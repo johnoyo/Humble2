@@ -25,7 +25,8 @@ project "Humble2"
     {
         "../Dependencies/GLFW/include",
         "../Dependencies/GLEW/include",
-        "src/Vendor"
+        "src/Vendor",
+        "C:/dev/Graphics/Emscripten/emsdk/upstream/emscripten/system/include"
     }
     
     libdirs

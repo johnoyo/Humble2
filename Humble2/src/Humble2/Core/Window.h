@@ -39,6 +39,6 @@ namespace HBL
 		bool m_FullScreen;
 		bool m_VSync;
 
-		void DispatchMainEm(void* fp);
+		static void DispatchMainEm(void* fp);
 	};
 }
