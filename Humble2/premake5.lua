@@ -23,9 +23,10 @@ project "Humble2"
     -- Include directories.
     includedirs
     {
+        "src/Vendor",
+        "src/Vendor/spdlog-1.x/include",
         "../Dependencies/GLFW/include",
         "../Dependencies/GLEW/include",
-        "src/Vendor",
         "C:/dev/Graphics/Emscripten/emsdk/upstream/emscripten/system/include"
     }
     

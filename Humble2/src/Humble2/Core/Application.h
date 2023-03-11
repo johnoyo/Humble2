@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Window.h"
+#include "../Utilities/Log.h"
+#include "../Renderer/Renderer2D.h"
 
 #include <string>
 #include <sstream>
@@ -22,20 +24,12 @@ namespace HBL
 		None
 	};
 
-	enum class RendererAPI
-	{
-		OpenGLES,
-		OpenGL,
-		Vulkan,
-		None
-	};
-
 	struct ApplicationSpec
 	{
 		std::string Name = "Humble Application";
 		Platform Platform = Platform::Windows;
 		Core Core = Core::Humble2D;
-		RendererAPI RendererAPI = RendererAPI::OpenGL;
+		GraphicsAPI RendererAPI = GraphicsAPI::OpenGL;
 		float Width = 960.f;
 		float Height = 540.f;
 		bool Vsync = true;
