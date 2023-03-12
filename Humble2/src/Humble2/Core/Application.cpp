@@ -62,9 +62,6 @@ namespace HBL
 
 		// Intialize the window.
 		m_Window = new Window(m_Spec.Name, m_Spec.Width, m_Spec.Height, m_Spec.Fullscreen, m_Spec.Vsync);
-
-		// Initialize the renderer.
-		Renderer2D::Get().Initialize(m_Spec.RendererAPI);
 	}
 
 	Application::~Application()
@@ -76,6 +73,9 @@ namespace HBL
 	{
 		m_Window->Create();
 
+		// Initialize the renderer.
+		Renderer2D::Get().Initialize(m_Spec.RendererAPI);
+
 		m_Window->DispatchMainLoop([&]()
 		{
 			// Measure time and delta time
@@ -84,8 +84,18 @@ namespace HBL
 			m_FixedDeltaTime += (time - m_LastTime) / m_LimitFPS;
 			m_LastTime = time;
 
-			glClear(GL_COLOR_BUFFER_BIT);
-			glClearColor(1.f, 0.7f, 0.3f, 1.0f);
+			Renderer2D::Get().BeginFrame();
+
+			glm::vec3 position = { 0.f, 0.f, 0.f };
+			glm::vec3 scale = { 150.f, 150.f, 0.f };
+			Renderer2D::Get().DrawQuad(position, 0.f, scale);
+
+			position = { 300.f, 300.f, 0.f };
+			scale = { 150.f, 150.f, 0.f };
+			if (glfwGetKey(m_Window->GetHandle(), GLFW_KEY_SPACE) == GLFW_PRESS)
+				Renderer2D::Get().DrawQuad(position, 0.f, scale);
+
+			Renderer2D::Get().EndFrame();
 
 			m_Frames++;
 

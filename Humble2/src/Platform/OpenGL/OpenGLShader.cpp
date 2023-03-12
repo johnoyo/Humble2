@@ -27,6 +27,7 @@ namespace HBL
 			HBL_CORE_ERROR("Failed to compile {0} shader.", (type == GL_VERTEX_SHADER ? "vertex" : "fragment"));
 			HBL_CORE_ERROR(message);
 			glDeleteShader(id);
+
 			return 0;
 		}
 
@@ -35,9 +36,9 @@ namespace HBL
 
 	void OpenGLShader::Attach()
 	{
-		uint32_t program = glCreateProgram();
-		uint32_t vs = Compile(GL_VERTEX_SHADER, m_VertexSource);
-		uint32_t fs = Compile(GL_FRAGMENT_SHADER, m_FragmentSource);
+		unsigned int program = glCreateProgram();
+		unsigned int vs = Compile(GL_VERTEX_SHADER, m_VertexSource);
+		unsigned int fs = Compile(GL_FRAGMENT_SHADER, m_FragmentSource);
 
 		glAttachShader(program, vs);
 		glAttachShader(program, fs);
@@ -58,5 +59,32 @@ namespace HBL
 	void OpenGLShader::UnBind()
 	{
 		glUseProgram(0);
+	}
+
+	void OpenGLShader::SetMat4(const glm::mat4& mat4, const std::string& uniformName)
+	{
+		auto location1 = glGetUniformLocation(m_ID, uniformName.c_str());
+		if (location1 == -1)
+			HBL_CORE_ERROR("Uniform: {0} not found in shader with name: {1}.", uniformName, m_Name);
+
+		glUniformMatrix4fv(location1, 1, GL_FALSE, glm::value_ptr(mat4));
+	}
+
+	void OpenGLShader::SetInt1(const int32_t value, const std::string& uniformName)
+	{
+		auto location = glGetUniformLocation(m_ID, uniformName.c_str());
+		if (location == -1)
+			HBL_CORE_ERROR("Uniform: {0} not found in shader with name: {1}.", uniformName, m_Name);
+
+		glUniform1i(location, value);
+	}
+
+	void OpenGLShader::SetIntPtr1(const GLint* value, GLsizei count, const std::string& uniformName)
+	{
+		auto location = glGetUniformLocation(m_ID, uniformName.c_str());
+		if (location == -1)
+			HBL_CORE_ERROR("Uniform: {0} not found in shader with name: {1}.", uniformName, m_Name);
+
+		glUniform1iv(location, count, value);
 	}
 }

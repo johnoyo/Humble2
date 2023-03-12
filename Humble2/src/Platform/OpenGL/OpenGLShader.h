@@ -5,12 +5,15 @@
 
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3
-	#include <emscripten\emscripten.h>
 	#include <GLFW/glfw3.h>
 #else
 	#define GLFW_INCLUDE_NONE
 	#include <GL/glew.h>
 #endif
+
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <stb_image/stb_image.h>
 
 namespace HBL
 {
@@ -18,9 +21,13 @@ namespace HBL
 	{
 	public:
 		OpenGLShader(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource);
+		virtual ~OpenGLShader() {}
 
 		virtual void Bind() override;
 		virtual void UnBind() override;
+		virtual void SetMat4(const glm::mat4& mat4, const std::string& uniformName) override;
+		virtual void SetInt1(const int32_t value, const std::string& uniformName) override;
+		virtual void SetIntPtr1(const GLint* value, GLsizei count, const std::string& uniformName) override;
 	private:
 		uint32_t Compile(uint32_t type, const std::string& source);
 		void Attach();
