@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Window.h"
-#include "../Utilities/Log.h"
+#include "../Base.h"
 #include "../Renderer/Renderer2D.h"
 
 #include <string>

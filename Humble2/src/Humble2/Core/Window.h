@@ -27,7 +27,8 @@ namespace HBL
 		GLFWwindow* GetHandle();
 
 		void Create();
-		void DispatchMainLoop(std::function<void()> mainLoop);
+		void DispatchMainLoop(const std::function<void()>& mainLoop);
+		void SetTitle(const std::string& title);
 		double GetTime();
 		void Close();
 		void Terminate();

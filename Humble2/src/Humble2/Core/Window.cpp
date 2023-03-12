@@ -79,7 +79,7 @@ namespace HBL
 		(*func)();
 	}
 
-	void Window::DispatchMainLoop(std::function<void()> mainLoop)
+	void Window::DispatchMainLoop(const std::function<void()>& mainLoop)
 	{
 #ifdef EMSCRIPTEN
 		std::function<void()> mainLoopEm = [&]()
@@ -99,6 +99,12 @@ namespace HBL
 			glfwPollEvents();
 		}
 #endif
+	}
+
+	void Window::SetTitle(const std::string& title)
+	{
+		m_Title = title;
+		glfwSetWindowTitle(m_Window, title.c_str());
 	}
 
 	double Window::GetTime()

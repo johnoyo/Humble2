@@ -79,7 +79,7 @@ namespace HBL
 		m_Window->DispatchMainLoop([&]()
 		{
 			// Measure time and delta time
-			float time = (float)glfwGetTime();
+			float time = (float)m_Window->GetTime();
 			m_DeltaTime = time - m_LastTime;
 			m_FixedDeltaTime += (time - m_LastTime) / m_LimitFPS;
 			m_LastTime = time;
@@ -88,27 +88,28 @@ namespace HBL
 
 			glm::vec3 position = { 0.f, 0.f, 0.f };
 			glm::vec3 scale = { 150.f, 150.f, 0.f };
-			Renderer2D::Get().DrawQuad(position, 0.f, scale);
+			glm::vec4 color = { 1.f, 1.f, 0.f, 1.f };
+			Renderer2D::Get().DrawQuad(position, 0.f, scale, 0, color);
 
 			position = { 300.f, 300.f, 0.f };
 			scale = { 150.f, 150.f, 0.f };
 			if (glfwGetKey(m_Window->GetHandle(), GLFW_KEY_SPACE) == GLFW_PRESS)
-				Renderer2D::Get().DrawQuad(position, 0.f, scale);
+				Renderer2D::Get().DrawQuad(position, 0.f, scale, 1);
 
 			Renderer2D::Get().EndFrame();
 
 			m_Frames++;
 
 			// Reset after one second
-			if (glfwGetTime() - m_Timer > 1.0)
+			if (m_Window->GetTime() - m_Timer > 1.0)
 			{
 				// Display frame rate at window bar
 				std::stringstream ss;
 				ss << m_Spec.Name << " [" << m_Frames << " FPS]";
-				glfwSetWindowTitle(m_Window->GetHandle(), ss.str().c_str());
+				m_Window->SetTitle(ss.str());
 
 				// Log framerate and delta time to console
-				std::cout << "FPS: " << m_Frames << ", DeltaTime: " << m_DeltaTime << "\n";
+				HBL_CORE_TRACE("FPS: {0}, DeltaTime: {1}", m_Frames, m_DeltaTime);
 
 				m_Timer++;
 				m_Frames = 0;

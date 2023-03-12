@@ -1,6 +1,7 @@
 #pragma once
 
 #include "OpenGLShader.h"
+#include "OpenGLTexture.h"
 #include "OpenGLVertexArray.h"
 #include "OpenGLVertexBuffer.h"
 #include "OpenGLIndexBuffer.h"

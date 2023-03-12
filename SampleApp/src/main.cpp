@@ -4,6 +4,7 @@ int main()
 {
 	HBL::ApplicationSpec applicationSpec;
 	applicationSpec.Name = "Sample App";
+	applicationSpec.Vsync = true;
 
 	HBL::Application* app = new HBL::Application(applicationSpec);
 

@@ -15,28 +15,14 @@ namespace HBL
 		m_VertexArray->AddVertexBuffer(m_VertexBuffer);
 		m_VertexArray->SetIndexBuffer(m_IndexBuffer);
 		
-		int w, h, bits;
-
-		stbi_set_flip_vertically_on_load(1);
-		auto* pixels = stbi_load("res/textures/Pixel-Art.png", &w, &h, &bits, STBI_rgb_alpha);
-		unsigned int tex_id;
-
-		glGenTextures(1, &tex_id);
-		glBindTexture(GL_TEXTURE_2D, tex_id);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-
-		stbi_image_free(pixels);
+		Texture::Load("")->Bind();
+		Texture::Load("res/textures/Pixel-Art.png")->Bind();
 		
 #ifdef EMSCRIPTEN
-		Shader::Create("Basic", "res/shaders/shaderES.vert", "res/shaders/shaderES.frag");
+		Shader::Create("Basic", "res/shaders/shaderES.vert", "res/shaders/shaderES.frag")->Bind();
 #else
-		Shader::Create("Basic", "res/shaders/shader.vert", "res/shaders/shader.frag");
+		Shader::Create("Basic", "res/shaders/shader.vert", "res/shaders/shader.frag")->Bind();
 #endif
-		Shader::Get("Basic")->Bind();
 		
 #ifdef EMSCRIPTEN
 		Shader::Get("Basic")->SetInt1(0, "u_Textures0");
@@ -88,6 +74,11 @@ namespace HBL
 
 	void OpenGLRendererAPI::Flush()
 	{
+		Texture::ForEach([](Texture* texture)
+		{
+			texture->Bind();
+		});
+
 		m_VertexBuffer->Bind();
 		m_VertexBuffer->SetData();
 

@@ -19,7 +19,7 @@ namespace HBL
 	};
 }
 
-#ifdef DEBUG
+#ifndef DEBUG
 	#define HBL_CORE_FATAL(...) ::HBL::Log::GetCoreLogger()->critical(__VA_ARGS__)
 	#define HBL_CORE_ERROR(...) ::HBL::Log::GetCoreLogger()->error(__VA_ARGS__)
 	#define HBL_CORE_WARN(...)  ::HBL::Log::GetCoreLogger()->warn(__VA_ARGS__)
