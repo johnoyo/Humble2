@@ -34,7 +34,7 @@ namespace HBL
 #ifdef EMSCRIPTEN
 		Shader::Create("Basic", "res/shaders/shaderES.vert", "res/shaders/shaderES.frag");
 #else
-		//Shader::Create("Basic", "res/shaders/shader.vert", "res/shaders/shader.frag");
+		Shader::Create("Basic", "res/shaders/shader.vert", "res/shaders/shader.frag");
 #endif
 		Shader::Get("Basic")->Bind();
 		
