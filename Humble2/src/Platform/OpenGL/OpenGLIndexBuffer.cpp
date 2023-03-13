@@ -20,7 +20,7 @@ namespace HBL
 
 		glGenBuffers(1, &m_IndexBufferID);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IndexBufferID);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, (m_Size / 4U) * 6U * sizeof(unsigned int), m_Indeces, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, (m_Size / 4U) * 6U * sizeof(GLuint), m_Indeces, GL_STATIC_DRAW);
 	}
 
 	void OpenGLIndexBuffer::Bind()
@@ -35,6 +35,6 @@ namespace HBL
 
 	void OpenGLIndexBuffer::SetData(uint32_t batchSize)
 	{
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, (batchSize / 4U) * 6U * sizeof(unsigned int), m_Indeces, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, (batchSize / 4U) * 6U * sizeof(GLuint), m_Indeces, GL_STATIC_DRAW);
 	}
 }

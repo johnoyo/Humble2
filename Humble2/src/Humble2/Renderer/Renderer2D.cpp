@@ -9,7 +9,7 @@ namespace HBL
 		RenderCommand::Initialize(api);
 
 		m_VertexArray = VertexArray::Create();
-		m_VertexArray->SetIndexBuffer(IndexBuffer::Create(10000 * 4));
+		m_VertexArray->SetIndexBuffer(IndexBuffer::Create(30000));
 
 		Texture::Load("")->Bind();
 
@@ -25,6 +25,7 @@ namespace HBL
 
 		AddBatch("Basic", 10000, mvp);
 		AddBatch("Basic", 10000, mvp);
+		AddBatch("Basic", 30000, mvp);
 		// -------------------------------------------------------------------------------------------
 
 		m_QuadVertexPosition[0] = { -0.5f, 0.5f, 0.0f, 1.0f };
@@ -74,10 +75,20 @@ namespace HBL
 		}
 	}
 
-	void Renderer2D::AddBatch(const std::string& shaderName, uint32_t vertexBufferSize, glm::mat4& mvp)
+	uint32_t Renderer2D::AddBatch(const std::string& shaderName, uint32_t vertexBufferSize, glm::mat4& mvp)
 	{
-		m_VertexArray->AddVertexBuffer(VertexBuffer::Create(vertexBufferSize * 4));
-		
+		VertexBufferLayout vertexBufferLayout(
+		{
+			{ 0, 2, Type::FLOAT, false },
+			{ 1, 4, Type::FLOAT, false },
+			{ 2, 2, Type::FLOAT, false },
+			{ 3, 1, Type::FLOAT, false },
+		});
+
+		VertexBuffer* vertexBuffer = VertexBuffer::Create(vertexBufferSize * 4, vertexBufferLayout);
+
+		m_VertexArray->AddVertexBuffer(vertexBuffer);
+
 		Shader::Get(shaderName)->Bind();
 
 #ifdef EMSCRIPTEN
@@ -99,16 +110,8 @@ namespace HBL
 		Shader::Get(shaderName)->SetMat4(mvp, "u_MVP");
 
 		m_Shaders.push_back(shaderName);
-	}
 
-	void Renderer2D::DrawQuad(uint32_t batchIndex, glm::vec3& position, float rotation, glm::vec3& scale)
-	{
-		DrawQuad(batchIndex, position, rotation, scale, 0.f, { 1.0f, 0.8f, 0.3f, 1.0f });
-	}
-
-	void Renderer2D::DrawQuad(uint32_t batchIndex, glm::vec3& position, float rotation, glm::vec3& scale, glm::vec4& color)
-	{
-		DrawQuad(batchIndex, position, rotation, scale, 0.f, color);
+		return m_VertexArray->GetVertexBuffers().size() - 1;
 	}
 
 	void Renderer2D::DrawQuad(uint32_t batchIndex, glm::vec3& position, float rotation, glm::vec3& scale, float textureID, glm::vec4 color)

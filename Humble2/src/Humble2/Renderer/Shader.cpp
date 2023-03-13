@@ -7,6 +7,11 @@ namespace HBL
 {
 	std::unordered_map<std::string, Shader*> Shader::s_ShaderLib;
 
+	Shader::Shader(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource)
+		: m_Name(name), m_VertexSource(vertexSource), m_FragmentSource(fragmentSource)
+	{
+	}
+
 	Shader* Shader::Create(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource, int tmp)
 	{
 		if (Exists(name))
@@ -169,10 +174,5 @@ namespace HBL
 		{
 			delete item.second;
 		}
-	}
-
-	Shader::Shader(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource)
-		: m_Name(name), m_VertexSource(vertexSource), m_FragmentSource(fragmentSource)
-	{
 	}
 }

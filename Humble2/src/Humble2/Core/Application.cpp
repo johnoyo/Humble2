@@ -76,6 +76,10 @@ namespace HBL
 		// Initialize the renderer.
 		Renderer2D::Get().Initialize(m_Specification.GraphicsAPI);
 
+		glm::vec3 position = { 10.f, 10.f, 0.f };
+		glm::vec3 scale = { 10.f, 10.f, 0.f };
+		glm::vec4 color = { 1.f, 0.2f, 0.1f, 1.f };
+
 		m_Window->DispatchMainLoop([&]()
 		{
 			// Measure time and delta time.
@@ -84,15 +88,49 @@ namespace HBL
 			m_FixedDeltaTime += (time - m_LastTime) / m_LimitFPS;
 			m_LastTime = time;
 
-			glm::vec3 position = { 120.f, 120.f, 0.f };
-			glm::vec3 scale = { 150.f, 150.f, 0.f };
-			glm::vec4 color = { 1.f, 1.f, 0.f, 1.f };
-			Renderer2D::Get().DrawQuad(0, position, 0.f, scale, 0.f, color);
+			position.x = 5.f;
+			position.y = 5.f;
+			scale = { 10.f, 10.f, 0.f };
+			for (int i = 0; i < 36; i++)
+			{
+				for (int j = 0; j < 64; j++)
+				{
+					Renderer2D::Get().DrawQuad(0, position, 0.f, scale, 0.f);
+					position.x += 15.f;
+				}
+				position.x = 5.f;
+				position.y += 15.f;
+			}
 
-			position = { 300.f, 300.f, 0.f };
-			scale = { 150.f, 150.f, 0.f };
-			if (glfwGetKey(m_Window->GetHandle(), GLFW_KEY_SPACE) == GLFW_PRESS)
-				Renderer2D::Get().DrawQuad(1, position, 0.f, scale, 1.f);
+			position.x = 12.5f;
+			position.y = 12.5f;
+			color = { 1.f, 0.2f, 0.1f, 1.f };
+
+			for (int i = 0; i < 36; i++)
+			{
+				for (int j = 0; j < 64; j++)
+				{
+					Renderer2D::Get().DrawQuad(1, position, 0.f, scale, 0.f, color);
+					position.x += 15.f;
+				}
+				position.x = 12.5f;
+				position.y += 15.f;
+			}
+
+			position.x = 5.f;
+			position.y = 5.f;
+			scale = { 5.f, 5.f, 0.f };
+			color = { 0.f, 0.f, 0.f, 1.f };
+			for (int i = 0; i < 55; i++)
+			{
+				for (int j = 0; j < 100; j++)
+				{
+					Renderer2D::Get().DrawQuad(2, position, 0.f, scale, 0.f, color);
+					position.x += 10.f;
+				}
+				position.x = 5.f;
+				position.y += 10.f;
+			}
 
 			Renderer2D::Get().BeginFrame();
 			Renderer2D::Get().Submit();

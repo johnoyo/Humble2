@@ -5,15 +5,15 @@
 
 namespace HBL
 {
-	VertexBuffer* VertexBuffer::Create(uint32_t size)
+	VertexBuffer* VertexBuffer::Create(uint32_t size, VertexBufferLayout& layout)
 	{
 		switch (Renderer2D::Get().GetAPI())
 		{
 		case GraphicsAPI::OpenGL:
-			return new OpenGLVertexBuffer(size);
+			return new OpenGLVertexBuffer(size, layout);
 		case GraphicsAPI::Vulkan:
 			HBL_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
-			return new OpenGLVertexBuffer(size);
+			return new OpenGLVertexBuffer(size, layout);
 		case HBL::GraphicsAPI::None:
 			HBL_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);

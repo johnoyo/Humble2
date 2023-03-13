@@ -15,6 +15,7 @@ namespace HBL
 	class Shader
 	{
 	public:
+		Shader(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource);
 		virtual ~Shader() = default;
 
 		static Shader* Create(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource, int tmp);
@@ -25,8 +26,6 @@ namespace HBL
 		static Shader* Get(const std::string& name);
 		static bool Exists(const std::string& name);
 		static void Clean();
-
-		Shader(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource);
 
 		virtual void Bind() = 0;
 		virtual void UnBind() = 0;
