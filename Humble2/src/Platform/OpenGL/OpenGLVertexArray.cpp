@@ -19,8 +19,19 @@ namespace HBL
 		glBindVertexArray(0);
 	}
 
+	std::vector<VertexBuffer*>& OpenGLVertexArray::GetVertexBuffers()
+	{
+		return m_VertexBuffers;
+	}
+
+	IndexBuffer* OpenGLVertexArray::GetIndexBuffer()
+	{
+		return m_IndexBuffer;
+	}
+
 	void OpenGLVertexArray::AddVertexBuffer(VertexBuffer* vertexBuffer)
 	{
+		vertexBuffer->BatchIndex = m_VertexBuffers.size();
 		m_VertexBuffers.push_back(vertexBuffer);
 	}
 

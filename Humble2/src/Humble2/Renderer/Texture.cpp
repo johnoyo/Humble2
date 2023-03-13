@@ -1,5 +1,6 @@
 #include "Texture.h"
 
+#include "Renderer2D.h"
 #include "../../Platform/OpenGL/OpenGLTexture.h"
 
 namespace HBL

@@ -7,7 +7,7 @@ namespace HBL
 		m_Indeces = new uint32_t[(m_Size / 4U) * 6U];
 
 		int w = 0;
-		for (int k = 0; k < (size / 4) * 6; k += 6) 
+		for (int k = 0; k < (m_Size / 4) * 6; k += 6)
 		{
 			m_Indeces[m_Index++] = 0 + w;
 			m_Indeces[m_Index++] = 3 + w;

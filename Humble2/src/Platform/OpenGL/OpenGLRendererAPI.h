@@ -1,11 +1,5 @@
 #pragma once
 
-#include "OpenGLShader.h"
-#include "OpenGLTexture.h"
-#include "OpenGLVertexArray.h"
-#include "OpenGLVertexBuffer.h"
-#include "OpenGLIndexBuffer.h"
-
 #include "../../Humble2/Renderer/RendererAPI.h"
 
 #ifdef EMSCRIPTEN
@@ -22,15 +16,8 @@ namespace HBL
 	{
 	public:
 		OpenGLRendererAPI();
-		virtual void DrawQuad(glm::vec3& position, float rotation, glm::vec3& scale) override;
-		virtual void DrawQuad(glm::vec3& position, float rotation, glm::vec3& scale, glm::vec4& color) override;
-		virtual void DrawQuad(glm::vec3& position, float rotation, glm::vec3& scale, uint32_t textureID, glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f }) override;
 		virtual void SetViewport(GLint x, GLint y, GLsizei width, GLsizei height) override;
 		virtual void ClearScreen(glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f }) override;
-		virtual void Flush() override;
-	private:
-		OpenGLVertexArray* m_VertexArray = nullptr;
-		OpenGLVertexBuffer* m_VertexBuffer = nullptr;
-		OpenGLIndexBuffer* m_IndexBuffer = nullptr;
+		virtual void Submit(VertexBuffer* vertexBuffer) override;
 	};
 }

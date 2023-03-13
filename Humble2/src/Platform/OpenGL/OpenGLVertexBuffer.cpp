@@ -29,69 +29,21 @@ namespace HBL
 
 	void OpenGLVertexBuffer::SetData()
 	{
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Buffer) * m_BatchSize, m_Buffer);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Buffer) * BatchSize, m_Buffer);
 	}
 
 	void OpenGLVertexBuffer::Bind()
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, m_VertexBufferID);
+
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct Buffer), (const void*)offsetof(Buffer, Position));
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(struct Buffer), (const void*)offsetof(Buffer, Color));
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(struct Buffer), (const void*)offsetof(Buffer, TextureCoord));
+		glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(struct Buffer), (const void*)offsetof(Buffer, TextureID));
 	}
 
 	void OpenGLVertexBuffer::UnBind()
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	}
-
-	void OpenGLVertexBuffer::AppendQuad(glm::vec3& position, float rotation, glm::vec3& scale, glm::vec4& color, float textureID)
-	{
-		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
-			* glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f))
-			* glm::scale(glm::mat4(1.0f), glm::vec3(scale.x, scale.y, 1.0f));
-
-		glm::vec4 quadVertexPosition[4];
-
-		quadVertexPosition[0] = { -0.5f, 0.5f, 0.0f, 1.0f };
-		quadVertexPosition[1] = {  0.5f, 0.5f, 0.0f, 1.0f };
-		quadVertexPosition[2] = {  0.5f,-0.5f, 0.0f, 1.0f };
-		quadVertexPosition[3] = { -0.5f,-0.5f, 0.0f, 1.0f };
-
-		m_Buffer[m_BatchSize].Position = transform * quadVertexPosition[0];
-		m_Buffer[m_BatchSize].Color = color;
-		m_Buffer[m_BatchSize].TextureCoord = { 0.0f, 1.0f };
-		m_Buffer[m_BatchSize].TextureID = textureID;
-		m_BatchSize++;
-
-		m_Buffer[m_BatchSize].Position = transform * quadVertexPosition[1];
-		m_Buffer[m_BatchSize].Color = color;
-		m_Buffer[m_BatchSize].TextureCoord = { 1.0f, 1.0f };
-		m_Buffer[m_BatchSize].TextureID = textureID;
-		m_BatchSize++;
-
-		m_Buffer[m_BatchSize].Position = transform * quadVertexPosition[2];
-		m_Buffer[m_BatchSize].Color = color;
-		m_Buffer[m_BatchSize].TextureCoord = { 1.0f, 0.0f };
-		m_Buffer[m_BatchSize].TextureID = textureID;
-		m_BatchSize++;
-
-		m_Buffer[m_BatchSize].Position = transform * quadVertexPosition[3];
-		m_Buffer[m_BatchSize].Color = color;
-		m_Buffer[m_BatchSize].TextureCoord = { 0.0f, 0.0f };
-		m_Buffer[m_BatchSize].TextureID = textureID;
-		m_BatchSize++;
-	}
-
-	void OpenGLVertexBuffer::Reset()
-	{
-		m_BatchSize = 0;
-	}
-
-	uint32_t OpenGLVertexBuffer::GetBatchSize()
-	{
-		return m_BatchSize;
-	}
-
-	Buffer* OpenGLVertexBuffer::GetHandle()
-	{
-		return m_Buffer;
 	}
 }

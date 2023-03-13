@@ -29,7 +29,7 @@ namespace HBL
 		std::string Name = "Humble Application";
 		Platform Platform = Platform::Windows;
 		Core Core = Core::Humble2D;
-		GraphicsAPI RendererAPI = GraphicsAPI::OpenGL;
+		GraphicsAPI GraphicsAPI = GraphicsAPI::OpenGL;
 		float Width = 960.f;
 		float Height = 540.f;
 		bool Vsync = true;
@@ -39,13 +39,13 @@ namespace HBL
 	class Application
 	{
 	public:
-		Application(ApplicationSpec& spec);
+		Application(ApplicationSpec& specification);
 		~Application();
 
 		void Start();
 
 	private:
-		ApplicationSpec m_Spec;
+		ApplicationSpec m_Specification;
 		Window* m_Window;
 
 		float m_LastTime = 0.0f;

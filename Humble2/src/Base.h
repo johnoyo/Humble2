@@ -11,3 +11,16 @@
 	#define HBL_PROFILE(...)
 	#define HBL_FUNC_PROFILE()
 #endif
+
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <stb_image/stb_image.h>
+
+struct Buffer
+{
+	glm::vec2 Position;
+	glm::vec4 Color;
+	glm::vec2 TextureCoord;
+	float TextureID;
+};

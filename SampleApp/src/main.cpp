@@ -4,7 +4,8 @@ int main()
 {
 	HBL::ApplicationSpec applicationSpec;
 	applicationSpec.Name = "Sample App";
-	applicationSpec.Vsync = true;
+	applicationSpec.Vsync = false;
+	applicationSpec.GraphicsAPI = HBL::GraphicsAPI::OpenGL;
 
 	HBL::Application* app = new HBL::Application(applicationSpec);
 

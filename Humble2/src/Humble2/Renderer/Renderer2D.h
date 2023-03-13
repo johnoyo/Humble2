@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Shader.h"
+#include "Texture.h"
+#include "VertexArray.h"
 #include "RenderCommand.h"
 
 namespace HBL
@@ -18,19 +21,23 @@ namespace HBL
 		void Initialize(GraphicsAPI api);
 
 		void BeginFrame();
-		void Render();
+		void Submit();
 		void EndFrame();
 
-		void DrawQuad(glm::vec3& position, float rotation, glm::vec3& scale);
-		void DrawQuad(glm::vec3& position, float rotation, glm::vec3& scale, glm::vec4& color);
-		void DrawQuad(glm::vec3& position, float rotation, glm::vec3& scale, uint32_t textureID, glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f });
+		void AddBatch(const std::string& shaderName, uint32_t vertexBufferSize, glm::mat4& mvp);
+
+		void DrawQuad(uint32_t batchIndex, glm::vec3& position, float rotation, glm::vec3& scale);
+		void DrawQuad(uint32_t batchIndex, glm::vec3& position, float rotation, glm::vec3& scale, glm::vec4& color);
+		void DrawQuad(uint32_t batchIndex, glm::vec3& position, float rotation, glm::vec3& scale, float textureID, glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f });
 
 		void SetViewport(int32_t x, int32_t y, int32_t width, int32_t height);
 
 		inline GraphicsAPI GetAPI() { return m_API; }
-
 	private:
 		Renderer2D() {}
 		GraphicsAPI m_API = GraphicsAPI::None;
+		VertexArray* m_VertexArray = nullptr;
+		glm::vec4 m_QuadVertexPosition[4] = {};
+		std::vector<std::string> m_Shaders;
 	};
 }

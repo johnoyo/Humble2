@@ -1,5 +1,6 @@
 #include "IndexBuffer.h"
 
+#include "Renderer2D.h"
 #include "../../Platform/OpenGL/OpenGLIndexBuffer.h"
 
 namespace HBL

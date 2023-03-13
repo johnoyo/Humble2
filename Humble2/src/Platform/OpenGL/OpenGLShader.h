@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Humble2/Renderer/Shader.h"
-#include "../../Humble2/Utilities/Log.h"
+#include "../Base.h"
 
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3
@@ -10,10 +10,6 @@
 	#define GLFW_INCLUDE_NONE
 	#include <GL/glew.h>
 #endif
-
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <stb_image/stb_image.h>
 
 namespace HBL
 {

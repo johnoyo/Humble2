@@ -20,8 +20,7 @@ namespace HBL
 
 		virtual void Bind() override;
 		virtual void UnBind() override;
-
-		void SetData(uint32_t batchSize);
+		virtual void SetData(uint32_t batchSize) override;
 	private:
 		uint32_t m_IndexBufferID = 0;
 		uint32_t m_Index = 0;

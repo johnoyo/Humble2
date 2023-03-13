@@ -1,5 +1,6 @@
 #include "VertexArray.h"
 
+#include "Renderer2D.h"
 #include "../../Platform/OpenGL/OpenGLVertexArray.h"
 
 namespace HBL

@@ -1,8 +1,10 @@
 #pragma once
 
-#include "Renderer2D.h"
+#include "../Base.h"
 
 #include <string>
+#include <assert.h>
+#include <functional>
 #include <unordered_map>
 
 namespace HBL

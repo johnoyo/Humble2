@@ -24,21 +24,6 @@ namespace HBL
 		}
 	}
 
-	void RenderCommand::DrawQuad(glm::vec3& position, float rotation, glm::vec3& scale)
-	{
-		s_RendererAPI->DrawQuad(position, rotation, scale);
-	}
-
-	void RenderCommand::DrawQuad(glm::vec3& position, float rotation, glm::vec3& scale, glm::vec4& color)
-	{
-		s_RendererAPI->DrawQuad(position, rotation, scale, color);
-	}
-
-	void RenderCommand::DrawQuad(glm::vec3& position, float rotation, glm::vec3& scale, uint32_t textureID, glm::vec4 color)
-	{
-		s_RendererAPI->DrawQuad(position, rotation, scale, textureID, color);
-	}
-
 	void RenderCommand::SetViewport(int32_t x, int32_t y, int32_t width, int32_t height)
 	{
 		s_RendererAPI->SetViewport(x, y, width, height);
@@ -49,8 +34,8 @@ namespace HBL
 		s_RendererAPI->ClearScreen(color);
 	}
 
-	void RenderCommand::Flush()
+	void RenderCommand::Submit(VertexBuffer* vertexBuffer)
 	{
-		s_RendererAPI->Flush();
+		s_RendererAPI->Submit(vertexBuffer);
 	}
 }

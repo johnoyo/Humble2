@@ -1,5 +1,6 @@
 #include "VertexBuffer.h"
 
+#include "Renderer2D.h"
 #include "../../Platform/OpenGL/OpenGLVertexBuffer.h"
 
 namespace HBL
@@ -20,5 +21,10 @@ namespace HBL
 		}
 
 		return nullptr;
+	}
+
+	Buffer* VertexBuffer::GetHandle()
+	{
+		return m_Buffer;
 	}
 }
