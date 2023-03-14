@@ -120,7 +120,7 @@ namespace HBL
 			position.x = 5.f;
 			position.y = 5.f;
 			scale = { 5.f, 5.f, 0.f };
-			color = { 0.f, 0.f, 0.f, 1.f };
+			color = { 0.f, 1.f, 0.f, 1.f };
 			for (int i = 0; i < 55; i++)
 			{
 				for (int j = 0; j < 100; j++)

@@ -1,3 +1,4 @@
+
 precision highp float;
 
 uniform sampler2D u_Textures0;
@@ -9,6 +10,9 @@ uniform sampler2D u_Textures5;
 uniform sampler2D u_Textures6;
 uniform sampler2D u_Textures7;
 
+uniform vec2 u_LightPosition;
+
+varying highp vec2 v_Position;
 varying highp vec4 v_Color;
 varying highp vec2 v_TextureCoord;
 varying highp float v_TextureID;
@@ -36,5 +40,7 @@ void main()
 	else if (id == 7)
 		texColor = v_Color * texture2D(u_Textures7, v_TextureCoord);
 
-	gl_FragColor = texColor;
+	float intensity = 1.0 / length(v_Position - u_LightPosition);
+
+	gl_FragColor = texColor * intensity;
 }

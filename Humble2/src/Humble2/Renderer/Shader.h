@@ -30,6 +30,7 @@ namespace HBL
 		virtual void Bind() = 0;
 		virtual void UnBind() = 0;
 
+		virtual void SetFloat2(const glm::vec2& vec2, const std::string& uniformName) = 0;
 		virtual void SetMat4(const glm::mat4& mat4, const std::string& uniformName) = 0;
 		virtual void SetInt1(const int32_t value, const std::string& uniformName) = 0;
 		virtual void SetIntPtr1(const int32_t* value, int count, const std::string& uniformName) = 0;

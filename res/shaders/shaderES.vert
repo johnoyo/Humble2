@@ -6,12 +6,14 @@ attribute highp float a_TextureID;
 
 uniform highp mat4 u_MVP;
 
+varying highp vec2 v_Position;
 varying highp vec4 v_Color;
 varying highp vec2 v_TextureCoord;
 varying highp float v_TextureID;
 
 void main()
 {
+	v_Position = a_Position;
 	v_Color = a_Color;
 	v_TextureCoord = a_TextureCoord;
 	v_TextureID = a_TextureID;

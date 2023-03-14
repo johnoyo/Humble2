@@ -9,7 +9,7 @@ namespace HBL
 		RenderCommand::Initialize(api);
 
 		m_VertexArray = VertexArray::Create();
-		m_VertexArray->SetIndexBuffer(IndexBuffer::Create(30000));
+		m_VertexArray->SetIndexBuffer(IndexBuffer::Create(50000));
 
 		Texture::Load("")->Bind();
 
@@ -17,15 +17,17 @@ namespace HBL
 		Texture::Load("res/textures/Pixel-Art.png")->Bind();
 
 #ifdef EMSCRIPTEN
-		Shader::Create("Basic", "res/shaders/shaderES.vert", "res/shaders/shaderES.frag");
+		Shader::Create("BasicLight", "res/shaders/shaderES.vert", "res/shaders/shaderES.frag");
+		//Shader::Create("Basic", "res/shaders/BasicES.shader");
 #else
-		Shader::Create("Basic", "res/shaders/shader.vert", "res/shaders/shader.frag");
+		Shader::Create("BasicLight", "res/shaders/shader.vert", "res/shaders/shader.frag");
+		Shader::Create("Basic", "res/shaders/Basic.shader");
 #endif
 		glm::mat4 mvp = glm::ortho(0.f, 960.f, 0.f, 540.f, -1.f, 1.f);
 
-		AddBatch("Basic", 10000, mvp);
-		AddBatch("Basic", 10000, mvp);
-		AddBatch("Basic", 30000, mvp);
+		AddBatch("BasicLight", 10000, mvp);
+		AddBatch("BasicLight", 10000, mvp);
+		AddBatch("BasicLight", 30000, mvp);
 		// -------------------------------------------------------------------------------------------
 
 		m_QuadVertexPosition[0] = { -0.5f, 0.5f, 0.0f, 1.0f };
@@ -36,7 +38,7 @@ namespace HBL
 
 	void Renderer2D::BeginFrame()
 	{
-		RenderCommand::ClearScreen({ 1.f, 0.7f, 0.3f, 1.0f });
+		RenderCommand::ClearScreen({ 0.f, 0.0f, 0.0f, 1.0f });
 	}
 
 	void Renderer2D::Submit()
@@ -109,6 +111,10 @@ namespace HBL
 #endif
 		Shader::Get(shaderName)->SetMat4(mvp, "u_MVP");
 
+		glm::vec2 lightPosition = { 250.f, 250.f };
+
+		Shader::Get(shaderName)->SetFloat2(lightPosition, "u_LightPosition");
+
 		m_Shaders.push_back(shaderName);
 
 		return m_VertexArray->GetVertexBuffers().size() - 1;
@@ -117,7 +123,7 @@ namespace HBL
 	void Renderer2D::DrawQuad(uint32_t batchIndex, glm::vec3& position, float rotation, glm::vec3& scale, float textureID, glm::vec4 color)
 	{
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
-			* glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f))
+			/** glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f))*/
 			* glm::scale(glm::mat4(1.0f), glm::vec3(scale.x, scale.y, 1.0f));
 
 		Buffer* buffer = m_VertexArray->GetVertexBuffers()[batchIndex]->GetHandle();

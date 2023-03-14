@@ -1,5 +1,5 @@
 #shader vertex
-attribute highp vec4 a_Position;
+attribute highp vec2 a_Position;
 attribute highp vec4 a_Color;
 attribute highp vec2 a_TextureCoord;
 attribute highp float a_TextureID;
@@ -15,7 +15,7 @@ void main()
 	v_Color = a_Color;
 	v_TextureCoord = a_TextureCoord;
 	v_TextureID = a_TextureID;
-	gl_Position = u_MVP * a_Position;
+	gl_Position = u_MVP * vec4(a_Position, 1.0, 1.0);
 }
 
 #shader fragment

@@ -61,6 +61,15 @@ namespace HBL
 		glUseProgram(0);
 	}
 
+	void OpenGLShader::SetFloat2(const glm::vec2& vec2, const std::string& uniformName)
+	{
+		auto location1 = glGetUniformLocation(m_ID, uniformName.c_str());
+		if (location1 == -1)
+			HBL_CORE_ERROR("Uniform: {0} not found in shader with name: {1}.", uniformName, m_Name);
+
+		glUniform2f(location1, vec2.x, vec2.y);
+	}
+
 	void OpenGLShader::SetMat4(const glm::mat4& mat4, const std::string& uniformName)
 	{
 		auto location1 = glGetUniformLocation(m_ID, uniformName.c_str());
