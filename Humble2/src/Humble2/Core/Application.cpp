@@ -95,7 +95,7 @@ namespace HBL
 			{
 				for (int j = 0; j < 64; j++)
 				{
-					Renderer2D::Get().DrawQuad(0, position, 0.f, scale, 0.f);
+					Renderer2D::Get().DrawQuad(0, position, scale, 0.f);
 					position.x += 15.f;
 				}
 				position.x = 5.f;
@@ -110,7 +110,7 @@ namespace HBL
 			{
 				for (int j = 0; j < 64; j++)
 				{
-					Renderer2D::Get().DrawQuad(1, position, 0.f, scale, 0.f, color);
+					Renderer2D::Get().DrawQuad(1, position, scale, 0.f, color);
 					position.x += 15.f;
 				}
 				position.x = 12.5f;
@@ -125,7 +125,37 @@ namespace HBL
 			{
 				for (int j = 0; j < 100; j++)
 				{
-					Renderer2D::Get().DrawQuad(2, position, 0.f, scale, 0.f, color);
+					Renderer2D::Get().DrawQuad(2, position, scale, 0.f, color);
+					position.x += 10.f;
+				}
+				position.x = 5.f;
+				position.y += 10.f;
+			}
+
+			position.x = 5.f;
+			position.y = 5.f;
+			scale = { 5.f, 5.f, 0.f };
+			color = { 0.f, 1.f, 1.f, 1.f };
+			for (int i = 0; i < 55; i++)
+			{
+				for (int j = 0; j < 100; j++)
+				{
+					Renderer2D::Get().DrawQuad(3, position, scale, 0.f, color);
+					position.x += 10.f;
+				}
+				position.x = 5.f;
+				position.y += 10.f;
+			}
+
+			position.x = 5.f;
+			position.y = 5.f;
+			scale = { 5.f, 5.f, 0.f };
+			color = { 1.f, 0.f, 1.f, 1.f };
+			for (int i = 0; i < 55; i++)
+			{
+				for (int j = 0; j < 100; j++)
+				{
+					Renderer2D::Get().DrawQuad(3, position, scale, 0.f, color);
 					position.x += 10.f;
 				}
 				position.x = 5.f;

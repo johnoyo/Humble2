@@ -9,7 +9,7 @@ namespace HBL
 		RenderCommand::Initialize(api);
 
 		m_VertexArray = VertexArray::Create();
-		m_VertexArray->SetIndexBuffer(IndexBuffer::Create(50000));
+		m_VertexArray->SetIndexBuffer(IndexBuffer::Create(60000));
 
 		Texture::Load("")->Bind();
 
@@ -28,6 +28,7 @@ namespace HBL
 		AddBatch("BasicLight", 10000, mvp);
 		AddBatch("BasicLight", 10000, mvp);
 		AddBatch("BasicLight", 30000, mvp);
+		AddBatch("BasicLight", 60000, mvp);
 		// -------------------------------------------------------------------------------------------
 
 		m_QuadVertexPosition[0] = { -0.5f, 0.5f, 0.0f, 1.0f };
@@ -123,7 +124,7 @@ namespace HBL
 	void Renderer2D::DrawQuad(uint32_t batchIndex, glm::vec3& position, float rotation, glm::vec3& scale, float textureID, glm::vec4 color)
 	{
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
-			/** glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f))*/
+			* glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f))
 			* glm::scale(glm::mat4(1.0f), glm::vec3(scale.x, scale.y, 1.0f));
 
 		Buffer* buffer = m_VertexArray->GetVertexBuffers()[batchIndex]->GetHandle();
@@ -148,6 +149,36 @@ namespace HBL
 		batchSize++;
 
 		buffer[batchSize].Position = transform * m_QuadVertexPosition[3];
+		buffer[batchSize].Color = color;
+		buffer[batchSize].TextureCoord = { 0.0f, 0.0f };
+		buffer[batchSize].TextureID = textureID;
+		batchSize++;
+	}
+
+	void Renderer2D::DrawQuad(uint32_t batchIndex, glm::vec3& position, glm::vec3& scale, float textureID, glm::vec4 color)
+	{
+		Buffer* buffer = m_VertexArray->GetVertexBuffers()[batchIndex]->GetHandle();
+		uint32_t& batchSize = m_VertexArray->GetVertexBuffers()[batchIndex]->BatchSize;
+
+		buffer[batchSize].Position = { position.x - scale.x / 2.f, position.y + scale.y / 2.f };
+		buffer[batchSize].Color = color;
+		buffer[batchSize].TextureCoord = { 0.0f, 1.0f };
+		buffer[batchSize].TextureID = textureID;
+		batchSize++;
+
+		buffer[batchSize].Position = { position.x + scale.x / 2.f, position.y + scale.y / 2.f };
+		buffer[batchSize].Color = color;
+		buffer[batchSize].TextureCoord = { 1.0f, 1.0f };
+		buffer[batchSize].TextureID = textureID;
+		batchSize++;
+
+		buffer[batchSize].Position = { position.x + scale.x / 2.f, position.y - scale.y / 2.f };
+		buffer[batchSize].Color = color;
+		buffer[batchSize].TextureCoord = { 1.0f, 0.0f };
+		buffer[batchSize].TextureID = textureID;
+		batchSize++;
+
+		buffer[batchSize].Position = { position.x - scale.x / 2.f, position.y - scale.y / 2.f };
 		buffer[batchSize].Color = color;
 		buffer[batchSize].TextureCoord = { 0.0f, 0.0f };
 		buffer[batchSize].TextureID = textureID;
