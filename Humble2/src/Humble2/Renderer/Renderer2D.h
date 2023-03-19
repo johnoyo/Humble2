@@ -37,6 +37,7 @@ namespace HBL
 		GraphicsAPI m_API = GraphicsAPI::None;
 		VertexArray* m_VertexArray = nullptr;
 		glm::vec4 m_QuadVertexPosition[4] = {};
+		glm::vec2 m_QuadTextureCoordinates[4] = {};
 		std::vector<std::string> m_Shaders;
 	};
 }
