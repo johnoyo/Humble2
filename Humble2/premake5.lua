@@ -27,7 +27,7 @@ project "Humble2"
         "src/Vendor/spdlog-1.x/include",
         "../Dependencies/GLFW/include",
         "../Dependencies/GLEW/include",
-        "C:/dev/Graphics/Emscripten/emsdk/upstream/emscripten/system/include"
+        "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include"
     }
     
     libdirs
@@ -40,7 +40,8 @@ project "Humble2"
     {
         "glew32s.lib",
         "glfw3.lib",
-        "opengl32.lib"
+        "opengl32.lib",
+        "ImGui"
     }
     
     filter "system:windows"

@@ -19,7 +19,7 @@ namespace HBL2
 		glGenTextures(1, &m_TextureID);
 		glBindTexture(GL_TEXTURE_2D, m_TextureID);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -47,41 +47,8 @@ namespace HBL2
 	void OpenGLTexture::Bind()
 	{
 #ifdef EMSCRIPTEN
-		switch (m_SlotIndex)
-		{
-		case 0:
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, m_TextureID);
-			break;
-		case 1:
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, m_TextureID);
-			break;
-		case 2:
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, m_TextureID);
-			break;
-		case 3:
-			glActiveTexture(GL_TEXTURE3);
-			glBindTexture(GL_TEXTURE_2D, m_TextureID);
-			break;
-		case 4:
-			glActiveTexture(GL_TEXTURE4);
-			glBindTexture(GL_TEXTURE_2D, m_TextureID);
-			break;
-		case 5:
-			glActiveTexture(GL_TEXTURE5);
-			glBindTexture(GL_TEXTURE_2D, m_TextureID);
-			break;
-		case 6:
-			glActiveTexture(GL_TEXTURE6);
-			glBindTexture(GL_TEXTURE_2D, m_TextureID);
-			break;
-		case 7:
-			glActiveTexture(GL_TEXTURE7);
-			glBindTexture(GL_TEXTURE_2D, m_TextureID);
-			break;
-		}
+		glActiveTexture(m_SlotIndex + GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_TextureID);
 #else
 		glBindTextureUnit(m_SlotIndex, m_TextureID);
 #endif
@@ -90,41 +57,8 @@ namespace HBL2
 	void OpenGLTexture::UnBind()
 	{
 #ifdef EMSCRIPTEN
-		switch (m_SlotIndex)
-		{
-		case 0:
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, 0);
-			break;
-		case 1:
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, 0);
-			break;
-		case 2:
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, 0);
-			break;
-		case 3:
-			glActiveTexture(GL_TEXTURE3);
-			glBindTexture(GL_TEXTURE_2D, 0);
-			break;
-		case 4:
-			glActiveTexture(GL_TEXTURE4);
-			glBindTexture(GL_TEXTURE_2D, 0);
-			break;
-		case 5:
-			glActiveTexture(GL_TEXTURE5);
-			glBindTexture(GL_TEXTURE_2D, 0);
-			break;
-		case 6:
-			glActiveTexture(GL_TEXTURE6);
-			glBindTexture(GL_TEXTURE_2D, 0);
-			break;
-		case 7:
-			glActiveTexture(GL_TEXTURE7);
-			glBindTexture(GL_TEXTURE_2D, 0);
-			break;
-		}
+		glActiveTexture(m_SlotIndex + GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, 0);
 #else
 		glBindTextureUnit(m_SlotIndex, 0);
 #endif

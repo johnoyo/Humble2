@@ -14,14 +14,14 @@ namespace HBL2
 		Texture::Load("")->Bind();
 
 		// TODO: Remove from here. ------------------------------------------------------------------
-		Texture::Load("res/textures/Pixel-Art.png")->Bind();
+		Texture::Load("assets/textures/Pixel-Art.png")->Bind();
 
 #ifdef EMSCRIPTEN
-		Shader::Create("BasicLight", "res/shaders/shaderES.vert", "res/shaders/shaderES.frag");
-		//Shader::Create("Basic", "res/shaders/BasicES.shader");
+		Shader::Create("BasicLight", "assets/shaders/shaderES.vert", "assets/shaders/shaderES.frag");
+		//Shader::Create("Basic", "assets/shaders/BasicES.shader");
 #else
-		Shader::Create("BasicLight", "res/shaders/shader.vert", "res/shaders/shader.frag");
-		Shader::Create("Basic", "res/shaders/Basic.shader");
+		Shader::Create("BasicLight", "assets/shaders/shader.vert", "assets/shaders/shader.frag");
+		Shader::Create("Basic", "assets/shaders/Basic.shader");
 #endif
 		glm::mat4 mvp = glm::ortho(0.f, 960.f, 0.f, 540.f, -1.f, 1.f);
 

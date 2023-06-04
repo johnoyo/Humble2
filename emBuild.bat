@@ -1,7 +1,0 @@
-set p=%cd%
-if not exist %p%\bin mkdir %p%\bin
-if not exist %p%\bin\Web mkdir %p%\bin\Web
-
-call emcc -sSIDE_MODULE -std=c++17 -I"Dependencies/GLFW/include" -I"Humble2/src/Vendor/spdlog-1.x/include" -I"Humble2/src/Vendor" "Humble2/src/Humble2/Core/Application.cpp" "Humble2/src/Humble2/Core/Window.cpp" "Humble2/src/Humble2/Renderer/IndexBuffer.cpp" "Humble2/src/Humble2/Renderer/RenderCommand.cpp" "Humble2/src/Humble2/Renderer/Renderer2D.cpp" "Humble2/src/Humble2/Renderer/Shader.cpp" "Humble2/src/Humble2/Renderer/VertexArray.cpp" "Humble2/src/Humble2/Renderer/VertexBuffer.cpp" "Humble2/src/Humble2/Renderer/Texture.cpp" "Humble2/src/Platform/OpenGL/OpenGLIndexBuffer.cpp" "Humble2/src/Platform/OpenGL/OpenGLRendererAPI.cpp" "Humble2/src/Platform/OpenGL/OpenGLShader.cpp" "Humble2/src/Platform/OpenGL/OpenGLVertexArray.cpp" "Humble2/src/Platform/OpenGL/OpenGLVertexBuffer.cpp" "Humble2/src/Platform/OpenGL/OpenGLTexture.cpp" "Humble2/src/Humble2/Utilities/Log.cpp" "Humble2/src/Humble2/Utilities/JobSystem.cpp" "Humble2/src/Vendor/stb_image/stb_image.cpp" -O3 -o bin/Web/Humble2.wasm
-
-call emcc -sMAIN_MODULE -std=c++17 -I"Humble2/src/" -I"Humble2/src/Vendor/spdlog-1.x/include" -I"Humble2/src/Vendor" "SampleApp/src/main.cpp" bin/Web/Humble2.wasm -s USE_GLFW=3 -s FULL_ES3=1 -DEMSCRIPTEN=1 --memory-init-file 0 --embed-file res -O3 -o bin/Web/SampleApp.html

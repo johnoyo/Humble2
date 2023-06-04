@@ -1,5 +1,5 @@
 -- Application project
-project "SampleApp"
+project "HumbleApp"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++17"
@@ -23,7 +23,7 @@ project "SampleApp"
         "../Humble2/src/Vendor/spdlog-1.x/include",
         "../Dependencies/GLFW/include",
         "../Dependencies/GLEW/include",
-        "C:/dev/Graphics/Emscripten/emsdk/upstream/emscripten/system/include"
+        "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include"
     }
 
     links

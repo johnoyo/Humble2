@@ -9,10 +9,18 @@ workspace "HumbleGameEngine2"
         "Emscripten"
     }
 
-    startproject "SampleApp"
+    startproject "HumbleApp"
 
 -- Variable to hold output directory.
 outputdir = "%{cfg.buildcfg}-%{cfg.architecture}"
 
-include "Humble2"
-include "SampleApp"
+group "Dependencies"
+    include "Dependencies/ImGui"
+group ""
+
+group "Core"
+    include "Humble2"
+group ""
+
+include "HumbleEditor"
+include "HumbleApp"
