@@ -3,7 +3,7 @@
 #include "../Base.h"
 #include <stdint.h>
 
-namespace HBL
+namespace HBL2
 {
 	enum class Type
 	{

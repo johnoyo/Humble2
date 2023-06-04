@@ -5,7 +5,7 @@
 #define GLFW_INCLUDE_NONE
 #include <GL/glew.h>
 
-namespace HBL
+namespace HBL2
 {
 	namespace GLDebug
 	{

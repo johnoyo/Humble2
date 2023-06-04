@@ -3,7 +3,7 @@
 #include "Renderer2D.h"
 #include "../../Platform/OpenGL/OpenGLVertexArray.h"
 
-namespace HBL
+namespace HBL2
 {
 	VertexArray* VertexArray::Create()
 	{
@@ -12,10 +12,10 @@ namespace HBL
 		case GraphicsAPI::OpenGL:
 			return new OpenGLVertexArray();
 		case GraphicsAPI::Vulkan:
-			HBL_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
+			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
 			return new OpenGLVertexArray();
-		case HBL::GraphicsAPI::None:
-			HBL_CORE_FATAL("No GraphicsAPI specified.");
+		case HBL2::GraphicsAPI::None:
+			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 			return nullptr;
 		}

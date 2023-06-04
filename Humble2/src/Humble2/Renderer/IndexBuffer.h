@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-namespace HBL
+namespace HBL2
 {
 	class IndexBuffer
 	{
@@ -14,5 +14,6 @@ namespace HBL
 		virtual void Bind() = 0;
 		virtual void UnBind() = 0;
 		virtual void SetData(uint32_t batchSize) = 0;
+		virtual void Invalidate(uint32_t size) = 0;
 	};
 }

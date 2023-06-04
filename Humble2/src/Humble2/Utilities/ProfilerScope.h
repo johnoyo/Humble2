@@ -2,7 +2,7 @@
 
 #include "Log.h"
 
-namespace HBL
+namespace HBL2
 {
 	class ProfilerScope
 	{
@@ -14,7 +14,7 @@ namespace HBL
         ~ProfilerScope()
         {
             auto timeEnd = std::chrono::high_resolution_clock::now();
-            HBL_CORE_TRACE("{0} running time: {1} milliseconds.", m_Name, std::chrono::duration_cast<std::chrono::milliseconds>(timeEnd - m_TimeStart).count());
+            HBL2_CORE_TRACE("{0} running time: {1} milliseconds.", m_Name, std::chrono::duration_cast<std::chrono::milliseconds>(timeEnd - m_TimeStart).count());
         }
     private:
         std::string m_Name;

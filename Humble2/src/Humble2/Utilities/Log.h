@@ -5,7 +5,7 @@
 
 #include <memory>
 
-namespace HBL
+namespace HBL2
 {
 	class Log 
 	{
@@ -20,27 +20,27 @@ namespace HBL
 }
 
 #ifdef DEBUG
-	#define HBL_CORE_FATAL(...) ::HBL::Log::GetCoreLogger()->critical(__VA_ARGS__)
-	#define HBL_CORE_ERROR(...) ::HBL::Log::GetCoreLogger()->error(__VA_ARGS__)
-	#define HBL_CORE_WARN(...)  ::HBL::Log::GetCoreLogger()->warn(__VA_ARGS__)
-	#define HBL_CORE_INFO(...)  ::HBL::Log::GetCoreLogger()->info(__VA_ARGS__)
-	#define HBL_CORE_TRACE(...) ::HBL::Log::GetCoreLogger()->trace(__VA_ARGS__)
+	#define HBL2_CORE_FATAL(...) ::HBL2::Log::GetCoreLogger()->critical(__VA_ARGS__)
+	#define HBL2_CORE_ERROR(...) ::HBL2::Log::GetCoreLogger()->error(__VA_ARGS__)
+	#define HBL2_CORE_WARN(...)  ::HBL2::Log::GetCoreLogger()->warn(__VA_ARGS__)
+	#define HBL2_CORE_INFO(...)  ::HBL2::Log::GetCoreLogger()->info(__VA_ARGS__)
+	#define HBL2_CORE_TRACE(...) ::HBL2::Log::GetCoreLogger()->trace(__VA_ARGS__)
 
-	#define HBL_FATAL(...) ::HBL::Log::GetClientLogger()->critical(__VA_ARGS__)
-	#define HBL_ERROR(...) ::HBL::Log::GetClientLogger()->error(__VA_ARGS__)
-	#define HBL_WARN(...)  ::HBL::Log::GetClientLogger()->warn(__VA_ARGS__)
-	#define HBL_INFO(...)  ::HBL::Log::GetClientLogger()->info(__VA_ARGS__)
-	#define HBL_TRACE(...) ::HBL::Log::GetClientLogger()->trace(__VA_ARGS__)
+	#define HBL2_FATAL(...) ::HBL2::Log::GetClientLogger()->critical(__VA_ARGS__)
+	#define HBL2_ERROR(...) ::HBL2::Log::GetClientLogger()->error(__VA_ARGS__)
+	#define HBL2_WARN(...)  ::HBL2::Log::GetClientLogger()->warn(__VA_ARGS__)
+	#define HBL2_INFO(...)  ::HBL2::Log::GetClientLogger()->info(__VA_ARGS__)
+	#define HBL2_TRACE(...) ::HBL2::Log::GetClientLogger()->trace(__VA_ARGS__)
 #else
-	#define HBL_CORE_FATAL(...)
-	#define HBL_CORE_ERROR(...)
-	#define HBL_CORE_WARN(...) 
-	#define HBL_CORE_INFO(...) 
-	#define HBL_CORE_TRACE(...)
+	#define HBL2_CORE_FATAL(...)
+	#define HBL2_CORE_ERROR(...)
+	#define HBL2_CORE_WARN(...) 
+	#define HBL2_CORE_INFO(...) 
+	#define HBL2_CORE_TRACE(...)
 
-	#define HBL_FATAL(...)
-	#define HBL_ERROR(...)
-	#define HBL_WARN(...) 
-	#define HBL_INFO(...) 
-	#define HBL_TRACE(...)
+	#define HBL2_FATAL(...)
+	#define HBL2_ERROR(...)
+	#define HBL2_WARN(...) 
+	#define HBL2_INFO(...) 
+	#define HBL2_TRACE(...)
 #endif

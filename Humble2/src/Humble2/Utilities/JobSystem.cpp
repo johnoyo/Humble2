@@ -1,6 +1,6 @@
 #include "JobSystem.h"
 
-namespace HBL
+namespace HBL2
 {
 	void JobSystem::Initialize()
 	{
@@ -10,7 +10,7 @@ namespace HBL
         // Retrieve the number of hardware threads in this system:
         auto numCores = std::thread::hardware_concurrency();
 
-        HBL_CORE_TRACE("Number of hardware threads in this system: {0}", numCores);
+        HBL2_CORE_TRACE("Number of hardware threads in this system: {0}", numCores);
 
         // Calculate the actual number of worker threads we want:
         m_NumThreads = std::max(1u, numCores);

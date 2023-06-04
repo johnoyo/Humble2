@@ -11,7 +11,7 @@
 	#include <GL/glew.h>
 #endif
 
-namespace HBL
+namespace HBL2
 {
 	class OpenGLRendererAPI final : public RendererAPI
 	{

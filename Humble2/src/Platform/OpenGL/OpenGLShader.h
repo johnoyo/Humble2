@@ -11,7 +11,7 @@
 	#include <GL/glew.h>
 #endif
 
-namespace HBL
+namespace HBL2
 {
 	class OpenGLShader final : public Shader
 	{

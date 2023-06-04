@@ -7,7 +7,7 @@
 #include <functional>
 #include <unordered_map>
 
-namespace HBL
+namespace HBL2
 {
 	class Texture
 	{

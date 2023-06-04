@@ -3,7 +3,7 @@
 #include "Renderer2D.h"
 #include "../../Platform/OpenGL/OpenGLShader.h"
 
-namespace HBL
+namespace HBL2
 {
 	std::unordered_map<std::string, Shader*> Shader::s_ShaderLib;
 
@@ -22,10 +22,10 @@ namespace HBL
 		case GraphicsAPI::OpenGL:
 			return new OpenGLShader(name, vertexSource, fragmentSource);
 		case GraphicsAPI::Vulkan:
-			HBL_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
+			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
 			return new OpenGLShader(name, vertexSource, fragmentSource);
-		case HBL::GraphicsAPI::None:
-			HBL_CORE_FATAL("No GraphicsAPI specified.");
+		case HBL2::GraphicsAPI::None:
+			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 			return nullptr;
 		}
@@ -56,7 +56,7 @@ namespace HBL
 		}
 		else
 		{
-			HBL_CORE_ERROR("Could not open file: {0}.", vertexFilepath);
+			HBL2_CORE_ERROR("Could not open file: {0}.", vertexFilepath);
 		}
 
 		line.clear();
@@ -75,7 +75,7 @@ namespace HBL
 		}
 		else
 		{
-			HBL_CORE_ERROR("Could not open file: {0}.", fragmentFilepath);
+			HBL2_CORE_ERROR("Could not open file: {0}.", fragmentFilepath);
 		}
 
 		switch (Renderer2D::Get().GetAPI())
@@ -83,10 +83,10 @@ namespace HBL
 		case GraphicsAPI::OpenGL:
 			return new OpenGLShader(name, ssV.str(), ssF.str());
 		case GraphicsAPI::Vulkan:
-			HBL_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
+			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
 			return new OpenGLShader(name, ssV.str(), ssF.str());
-		case HBL::GraphicsAPI::None:
-			HBL_CORE_FATAL("No GraphicsAPI specified.");
+		case HBL2::GraphicsAPI::None:
+			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 			return nullptr;
 		}
@@ -133,7 +133,7 @@ namespace HBL
 		}
 		else
 		{
-			HBL_CORE_ERROR("Could not open file: {0}.", filepath);
+			HBL2_CORE_ERROR("Could not open file: {0}.", filepath);
 		}
 
 		switch (Renderer2D::Get().GetAPI())
@@ -141,10 +141,10 @@ namespace HBL
 		case GraphicsAPI::OpenGL:
 			return new OpenGLShader(name, ss[0].str(), ss[1].str());
 		case GraphicsAPI::Vulkan:
-			HBL_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
+			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
 			return new OpenGLShader(name, ss[0].str(), ss[1].str());
-		case HBL::GraphicsAPI::None:
-			HBL_CORE_FATAL("No GraphicsAPI specified.");
+		case HBL2::GraphicsAPI::None:
+			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 			return nullptr;
 		}

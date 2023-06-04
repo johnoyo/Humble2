@@ -37,7 +37,7 @@ project "SampleApp"
     
         defines
         {
-            "HBL_PLATFORM_WINDOWS"
+            "HBL2_PLATFORM_WINDOWS"
         }
 
     filter "configurations:Debug"

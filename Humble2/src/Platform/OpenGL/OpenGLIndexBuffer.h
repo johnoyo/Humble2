@@ -10,7 +10,7 @@
 	#include <GL/glew.h>
 #endif
 
-namespace HBL
+namespace HBL2
 {
 	class OpenGLIndexBuffer final : public IndexBuffer
 	{
@@ -21,10 +21,14 @@ namespace HBL
 		virtual void Bind() override;
 		virtual void UnBind() override;
 		virtual void SetData(uint32_t batchSize) override;
+		virtual void Invalidate(uint32_t size) override;
 	private:
 		uint32_t m_IndexBufferID = 0;
 		uint32_t m_Index = 0;
 		uint32_t m_Size = 0;
 		uint32_t* m_Indeces;
+
+		void GenerateIndeces(uint32_t size);
+		void Clean();
 	};
 }

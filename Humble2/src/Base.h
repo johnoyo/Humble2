@@ -5,11 +5,11 @@
 #include "Humble2/Utilities/ProfilerScope.h"
 
 #ifdef DEBUG
-	#define HBL_PROFILE(...) HBL::ProfilerScope profiler = HBL::ProfilerScope(__VA_ARGS__);
-	#define HBL_FUNC_PROFILE() HBL_PROFILE(__FUNCTION__)
+	#define HBL2_PROFILE(...) HBL2::ProfilerScope profiler = HBL2::ProfilerScope(__VA_ARGS__);
+	#define HBL2_FUNC_PROFILE() HBL2_PROFILE(__FUNCTION__)
 #else
-	#define HBL_PROFILE(...)
-	#define HBL_FUNC_PROFILE()
+	#define HBL2_PROFILE(...)
+	#define HBL2_FUNC_PROFILE()
 #endif
 
 #include <glm/glm.hpp>

@@ -10,7 +10,7 @@
 #include <filesystem>
 #include <unordered_map>
 
-namespace HBL
+namespace HBL2
 {
 	class Shader
 	{

@@ -1,6 +1,6 @@
 #include "OpenGLRendererAPI.h"
 
-namespace HBL
+namespace HBL2
 {
 	OpenGLRendererAPI::OpenGLRendererAPI()
 	{

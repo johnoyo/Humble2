@@ -1,6 +1,6 @@
 #include "OpenGLVertexBuffer.h"
 
-namespace HBL
+namespace HBL2
 {
 	OpenGLVertexBuffer::OpenGLVertexBuffer(uint32_t size, VertexBufferLayout& layout) : m_TotalSize(size), m_Layout(layout)
 	{

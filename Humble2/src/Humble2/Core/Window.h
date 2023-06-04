@@ -16,7 +16,7 @@
 #include <iostream>
 #include <functional>
 
-namespace HBL
+namespace HBL2
 {
 	class Window
 	{
@@ -36,6 +36,7 @@ namespace HBL
 	private:
 		GLFWwindow* m_Window;
 		std::string m_Title;
+
 		float m_RefreshRate;
 		float m_Width;
 		float m_Height;

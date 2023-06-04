@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include <stdint.h>
 
-namespace HBL
+namespace HBL2
 {
 	enum class GraphicsAPI
 	{

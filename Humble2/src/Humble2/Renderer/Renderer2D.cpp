@@ -1,6 +1,6 @@
 #include "Renderer2D.h"
 
-namespace HBL
+namespace HBL2
 {
 	void Renderer2D::Initialize(GraphicsAPI api)
 	{
@@ -9,7 +9,7 @@ namespace HBL
 		RenderCommand::Initialize(api);
 
 		m_VertexArray = VertexArray::Create();
-		m_VertexArray->SetIndexBuffer(IndexBuffer::Create(60000));
+		m_VertexArray->SetIndexBuffer(IndexBuffer::Create(MAX_BATCH_SIZE));
 
 		Texture::Load("")->Bind();
 
@@ -122,6 +122,8 @@ namespace HBL
 		Shader::Get(shaderName)->SetFloat2(lightPosition, "u_LightPosition");
 
 		m_Shaders.push_back(shaderName);
+
+		m_VertexArray->GetIndexBuffer()->Invalidate(MAX_BATCH_SIZE * m_VertexArray->GetVertexBuffers().size());
 
 		return m_VertexArray->GetVertexBuffers().size() - 1;
 	}

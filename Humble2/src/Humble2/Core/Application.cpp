@@ -1,6 +1,6 @@
 #include "Application.h"
 
-namespace HBL
+namespace HBL2
 {
 	Application::Application(ApplicationSpec& specification) : m_Specification(specification)
 	{
@@ -9,29 +9,13 @@ namespace HBL
 		switch (m_Specification.Platform)
 		{
 		case Platform::Windows:
-			HBL_CORE_INFO("Windows platform selected.");
+			HBL2_CORE_INFO("Windows platform selected.");
 			break;
 		case Platform::Web:
-			HBL_CORE_INFO("Web platform selected.");
+			HBL2_CORE_INFO("Web platform selected.");
 			break;
 		case Platform::None:
-			HBL_CORE_ERROR("No target platform specified. Please choose between Windows or Web.");
-			exit(-1);
-			break;
-		default:
-			break;
-		}
-
-		switch (m_Specification.Core)
-		{
-		case Core::Humble2D:
-			HBL_CORE_INFO("Humble 2D is selected as core.");
-			break;
-		case Core::Humble3D:
-			HBL_CORE_INFO("Humble 3D is selected as core.");
-			break;
-		case Core::None:
-			HBL_CORE_ERROR("No Core template specified. Please choose between 2D or 3D core.");
+			HBL2_CORE_ERROR("No target platform specified. Please choose between Windows or Web.");
 			exit(-1);
 			break;
 		default:
@@ -41,19 +25,19 @@ namespace HBL
 		switch (m_Specification.GraphicsAPI)
 		{
 		case GraphicsAPI::OpenGL:
-			HBL_CORE_INFO("OpenGL is selected as the renderer API.");
+			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
 			break;
 		case GraphicsAPI::Vulkan:
 			if (m_Specification.Platform == Platform::Web)
 			{
-				HBL_CORE_WARN("Web is the selected platform, defaulting to OpenGLES as the renderer API.");
+				HBL2_CORE_WARN("Web is the selected platform, defaulting to OpenGLES as the renderer API.");
 				m_Specification.GraphicsAPI = GraphicsAPI::OpenGL;
 				break;
 			}
-			HBL_CORE_INFO("Vulkan is selected as the renderer API.");
+			HBL2_CORE_INFO("Vulkan is selected as the renderer API.");
 			break;
 		case GraphicsAPI::None:
-			HBL_CORE_ERROR("No RendererAPI specified. Please choose between OpenGL, or Vulkan depending on your target platform.");
+			HBL2_CORE_ERROR("No RendererAPI specified. Please choose between OpenGL, or Vulkan depending on your target platform.");
 			exit(-1);
 			break;
 		default:
@@ -69,6 +53,36 @@ namespace HBL
 		delete m_Window;
 	}
 
+	void Application::BeginFrame()
+	{
+		// Measure time and delta time.
+		float time = (float)m_Window->GetTime();
+		m_DeltaTime = time - m_LastTime;
+		m_FixedDeltaTime += (time - m_LastTime) / m_LimitFPS;
+		m_LastTime = time;
+	}
+
+	void Application::EndFrame()
+	{
+		m_Frames++;
+
+		// Reset after one second.
+		if (m_Window->GetTime() - m_Timer > 1.0)
+		{
+			// Display frame rate at window bar.
+			std::stringstream ss;
+			ss << m_Specification.Name << " [" << m_Frames << " FPS]";
+			m_Window->SetTitle(ss.str());
+
+			// Log framerate and delta time to console.
+			printf("FPS: %d, DeltaTime: %f\n", m_Frames, m_DeltaTime);
+
+			m_Timer++;
+			m_Frames = 0;
+			m_FixedUpdates = 0;
+		}
+	}
+
 	void Application::Start()
 	{
 		m_Window->Create();
@@ -82,18 +96,14 @@ namespace HBL
 
 		m_Window->DispatchMainLoop([&]()
 		{
-			// Measure time and delta time.
-			float time = (float)m_Window->GetTime();
-			m_DeltaTime = time - m_LastTime;
-			m_FixedDeltaTime += (time - m_LastTime) / m_LimitFPS;
-			m_LastTime = time;
+			BeginFrame();
 
 			position.x = 5.f;
 			position.y = 5.f;
 			scale = { 10.f, 10.f, 0.f };
-			for (int i = 0; i < 36; i++)
+			for (int i = 0; i < 99; i++)
 			{
-				for (int j = 0; j < 64; j++)
+				for (int j = 0; j < 99; j++)
 				{
 					Renderer2D::Get().DrawQuad(0, position, scale, 0.f);
 					position.x += 15.f;
@@ -106,9 +116,9 @@ namespace HBL
 			position.y = 12.5f;
 			color = { 1.f, 0.2f, 0.1f, 1.f };
 
-			for (int i = 0; i < 36; i++)
+			for (int i = 0; i < 99; i++)
 			{
-				for (int j = 0; j < 64; j++)
+				for (int j = 0; j < 99; j++)
 				{
 					Renderer2D::Get().DrawQuad(1, position, scale, 0.f, color);
 					position.x += 15.f;
@@ -121,9 +131,9 @@ namespace HBL
 			position.y = 5.f;
 			scale = { 5.f, 5.f, 0.f };
 			color = { 0.f, 1.f, 0.f, 1.f };
-			for (int i = 0; i < 55; i++)
+			for (int i = 0; i < 99; i++)
 			{
-				for (int j = 0; j < 100; j++)
+				for (int j = 0; j < 299; j++)
 				{
 					Renderer2D::Get().DrawQuad(2, position, scale, 0.f, color);
 					position.x += 10.f;
@@ -136,9 +146,9 @@ namespace HBL
 			position.y = 5.f;
 			scale = { 5.f, 5.f, 0.f };
 			color = { 0.f, 1.f, 1.f, 1.f };
-			for (int i = 0; i < 55; i++)
+			for (int i = 0; i < 99; i++)
 			{
-				for (int j = 0; j < 100; j++)
+				for (int j = 0; j < 299; j++)
 				{
 					Renderer2D::Get().DrawQuad(3, position, scale, 0.f, color);
 					position.x += 10.f;
@@ -151,9 +161,9 @@ namespace HBL
 			position.y = 5.f;
 			scale = { 5.f, 5.f, 0.f };
 			color = { 1.f, 0.f, 1.f, 1.f };
-			for (int i = 0; i < 55; i++)
+			for (int i = 0; i < 100; i++)
 			{
-				for (int j = 0; j < 100; j++)
+				for (int j = 0; j < 300; j++)
 				{
 					Renderer2D::Get().DrawQuad(3, position, scale, 0.f, color);
 					position.x += 10.f;
@@ -166,23 +176,7 @@ namespace HBL
 			Renderer2D::Get().Submit();
 			Renderer2D::Get().EndFrame();
 
-			m_Frames++;
-
-			// Reset after one second.
-			if (m_Window->GetTime() - m_Timer > 1.0)
-			{
-				// Display frame rate at window bar.
-				std::stringstream ss;
-				ss << m_Specification.Name << " [" << m_Frames << " FPS]";
-				m_Window->SetTitle(ss.str());
-
-				// Log framerate and delta time to console.
-				HBL_CORE_TRACE("FPS: {0}, DeltaTime: {1}", m_Frames, m_DeltaTime);
-
-				m_Timer++;
-				m_Frames = 0;
-				m_FixedUpdates = 0;
-			}
+			EndFrame();
 		});
 
 		Shutdown();

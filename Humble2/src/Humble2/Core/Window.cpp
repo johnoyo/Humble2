@@ -1,6 +1,6 @@
 #include "Window.h"
 
-namespace HBL
+namespace HBL2
 {
 	void WindowResizeCallback(GLFWwindow* window, int width, int height)
 	{

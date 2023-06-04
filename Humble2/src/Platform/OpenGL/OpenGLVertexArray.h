@@ -10,7 +10,7 @@
 	#include <GL/glew.h>
 #endif
 
-namespace HBL
+namespace HBL2
 {
 	class OpenGLVertexArray final : public VertexArray
 	{

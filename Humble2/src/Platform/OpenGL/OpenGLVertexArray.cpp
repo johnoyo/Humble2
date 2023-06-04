@@ -1,7 +1,7 @@
 #include "OpenGLVertexArray.h"
 #include <iostream>
 
-namespace HBL
+namespace HBL2
 {
 	OpenGLVertexArray::OpenGLVertexArray()
 	{

@@ -5,7 +5,7 @@
 
 #include<vector>
 
-namespace HBL
+namespace HBL2
 {
 	class VertexArray
 	{

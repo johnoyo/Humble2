@@ -1,6 +1,6 @@
 #include "OpenGLTexture.h"
 
-namespace HBL
+namespace HBL2
 {
 	OpenGLTexture::OpenGLTexture(const std::string& path) : m_Path(path)
 	{
@@ -25,8 +25,8 @@ namespace HBL
 
 		m_SlotIndex = OpenGLTexture::s_CurrentSlot++;
 
-		HBL_CORE_TRACE("m_TextureID ({0}): {1}", m_Path, m_TextureID);
-		HBL_CORE_TRACE("m_SlotIndex ({0}): {1}", m_Path, m_SlotIndex);
+		HBL2_CORE_TRACE("m_TextureID ({0}): {1}", m_Path, m_TextureID);
+		HBL2_CORE_TRACE("m_SlotIndex ({0}): {1}", m_Path, m_SlotIndex);
 
 		if (!path.empty())
 		{

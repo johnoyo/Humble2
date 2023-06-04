@@ -5,7 +5,9 @@
 #include "VertexArray.h"
 #include "RenderCommand.h"
 
-namespace HBL
+#define MAX_BATCH_SIZE 60000
+
+namespace HBL2
 {
 	class Renderer2D
 	{

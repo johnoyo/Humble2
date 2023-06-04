@@ -1,13 +1,20 @@
 #include "OpenGLIndexBuffer.h"
 
-namespace HBL
+namespace HBL2
 {
 	OpenGLIndexBuffer::OpenGLIndexBuffer(uint32_t size) : m_Size(size)
 	{
-		m_Indeces = new uint32_t[(m_Size / 4U) * 6U];
+		GenerateIndeces(m_Size);
+	}
+
+	void OpenGLIndexBuffer::GenerateIndeces(uint32_t size)
+	{
+		m_Size = size;
+
+		m_Indeces = new uint32_t[m_Size * 6U];
 
 		int w = 0;
-		for (int k = 0; k < (m_Size / 4) * 6; k += 6)
+		for (int k = 0; k < m_Size * 6; k += 6)
 		{
 			m_Indeces[m_Index++] = 0 + w;
 			m_Indeces[m_Index++] = 3 + w;
@@ -20,7 +27,7 @@ namespace HBL
 
 		glGenBuffers(1, &m_IndexBufferID);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IndexBufferID);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, (m_Size / 4U) * 6U * sizeof(GLuint), m_Indeces, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Size * 6U * sizeof(GLuint), m_Indeces, GL_STATIC_DRAW);
 	}
 
 	void OpenGLIndexBuffer::Bind()
@@ -35,6 +42,24 @@ namespace HBL
 
 	void OpenGLIndexBuffer::SetData(uint32_t batchSize)
 	{
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, (batchSize / 4U) * 6U * sizeof(GLuint), m_Indeces, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, batchSize * 6U * sizeof(GLuint), m_Indeces, GL_STATIC_DRAW);
+	}
+
+	void OpenGLIndexBuffer::Invalidate(uint32_t size)
+	{
+		Clean();
+		GenerateIndeces(size);
+		SetData(size);
+	}
+
+	void OpenGLIndexBuffer::Clean()
+	{
+		delete[] m_Indeces;
+
+		glDeleteBuffers(1, &m_IndexBufferID);
+
+		m_IndexBufferID = 0;
+		m_Index = 0;
+		m_Size = 0;
 	}
 }

@@ -1,6 +1,6 @@
 #include "Log.h"
 
-namespace HBL
+namespace HBL2
 {
 	std::shared_ptr<spdlog::logger> Log::s_CoreLogger;
 	std::shared_ptr<spdlog::logger> Log::s_ClientLogger;

@@ -2,7 +2,7 @@
 
 #include <mutex>
 
-namespace HBL
+namespace HBL2
 {
     template <typename T, size_t Capacity>
     class ThreadSafeRingBuffer

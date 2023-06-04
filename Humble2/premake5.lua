@@ -48,7 +48,7 @@ project "Humble2"
     
     defines
     {
-        "HBL_PLATFORM_WINDOWS",
+        "HBL2_PLATFORM_WINDOWS",
         "GLEW_STATIC"
     }
 

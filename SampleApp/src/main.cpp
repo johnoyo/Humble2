@@ -2,12 +2,12 @@
 
 int main()
 {
-	HBL::ApplicationSpec applicationSpec;
+	HBL2::ApplicationSpec applicationSpec;
 	applicationSpec.Name = "Sample App";
 	applicationSpec.Vsync = false;
-	applicationSpec.GraphicsAPI = HBL::GraphicsAPI::OpenGL;
+	applicationSpec.GraphicsAPI = HBL2::GraphicsAPI::OpenGL;
 
-	HBL::Application* app = new HBL::Application(applicationSpec);
+	HBL2::Application* app = new HBL2::Application(applicationSpec);
 
 	app->Start();
 

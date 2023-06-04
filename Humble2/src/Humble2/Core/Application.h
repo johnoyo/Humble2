@@ -8,7 +8,7 @@
 #include <sstream>
 #include <iostream>
 
-namespace HBL
+namespace HBL2
 {
 	enum class Platform
 	{
@@ -17,18 +17,10 @@ namespace HBL
 		None
 	};
 
-	enum class Core
-	{
-		Humble2D,
-		Humble3D,
-		None
-	};
-
 	struct ApplicationSpec
 	{
 		std::string Name = "Humble Application";
 		Platform Platform = Platform::Windows;
-		Core Core = Core::Humble2D;
 		GraphicsAPI GraphicsAPI = GraphicsAPI::OpenGL;
 		float Width = 960.f;
 		float Height = 540.f;
@@ -56,6 +48,9 @@ namespace HBL
 		float m_LimitFPS = 1.0f / 60.0f;
 		float m_FixedDeltaTime = 0.0f;
 		int m_FixedUpdates = 0;
+
+		void BeginFrame();
+		void EndFrame();
 
 		void Shutdown();
 	};

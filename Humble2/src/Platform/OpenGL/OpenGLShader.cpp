@@ -1,6 +1,6 @@
 #include "OpenGLShader.h"
 
-namespace HBL
+namespace HBL2
 {
 	OpenGLShader::OpenGLShader(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource)
 		: Shader(name, vertexSource, fragmentSource)
@@ -24,8 +24,8 @@ namespace HBL
 			glGetShaderiv(id, GL_INFO_LOG_LENGTH, &lenght);
 			char* message = (char*)alloca(lenght * sizeof(char));
 			glGetShaderInfoLog(id, lenght, &lenght, message);
-			HBL_CORE_ERROR("Failed to compile {0} shader.", (type == GL_VERTEX_SHADER ? "vertex" : "fragment"));
-			HBL_CORE_ERROR(message);
+			HBL2_CORE_ERROR("Failed to compile {0} shader.", (type == GL_VERTEX_SHADER ? "vertex" : "fragment"));
+			HBL2_CORE_ERROR(message);
 			glDeleteShader(id);
 
 			return 0;
@@ -65,7 +65,7 @@ namespace HBL
 	{
 		auto location1 = glGetUniformLocation(m_ID, uniformName.c_str());
 		if (location1 == -1)
-			HBL_CORE_ERROR("Uniform: {0} not found in shader with name: {1}.", uniformName, m_Name);
+			HBL2_CORE_ERROR("Uniform: {0} not found in shader with name: {1}.", uniformName, m_Name);
 
 		glUniform2f(location1, vec2.x, vec2.y);
 	}
@@ -74,7 +74,7 @@ namespace HBL
 	{
 		auto location1 = glGetUniformLocation(m_ID, uniformName.c_str());
 		if (location1 == -1)
-			HBL_CORE_ERROR("Uniform: {0} not found in shader with name: {1}.", uniformName, m_Name);
+			HBL2_CORE_ERROR("Uniform: {0} not found in shader with name: {1}.", uniformName, m_Name);
 
 		glUniformMatrix4fv(location1, 1, GL_FALSE, glm::value_ptr(mat4));
 	}
@@ -83,7 +83,7 @@ namespace HBL
 	{
 		auto location = glGetUniformLocation(m_ID, uniformName.c_str());
 		if (location == -1)
-			HBL_CORE_ERROR("Uniform: {0} not found in shader with name: {1}.", uniformName, m_Name);
+			HBL2_CORE_ERROR("Uniform: {0} not found in shader with name: {1}.", uniformName, m_Name);
 
 		glUniform1i(location, value);
 	}
@@ -92,7 +92,7 @@ namespace HBL
 	{
 		auto location = glGetUniformLocation(m_ID, uniformName.c_str());
 		if (location == -1)
-			HBL_CORE_ERROR("Uniform: {0} not found in shader with name: {1}.", uniformName, m_Name);
+			HBL2_CORE_ERROR("Uniform: {0} not found in shader with name: {1}.", uniformName, m_Name);
 
 		glUniform1iv(location, count, value);
 	}

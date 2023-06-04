@@ -9,7 +9,7 @@
 #include <functional>
 #include <condition_variable>
 
-namespace HBL
+namespace HBL2
 {
 	class JobSystem
 	{

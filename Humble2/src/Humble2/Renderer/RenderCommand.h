@@ -3,7 +3,7 @@
 #include "RendererAPI.h"
 #include "../Utilities/Log.h"
 
-namespace HBL
+namespace HBL2
 {
 	class RenderCommand
 	{

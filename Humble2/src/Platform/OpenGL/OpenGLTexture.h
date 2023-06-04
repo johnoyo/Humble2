@@ -12,7 +12,7 @@
 
 #include "stb_image/stb_image.h"
 
-namespace HBL
+namespace HBL2
 {
 	class OpenGLTexture final : public Texture
 	{

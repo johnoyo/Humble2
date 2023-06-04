@@ -2,7 +2,7 @@
 
 #include "../../Platform/OpenGL/OpenGLRendererAPI.h"
 
-namespace HBL
+namespace HBL2
 {
 	RendererAPI* RenderCommand::s_RendererAPI = nullptr;
 
@@ -10,15 +10,15 @@ namespace HBL
 	{
 		switch (api)
 		{
-		case HBL::GraphicsAPI::OpenGL:
+		case HBL2::GraphicsAPI::OpenGL:
 			s_RendererAPI = new OpenGLRendererAPI();
 			break;
-		case HBL::GraphicsAPI::Vulkan:
-			HBL_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
+		case HBL2::GraphicsAPI::Vulkan:
+			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
 			s_RendererAPI = new OpenGLRendererAPI();
 			break;
-		case HBL::GraphicsAPI::None:
-			HBL_CORE_FATAL("No GraphicsAPI specified.");
+		case HBL2::GraphicsAPI::None:
+			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 			break;
 		}
