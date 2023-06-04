@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Base.h"
-#include "../../Humble2/Renderer/VertexBuffer.h"
+#include "Base.h"
+#include "Renderer/VertexBuffer.h"
 
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3

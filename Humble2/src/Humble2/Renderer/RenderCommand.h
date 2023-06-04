@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RendererAPI.h"
-#include "../Utilities/Log.h"
+#include "Utilities/Log.h"
 
 namespace HBL2
 {

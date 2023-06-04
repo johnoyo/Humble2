@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Humble2/Renderer/RendererAPI.h"
+#include "Renderer/RendererAPI.h"
 
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3

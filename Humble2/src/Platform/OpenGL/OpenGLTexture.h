@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Humble2/Renderer/Texture.h"
+#include "Renderer/Texture.h"
 
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3

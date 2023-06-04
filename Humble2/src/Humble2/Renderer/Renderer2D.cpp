@@ -196,4 +196,17 @@ namespace HBL2
 	{
 		RenderCommand::SetViewport(x, y, width, height);
 	}
+
+	void Renderer2D::Clean()
+	{
+		for (VertexBuffer* vb : m_VertexArray->GetVertexBuffers())
+		{
+			delete vb;
+		}
+
+		IndexBuffer* ib = m_VertexArray->GetIndexBuffer();
+		delete ib;
+
+		delete m_VertexArray;
+	}
 }

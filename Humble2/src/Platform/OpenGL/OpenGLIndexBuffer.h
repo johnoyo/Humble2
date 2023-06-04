@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Humble2/Renderer/IndexBuffer.h"
+#include "Renderer/IndexBuffer.h"
 
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3

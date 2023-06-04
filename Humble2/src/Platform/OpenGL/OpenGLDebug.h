@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Base.h"
+#include "Base.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GL/glew.h>

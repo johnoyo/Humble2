@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Humble2/Renderer/Shader.h"
-#include "../Base.h"
+#include "Base.h"
+#include "Renderer/Shader.h"
 
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3

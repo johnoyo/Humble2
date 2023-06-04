@@ -50,6 +50,10 @@ namespace HBL2
 
 	Application::~Application()
 	{
+		Renderer2D::Get().Clean();
+
+		m_Window->Terminate();
+
 		delete m_Window;
 	}
 

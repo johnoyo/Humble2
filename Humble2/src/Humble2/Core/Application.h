@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Window.h"
-#include "../Base.h"
-#include "../Renderer/Renderer2D.h"
+#include "Base.h"
+#include "Renderer/Renderer2D.h"
 
 #include <string>
 #include <sstream>

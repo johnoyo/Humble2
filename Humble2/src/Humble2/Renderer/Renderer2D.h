@@ -26,6 +26,8 @@ namespace HBL2
 		void Submit();
 		void EndFrame();
 
+		void Clean();
+
 		uint32_t AddBatch(const std::string& shaderName, uint32_t vertexBufferSize, glm::mat4& mvp);
 
 		void DrawQuad(uint32_t batchIndex, glm::vec3& position, glm::vec3& scale, float textureID = 0.f, glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f });

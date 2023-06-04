@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Humble2/Renderer/VertexArray.h"
+#include "Renderer/VertexArray.h"
 
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3
