@@ -1,25 +1,23 @@
-#include "IndexBuffer.h"
+#include "FrameBuffer.h"
 
 #include "Renderer2D.h"
-#include "Platform/OpenGL/OpenGLIndexBuffer.h"
+#include "Platform/OpenGL/OpenGLFrameBuffer.h"
 
 namespace HBL2
 {
-	IndexBuffer* IndexBuffer::Create(uint32_t size)
+	FrameBuffer* FrameBuffer::Create(FrameBufferSpecification& spec)
 	{
 		switch (Renderer2D::Get().GetAPI())
 		{
 		case GraphicsAPI::OpenGL:
-			return new OpenGLIndexBuffer(size);
+			return new OpenGLFrameBuffer(spec);
 		case GraphicsAPI::Vulkan:
 			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
-			return new OpenGLIndexBuffer(size);
+			return new OpenGLFrameBuffer(spec);
 		case GraphicsAPI::None:
 			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 			return nullptr;
 		}
-
-		return nullptr;
 	}
 }

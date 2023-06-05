@@ -2,7 +2,13 @@
 
 #include "Window.h"
 #include "Base.h"
+#include "Input.h"
+#include "Context.h"
 #include "Renderer/Renderer2D.h"
+#include "ImGui/ImGuiRenderer.h"
+
+#include "Systems/CameraSystem.h"
+#include "Systems/SpriteRendererSystem.h"
 
 #include <string>
 #include <sstream>
@@ -19,13 +25,15 @@ namespace HBL2
 
 	struct ApplicationSpec
 	{
-		std::string Name = "Humble Application";
+		std::string Name = "Humble2 Application";
 		Platform Platform = Platform::Windows;
 		GraphicsAPI GraphicsAPI = GraphicsAPI::OpenGL;
-		float Width = 960.f;
-		float Height = 540.f;
+		float Width = 1280.f;
+		float Height = 720.f;
 		bool Vsync = true;
 		bool Fullscreen = false;
+
+		Context* Context = nullptr;
 	};
 
 	class Application

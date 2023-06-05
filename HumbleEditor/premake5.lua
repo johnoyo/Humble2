@@ -4,21 +4,31 @@ project "HumbleEditor"
     cppdialect "C++17"
     staticruntime "off"
 
-    files { "src/**.h", "src/**.cpp" }
+    targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
+
+    files 
+    { 
+        "src/**.h", 
+        "src/**.cpp"
+    }
 
     includedirs
     {
         "src",
         "../Humble2/src",
+        "../Humble2/src/Humble2",
         "../Humble2/src/Vendor",
         "../Humble2/src/Vendor/entt/include",
         "../Humble2/src/Vendor/spdlog-1.x/include",
+        "../Humble2/src/Vendor/entt/include",
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
         "../Dependencies/GLFW/include",
         "../Dependencies/GLEW/include",
         "../Dependencies/stb_image",
-        "../Dependencies/GLM"
+        "../Dependencies/GLM",
+        "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include"
     }
 
     links
@@ -30,9 +40,6 @@ project "HumbleEditor"
     {
         "GLEW_STATIC"
     }
-
-    targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
-    objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
 
     filter "system:windows"
         systemversion "latest"

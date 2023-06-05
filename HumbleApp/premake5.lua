@@ -1,11 +1,9 @@
--- Application project
 project "HumbleApp"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++17"
-    staticruntime "on"
+    staticruntime "off"
 
-    -- Directories for binary and intermediate files.
     targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
     objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
 
@@ -15,13 +13,13 @@ project "HumbleApp"
         "src/**.cpp"
     }
 
-    -- Include directories.
     includedirs
     {
         "../Humble2/src",
         "../Humble2/src/Humble2",
         "../Humble2/src/Vendor",
         "../Humble2/src/Vendor/spdlog-1.x/include",
+        "../Humble2/src/Vendor/entt/include",
         "../Dependencies/GLFW/include",
         "../Dependencies/GLEW/include",
         "../Dependencies/ImGui/imgui",
@@ -32,7 +30,6 @@ project "HumbleApp"
 
     links
     {
-        -- Add reference to engine project, so when the game gets built, the engine builds as well.
         "Humble2"
     }
 

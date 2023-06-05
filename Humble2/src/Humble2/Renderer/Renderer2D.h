@@ -3,9 +3,12 @@
 #include "Shader.h"
 #include "Texture.h"
 #include "VertexArray.h"
+#include "FrameBuffer.h"
 #include "RenderCommand.h"
 
-#define MAX_BATCH_SIZE 60000
+#include "Core/Context.h"
+
+#define MAX_BATCH_SIZE 50000
 
 namespace HBL2
 {
@@ -34,11 +37,13 @@ namespace HBL2
 		void DrawQuad(uint32_t batchIndex, glm::vec3& position, float rotation, glm::vec3& scale, float textureID = 0.f, glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f });
 
 		void SetViewport(int32_t x, int32_t y, int32_t width, int32_t height);
+		FrameBuffer* GetFrameBuffer() const { return m_FrameBuffer; }
 
 		inline GraphicsAPI GetAPI() { return m_API; }
 	private:
 		Renderer2D() {}
 		GraphicsAPI m_API = GraphicsAPI::None;
+		FrameBuffer* m_FrameBuffer = nullptr;
 		VertexArray* m_VertexArray = nullptr;
 		glm::vec4 m_QuadVertexPosition[4] = {};
 		glm::vec2 m_QuadTextureCoordinates[4] = {};

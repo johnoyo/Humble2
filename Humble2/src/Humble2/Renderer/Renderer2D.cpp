@@ -13,24 +13,6 @@ namespace HBL2
 
 		Texture::Load("")->Bind();
 
-		// TODO: Remove from here. ------------------------------------------------------------------
-		Texture::Load("assets/textures/Pixel-Art.png")->Bind();
-
-#ifdef EMSCRIPTEN
-		Shader::Create("BasicLight", "assets/shaders/shaderES.vert", "assets/shaders/shaderES.frag");
-		//Shader::Create("Basic", "assets/shaders/BasicES.shader");
-#else
-		Shader::Create("BasicLight", "assets/shaders/shader.vert", "assets/shaders/shader.frag");
-		Shader::Create("Basic", "assets/shaders/Basic.shader");
-#endif
-		glm::mat4 mvp = glm::ortho(0.f, 960.f, 0.f, 540.f, -1.f, 1.f);
-
-		AddBatch("BasicLight", 10000, mvp);
-		AddBatch("BasicLight", 10000, mvp);
-		AddBatch("BasicLight", 30000, mvp);
-		AddBatch("BasicLight", 60000, mvp);
-		// -------------------------------------------------------------------------------------------
-
 		m_QuadVertexPosition[0] = { -0.5f, 0.5f, 0.0f, 1.0f };
 		m_QuadVertexPosition[1] = { 0.5f,  0.5f, 0.0f, 1.0f };
 		m_QuadVertexPosition[2] = { 0.5f, -0.5f, 0.0f, 1.0f };
@@ -40,15 +22,28 @@ namespace HBL2
 		m_QuadTextureCoordinates[1] = { 1.0f, 1.0f };
 		m_QuadTextureCoordinates[2] = { 1.0f, 0.0f };
 		m_QuadTextureCoordinates[3] = { 0.0f, 0.0f };
+
+		FrameBufferSpecification spec;
+		spec.Width = 1280;
+		spec.Height = 720;
+
+		m_FrameBuffer = FrameBuffer::Create(spec);
 	}
 
 	void Renderer2D::BeginFrame()
 	{
+		m_FrameBuffer->Bind();
+
 		RenderCommand::ClearScreen({ 0.f, 0.0f, 0.0f, 1.0f });
 	}
 
 	void Renderer2D::Submit()
 	{
+		glm::mat4 mvp = glm::mat4(0.f);
+
+		if (Context::ActiveScene->MainCamera != entt::null)
+			mvp = Context::ActiveScene->GetComponent<Component::Camera>(Context::ActiveScene->MainCamera).ViewProjectionMatrix;
+
 		Texture::ForEach([](Texture* texture)
 		{
 			texture->Bind();
@@ -66,10 +61,15 @@ namespace HBL2
 
 			Shader::Get(m_Shaders[buffer->BatchIndex])->Bind();
 
+			Shader::Get(m_Shaders[buffer->BatchIndex])->SetMat4(mvp, "u_MVP");
+
 			RenderCommand::Submit(buffer);
 
-			buffer->UnBind();
+			Shader::Get(m_Shaders[buffer->BatchIndex])->UnBind();
+
 			m_VertexArray->GetIndexBuffer()->UnBind();
+
+			buffer->UnBind();
 		}
 
 		m_VertexArray->UnBind();
@@ -81,10 +81,14 @@ namespace HBL2
 		{
 			buffer->BatchSize = 0;
 		}
+
+		m_FrameBuffer->UnBind();
 	}
 
 	uint32_t Renderer2D::AddBatch(const std::string& shaderName, uint32_t vertexBufferSize, glm::mat4& mvp)
 	{
+		assert(vertexBufferSize <= MAX_BATCH_SIZE);
+
 		VertexBufferLayout vertexBufferLayout(
 		{
 			{ 0, 2, Type::FLOAT, false },
@@ -116,10 +120,6 @@ namespace HBL2
 		Shader::Get(shaderName)->SetIntPtr1(samplers, 32, "u_Textures");
 #endif
 		Shader::Get(shaderName)->SetMat4(mvp, "u_MVP");
-
-		glm::vec2 lightPosition = { 250.f, 250.f };
-
-		Shader::Get(shaderName)->SetFloat2(lightPosition, "u_LightPosition");
 
 		m_Shaders.push_back(shaderName);
 

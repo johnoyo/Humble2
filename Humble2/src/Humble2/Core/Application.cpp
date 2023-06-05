@@ -46,13 +46,18 @@ namespace HBL2
 
 		// Intialize the window.
 		m_Window = new Window(m_Specification.Name, m_Specification.Width, m_Specification.Height, m_Specification.Fullscreen, m_Specification.Vsync);
+
+		// Initialize empty scene.
+		m_Specification.Context->EmptyScene = new Scene("Empty Scene");
+		m_Specification.Context->EmptyScene->RegisterSystem(new SpriteRendererSystem);
+		m_Specification.Context->EmptyScene->RegisterSystem(new CameraSystem);
 	}
 
 	Application::~Application()
 	{
-		Renderer2D::Get().Clean();
+		ImGuiRenderer::Get().Clean();
 
-		m_Window->Terminate();
+		Renderer2D::Get().Clean();
 
 		delete m_Window;
 	}
@@ -91,94 +96,30 @@ namespace HBL2
 	{
 		m_Window->Create();
 
+		Input::SetWindow(m_Window->GetHandle());
+
+		m_Specification.Context->OnAttach();
+
 		// Initialize the renderer.
 		Renderer2D::Get().Initialize(m_Specification.GraphicsAPI);
 
-		glm::vec3 position = { 10.f, 10.f, 0.f };
-		glm::vec3 scale = { 10.f, 10.f, 0.f };
-		glm::vec4 color = { 1.f, 0.2f, 0.1f, 1.f };
+		ImGuiRenderer::Get().Initialize(m_Window);
+
+		m_Specification.Context->OnCreate();
 
 		m_Window->DispatchMainLoop([&]()
 		{
 			BeginFrame();
 
-			position.x = 5.f;
-			position.y = 5.f;
-			scale = { 10.f, 10.f, 0.f };
-			for (int i = 0; i < 99; i++)
-			{
-				for (int j = 0; j < 99; j++)
-				{
-					Renderer2D::Get().DrawQuad(0, position, scale, 0.f);
-					position.x += 15.f;
-				}
-				position.x = 5.f;
-				position.y += 15.f;
-			}
-
-			position.x = 12.5f;
-			position.y = 12.5f;
-			color = { 1.f, 0.2f, 0.1f, 1.f };
-
-			for (int i = 0; i < 99; i++)
-			{
-				for (int j = 0; j < 99; j++)
-				{
-					Renderer2D::Get().DrawQuad(1, position, scale, 0.f, color);
-					position.x += 15.f;
-				}
-				position.x = 12.5f;
-				position.y += 15.f;
-			}
-
-			position.x = 5.f;
-			position.y = 5.f;
-			scale = { 5.f, 5.f, 0.f };
-			color = { 0.f, 1.f, 0.f, 1.f };
-			for (int i = 0; i < 99; i++)
-			{
-				for (int j = 0; j < 299; j++)
-				{
-					Renderer2D::Get().DrawQuad(2, position, scale, 0.f, color);
-					position.x += 10.f;
-				}
-				position.x = 5.f;
-				position.y += 10.f;
-			}
-
-			position.x = 5.f;
-			position.y = 5.f;
-			scale = { 5.f, 5.f, 0.f };
-			color = { 0.f, 1.f, 1.f, 1.f };
-			for (int i = 0; i < 99; i++)
-			{
-				for (int j = 0; j < 299; j++)
-				{
-					Renderer2D::Get().DrawQuad(3, position, scale, 0.f, color);
-					position.x += 10.f;
-				}
-				position.x = 5.f;
-				position.y += 10.f;
-			}
-
-			position.x = 5.f;
-			position.y = 5.f;
-			scale = { 5.f, 5.f, 0.f };
-			color = { 1.f, 0.f, 1.f, 1.f };
-			for (int i = 0; i < 100; i++)
-			{
-				for (int j = 0; j < 300; j++)
-				{
-					Renderer2D::Get().DrawQuad(3, position, scale, 0.f, color);
-					position.x += 10.f;
-				}
-				position.x = 5.f;
-				position.y += 10.f;
-			}
+			m_Specification.Context->OnUpdate(m_DeltaTime);
 
 			Renderer2D::Get().BeginFrame();
 			Renderer2D::Get().Submit();
 			Renderer2D::Get().EndFrame();
+
+			ImGuiRenderer::Get().BeginFrame();
+			m_Specification.Context->OnGuiRender(m_DeltaTime);
+			ImGuiRenderer::Get().EndFrame();
 
 			EndFrame();
 		});
