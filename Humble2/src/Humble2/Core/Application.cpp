@@ -50,12 +50,15 @@ namespace HBL2
 		// Initialize empty scene.
 		m_Specification.Context->EmptyScene = new Scene("Empty Scene");
 		m_Specification.Context->EmptyScene->RegisterSystem(new SpriteRendererSystem);
-		m_Specification.Context->EmptyScene->RegisterSystem(new CameraSystem);
+		m_Specification.Context->EmptyScene->RegisterSystem(new MeshRendererSystem);
+		m_Specification.Context->EmptyScene->RegisterSystem(new CameraSystem);		
 	}
 
 	Application::~Application()
 	{
 		ImGuiRenderer::Get().Clean();
+
+		Renderer3D::Get().Clean();
 
 		Renderer2D::Get().Clean();
 
@@ -94,15 +97,26 @@ namespace HBL2
 
 	void Application::Start()
 	{
+		// Create window.
 		m_Window->Create();
+
+		// Initialize the graphics API.
+		RenderCommand::Initialize(m_Specification.GraphicsAPI);
+
+		// Create FrameBuffer.
+		FrameBufferSpecification spec;
+		spec.Width = 1280;
+		spec.Height = 720;
+
+		m_FrameBuffer = FrameBuffer::Create(spec);
 
 		Input::SetWindow(m_Window->GetHandle());
 
 		m_Specification.Context->OnAttach();
 
-		// Initialize the renderer.
-		Renderer2D::Get().Initialize(m_Specification.GraphicsAPI);
-
+		// Initialize the renderers.
+		Renderer2D::Get().Initialize(m_FrameBuffer);
+		Renderer3D::Get().Initialize(m_FrameBuffer);
 		ImGuiRenderer::Get().Initialize(m_Window);
 
 		m_Specification.Context->OnCreate();
@@ -111,7 +125,9 @@ namespace HBL2
 		{
 			BeginFrame();
 
+			Renderer3D::Get().BeginFrame();
 			m_Specification.Context->OnUpdate(m_DeltaTime);
+			Renderer3D::Get().EndFrame();
 
 			Renderer2D::Get().BeginFrame();
 			Renderer2D::Get().Submit();

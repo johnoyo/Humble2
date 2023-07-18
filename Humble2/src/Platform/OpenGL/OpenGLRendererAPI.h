@@ -19,6 +19,7 @@ namespace HBL2
 		OpenGLRendererAPI();
 		virtual void SetViewport(GLint x, GLint y, GLsizei width, GLsizei height) override;
 		virtual void ClearScreen(glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f }) override;
-		virtual void Submit(VertexBuffer* vertexBuffer) override;
+		virtual void Draw(VertexBuffer* vertexBuffer) override;
+		virtual void DrawIndexed(VertexBuffer* vertexBuffer) override;
 	};
 }

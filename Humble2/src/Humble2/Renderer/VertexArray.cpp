@@ -1,13 +1,13 @@
 #include "VertexArray.h"
 
 #include "Renderer2D.h"
-#include "../../Platform/OpenGL/OpenGLVertexArray.h"
+#include "Platform/OpenGL/OpenGLVertexArray.h"
 
 namespace HBL2
 {
 	VertexArray* VertexArray::Create()
 	{
-		switch (Renderer2D::Get().GetAPI())
+		switch (RenderCommand::GetAPI())
 		{
 		case GraphicsAPI::OpenGL:
 			return new OpenGLVertexArray();

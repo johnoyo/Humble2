@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Renderer/Renderer2D.h"
+#include "Renderer/RenderCommand.h"
 
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3

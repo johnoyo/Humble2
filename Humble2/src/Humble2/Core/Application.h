@@ -5,9 +5,11 @@
 #include "Input.h"
 #include "Context.h"
 #include "Renderer/Renderer2D.h"
+#include "Renderer/Renderer3D.h"
 #include "ImGui/ImGuiRenderer.h"
 
 #include "Systems/CameraSystem.h"
+#include "Systems/MeshRendererSystem.h"
 #include "Systems/SpriteRendererSystem.h"
 
 #include <string>
@@ -47,6 +49,7 @@ namespace HBL2
 	private:
 		ApplicationSpec m_Specification;
 		Window* m_Window;
+		FrameBuffer* m_FrameBuffer = nullptr;
 
 		float m_LastTime = 0.0f;
 		float m_Timer = m_LastTime;

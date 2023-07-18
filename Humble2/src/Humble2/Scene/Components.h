@@ -2,6 +2,8 @@
 
 #include "Base.h"
 
+#include "Renderer/VertexArray.h"
+
 namespace HBL2
 {
 	namespace Component
@@ -28,6 +30,18 @@ namespace HBL2
 			bool Enabled = true;
 		};
 
+		struct Mesh
+		{
+			std::vector<Buffer> Data;
+
+			VertexArray* VertexArray;
+			std::string Path;
+			std::string ShaderName;
+			bool Static = false;
+
+			bool Enabled = true;
+		};
+
 		struct Camera
 		{
 			float ZoomLevel = 300.f;
@@ -37,7 +51,8 @@ namespace HBL2
 			float AspectRatio = 1.778f;
 
 			glm::mat4 View = glm::mat4(1.f);
-			glm::mat4 Projection = glm::ortho(-AspectRatio * ZoomLevel, AspectRatio * ZoomLevel, -ZoomLevel, ZoomLevel, -1.f, 1.f);
+			//glm::mat4 Projection = glm::ortho(-AspectRatio * ZoomLevel, AspectRatio * ZoomLevel, -ZoomLevel, ZoomLevel, -1.f, 1.f);
+			glm::mat4 Projection = glm::perspective(glm::radians(Fov), AspectRatio, Near, Far);
 			glm::mat4 ViewProjectionMatrix = glm::mat4(1.f);
 
 			bool Primary = true;

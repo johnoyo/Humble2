@@ -7,7 +7,8 @@ layout(location = 2) in vec2 a_TextureCoord;
 layout(location = 3) in float a_TextureID;
 layout(location = 4) in float a_Normal;
 
-uniform mat4 u_MVP;
+uniform mat4 u_VP;
+uniform mat4 u_M;
 
 out vec4 v_Color;
 out vec2 v_TextureCoord;
@@ -18,7 +19,7 @@ void main()
 	v_Color = a_Color;
 	v_TextureCoord = a_TextureCoord;
 	v_TextureID = a_TextureID;
-	gl_Position = u_MVP * a_Position;
+	gl_Position = u_VP * u_M * a_Position;
 };
 
 #shader fragment

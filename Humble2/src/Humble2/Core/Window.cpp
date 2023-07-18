@@ -4,7 +4,7 @@ namespace HBL2
 {
 	void WindowResizeCallback(GLFWwindow* window, int width, int height)
 	{
-		Renderer2D::Get().SetViewport(0, 0, width, height);
+		RenderCommand::SetViewport(0, 0, width, height);
 	}
 
 	Window::Window(const std::string& title, float width, float height, bool fullScreen, bool vSync) :

@@ -7,7 +7,7 @@ namespace HBL2
 {
 	FrameBuffer* FrameBuffer::Create(FrameBufferSpecification& spec)
 	{
-		switch (Renderer2D::Get().GetAPI())
+		switch (RenderCommand::GetAPI())
 		{
 		case GraphicsAPI::OpenGL:
 			return new OpenGLFrameBuffer(spec);

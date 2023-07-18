@@ -2,9 +2,21 @@
 
 namespace HBL2
 {
-	OpenGLIndexBuffer::OpenGLIndexBuffer(uint32_t size) : m_Size(size)
+	OpenGLIndexBuffer::OpenGLIndexBuffer(uint32_t size, bool generated) : m_Size(size), m_Ganerated(generated)
 	{
-		GenerateIndeces(m_Size);
+		if (generated)
+		{
+			GenerateIndeces(m_Size);
+		}
+		else
+		{
+			m_Size = size;
+			m_Indeces = new uint32_t[m_Size];
+
+			glGenBuffers(1, &m_IndexBufferID);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IndexBufferID);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Size * sizeof(GLuint), m_Indeces, GL_STATIC_DRAW);
+		}
 	}
 
 	void OpenGLIndexBuffer::GenerateIndeces(uint32_t size)
@@ -42,7 +54,10 @@ namespace HBL2
 
 	void OpenGLIndexBuffer::SetData(uint32_t batchSize)
 	{
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, batchSize * 6U * sizeof(GLuint), m_Indeces, GL_STATIC_DRAW);
+		if (m_Ganerated)
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, batchSize * 6U * sizeof(GLuint), m_Indeces, GL_STATIC_DRAW);
+		else
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, batchSize * sizeof(GLuint), m_Indeces, GL_STATIC_DRAW);
 	}
 
 	void OpenGLIndexBuffer::Invalidate(uint32_t size)
@@ -50,6 +65,11 @@ namespace HBL2
 		Clean();
 		GenerateIndeces(size);
 		SetData(size);
+	}
+
+	uint32_t* OpenGLIndexBuffer::GetHandle()
+	{
+		return m_Indeces;
 	}
 
 	void OpenGLIndexBuffer::Clean()

@@ -5,15 +5,15 @@
 
 namespace HBL2
 {
-	IndexBuffer* IndexBuffer::Create(uint32_t size)
+	IndexBuffer* IndexBuffer::Create(uint32_t size, bool generated)
 	{
-		switch (Renderer2D::Get().GetAPI())
+		switch (RenderCommand::GetAPI())
 		{
 		case GraphicsAPI::OpenGL:
-			return new OpenGLIndexBuffer(size);
+			return new OpenGLIndexBuffer(size, generated);
 		case GraphicsAPI::Vulkan:
 			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
-			return new OpenGLIndexBuffer(size);
+			return new OpenGLIndexBuffer(size, generated);
 		case GraphicsAPI::None:
 			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);

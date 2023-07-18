@@ -1,14 +1,17 @@
 #include "RenderCommand.h"
 
-#include "../../Platform/OpenGL/OpenGLRendererAPI.h"
+#include "Platform/OpenGL/OpenGLRendererAPI.h"
 
 namespace HBL2
 {
 	RendererAPI* RenderCommand::s_RendererAPI = nullptr;
+	GraphicsAPI RenderCommand::s_API = GraphicsAPI::None;
 
 	void RenderCommand::Initialize(GraphicsAPI api)
 	{
-		switch (api)
+		s_API = api;
+
+		switch (s_API)
 		{
 		case HBL2::GraphicsAPI::OpenGL:
 			s_RendererAPI = new OpenGLRendererAPI();
@@ -34,8 +37,18 @@ namespace HBL2
 		s_RendererAPI->ClearScreen(color);
 	}
 
-	void RenderCommand::Submit(VertexBuffer* vertexBuffer)
+	void RenderCommand::Draw(VertexBuffer* vertexBuffer)
 	{
-		s_RendererAPI->Submit(vertexBuffer);
+		s_RendererAPI->Draw(vertexBuffer);
+	}
+
+	void RenderCommand::DrawIndexed(VertexBuffer* vertexBuffer)
+	{
+		s_RendererAPI->DrawIndexed(vertexBuffer);
+	}
+
+	GraphicsAPI RenderCommand::GetAPI()
+	{
+		return s_API;
 	}
 }

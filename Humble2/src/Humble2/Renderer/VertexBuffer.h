@@ -60,6 +60,7 @@ namespace HBL2
 		virtual ~VertexBuffer() = default;
 
 		static VertexBuffer* Create(uint32_t size, VertexBufferLayout& layout);
+		static VertexBuffer* Create(Buffer* handle, uint32_t size, VertexBufferLayout& layout);
 
 		virtual void Bind() = 0;
 		virtual void UnBind() = 0;

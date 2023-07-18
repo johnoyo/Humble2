@@ -126,6 +126,7 @@ namespace HBL2Editor
 			{
 				auto entity = context->CreateEntity();
 				context->GetComponent<HBL2::Component::Tag>(entity).Name = "Sprite";
+				context->GetComponent<HBL2::Component::Transform>(entity).Position = { 0.f, 15.f, 0.f };
 				context->AddComponent<Component::EditorVisible>(entity);
 				context->AddComponent<HBL2::Component::Sprite>(entity);
 			}
@@ -135,7 +136,32 @@ namespace HBL2Editor
 				auto entity = context->CreateEntity();
 				context->GetComponent<HBL2::Component::Tag>(entity).Name = "Camera";
 				context->AddComponent<Component::EditorVisible>(entity);
-				context->AddComponent<HBL2::Component::Camera>(entity);
+				context->AddComponent<HBL2::Component::Camera>(entity).Enabled = true;
+				context->GetComponent<HBL2::Component::Transform>(entity).Position.z = 100.f;
+			}
+
+			if (ImGui::MenuItem("Create Monkeh"))
+			{
+				auto entity = context->CreateEntity();
+				context->GetComponent<HBL2::Component::Tag>(entity).Name = "Monkeh";
+				context->GetComponent<HBL2::Component::Transform>(entity).Scale = { 5.f, 5.f, 5.f };
+				context->AddComponent<Component::EditorVisible>(entity);
+				auto& mesh = context->AddComponent<HBL2::Component::Mesh>(entity);
+				mesh.Path = "assets/meshes/monkey_smooth.obj";
+				mesh.ShaderName = "BasicMesh";
+			}
+
+			if (ImGui::MenuItem("Create Monkeh 2"))
+			{
+				auto entity = context->CreateEntity();
+				context->GetComponent<HBL2::Component::Tag>(entity).Name = "Monkeh2";
+				context->GetComponent<HBL2::Component::Transform>(entity).Position = { 25.f, 0.f, 0.f };
+				context->GetComponent<HBL2::Component::Transform>(entity).Rotation = { 0.f, -90.f, 0.f };
+				context->GetComponent<HBL2::Component::Transform>(entity).Scale = { 10.f, 10.f, 10.f };
+				context->AddComponent<Component::EditorVisible>(entity);
+				auto& mesh = context->AddComponent<HBL2::Component::Mesh>(entity);
+				mesh.Path = "assets/meshes/monkey_smooth.obj";
+				mesh.ShaderName = "BasicMesh";
 			}
 
 			ImGui::EndPopup();
@@ -202,7 +228,8 @@ namespace HBL2Editor
 						if (camera.Enabled && camera.Primary)
 						{
 							camera.AspectRatio = m_ViewportSize.x / m_ViewportSize.y;
-							camera.Projection = glm::ortho(-camera.AspectRatio * camera.ZoomLevel, camera.AspectRatio * camera.ZoomLevel, -camera.ZoomLevel, camera.ZoomLevel, -1.f, 1.f);
+							// camera.Projection = glm::ortho(-camera.AspectRatio * camera.ZoomLevel, camera.AspectRatio * camera.ZoomLevel, -camera.ZoomLevel, camera.ZoomLevel, -1.f, 1.f);
+							camera.Projection = glm::perspective(glm::radians(camera.Fov), camera.AspectRatio, camera.Near, camera.Far);
 							camera.ViewProjectionMatrix = camera.Projection * camera.View;
 						}
 					});

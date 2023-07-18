@@ -19,8 +19,9 @@
 
 struct Buffer
 {
-	glm::vec2 Position;
+	glm::vec3 Position;
 	glm::vec4 Color;
 	glm::vec2 TextureCoord;
 	float TextureID;
+	glm::vec3 Normal;
 };

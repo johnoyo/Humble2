@@ -1,7 +1,7 @@
 #include "Shader.h"
 
 #include "Renderer2D.h"
-#include "../../Platform/OpenGL/OpenGLShader.h"
+#include "Platform/OpenGL/OpenGLShader.h"
 
 namespace HBL2
 {
@@ -17,7 +17,7 @@ namespace HBL2
 		if (Exists(name))
 			return Get(name);
 
-		switch (Renderer2D::Get().GetAPI())
+		switch (RenderCommand::GetAPI())
 		{
 		case GraphicsAPI::OpenGL:
 			return new OpenGLShader(name, vertexSource, fragmentSource);
@@ -78,7 +78,7 @@ namespace HBL2
 			HBL2_CORE_ERROR("Could not open file: {0}.", fragmentFilepath);
 		}
 
-		switch (Renderer2D::Get().GetAPI())
+		switch (RenderCommand::GetAPI())
 		{
 		case GraphicsAPI::OpenGL:
 			return new OpenGLShader(name, ssV.str(), ssF.str());
@@ -136,7 +136,7 @@ namespace HBL2
 			HBL2_CORE_ERROR("Could not open file: {0}.", filepath);
 		}
 
-		switch (Renderer2D::Get().GetAPI())
+		switch (RenderCommand::GetAPI())
 		{
 		case GraphicsAPI::OpenGL:
 			return new OpenGLShader(name, ss[0].str(), ss[1].str());
@@ -151,6 +151,7 @@ namespace HBL2
 
 		return nullptr;
 	}
+
 	void Shader::Add(const std::string& name, Shader* shader)
 	{
 		assert(!Exists(name));

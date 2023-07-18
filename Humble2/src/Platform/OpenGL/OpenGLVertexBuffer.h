@@ -17,6 +17,7 @@ namespace HBL2
 	{
 	public:
 		OpenGLVertexBuffer(uint32_t size, VertexBufferLayout& layout);
+		OpenGLVertexBuffer(Buffer* handle, uint32_t size, VertexBufferLayout& layout);
 		virtual ~OpenGLVertexBuffer() {}
 
 		virtual void Bind() override;
@@ -25,6 +26,7 @@ namespace HBL2
 	private:
 		uint32_t m_VertexBufferID = 0;
 		uint32_t m_TotalSize = 0;
+		bool m_DynamicDraw = false;
 		VertexBufferLayout m_Layout;
 		std::vector<GLenum> m_Types;
 		std::vector<GLsizei> m_Offsets;

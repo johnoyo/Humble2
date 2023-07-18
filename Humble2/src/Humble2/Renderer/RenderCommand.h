@@ -12,8 +12,12 @@ namespace HBL2
 
 		static void SetViewport(int32_t x, int32_t y, int32_t width, int32_t height);
 		static void ClearScreen(glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f });
-		static void Submit(VertexBuffer* vertexBuffer);
+		static void Draw(VertexBuffer* vertexBuffer);
+		static void DrawIndexed(VertexBuffer* vertexBuffer);
+
+		static GraphicsAPI GetAPI();
 	private:
 		static RendererAPI* s_RendererAPI;
+		static GraphicsAPI s_API;
 	};
 }

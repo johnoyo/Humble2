@@ -57,7 +57,7 @@ namespace HBL2Editor
 						}
 						else if (HBL2::Input::GetKeyDown(GLFW_MOUSE_BUTTON_RIGHT))
 						{
-							float distance = editorCamera.Distance * 0.2f;
+							float distance = editorCamera.Distance * 0.5f;
 							distance = std::max(distance, 0.0f);
 							float speed = distance * distance;
 							speed = std::min(speed, 100.0f); // max speed = 100

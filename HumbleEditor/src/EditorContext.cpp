@@ -22,6 +22,22 @@ namespace HBL2Editor
 		ActiveScene->AddComponent<Component::EditorCamera>(editorCameraEntity);
 		ActiveScene->AddComponent<HBL2::Component::Camera>(editorCameraEntity).Enabled = true;
 		ActiveScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Position.z = 100.f;
+
+		// Runtime camera setup.
+		auto camera = ActiveScene->CreateEntity();
+		ActiveScene->GetComponent<HBL2::Component::Tag>(camera).Name = "Camera";
+		ActiveScene->AddComponent<Component::EditorVisible>(camera);
+		ActiveScene->AddComponent<HBL2::Component::Camera>(camera).Enabled = true;
+		ActiveScene->GetComponent<HBL2::Component::Transform>(camera).Position.z = 100.f;
+
+		// Add a monkeh.
+		auto monkeh = ActiveScene->CreateEntity();
+		ActiveScene->GetComponent<HBL2::Component::Tag>(monkeh).Name = "Monkeh";
+		ActiveScene->GetComponent<HBL2::Component::Transform>(monkeh).Scale = { 5.f, 5.f, 5.f };
+		ActiveScene->AddComponent<Component::EditorVisible>(monkeh);
+		auto& mesh = ActiveScene->AddComponent<HBL2::Component::Mesh>(monkeh);
+		mesh.Path = "assets/meshes/monkey_smooth.obj";
+		mesh.ShaderName = "BasicMesh";
 	}
 
 	void EditorContext::OnCreate()

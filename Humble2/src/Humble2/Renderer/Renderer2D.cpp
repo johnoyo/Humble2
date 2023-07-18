@@ -2,12 +2,8 @@
 
 namespace HBL2
 {
-	void Renderer2D::Initialize(GraphicsAPI api)
+	void Renderer2D::Initialize(FrameBuffer* framebuffer)
 	{
-		m_API = api;
-
-		RenderCommand::Initialize(api);
-
 		m_VertexArray = VertexArray::Create();
 		m_VertexArray->SetIndexBuffer(IndexBuffer::Create(MAX_BATCH_SIZE));
 
@@ -27,14 +23,15 @@ namespace HBL2
 		spec.Width = 1280;
 		spec.Height = 720;
 
-		m_FrameBuffer = FrameBuffer::Create(spec);
+		m_FrameBuffer = framebuffer; // FrameBuffer::Create(spec);
 	}
 
 	void Renderer2D::BeginFrame()
 	{
-		m_FrameBuffer->Bind();
-
-		RenderCommand::ClearScreen({ 0.f, 0.0f, 0.0f, 1.0f });
+		if (m_FrameBuffer != nullptr)
+		{
+			m_FrameBuffer->Bind();
+		}
 	}
 
 	void Renderer2D::Submit()
@@ -63,7 +60,7 @@ namespace HBL2
 
 			Shader::Get(m_Shaders[buffer->BatchIndex])->SetMat4(mvp, "u_MVP");
 
-			RenderCommand::Submit(buffer);
+			RenderCommand::DrawIndexed(buffer);
 
 			Shader::Get(m_Shaders[buffer->BatchIndex])->UnBind();
 
@@ -82,7 +79,10 @@ namespace HBL2
 			buffer->BatchSize = 0;
 		}
 
-		m_FrameBuffer->UnBind();
+		if (m_FrameBuffer != nullptr)
+		{
+			m_FrameBuffer->UnBind();
+		}
 	}
 
 	uint32_t Renderer2D::AddBatch(const std::string& shaderName, uint32_t vertexBufferSize, glm::mat4& mvp)
@@ -91,10 +91,11 @@ namespace HBL2
 
 		VertexBufferLayout vertexBufferLayout(
 		{
-			{ 0, 2, Type::FLOAT, false },
+			{ 0, 3, Type::FLOAT, false },
 			{ 1, 4, Type::FLOAT, false },
 			{ 2, 2, Type::FLOAT, false },
 			{ 3, 1, Type::FLOAT, false },
+			{ 4, 3, Type::FLOAT, false },
 		});
 
 		VertexBuffer* vertexBuffer = VertexBuffer::Create(vertexBufferSize * 4, vertexBufferLayout);
@@ -104,14 +105,22 @@ namespace HBL2
 		Shader::Get(shaderName)->Bind();
 
 #ifdef EMSCRIPTEN
-		Shader::Get(shaderName)->SetInt1(0, "u_Textures0");
-		Shader::Get(shaderName)->SetInt1(1, "u_Textures1");
-		Shader::Get(shaderName)->SetInt1(2, "u_Textures2");
-		Shader::Get(shaderName)->SetInt1(3, "u_Textures3");
-		Shader::Get(shaderName)->SetInt1(4, "u_Textures4");
-		Shader::Get(shaderName)->SetInt1(5, "u_Textures5");
-		Shader::Get(shaderName)->SetInt1(6, "u_Textures6");
-		Shader::Get(shaderName)->SetInt1(7, "u_Textures7");
+		Shader::Get(mesh.ShaderName)->SetInt1(0, "u_Textures0");
+		Shader::Get(mesh.ShaderName)->SetInt1(1, "u_Textures1");
+		Shader::Get(mesh.ShaderName)->SetInt1(2, "u_Textures2");
+		Shader::Get(mesh.ShaderName)->SetInt1(3, "u_Textures3");
+		Shader::Get(mesh.ShaderName)->SetInt1(4, "u_Textures4");
+		Shader::Get(mesh.ShaderName)->SetInt1(5, "u_Textures5");
+		Shader::Get(mesh.ShaderName)->SetInt1(6, "u_Textures6");
+		Shader::Get(mesh.ShaderName)->SetInt1(7, "u_Textures7");
+		Shader::Get(mesh.ShaderName)->SetInt1(8, "u_Textures8");
+		Shader::Get(mesh.ShaderName)->SetInt1(9, "u_Textures9");
+		Shader::Get(mesh.ShaderName)->SetInt1(10, "u_Textures10");
+		Shader::Get(mesh.ShaderName)->SetInt1(11, "u_Textures11");
+		Shader::Get(mesh.ShaderName)->SetInt1(12, "u_Textures12");
+		Shader::Get(mesh.ShaderName)->SetInt1(13, "u_Textures13");
+		Shader::Get(mesh.ShaderName)->SetInt1(14, "u_Textures14");
+		Shader::Get(mesh.ShaderName)->SetInt1(15, "u_Textures15");
 #else
 		int samplers[32];
 		for (uint32_t i = 0; i < 32; i++)
@@ -167,25 +176,25 @@ namespace HBL2
 		Buffer* buffer = m_VertexArray->GetVertexBuffers()[batchIndex]->GetHandle();
 		uint32_t& batchSize = m_VertexArray->GetVertexBuffers()[batchIndex]->BatchSize;
 
-		buffer[batchSize].Position = { position.x - scale.x / 2.f, position.y + scale.y / 2.f };
+		buffer[batchSize].Position = { position.x - scale.x / 2.f, position.y + scale.y / 2.f, 0.f };
 		buffer[batchSize].Color = color;
 		buffer[batchSize].TextureCoord = m_QuadTextureCoordinates[0];
 		buffer[batchSize].TextureID = textureID;
 		batchSize++;
 
-		buffer[batchSize].Position = { position.x + scale.x / 2.f, position.y + scale.y / 2.f };
+		buffer[batchSize].Position = { position.x + scale.x / 2.f, position.y + scale.y / 2.f, 0.f };
 		buffer[batchSize].Color = color;
 		buffer[batchSize].TextureCoord = m_QuadTextureCoordinates[1];
 		buffer[batchSize].TextureID = textureID;
 		batchSize++;
 
-		buffer[batchSize].Position = { position.x + scale.x / 2.f, position.y - scale.y / 2.f };
+		buffer[batchSize].Position = { position.x + scale.x / 2.f, position.y - scale.y / 2.f, 0.f };
 		buffer[batchSize].Color = color;
 		buffer[batchSize].TextureCoord = m_QuadTextureCoordinates[2];
 		buffer[batchSize].TextureID = textureID;
 		batchSize++;
 
-		buffer[batchSize].Position = { position.x - scale.x / 2.f, position.y - scale.y / 2.f };
+		buffer[batchSize].Position = { position.x - scale.x / 2.f, position.y - scale.y / 2.f, 0.f };
 		buffer[batchSize].Color = color;
 		buffer[batchSize].TextureCoord = m_QuadTextureCoordinates[3];
 		buffer[batchSize].TextureID = textureID;

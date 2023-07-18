@@ -23,7 +23,7 @@ namespace HBL2
 			return instance;
 		}
 
-		void Initialize(GraphicsAPI api);
+		void Initialize(FrameBuffer* framebuffer);
 
 		void BeginFrame();
 		void Submit();
@@ -39,10 +39,9 @@ namespace HBL2
 		void SetViewport(int32_t x, int32_t y, int32_t width, int32_t height);
 		FrameBuffer* GetFrameBuffer() const { return m_FrameBuffer; }
 
-		inline GraphicsAPI GetAPI() { return m_API; }
 	private:
 		Renderer2D() {}
-		GraphicsAPI m_API = GraphicsAPI::None;
+
 		FrameBuffer* m_FrameBuffer = nullptr;
 		VertexArray* m_VertexArray = nullptr;
 		glm::vec4 m_QuadVertexPosition[4] = {};

@@ -1,7 +1,7 @@
 #include "Texture.h"
 
 #include "Renderer2D.h"
-#include "../../Platform/OpenGL/OpenGLTexture.h"
+#include "Platform/OpenGL/OpenGLTexture.h"
 
 namespace HBL2
 {
@@ -12,7 +12,7 @@ namespace HBL2
 		if (Exists(path))
 			return Get(path);
 
-		switch (Renderer2D::Get().GetAPI())
+		switch (RenderCommand::GetAPI())
 		{
 		case GraphicsAPI::OpenGL:
 			return new OpenGLTexture(path);
