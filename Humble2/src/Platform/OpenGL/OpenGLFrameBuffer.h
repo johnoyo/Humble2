@@ -27,8 +27,8 @@ namespace HBL2
 
 		virtual void Clean() override;
 
-		virtual uint32_t GetColorAttachmentID() const { return m_ColorAttachment; }
-		virtual uint32_t GetDepthAttachmentID() const { return m_DepthAttachment; }
+		virtual uint32_t GetColorAttachmentID() const override { return m_ColorAttachment; }
+		virtual uint32_t GetDepthAttachmentID() const override { return m_DepthAttachment; }
 
 		virtual FrameBufferSpecification& GetSpecification() override { return m_Specification; }
 

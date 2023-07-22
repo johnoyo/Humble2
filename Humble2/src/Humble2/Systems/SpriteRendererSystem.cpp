@@ -4,8 +4,11 @@ namespace HBL2
 {
 	void SpriteRendererSystem::OnCreate()
 	{
+#ifdef EMSCRIPTEN
+		Shader::Create("Basic", "assets/shaders/BasicES.shader");
+#else
 		Shader::Create("Basic", "assets/shaders/Basic.shader");
-
+#endif
 		glm::mat4 mvp = glm::mat4(0.f);
 		
 		if (Context::ActiveScene->MainCamera != entt::null)

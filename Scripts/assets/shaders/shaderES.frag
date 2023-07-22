@@ -42,5 +42,5 @@ void main()
 
 	float intensity = 1.0 / length(v_Position - u_LightPosition);
 
-	gl_FragColor = texColor * intensity * 50.0; 
+	gl_FragColor = texColor * intensity;
 }

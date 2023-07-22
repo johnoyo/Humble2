@@ -2,8 +2,10 @@
 
 #include "Humble2.h"
 
-#include "Systems/EditorPanelSystem.h"
-#include "Systems/EditorCameraSystem.h"
+#ifndef EMSCRIPTEN
+	#include "Systems/EditorPanelSystem.h"
+	#include "Systems/EditorCameraSystem.h"
+#endif
 
 namespace HBL2Editor
 {

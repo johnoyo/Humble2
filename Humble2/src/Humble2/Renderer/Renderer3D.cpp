@@ -63,10 +63,9 @@ namespace HBL2
 		int samplers[32];
 		for (uint32_t i = 0; i < 32; i++)
 			samplers[i] = i;
-#endif
 
 		Shader::Get(mesh.ShaderName)->SetIntPtr1(samplers, 32, "u_Textures");
-
+#endif
 		Shader::Get(mesh.ShaderName)->SetMat4(mvp, "u_VP");
 
 		Shader::Get(mesh.ShaderName)->SetMat4(transform.Matrix, "u_M");

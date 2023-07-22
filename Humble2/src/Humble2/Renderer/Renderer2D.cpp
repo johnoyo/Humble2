@@ -105,22 +105,22 @@ namespace HBL2
 		Shader::Get(shaderName)->Bind();
 
 #ifdef EMSCRIPTEN
-		Shader::Get(mesh.ShaderName)->SetInt1(0, "u_Textures0");
-		Shader::Get(mesh.ShaderName)->SetInt1(1, "u_Textures1");
-		Shader::Get(mesh.ShaderName)->SetInt1(2, "u_Textures2");
-		Shader::Get(mesh.ShaderName)->SetInt1(3, "u_Textures3");
-		Shader::Get(mesh.ShaderName)->SetInt1(4, "u_Textures4");
-		Shader::Get(mesh.ShaderName)->SetInt1(5, "u_Textures5");
-		Shader::Get(mesh.ShaderName)->SetInt1(6, "u_Textures6");
-		Shader::Get(mesh.ShaderName)->SetInt1(7, "u_Textures7");
-		Shader::Get(mesh.ShaderName)->SetInt1(8, "u_Textures8");
-		Shader::Get(mesh.ShaderName)->SetInt1(9, "u_Textures9");
-		Shader::Get(mesh.ShaderName)->SetInt1(10, "u_Textures10");
-		Shader::Get(mesh.ShaderName)->SetInt1(11, "u_Textures11");
-		Shader::Get(mesh.ShaderName)->SetInt1(12, "u_Textures12");
-		Shader::Get(mesh.ShaderName)->SetInt1(13, "u_Textures13");
-		Shader::Get(mesh.ShaderName)->SetInt1(14, "u_Textures14");
-		Shader::Get(mesh.ShaderName)->SetInt1(15, "u_Textures15");
+		Shader::Get(shaderName)->SetInt1(0, "u_Textures0");
+		Shader::Get(shaderName)->SetInt1(1, "u_Textures1");
+		Shader::Get(shaderName)->SetInt1(2, "u_Textures2");
+		Shader::Get(shaderName)->SetInt1(3, "u_Textures3");
+		Shader::Get(shaderName)->SetInt1(4, "u_Textures4");
+		Shader::Get(shaderName)->SetInt1(5, "u_Textures5");
+		Shader::Get(shaderName)->SetInt1(6, "u_Textures6");
+		Shader::Get(shaderName)->SetInt1(7, "u_Textures7");
+		Shader::Get(shaderName)->SetInt1(8, "u_Textures8");
+		Shader::Get(shaderName)->SetInt1(9, "u_Textures9");
+		Shader::Get(shaderName)->SetInt1(10, "u_Textures10");
+		Shader::Get(shaderName)->SetInt1(11, "u_Textures11");
+		Shader::Get(shaderName)->SetInt1(12, "u_Textures12");
+		Shader::Get(shaderName)->SetInt1(13, "u_Textures13");
+		Shader::Get(shaderName)->SetInt1(14, "u_Textures14");
+		Shader::Get(shaderName)->SetInt1(15, "u_Textures15");
 #else
 		int samplers[32];
 		for (uint32_t i = 0; i < 32; i++)

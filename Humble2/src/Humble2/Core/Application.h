@@ -6,8 +6,9 @@
 #include "Context.h"
 #include "Renderer/Renderer2D.h"
 #include "Renderer/Renderer3D.h"
-#include "ImGui/ImGuiRenderer.h"
-
+#ifndef EMSCRIPTEN
+	#include "ImGui/ImGuiRenderer.h"
+#endif
 #include "Systems/CameraSystem.h"
 #include "Systems/MeshRendererSystem.h"
 #include "Systems/SpriteRendererSystem.h"
