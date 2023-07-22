@@ -56,9 +56,8 @@ namespace HBL2
 
 	Application::~Application()
 	{
-#ifndef EMSCRIPTEN
 		ImGuiRenderer::Get().Clean();
-#endif
+
 		Renderer3D::Get().Clean();
 
 		Renderer2D::Get().Clean();
@@ -111,7 +110,6 @@ namespace HBL2
 		spec.Height = 720;
 		m_FrameBuffer = FrameBuffer::Create(spec);
 #endif
-
 		Input::SetWindow(m_Window->GetHandle());
 
 		m_Specification.Context->OnAttach();
@@ -119,9 +117,7 @@ namespace HBL2
 		// Initialize the renderers.
 		Renderer2D::Get().Initialize(m_FrameBuffer);
 		Renderer3D::Get().Initialize(m_FrameBuffer);
-#ifndef EMSCRIPTEN
 		ImGuiRenderer::Get().Initialize(m_Window);
-#endif
 
 		m_Specification.Context->OnCreate();
 
@@ -137,11 +133,9 @@ namespace HBL2
 			Renderer2D::Get().Submit();
 			Renderer2D::Get().EndFrame();
 
-#ifndef EMSCRIPTEN
 			ImGuiRenderer::Get().BeginFrame();
 			m_Specification.Context->OnGuiRender(m_DeltaTime);
 			ImGuiRenderer::Get().EndFrame();
-#endif
 
 			EndFrame();
 		});
