@@ -37,7 +37,7 @@ namespace HBL2
 										* glm::scale(glm::mat4(1.0f), glm::vec3(transform.Scale.x, transform.Scale.y, 1.0f));
 					}
 
-					Renderer2D::Get().DrawQuad(m_BatchIndex, transform, 0.0f, sprite.Color);
+					Renderer2D::Get().DrawQuad(m_BatchIndex, transform, Texture::Get(sprite.TextureIndex)->GetSlot(), sprite.Color);
 				}
 			});
 	}

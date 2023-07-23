@@ -64,9 +64,14 @@ namespace HBL2
 #endif
 	}
 
-	uint32_t OpenGLTexture::GetTextureID()
+	uint32_t OpenGLTexture::GetID()
 	{
 		return m_TextureID;
+	}
+
+	uint32_t OpenGLTexture::GetSlot()
+	{
+		return m_SlotIndex;
 	}
 
 	float OpenGLTexture::GetWidth()

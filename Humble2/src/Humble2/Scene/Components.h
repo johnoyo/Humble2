@@ -26,6 +26,7 @@ namespace HBL2
 		struct Sprite
 		{
 			glm::vec4 Color = { 1.f, 1.f, 1.f, 1.f };
+			int TextureIndex = 0;
 			bool Static = false;
 
 			bool Enabled = true;

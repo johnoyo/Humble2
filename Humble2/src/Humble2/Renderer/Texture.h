@@ -24,6 +24,13 @@ namespace HBL2
 
 		virtual void Bind() = 0;
 		virtual void UnBind() = 0;
+
+		virtual uint32_t GetID() = 0;
+		virtual uint32_t GetSlot() = 0;
+
+		virtual float GetWidth() = 0;
+		virtual float GetHeight() = 0;
+
 	private:
 		static std::unordered_map<std::string, Texture*> s_TextureLib;
 	};

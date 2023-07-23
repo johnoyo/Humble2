@@ -23,9 +23,11 @@ namespace HBL2
 		virtual void Bind() override;
 		virtual void UnBind() override;
 
-		uint32_t GetTextureID();
-		float GetWidth();
-		float GetHeight();
+		virtual uint32_t GetID() override;
+		virtual uint32_t GetSlot() override;
+
+		virtual float GetWidth() override;
+		virtual float GetHeight() override;
 	private:
 		std::string m_Path;
 		uint32_t m_SlotIndex;

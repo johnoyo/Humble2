@@ -3,7 +3,7 @@
 
 precision highp float;
 
-layout(location = 0) in vec4 a_Position;
+layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec4 a_Color;
 layout(location = 2) in vec2 a_TextureCoord;
 layout(location = 3) in float a_TextureID;
@@ -21,7 +21,7 @@ void main()
 	v_Color = a_Color;
 	v_TextureCoord = a_TextureCoord;
 	v_TextureID = a_TextureID;
-	gl_Position = u_VP * u_M * a_Position;
+    gl_Position = u_VP * u_M * vec4(a_Position, 1.0);
 }
 
 #shader fragment
@@ -55,7 +55,7 @@ uniform sampler2D u_Textures15;
 
 void main()
 {
-	int id = int(v_TextureID);
+    int id = int(v_TextureID + 0.1	);
 
 	vec4 texColor = v_Color;
 

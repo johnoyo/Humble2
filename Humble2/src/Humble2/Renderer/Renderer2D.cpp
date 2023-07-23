@@ -8,6 +8,7 @@ namespace HBL2
 		m_VertexArray->SetIndexBuffer(IndexBuffer::Create(MAX_BATCH_SIZE));
 
 		Texture::Load("")->Bind();
+		Texture::Load("assets/textures/Pixel-Art.png")->Bind();
 
 		m_QuadVertexPosition[0] = { -0.5f, 0.5f, 0.0f, 1.0f };
 		m_QuadVertexPosition[1] = { 0.5f,  0.5f, 0.0f, 1.0f };

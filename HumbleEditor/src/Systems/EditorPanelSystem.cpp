@@ -258,6 +258,7 @@ namespace HBL2Editor
 
 					ImGui::Checkbox("Enabled", &sprite.Enabled);
 					ImGui::Checkbox("Static", &sprite.Static);
+					ImGui::InputInt("Texture", &sprite.TextureIndex);
 					ImGui::ColorEdit4("Color", glm::value_ptr(sprite.Color));
 
 					ImGui::TreePop();
