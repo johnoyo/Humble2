@@ -288,6 +288,16 @@ namespace HBL2Editor
 		{
 			if (ImGui::BeginMenu("File"))
 			{
+				if (ImGui::MenuItem("Save"))
+				{
+				}
+				if (ImGui::MenuItem("Build(Windows)"))
+				{
+				}
+				if (ImGui::MenuItem("Build(Web)"))
+				{
+					system("C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\Scripts\\emBuildAll.bat");
+				}
 				if (ImGui::MenuItem("Close"))
 				{
 					// m_Window->Close();
