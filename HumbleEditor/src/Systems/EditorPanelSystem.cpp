@@ -114,6 +114,7 @@ namespace HBL2Editor
 
 	void EditorPanelSystem::DrawHierachyPanel(HBL2::Scene* context)
 	{
+		// Pop up menu when right clicking the hierachy panel.
 		if (ImGui::BeginPopupContextWindow())
 		{
 			if (ImGui::MenuItem("Create Empty"))
@@ -167,11 +168,27 @@ namespace HBL2Editor
 			ImGui::EndPopup();
 		}
 
+		// Iterate over all editor visible entities and draw the to the hierachy panel.
 		context->GetRegistry()
 			.group<Component::EditorVisible>(entt::get<HBL2::Component::Tag>)
-			.each([&](Component::EditorVisible& editorVisible, HBL2::Component::Tag& tag)
+			.each([&](entt::entity entity, Component::EditorVisible& editorVisible, HBL2::Component::Tag& tag)
 			{
-				ImGui::Text("%s", tag.Name.c_str());
+				if (editorVisible.Enabled)
+				{
+					ImGuiTreeNodeFlags flags = ((editorVisible.Selected && editorVisible.EntityID == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+					bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.Name.c_str());
+
+					if (ImGui::IsItemClicked())
+					{
+						editorVisible.Selected = true;
+						editorVisible.EntityID = entity;
+					}
+
+					if (opened)
+					{
+						ImGui::TreePop();
+					}
+				}
 			});
 	}
 

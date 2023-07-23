@@ -6,7 +6,10 @@ namespace HBL2Editor
 	{
 		struct EditorVisible
 		{
-			bool Selected = false;
+			static inline bool Selected = false;
+			static inline entt::entity EntityID = entt::null;
+
+			bool Enabled = true;
 		};
 
 		struct EditorPanel
