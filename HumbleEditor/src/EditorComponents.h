@@ -7,7 +7,7 @@ namespace HBL2Editor
 		struct EditorVisible
 		{
 			static inline bool Selected = false;
-			static inline entt::entity EntityID = entt::null;
+			static inline entt::entity SelectedEntity = entt::null;
 
 			bool Enabled = true;
 		};
@@ -31,6 +31,7 @@ namespace HBL2Editor
 
 			enum class Panel 
 			{
+				None,
 				Hierachy,
 				Properties,
 				ContentBrowser,
@@ -39,7 +40,7 @@ namespace HBL2Editor
 				Menubar,
 				Stats,
 				Custom
-			} Type;
+			} Type = Panel::None;
 
 			bool Enabled = true;
 		};

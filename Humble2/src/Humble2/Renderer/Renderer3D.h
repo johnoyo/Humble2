@@ -29,8 +29,8 @@ namespace HBL2
 		void Initialize(FrameBuffer* framebuffer);
 
 		void BeginFrame();
-		void SetupMesh(Component::Transform& transform, Component::Mesh& mesh, glm::mat4& mvp);
-		void SubmitMesh(Component::Transform& transform, Component::Mesh& mesh);
+		void SetupMesh(Component::Transform& transform, Component::StaticMesh& mesh, glm::mat4& mvp);
+		void SubmitMesh(Component::Transform& transform, Component::StaticMesh& mesh);
 		void EndFrame();
 
 		void Clean();
@@ -38,7 +38,7 @@ namespace HBL2
 	private:
 		Renderer3D() {}
 
-		bool LoadFromObj(Component::Mesh& mesh);
+		bool LoadFromObj(Component::StaticMesh& mesh);
 		FrameBuffer* m_FrameBuffer = nullptr;
 		std::vector<std::string> m_Shaders;
 	};

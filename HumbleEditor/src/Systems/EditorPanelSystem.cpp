@@ -147,7 +147,7 @@ namespace HBL2Editor
 				context->GetComponent<HBL2::Component::Tag>(entity).Name = "Monkeh";
 				context->GetComponent<HBL2::Component::Transform>(entity).Scale = { 5.f, 5.f, 5.f };
 				context->AddComponent<Component::EditorVisible>(entity);
-				auto& mesh = context->AddComponent<HBL2::Component::Mesh>(entity);
+				auto& mesh = context->AddComponent<HBL2::Component::StaticMesh>(entity);
 				mesh.Path = "assets/meshes/monkey_smooth.obj";
 				mesh.ShaderName = "BasicMesh";
 			}
@@ -160,7 +160,7 @@ namespace HBL2Editor
 				context->GetComponent<HBL2::Component::Transform>(entity).Rotation = { 0.f, -90.f, 0.f };
 				context->GetComponent<HBL2::Component::Transform>(entity).Scale = { 10.f, 10.f, 10.f };
 				context->AddComponent<Component::EditorVisible>(entity);
-				auto& mesh = context->AddComponent<HBL2::Component::Mesh>(entity);
+				auto& mesh = context->AddComponent<HBL2::Component::StaticMesh>(entity);
 				mesh.Path = "assets/meshes/monkey_smooth.obj";
 				mesh.ShaderName = "BasicMesh";
 			}
@@ -175,13 +175,13 @@ namespace HBL2Editor
 			{
 				if (editorVisible.Enabled)
 				{
-					ImGuiTreeNodeFlags flags = ((editorVisible.Selected && editorVisible.EntityID == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+					ImGuiTreeNodeFlags flags = ((editorVisible.Selected && editorVisible.SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
 					bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.Name.c_str());
 
 					if (ImGui::IsItemClicked())
 					{
 						editorVisible.Selected = true;
-						editorVisible.EntityID = entity;
+						editorVisible.SelectedEntity = entity;
 					}
 
 					if (opened)
@@ -190,10 +190,95 @@ namespace HBL2Editor
 					}
 				}
 			});
+
+		// Clear selection if clicked on empty space inside hierachy panel.
+		if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+		{
+			Component::EditorVisible::SelectedEntity = entt::null;
+			Component::EditorVisible::Selected = false;
+		}
 	}
 
 	void EditorPanelSystem::DrawPropertiesPanel(HBL2::Scene* context)
 	{
+		if (Component::EditorVisible::SelectedEntity != entt::null)
+		{
+			if (context->HasComponent<HBL2::Component::Tag>(Component::EditorVisible::SelectedEntity))
+			{
+				auto& tag = context->GetComponent<HBL2::Component::Tag>(Component::EditorVisible::SelectedEntity).Name;
+
+				char buffer[256];
+				memset(buffer, 0, sizeof(buffer));
+				strcpy_s(buffer, sizeof(buffer), tag.c_str());
+
+				if (ImGui::InputText("Tag", buffer, sizeof(buffer)))
+				{
+					tag = std::string(buffer);
+				}
+			}
+
+			if (context->HasComponent<HBL2::Component::Transform>(Component::EditorVisible::SelectedEntity))
+			{
+				ImGui::Separator();
+
+				if (ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Transform).hash_code(), ImGuiTreeNodeFlags_DefaultOpen, "Transform"))
+				{
+					auto& transform = context->GetComponent<HBL2::Component::Transform>(Component::EditorVisible::SelectedEntity);
+
+					ImGui::DragFloat3("Translation", glm::value_ptr(transform.Position), 0.25f);
+					ImGui::DragFloat3("Rotation", glm::value_ptr(transform.Rotation), 0.25f);
+					ImGui::DragFloat3("Scale", glm::value_ptr(transform.Scale), 0.25f);
+
+					ImGui::TreePop();
+				}
+			}
+
+			if (context->HasComponent<HBL2::Component::Camera>(Component::EditorVisible::SelectedEntity))
+			{
+				ImGui::Separator();
+
+				if (ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Camera).hash_code(), ImGuiTreeNodeFlags_DefaultOpen, "Camera"))
+				{
+					auto& camera = context->GetComponent<HBL2::Component::Camera>(Component::EditorVisible::SelectedEntity);
+
+					ImGui::Checkbox("Enabled", &camera.Enabled);
+					ImGui::Checkbox("Primary camera", &camera.Primary);
+
+					ImGui::TreePop();
+				}
+			}
+
+			if (context->HasComponent<HBL2::Component::Sprite>(Component::EditorVisible::SelectedEntity))
+			{
+				ImGui::Separator();
+
+				if (ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Sprite).hash_code(), ImGuiTreeNodeFlags_DefaultOpen, "Sprite"))
+				{
+					auto& sprite = context->GetComponent<HBL2::Component::Sprite>(Component::EditorVisible::SelectedEntity);
+
+					ImGui::Checkbox("Enabled", &sprite.Enabled);
+					ImGui::Checkbox("Static", &sprite.Static);
+					ImGui::ColorEdit4("Color", glm::value_ptr(sprite.Color));
+
+					ImGui::TreePop();
+				}
+			}
+
+			if (context->HasComponent<HBL2::Component::StaticMesh>(Component::EditorVisible::SelectedEntity))
+			{
+				ImGui::Separator();
+
+				if (ImGui::TreeNodeEx((void*)typeid(HBL2::Component::StaticMesh).hash_code(), ImGuiTreeNodeFlags_DefaultOpen, "Static Mesh"))
+				{
+					auto& mesh = context->GetComponent<HBL2::Component::StaticMesh>(Component::EditorVisible::SelectedEntity);
+
+					ImGui::Checkbox("Enabled", &mesh.Enabled);
+					ImGui::Checkbox("Static", &mesh.Static);
+
+					ImGui::TreePop();
+				}
+			}
+		}
 	}
 
 	void EditorPanelSystem::DrawToolBarPanel(HBL2::Scene* context)
@@ -203,7 +288,9 @@ namespace HBL2Editor
 			if (ImGui::BeginMenu("File"))
 			{
 				if (ImGui::MenuItem("Close"))
-					;//m_Window->Close();
+				{
+					// m_Window->Close();
+				}
 				ImGui::EndMenu();
 			}
 

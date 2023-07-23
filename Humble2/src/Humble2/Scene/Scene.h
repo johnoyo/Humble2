@@ -32,6 +32,12 @@ namespace HBL2
 		}
 
 		template<typename T>
+		bool HasComponent(entt::entity entity)
+		{
+			return m_Registry.try_get<T>(entity) == nullptr ? false : true;
+		}
+
+		template<typename T>
 		T& AddComponent(entt::entity entity)
 		{
 			return m_Registry.emplace<T>(entity);

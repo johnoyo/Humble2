@@ -26,11 +26,12 @@ namespace HBL2
 		struct Sprite
 		{
 			glm::vec4 Color = { 1.f, 1.f, 1.f, 1.f };
+			bool Static = false;
 
 			bool Enabled = true;
 		};
 
-		struct Mesh
+		struct StaticMesh
 		{
 			std::vector<Buffer> Data;
 

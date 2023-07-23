@@ -41,7 +41,7 @@ namespace HBL2Editor
 #ifndef EMSCRIPTEN
 		ActiveScene->AddComponent<Component::EditorVisible>(monkeh);
 #endif
-		auto& mesh = ActiveScene->AddComponent<HBL2::Component::Mesh>(monkeh);
+		auto& mesh = ActiveScene->AddComponent<HBL2::Component::StaticMesh>(monkeh);
 		mesh.Path = "assets/meshes/monkey_smooth.obj";
 		mesh.ShaderName = "BasicMesh";
 	}

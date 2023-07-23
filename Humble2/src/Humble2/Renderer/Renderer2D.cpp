@@ -19,11 +19,7 @@ namespace HBL2
 		m_QuadTextureCoordinates[2] = { 1.0f, 0.0f };
 		m_QuadTextureCoordinates[3] = { 0.0f, 0.0f };
 
-		FrameBufferSpecification spec;
-		spec.Width = 1280;
-		spec.Height = 720;
-
-		m_FrameBuffer = framebuffer; // FrameBuffer::Create(spec);
+		m_FrameBuffer = framebuffer;
 	}
 
 	void Renderer2D::BeginFrame()
@@ -39,7 +35,9 @@ namespace HBL2
 		glm::mat4 mvp = glm::mat4(0.f);
 
 		if (Context::ActiveScene->MainCamera != entt::null)
+		{
 			mvp = Context::ActiveScene->GetComponent<Component::Camera>(Context::ActiveScene->MainCamera).ViewProjectionMatrix;
+		}
 
 		Texture::ForEach([](Texture* texture)
 		{
@@ -137,34 +135,30 @@ namespace HBL2
 		return m_VertexArray->GetVertexBuffers().size() - 1;
 	}
 
-	void Renderer2D::DrawQuad(uint32_t batchIndex, glm::vec3& position, float rotation, glm::vec3& scale, float textureID, glm::vec4 color)
+	void Renderer2D::DrawQuad(uint32_t batchIndex, Component::Transform& transform, float textureID, glm::vec4 color)
 	{
-		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
-			* glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f))
-			* glm::scale(glm::mat4(1.0f), glm::vec3(scale.x, scale.y, 1.0f));
-
 		Buffer* buffer = m_VertexArray->GetVertexBuffers()[batchIndex]->GetHandle();
 		uint32_t& batchSize = m_VertexArray->GetVertexBuffers()[batchIndex]->BatchSize;
 
-		buffer[batchSize].Position = transform * m_QuadVertexPosition[0];
+		buffer[batchSize].Position = transform.Matrix * m_QuadVertexPosition[0];
 		buffer[batchSize].Color = color;
 		buffer[batchSize].TextureCoord = m_QuadTextureCoordinates[0];
 		buffer[batchSize].TextureID = textureID;
 		batchSize++;
 
-		buffer[batchSize].Position = transform * m_QuadVertexPosition[1];
+		buffer[batchSize].Position = transform.Matrix * m_QuadVertexPosition[1];
 		buffer[batchSize].Color = color;
 		buffer[batchSize].TextureCoord = m_QuadTextureCoordinates[1];
 		buffer[batchSize].TextureID = textureID;
 		batchSize++;
 
-		buffer[batchSize].Position = transform * m_QuadVertexPosition[2];
+		buffer[batchSize].Position = transform.Matrix * m_QuadVertexPosition[2];
 		buffer[batchSize].Color = color;
 		buffer[batchSize].TextureCoord = m_QuadTextureCoordinates[2];
 		buffer[batchSize].TextureID = textureID;
 		batchSize++;
 
-		buffer[batchSize].Position = transform * m_QuadVertexPosition[3];
+		buffer[batchSize].Position = transform.Matrix * m_QuadVertexPosition[3];
 		buffer[batchSize].Color = color;
 		buffer[batchSize].TextureCoord = m_QuadTextureCoordinates[3];
 		buffer[batchSize].TextureID = textureID;

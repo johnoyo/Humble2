@@ -20,7 +20,7 @@ namespace HBL2
 		RenderCommand::ClearScreen({ 0.2f, 0.2f, 0.2f, 1.f });
 	}
 
-	void Renderer3D::SetupMesh(Component::Transform& transform, Component::Mesh& mesh, glm::mat4& mvp)
+	void Renderer3D::SetupMesh(Component::Transform& transform, Component::StaticMesh& mesh, glm::mat4& mvp)
 	{
 		if (!LoadFromObj(mesh))
 			return;
@@ -73,7 +73,7 @@ namespace HBL2
 		m_Shaders.push_back(mesh.ShaderName);
 	}
 
-	void Renderer3D::SubmitMesh(Component::Transform& transform, Component::Mesh& mesh)
+	void Renderer3D::SubmitMesh(Component::Transform& transform, Component::StaticMesh& mesh)
 	{
 		glm::mat4 mvp = glm::mat4(0.f);
 
@@ -122,7 +122,7 @@ namespace HBL2
 	{
 	}
 
-	bool Renderer3D::LoadFromObj(Component::Mesh& mesh)
+	bool Renderer3D::LoadFromObj(Component::StaticMesh& mesh)
 	{
 		//attrib will contain the vertex arrays of the file
 		tinyobj::attrib_t attrib;
