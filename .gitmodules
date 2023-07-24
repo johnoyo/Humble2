@@ -8,3 +8,6 @@
 [submodule "Dependencies/GLM"]
 	path = Dependencies/GLM
 	url = https://github.com/g-truc/glm.git
+[submodule "Dependencies/YAML-Cpp/yaml-cpp"]
+	path = Dependencies/YAML-Cpp/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git

@@ -16,6 +16,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.architecture}"
 
 group "Dependencies"
     include "Dependencies/ImGui"
+    include "Dependencies/YAML-Cpp"
 group ""
 
 group "Core"

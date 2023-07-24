@@ -33,6 +33,7 @@ project "Humble2"
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
         "../Dependencies/GLM",
+        "../Dependencies/YAML-Cpp/yaml-cpp/include",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include"
     }
     
@@ -47,7 +48,8 @@ project "Humble2"
         "glew32s.lib",
         "glfw3.lib",
         "opengl32.lib",
-        "ImGui"
+        "ImGui",
+        "YAML-Cpp"
     }
     
     filter "system:windows"

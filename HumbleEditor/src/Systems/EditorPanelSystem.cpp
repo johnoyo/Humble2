@@ -229,6 +229,7 @@ namespace HBL2Editor
 
 		if (Component::EditorVisible::SelectedEntity != entt::null)
 		{
+			// Tag component.
 			if (context->HasComponent<HBL2::Component::Tag>(Component::EditorVisible::SelectedEntity))
 			{
 				auto& tag = context->GetComponent<HBL2::Component::Tag>(Component::EditorVisible::SelectedEntity).Name;
@@ -245,6 +246,7 @@ namespace HBL2Editor
 				ImGui::Separator();
 			}
 
+			// Transform component.
 			if (context->HasComponent<HBL2::Component::Transform>(Component::EditorVisible::SelectedEntity))
 			{
 				if (ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Transform).hash_code(), treeNodeFlags, "Transform"))
@@ -261,6 +263,7 @@ namespace HBL2Editor
 				ImGui::Separator();
 			}
 
+			// Camera component.
 			if (context->HasComponent<HBL2::Component::Camera>(Component::EditorVisible::SelectedEntity))
 			{
 				bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Camera).hash_code(), treeNodeFlags, "Camera");
@@ -292,6 +295,7 @@ namespace HBL2Editor
 				}
 			}
 
+			// Sprite component.
 			if (context->HasComponent<HBL2::Component::Sprite>(Component::EditorVisible::SelectedEntity))
 			{
 				bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Sprite).hash_code(), treeNodeFlags, "Sprite");
@@ -325,6 +329,7 @@ namespace HBL2Editor
 				}
 			}
 
+			// StaticMesh component.
 			if (context->HasComponent<HBL2::Component::StaticMesh>(Component::EditorVisible::SelectedEntity))
 			{
 				bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::StaticMesh).hash_code(), treeNodeFlags, "Static Mesh");
@@ -356,6 +361,7 @@ namespace HBL2Editor
 				}
 			}
 
+			// Add component button.
 			if (ImGui::Button("Add Component"))
 			{
 				ImGui::OpenPopup("AddComponent");

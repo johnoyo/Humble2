@@ -28,6 +28,7 @@ project "HumbleEditor"
         "../Dependencies/GLEW/include",
         "../Dependencies/stb_image",
         "../Dependencies/GLM",
+        "../Dependencies/YAML-Cpp/yaml-cpp/include",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include"
     }
 
