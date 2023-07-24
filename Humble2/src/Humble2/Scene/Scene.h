@@ -25,6 +25,11 @@ namespace HBL2
 			return entity;
 		}
 
+		void DestroyEntity(entt::entity entity)
+		{
+			m_Registry.destroy(entity);
+		}
+
 		template<typename T>
 		T& GetComponent(entt::entity entity)
 		{
@@ -41,6 +46,12 @@ namespace HBL2
 		T& AddComponent(entt::entity entity)
 		{
 			return m_Registry.emplace<T>(entity);
+		}
+
+		template<typename T>
+		void RemoveComponent(entt::entity entity)
+		{
+			m_Registry.remove<T>(entity);
 		}
 
 		void RegisterSystem(ISystem* system)

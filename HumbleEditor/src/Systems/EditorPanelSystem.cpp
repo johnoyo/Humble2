@@ -114,8 +114,8 @@ namespace HBL2Editor
 
 	void EditorPanelSystem::DrawHierachyPanel(HBL2::Scene* context)
 	{
-		// Pop up menu when right clicking the hierachy panel.
-		if (ImGui::BeginPopupContextWindow())
+		// Pop up menu when right clicking on an empty space inside the hierachy panel.
+		if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
 		{
 			if (ImGui::MenuItem("Create Empty"))
 			{
@@ -168,6 +168,8 @@ namespace HBL2Editor
 			ImGui::EndPopup();
 		}
 
+		entt::entity entityToBeDeleted = entt::null;
+
 		// Iterate over all editor visible entities and draw the to the hierachy panel.
 		context->GetRegistry()
 			.group<Component::EditorVisible>(entt::get<HBL2::Component::Tag>)
@@ -184,12 +186,34 @@ namespace HBL2Editor
 						editorVisible.SelectedEntity = entity;
 					}
 
+					if (ImGui::BeginPopupContextItem())
+					{
+						if (ImGui::MenuItem("Destroy"))
+						{
+							// Defer the deletion at the end of the function, for now just mark the entity.
+							entityToBeDeleted = entity;
+						}
+
+						ImGui::EndPopup();
+					}
+
 					if (opened)
 					{
 						ImGui::TreePop();
 					}
 				}
 			});
+
+		if (entityToBeDeleted != entt::null)
+		{
+			// Destroy entity and clear entityToBeDeleted value.
+			m_Context->DestroyEntity(entityToBeDeleted);
+			entityToBeDeleted = entt::null;
+
+			// Clear currently selected entity.
+			Component::EditorVisible::SelectedEntity = entt::null;
+			Component::EditorVisible::Selected = false;
+		}
 
 		// Clear selection if clicked on empty space inside hierachy panel.
 		if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
@@ -201,6 +225,8 @@ namespace HBL2Editor
 
 	void EditorPanelSystem::DrawPropertiesPanel(HBL2::Scene* context)
 	{
+		const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowItemOverlap;
+
 		if (Component::EditorVisible::SelectedEntity != entt::null)
 		{
 			if (context->HasComponent<HBL2::Component::Tag>(Component::EditorVisible::SelectedEntity))
@@ -215,13 +241,13 @@ namespace HBL2Editor
 				{
 					tag = std::string(buffer);
 				}
+
+				ImGui::Separator();
 			}
 
 			if (context->HasComponent<HBL2::Component::Transform>(Component::EditorVisible::SelectedEntity))
 			{
-				ImGui::Separator();
-
-				if (ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Transform).hash_code(), ImGuiTreeNodeFlags_DefaultOpen, "Transform"))
+				if (ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Transform).hash_code(), treeNodeFlags, "Transform"))
 				{
 					auto& transform = context->GetComponent<HBL2::Component::Transform>(Component::EditorVisible::SelectedEntity);
 
@@ -231,13 +257,24 @@ namespace HBL2Editor
 
 					ImGui::TreePop();
 				}
+
+				ImGui::Separator();
 			}
 
 			if (context->HasComponent<HBL2::Component::Camera>(Component::EditorVisible::SelectedEntity))
 			{
-				ImGui::Separator();
+				bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Camera).hash_code(), treeNodeFlags, "Camera");
 
-				if (ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Camera).hash_code(), ImGuiTreeNodeFlags_DefaultOpen, "Camera"))
+				ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
+
+				bool removeComponent = false;
+
+				if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+				{
+					removeComponent = true;
+				}
+
+				if (opened)
 				{
 					auto& camera = context->GetComponent<HBL2::Component::Camera>(Component::EditorVisible::SelectedEntity);
 
@@ -246,13 +283,29 @@ namespace HBL2Editor
 
 					ImGui::TreePop();
 				}
+
+				ImGui::Separator();
+
+				if (removeComponent)
+				{
+					context->RemoveComponent<HBL2::Component::Camera>(Component::EditorVisible::SelectedEntity);
+				}
 			}
 
 			if (context->HasComponent<HBL2::Component::Sprite>(Component::EditorVisible::SelectedEntity))
 			{
-				ImGui::Separator();
+				bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Sprite).hash_code(), treeNodeFlags, "Sprite");
 
-				if (ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Sprite).hash_code(), ImGuiTreeNodeFlags_DefaultOpen, "Sprite"))
+				ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
+
+				bool removeComponent = false;
+
+				if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+				{
+					removeComponent = true;
+				}
+
+				if (opened)
 				{
 					auto& sprite = context->GetComponent<HBL2::Component::Sprite>(Component::EditorVisible::SelectedEntity);
 
@@ -263,13 +316,29 @@ namespace HBL2Editor
 
 					ImGui::TreePop();
 				}
+
+				ImGui::Separator();
+
+				if (removeComponent)
+				{
+					context->RemoveComponent<HBL2::Component::Sprite>(Component::EditorVisible::SelectedEntity);
+				}
 			}
 
 			if (context->HasComponent<HBL2::Component::StaticMesh>(Component::EditorVisible::SelectedEntity))
 			{
-				ImGui::Separator();
+				bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::StaticMesh).hash_code(), treeNodeFlags, "Static Mesh");
 
-				if (ImGui::TreeNodeEx((void*)typeid(HBL2::Component::StaticMesh).hash_code(), ImGuiTreeNodeFlags_DefaultOpen, "Static Mesh"))
+				ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
+
+				bool removeComponent = false;
+
+				if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+				{
+					removeComponent = true;
+				}
+
+				if (opened)
 				{
 					auto& mesh = context->GetComponent<HBL2::Component::StaticMesh>(Component::EditorVisible::SelectedEntity);
 
@@ -278,6 +347,41 @@ namespace HBL2Editor
 
 					ImGui::TreePop();
 				}
+
+				ImGui::Separator();
+
+				if (removeComponent)
+				{
+					context->RemoveComponent<HBL2::Component::StaticMesh>(Component::EditorVisible::SelectedEntity);
+				}
+			}
+
+			if (ImGui::Button("Add Component"))
+			{
+				ImGui::OpenPopup("AddComponent");
+			}
+
+			if (ImGui::BeginPopup("AddComponent"))
+			{
+				if (ImGui::MenuItem("Sprite"))
+				{
+					context->AddComponent<HBL2::Component::Sprite>(Component::EditorVisible::SelectedEntity);
+					ImGui::CloseCurrentPopup();
+				}
+
+				if (ImGui::MenuItem("StaticMesh"))
+				{
+					context->AddComponent<HBL2::Component::StaticMesh>(Component::EditorVisible::SelectedEntity);
+					ImGui::CloseCurrentPopup();
+				}
+
+				if (ImGui::MenuItem("Camera"))
+				{
+					context->AddComponent<HBL2::Component::Camera>(Component::EditorVisible::SelectedEntity);
+					ImGui::CloseCurrentPopup();
+				}
+
+				ImGui::EndPopup();
 			}
 		}
 	}
