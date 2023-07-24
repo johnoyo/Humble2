@@ -5,6 +5,7 @@ Humble2 is a simple 3D & 2D OpenGL game engine with an ECS architecture.
 Features:
 ---------
 
+- UI Editor for creating applications / games.
 - WebGL support with emscripten to build games for the browser.
 - An ECS architecture using the [EnTT](https://github.com/skypjack/entt) library.
 
