@@ -32,7 +32,7 @@ namespace HBL2
 					{
 						transform.QRotation = glm::quat(transform.Rotation);
 
-						transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Position)
+						transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation)
 										* glm::toMat4(transform.QRotation)
 										* glm::scale(glm::mat4(1.0f), glm::vec3(transform.Scale.x, transform.Scale.y, 1.0f));
 					}

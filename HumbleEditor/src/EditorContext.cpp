@@ -10,40 +10,41 @@ namespace HBL2Editor
 		{
 			// No other scene exists in project, so create a new one from the empty scene.
 			ActiveScene = HBL2::Scene::Copy(EmptyScene);
-
-#ifndef EMSCRIPTEN
-			// Attach editor systems.
-			ActiveScene->RegisterSystem(new EditorPanelSystem);
-			ActiveScene->RegisterSystem(new EditorCameraSystem);
-#endif
 		}
+#ifndef EMSCRIPTEN
+		// Attach editor systems.
+		ActiveScene->RegisterSystem(new EditorPanelSystem);
+		ActiveScene->RegisterSystem(new EditorCameraSystem);
+#endif
 #ifndef EMSCRIPTEN
 		// Editor camera set up.
 		auto editorCameraEntity = ActiveScene->CreateEntity();
-		ActiveScene->GetComponent<HBL2::Component::Tag>(editorCameraEntity).Name = "EditorCamera";
+		ActiveScene->GetComponent<HBL2::Component::Tag>(editorCameraEntity).Name = "Hidden";
 		ActiveScene->AddComponent<Component::EditorCamera>(editorCameraEntity);
 		ActiveScene->AddComponent<HBL2::Component::Camera>(editorCameraEntity).Enabled = true;
-		ActiveScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Position.z = 100.f;
+		ActiveScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 100.f;
 #endif
+#ifdef false
 		// Runtime camera setup.
 		auto camera = ActiveScene->CreateEntity();
 		ActiveScene->GetComponent<HBL2::Component::Tag>(camera).Name = "Camera";
-#ifndef EMSCRIPTEN
-		ActiveScene->AddComponent<Component::EditorVisible>(camera);
-#endif
+	#ifndef EMSCRIPTEN
+		ActiveScene->AddComponent<HBL2::Component::EditorVisible>(camera);
+	#endif
 		ActiveScene->AddComponent<HBL2::Component::Camera>(camera).Enabled = true;
-		ActiveScene->GetComponent<HBL2::Component::Transform>(camera).Position.z = 100.f;
+		ActiveScene->GetComponent<HBL2::Component::Transform>(camera).Translation.z = 100.f;
 
 		// Add a monkeh.
 		auto monkeh = ActiveScene->CreateEntity();
 		ActiveScene->GetComponent<HBL2::Component::Tag>(monkeh).Name = "Monkeh";
 		ActiveScene->GetComponent<HBL2::Component::Transform>(monkeh).Scale = { 5.f, 5.f, 5.f };
-#ifndef EMSCRIPTEN
-		ActiveScene->AddComponent<Component::EditorVisible>(monkeh);
-#endif
+	#ifndef EMSCRIPTEN
+		ActiveScene->AddComponent<HBL2::Component::EditorVisible>(monkeh);
+	#endif
 		auto& mesh = ActiveScene->AddComponent<HBL2::Component::StaticMesh>(monkeh);
 		mesh.Path = "assets/meshes/monkey_smooth.obj";
 		mesh.ShaderName = "BasicMesh";
+#endif
 	}
 
 	void EditorContext::OnCreate()

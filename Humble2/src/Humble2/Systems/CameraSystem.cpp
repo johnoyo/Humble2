@@ -15,7 +15,7 @@ namespace HBL2
 				{
 					transform.QRotation = glm::quat(transform.Rotation);
 
-					transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Position) * glm::toMat4(transform.QRotation);
+					transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) * glm::toMat4(transform.QRotation);
 
 					camera.View = glm::inverse(transform.Matrix);
 
@@ -39,7 +39,7 @@ namespace HBL2
 					{
 						transform.QRotation = glm::quat(transform.Rotation);
 
-						transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Position) * glm::toMat4(transform.QRotation);
+						transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) * glm::toMat4(transform.QRotation);
 
 						camera.View = glm::inverse(transform.Matrix);
 

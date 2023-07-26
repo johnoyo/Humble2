@@ -15,7 +15,7 @@ namespace HBL2Editor
 			{
 				if (editorCamera.Enabled)
 				{
-					editorCamera.Distance = transform.Position.z;
+					editorCamera.Distance = transform.Translation.z;
 				}
 			});
 	}
@@ -71,7 +71,7 @@ namespace HBL2Editor
 						}
 					}
 
-					transform.Position = CalculatePosition(editorCamera.FocalPoint, editorCamera.Distance, editorCamera.Yaw, editorCamera.Pitch);
+					transform.Translation = CalculatePosition(editorCamera.FocalPoint, editorCamera.Distance, editorCamera.Yaw, editorCamera.Pitch);
 					transform.Rotation = { -editorCamera.Pitch, -editorCamera.Yaw, 0.f };
 				}
 			});

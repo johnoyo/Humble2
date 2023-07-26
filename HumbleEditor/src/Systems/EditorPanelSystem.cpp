@@ -9,6 +9,7 @@ namespace HBL2Editor
 		{
 			// Hierachy panel.
 			auto hierachyPanel = m_Context->CreateEntity();
+			m_Context->GetComponent<HBL2::Component::Tag>(hierachyPanel).Name = "Hidden";
 			auto& panel = m_Context->AddComponent<Component::EditorPanel>(hierachyPanel);
 			panel.Name = "Hierachy";
 			panel.Type = Component::EditorPanel::Panel::Hierachy;
@@ -17,6 +18,7 @@ namespace HBL2Editor
 		{
 			// Properties panel.
 			auto propertiesPanel = m_Context->CreateEntity();
+			m_Context->GetComponent<HBL2::Component::Tag>(propertiesPanel).Name = "Hidden";
 			auto& panel = m_Context->AddComponent<Component::EditorPanel>(propertiesPanel);
 			panel.Name = "Properties";
 			panel.Type = Component::EditorPanel::Panel::Properties;
@@ -25,6 +27,7 @@ namespace HBL2Editor
 		{
 			// Menubar panel.
 			auto menubarPanel = m_Context->CreateEntity();
+			m_Context->GetComponent<HBL2::Component::Tag>(menubarPanel).Name = "Hidden";
 			auto& panel = m_Context->AddComponent<Component::EditorPanel>(menubarPanel);
 			panel.Name = "Menubar";
 			panel.Type = Component::EditorPanel::Panel::Menubar;
@@ -34,6 +37,7 @@ namespace HBL2Editor
 		{
 			// Console panel.
 			auto consolePanel = m_Context->CreateEntity();
+			m_Context->GetComponent<HBL2::Component::Tag>(consolePanel).Name = "Hidden";
 			auto& panel = m_Context->AddComponent<Component::EditorPanel>(consolePanel);
 			panel.Name = "Console";
 			panel.Type = Component::EditorPanel::Panel::Console;
@@ -42,6 +46,7 @@ namespace HBL2Editor
 		{
 			// Viewport panel.
 			auto viewportPanel = m_Context->CreateEntity();
+			m_Context->GetComponent<HBL2::Component::Tag>(viewportPanel).Name = "Hidden";
 			auto& panel = m_Context->AddComponent<Component::EditorPanel>(viewportPanel);
 			panel.Name = "Viewport";
 			panel.Type = Component::EditorPanel::Panel::Viewport;
@@ -120,15 +125,15 @@ namespace HBL2Editor
 			if (ImGui::MenuItem("Create Empty"))
 			{
 				auto entity = m_Context->CreateEntity();
-				context->AddComponent<Component::EditorVisible>(entity);
+				context->AddComponent<HBL2::Component::EditorVisible>(entity);
 			}
 
 			if (ImGui::MenuItem("Create Sprite"))
 			{
 				auto entity = context->CreateEntity();
 				context->GetComponent<HBL2::Component::Tag>(entity).Name = "Sprite";
-				context->GetComponent<HBL2::Component::Transform>(entity).Position = { 0.f, 15.f, 0.f };
-				context->AddComponent<Component::EditorVisible>(entity);
+				context->GetComponent<HBL2::Component::Transform>(entity).Translation = { 0.f, 15.f, 0.f };
+				context->AddComponent<HBL2::Component::EditorVisible>(entity);
 				context->AddComponent<HBL2::Component::Sprite>(entity);
 			}
 
@@ -136,9 +141,9 @@ namespace HBL2Editor
 			{
 				auto entity = context->CreateEntity();
 				context->GetComponent<HBL2::Component::Tag>(entity).Name = "Camera";
-				context->AddComponent<Component::EditorVisible>(entity);
+				context->AddComponent<HBL2::Component::EditorVisible>(entity);
 				context->AddComponent<HBL2::Component::Camera>(entity).Enabled = true;
-				context->GetComponent<HBL2::Component::Transform>(entity).Position.z = 100.f;
+				context->GetComponent<HBL2::Component::Transform>(entity).Translation.z = 100.f;
 			}
 
 			if (ImGui::MenuItem("Create Monkeh"))
@@ -146,7 +151,7 @@ namespace HBL2Editor
 				auto entity = context->CreateEntity();
 				context->GetComponent<HBL2::Component::Tag>(entity).Name = "Monkeh";
 				context->GetComponent<HBL2::Component::Transform>(entity).Scale = { 5.f, 5.f, 5.f };
-				context->AddComponent<Component::EditorVisible>(entity);
+				context->AddComponent<HBL2::Component::EditorVisible>(entity);
 				auto& mesh = context->AddComponent<HBL2::Component::StaticMesh>(entity);
 				mesh.Path = "assets/meshes/monkey_smooth.obj";
 				mesh.ShaderName = "BasicMesh";
@@ -156,10 +161,10 @@ namespace HBL2Editor
 			{
 				auto entity = context->CreateEntity();
 				context->GetComponent<HBL2::Component::Tag>(entity).Name = "Monkeh2";
-				context->GetComponent<HBL2::Component::Transform>(entity).Position = { 25.f, 0.f, 0.f };
+				context->GetComponent<HBL2::Component::Transform>(entity).Translation = { 25.f, 0.f, 0.f };
 				context->GetComponent<HBL2::Component::Transform>(entity).Rotation = { 0.f, -90.f, 0.f };
 				context->GetComponent<HBL2::Component::Transform>(entity).Scale = { 10.f, 10.f, 10.f };
-				context->AddComponent<Component::EditorVisible>(entity);
+				context->AddComponent<HBL2::Component::EditorVisible>(entity);
 				auto& mesh = context->AddComponent<HBL2::Component::StaticMesh>(entity);
 				mesh.Path = "assets/meshes/monkey_smooth.obj";
 				mesh.ShaderName = "BasicMesh";
@@ -172,8 +177,8 @@ namespace HBL2Editor
 
 		// Iterate over all editor visible entities and draw the to the hierachy panel.
 		context->GetRegistry()
-			.group<Component::EditorVisible>(entt::get<HBL2::Component::Tag>)
-			.each([&](entt::entity entity, Component::EditorVisible& editorVisible, HBL2::Component::Tag& tag)
+			.group<HBL2::Component::EditorVisible>(entt::get<HBL2::Component::Tag>)
+			.each([&](entt::entity entity, HBL2::Component::EditorVisible& editorVisible, HBL2::Component::Tag& tag)
 			{
 				if (editorVisible.Enabled)
 				{
@@ -211,15 +216,15 @@ namespace HBL2Editor
 			entityToBeDeleted = entt::null;
 
 			// Clear currently selected entity.
-			Component::EditorVisible::SelectedEntity = entt::null;
-			Component::EditorVisible::Selected = false;
+			HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+			HBL2::Component::EditorVisible::Selected = false;
 		}
 
 		// Clear selection if clicked on empty space inside hierachy panel.
 		if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
 		{
-			Component::EditorVisible::SelectedEntity = entt::null;
-			Component::EditorVisible::Selected = false;
+			HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+			HBL2::Component::EditorVisible::Selected = false;
 		}
 	}
 
@@ -227,12 +232,12 @@ namespace HBL2Editor
 	{
 		const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowItemOverlap;
 
-		if (Component::EditorVisible::SelectedEntity != entt::null)
+		if (HBL2::Component::EditorVisible::SelectedEntity != entt::null)
 		{
 			// Tag component.
-			if (context->HasComponent<HBL2::Component::Tag>(Component::EditorVisible::SelectedEntity))
+			if (context->HasComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity))
 			{
-				auto& tag = context->GetComponent<HBL2::Component::Tag>(Component::EditorVisible::SelectedEntity).Name;
+				auto& tag = context->GetComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity).Name;
 
 				char buffer[256];
 				memset(buffer, 0, sizeof(buffer));
@@ -247,13 +252,13 @@ namespace HBL2Editor
 			}
 
 			// Transform component.
-			if (context->HasComponent<HBL2::Component::Transform>(Component::EditorVisible::SelectedEntity))
+			if (context->HasComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity))
 			{
 				if (ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Transform).hash_code(), treeNodeFlags, "Transform"))
 				{
-					auto& transform = context->GetComponent<HBL2::Component::Transform>(Component::EditorVisible::SelectedEntity);
+					auto& transform = context->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity);
 
-					ImGui::DragFloat3("Translation", glm::value_ptr(transform.Position), 0.25f);
+					ImGui::DragFloat3("Translation", glm::value_ptr(transform.Translation), 0.25f);
 					ImGui::DragFloat3("Rotation", glm::value_ptr(transform.Rotation), 0.25f);
 					ImGui::DragFloat3("Scale", glm::value_ptr(transform.Scale), 0.25f);
 
@@ -264,7 +269,7 @@ namespace HBL2Editor
 			}
 
 			// Camera component.
-			if (context->HasComponent<HBL2::Component::Camera>(Component::EditorVisible::SelectedEntity))
+			if (context->HasComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity))
 			{
 				bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Camera).hash_code(), treeNodeFlags, "Camera");
 
@@ -279,10 +284,16 @@ namespace HBL2Editor
 
 				if (opened)
 				{
-					auto& camera = context->GetComponent<HBL2::Component::Camera>(Component::EditorVisible::SelectedEntity);
+					auto& camera = context->GetComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
 
 					ImGui::Checkbox("Enabled", &camera.Enabled);
-					ImGui::Checkbox("Primary camera", &camera.Primary);
+					ImGui::Checkbox("Static", &camera.Static);
+					ImGui::Checkbox("Primary", &camera.Primary);
+					ImGui::SliderFloat("Far", &camera.Far, 0, 100);
+					ImGui::SliderFloat("Near", &camera.Near, 100, 1500);
+					ImGui::SliderFloat("FOV", &camera.Fov, 0, 120);
+					ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 2);
+					ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
 
 					ImGui::TreePop();
 				}
@@ -291,12 +302,12 @@ namespace HBL2Editor
 
 				if (removeComponent)
 				{
-					context->RemoveComponent<HBL2::Component::Camera>(Component::EditorVisible::SelectedEntity);
+					context->RemoveComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
 				}
 			}
 
 			// Sprite component.
-			if (context->HasComponent<HBL2::Component::Sprite>(Component::EditorVisible::SelectedEntity))
+			if (context->HasComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity))
 			{
 				bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Sprite).hash_code(), treeNodeFlags, "Sprite");
 
@@ -311,7 +322,7 @@ namespace HBL2Editor
 
 				if (opened)
 				{
-					auto& sprite = context->GetComponent<HBL2::Component::Sprite>(Component::EditorVisible::SelectedEntity);
+					auto& sprite = context->GetComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity);
 
 					ImGui::Checkbox("Enabled", &sprite.Enabled);
 					ImGui::Checkbox("Static", &sprite.Static);
@@ -325,12 +336,12 @@ namespace HBL2Editor
 
 				if (removeComponent)
 				{
-					context->RemoveComponent<HBL2::Component::Sprite>(Component::EditorVisible::SelectedEntity);
+					context->RemoveComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity);
 				}
 			}
 
 			// StaticMesh component.
-			if (context->HasComponent<HBL2::Component::StaticMesh>(Component::EditorVisible::SelectedEntity))
+			if (context->HasComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity))
 			{
 				bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::StaticMesh).hash_code(), treeNodeFlags, "Static Mesh");
 
@@ -345,7 +356,7 @@ namespace HBL2Editor
 
 				if (opened)
 				{
-					auto& mesh = context->GetComponent<HBL2::Component::StaticMesh>(Component::EditorVisible::SelectedEntity);
+					auto& mesh = context->GetComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
 
 					ImGui::Checkbox("Enabled", &mesh.Enabled);
 					ImGui::Checkbox("Static", &mesh.Static);
@@ -357,7 +368,7 @@ namespace HBL2Editor
 
 				if (removeComponent)
 				{
-					context->RemoveComponent<HBL2::Component::StaticMesh>(Component::EditorVisible::SelectedEntity);
+					context->RemoveComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
 				}
 			}
 
@@ -371,19 +382,19 @@ namespace HBL2Editor
 			{
 				if (ImGui::MenuItem("Sprite"))
 				{
-					context->AddComponent<HBL2::Component::Sprite>(Component::EditorVisible::SelectedEntity);
+					context->AddComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity);
 					ImGui::CloseCurrentPopup();
 				}
 
 				if (ImGui::MenuItem("StaticMesh"))
 				{
-					context->AddComponent<HBL2::Component::StaticMesh>(Component::EditorVisible::SelectedEntity);
+					context->AddComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
 					ImGui::CloseCurrentPopup();
 				}
 
 				if (ImGui::MenuItem("Camera"))
 				{
-					context->AddComponent<HBL2::Component::Camera>(Component::EditorVisible::SelectedEntity);
+					context->AddComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
 					ImGui::CloseCurrentPopup();
 				}
 
@@ -400,6 +411,14 @@ namespace HBL2Editor
 			{
 				if (ImGui::MenuItem("Save"))
 				{
+					HBL2::SceneSerializer sceneSerializer(context);
+					sceneSerializer.Serialize("assets/scenes/Example.humble");
+				}
+				if (ImGui::MenuItem("Load"))
+				{
+					HBL2_CORE_TRACE("Loading...");
+					HBL2::SceneSerializer sceneSerializer(context);
+					sceneSerializer.Deserialize("assets/scenes/Example.humble");
 				}
 				if (ImGui::MenuItem("Build(Windows)"))
 				{
@@ -422,6 +441,13 @@ namespace HBL2Editor
 
 			if (ImGui::BeginMenu("View"))
 			{
+				context->GetRegistry()
+					.view<Component::EditorPanel>()
+					.each([&](Component::EditorPanel& panel)
+					{
+						ImGui::Checkbox(panel.Name.c_str(), &panel.Enabled);
+					});
+
 				ImGui::EndMenu();
 			}
 

@@ -3,7 +3,7 @@ project "Humble2"
     kind "StaticLib"
     language "C++"
     cppdialect "C++17"
-    staticruntime "on"
+    staticruntime "Off"
 
     -- Directories for binary and intermediate files.
     targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
@@ -39,7 +39,7 @@ project "Humble2"
     
     libdirs
     {
-        "../Dependencies/GLFW/lib-vc2019/x64",
+        "../Dependencies/GLFW/lib-vc2022",
         "../Dependencies/GLEW/lib/Release/x64"
     }
     
@@ -58,23 +58,21 @@ project "Humble2"
     defines
     {
         "HBL2_PLATFORM_WINDOWS",
-        "GLEW_STATIC"
+        "YAML_CPP_STATIC_DEFINE",
+        "GLEW_STATIC",
     }
 
     filter "configurations:Debug"
         defines { "DEBUG" }
+        runtime "Debug"
         symbols "On"
 
     filter "configurations:Release"
         defines { "RELEASE" }
+        runtime "Release"
         optimize "On"
-
+        
     filter "configurations:Emscripten"
         defines { "EMSCRIPTEN" }
+        runtime "Release"
         optimize "on"
-
-    filter { "system:windows", "configurations:Debug" }
-        buildoptions "/MDd"
-
-    filter { "system:windows", "configurations:Release" }
-        buildoptions "/MD"

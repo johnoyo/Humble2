@@ -2,7 +2,7 @@ project "HumbleEditor"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++17"
-    staticruntime "off"
+    staticruntime "Off"
 
     targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
     objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
@@ -39,7 +39,8 @@ project "HumbleEditor"
 
     defines 
     {
-        "GLEW_STATIC"
+        "GLEW_STATIC",
+        "YAML_CPP_STATIC_DEFINE",
     }
 
     filter "system:windows"
@@ -58,4 +59,5 @@ project "HumbleEditor"
 
     filter "configurations:Emscripten"
         defines { "EMSCRIPTEN", "__EMSCRIPTEN__" }
-        optimize "on"
+        runtime "Release"
+        optimize "On"

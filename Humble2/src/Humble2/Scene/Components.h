@@ -4,6 +4,8 @@
 
 #include "Renderer/VertexArray.h"
 
+#include <entt.hpp>
+
 namespace HBL2
 {
 	namespace Component
@@ -15,7 +17,7 @@ namespace HBL2
 
 		struct Transform
 		{
-			glm::vec3 Position = { 0.f, 0.f, 0.f };
+			glm::vec3 Translation = { 0.f, 0.f, 0.f };
 			glm::vec3 Rotation = { 0.f, 0.f, 0.f };
 			glm::quat QRotation = glm::quat(Rotation);
 			glm::vec3 Scale = { 10.f, 10.f, 10.f };
@@ -61,6 +63,14 @@ namespace HBL2
 			bool Static = false;
 
 			bool Enabled = false;
+		};
+
+		struct EditorVisible
+		{
+			static inline bool Selected = false;
+			static inline entt::entity SelectedEntity = entt::null;
+
+			bool Enabled = true;
 		};
 	}
 }

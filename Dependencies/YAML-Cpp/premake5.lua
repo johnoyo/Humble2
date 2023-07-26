@@ -2,7 +2,7 @@ project "YAML-Cpp"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++17"
-    staticruntime "On"
+    staticruntime "Off"
 
 	targetdir ("yaml-cpp/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("yaml-cpp/bin-int/" .. outputdir .. "/%{prj.name}")
@@ -36,7 +36,7 @@ project "YAML-Cpp"
 		runtime "Release"
 		optimize "on"
 
-    filter "configurations:Dist"
-		runtime "Release"
-		optimize "on"
-        symbols "off"
+	filter "configurations:Emscripten"
+        defines { "EMSCRIPTEN" }
+        runtime "Release"
+        optimize "on"

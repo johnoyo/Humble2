@@ -4,7 +4,6 @@ namespace HBL2
 {
     Scene::Scene(const std::string& name) : m_Name(name)
     {
-        
     }
 
     Scene::~Scene()

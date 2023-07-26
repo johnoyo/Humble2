@@ -25,6 +25,16 @@ namespace HBL2
 			return entity;
 		}
 
+		entt::entity CreateEntity(const std::string& tag)
+		{
+			entt::entity entity = m_Registry.create();
+
+			m_Registry.emplace<Component::Tag>(entity).Name = tag;
+			m_Registry.emplace<Component::Transform>(entity);
+
+			return entity;
+		}
+
 		void DestroyEntity(entt::entity entity)
 		{
 			m_Registry.destroy(entity);
@@ -67,6 +77,11 @@ namespace HBL2
 		entt::registry& GetRegistry()
 		{
 			return m_Registry;
+		}
+
+		const std::string& GetName() const
+		{
+			return m_Name;
 		}
 
 		entt::entity MainCamera = entt::null;

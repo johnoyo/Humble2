@@ -4,14 +4,6 @@ namespace HBL2Editor
 {
 	namespace Component
 	{
-		struct EditorVisible
-		{
-			static inline bool Selected = false;
-			static inline entt::entity SelectedEntity = entt::null;
-
-			bool Enabled = true;
-		};
-
 		struct EditorPanel
 		{
 			std::string Name = "New Panel";

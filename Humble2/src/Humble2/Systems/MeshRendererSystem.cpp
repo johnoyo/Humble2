@@ -18,7 +18,7 @@ namespace HBL2
 				if (mesh.Enabled)
 				{
 					transform.QRotation = glm::quat(transform.Rotation);
-					transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Position) 
+					transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) 
 									* glm::toMat4(transform.QRotation) 
 									* glm::scale(glm::mat4(1.0f), transform.Scale);
 
@@ -38,7 +38,7 @@ namespace HBL2
 					if (!mesh.Static)
 					{
 						transform.QRotation = glm::quat(transform.Rotation);
-						transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Position) 
+						transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) 
 										* glm::toMat4(transform.QRotation) 
 										* glm::scale(glm::mat4(1.0f), transform.Scale);
 					}
