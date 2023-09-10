@@ -1,6 +1,6 @@
 Scene: Empty Scene
 Entities:
-  - Entity: 15
+  - Entity: 14
     Component::Tag:
       Tag: Monkeh22
     Component::Transform:
@@ -12,7 +12,7 @@ Entities:
       Static: false
       Path: assets/meshes/monkey_smooth.obj
       ShaderName: BasicMesh
-  - Entity: 14
+  - Entity: 13
     Component::Tag:
       Tag: Monkeh2
     Component::Transform:
@@ -24,7 +24,7 @@ Entities:
       Static: false
       Path: assets/meshes/monkey_smooth.obj
       ShaderName: BasicMesh
-  - Entity: 13
+  - Entity: 12
     Component::Tag:
       Tag: Camera
     Component::Transform:
@@ -40,7 +40,7 @@ Entities:
       FOV: 30
       Aspect Ratio: 1.778
       Zoom Level: 300
-  - Entity: 12
+  - Entity: 11
     Component::Tag:
       Tag: Monkeh
     Component::Transform:
@@ -52,7 +52,7 @@ Entities:
       Static: false
       Path: assets/meshes/monkey_smooth.obj
       ShaderName: BasicMesh
-  - Entity: 11
+  - Entity: 10
     Component::Tag:
       Tag: Sprite1
     Component::Transform:
@@ -64,7 +64,7 @@ Entities:
       Static: false
       Color: [0.392156839, 0.678200662, 1, 1]
       TextureIndex: 1
-  - Entity: 10
+  - Entity: 9
     Component::Tag:
       Tag: Monkeh1
     Component::Transform:
@@ -76,7 +76,7 @@ Entities:
       Static: false
       Path: assets/meshes/monkey_smooth.obj
       ShaderName: BasicMesh
-  - Entity: 9
+  - Entity: 8
     Component::Tag:
       Tag: Sprite2
     Component::Transform:
@@ -88,7 +88,7 @@ Entities:
       Static: false
       Color: [1, 1, 1, 1]
       TextureIndex: 1
-  - Entity: 8
+  - Entity: 7
     Component::Tag:
       Tag: Monkeh3
     Component::Transform:
@@ -100,7 +100,7 @@ Entities:
       Static: false
       Path: assets/meshes/monkey_smooth.obj
       ShaderName: BasicMesh
-  - Entity: 7
+  - Entity: 6
     Component::Tag:
       Tag: Sprite3
     Component::Transform:
@@ -112,15 +112,3 @@ Entities:
       Static: false
       Color: [0.94607842, 0.704921126, 0.704921126, 1]
       TextureIndex: 1
-  - Entity: 6
-    Component::Tag:
-      Tag: Sprite
-    Component::Transform:
-      Translation: [0, -13.5, 0]
-      Rotation: [0, 0, 0]
-      Scale: [10, 10, 10]
-    Component::Sprite:
-      Enabled: true
-      Static: false
-      Color: [0.921568632, 0.275567114, 0.275567114, 1]
-      TextureIndex: 0

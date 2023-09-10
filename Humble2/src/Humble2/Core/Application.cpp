@@ -103,20 +103,13 @@ namespace HBL2
 		// Initialize the graphics API.
 		RenderCommand::Initialize(m_Specification.GraphicsAPI);
 
-#ifndef EMSCRIPTEN
-		// Create FrameBuffer.
-		FrameBufferSpecification spec;
-		spec.Width = 1280;
-		spec.Height = 720;
-		m_FrameBuffer = FrameBuffer::Create(spec);
-#endif
 		Input::SetWindow(m_Window->GetHandle());
 
 		m_Specification.Context->OnAttach();
 
 		// Initialize the renderers.
-		Renderer2D::Get().Initialize(m_FrameBuffer);
-		Renderer3D::Get().Initialize(m_FrameBuffer);
+		Renderer2D::Get().Initialize(RenderCommand::FrameBuffer);
+		Renderer3D::Get().Initialize(RenderCommand::FrameBuffer);
 		ImGuiRenderer::Get().Initialize(m_Window);
 
 		m_Specification.Context->OnCreate();

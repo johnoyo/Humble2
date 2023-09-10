@@ -5,4 +5,7 @@
 #include "Utilities\JobSystem.h"
 
 #include "Scene\Scene.h"
-#include "Scene\SceneSerializer.h"
+
+#ifndef EMSCRIPTEN
+	#include "Scene\SceneSerializer.h"
+#endif

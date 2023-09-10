@@ -420,16 +420,32 @@ namespace HBL2Editor
 					HBL2::SceneSerializer sceneSerializer(context);
 					sceneSerializer.Deserialize("assets/scenes/Example.humble");
 				}
-				if (ImGui::MenuItem("Build(Windows)"))
+				if (ImGui::MenuItem("Build (Windows)"))
 				{
+					// Build.
+					system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
+
+					// Copy assets to build folder.
+					std::filesystem::copy("./assets", "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
 				}
-				if (ImGui::MenuItem("Build(Web)"))
+				if (ImGui::MenuItem("Build & Run (Windows)"))
+				{
+					// Build.
+					system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
+
+					// Copy assets to build folder.
+					std::filesystem::copy("./assets", "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+
+					// Run.
+					system("C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\HumbleApp.exe");
+
+				}
+				if (ImGui::MenuItem("Build (Web)"))
 				{
 					system("C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\Scripts\\emBuildAll.bat");
 				}
 				if (ImGui::MenuItem("Close"))
 				{
-					// m_Window->Close();
 				}
 				ImGui::EndMenu();
 			}

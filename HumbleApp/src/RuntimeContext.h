@@ -2,16 +2,9 @@
 
 #include "Humble2.h"
 
-#include "Renderer\RenderCommand.h"
-
-#ifndef EMSCRIPTEN
-	#include "Systems/EditorPanelSystem.h"
-	#include "Systems/EditorCameraSystem.h"
-#endif
-
-namespace HBL2Editor
+namespace HBL2Runtime
 {
-	class EditorContext final : public HBL2::Context
+	class RuntimeContext final : public HBL2::Context
 	{
 	public:
 		virtual void OnAttach() override;

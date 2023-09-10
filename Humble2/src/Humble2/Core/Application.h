@@ -48,7 +48,6 @@ namespace HBL2
 	private:
 		ApplicationSpec m_Specification;
 		Window* m_Window;
-		FrameBuffer* m_FrameBuffer = nullptr;
 
 		float m_LastTime = 0.0f;
 		float m_Timer = m_LastTime;

@@ -46,6 +46,6 @@ call emcc -std=c++17 -sUSE_GLFW=3 -sFULL_ES3=1 -sALLOW_MEMORY_GROWTH -DEMSCRIPTE
  "../Humble2/src/Humble2/Utilities/Log.cpp"^
  "../Humble2/src/Humble2/Utilities/JobSystem.cpp"^
  "../Humble2/src/Vendor/stb_image/stb_image.cpp"^
- "../HumbleEditor/src/EditorContext.cpp"^
- "../HumbleEditor/src/main.cpp"^
+ "../HumbleApp/src/RuntimeContext.cpp"^
+ "../HumbleApp/src/main.cpp"^
  --embed-file assets -O3 -o ../bin/Web/HumbleApp.html

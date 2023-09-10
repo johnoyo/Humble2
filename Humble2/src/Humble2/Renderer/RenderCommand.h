@@ -2,6 +2,7 @@
 
 #include "RendererAPI.h"
 #include "Utilities/Log.h"
+#include "FrameBuffer.h"
 
 namespace HBL2
 {
@@ -14,6 +15,8 @@ namespace HBL2
 		static void ClearScreen(glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f });
 		static void Draw(VertexBuffer* vertexBuffer);
 		static void DrawIndexed(VertexBuffer* vertexBuffer);
+
+		static FrameBuffer* FrameBuffer;
 
 		static GraphicsAPI GetAPI();
 	private:
