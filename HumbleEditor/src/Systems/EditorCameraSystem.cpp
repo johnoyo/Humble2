@@ -7,14 +7,25 @@ namespace HBL2Editor
 {
 	void EditorCameraSystem::OnCreate()
 	{
-		m_Context = HBL2::Context::ActiveScene;
+		m_Context = HBL2::Context::Core;
 
 		m_Context->GetRegistry()
 			.group<Component::EditorCamera>(entt::get<HBL2::Component::Camera, HBL2::Component::Transform>)
-			.each([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera, HBL2::Component::Transform& transform)
+			.each([&](entt::entity entity, Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera, HBL2::Component::Transform& transform)
 			{
 				if (editorCamera.Enabled)
 				{
+					transform.QRotation = glm::quat(transform.Rotation);
+
+					transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) * glm::toMat4(transform.QRotation);
+
+					camera.View = glm::inverse(transform.Matrix);
+
+					camera.ViewProjectionMatrix = camera.Projection * camera.View;
+
+					if (camera.Primary)
+						m_Context->MainCamera = entity;
+
 					editorCamera.Distance = transform.Translation.z;
 				}
 			});
@@ -22,14 +33,31 @@ namespace HBL2Editor
 
 	void EditorCameraSystem::OnUpdate(float ts)
 	{
-		m_Context = HBL2::Context::ActiveScene;
-
 		m_Context->GetRegistry()
 			.group<Component::EditorCamera>(entt::get<HBL2::Component::Camera, HBL2::Component::Transform>)
-			.each([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera, HBL2::Component::Transform& transform)
+			.each([&](entt::entity entity, Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera, HBL2::Component::Transform& transform)
 			{
 				if (editorCamera.Enabled)
 				{
+					if (!camera.Static)
+					{
+						transform.QRotation = glm::quat(transform.Rotation);
+
+						transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) * glm::toMat4(transform.QRotation);
+
+						camera.View = glm::inverse(transform.Matrix);
+
+						camera.ViewProjectionMatrix = camera.Projection * camera.View;
+
+						if (camera.Primary)
+							m_Context->MainCamera = entity;
+					}
+					else if (camera.Static)
+					{
+						if (camera.Primary)
+							m_Context->MainCamera = entity;
+					}
+
 					if (HBL2::Input::GetKeyDown(GLFW_KEY_LEFT_ALT))
 					{
 						const glm::vec2& mouse{ HBL2::Input::GetMousePosition().x, HBL2::Input::GetMousePosition().y };

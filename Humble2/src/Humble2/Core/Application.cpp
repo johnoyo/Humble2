@@ -2,8 +2,14 @@
 
 namespace HBL2
 {
+	Application* Application::s_Instance = nullptr;
+
 	Application::Application(ApplicationSpec& specification) : m_Specification(specification)
 	{
+		HBL2_CORE_ASSERT(!s_Instance, "Application already exists!");
+
+		s_Instance = this;
+
 		Log::Initialize();
 
 		switch (m_Specification.Platform)
@@ -48,10 +54,12 @@ namespace HBL2
 		m_Window = new Window(m_Specification.Name, m_Specification.Width, m_Specification.Height, m_Specification.Fullscreen, m_Specification.Vsync);
 
 		// Initialize empty scene.
-		m_Specification.Context->EmptyScene = new Scene("Empty Scene");
-		m_Specification.Context->EmptyScene->RegisterSystem(new SpriteRendererSystem);
-		m_Specification.Context->EmptyScene->RegisterSystem(new MeshRendererSystem);
-		m_Specification.Context->EmptyScene->RegisterSystem(new CameraSystem);		
+		m_Specification.Context->EmptyScene = new Scene("EmptyScene");
+
+		m_Specification.Context->Core = new Scene("Core");
+		m_Specification.Context->Core->RegisterSystem(new SpriteRendererSystem);
+		m_Specification.Context->Core->RegisterSystem(new MeshRendererSystem);
+		m_Specification.Context->Core->RegisterSystem(new CameraSystem);
 	}
 
 	Application::~Application()
@@ -119,7 +127,9 @@ namespace HBL2
 			BeginFrame();
 
 			Renderer3D::Get().BeginFrame();
+
 			m_Specification.Context->OnUpdate(m_DeltaTime);
+
 			Renderer3D::Get().EndFrame();
 
 			Renderer2D::Get().BeginFrame();

@@ -45,7 +45,19 @@ namespace HBL2
 
 		void Start();
 
+		static Application& Get()
+		{
+			return *s_Instance;
+		}
+
+		Window* GetWindow()
+		{
+			return m_Window;
+		}
+
 	private:
+		static Application* s_Instance;
+
 		ApplicationSpec m_Specification;
 		Window* m_Window;
 

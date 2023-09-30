@@ -8,6 +8,14 @@ namespace HBL2
 
     Scene::~Scene()
     {
+        m_Registry.clear();
+
+        for (ISystem* system : m_Systems)
+        {
+            delete system;
+        }
+
+        m_Systems.clear();
     }
 
     Scene* Scene::Copy(Scene* other)

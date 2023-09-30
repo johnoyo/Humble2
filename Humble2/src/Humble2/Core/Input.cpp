@@ -51,8 +51,8 @@ namespace HBL2
 		{
 			double x, y;
 			glfwGetCursorPos(m_Window, &x, &y);
-			m_MousePosition.x = x;
-			m_MousePosition.y = y;
+			m_MousePosition.x = (float)x;
+			m_MousePosition.y = (float)y;
 			return m_MousePosition;
 		}
 		else
@@ -83,7 +83,7 @@ namespace HBL2
 
 	void Input::ScrollCallback(GLFWwindow* window, double xOffset, double yOffset)
 	{
-		s_ScrollOffset.x = xOffset;
-		s_ScrollOffset.y = yOffset;
+		s_ScrollOffset.x = (float)xOffset;
+		s_ScrollOffset.y = (float)yOffset;
 	}
 }

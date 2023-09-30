@@ -4,8 +4,7 @@ namespace HBL2Runtime
 {
     void RuntimeContext::OnAttach()
     {
-        ActiveScene = HBL2::Scene::Copy(EmptyScene);
-
+		HBL2::Context::Mode = HBL2::Mode::Runtime;
 #ifdef EMSCRIPTEN
 		// Runtime camera setup.
 		auto camera = ActiveScene->CreateEntity();
@@ -21,13 +20,17 @@ namespace HBL2Runtime
 		mesh.Path = "assets/meshes/monkey_smooth.obj";
 		mesh.ShaderName = "BasicMesh";
 #else
-		HBL2::SceneSerializer sceneSerializer(ActiveScene);
-		sceneSerializer.Deserialize("assets/scenes/Example.humble");
-#endif // EMSCRIPTEN
+		OpenEmptyProject();
+#endif
     }
 
     void RuntimeContext::OnCreate()
     {
+		for (HBL2::ISystem* system : Core->GetSystems())
+		{
+			system->OnCreate();
+		}
+
 		for (HBL2::ISystem* system : ActiveScene->GetSystems())
 		{
 			system->OnCreate();
@@ -36,6 +39,11 @@ namespace HBL2Runtime
 
     void RuntimeContext::OnUpdate(float ts)
     {
+		for (HBL2::ISystem* system : Core->GetSystems())
+		{
+			system->OnUpdate(ts);
+		}
+
 		for (HBL2::ISystem* system : ActiveScene->GetSystems())
 		{
 			system->OnUpdate(ts);
@@ -45,4 +53,24 @@ namespace HBL2Runtime
     void RuntimeContext::OnGuiRender(float ts)
     {
     }
+
+	bool RuntimeContext::OpenEmptyProject()
+	{
+		// TODO: Get this from command line args.
+		std::string filepath = "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\HumbleApp\\EmptyProject\\EmptyProject.hblproj";
+
+		if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
+		{
+			auto& startingScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
+
+			HBL2::Project::OpenScene(startingScenePath);
+
+			return true;
+		}
+
+		HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
+		HBL2::Application::Get().GetWindow()->Close();
+
+		return false;
+	}
 }

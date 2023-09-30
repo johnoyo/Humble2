@@ -8,6 +8,7 @@ namespace HBL2Editor
 {
 	class EditorCameraSystem final : public HBL2::ISystem
 	{
+	public:
 		virtual void OnCreate() override;
 		virtual void OnUpdate(float ts) override;
 

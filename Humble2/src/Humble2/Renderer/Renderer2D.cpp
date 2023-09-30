@@ -35,9 +35,31 @@ namespace HBL2
 	{
 		glm::mat4 mvp = glm::mat4(0.f);
 
-		if (Context::ActiveScene->MainCamera != entt::null)
+		if (Context::Mode == Mode::Runtime)
 		{
-			mvp = Context::ActiveScene->GetComponent<Component::Camera>(Context::ActiveScene->MainCamera).ViewProjectionMatrix;
+			if (Context::ActiveScene->MainCamera != entt::null)
+			{
+				mvp = Context::ActiveScene->GetComponent<Component::Camera>(Context::ActiveScene->MainCamera).ViewProjectionMatrix;
+			}
+			else
+			{
+				HBL2_CORE_WARN("No main camera set for runtime context.");
+			}
+		}
+		else if (Context::Mode == Mode::Editor)
+		{
+			if (Context::Core->MainCamera != entt::null)
+			{
+				mvp = Context::Core->GetComponent<Component::Camera>(Context::Core->MainCamera).ViewProjectionMatrix;
+			}
+			else
+			{
+				HBL2_CORE_WARN("No main camera set for editor context.");
+			}
+		}
+		else
+		{
+			HBL2_CORE_WARN("No mode set for current context.");
 		}
 
 		Texture::ForEach([](Texture* texture)
@@ -131,7 +153,7 @@ namespace HBL2
 
 		m_Shaders.push_back(shaderName);
 
-		m_VertexArray->GetIndexBuffer()->Invalidate(MAX_BATCH_SIZE * m_VertexArray->GetVertexBuffers().size());
+		m_VertexArray->GetIndexBuffer()->Invalidate(MAX_BATCH_SIZE * 4 * m_VertexArray->GetVertexBuffers().size());
 
 		return m_VertexArray->GetVertexBuffers().size() - 1;
 	}

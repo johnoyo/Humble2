@@ -86,9 +86,9 @@ namespace HBL2
 
 		entt::entity MainCamera = entt::null;
 
+		std::vector<ISystem*> m_Systems;
 	private:
 		std::string m_Name;
 		entt::registry m_Registry;
-		std::vector<ISystem*> m_Systems;
 	};
 }

@@ -101,7 +101,8 @@ namespace HBL2
 		return out;
 	}
 
-	SceneSerializer::SceneSerializer(Scene* scene) : m_Scene(scene)
+	SceneSerializer::SceneSerializer(Scene* scene) 
+		: m_Scene(scene)
 	{
 	}
 
@@ -180,7 +181,7 @@ namespace HBL2
 		out << YAML::EndMap;
 	}
 
-	void SceneSerializer::Serialize(const std::string& filePath)
+	void SceneSerializer::Serialize(const std::filesystem::path& filePath)
 	{
 		YAML::Emitter out;
 		out << YAML::BeginMap;
@@ -201,11 +202,20 @@ namespace HBL2
 		out << YAML::EndSeq;
 		out << YAML::EndMap;
 
+		try 
+		{
+			std::filesystem::create_directories(filePath.parent_path());
+		}
+		catch (std::exception& e) 
+		{
+			HBL2_ERROR("Project directory creation failed.");
+		}
+
 		std::ofstream fOut(filePath);
 		fOut << out.c_str();
 	}
 
-	bool SceneSerializer::Deserialize(const std::string& filePath)
+	bool SceneSerializer::Deserialize(const std::filesystem::path& filePath)
 	{
 		std::ifstream stream(filePath);
 		std::stringstream ss;

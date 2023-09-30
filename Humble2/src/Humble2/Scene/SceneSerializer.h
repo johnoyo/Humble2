@@ -3,6 +3,7 @@
 #include "Scene.h"
 
 #include <fstream>
+#include <filesystem>
 #include <yaml-cpp\yaml.h>
 
 namespace HBL2
@@ -12,8 +13,8 @@ namespace HBL2
 	public:
 		SceneSerializer(Scene* scene);
 
-		void Serialize(const std::string& filePath);
-		bool Deserialize(const std::string& filePath);
+		void Serialize(const std::filesystem::path& filePath);
+		bool Deserialize(const std::filesystem::path& filePath);
 	private:
 		void SerializeEntity(YAML::Emitter& out, entt::entity entity);
 	private:

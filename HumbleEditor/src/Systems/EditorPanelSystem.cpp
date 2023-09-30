@@ -1,5 +1,8 @@
 #include "EditorPanelSystem.h"
 
+#include "Humble2\Utilities\FileDialogs.h"
+#include "EditorCameraSystem.h"
+
 namespace HBL2Editor
 {
 	void EditorPanelSystem::OnCreate()
@@ -8,27 +11,27 @@ namespace HBL2Editor
 
 		{
 			// Hierachy panel.
-			auto hierachyPanel = m_Context->CreateEntity();
-			m_Context->GetComponent<HBL2::Component::Tag>(hierachyPanel).Name = "Hidden";
-			auto& panel = m_Context->AddComponent<Component::EditorPanel>(hierachyPanel);
+			auto hierachyPanel = HBL2::Context::Core->CreateEntity();
+			HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(hierachyPanel).Name = "Hidden";
+			auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(hierachyPanel);
 			panel.Name = "Hierachy";
 			panel.Type = Component::EditorPanel::Panel::Hierachy;
 		}
 
 		{
 			// Properties panel.
-			auto propertiesPanel = m_Context->CreateEntity();
-			m_Context->GetComponent<HBL2::Component::Tag>(propertiesPanel).Name = "Hidden";
-			auto& panel = m_Context->AddComponent<Component::EditorPanel>(propertiesPanel);
+			auto propertiesPanel = HBL2::Context::Core->CreateEntity();
+			HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(propertiesPanel).Name = "Hidden";
+			auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(propertiesPanel);
 			panel.Name = "Properties";
 			panel.Type = Component::EditorPanel::Panel::Properties;
 		}
 
 		{
 			// Menubar panel.
-			auto menubarPanel = m_Context->CreateEntity();
-			m_Context->GetComponent<HBL2::Component::Tag>(menubarPanel).Name = "Hidden";
-			auto& panel = m_Context->AddComponent<Component::EditorPanel>(menubarPanel);
+			auto menubarPanel = HBL2::Context::Core->CreateEntity();
+			HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(menubarPanel).Name = "Hidden";
+			auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(menubarPanel);
 			panel.Name = "Menubar";
 			panel.Type = Component::EditorPanel::Panel::Menubar;
 			panel.UseBeginEnd = false;
@@ -36,18 +39,18 @@ namespace HBL2Editor
 
 		{
 			// Console panel.
-			auto consolePanel = m_Context->CreateEntity();
-			m_Context->GetComponent<HBL2::Component::Tag>(consolePanel).Name = "Hidden";
-			auto& panel = m_Context->AddComponent<Component::EditorPanel>(consolePanel);
+			auto consolePanel = HBL2::Context::Core->CreateEntity();
+			HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(consolePanel).Name = "Hidden";
+			auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(consolePanel);
 			panel.Name = "Console";
 			panel.Type = Component::EditorPanel::Panel::Console;
 		}
 
 		{
 			// Viewport panel.
-			auto viewportPanel = m_Context->CreateEntity();
-			m_Context->GetComponent<HBL2::Component::Tag>(viewportPanel).Name = "Hidden";
-			auto& panel = m_Context->AddComponent<Component::EditorPanel>(viewportPanel);
+			auto viewportPanel = HBL2::Context::Core->CreateEntity();
+			HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(viewportPanel).Name = "Hidden";
+			auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(viewportPanel);
 			panel.Name = "Viewport";
 			panel.Type = Component::EditorPanel::Panel::Viewport;
 			panel.Styles.push_back({ ImGuiStyleVar_WindowPadding, ImVec2{ 0.f, 0.f }, 0.f, false });
@@ -61,7 +64,7 @@ namespace HBL2Editor
 
 	void EditorPanelSystem::OnGuiRender(float ts)
 	{
-		m_Context->GetRegistry()
+		HBL2::Context::Core->GetRegistry()
 			.view<Component::EditorPanel>()
 			.each([&](Component::EditorPanel& panel)
 			{
@@ -89,14 +92,14 @@ namespace HBL2Editor
 					case Component::EditorPanel::Panel::Properties:
 						DrawPropertiesPanel(m_Context);
 						break;
-					case Component::EditorPanel::Panel::Menubar:
-						DrawToolBarPanel(m_Context);
-						break;
 					case Component::EditorPanel::Panel::Console:
 						DrawConsolePanel(m_Context, ts);
 						break;
 					case Component::EditorPanel::Panel::Viewport:
 						DrawViewportPanel(m_Context);
+						break;
+					case Component::EditorPanel::Panel::Menubar:
+						DrawToolBarPanel(m_Context);
 						break;
 					}
 
@@ -124,7 +127,7 @@ namespace HBL2Editor
 		{
 			if (ImGui::MenuItem("Create Empty"))
 			{
-				auto entity = m_Context->CreateEntity();
+				auto entity = context->CreateEntity();
 				context->AddComponent<HBL2::Component::EditorVisible>(entity);
 			}
 
@@ -212,7 +215,7 @@ namespace HBL2Editor
 		if (entityToBeDeleted != entt::null)
 		{
 			// Destroy entity and clear entityToBeDeleted value.
-			m_Context->DestroyEntity(entityToBeDeleted);
+			context->DestroyEntity(entityToBeDeleted);
 			entityToBeDeleted = entt::null;
 
 			// Clear currently selected entity.
@@ -409,16 +412,71 @@ namespace HBL2Editor
 		{
 			if (ImGui::BeginMenu("File"))
 			{
-				if (ImGui::MenuItem("Save"))
+				if (ImGui::MenuItem("New Project"))
 				{
-					HBL2::SceneSerializer sceneSerializer(context);
-					sceneSerializer.Serialize("assets/scenes/Example.humble");
+					std::string filepath = HBL2::FileDialogs::SaveFile("Humble Project (*.hblproj)\0*.hblproj\0");
+
+					HBL2::Project::Create()->Save(filepath);
+
+					auto& startScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
+
+					HBL2::Project::SaveScene(context, startScenePath);
+
+					HBL2::Project::OpenScene(startScenePath);
+
+					m_Context = HBL2::Context::ActiveScene;
+					m_EditorScenePath = filepath;
 				}
-				if (ImGui::MenuItem("Load"))
+				if (ImGui::MenuItem("Open Project"))
 				{
-					HBL2_CORE_TRACE("Loading...");
-					HBL2::SceneSerializer sceneSerializer(context);
-					sceneSerializer.Deserialize("assets/scenes/Example.humble");
+					std::string filepath = HBL2::FileDialogs::OpenFile("Humble Project (*.hblproj)\0*.hblproj\0");
+
+					if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
+					{
+						auto& startingScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
+
+						HBL2::Project::OpenScene(startingScenePath);
+
+						m_Context = HBL2::Context::ActiveScene;
+						m_EditorScenePath = filepath;
+					}
+					else
+					{
+						HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
+					}
+				}
+				if (ImGui::MenuItem("Save Scene"))
+				{
+					if (m_EditorScenePath.empty())
+					{
+						std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene (*.humble)\0*.humble\0");
+
+						HBL2::Project::SaveScene(context, filepath);
+
+						m_EditorScenePath = filepath;
+					}
+					else
+					{
+						HBL2::Project::SaveScene(context, m_EditorScenePath);
+					}
+				}
+				if (ImGui::MenuItem("Save Scene As"))
+				{
+					std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene (*.humble)\0*.humble\0");
+					
+					HBL2::Project::SaveScene(context, filepath);
+
+					m_EditorScenePath = filepath;
+				}
+
+				if (ImGui::MenuItem("Open Scene"))
+				{
+					std::string filepath = HBL2::FileDialogs::OpenFile("Humble Project (*.humble)\0*.humble\0");
+
+					HBL2::Project::OpenScene(filepath);
+
+					m_Context = HBL2::Context::ActiveScene;
+					m_EditorScenePath = filepath;
 				}
 				if (ImGui::MenuItem("Build (Windows)"))
 				{
@@ -438,7 +496,6 @@ namespace HBL2Editor
 
 					// Run.
 					system("C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\HumbleApp.exe");
-
 				}
 				if (ImGui::MenuItem("Build (Web)"))
 				{
@@ -446,6 +503,7 @@ namespace HBL2Editor
 				}
 				if (ImGui::MenuItem("Close"))
 				{
+					HBL2::Application::Get().GetWindow()->Close();
 				}
 				ImGui::EndMenu();
 			}
@@ -457,7 +515,7 @@ namespace HBL2Editor
 
 			if (ImGui::BeginMenu("View"))
 			{
-				context->GetRegistry()
+				HBL2::Context::Core->GetRegistry()
 					.view<Component::EditorPanel>()
 					.each([&](Component::EditorPanel& panel)
 					{
@@ -482,7 +540,7 @@ namespace HBL2Editor
 
 		if (m_ViewportSize != *(glm::vec2*)&viewportPanelSize)
 		{
-			HBL2::Renderer2D::Get().GetFrameBuffer()->Resize((uint32_t)viewportPanelSize.x, (uint32_t)viewportPanelSize.y);
+			HBL2::RenderCommand::FrameBuffer->Resize((uint32_t)viewportPanelSize.x, (uint32_t)viewportPanelSize.y);
 			m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 
 			// TODO: Change this to switch for play and edit mode.
@@ -503,7 +561,7 @@ namespace HBL2Editor
 			}
 			else if (true)
 			{
-				context->GetRegistry()
+				HBL2::Context::Core->GetRegistry()
 					.group<Component::EditorCamera>(entt::get<HBL2::Component::Camera>)
 					.each([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera)
 					{
@@ -518,6 +576,6 @@ namespace HBL2Editor
 			}
 		}
 
-		ImGui::Image((void*)HBL2::Renderer2D::Get().GetFrameBuffer()->GetColorAttachmentID(), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGui::Image((void*)HBL2::RenderCommand::FrameBuffer->GetColorAttachmentID(), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 	}
 }

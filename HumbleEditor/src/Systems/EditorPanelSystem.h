@@ -22,5 +22,6 @@ namespace HBL2Editor
 		void DrawViewportPanel(HBL2::Scene* context);
 
 		glm::vec2 m_ViewportSize = { 0.f, 0.f };
+		std::filesystem::path m_EditorScenePath;
 	};
 }
