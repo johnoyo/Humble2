@@ -2,30 +2,6 @@ Scene: Scenes/EmptyScene.humble
 Entities:
   - Entity: 2
     Component::Tag:
-      Tag: Sprite
-    Component::Transform:
-      Translation: [-12.25, 15, 0]
-      Rotation: [0, 0, 0]
-      Scale: [10, 10, 10]
-    Component::Sprite:
-      Enabled: true
-      Static: false
-      Color: [1, 1, 1, 1]
-      TextureIndex: 0
-  - Entity: 1
-    Component::Tag:
-      Tag: Sprite
-    Component::Transform:
-      Translation: [0, 15, 0]
-      Rotation: [0, 0, 0]
-      Scale: [10, 10, 10]
-    Component::Sprite:
-      Enabled: true
-      Static: false
-      Color: [1, 1, 1, 1]
-      TextureIndex: 0
-  - Entity: 0
-    Component::Tag:
       Tag: Camera
     Component::Transform:
       Translation: [0, 0, 100]
@@ -40,3 +16,15 @@ Entities:
       FOV: 30
       Aspect Ratio: 1.778
       Zoom Level: 300
+  - Entity: 1
+    Component::Tag:
+      Tag: Sprite
+    Component::Transform:
+      Translation: [0, 15, 0]
+      Rotation: [0, 0, 0]
+      Scale: [10, 10, 10]
+    Component::Sprite:
+      Enabled: true
+      Static: false
+      Color: [1, 1, 1, 1]
+      TextureIndex: 0

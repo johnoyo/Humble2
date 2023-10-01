@@ -6,9 +6,32 @@ namespace HBL2
 	void MeshRendererSystem::OnCreate()
 	{
 		glm::mat4 mvp = glm::mat4(0.f);
-		if (Context::ActiveScene->MainCamera != entt::null)
+
+		if (Context::Mode == Mode::Runtime)
 		{
-			mvp = Context::ActiveScene->GetComponent<Component::Camera>(Context::ActiveScene->MainCamera).ViewProjectionMatrix;
+			if (Context::ActiveScene->MainCamera != entt::null)
+			{
+				mvp = Context::ActiveScene->GetComponent<Component::Camera>(Context::ActiveScene->MainCamera).ViewProjectionMatrix;
+			}
+			else
+			{
+				HBL2_CORE_WARN("No main camera set for runtime context.");
+			}
+		}
+		else if (Context::Mode == Mode::Editor)
+		{
+			if (Context::Core->MainCamera != entt::null)
+			{
+				mvp = Context::Core->GetComponent<Component::Camera>(Context::Core->MainCamera).ViewProjectionMatrix;
+			}
+			else
+			{
+				HBL2_CORE_WARN("No main camera set for editor context.");
+			}
+		}
+		else
+		{
+			HBL2_CORE_WARN("No mode set for current context.");
 		}
 
 		Context::ActiveScene->GetRegistry()
@@ -17,7 +40,7 @@ namespace HBL2
 			{
 				if (mesh.Enabled)
 				{
-					transform.QRotation = glm::quat(transform.Rotation);
+					transform.QRotation = glm::quat({ glm::radians(transform.Rotation.x), glm::radians(transform.Rotation.y), glm::radians(transform.Rotation.z) });
 					transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) 
 									* glm::toMat4(transform.QRotation) 
 									* glm::scale(glm::mat4(1.0f), transform.Scale);
@@ -37,7 +60,7 @@ namespace HBL2
 				{
 					if (!mesh.Static)
 					{
-						transform.QRotation = glm::quat(transform.Rotation);
+						transform.QRotation = glm::quat({ glm::radians(transform.Rotation.x), glm::radians(transform.Rotation.y), glm::radians(transform.Rotation.z) });
 						transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) 
 										* glm::toMat4(transform.QRotation) 
 										* glm::scale(glm::mat4(1.0f), transform.Scale);

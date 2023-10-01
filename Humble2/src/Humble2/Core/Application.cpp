@@ -127,13 +127,13 @@ namespace HBL2
 			BeginFrame();
 
 			Renderer3D::Get().BeginFrame();
+			Renderer2D::Get().BeginFrame();
 
 			m_Specification.Context->OnUpdate(m_DeltaTime);
 
-			Renderer3D::Get().EndFrame();
-
-			Renderer2D::Get().BeginFrame();
 			Renderer2D::Get().Submit();
+
+			Renderer3D::Get().EndFrame();
 			Renderer2D::Get().EndFrame();
 
 			ImGuiRenderer::Get().BeginFrame();

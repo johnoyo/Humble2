@@ -38,6 +38,25 @@ namespace HBL2Editor
 		}
 
 		{
+			// Stats panel.
+			auto statsPanel = HBL2::Context::Core->CreateEntity();
+			HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(statsPanel).Name = "Hidden";
+			auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(statsPanel);
+			panel.Name = "Stats";
+			panel.Type = Component::EditorPanel::Panel::Stats;
+		}
+
+		{
+			// Content browser panel.
+			auto contentBrowserPanel = HBL2::Context::Core->CreateEntity();
+			HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(contentBrowserPanel).Name = "Hidden";
+			auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(contentBrowserPanel);
+			panel.Name = "Content Browser";
+			panel.Type = Component::EditorPanel::Panel::ContentBrowser;
+			m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
+		}
+
+		{
 			// Console panel.
 			auto consolePanel = HBL2::Context::Core->CreateEntity();
 			HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(consolePanel).Name = "Hidden";
@@ -92,14 +111,20 @@ namespace HBL2Editor
 					case Component::EditorPanel::Panel::Properties:
 						DrawPropertiesPanel(m_Context);
 						break;
-					case Component::EditorPanel::Panel::Console:
-						DrawConsolePanel(m_Context, ts);
-						break;
 					case Component::EditorPanel::Panel::Viewport:
 						DrawViewportPanel(m_Context);
 						break;
 					case Component::EditorPanel::Panel::Menubar:
 						DrawToolBarPanel(m_Context);
+						break;
+					case Component::EditorPanel::Panel::Stats:
+						DrawStatsPanel(m_Context, ts);
+						break;
+					case Component::EditorPanel::Panel::ContentBrowser:
+						DrawContentBrowserPanel(m_Context);
+						break;
+					case Component::EditorPanel::Panel::Console:
+						DrawConsolePanel(m_Context, ts);
 						break;
 					}
 
@@ -531,7 +556,59 @@ namespace HBL2Editor
 
 	void EditorPanelSystem::DrawConsolePanel(HBL2::Scene* context, float ts)
 	{
+		ImGui::Text("Console");
+	}
+
+	void EditorPanelSystem::DrawStatsPanel(HBL2::Scene* context, float ts)
+	{
 		ImGui::Text("Frame Time: %f", ts);
+	}
+
+	void EditorPanelSystem::DrawContentBrowserPanel(HBL2::Scene* context)
+	{
+		float padding = 16.f;
+		float thumbnailSize = 128.f;
+		float panelWidth = ImGui::GetContentRegionAvail().x;
+
+		int columnCount = (int)(panelWidth / (padding + thumbnailSize));
+
+		columnCount = columnCount < 1 ? 1 : columnCount;
+
+		ImGui::Columns(columnCount, 0, false);
+
+		if (m_CurrentDirectory != HBL2::Project::GetAssetDirectory())
+		{
+			ImGui::Button("..", { thumbnailSize, thumbnailSize });
+			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+			{
+				m_CurrentDirectory = m_CurrentDirectory.parent_path();
+			}
+			ImGui::TextWrapped("Back");
+
+			ImGui::NextColumn();
+		}
+
+		for (const auto& entry : std::filesystem::directory_iterator(m_CurrentDirectory))
+		{
+			std::string& path = entry.path().string();
+
+			auto relativePath = std::filesystem::relative(entry.path(), HBL2::Project::GetAssetDirectory());
+
+			ImGui::Button(relativePath.string().c_str(), { thumbnailSize, thumbnailSize });
+			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+			{
+				if (entry.is_directory())
+				{
+					m_CurrentDirectory /= entry.path().filename();
+				}
+			}
+
+			ImGui::TextWrapped(relativePath.filename().string().c_str());
+
+			ImGui::NextColumn();
+		}
+
+		ImGui::Columns(1);
 	}
 
 	void EditorPanelSystem::DrawViewportPanel(HBL2::Scene* context)
