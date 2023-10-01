@@ -107,6 +107,9 @@ namespace HBL2
 		if (mesh.VertexArray == nullptr)
 			SetupMesh(transform, mesh, mvp);
 
+		if (mesh.VertexArray == nullptr)
+			return;
+
 		Texture::ForEach([](Texture* texture)
 		{
 			texture->Bind();

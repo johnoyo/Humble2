@@ -26,5 +26,9 @@ namespace HBL2Editor
 		glm::vec2 m_ViewportSize = { 0.f, 0.f };
 		std::filesystem::path m_EditorScenePath;
 		std::filesystem::path m_CurrentDirectory;
+
+		uint32_t m_FolderIcon;
+		uint32_t m_FileIcon;
+		uint32_t m_BackIcon;
 	};
 }

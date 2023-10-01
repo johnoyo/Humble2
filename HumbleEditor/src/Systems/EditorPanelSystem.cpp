@@ -7,6 +7,10 @@ namespace HBL2Editor
 {
 	void EditorPanelSystem::OnCreate()
 	{
+		m_FileIcon = HBL2::Texture::Load("assets/icons/content_browser/file-1453.png")->GetID();
+		m_FolderIcon = HBL2::Texture::Load("assets/icons/content_browser/folder-1437.png")->GetID();
+		m_BackIcon = HBL2::Texture::Load("assets/icons/content_browser/curved-arrow-4608.png")->GetID();
+
 		m_Context = HBL2::Context::ActiveScene;
 
 		{
@@ -571,14 +575,15 @@ namespace HBL2Editor
 		float panelWidth = ImGui::GetContentRegionAvail().x;
 
 		int columnCount = (int)(panelWidth / (padding + thumbnailSize));
-
 		columnCount = columnCount < 1 ? 1 : columnCount;
 
 		ImGui::Columns(columnCount, 0, false);
 
 		if (m_CurrentDirectory != HBL2::Project::GetAssetDirectory())
 		{
-			ImGui::Button("..", { thumbnailSize, thumbnailSize });
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+			ImGui::ImageButton((ImTextureID)m_BackIcon, { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
+			ImGui::PopStyleColor();
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 			{
 				m_CurrentDirectory = m_CurrentDirectory.parent_path();
@@ -588,13 +593,26 @@ namespace HBL2Editor
 			ImGui::NextColumn();
 		}
 
+		int id = 0;
+
 		for (const auto& entry : std::filesystem::directory_iterator(m_CurrentDirectory))
 		{
-			std::string& path = entry.path().string();
+			ImGui::PushID(id++);
 
+			std::string& path = entry.path().string();
 			auto relativePath = std::filesystem::relative(entry.path(), HBL2::Project::GetAssetDirectory());
 
-			ImGui::Button(relativePath.string().c_str(), { thumbnailSize, thumbnailSize });
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+			ImGui::ImageButton((ImTextureID)(entry.is_directory() ? m_FolderIcon : m_FileIcon), { thumbnailSize, thumbnailSize }, {0, 1}, {1, 0});
+
+			if (ImGui::BeginDragDropSource())
+			{
+				const wchar_t* path = relativePath.c_str();
+				ImGui::SetDragDropPayload("Content_Browser_Item", path, (wcslen(path) + 1) * sizeof(wchar_t));
+				ImGui::EndDragDropSource();
+			}
+
+			ImGui::PopStyleColor();
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 			{
 				if (entry.is_directory())
@@ -603,9 +621,11 @@ namespace HBL2Editor
 				}
 			}
 
-			ImGui::TextWrapped(relativePath.filename().string().c_str());
+			ImGui::TextWrapped(entry.path().filename().string().c_str());
 
 			ImGui::NextColumn();
+
+			ImGui::PopID();
 		}
 
 		ImGui::Columns(1);
@@ -654,5 +674,26 @@ namespace HBL2Editor
 		}
 
 		ImGui::Image((void*)HBL2::RenderCommand::FrameBuffer->GetColorAttachmentID(), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item"))
+			{
+				auto path = HBL2::Project::GetAssetFileSystemPath((const wchar_t*)payload->Data);
+
+				if (path.extension().string() != ".humble")
+				{
+					HBL2_WARN("Could not load {0} - not a scene file", path.filename().string());
+					return;
+				}
+
+				HBL2::Project::OpenScene(path);
+
+				m_Context = HBL2::Context::ActiveScene;
+				m_EditorScenePath = path;
+
+				ImGui::EndDragDropTarget();
+			}
+		}
 	}
 }
