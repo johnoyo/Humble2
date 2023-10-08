@@ -581,6 +581,9 @@ namespace HBL2Editor
 
 					// Copy assets to build folder.
 					std::filesystem::copy("./EmptyProject", "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\EmptyProject", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+
+					// Copy assets to build folder.
+					std::filesystem::copy("./assets", "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
 				}
 				if (ImGui::MenuItem("Build & Run (Windows)"))
 				{
@@ -589,6 +592,9 @@ namespace HBL2Editor
 
 					// Copy assets to build folder.
 					std::filesystem::copy("./EmptyProject", "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\EmptyProject", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+
+					// Copy assets to build folder.
+					std::filesystem::copy("./assets", "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
 
 					// Run.
 					system("C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\HumbleApp.exe \"EmptyProject\\EmptyProject.hblproj\"");

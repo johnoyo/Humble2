@@ -36,26 +36,19 @@ project "HumbleApp"
 
     filter "system:windows"
         systemversion "latest"
-    
-        defines
-        {
-            "HBL2_PLATFORM_WINDOWS"
-        }
+        defines { "HBL2_PLATFORM_WINDOWS" }
 
     filter "configurations:Debug"
         defines { "DEBUG" }
+        runtime "Debug"
         symbols "On"
 
     filter "configurations:Release"
         defines { "RELEASE" }
+        runtime "Release"
         optimize "On"
 
     filter "configurations:Emscripten"
-        defines { "EMSCRIPTEN" }
-        optimize "on"
-
-    filter { "system:windows", "configurations:Debug" }
-        buildoptions "/MDd"
-
-    filter { "system:windows", "configurations:Release" }
-        buildoptions "/MD"
+        defines { "EMSCRIPTEN", "__EMSCRIPTEN__" }
+        runtime "Release"
+        optimize "On"

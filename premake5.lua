@@ -9,7 +9,7 @@ workspace "HumbleGameEngine2"
         "Emscripten"
     }
 
-    startproject "HumbleApp"
+    startproject "HumbleEditor"
 
 -- Variable to hold output directory.
 outputdir = "%{cfg.buildcfg}-%{cfg.architecture}"

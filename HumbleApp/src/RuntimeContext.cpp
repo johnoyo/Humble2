@@ -56,7 +56,20 @@ namespace HBL2Runtime
 
 	bool RuntimeContext::OpenProject()
 	{
-		std::string filepath = HBL2::Application::Get().GetSpec().CommandLineArgs;
+		std::filesystem::path filepath;
+
+		for (const auto& entry : std::filesystem::recursive_directory_iterator(std::filesystem::current_path()))
+		{
+			if (entry.path().extension() == ".hblproj")
+			{
+				filepath = entry.path();
+			}
+		}
+
+		if (filepath.empty())
+		{
+			// HBL2_ERROR("Could not find project.");
+		}
 
 		if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 		{
@@ -67,7 +80,7 @@ namespace HBL2Runtime
 			return true;
 		}
 
-		HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
+		// HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
 		HBL2::Application::Get().GetWindow()->Close();
 
 		return false;
