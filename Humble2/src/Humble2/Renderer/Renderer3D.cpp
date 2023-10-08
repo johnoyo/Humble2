@@ -137,6 +137,29 @@ namespace HBL2
 		mesh.VertexArray->UnBind();
 	}
 
+	void Renderer3D::CleanMesh(Component::StaticMesh& mesh)
+	{
+		if (mesh.VertexArray == nullptr)
+		{
+			return;
+		}
+
+		for (auto& buffer : mesh.VertexArray->GetVertexBuffers())
+		{
+			buffer->Clean();
+			delete buffer;
+			buffer = nullptr;
+		}
+
+		mesh.VertexArray->GetVertexBuffers().clear();
+
+		mesh.Data.clear();
+
+		mesh.VertexArray->Clean();
+		delete mesh.VertexArray;
+		mesh.VertexArray = nullptr;
+	}
+
 	void Renderer3D::EndFrame()
 	{
 		if (m_FrameBuffer != nullptr)
@@ -214,7 +237,7 @@ namespace HBL2
 				new_vert.Normal = normal;
 				new_vert.Color = { normal.x, normal.y, normal.z, 1.0f };
 				new_vert.TextureCoord = texCoord;
-				new_vert.TextureID = 0;
+				new_vert.TextureID = Texture::Get(mesh.TexturePath)->GetSlot();
 
 				mesh.Data.push_back(new_vert);
 			}

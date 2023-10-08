@@ -185,20 +185,20 @@ namespace HBL2Editor
 				context->GetComponent<HBL2::Component::Transform>(entity).Scale = { 5.f, 5.f, 5.f };
 				context->AddComponent<HBL2::Component::EditorVisible>(entity);
 				auto& mesh = context->AddComponent<HBL2::Component::StaticMesh>(entity);
-				mesh.Path = "assets/meshes/monkey_smooth.obj";
+				mesh.Path = "EmptyProject\\Assets\\Meshes\\monkey_smooth.obj";
+				mesh.TexturePath = "";
 				mesh.ShaderName = "BasicMesh";
 			}
 
-			if (ImGui::MenuItem("Create Monkeh 2"))
+			if (ImGui::MenuItem("Create Lost Empire"))
 			{
 				auto entity = context->CreateEntity();
-				context->GetComponent<HBL2::Component::Tag>(entity).Name = "Monkeh2";
-				context->GetComponent<HBL2::Component::Transform>(entity).Translation = { 25.f, 0.f, 0.f };
-				context->GetComponent<HBL2::Component::Transform>(entity).Rotation = { 0.f, -90.f, 0.f };
-				context->GetComponent<HBL2::Component::Transform>(entity).Scale = { 10.f, 10.f, 10.f };
+				context->GetComponent<HBL2::Component::Tag>(entity).Name = "LostEmpire";
+				context->GetComponent<HBL2::Component::Transform>(entity).Scale = { 5.f, 5.f, 5.f };
 				context->AddComponent<HBL2::Component::EditorVisible>(entity);
 				auto& mesh = context->AddComponent<HBL2::Component::StaticMesh>(entity);
-				mesh.Path = "assets/meshes/monkey_smooth.obj";
+				mesh.Path = "EmptyProject\\Assets\\Meshes\\lost_empire.obj";
+				mesh.TexturePath = "EmptyProject\\Assets\\Textures\\lost_empire-RGBA.png";
 				mesh.ShaderName = "BasicMesh";
 			}
 
@@ -358,7 +358,27 @@ namespace HBL2Editor
 
 					ImGui::Checkbox("Enabled", &sprite.Enabled);
 					ImGui::Checkbox("Static", &sprite.Static);
-					ImGui::InputInt("Texture", &sprite.TextureIndex);
+					ImGui::InputText("Texture", (char*)sprite.Path.c_str(), 256);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item"))
+						{
+							auto path = std::filesystem::relative(HBL2::Project::GetAssetFileSystemPath((const wchar_t*)payload->Data), HBL2::Project::GetProjectDirectory().parent_path());
+
+							if (path.extension().string() == ".png" || path.extension().string() == ".jpg")
+							{
+								sprite.Path = path.string();
+							}
+							else
+							{
+								HBL2_WARN("Could not load {0} - not a valid texture format file", path.filename().string());
+							}
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+
 					ImGui::ColorEdit4("Color", glm::value_ptr(sprite.Color));
 
 					ImGui::TreePop();
@@ -392,6 +412,53 @@ namespace HBL2Editor
 
 					ImGui::Checkbox("Enabled", &mesh.Enabled);
 					ImGui::Checkbox("Static", &mesh.Static);
+					ImGui::InputText("Mesh", (char*)mesh.Path.c_str(), 256);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item"))
+						{
+							auto path = std::filesystem::relative(HBL2::Project::GetAssetFileSystemPath((const wchar_t*)payload->Data), HBL2::Project::GetProjectDirectory().parent_path());
+
+							if (path.extension().string() == ".obj")
+							{
+								HBL2::Renderer3D::Get().CleanMesh(mesh);
+								mesh.Path = path.string();
+								HBL2::Renderer3D::Get().SubmitMesh(context->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity), mesh);
+							}
+							else
+							{
+								HBL2_WARN("Could not load {0} - not a valid mesh format file", path.filename().string());
+							}
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+
+					ImGui::InputText("Texture", (char*)mesh.TexturePath.c_str(), 256);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item"))
+						{
+							auto path = std::filesystem::relative(HBL2::Project::GetAssetFileSystemPath((const wchar_t*)payload->Data), HBL2::Project::GetProjectDirectory().parent_path());
+
+							if (path.extension().string() == ".png" || path.filename().extension().string() == ".jpg")
+							{
+								mesh.TexturePath = path.string();
+
+								// TODO: Improve this. Update the mesh, do not recreate it.
+								HBL2::Renderer3D::Get().CleanMesh(mesh);
+								HBL2::Renderer3D::Get().SubmitMesh(context->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity), mesh);
+							}
+							else
+							{
+								HBL2_WARN("Could not load {0} - not a valid texture format file", path.filename().string());
+							}
+
+							ImGui::EndDragDropTarget();
+						}
+					}
 
 					ImGui::TreePop();
 				}
@@ -513,7 +580,7 @@ namespace HBL2Editor
 					system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
 
 					// Copy assets to build folder.
-					std::filesystem::copy("./assets", "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+					std::filesystem::copy("./EmptyProject", "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\EmptyProject", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
 				}
 				if (ImGui::MenuItem("Build & Run (Windows)"))
 				{
@@ -521,10 +588,10 @@ namespace HBL2Editor
 					system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
 
 					// Copy assets to build folder.
-					std::filesystem::copy("./assets", "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+					std::filesystem::copy("./EmptyProject", "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\EmptyProject", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
 
 					// Run.
-					system("C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\HumbleApp.exe");
+					system("C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\HumbleApp.exe \"EmptyProject\\EmptyProject.hblproj\"");
 				}
 				if (ImGui::MenuItem("Build (Web)"))
 				{
@@ -684,6 +751,7 @@ namespace HBL2Editor
 				if (path.extension().string() != ".humble")
 				{
 					HBL2_WARN("Could not load {0} - not a scene file", path.filename().string());
+					ImGui::EndDragDropTarget();
 					return;
 				}
 

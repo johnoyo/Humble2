@@ -20,6 +20,7 @@ namespace HBL2
 
 		virtual void Bind() override;
 		virtual void UnBind() override;
+		virtual void Clean() override;
 		virtual std::vector<VertexBuffer*>& GetVertexBuffers() override;
 		virtual IndexBuffer* GetIndexBuffer() override;
 		virtual void AddVertexBuffer(VertexBuffer* vertexBuffer) override;

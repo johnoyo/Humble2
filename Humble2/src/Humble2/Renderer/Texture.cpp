@@ -35,18 +35,6 @@ namespace HBL2
 		return s_TextureLib[name];
 	}
 
-	Texture* Texture::Get(uint32_t index)
-	{
-		int i = 0;
-		for (auto& item : s_TextureLib)
-		{
-			if (i++ == index)
-				return item.second;
-		}
-
-		return nullptr;
-	}
-
 	bool Texture::Exists(const std::string& name)
 	{
 		return s_TextureLib.find(name) != s_TextureLib.end();

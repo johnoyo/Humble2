@@ -23,6 +23,7 @@ namespace HBL2
 		virtual void Bind() override;
 		virtual void UnBind() override;
 		virtual void SetData() override;
+		virtual void Clean() override;
 	private:
 		uint32_t m_VertexBufferID = 0;
 		uint32_t m_TotalSize = 0;

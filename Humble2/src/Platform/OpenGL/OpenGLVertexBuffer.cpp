@@ -92,6 +92,11 @@ namespace HBL2
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct Buffer) * BatchSize, m_Buffer);
 	}
 
+	void OpenGLVertexBuffer::Clean()
+	{
+		glDeleteBuffers(1, &m_VertexBufferID);
+	}
+
 	void OpenGLVertexBuffer::Bind()
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, m_VertexBufferID);

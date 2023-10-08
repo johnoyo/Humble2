@@ -1,18 +1,6 @@
-Scene: scenes/EmptyScene.humble
+Scene: Scenes/EmptyScene.humble
 Entities:
-  - Entity: 4
-    Component::Tag:
-      Tag: Monkeh2
-    Component::Transform:
-      Translation: [25, 0, 0]
-      Rotation: [0, -90, 0]
-      Scale: [10, 10, 10]
-    Component::StaticMesh:
-      Enabled: true
-      Static: false
-      Path: assets/meshes/monkey_smooth.obj
-      ShaderName: BasicMesh
-  - Entity: 3
+  - Entity: 2
     Component::Tag:
       Tag: Monkeh
     Component::Transform:
@@ -22,9 +10,10 @@ Entities:
     Component::StaticMesh:
       Enabled: true
       Static: false
-      Path: assets/meshes/monkey_smooth.obj
+      Path: EmptyProject\Assets\Meshes\monkey_smooth.obj
+      TexturePath: ""
       ShaderName: BasicMesh
-  - Entity: 2
+  - Entity: 1
     Component::Tag:
       Tag: Camera
     Component::Transform:
@@ -40,7 +29,7 @@ Entities:
       FOV: 30
       Aspect Ratio: 1.778
       Zoom Level: 300
-  - Entity: 1
+  - Entity: 0
     Component::Tag:
       Tag: Sprite
     Component::Transform:
@@ -51,16 +40,4 @@ Entities:
       Enabled: true
       Static: false
       Color: [1, 1, 1, 1]
-      TextureIndex: 0
-  - Entity: 0
-    Component::Tag:
-      Tag: Sprite
-    Component::Transform:
-      Translation: [-12.25, 15, 0]
-      Rotation: [0, 0, 0]
-      Scale: [10, 10, 10]
-    Component::Sprite:
-      Enabled: true
-      Static: false
-      Color: [1, 1, 1, 1]
-      TextureIndex: 0
+      Texture: EmptyProject\Assets\Textures\Brick.png

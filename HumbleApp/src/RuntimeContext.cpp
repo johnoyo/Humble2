@@ -20,7 +20,7 @@ namespace HBL2Runtime
 		mesh.Path = "assets/meshes/monkey_smooth.obj";
 		mesh.ShaderName = "BasicMesh";
 #else
-		OpenEmptyProject();
+		OpenProject();
 #endif
     }
 
@@ -54,10 +54,9 @@ namespace HBL2Runtime
     {
     }
 
-	bool RuntimeContext::OpenEmptyProject()
+	bool RuntimeContext::OpenProject()
 	{
-		// TODO: Get this from command line args.
-		std::string filepath = "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\HumbleApp\\EmptyProject\\EmptyProject.hblproj";
+		std::string filepath = HBL2::Application::Get().GetSpec().CommandLineArgs;
 
 		if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 		{

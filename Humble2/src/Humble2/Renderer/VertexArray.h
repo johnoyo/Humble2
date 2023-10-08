@@ -16,6 +16,7 @@ namespace HBL2
 
 		virtual void Bind() = 0;
 		virtual void UnBind() = 0;
+		virtual void Clean() = 0;
 
 		virtual std::vector<VertexBuffer*>& GetVertexBuffers() = 0;
 		virtual IndexBuffer* GetIndexBuffer() = 0;

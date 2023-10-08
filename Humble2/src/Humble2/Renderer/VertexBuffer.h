@@ -64,6 +64,7 @@ namespace HBL2
 
 		virtual void Bind() = 0;
 		virtual void UnBind() = 0;
+		virtual void Clean() = 0;
 		virtual void SetData() = 0;
 		Buffer* GetHandle();
 		uint32_t BatchSize = 0;

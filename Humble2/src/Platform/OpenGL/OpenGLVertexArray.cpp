@@ -19,6 +19,11 @@ namespace HBL2
 		glBindVertexArray(0);
 	}
 
+	void OpenGLVertexArray::Clean()
+	{
+		glDeleteVertexArrays(1, &m_VertexArrayObject);
+	}
+
 	std::vector<VertexBuffer*>& OpenGLVertexArray::GetVertexBuffers()
 	{
 		return m_VertexBuffers;

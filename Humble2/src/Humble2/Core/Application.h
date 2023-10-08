@@ -27,6 +27,7 @@ namespace HBL2
 	struct ApplicationSpec
 	{
 		std::string Name = "Humble2 Application";
+		std::string CommandLineArgs = "";
 		Platform Platform = Platform::Windows;
 		GraphicsAPI GraphicsAPI = GraphicsAPI::OpenGL;
 		float Width = 1280.f;
@@ -54,6 +55,8 @@ namespace HBL2
 		{
 			return m_Window;
 		}
+
+		const ApplicationSpec& GetSpec() const { return m_Specification; }
 
 	private:
 		static Application* s_Instance;

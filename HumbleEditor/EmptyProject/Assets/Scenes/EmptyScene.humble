@@ -1,6 +1,6 @@
 Scene: Scenes/EmptyScene.humble
 Entities:
-  - Entity: 2
+  - Entity: 1
     Component::Tag:
       Tag: Camera
     Component::Transform:
@@ -16,7 +16,7 @@ Entities:
       FOV: 30
       Aspect Ratio: 1.778
       Zoom Level: 300
-  - Entity: 1
+  - Entity: 0
     Component::Tag:
       Tag: Sprite
     Component::Transform:
@@ -27,4 +27,4 @@ Entities:
       Enabled: true
       Static: false
       Color: [1, 1, 1, 1]
-      TextureIndex: 0
+      Texture: EmptyProject\Assets\Textures\Pixel-Art.png

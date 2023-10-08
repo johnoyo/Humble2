@@ -1,5 +1,7 @@
 #include "SceneSerializer.h"
 
+#include "Renderer\Texture.h"
+
 namespace YAML
 {
 	template<>
@@ -160,7 +162,7 @@ namespace HBL2
 			out << YAML::Key << "Enabled" << YAML::Value << sprite.Enabled;
 			out << YAML::Key << "Static" << YAML::Value << sprite.Static;
 			out << YAML::Key << "Color" << YAML::Value << sprite.Color;
-			out << YAML::Key << "TextureIndex" << YAML::Value << sprite.TextureIndex;
+			out << YAML::Key << "Texture" << YAML::Value << sprite.Path;
 			out << YAML::EndMap;
 		}
 
@@ -174,6 +176,7 @@ namespace HBL2
 			out << YAML::Key << "Enabled" << YAML::Value << staticMesh.Enabled;
 			out << YAML::Key << "Static" << YAML::Value << staticMesh.Static;
 			out << YAML::Key << "Path" << YAML::Value << staticMesh.Path;
+			out << YAML::Key << "TexturePath" << YAML::Value << staticMesh.TexturePath;
 			out << YAML::Key << "ShaderName" << YAML::Value << staticMesh.ShaderName;
 			out << YAML::EndMap;
 		}
@@ -278,10 +281,12 @@ namespace HBL2
 				if (spriteComponent)
 				{
 					auto& sprite = m_Scene->AddComponent<Component::Sprite>(deserializedEntity);
+
 					sprite.Enabled = spriteComponent["Enabled"].as<bool>();
 					sprite.Static = spriteComponent["Static"].as<bool>();
 					sprite.Color = spriteComponent["Color"].as<glm::vec4>();
-					sprite.TextureIndex = spriteComponent["TextureIndex"].as<int>();
+					sprite.Path = spriteComponent["Texture"].as<std::string>();
+					sprite.TextureIndex = Texture::Get(sprite.Path)->GetID();
 				}
 
 				auto staticMeshComponent = entity["Component::StaticMesh"];
@@ -291,7 +296,9 @@ namespace HBL2
 					staticMesh.Enabled = staticMeshComponent["Enabled"].as<bool>();
 					staticMesh.Static = staticMeshComponent["Static"].as<bool>();
 					staticMesh.Path = staticMeshComponent["Path"].as<std::string>();
+					staticMesh.TexturePath = staticMeshComponent["TexturePath"].as<std::string>();
 					staticMesh.ShaderName = staticMeshComponent["ShaderName"].as<std::string>();
+					staticMesh.TextureIndex = Texture::Get(staticMesh.TexturePath)->GetID();
 				}
 			}
 		}

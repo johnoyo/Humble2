@@ -12,6 +12,6 @@ namespace HBL2Runtime
 		virtual void OnUpdate(float ts) override;
 		virtual void OnGuiRender(float ts) override;
 	private:
-		bool OpenEmptyProject();
+		bool OpenProject();
 	};
 }

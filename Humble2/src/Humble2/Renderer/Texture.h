@@ -16,7 +16,6 @@ namespace HBL2
 
 		static Texture* Load(const std::string& path);
 		static Texture* Get(const std::string& name);
-		static Texture* Get(uint32_t index);
 		static bool Exists(const std::string& name);
 		static void Add(const std::string& path, Texture* texture);
 

@@ -28,6 +28,7 @@ namespace HBL2
 		struct Sprite
 		{
 			glm::vec4 Color = { 1.f, 1.f, 1.f, 1.f };
+			std::string Path = "";
 			int TextureIndex = 0;
 			bool Static = false;
 
@@ -40,6 +41,8 @@ namespace HBL2
 
 			VertexArray* VertexArray;
 			std::string Path;
+			std::string TexturePath = "";
+			int TextureIndex = 0;
 			std::string ShaderName;
 			bool Static = false;
 

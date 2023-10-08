@@ -31,6 +31,7 @@ namespace HBL2
 		void BeginFrame();
 		void SetupMesh(Component::Transform& transform, Component::StaticMesh& mesh, glm::mat4& mvp);
 		void SubmitMesh(Component::Transform& transform, Component::StaticMesh& mesh);
+		void CleanMesh(Component::StaticMesh& mesh);
 		void EndFrame();
 
 		void Clean();
