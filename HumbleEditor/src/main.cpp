@@ -2,6 +2,7 @@
 
 #include "EditorContext.h"
 
+// int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdLine, int cmdshow)
 int main()
 {
 	HBL2::ApplicationSpec applicationSpec;

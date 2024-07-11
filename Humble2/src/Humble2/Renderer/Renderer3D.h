@@ -26,7 +26,7 @@ namespace HBL2
 			return instance;
 		}
 
-		void Initialize(FrameBuffer* framebuffer);
+		void Initialize();
 
 		void BeginFrame();
 		void SetupMesh(Component::Transform& transform, Component::StaticMesh& mesh, glm::mat4& mvp);

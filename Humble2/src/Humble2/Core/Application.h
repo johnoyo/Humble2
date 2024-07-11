@@ -11,6 +11,8 @@
 #include "Systems/MeshRendererSystem.h"
 #include "Systems/SpriteRendererSystem.h"
 
+#include "Utilities\AssetManager.h"
+
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -30,8 +32,8 @@ namespace HBL2
 		std::string CommandLineArgs = "";
 		Platform Platform = Platform::Windows;
 		GraphicsAPI GraphicsAPI = GraphicsAPI::OpenGL;
-		float Width = 1280.f;
-		float Height = 720.f;
+		float Width = 1920.f;
+		float Height = 1080.f;
 		bool Vsync = true;
 		bool Fullscreen = false;
 

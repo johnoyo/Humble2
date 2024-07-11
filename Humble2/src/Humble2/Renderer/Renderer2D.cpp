@@ -2,7 +2,7 @@
 
 namespace HBL2
 {
-	void Renderer2D::Initialize(FrameBuffer* framebuffer)
+	void Renderer2D::Initialize()
 	{
 		m_VertexArray = VertexArray::Create();
 		m_VertexArray->SetIndexBuffer(IndexBuffer::Create(MAX_BATCH_SIZE));
@@ -19,7 +19,7 @@ namespace HBL2
 		m_QuadTextureCoordinates[2] = { 1.0f, 0.0f };
 		m_QuadTextureCoordinates[3] = { 0.0f, 0.0f };
 
-		m_FrameBuffer = framebuffer;
+		m_FrameBuffer = RenderCommand::FrameBuffer;
 	}
 
 	void Renderer2D::BeginFrame()

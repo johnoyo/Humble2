@@ -116,8 +116,8 @@ namespace HBL2
 		m_Specification.Context->OnAttach();
 
 		// Initialize the renderers.
-		Renderer2D::Get().Initialize(RenderCommand::FrameBuffer);
-		Renderer3D::Get().Initialize(RenderCommand::FrameBuffer);
+		Renderer2D::Get().Initialize();
+		Renderer3D::Get().Initialize();
 		ImGuiRenderer::Get().Initialize(m_Window);
 
 		m_Specification.Context->OnCreate();

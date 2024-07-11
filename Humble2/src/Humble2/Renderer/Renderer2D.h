@@ -23,7 +23,7 @@ namespace HBL2
 			return instance;
 		}
 
-		void Initialize(FrameBuffer* framebuffer);
+		void Initialize();
 
 		void BeginFrame();
 		void Submit();
@@ -37,7 +37,6 @@ namespace HBL2
 		void DrawQuad(uint32_t batchIndex, Component::Transform& transform, float textureID = 0.f, glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f });
 
 		void SetViewport(int32_t x, int32_t y, int32_t width, int32_t height);
-		FrameBuffer* GetFrameBuffer() const { return m_FrameBuffer; }
 
 	private:
 		Renderer2D() {}

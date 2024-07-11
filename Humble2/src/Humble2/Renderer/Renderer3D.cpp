@@ -5,9 +5,9 @@
 
 namespace HBL2
 {
-	void Renderer3D::Initialize(FrameBuffer* framebuffer)
+	void Renderer3D::Initialize()
 	{
-		m_FrameBuffer = framebuffer;
+		m_FrameBuffer = RenderCommand::FrameBuffer;
 	}
 
 	void Renderer3D::BeginFrame()
@@ -186,7 +186,7 @@ namespace HBL2
 		std::string err;
 
 		//load the OBJ file
-		bool result = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, mesh.Path.c_str(), nullptr);
+		bool result = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, mesh.Path.c_str(), std::filesystem::path(mesh.Path).parent_path().string().c_str());
 
 		//make sure to output the warnings to the console, in case there are issues with the file
 		if (!warn.empty())

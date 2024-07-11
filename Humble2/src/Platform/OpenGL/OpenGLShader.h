@@ -21,6 +21,8 @@ namespace HBL2
 
 		virtual void Bind() override;
 		virtual void UnBind() override;
+
+		virtual void SetFloat1(const float value, const std::string& uniformName) override;
 		virtual void SetFloat2(const glm::vec2& vec2, const std::string& uniformName) override;
 		virtual void SetMat4(const glm::mat4& mat4, const std::string& uniformName) override;
 		virtual void SetInt1(const int32_t value, const std::string& uniformName) override;

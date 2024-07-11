@@ -14,7 +14,7 @@
 		#include <signal.h>
 		#define HBL_DEBUGBREAK() raise(SIGTRAP)
 	#else
-		#error "Platform is not suppoerted yet!"
+		#error "Platform is not supported yet!"
 	#endif
 
 	#define HBL2_ENABLE_ASSERTS
@@ -45,3 +45,5 @@ struct Buffer
 	float TextureID;
 	glm::vec3 Normal;
 };
+
+using UUID = uint64_t;

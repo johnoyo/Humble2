@@ -7,6 +7,17 @@ namespace HBL2Editor
 {
 	void EditorPanelSystem::OnCreate()
 	{
+		// Load editor icons.
+		m_PngIcon = HBL2::Texture::Load("assets/icons/content_browser/png-1477.png")->GetID();
+		m_JpgIcon = HBL2::Texture::Load("assets/icons/content_browser/jpg-1476.png")->GetID();
+		m_ObjIcon = HBL2::Texture::Load("assets/icons/content_browser/obj-1472.png")->GetID();
+		m_FbxIcon = HBL2::Texture::Load("assets/icons/content_browser/fbx-1472.png")->GetID();
+		m_MatIcon = HBL2::Texture::Load("assets/icons/content_browser/mat-1472.png")->GetID();
+		m_MtlIcon = HBL2::Texture::Load("assets/icons/content_browser/mtl-1472.png")->GetID();
+		m_SceneIcon = HBL2::Texture::Load("assets/icons/content_browser/scene-1472.png")->GetID();
+		m_Mp3Icon = HBL2::Texture::Load("assets/icons/content_browser/mp3-1474.png")->GetID();
+		m_TxtIcon = HBL2::Texture::Load("assets/icons/content_browser/txt-1473.png")->GetID();
+		m_ShaderIcon = HBL2::Texture::Load("assets/icons/content_browser/shader-1472.png")->GetID();
 		m_FileIcon = HBL2::Texture::Load("assets/icons/content_browser/file-1453.png")->GetID();
 		m_FolderIcon = HBL2::Texture::Load("assets/icons/content_browser/folder-1437.png")->GetID();
 		m_BackIcon = HBL2::Texture::Load("assets/icons/content_browser/curved-arrow-4608.png")->GetID();
@@ -77,6 +88,17 @@ namespace HBL2Editor
 			panel.Name = "Viewport";
 			panel.Type = Component::EditorPanel::Panel::Viewport;
 			panel.Styles.push_back({ ImGuiStyleVar_WindowPadding, ImVec2{ 0.f, 0.f }, 0.f, false });
+		}
+
+		// Create and register assets.
+		for (auto& entry : std::filesystem::recursive_directory_iterator(HBL2::Project::GetAssetDirectory()))
+		{
+			if (entry.path().extension().string() == ".meta")
+			{
+				continue;
+			}
+
+			UUID assetID = HBL2::AssetManager::Get().CreateAsset(entry.path());
 		}
 	}
 
@@ -674,9 +696,73 @@ namespace HBL2Editor
 
 			std::string& path = entry.path().string();
 			auto relativePath = std::filesystem::relative(entry.path(), HBL2::Project::GetAssetDirectory());
+			const std::string extension = entry.path().extension().string();
+
+			if (extension == ".meta")
+			{
+				ImGui::PopID();
+				continue;
+			}
 
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-			ImGui::ImageButton((ImTextureID)(entry.is_directory() ? m_FolderIcon : m_FileIcon), { thumbnailSize, thumbnailSize }, {0, 1}, {1, 0});
+
+			ImTextureID textureID;
+
+			if (entry.is_directory())
+			{
+				textureID = (ImTextureID)m_FolderIcon;
+			}
+			else
+			{
+				if (extension == ".obj")
+				{
+					textureID = (ImTextureID)m_ObjIcon;
+				}
+				else if (extension == ".fbx")
+				{
+					textureID = (ImTextureID)m_FbxIcon;
+				}
+				else if (extension == ".mat")
+				{
+					textureID = (ImTextureID)m_MatIcon;
+				}
+				else if (extension == ".mtl")
+				{
+					textureID = (ImTextureID)m_MtlIcon;
+				}
+				else if (extension == ".shader")
+				{
+					textureID = (ImTextureID)m_ShaderIcon;
+				}
+				else if (extension == ".png")
+				{
+					textureID = (ImTextureID)m_PngIcon;
+				}
+				else if (extension == ".jpg")
+				{
+					textureID = (ImTextureID)m_JpgIcon;
+				}
+				else if (extension == ".mp3")
+				{
+					textureID = (ImTextureID)m_Mp3Icon;
+				}
+				else if (extension == ".txt")
+				{
+					textureID = (ImTextureID)m_TxtIcon;
+				}
+				else if (extension == ".humble")
+				{
+					textureID = (ImTextureID)m_SceneIcon;
+				}
+				else
+				{
+					textureID = (ImTextureID)m_FileIcon;
+				}
+			}
+
+			UUID assetID = HBL2::AssetManager::Get().CreateAsset(entry.path());
+
+			ImGui::ImageButton(textureID, { thumbnailSize, thumbnailSize }, {0, 1}, {1, 0});
 
 			if (ImGui::BeginDragDropSource())
 			{

@@ -54,5 +54,4 @@ namespace HBL2
 		static std::mt19937_64 s_RandomEngine;
 		static std::uniform_int_distribution<std::mt19937_64::result_type> s_Distribution;
 	};
-
 }
