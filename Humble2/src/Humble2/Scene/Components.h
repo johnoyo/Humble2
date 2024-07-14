@@ -30,7 +30,13 @@ namespace HBL2
 			glm::vec3 Scale = { 10.f, 10.f, 10.f };
 
 			glm::mat4 Matrix = glm::mat4(1.f);
+			glm::mat4 WorldMatrix = glm::mat4(1.f);
 			bool Static = false;
+		};
+
+		struct Link
+		{
+			entt::entity parent = entt::null;
 		};
 
 		struct Sprite
@@ -38,7 +44,6 @@ namespace HBL2
 			glm::vec4 Color = { 1.f, 1.f, 1.f, 1.f };
 			std::string Path = "";
 			int TextureIndex = 0;
-			bool Static = false;
 
 			bool Enabled = true;
 		};
@@ -52,8 +57,13 @@ namespace HBL2
 			std::string TexturePath = "";
 			int TextureIndex = 0;
 			std::string ShaderName;
-			bool Static = false;
 
+			bool Enabled = true;
+		};
+
+		struct Sprite_New
+		{
+			HBL::Handle<HBL::Material> MaterialInstance;
 			bool Enabled = true;
 		};
 
@@ -66,20 +76,24 @@ namespace HBL2
 
 		struct Camera
 		{
+			enum class Type
+			{
+				Perspective = 0,
+				Orthographic = 1,
+			};
+
 			float ZoomLevel = 300.f;
 			float Fov = 30.f;
 			float Near = 0.1f;
 			float Far = 1000.f;
 			float AspectRatio = 1.778f;
+			Type Type = Type::Perspective;
 
 			glm::mat4 View = glm::mat4(1.f);
-			//glm::mat4 Projection = glm::ortho(-AspectRatio * ZoomLevel, AspectRatio * ZoomLevel, -ZoomLevel, ZoomLevel, -1.f, 1.f);
-			glm::mat4 Projection = glm::perspective(glm::radians(Fov), AspectRatio, Near, Far);
+			glm::mat4 Projection = glm::mat4(1.f);
 			glm::mat4 ViewProjectionMatrix = glm::mat4(1.f);
 
 			bool Primary = true;
-			bool Static = false;
-
 			bool Enabled = false;
 		};
 

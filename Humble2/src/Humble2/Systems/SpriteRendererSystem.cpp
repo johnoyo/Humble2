@@ -66,7 +66,7 @@ namespace HBL2
 			{
 				if (sprite.Enabled)
 				{
-					if (!sprite.Static)
+					if (!transform.Static)
 					{
 						transform.QRotation = glm::quat({ glm::radians(transform.Rotation.x), glm::radians(transform.Rotation.y), glm::radians(transform.Rotation.z) });
 

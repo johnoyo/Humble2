@@ -13,16 +13,22 @@ namespace HBL2
 			{
 				if (camera.Enabled)
 				{
-					transform.QRotation = glm::quat(transform.Rotation);
+					if (camera.Type == Component::Camera::Type::Perspective)
+					{
+						camera.Projection = glm::perspective(glm::radians(camera.Fov), camera.AspectRatio, camera.Near, camera.Far);
+					}
+					else
+					{
+						camera.Projection = glm::ortho(-camera.AspectRatio * camera.ZoomLevel, camera.AspectRatio * camera.ZoomLevel, -camera.ZoomLevel, camera.ZoomLevel, -1.f, 1.f);
+					}
 
-					transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) * glm::toMat4(transform.QRotation);
-
-					camera.View = glm::inverse(transform.Matrix);
-
+					camera.View = glm::inverse(transform.WorldMatrix);
 					camera.ViewProjectionMatrix = camera.Projection * camera.View;
 
 					if (camera.Primary)
+					{
 						Context::ActiveScene->MainCamera = entity;
+					}
 				}
 			});
 	}
@@ -35,23 +41,24 @@ namespace HBL2
 			{
 				if (camera.Enabled)
 				{
-					if (!camera.Static)
+					if (!transform.Static)
 					{
-						transform.QRotation = glm::quat(transform.Rotation);
+						if (camera.Type == Component::Camera::Type::Perspective)
+						{
+							camera.Projection = glm::perspective(glm::radians(camera.Fov), camera.AspectRatio, camera.Near, camera.Far);
+						}
+						else
+						{
+							camera.Projection = glm::ortho(-camera.AspectRatio * camera.ZoomLevel, camera.AspectRatio * camera.ZoomLevel, -camera.ZoomLevel, camera.ZoomLevel, -1.f, 1.f);
+						}
 
-						transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) * glm::toMat4(transform.QRotation);
-
-						camera.View = glm::inverse(transform.Matrix);
-
+						camera.View = glm::inverse(transform.WorldMatrix);
 						camera.ViewProjectionMatrix = camera.Projection * camera.View;
-
-						if (camera.Primary)
-							Context::ActiveScene->MainCamera = entity;
 					}
-					else if (camera.Static)
+
+					if (camera.Primary)
 					{
-						if (camera.Primary)
-							Context::ActiveScene->MainCamera = entity;
+						Context::ActiveScene->MainCamera = entity;
 					}
 				}
 			});

@@ -59,19 +59,19 @@ namespace HBL2
 		m_Specification.Context->Core = new Scene("Core");
 		//m_Specification.Context->Core->RegisterSystem(new SpriteRendererSystem);
 		//m_Specification.Context->Core->RegisterSystem(new MeshRendererSystem);
+		m_Specification.Context->Core->RegisterSystem(new TransformSystem);
+		m_Specification.Context->Core->RegisterSystem(new LinkSystem);
 		m_Specification.Context->Core->RegisterSystem(new TestRendererSystem);
-		//m_Specification.Context->Core->RegisterSystem(new CameraSystem);
+		m_Specification.Context->Core->RegisterSystem(new CameraSystem);
 	}
 
 	Application::~Application()
 	{
-		//ImGuiRenderer::Get().Clean();
-
-		//Renderer3D::Get().Clean();
-
-		//Renderer2D::Get().Clean();
+		// ImGuiRenderer::Instance->Clean();
+		// delete ImGuiRenderer::Instance;
 
 		Renderer::Instance->Clean();
+		delete Renderer::Instance;
 
 		delete m_Window;
 	}
@@ -104,6 +104,11 @@ namespace HBL2
 			m_Frames = 0;
 			m_FixedUpdates = 0;
 		}
+
+		if (m_Specification.GraphicsAPI == GraphicsAPI::OpenGL)
+		{
+			glfwSwapBuffers(m_Window->GetHandle());
+		}
 	}
 
 	void Application::Start()
@@ -112,20 +117,16 @@ namespace HBL2
 		m_Window->Create();
 
 		HBL::ResourceManager::Instance = new HBL::OpenGLResourceManager();
-		Renderer::Instance = new HBL2::OpenGLRenderer();
-
-		// Initialize the graphics API.
-		RenderCommand::Initialize(m_Specification.GraphicsAPI);
+		Renderer::Instance = new OpenGLRenderer();
+		ImGuiRenderer::Instance = new OpenGLImGuiRenderer();
 
 		Input::SetWindow(m_Window->GetHandle());
 
 		m_Specification.Context->OnAttach();
 
 		// Initialize the renderers.
-		//Renderer2D::Get().Initialize();
-		//Renderer3D::Get().Initialize();
 		Renderer::Instance->Initialize();
-		//ImGuiRenderer::Get().Initialize(m_Window);
+		//ImGuiRenderer::Instance->Initialize(m_Window);
 
 		m_Specification.Context->OnCreate();
 
@@ -133,21 +134,13 @@ namespace HBL2
 		{
 			BeginFrame();
 
-			//Renderer3D::Get().BeginFrame();
-			//Renderer2D::Get().BeginFrame();
 			Renderer::Instance->BeginFrame();
-
 			m_Specification.Context->OnUpdate(m_DeltaTime);
-
-			//Renderer2D::Get().Submit();
-
 			Renderer::Instance->EndFrame();
-			//Renderer3D::Get().EndFrame();
-			//Renderer2D::Get().EndFrame();
 
-			//ImGuiRenderer::Get().BeginFrame();
+			//ImGuiRenderer::Instance->BeginFrame();
 			//m_Specification.Context->OnGuiRender(m_DeltaTime);
-			//ImGuiRenderer::Get().EndFrame();
+			//ImGuiRenderer::Instance->EndFrame();
 
 			EndFrame();
 		});

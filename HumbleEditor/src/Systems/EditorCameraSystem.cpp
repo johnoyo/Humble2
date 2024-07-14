@@ -17,12 +17,7 @@ namespace HBL2
 				{
 					if (editorCamera.Enabled)
 					{
-						transform.QRotation = glm::quat(transform.Rotation);
-
-						transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) * glm::toMat4(transform.QRotation);
-
-						camera.View = glm::inverse(transform.Matrix);
-
+						camera.View = glm::inverse(transform.WorldMatrix);
 						camera.ViewProjectionMatrix = camera.Projection * camera.View;
 
 						if (camera.Primary)
@@ -41,23 +36,15 @@ namespace HBL2
 				{
 					if (editorCamera.Enabled)
 					{
-						if (!camera.Static)
+						if (!transform.Static)
 						{
-							transform.QRotation = glm::quat(transform.Rotation);
-
-							transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) * glm::toMat4(transform.QRotation);
-
-							camera.View = glm::inverse(transform.Matrix);
-
+							camera.View = glm::inverse(transform.WorldMatrix);
 							camera.ViewProjectionMatrix = camera.Projection * camera.View;
-
-							if (camera.Primary)
-								m_Context->MainCamera = entity;
 						}
-						else if (camera.Static)
+
+						if (camera.Primary)
 						{
-							if (camera.Primary)
-								m_Context->MainCamera = entity;
+							m_Context->MainCamera = entity;
 						}
 
 						if (HBL2::Input::GetKeyDown(GLFW_KEY_LEFT_ALT))

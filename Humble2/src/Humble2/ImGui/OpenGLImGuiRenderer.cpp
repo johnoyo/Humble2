@@ -1,4 +1,4 @@
-#include "ImGuiRenderer.h"
+#include "OpenGLImGuiRenderer.h"
 
 #include <imgui_impl_glfw.h>
 //#include <imgui_impl_vulkan.h>
@@ -6,7 +6,7 @@
 
 namespace HBL2
 {
-	void ImGuiRenderer::Initialize(Window* window)
+	void OpenGLImGuiRenderer::Initialize(Window* window)
 	{
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -37,14 +37,14 @@ namespace HBL2
 		ImGui_ImplOpenGL3_Init(m_GlslVersion);
 	}
 
-	void ImGuiRenderer::BeginFrame()
+	void OpenGLImGuiRenderer::BeginFrame()
 	{
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 	}
 
-	void ImGuiRenderer::EndFrame()
+	void OpenGLImGuiRenderer::EndFrame()
 	{
 		ImGui::Render();
 
@@ -65,7 +65,7 @@ namespace HBL2
 		}
 	}
 
-	void ImGuiRenderer::Clean()
+	void OpenGLImGuiRenderer::Clean()
 	{
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();

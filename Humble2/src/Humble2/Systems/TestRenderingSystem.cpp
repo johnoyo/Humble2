@@ -42,7 +42,7 @@ namespace HBL2
 
 					auto material = rm->CreateMaterial({
 						.debugName = "test_material",
-						.shader = shader
+						.shader = shader,
 					});
 
 					mesh.MaterialInstance = material;

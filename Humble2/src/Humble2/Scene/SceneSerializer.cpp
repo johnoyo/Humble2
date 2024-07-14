@@ -143,7 +143,6 @@ namespace HBL2
 
 			out << YAML::Key << "Enabled" << YAML::Value << camera.Enabled;
 			out << YAML::Key << "Primary" << YAML::Value << camera.Primary;
-			out << YAML::Key << "Static" << YAML::Value << camera.Static;
 			out << YAML::Key << "Far" << YAML::Value << camera.Far;
 			out << YAML::Key << "Near" << YAML::Value << camera.Near;
 			out << YAML::Key << "FOV" << YAML::Value << camera.Fov;
@@ -160,7 +159,6 @@ namespace HBL2
 			auto& sprite = m_Scene->GetComponent<Component::Sprite>(entity);
 
 			out << YAML::Key << "Enabled" << YAML::Value << sprite.Enabled;
-			out << YAML::Key << "Static" << YAML::Value << sprite.Static;
 			out << YAML::Key << "Color" << YAML::Value << sprite.Color;
 			out << YAML::Key << "Texture" << YAML::Value << sprite.Path;
 			out << YAML::EndMap;
@@ -174,7 +172,6 @@ namespace HBL2
 			auto& staticMesh = m_Scene->GetComponent<Component::StaticMesh>(entity);
 
 			out << YAML::Key << "Enabled" << YAML::Value << staticMesh.Enabled;
-			out << YAML::Key << "Static" << YAML::Value << staticMesh.Static;
 			out << YAML::Key << "Path" << YAML::Value << staticMesh.Path;
 			out << YAML::Key << "TexturePath" << YAML::Value << staticMesh.TexturePath;
 			out << YAML::Key << "ShaderName" << YAML::Value << staticMesh.ShaderName;
@@ -269,7 +266,6 @@ namespace HBL2
 					auto& camera = m_Scene->AddComponent<Component::Camera>(deserializedEntity);
 					camera.Enabled = cameraComponent["Enabled"].as<bool>();
 					camera.Primary = cameraComponent["Primary"].as<bool>();
-					camera.Static = cameraComponent["Static"].as<bool>();
 
 					camera.Far = cameraComponent["Far"].as<float>();
 					camera.Near = cameraComponent["Near"].as<float>();
@@ -284,7 +280,6 @@ namespace HBL2
 					auto& sprite = m_Scene->AddComponent<Component::Sprite>(deserializedEntity);
 
 					sprite.Enabled = spriteComponent["Enabled"].as<bool>();
-					sprite.Static = spriteComponent["Static"].as<bool>();
 					sprite.Color = spriteComponent["Color"].as<glm::vec4>();
 					sprite.Path = spriteComponent["Texture"].as<std::string>();
 					sprite.TextureIndex = Texture::Get(sprite.Path)->GetID();
@@ -295,7 +290,6 @@ namespace HBL2
 				{
 					auto& staticMesh = m_Scene->AddComponent<Component::StaticMesh>(deserializedEntity);
 					staticMesh.Enabled = staticMeshComponent["Enabled"].as<bool>();
-					staticMesh.Static = staticMeshComponent["Static"].as<bool>();
 					staticMesh.Path = staticMeshComponent["Path"].as<std::string>();
 					staticMesh.TexturePath = staticMeshComponent["TexturePath"].as<std::string>();
 					staticMesh.ShaderName = staticMeshComponent["ShaderName"].as<std::string>();

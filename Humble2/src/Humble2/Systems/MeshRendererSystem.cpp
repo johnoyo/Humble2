@@ -58,7 +58,7 @@ namespace HBL2
 			{
 				if (mesh.Enabled)
 				{
-					if (!mesh.Static)
+					if (!transform.Static)
 					{
 						transform.QRotation = glm::quat({ glm::radians(transform.Rotation.x), glm::radians(transform.Rotation.y), glm::radians(transform.Rotation.z) });
 						transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) 

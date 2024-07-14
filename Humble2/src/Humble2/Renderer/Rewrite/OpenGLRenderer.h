@@ -8,6 +8,15 @@
 #include "Renderer\Rewrite\ResourceManager.h"
 #include "Renderer\Rewrite\OpenGLResourceManager.h"
 
+#ifdef EMSCRIPTEN
+	#define GLFW_INCLUDE_ES3
+	#include <GLFW/glfw3.h>
+#else
+	#include "Platform\OpenGL\OpenGLDebug.h"
+	#define GLFW_INCLUDE_NONE
+	#include <GL/glew.h>
+#endif
+
 namespace HBL2
 {
 	class OpenGLRenderer final : public Renderer
@@ -17,12 +26,12 @@ namespace HBL2
 
 		virtual void Initialize() override;
 		virtual void BeginFrame() override;
-		virtual void SetPipeline(HBL::Handle<HBL::Material>& material) override;
-		virtual void SetBuffers(HBL::Handle<HBL::Mesh>& mesh) override;
-		virtual void SetBufferData(HBL::Handle<HBL::Mesh>& mesh) override;
-		virtual void SetBindGroups(HBL::Handle<HBL::Material>& material) override;
-		virtual void Draw(HBL::Handle<HBL::Mesh>& mesh, HBL::Handle<HBL::Material>& material) override;
-		virtual void DrawIndexed(HBL::Handle<HBL::Mesh>& mesh, HBL::Handle<HBL::Material>& material) override;
+		virtual void SetPipeline(HBL::Handle<HBL::Material> material) override;
+		virtual void SetBuffers(HBL::Handle<HBL::Mesh> mesh) override;
+		virtual void SetBufferData(HBL::Handle<HBL::Buffer> buffer, void* newData) override;
+		virtual void SetBindGroups(HBL::Handle<HBL::Material> material) override;
+		virtual void Draw(HBL::Handle<HBL::Mesh> mesh, HBL::Handle<HBL::Material> material) override;
+		virtual void DrawIndexed(HBL::Handle<HBL::Mesh> mesh, HBL::Handle<HBL::Material> material) override;
 		virtual void EndFrame() override;
 		virtual void Clean() override;
 

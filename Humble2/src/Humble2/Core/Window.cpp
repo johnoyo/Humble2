@@ -84,19 +84,15 @@ namespace HBL2
 #ifdef EMSCRIPTEN
 		std::function<void()> mainLoopEm = [&]()
 		{
-			mainLoop();
-
-			glfwSwapBuffers(m_Window);
 			glfwPollEvents();
+			mainLoop();
 		};
 		emscripten_set_main_loop_arg(DispatchMainEm, &mainLoopEm, 0, 1);
 #else
 		while (!glfwWindowShouldClose(m_Window))
 		{
-			mainLoop();
-
-			glfwSwapBuffers(m_Window);
 			glfwPollEvents();
+			mainLoop();
 		}
 #endif
 	}

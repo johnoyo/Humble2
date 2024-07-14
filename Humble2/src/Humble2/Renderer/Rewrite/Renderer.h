@@ -19,12 +19,12 @@ namespace HBL2
 
 		virtual void Initialize() = 0;
 		virtual void BeginFrame() = 0;
-		virtual void SetPipeline(HBL::Handle<HBL::Material>& material) = 0;
-		virtual void SetBufferData(HBL::Handle<HBL::Mesh>& mesh) = 0;
-		virtual void SetBuffers(HBL::Handle<HBL::Mesh>& mesh) = 0;
-		virtual void SetBindGroups(HBL::Handle<HBL::Material>& material) = 0;
-		virtual void Draw(HBL::Handle<HBL::Mesh>& mesh, HBL::Handle<HBL::Material>& material) = 0;
-		virtual void DrawIndexed(HBL::Handle<HBL::Mesh>& mesh, HBL::Handle<HBL::Material>& material) = 0;
+		virtual void SetPipeline(HBL::Handle<HBL::Material> material) = 0;
+		virtual void SetBuffers(HBL::Handle<HBL::Mesh> mesh) = 0;
+		virtual void SetBufferData(HBL::Handle<HBL::Buffer> buffer, void* newData) = 0;
+		virtual void SetBindGroups(HBL::Handle<HBL::Material> material) = 0;
+		virtual void Draw(HBL::Handle<HBL::Mesh> mesh, HBL::Handle<HBL::Material> material) = 0;
+		virtual void DrawIndexed(HBL::Handle<HBL::Mesh> mesh, HBL::Handle<HBL::Material> material) = 0;
 		virtual void EndFrame() = 0;
 		virtual void Clean() = 0;
 	};

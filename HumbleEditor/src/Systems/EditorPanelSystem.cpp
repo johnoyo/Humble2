@@ -352,7 +352,6 @@ namespace HBL2
 						auto& camera = m_Context->GetComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
 
 						ImGui::Checkbox("Enabled", &camera.Enabled);
-						ImGui::Checkbox("Static", &camera.Static);
 						ImGui::Checkbox("Primary", &camera.Primary);
 						ImGui::SliderFloat("Far", &camera.Far, 0, 100);
 						ImGui::SliderFloat("Near", &camera.Near, 100, 1500);
@@ -390,7 +389,6 @@ namespace HBL2
 						auto& sprite = m_Context->GetComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity);
 
 						ImGui::Checkbox("Enabled", &sprite.Enabled);
-						ImGui::Checkbox("Static", &sprite.Static);
 						ImGui::InputText("Texture", (char*)sprite.Path.c_str(), 256);
 
 						if (ImGui::BeginDragDropTarget())
@@ -444,7 +442,6 @@ namespace HBL2
 						auto& mesh = m_Context->GetComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
 
 						ImGui::Checkbox("Enabled", &mesh.Enabled);
-						ImGui::Checkbox("Static", &mesh.Static);
 						ImGui::InputText("Mesh", (char*)mesh.Path.c_str(), 256);
 
 						if (ImGui::BeginDragDropTarget())
@@ -663,9 +660,9 @@ namespace HBL2
 					HBL2::Context::Core->GetRegistry()
 						.view<Component::EditorPanel>()
 						.each([&](Component::EditorPanel& panel)
-							{
-								ImGui::Checkbox(panel.Name.c_str(), &panel.Enabled);
-							});
+						{
+							ImGui::Checkbox(panel.Name.c_str(), &panel.Enabled);
+						});
 
 					ImGui::EndMenu();
 				}

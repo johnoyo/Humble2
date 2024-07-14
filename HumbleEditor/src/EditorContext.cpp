@@ -23,7 +23,7 @@ namespace HBL2
 
 			// Create editor systems.
 			//Core->RegisterSystem(new EditorPanelSystem);
-			//Core->RegisterSystem(new EditorCameraSystem);
+			Core->RegisterSystem(new EditorCameraSystem);
 
 			// Editor camera set up.
 			auto editorCameraEntity = Core->CreateEntity();

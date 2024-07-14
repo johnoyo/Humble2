@@ -9,24 +9,16 @@ namespace HBL2
 	class ImGuiRenderer
 	{
 	public:
-		ImGuiRenderer(const ImGuiRenderer&) = delete;
+		static inline ImGuiRenderer* Instance;
 
-		static ImGuiRenderer& Get()
-		{
-			static ImGuiRenderer instance;
-			return instance;
-		}
+		virtual void Initialize(Window* window) = 0;
 
-		void Initialize(Window* window);
+		virtual void BeginFrame() = 0;
+		virtual void EndFrame() = 0;
 
-		void BeginFrame();
-		void EndFrame();
+		virtual void Clean() = 0;
 
-		void Clean();
-
-	private:
-		ImGuiRenderer() {}
-
+	protected:
 		Window* m_Window = nullptr;
 		const char* m_GlslVersion = nullptr;
 	};
