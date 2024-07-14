@@ -3,8 +3,15 @@
 #include "Base.h"
 
 #include "Renderer/VertexArray.h"
+#include "Renderer/Rewrite/Handle.h"
 
 #include <entt.hpp>
+
+namespace HBL
+{
+	class Mesh;
+	class Material;
+}
 
 namespace HBL2
 {
@@ -23,6 +30,7 @@ namespace HBL2
 			glm::vec3 Scale = { 10.f, 10.f, 10.f };
 
 			glm::mat4 Matrix = glm::mat4(1.f);
+			bool Static = false;
 		};
 
 		struct Sprite
@@ -46,6 +54,13 @@ namespace HBL2
 			std::string ShaderName;
 			bool Static = false;
 
+			bool Enabled = true;
+		};
+
+		struct StaticMesh_New
+		{
+			HBL::Handle<HBL::Mesh> MeshInstance;
+			HBL::Handle<HBL::Material> MaterialInstance;
 			bool Enabled = true;
 		};
 

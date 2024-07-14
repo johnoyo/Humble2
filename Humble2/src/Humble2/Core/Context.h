@@ -3,6 +3,8 @@
 #include "Scene\Scene.h"
 #include "Project\Project.h"
 
+#include "Renderer\Rewrite\ResourceManager.h"
+
 namespace HBL2
 {
 	enum class Mode

@@ -47,7 +47,7 @@ namespace HBL2
 		}
 
 		static Project* Create(const std::string& name = "");
-		static Project* Load(std::filesystem::path& path);
+		static Project* Load(const std::filesystem::path& path);
 		static void Save(const std::filesystem::path& path);
 
 		static void OpenScene(const std::filesystem::path& path);

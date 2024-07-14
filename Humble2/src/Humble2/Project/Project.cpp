@@ -16,7 +16,7 @@ namespace HBL2
 		return s_ActiveProject;
 	}
 
-	Project* Project::Load(std::filesystem::path& path)
+	Project* Project::Load(const std::filesystem::path& path)
 	{
 		if (path.empty())
 		{

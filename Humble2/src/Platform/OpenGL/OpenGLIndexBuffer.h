@@ -29,7 +29,7 @@ namespace HBL2
 		uint32_t m_Size = 0;
 		uint32_t* m_Indeces;
 
-		bool m_Ganerated = false;
+		bool m_Generated = false;
 
 		void GenerateIndeces(uint32_t size);
 		void Clean();

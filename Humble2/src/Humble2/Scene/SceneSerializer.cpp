@@ -211,7 +211,7 @@ namespace HBL2
 		}
 		catch (std::exception& e) 
 		{
-			HBL2_ERROR("Project directory creation failed.");
+			HBL2_ERROR("Project directory creation failed: {0}", e.what());
 		}
 
 		std::ofstream fOut(filePath);

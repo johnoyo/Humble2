@@ -73,7 +73,7 @@ namespace HBL2Runtime
 
 		if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 		{
-			auto& startingScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
+			const auto& startingScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
 
 			HBL2::Project::OpenScene(startingScenePath);
 

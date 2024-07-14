@@ -19,6 +19,7 @@ namespace HBL2
 		static FrameBuffer* FrameBuffer;
 
 		static GraphicsAPI GetAPI();
+
 	private:
 		static RendererAPI* s_RendererAPI;
 		static GraphicsAPI s_API;

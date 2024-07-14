@@ -10,8 +10,13 @@
 #include "Systems/CameraSystem.h"
 #include "Systems/MeshRendererSystem.h"
 #include "Systems/SpriteRendererSystem.h"
+#include "Systems/TestRenderingSystem.h"
 
 #include "Utilities\AssetManager.h"
+#include "Renderer\Rewrite\ResourceManager.h"
+#include "Renderer\Rewrite\OpenGLResourceManager.h"
+#include "Renderer\Rewrite\Renderer.h"
+#include "Renderer\Rewrite\OpenGLRenderer.h"
 
 #include <string>
 #include <sstream>

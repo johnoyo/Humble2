@@ -9,16 +9,19 @@
 	#include "Systems/EditorCameraSystem.h"
 #endif
 
-namespace HBL2Editor
+namespace HBL2
 {
-	class EditorContext final : public HBL2::Context
+	namespace Editor
 	{
-	public:
-		virtual void OnAttach() override;
-		virtual void OnCreate() override;
-		virtual void OnUpdate(float ts) override;
-		virtual void OnGuiRender(float ts) override;
-	private:
-		bool OpenEmptyProject();
-	};
+		class EditorContext final : public HBL2::Context
+		{
+		public:
+			virtual void OnAttach() override;
+			virtual void OnCreate() override;
+			virtual void OnUpdate(float ts) override;
+			virtual void OnGuiRender(float ts) override;
+		private:
+			bool OpenEmptyProject();
+		};
+	}
 }

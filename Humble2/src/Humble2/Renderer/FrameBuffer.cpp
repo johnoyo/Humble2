@@ -19,5 +19,9 @@ namespace HBL2
 			exit(-1);
 			return nullptr;
 		}
+		
+		HBL2_CORE_FATAL("No GraphicsAPI specified.");
+		exit(-1);
+		return nullptr;
 	}
 }
