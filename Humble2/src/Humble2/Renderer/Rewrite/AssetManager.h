@@ -14,7 +14,7 @@ namespace HBL2
 
 		virtual ~AssetManager() = default;
 
-		Handle<Asset> CreateAsset(AssetDescriptor&& desc)
+		Handle<Asset> CreateAsset(const AssetDescriptor&& desc)
 		{
 			return m_AssetPool.Insert(Asset(desc));
 		}

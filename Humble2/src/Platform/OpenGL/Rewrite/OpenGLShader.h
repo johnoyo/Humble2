@@ -21,7 +21,7 @@ namespace HBL2
 	struct OpenGLShader
 	{
 		OpenGLShader() = default;
-		OpenGLShader(ShaderDescriptor& desc)
+		OpenGLShader(const ShaderDescriptor& desc)
 		{
 			std::fstream stream;
 

@@ -21,7 +21,7 @@ namespace HBL2
 	struct OpenGLBindGroup
 	{
 		OpenGLBindGroup() = default;
-		OpenGLBindGroup(BindGroupDescriptor& desc) {}
+		OpenGLBindGroup(const BindGroupDescriptor& desc) {}
 
 		const char* DebugName = "";
 	};

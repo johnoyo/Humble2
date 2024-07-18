@@ -15,40 +15,40 @@ namespace HBL2
 		virtual ~ResourceManager() = default;
 
 		// Textures
-		virtual Handle<Texture> CreateTexture(TextureDescriptor&& desc) = 0;
+		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) = 0;
 		virtual void DeleteTexture(Handle<Texture> handle) = 0;
 
 		// Buffers
-		virtual Handle<Buffer> CreateBuffer(BufferDescriptor&& desc) = 0;
+		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) = 0;
 		virtual void DeleteBuffer(Handle<Buffer> handle) = 0;
 		virtual void* GetBufferData(Handle<Buffer> handle) = 0;
 
 		// FrameBuffers
-		virtual Handle<FrameBuffer> CreateFrameBuffer(FrameBufferDescriptor&& desc) = 0;
+		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) = 0;
 		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) = 0;
 
 		// Shaders
-		virtual Handle<Shader> CreateShader(ShaderDescriptor&& desc) = 0;
+		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) = 0;
 		virtual void DeleteShader(Handle<Shader> handle) = 0;
 
 		// BindGroups
-		virtual Handle<BindGroup> CreateBindGroup(BindGroupDescriptor&& desc) = 0;
+		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) = 0;
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) = 0;
 
 		// BindGroupLayouts
-		virtual Handle<BindGroupLayout> CreateBindGroupLayout(BindGroupLayoutDescriptor&& desc) = 0;
+		virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) = 0;
 		virtual void DeleteBindGroupLayout(Handle<BindGroupLayout> handle) = 0;
 
 		// RenderPass
-		virtual Handle<RenderPass> CreateRenderPass(RenderPassDescriptor&& desc) = 0;
+		virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) = 0;
 		virtual void DeleteRenderPass(Handle<RenderPass> handle) = 0;
 
 		// RenderPassLayouts
-		virtual Handle<RenderPassLayout> CreateRenderPassLayout(RenderPassLayoutDescriptor&& desc) = 0;
+		virtual Handle<RenderPassLayout> CreateRenderPassLayout(const RenderPassLayoutDescriptor&& desc) = 0;
 		virtual void DeleteRenderPassLayout(Handle<RenderPassLayout> handle) = 0;
 
 		// Meshes	
-		Handle<Mesh> CreateMesh(MeshDescriptor&& desc)
+		Handle<Mesh> CreateMesh(const MeshDescriptor&& desc)
 		{
 			return m_MeshPool.Insert(Mesh(desc));
 		}
@@ -62,7 +62,7 @@ namespace HBL2
 		}
 
 		// Materials
-		Handle<Material> CreateMaterial(MaterialDescriptor&& desc)
+		Handle<Material> CreateMaterial(const MaterialDescriptor&& desc)
 		{
 			return m_MaterialPool.Insert(Material(desc));
 		}

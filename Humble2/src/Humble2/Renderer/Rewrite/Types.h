@@ -22,7 +22,7 @@ namespace HBL2
 	struct Mesh
 	{
 		Mesh() = default;
-		Mesh(MeshDescriptor& desc)
+		Mesh(const MeshDescriptor& desc)
 		{
 			DebugName = desc.debugName;
 			IndexOffset = desc.indexOffset;
@@ -45,7 +45,7 @@ namespace HBL2
 	struct Material
 	{
 		Material() = default;
-		Material(MaterialDescriptor& desc)
+		Material(const MaterialDescriptor& desc)
 		{
 			DebugName = desc.debugName;
 			Shader = desc.shader;
@@ -60,7 +60,7 @@ namespace HBL2
 	struct Asset
 	{
 		Asset() = default;
-		Asset(AssetDescriptor& desc)
+		Asset(const AssetDescriptor& desc)
 		{
 			DebugName = desc.debugName;
 		}

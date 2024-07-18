@@ -21,11 +21,11 @@ namespace HBL2
 	struct OpenGLBuffer
 	{
 		OpenGLBuffer() = default;
-		OpenGLBuffer(BufferDescriptor& desc)
+		OpenGLBuffer(const BufferDescriptor& desc)
 		{
 			DebugName = desc.debugName;
 			ByteSize = desc.byteSize;
-			Data = desc.data;
+			Data = desc.initialData;
 
 			glGenBuffers(1, &RendererId);
 			glBindBuffer(GL_ARRAY_BUFFER, RendererId);
@@ -36,6 +36,6 @@ namespace HBL2
 		uint32_t RendererId = 0;
 		uint32_t ByteSize = 0;
 		uint32_t BatchSize = 1;
-		void* Data = nullptr;
+		void* Data;
 	};
 }

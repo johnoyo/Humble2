@@ -28,7 +28,6 @@ namespace HBL2
 						.VS { .code = "assets/shaders/unlit.vs", .entryPoint = "main" },
 						.FS { .code = "assets/shaders/unlit.fs", .entryPoint = "main" },
 						.renderPipeline {
-							.depthTest = true,
 							.vertexBufferBindings = {
 								{
 									.byteStride = 12,
@@ -49,7 +48,7 @@ namespace HBL2
 					
 					auto buffer = rm->CreateBuffer({
 						.debugName = "test_quad_positions",
-						.data = m_Positions,
+						.initialData = m_Positions,
 						.byteSize = sizeof(float) * 18,
 					});
 

@@ -21,7 +21,7 @@ namespace HBL2
 	struct OpenGLBindGroupLayout
 	{
 		OpenGLBindGroupLayout() = default;
-		OpenGLBindGroupLayout(BindGroupLayoutDescriptor& desc) {}
+		OpenGLBindGroupLayout(const BindGroupLayoutDescriptor& desc) {}
 
 		const char* DebugName = "";
 	};

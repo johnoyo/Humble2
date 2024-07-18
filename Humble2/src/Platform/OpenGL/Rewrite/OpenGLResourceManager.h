@@ -23,7 +23,7 @@ namespace HBL2
 		virtual ~OpenGLResourceManager() = default;
 
 		// Textures
-		virtual Handle<Texture> CreateTexture(TextureDescriptor&& desc) override
+		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) override
 		{
 			return m_TexturePool.Insert(OpenGLTexture(desc));
 		}
@@ -37,7 +37,7 @@ namespace HBL2
 		}
 
 		// Buffers
-		virtual Handle<Buffer> CreateBuffer(BufferDescriptor&& desc) override
+		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) override
 		{
 			return m_BufferPool.Insert(OpenGLBuffer(desc));
 		}
@@ -55,7 +55,7 @@ namespace HBL2
 		}
 
 		// Framebuffers
-		virtual Handle<FrameBuffer> CreateFrameBuffer(FrameBufferDescriptor&& desc) override
+		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) override
 		{
 			return m_FrameBufferPool.Insert(OpenGLFrameBuffer(desc));
 		}
@@ -69,7 +69,7 @@ namespace HBL2
 		}
 
 		// Shaders
-		virtual Handle<Shader> CreateShader(ShaderDescriptor&& desc) override
+		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) override
 		{
 			return m_ShaderPool.Insert(OpenGLShader(desc));
 		}
@@ -83,7 +83,7 @@ namespace HBL2
 		}
 
 		// BindGroups
-		virtual Handle<BindGroup> CreateBindGroup(BindGroupDescriptor&& desc) override
+		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) override
 		{
 			return m_BindGroupPool.Insert(OpenGLBindGroup(desc));
 		}
@@ -97,7 +97,7 @@ namespace HBL2
 		}
 
 		// BindGroupsLayouts
-		virtual Handle<BindGroupLayout> CreateBindGroupLayout(BindGroupLayoutDescriptor&& desc) override
+		virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) override
 		{
 			return m_BindGroupLayoutPool.Insert(OpenGLBindGroupLayout(desc));
 		}
@@ -111,7 +111,7 @@ namespace HBL2
 		}
 
 		// RenderPass
-		virtual Handle<RenderPass> CreateRenderPass(RenderPassDescriptor&& desc) override
+		virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) override
 		{
 			return m_RenderPassPool.Insert(OpenGLRenderPass(desc));
 		}
@@ -125,7 +125,7 @@ namespace HBL2
 		}
 
 		// RenderPassLayouts
-		virtual Handle<RenderPassLayout> CreateRenderPassLayout(RenderPassLayoutDescriptor&& desc) override
+		virtual Handle<RenderPassLayout> CreateRenderPassLayout(const RenderPassLayoutDescriptor&& desc) override
 		{
 			return m_RenderPassLayoutPool.Insert(OpenGLRenderPassLayout(desc));
 		}

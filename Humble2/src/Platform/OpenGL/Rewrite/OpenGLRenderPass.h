@@ -21,7 +21,7 @@ namespace HBL2
 	struct OpenGLRenderPass
 	{
 		OpenGLRenderPass() = default;
-		OpenGLRenderPass(RenderPassDescriptor& desc) {}
+		OpenGLRenderPass(const RenderPassDescriptor& desc) {}
 
 		const char* DebugName = "";
 	};

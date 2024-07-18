@@ -21,7 +21,7 @@ namespace HBL2
 	struct OpenGLFrameBuffer
 	{
 		OpenGLFrameBuffer() = default;
-		OpenGLFrameBuffer(FrameBufferDescriptor& desc)
+		OpenGLFrameBuffer(const FrameBufferDescriptor& desc)
 		{
 			DebugName = desc.debugName;
 			Width = desc.width;
