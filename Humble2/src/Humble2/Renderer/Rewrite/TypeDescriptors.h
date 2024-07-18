@@ -2,11 +2,12 @@
 
 #include <glm\glm.hpp>
 
-namespace HBL
+namespace HBL2
 {
 	class Texture;
 	class Buffer;
 	class Shader;
+	class Framebuffer;
 	class BindGroup;
 	class BindGroupLayout;
 	class RenderPass;
@@ -29,9 +30,11 @@ namespace HBL
 		uint32_t memory = 0;
 	};
 
-	struct FramebufferDescriptor
+	struct FrameBufferDescriptor
 	{
 		const char* debugName;
+		uint32_t width = 0;
+		uint32_t height = 0;
 	};
 
 	struct BindGroupLayoutDescriptor
@@ -60,7 +63,7 @@ namespace HBL
 		std::initializer_list<Handle<Texture>> textures;
 		struct Buffer
 		{
-			Handle<HBL::Buffer> buffer;
+			Handle<Buffer> buffer;
 			uint32_t byteOffset = 0;
 		};
 		std::initializer_list<Handle<Buffer>> buffers;
@@ -123,5 +126,10 @@ namespace HBL
 		const char* debugName;
 		Handle<Shader> shader;
 		Handle<BindGroup> bindGroup;
+	};
+
+	struct AssetDescriptor
+	{
+		const char* debugName;
 	};
 }

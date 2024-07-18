@@ -1,6 +1,6 @@
-#include "OpenGLShader.h"
+#include "OpenGLShaderOld.h"
 
-namespace HBL2
+namespace HBL
 {
 	OpenGLShader::OpenGLShader(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource)
 		: Shader(name, vertexSource, fragmentSource)

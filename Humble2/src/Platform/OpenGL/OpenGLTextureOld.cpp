@@ -1,6 +1,6 @@
-#include "OpenGLTexture.h"
+#include "OpenGLTextureOld.h"
 
-namespace HBL2
+namespace HBL
 {
 	OpenGLTexture::OpenGLTexture(const std::string& path) : m_Path(path)
 	{

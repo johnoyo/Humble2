@@ -1,4 +1,4 @@
-#include "OpenGLFrameBuffer.h"
+#include "OpenGLFrameBufferOld.h"
 
 #include <iostream>
 
@@ -25,7 +25,7 @@ static bool GLLogCall(const char* function, const char* file, int line)
 	return true;
 }
 
-namespace HBL2
+namespace HBL
 {
 	OpenGLFrameBuffer::OpenGLFrameBuffer(const FrameBufferSpecification& spec)
 		: m_Specification(spec)

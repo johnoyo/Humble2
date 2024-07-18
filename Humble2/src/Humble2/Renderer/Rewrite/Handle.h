@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-namespace HBL
+namespace HBL2
 {
 	template<typename T>
 	class Handle

@@ -13,7 +13,7 @@ namespace HBL2
 			-0.5, -0.5, 0.0  // 0 - Bottom left
 		};
 
-		auto* rm = HBL::ResourceManager::Instance;
+		auto* rm = ResourceManager::Instance;
 
 		Context::ActiveScene->GetRegistry()
 			.group<Component::StaticMesh_New>(entt::get<Component::Transform>)

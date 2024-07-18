@@ -12,7 +12,7 @@
 #include <filesystem>
 #include <type_traits>
 
-namespace HBL2
+namespace HBL
 {
 	struct Asset
 	{

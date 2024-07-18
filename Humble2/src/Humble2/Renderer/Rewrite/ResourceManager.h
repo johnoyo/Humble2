@@ -1,20 +1,12 @@
 #pragma once
 
 #include "Handle.h"
+#include "Pool.h"
+#include "Types.h"
 #include "TypeDescriptors.h"
 
-namespace HBL
+namespace HBL2
 {
-	class Mesh;
-	class Material;
-	class Texture;
-	class Buffer;
-	class Shader;
-	class BindGroup;
-	class BindGroupLayout;
-	class RenderPass;
-	class RenderPassLayout;
-
 	class ResourceManager
 	{
 	public:
@@ -30,6 +22,10 @@ namespace HBL
 		virtual Handle<Buffer> CreateBuffer(BufferDescriptor&& desc) = 0;
 		virtual void DeleteBuffer(Handle<Buffer> handle) = 0;
 		virtual void* GetBufferData(Handle<Buffer> handle) = 0;
+
+		// FrameBuffers
+		virtual Handle<FrameBuffer> CreateFrameBuffer(FrameBufferDescriptor&& desc) = 0;
+		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) = 0;
 
 		// Shaders
 		virtual Handle<Shader> CreateShader(ShaderDescriptor&& desc) = 0;
@@ -51,12 +47,36 @@ namespace HBL
 		virtual Handle<RenderPassLayout> CreateRenderPassLayout(RenderPassLayoutDescriptor&& desc) = 0;
 		virtual void DeleteRenderPassLayout(Handle<RenderPassLayout> handle) = 0;
 
-		// Meshes
-		virtual Handle<Mesh> CreateMesh(MeshDescriptor&& mesh) = 0;
-		virtual void DeleteMesh(Handle<Mesh> handle) = 0;
+		// Meshes	
+		Handle<Mesh> CreateMesh(MeshDescriptor&& desc)
+		{
+			return m_MeshPool.Insert(Mesh(desc));
+		}
+		void DeleteMesh(Handle<Mesh> handle)
+		{
+			m_MeshPool.Remove(handle);
+		}
+		Mesh* GetMesh(Handle<Mesh> handle) const
+		{
+			return m_MeshPool.Get(handle);
+		}
 
 		// Materials
-		virtual Handle<Material> CreateMaterial(MaterialDescriptor&& desc) = 0;
-		virtual void DeleteMaterial(Handle<Material> handle) = 0;
+		Handle<Material> CreateMaterial(MaterialDescriptor&& desc)
+		{
+			return m_MaterialPool.Insert(Material(desc));
+		}
+		void DeleteMaterial(Handle<Material> handle)
+		{
+			m_MaterialPool.Remove(handle);
+		}
+		Material* GetMaterial(Handle<Material> handle) const
+		{
+			return m_MaterialPool.Get(handle);
+		}
+
+	private:
+		Pool<Mesh, Mesh> m_MeshPool;
+		Pool<Material, Material> m_MaterialPool;
 	};
 }

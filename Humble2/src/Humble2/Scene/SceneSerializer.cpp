@@ -282,7 +282,7 @@ namespace HBL2
 					sprite.Enabled = spriteComponent["Enabled"].as<bool>();
 					sprite.Color = spriteComponent["Color"].as<glm::vec4>();
 					sprite.Path = spriteComponent["Texture"].as<std::string>();
-					sprite.TextureIndex = Texture::Get(sprite.Path)->GetID();
+					// sprite.TextureIndex = Texture::Get(sprite.Path)->GetID();
 				}
 
 				auto staticMeshComponent = entity["Component::StaticMesh"];
@@ -293,7 +293,7 @@ namespace HBL2
 					staticMesh.Path = staticMeshComponent["Path"].as<std::string>();
 					staticMesh.TexturePath = staticMeshComponent["TexturePath"].as<std::string>();
 					staticMesh.ShaderName = staticMeshComponent["ShaderName"].as<std::string>();
-					staticMesh.TextureIndex = Texture::Get(staticMesh.TexturePath)->GetID();
+					// staticMesh.TextureIndex = Texture::Get(staticMesh.TexturePath)->GetID();
 				}
 			}
 		}

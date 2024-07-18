@@ -5,7 +5,7 @@
 namespace HBL2
 {
 	RendererAPI* RenderCommand::s_RendererAPI = nullptr;
-	FrameBuffer* RenderCommand::FrameBuffer = nullptr;
+	HBL::FrameBuffer* RenderCommand::FrameBuffer = nullptr;
 	GraphicsAPI RenderCommand::s_API = GraphicsAPI::None;
 
 	void RenderCommand::Initialize(GraphicsAPI api)

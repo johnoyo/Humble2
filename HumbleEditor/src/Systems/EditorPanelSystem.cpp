@@ -15,7 +15,7 @@ namespace HBL2
 		void EditorPanelSystem::OnCreate()
 		{
 			// Load editor icons.
-			m_PngIcon = HBL2::Texture::Load("assets/icons/content_browser/png-1477.png")->GetID();
+			/*m_PngIcon = HBL2::Texture::Load("assets/icons/content_browser/png-1477.png")->GetID();
 			m_JpgIcon = HBL2::Texture::Load("assets/icons/content_browser/jpg-1476.png")->GetID();
 			m_ObjIcon = HBL2::Texture::Load("assets/icons/content_browser/obj-1472.png")->GetID();
 			m_FbxIcon = HBL2::Texture::Load("assets/icons/content_browser/fbx-1472.png")->GetID();
@@ -27,7 +27,7 @@ namespace HBL2
 			m_ShaderIcon = HBL2::Texture::Load("assets/icons/content_browser/shader-1472.png")->GetID();
 			m_FileIcon = HBL2::Texture::Load("assets/icons/content_browser/file-1453.png")->GetID();
 			m_FolderIcon = HBL2::Texture::Load("assets/icons/content_browser/folder-1437.png")->GetID();
-			m_BackIcon = HBL2::Texture::Load("assets/icons/content_browser/curved-arrow-4608.png")->GetID();
+			m_BackIcon = HBL2::Texture::Load("assets/icons/content_browser/curved-arrow-4608.png")->GetID();*/
 
 			m_Context = HBL2::Context::ActiveScene;
 
@@ -70,12 +70,12 @@ namespace HBL2
 
 			{
 				// Content browser panel.
-				auto contentBrowserPanel = HBL2::Context::Core->CreateEntity();
+				/*auto contentBrowserPanel = HBL2::Context::Core->CreateEntity();
 				HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(contentBrowserPanel).Name = "Hidden";
 				auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(contentBrowserPanel);
 				panel.Name = "Content Browser";
 				panel.Type = Component::EditorPanel::Panel::ContentBrowser;
-				m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
+				m_CurrentDirectory = HBL2::Project::GetAssetDirectory();*/
 			}
 
 			{
@@ -98,7 +98,7 @@ namespace HBL2
 			}
 
 			// Create and register assets.
-			for (auto& entry : std::filesystem::recursive_directory_iterator(HBL2::Project::GetAssetDirectory()))
+			/*for (auto& entry : std::filesystem::recursive_directory_iterator(HBL2::Project::GetAssetDirectory()))
 			{
 				if (entry.path().extension().string() == ".meta")
 				{
@@ -106,7 +106,7 @@ namespace HBL2
 				}
 
 				UUID assetID = HBL2::AssetManager::Get().CreateAsset(entry.path());
-			}
+			}*/
 		}
 
 		void EditorPanelSystem::OnUpdate(float ts)
@@ -154,7 +154,7 @@ namespace HBL2
 							DrawStatsPanel(ts);
 							break;
 						case Component::EditorPanel::Panel::ContentBrowser:
-							DrawContentBrowserPanel();
+							// DrawContentBrowserPanel();
 							break;
 						case Component::EditorPanel::Panel::Console:
 							DrawConsolePanel(ts);
@@ -695,7 +695,8 @@ namespace HBL2
 			if (m_CurrentDirectory != HBL2::Project::GetAssetDirectory())
 			{
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-				ImGui::ImageButton((ImTextureID)m_BackIcon, { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
+				//ImGui::ImageButton((ImTextureID)m_BackIcon, { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
+				ImGui::Button("Back", { thumbnailSize, thumbnailSize });
 				ImGui::PopStyleColor();
 				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 				{
@@ -724,7 +725,7 @@ namespace HBL2
 
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 
-				ImTextureID textureID;
+				/*ImTextureID textureID;
 
 				if (entry.is_directory())
 				{
@@ -776,11 +777,12 @@ namespace HBL2
 					{
 						textureID = (ImTextureID)m_FileIcon;
 					}
-				}
+				}*/
 
-				UUID assetID = HBL2::AssetManager::Get().CreateAsset(entry.path());
+				// UUID assetID = HBL2::AssetManager::Get().CreateAsset(entry.path());
 
-				ImGui::ImageButton(textureID, { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
+				// ImGui::ImageButton(textureID, { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
+				ImGui::Button(entry.path().filename().string().c_str(), { thumbnailSize, thumbnailSize });
 
 				if (ImGui::BeginDragDropSource())
 				{
@@ -814,7 +816,7 @@ namespace HBL2
 
 			if (m_ViewportSize != *(glm::vec2*)&viewportPanelSize)
 			{
-				HBL2::RenderCommand::FrameBuffer->Resize((uint32_t)viewportPanelSize.x, (uint32_t)viewportPanelSize.y);
+				HBL2::Renderer::Instance->ResizeFrameBuffer((uint32_t)viewportPanelSize.x, (uint32_t)viewportPanelSize.y);
 				m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 
 				// TODO: Change this to switch for play and edit mode.
@@ -827,9 +829,6 @@ namespace HBL2
 							if (camera.Enabled && camera.Primary)
 							{
 								camera.AspectRatio = m_ViewportSize.x / m_ViewportSize.y;
-								// camera.Projection = glm::ortho(-camera.AspectRatio * camera.ZoomLevel, camera.AspectRatio * camera.ZoomLevel, -camera.ZoomLevel, camera.ZoomLevel, -1.f, 1.f);
-								camera.Projection = glm::perspective(glm::radians(camera.Fov), camera.AspectRatio, camera.Near, camera.Far);
-								camera.ViewProjectionMatrix = camera.Projection * camera.View;
 							}
 						});
 				}
@@ -843,14 +842,12 @@ namespace HBL2
 							{
 								editorCamera.ViewportSize = m_ViewportSize;
 								camera.AspectRatio = m_ViewportSize.x / m_ViewportSize.y;
-								camera.Projection = glm::perspective(glm::radians(camera.Fov), camera.AspectRatio, camera.Near, camera.Far);
-								camera.ViewProjectionMatrix = camera.Projection * camera.View;
 							}
 						});
 				}
 			}
 
-			ImGui::Image((ImTextureID)HBL2::RenderCommand::FrameBuffer->GetColorAttachmentID(), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+			ImGui::Image(HBL2::Renderer::Instance->GetColorAttachment(), ImVec2{m_ViewportSize.x, m_ViewportSize.y}, ImVec2{0, 1}, ImVec2{1, 0});
 
 			if (ImGui::BeginDragDropTarget())
 			{

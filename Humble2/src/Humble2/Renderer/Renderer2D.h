@@ -41,7 +41,7 @@ namespace HBL2
 	private:
 		Renderer2D() {}
 
-		FrameBuffer* m_FrameBuffer = nullptr;
+		HBL::FrameBuffer* m_FrameBuffer = nullptr;
 		VertexArray* m_VertexArray = nullptr;
 		glm::vec4 m_QuadVertexPosition[4] = {};
 		glm::vec2 m_QuadTextureCoordinates[4] = {};

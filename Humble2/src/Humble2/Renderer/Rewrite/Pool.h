@@ -4,7 +4,7 @@
 
 #include <stack>
 
-namespace HBL
+namespace HBL2
 {
 	template <typename T, typename H>
 	class Pool
@@ -12,13 +12,13 @@ namespace HBL
 	public:
 		Pool()
 		{
-			m_Data = new T[10];
-			m_GenerationalCounter = new uint16_t[10];
+			m_Data = new T[20];
+			m_GenerationalCounter = new uint16_t[20];
 
 			memset(m_Data, 0, sizeof(m_Data));
 			memset(m_GenerationalCounter, 0, sizeof(m_GenerationalCounter));
 
-			for (int16_t i = 9; i >= 0; i--)
+			for (int16_t i = 19; i >= 0; i--)
 			{
 				m_FreeList.push((uint16_t)i);
 			}
@@ -33,7 +33,7 @@ namespace HBL
 			m_FreeList.pop();
 
 			m_Data[index] = data;
-			m_GenerationalCounter[index] = 0;
+			m_GenerationalCounter[index] = 1;
 
 			return { index, m_GenerationalCounter[index] };
 		}

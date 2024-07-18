@@ -12,34 +12,12 @@ namespace HBL2
 
 		Log::Initialize();
 
-		switch (m_Specification.Platform)
-		{
-		case Platform::Windows:
-			HBL2_CORE_INFO("Windows platform selected.");
-			break;
-		case Platform::Web:
-			HBL2_CORE_INFO("Web platform selected.");
-			break;
-		case Platform::None:
-			HBL2_CORE_ERROR("No target platform specified. Please choose between Windows or Web.");
-			exit(-1);
-			break;
-		default:
-			break;
-		}
-
 		switch (m_Specification.GraphicsAPI)
 		{
 		case GraphicsAPI::OpenGL:
 			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
 			break;
 		case GraphicsAPI::Vulkan:
-			if (m_Specification.Platform == Platform::Web)
-			{
-				HBL2_CORE_WARN("Web is the selected platform, defaulting to OpenGLES as the renderer API.");
-				m_Specification.GraphicsAPI = GraphicsAPI::OpenGL;
-				break;
-			}
 			HBL2_CORE_INFO("Vulkan is selected as the renderer API.");
 			break;
 		case GraphicsAPI::None:
@@ -63,17 +41,6 @@ namespace HBL2
 		m_Specification.Context->Core->RegisterSystem(new LinkSystem);
 		m_Specification.Context->Core->RegisterSystem(new TestRendererSystem);
 		m_Specification.Context->Core->RegisterSystem(new CameraSystem);
-	}
-
-	Application::~Application()
-	{
-		// ImGuiRenderer::Instance->Clean();
-		// delete ImGuiRenderer::Instance;
-
-		Renderer::Instance->Clean();
-		delete Renderer::Instance;
-
-		delete m_Window;
 	}
 
 	void Application::BeginFrame()
@@ -113,20 +80,18 @@ namespace HBL2
 
 	void Application::Start()
 	{
-		// Create window.
 		m_Window->Create();
 
-		HBL::ResourceManager::Instance = new HBL::OpenGLResourceManager();
+		ResourceManager::Instance = new OpenGLResourceManager();
 		Renderer::Instance = new OpenGLRenderer();
 		ImGuiRenderer::Instance = new OpenGLImGuiRenderer();
 
 		Input::SetWindow(m_Window->GetHandle());
 
 		m_Specification.Context->OnAttach();
-
-		// Initialize the renderers.
+		
 		Renderer::Instance->Initialize();
-		//ImGuiRenderer::Instance->Initialize(m_Window);
+		ImGuiRenderer::Instance->Initialize(m_Window);
 
 		m_Specification.Context->OnCreate();
 
@@ -138,9 +103,9 @@ namespace HBL2
 			m_Specification.Context->OnUpdate(m_DeltaTime);
 			Renderer::Instance->EndFrame();
 
-			//ImGuiRenderer::Instance->BeginFrame();
-			//m_Specification.Context->OnGuiRender(m_DeltaTime);
-			//ImGuiRenderer::Instance->EndFrame();
+			ImGuiRenderer::Instance->BeginFrame();
+			m_Specification.Context->OnGuiRender(m_DeltaTime);
+			ImGuiRenderer::Instance->EndFrame();
 
 			EndFrame();
 		});
@@ -151,5 +116,13 @@ namespace HBL2
 	void Application::Shutdown()
 	{
 		m_Window->Terminate();
+
+		ImGuiRenderer::Instance->Clean();
+		delete ImGuiRenderer::Instance;
+
+		Renderer::Instance->Clean();
+		delete Renderer::Instance;
+
+		delete m_Window;
 	}
 }

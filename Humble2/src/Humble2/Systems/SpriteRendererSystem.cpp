@@ -6,9 +6,9 @@ namespace HBL2
 	void SpriteRendererSystem::OnCreate()
 	{
 #ifdef EMSCRIPTEN
-		Shader::Create("Basic", "assets/shaders/BasicES.shader");
+		HBL::Shader::Create("Basic", "assets/shaders/BasicES.shader");
 #else
-		Shader::Create("Basic", "assets/shaders/Basic.shader");
+		HBL::Shader::Create("Basic", "assets/shaders/Basic.shader");
 #endif
 		glm::mat4 mvp = glm::mat4(0.f);
 		
@@ -53,7 +53,7 @@ namespace HBL2
 							* glm::toMat4(transform.QRotation)
 							* glm::scale(glm::mat4(1.0f), glm::vec3(transform.Scale.x, transform.Scale.y, 1.0f));
 
-						Renderer2D::Get().DrawQuad(m_BatchIndex, transform, Texture::Get(sprite.Path)->GetSlot(), sprite.Color);
+						Renderer2D::Get().DrawQuad(m_BatchIndex, transform, (float)HBL::Texture::Get(sprite.Path)->GetSlot(), sprite.Color);
 					}
 				});
 	}
@@ -75,7 +75,7 @@ namespace HBL2
 										* glm::scale(glm::mat4(1.0f), glm::vec3(transform.Scale.x, transform.Scale.y, 1.0f));
 					}
 
-					Renderer2D::Get().DrawQuad(m_BatchIndex, transform, Texture::Get(sprite.Path)->GetSlot(), sprite.Color);
+					Renderer2D::Get().DrawQuad(m_BatchIndex, transform, (float)HBL::Texture::Get(sprite.Path)->GetSlot(), sprite.Color);
 				}
 			});
 	}

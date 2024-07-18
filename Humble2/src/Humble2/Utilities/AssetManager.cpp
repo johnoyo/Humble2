@@ -1,6 +1,6 @@
 #include "AssetManager.h"
 
-namespace HBL2
+namespace HBL
 {
     void AssetManager::Serialize(Asset* asset)
     {

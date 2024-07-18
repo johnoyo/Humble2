@@ -10,10 +10,11 @@ namespace HBL2
 			Mode = HBL2::Mode::Editor;
 
 			// Create FrameBuffer.
-			HBL2::FrameBufferSpecification spec;
-			spec.Width = 1280;
-			spec.Height = 720;
-			//HBL2::RenderCommand::FrameBuffer = HBL2::FrameBuffer::Create(spec);
+			HBL2::Renderer::Instance->FrameBufferHandle = HBL2::ResourceManager::Instance->CreateFrameBuffer({
+				.debugName = "editor-viewport",
+				.width = 1280,
+				.height = 720,
+			});
 
 			//if (!OpenEmptyProject())
 			//{
@@ -22,7 +23,7 @@ namespace HBL2
 			//}
 
 			// Create editor systems.
-			//Core->RegisterSystem(new EditorPanelSystem);
+			Core->RegisterSystem(new EditorPanelSystem);
 			Core->RegisterSystem(new EditorCameraSystem);
 
 			// Editor camera set up.

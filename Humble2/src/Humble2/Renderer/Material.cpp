@@ -1,6 +1,6 @@
 #include "Material.h"
 
-namespace HBL2 
+namespace HBL
 {
 	Material::Material(UUID shader)
 	{

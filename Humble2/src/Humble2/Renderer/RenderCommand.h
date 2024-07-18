@@ -16,7 +16,7 @@ namespace HBL2
 		static void Draw(VertexBuffer* vertexBuffer);
 		static void DrawIndexed(VertexBuffer* vertexBuffer);
 
-		static FrameBuffer* FrameBuffer;
+		static HBL::FrameBuffer* FrameBuffer;
 
 		static GraphicsAPI GetAPI();
 

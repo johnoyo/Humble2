@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-namespace HBL2
+namespace HBL
 {
 	enum class CullMode
 	{

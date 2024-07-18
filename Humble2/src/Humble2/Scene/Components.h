@@ -7,10 +7,10 @@
 
 #include <entt.hpp>
 
-namespace HBL
+namespace HBL2
 {
-	class Mesh;
-	class Material;
+	struct Mesh;
+	struct Material;
 }
 
 namespace HBL2
@@ -63,14 +63,14 @@ namespace HBL2
 
 		struct Sprite_New
 		{
-			HBL::Handle<HBL::Material> MaterialInstance;
+			Handle<Material> MaterialInstance;
 			bool Enabled = true;
 		};
 
 		struct StaticMesh_New
 		{
-			HBL::Handle<HBL::Mesh> MeshInstance;
-			HBL::Handle<HBL::Material> MaterialInstance;
+			Handle<Mesh> MeshInstance;
+			Handle<Material> MaterialInstance;
 			bool Enabled = true;
 		};
 

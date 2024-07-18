@@ -1,14 +1,21 @@
 #pragma once
 
-#include "Renderer\RenderCommand.h"
+#include "Renderer\Rewrite\ResourceManager.h"
 
-#include "ResourceManager.h"
+#include "Renderer\Rewrite\Pool.h"
+#include "Renderer\Rewrite\Types.h"
+#include "Renderer\Rewrite\TypeDescriptors.h"
 
-#include "Pool.h"
-#include "Types.h"
-#include "TypeDescriptors.h"
+#include "OpenGLBuffer.h"
+#include "OpenGLShader.h"
+#include "OpenGLTexture.h"
+#include "OpenGLFrameBuffer.h"
+#include "OpenGLBindGroup.h"
+#include "OpenGLBindGroupLayout.h"
+#include "OpenGLRenderPass.h"
+#include "OpenGLRenderPassLayout.h"
 
-namespace HBL
+namespace HBL2
 {
 	class OpenGLResourceManager final : public ResourceManager
 	{
@@ -24,6 +31,10 @@ namespace HBL
 		{
 			m_TexturePool.Remove(handle);
 		}
+		OpenGLTexture* GetTexture(Handle<Texture> handle) const
+		{
+			return m_TexturePool.Get(handle);
+		}
 
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(BufferDescriptor&& desc) override
@@ -38,6 +49,24 @@ namespace HBL
 		{
 			return m_BufferPool.Get(handle)->Data;
 		}
+		OpenGLBuffer* GetBuffer(Handle<Buffer> handle) const
+		{
+			return m_BufferPool.Get(handle);
+		}
+
+		// Framebuffers
+		virtual Handle<FrameBuffer> CreateFrameBuffer(FrameBufferDescriptor&& desc) override
+		{
+			return m_FrameBufferPool.Insert(OpenGLFrameBuffer(desc));
+		}
+		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) override
+		{
+			m_FrameBufferPool.Remove(handle);
+		}
+		OpenGLFrameBuffer* GetFrameBuffer(Handle<FrameBuffer> handle) const
+		{
+			return m_FrameBufferPool.Get(handle);
+		}
 
 		// Shaders
 		virtual Handle<Shader> CreateShader(ShaderDescriptor&& desc) override
@@ -47,6 +76,10 @@ namespace HBL
 		virtual void DeleteShader(Handle<Shader> handle) override
 		{
 			m_ShaderPool.Remove(handle);
+		}
+		OpenGLShader* GetShader(Handle<Shader> handle) const
+		{
+			return m_ShaderPool.Get(handle);
 		}
 
 		// BindGroups
@@ -58,6 +91,10 @@ namespace HBL
 		{
 			m_BindGroupPool.Remove(handle);
 		}
+		OpenGLBindGroup* GetBindGroup(Handle<BindGroup> handle) const
+		{
+			return m_BindGroupPool.Get(handle);
+		}
 
 		// BindGroupsLayouts
 		virtual Handle<BindGroupLayout> CreateBindGroupLayout(BindGroupLayoutDescriptor&& desc) override
@@ -67,6 +104,10 @@ namespace HBL
 		virtual void DeleteBindGroupLayout(Handle<BindGroupLayout> handle) override
 		{
 			m_BindGroupLayoutPool.Remove(handle);
+		}
+		OpenGLBindGroupLayout* GetBindGroupLayout(Handle<BindGroupLayout> handle) const
+		{
+			return m_BindGroupLayoutPool.Get(handle);
 		}
 
 		// RenderPass
@@ -78,6 +119,10 @@ namespace HBL
 		{
 			m_RenderPassPool.Remove(handle);
 		}
+		OpenGLRenderPass* GetRenderPass(Handle<RenderPass> handle) const
+		{
+			return m_RenderPassPool.Get(handle);
+		}
 
 		// RenderPassLayouts
 		virtual Handle<RenderPassLayout> CreateRenderPassLayout(RenderPassLayoutDescriptor&& desc) override
@@ -88,71 +133,16 @@ namespace HBL
 		{
 			m_RenderPassLayoutPool.Remove(handle);
 		}
-
-		// Meshes
-		virtual Handle<Mesh> CreateMesh(MeshDescriptor&& desc) override
-		{
-			return m_MeshPool.Insert(OpenGLMesh(desc));
-		}
-		virtual void DeleteMesh(Handle<Mesh> handle) override
-		{
-			m_MeshPool.Remove(handle);
-		}
-
-		// Materials
-		virtual Handle<Material> CreateMaterial(MaterialDescriptor&& desc) override
-		{
-			return m_MaterialPool.Insert(OpenGLMaterial(desc));
-		}
-		virtual void DeleteMaterial(Handle<Material> handle) override
-		{
-			m_MaterialPool.Remove(handle);
-		}
-
-		// Getters
-		OpenGLMesh* GetMesh(Handle<Mesh> handle) const
-		{
-			return m_MeshPool.Get(handle);
-		}
-		OpenGLMaterial* GetMaterial(Handle<Material> handle) const
-		{
-			return m_MaterialPool.Get(handle);
-		}
-		OpenGLTexture* GetTexture(Handle<Texture> handle) const
-		{
-			return m_TexturePool.Get(handle);
-		}
-		OpenGLBuffer* GetBuffer(Handle<Buffer> handle) const
-		{
-			return m_BufferPool.Get(handle);
-		}
-		OpenGLShader* GetShader(Handle<Shader> handle) const
-		{
-			return m_ShaderPool.Get(handle);
-		}
-		OpenGLBindGroup* GetBindGroup(Handle<BindGroup> handle) const
-		{
-			return m_BindGroupPool.Get(handle);
-		}
-		OpenGLBindGroupLayout* GetBindGroupLayout(Handle<BindGroupLayout> handle) const
-		{
-			return m_BindGroupLayoutPool.Get(handle);
-		}
-		OpenGLRenderPass* GetRenderPass(Handle<RenderPass> handle) const
-		{
-			return m_RenderPassPool.Get(handle);
-		}
 		OpenGLRenderPassLayout* GetRenderPassLayout(Handle<RenderPassLayout> handle) const
 		{
 			return m_RenderPassLayoutPool.Get(handle);
 		}
 
 	private:
-		Pool<OpenGLMesh, Mesh> m_MeshPool;
-		Pool<OpenGLMaterial, Material> m_MaterialPool;
 		Pool<OpenGLTexture, Texture> m_TexturePool;
 		Pool<OpenGLBuffer, Buffer> m_BufferPool;
 		Pool<OpenGLShader, Shader> m_ShaderPool;
+		Pool<OpenGLFrameBuffer, FrameBuffer> m_FrameBufferPool;
 		Pool<OpenGLBindGroup, BindGroup> m_BindGroupPool;
 		Pool<OpenGLBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
 		Pool<OpenGLRenderPass, RenderPass> m_RenderPassPool;

@@ -17,9 +17,9 @@
 
 #include "Utilities\AssetManager.h"
 #include "Renderer\Rewrite\ResourceManager.h"
-#include "Renderer\Rewrite\OpenGLResourceManager.h"
+#include "Platform\OpenGL\Rewrite\OpenGLResourceManager.h"
 #include "Renderer\Rewrite\Renderer.h"
-#include "Renderer\Rewrite\OpenGLRenderer.h"
+#include "Platform\OpenGL\Rewrite\OpenGLRenderer.h"
 
 #include <string>
 #include <sstream>
@@ -38,7 +38,6 @@ namespace HBL2
 	{
 		std::string Name = "Humble2 Application";
 		std::string CommandLineArgs = "";
-		Platform Platform = Platform::Windows;
 		GraphicsAPI GraphicsAPI = GraphicsAPI::OpenGL;
 		float Width = 1920.f;
 		float Height = 1080.f;
@@ -52,7 +51,7 @@ namespace HBL2
 	{
 	public:
 		Application(ApplicationSpec& specification);
-		~Application();
+		~Application() = default;
 
 		void Start();
 

@@ -30,7 +30,7 @@ namespace HBL2
 			std::filesystem::path m_EditorScenePath;
 			std::filesystem::path m_CurrentDirectory;
 
-			uint32_t m_FolderIcon;
+			/*uint32_t m_FolderIcon;
 			uint32_t m_FileIcon;
 			uint32_t m_TxtIcon;
 			uint32_t m_Mp3Icon;
@@ -42,7 +42,7 @@ namespace HBL2
 			uint32_t m_MatIcon;
 			uint32_t m_ShaderIcon;
 			uint32_t m_SceneIcon;
-			uint32_t m_BackIcon;
+			uint32_t m_BackIcon;*/
 		};
 	}
 }

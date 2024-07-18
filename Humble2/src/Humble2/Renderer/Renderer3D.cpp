@@ -36,39 +36,39 @@ namespace HBL2
 			{ 4, 3, Type::FLOAT, false },
 		});
 
-		mesh.VertexArray->AddVertexBuffer(VertexBuffer::Create(mesh.Data.data(), mesh.Data.size(), vertexBufferLayout));
+		mesh.VertexArray->AddVertexBuffer(VertexBuffer::Create(mesh.Data.data(), (uint32_t)mesh.Data.size(), vertexBufferLayout));
 
 #ifdef EMSCRIPTEN
-		Shader::Create("BasicMesh", "assets/shaders/BasicMeshES.shader")->Bind();
+		HBL::Shader::Create("BasicMesh", "assets/shaders/BasicMeshES.shader")->Bind();
 
-		Shader::Get(mesh.ShaderName)->SetInt1(0, "u_Textures0");
-		Shader::Get(mesh.ShaderName)->SetInt1(1, "u_Textures1");
-		Shader::Get(mesh.ShaderName)->SetInt1(2, "u_Textures2");
-		Shader::Get(mesh.ShaderName)->SetInt1(3, "u_Textures3");
-		Shader::Get(mesh.ShaderName)->SetInt1(4, "u_Textures4");
-		Shader::Get(mesh.ShaderName)->SetInt1(5, "u_Textures5");
-		Shader::Get(mesh.ShaderName)->SetInt1(6, "u_Textures6");
-		Shader::Get(mesh.ShaderName)->SetInt1(7, "u_Textures7");
-		Shader::Get(mesh.ShaderName)->SetInt1(8, "u_Textures8");
-		Shader::Get(mesh.ShaderName)->SetInt1(9, "u_Textures9");
-		Shader::Get(mesh.ShaderName)->SetInt1(10, "u_Textures10");
-		Shader::Get(mesh.ShaderName)->SetInt1(11, "u_Textures11");
-		Shader::Get(mesh.ShaderName)->SetInt1(12, "u_Textures12");
-		Shader::Get(mesh.ShaderName)->SetInt1(13, "u_Textures13");
-		Shader::Get(mesh.ShaderName)->SetInt1(14, "u_Textures14");
-		Shader::Get(mesh.ShaderName)->SetInt1(15, "u_Textures15");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(0, "u_Textures0");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(1, "u_Textures1");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(2, "u_Textures2");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(3, "u_Textures3");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(4, "u_Textures4");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(5, "u_Textures5");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(6, "u_Textures6");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(7, "u_Textures7");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(8, "u_Textures8");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(9, "u_Textures9");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(10, "u_Textures10");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(11, "u_Textures11");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(12, "u_Textures12");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(13, "u_Textures13");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(14, "u_Textures14");
+		HBL::Shader::Get(mesh.ShaderName)->SetInt1(15, "u_Textures15");
 #else
-		Shader::Create("BasicMesh", "assets/shaders/BasicMesh.shader")->Bind();
+		HBL::Shader::Create("BasicMesh", "assets/shaders/BasicMesh.shader")->Bind();
 		
 		int samplers[32];
 		for (uint32_t i = 0; i < 32; i++)
 			samplers[i] = i;
 
-		Shader::Get(mesh.ShaderName)->SetIntPtr1(samplers, 32, "u_Textures");
+		HBL::Shader::Get(mesh.ShaderName)->SetIntPtr1(samplers, 32, "u_Textures");
 #endif
-		Shader::Get(mesh.ShaderName)->SetMat4(mvp, "u_VP");
+		HBL::Shader::Get(mesh.ShaderName)->SetMat4(mvp, "u_VP");
 
-		Shader::Get(mesh.ShaderName)->SetMat4(transform.Matrix, "u_M");
+		HBL::Shader::Get(mesh.ShaderName)->SetMat4(transform.Matrix, "u_M");
 
 		m_Shaders.push_back(mesh.ShaderName);
 	}
@@ -110,7 +110,7 @@ namespace HBL2
 		if (mesh.VertexArray == nullptr)
 			return;
 
-		Texture::ForEach([](Texture* texture)
+		HBL::Texture::ForEach([](HBL::Texture* texture)
 		{
 			texture->Bind();
 		});
@@ -121,15 +121,15 @@ namespace HBL2
 		{
 			buffer->Bind();
 
-			Shader::Get(m_Shaders[buffer->BatchIndex])->Bind();
+			HBL::Shader::Get(m_Shaders[buffer->BatchIndex])->Bind();
 
-			Shader::Get(m_Shaders[buffer->BatchIndex])->SetMat4(mvp, "u_VP");
+			HBL::Shader::Get(m_Shaders[buffer->BatchIndex])->SetMat4(mvp, "u_VP");
 
-			Shader::Get(m_Shaders[buffer->BatchIndex])->SetMat4(transform.Matrix, "u_M");
+			HBL::Shader::Get(m_Shaders[buffer->BatchIndex])->SetMat4(transform.Matrix, "u_M");
 
 			RenderCommand::Draw(buffer);
 
-			Shader::Get(m_Shaders[buffer->BatchIndex])->UnBind();
+			HBL::Shader::Get(m_Shaders[buffer->BatchIndex])->UnBind();
 
 			buffer->UnBind();
 		}
@@ -237,7 +237,7 @@ namespace HBL2
 				new_vert.Normal = normal;
 				new_vert.Color = { normal.x, normal.y, normal.z, 1.0f };
 				new_vert.TextureCoord = texCoord;
-				new_vert.TextureID = Texture::Get(mesh.TexturePath)->GetSlot();
+				new_vert.TextureID = (float)HBL::Texture::Get(mesh.TexturePath)->GetSlot();
 
 				mesh.Data.push_back(new_vert);
 			}
