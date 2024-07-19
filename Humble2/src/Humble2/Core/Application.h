@@ -1,19 +1,23 @@
 #pragma once
 
 #include "Window.h"
+#include "Platform\OpenGL\Rewrite\OpenGLWindow.h"
+
 #include "Base.h"
 #include "Input.h"
 #include "Context.h"
-#include "Renderer/Renderer2D.h"
-#include "Renderer/Renderer3D.h"
-#include "ImGui/ImGuiRenderer.h"
-#include "ImGui/OpenGLImGuiRenderer.h"
-#include "Systems/CameraSystem.h"
-#include "Systems/MeshRendererSystem.h"
-#include "Systems/SpriteRendererSystem.h"
-#include "Systems/TestRenderingSystem.h"
-#include "Systems/TransformSystem.h"
-#include "Systems/LinkSystem.h"
+
+#include "Renderer\Renderer2D.h"
+#include "Renderer\Renderer3D.h"
+#include "ImGui\ImGuiRenderer.h"
+#include "Platform\OpenGL\Rewrite\OpenGLImGuiRenderer.h"
+
+#include "Systems\CameraSystem.h"
+#include "Systems\MeshRendererSystem.h"
+#include "Systems\SpriteRendererSystem.h"
+#include "Systems\TestRenderingSystem.h"
+#include "Systems\TransformSystem.h"
+#include "Systems\LinkSystem.h"
 
 #include "Utilities\AssetManager.h"
 #include "Renderer\Rewrite\ResourceManager.h"
@@ -41,7 +45,7 @@ namespace HBL2
 		GraphicsAPI GraphicsAPI = GraphicsAPI::OpenGL;
 		float Width = 1920.f;
 		float Height = 1080.f;
-		bool Vsync = true;
+		bool VerticalSync = true;
 		bool Fullscreen = false;
 
 		Context* Context = nullptr;
@@ -60,18 +64,12 @@ namespace HBL2
 			return *s_Instance;
 		}
 
-		Window* GetWindow()
-		{
-			return m_Window;
-		}
-
 		const ApplicationSpec& GetSpec() const { return m_Specification; }
 
 	private:
 		static Application* s_Instance;
 
 		ApplicationSpec m_Specification;
-		Window* m_Window;
 
 		float m_LastTime = 0.0f;
 		float m_Timer = m_LastTime;

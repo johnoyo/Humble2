@@ -16,6 +16,10 @@ namespace HBL2
 		{
 		case GraphicsAPI::OpenGL:
 			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
+			Window::Instance = new OpenGLWindow();
+			ResourceManager::Instance = new OpenGLResourceManager();
+			Renderer::Instance = new OpenGLRenderer();
+			ImGuiRenderer::Instance = new OpenGLImGuiRenderer();
 			break;
 		case GraphicsAPI::Vulkan:
 			HBL2_CORE_INFO("Vulkan is selected as the renderer API.");
@@ -29,7 +33,13 @@ namespace HBL2
 		}
 
 		// Intialize the window.
-		m_Window = new Window(m_Specification.Name, m_Specification.Width, m_Specification.Height, m_Specification.Fullscreen, m_Specification.Vsync);
+		Window::Instance->Initialize({
+			.Title = m_Specification.Name,
+			.Width = m_Specification.Width,
+			.Height = m_Specification.Height,
+			.FullScreen = m_Specification.Fullscreen,
+			.VerticalSync = m_Specification.VerticalSync
+		});
 
 		// Initialize empty scene.
 		m_Specification.Context->EmptyScene = new Scene("Empty Scene");
@@ -46,7 +56,7 @@ namespace HBL2
 	void Application::BeginFrame()
 	{
 		// Measure time and delta time.
-		float time = (float)m_Window->GetTime();
+		float time = (float)Window::Instance->GetTime();
 		m_DeltaTime = time - m_LastTime;
 		m_FixedDeltaTime += (time - m_LastTime) / m_LimitFPS;
 		m_LastTime = time;
@@ -57,12 +67,12 @@ namespace HBL2
 		m_Frames++;
 
 		// Reset after one second.
-		if (m_Window->GetTime() - m_Timer > 1.0)
+		if (Window::Instance->GetTime() - m_Timer > 1.0)
 		{
 			// Display frame rate at window bar.
 			std::stringstream ss;
 			ss << m_Specification.Name << " [" << m_Frames << " FPS]";
-			m_Window->SetTitle(ss.str());
+			Window::Instance->SetTitle(ss.str());
 
 			// Log framerate and delta time to console.
 			printf("FPS: %d, DeltaTime: %f\n", m_Frames, m_DeltaTime);
@@ -72,21 +82,12 @@ namespace HBL2
 			m_FixedUpdates = 0;
 		}
 
-		if (m_Specification.GraphicsAPI == GraphicsAPI::OpenGL)
-		{
-			glfwSwapBuffers(m_Window->GetHandle());
-		}
+		Window::Instance->Present();
 	}
 
 	void Application::Start()
 	{
-		m_Window->Create();
-
-		ResourceManager::Instance = new OpenGLResourceManager();
-		Renderer::Instance = new OpenGLRenderer();
-		ImGuiRenderer::Instance = new OpenGLImGuiRenderer();
-
-		Input::SetWindow(m_Window->GetHandle());
+		Window::Instance->Create();
 
 		m_Specification.Context->OnAttach();
 		
@@ -95,7 +96,7 @@ namespace HBL2
 
 		m_Specification.Context->OnCreate();
 
-		m_Window->DispatchMainLoop([&]()
+		Window::Instance->DispatchMainLoop([&]()
 		{
 			BeginFrame();
 
@@ -115,14 +116,13 @@ namespace HBL2
 
 	void Application::Shutdown()
 	{
-		m_Window->Terminate();
+		Window::Instance->Terminate();
+		delete Window::Instance;
 
 		ImGuiRenderer::Instance->Clean();
 		delete ImGuiRenderer::Instance;
 
 		Renderer::Instance->Clean();
 		delete Renderer::Instance;
-
-		delete m_Window;
 	}
 }

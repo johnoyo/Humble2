@@ -95,7 +95,7 @@ namespace HBL2
 			}
 
 			HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
-			HBL2::Application::Get().GetWindow()->Close();
+			HBL2::Window::Instance->Close();
 
 			return false;
 		}

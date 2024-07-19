@@ -10,7 +10,7 @@ namespace HBL2
 {
 	void OpenGLImGuiRenderer::Initialize()
 	{
-		m_Window = Application::Get().GetWindow();
+		m_Window = Window::Instance;
 
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();

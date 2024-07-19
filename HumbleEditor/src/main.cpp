@@ -7,7 +7,7 @@ int main()
 {
 	HBL2::ApplicationSpec applicationSpec;
 	applicationSpec.Name = "Humble2 Editor";
-	applicationSpec.Vsync = false;
+	applicationSpec.VerticalSync = false;
 	applicationSpec.GraphicsAPI = HBL2::GraphicsAPI::OpenGL;
 	applicationSpec.Context = new HBL2::Editor::EditorContext;
 

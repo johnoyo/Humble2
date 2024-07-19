@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ImGuiRenderer.h"
-#include "Core/Window.h"
+#include "ImGui\ImGuiRenderer.h"
+#include "Core\Window.h"
 
 #include <imgui.h>
 

@@ -6,7 +6,7 @@ int main(int argc, char** argv)
 {
 	HBL2::ApplicationSpec applicationSpec;
 	applicationSpec.Name = "Sample App";
-	applicationSpec.Vsync = false;
+	applicationSpec.VerticalSync = false;
 	applicationSpec.GraphicsAPI = HBL2::GraphicsAPI::OpenGL;
 	applicationSpec.Context = new HBL2Runtime::RuntimeContext;
 

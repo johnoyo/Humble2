@@ -645,7 +645,7 @@ namespace HBL2
 					}
 					if (ImGui::MenuItem("Close"))
 					{
-						HBL2::Application::Get().GetWindow()->Close();
+						HBL2::Window::Instance->Close();
 					}
 					ImGui::EndMenu();
 				}
