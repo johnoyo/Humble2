@@ -1,13 +1,17 @@
 #include "OpenGLImGuiRenderer.h"
 
+#include "Core\Application.h"
+
 #include <imgui_impl_glfw.h>
-//#include <imgui_impl_vulkan.h>
+// #include <imgui_impl_vulkan.h>
 #include <imgui_impl_opengl3.h>
 
 namespace HBL2
 {
-	void OpenGLImGuiRenderer::Initialize(Window* window)
+	void OpenGLImGuiRenderer::Initialize()
 	{
+		m_Window = Application::Get().GetWindow();
+
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
@@ -31,7 +35,6 @@ namespace HBL2
 		}
 
 		m_GlslVersion = "#version 300 es";
-		m_Window = window;
 
 		ImGui_ImplGlfw_InitForOpenGL(m_Window->GetHandle(), true);
 		ImGui_ImplOpenGL3_Init(m_GlslVersion);

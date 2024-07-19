@@ -88,7 +88,7 @@ namespace HBL2
 		const char* debugName;
 		struct ShaderStage
 		{
-			const char* code = nullptr;
+			std::vector<uint32_t> code;
 			const char* entryPoint;
 		};
 		ShaderStage VS;
@@ -126,6 +126,19 @@ namespace HBL2
 		Handle<RenderPassLayout> renderPassLayout;
 	};
 
+	struct RenderPassLayoutDescriptor
+	{
+		const char* debugName;
+		uint32_t depthTargetFormat = 347567;
+
+		struct SubPass
+		{
+			bool depthTarget = false;
+		};
+
+		std::initializer_list<SubPass> subPasses;
+	};
+
 	struct RenderPassDescriptor
 	{
 		const char* debugName;
@@ -138,19 +151,6 @@ namespace HBL2
 		};
 
 		DepthTarget depthTarget;
-	};
-
-	struct RenderPassLayoutDescriptor
-	{
-		const char* debugName;
-		uint32_t depthTargetFormat = 347567;
-
-		struct SubPass
-		{
-			bool depthTarget = false;
-		};
-
-		std::initializer_list<SubPass> subPasses;
 	};
 
 	struct MeshDescriptor

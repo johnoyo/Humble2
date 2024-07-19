@@ -21,7 +21,6 @@ project "HumbleEditor"
         "../Humble2/src/Vendor",
         "../Humble2/src/Vendor/entt/include",
         "../Humble2/src/Vendor/spdlog-1.x/include",
-        "../Humble2/src/Vendor/entt/include",
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
         "../Dependencies/GLFW/include",
@@ -29,7 +28,8 @@ project "HumbleEditor"
         "../Dependencies/stb_image",
         "../Dependencies/GLM",
         "../Dependencies/YAML-Cpp/yaml-cpp/include",
-        "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include"
+        "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
+        "%{VULKAN_SDK}/Include"
     }
 
     links
@@ -37,7 +37,7 @@ project "HumbleEditor"
         "Humble2"
     }
 
-    defines 
+    defines
     {
         "GLEW_STATIC",
         "YAML_CPP_STATIC_DEFINE",

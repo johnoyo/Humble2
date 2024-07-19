@@ -32,7 +32,7 @@ namespace HBL2
 		m_Window = new Window(m_Specification.Name, m_Specification.Width, m_Specification.Height, m_Specification.Fullscreen, m_Specification.Vsync);
 
 		// Initialize empty scene.
-		m_Specification.Context->EmptyScene = new Scene("EmptyScene");
+		m_Specification.Context->EmptyScene = new Scene("Empty Scene");
 
 		m_Specification.Context->Core = new Scene("Core");
 		//m_Specification.Context->Core->RegisterSystem(new SpriteRendererSystem);
@@ -91,7 +91,7 @@ namespace HBL2
 		m_Specification.Context->OnAttach();
 		
 		Renderer::Instance->Initialize();
-		ImGuiRenderer::Instance->Initialize(m_Window);
+		ImGuiRenderer::Instance->Initialize();
 
 		m_Specification.Context->OnCreate();
 

@@ -13,6 +13,9 @@ namespace HBL2
 			-0.5, -0.5, 0.0  // 0 - Bottom left
 		};
 
+		auto vsCode = ShaderUtilities::Get().Compile("assets/shaders/unlit.vs", Stage::Vertex, Target::OpenGL);
+		auto fsCode = ShaderUtilities::Get().Compile("assets/shaders/unlit.fs", Stage::Fragment, Target::OpenGL);
+
 		auto* rm = ResourceManager::Instance;
 
 		Context::ActiveScene->GetRegistry()
@@ -25,8 +28,8 @@ namespace HBL2
 
 					auto shader = rm->CreateShader({
 						.debugName = "test_shader",
-						.VS { .code = "assets/shaders/unlit.vs", .entryPoint = "main" },
-						.FS { .code = "assets/shaders/unlit.fs", .entryPoint = "main" },
+						.VS { .code = vsCode, .entryPoint = "main" },
+						.FS { .code = fsCode, .entryPoint = "main" },
 						.renderPipeline {
 							.vertexBufferBindings = {
 								{

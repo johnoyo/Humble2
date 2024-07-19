@@ -11,7 +11,7 @@ namespace HBL2
 	public:
 		static inline ImGuiRenderer* Instance;
 
-		virtual void Initialize(Window* window) = 0;
+		virtual void Initialize() = 0;
 
 		virtual void BeginFrame() = 0;
 		virtual void EndFrame() = 0;

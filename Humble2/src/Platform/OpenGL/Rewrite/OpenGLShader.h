@@ -23,49 +23,9 @@ namespace HBL2
 		OpenGLShader() = default;
 		OpenGLShader(const ShaderDescriptor& desc)
 		{
-			std::fstream stream;
-
-			std::string line;
-			std::stringstream ssV;
-
-			stream.open(desc.VS.code, std::ios::in);
-
-			if (stream.is_open())
-			{
-				while (getline(stream, line))
-				{
-					ssV << line << '\n';
-				}
-
-				stream.close();
-			}
-			else
-			{
-				HBL2_CORE_ERROR("Could not open file: {0}.", desc.VS.code);
-			}
-
-			line.clear();
-			std::stringstream ssF;
-
-			stream.open(desc.FS.code, std::ios::in);
-
-			if (stream.is_open())
-			{
-				while (getline(stream, line))
-				{
-					ssF << line << '\n';
-				}
-
-				stream.close();
-			}
-			else
-			{
-				HBL2_CORE_ERROR("Could not open file: {0}.", desc.FS.code);
-			}
-
 			Program = glCreateProgram();
-			uint32_t vs = Compile(GL_VERTEX_SHADER, ssV.str());
-			uint32_t fs = Compile(GL_FRAGMENT_SHADER, ssF.str());
+			uint32_t vs = Compile(GL_VERTEX_SHADER, desc.VS.entryPoint, desc.VS.code);
+			uint32_t fs = Compile(GL_FRAGMENT_SHADER, desc.FS.entryPoint, desc.FS.code);
 
 			glAttachShader(Program, vs);
 			glAttachShader(Program, fs);
@@ -79,29 +39,12 @@ namespace HBL2
 			glBindVertexArray(RenderPipeline);
 		}
 
-		uint32_t Compile(uint32_t type, const std::string& source)
+		uint32_t Compile(uint32_t type, const char* entryPoint, const std::vector<uint32_t>& binaryCode)
 		{
-			uint32_t id = glCreateShader(type);
-			const char* src = source.c_str();
-			glShaderSource(id, 1, &src, nullptr);
-			glCompileShader(id);
-
-			int result;
-			glGetShaderiv(id, GL_COMPILE_STATUS, &result);
-			if (result == GL_FALSE)
-			{
-				int lenght;
-				glGetShaderiv(id, GL_INFO_LOG_LENGTH, &lenght);
-				char* message = (char*)alloca(lenght * sizeof(char));
-				glGetShaderInfoLog(id, lenght, &lenght, message);
-				HBL2_CORE_ERROR("Failed to compile {0} shader.", (type == GL_VERTEX_SHADER ? "vertex" : "fragment"));
-				HBL2_CORE_ERROR(message);
-				glDeleteShader(id);
-
-				return 0;
-			}
-
-			return id;
+			GLuint shaderID = glCreateShader(type);
+			glShaderBinary(1, &shaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, binaryCode.data(), (GLuint)binaryCode.size() * sizeof(uint32_t));
+			glSpecializeShader(shaderID, entryPoint, 0, nullptr, nullptr);
+			return shaderID;
 		}
 
 		const char* DebugName = "";

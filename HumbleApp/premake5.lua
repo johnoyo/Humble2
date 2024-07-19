@@ -26,7 +26,8 @@ project "HumbleApp"
         "../Dependencies/ImGui/imgui/backends",
         "../Dependencies/GLM",
         "../Dependencies/YAML-Cpp/yaml-cpp/include",
-        "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include"
+        "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
+        "%{VULKAN_SDK}/Include"
     }
 
     links

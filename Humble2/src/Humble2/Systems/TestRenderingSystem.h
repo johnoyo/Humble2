@@ -6,6 +6,8 @@
 #include "Renderer\Rewrite\Renderer.h"
 #include "Renderer\Rewrite\ResourceManager.h"
 
+#include "Utilities\ShaderUtilities.h"
+
 #include <glm\gtx\quaternion.hpp>
 
 

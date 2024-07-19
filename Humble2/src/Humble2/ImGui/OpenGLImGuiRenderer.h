@@ -10,7 +10,7 @@ namespace HBL2
 	class OpenGLImGuiRenderer final : public ImGuiRenderer
 	{
 	public:
-		virtual void Initialize(Window* window) override;
+		virtual void Initialize() override;
 
 		virtual void BeginFrame() override;
 		virtual void EndFrame() override;
