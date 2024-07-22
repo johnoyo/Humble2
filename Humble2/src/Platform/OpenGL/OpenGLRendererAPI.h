@@ -6,7 +6,7 @@
 	#define GLFW_INCLUDE_ES3
 	#include <GLFW/glfw3.h>
 #else
-	#include "OpenGLDebug.h"
+	#include "Platform\OpenGL\Rewrite\OpenGLDebug.h"
 	#define GLFW_INCLUDE_NONE
 	#include <GL/glew.h>
 #endif

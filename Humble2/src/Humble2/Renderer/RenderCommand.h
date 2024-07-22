@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Renderer\Rewrite\Renderer.h"
 #include "RendererAPI.h"
 #include "Utilities/Log.h"
 #include "FrameBuffer.h"

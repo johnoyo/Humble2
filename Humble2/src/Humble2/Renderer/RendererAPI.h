@@ -7,12 +7,12 @@
 
 namespace HBL2
 {
-	enum class GraphicsAPI
-	{
-		OpenGL,
-		Vulkan,
-		None
-	};
+	//enum class GraphicsAPI
+	//{
+	//	OpenGL,
+	//	Vulkan,
+	//	None
+	//};
 
 	class RendererAPI
 	{

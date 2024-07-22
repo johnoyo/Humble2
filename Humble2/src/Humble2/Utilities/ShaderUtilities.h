@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Base.h"
+#include "Renderer\Rewrite\Renderer.h"
+#include "Renderer\Rewrite\Enums.h"
 
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
@@ -11,18 +13,6 @@
 
 namespace HBL2
 {
-	enum class Stage
-	{
-		Vertex = 0,
-		Fragment = 1,
-	};
-
-	enum class Target
-	{
-		OpenGL = 0,
-		Vulkan = 1,
-	};
-
 	class ShaderUtilities
 	{
 	public:
@@ -34,13 +24,13 @@ namespace HBL2
 			return instance;
 		}
 
-		const char* GetCacheDirectory(Target target)
+		const char* GetCacheDirectory(GraphicsAPI target)
 		{
 			switch (target)
 			{
-			case Target::OpenGL:
+			case GraphicsAPI::OPENGL:
 				return "assets/cache/shader/opengl";
-			case Target::Vulkan:
+			case GraphicsAPI::VULKAN:
 				return "assets/cache/shader/vulkan";
 			default:
 				HBL2_CORE_ERROR("Stage not supported");
@@ -49,7 +39,7 @@ namespace HBL2
 			}
 		}
 
-		void CreateCacheDirectoryIfNeeded(Target target)
+		void CreateCacheDirectoryIfNeeded(GraphicsAPI target)
 		{
 			std::string cacheDirectory = GetCacheDirectory(target);
 
@@ -59,13 +49,13 @@ namespace HBL2
 			}
 		}
 
-		const char* GLShaderStageCachedVulkanFileExtension(Stage stage)
+		const char* GLShaderStageCachedVulkanFileExtension(ShaderStage stage)
 		{
 			switch (stage)
 			{
-			case Stage::Vertex:
+			case ShaderStage::VERTEX:
 				return ".cached_vulkan.vert";
-			case Stage::Fragment:
+			case ShaderStage::FRAGMENT:
 				return ".cached_vulkan.frag";
 			default:
 				HBL2_CORE_ERROR("Stage not supported");
@@ -74,13 +64,13 @@ namespace HBL2
 			}
 		}
 
-		const char* GLShaderStageCachedOpenGLFileExtension(Stage stage)
+		const char* GLShaderStageCachedOpenGLFileExtension(ShaderStage stage)
 		{
 			switch (stage)
 			{
-			case Stage::Vertex:
+			case ShaderStage::VERTEX:
 				return ".cached_opengl.vert";
-			case Stage::Fragment:
+			case ShaderStage::FRAGMENT:
 				return ".cached_opengl.frag";
 			default:
 				HBL2_CORE_ERROR("Stage not supported");
@@ -89,13 +79,13 @@ namespace HBL2
 			}
 		}
 
-		shaderc_shader_kind GLShaderStageToShaderC(Stage stage)
+		shaderc_shader_kind GLShaderStageToShaderC(ShaderStage stage)
 		{
 			switch (stage)
 			{
-				case Stage::Vertex:
+				case ShaderStage::VERTEX:
 					return shaderc_glsl_vertex_shader;
-				case Stage::Fragment:
+				case ShaderStage::FRAGMENT:
 					return shaderc_glsl_fragment_shader;
 			}
 			// HBL2_CORE_ASSERT(false);
@@ -130,8 +120,25 @@ namespace HBL2
 			return result;
 		}
 
-		std::vector<uint32_t> Compile(const std::string& shaderFilePath, Stage stage, Target target)
+		const char* GLShaderStageToString(ShaderStage stage)
 		{
+			switch (stage)
+			{
+			case ShaderStage::VERTEX:
+				return "ShaderStage::VERTEX";
+			case ShaderStage::FRAGMENT:
+				return "ShaderStage::FRAGMENT";
+			default:
+				// HBL2_CORE_ASSERT(false);
+				assert(false);
+				return "";
+			}
+		}
+
+		std::vector<uint32_t> Compile(const std::string& shaderFilePath, ShaderStage stage)
+		{
+			GraphicsAPI target = Renderer::Instance->GetAPI();
+
 			CreateCacheDirectoryIfNeeded(target);
 
 			std::vector<uint32_t> vulkanShaderData;
@@ -146,10 +153,10 @@ namespace HBL2
 
 				switch (target)
 				{
-				case Target::OpenGL:
+				case GraphicsAPI::OPENGL:
 					options.AddMacroDefinition("OpenGL");
 					break;
-				case Target::Vulkan:
+				case GraphicsAPI::VULKAN:
 					options.AddMacroDefinition("Vulkan");
 					break;
 				}
@@ -193,13 +200,13 @@ namespace HBL2
 			}
 
 			// TODO: Reflect here
-			// ...
+			Reflect(stage, vulkanShaderData);
 
 			switch (target)
 			{
-			case Target::Vulkan:
+			case GraphicsAPI::VULKAN:
 				return vulkanShaderData;
-			case Target::OpenGL:
+			case GraphicsAPI::OPENGL:
 				{
 					shaderc::Compiler compiler;
 					shaderc::CompileOptions options;
@@ -252,6 +259,30 @@ namespace HBL2
 				assert(false);
 				return std::vector<uint32_t>();
 			}			
+		}
+
+		void Reflect(ShaderStage stage, const std::vector<uint32_t>& shaderData)
+		{
+			spirv_cross::Compiler compiler(shaderData);
+			spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+
+			HBL2_CORE_TRACE("OpenGLShader::Reflect - {0}", GLShaderStageToString(stage));
+			HBL2_CORE_TRACE("    {0} uniform buffers", resources.uniform_buffers.size());
+			HBL2_CORE_TRACE("    {0} resources", resources.sampled_images.size());
+
+			HBL2_CORE_TRACE("Uniform buffers:");
+			for (const auto& resource : resources.uniform_buffers)
+			{
+				const auto& bufferType = compiler.get_type(resource.base_type_id);
+				uint32_t bufferSize = compiler.get_declared_struct_size(bufferType);
+				uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+				int memberCount = bufferType.member_types.size();
+
+				HBL2_CORE_TRACE("  {0}", resource.name);
+				HBL2_CORE_TRACE("    Size = {0}", bufferSize);
+				HBL2_CORE_TRACE("    Binding = {0}", binding);
+				HBL2_CORE_TRACE("    Members = {0}", memberCount);
+			}
 		}
 
 	private:

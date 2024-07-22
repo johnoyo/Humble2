@@ -4,6 +4,7 @@ namespace HBL2
 {
 	void OpenGLRenderer::Initialize()
 	{
+		m_GraphicsAPI = GraphicsAPI::OPENGL;
 		m_ResourceManager = (OpenGLResourceManager*)ResourceManager::Instance;
 
 #ifdef DEBUG
@@ -31,7 +32,7 @@ namespace HBL2
 			glViewport(0, 0, openGLFrameBuffer->Width, openGLFrameBuffer->Height);
 		}
 
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
@@ -66,14 +67,26 @@ namespace HBL2
 		}
 	}
 
-	void OpenGLRenderer::SetBufferData(Handle<Buffer> buffer, void* newData)
+	void OpenGLRenderer::WriteBuffer(Handle<Buffer> buffer, void* newData)
 	{
 		OpenGLBuffer* openGLBuffer = m_ResourceManager->GetBuffer(buffer);
 		void* data = m_ResourceManager->GetBufferData(buffer);
 		data = newData;
 
-		glBindBuffer(GL_ARRAY_BUFFER, openGLBuffer->RendererId);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, openGLBuffer->ByteSize * openGLBuffer->RendererId, data);
+		if (openGLBuffer->UsageHint == GL_STATIC_DRAW)
+		{
+			HBL2_CORE_WARN("Buffer with name: {0} is set for static usage, updating will have no effect", openGLBuffer->DebugName);
+			return;
+		}
+
+		glBindBuffer(openGLBuffer->Usage, openGLBuffer->RendererId);
+		glBufferSubData(openGLBuffer->Usage, 0, openGLBuffer->ByteSize, data);
+	}
+
+	void OpenGLRenderer::WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData)
+	{
+		OpenGLBindGroup* openGLBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
+		WriteBuffer(openGLBindGroup->Buffers[bufferIndex].buffer, newData);
 	}
 
 	void OpenGLRenderer::SetBindGroups(Handle<Material> material)

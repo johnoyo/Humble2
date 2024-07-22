@@ -6,7 +6,7 @@ namespace HBL2
 {
 	RendererAPI* RenderCommand::s_RendererAPI = nullptr;
 	HBL::FrameBuffer* RenderCommand::FrameBuffer = nullptr;
-	GraphicsAPI RenderCommand::s_API = GraphicsAPI::None;
+	GraphicsAPI RenderCommand::s_API = GraphicsAPI::NONE;
 
 	void RenderCommand::Initialize(GraphicsAPI api)
 	{
@@ -14,14 +14,14 @@ namespace HBL2
 
 		switch (s_API)
 		{
-		case HBL2::GraphicsAPI::OpenGL:
+		case HBL2::GraphicsAPI::OPENGL:
 			s_RendererAPI = new OpenGLRendererAPI();
 			break;
-		case HBL2::GraphicsAPI::Vulkan:
+		case HBL2::GraphicsAPI::VULKAN:
 			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
 			s_RendererAPI = new OpenGLRendererAPI();
 			break;
-		case HBL2::GraphicsAPI::None:
+		case HBL2::GraphicsAPI::NONE:
 			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 			break;

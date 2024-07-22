@@ -9,12 +9,12 @@ namespace HBL2
 	{
 		switch (RenderCommand::GetAPI())
 		{
-		case GraphicsAPI::OpenGL:
+		case GraphicsAPI::OPENGL:
 			return new OpenGLVertexBuffer(size, layout);
-		case GraphicsAPI::Vulkan:
+		case GraphicsAPI::VULKAN:
 			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
 			return new OpenGLVertexBuffer(size, layout);
-		case HBL2::GraphicsAPI::None:
+		case HBL2::GraphicsAPI::NONE:
 			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 			return nullptr;
@@ -23,16 +23,16 @@ namespace HBL2
 		return nullptr;
 	}
 
-	VertexBuffer* VertexBuffer::Create(Buffer* handle, uint32_t size, VertexBufferLayout& layout)
+	VertexBuffer* VertexBuffer::Create(HBL::Buffer* handle, uint32_t size, VertexBufferLayout& layout)
 	{
 		switch (RenderCommand::GetAPI())
 		{
-		case GraphicsAPI::OpenGL:
+		case GraphicsAPI::OPENGL:
 			return new OpenGLVertexBuffer(handle, size, layout);
-		case GraphicsAPI::Vulkan:
+		case GraphicsAPI::VULKAN:
 			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
 			return new OpenGLVertexBuffer(handle, size, layout);
-		case HBL2::GraphicsAPI::None:
+		case HBL2::GraphicsAPI::NONE:
 			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 			return nullptr;
@@ -41,7 +41,7 @@ namespace HBL2
 		return nullptr;
 	}
 
-	Buffer* VertexBuffer::GetHandle()
+	HBL::Buffer* VertexBuffer::GetHandle()
 	{
 		return m_Buffer;
 	}

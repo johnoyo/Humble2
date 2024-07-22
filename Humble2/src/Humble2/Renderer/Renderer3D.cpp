@@ -232,7 +232,7 @@ namespace HBL2
 				};
 
 				//copy it into our vertex
-				Buffer new_vert;
+				HBL::Buffer new_vert;
 				new_vert.Position = position;
 				new_vert.Normal = normal;
 				new_vert.Color = { normal.x, normal.y, normal.z, 1.0f };

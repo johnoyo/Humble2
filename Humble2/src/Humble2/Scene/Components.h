@@ -27,7 +27,7 @@ namespace HBL2
 			glm::vec3 Translation = { 0.f, 0.f, 0.f };
 			glm::vec3 Rotation = { 0.f, 0.f, 0.f };
 			glm::quat QRotation = glm::quat(Rotation);
-			glm::vec3 Scale = { 10.f, 10.f, 10.f };
+			glm::vec3 Scale = { 1.f, 1.f, 1.f };
 
 			glm::mat4 Matrix = glm::mat4(1.f);
 			glm::mat4 WorldMatrix = glm::mat4(1.f);
@@ -50,7 +50,7 @@ namespace HBL2
 
 		struct StaticMesh
 		{
-			std::vector<Buffer> Data;
+			std::vector<HBL::Buffer> Data;
 
 			VertexArray* VertexArray;
 			std::string Path;

@@ -1,7 +1,12 @@
 #pragma once
 
 #include "Base.h"
+#include "Renderer\Rewrite\Handle.h"
 #include "Renderer\Rewrite\TypeDescriptors.h"
+
+#include "OpenGLBuffer.h"
+#include "OpenGLTexture.h"
+#include "OpenGLBindGroupLayout.h"
 
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3
@@ -18,11 +23,15 @@
 
 namespace HBL2
 {
+	class OpenGLResourceManager;
+
 	struct OpenGLBindGroup
 	{
 		OpenGLBindGroup() = default;
-		OpenGLBindGroup(const BindGroupDescriptor& desc) {}
+		OpenGLBindGroup(const BindGroupDescriptor& desc);		
 
 		const char* DebugName = "";
+		std::vector<BindGroupDescriptor::BufferEntry> Buffers;
+		std::vector<Handle<Texture>> Textures;
 	};
 }

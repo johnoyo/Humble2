@@ -9,7 +9,7 @@ namespace HBL2
 	{
 		void EditorCameraSystem::OnCreate()
 		{
-			m_Context = HBL2::Context::Core;
+			m_Context = HBL2::Context::ActiveScene;
 
 			m_Context->GetRegistry()
 				.group<Component::EditorCamera>(entt::get<HBL2::Component::Camera, HBL2::Component::Transform>)
@@ -17,12 +17,6 @@ namespace HBL2
 				{
 					if (editorCamera.Enabled)
 					{
-						camera.View = glm::inverse(transform.WorldMatrix);
-						camera.ViewProjectionMatrix = camera.Projection * camera.View;
-
-						if (camera.Primary)
-							m_Context->MainCamera = entity;
-
 						editorCamera.Distance = transform.Translation.z;
 					}
 				});
@@ -36,17 +30,6 @@ namespace HBL2
 				{
 					if (editorCamera.Enabled)
 					{
-						if (!transform.Static)
-						{
-							camera.View = glm::inverse(transform.WorldMatrix);
-							camera.ViewProjectionMatrix = camera.Projection * camera.View;
-						}
-
-						if (camera.Primary)
-						{
-							m_Context->MainCamera = entity;
-						}
-
 						if (HBL2::Input::GetKeyDown(GLFW_KEY_LEFT_ALT))
 						{
 							const glm::vec2& mouse{ HBL2::Input::GetMousePosition().x, HBL2::Input::GetMousePosition().y };

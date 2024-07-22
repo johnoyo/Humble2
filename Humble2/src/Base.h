@@ -37,13 +37,16 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <stb_image/stb_image.h>
 
-struct Buffer
+namespace HBL
 {
-	glm::vec3 Position;
-	glm::vec4 Color;
-	glm::vec2 TextureCoord;
-	float TextureID;
-	glm::vec3 Normal;
-};
+	struct Buffer
+	{
+		glm::vec3 Position;
+		glm::vec4 Color;
+		glm::vec2 TextureCoord;
+		float TextureID;
+		glm::vec3 Normal;
+	};
+}
 
 using UUID = uint64_t;

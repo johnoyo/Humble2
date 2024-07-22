@@ -24,20 +24,26 @@ namespace HBL2
 
 			// Create editor systems.
 			Core->RegisterSystem(new EditorPanelSystem);
-			Core->RegisterSystem(new EditorCameraSystem);
+			ActiveScene->RegisterSystem(new EditorCameraSystem);
 
 			// Editor camera set up.
-			auto editorCameraEntity = Core->CreateEntity();
-			Core->GetComponent<HBL2::Component::Tag>(editorCameraEntity).Name = "Hidden";
-			Core->AddComponent<Component::EditorCamera>(editorCameraEntity);
-			Core->AddComponent<HBL2::Component::Camera>(editorCameraEntity).Enabled = true;
-			Core->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 10.f;
+			auto editorCameraEntity = ActiveScene->CreateEntity();
+			ActiveScene->GetComponent<HBL2::Component::Tag>(editorCameraEntity).Name = "Hidden";
+			ActiveScene->AddComponent<Component::EditorCamera>(editorCameraEntity);
+			ActiveScene->AddComponent<HBL2::Component::Camera>(editorCameraEntity).Enabled = true;
+			ActiveScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 5.f;
 
-			auto entity = ActiveScene->CreateEntity();
-			ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name = "Sprite";
-			ActiveScene->GetComponent<HBL2::Component::Transform>(entity).Translation = { 0.f, 0.f, 0.f };
-			ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
-			ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity);
+			auto entity1 = ActiveScene->CreateEntity();
+			ActiveScene->GetComponent<HBL2::Component::Tag>(entity1).Name = "Sprite1";
+			ActiveScene->GetComponent<HBL2::Component::Transform>(entity1).Translation = { 0.f, 0.f, 0.f };
+			ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity1);
+			ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity1);
+
+			auto entity2 = ActiveScene->CreateEntity();
+			ActiveScene->GetComponent<HBL2::Component::Tag>(entity2).Name = "Sprite2";
+			ActiveScene->GetComponent<HBL2::Component::Transform>(entity2).Translation = { 5.f, 0.f, 0.f };
+			ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity2);
+			ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity2);
 		}
 
 		void EditorContext::OnCreate()

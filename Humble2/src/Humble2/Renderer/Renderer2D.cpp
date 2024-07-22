@@ -159,7 +159,7 @@ namespace HBL2
 
 	void Renderer2D::DrawQuad(uint32_t batchIndex, Component::Transform& transform, float textureID, glm::vec4 color)
 	{
-		Buffer* buffer = m_VertexArray->GetVertexBuffers()[batchIndex]->GetHandle();
+		HBL::Buffer * buffer = m_VertexArray->GetVertexBuffers()[batchIndex]->GetHandle();
 		uint32_t& batchSize = m_VertexArray->GetVertexBuffers()[batchIndex]->BatchSize;
 
 		buffer[batchSize].Position = transform.Matrix * m_QuadVertexPosition[0];
@@ -189,7 +189,7 @@ namespace HBL2
 
 	void Renderer2D::DrawQuad(uint32_t batchIndex, glm::vec3& position, glm::vec3& scale, float textureID, glm::vec4 color)
 	{
-		Buffer* buffer = m_VertexArray->GetVertexBuffers()[batchIndex]->GetHandle();
+		HBL::Buffer* buffer = m_VertexArray->GetVertexBuffers()[batchIndex]->GetHandle();
 		uint32_t& batchSize = m_VertexArray->GetVertexBuffers()[batchIndex]->BatchSize;
 
 		buffer[batchSize].Position = { position.x - scale.x / 2.f, position.y + scale.y / 2.f, 0.f };

@@ -17,7 +17,7 @@ namespace HBL2
 	{
 	public:
 		OpenGLVertexBuffer(uint32_t size, VertexBufferLayout& layout);
-		OpenGLVertexBuffer(Buffer* handle, uint32_t size, VertexBufferLayout& layout);
+		OpenGLVertexBuffer(HBL::Buffer* handle, uint32_t size, VertexBufferLayout& layout);
 		virtual ~OpenGLVertexBuffer() {}
 
 		virtual void Bind() override;

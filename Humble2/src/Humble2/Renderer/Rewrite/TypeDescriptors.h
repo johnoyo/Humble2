@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Enums.h"
+#include "Handle.h"
+
 #include <glm\glm.hpp>
 
 #include <initializer_list>
@@ -22,23 +25,24 @@ namespace HBL2
 		uint32_t mips = 1;
 		uint32_t format = 347567;
 		uint32_t internalFormat = 347567;
-		uint32_t usage = 347567;
+		TextureUsage usage = TextureUsage::TEXTURE_BINDING;
 
 		struct Sampler
 		{
 			uint32_t compare = 347567;
 		};
 
-		void* initialData;
+		void* initialData = nullptr;
 	};
 
 	struct BufferDescriptor
 	{
 		const char* debugName;
-		void* initialData;
+		BufferUsage usage = BufferUsage::UNIFORM;
+		BufferUsageHint usageHint = BufferUsageHint::STATIC;
+		Memory memory = Memory::GPU_CPU;
 		uint32_t byteSize = 0;
-		uint32_t usage = 347567;
-		uint32_t memory = 347567;
+		void* initialData = nullptr;
 	};
 
 	struct FrameBufferDescriptor
@@ -56,15 +60,15 @@ namespace HBL2
 		struct TextureBinding
 		{
 			uint32_t slot = 0;
-			uint32_t visibility = 347567;
+			ShaderStage visibility = ShaderStage::VERTEX;
 		};
 		std::initializer_list<TextureBinding> textureBindings;
 
 		struct BufferBinding
 		{
 			uint32_t slot = 0;
-			uint32_t visibility = 347567;
-			uint32_t type = 347567;
+			ShaderStage visibility = ShaderStage::VERTEX;
+			BufferBindingType type = BufferBindingType::UNIFORM;
 		};
 		std::initializer_list<BufferBinding> bufferBindings;
 	};
@@ -72,15 +76,14 @@ namespace HBL2
 	struct BindGroupDescriptor
 	{
 		const char* debugName;
-		BindGroupLayoutDescriptor layout;
+		Handle<BindGroupLayout> layout;
 		std::initializer_list<Handle<Texture>> textures;
-		struct Buffer
+		struct BufferEntry
 		{
 			Handle<Buffer> buffer;
 			uint32_t byteOffset = 0;
-			uint32_t byteSize = 0;
 		};
-		std::initializer_list<Handle<Buffer>> buffers;
+		std::initializer_list<BufferEntry> buffers;
 	};
 
 	struct ShaderDescriptor
@@ -101,7 +104,7 @@ namespace HBL2
 				struct Attribute
 				{
 					uint32_t byteOffset = 0;
-					uint32_t format = 347567;
+					VertexFormat format = VertexFormat::FLOAT32;
 				};
 
 				uint32_t byteStride = 12;

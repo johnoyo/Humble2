@@ -18,7 +18,7 @@
 	#define GLFW_INCLUDE_ES3
 	#include <GLFW/glfw3.h>
 #else
-	#include "Platform\OpenGL\OpenGLDebug.h"
+	#include "Platform\OpenGL\Rewrite\OpenGLDebug.h"
 	#define GLFW_INCLUDE_NONE
 	#include <GL/glew.h>
 #endif
@@ -34,8 +34,9 @@ namespace HBL2
 		virtual void BeginFrame() override;
 		virtual void SetPipeline(Handle<Material> material) override;
 		virtual void SetBuffers(Handle<Mesh> mesh) override;
-		virtual void SetBufferData(Handle<Buffer> buffer, void* newData) override;
 		virtual void SetBindGroups(Handle<Material> material) override;
+		virtual void WriteBuffer(Handle<Buffer> buffer, void* newData) override;
+		virtual void WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
 		virtual void Draw(Handle<Mesh> mesh, Handle<Material> material) override;
 		virtual void DrawIndexed(Handle<Mesh> mesh, Handle<Material> material) override;
 		virtual void EndFrame() override;

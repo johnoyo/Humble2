@@ -8,6 +8,9 @@
 
 #include "Utilities\ShaderUtilities.h"
 
+#include "Platform\OpenGL\Rewrite\OpenGLBindGroup.h"
+#include "Platform\OpenGL\Rewrite\OpenGLResourceManager.h"
+
 #include <glm\gtx\quaternion.hpp>
 
 

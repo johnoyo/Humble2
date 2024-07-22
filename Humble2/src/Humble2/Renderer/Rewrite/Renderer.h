@@ -5,6 +5,13 @@
 
 namespace HBL2
 {
+	enum class GraphicsAPI
+	{
+		NONE,
+		OPENGL,
+		VULKAN,
+	};
+
 	class Renderer
 	{
 	public:
@@ -16,8 +23,9 @@ namespace HBL2
 		virtual void BeginFrame() = 0;
 		virtual void SetPipeline(Handle<Material> material) = 0;
 		virtual void SetBuffers(Handle<Mesh> mesh) = 0;
-		virtual void SetBufferData(Handle<Buffer> buffer, void* newData) = 0;
 		virtual void SetBindGroups(Handle<Material> material) = 0;
+		virtual void WriteBuffer(Handle<Buffer> buffer, void* newData) = 0;
+		virtual void WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) = 0;
 		virtual void Draw(Handle<Mesh> mesh, Handle<Material> material) = 0;
 		virtual void DrawIndexed(Handle<Mesh> mesh, Handle<Material> material) = 0;
 		virtual void EndFrame() = 0;
@@ -27,6 +35,11 @@ namespace HBL2
 		virtual void* GetDepthAttachment() = 0;
 		virtual void* GetColorAttachment() = 0;
 
+		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
+
 		Handle<FrameBuffer> FrameBufferHandle;
+
+	protected:
+		GraphicsAPI m_GraphicsAPI;
 	};
 }
