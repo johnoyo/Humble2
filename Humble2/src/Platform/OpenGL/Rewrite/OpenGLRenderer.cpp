@@ -93,8 +93,23 @@ namespace HBL2
 	{
 		Material* openGLMaterial = m_ResourceManager->GetMaterial(material);
 		OpenGLShader* openGLShader = m_ResourceManager->GetShader(openGLMaterial->Shader);
+		OpenGLBindGroup* openGLBindGroup = m_ResourceManager->GetBindGroup(openGLMaterial->BindGroup);
 
 		glUseProgram(openGLShader->Program);
+
+		for (int i = 0; i < openGLBindGroup->Textures.size(); i++)
+		{
+			OpenGLTexture* openGLTexture = m_ResourceManager->GetTexture(openGLBindGroup->Textures[i]);
+
+			glActiveTexture(i + GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, openGLTexture->RendererId);
+
+			int uniform_location = glGetUniformLocation(openGLShader->Program, "u_AlbedoMap");
+			if (uniform_location != -1)
+			{
+				glUniform1i(uniform_location, i);
+			}
+		}
 	}
 
 	void OpenGLRenderer::Draw(Handle<Mesh> mesh, Handle<Material> material)

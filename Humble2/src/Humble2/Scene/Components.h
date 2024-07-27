@@ -63,14 +63,14 @@ namespace HBL2
 
 		struct Sprite_New
 		{
-			Handle<Material> MaterialInstance;
+			Handle<Material> Material;
 			bool Enabled = true;
 		};
 
 		struct StaticMesh_New
 		{
-			Handle<Mesh> MeshInstance;
-			Handle<Material> MaterialInstance;
+			Handle<Mesh> Mesh;
+			Handle<Material> Material;
 			bool Enabled = true;
 		};
 

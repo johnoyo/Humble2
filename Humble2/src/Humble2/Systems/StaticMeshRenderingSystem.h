@@ -7,6 +7,7 @@
 #include "Renderer\Rewrite\ResourceManager.h"
 
 #include "Utilities\ShaderUtilities.h"
+#include "Utilities\TextureUtilities.h"
 
 #include "Platform\OpenGL\Rewrite\OpenGLBindGroup.h"
 #include "Platform\OpenGL\Rewrite\OpenGLResourceManager.h"
@@ -16,7 +17,7 @@
 
 namespace HBL2
 {
-	class TestRendererSystem final : public ISystem
+	class StaticMeshRenderingSystem final : public ISystem
 	{
 	public:
 		virtual void OnCreate() override;

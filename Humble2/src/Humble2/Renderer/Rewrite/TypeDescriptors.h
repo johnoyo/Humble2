@@ -32,7 +32,7 @@ namespace HBL2
 			uint32_t compare = 347567;
 		};
 
-		void* initialData = nullptr;
+		const unsigned char* initialData = nullptr;
 	};
 
 	struct BufferDescriptor

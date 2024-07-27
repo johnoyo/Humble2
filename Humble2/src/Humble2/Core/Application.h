@@ -15,7 +15,7 @@
 #include "Systems\CameraSystem.h"
 #include "Systems\MeshRendererSystem.h"
 #include "Systems\SpriteRendererSystem.h"
-#include "Systems\TestRenderingSystem.h"
+#include "Systems\StaticMeshRenderingSystem.h"
 #include "Systems\TransformSystem.h"
 #include "Systems\LinkSystem.h"
 

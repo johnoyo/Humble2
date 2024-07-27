@@ -1,8 +1,8 @@
-#include "TestRenderingSystem.h"
+#include "StaticMeshRenderingSystem.h"
 
 namespace HBL2
 {
-	void TestRendererSystem::OnCreate()
+	void StaticMeshRenderingSystem::OnCreate()
 	{
 		m_Positions = new float[18] {
 			-0.5, -0.5, 0.0, // 0 - Bottom left
@@ -13,24 +13,44 @@ namespace HBL2
 			-0.5, -0.5, 0.0  // 0 - Bottom left
 		};
 
+		float* texCoords = new float[12] {
+			0.0, 1.0,  // 0 - Bottom left
+			1.0, 1.0,  // 1 - Bottom right
+			1.0, 0.0,  // 2 - Top right
+			1.0, 0.0,  // 2 - Top right
+			0.0, 0.0,  // 3 - Top left
+			0.0, 1.0,  // 0 - Bottom left
+		};
+
+		auto textureData = TextureUtilities::Get().Load("assets/icons/content_browser/png-1477.png");
+
 		auto vsCode = ShaderUtilities::Get().Compile("assets/shaders/unlit.vs", ShaderStage::VERTEX);
 		auto fsCode = ShaderUtilities::Get().Compile("assets/shaders/unlit.fs", ShaderStage::FRAGMENT);
 
 		auto vsCode1 = ShaderUtilities::Get().Compile("assets/shaders/unlit-colored.vs", ShaderStage::VERTEX);
 		auto fsCode1 = ShaderUtilities::Get().Compile("assets/shaders/unlit-colored.fs", ShaderStage::FRAGMENT);
 
+		auto vsCode2 = ShaderUtilities::Get().Compile("assets/shaders/unlit-textured.vs", ShaderStage::VERTEX);
+		auto fsCode2 = ShaderUtilities::Get().Compile("assets/shaders/unlit-textured.fs", ShaderStage::FRAGMENT);
+
 		auto* rm = ResourceManager::Instance;
 
 		auto shader = rm->CreateShader({
 			.debugName = "test_shader",
-			.VS {.code = vsCode1, .entryPoint = "main" },
-			.FS {.code = fsCode1, .entryPoint = "main" },
+			.VS {.code = vsCode2, .entryPoint = "main" },
+			.FS {.code = fsCode2, .entryPoint = "main" },
 			.renderPipeline {
 				.vertexBufferBindings = {
 					{
 						.byteStride = 12,
 						.attributes = {
-							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 }
+							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
+						},
+					},
+					{
+						.byteStride = 8,
+						.attributes = {
+							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				}
@@ -39,6 +59,12 @@ namespace HBL2
 
 		auto bindGroupLayout = rm->CreateBindGroupLayout({
 			.debugName = "unlit-colored-layout",
+			.textureBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::FRAGMENT,
+				}
+			},
 			.bufferBindings = {
 				{
 					.slot = 0,
@@ -50,7 +76,7 @@ namespace HBL2
 					.visibility = ShaderStage::VERTEX,
 					.type = BufferBindingType::UNIFORM,
 				},
-			},
+			},			
 		});
 
 		auto cameraBuffer = rm->CreateBuffer({
@@ -71,9 +97,16 @@ namespace HBL2
 			.initialData = nullptr,
 		});
 
+		auto texture = rm->CreateTexture({
+			.debugName = "test-texture",
+			.dimensions = { textureData.Width, textureData.Height, 0 },
+			.initialData = textureData.Data,
+		});
+
 		auto bindGroup = rm->CreateBindGroup({
 			.debugName = "unlit-colored-bind-group",
 			.layout = bindGroupLayout,
+			.textures = { texture },
 			.buffers = {
 				{ .buffer = cameraBuffer },
 				{ .buffer = objectBuffer },
@@ -92,52 +125,58 @@ namespace HBL2
 			.initialData = m_Positions,
 		});
 
+		auto bufferTexCoords = rm->CreateBuffer({
+			.debugName = "test_quad_texCoords",
+			.byteSize = sizeof(float) * 12,
+			.initialData = texCoords,
+		});
+
 		auto meshResource = rm->CreateMesh({
 			.debugName = "quad_mesh",
 			.vertexOffset = 0,
 			.vertexCount = 6,
-			.vertexBuffers = { buffer },
+			.vertexBuffers = { buffer, bufferTexCoords },
 		});
 
 		Context::ActiveScene->GetRegistry()
 			.group<Component::StaticMesh_New>(entt::get<Component::Transform>)
-			.each([&](Component::StaticMesh_New& mesh, Component::Transform& transform)
+			.each([&](Component::StaticMesh_New& staticMesh, Component::Transform& transform)
 			{
-				if (mesh.Enabled)
+				if (staticMesh.Enabled)
 				{
 					HBL2_CORE_INFO("Setting up mesh");
 
-					mesh.MaterialInstance = material;
-					mesh.MeshInstance = meshResource;
+					staticMesh.Material = material;
+					staticMesh.Mesh = meshResource;
 				}
 			});
 	}
 
-	void TestRendererSystem::OnUpdate(float ts)
+	void StaticMeshRenderingSystem::OnUpdate(float ts)
 	{
 		glm::mat4 vp = Context::ActiveScene->GetComponent<Component::Camera>(Context::ActiveScene->MainCamera).ViewProjectionMatrix;
 
 		Context::ActiveScene->GetRegistry()
 			.group<Component::StaticMesh_New>(entt::get<Component::Transform>)
-			.each([&](Component::StaticMesh_New& mesh, Component::Transform& transform)
+			.each([&](Component::StaticMesh_New& staticMesh, Component::Transform& transform)
 			{
-				if (mesh.Enabled)
+				if (staticMesh.Enabled)
 				{
-					Renderer::Instance->SetPipeline(mesh.MaterialInstance);
-					Renderer::Instance->SetBuffers(mesh.MeshInstance);
-					Renderer::Instance->SetBindGroups(mesh.MaterialInstance);
+					Renderer::Instance->SetPipeline(staticMesh.Material);
+					Renderer::Instance->SetBuffers(staticMesh.Mesh);
+					Renderer::Instance->SetBindGroups(staticMesh.Material);
 
 					// TODO: Update uniforms
 					// ...
-					Material* openGLMaterial = ResourceManager::Instance->GetMaterial(mesh.MaterialInstance);
+					Material* openGLMaterial = ResourceManager::Instance->GetMaterial(staticMesh.Material);
 
 					glm::mat4 mvp = vp * transform.WorldMatrix;
 					Renderer::Instance->WriteBuffer(openGLMaterial->BindGroup, 0, &mvp);
 
-					glm::vec4 color = glm::vec4(1.0, 0.0, 0.0, 1.0);
+					glm::vec4 color = glm::vec4(1.0, 1.0, 0.75, 1.0);
 					Renderer::Instance->WriteBuffer(openGLMaterial->BindGroup, 1, &color);
 
-					Renderer::Instance->Draw(mesh.MeshInstance, mesh.MaterialInstance);
+					Renderer::Instance->Draw(staticMesh.Mesh, staticMesh.Material);
 				}
 			});
 	}

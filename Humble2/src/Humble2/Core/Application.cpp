@@ -49,7 +49,7 @@ namespace HBL2
 		//m_Specification.Context->Core->RegisterSystem(new MeshRendererSystem);
 		m_Specification.Context->Core->RegisterSystem(new TransformSystem);
 		m_Specification.Context->Core->RegisterSystem(new LinkSystem);
-		m_Specification.Context->Core->RegisterSystem(new TestRendererSystem);
+		m_Specification.Context->Core->RegisterSystem(new StaticMeshRenderingSystem);
 		m_Specification.Context->Core->RegisterSystem(new CameraSystem);
 	}
 
