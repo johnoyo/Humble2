@@ -162,22 +162,50 @@ namespace HBL2
 			{
 				if (staticMesh.Enabled)
 				{
-					Renderer::Instance->SetPipeline(staticMesh.Material);
+					Material* material = ResourceManager::Instance->GetMaterial(staticMesh.Material);
+
+					Renderer::Instance->SetPipeline(material->Shader);
 					Renderer::Instance->SetBuffers(staticMesh.Mesh);
 					Renderer::Instance->SetBindGroups(staticMesh.Material);
 
 					// TODO: Update uniforms
 					// ...
-					Material* openGLMaterial = ResourceManager::Instance->GetMaterial(staticMesh.Material);
 
 					glm::mat4 mvp = vp * transform.WorldMatrix;
-					Renderer::Instance->WriteBuffer(openGLMaterial->BindGroup, 0, &mvp);
+					Renderer::Instance->WriteBuffer(material->BindGroup, 0, &mvp);
 
 					glm::vec4 color = glm::vec4(1.0, 1.0, 0.75, 1.0);
-					Renderer::Instance->WriteBuffer(openGLMaterial->BindGroup, 1, &color);
+					Renderer::Instance->WriteBuffer(material->BindGroup, 1, &color);
 
-					Renderer::Instance->Draw(staticMesh.Mesh, staticMesh.Material);
+					Renderer::Instance->Draw(staticMesh.Mesh);
 				}
 			});
+
+		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Handle<RenderPass>(), Handle<FrameBuffer>());
+
+		// TODO: Optimize this.
+		std::vector<LocalDrawStream> draws;
+
+		Context::ActiveScene->GetRegistry()
+			.group<Component::StaticMesh_New>(entt::get<Component::Transform>)
+			.each([&](Component::StaticMesh_New& staticMesh, Component::Transform& transform)
+			{
+				if (staticMesh.Enabled)
+				{
+					Material* material = ResourceManager::Instance->GetMaterial(staticMesh.Material);
+
+					draws.push_back({
+						.Shader = material->Shader,
+						.BindGroup = material->BindGroup,
+						.Mesh = staticMesh.Mesh,
+					});
+				}
+			});
+
+		GlobalDrawStream globalDrawStream = { .BindGroup = Handle<BindGroup>() };
+		passRenderer->DrawSubPass(globalDrawStream, draws);
+		commandBuffer->EndRenderPass(*passRenderer);
+		commandBuffer->Submit();
 	}
 }

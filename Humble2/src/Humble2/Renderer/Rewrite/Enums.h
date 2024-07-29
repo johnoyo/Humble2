@@ -2,6 +2,12 @@
 
 namespace HBL2
 {
+	enum class CommandBufferType
+	{
+		MAIN = 0,
+		OFFSCREEN = 1,
+	};
+
 	enum class ShaderStage
 	{
 		VERTEX = 0,

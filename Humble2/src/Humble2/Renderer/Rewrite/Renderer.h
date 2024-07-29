@@ -2,6 +2,7 @@
 
 #include "Types.h"
 #include "Handle.h"
+#include "CommandBuffer.h"
 
 namespace HBL2
 {
@@ -21,13 +22,14 @@ namespace HBL2
 
 		virtual void Initialize() = 0;
 		virtual void BeginFrame() = 0;
-		virtual void SetPipeline(Handle<Material> material) = 0;
+		virtual void SetPipeline(Handle<Shader> shader) = 0;
 		virtual void SetBuffers(Handle<Mesh> mesh) = 0;
 		virtual void SetBindGroups(Handle<Material> material) = 0;
-		virtual void WriteBuffer(Handle<Buffer> buffer, void* newData) = 0;
+		virtual void WriteBuffer(Handle<Buffer> buffer, intptr_t offset, void* newData) = 0;
 		virtual void WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) = 0;
-		virtual void Draw(Handle<Mesh> mesh, Handle<Material> material) = 0;
-		virtual void DrawIndexed(Handle<Mesh> mesh, Handle<Material> material) = 0;
+		virtual void Draw(Handle<Mesh> mesh) = 0;
+		virtual void DrawIndexed(Handle<Mesh> mesh) = 0;
+		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) = 0;
 		virtual void EndFrame() = 0;
 		virtual void Clean() = 0;
 

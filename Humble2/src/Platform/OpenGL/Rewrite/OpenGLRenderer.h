@@ -32,13 +32,14 @@ namespace HBL2
 
 		virtual void Initialize() override;
 		virtual void BeginFrame() override;
-		virtual void SetPipeline(Handle<Material> material) override;
+		virtual void SetPipeline(Handle<Shader> shader) override;
 		virtual void SetBuffers(Handle<Mesh> mesh) override;
 		virtual void SetBindGroups(Handle<Material> material) override;
-		virtual void WriteBuffer(Handle<Buffer> buffer, void* newData) override;
+		virtual void WriteBuffer(Handle<Buffer> buffer, intptr_t offset, void* newData) override;
 		virtual void WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
-		virtual void Draw(Handle<Mesh> mesh, Handle<Material> material) override;
-		virtual void DrawIndexed(Handle<Mesh> mesh, Handle<Material> material) override;
+		virtual void Draw(Handle<Mesh> mesh) override;
+		virtual void DrawIndexed(Handle<Mesh> mesh) override;
+		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
 		virtual void EndFrame() override;
 		virtual void Clean() override;
 

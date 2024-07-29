@@ -36,11 +36,9 @@ namespace HBL2
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
-	void OpenGLRenderer::SetPipeline(Handle<Material> material)
+	void OpenGLRenderer::SetPipeline(Handle<Shader> shader)
 	{
-		Material* openGLMaterial = m_ResourceManager->GetMaterial(material);
-		OpenGLShader* openGLShader = m_ResourceManager->GetShader(openGLMaterial->Shader);
-
+		OpenGLShader* openGLShader = m_ResourceManager->GetShader(shader);
 		glBindVertexArray(openGLShader->RenderPipeline);
 	}
 
@@ -67,7 +65,7 @@ namespace HBL2
 		}
 	}
 
-	void OpenGLRenderer::WriteBuffer(Handle<Buffer> buffer, void* newData)
+	void OpenGLRenderer::WriteBuffer(Handle<Buffer> buffer, intptr_t offset, void* newData)
 	{
 		OpenGLBuffer* openGLBuffer = m_ResourceManager->GetBuffer(buffer);
 		void* data = m_ResourceManager->GetBufferData(buffer);
@@ -80,13 +78,13 @@ namespace HBL2
 		}
 
 		glBindBuffer(openGLBuffer->Usage, openGLBuffer->RendererId);
-		glBufferSubData(openGLBuffer->Usage, 0, openGLBuffer->ByteSize, data);
+		glBufferSubData(openGLBuffer->Usage, offset, openGLBuffer->ByteSize, data);
 	}
 
 	void OpenGLRenderer::WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData)
 	{
 		OpenGLBindGroup* openGLBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
-		WriteBuffer(openGLBindGroup->Buffers[bufferIndex].buffer, newData);
+		WriteBuffer(openGLBindGroup->Buffers[bufferIndex].buffer, openGLBindGroup->Buffers[bufferIndex].byteOffset, newData);
 	}
 
 	void OpenGLRenderer::SetBindGroups(Handle<Material> material)
@@ -112,7 +110,7 @@ namespace HBL2
 		}
 	}
 
-	void OpenGLRenderer::Draw(Handle<Mesh> mesh, Handle<Material> material)
+	void OpenGLRenderer::Draw(Handle<Mesh> mesh)
 	{
 		Mesh* openGLMesh = m_ResourceManager->GetMesh(mesh);
 
@@ -122,7 +120,7 @@ namespace HBL2
 		glUseProgram(0);
 	}
 
-	void OpenGLRenderer::DrawIndexed(Handle<Mesh> mesh, Handle<Material> material)
+	void OpenGLRenderer::DrawIndexed(Handle<Mesh> mesh)
 	{
 		Mesh* openGLMesh = m_ResourceManager->GetMesh(mesh);
 
@@ -130,6 +128,11 @@ namespace HBL2
 
 		glBindVertexArray(0);
 		glUseProgram(0);
+	}
+
+	CommandBuffer* OpenGLRenderer::BeginCommandRecording(CommandBufferType type)
+	{
+		return new CommandBuffer;
 	}
 
 	void OpenGLRenderer::EndFrame()
