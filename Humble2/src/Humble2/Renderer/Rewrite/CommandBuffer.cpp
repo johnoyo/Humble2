@@ -4,6 +4,7 @@ namespace HBL2
 {
 	RenderPassRenderer* CommandBuffer::BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer)
 	{
+		// TODO: FIXME
 		return new RenderPassRenderer;
 	}
 

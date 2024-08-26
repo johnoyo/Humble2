@@ -6,6 +6,8 @@
 #include "Renderer\Rewrite\Renderer.h"
 #include "Renderer\Rewrite\ResourceManager.h"
 
+#include "Renderer\Rewrite\UniformRingBuffer.h"
+
 #include "Utilities\ShaderUtilities.h"
 #include "Utilities\TextureUtilities.h"
 
@@ -23,6 +25,8 @@ namespace HBL2
 		virtual void OnCreate() override;
 		virtual void OnUpdate(float ts) override;
 	private:
-		float* m_Positions;
+		Handle<BindGroup> m_GlobalBindings;
+		Handle<BindGroup> m_DrawBindings;
+		UniformRingBuffer* m_UniformRingBuffer;
 	};
 }

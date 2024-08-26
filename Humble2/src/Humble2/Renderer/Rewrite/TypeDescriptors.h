@@ -132,7 +132,7 @@ namespace HBL2
 	struct RenderPassLayoutDescriptor
 	{
 		const char* debugName;
-		uint32_t depthTargetFormat = 347567;
+		Format depthTargetFormat = Format::D32_FLOAT;
 
 		struct SubPass
 		{
@@ -149,7 +149,7 @@ namespace HBL2
 
 		struct DepthTarget
 		{
-			uint32_t nextUsage = 347567;
+			TextureLayout nextUsage = TextureLayout::SAMPLED;
 			float clearZ = 0.0f;
 		};
 

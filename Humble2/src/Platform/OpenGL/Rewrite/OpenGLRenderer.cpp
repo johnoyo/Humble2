@@ -65,11 +65,10 @@ namespace HBL2
 		}
 	}
 
-	void OpenGLRenderer::WriteBuffer(Handle<Buffer> buffer, intptr_t offset, void* newData)
+	void OpenGLRenderer::WriteBuffer(Handle<Buffer> buffer, intptr_t offset)
 	{
 		OpenGLBuffer* openGLBuffer = m_ResourceManager->GetBuffer(buffer);
 		void* data = m_ResourceManager->GetBufferData(buffer);
-		data = newData;
 
 		if (openGLBuffer->UsageHint == GL_STATIC_DRAW)
 		{
@@ -78,13 +77,19 @@ namespace HBL2
 		}
 
 		glBindBuffer(openGLBuffer->Usage, openGLBuffer->RendererId);
-		glBufferSubData(openGLBuffer->Usage, offset, openGLBuffer->ByteSize, data);
+		glBufferSubData(openGLBuffer->Usage, 0, openGLBuffer->ByteSize, data);
 	}
 
-	void OpenGLRenderer::WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData)
+	void OpenGLRenderer::WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex)
 	{
 		OpenGLBindGroup* openGLBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
-		WriteBuffer(openGLBindGroup->Buffers[bufferIndex].buffer, openGLBindGroup->Buffers[bufferIndex].byteOffset, newData);
+		WriteBuffer(openGLBindGroup->Buffers[bufferIndex].buffer, openGLBindGroup->Buffers[bufferIndex].byteOffset);
+	}
+
+	void OpenGLRenderer::WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset)
+	{
+		OpenGLBindGroup* openGLBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
+		WriteBuffer(openGLBindGroup->Buffers[bufferIndex].buffer, offset);
 	}
 
 	void OpenGLRenderer::SetBindGroups(Handle<Material> material)
@@ -110,28 +115,44 @@ namespace HBL2
 		}
 	}
 
+	void OpenGLRenderer::SetBindGroup(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset)
+	{
+		OpenGLBindGroup* openGLBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
+		OpenGLBindGroupLayout* bindGroupLayout = m_ResourceManager->GetBindGroupLayout(openGLBindGroup->BindGroupLayout);
+		if (bindGroupLayout->BufferBindings[bufferIndex].type == BufferBindingType::UNIFORM_DYNAMIC_OFFSET)
+		{
+			OpenGLBuffer* openGLBuffer = m_ResourceManager->GetBuffer(openGLBindGroup->Buffers[bufferIndex].buffer);
+			glBindBufferRange(GL_UNIFORM_BUFFER, bindGroupLayout->BufferBindings[bufferIndex].slot, openGLBuffer->RendererId, offset, 80);
+		}
+	}
+
+	void OpenGLRenderer::SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData)
+	{
+		OpenGLBuffer* openGLBuffer = m_ResourceManager->GetBuffer(buffer);
+		openGLBuffer->Data = newData;
+	}
+
+	void OpenGLRenderer::SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData)
+	{
+		OpenGLBindGroup* openGLBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
+		SetBufferData(openGLBindGroup->Buffers[bufferIndex].buffer, openGLBindGroup->Buffers[bufferIndex].byteOffset, newData);
+	}
+
 	void OpenGLRenderer::Draw(Handle<Mesh> mesh)
 	{
 		Mesh* openGLMesh = m_ResourceManager->GetMesh(mesh);
-
 		glDrawArrays(GL_TRIANGLES, 0, openGLMesh->VertexCount);
-
-		glBindVertexArray(0);
-		glUseProgram(0);
 	}
 
 	void OpenGLRenderer::DrawIndexed(Handle<Mesh> mesh)
 	{
 		Mesh* openGLMesh = m_ResourceManager->GetMesh(mesh);
-
 		glDrawElements(GL_TRIANGLES, (openGLMesh->VertexCount / 4) * 6, GL_UNSIGNED_INT, nullptr);
-
-		glBindVertexArray(0);
-		glUseProgram(0);
 	}
 
 	CommandBuffer* OpenGLRenderer::BeginCommandRecording(CommandBufferType type)
 	{
+		// TODO: FIXME
 		return new CommandBuffer;
 	}
 

@@ -4,11 +4,12 @@ layout(location = 1) in vec2 a_TextureCoord;
 
 layout(std140, binding = 0) uniform Camera
 {
-    mat4 ModelViewProjection;
+    mat4 ViewProjection;
 } u_Camera;
 
 layout(std140, binding = 1) uniform Object
 {
+    mat4 Model;
     vec4 Color;
 } u_Object;
 
@@ -20,5 +21,5 @@ void main()
 {
     v_Color = u_Object.Color;
     v_TextureCoord = a_TextureCoord;
-    gl_Position = u_Camera.ModelViewProjection * vec4(a_Position, 1.0);
+    gl_Position = u_Camera.ViewProjection * u_Object.Model * vec4(a_Position, 1.0);
 }

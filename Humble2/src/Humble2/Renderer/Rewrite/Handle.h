@@ -14,6 +14,7 @@ namespace HBL2
 		bool operator==(const Handle<T>& other) const { return m_ArrayIndex == other.m_ArrayIndex && m_GenerationalCounter == other.m_GenerationalCounter; }
 		bool operator!=(const Handle<T>& other) const { return m_ArrayIndex != other.m_ArrayIndex || m_GenerationalCounter != other.m_GenerationalCounter; }
 
+		uint32_t HashKey() const { return (((uint32_t)m_ArrayIndex) << 16) + (uint32_t)m_GenerationalCounter; }
 		uint16_t Index() const { return m_ArrayIndex; }
 
 	private:

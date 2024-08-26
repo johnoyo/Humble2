@@ -18,8 +18,9 @@ namespace HBL2
 	enum class BufferBindingType
 	{
 		UNIFORM = 0,
-		STORAGE = 1,
-		READ_ONLY_STORAGE = 2,
+		UNIFORM_DYNAMIC_OFFSET = 1,
+		STORAGE = 2,
+		READ_ONLY_STORAGE = 3,
 	};
 
 	enum class VertexFormat
@@ -81,5 +82,11 @@ namespace HBL2
 		TEXTURE_BINDING = 4,
 		STORAGE_BINDING = 8,
 		RENDER_ATTACHMENT = 16,
+	};
+
+	enum class TextureLayout
+	{
+		SAMPLED = 0,
+		DEPTH_STENCIL = 1,
 	};
 }

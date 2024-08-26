@@ -9,10 +9,11 @@ namespace HBL2
 		DebugName = desc.debugName;
 		Buffers = desc.buffers;
 		Textures = desc.textures;
+		BindGroupLayout = desc.layout;
 
 		auto* rm = (OpenGLResourceManager*)ResourceManager::Instance;
 
-		OpenGLBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(desc.layout);
+		OpenGLBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(BindGroupLayout);
 
 		for (int i = 0; i < Buffers.size(); i++)
 		{
@@ -22,6 +23,7 @@ namespace HBL2
 			{
 			case BufferBindingType::UNIFORM:
 				glBindBufferBase(GL_UNIFORM_BUFFER, bindGroupLayout->BufferBindings[i].slot, buffer->RendererId);
+			case BufferBindingType::UNIFORM_DYNAMIC_OFFSET:
 				break;
 			case BufferBindingType::STORAGE:
 				break;

@@ -4,7 +4,15 @@ namespace HBL2
 {
 	void StaticMeshRenderingSystem::OnCreate()
 	{
-		m_Positions = new float[18] {
+		/*
+		TODO: Get 256 from here in a API agnostic way:
+				int32_t uniformBufferAlignSize;
+				glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferAlignSize);
+		*/
+
+		m_UniformRingBuffer = new UniformRingBuffer(4096, 256);
+
+		float*  positions = new float[18] {
 			-0.5, -0.5, 0.0, // 0 - Bottom left
 			 0.5, -0.5, 0.0, // 1 - Bottom right
 			 0.5,  0.5, 0.0, // 2 - Top right
@@ -37,8 +45,8 @@ namespace HBL2
 
 		auto shader = rm->CreateShader({
 			.debugName = "test_shader",
-			.VS {.code = vsCode2, .entryPoint = "main" },
-			.FS {.code = fsCode2, .entryPoint = "main" },
+			.VS { .code = vsCode2, .entryPoint = "main" },
+			.FS { .code = fsCode2, .entryPoint = "main" },
 			.renderPipeline {
 				.vertexBufferBindings = {
 					{
@@ -57,7 +65,7 @@ namespace HBL2
 			}
 		});
 
-		auto bindGroupLayout = rm->CreateBindGroupLayout({
+		auto drawBindGroupLayout = rm->CreateBindGroupLayout({
 			.debugName = "unlit-colored-layout",
 			.textureBindings = {
 				{
@@ -67,34 +75,11 @@ namespace HBL2
 			},
 			.bufferBindings = {
 				{
-					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM,
-				},
-				{
 					.slot = 1,
 					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
 				},
 			},			
-		});
-
-		auto cameraBuffer = rm->CreateBuffer({
-			.debugName = "camera-uniform-buffer",
-			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
-			.memory = Memory::GPU_CPU,
-			.byteSize = 64,
-			.initialData = nullptr
-		});
-
-		auto objectBuffer = rm->CreateBuffer({
-			.debugName = "object-uniform-buffer",
-			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
-			.memory = Memory::GPU_CPU,
-			.byteSize = 16,
-			.initialData = nullptr,
 		});
 
 		auto texture = rm->CreateTexture({
@@ -103,26 +88,25 @@ namespace HBL2
 			.initialData = textureData.Data,
 		});
 
-		auto bindGroup = rm->CreateBindGroup({
+		m_DrawBindings = rm->CreateBindGroup({
 			.debugName = "unlit-colored-bind-group",
-			.layout = bindGroupLayout,
+			.layout = drawBindGroupLayout,
 			.textures = { texture },
 			.buffers = {
-				{ .buffer = cameraBuffer },
-				{ .buffer = objectBuffer },
+				{ .buffer = m_UniformRingBuffer->GetBuffer() },
 			}
 		});
 
 		auto material = rm->CreateMaterial({
 			.debugName = "test_material",
 			.shader = shader,
-			.bindGroup = bindGroup,
+			.bindGroup = m_DrawBindings,
 		});
 
 		auto buffer = rm->CreateBuffer({
 			.debugName = "test_quad_positions",
 			.byteSize = sizeof(float) * 18,
-			.initialData = m_Positions,
+			.initialData = positions,
 		});
 
 		auto bufferTexCoords = rm->CreateBuffer({
@@ -150,42 +134,54 @@ namespace HBL2
 					staticMesh.Mesh = meshResource;
 				}
 			});
+
+		auto globalBindGroupLayout = rm->CreateBindGroupLayout({
+			.debugName = "unlit-colored-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM,
+				},
+			},
+		});
+
+		auto cameraBuffer = rm->CreateBuffer({
+			.debugName = "camera-uniform-buffer",
+			.usage = BufferUsage::UNIFORM,
+			.usageHint = BufferUsageHint::DYNAMIC,
+			.memory = Memory::GPU_CPU,
+			.byteSize = 64,
+			.initialData = nullptr
+		});
+
+		m_GlobalBindings = rm->CreateBindGroup({
+			.debugName = "unlit-colored-bind-group",
+			.layout = globalBindGroupLayout,
+			.buffers = {
+				{ .buffer = cameraBuffer },
+			}
+		});
 	}
 
 	void StaticMeshRenderingSystem::OnUpdate(float ts)
 	{
 		glm::mat4 vp = Context::ActiveScene->GetComponent<Component::Camera>(Context::ActiveScene->MainCamera).ViewProjectionMatrix;
 
-		Context::ActiveScene->GetRegistry()
-			.group<Component::StaticMesh_New>(entt::get<Component::Transform>)
-			.each([&](Component::StaticMesh_New& staticMesh, Component::Transform& transform)
-			{
-				if (staticMesh.Enabled)
-				{
-					Material* material = ResourceManager::Instance->GetMaterial(staticMesh.Material);
-
-					Renderer::Instance->SetPipeline(material->Shader);
-					Renderer::Instance->SetBuffers(staticMesh.Mesh);
-					Renderer::Instance->SetBindGroups(staticMesh.Material);
-
-					// TODO: Update uniforms
-					// ...
-
-					glm::mat4 mvp = vp * transform.WorldMatrix;
-					Renderer::Instance->WriteBuffer(material->BindGroup, 0, &mvp);
-
-					glm::vec4 color = glm::vec4(1.0, 1.0, 0.75, 1.0);
-					Renderer::Instance->WriteBuffer(material->BindGroup, 1, &color);
-
-					Renderer::Instance->Draw(staticMesh.Mesh);
-				}
-			});
+		m_UniformRingBuffer->Invalidate();
 
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Handle<RenderPass>(), Handle<FrameBuffer>());
 
-		// TODO: Optimize this.
-		std::vector<LocalDrawStream> draws;
+		Renderer::Instance->SetBufferData(m_GlobalBindings, 0, &vp);
+
+		DrawList draws;
+		
+		struct PerDrawData
+		{
+			glm::mat4 Model;
+			glm::vec4 Color;
+		};
 
 		Context::ActiveScene->GetRegistry()
 			.group<Component::StaticMesh_New>(entt::get<Component::Transform>)
@@ -195,15 +191,21 @@ namespace HBL2
 				{
 					Material* material = ResourceManager::Instance->GetMaterial(staticMesh.Material);
 
-					draws.push_back({
+					auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawData>();
+					alloc.Data->Model = transform.WorldMatrix;
+					alloc.Data->Color = glm::vec4(1.0, 1.0, 0.75, 1.0);
+
+					draws.Insert({
 						.Shader = material->Shader,
 						.BindGroup = material->BindGroup,
 						.Mesh = staticMesh.Mesh,
+						.Material = staticMesh.Material,
+						.Offset = alloc.Offset,
 					});
 				}
 			});
 
-		GlobalDrawStream globalDrawStream = { .BindGroup = Handle<BindGroup>() };
+		GlobalDrawStream globalDrawStream = { .BindGroup = m_GlobalBindings };
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 		commandBuffer->EndRenderPass(*passRenderer);
 		commandBuffer->Submit();

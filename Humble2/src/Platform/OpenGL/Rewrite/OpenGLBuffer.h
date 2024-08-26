@@ -75,6 +75,37 @@ namespace HBL2
 			}
 		}
 
+		void ReAllocate(uint32_t currentOffset)
+		{
+			if (UsageHint == GL_STATIC_DRAW)
+			{
+				HBL2_CORE_WARN("Buffer with name: {0} is set for static usage, re-allocating will have no effect", DebugName);
+				return;
+			}
+
+			GLuint newRendererId;
+			glGenBuffers(1, &newRendererId);
+			glBindBuffer(Usage, newRendererId);
+			glBufferData(Usage, ByteSize * 2, nullptr, GL_DYNAMIC_DRAW);
+
+			// Copy existing data to the new buffer
+			glBindBuffer(GL_COPY_READ_BUFFER, RendererId);
+			glBindBuffer(GL_COPY_WRITE_BUFFER, newRendererId);
+			glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, currentOffset);
+
+			// Delete the old buffer
+			glDeleteBuffers(1, &RendererId);
+
+			// Update buffer and size references
+			RendererId = newRendererId;
+			ByteSize = ByteSize * 2;
+
+			// Unbind buffers
+			glBindBuffer(GL_UNIFORM_BUFFER, 0);
+			glBindBuffer(GL_COPY_READ_BUFFER, 0);
+			glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+		}
+
 		const char* DebugName = "";
 		uint32_t RendererId = 0;
 		uint32_t ByteSize = 0;

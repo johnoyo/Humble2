@@ -4,30 +4,26 @@
 
 namespace HBL2
 {
-	void RenderPassRenderer::DrawSubPass(const GlobalDrawStream& globalDraw, const std::vector<LocalDrawStream>& draws)
+	void RenderPassRenderer::DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws)
 	{
 		if (globalDraw.BindGroup.IsValid())
 		{
-			// Bind global bind group
+			Renderer::Instance->WriteBuffer(globalDraw.BindGroup, 0);
 		}
 
-		for (const auto& draw : draws)
+		draws.PerShader([&](LocalDrawStream& draw)
 		{
-			//Renderer::Instance->SetPipeline(draw.Shader);
-			//Renderer::Instance->SetBuffers(draw.Mesh);
-			//Renderer::Instance->SetBindGroups(staticMesh.Material);
+			Renderer::Instance->WriteBuffer(draw.BindGroup, 0);
+			Renderer::Instance->SetPipeline(draw.Shader);
+		})
+		.PerDraw([&](LocalDrawStream& draw)
+		{
+			Renderer::Instance->SetBuffers(draw.Mesh);
+			Renderer::Instance->SetBindGroups(draw.Material);
+			Renderer::Instance->SetBindGroup(draw.BindGroup, 0, draw.Offset);
 
-			//// TODO: Update uniforms
-			//// ...
-			//Material* openGLMaterial = ResourceManager::Instance->GetMaterial(staticMesh.Material);
-
-			//glm::mat4 mvp = vp * transform.WorldMatrix;
-			//Renderer::Instance->WriteBuffer(openGLMaterial->BindGroup, 0, &mvp);
-
-			//glm::vec4 color = glm::vec4(1.0, 1.0, 0.75, 1.0);
-			//Renderer::Instance->WriteBuffer(openGLMaterial->BindGroup, 1, &color);
-
-			//Renderer::Instance->Draw(draw.Mesh);
-		}
+			Renderer::Instance->Draw(draw.Mesh);
+		})
+		.Iterate();
 	}
 }

@@ -21,6 +21,7 @@ namespace HBL2
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) = 0;
 		virtual void DeleteBuffer(Handle<Buffer> handle) = 0;
+		virtual void ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset) = 0;
 		virtual void* GetBufferData(Handle<Buffer> handle) = 0;
 
 		// FrameBuffers

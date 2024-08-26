@@ -45,6 +45,11 @@ namespace HBL2
 		{
 			m_BufferPool.Remove(handle);
 		}
+		virtual void ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset) override
+		{
+			OpenGLBuffer* buffer = GetBuffer(handle);
+			buffer->ReAllocate(currentOffset);
+		}
 		virtual void* GetBufferData(Handle<Buffer> handle) override
 		{
 			return m_BufferPool.Get(handle)->Data;

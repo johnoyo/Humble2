@@ -35,15 +35,34 @@ namespace HBL2
 
 			auto entity1 = ActiveScene->CreateEntity();
 			ActiveScene->GetComponent<HBL2::Component::Tag>(entity1).Name = "Sprite1";
-			ActiveScene->GetComponent<HBL2::Component::Transform>(entity1).Translation = { 0.f, 0.f, 0.f };
+			ActiveScene->GetComponent<HBL2::Component::Transform>(entity1).Translation = { -1.f, 0.5f, 0.f };
 			ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity1);
 			ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity1);
 
 			auto entity2 = ActiveScene->CreateEntity();
 			ActiveScene->GetComponent<HBL2::Component::Tag>(entity2).Name = "Sprite2";
-			ActiveScene->GetComponent<HBL2::Component::Transform>(entity2).Translation = { 5.f, 0.f, 0.f };
+			ActiveScene->GetComponent<HBL2::Component::Transform>(entity2).Translation = { 1.f, 0.5f, 0.f };
 			ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity2);
 			ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity2);
+
+			auto entity3 = ActiveScene->CreateEntity();
+			ActiveScene->GetComponent<HBL2::Component::Tag>(entity3).Name = "Sprite3";
+			ActiveScene->GetComponent<HBL2::Component::Transform>(entity3).Translation = { 0.f, 0.f, 0.f };
+			ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity3);
+			ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity3);
+
+			uint32_t entityCount = 1000;
+			std::vector<entt::entity> entities;
+			entities.resize(entityCount);
+
+			for (int i = 0; i < entityCount; i++)
+			{
+				entities[i] = ActiveScene->CreateEntity();
+				ActiveScene->GetComponent<HBL2::Component::Tag>(entities[i]).Name = "entity" + std::to_string(i);
+				ActiveScene->GetComponent<HBL2::Component::Transform>(entities[i]).Translation = { 0.f, 0.f, 0.f };
+				ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entities[i]);
+				ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entities[i]);
+			}
 		}
 
 		void EditorContext::OnCreate()
