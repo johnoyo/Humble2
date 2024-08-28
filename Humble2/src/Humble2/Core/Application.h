@@ -7,14 +7,10 @@
 #include "Input.h"
 #include "Context.h"
 
-#include "Renderer\Renderer2D.h"
-#include "Renderer\Renderer3D.h"
 #include "ImGui\ImGuiRenderer.h"
 #include "Platform\OpenGL\Rewrite\OpenGLImGuiRenderer.h"
 
 #include "Systems\CameraSystem.h"
-#include "Systems\MeshRendererSystem.h"
-#include "Systems\SpriteRendererSystem.h"
 #include "Systems\StaticMeshRenderingSystem.h"
 #include "Systems\TransformSystem.h"
 #include "Systems\LinkSystem.h"
@@ -24,6 +20,8 @@
 #include "Platform\OpenGL\Rewrite\OpenGLResourceManager.h"
 #include "Renderer\Rewrite\Renderer.h"
 #include "Platform\OpenGL\Rewrite\OpenGLRenderer.h"
+#include "Renderer\Rewrite\Device.h"
+#include "Platform\OpenGL\Rewrite\OpenGLDevice.h"
 
 #include <string>
 #include <sstream>
@@ -82,7 +80,6 @@ namespace HBL2
 
 		void BeginFrame();
 		void EndFrame();
-
 		void Shutdown();
 	};
 }

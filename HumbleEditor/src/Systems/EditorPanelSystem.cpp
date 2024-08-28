@@ -452,9 +452,10 @@ namespace HBL2
 
 								if (path.extension().string() == ".obj")
 								{
-									HBL2::Renderer3D::Get().CleanMesh(mesh);
+									// TODO: Update this to use new API.
+									/*HBL2::Renderer3D::Get().CleanMesh(mesh);
 									mesh.Path = path.string();
-									HBL2::Renderer3D::Get().SubmitMesh(m_Context->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity), mesh);
+									HBL2::Renderer3D::Get().SubmitMesh(m_Context->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity), mesh);*/
 								}
 								else
 								{
@@ -477,9 +478,9 @@ namespace HBL2
 								{
 									mesh.TexturePath = path.string();
 
-									// TODO: Improve this. Update the mesh, do not recreate it.
-									HBL2::Renderer3D::Get().CleanMesh(mesh);
-									HBL2::Renderer3D::Get().SubmitMesh(m_Context->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity), mesh);
+									// TODO: Update this to use new API.
+									/*HBL2::Renderer3D::Get().CleanMesh(mesh);
+									HBL2::Renderer3D::Get().SubmitMesh(m_Context->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity), mesh);*/
 								}
 								else
 								{

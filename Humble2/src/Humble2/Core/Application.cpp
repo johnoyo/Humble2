@@ -16,6 +16,7 @@ namespace HBL2
 		{
 		case GraphicsAPI::OPENGL:
 			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
+			Device::Instance = new OpenGLDevice();
 			Window::Instance = new OpenGLWindow();
 			ResourceManager::Instance = new OpenGLResourceManager();
 			Renderer::Instance = new OpenGLRenderer();
@@ -45,8 +46,6 @@ namespace HBL2
 		m_Specification.Context->EmptyScene = new Scene("Empty Scene");
 
 		m_Specification.Context->Core = new Scene("Core");
-		//m_Specification.Context->Core->RegisterSystem(new SpriteRendererSystem);
-		//m_Specification.Context->Core->RegisterSystem(new MeshRendererSystem);
 		m_Specification.Context->Core->RegisterSystem(new TransformSystem);
 		m_Specification.Context->Core->RegisterSystem(new LinkSystem);
 		m_Specification.Context->Core->RegisterSystem(new StaticMeshRenderingSystem);
@@ -91,6 +90,7 @@ namespace HBL2
 
 		m_Specification.Context->OnAttach();
 		
+		Device::Instance->Initialize();
 		Renderer::Instance->Initialize();
 		ImGuiRenderer::Instance->Initialize();
 
@@ -111,6 +111,8 @@ namespace HBL2
 			EndFrame();
 		});
 
+		m_Specification.Context->OnDetach();
+
 		Shutdown();
 	}
 
@@ -118,11 +120,20 @@ namespace HBL2
 	{
 		Window::Instance->Terminate();
 		delete Window::Instance;
+		Window::Instance = nullptr;
 
 		ImGuiRenderer::Instance->Clean();
 		delete ImGuiRenderer::Instance;
+		ImGuiRenderer::Instance = nullptr;
 
 		Renderer::Instance->Clean();
 		delete Renderer::Instance;
+		Renderer::Instance = nullptr;
+
+		delete ResourceManager::Instance;
+		ResourceManager::Instance = nullptr;
+
+		delete Device::Instance;
+		Device::Instance = nullptr;
 	}
 }
