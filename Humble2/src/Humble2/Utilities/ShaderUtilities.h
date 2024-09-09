@@ -110,7 +110,9 @@ namespace HBL2
 
 		std::string ReadFile(const std::string& filepath);
 
-		std::vector<uint32_t> Compile(const std::string& shaderFilePath, ShaderStage stage);
+		std::vector<uint32_t> Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage);
+
+		std::vector<std::vector<uint32_t>> Compile(const std::string& shaderFilePath);
 
 		void Reflect(ShaderStage stage, const std::vector<uint32_t>& shaderData);
 

@@ -2,6 +2,8 @@
 
 #include "Scene.h"
 
+#include "Asset\AssetManager.h"
+
 #include <fstream>
 #include <filesystem>
 #include <yaml-cpp\yaml.h>

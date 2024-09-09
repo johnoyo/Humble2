@@ -4,9 +4,15 @@
 
 namespace HBL2
 {
+	struct TextureSettings
+	{
+		bool Flip = false;
+	};
+
 	struct TextureData
 	{
 		const uint8_t* Data;
+		TextureSettings Settings;
 		int Width;
 		int Height;
 	};
@@ -22,7 +28,7 @@ namespace HBL2
 			return instance;
 		}
 
-		TextureData Load(const std::string& path, bool flip = false);		
+		TextureData Load(const std::string& path, const TextureSettings& settings);		
 
 	private:
 		TextureUtilities() = default;

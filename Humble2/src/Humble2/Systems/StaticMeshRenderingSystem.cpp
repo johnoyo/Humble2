@@ -4,15 +4,9 @@ namespace HBL2
 {
 	void StaticMeshRenderingSystem::OnCreate()
 	{
-		/*
-		TODO: Get 256 from here in a API agnostic way:
-				int32_t uniformBufferAlignSize;
-				glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferAlignSize);
-		*/
+		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 
-		m_UniformRingBuffer = new UniformRingBuffer(4096, 256);
-
-		float*  positions = new float[18] {
+		float* positions = new float[18] {
 			-0.5, -0.5, 0.0, // 0 - Bottom left
 			 0.5, -0.5, 0.0, // 1 - Bottom right
 			 0.5,  0.5, 0.0, // 2 - Top right
@@ -30,78 +24,73 @@ namespace HBL2
 			0.0, 1.0,  // 0 - Bottom left
 		};
 
-		auto textureData = TextureUtilities::Get().Load("assets/icons/content_browser/png-1477.png");
-
-		auto vsCode = ShaderUtilities::Get().Compile("assets/shaders/unlit.vs", ShaderStage::VERTEX);
-		auto fsCode = ShaderUtilities::Get().Compile("assets/shaders/unlit.fs", ShaderStage::FRAGMENT);
-
-		auto vsCode1 = ShaderUtilities::Get().Compile("assets/shaders/unlit-colored.vs", ShaderStage::VERTEX);
-		auto fsCode1 = ShaderUtilities::Get().Compile("assets/shaders/unlit-colored.fs", ShaderStage::FRAGMENT);
-
-		auto vsCode2 = ShaderUtilities::Get().Compile("assets/shaders/unlit-textured.vs", ShaderStage::VERTEX);
-		auto fsCode2 = ShaderUtilities::Get().Compile("assets/shaders/unlit-textured.fs", ShaderStage::FRAGMENT);
-
 		auto* rm = ResourceManager::Instance;
 
-		auto shader = rm->CreateShader({
-			.debugName = "test_shader",
-			.VS { .code = vsCode2, .entryPoint = "main" },
-			.FS { .code = fsCode2, .entryPoint = "main" },
-			.renderPipeline {
-				.vertexBufferBindings = {
-					{
-						.byteStride = 12,
-						.attributes = {
-							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-						},
-					},
-					{
-						.byteStride = 8,
-						.attributes = {
-							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
-						},
-					}
-				}
-			}
-		});
+		//TextureSettings textureSettings;
+		//auto textureData = TextureUtilities::Get().Load("assets/icons/content_browser/png-1477.png", textureSettings);
 
-		auto drawBindGroupLayout = rm->CreateBindGroupLayout({
-			.debugName = "unlit-colored-layout",
-			.textureBindings = {
-				{
-					.slot = 0,
-					.visibility = ShaderStage::FRAGMENT,
-				}
-			},
-			.bufferBindings = {
-				{
-					.slot = 1,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
-				},
-			},			
-		});
+		//auto shaderCode = ShaderUtilities::Get().Compile("assets/shaders/unlit-textured.hblshader");
+		//auto shaderCode = ShaderUtilities::Get().Compile("assets/shaders/unlit-colored.hblshader");
 
-		auto texture = rm->CreateTexture({
-			.debugName = "test-texture",
-			.dimensions = { textureData.Width, textureData.Height, 0 },
-			.initialData = textureData.Data,
-		});
+		//auto shader = rm->CreateShader({
+		//	.debugName = "test_shader",
+		//	.VS { .code = shaderCode[0], .entryPoint = "main" },
+		//	.FS { .code = shaderCode[1], .entryPoint = "main" },
+		//	.renderPipeline {
+		//		.vertexBufferBindings = {
+		//			{
+		//				.byteStride = 12,
+		//				.attributes = {
+		//					{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
+		//				},
+		//			}/*,
+		//			{
+		//				.byteStride = 8,
+		//				.attributes = {
+		//					{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+		//				},
+		//			}*/
+		//		}
+		//	}
+		//});
 
-		m_DrawBindings = rm->CreateBindGroup({
-			.debugName = "unlit-colored-bind-group",
-			.layout = drawBindGroupLayout,
-			.textures = { texture },
-			.buffers = {
-				{ .buffer = m_UniformRingBuffer->GetBuffer() },
-			}
-		});
+		//auto drawBindGroupLayout = rm->CreateBindGroupLayout({
+		//	.debugName = "unlit-colored-layout",
+		//	/*.textureBindings = {
+		//		{
+		//			.slot = 0,
+		//			.visibility = ShaderStage::FRAGMENT,
+		//		}
+		//	},*/
+		//	.bufferBindings = {
+		//		{
+		//			.slot = 1,
+		//			.visibility = ShaderStage::VERTEX,
+		//			.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+		//		},
+		//	},			
+		//});
 
-		auto material = rm->CreateMaterial({
-			.debugName = "test_material",
-			.shader = shader,
-			.bindGroup = m_DrawBindings,
-		});
+		///*auto texture = rm->CreateTexture({
+		//	.debugName = "test-texture",
+		//	.dimensions = { textureData.Width, textureData.Height, 0 },
+		//	.initialData = textureData.Data,
+		//});*/
+
+		//m_DrawBindings = rm->CreateBindGroup({
+		//	.debugName = "unlit-colored-bind-group",
+		//	.layout = drawBindGroupLayout,
+		//	/*.textures = { texture },*/
+		//	.buffers = {
+		//		{ .buffer = m_UniformRingBuffer->GetBuffer() },
+		//	}
+		//});
+
+		//auto material = rm->CreateMaterial({
+		//	.debugName = "test_material",
+		//	.shader = shader,
+		//	.bindGroup = m_DrawBindings,
+		//});
 
 		auto buffer = rm->CreateBuffer({
 			.debugName = "test_quad_positions",
@@ -109,17 +98,17 @@ namespace HBL2
 			.initialData = positions,
 		});
 
-		auto bufferTexCoords = rm->CreateBuffer({
-			.debugName = "test_quad_texCoords",
-			.byteSize = sizeof(float) * 12,
-			.initialData = texCoords,
-		});
+		//auto bufferTexCoords = rm->CreateBuffer({
+		//	.debugName = "test_quad_texCoords",
+		//	.byteSize = sizeof(float) * 12,
+		//	.initialData = texCoords,
+		//});
 
 		auto meshResource = rm->CreateMesh({
 			.debugName = "quad_mesh",
 			.vertexOffset = 0,
 			.vertexCount = 6,
-			.vertexBuffers = { buffer, bufferTexCoords },
+			.vertexBuffers = { buffer/*, bufferTexCoords*/ },
 		});
 
 		Context::ActiveScene->GetRegistry()
@@ -130,7 +119,7 @@ namespace HBL2
 				{
 					HBL2_CORE_INFO("Setting up mesh");
 
-					staticMesh.Material = material;
+					//staticMesh.Material = material;
 					staticMesh.Mesh = meshResource;
 				}
 			});
@@ -189,6 +178,11 @@ namespace HBL2
 			{
 				if (staticMesh.Enabled)
 				{
+					if (!staticMesh.Material.IsValid() || !staticMesh.Mesh.IsValid())
+					{
+						return;
+					}
+
 					Material* material = ResourceManager::Instance->GetMaterial(staticMesh.Material);
 
 					auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawData>();

@@ -29,7 +29,7 @@ namespace HBL2
 		return result;
 	}
 
-	std::vector<uint32_t> ShaderUtilities::Compile(const std::string& shaderFilePath, ShaderStage stage)
+	std::vector<uint32_t> ShaderUtilities::Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage)
 	{
 		GraphicsAPI target = Renderer::Instance->GetAPI();
 
@@ -59,8 +59,6 @@ namespace HBL2
 
 			std::filesystem::path cachedPath = cacheDirectory / (shaderPath.filename().string() + GLShaderStageCachedVulkanFileExtension(stage));
 
-			std::string source = ReadFile(shaderFilePath);
-
 			std::ifstream in(cachedPath, std::ios::in | std::ios::binary);
 			if (in.is_open())
 			{
@@ -73,7 +71,7 @@ namespace HBL2
 			}
 			else
 			{
-				shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, GLShaderStageToShaderC(stage), shaderFilePath.c_str(), options);
+				shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(shaderSource, GLShaderStageToShaderC(stage), shaderFilePath.c_str(), options);
 				if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 				{
 					HBL2_CORE_ERROR(module.GetErrorMessage());
@@ -127,7 +125,7 @@ namespace HBL2
 				glslCompiler.set_common_options({
 					.version = 310,
 					.es = true,
-					});
+				});
 				const auto& source = glslCompiler.compile();
 
 				shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, GLShaderStageToShaderC(stage), shaderFilePath.c_str(), options);
@@ -155,6 +153,54 @@ namespace HBL2
 			assert(false);
 			return std::vector<uint32_t>();
 		}
+	}
+
+	std::vector<std::vector<uint32_t>> ShaderUtilities::Compile(const std::string& shaderFilePath)
+	{
+		std::fstream newFile;
+
+		enum class ShaderType
+		{
+			NONE = -1, VERTEX = 0, FRAGMENT = 1
+		};
+
+		std::string line;
+		std::stringstream ss[2];
+		ShaderType type = ShaderType::NONE;
+
+		newFile.open(shaderFilePath, std::ios::in);
+
+		if (newFile.is_open())
+		{
+			while (getline(newFile, line))
+			{
+				if (line.find("#shader") != std::string::npos)
+				{
+					if (line.find("vertex") != std::string::npos)
+						type = ShaderType::VERTEX;
+					else if (line.find("fragment") != std::string::npos)
+						type = ShaderType::FRAGMENT;
+				}
+				else
+				{
+					ss[(int)type] << line << '\n';
+				}
+			}
+
+			// Close the file object.
+			newFile.close();
+		}
+		else
+		{
+			HBL2_CORE_ERROR("Could not open file: {0}.", shaderFilePath);
+		}
+
+		std::vector<std::vector<uint32_t>> shaderBinaries;
+
+		shaderBinaries.push_back(Compile(shaderFilePath, ss[0].str(), ShaderStage::VERTEX));
+		shaderBinaries.push_back(Compile(shaderFilePath, ss[1].str(), ShaderStage::FRAGMENT));
+
+		return shaderBinaries;
 	}
 
 	void ShaderUtilities::Reflect(ShaderStage stage, const std::vector<uint32_t>& shaderData)

@@ -1,6 +1,7 @@
 #include "EditorPanelSystem.h"
 
 #include "Humble2\Utilities\FileDialogs.h"
+#include "Humble2\Utilities\YamlUtilities.h"
 #include "EditorCameraSystem.h"
 
 #include "Renderer\Rewrite\Handle.h"
@@ -70,12 +71,12 @@ namespace HBL2
 
 			{
 				// Content browser panel.
-				/*auto contentBrowserPanel = HBL2::Context::Core->CreateEntity();
+				auto contentBrowserPanel = HBL2::Context::Core->CreateEntity();
 				HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(contentBrowserPanel).Name = "Hidden";
 				auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(contentBrowserPanel);
 				panel.Name = "Content Browser";
 				panel.Type = Component::EditorPanel::Panel::ContentBrowser;
-				m_CurrentDirectory = HBL2::Project::GetAssetDirectory();*/
+				m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
 			}
 
 			{
@@ -98,15 +99,51 @@ namespace HBL2
 			}
 
 			// Create and register assets.
-			/*for (auto& entry : std::filesystem::recursive_directory_iterator(HBL2::Project::GetAssetDirectory()))
+			for (auto& entry : std::filesystem::recursive_directory_iterator(HBL2::Project::GetAssetDirectory()))
 			{
-				if (entry.path().extension().string() == ".meta")
-				{
-					continue;
-				}
+				const std::string& extension = entry.path().extension().string();
 
-				UUID assetID = HBL2::AssetManager::Get().CreateAsset(entry.path());
-			}*/
+				if (extension == ".png" || extension == ".jpg")
+				{
+					auto assetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "texture-asset",
+						.filePath = entry.path(),
+						.type = AssetType::Texture,
+					});
+				}
+				else if (extension == ".obj" || extension == ".gltf" || extension == ".glb" || extension == ".fbx")
+				{
+					auto assetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "mesh-asset",
+						.filePath = entry.path(),
+						.type = AssetType::Mesh,
+					});
+				}
+				else if (extension == ".hblmat")
+				{
+					auto assetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "material-asset",
+						.filePath = entry.path(),
+						.type = AssetType::Material,
+					});
+				}
+				else if (extension == ".hblshader")
+				{
+					auto assetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "shader-asset",
+						.filePath = entry.path(),
+						.type = AssetType::Shader,
+					});
+				}
+				else if (extension == ".humble")
+				{
+					auto assetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "scene-asset",
+						.filePath = entry.path(),
+						.type = AssetType::Scene,
+					});
+				}
+			}
 		}
 
 		void EditorPanelSystem::OnUpdate(float ts)
@@ -154,7 +191,7 @@ namespace HBL2
 							DrawStatsPanel(ts);
 							break;
 						case Component::EditorPanel::Panel::ContentBrowser:
-							// DrawContentBrowserPanel();
+							DrawContentBrowserPanel();
 							break;
 						case Component::EditorPanel::Panel::Console:
 							DrawConsolePanel(ts);
@@ -423,6 +460,69 @@ namespace HBL2
 					}
 				}
 
+				// StaticMesh_New component.
+				if (m_Context->HasComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity))
+				{
+					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::StaticMesh_New).hash_code(), treeNodeFlags, "Static Mesh New");
+
+					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
+
+					bool removeComponent = false;
+
+					if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+					{
+						removeComponent = true;
+					}
+
+					if (opened)
+					{
+						auto& mesh = m_Context->GetComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity);
+						
+						uint32_t meshHandle = mesh.Mesh.Pack();
+						uint32_t materialHandle = mesh.Material.Pack();
+
+						ImGui::Checkbox("Enabled", &mesh.Enabled);
+						ImGui::InputScalar("Mesh", ImGuiDataType_U32, (void*)(intptr_t*)&meshHandle);
+
+						if (ImGui::BeginDragDropTarget())
+						{
+							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
+							{
+								uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+								Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+								mesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(assetHandle);
+
+								ImGui::EndDragDropTarget();
+							}
+						}
+
+						ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
+
+						if (ImGui::BeginDragDropTarget())
+						{
+							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
+							{
+								uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+								Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+								mesh.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
+
+								ImGui::EndDragDropTarget();
+							}
+						}
+
+						ImGui::TreePop();
+					}
+
+					ImGui::Separator();
+
+					if (removeComponent)
+					{
+						m_Context->RemoveComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity);
+					}
+				}
+
 				// StaticMesh component.
 				if (m_Context->HasComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
@@ -684,6 +784,175 @@ namespace HBL2
 
 		void EditorPanelSystem::DrawContentBrowserPanel()
 		{
+			// Pop up menu when right clicking on an empty space inside the Content Browser panel.
+			if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
+			{
+				if (ImGui::MenuItem("Create Shader"))
+				{
+					m_OpenShaderSetupPopup = true;
+				}
+
+				if (ImGui::MenuItem("Create Material"))
+				{
+					m_OpenMaterialSetupPopup = true;
+				}
+
+				ImGui::EndPopup();
+			}
+
+			if (m_OpenShaderSetupPopup)
+			{
+				ImGui::Begin("Shader Setup", &m_OpenShaderSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+				static char shaderNameBuffer[256] = "New-Shader";
+				ImGui::InputText("Shader Name", shaderNameBuffer, 256);
+
+				ImGui::NewLine();
+
+				if (ImGui::Button("OK"))
+				{
+					auto shaderAssetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "shader-asset",
+						.filePath = m_CurrentDirectory / (std::string(shaderNameBuffer) + ".hblshader"),
+						.type = AssetType::Shader,
+					});
+
+					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".hblshader"), 0);
+					fout << "#shader vertex\n\n";
+					fout << "#shader fragment\n\n";
+					fout.close();
+
+					m_OpenShaderSetupPopup = false;
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel"))
+				{
+					m_OpenShaderSetupPopup = false;
+				}
+
+				ImGui::End();
+			}
+
+			if (m_OpenMaterialSetupPopup)
+			{
+				ImGui::Begin("Material Setup", &m_OpenMaterialSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+				static char materialNameBuffer[256] = "New-Material";
+				ImGui::InputText("Material Name", materialNameBuffer, 256);
+
+				ImGui::NewLine();
+
+				static uint32_t shaderAssetHandlePacked = 0;
+				ImGui::InputScalar("Shader", ImGuiDataType_U32, (void*)(intptr_t*)&shaderAssetHandlePacked);
+
+				Handle<Asset> shaderAssetHandle = Handle<Asset>::UnPack(shaderAssetHandlePacked);
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Shader"))
+					{
+						shaderAssetHandlePacked = *((uint32_t*)payload->Data);
+						shaderAssetHandle = Handle<Asset>::UnPack(shaderAssetHandlePacked);
+						ImGui::EndDragDropTarget();
+					}
+				}
+
+				Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderAssetHandle);
+
+				ImGui::NewLine();
+
+				static float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+				ImGui::ColorEdit4("AlbedoColor", color);
+
+				static float metalicness = 1.0f;
+				ImGui::InputFloat("Metalicness", &metalicness, 0.05f);
+
+				static float roughness = 1.0f;
+				ImGui::InputFloat("Roughness", &roughness, 0.05f);
+
+				static uint32_t albedoMapHandlePacked = 0;
+				ImGui::InputScalar("AlbedoMap", ImGuiDataType_U32, (void*)(intptr_t*)&albedoMapHandlePacked);
+
+				Handle<Asset> albedoMapAssetHandle = Handle<Asset>::UnPack(albedoMapHandlePacked);
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+					{
+						albedoMapHandlePacked = *((uint32_t*)payload->Data);
+						albedoMapAssetHandle = Handle<Asset>::UnPack(albedoMapHandlePacked);
+
+						if (albedoMapAssetHandle.IsValid())
+						{
+							std::ofstream fout(AssetManager::Instance->GetAssetMetadata(albedoMapAssetHandle)->FilePath.string() + ".hbltexture", 0);
+
+							YAML::Emitter out;
+							out << YAML::BeginMap;
+							out << YAML::Key << "Texture" << YAML::Value;
+							out << YAML::BeginMap;
+							out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(albedoMapAssetHandle)->UUID;
+							out << YAML::Key << "Flip" << YAML::Value << false;
+							out << YAML::EndMap;
+							out << YAML::EndMap;
+							fout << out.c_str();
+							fout.close();
+						}
+
+						ImGui::EndDragDropTarget();
+					}
+				}
+
+				Handle<Texture> albedoMapHandle = AssetManager::Instance->GetAsset<Texture>(albedoMapAssetHandle);
+
+				ImGui::NewLine();
+
+				if (ImGui::Button("OK"))
+				{
+					auto materialAssetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "material-asset",
+						.filePath = m_CurrentDirectory / (std::string(materialNameBuffer) + ".hblmat"),
+						.type = AssetType::Material,
+					});
+
+					std::ofstream fout(m_CurrentDirectory / (std::string(materialNameBuffer) + ".hblmat"), 0);
+
+					YAML::Emitter out;
+					out << YAML::BeginMap;
+					out << YAML::Key << "Material" << YAML::Value;
+					out << YAML::BeginMap;
+					out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(materialAssetHandle)->UUID;
+					out << YAML::Key << "Shader" << YAML::Value << AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->UUID;
+					out << YAML::Key << "AlbedoColor" << YAML::Value << glm::vec4(color[0], color[1], color[2], color[3]);
+					out << YAML::Key << "Metalicness" << YAML::Value << metalicness;
+					out << YAML::Key << "Roughness" << YAML::Value << roughness;
+					if (albedoMapHandle.IsValid())
+					{
+						out << YAML::Key << "AlbedoMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(albedoMapAssetHandle)->UUID;
+					}
+					else
+					{
+						out << YAML::Key << "AlbedoMap" << YAML::Value << (UUID)0;
+					}
+					out << YAML::EndMap;
+					out << YAML::EndMap;
+					fout << out.c_str();
+					fout.close();
+
+					m_OpenMaterialSetupPopup = false;
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel"))
+				{
+					m_OpenMaterialSetupPopup = false;
+				}
+
+				ImGui::End();
+			}
+
 			float padding = 16.f;
 			float thumbnailSize = 128.f;
 			float panelWidth = ImGui::GetContentRegionAvail().x;
@@ -780,15 +1049,58 @@ namespace HBL2
 					}
 				}*/
 
-				// UUID assetID = HBL2::AssetManager::Get().CreateAsset(entry.path());
-
 				// ImGui::ImageButton(textureID, { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
 				ImGui::Button(entry.path().filename().string().c_str(), { thumbnailSize, thumbnailSize });
 
+				UUID assetUUID = std::hash<std::string>()(entry.path().string());
+				Handle<Asset> assetHandle;
+				Asset* asset = nullptr;
+
+				for (auto handle : AssetManager::Instance->GetRegisteredAssets())
+				{
+					Asset* currentAsset = AssetManager::Instance->GetAssetMetadata(handle);
+					if (currentAsset->UUID == assetUUID)
+					{
+						assetHandle = handle;
+						asset = currentAsset;
+						break;
+					}
+				}
+
 				if (ImGui::BeginDragDropSource())
 				{
-					const wchar_t* path = relativePath.c_str();
-					ImGui::SetDragDropPayload("Content_Browser_Item", path, (wcslen(path) + 1) * sizeof(wchar_t));
+					uint32_t packedHandle = assetHandle.Pack();
+
+					if (asset != nullptr)
+					{
+						switch (asset->Type)
+						{
+						case AssetType::Shader:
+							ImGui::SetDragDropPayload("Content_Browser_Item_Shader", (void*)(intptr_t)&packedHandle, sizeof(uint32_t));
+							break;
+						case AssetType::Texture:
+							ImGui::SetDragDropPayload("Content_Browser_Item_Texture", (void*)(intptr_t)&packedHandle, sizeof(uint32_t));
+							break;
+						case AssetType::Material:
+							ImGui::SetDragDropPayload("Content_Browser_Item_Material", (void*)(intptr_t)&packedHandle, sizeof(uint32_t));
+							break;
+						case AssetType::Mesh:
+							ImGui::SetDragDropPayload("Content_Browser_Item_Mesh", (void*)(intptr_t)&packedHandle, sizeof(uint32_t));
+							break;
+						case AssetType::Scene:
+							ImGui::SetDragDropPayload("Content_Browser_Item_Scene", (void*)(intptr_t)&packedHandle, sizeof(uint32_t));
+							break;
+						default:
+							ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(intptr_t)&packedHandle, sizeof(uint32_t));
+							break;
+						}
+					}
+					else
+					{
+						HBL2_CORE_ERROR("Asset at path: {0} and with UUID: {1} has not been registered. Make sure is it registered before use.", entry.path().string(), assetUUID);
+						ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(intptr_t)&packedHandle, sizeof(uint32_t));
+					}
+
 					ImGui::EndDragDropSource();
 				}
 
@@ -852,7 +1164,7 @@ namespace HBL2
 
 			if (ImGui::BeginDragDropTarget())
 			{
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item"))
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Scene"))
 				{
 					auto path = HBL2::Project::GetAssetFileSystemPath((const wchar_t*)payload->Data);
 

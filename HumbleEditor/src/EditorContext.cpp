@@ -8,6 +8,7 @@ namespace HBL2
 		void EditorContext::OnAttach()
 		{
 			Mode = HBL2::Mode::Editor;
+			AssetManager::Instance = new EditorAssetManager;
 
 			// Create FrameBuffer.
 			HBL2::Renderer::Instance->FrameBufferHandle = HBL2::ResourceManager::Instance->CreateFrameBuffer({
@@ -16,11 +17,14 @@ namespace HBL2
 				.height = 720,
 			});
 
-			//if (!OpenEmptyProject())
-			//{
+			if (!OpenEmptyProject())
+			{
 				ActiveScene = EmptyScene;
-			//	return;
-			//}
+				return;
+			}
+
+			// TODO: Remove when serialization is working again.
+			ActiveScene = EmptyScene;
 
 			// Create editor systems.
 			Core->RegisterSystem(new EditorPanelSystem);
@@ -39,19 +43,19 @@ namespace HBL2
 			ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity1);
 			ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity1);
 
-			auto entity2 = ActiveScene->CreateEntity();
-			ActiveScene->GetComponent<HBL2::Component::Tag>(entity2).Name = "Sprite2";
-			ActiveScene->GetComponent<HBL2::Component::Transform>(entity2).Translation = { 1.f, 0.5f, 0.f };
-			ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity2);
-			ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity2);
+			//auto entity2 = ActiveScene->CreateEntity();
+			//ActiveScene->GetComponent<HBL2::Component::Tag>(entity2).Name = "Sprite2";
+			//ActiveScene->GetComponent<HBL2::Component::Transform>(entity2).Translation = { 1.f, 0.5f, 0.f };
+			//ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity2);
+			//ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity2);
 
-			auto entity3 = ActiveScene->CreateEntity();
-			ActiveScene->GetComponent<HBL2::Component::Tag>(entity3).Name = "Sprite3";
-			ActiveScene->GetComponent<HBL2::Component::Transform>(entity3).Translation = { 0.f, 0.f, 0.f };
-			ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity3);
-			ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity3);
+			//auto entity3 = ActiveScene->CreateEntity();
+			//ActiveScene->GetComponent<HBL2::Component::Tag>(entity3).Name = "Sprite3";
+			//ActiveScene->GetComponent<HBL2::Component::Transform>(entity3).Translation = { 0.f, 0.f, 0.f };
+			//ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity3);
+			//ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity3);
 
-			uint32_t entityCount = 1000;
+			uint32_t entityCount = 0;
 			std::vector<entt::entity> entities;
 			entities.resize(entityCount);
 
@@ -112,9 +116,9 @@ namespace HBL2
 
 			if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 			{
-				const auto& startingScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
+				//const auto& startingScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
 
-				HBL2::Project::OpenScene(startingScenePath);
+				//HBL2::Project::OpenScene(startingScenePath);
 
 				return true;
 			}

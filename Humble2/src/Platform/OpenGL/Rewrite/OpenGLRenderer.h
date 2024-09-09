@@ -53,5 +53,7 @@ namespace HBL2
 
 	private:
 		OpenGLResourceManager* m_ResourceManager = nullptr;
+		CommandBuffer* m_MainCommandBuffer = nullptr;
+		CommandBuffer* m_SecondaryCommandBuffer = nullptr;
 	};
 }

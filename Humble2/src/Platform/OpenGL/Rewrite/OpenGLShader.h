@@ -23,6 +23,8 @@ namespace HBL2
 		OpenGLShader() = default;
 		OpenGLShader(const ShaderDescriptor& desc)
 		{
+			DebugName = desc.debugName;
+
 			Program = glCreateProgram();
 			uint32_t vs = Compile(GL_VERTEX_SHADER, desc.VS.entryPoint, desc.VS.code);
 			uint32_t fs = Compile(GL_FRAGMENT_SHADER, desc.FS.entryPoint, desc.FS.code);

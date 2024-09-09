@@ -2,14 +2,14 @@
 
 namespace HBL2
 {
-    TextureData TextureUtilities::Load(const std::string& path, bool flip)
+    TextureData TextureUtilities::Load(const std::string& path, const TextureSettings& settings)
 	{
 		int w = 0, h = 0, bits = 0;
 		stbi_uc* pixels = nullptr;
 
 		if (!path.empty())
 		{
-			if (flip)
+			if (settings.Flip)
 			{
 				stbi_set_flip_vertically_on_load(1);
 			}
@@ -17,6 +17,6 @@ namespace HBL2
 			assert(pixels);
 		}
 
-		return { pixels, w, h };
+		return { pixels, settings, w, h };
 	}
 }

@@ -3,6 +3,7 @@
 #include "Types.h"
 #include "Handle.h"
 #include "CommandBuffer.h"
+#include "UniformRingBuffer.h"
 
 namespace HBL2
 {
@@ -44,6 +45,7 @@ namespace HBL2
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
 
 		Handle<FrameBuffer> FrameBufferHandle;
+		UniformRingBuffer* TempUniformRingBuffer;
 
 	protected:
 		GraphicsAPI m_GraphicsAPI;

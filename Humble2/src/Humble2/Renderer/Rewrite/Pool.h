@@ -56,5 +56,6 @@ namespace HBL2
 		std::stack<uint16_t> m_FreeList;
 		T* m_Data;
 		uint16_t* m_GenerationalCounter;
+		uint32_t m_CurrentSize = 20;
 	};
 }

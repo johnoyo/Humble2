@@ -1,0 +1,90 @@
+#pragma once
+
+#include "Asset.h"
+#include "Renderer\Rewrite\Handle.h"
+#include "Renderer\Rewrite\Pool.h"
+
+namespace HBL2
+{
+	class AssetManager
+	{
+	public:
+		static inline AssetManager* Instance;
+
+		AssetManager() = default;
+		virtual ~AssetManager() = default;
+
+		Handle<Asset> CreateAsset(const AssetDescriptor&& desc)
+		{
+			auto handle = m_AssetPool.Insert(Asset(desc));
+			m_RegisteredAssets.push_back(handle);
+			return handle;
+		}
+		void DeleteAsset(Handle<Asset> handle)
+		{
+			for (int i = 0; i < m_RegisteredAssets.size(); i++)
+			{
+				if (handle == m_RegisteredAssets[i])
+				{
+					m_RegisteredAssets.erase(m_RegisteredAssets.begin() + i);
+					break;
+				}
+			}
+			m_AssetPool.Remove(handle);
+		}
+		Asset* GetAssetMetadata(Handle<Asset> handle) const
+		{
+			return m_AssetPool.Get(handle);
+		}
+
+		template<typename T>
+		Handle<T> GetAsset(UUID assetUUID)
+		{
+			Handle<Asset> assetHandle;
+
+			for (auto handle : m_RegisteredAssets)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+				if (asset->UUID == assetUUID)
+				{
+					assetHandle = handle;
+					break;
+				}
+			}			
+
+			return GetAsset<T>(assetHandle);
+		}
+		
+		template<typename T>
+		Handle<T> GetAsset(Handle<Asset> handle)
+		{
+			if (!handle.IsValid())
+			{
+				return Handle<T>();
+			}
+
+			Asset* asset = GetAssetMetadata(handle);
+			if (asset->Loaded)
+			{
+				return Handle<T>::UnPack(asset->Indentifier);
+			}
+			else
+			{
+				uint32_t packedHandle = LoadAsset(handle);
+				return Handle<T>::UnPack(packedHandle);
+			}
+
+			return Handle<T>();
+		}
+
+		std::vector<Handle<Asset>>& GetRegisteredAssets() { return m_RegisteredAssets; }
+
+		virtual uint32_t LoadAsset(Handle<Asset> handle) = 0;
+		virtual bool IsAssetValid(Handle<Asset> handle) = 0;
+		virtual bool IsAssetLoaded(Handle<Asset> handle) = 0;
+
+	private:
+		Pool<Asset, Asset> m_AssetPool;
+		std::vector<Handle<Asset>> m_RegisteredAssets;
+	};
+}

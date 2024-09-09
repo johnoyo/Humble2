@@ -57,20 +57,4 @@ namespace HBL2
 		Handle<Shader> Shader;
 		Handle<BindGroup> BindGroup;
 	};
-
-	struct Asset
-	{
-		Asset() = default;
-		Asset(const AssetDescriptor& desc)
-		{
-			DebugName = desc.debugName;
-		}
-
-		const char* DebugName = "";
-		UUID UUID;
-		std::filesystem::path FilePath;
-		uint32_t FileFormatVersion = 1;
-		void* UserData = nullptr;
-		bool Loaded = false;
-	};
 }

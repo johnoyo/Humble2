@@ -7,6 +7,14 @@ namespace HBL2
 		m_GraphicsAPI = GraphicsAPI::OPENGL;
 		m_ResourceManager = (OpenGLResourceManager*)ResourceManager::Instance;
 
+		/*
+		TODO: Get 256 from here in a API agnostic way:
+				int32_t uniformBufferAlignSize;
+				glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferAlignSize);
+		*/
+
+		TempUniformRingBuffer = new UniformRingBuffer(4096, 256);
+
 #ifdef DEBUG
 		GLDebug::EnableGLDebugging();
 #endif
@@ -20,6 +28,9 @@ namespace HBL2
 
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LESS);
+
+		m_MainCommandBuffer = new CommandBuffer();
+		m_SecondaryCommandBuffer = new CommandBuffer();
 	}
 
 	void OpenGLRenderer::BeginFrame()
@@ -119,6 +130,7 @@ namespace HBL2
 	{
 		OpenGLBindGroup* openGLBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
 		OpenGLBindGroupLayout* bindGroupLayout = m_ResourceManager->GetBindGroupLayout(openGLBindGroup->BindGroupLayout);
+
 		if (bindGroupLayout->BufferBindings[bufferIndex].type == BufferBindingType::UNIFORM_DYNAMIC_OFFSET)
 		{
 			OpenGLBuffer* openGLBuffer = m_ResourceManager->GetBuffer(openGLBindGroup->Buffers[bufferIndex].buffer);
@@ -152,8 +164,16 @@ namespace HBL2
 
 	CommandBuffer* OpenGLRenderer::BeginCommandRecording(CommandBufferType type)
 	{
-		// TODO: FIXME
-		return new CommandBuffer;
+		switch (type)
+		{
+		case HBL2::CommandBufferType::MAIN:
+			return m_MainCommandBuffer;
+		case HBL2::CommandBufferType::OFFSCREEN:
+			return m_SecondaryCommandBuffer;
+		default:
+			assert(false);
+			return nullptr;
+		}
 	}
 
 	void OpenGLRenderer::EndFrame()

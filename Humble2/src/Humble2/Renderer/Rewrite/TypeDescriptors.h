@@ -173,9 +173,4 @@ namespace HBL2
 		Handle<Shader> shader;
 		Handle<BindGroup> bindGroup;
 	};
-
-	struct AssetDescriptor
-	{
-		const char* debugName;
-	};
 }

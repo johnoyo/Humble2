@@ -5,6 +5,8 @@
 #include "Renderer/VertexArray.h"
 #include "Renderer/Rewrite/Handle.h"
 
+#include "Asset\Asset.h"
+
 #include <entt.hpp>
 
 namespace HBL2
