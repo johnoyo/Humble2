@@ -3,6 +3,7 @@
 #include "Handle.h"
 #include "Pool.h"
 #include "Types.h"
+#include "Scene\Scene.h"
 #include "TypeDescriptors.h"
 
 namespace HBL2
@@ -75,9 +76,24 @@ namespace HBL2
 		{
 			return m_MaterialPool.Get(handle);
 		}
+		
+		// Scenes
+		Handle<Scene> CreateScene(const SceneDescriptor&& desc)
+		{
+			return m_ScenePool.Insert(Scene(desc));
+		}
+		void DeleteScene(Handle<Scene> handle)
+		{
+			m_ScenePool.Remove(handle);
+		}
+		Scene* GetScene(Handle<Scene> handle) const
+		{
+			return m_ScenePool.Get(handle);
+		}
 
 	private:
 		Pool<Mesh, Mesh> m_MeshPool;
 		Pool<Material, Material> m_MaterialPool;
+		Pool<Scene, Scene> m_ScenePool;
 	};
 }

@@ -36,6 +36,17 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::Link>(entity))
+		{
+			out << YAML::Key << "Component::Link";
+			out << YAML::BeginMap;
+
+			auto& link = m_Scene->GetComponent<Component::Link>(entity);
+
+			out << YAML::Key << "Parent" << YAML::Value << (uint32_t)link.parent;
+			out << YAML::EndMap;
+		}
+
 		if (m_Scene->HasComponent<Component::Camera>(entity))
 		{
 			out << YAML::Key << "Component::Camera";
@@ -53,33 +64,6 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
-		if (m_Scene->HasComponent<Component::Sprite>(entity))
-		{
-			out << YAML::Key << "Component::Sprite";
-			out << YAML::BeginMap;
-
-			auto& sprite = m_Scene->GetComponent<Component::Sprite>(entity);
-
-			out << YAML::Key << "Enabled" << YAML::Value << sprite.Enabled;
-			out << YAML::Key << "Color" << YAML::Value << sprite.Color;
-			out << YAML::Key << "Texture" << YAML::Value << sprite.Path;
-			out << YAML::EndMap;
-		}
-
-		if (m_Scene->HasComponent<Component::StaticMesh>(entity))
-		{
-			out << YAML::Key << "Component::StaticMesh";
-			out << YAML::BeginMap;
-
-			auto& staticMesh = m_Scene->GetComponent<Component::StaticMesh>(entity);
-
-			out << YAML::Key << "Enabled" << YAML::Value << staticMesh.Enabled;
-			out << YAML::Key << "Path" << YAML::Value << staticMesh.Path;
-			out << YAML::Key << "TexturePath" << YAML::Value << staticMesh.TexturePath;
-			out << YAML::Key << "ShaderName" << YAML::Value << staticMesh.ShaderName;
-			out << YAML::EndMap;
-		}
-
 		if (m_Scene->HasComponent<Component::StaticMesh_New>(entity))
 		{
 			out << YAML::Key << "Component::StaticMesh_New";
@@ -88,6 +72,52 @@ namespace HBL2
 			auto& staticMesh = m_Scene->GetComponent<Component::StaticMesh_New>(entity);
 
 			out << YAML::Key << "Enabled" << YAML::Value << staticMesh.Enabled;
+
+			const std::vector<Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+			Asset* materialAsset = nullptr;
+			Asset* meshAsset = nullptr;
+
+			bool meshFound = false;
+			bool materialFound = false;
+
+			for (auto handle : assetHandles)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+				if (asset->Indentifier != 0 && asset->Indentifier == staticMesh.Material.Pack() && !materialFound)
+				{
+					materialFound = true;
+					materialAsset = asset;
+				}
+				if (asset->Indentifier != 0 && asset->Indentifier == staticMesh.Mesh.Pack() && !meshFound)
+				{
+					meshFound = true;
+					meshAsset = asset;
+				}
+
+				if (materialFound && meshFound)
+				{
+					break;
+				}
+			}
+
+			if (materialAsset != nullptr)
+			{
+				out << YAML::Key << "Material" << YAML::Value << materialAsset->UUID;
+			}
+			else
+			{
+				out << YAML::Key << "Material" << YAML::Value << (UUID)0;
+			}
+
+			if (meshAsset != nullptr)
+			{
+				out << YAML::Key << "Mesh" << YAML::Value << meshAsset->UUID;
+			}
+			else
+			{
+				out << YAML::Key << "Mesh" << YAML::Value << (UUID)0;
+			}
 
 			out << YAML::EndMap;
 		}
@@ -163,7 +193,7 @@ namespace HBL2
 				HBL2_CORE_TRACE("Deserializing entity with ID = {0}, name = {1}", uuid, name);
 
 				entt::entity deserializedEntity = m_Scene->CreateEntity(name);
-				auto& camera = m_Scene->AddComponent<Component::EditorVisible>(deserializedEntity);
+				auto& editorVisible = m_Scene->AddComponent<Component::EditorVisible>(deserializedEntity);
 
 				auto transformComponent = entity["Component::Transform"];
 				if (transformComponent)
@@ -172,6 +202,13 @@ namespace HBL2
 					transform.Translation = transformComponent["Translation"].as<glm::vec3>();
 					transform.Rotation = transformComponent["Rotation"].as<glm::vec3>();
 					transform.Scale = transformComponent["Scale"].as<glm::vec3>();
+				}
+
+				auto linkComponent = entity["Component::Link"];
+				if (linkComponent)
+				{
+					auto& link = m_Scene->GetComponent<Component::Link>(deserializedEntity);
+					link.parent = (entt::entity)linkComponent["Parent"].as<glm::uint32_t>();
 				}
 
 				auto cameraComponent = entity["Component::Camera"];
@@ -188,26 +225,13 @@ namespace HBL2
 					camera.ZoomLevel = cameraComponent["Zoom Level"].as<float>();
 				}
 
-				auto spriteComponent = entity["Component::Sprite"];
-				if (spriteComponent)
+				auto staticMesh_NewComponent = entity["Component::StaticMesh_New"];
+				if (staticMesh_NewComponent)
 				{
-					auto& sprite = m_Scene->AddComponent<Component::Sprite>(deserializedEntity);
-
-					sprite.Enabled = spriteComponent["Enabled"].as<bool>();
-					sprite.Color = spriteComponent["Color"].as<glm::vec4>();
-					sprite.Path = spriteComponent["Texture"].as<std::string>();
-					// sprite.TextureIndex = Texture::Get(sprite.Path)->GetID();
-				}
-
-				auto staticMeshComponent = entity["Component::StaticMesh"];
-				if (staticMeshComponent)
-				{
-					auto& staticMesh = m_Scene->AddComponent<Component::StaticMesh>(deserializedEntity);
-					staticMesh.Enabled = staticMeshComponent["Enabled"].as<bool>();
-					staticMesh.Path = staticMeshComponent["Path"].as<std::string>();
-					staticMesh.TexturePath = staticMeshComponent["TexturePath"].as<std::string>();
-					staticMesh.ShaderName = staticMeshComponent["ShaderName"].as<std::string>();
-					// staticMesh.TextureIndex = Texture::Get(staticMesh.TexturePath)->GetID();
+					auto& staticMesh = m_Scene->AddComponent<Component::StaticMesh_New>(deserializedEntity);
+					staticMesh.Enabled = staticMesh_NewComponent["Enabled"].as<bool>();
+					staticMesh.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
+					// staticMesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(staticMesh_NewComponent["Mesh"].as<UUID>());
 				}
 			}
 		}

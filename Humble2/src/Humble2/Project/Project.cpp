@@ -3,6 +3,11 @@
 #include "ProjectSerializer.h"
 #include <Core\Context.h>
 
+#include "Systems\TransformSystem.h"
+#include "Systems\LinkSystem.h"
+#include "Systems\CameraSystem.h"
+#include "Systems\StaticMeshRenderingSystem.h"
+
 namespace HBL2
 {
 	Project* Project::Create(const std::string& name)
@@ -48,6 +53,13 @@ namespace HBL2
 		serializer.Serialize(path);
 	}
 
+	void Project::OpenStartingScene()
+	{
+		UUID assetUUID = std::hash<std::string>()(s_ActiveProject->GetSpecification().StartingScene.string());
+		Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(assetUUID);
+		// Context::ActiveScene = newScene;
+	}
+
 	void Project::OpenScene(const std::filesystem::path& path)
 	{
 		if (path.extension().string() != ".humble")
@@ -56,13 +68,18 @@ namespace HBL2
 			return;
 		}
 
-		Scene* newScene = new Scene(s_ActiveProject->GetSpecification().StartingScene.string());
+		Scene* newScene = new Scene({ .name = s_ActiveProject->GetSpecification().StartingScene.string() });
 
 		SceneSerializer serializer(newScene);
 		if (serializer.Deserialize(path.string()))
 		{
 			delete Context::ActiveScene;
 			Context::ActiveScene = newScene;
+
+			Context::ActiveScene->RegisterSystem(new TransformSystem);
+			Context::ActiveScene->RegisterSystem(new LinkSystem);
+			Context::ActiveScene->RegisterSystem(new CameraSystem);
+			Context::ActiveScene->RegisterSystem(new StaticMeshRenderingSystem);
 		}
 	}
 

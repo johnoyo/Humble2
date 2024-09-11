@@ -7,13 +7,22 @@
 
 namespace HBL2
 {
+	struct SceneDescriptor
+	{
+		std::string name;
+		std::filesystem::path path;
+	};
+
 	class Scene
 	{
 	public:
-		Scene(const std::string& name);
+		Scene() = default;
+		Scene(const SceneDescriptor& desc);
 		~Scene();
 
 		static Scene* Copy(Scene* other);
+
+		HBL2::Scene& operator=(const HBL2::Scene&);
 
 		entt::entity CreateEntity()
 		{
@@ -66,6 +75,7 @@ namespace HBL2
 
 		void RegisterSystem(ISystem* system)
 		{
+			system->SetContext(this);
 			m_Systems.push_back(system);
 		}
 

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Asset.h"
-#include "Renderer\Rewrite\Handle.h"
-#include "Renderer\Rewrite\Pool.h"
+#include "Resources\Handle.h"
+#include "Resources\Pool.h"
 
 namespace HBL2
 {
@@ -79,9 +79,12 @@ namespace HBL2
 
 		std::vector<Handle<Asset>>& GetRegisteredAssets() { return m_RegisteredAssets; }
 
-		virtual uint32_t LoadAsset(Handle<Asset> handle) = 0;
+		virtual void SaveAsset(Handle<Asset> handle) = 0;
 		virtual bool IsAssetValid(Handle<Asset> handle) = 0;
 		virtual bool IsAssetLoaded(Handle<Asset> handle) = 0;
+
+	protected:
+		virtual uint32_t LoadAsset(Handle<Asset> handle) = 0;
 
 	private:
 		Pool<Asset, Asset> m_AssetPool;

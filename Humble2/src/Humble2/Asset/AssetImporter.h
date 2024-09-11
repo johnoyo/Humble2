@@ -1,10 +1,13 @@
 #pragma once
 
 #include "Asset.h"
-#include "Renderer\Rewrite\Handle.h"
+#include "Resources\Handle.h"
 
 #include "Utilities\ShaderUtilities.h"
 #include "Utilities\TextureUtilities.h"
+
+#include "Scene\SceneSerializer.h"
+#include "Project\Project.h"
 
 #include <yaml-cpp\yaml.h>
 
@@ -21,13 +24,17 @@ namespace HBL2
 			return instance;
 		}
 
-		uint32_t ImportAsset(Asset* asset);		
+		uint32_t ImportAsset(Asset* asset);
+		void SaveAsset(Asset* asset);
 
 	private:
 		Handle<Texture> ImportTexture(Asset* asset);
 		Handle<Shader> ImportShader(Asset* asset);
 		Handle<Material> ImportMaterial(Asset* asset);
 		Handle<Mesh> ImportMesh(Asset* asset);
+		Handle<Scene> ImportScene(Asset* asset);
+
+		void SaveScene(Asset* asset);
 
 		AssetImporter() = default;
 	};

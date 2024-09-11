@@ -2,7 +2,7 @@
 
 namespace HBL2Runtime
 {
-    void RuntimeContext::OnAttach()
+    void RuntimeContext::OnCreate()
     {
 		HBL2::Context::Mode = HBL2::Mode::Runtime;
 #ifdef EMSCRIPTEN
@@ -22,11 +22,7 @@ namespace HBL2Runtime
 #else
 		OpenProject();
 #endif
-    }
-
-    void RuntimeContext::OnCreate()
-    {
-		for (HBL2::ISystem* system : Core->GetSystems())
+		for (HBL2::ISystem* system : EditorScene->GetSystems())
 		{
 			system->OnCreate();
 		}
@@ -39,7 +35,7 @@ namespace HBL2Runtime
 
     void RuntimeContext::OnUpdate(float ts)
     {
-		for (HBL2::ISystem* system : Core->GetSystems())
+		for (HBL2::ISystem* system : EditorScene->GetSystems())
 		{
 			system->OnUpdate(ts);
 		}

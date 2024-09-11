@@ -1,9 +1,16 @@
 #include "Scene.h"
 
+#include "SceneSerializer.h"
+
 namespace HBL2
 {
-    Scene::Scene(const std::string& name) : m_Name(name)
+    Scene::Scene(const SceneDescriptor& desc) : m_Name(desc.name)
     {
+        if (!desc.path.empty())
+        {
+            SceneSerializer sceneSerializer(this);
+            sceneSerializer.Deserialize(desc.path);
+        }
     }
 
     Scene::~Scene()
@@ -22,5 +29,11 @@ namespace HBL2
     {
         // TODO: Do an actual deep copy.
         return other;
+    }
+
+    HBL2::Scene& Scene::operator=(const HBL2::Scene& other)
+    {
+        // TODO: insert return statement here
+        return (HBL2::Scene&)other;
     }
 }

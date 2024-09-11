@@ -2,29 +2,27 @@ Scene: Scenes/EmptyScene.humble
 Entities:
   - Entity: 1
     Component::Tag:
+      Tag: Sprite
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 17229211357820178511
+      Mesh: 2339624905484583992
+  - Entity: 0
+    Component::Tag:
       Tag: Camera
     Component::Transform:
-      Translation: [0, 0, 100]
+      Translation: [0, 0, 10]
       Rotation: [0, 0, 0]
-      Scale: [10, 10, 10]
+      Scale: [1, 1, 1]
     Component::Camera:
       Enabled: true
       Primary: true
-      Static: false
-      Far: 1000
+      Far: 100
       Near: 0.100000001
       FOV: 30
       Aspect Ratio: 1.778
       Zoom Level: 300
-  - Entity: 0
-    Component::Tag:
-      Tag: Sprite
-    Component::Transform:
-      Translation: [0, 15, 0]
-      Rotation: [0, 0, 0]
-      Scale: [10, 10, 10]
-    Component::Sprite:
-      Enabled: true
-      Static: false
-      Color: [1, 1, 1, 1]
-      Texture: EmptyProject\Assets\Textures\Pixel-Art.png

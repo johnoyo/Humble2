@@ -28,14 +28,38 @@ namespace HBL2
 		case AssetType::Mesh:
 			asset->Indentifier = ImportMesh(asset).Pack();
 			return asset->Indentifier;
+		case AssetType::Scene:
+			asset->Indentifier = ImportScene(asset).Pack();
+			return asset->Indentifier;
 		}
 
 		return 0;
 	}
 
+	void AssetImporter::SaveAsset(Asset* asset)
+	{
+		if (asset == nullptr)
+		{
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_ERROR("Could not save asset {0} at path: {1}, because it is not loaded.", asset->DebugName, asset->FilePath.string());
+			return;
+		}
+
+		switch (asset->Type)
+		{
+		case AssetType::Scene:
+			SaveScene(asset);
+			break;
+		}
+	}
+
     Handle<Texture> AssetImporter::ImportTexture(Asset* asset)
     {
-		std::ifstream stream(asset->FilePath.string() + ".hbltexture");
+		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture");
 		std::stringstream ss;
 		ss << stream.rdbuf();
 
@@ -54,7 +78,7 @@ namespace HBL2
 			{
 				.Flip = textureProperties["Flip"].as<bool>(),
 			};
-			TextureData textureData = TextureUtilities::Get().Load(asset->FilePath.string(), textureSettings);
+			TextureData textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
 
 			// Create the texture
 			auto texture = ResourceManager::Instance->CreateTexture({
@@ -72,7 +96,7 @@ namespace HBL2
 
 	Handle<Shader> AssetImporter::ImportShader(Asset* asset)
     {
-		auto shaderCode = ShaderUtilities::Get().Compile(asset->FilePath.string());
+		auto shaderCode = ShaderUtilities::Get().Compile(Project::GetAssetFileSystemPath(asset->FilePath).string());
 
 		auto shader = ResourceManager::Instance->CreateShader({
 			.debugName = "test-shader",
@@ -95,7 +119,7 @@ namespace HBL2
 
 	Handle<Material> AssetImporter::ImportMaterial(Asset* asset)
 	{
-		std::ifstream stream(asset->FilePath);
+		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath));
 		std::stringstream ss;
 		ss << stream.rdbuf();
 
@@ -147,9 +171,34 @@ namespace HBL2
 		return Handle<Material>();
 	}
 
+	Handle<Scene> AssetImporter::ImportScene(Asset* asset)
+	{
+		auto scene = ResourceManager::Instance->CreateScene({
+			.name = asset->FilePath.filename().stem().string(),
+			.path = Project::GetAssetFileSystemPath(asset->FilePath),
+		});
+
+		return scene;
+	}
+
 	Handle<Mesh> AssetImporter::ImportMesh(Asset* asset)
 	{
 		return Handle<Mesh>();
+	}
+
+	void AssetImporter::SaveScene(Asset* asset)
+	{
+		Handle<Scene> sceneHandle = Handle<Scene>::UnPack(asset->Indentifier);
+
+		if (!sceneHandle.IsValid())
+		{
+			HBL2_CORE_ERROR("Could not save asset {0} at path: {1}, because the handle is invalid.", asset->DebugName, asset->FilePath.string());
+			return;
+		}
+
+		Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
+		SceneSerializer serializer(scene);
+		serializer.Serialize(asset->FilePath);
 	}
 }
 

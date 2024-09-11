@@ -9,8 +9,6 @@ namespace HBL2
 	{
 		void EditorCameraSystem::OnCreate()
 		{
-			m_Context = HBL2::Context::ActiveScene;
-
 			m_Context->GetRegistry()
 				.group<Component::EditorCamera>(entt::get<HBL2::Component::Camera, HBL2::Component::Transform>)
 				.each([&](entt::entity entity, Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera, HBL2::Component::Transform& transform)

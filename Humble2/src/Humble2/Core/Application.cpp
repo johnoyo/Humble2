@@ -43,13 +43,10 @@ namespace HBL2
 		});
 
 		// Initialize empty scene.
-		m_Specification.Context->EmptyScene = new Scene("Empty Scene");
+		m_Specification.Context->EmptyScene = new Scene();
 
-		m_Specification.Context->Core = new Scene("Core");
-		m_Specification.Context->Core->RegisterSystem(new TransformSystem);
-		m_Specification.Context->Core->RegisterSystem(new LinkSystem);
-		m_Specification.Context->Core->RegisterSystem(new StaticMeshRenderingSystem);
-		m_Specification.Context->Core->RegisterSystem(new CameraSystem);
+		// Initialize core scene.
+		m_Specification.Context->EditorScene = new Scene();
 	}
 
 	void Application::BeginFrame()
@@ -87,8 +84,6 @@ namespace HBL2
 	void Application::Start()
 	{
 		Window::Instance->Create();
-
-		m_Specification.Context->OnAttach();
 		
 		Device::Instance->Initialize();
 		Renderer::Instance->Initialize();
@@ -111,7 +106,7 @@ namespace HBL2
 			EndFrame();
 		});
 
-		m_Specification.Context->OnDetach();
+		m_Specification.Context->OnDestroy();
 
 		Shutdown();
 	}

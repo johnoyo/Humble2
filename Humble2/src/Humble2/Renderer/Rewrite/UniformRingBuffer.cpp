@@ -1,7 +1,7 @@
 #include "UniformRingBuffer.h"
 
 #include "Renderer.h"
-#include "ResourceManager.h"
+#include "Resources\ResourceManager.h"
 
 namespace HBL2
 {

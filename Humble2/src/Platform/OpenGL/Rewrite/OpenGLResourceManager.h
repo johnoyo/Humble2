@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Renderer\Rewrite\ResourceManager.h"
+#include "Resources\ResourceManager.h"
 
-#include "Renderer\Rewrite\Pool.h"
-#include "Renderer\Rewrite\Types.h"
-#include "Renderer\Rewrite\TypeDescriptors.h"
+#include "Resources\Pool.h"
+#include "Resources\Types.h"
+#include "Resources\TypeDescriptors.h"
 
 #include "OpenGLBuffer.h"
 #include "OpenGLShader.h"

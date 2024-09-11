@@ -5,7 +5,7 @@
 
 #include "Scene\Components.h"
 #include "Renderer\Rewrite\Renderer.h"
-#include "Renderer\Rewrite\ResourceManager.h"
+#include "Resources\ResourceManager.h"
 
 #include "OpenGLResourceManager.h"
 

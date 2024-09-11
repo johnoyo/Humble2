@@ -111,7 +111,7 @@ namespace HBL2
 			.vertexBuffers = { buffer/*, bufferTexCoords*/ },
 		});
 
-		Context::ActiveScene->GetRegistry()
+		m_Context->GetRegistry()
 			.group<Component::StaticMesh_New>(entt::get<Component::Transform>)
 			.each([&](Component::StaticMesh_New& staticMesh, Component::Transform& transform)
 			{
@@ -155,14 +155,14 @@ namespace HBL2
 
 	void StaticMeshRenderingSystem::OnUpdate(float ts)
 	{
-		glm::mat4 vp = Context::ActiveScene->GetComponent<Component::Camera>(Context::ActiveScene->MainCamera).ViewProjectionMatrix;
-
+		const glm::mat4& vp = GetViewProjection();
+		
 		m_UniformRingBuffer->Invalidate();
 
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Handle<RenderPass>(), Handle<FrameBuffer>());
 
-		Renderer::Instance->SetBufferData(m_GlobalBindings, 0, &vp);
+		Renderer::Instance->SetBufferData(m_GlobalBindings, 0, (void*)&vp);
 
 		DrawList draws;
 		
@@ -172,7 +172,7 @@ namespace HBL2
 			glm::vec4 Color;
 		};
 
-		Context::ActiveScene->GetRegistry()
+		m_Context->GetRegistry()
 			.group<Component::StaticMesh_New>(entt::get<Component::Transform>)
 			.each([&](Component::StaticMesh_New& staticMesh, Component::Transform& transform)
 			{
@@ -203,5 +203,41 @@ namespace HBL2
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 		commandBuffer->EndRenderPass(*passRenderer);
 		commandBuffer->Submit();
+	}
+
+	void StaticMeshRenderingSystem::OnDestroy()
+	{
+	}
+
+	const glm::mat4& StaticMeshRenderingSystem::GetViewProjection()
+	{
+		if (Context::Mode == Mode::Runtime)
+		{
+			if (Context::ActiveScene->MainCamera != entt::null)
+			{
+				return Context::ActiveScene->GetComponent<Component::Camera>(Context::ActiveScene->MainCamera).ViewProjectionMatrix;
+			}
+			else
+			{
+				HBL2_CORE_WARN("No main camera set for runtime context.");
+			}
+		}
+		else if (Context::Mode == Mode::Editor)
+		{
+			if (Context::EditorScene->MainCamera != entt::null)
+			{
+				return Context::EditorScene->GetComponent<Component::Camera>(Context::EditorScene->MainCamera).ViewProjectionMatrix;
+			}
+			else
+			{
+				HBL2_CORE_WARN("No main camera set for editor context.");
+			}
+		}
+		else
+		{
+			HBL2_CORE_WARN("No mode set for current context.");
+		}
+
+		return glm::mat4(1.0f);
 	}
 }

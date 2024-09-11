@@ -12,9 +12,9 @@
 	#include "Project\ProjectSerializer.h"
 #endif
 
-#include "Renderer\Rewrite\Handle.h"
-#include "Renderer\Rewrite\ResourceManager.h"
+#include "Resources\Handle.h"
+#include "Resources\ResourceManager.h"
 #include "Renderer\Rewrite\Renderer.h"
 
-#include "Renderer\Rewrite\Types.h"
-#include "Renderer\Rewrite\TypeDescriptors.h"
+#include "Resources\Types.h"
+#include "Resources\TypeDescriptors.h"

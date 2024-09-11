@@ -4,7 +4,7 @@
 #include "Scene\ISystem.h"
 #include "Scene\Components.h"
 #include "Renderer\Rewrite\Renderer.h"
-#include "Renderer\Rewrite\ResourceManager.h"
+#include "Resources\ResourceManager.h"
 
 #include "Renderer\Rewrite\UniformRingBuffer.h"
 
@@ -24,6 +24,11 @@ namespace HBL2
 	public:
 		virtual void OnCreate() override;
 		virtual void OnUpdate(float ts) override;
+		virtual void OnDestroy() override;
+
+	private:
+		const glm::mat4& GetViewProjection();
+
 	private:
 		Handle<BindGroup> m_GlobalBindings;
 		Handle<BindGroup> m_DrawBindings;

@@ -4,7 +4,7 @@ namespace HBL2
 {
 	void TransformSystem::OnCreate()
 	{
-		Context::ActiveScene->GetRegistry()
+		m_Context->GetRegistry()
 			.view<Component::Transform>()
 			.each([&](Component::Transform& transform)
 			{
@@ -19,7 +19,7 @@ namespace HBL2
 
 	void TransformSystem::OnUpdate(float ts)
 	{
-		Context::ActiveScene->GetRegistry()
+		m_Context->GetRegistry()
 			.view<Component::Transform>()
 			.each([&](Component::Transform& transform)
 			{

@@ -50,6 +50,7 @@ namespace HBL2
 		static Project* Load(const std::filesystem::path& path);
 		static void Save(const std::filesystem::path& path);
 
+		static void OpenStartingScene();
 		static void OpenScene(const std::filesystem::path& path);
 		static void SaveScene(Scene* scene, const std::filesystem::path& path);
 

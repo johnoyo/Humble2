@@ -7,7 +7,7 @@ namespace HBL2
 {
 	void CameraSystem::OnCreate()
 	{
-		Context::ActiveScene->GetRegistry()
+		m_Context->GetRegistry()
 			.group<Component::Camera>(entt::get<Component::Transform>)
 			.each([&](entt::entity entity, Component::Camera& camera, Component::Transform& transform)
 			{
@@ -27,7 +27,7 @@ namespace HBL2
 
 					if (camera.Primary)
 					{
-						Context::ActiveScene->MainCamera = entity;
+						m_Context->MainCamera = entity;
 					}
 				}
 			});
@@ -35,7 +35,7 @@ namespace HBL2
 
 	void CameraSystem::OnUpdate(float ts)
 	{
-		Context::ActiveScene->GetRegistry()
+		m_Context->GetRegistry()
 			.group<Component::Camera>(entt::get<Component::Transform>)
 			.each([&](entt::entity entity, Component::Camera& camera, Component::Transform& transform)
 			{
@@ -58,7 +58,7 @@ namespace HBL2
 
 					if (camera.Primary)
 					{
-						Context::ActiveScene->MainCamera = entity;
+						m_Context->MainCamera = entity;
 					}
 				}
 			});

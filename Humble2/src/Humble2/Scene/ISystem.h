@@ -15,6 +15,11 @@ namespace HBL2
 		virtual void OnGuiRender(float ts)	{}
 		virtual void OnDestroy()			{}
 
+		void SetContext(Scene* context)
+		{
+			m_Context = context;
+		}
+
 	protected:
 		Scene* m_Context = nullptr;
 	};

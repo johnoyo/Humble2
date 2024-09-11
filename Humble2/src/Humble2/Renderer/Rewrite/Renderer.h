@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Types.h"
-#include "Handle.h"
+#include "Resources\Types.h"
+#include "Resources\Handle.h"
 #include "CommandBuffer.h"
 #include "UniformRingBuffer.h"
 

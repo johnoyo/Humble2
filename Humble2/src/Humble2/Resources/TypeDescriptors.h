@@ -1,10 +1,11 @@
 #pragma once
 
-#include "Enums.h"
+#include "Renderer\Rewrite\Enums.h"
 #include "Handle.h"
 
 #include <glm\glm.hpp>
 
+#include <vector>
 #include <initializer_list>
 
 namespace HBL2

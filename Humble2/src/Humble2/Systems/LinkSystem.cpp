@@ -4,7 +4,7 @@ namespace HBL2
 {
 	void LinkSystem::OnCreate()
 	{
-		Context::ActiveScene->GetRegistry()
+		m_Context->GetRegistry()
 			.group<Component::Link>(entt::get<Component::Transform>)
 			.each([&](entt::entity entity, Component::Link& link, Component::Transform& transform)
 			{
@@ -14,7 +14,7 @@ namespace HBL2
 
 	void LinkSystem::OnUpdate(float ts)
 	{
-		Context::ActiveScene->GetRegistry()
+		m_Context->GetRegistry()
 			.group<Component::Link>(entt::get<Component::Transform>)
 			.each([&](entt::entity entity, Component::Link& link, Component::Transform& transform)
 			{
@@ -31,10 +31,10 @@ namespace HBL2
 
 		if (link.parent != entt::null)
 		{
-			Component::Link& parentLink = Context::ActiveScene->GetComponent<Component::Link>(link.parent);
+			Component::Link& parentLink = m_Context->GetComponent<Component::Link>(link.parent);
 			transform = GetWorldSpaceTransform(link.parent, parentLink);
 		}
 
-		return transform * Context::ActiveScene->GetComponent<Component::Transform>(entity).Matrix;
+		return transform * m_Context->GetComponent<Component::Transform>(entity).Matrix;
 	}
 }

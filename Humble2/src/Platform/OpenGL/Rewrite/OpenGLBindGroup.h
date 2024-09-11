@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Base.h"
-#include "Renderer\Rewrite\Handle.h"
-#include "Renderer\Rewrite\TypeDescriptors.h"
+#include "Resources\Handle.h"
+#include "Resources\TypeDescriptors.h"
 
 #include "OpenGLBuffer.h"
 #include "OpenGLTexture.h"

@@ -3,7 +3,7 @@
 #include "Base.h"
 
 #include "Renderer/VertexArray.h"
-#include "Renderer/Rewrite/Handle.h"
+#include "Resources\Handle.h"
 
 #include "Asset\Asset.h"
 

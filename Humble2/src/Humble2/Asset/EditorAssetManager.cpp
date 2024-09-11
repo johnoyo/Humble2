@@ -8,6 +8,12 @@ namespace HBL2
         return AssetImporter::Get().ImportAsset(asset);
     }
 
+    void EditorAssetManager::SaveAsset(Handle<Asset> handle)
+    {
+        Asset* asset = GetAssetMetadata(handle);
+        AssetImporter::Get().SaveAsset(asset);
+    }
+
     bool EditorAssetManager::IsAssetValid(Handle<Asset> handle)
     {
         return handle.IsValid();

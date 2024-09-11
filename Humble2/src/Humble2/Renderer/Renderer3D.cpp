@@ -90,9 +90,9 @@ namespace HBL2
 		}
 		else if (Context::Mode == Mode::Editor)
 		{
-			if (Context::Core->MainCamera != entt::null)
+			if (Context::EditorScene->MainCamera != entt::null)
 			{
-				mvp = Context::Core->GetComponent<Component::Camera>(Context::Core->MainCamera).ViewProjectionMatrix;
+				mvp = Context::EditorScene->GetComponent<Component::Camera>(Context::EditorScene->MainCamera).ViewProjectionMatrix;
 			}
 			else
 			{

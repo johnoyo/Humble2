@@ -5,7 +5,7 @@ namespace HBL2
 {
 	namespace Editor
 	{
-		void EditorContext::OnAttach()
+		void EditorContext::OnCreate()
 		{
 			Mode = HBL2::Mode::Editor;
 			AssetManager::Instance = new EditorAssetManager;
@@ -23,55 +23,21 @@ namespace HBL2
 				return;
 			}
 
-			// TODO: Remove when serialization is working again.
-			ActiveScene = EmptyScene;
-
 			// Create editor systems.
-			Core->RegisterSystem(new EditorPanelSystem);
-			ActiveScene->RegisterSystem(new EditorCameraSystem);
+			EditorScene->RegisterSystem(new EditorPanelSystem);
+			EditorScene->RegisterSystem(new TransformSystem);
+			EditorScene->RegisterSystem(new CameraSystem);
+			EditorScene->RegisterSystem(new EditorCameraSystem);
 
 			// Editor camera set up.
-			auto editorCameraEntity = ActiveScene->CreateEntity();
-			ActiveScene->GetComponent<HBL2::Component::Tag>(editorCameraEntity).Name = "Hidden";
-			ActiveScene->AddComponent<Component::EditorCamera>(editorCameraEntity);
-			ActiveScene->AddComponent<HBL2::Component::Camera>(editorCameraEntity).Enabled = true;
-			ActiveScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 5.f;
+			auto editorCameraEntity = EditorScene->CreateEntity();
+			EditorScene->GetComponent<HBL2::Component::Tag>(editorCameraEntity).Name = "Hidden";
+			EditorScene->AddComponent<HBL2::Component::Camera>(editorCameraEntity).Enabled = true;
+			EditorScene->AddComponent<Component::EditorCamera>(editorCameraEntity);
+			EditorScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 5.f;
 
-			auto entity1 = ActiveScene->CreateEntity();
-			ActiveScene->GetComponent<HBL2::Component::Tag>(entity1).Name = "Sprite1";
-			ActiveScene->GetComponent<HBL2::Component::Transform>(entity1).Translation = { -1.f, 0.5f, 0.f };
-			ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity1);
-			ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity1);
-
-			//auto entity2 = ActiveScene->CreateEntity();
-			//ActiveScene->GetComponent<HBL2::Component::Tag>(entity2).Name = "Sprite2";
-			//ActiveScene->GetComponent<HBL2::Component::Transform>(entity2).Translation = { 1.f, 0.5f, 0.f };
-			//ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity2);
-			//ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity2);
-
-			//auto entity3 = ActiveScene->CreateEntity();
-			//ActiveScene->GetComponent<HBL2::Component::Tag>(entity3).Name = "Sprite3";
-			//ActiveScene->GetComponent<HBL2::Component::Transform>(entity3).Translation = { 0.f, 0.f, 0.f };
-			//ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity3);
-			//ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entity3);
-
-			uint32_t entityCount = 0;
-			std::vector<entt::entity> entities;
-			entities.resize(entityCount);
-
-			for (int i = 0; i < entityCount; i++)
-			{
-				entities[i] = ActiveScene->CreateEntity();
-				ActiveScene->GetComponent<HBL2::Component::Tag>(entities[i]).Name = "entity" + std::to_string(i);
-				ActiveScene->GetComponent<HBL2::Component::Transform>(entities[i]).Translation = { 0.f, 0.f, 0.f };
-				ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entities[i]);
-				ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(entities[i]);
-			}
-		}
-
-		void EditorContext::OnCreate()
-		{
-			for (HBL2::ISystem* system : Core->GetSystems())
+			// Create systems
+			for (HBL2::ISystem* system : EditorScene->GetSystems())
 			{
 				system->OnCreate();
 			}
@@ -84,7 +50,7 @@ namespace HBL2
 
 		void EditorContext::OnUpdate(float ts)
 		{
-			for (HBL2::ISystem* system : Core->GetSystems())
+			for (HBL2::ISystem* system : EditorScene->GetSystems())
 			{
 				system->OnUpdate(ts);
 			}
@@ -99,7 +65,7 @@ namespace HBL2
 		{
 			ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
-			for (HBL2::ISystem* system : Core->GetSystems())
+			for (HBL2::ISystem* system : EditorScene->GetSystems())
 			{
 				system->OnGuiRender(ts);
 			}
@@ -116,9 +82,13 @@ namespace HBL2
 
 			if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 			{
-				//const auto& startingScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
+				RegisterAssets();
 
-				//HBL2::Project::OpenScene(startingScenePath);
+				const auto& startingScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
+
+				HBL2::Project::OpenScene(startingScenePath);
+
+				// HBL2::Project::OpenStartingScene();
 
 				return true;
 			}
@@ -127,6 +97,56 @@ namespace HBL2
 			HBL2::Window::Instance->Close();
 
 			return false;
+		}
+
+		void EditorContext::RegisterAssets()
+		{
+			for (auto& entry : std::filesystem::recursive_directory_iterator(HBL2::Project::GetAssetDirectory()))
+			{
+				const std::string& extension = entry.path().extension().string();
+				auto relativePath = std::filesystem::relative(entry.path(), HBL2::Project::GetAssetDirectory());
+
+				if (extension == ".png" || extension == ".jpg")
+				{
+					auto assetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "texture-asset",
+						.filePath = relativePath,
+						.type = AssetType::Texture,
+					});
+				}
+				else if (extension == ".obj" || extension == ".gltf" || extension == ".glb" || extension == ".fbx")
+				{
+					auto assetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "mesh-asset",
+						.filePath = relativePath,
+						.type = AssetType::Mesh,
+					});
+				}
+				else if (extension == ".hblmat")
+				{
+					auto assetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "material-asset",
+						.filePath = relativePath,
+						.type = AssetType::Material,
+					});
+				}
+				else if (extension == ".hblshader")
+				{
+					auto assetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "shader-asset",
+						.filePath = relativePath,
+						.type = AssetType::Shader,
+					});
+				}
+				else if (extension == ".humble")
+				{
+					auto assetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "scene-asset",
+						.filePath = relativePath,
+						.type = AssetType::Scene,
+					});
+				}
+			}
 		}
 	}
 }

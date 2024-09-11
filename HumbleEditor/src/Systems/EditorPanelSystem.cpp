@@ -4,10 +4,10 @@
 #include "Humble2\Utilities\YamlUtilities.h"
 #include "EditorCameraSystem.h"
 
-#include "Renderer\Rewrite\Handle.h"
-#include "Renderer\Rewrite\ResourceManager.h"
-#include "Renderer\Rewrite\Types.h"
-#include "Renderer\Rewrite\TypeDescriptors.h"
+#include "Resources\Handle.h"
+#include "Resources\ResourceManager.h"
+#include "Resources\Types.h"
+#include "Resources\TypeDescriptors.h"
 
 namespace HBL2
 {
@@ -15,46 +15,31 @@ namespace HBL2
 	{
 		void EditorPanelSystem::OnCreate()
 		{
-			// Load editor icons.
-			/*m_PngIcon = HBL2::Texture::Load("assets/icons/content_browser/png-1477.png")->GetID();
-			m_JpgIcon = HBL2::Texture::Load("assets/icons/content_browser/jpg-1476.png")->GetID();
-			m_ObjIcon = HBL2::Texture::Load("assets/icons/content_browser/obj-1472.png")->GetID();
-			m_FbxIcon = HBL2::Texture::Load("assets/icons/content_browser/fbx-1472.png")->GetID();
-			m_MatIcon = HBL2::Texture::Load("assets/icons/content_browser/mat-1472.png")->GetID();
-			m_MtlIcon = HBL2::Texture::Load("assets/icons/content_browser/mtl-1472.png")->GetID();
-			m_SceneIcon = HBL2::Texture::Load("assets/icons/content_browser/scene-1472.png")->GetID();
-			m_Mp3Icon = HBL2::Texture::Load("assets/icons/content_browser/mp3-1474.png")->GetID();
-			m_TxtIcon = HBL2::Texture::Load("assets/icons/content_browser/txt-1473.png")->GetID();
-			m_ShaderIcon = HBL2::Texture::Load("assets/icons/content_browser/shader-1472.png")->GetID();
-			m_FileIcon = HBL2::Texture::Load("assets/icons/content_browser/file-1453.png")->GetID();
-			m_FolderIcon = HBL2::Texture::Load("assets/icons/content_browser/folder-1437.png")->GetID();
-			m_BackIcon = HBL2::Texture::Load("assets/icons/content_browser/curved-arrow-4608.png")->GetID();*/
-
-			m_Context = HBL2::Context::ActiveScene;
+			m_ActiveScene = HBL2::Context::ActiveScene;
 
 			{
 				// Hierachy panel.
-				auto hierachyPanel = HBL2::Context::Core->CreateEntity();
-				HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(hierachyPanel).Name = "Hidden";
-				auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(hierachyPanel);
+				auto hierachyPanel = m_Context->CreateEntity();
+				m_Context->GetComponent<HBL2::Component::Tag>(hierachyPanel).Name = "Hidden";
+				auto& panel = m_Context->AddComponent<Component::EditorPanel>(hierachyPanel);
 				panel.Name = "Hierachy";
 				panel.Type = Component::EditorPanel::Panel::Hierachy;
 			}
 
 			{
 				// Properties panel.
-				auto propertiesPanel = HBL2::Context::Core->CreateEntity();
-				HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(propertiesPanel).Name = "Hidden";
-				auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(propertiesPanel);
+				auto propertiesPanel = m_Context->CreateEntity();
+				m_Context->GetComponent<HBL2::Component::Tag>(propertiesPanel).Name = "Hidden";
+				auto& panel = m_Context->AddComponent<Component::EditorPanel>(propertiesPanel);
 				panel.Name = "Properties";
 				panel.Type = Component::EditorPanel::Panel::Properties;
 			}
 
 			{
 				// Menubar panel.
-				auto menubarPanel = HBL2::Context::Core->CreateEntity();
-				HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(menubarPanel).Name = "Hidden";
-				auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(menubarPanel);
+				auto menubarPanel = m_Context->CreateEntity();
+				m_Context->GetComponent<HBL2::Component::Tag>(menubarPanel).Name = "Hidden";
+				auto& panel = m_Context->AddComponent<Component::EditorPanel>(menubarPanel);
 				panel.Name = "Menubar";
 				panel.Type = Component::EditorPanel::Panel::Menubar;
 				panel.UseBeginEnd = false;
@@ -62,18 +47,18 @@ namespace HBL2
 
 			{
 				// Stats panel.
-				auto statsPanel = HBL2::Context::Core->CreateEntity();
-				HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(statsPanel).Name = "Hidden";
-				auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(statsPanel);
+				auto statsPanel = m_Context->CreateEntity();
+				m_Context->GetComponent<HBL2::Component::Tag>(statsPanel).Name = "Hidden";
+				auto& panel = m_Context->AddComponent<Component::EditorPanel>(statsPanel);
 				panel.Name = "Stats";
 				panel.Type = Component::EditorPanel::Panel::Stats;
 			}
 
 			{
 				// Content browser panel.
-				auto contentBrowserPanel = HBL2::Context::Core->CreateEntity();
-				HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(contentBrowserPanel).Name = "Hidden";
-				auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(contentBrowserPanel);
+				auto contentBrowserPanel = m_Context->CreateEntity();
+				m_Context->GetComponent<HBL2::Component::Tag>(contentBrowserPanel).Name = "Hidden";
+				auto& panel = m_Context->AddComponent<Component::EditorPanel>(contentBrowserPanel);
 				panel.Name = "Content Browser";
 				panel.Type = Component::EditorPanel::Panel::ContentBrowser;
 				m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
@@ -81,79 +66,32 @@ namespace HBL2
 
 			{
 				// Console panel.
-				auto consolePanel = HBL2::Context::Core->CreateEntity();
-				HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(consolePanel).Name = "Hidden";
-				auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(consolePanel);
+				auto consolePanel = m_Context->CreateEntity();
+				m_Context->GetComponent<HBL2::Component::Tag>(consolePanel).Name = "Hidden";
+				auto& panel = m_Context->AddComponent<Component::EditorPanel>(consolePanel);
 				panel.Name = "Console";
 				panel.Type = Component::EditorPanel::Panel::Console;
 			}
 
 			{
 				// Viewport panel.
-				auto viewportPanel = HBL2::Context::Core->CreateEntity();
-				HBL2::Context::Core->GetComponent<HBL2::Component::Tag>(viewportPanel).Name = "Hidden";
-				auto& panel = HBL2::Context::Core->AddComponent<Component::EditorPanel>(viewportPanel);
+				auto viewportPanel = m_Context->CreateEntity();
+				m_Context->GetComponent<HBL2::Component::Tag>(viewportPanel).Name = "Hidden";
+				auto& panel = m_Context->AddComponent<Component::EditorPanel>(viewportPanel);
 				panel.Name = "Viewport";
 				panel.Type = Component::EditorPanel::Panel::Viewport;
 				panel.Styles.push_back({ ImGuiStyleVar_WindowPadding, ImVec2{ 0.f, 0.f }, 0.f, false });
-			}
-
-			// Create and register assets.
-			for (auto& entry : std::filesystem::recursive_directory_iterator(HBL2::Project::GetAssetDirectory()))
-			{
-				const std::string& extension = entry.path().extension().string();
-
-				if (extension == ".png" || extension == ".jpg")
-				{
-					auto assetHandle = AssetManager::Instance->CreateAsset({
-						.debugName = "texture-asset",
-						.filePath = entry.path(),
-						.type = AssetType::Texture,
-					});
-				}
-				else if (extension == ".obj" || extension == ".gltf" || extension == ".glb" || extension == ".fbx")
-				{
-					auto assetHandle = AssetManager::Instance->CreateAsset({
-						.debugName = "mesh-asset",
-						.filePath = entry.path(),
-						.type = AssetType::Mesh,
-					});
-				}
-				else if (extension == ".hblmat")
-				{
-					auto assetHandle = AssetManager::Instance->CreateAsset({
-						.debugName = "material-asset",
-						.filePath = entry.path(),
-						.type = AssetType::Material,
-					});
-				}
-				else if (extension == ".hblshader")
-				{
-					auto assetHandle = AssetManager::Instance->CreateAsset({
-						.debugName = "shader-asset",
-						.filePath = entry.path(),
-						.type = AssetType::Shader,
-					});
-				}
-				else if (extension == ".humble")
-				{
-					auto assetHandle = AssetManager::Instance->CreateAsset({
-						.debugName = "scene-asset",
-						.filePath = entry.path(),
-						.type = AssetType::Scene,
-					});
-				}
 			}
 		}
 
 		void EditorPanelSystem::OnUpdate(float ts)
 		{
-			m_Context = HBL2::Context::ActiveScene;
+			m_ActiveScene = HBL2::Context::ActiveScene;
 		}
 
 		void EditorPanelSystem::OnGuiRender(float ts)
 		{
-			HBL2::Context::Core->GetRegistry()
+			m_Context->GetRegistry()
 				.view<Component::EditorPanel>()
 				.each([&](Component::EditorPanel& panel)
 				{
@@ -222,35 +160,35 @@ namespace HBL2
 			{
 				if (ImGui::MenuItem("Create Empty"))
 				{
-					auto entity = m_Context->CreateEntity();
-					m_Context->AddComponent<HBL2::Component::EditorVisible>(entity);
+					auto entity = m_ActiveScene->CreateEntity();
+					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
 				}
 
 				if (ImGui::MenuItem("Create Sprite"))
 				{
-					auto entity = m_Context->CreateEntity();
-					m_Context->GetComponent<HBL2::Component::Tag>(entity).Name = "Sprite";
-					m_Context->GetComponent<HBL2::Component::Transform>(entity).Translation = { 0.f, 15.f, 0.f };
-					m_Context->AddComponent<HBL2::Component::EditorVisible>(entity);
-					m_Context->AddComponent<HBL2::Component::Sprite>(entity);
+					auto entity = m_ActiveScene->CreateEntity();
+					m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name = "Sprite";
+					m_ActiveScene->GetComponent<HBL2::Component::Transform>(entity).Translation = { 0.f, 15.f, 0.f };
+					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
+					m_ActiveScene->AddComponent<HBL2::Component::Sprite>(entity);
 				}
 
 				if (ImGui::MenuItem("Create Camera"))
 				{
-					auto entity = m_Context->CreateEntity();
-					m_Context->GetComponent<HBL2::Component::Tag>(entity).Name = "Camera";
-					m_Context->AddComponent<HBL2::Component::EditorVisible>(entity);
-					m_Context->AddComponent<HBL2::Component::Camera>(entity).Enabled = true;
-					m_Context->GetComponent<HBL2::Component::Transform>(entity).Translation.z = 100.f;
+					auto entity = m_ActiveScene->CreateEntity();
+					m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name = "Camera";
+					m_ActiveScene->AddComponent<HBL2::Component::Camera>(entity).Enabled = true;
+					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
+					m_ActiveScene->GetComponent<HBL2::Component::Transform>(entity).Translation.z = 10.f;
 				}
 
 				if (ImGui::MenuItem("Create Monkeh"))
 				{
-					auto entity = m_Context->CreateEntity();
-					m_Context->GetComponent<HBL2::Component::Tag>(entity).Name = "Monkeh";
-					m_Context->GetComponent<HBL2::Component::Transform>(entity).Scale = { 5.f, 5.f, 5.f };
-					m_Context->AddComponent<HBL2::Component::EditorVisible>(entity);
-					auto& mesh = m_Context->AddComponent<HBL2::Component::StaticMesh>(entity);
+					auto entity = m_ActiveScene->CreateEntity();
+					m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name = "Monkeh";
+					m_ActiveScene->GetComponent<HBL2::Component::Transform>(entity).Scale = { 5.f, 5.f, 5.f };
+					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
+					auto& mesh = m_ActiveScene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
 					// TODO: Get active project.
 					mesh.Path = "EmptyProject\\Assets\\Meshes\\monkey_smooth.obj";
@@ -260,11 +198,11 @@ namespace HBL2
 
 				if (ImGui::MenuItem("Create Lost Empire"))
 				{
-					auto entity = m_Context->CreateEntity();
-					m_Context->GetComponent<HBL2::Component::Tag>(entity).Name = "LostEmpire";
-					m_Context->GetComponent<HBL2::Component::Transform>(entity).Scale = { 5.f, 5.f, 5.f };
-					m_Context->AddComponent<HBL2::Component::EditorVisible>(entity);
-					auto& mesh = m_Context->AddComponent<HBL2::Component::StaticMesh>(entity);
+					auto entity = m_ActiveScene->CreateEntity();
+					m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name = "LostEmpire";
+					m_ActiveScene->GetComponent<HBL2::Component::Transform>(entity).Scale = { 5.f, 5.f, 5.f };
+					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
+					auto& mesh = m_ActiveScene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
 					// TODO: Get active project.
 					mesh.Path = "EmptyProject\\Assets\\Meshes\\lost_empire.obj";
@@ -278,7 +216,7 @@ namespace HBL2
 			entt::entity entityToBeDeleted = entt::null;
 
 			// Iterate over all editor visible entities and draw the to the hierachy panel.
-			m_Context->GetRegistry()
+			m_ActiveScene->GetRegistry()
 				.group<HBL2::Component::EditorVisible>(entt::get<HBL2::Component::Tag>)
 				.each([&](entt::entity entity, HBL2::Component::EditorVisible& editorVisible, HBL2::Component::Tag& tag)
 				{
@@ -314,7 +252,7 @@ namespace HBL2
 			if (entityToBeDeleted != entt::null)
 			{
 				// Destroy entity and clear entityToBeDeleted value.
-				m_Context->DestroyEntity(entityToBeDeleted);
+				m_ActiveScene->DestroyEntity(entityToBeDeleted);
 				entityToBeDeleted = entt::null;
 
 				// Clear currently selected entity.
@@ -337,9 +275,9 @@ namespace HBL2
 			if (HBL2::Component::EditorVisible::SelectedEntity != entt::null)
 			{
 				// Tag component.
-				if (m_Context->HasComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity))
+				if (m_ActiveScene->HasComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
-					auto& tag = m_Context->GetComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity).Name;
+					auto& tag = m_ActiveScene->GetComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity).Name;
 
 					char buffer[256];
 					memset(buffer, 0, sizeof(buffer));
@@ -354,11 +292,11 @@ namespace HBL2
 				}
 
 				// Transform component.
-				if (m_Context->HasComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity))
+				if (m_ActiveScene->HasComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
 					if (ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Transform).hash_code(), treeNodeFlags, "Transform"))
 					{
-						auto& transform = m_Context->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity);
+						auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity);
 
 						ImGui::DragFloat3("Translation", glm::value_ptr(transform.Translation), 0.25f);
 						ImGui::DragFloat3("Rotation", glm::value_ptr(transform.Rotation), 0.25f);
@@ -370,8 +308,39 @@ namespace HBL2
 					ImGui::Separator();
 				}
 
+				// Link component.
+				if (m_ActiveScene->HasComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity))
+				{
+					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Camera).hash_code(), treeNodeFlags, "Link");
+
+					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
+
+					bool removeComponent = false;
+
+					if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+					{
+						removeComponent = true;
+					}
+
+					if (opened)
+					{
+						auto& link = m_ActiveScene->GetComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity);
+
+						ImGui::InputScalar("Parent", ImGuiDataType_U32, &link.parent);
+
+						ImGui::TreePop();
+					}
+
+					ImGui::Separator();
+
+					if (removeComponent)
+					{
+						m_ActiveScene->RemoveComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity);
+					}
+				}
+
 				// Camera component.
-				if (m_Context->HasComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity))
+				if (m_ActiveScene->HasComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
 					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Camera).hash_code(), treeNodeFlags, "Camera");
 
@@ -386,7 +355,7 @@ namespace HBL2
 
 					if (opened)
 					{
-						auto& camera = m_Context->GetComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
+						auto& camera = m_ActiveScene->GetComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
 
 						ImGui::Checkbox("Enabled", &camera.Enabled);
 						ImGui::Checkbox("Primary", &camera.Primary);
@@ -403,65 +372,12 @@ namespace HBL2
 
 					if (removeComponent)
 					{
-						m_Context->RemoveComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
-					}
-				}
-
-				// Sprite component.
-				if (m_Context->HasComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity))
-				{
-					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Sprite).hash_code(), treeNodeFlags, "Sprite");
-
-					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
-
-					bool removeComponent = false;
-
-					if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
-					{
-						removeComponent = true;
-					}
-
-					if (opened)
-					{
-						auto& sprite = m_Context->GetComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity);
-
-						ImGui::Checkbox("Enabled", &sprite.Enabled);
-						ImGui::InputText("Texture", (char*)sprite.Path.c_str(), 256);
-
-						if (ImGui::BeginDragDropTarget())
-						{
-							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item"))
-							{
-								auto path = std::filesystem::relative(HBL2::Project::GetAssetFileSystemPath((const wchar_t*)payload->Data), HBL2::Project::GetProjectDirectory().parent_path());
-
-								if (path.extension().string() == ".png" || path.extension().string() == ".jpg")
-								{
-									sprite.Path = path.string();
-								}
-								else
-								{
-									HBL2_WARN("Could not load {0} - not a valid texture format file", path.filename().string());
-								}
-
-								ImGui::EndDragDropTarget();
-							}
-						}
-
-						ImGui::ColorEdit4("Color", glm::value_ptr(sprite.Color));
-
-						ImGui::TreePop();
-					}
-
-					ImGui::Separator();
-
-					if (removeComponent)
-					{
-						m_Context->RemoveComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity);
+						m_ActiveScene->RemoveComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
 					}
 				}
 
 				// StaticMesh_New component.
-				if (m_Context->HasComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity))
+				if (m_ActiveScene->HasComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
 					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::StaticMesh_New).hash_code(), treeNodeFlags, "Static Mesh New");
 
@@ -476,7 +392,7 @@ namespace HBL2
 
 					if (opened)
 					{
-						auto& mesh = m_Context->GetComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity);
+						auto& mesh = m_ActiveScene->GetComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity);
 						
 						uint32_t meshHandle = mesh.Mesh.Pack();
 						uint32_t materialHandle = mesh.Material.Pack();
@@ -519,86 +435,7 @@ namespace HBL2
 
 					if (removeComponent)
 					{
-						m_Context->RemoveComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity);
-					}
-				}
-
-				// StaticMesh component.
-				if (m_Context->HasComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity))
-				{
-					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::StaticMesh).hash_code(), treeNodeFlags, "Static Mesh");
-
-					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
-
-					bool removeComponent = false;
-
-					if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
-					{
-						removeComponent = true;
-					}
-
-					if (opened)
-					{
-						auto& mesh = m_Context->GetComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
-
-						ImGui::Checkbox("Enabled", &mesh.Enabled);
-						ImGui::InputText("Mesh", (char*)mesh.Path.c_str(), 256);
-
-						if (ImGui::BeginDragDropTarget())
-						{
-							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item"))
-							{
-								auto path = std::filesystem::relative(HBL2::Project::GetAssetFileSystemPath((const wchar_t*)payload->Data), HBL2::Project::GetProjectDirectory().parent_path());
-
-								if (path.extension().string() == ".obj")
-								{
-									// TODO: Update this to use new API.
-									/*HBL2::Renderer3D::Get().CleanMesh(mesh);
-									mesh.Path = path.string();
-									HBL2::Renderer3D::Get().SubmitMesh(m_Context->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity), mesh);*/
-								}
-								else
-								{
-									HBL2_WARN("Could not load {0} - not a valid mesh format file", path.filename().string());
-								}
-
-								ImGui::EndDragDropTarget();
-							}
-						}
-
-						ImGui::InputText("Texture", (char*)mesh.TexturePath.c_str(), 256);
-
-						if (ImGui::BeginDragDropTarget())
-						{
-							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item"))
-							{
-								auto path = std::filesystem::relative(HBL2::Project::GetAssetFileSystemPath((const wchar_t*)payload->Data), HBL2::Project::GetProjectDirectory().parent_path());
-
-								if (path.extension().string() == ".png" || path.filename().extension().string() == ".jpg")
-								{
-									mesh.TexturePath = path.string();
-
-									// TODO: Update this to use new API.
-									/*HBL2::Renderer3D::Get().CleanMesh(mesh);
-									HBL2::Renderer3D::Get().SubmitMesh(m_Context->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity), mesh);*/
-								}
-								else
-								{
-									HBL2_WARN("Could not load {0} - not a valid texture format file", path.filename().string());
-								}
-
-								ImGui::EndDragDropTarget();
-							}
-						}
-
-						ImGui::TreePop();
-					}
-
-					ImGui::Separator();
-
-					if (removeComponent)
-					{
-						m_Context->RemoveComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
+						m_ActiveScene->RemoveComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity);
 					}
 				}
 
@@ -610,21 +447,21 @@ namespace HBL2
 
 				if (ImGui::BeginPopup("AddComponent"))
 				{
-					if (ImGui::MenuItem("Sprite"))
+					if (ImGui::MenuItem("StaticMesh_New"))
 					{
-						m_Context->AddComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity);
-						ImGui::CloseCurrentPopup();
-					}
-
-					if (ImGui::MenuItem("StaticMesh"))
-					{
-						m_Context->AddComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
+						m_ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity);
 						ImGui::CloseCurrentPopup();
 					}
 
 					if (ImGui::MenuItem("Camera"))
 					{
-						m_Context->AddComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
+						m_ActiveScene->AddComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
+						ImGui::CloseCurrentPopup();
+					}
+
+					if (ImGui::MenuItem("Link"))
+					{
+						m_ActiveScene->AddComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity);
 						ImGui::CloseCurrentPopup();
 					}
 
@@ -647,11 +484,10 @@ namespace HBL2
 
 						const auto& startScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
 
-						HBL2::Project::SaveScene(new HBL2::Scene("Empty Scene"), startScenePath);
+						HBL2::Project::SaveScene(new HBL2::Scene({ .name = "Empty Scene" }), startScenePath);
 
 						HBL2::Project::OpenScene(startScenePath);
 
-						m_Context = HBL2::Context::ActiveScene;
 						m_EditorScenePath = filepath;
 						m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
 					}
@@ -665,7 +501,6 @@ namespace HBL2
 
 							HBL2::Project::OpenScene(startingScenePath);
 
-							m_Context = HBL2::Context::ActiveScene;
 							m_EditorScenePath = filepath;
 							m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
 						}
@@ -680,20 +515,20 @@ namespace HBL2
 						{
 							std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene (*.humble)\0*.humble\0");
 
-							HBL2::Project::SaveScene(m_Context, filepath);
+							HBL2::Project::SaveScene(m_ActiveScene, filepath);
 
 							m_EditorScenePath = filepath;
 						}
 						else
 						{
-							HBL2::Project::SaveScene(m_Context, m_EditorScenePath);
+							HBL2::Project::SaveScene(m_ActiveScene, m_EditorScenePath);
 						}
 					}
 					if (ImGui::MenuItem("Save Scene As"))
 					{
 						std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene (*.humble)\0*.humble\0");
 
-						HBL2::Project::SaveScene(m_Context, filepath);
+						HBL2::Project::SaveScene(m_ActiveScene, filepath);
 
 						m_EditorScenePath = filepath;
 					}
@@ -704,7 +539,6 @@ namespace HBL2
 
 						HBL2::Project::OpenScene(filepath);
 
-						m_Context = HBL2::Context::ActiveScene;
 						m_EditorScenePath = filepath;
 					}
 					if (ImGui::MenuItem("Build (Windows)"))
@@ -758,7 +592,7 @@ namespace HBL2
 
 				if (ImGui::BeginMenu("View"))
 				{
-					HBL2::Context::Core->GetRegistry()
+					m_Context->GetRegistry()
 						.view<Component::EditorPanel>()
 						.each([&](Component::EditorPanel& panel)
 						{
@@ -811,9 +645,11 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
+					auto relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".hblshader"), HBL2::Project::GetAssetDirectory());
+
 					auto shaderAssetHandle = AssetManager::Instance->CreateAsset({
 						.debugName = "shader-asset",
-						.filePath = m_CurrentDirectory / (std::string(shaderNameBuffer) + ".hblshader"),
+						.filePath = relativePath,
 						.type = AssetType::Shader,
 					});
 
@@ -910,9 +746,11 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
+					auto relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(materialNameBuffer) + ".hblmat"), HBL2::Project::GetAssetDirectory());
+
 					auto materialAssetHandle = AssetManager::Instance->CreateAsset({
 						.debugName = "material-asset",
-						.filePath = m_CurrentDirectory / (std::string(materialNameBuffer) + ".hblmat"),
+						.filePath = relativePath,
 						.type = AssetType::Material,
 					});
 
@@ -995,64 +833,9 @@ namespace HBL2
 
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 
-				/*ImTextureID textureID;
-
-				if (entry.is_directory())
-				{
-					textureID = (ImTextureID)m_FolderIcon;
-				}
-				else
-				{
-					if (extension == ".obj")
-					{
-						textureID = (ImTextureID)m_ObjIcon;
-					}
-					else if (extension == ".fbx")
-					{
-						textureID = (ImTextureID)m_FbxIcon;
-					}
-					else if (extension == ".mat")
-					{
-						textureID = (ImTextureID)m_MatIcon;
-					}
-					else if (extension == ".mtl")
-					{
-						textureID = (ImTextureID)m_MtlIcon;
-					}
-					else if (extension == ".shader")
-					{
-						textureID = (ImTextureID)m_ShaderIcon;
-					}
-					else if (extension == ".png")
-					{
-						textureID = (ImTextureID)m_PngIcon;
-					}
-					else if (extension == ".jpg")
-					{
-						textureID = (ImTextureID)m_JpgIcon;
-					}
-					else if (extension == ".mp3")
-					{
-						textureID = (ImTextureID)m_Mp3Icon;
-					}
-					else if (extension == ".txt")
-					{
-						textureID = (ImTextureID)m_TxtIcon;
-					}
-					else if (extension == ".humble")
-					{
-						textureID = (ImTextureID)m_SceneIcon;
-					}
-					else
-					{
-						textureID = (ImTextureID)m_FileIcon;
-					}
-				}*/
-
-				// ImGui::ImageButton(textureID, { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
 				ImGui::Button(entry.path().filename().string().c_str(), { thumbnailSize, thumbnailSize });
 
-				UUID assetUUID = std::hash<std::string>()(entry.path().string());
+				UUID assetUUID = std::hash<std::string>()(relativePath.string());
 				Handle<Asset> assetHandle;
 				Asset* asset = nullptr;
 
@@ -1135,7 +918,7 @@ namespace HBL2
 				// TODO: Change this to switch for play and edit mode.
 				if (false)
 				{
-					m_Context->GetRegistry()
+					m_ActiveScene->GetRegistry()
 						.view<HBL2::Component::Camera>()
 						.each([&](HBL2::Component::Camera& camera)
 						{
@@ -1147,7 +930,7 @@ namespace HBL2
 				}
 				else if (true)
 				{
-					HBL2::Context::Core->GetRegistry()
+					m_Context->GetRegistry()
 						.group<Component::EditorCamera>(entt::get<HBL2::Component::Camera>)
 						.each([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera)
 						{
@@ -1166,7 +949,18 @@ namespace HBL2
 			{
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Scene"))
 				{
-					auto path = HBL2::Project::GetAssetFileSystemPath((const wchar_t*)payload->Data);
+					uint32_t sceneAssetHandlePacked = *((uint32_t*)payload->Data);
+					Handle<Asset> sceneAssetHandle = Handle<Asset>::UnPack(sceneAssetHandlePacked);
+					Asset* sceneAsset = AssetManager::Instance->GetAssetMetadata(sceneAssetHandle);
+
+					if (sceneAsset == nullptr)
+					{
+						HBL2_WARN("Could not load scene - invalid asset handle.");
+						ImGui::EndDragDropTarget();
+						return;
+					}
+
+					auto path = HBL2::Project::GetAssetFileSystemPath(sceneAsset->FilePath);
 
 					if (path.extension().string() != ".humble")
 					{
@@ -1177,7 +971,7 @@ namespace HBL2
 
 					HBL2::Project::OpenScene(path);
 
-					m_Context = HBL2::Context::ActiveScene;
+					m_ActiveScene = HBL2::Context::ActiveScene;
 					m_EditorScenePath = path;
 
 					ImGui::EndDragDropTarget();
