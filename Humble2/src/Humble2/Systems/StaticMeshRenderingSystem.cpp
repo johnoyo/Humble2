@@ -187,7 +187,7 @@ namespace HBL2
 
 					auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawData>();
 					alloc.Data->Model = transform.WorldMatrix;
-					alloc.Data->Color = glm::vec4(1.0, 1.0, 0.75, 1.0);
+					alloc.Data->Color = material->AlbedoColor;
 
 					draws.Insert({
 						.Shader = material->Shader,

@@ -16,7 +16,6 @@
 
 #include <glm\gtx\quaternion.hpp>
 
-
 namespace HBL2
 {
 	class StaticMeshRenderingSystem final : public ISystem

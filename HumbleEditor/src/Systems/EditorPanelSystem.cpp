@@ -376,6 +376,54 @@ namespace HBL2
 					}
 				}
 
+				// Sprite_New component.
+				if (m_ActiveScene->HasComponent<HBL2::Component::Sprite_New>(HBL2::Component::EditorVisible::SelectedEntity))
+				{
+					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Sprite_New).hash_code(), treeNodeFlags, "Sprite New");
+
+					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
+
+					bool removeComponent = false;
+
+					if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+					{
+						removeComponent = true;
+					}
+
+					if (opened)
+					{
+						auto& sprite = m_ActiveScene->GetComponent<HBL2::Component::Sprite_New>(HBL2::Component::EditorVisible::SelectedEntity);
+
+						uint32_t materialHandle = sprite.Material.Pack();
+
+						ImGui::Checkbox("Enabled", &sprite.Enabled);
+
+						ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
+
+						if (ImGui::BeginDragDropTarget())
+						{
+							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
+							{
+								uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+								Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+								sprite.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
+
+								ImGui::EndDragDropTarget();
+							}
+						}
+
+						ImGui::TreePop();
+					}
+
+					ImGui::Separator();
+
+					if (removeComponent)
+					{
+						m_ActiveScene->RemoveComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity);
+					}
+				}
+
 				// StaticMesh_New component.
 				if (m_ActiveScene->HasComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
@@ -447,6 +495,12 @@ namespace HBL2
 
 				if (ImGui::BeginPopup("AddComponent"))
 				{
+					if (ImGui::MenuItem("Sprite_New"))
+					{
+						m_ActiveScene->AddComponent<HBL2::Component::Sprite_New>(HBL2::Component::EditorVisible::SelectedEntity);
+						ImGui::CloseCurrentPopup();
+					}
+
 					if (ImGui::MenuItem("StaticMesh_New"))
 					{
 						m_ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity);

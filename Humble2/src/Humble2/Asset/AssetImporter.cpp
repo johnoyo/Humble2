@@ -165,6 +165,11 @@ namespace HBL2
 				.bindGroup = drawBindings,
 			});
 
+			Material* mat = ResourceManager::Instance->GetMaterial(material);
+			mat->AlbedoColor = albedoColor;
+			mat->Metalicness = metalicness;
+			mat->Roughness = roughness;
+
 			return material;
 		}
 

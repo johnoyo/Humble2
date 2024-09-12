@@ -56,5 +56,9 @@ namespace HBL2
 		const char* DebugName = "";
 		Handle<Shader> Shader;
 		Handle<BindGroup> BindGroup;
+
+		glm::vec4 AlbedoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		float Metalicness = 1.0f;
+		float Roughness = 1.0f;
 	};
 }
