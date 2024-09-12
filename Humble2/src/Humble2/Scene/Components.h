@@ -24,6 +24,11 @@ namespace HBL2
 			std::string Name = "Unnamed Entity";
 		};
 
+		struct ID
+		{
+			UUID Identifier = 0;
+		};
+
 		struct Transform
 		{
 			glm::vec3 Translation = { 0.f, 0.f, 0.f };
@@ -38,7 +43,7 @@ namespace HBL2
 
 		struct Link
 		{
-			entt::entity parent = entt::null;
+			UUID parent = 0;
 		};
 
 		struct Sprite

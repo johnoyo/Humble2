@@ -213,9 +213,9 @@ namespace HBL2
 	{
 		if (Context::Mode == Mode::Runtime)
 		{
-			if (Context::ActiveScene->MainCamera != entt::null)
+			if (m_Context->MainCamera != entt::null)
 			{
-				return Context::ActiveScene->GetComponent<Component::Camera>(Context::ActiveScene->MainCamera).ViewProjectionMatrix;
+				return m_Context->GetComponent<Component::Camera>(m_Context->MainCamera).ViewProjectionMatrix;
 			}
 			else
 			{

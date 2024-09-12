@@ -3,6 +3,8 @@
 #include "ISystem.h"
 #include "Components.h"
 
+#include "Utilities\Random.h"
+
 #include <entt.hpp>
 
 namespace HBL2
@@ -26,26 +28,40 @@ namespace HBL2
 
 		entt::entity CreateEntity()
 		{
-			entt::entity entity = m_Registry.create();
-
-			m_Registry.emplace<Component::Tag>(entity);
-			m_Registry.emplace<Component::Transform>(entity);
-
-			return entity;
+			return CreateEntityWithUUID(Random::UInt64());
 		}
 
 		entt::entity CreateEntity(const std::string& tag)
 		{
+			return CreateEntityWithUUID(Random::UInt64(), tag);
+		}
+
+		entt::entity CreateEntityWithUUID(UUID uuid, const std::string& tag = "New Entity")
+		{
 			entt::entity entity = m_Registry.create();
 
 			m_Registry.emplace<Component::Tag>(entity).Name = tag;
+			m_Registry.emplace<Component::ID>(entity).Identifier = uuid;
 			m_Registry.emplace<Component::Transform>(entity);
+
+			m_EntityMap[uuid] = entity;
 
 			return entity;
 		}
 
+		entt::entity GetEntityByUUID(UUID uuid)
+		{
+			if (m_EntityMap.find(uuid) != m_EntityMap.end())
+			{
+				return m_EntityMap.at(uuid);
+			}
+
+			return entt::null;
+		}
+
 		void DestroyEntity(entt::entity entity)
 		{
+			m_EntityMap.erase(m_Registry.get<Component::ID>(entity).Identifier);
 			m_Registry.destroy(entity);
 		}
 
@@ -100,5 +116,6 @@ namespace HBL2
 		std::string m_Name;
 		entt::registry m_Registry;
 		std::vector<ISystem*> m_Systems;
+		std::unordered_map<UUID, entt::entity> m_EntityMap;
 	};
 }

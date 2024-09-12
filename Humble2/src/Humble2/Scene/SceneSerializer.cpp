@@ -23,6 +23,14 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::ID>(entity))
+		{
+			out << YAML::Key << "Component::ID";
+			out << YAML::BeginMap;
+			out << YAML::Key << "ID" << YAML::Value << m_Scene->GetComponent<Component::ID>(entity).Identifier;
+			out << YAML::EndMap;
+		}
+
 		if (m_Scene->HasComponent<Component::Transform>(entity))
 		{
 			out << YAML::Key << "Component::Transform";
@@ -181,7 +189,7 @@ namespace HBL2
 		{
 			for (auto entity : entities)
 			{
-				uint32_t uuid = entity["Entity"].as<uint32_t>();
+				uint32_t entityID = entity["Entity"].as<uint32_t>();
 
 				std::string name;
 				auto tagComponent = entity["Component::Tag"];
@@ -190,9 +198,17 @@ namespace HBL2
 					name = tagComponent["Tag"].as<std::string>();
 				}
 
-				HBL2_CORE_TRACE("Deserializing entity with ID = {0}, name = {1}", uuid, name);
+				UUID uuid;
+				auto idComponent = entity["Component::ID"];
+				if (idComponent)
+				{
+					uuid = idComponent["ID"].as<UUID>();
+				}
 
-				entt::entity deserializedEntity = m_Scene->CreateEntity(name);
+				HBL2_CORE_TRACE("Deserializing entity-{0} with UUID = {1}, Name = {2}", entityID, uuid, name);
+
+				entt::entity deserializedEntity = m_Scene->CreateEntityWithUUID(uuid, name);
+
 				auto& editorVisible = m_Scene->AddComponent<Component::EditorVisible>(deserializedEntity);
 
 				auto transformComponent = entity["Component::Transform"];
@@ -208,7 +224,7 @@ namespace HBL2
 				if (linkComponent)
 				{
 					auto& link = m_Scene->GetComponent<Component::Link>(deserializedEntity);
-					link.parent = (entt::entity)linkComponent["Parent"].as<glm::uint32_t>();
+					link.parent = linkComponent["Parent"].as<UUID>();
 				}
 
 				auto cameraComponent = entity["Component::Camera"];

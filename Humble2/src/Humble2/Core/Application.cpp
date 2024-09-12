@@ -11,6 +11,7 @@ namespace HBL2
 		s_Instance = this;
 
 		Log::Initialize();
+		Random::Initialize();
 
 		switch (m_Specification.GraphicsAPI)
 		{
