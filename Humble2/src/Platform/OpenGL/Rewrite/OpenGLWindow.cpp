@@ -41,14 +41,14 @@ namespace HBL2
 			exit(-1);
 		}
 
+		glfwMakeContextCurrent(m_Window);
+
 		if (m_Spec.VerticalSync)
 		{
-			glfwMakeContextCurrent(m_Window);
 			glfwSwapInterval(1);
 		}
 		else
 		{
-			glfwMakeContextCurrent(m_Window);
 			glfwSwapInterval(0);
 		}
 

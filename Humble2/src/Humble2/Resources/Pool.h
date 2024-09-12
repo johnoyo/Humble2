@@ -26,7 +26,7 @@ namespace HBL2
 
 		Handle<H> Insert(const T& data)
 		{
-			if (m_CurrentSize >= m_Size)
+			if (m_FreeList.empty())
 			{
 				ReAllocate();
 			}
@@ -38,14 +38,11 @@ namespace HBL2
 			m_Data[index] = data;
 			m_GenerationalCounter[index] = 1;
 
-			m_CurrentSize++;
-
 			return { index, m_GenerationalCounter[index] };
 		}
 
 		void Remove(Handle<H> handle)
 		{
-			m_CurrentSize--;
 			handle.m_GenerationalCounter++;
 			m_FreeList.push(handle.m_ArrayIndex);
 		}
@@ -106,7 +103,6 @@ namespace HBL2
 		std::stack<uint16_t> m_FreeList;
 		T* m_Data;
 		uint16_t* m_GenerationalCounter;
-		uint32_t m_CurrentSize = 0;
 		uint32_t m_Size = 32;
 	};
 }

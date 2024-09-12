@@ -30,8 +30,7 @@ namespace HBL2
 			EditorScene->RegisterSystem(new EditorCameraSystem);
 
 			// Editor camera set up.
-			auto editorCameraEntity = EditorScene->CreateEntity();
-			EditorScene->GetComponent<HBL2::Component::Tag>(editorCameraEntity).Name = "Hidden";
+			auto editorCameraEntity = EditorScene->CreateEntity("Hidden");
 			EditorScene->AddComponent<HBL2::Component::Camera>(editorCameraEntity).Enabled = true;
 			EditorScene->AddComponent<Component::EditorCamera>(editorCameraEntity);
 			EditorScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 5.f;
