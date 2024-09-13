@@ -5,6 +5,8 @@ project "Humble2"
     cppdialect "C++20"
     staticruntime "Off"
 
+    flags { "MultiProcessorCompile" }
+
     -- Directories for binary and intermediate files.
     targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
     objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")

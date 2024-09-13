@@ -2,7 +2,9 @@ project "HumbleApp"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++20"
-    staticruntime "off"
+    staticruntime "Off"
+
+    flags { "MultiProcessorCompile" }
 
     targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
     objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
