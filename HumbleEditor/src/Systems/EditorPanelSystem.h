@@ -24,6 +24,7 @@ namespace HBL2
 			void DrawStatsPanel(float ts);
 			void DrawViewportPanel();
 			void DrawContentBrowserPanel();
+			void DrawPlayStopPanel();
 
 			glm::vec2 m_ViewportSize = { 0.f, 0.f };
 			std::filesystem::path m_EditorScenePath;

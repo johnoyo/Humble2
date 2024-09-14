@@ -82,6 +82,16 @@ namespace HBL2
 				panel.Type = Component::EditorPanel::Panel::Viewport;
 				panel.Styles.push_back({ ImGuiStyleVar_WindowPadding, ImVec2{ 0.f, 0.f }, 0.f, false });
 			}
+
+			{
+				// Play / Stop panel.
+				auto playStopPanel = m_Context->CreateEntity();
+				m_Context->GetComponent<HBL2::Component::Tag>(playStopPanel).Name = "Hidden";
+				auto& panel = m_Context->AddComponent<Component::EditorPanel>(playStopPanel);
+				panel.Name = "Play / Stop";
+				panel.Type = Component::EditorPanel::Panel::PlayStop;
+				panel.Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
+			}
 		}
 
 		void EditorPanelSystem::OnUpdate(float ts)
@@ -108,7 +118,9 @@ namespace HBL2
 
 						// Push window to the stack.
 						if (panel.UseBeginEnd)
+						{
 							ImGui::Begin(panel.Name.c_str(), &panel.Closeable, panel.Flags);
+						}
 
 						// Draw the appropriate window.
 						switch (panel.Type)
@@ -134,11 +146,15 @@ namespace HBL2
 						case Component::EditorPanel::Panel::Console:
 							DrawConsolePanel(ts);
 							break;
+						case Component::EditorPanel::Panel::PlayStop:
+							DrawPlayStopPanel();
 						}
 
 						// Pop window from the stack.
 						if (panel.UseBeginEnd)
+						{
 							ImGui::End();
+						}
 
 						// Pop style vars.
 						for (auto& style : panel.Styles)
@@ -969,32 +985,26 @@ namespace HBL2
 				HBL2::Renderer::Instance->ResizeFrameBuffer((uint32_t)viewportPanelSize.x, (uint32_t)viewportPanelSize.y);
 				m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 
-				// TODO: Change this to switch for play and edit mode.
-				if (false)
-				{
-					m_ActiveScene->GetRegistry()
-						.view<HBL2::Component::Camera>()
-						.each([&](HBL2::Component::Camera& camera)
+				m_ActiveScene->GetRegistry()
+					.view<HBL2::Component::Camera>()
+					.each([&](HBL2::Component::Camera& camera)
+					{
+						if (camera.Enabled)
 						{
-							if (camera.Enabled && camera.Primary)
-							{
-								camera.AspectRatio = m_ViewportSize.x / m_ViewportSize.y;
-							}
-						});
-				}
-				else if (true)
-				{
-					m_Context->GetRegistry()
-						.group<Component::EditorCamera>(entt::get<HBL2::Component::Camera>)
-						.each([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera)
+							camera.AspectRatio = m_ViewportSize.x / m_ViewportSize.y;
+						}
+					});
+
+				m_Context->GetRegistry()
+					.group<Component::EditorCamera>(entt::get<HBL2::Component::Camera>)
+					.each([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera)
+					{
+						if (editorCamera.Enabled)
 						{
-							if (editorCamera.Enabled)
-							{
-								editorCamera.ViewportSize = m_ViewportSize;
-								camera.AspectRatio = m_ViewportSize.x / m_ViewportSize.y;
-							}
-						});
-				}
+							editorCamera.ViewportSize = m_ViewportSize;
+							camera.AspectRatio = m_ViewportSize.x / m_ViewportSize.y;
+						}
+					});
 			}
 
 			ImGui::Image(HBL2::Renderer::Instance->GetColorAttachment(), ImVec2{m_ViewportSize.x, m_ViewportSize.y}, ImVec2{0, 1}, ImVec2{1, 0});
@@ -1030,6 +1040,21 @@ namespace HBL2
 
 					ImGui::EndDragDropTarget();
 				}
+			}
+		}
+		
+		void EditorPanelSystem::DrawPlayStopPanel()
+		{
+			if (ImGui::Button("Play"))
+			{
+				Context::Mode = Mode::Runtime;
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Stop"))
+			{
+				Context::Mode = Mode::Editor;
 			}
 		}
 	}
