@@ -1,10 +1,7 @@
 #pragma once
 
 #include "Humble2.h"
-
 #include "Asset\AssetManager.h"
-
-#include "Utilities\AssetManager.h"
 #include "EditorComponents.h"
 
 namespace HBL2

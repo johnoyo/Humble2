@@ -15,7 +15,6 @@
 #include "Systems\TransformSystem.h"
 #include "Systems\LinkSystem.h"
 
-#include "Utilities\AssetManager.h"
 #include "Resources\ResourceManager.h"
 #include "Platform\OpenGL\Rewrite\OpenGLResourceManager.h"
 #include "Renderer\Rewrite\Renderer.h"

@@ -47,7 +47,7 @@ namespace HBL2
 
 		const char* DebugName = "";
 		uint32_t RendererId = 0;
-		glm::vec3 Dimensions = glm::vec3(0.0);
+		glm::vec3 Dimensions = glm::vec3(0.0f);
 		uint32_t Format = 0;
 		const unsigned char* Data = nullptr;
 	};

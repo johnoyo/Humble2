@@ -92,12 +92,12 @@ namespace HBL2
 			for (auto handle : assetHandles)
 			{
 				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-				if (asset->Indentifier != 0 && asset->Indentifier == staticMesh.Material.Pack() && !materialFound)
+				if (asset->Type == AssetType::Material && asset->Indentifier != 0 && asset->Indentifier == staticMesh.Material.Pack() && !materialFound)
 				{
 					materialFound = true;
 					materialAsset = asset;
 				}
-				if (asset->Indentifier != 0 && asset->Indentifier == staticMesh.Mesh.Pack() && !meshFound)
+				if (asset->Type == AssetType::Mesh && asset->Indentifier != 0 && asset->Indentifier == staticMesh.Mesh.Pack() && !meshFound)
 				{
 					meshFound = true;
 					meshAsset = asset;

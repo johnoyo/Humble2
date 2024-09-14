@@ -1,6 +1,19 @@
 Scene: Scenes/EmptyScene.humble
 Entities:
-  - Entity: 1
+  - Entity: 1048577
+    Component::Tag:
+      Tag: Sprite
+    Component::ID:
+      ID: 16170793832576229376
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 1837901151889460311
+      Mesh: 0
+  - Entity: 0
     Component::Tag:
       Tag: Camera
     Component::ID:
@@ -17,16 +30,3 @@ Entities:
       FOV: 30
       Aspect Ratio: 1.778
       Zoom Level: 300
-  - Entity: 0
-    Component::Tag:
-      Tag: Sprite
-    Component::ID:
-      ID: 7641505767261807616
-    Component::Transform:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::StaticMesh_New:
-      Enabled: true
-      Material: 11080470078166277045
-      Mesh: 1158338017792828780
