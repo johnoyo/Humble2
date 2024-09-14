@@ -21,7 +21,7 @@ namespace HBL2
 	struct OpenGLShader
 	{
 		OpenGLShader() = default;
-		OpenGLShader(const ShaderDescriptor& desc)
+		OpenGLShader(const ShaderDescriptor&& desc)
 		{
 			DebugName = desc.debugName;
 

@@ -10,9 +10,33 @@
 
 #include <fstream>
 #include <filesystem>
+#include <unordered_map>
 
 namespace HBL2
 {
+	enum class BuiltInShader
+	{
+		INVALID = 0,
+		UNLIT,
+		BLINN_PHONG,
+		PBR,
+		TEXTURED_SPRITE,
+	};
+
+	struct ReflectionData
+	{
+		std::string VertexEntryPoint;
+		std::string FragmentEntryPoint;
+		uint32_t VertexBindingCount;
+		uint32_t ByteStride;
+		struct Attribute
+		{
+			uint32_t ByteOffset = 0;
+			VertexFormat Format = VertexFormat::FLOAT32;
+		};
+		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding::Attribute> Attributes;
+	};
+
 	class ShaderUtilities
 	{
 	public:
@@ -110,13 +134,19 @@ namespace HBL2
 
 		std::string ReadFile(const std::string& filepath);
 
-		std::vector<uint32_t> Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage);
-
 		std::vector<std::vector<uint32_t>> Compile(const std::string& shaderFilePath);
 
-		void Reflect(ShaderStage stage, const std::vector<uint32_t>& shaderData);
+		const ReflectionData& GetReflectionData(const std::string& shaderFilePath) { return m_ShaderReflectionData[shaderFilePath]; }
+
+		void AddShader(BuiltInShader shader, const ShaderDescriptor&& desc);
 
 	private:
 		ShaderUtilities() = default;
+		std::vector<uint32_t> Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage);
+		ReflectionData Reflect(const std::vector<uint32_t>& vertexShaderData, const std::vector<uint32_t>& fragmentShaderData);
+
+	private:
+		std::unordered_map<std::string, ReflectionData> m_ShaderReflectionData;
+		std::unordered_map<BuiltInShader, Handle<Shader>> m_Shaders;
 	};
 }

@@ -21,7 +21,7 @@ namespace HBL2
 	struct OpenGLTexture
 	{
 		OpenGLTexture() = default;
-		OpenGLTexture(const TextureDescriptor& desc)
+		OpenGLTexture(const TextureDescriptor&& desc)
 		{
 			DebugName = desc.debugName;
 			Dimensions = desc.dimensions;

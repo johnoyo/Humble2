@@ -25,7 +25,7 @@ namespace HBL2
 		// Textures
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) override
 		{
-			return m_TexturePool.Insert(OpenGLTexture(desc));
+			return m_TexturePool.Insert(OpenGLTexture(std::forward<const TextureDescriptor>(desc)));
 		}
 		virtual void DeleteTexture(Handle<Texture> handle) override
 		{
@@ -39,7 +39,7 @@ namespace HBL2
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) override
 		{
-			return m_BufferPool.Insert(OpenGLBuffer(desc));
+			return m_BufferPool.Insert(OpenGLBuffer(std::forward<const BufferDescriptor>(desc)));
 		}
 		virtual void DeleteBuffer(Handle<Buffer> handle) override
 		{
@@ -62,7 +62,7 @@ namespace HBL2
 		// Framebuffers
 		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) override
 		{
-			return m_FrameBufferPool.Insert(OpenGLFrameBuffer(desc));
+			return m_FrameBufferPool.Insert(OpenGLFrameBuffer(std::forward<const FrameBufferDescriptor>(desc)));
 		}
 		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) override
 		{
@@ -76,7 +76,7 @@ namespace HBL2
 		// Shaders
 		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) override
 		{
-			return m_ShaderPool.Insert(OpenGLShader(desc));
+			return m_ShaderPool.Insert(OpenGLShader(std::forward<const ShaderDescriptor>(desc)));
 		}
 		virtual void DeleteShader(Handle<Shader> handle) override
 		{
@@ -90,7 +90,7 @@ namespace HBL2
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) override
 		{
-			return m_BindGroupPool.Insert(OpenGLBindGroup(desc));
+			return m_BindGroupPool.Insert(OpenGLBindGroup(std::forward<const BindGroupDescriptor>(desc)));
 		}
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) override
 		{
@@ -104,7 +104,7 @@ namespace HBL2
 		// BindGroupsLayouts
 		virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) override
 		{
-			return m_BindGroupLayoutPool.Insert(OpenGLBindGroupLayout(desc));
+			return m_BindGroupLayoutPool.Insert(OpenGLBindGroupLayout(std::forward<const BindGroupLayoutDescriptor>(desc)));
 		}
 		virtual void DeleteBindGroupLayout(Handle<BindGroupLayout> handle) override
 		{
@@ -118,7 +118,7 @@ namespace HBL2
 		// RenderPass
 		virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) override
 		{
-			return m_RenderPassPool.Insert(OpenGLRenderPass(desc));
+			return m_RenderPassPool.Insert(OpenGLRenderPass(std::forward<const RenderPassDescriptor>(desc)));
 		}
 		virtual void DeleteRenderPass(Handle<RenderPass> handle) override
 		{
@@ -132,7 +132,7 @@ namespace HBL2
 		// RenderPassLayouts
 		virtual Handle<RenderPassLayout> CreateRenderPassLayout(const RenderPassLayoutDescriptor&& desc) override
 		{
-			return m_RenderPassLayoutPool.Insert(OpenGLRenderPassLayout(desc));
+			return m_RenderPassLayoutPool.Insert(OpenGLRenderPassLayout(std::forward<const RenderPassLayoutDescriptor>(desc)));
 		}
 		virtual void DeleteRenderPassLayout(Handle<RenderPassLayout> handle) override
 		{

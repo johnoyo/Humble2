@@ -96,22 +96,30 @@ namespace HBL2
 
 	Handle<Shader> AssetImporter::ImportShader(Asset* asset)
     {
-		auto shaderCode = ShaderUtilities::Get().Compile(Project::GetAssetFileSystemPath(asset->FilePath).string());
+		// Compile Shader.
+		std::filesystem::path shaderPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		auto shaderCode = ShaderUtilities::Get().Compile(shaderPath.string());
 
+		// Reflect Shader.
+		const auto& reflectionData = ShaderUtilities::Get().GetReflectionData(shaderPath.string());
+
+		// Create Resource.
 		auto shader = ResourceManager::Instance->CreateShader({
 			.debugName = "test-shader",
-			.VS { .code = shaderCode[0], .entryPoint = "main" },
-			.FS { .code = shaderCode[1], .entryPoint = "main" },
+			.VS { .code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
+			.FS {.code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
+			.bindGroups {
+				{}, // Global bind group (0)
+				{}, // Material bind group (1)
+			},
 			.renderPipeline {
 				.vertexBufferBindings = {
 					{
-						.byteStride = 12,
-						.attributes = {
-							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-						},
+						.byteStride = reflectionData.ByteStride,
+						.attributes = reflectionData.Attributes,
 					}
 				}
-			}
+			},
 		});
 
 		return shader;
@@ -188,6 +196,23 @@ namespace HBL2
 
 	Handle<Mesh> AssetImporter::ImportMesh(Asset* asset)
 	{
+		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmesh");
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Mesh"].IsDefined())
+		{
+			HBL2_CORE_TRACE("Mesh not found: {0}", ss.str());
+			return Handle<Mesh>();
+		}
+
+		auto meshProperties = data["Mesh"];
+		if (meshProperties)
+		{
+
+		}
+
 		return Handle<Mesh>();
 	}
 

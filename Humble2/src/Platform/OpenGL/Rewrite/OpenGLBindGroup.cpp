@@ -4,7 +4,7 @@
 
 namespace HBL2
 {
-	OpenGLBindGroup::OpenGLBindGroup(const BindGroupDescriptor& desc)
+	OpenGLBindGroup::OpenGLBindGroup(const BindGroupDescriptor&& desc)
 	{
 		DebugName = desc.debugName;
 		Buffers = desc.buffers;

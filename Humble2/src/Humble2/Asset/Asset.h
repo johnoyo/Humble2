@@ -12,11 +12,12 @@ namespace HBL2
 {
 	enum class AssetType
 	{
-		Texture = 0,
-		Shader = 1,
-		Material = 2,
-		Mesh = 3,
-		Scene = 4,
+		None = 0,
+		Texture = 1,
+		Shader = 2,
+		Material = 3,
+		Mesh = 4,
+		Scene = 5,
 	};
 
 	struct AssetDescriptor
@@ -41,7 +42,7 @@ namespace HBL2
 		const char* DebugName = "";
 		UUID UUID = 0;
 		uint32_t Indentifier = 0;
-		AssetType Type;
+		AssetType Type = AssetType::None;
 		std::filesystem::path FilePath;
 		uint32_t FileFormatVersion = 1;
 		bool Loaded = false;

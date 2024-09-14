@@ -30,7 +30,9 @@ namespace HBL2
 
 		struct Sampler
 		{
-			uint32_t compare = 347567;
+			uint32_t filter = 347567;
+			Compare compare = Compare::LESS_OR_EQUAL;
+			Wrap wrap = Wrap::CLAMP;
 		};
 
 		const unsigned char* initialData = nullptr;
@@ -51,8 +53,9 @@ namespace HBL2
 		const char* debugName;
 		uint32_t width = 0;
 		uint32_t height = 0;
-		Handle<Texture> depthTarget;
 		Handle<RenderPassLayout> renderPassLayout;
+		Handle<Texture> depthTarget;
+		std::initializer_list<Handle<Texture>> colorTargets;
 	};
 
 	struct BindGroupLayoutDescriptor
@@ -97,7 +100,7 @@ namespace HBL2
 		};
 		ShaderStage VS;
 		ShaderStage FS;
-		std::initializer_list<BindGroupDescriptor> bindGroups;
+		std::initializer_list<Handle<BindGroupLayout>> bindGroups;
 		struct RenderPipeline
 		{
 			struct VertexBufferBinding
@@ -109,20 +112,20 @@ namespace HBL2
 				};
 
 				uint32_t byteStride = 12;
-				std::initializer_list<Attribute> attributes;
+				std::vector<Attribute> attributes; // TODO: Change to initializer list.
 			};
 
 			struct BlendState
 			{
-				uint32_t colorOp = 347567;
-				uint32_t srcColorFactor = 347567;
-				uint32_t dstColorFactor = 347567;
-				uint32_t aplhaOp = 347567;
-				uint32_t srcAlhpaFactor = 347567;
-				uint32_t dstAlhpaFactor = 347567;
+				BlendOperation colorOp = BlendOperation::ADD;
+				BlendFactor srcColorFactor = BlendFactor::SRC_ALPHA;
+				BlendFactor dstColorFactor = BlendFactor::ONE_MINUS_SRC_ALPHA;
+				BlendOperation aplhaOp = BlendOperation::ADD;
+				BlendFactor srcAlhpaFactor = BlendFactor::SRC_ALPHA;
+				BlendFactor dstAlhpaFactor = BlendFactor::ONE_MINUS_SRC_ALPHA;
 			};
 
-			uint32_t depthTest = 347567;
+			Compare depthTest = Compare::LESS;
 			BlendState blend;
 			std::initializer_list<VertexBufferBinding> vertexBufferBindings;
 		};
@@ -138,6 +141,7 @@ namespace HBL2
 		struct SubPass
 		{
 			bool depthTarget = false;
+			uint32_t colorTargets = 0;
 		};
 
 		std::initializer_list<SubPass> subPasses;
@@ -145,16 +149,29 @@ namespace HBL2
 
 	struct RenderPassDescriptor
 	{
-		const char* debugName;
-		Handle<RenderPassLayoutDescriptor> layout;
+		struct ColorTarget
+		{
+			LoadOperation loadOp = LoadOperation::CLEAR;
+			StoreOperation storeOp = StoreOperation::STORE;
+			TextureLayout nextUsage = TextureLayout::SAMPLED;
+			glm::vec4 clearColor = glm::vec4(0.0f);
+		};
 
 		struct DepthTarget
 		{
+			LoadOperation loadOp = LoadOperation::CLEAR;
+			StoreOperation storeOp = StoreOperation::STORE;
+			LoadOperation stencilLoadOp = LoadOperation::CLEAR;
+			StoreOperation stencilStoreOp = StoreOperation::STORE;
 			TextureLayout nextUsage = TextureLayout::SAMPLED;
 			float clearZ = 0.0f;
+			uint32_t clearStencil = 0;
 		};
 
+		const char* debugName;
+		Handle<RenderPassLayoutDescriptor> layout;
 		DepthTarget depthTarget;
+		std::initializer_list<ColorTarget> colorTargets;
 	};
 
 	struct MeshDescriptor

@@ -28,7 +28,7 @@ namespace HBL2
 	struct OpenGLBindGroup
 	{
 		OpenGLBindGroup() = default;
-		OpenGLBindGroup(const BindGroupDescriptor& desc);		
+		OpenGLBindGroup(const BindGroupDescriptor&& desc);		
 
 		const char* DebugName = "";
 		std::vector<BindGroupDescriptor::BufferEntry> Buffers;
