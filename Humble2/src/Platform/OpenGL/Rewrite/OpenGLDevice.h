@@ -10,5 +10,6 @@ namespace HBL2
 		~OpenGLDevice() = default;
 
 		virtual void Initialize() override;
+		virtual void Destroy() override;
 	};
 }

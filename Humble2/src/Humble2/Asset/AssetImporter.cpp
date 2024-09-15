@@ -3,6 +3,11 @@
 #include "AssetManager.h"
 #include "Utilities\YamlUtilities.h"
 
+#include "Systems\TransformSystem.h"
+#include "Systems\LinkSystem.h"
+#include "Systems\CameraSystem.h"
+#include "Systems\StaticMeshRenderingSystem.h"
+
 namespace HBL2
 {
 	uint32_t AssetImporter::ImportAsset(Asset* asset)
@@ -186,12 +191,27 @@ namespace HBL2
 
 	Handle<Scene> AssetImporter::ImportScene(Asset* asset)
 	{
-		auto scene = ResourceManager::Instance->CreateScene({
-			.name = asset->FilePath.filename().stem().string(),
-			.path = Project::GetAssetFileSystemPath(asset->FilePath),
+		auto sceneHandle = ResourceManager::Instance->CreateScene({
+			.name = asset->FilePath.filename().stem().string()
 		});
 
-		return scene;
+		Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
+
+		if (scene == nullptr)
+		{
+			HBL2_CORE_ERROR("Scene asset \"{0}\" is invalid, aborting scene load.", asset->FilePath.filename().stem().string());
+			return sceneHandle;
+		}
+
+		SceneSerializer sceneSerializer(scene);
+		sceneSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
+
+		scene->RegisterSystem(new TransformSystem);
+		scene->RegisterSystem(new LinkSystem);
+		scene->RegisterSystem(new CameraSystem);
+		scene->RegisterSystem(new StaticMeshRenderingSystem);
+
+		return sceneHandle;
 	}
 
 	Handle<Mesh> AssetImporter::ImportMesh(Asset* asset)
@@ -231,4 +251,3 @@ namespace HBL2
 		serializer.Serialize(asset->FilePath);
 	}
 }
-

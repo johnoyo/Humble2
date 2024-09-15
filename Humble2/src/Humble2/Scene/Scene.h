@@ -12,19 +12,18 @@ namespace HBL2
 	struct SceneDescriptor
 	{
 		std::string name;
-		std::filesystem::path path;
 	};
 
 	class Scene
 	{
 	public:
 		Scene() = default;
-		Scene(const SceneDescriptor& desc);
+		Scene(const SceneDescriptor&& desc);
 		~Scene();
 
 		static Scene* Copy(Scene* other);
 
-		HBL2::Scene& operator=(const HBL2::Scene&);
+		 HBL2::Scene& operator=(const HBL2::Scene&);
 
 		entt::entity CreateEntity()
 		{

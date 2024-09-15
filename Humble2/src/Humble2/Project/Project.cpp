@@ -14,7 +14,7 @@ namespace HBL2
 	{
 		s_ActiveProject = new Project;
 
-		s_ActiveProject->m_Spec.StartingScene = "Scenes/EmptyScene.humble";
+		s_ActiveProject->m_Spec.StartingScene = std::filesystem::path("Scenes", "EmptyScene.humble");
 		s_ActiveProject->m_Spec.AssetDirectory = "Assets";
 		s_ActiveProject->m_Spec.Name = name;		
 
@@ -57,35 +57,12 @@ namespace HBL2
 	{
 		UUID assetUUID = std::hash<std::string>()(s_ActiveProject->GetSpecification().StartingScene.string());
 		Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(assetUUID);
-		// Context::ActiveScene = newScene;
-	}
+		Context::ActiveScene = sceneHandle;
 
-	void Project::OpenScene(const std::filesystem::path& path)
-	{
-		if (path.extension().string() != ".humble")
+		if (!sceneHandle.IsValid())
 		{
-			HBL2_WARN("Could not load {0} - not a scene file", path.filename().string());
+			HBL2_CORE_ERROR("Scene asset handle of \"{0}\" is invalid, aborting scene load.", s_ActiveProject->GetSpecification().StartingScene.string());
 			return;
 		}
-
-		Scene* newScene = new Scene({ .name = s_ActiveProject->GetSpecification().StartingScene.string() });
-
-		SceneSerializer serializer(newScene);
-		if (serializer.Deserialize(path.string()))
-		{
-			delete Context::ActiveScene;
-			Context::ActiveScene = newScene;
-
-			Context::ActiveScene->RegisterSystem(new TransformSystem);
-			Context::ActiveScene->RegisterSystem(new LinkSystem);
-			Context::ActiveScene->RegisterSystem(new CameraSystem);
-			Context::ActiveScene->RegisterSystem(new StaticMeshRenderingSystem);
-		}
-	}
-
-	void Project::SaveScene(Scene* scene, const std::filesystem::path& path)
-	{
-		HBL2::SceneSerializer serializer(scene);
-		serializer.Serialize(path.string());
 	}
 }

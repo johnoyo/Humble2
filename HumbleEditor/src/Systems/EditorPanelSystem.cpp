@@ -15,7 +15,7 @@ namespace HBL2
 	{
 		void EditorPanelSystem::OnCreate()
 		{
-			m_ActiveScene = HBL2::Context::ActiveScene;
+			m_ActiveScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 			{
 				// Hierachy panel.
@@ -96,7 +96,8 @@ namespace HBL2
 
 		void EditorPanelSystem::OnUpdate(float ts)
 		{
-			m_ActiveScene = HBL2::Context::ActiveScene;
+			// TODO: Move this to event manager when written, to happen on the OnSceneChangeEvent.
+			m_ActiveScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 		}
 
 		void EditorPanelSystem::OnGuiRender(float ts)
@@ -552,11 +553,13 @@ namespace HBL2
 
 						HBL2::Project::Create()->Save(filepath);
 
-						const auto& startScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
+						auto assetHandle = AssetManager::Instance->CreateAsset({
+							.debugName = "Empty Scene",
+							.filePath = HBL2::Project::GetActive()->GetSpecification().StartingScene,
+							.type = AssetType::Scene,
+						});
 
-						HBL2::Project::SaveScene(new HBL2::Scene({ .name = "Empty Scene" }), startScenePath);
-
-						HBL2::Project::OpenScene(startScenePath);
+						HBL2::Project::OpenStartingScene();
 
 						m_EditorScenePath = filepath;
 						m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
@@ -567,9 +570,7 @@ namespace HBL2
 
 						if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 						{
-							const auto& startingScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
-
-							HBL2::Project::OpenScene(startingScenePath);
+							HBL2::Project::OpenStartingScene();
 
 							m_EditorScenePath = filepath;
 							m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
@@ -584,21 +585,25 @@ namespace HBL2
 						if (m_EditorScenePath.empty())
 						{
 							std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene (*.humble)\0*.humble\0");
+							auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
 
-							HBL2::Project::SaveScene(m_ActiveScene, filepath);
+							AssetManager::Instance->SaveAsset(std::hash<std::string>()(relativePath.string()));
 
 							m_EditorScenePath = filepath;
 						}
 						else
 						{
-							HBL2::Project::SaveScene(m_ActiveScene, m_EditorScenePath);
+							auto relativePath = std::filesystem::relative(m_EditorScenePath, HBL2::Project::GetAssetDirectory());
+
+							AssetManager::Instance->SaveAsset(std::hash<std::string>()(relativePath.string()));
 						}
 					}
 					if (ImGui::MenuItem("Save Scene As"))
 					{
 						std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene (*.humble)\0*.humble\0");
+						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
 
-						HBL2::Project::SaveScene(m_ActiveScene, filepath);
+						AssetManager::Instance->SaveAsset(std::hash<std::string>()(relativePath.string()));
 
 						m_EditorScenePath = filepath;
 					}
@@ -606,8 +611,22 @@ namespace HBL2
 					if (ImGui::MenuItem("Open Scene"))
 					{
 						std::string filepath = HBL2::FileDialogs::OpenFile("Humble Project (*.humble)\0*.humble\0");
+						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
+						UUID sceneUUID = std::hash<std::string>()(relativePath.string());
 
-						HBL2::Project::OpenScene(filepath);
+						Handle<Asset> sceneAssetHandle;
+
+						for (auto handle : AssetManager::Instance->GetRegisteredAssets())
+						{
+							Asset* currentAsset = AssetManager::Instance->GetAssetMetadata(handle);
+							if (currentAsset->Type == AssetType::Scene && currentAsset->UUID == sceneUUID)
+							{
+								sceneAssetHandle = handle;
+								break;
+							}
+						}
+
+						HBL2::SceneManager::Get().LoadScene(sceneAssetHandle, true);
 
 						m_EditorScenePath = filepath;
 					}
@@ -1033,9 +1052,7 @@ namespace HBL2
 						return;
 					}
 
-					HBL2::Project::OpenScene(path);
-
-					m_ActiveScene = HBL2::Context::ActiveScene;
+					HBL2::SceneManager::Get().LoadScene(sceneAssetHandle, true);
 					m_EditorScenePath = path;
 
 					ImGui::EndDragDropTarget();

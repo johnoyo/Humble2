@@ -32,5 +32,6 @@ namespace HBL2
 		Handle<BindGroup> m_GlobalBindings;
 		Handle<BindGroup> m_DrawBindings;
 		UniformRingBuffer* m_UniformRingBuffer;
+		Scene* m_EditorScene = nullptr;
 	};
 }

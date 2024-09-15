@@ -9,5 +9,6 @@ namespace HBL2
 		virtual ~Device() = default;
 
 		virtual void Initialize() = 0;
+		virtual void Destroy() = 0;
 	};
 }

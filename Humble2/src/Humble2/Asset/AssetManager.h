@@ -16,7 +16,7 @@ namespace HBL2
 
 		Handle<Asset> CreateAsset(const AssetDescriptor&& desc)
 		{
-			auto handle = m_AssetPool.Insert(Asset(desc));
+			auto handle = m_AssetPool.Insert(Asset(std::forward<const AssetDescriptor>(desc)));
 			m_RegisteredAssets.push_back(handle);
 			return handle;
 		}
@@ -78,6 +78,23 @@ namespace HBL2
 		}
 
 		std::vector<Handle<Asset>>& GetRegisteredAssets() { return m_RegisteredAssets; }
+
+		void SaveAsset(UUID assetUUID)
+		{
+			Handle<Asset> assetHandle;
+
+			for (auto handle : m_RegisteredAssets)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+				if (asset->UUID == assetUUID)
+				{
+					assetHandle = handle;
+					break;
+				}
+			}
+
+			return SaveAsset(assetHandle);
+		}
 
 		virtual void SaveAsset(Handle<Asset> handle) = 0;
 		virtual bool IsAssetValid(Handle<Asset> handle) = 0;

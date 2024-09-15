@@ -4,6 +4,9 @@ namespace HBL2
 {
 	void SpriteRenderingSystem::OnCreate()
 	{
+		auto* rm = ResourceManager::Instance;
+
+		m_EditorScene = rm->GetScene(Context::EditorScene);
 		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 
 		float* positions = new float[18] {
@@ -24,7 +27,6 @@ namespace HBL2
 			0.0, 1.0,  // 0 - Bottom left
 		};
 
-		auto* rm = ResourceManager::Instance;
 
 		auto buffer = rm->CreateBuffer({
 			.debugName = "test_quad_positions",
@@ -155,9 +157,9 @@ namespace HBL2
 		}
 		else if (Context::Mode == Mode::Editor)
 		{
-			if (Context::EditorScene->MainCamera != entt::null)
+			if (m_EditorScene->MainCamera != entt::null)
 			{
-				return Context::EditorScene->GetComponent<Component::Camera>(Context::EditorScene->MainCamera).ViewProjectionMatrix;
+				return m_EditorScene->GetComponent<Component::Camera>(m_EditorScene->MainCamera).ViewProjectionMatrix;
 			}
 			else
 			{

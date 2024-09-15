@@ -21,10 +21,9 @@ namespace HBL2
 		virtual void OnGuiRender(float ts) {}
 		virtual void OnDestroy() {}
 
-		inline static Scene* ActiveScene = nullptr;
-		inline static Scene* EmptyScene = nullptr;
-
-		inline static Scene* EditorScene = nullptr;
+		inline static Handle<Scene> ActiveScene;
+		inline static Handle<Scene> EmptyScene;
+		inline static Handle<Scene> EditorScene;
 
 		inline static Mode Mode = Mode::None;
 	};

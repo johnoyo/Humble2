@@ -30,7 +30,7 @@ namespace HBL2
 	struct Asset
 	{
 		Asset() = default;
-		Asset(const AssetDescriptor& desc)
+		Asset(const AssetDescriptor&& desc)
 		{
 			DebugName = desc.debugName;
 			FilePath = desc.filePath;

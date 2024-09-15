@@ -23,25 +23,29 @@ namespace HBL2
 				return;
 			}
 
+			m_EditorScene = ResourceManager::Instance->GetScene(EditorScene);
+			m_ActiveScene = ResourceManager::Instance->GetScene(ActiveScene);
+			m_EmptyScene = ResourceManager::Instance->GetScene(EmptyScene);
+
 			// Create editor systems.
-			EditorScene->RegisterSystem(new EditorPanelSystem);
-			EditorScene->RegisterSystem(new TransformSystem);
-			EditorScene->RegisterSystem(new CameraSystem);
-			EditorScene->RegisterSystem(new EditorCameraSystem);
+			m_EditorScene->RegisterSystem(new EditorPanelSystem);
+			m_EditorScene->RegisterSystem(new TransformSystem);
+			m_EditorScene->RegisterSystem(new CameraSystem);
+			m_EditorScene->RegisterSystem(new EditorCameraSystem);
 
 			// Editor camera set up.
-			auto editorCameraEntity = EditorScene->CreateEntity("Hidden");
-			EditorScene->AddComponent<HBL2::Component::Camera>(editorCameraEntity).Enabled = true;
-			EditorScene->AddComponent<Component::EditorCamera>(editorCameraEntity);
-			EditorScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 5.f;
+			auto editorCameraEntity = m_EditorScene->CreateEntity("Hidden");
+			m_EditorScene->AddComponent<HBL2::Component::Camera>(editorCameraEntity).Enabled = true;
+			m_EditorScene->AddComponent<Component::EditorCamera>(editorCameraEntity);
+			m_EditorScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 5.f;
 
 			// Create systems
-			for (HBL2::ISystem* system : EditorScene->GetSystems())
+			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
 			{
 				system->OnCreate();
 			}
 
-			for (HBL2::ISystem* system : ActiveScene->GetSystems())
+			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 			{
 				system->OnCreate();
 			}
@@ -49,12 +53,12 @@ namespace HBL2
 
 		void EditorContext::OnUpdate(float ts)
 		{
-			for (HBL2::ISystem* system : EditorScene->GetSystems())
+			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
 			{
 				system->OnUpdate(ts);
 			}
 
-			for (HBL2::ISystem* system : ActiveScene->GetSystems())
+			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 			{
 				system->OnUpdate(ts);
 			}
@@ -64,12 +68,12 @@ namespace HBL2
 		{
 			ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
-			for (HBL2::ISystem* system : EditorScene->GetSystems())
+			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
 			{
 				system->OnGuiRender(ts);
 			}
 
-			for (HBL2::ISystem* system : ActiveScene->GetSystems())
+			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 			{
 				system->OnGuiRender(ts);
 			}
@@ -83,11 +87,7 @@ namespace HBL2
 			{
 				RegisterAssets();
 
-				const auto& startingScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
-
-				HBL2::Project::OpenScene(startingScenePath);
-
-				// HBL2::Project::OpenStartingScene();
+				HBL2::Project::OpenStartingScene();
 
 				return true;
 			}

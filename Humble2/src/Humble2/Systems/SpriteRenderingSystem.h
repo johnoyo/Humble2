@@ -34,5 +34,6 @@ namespace HBL2
 		Handle<BindGroup> m_DrawBindings;
 		Handle<Mesh> m_SpriteMesh;
 		UniformRingBuffer* m_UniformRingBuffer;
+		Scene* m_EditorScene = nullptr;
 	};
 }

@@ -20,9 +20,15 @@ namespace HBL2
 			virtual void OnCreate() override;
 			virtual void OnUpdate(float ts) override;
 			virtual void OnGuiRender(float ts) override;
+
 		private:
 			bool OpenEmptyProject();
 			void RegisterAssets();
+
+		private:
+			Scene* m_EditorScene = nullptr;
+			Scene* m_ActiveScene = nullptr;
+			Scene* m_EmptyScene = nullptr;
 		};
 	}
 }

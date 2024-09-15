@@ -52,7 +52,7 @@ namespace HBL2
 		// Meshes	
 		Handle<Mesh> CreateMesh(const MeshDescriptor&& desc)
 		{
-			return m_MeshPool.Insert(Mesh(desc));
+			return m_MeshPool.Insert(Mesh(std::forward<const MeshDescriptor>(desc)));
 		}
 		void DeleteMesh(Handle<Mesh> handle)
 		{
@@ -66,7 +66,7 @@ namespace HBL2
 		// Materials
 		Handle<Material> CreateMaterial(const MaterialDescriptor&& desc)
 		{
-			return m_MaterialPool.Insert(Material(desc));
+			return m_MaterialPool.Insert(Material(std::forward<const MaterialDescriptor>(desc)));
 		}
 		void DeleteMaterial(Handle<Material> handle)
 		{
@@ -80,7 +80,7 @@ namespace HBL2
 		// Scenes
 		Handle<Scene> CreateScene(const SceneDescriptor&& desc)
 		{
-			return m_ScenePool.Insert(Scene(desc));
+			return m_ScenePool.Insert(Scene(std::forward<const SceneDescriptor>(desc)));
 		}
 		void DeleteScene(Handle<Scene> handle)
 		{

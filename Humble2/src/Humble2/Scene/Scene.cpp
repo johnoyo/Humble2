@@ -1,16 +1,9 @@
 #include "Scene.h"
 
-#include "SceneSerializer.h"
-
 namespace HBL2
 {
-    Scene::Scene(const SceneDescriptor& desc) : m_Name(desc.name)
+    Scene::Scene(const SceneDescriptor&& desc) : m_Name(desc.name)
     {
-        if (!desc.path.empty())
-        {
-            SceneSerializer sceneSerializer(this);
-            sceneSerializer.Deserialize(desc.path);
-        }
     }
 
     Scene::~Scene()
@@ -33,7 +26,7 @@ namespace HBL2
 
     HBL2::Scene& Scene::operator=(const HBL2::Scene& other)
     {
-        // TODO: insert return statement here
+        m_Name = other.GetName();
         return (HBL2::Scene&)other;
     }
 }

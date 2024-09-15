@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core\Context.h"
 #include "Scene\Scene.h"
 #include "Scene\SceneSerializer.h"
 #include "Resources\Handle.h"

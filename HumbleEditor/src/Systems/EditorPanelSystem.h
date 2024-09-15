@@ -2,6 +2,7 @@
 
 #include "Humble2.h"
 #include "Asset\AssetManager.h"
+#include "Scene\SceneManager.h"
 #include "EditorComponents.h"
 
 namespace HBL2

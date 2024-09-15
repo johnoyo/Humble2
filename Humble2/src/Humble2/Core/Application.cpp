@@ -34,7 +34,6 @@ namespace HBL2
 			break;
 		}
 
-		// Intialize the window.
 		Window::Instance->Initialize({
 			.Title = m_Specification.Name,
 			.Width = m_Specification.Width,
@@ -43,11 +42,8 @@ namespace HBL2
 			.VerticalSync = m_Specification.VerticalSync
 		});
 
-		// Initialize empty scene.
-		m_Specification.Context->EmptyScene = new Scene();
-
-		// Initialize core scene.
-		m_Specification.Context->EditorScene = new Scene();
+		m_Specification.Context->EmptyScene = ResourceManager::Instance->CreateScene({ .name = "Empty Scene" });
+		m_Specification.Context->EditorScene = ResourceManager::Instance->CreateScene({ .name = "Editor Scene" });
 	}
 
 	void Application::BeginFrame()
@@ -63,15 +59,12 @@ namespace HBL2
 	{
 		m_Frames++;
 
-		// Reset after one second.
 		if (Window::Instance->GetTime() - m_Timer > 1.0)
 		{
-			// Display frame rate at window bar.
 			std::stringstream ss;
 			ss << m_Specification.Name << " [" << m_Frames << " FPS]";
 			Window::Instance->SetTitle(ss.str());
 
-			// Log framerate and delta time to console.
 			printf("FPS: %d, DeltaTime: %f\n", m_Frames, m_DeltaTime);
 
 			m_Timer++;
@@ -129,6 +122,7 @@ namespace HBL2
 		delete ResourceManager::Instance;
 		ResourceManager::Instance = nullptr;
 
+		Device::Instance->Destroy();
 		delete Device::Instance;
 		Device::Instance = nullptr;
 	}

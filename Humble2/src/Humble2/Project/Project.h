@@ -5,6 +5,8 @@
 #include "Scene\Scene.h"
 #include "Scene\SceneSerializer.h"
 
+#include "Resources\ResourceManager.h"
+
 #include <string>
 #include <filesystem>
 
@@ -51,8 +53,6 @@ namespace HBL2
 		static void Save(const std::filesystem::path& path);
 
 		static void OpenStartingScene();
-		static void OpenScene(const std::filesystem::path& path);
-		static void SaveScene(Scene* scene, const std::filesystem::path& path);
 
 	private:
 		ProjectSpecification m_Spec;
