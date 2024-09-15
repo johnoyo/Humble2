@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Events.h"
+#include "EventDispatcher.h"
+
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3
 	#include <emscripten\emscripten.h>

@@ -1,6 +1,6 @@
 Scene: Scenes/EmptyScene.humble
 Entities:
-  - Entity: 1048577
+  - Entity: 1
     Component::Tag:
       Tag: Sprite
     Component::ID:

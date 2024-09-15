@@ -171,6 +171,13 @@ namespace HBL2
 	bool SceneSerializer::Deserialize(const std::filesystem::path& filePath)
 	{
 		std::ifstream stream(filePath);
+
+		if (!stream.is_open())
+		{
+			HBL2_CORE_TRACE("File not found: {0}", filePath.string());
+			return false;
+		}
+
 		std::stringstream ss;
 		ss << stream.rdbuf();
 

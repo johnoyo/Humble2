@@ -10,6 +10,12 @@ namespace HBL2
 
 	void OpenGLWindow::Create()
 	{
+		EventDispatcher::Get().Register("WindowSizeEvent", [](const Event& e)
+		{
+			const WindowSizeEvent& wse = dynamic_cast<const WindowSizeEvent&>(e);
+			glViewport(0, 0, wse.Width, wse.Height);
+		});
+
 		if (!glfwInit())
 		{
 			std::cout << "Error initializing window!\n";
@@ -59,7 +65,6 @@ namespace HBL2
 			exit(-1);
 		}
 #endif
-		glfwSetWindowSizeCallback(m_Window, WindowResizeCallback);
 
 		Input::SetWindow(m_Window);
 	}
