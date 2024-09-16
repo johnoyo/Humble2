@@ -1,43 +1,44 @@
-Scene: Scenes/EmptyScene.humble
+Scene: TestScene
 Entities:
   - Entity: 2
     Component::Tag:
-      Tag: Sprite
+      Tag: RedSprite
+    Component::ID:
+      ID: 16170793832576229376
     Component::Transform:
-      Translation: [0, 15, 0]
+      Translation: [-1, 0, 0]
       Rotation: [0, 0, 0]
-      Scale: [10, 10, 10]
-    Component::Sprite:
+      Scale: [1, 1, 1]
+    Component::StaticMesh_New:
       Enabled: true
-      Static: false
-      Color: [1, 1, 1, 1]
-      Texture: EmptyProject\Assets\Textures\Brick.png
-  - Entity: 1
+      Material: 3020648493988299302
+      Mesh: 0
+  - Entity: 1048577
     Component::Tag:
       Tag: Camera
+    Component::ID:
+      ID: 7031365491490028544
     Component::Transform:
-      Translation: [0, 0, 100]
+      Translation: [0, 0, 10]
       Rotation: [0, 0, 0]
-      Scale: [10, 10, 10]
+      Scale: [1, 1, 1]
     Component::Camera:
       Enabled: true
       Primary: true
-      Static: false
       Far: 1000
       Near: 0.100000001
       FOV: 30
       Aspect Ratio: 1.778
       Zoom Level: 300
-  - Entity: 0
+  - Entity: 1048576
     Component::Tag:
-      Tag: Monkeh
+      Tag: ActualSprite
+    Component::ID:
+      ID: 12075401353704701952
     Component::Transform:
-      Translation: [0, 0, 0]
+      Translation: [1, 0, 0]
       Rotation: [0, 0, 0]
-      Scale: [5, 5, 5]
-    Component::StaticMesh:
+      Scale: [1, 1, 1]
+    Component::Sprite_New:
       Enabled: true
-      Static: false
-      Path: EmptyProject\Assets\Meshes\monkey_smooth.obj
-      TexturePath: ""
-      ShaderName: BasicMesh
+      Material: 11080470078166277045

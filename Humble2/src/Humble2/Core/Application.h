@@ -22,6 +22,8 @@
 #include "Renderer\Rewrite\Device.h"
 #include "Platform\OpenGL\Rewrite\OpenGLDevice.h"
 
+#include "Scene\SceneManager.h"
+
 #include "Utilities\Random.h"
 
 #include <string>

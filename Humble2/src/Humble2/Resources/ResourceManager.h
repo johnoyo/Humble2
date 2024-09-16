@@ -15,6 +15,8 @@ namespace HBL2
 
 		virtual ~ResourceManager() = default;
 
+		virtual void Clean() = 0;
+
 		// Textures
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) = 0;
 		virtual void DeleteTexture(Handle<Texture> handle) = 0;

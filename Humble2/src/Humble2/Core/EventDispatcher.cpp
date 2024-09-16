@@ -6,25 +6,24 @@ namespace HBL2
 	{
 	}
 
-	void EventDispatcher::Initialize(Application* app)
+	void EventDispatcher::Initialize()
 	{
-		m_App = app;
 	}
 
-	void EventDispatcher::Register(const std::string& descriptor, Slot&& callback)
+	void EventDispatcher::Register(const std::string& descriptor, std::function<void(const Event&)>&& callback)
 	{
-		m_Slots[descriptor].push_back(callback);
+		m_Callbacks[descriptor].push_back(callback);
 	}
 
 	void EventDispatcher::Post(const Event& event) const
 	{
 		auto desc = event.GetDescription();
-		if (m_Slots.find(desc) == m_Slots.end())
+		if (m_Callbacks.find(desc) == m_Callbacks.end())
 		{
 			return;
 		}
 
-		auto&& observers = m_Slots.at(desc);
+		auto&& observers = m_Callbacks.at(desc);
 
 		for (auto&& observer : observers)
 		{

@@ -2,7 +2,23 @@
 
 namespace HBL2
 {
-	Handle<Scene> SceneManager::LoadScene(Handle<Asset> sceneAssetHandle, bool runtime)
+	void SceneManager::LoadScene(Handle<Asset> sceneAssetHandle, bool runtime)
+	{
+		m_NewSceneAssetHandle = sceneAssetHandle;
+		m_NewSceneHandle = {};
+		m_RuntimeSceneChange = runtime;
+		SceneChangeRequested = true;
+	}
+
+	void SceneManager::LoadScene(Handle<Scene> sceneHandle, bool runtime)
+	{
+		m_NewSceneHandle = sceneHandle;
+		m_NewSceneAssetHandle = {};
+		m_RuntimeSceneChange = runtime;
+		SceneChangeRequested = true;
+	}
+
+	void SceneManager::LoadSceneDeffered()
 	{
 		if (Context::ActiveScene.IsValid())
 		{
@@ -17,31 +33,64 @@ namespace HBL2
 			}
 		}
 
-		if (!sceneAssetHandle.IsValid())
+		if (m_NewSceneAssetHandle.IsValid())
 		{
-			HBL2_CORE_ERROR("Handle of scene asset is invalid, aborting scene load.");
-			return Handle<Scene>();
-		}
+			Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(m_NewSceneAssetHandle);
 
-		Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(sceneAssetHandle);
-		Context::ActiveScene = sceneHandle;
+			EventDispatcher::Get().Post(SceneChangeEvent(Context::ActiveScene, sceneHandle));
 
-		Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
+			Context::ActiveScene = sceneHandle;
 
-		if (scene == nullptr)
-		{
-			HBL2_CORE_ERROR("Scene asset is invalid, aborting scene load.");
-			return Handle<Scene>();
-		}
+			Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
 
-		if (runtime)
-		{
-			for (ISystem* system : scene->GetSystems())
+			if (scene == nullptr)
 			{
-				system->OnCreate();
+				HBL2_CORE_ERROR("Scene asset is invalid, aborting scene load.");
+				SceneChangeRequested = false;
+				return;
 			}
+
+			if (m_RuntimeSceneChange)
+			{
+				for (ISystem* system : scene->GetSystems())
+				{
+					system->OnCreate();
+				}
+			}
+
+			SceneChangeRequested = false;
+			return;
 		}
 
-		return sceneHandle;
+		if (m_NewSceneHandle.IsValid())
+		{
+			EventDispatcher::Get().Post(SceneChangeEvent(Context::ActiveScene, m_NewSceneHandle));
+
+			Context::ActiveScene = m_NewSceneHandle;
+
+			Scene* scene = ResourceManager::Instance->GetScene(m_NewSceneHandle);
+
+			if (scene == nullptr)
+			{
+				HBL2_CORE_ERROR("Scene asset is invalid, aborting scene load.");
+				SceneChangeRequested = false;
+				return;
+			}
+
+			if (m_RuntimeSceneChange)
+			{
+				for (ISystem* system : scene->GetSystems())
+				{
+					system->OnCreate();
+				}
+			}
+
+			SceneChangeRequested = false;
+			return;
+		}
+
+		HBL2_CORE_ERROR("Scene handle is invalid, aborting scene load.");
+		SceneChangeRequested = false;
+		return;
 	}
 }

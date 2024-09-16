@@ -27,24 +27,23 @@ namespace HBL2
 			0.0, 1.0,  // 0 - Bottom left
 		};
 
-
-		auto buffer = rm->CreateBuffer({
+		m_Positions = rm->CreateBuffer({
 			.debugName = "test_quad_positions",
 			.byteSize = sizeof(float) * 18,
 			.initialData = positions,
 		});
 
-		//auto bufferTexCoords = rm->CreateBuffer({
-		//	.debugName = "test_quad_texCoords",
-		//	.byteSize = sizeof(float) * 12,
-		//	.initialData = texCoords,
-		//});
+		m_TextureCoordinates = rm->CreateBuffer({
+			.debugName = "test_quad_texCoords",
+			.byteSize = sizeof(float) * 12,
+			.initialData = texCoords,
+		});
 
 		m_SpriteMesh = rm->CreateMesh({
 			.debugName = "quad_mesh",
 			.vertexOffset = 0,
 			.vertexCount = 6,
-			.vertexBuffers = { buffer/*, bufferTexCoords*/ },
+			.vertexBuffers = { m_Positions, m_TextureCoordinates },
 		});
 
 		m_Context->GetRegistry()
@@ -57,7 +56,7 @@ namespace HBL2
 				}
 			});
 
-		auto globalBindGroupLayout = rm->CreateBindGroupLayout({
+		m_GlobalBindGroupLayout = rm->CreateBindGroupLayout({
 			.debugName = "unlit-colored-layout",
 			.bufferBindings = {
 				{
@@ -68,7 +67,7 @@ namespace HBL2
 			},
 		});
 
-		auto cameraBuffer = rm->CreateBuffer({
+		m_CameraBuffer = rm->CreateBuffer({
 			.debugName = "camera-uniform-buffer",
 			.usage = BufferUsage::UNIFORM,
 			.usageHint = BufferUsageHint::DYNAMIC,
@@ -79,9 +78,9 @@ namespace HBL2
 
 		m_GlobalBindings = rm->CreateBindGroup({
 			.debugName = "unlit-colored-bind-group",
-			.layout = globalBindGroupLayout,
+			.layout = m_GlobalBindGroupLayout,
 			.buffers = {
-				{ .buffer = cameraBuffer },
+				{ .buffer = m_CameraBuffer },
 			}
 		});
 	}
@@ -140,6 +139,14 @@ namespace HBL2
 
 	void SpriteRenderingSystem::OnDestroy()
 	{
+		auto* rm = ResourceManager::Instance;
+
+		rm->DeleteBindGroup(m_GlobalBindings);
+		rm->DeleteBindGroupLayout(m_GlobalBindGroupLayout);
+		rm->DeleteBuffer(m_CameraBuffer);
+		rm->DeleteBuffer(m_Positions);
+		rm->DeleteBuffer(m_TextureCoordinates);
+		rm->DeleteMesh(m_SpriteMesh);
 	}
 
 	const glm::mat4& SpriteRenderingSystem::GetViewProjection()

@@ -30,7 +30,8 @@ namespace HBL2
 
 	private:
 		Handle<BindGroup> m_GlobalBindings;
-		Handle<BindGroup> m_DrawBindings;
+		Handle<BindGroupLayout> m_GlobalBindGroupLayout;
+		Handle<Buffer> m_CameraBuffer;
 		UniformRingBuffer* m_UniformRingBuffer;
 		Scene* m_EditorScene = nullptr;
 	};

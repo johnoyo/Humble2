@@ -19,4 +19,13 @@ namespace HBL2
 
 		return { pixels, settings, w, h };
 	}
+
+	void TextureUtilities::LoadWhiteTexture()
+	{
+		WhiteTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "white-texture",
+			.dimensions = { 1.0f, 1.0f, 1.0f },
+			.initialData = nullptr,
+		});
+	}
 }

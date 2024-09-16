@@ -72,6 +72,48 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::Sprite_New>(entity))
+		{
+			out << YAML::Key << "Component::Sprite_New";
+			out << YAML::BeginMap;
+
+			auto& sprite = m_Scene->GetComponent<Component::Sprite_New>(entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << sprite.Enabled;
+
+			const std::vector<Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+			Asset* materialAsset = nullptr;
+
+			bool materialFound = false;
+
+			for (auto handle : assetHandles)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+				if (asset->Type == AssetType::Material && asset->Indentifier != 0 && asset->Indentifier == sprite.Material.Pack() && !materialFound)
+				{
+					materialFound = true;
+					materialAsset = asset;
+				}
+
+				if (materialFound)
+				{
+					break;
+				}
+			}
+
+			if (materialAsset != nullptr)
+			{
+				out << YAML::Key << "Material" << YAML::Value << materialAsset->UUID;
+			}
+			else
+			{
+				out << YAML::Key << "Material" << YAML::Value << (UUID)0;
+			}
+
+			out << YAML::EndMap;
+		}
+
 		if (m_Scene->HasComponent<Component::StaticMesh_New>(entity))
 		{
 			out << YAML::Key << "Component::StaticMesh_New";
@@ -164,6 +206,13 @@ namespace HBL2
 		}
 
 		std::ofstream fOut(filePath);
+
+		if (!fOut.is_open())
+		{
+			HBL2_CORE_ERROR("File not found: {0}", filePath.string());
+			return;
+		}
+
 		fOut << out.c_str();
 		fOut.close();
 	}
@@ -174,7 +223,7 @@ namespace HBL2
 
 		if (!stream.is_open())
 		{
-			HBL2_CORE_TRACE("File not found: {0}", filePath.string());
+			HBL2_CORE_ERROR("File not found: {0}", filePath.string());
 			return false;
 		}
 
@@ -246,6 +295,14 @@ namespace HBL2
 					camera.Fov = cameraComponent["FOV"].as<float>();
 					camera.AspectRatio = cameraComponent["Aspect Ratio"].as<float>();
 					camera.ZoomLevel = cameraComponent["Zoom Level"].as<float>();
+				}
+
+				auto sprite_NewComponent = entity["Component::Sprite_New"];
+				if (sprite_NewComponent)
+				{
+					auto& sprite = m_Scene->AddComponent<Component::Sprite_New>(deserializedEntity);
+					sprite.Enabled = sprite_NewComponent["Enabled"].as<bool>();
+					sprite.Material = AssetManager::Instance->GetAsset<Material>(sprite_NewComponent["Material"].as<UUID>());
 				}
 
 				auto staticMesh_NewComponent = entity["Component::StaticMesh_New"];

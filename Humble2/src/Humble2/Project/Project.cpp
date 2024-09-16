@@ -3,11 +3,6 @@
 #include "ProjectSerializer.h"
 #include <Core\Context.h>
 
-#include "Systems\TransformSystem.h"
-#include "Systems\LinkSystem.h"
-#include "Systems\CameraSystem.h"
-#include "Systems\StaticMeshRenderingSystem.h"
-
 namespace HBL2
 {
 	Project* Project::Create(const std::string& name)

@@ -5,29 +5,12 @@ namespace HBL2Runtime
     void RuntimeContext::OnCreate()
     {
 		HBL2::Context::Mode = HBL2::Mode::Runtime;
-#ifdef EMSCRIPTEN
-		// Runtime camera setup.
-		auto camera = ActiveScene->CreateEntity();
-		ActiveScene->GetComponent<HBL2::Component::Tag>(camera).Name = "Camera";
-		ActiveScene->AddComponent<HBL2::Component::Camera>(camera).Enabled = true;
-		ActiveScene->GetComponent<HBL2::Component::Transform>(camera).Translation.z = 100.f;
 
-		// Add a monkeh.
-		auto monkeh = ActiveScene->CreateEntity();
-		ActiveScene->GetComponent<HBL2::Component::Tag>(monkeh).Name = "Monkeh";
-		ActiveScene->GetComponent<HBL2::Component::Transform>(monkeh).Scale = { 5.f, 5.f, 5.f };
-		auto& mesh = ActiveScene->AddComponent<HBL2::Component::StaticMesh>(monkeh);
-		mesh.Path = "assets/meshes/monkey_smooth.obj";
-		mesh.ShaderName = "BasicMesh";
-#else
+		m_ActiveScene = HBL2::ResourceManager::Instance->GetScene(ActiveScene);
+
 		OpenProject();
-#endif
-		for (HBL2::ISystem* system : EditorScene->GetSystems())
-		{
-			system->OnCreate();
-		}
 
-		for (HBL2::ISystem* system : ActiveScene->GetSystems())
+		for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 		{
 			system->OnCreate();
 		}
@@ -35,12 +18,7 @@ namespace HBL2Runtime
 
     void RuntimeContext::OnUpdate(float ts)
     {
-		for (HBL2::ISystem* system : EditorScene->GetSystems())
-		{
-			system->OnUpdate(ts);
-		}
-
-		for (HBL2::ISystem* system : ActiveScene->GetSystems())
+		for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 		{
 			system->OnUpdate(ts);
 		}
@@ -48,7 +26,19 @@ namespace HBL2Runtime
 
     void RuntimeContext::OnGuiRender(float ts)
     {
+		for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+		{
+			system->OnGuiRender(ts);
+		}
     }
+
+	void RuntimeContext::OnDestroy()
+	{
+		for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+		{
+			system->OnDestroy();
+		}
+	}
 
 	bool RuntimeContext::OpenProject()
 	{
@@ -64,19 +54,17 @@ namespace HBL2Runtime
 
 		if (filepath.empty())
 		{
-			// HBL2_ERROR("Could not find project.");
+			HBL2_ERROR("Could not find project.");
+			return false;
 		}
 
 		if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 		{
-			const auto& startingScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
-
-			HBL2::Project::OpenScene(startingScenePath);
-
+			HBL2::Project::OpenStartingScene();
 			return true;
 		}
 
-		// HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
+		HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
 		HBL2::Window::Instance->Close();
 
 		return false;

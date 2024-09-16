@@ -16,6 +16,22 @@ namespace HBL2
 		void EditorPanelSystem::OnCreate()
 		{
 			m_ActiveScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+			m_EditorScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
+
+			EventDispatcher::Get().Register("SceneChangeEvent", [&](const HBL2::Event& e)
+			{
+				HBL2_CORE_INFO("EditorPanelSystem::SceneChangeEvent");
+				const SceneChangeEvent& sce = dynamic_cast<const SceneChangeEvent&>(e);
+
+				// Delete temporary play mode scene.
+				Scene* currentScene = ResourceManager::Instance->GetScene(sce.CurrentScene);
+				if (currentScene != nullptr && currentScene->GetName() == "(Clone)")
+				{
+					ResourceManager::Instance->DeleteScene(sce.CurrentScene);
+				}
+
+				m_ActiveScene = ResourceManager::Instance->GetScene(sce.NewScene);
+			});
 
 			{
 				// Hierachy panel.
@@ -96,8 +112,6 @@ namespace HBL2
 
 		void EditorPanelSystem::OnUpdate(float ts)
 		{
-			// TODO: Move this to event manager when written, to happen on the OnSceneChangeEvent.
-			m_ActiveScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 		}
 
 		void EditorPanelSystem::OnGuiRender(float ts)
@@ -112,9 +126,13 @@ namespace HBL2
 						for (auto& style : panel.Styles)
 						{
 							if (style.UseFloat)
+							{
 								ImGui::PushStyleVar(style.StyleVar, style.FloatValue);
+							}
 							else
+							{
 								ImGui::PushStyleVar(style.StyleVar, style.VectorValue);
+							}
 						}
 
 						// Push window to the stack.
@@ -603,6 +621,15 @@ namespace HBL2
 						std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene (*.humble)\0*.humble\0");
 						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
 
+						UUID assetUUID = std::hash<std::string>()(relativePath.string());
+
+						// Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(assetUUID);
+
+						// if (!sceneHandle.IsValid())
+						// {
+
+						// }
+
 						AssetManager::Instance->SaveAsset(std::hash<std::string>()(relativePath.string()));
 
 						m_EditorScenePath = filepath;
@@ -710,14 +737,50 @@ namespace HBL2
 			// Pop up menu when right clicking on an empty space inside the Content Browser panel.
 			if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
 			{
-				if (ImGui::MenuItem("Create Shader"))
+				if (ImGui::BeginMenu("Create Shader"))
 				{
-					m_OpenShaderSetupPopup = true;
+					if (ImGui::MenuItem("Create Unlit Shader"))
+					{
+						m_SelectedShaderType = 0;
+						m_OpenShaderSetupPopup = true;
+					}
+
+					if (ImGui::MenuItem("Create Blinn-Phong Shader"))
+					{
+						m_SelectedShaderType = 1;
+						m_OpenShaderSetupPopup = true;
+					}
+
+					if (ImGui::MenuItem("Create PBR Shader"))
+					{
+						m_SelectedShaderType = 2;
+						m_OpenShaderSetupPopup = true;
+					}
+
+					ImGui::EndMenu();
 				}
 
-				if (ImGui::MenuItem("Create Material"))
+				if (ImGui::BeginMenu("Create Material"))
 				{
-					m_OpenMaterialSetupPopup = true;
+					if (ImGui::MenuItem("Create Unlit Material"))
+					{
+						m_SelectedMaterialType = 0;
+						m_OpenMaterialSetupPopup = true;
+					}
+
+					if (ImGui::MenuItem("Create Blinn-Phong Material"))
+					{
+						m_SelectedMaterialType = 1;
+						m_OpenMaterialSetupPopup = true;
+					}
+
+					if (ImGui::MenuItem("Create PBR Material"))
+					{
+						m_SelectedMaterialType = 2;
+						m_OpenMaterialSetupPopup = true;
+					}
+
+					ImGui::EndMenu();
 				}
 
 				ImGui::EndPopup();
@@ -742,9 +805,23 @@ namespace HBL2
 						.type = AssetType::Shader,
 					});
 
+					std::string shaderSource;
+
+					switch (m_SelectedShaderType)
+					{
+					case 0:
+						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/unlit.hblshader");
+						break;
+					case 1:
+						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/blinn-phong.hblshader");
+						break;
+					case 2:
+						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/pbr.hblshader");
+						break;
+					}
+
 					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".hblshader"), 0);
-					fout << "#shader vertex\n\n";
-					fout << "#shader fragment\n\n";
+					fout << shaderSource;
 					fout.close();
 
 					m_OpenShaderSetupPopup = false;
@@ -1053,6 +1130,7 @@ namespace HBL2
 					}
 
 					HBL2::SceneManager::Get().LoadScene(sceneAssetHandle, true);
+
 					m_EditorScenePath = path;
 
 					ImGui::EndDragDropTarget();
@@ -1062,9 +1140,22 @@ namespace HBL2
 		
 		void EditorPanelSystem::DrawPlayStopPanel()
 		{
+			static bool isPlaying = false;
+
 			if (ImGui::Button("Play"))
 			{
 				Context::Mode = Mode::Runtime;
+
+				if (!m_ActiveSceneTemp.IsValid())
+				{
+					m_ActiveSceneTemp = Context::ActiveScene;
+					auto playSceneHandle = ResourceManager::Instance->CreateScene({ .name = "(Clone)" });
+					Scene* playScene = ResourceManager::Instance->GetScene(playSceneHandle);
+					Scene::Copy(m_ActiveScene, playScene);
+					SceneManager::Get().LoadScene(playSceneHandle, true);
+				}
+
+				isPlaying = true;
 			}
 
 			ImGui::SameLine();
@@ -1072,6 +1163,25 @@ namespace HBL2
 			if (ImGui::Button("Stop"))
 			{
 				Context::Mode = Mode::Editor;
+
+				if (m_ActiveSceneTemp.IsValid())
+				{
+					SceneManager::Get().LoadScene(m_ActiveSceneTemp, true);
+					m_ActiveSceneTemp = {};
+				}
+
+				isPlaying = false;
+			}
+
+			ImGui::SameLine();
+
+			if (isPlaying)
+			{
+				ImGui::Text("Playing ...");
+			}
+			else
+			{
+				ImGui::Text("Editing ...");
 			}
 		}
 	}

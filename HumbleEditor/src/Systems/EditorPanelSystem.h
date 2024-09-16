@@ -32,9 +32,12 @@ namespace HBL2
 			std::filesystem::path m_CurrentDirectory;
 
 			bool m_OpenShaderSetupPopup = false;
+			uint32_t m_SelectedShaderType = 0;
 			bool m_OpenMaterialSetupPopup = false;
+			uint32_t m_SelectedMaterialType = 0;
 
 			Scene* m_ActiveScene = nullptr;
+			Handle<Scene> m_ActiveSceneTemp;
 		};
 	}
 }

@@ -16,7 +16,11 @@ namespace HBL2
 			m_GenerationalCounter = new uint16_t[m_Size];
 
 			memset(m_Data, 0, sizeof(m_Data));
-			memset(m_GenerationalCounter, 0, sizeof(m_GenerationalCounter));
+
+			for (int i = 0; i < m_Size; i++)
+			{
+				m_GenerationalCounter[i] = 1;
+			}
 
 			for (int32_t i = (m_Size - 1); i >= 0; i--)
 			{
@@ -36,14 +40,13 @@ namespace HBL2
 			m_FreeList.pop();
 
 			m_Data[index] = data;
-			m_GenerationalCounter[index] = 1;
 
 			return { index, m_GenerationalCounter[index] };
 		}
 
 		void Remove(Handle<H> handle)
 		{
-			handle.m_GenerationalCounter++;
+			m_GenerationalCounter[handle.m_ArrayIndex]++;
 			m_FreeList.push(handle.m_ArrayIndex);
 		}
 
@@ -70,19 +73,30 @@ namespace HBL2
 
 			m_Data = new T[m_Size * 2];
 			memset(m_Data, 0, sizeof(m_Data));
-			memcpy(m_Data, oldData, sizeof(oldData));
 
-			delete oldData;
+			for (int i = 0; i < m_Size; i++)
+			{
+				m_Data[i] = oldData[i];
+			}
+
+			delete[] oldData;
 
 			// Resize generational counter array
 			uint16_t* oldGenerationalCounter = m_GenerationalCounter;
 
 			m_GenerationalCounter = new uint16_t[m_Size * 2];
 
-			memset(m_GenerationalCounter, 0, sizeof(m_GenerationalCounter));
-			memcpy(m_GenerationalCounter, oldGenerationalCounter, sizeof(oldGenerationalCounter));
+			for (int i = m_Size; i < m_Size * 2; i++)
+			{
+				m_GenerationalCounter[i] = 1;
+			}
 
-			delete oldGenerationalCounter;
+			for (int i = 0; i < m_Size; i++)
+			{
+				m_GenerationalCounter[i] = oldGenerationalCounter[i];
+			}
+
+			delete[] oldGenerationalCounter;
 
 			// Resize free list stack
 			while (!m_FreeList.empty())

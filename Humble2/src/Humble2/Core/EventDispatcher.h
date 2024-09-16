@@ -6,8 +6,6 @@
 
 namespace HBL2
 {
-	class Application;
-
 	class Event {
 	public:
 		virtual ~Event();
@@ -24,17 +22,13 @@ namespace HBL2
 			return instance;
 		}
 
-		void Initialize(Application* app);
-
-		using Slot = std::function<void(const Event&)>;
-
-		void Register(const std::string& descriptor, Slot&& callback);
+		void Initialize();
+		void Register(const std::string& descriptor, std::function<void(const Event&)>&& callback);
 		void Post(const Event& event) const;
 
 	private:
 		EventDispatcher() = default;
 
-		Application* m_App = nullptr;
-		std::unordered_map<std::string, std::vector<Slot>> m_Slots;
+		std::unordered_map<std::string, std::vector<std::function<void(const Event&)>>> m_Callbacks;
 	};
 }

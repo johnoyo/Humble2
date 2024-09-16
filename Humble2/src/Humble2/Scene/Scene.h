@@ -22,8 +22,7 @@ namespace HBL2
 		~Scene();
 
 		static Scene* Copy(Scene* other);
-
-		 HBL2::Scene& operator=(const HBL2::Scene&);
+		static void Copy(Scene* src, Scene* dst);
 
 		entt::entity CreateEntity()
 		{
@@ -116,5 +115,9 @@ namespace HBL2
 		entt::registry m_Registry;
 		std::vector<ISystem*> m_Systems;
 		std::unordered_map<UUID, entt::entity> m_EntityMap;
+
+		void operator=(const HBL2::Scene&);
+
+		friend class Pool<Scene, Scene>;
 	};
 }

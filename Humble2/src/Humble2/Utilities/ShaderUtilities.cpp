@@ -1,5 +1,4 @@
 #include "ShaderUtilities.h"
-#include <iostream>
 
 namespace HBL2
 {
@@ -76,8 +75,7 @@ namespace HBL2
 				if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 				{
 					HBL2_CORE_ERROR(module.GetErrorMessage());
-					assert(false);
-					// HBL2_CORE_ASSERT(false);
+					return {};
 				}
 
 				vulkanShaderData = std::vector<uint32_t>(module.cbegin(), module.cend());
@@ -128,8 +126,7 @@ namespace HBL2
 				if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 				{
 					HBL2_CORE_ERROR(module.GetErrorMessage());
-					// HBL2_CORE_ASSERT(false);
-					assert(false);
+					return {};
 				}
 
 				openGLShaderData = std::vector<uint32_t>(module.cbegin(), module.cend());
@@ -189,12 +186,18 @@ namespace HBL2
 		else
 		{
 			HBL2_CORE_ERROR("Could not open file: {0}.", shaderFilePath);
+			return {};
 		}
 
 		std::vector<std::vector<uint32_t>> shaderBinaries;
 
 		shaderBinaries.push_back(Compile(shaderFilePath, ss[0].str(), ShaderStage::VERTEX));
 		shaderBinaries.push_back(Compile(shaderFilePath, ss[1].str(), ShaderStage::FRAGMENT));
+
+		if (shaderBinaries[0].empty() || shaderBinaries[1].empty())
+		{
+			return {};
+		}
 
 		GraphicsAPI api = Renderer::Instance->GetAPI();
 		std::filesystem::path shaderPath = shaderFilePath;
@@ -235,10 +238,178 @@ namespace HBL2
 		return shaderBinaries;
 	}
 
-	void ShaderUtilities::AddShader(BuiltInShader shader, const ShaderDescriptor&& desc)
+	void ShaderUtilities::LoadBuiltInShaders()
 	{
-		Handle<Shader> shaderHandle = ResourceManager::Instance->CreateShader(std::forward<const ShaderDescriptor>(desc));
-		m_Shaders[shader] = shaderHandle;
+		// Invalid shader
+		{
+			auto invalidShaderAssetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "shader-asset",
+				.filePath = "assets/shaders/invalid.hblshader",
+				.type = AssetType::Shader,
+			});
+
+			auto invalidShaderCode = Compile("assets/shaders/invalid.hblshader");
+
+			auto invalidShaderHandle = ResourceManager::Instance->CreateShader({
+				.debugName = "invalid-shader",
+				.VS {.code = invalidShaderCode[0], .entryPoint = "main" },
+				.FS {.code = invalidShaderCode[1], .entryPoint = "main" },
+				.bindGroups {
+					{}, // Global bind group (0)
+					{}, // Material bind group (1)
+				},
+				.renderPipeline {
+					.vertexBufferBindings = {
+						{
+							.byteStride = 12,
+							.attributes = {
+								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
+							},
+						},
+						{
+							.byteStride = 8,
+							.attributes = {
+								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+							},
+						}
+					}
+				},
+			});
+
+			m_Shaders[BuiltInShader::INVALID] = invalidShaderHandle;
+
+			Asset* invalidShaderAsset = AssetManager::Instance->GetAssetMetadata(invalidShaderAssetHandle);
+			invalidShaderAsset->Loaded = true;
+			invalidShaderAsset->Indentifier = invalidShaderHandle.Pack();
+		}
+		
+		// Unlit shader
+		{
+			auto unlitShaderAssetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "shader-asset",
+				.filePath = "assets/shaders/unlit.hblshader",
+				.type = AssetType::Shader,
+			});
+
+			auto unlitShaderCode = Compile("assets/shaders/unlit.hblshader");
+
+			auto unlitShaderHandle = ResourceManager::Instance->CreateShader({
+				.debugName = "unlit-shader",
+				.VS {.code = unlitShaderCode[0], .entryPoint = "main" },
+				.FS {.code = unlitShaderCode[1], .entryPoint = "main" },
+				.bindGroups {
+					{}, // Global bind group (0)
+					{}, // Material bind group (1)
+				},
+				.renderPipeline {
+					.vertexBufferBindings = {
+						{
+							.byteStride = 12,
+							.attributes = {
+								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
+							},
+						},
+						{
+							.byteStride = 8,
+							.attributes = {
+								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+							},
+						}
+					}
+				},
+			});
+
+			m_Shaders[BuiltInShader::UNLIT] = unlitShaderHandle;
+
+			Asset* unlitShaderAsset = AssetManager::Instance->GetAssetMetadata(unlitShaderAssetHandle);
+			unlitShaderAsset->Loaded = true;
+			unlitShaderAsset->Indentifier = unlitShaderHandle.Pack();
+		}
+
+		// Blinn-Phnog shader
+		{
+			auto blinnPhongShaderAssetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "shader-asset",
+				.filePath = "assets/shaders/blinn-phong.hblshader",
+				.type = AssetType::Shader,
+			});
+
+			auto blinnPhongShaderCode = Compile("assets/shaders/blinn-phong.hblshader");
+
+			auto blinnPhongShaderHandle = ResourceManager::Instance->CreateShader({
+				.debugName = "blinn-phong-shader",
+				.VS {.code = blinnPhongShaderCode[0], .entryPoint = "main" },
+				.FS {.code = blinnPhongShaderCode[1], .entryPoint = "main" },
+				.bindGroups {
+					{}, // Global bind group (0)
+					{}, // Material bind group (1)
+				},
+				.renderPipeline {
+					.vertexBufferBindings = {
+						{
+							.byteStride = 12,
+							.attributes = {
+								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
+							},
+						},
+						{
+							.byteStride = 8,
+							.attributes = {
+								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+							},
+						}
+					}
+				},
+			});
+
+			m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderHandle;
+
+			Asset* blinnPhongShaderAsset = AssetManager::Instance->GetAssetMetadata(blinnPhongShaderAssetHandle);
+			blinnPhongShaderAsset->Loaded = true;
+			blinnPhongShaderAsset->Indentifier = blinnPhongShaderHandle.Pack();
+		}
+
+		{
+			auto pbrShaderAssetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "shader-asset",
+				.filePath = "assets/shaders/pbr.hblshader",
+				.type = AssetType::Shader,
+			});
+
+			auto pbrShaderCode = Compile("assets/shaders/pbr.hblshader");
+
+			auto pbrShaderHandle = ResourceManager::Instance->CreateShader({
+				.debugName = "pbr-shader",
+				.VS {.code = pbrShaderCode[0], .entryPoint = "main" },
+				.FS {.code = pbrShaderCode[1], .entryPoint = "main" },
+				.bindGroups {
+					{}, // Global bind group (0)
+					{}, // Material bind group (1)
+				},
+				.renderPipeline {
+					.vertexBufferBindings = {
+						{
+							.byteStride = 12,
+							.attributes = {
+								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
+							},
+						},
+						{
+							.byteStride = 8,
+							.attributes = {
+								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+							},
+						}
+					}
+				},
+			});
+
+			m_Shaders[BuiltInShader::PBR] = pbrShaderHandle;
+
+			Asset* pbrShaderAsset = AssetManager::Instance->GetAssetMetadata(pbrShaderAssetHandle);
+			pbrShaderAsset->Loaded = true;
+			pbrShaderAsset->Indentifier = pbrShaderHandle.Pack();
+		}
 	}
 
 	ReflectionData ShaderUtilities::Reflect(const std::vector<uint32_t>& vertexShaderData, const std::vector<uint32_t>& fragmentShaderData)

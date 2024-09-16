@@ -4,13 +4,17 @@
 #include "Renderer\Rewrite\Renderer.h"
 #include "Renderer\Rewrite\Enums.h"
 
+#include "Asset\AssetManager.h"
+
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
 #include <spirv_cross/spirv_glsl.hpp>
 
 #include <fstream>
 #include <filesystem>
+#include <iostream>
 #include <unordered_map>
+#include <iostream>
 
 namespace HBL2
 {
@@ -138,7 +142,9 @@ namespace HBL2
 
 		const ReflectionData& GetReflectionData(const std::string& shaderFilePath) { return m_ShaderReflectionData[shaderFilePath]; }
 
-		void AddShader(BuiltInShader shader, const ShaderDescriptor&& desc);
+		void LoadBuiltInShaders();
+
+		Handle<Shader> GetBuiltInShader(BuiltInShader shader) { return m_Shaders[shader]; }
 
 	private:
 		ShaderUtilities() = default;

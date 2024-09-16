@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Base.h"
+#include "Resources\Handle.h"
+#include "Resources\Types.h"
+#include "Resources\ResourceManager.h"
 
 namespace HBL2
 {
@@ -29,6 +32,10 @@ namespace HBL2
 		}
 
 		TextureData Load(const std::string& path, const TextureSettings& settings);		
+
+		void LoadWhiteTexture();
+
+		Handle<Texture> WhiteTexture;
 
 	private:
 		TextureUtilities() = default;

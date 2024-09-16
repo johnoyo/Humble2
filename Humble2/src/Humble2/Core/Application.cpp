@@ -48,7 +48,6 @@ namespace HBL2
 
 	void Application::BeginFrame()
 	{
-		// Measure time and delta time.
 		float time = (float)Window::Instance->GetTime();
 		m_DeltaTime = time - m_LastTime;
 		m_FixedDeltaTime += (time - m_LastTime) / m_LimitFPS;
@@ -73,6 +72,11 @@ namespace HBL2
 		}
 
 		Window::Instance->Present();
+
+		if (SceneManager::Get().SceneChangeRequested)
+		{
+			SceneManager::Get().LoadSceneDeffered();
+		}
 	}
 
 	void Application::Start()
@@ -119,6 +123,7 @@ namespace HBL2
 		delete Renderer::Instance;
 		Renderer::Instance = nullptr;
 
+		ResourceManager::Instance->Clean();
 		delete ResourceManager::Instance;
 		ResourceManager::Instance = nullptr;
 

@@ -49,6 +49,13 @@ namespace HBL2
 			{
 				system->OnCreate();
 			}
+
+			EventDispatcher::Get().Register("SceneChangeEvent", [&](const HBL2::Event& e)
+			{
+				HBL2_CORE_INFO("EditorContext::SceneChangeEvent");
+				const SceneChangeEvent& sce = dynamic_cast<const SceneChangeEvent&>(e);
+				m_ActiveScene = ResourceManager::Instance->GetScene(sce.NewScene);
+			});
 		}
 
 		void EditorContext::OnUpdate(float ts)
@@ -79,6 +86,19 @@ namespace HBL2
 			}
 		}
 
+		void EditorContext::OnDestroy()
+		{
+			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+			{
+				system->OnDestroy();
+			}
+
+			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+			{
+				system->OnDestroy();
+			}
+		}
+
 		bool EditorContext::OpenEmptyProject()
 		{
 			std::string filepath = HBL2::FileDialogs::OpenFile("Humble Project (*.hblproj)\0*.hblproj\0");
@@ -100,6 +120,10 @@ namespace HBL2
 
 		void EditorContext::RegisterAssets()
 		{
+			TextureUtilities::Get().LoadWhiteTexture();
+			ShaderUtilities::Get().LoadBuiltInShaders();
+
+			// Register project assets
 			for (auto& entry : std::filesystem::recursive_directory_iterator(HBL2::Project::GetAssetDirectory()))
 			{
 				const std::string& extension = entry.path().extension().string();

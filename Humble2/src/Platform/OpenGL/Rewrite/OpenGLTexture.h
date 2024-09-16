@@ -42,6 +42,7 @@ namespace HBL2
 			else
 			{
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Dimensions.x, Dimensions.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, Data);
+				delete Data;
 			}
 		}
 

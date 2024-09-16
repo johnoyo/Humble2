@@ -2,6 +2,7 @@
 
 #include "Utilities\Log.h"
 #include "Core\Application.h"
+#include "Core\Events.h"
 #include "Utilities\JobSystem.h"
 
 #include "Scene\Scene.h"

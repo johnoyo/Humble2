@@ -27,72 +27,6 @@ namespace HBL2
 			0.0, 1.0,  // 0 - Bottom left
 		};
 
-		//TextureSettings textureSettings;
-		//auto textureData = TextureUtilities::Get().Load("assets/icons/content_browser/png-1477.png", textureSettings);
-
-		//auto shaderCode = ShaderUtilities::Get().Compile("assets/shaders/unlit-textured.hblshader");
-		//auto shaderCode = ShaderUtilities::Get().Compile("assets/shaders/unlit-colored.hblshader");
-
-		//auto shader = rm->CreateShader({
-		//	.debugName = "test_shader",
-		//	.VS { .code = shaderCode[0], .entryPoint = "main" },
-		//	.FS { .code = shaderCode[1], .entryPoint = "main" },
-		//	.renderPipeline {
-		//		.vertexBufferBindings = {
-		//			{
-		//				.byteStride = 12,
-		//				.attributes = {
-		//					{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-		//				},
-		//			}/*,
-		//			{
-		//				.byteStride = 8,
-		//				.attributes = {
-		//					{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
-		//				},
-		//			}*/
-		//		}
-		//	}
-		//});
-
-		//auto drawBindGroupLayout = rm->CreateBindGroupLayout({
-		//	.debugName = "unlit-colored-layout",
-		//	/*.textureBindings = {
-		//		{
-		//			.slot = 0,
-		//			.visibility = ShaderStage::FRAGMENT,
-		//		}
-		//	},*/
-		//	.bufferBindings = {
-		//		{
-		//			.slot = 1,
-		//			.visibility = ShaderStage::VERTEX,
-		//			.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
-		//		},
-		//	},			
-		//});
-
-		///*auto texture = rm->CreateTexture({
-		//	.debugName = "test-texture",
-		//	.dimensions = { textureData.Width, textureData.Height, 0 },
-		//	.initialData = textureData.Data,
-		//});*/
-
-		//m_DrawBindings = rm->CreateBindGroup({
-		//	.debugName = "unlit-colored-bind-group",
-		//	.layout = drawBindGroupLayout,
-		//	/*.textures = { texture },*/
-		//	.buffers = {
-		//		{ .buffer = m_UniformRingBuffer->GetBuffer() },
-		//	}
-		//});
-
-		//auto material = rm->CreateMaterial({
-		//	.debugName = "test_material",
-		//	.shader = shader,
-		//	.bindGroup = m_DrawBindings,
-		//});
-
 		auto buffer = rm->CreateBuffer({
 			.debugName = "test_quad_positions",
 			.byteSize = sizeof(float) * 18,
@@ -119,13 +53,11 @@ namespace HBL2
 				if (staticMesh.Enabled)
 				{
 					HBL2_CORE_INFO("Setting up mesh");
-
-					//staticMesh.Material = material;
 					staticMesh.Mesh = meshResource;
 				}
 			});
 
-		auto globalBindGroupLayout = rm->CreateBindGroupLayout({
+		m_GlobalBindGroupLayout = rm->CreateBindGroupLayout({
 			.debugName = "unlit-colored-layout",
 			.bufferBindings = {
 				{
@@ -136,7 +68,7 @@ namespace HBL2
 			},
 		});
 
-		auto cameraBuffer = rm->CreateBuffer({
+		m_CameraBuffer = rm->CreateBuffer({
 			.debugName = "camera-uniform-buffer",
 			.usage = BufferUsage::UNIFORM,
 			.usageHint = BufferUsageHint::DYNAMIC,
@@ -147,9 +79,9 @@ namespace HBL2
 
 		m_GlobalBindings = rm->CreateBindGroup({
 			.debugName = "unlit-colored-bind-group",
-			.layout = globalBindGroupLayout,
+			.layout = m_GlobalBindGroupLayout,
 			.buffers = {
-				{ .buffer = cameraBuffer },
+				{ .buffer = m_CameraBuffer },
 			}
 		});
 	}
@@ -208,6 +140,11 @@ namespace HBL2
 
 	void StaticMeshRenderingSystem::OnDestroy()
 	{
+		auto* rm = ResourceManager::Instance;
+
+		rm->DeleteBindGroup(m_GlobalBindings);
+		rm->DeleteBindGroupLayout(m_GlobalBindGroupLayout);
+		rm->DeleteBuffer(m_CameraBuffer);
 	}
 
 	const glm::mat4& StaticMeshRenderingSystem::GetViewProjection()
