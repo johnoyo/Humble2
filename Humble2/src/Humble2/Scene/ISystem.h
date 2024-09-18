@@ -5,6 +5,12 @@ namespace HBL2
 {
 	class Scene;
 
+	enum class SystemType
+	{
+		Core = 0,
+		Runtime,
+	};
+
 	class ISystem
 	{
 	public:
@@ -20,7 +26,13 @@ namespace HBL2
 			m_Context = context;
 		}
 
+		void SetType(SystemType type)
+		{
+			m_Type = type;
+		}
+
 	protected:
 		Scene* m_Context = nullptr;
+		SystemType m_Type = SystemType::Core;
 	};
 }

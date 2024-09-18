@@ -24,7 +24,6 @@ namespace HBL2
 			}
 
 			m_EditorScene = ResourceManager::Instance->GetScene(EditorScene);
-			m_ActiveScene = ResourceManager::Instance->GetScene(ActiveScene);
 			m_EmptyScene = ResourceManager::Instance->GetScene(EmptyScene);
 
 			// Create editor systems.
@@ -39,13 +38,8 @@ namespace HBL2
 			m_EditorScene->AddComponent<Component::EditorCamera>(editorCameraEntity);
 			m_EditorScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 5.f;
 
-			// Create systems
+			// Create editor systems.
 			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
-			{
-				system->OnCreate();
-			}
-
-			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 			{
 				system->OnCreate();
 			}
@@ -65,9 +59,23 @@ namespace HBL2
 				system->OnUpdate(ts);
 			}
 
-			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+			if (m_ActiveScene == nullptr)
+			{
+				HBL2_CORE_TRACE("Active Scene is null.");
+				return;
+			}
+
+			for (HBL2::ISystem* system : m_ActiveScene->GetCoreSystems())
 			{
 				system->OnUpdate(ts);
+			}
+
+			if (Mode == Mode::Runtime)
+			{
+				for (HBL2::ISystem* system : m_ActiveScene->GetRuntimeSystems())
+				{
+					system->OnUpdate(ts);
+				}
 			}
 		}
 
@@ -80,6 +88,12 @@ namespace HBL2
 				system->OnGuiRender(ts);
 			}
 
+			if (m_ActiveScene == nullptr)
+			{
+				HBL2_CORE_TRACE("Active Scene is null.");
+				return;
+			}
+
 			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 			{
 				system->OnGuiRender(ts);
@@ -88,14 +102,20 @@ namespace HBL2
 
 		void EditorContext::OnDestroy()
 		{
-			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+			if (m_EditorScene != nullptr)
 			{
-				system->OnDestroy();
+				for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+				{
+					system->OnDestroy();
+				}
 			}
 
-			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+			if (m_ActiveScene != nullptr)
 			{
-				system->OnDestroy();
+				for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+				{
+					system->OnDestroy();
+				}
 			}
 		}
 
@@ -105,7 +125,7 @@ namespace HBL2
 
 			if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 			{
-				RegisterAssets();
+				LoadBuiltInAssets();
 
 				HBL2::Project::OpenStartingScene();
 
@@ -118,58 +138,10 @@ namespace HBL2
 			return false;
 		}
 
-		void EditorContext::RegisterAssets()
+		void EditorContext::LoadBuiltInAssets()
 		{
 			TextureUtilities::Get().LoadWhiteTexture();
 			ShaderUtilities::Get().LoadBuiltInShaders();
-
-			// Register project assets
-			for (auto& entry : std::filesystem::recursive_directory_iterator(HBL2::Project::GetAssetDirectory()))
-			{
-				const std::string& extension = entry.path().extension().string();
-				auto relativePath = std::filesystem::relative(entry.path(), HBL2::Project::GetAssetDirectory());
-
-				if (extension == ".png" || extension == ".jpg")
-				{
-					auto assetHandle = AssetManager::Instance->CreateAsset({
-						.debugName = "texture-asset",
-						.filePath = relativePath,
-						.type = AssetType::Texture,
-					});
-				}
-				else if (extension == ".obj" || extension == ".gltf" || extension == ".glb" || extension == ".fbx")
-				{
-					auto assetHandle = AssetManager::Instance->CreateAsset({
-						.debugName = "mesh-asset",
-						.filePath = relativePath,
-						.type = AssetType::Mesh,
-					});
-				}
-				else if (extension == ".hblmat")
-				{
-					auto assetHandle = AssetManager::Instance->CreateAsset({
-						.debugName = "material-asset",
-						.filePath = relativePath,
-						.type = AssetType::Material,
-					});
-				}
-				else if (extension == ".hblshader")
-				{
-					auto assetHandle = AssetManager::Instance->CreateAsset({
-						.debugName = "shader-asset",
-						.filePath = relativePath,
-						.type = AssetType::Shader,
-					});
-				}
-				else if (extension == ".humble")
-				{
-					auto assetHandle = AssetManager::Instance->CreateAsset({
-						.debugName = "scene-asset",
-						.filePath = relativePath,
-						.type = AssetType::Scene,
-					});
-				}
-			}
 		}
 	}
 }

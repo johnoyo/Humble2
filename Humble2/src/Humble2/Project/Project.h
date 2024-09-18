@@ -4,6 +4,7 @@
 
 #include "Scene\Scene.h"
 #include "Scene\SceneSerializer.h"
+#include "Scene\SceneManager.h"
 
 #include "Resources\ResourceManager.h"
 

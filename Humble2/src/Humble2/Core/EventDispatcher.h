@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Base.h"
+
 #include <string>
 #include <functional>
 #include <unordered_map>
@@ -18,17 +20,21 @@ namespace HBL2
 
 		static EventDispatcher& Get()
 		{
-			static EventDispatcher instance;
-			return instance;
+			HBL2_CORE_ASSERT(s_Instance != nullptr, "EventDispatcher s_Instance is null! Call EventDispatcher::Initialize before use.");
+			return *s_Instance;
 		}
 
-		void Initialize();
+		static void Initialize();
+		static void Shutdown();
+
 		void Register(const std::string& descriptor, std::function<void(const Event&)>&& callback);
 		void Post(const Event& event) const;
 
 	private:
 		EventDispatcher() = default;
 
-		std::unordered_map<std::string, std::vector<std::function<void(const Event&)>>> m_Callbacks;
+		std::unordered_map<std::string, std::vector<std::function<void(const Event&)>>> m_CallbackSlots;
+
+		inline static EventDispatcher* s_Instance = nullptr;
 	};
 }

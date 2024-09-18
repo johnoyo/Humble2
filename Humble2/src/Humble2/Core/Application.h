@@ -6,6 +6,7 @@
 #include "Base.h"
 #include "Input.h"
 #include "Context.h"
+#include "EventDispatcher.h"
 
 #include "ImGui\ImGuiRenderer.h"
 #include "Platform\OpenGL\Rewrite\OpenGLImGuiRenderer.h"
@@ -25,6 +26,7 @@
 #include "Scene\SceneManager.h"
 
 #include "Utilities\Random.h"
+#include "Utilities\MeshUtilities.h"
 
 #include <string>
 #include <sstream>

@@ -87,15 +87,36 @@ namespace HBL2
 			m_Registry.remove<T>(entity);
 		}
 
-		void RegisterSystem(ISystem* system)
+		void RegisterSystem(ISystem* system, SystemType type = SystemType::Core)
 		{
+			system->SetType(type);
 			system->SetContext(this);
 			m_Systems.push_back(system);
+
+			switch (type)
+			{
+			case HBL2::SystemType::Core:
+				m_CoreSystems.push_back(system);
+				break;
+			case HBL2::SystemType::Runtime:
+				m_RuntimeSystems.push_back(system);
+				break;
+			}
 		}
 
 		const std::vector<ISystem*>& GetSystems() const
 		{
 			return m_Systems;
+		}
+
+		const std::vector<ISystem*>& GetCoreSystems() const
+		{
+			return m_CoreSystems;
+		}
+
+		const std::vector<ISystem*>& GetRuntimeSystems() const
+		{
+			return m_RuntimeSystems;
 		}
 
 		entt::registry& GetRegistry()
@@ -114,6 +135,8 @@ namespace HBL2
 		std::string m_Name;
 		entt::registry m_Registry;
 		std::vector<ISystem*> m_Systems;
+		std::vector<ISystem*> m_CoreSystems;
+		std::vector<ISystem*> m_RuntimeSystems;
 		std::unordered_map<UUID, entt::entity> m_EntityMap;
 
 		void operator=(const HBL2::Scene&);

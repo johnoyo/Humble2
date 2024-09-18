@@ -2,22 +2,9 @@ Scene: TestScene
 Entities:
   - Entity: 2
     Component::Tag:
-      Tag: RedSprite
-    Component::ID:
-      ID: 16170793832576229376
-    Component::Transform:
-      Translation: [-1, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::StaticMesh_New:
-      Enabled: true
-      Material: 3020648493988299302
-      Mesh: 0
-  - Entity: 1048577
-    Component::Tag:
       Tag: Camera
     Component::ID:
-      ID: 7031365491490028544
+      ID: 4611933241828566016
     Component::Transform:
       Translation: [0, 0, 10]
       Rotation: [0, 0, 0]
@@ -30,15 +17,28 @@ Entities:
       FOV: 30
       Aspect Ratio: 1.778
       Zoom Level: 300
-  - Entity: 1048576
+  - Entity: 1
+    Component::Tag:
+      Tag: RedSprite
+    Component::ID:
+      ID: 13890798416703205376
+    Component::Transform:
+      Translation: [-1, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 16085425775331581885
+      Mesh: 0
+  - Entity: 0
     Component::Tag:
       Tag: ActualSprite
     Component::ID:
-      ID: 12075401353704701952
+      ID: 7392171364512436224
     Component::Transform:
       Translation: [1, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Sprite_New:
       Enabled: true
-      Material: 11080470078166277045
+      Material: 7020287691825424313

@@ -2,9 +2,22 @@ Scene: EmptyScene
 Entities:
   - Entity: 1
     Component::Tag:
+      Tag: YellowSprite
+    Component::ID:
+      ID: 10212013228284741632
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 15323823404803264542
+      Mesh: 0
+  - Entity: 0
+    Component::Tag:
       Tag: Camera
     Component::ID:
-      ID: 7031365491490028544
+      ID: 1275945063876455680
     Component::Transform:
       Translation: [0, 0, 10]
       Rotation: [0, 0, 0]
@@ -15,18 +28,5 @@ Entities:
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 1.92109251
+      Aspect Ratio: 1.778
       Zoom Level: 300
-  - Entity: 0
-    Component::Tag:
-      Tag: Sprite
-    Component::ID:
-      ID: 16170793832576229376
-    Component::Transform:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::StaticMesh_New:
-      Enabled: true
-      Material: 1837901151889460311
-      Mesh: 0

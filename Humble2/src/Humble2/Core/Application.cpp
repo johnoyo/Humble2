@@ -12,6 +12,9 @@ namespace HBL2
 
 		Log::Initialize();
 		Random::Initialize();
+		EventDispatcher::Initialize();
+
+		MeshUtilities::Initialize();
 
 		switch (m_Specification.GraphicsAPI)
 		{
@@ -130,5 +133,9 @@ namespace HBL2
 		Device::Instance->Destroy();
 		delete Device::Instance;
 		Device::Instance = nullptr;
+
+		MeshUtilities::Shutdown();
+
+		EventDispatcher::Shutdown();
 	}
 }

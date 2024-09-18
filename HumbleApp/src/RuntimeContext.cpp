@@ -5,19 +5,24 @@ namespace HBL2Runtime
     void RuntimeContext::OnCreate()
     {
 		HBL2::Context::Mode = HBL2::Mode::Runtime;
-
-		m_ActiveScene = HBL2::ResourceManager::Instance->GetScene(ActiveScene);
+		HBL2::AssetManager::Instance = new HBL2::EditorAssetManager;
 
 		OpenProject();
 
-		for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+		HBL2::EventDispatcher::Get().Register("SceneChangeEvent", [&](const HBL2::Event& e)
 		{
-			system->OnCreate();
-		}
+			const HBL2::SceneChangeEvent& sce = dynamic_cast<const HBL2::SceneChangeEvent&>(e);
+			m_ActiveScene = HBL2::ResourceManager::Instance->GetScene(sce.NewScene);
+		});
     }
 
     void RuntimeContext::OnUpdate(float ts)
     {
+		if (m_ActiveScene == nullptr)
+		{
+			return;
+		}
+
 		for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 		{
 			system->OnUpdate(ts);
@@ -26,6 +31,11 @@ namespace HBL2Runtime
 
     void RuntimeContext::OnGuiRender(float ts)
     {
+		if (m_ActiveScene == nullptr)
+		{
+			return;
+		}
+
 		for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 		{
 			system->OnGuiRender(ts);
@@ -34,6 +44,11 @@ namespace HBL2Runtime
 
 	void RuntimeContext::OnDestroy()
 	{
+		if (m_ActiveScene == nullptr)
+		{
+			return;
+		}
+
 		for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 		{
 			system->OnDestroy();
@@ -42,6 +57,9 @@ namespace HBL2Runtime
 
 	bool RuntimeContext::OpenProject()
 	{
+		HBL2::TextureUtilities::Get().LoadWhiteTexture();
+		HBL2::ShaderUtilities::Get().LoadBuiltInShaders();
+
 		std::filesystem::path filepath;
 
 		for (const auto& entry : std::filesystem::recursive_directory_iterator(std::filesystem::current_path()))

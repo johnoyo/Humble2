@@ -241,7 +241,7 @@ namespace HBL2
 
 		scene->RegisterSystem(new TransformSystem);
 		scene->RegisterSystem(new LinkSystem);
-		scene->RegisterSystem(new CameraSystem);
+		scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
 		scene->RegisterSystem(new StaticMeshRenderingSystem);
 		scene->RegisterSystem(new SpriteRenderingSystem);
 

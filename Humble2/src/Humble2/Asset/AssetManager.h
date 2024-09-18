@@ -4,6 +4,8 @@
 #include "Resources\Handle.h"
 #include "Resources\Pool.h"
 
+#include <exception>
+
 namespace HBL2
 {
 	class AssetManager
@@ -22,20 +24,15 @@ namespace HBL2
 		}
 		void DeleteAsset(Handle<Asset> handle)
 		{
-			for (int i = 0; i < m_RegisteredAssets.size(); i++)
-			{
-				if (handle == m_RegisteredAssets[i])
-				{
-					m_RegisteredAssets.erase(m_RegisteredAssets.begin() + i);
-					break;
-				}
-			}
 			m_AssetPool.Remove(handle);
 		}
 		Asset* GetAssetMetadata(Handle<Asset> handle) const
 		{
 			return m_AssetPool.Get(handle);
 		}
+
+		void RegisterAssets();
+		void DeregisterAssets();
 
 		template<typename T>
 		Handle<T> GetAsset(UUID assetUUID)

@@ -50,14 +50,26 @@ namespace HBL2
 
 	void Project::OpenStartingScene()
 	{
+		AssetManager::Instance->RegisterAssets();
+
 		UUID assetUUID = std::hash<std::string>()(s_ActiveProject->GetSpecification().StartingScene.string());
 		Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(assetUUID);
-		Context::ActiveScene = sceneHandle;
 
 		if (!sceneHandle.IsValid())
 		{
 			HBL2_CORE_ERROR("Scene asset handle of \"{0}\" is invalid, aborting scene load.", s_ActiveProject->GetSpecification().StartingScene.string());
 			return;
 		}
+
+		const std::filesystem::path& startingScenePath = GetAssetFileSystemPath(s_ActiveProject->GetSpecification().StartingScene.string());
+
+		if (!std::filesystem::is_directory(startingScenePath.parent_path()))
+		{
+			Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
+			HBL2::SceneSerializer serializer(scene);
+			serializer.Serialize(GetAssetFileSystemPath(s_ActiveProject->GetSpecification().StartingScene.string()));
+		}
+
+		SceneManager::Get().LoadScene(sceneHandle, true);
 	}
 }

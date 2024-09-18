@@ -19,3 +19,5 @@
 
 #include "Resources\Types.h"
 #include "Resources\TypeDescriptors.h"
+
+#include "Asset\EditorAssetManager.h" // TODO: Remove.
