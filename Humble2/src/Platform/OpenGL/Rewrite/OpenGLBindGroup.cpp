@@ -36,7 +36,7 @@ namespace HBL2
 
 		for (int i = 0; i < Textures.size(); i++)
 		{
-			OpenGLTexture* buffer = rm->GetTexture(Textures[i]);
+			OpenGLTexture* texture = rm->GetTexture(Textures[i]);
 
 			// TODO: Handle textures.
 			// ...

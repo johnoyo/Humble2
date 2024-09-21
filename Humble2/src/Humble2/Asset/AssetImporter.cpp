@@ -270,7 +270,7 @@ namespace HBL2
 				.initialData = meshData.IndexBuffer.data(),
 			});
 
-			// Create the texture
+			// Create the mesh
 			auto mesh = ResourceManager::Instance->CreateMesh({
 				.debugName = "test-mesh",
 				.indexOffset = 0,

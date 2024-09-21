@@ -44,6 +44,8 @@ namespace HBL2
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, Data);
 				delete Data;
 			}
+
+			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 
 		const char* DebugName = "";
