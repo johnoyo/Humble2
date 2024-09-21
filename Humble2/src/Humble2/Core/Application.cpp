@@ -67,7 +67,7 @@ namespace HBL2
 			ss << m_Specification.Name << " [" << m_Frames << " FPS]";
 			Window::Instance->SetTitle(ss.str());
 
-			printf("FPS: %d, DeltaTime: %f\n", m_Frames, m_DeltaTime);
+			HBL2_CORE_TRACE("FPS: {0}, DeltaTime: {1}", m_Frames, m_DeltaTime);
 
 			m_Timer++;
 			m_Frames = 0;

@@ -33,7 +33,7 @@ namespace HBL2
 		virtual void Initialize() override;
 		virtual void BeginFrame() override;
 		virtual void SetPipeline(Handle<Shader> shader) override;
-		virtual void SetBuffers(Handle<Mesh> mesh) override;
+		virtual void SetBuffers(Handle<Mesh> mesh, Handle<Material> material) override;
 		virtual void SetBindGroups(Handle<Material> material) override;
 		virtual void SetBindGroup(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset) override;
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override;

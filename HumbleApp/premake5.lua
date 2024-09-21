@@ -1,5 +1,5 @@
 project "HumbleApp"
-    kind "ConsoleApp"
+    kind "WindowedApp"
     language "C++"
     cppdialect "C++20"
     staticruntime "Off"

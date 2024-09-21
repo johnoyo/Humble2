@@ -500,6 +500,21 @@ namespace HBL2
 								uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
 								Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
 
+								if (assetHandle.IsValid())
+								{
+									std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(assetHandle)->FilePath).string() + ".hblmesh", 0);
+
+									YAML::Emitter out;
+									out << YAML::BeginMap;
+									out << YAML::Key << "Mesh" << YAML::Value;
+									out << YAML::BeginMap;
+									out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(assetHandle)->UUID;
+									out << YAML::EndMap;
+									out << YAML::EndMap;
+									fout << out.c_str();
+									fout.close();
+								}
+
 								mesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(assetHandle);
 
 								ImGui::EndDragDropTarget();

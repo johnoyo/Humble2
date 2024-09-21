@@ -35,10 +35,10 @@ namespace HBL2
 		}
 
 		const char* DebugName = "";
-		uint32_t IndexOffset;
-		uint32_t IndexCount;
-		uint32_t VertexOffset;
-		uint32_t VertexCount;
+		uint32_t IndexOffset = 0;
+		uint32_t IndexCount = 0;
+		uint32_t VertexOffset = 0;
+		uint32_t VertexCount = 0;
 		Handle<Buffer> IndexBuffer;
 		std::vector<Handle<Buffer>> VertexBuffers;
 	};

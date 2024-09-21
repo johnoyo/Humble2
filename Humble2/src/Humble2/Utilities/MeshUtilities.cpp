@@ -27,9 +27,9 @@ namespace HBL2
 		s_Instance = nullptr;
 	}
 
-	std::vector<Vertex> MeshUtilities::Load(const std::filesystem::path& path)
+	MeshData MeshUtilities::Load(const std::filesystem::path& path)
     {
-		std::vector<Vertex> meshData;
+		MeshData meshData;
 
 		const std::string& extension = path.filename().extension().string();
 

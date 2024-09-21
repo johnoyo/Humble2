@@ -2,7 +2,8 @@
 
 #include "RuntimeContext.h"
 
-int main(int argc, char** argv)
+// int main(int argc, char** argv)
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
 	HBL2::ApplicationSpec applicationSpec;
 	applicationSpec.Name = "Sample App";

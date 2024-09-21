@@ -53,9 +53,13 @@ namespace HBL2
 		glBindVertexArray(openGLShader->RenderPipeline);
 	}
 
-	void OpenGLRenderer::SetBuffers(Handle<Mesh> mesh)
+	void OpenGLRenderer::SetBuffers(Handle<Mesh> mesh, Handle<Material> material)
 	{
 		Mesh* openGLMesh = m_ResourceManager->GetMesh(mesh);
+		Material* openGLMaterial = m_ResourceManager->GetMaterial(material);
+
+		HBL2_CORE_ASSERT(openGLMesh != nullptr, "Mesh handle is invalid.");
+		HBL2_CORE_ASSERT(openGLMaterial != nullptr, "Material handle is invalid.");
 
 		if (openGLMesh->IndexBuffer.IsValid())
 		{
@@ -67,11 +71,79 @@ namespace HBL2
 		{
 			if (openGLMesh->VertexBuffers[i].IsValid())
 			{
+				OpenGLShader* openGLShader = m_ResourceManager->GetShader(openGLMaterial->Shader);
 				OpenGLBuffer* openGLBuffer = m_ResourceManager->GetBuffer(openGLMesh->VertexBuffers[i]);
 
-				glBindBuffer(GL_ARRAY_BUFFER, openGLBuffer->RendererId);
-				glEnableVertexAttribArray(i);
-				glVertexAttribPointer(i, (openGLBuffer->ByteSize / sizeof(float)) / openGLMesh->VertexCount, GL_FLOAT, GL_FALSE, openGLBuffer->ByteSize / openGLMesh->VertexCount, nullptr);
+				HBL2_CORE_ASSERT(openGLShader != nullptr, "Shader handle for material \"" + std::string(openGLMaterial->DebugName) + "\" is invalid.");
+				HBL2_CORE_ASSERT(openGLBuffer != nullptr, "Buffer handle for material \"" + std::string(openGLMaterial->DebugName) + "\" is invalid.", openGLMaterial->DebugName);
+				HBL2_CORE_ASSERT(openGLShader->VertexBufferBindings.size() >= openGLMesh->VertexBuffers.size(), "Shader: \"" + std::string(openGLShader->DebugName) + "\", Number of vertex buffers and number of buffer bindings dot not match.");
+
+				const auto& binding = openGLShader->VertexBufferBindings[i];
+
+				for (int j = 0; j < binding.attributes.size(); j++)
+				{
+					auto& attribute = binding.attributes[j];
+
+					GLint size = 0;
+					GLenum type = 0;
+					GLsizei stride = binding.byteStride;
+					GLsizei offset = attribute.byteOffset;
+
+					switch (attribute.format)
+					{
+					case VertexFormat::FLOAT32:
+						size = 1;
+						type = GL_FLOAT;
+						break;
+					case VertexFormat::FLOAT32x2:
+						size = 2;
+						type = GL_FLOAT;
+						break;
+					case VertexFormat::FLOAT32x3:
+						size = 3;
+						type = GL_FLOAT;
+						break;
+					case VertexFormat::FLOAT32x4:
+						size = 4;
+						type = GL_FLOAT;
+					case VertexFormat::UINT32:
+						size = 1;
+						type = GL_UNSIGNED_INT;
+						break;
+					case VertexFormat::UINT32x2:
+						size = 2;
+						type = GL_UNSIGNED_INT;
+						break;
+					case VertexFormat::UINT32x3:
+						size = 3;
+						type = GL_UNSIGNED_INT;
+						break;
+					case VertexFormat::UINT32x4:
+						size = 4;
+						type = GL_UNSIGNED_INT;
+						break;
+					case VertexFormat::INT32:
+						size = 1;
+						type = GL_INT;
+						break;
+					case VertexFormat::INT32x2:
+						size = 2;
+						type = GL_INT;
+						break;
+					case VertexFormat::INT32x3:
+						size = 3;
+						type = GL_INT;
+						break;
+					case VertexFormat::INT32x4:
+						size = 4;
+						type = GL_INT;
+						break;
+					}
+
+					glBindBuffer(GL_ARRAY_BUFFER, openGLBuffer->RendererId);
+					glEnableVertexAttribArray(i + j);
+					glVertexAttribPointer(i + j, size, type, GL_FALSE, stride, (const void*)offset);
+				}
 			}
 		}
 	}
@@ -153,13 +225,13 @@ namespace HBL2
 	void OpenGLRenderer::Draw(Handle<Mesh> mesh)
 	{
 		Mesh* openGLMesh = m_ResourceManager->GetMesh(mesh);
-		glDrawArrays(GL_TRIANGLES, 0, openGLMesh->VertexCount);
+		glDrawArrays(GL_TRIANGLES, openGLMesh->VertexOffset, openGLMesh->VertexCount);
 	}
 
 	void OpenGLRenderer::DrawIndexed(Handle<Mesh> mesh)
 	{
 		Mesh* openGLMesh = m_ResourceManager->GetMesh(mesh);
-		glDrawElements(GL_TRIANGLES, (openGLMesh->VertexCount / 4) * 6, GL_UNSIGNED_INT, nullptr);
+		glDrawElements(GL_TRIANGLES, (openGLMesh->IndexCount - openGLMesh->IndexOffset), GL_UNSIGNED_INT, nullptr);
 	}
 
 	CommandBuffer* OpenGLRenderer::BeginCommandRecording(CommandBufferType type)

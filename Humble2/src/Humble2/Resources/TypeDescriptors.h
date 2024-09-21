@@ -112,7 +112,7 @@ namespace HBL2
 				};
 
 				uint32_t byteStride = 12;
-				std::vector<Attribute> attributes; // TODO: Change to initializer list.
+				std::vector<Attribute> attributes;
 			};
 
 			struct BlendState

@@ -25,8 +25,8 @@ namespace HBL2
 
 		m_Indeces = new uint32_t[m_Size * 6U];
 
-		int w = 0;
-		for (int k = 0; k < m_Size * 6; k += 6)
+		uint32_t w = 0;
+		for (uint32_t k = 0; k < m_Size * 6; k += 6)
 		{
 			m_Indeces[m_Index++] = 0 + w;
 			m_Indeces[m_Index++] = 3 + w;

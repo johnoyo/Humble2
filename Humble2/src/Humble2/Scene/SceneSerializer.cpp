@@ -311,7 +311,7 @@ namespace HBL2
 					auto& staticMesh = m_Scene->AddComponent<Component::StaticMesh_New>(deserializedEntity);
 					staticMesh.Enabled = staticMesh_NewComponent["Enabled"].as<bool>();
 					staticMesh.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
-					// staticMesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(staticMesh_NewComponent["Mesh"].as<UUID>());
+					staticMesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(staticMesh_NewComponent["Mesh"].as<UUID>());
 				}
 			}
 		}

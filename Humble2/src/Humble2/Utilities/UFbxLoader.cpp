@@ -1,8 +1,10 @@
 #include "UFbxLoader.h"
 
+#include "MeshUtilities.h"
+
 namespace HBL2
 {
-	bool UFbxLoader::Load(const std::filesystem::path& path, std::vector<Vertex>& meshData)
+	bool UFbxLoader::Load(const std::filesystem::path& path, MeshData& meshData)
 	{
         HBL2_FUNC_PROFILE();
 
@@ -41,7 +43,7 @@ namespace HBL2
         return true;
 	}
 
-    bool UFbxLoader::LoadVertexData(const ufbx_node* node, std::vector<Vertex>& meshData)
+    bool UFbxLoader::LoadVertexData(const ufbx_node* node, MeshData& meshData)
     {
         int submeshIndex = 0;
 
@@ -54,6 +56,9 @@ namespace HBL2
             HBL2_CORE_ERROR("UFbxLoader::LoadVertexData: only triangle meshes are supported");
             return false;
         }
+
+        size_t numVerticesBefore = meshData.VertexBuffer.size();
+        size_t numIndicesBefore = meshData.IndexBuffer.size();
 
         glm::vec4 diffuseColor;
         {
@@ -95,22 +100,22 @@ namespace HBL2
                     vertex.Position = glm::vec3(positionFbx.x, positionFbx.y, positionFbx.z);
                 }
 
-                // normals, always defined if `ufbx_load_opts.generate_missing_normals` is used
-                {
-                    uint32_t fbxNormalIndex = fbxMesh.vertex_normal.indices[vertexPerFaceIndex];
-                    HBL2_CORE_ASSERT(fbxNormalIndex < fbxMesh.vertex_normal.values.count, "LoadVertexData: memory violation normals");
-                    ufbx_vec3& normalFbx = fbxMesh.vertex_normal.values.data[fbxNormalIndex];
-                    vertex.Normal = glm::vec3(normalFbx.x, normalFbx.y, normalFbx.z);
-                }
+                //// normals, always defined if `ufbx_load_opts.generate_missing_normals` is used
+                //{
+                //    uint32_t fbxNormalIndex = fbxMesh.vertex_normal.indices[vertexPerFaceIndex];
+                //    HBL2_CORE_ASSERT(fbxNormalIndex < fbxMesh.vertex_normal.values.count, "LoadVertexData: memory violation normals");
+                //    ufbx_vec3& normalFbx = fbxMesh.vertex_normal.values.data[fbxNormalIndex];
+                //    vertex.Normal = glm::vec3(normalFbx.x, normalFbx.y, normalFbx.z);
+                //}
 
-                // tangents (check `tangent space` in Blender when exporting fbx)
-                if (hasTangents)
-                {
-                    uint32_t fbxTangentIndex = fbxMesh.vertex_tangent.indices[vertexPerFaceIndex];
-                    HBL2_CORE_ASSERT(fbxTangentIndex < fbxMesh.vertex_tangent.values.count, "LoadVertexData: memory violation tangents");
-                    ufbx_vec3& tangentFbx = fbxMesh.vertex_tangent.values.data[fbxTangentIndex];
-                    vertex.Tangent = glm::vec3(tangentFbx.x, tangentFbx.y, tangentFbx.z);
-                }
+                //// tangents (check `tangent space` in Blender when exporting fbx)
+                //if (hasTangents)
+                //{
+                //    uint32_t fbxTangentIndex = fbxMesh.vertex_tangent.indices[vertexPerFaceIndex];
+                //    HBL2_CORE_ASSERT(fbxTangentIndex < fbxMesh.vertex_tangent.values.count, "LoadVertexData: memory violation tangents");
+                //    ufbx_vec3& tangentFbx = fbxMesh.vertex_tangent.values.data[fbxTangentIndex];
+                //    vertex.Tangent = glm::vec3(tangentFbx.x, tangentFbx.y, tangentFbx.z);
+                //}
 
                 // uv coordinates
                 if (hasUVs)
@@ -121,24 +126,56 @@ namespace HBL2
                     vertex.UV = glm::vec2(uvFbx.x, uvFbx.y);
                 }
 
-                // vertex colors
-                if (hasVertexColors)
-                {
-                    uint32_t fbxColorIndex = fbxMesh.vertex_color.indices[vertexPerFaceIndex];
-                    ufbx_vec4& colorFbx = fbxMesh.vertex_color.values.data[fbxColorIndex];
+                //// vertex colors
+                //if (hasVertexColors)
+                //{
+                //    uint32_t fbxColorIndex = fbxMesh.vertex_color.indices[vertexPerFaceIndex];
+                //    ufbx_vec4& colorFbx = fbxMesh.vertex_color.values.data[fbxColorIndex];
 
-                    // convert from sRGB to linear
-                    glm::vec3 linearColor = glm::pow(glm::vec3(colorFbx.x, colorFbx.y, colorFbx.z), glm::vec3(2.2f));
-                    glm::vec4 vertexColor(linearColor.x, linearColor.y, linearColor.z, colorFbx.w);
-                    vertex.Color = vertexColor * diffuseColor;
-                }
-                else
-                {
-                    vertex.Color = diffuseColor;
-                }
+                //    // convert from sRGB to linear
+                //    glm::vec3 linearColor = glm::pow(glm::vec3(colorFbx.x, colorFbx.y, colorFbx.z), glm::vec3(2.2f));
+                //    glm::vec4 vertexColor(linearColor.x, linearColor.y, linearColor.z, colorFbx.w);
+                //    vertex.Color = vertexColor * diffuseColor;
+                //}
+                //else
+                //{
+                //    vertex.Color = diffuseColor;
+                //}
 
-                meshData.push_back(vertex);
+                meshData.VertexBuffer.push_back(vertex);
             }
+        }
+
+        // resolve indices
+        // A face has four vertices, while above loop generates at least six vertices for per face)
+        {
+            // get number of all vertices created from above (faces * trianglesPerFace * 3)
+            uint32_t submeshAllVertices = meshData.VertexBuffer.size() - numVerticesBefore;
+
+            // create a ufbx vertex stream with data pointing to the first vertex of this submesh
+            // (meshData.VertexBuffer is for all submeshes)
+            ufbx_vertex_stream streams;
+            streams.data = &meshData.VertexBuffer[numVerticesBefore];
+            streams.vertex_count = submeshAllVertices;
+            streams.vertex_size = sizeof(Vertex);
+
+            // index buffer: add space for all new vertices from above
+            meshData.IndexBuffer.resize(numIndicesBefore + submeshAllVertices);
+
+            // ufbx_generate_indices() will rearrange meshData.VertexBuffer (via streams.data) and fill meshData.IndexBuffer
+            ufbx_error ufbxError;
+            size_t numVertices = ufbx_generate_indices(&streams, 1, &meshData.IndexBuffer[numIndicesBefore], submeshAllVertices, nullptr, &ufbxError);
+
+            // handle error
+            if (ufbxError.type != UFBX_ERROR_NONE)
+            {
+                char errorBuffer[512];
+                ufbx_format_error(errorBuffer, sizeof(errorBuffer), &ufbxError);
+                HBL2_CORE_FATAL("UFbxLoader: creation of index buffer failed, error: {0},  node: {1}", errorBuffer, node->name.data);
+            }
+
+            // meshData.VertexBuffer can be downsized now
+            meshData.VertexBuffer.resize(numVerticesBefore + numVertices);
         }
 
         return true;

@@ -18,11 +18,20 @@ namespace HBL2
 		})
 		.PerDraw([&](LocalDrawStream& draw)
 		{
-			Renderer::Instance->SetBuffers(draw.Mesh);
+			Renderer::Instance->SetBuffers(draw.Mesh, draw.Material);
 			Renderer::Instance->SetBindGroups(draw.Material);
 			Renderer::Instance->SetBindGroup(draw.BindGroup, 0, draw.Offset);
 
-			Renderer::Instance->Draw(draw.Mesh);
+			Mesh* openGLMesh = ResourceManager::Instance->GetMesh(draw.Mesh);
+
+			if (openGLMesh->IndexBuffer.IsValid())
+			{
+				Renderer::Instance->DrawIndexed(draw.Mesh);
+			}
+			else
+			{
+				Renderer::Instance->Draw(draw.Mesh);
+			}
 		})
 		.Iterate();
 	}

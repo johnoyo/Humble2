@@ -17,7 +17,7 @@ namespace HBL2
 
 			memset(m_Data, 0, sizeof(m_Data));
 
-			for (int i = 0; i < m_Size; i++)
+			for (uint32_t i = 0; i < m_Size; i++)
 			{
 				m_GenerationalCounter[i] = 1;
 			}
@@ -74,7 +74,7 @@ namespace HBL2
 			m_Data = new T[m_Size * 2];
 			memset(m_Data, 0, sizeof(m_Data));
 
-			for (int i = 0; i < m_Size; i++)
+			for (uint32_t i = 0; i < m_Size; i++)
 			{
 				m_Data[i] = oldData[i];
 			}
@@ -86,12 +86,12 @@ namespace HBL2
 
 			m_GenerationalCounter = new uint16_t[m_Size * 2];
 
-			for (int i = m_Size; i < m_Size * 2; i++)
+			for (uint32_t i = m_Size; i < m_Size * 2; i++)
 			{
 				m_GenerationalCounter[i] = 1;
 			}
 
-			for (int i = 0; i < m_Size; i++)
+			for (uint32_t i = 0; i < m_Size; i++)
 			{
 				m_GenerationalCounter[i] = oldGenerationalCounter[i];
 			}

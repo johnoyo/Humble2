@@ -11,6 +11,8 @@
 	#include <GL/glew.h>
 #endif
 
+#include "Utilities\Span.h"
+
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -39,6 +41,8 @@ namespace HBL2
 
 			glGenVertexArrays(1, &RenderPipeline);
 			glBindVertexArray(RenderPipeline);
+
+			VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
 		}
 
 		uint32_t Compile(uint32_t type, const char* entryPoint, const std::vector<uint32_t>& binaryCode)
@@ -52,5 +56,6 @@ namespace HBL2
 		const char* DebugName = "";
 		uint32_t Program = 0;
 		uint32_t RenderPipeline = 0;
+		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding> VertexBufferBindings;
 	};
 }

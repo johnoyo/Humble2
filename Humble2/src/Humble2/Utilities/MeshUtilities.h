@@ -8,6 +8,12 @@
 
 namespace HBL2
 {
+	struct MeshData
+	{
+		std::vector<Vertex> VertexBuffer;
+		std::vector<uint32_t> IndexBuffer;
+	};
+
 	class MeshUtilities
 	{
 	public:
@@ -22,7 +28,7 @@ namespace HBL2
 		static void Initialize();
 		static void Shutdown();
 
-		std::vector<Vertex> Load(const std::filesystem::path& path);
+		MeshData Load(const std::filesystem::path& path);
 
 	private:
 		MeshUtilities() = default;

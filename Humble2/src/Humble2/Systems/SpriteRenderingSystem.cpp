@@ -9,41 +9,26 @@ namespace HBL2
 		m_EditorScene = rm->GetScene(Context::EditorScene);
 		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 
-		float* positions = new float[18] {
-			-0.5, -0.5, 0.0, // 0 - Bottom left
-			0.5, -0.5, 0.0, // 1 - Bottom right
-			0.5, 0.5, 0.0, // 2 - Top right
-			0.5, 0.5, 0.0, // 2 - Top right
-			-0.5, 0.5, 0.0, // 3 - Top left
-			-0.5, -0.5, 0.0  // 0 - Bottom left
+		float* vertexBuffer = new float[30] {
+			-0.5, -0.5, 0.0, 0.0, 1.0, // 0 - Bottom left
+			 0.5, -0.5, 0.0, 1.0, 1.0, // 1 - Bottom right
+			 0.5,  0.5, 0.0, 1.0, 0.0, // 2 - Top right
+			 0.5,  0.5, 0.0, 1.0, 0.0, // 2 - Top right
+			-0.5,  0.5, 0.0, 0.0, 0.0, // 3 - Top left
+			-0.5, -0.5, 0.0, 0.0, 1.0, // 0 - Bottom left
 		};
 
-		float* texCoords = new float[12] {
-			0.0, 1.0,  // 0 - Bottom left
-			1.0, 1.0,  // 1 - Bottom right
-			1.0, 0.0,  // 2 - Top right
-			1.0, 0.0,  // 2 - Top right
-			0.0, 0.0,  // 3 - Top left
-			0.0, 1.0,  // 0 - Bottom left
-		};
-
-		m_Positions = rm->CreateBuffer({
-			.debugName = "test_quad_positions",
-			.byteSize = sizeof(float) * 18,
-			.initialData = positions,
-		});
-
-		m_TextureCoordinates = rm->CreateBuffer({
-			.debugName = "test_quad_texCoords",
-			.byteSize = sizeof(float) * 12,
-			.initialData = texCoords,
+		m_VertexBuffer = rm->CreateBuffer({
+			.debugName = "quad_vertex_buffer",
+			.byteSize = sizeof(float) * 30,
+			.initialData = vertexBuffer,
 		});
 
 		m_SpriteMesh = rm->CreateMesh({
 			.debugName = "quad_mesh",
 			.vertexOffset = 0,
 			.vertexCount = 6,
-			.vertexBuffers = { m_Positions, m_TextureCoordinates },
+			.vertexBuffers = { m_VertexBuffer },
 		});
 
 		m_Context->GetRegistry()
@@ -144,8 +129,7 @@ namespace HBL2
 		rm->DeleteBindGroup(m_GlobalBindings);
 		rm->DeleteBindGroupLayout(m_GlobalBindGroupLayout);
 		rm->DeleteBuffer(m_CameraBuffer);
-		rm->DeleteBuffer(m_Positions);
-		rm->DeleteBuffer(m_TextureCoordinates);
+		rm->DeleteBuffer(m_VertexBuffer);
 		rm->DeleteMesh(m_SpriteMesh);
 	}
 

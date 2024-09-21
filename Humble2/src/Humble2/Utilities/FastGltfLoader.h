@@ -6,9 +6,11 @@
 
 namespace HBL2
 {
+	struct MeshData;
+
 	class FastGltfLoader
 	{
 	public:
-		bool Load(const std::filesystem::path& path, std::vector<Vertex>& meshData);
+		bool Load(const std::filesystem::path& path, MeshData& meshData);
 	};
 }

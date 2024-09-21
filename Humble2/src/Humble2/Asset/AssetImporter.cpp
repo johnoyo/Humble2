@@ -129,17 +129,12 @@ namespace HBL2
 			.renderPipeline {
 				.vertexBufferBindings = {
 					{
-						.byteStride = 12,
+						.byteStride = 20,
 						.attributes = {
 							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
+							{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
 						},
 					},
-					{
-						.byteStride = 8,
-						.attributes = {
-							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
-						},
-					}
 				}
 			},
 		});
@@ -264,7 +259,32 @@ namespace HBL2
 		auto meshProperties = data["Mesh"];
 		if (meshProperties)
 		{
+			MeshData meshData = MeshUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath));
 
+			auto vertexBuffer = ResourceManager::Instance->CreateBuffer({
+				.debugName = "vertex-buffer",
+				.byteSize = (uint32_t)(meshData.VertexBuffer.size() * sizeof(Vertex)),
+				.initialData = meshData.VertexBuffer.data(),
+			});
+
+			auto indexBuffer = ResourceManager::Instance->CreateBuffer({
+				.debugName = "index-buffer",
+				.byteSize = (uint32_t)(meshData.IndexBuffer.size() * sizeof(uint32_t)),
+				.initialData = meshData.IndexBuffer.data(),
+			});
+
+			// Create the texture
+			auto mesh = ResourceManager::Instance->CreateMesh({
+				.debugName = "test-mesh",
+				.indexOffset = 0,
+				.indexCount = (uint32_t)meshData.IndexBuffer.size(),
+				.vertexOffset = 0,
+				.vertexCount = (uint32_t)meshData.VertexBuffer.size(),
+				.indexBuffer = indexBuffer,
+				.vertexBuffers = { vertexBuffer },
+			});
+
+			return mesh;
 		}
 
 		return Handle<Mesh>();

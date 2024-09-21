@@ -33,10 +33,9 @@ namespace HBL2
 		Handle<BindGroup> m_GlobalBindings;
 		Handle<BindGroupLayout> m_GlobalBindGroupLayout;
 		Handle<Buffer> m_CameraBuffer;
-		Handle<Buffer> m_Positions;
-		Handle<Buffer> m_TextureCoordinates;
+		Handle<Buffer> m_VertexBuffer;
 		Handle<Mesh> m_SpriteMesh;
-		UniformRingBuffer* m_UniformRingBuffer;
+		UniformRingBuffer* m_UniformRingBuffer = nullptr;
 		Scene* m_EditorScene = nullptr;
 	};
 }

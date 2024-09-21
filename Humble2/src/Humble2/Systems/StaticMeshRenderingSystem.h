@@ -32,7 +32,7 @@ namespace HBL2
 		Handle<BindGroup> m_GlobalBindings;
 		Handle<BindGroupLayout> m_GlobalBindGroupLayout;
 		Handle<Buffer> m_CameraBuffer;
-		UniformRingBuffer* m_UniformRingBuffer;
+		UniformRingBuffer* m_UniformRingBuffer = nullptr;
 		Scene* m_EditorScene = nullptr;
 	};
 }

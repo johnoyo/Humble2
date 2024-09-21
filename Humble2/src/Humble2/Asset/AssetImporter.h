@@ -5,6 +5,7 @@
 
 #include "Utilities\ShaderUtilities.h"
 #include "Utilities\TextureUtilities.h"
+#include "Utilities\MeshUtilities.h"
 
 #include "Scene\SceneSerializer.h"
 #include "Project\Project.h"

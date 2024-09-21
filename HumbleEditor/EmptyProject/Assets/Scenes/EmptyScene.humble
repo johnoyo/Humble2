@@ -2,7 +2,7 @@ Scene: EmptyScene
 Entities:
   - Entity: 1
     Component::Tag:
-      Tag: YellowSprite
+      Tag: YellowMonkeh
     Component::ID:
       ID: 10212013228284741632
     Component::Transform:
@@ -12,7 +12,7 @@ Entities:
     Component::StaticMesh_New:
       Enabled: true
       Material: 15323823404803264542
-      Mesh: 0
+      Mesh: 17631668153373402826
   - Entity: 0
     Component::Tag:
       Tag: Camera
@@ -28,5 +28,5 @@ Entities:
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 1.778
+      Aspect Ratio: 1.92109251
       Zoom Level: 300

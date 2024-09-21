@@ -109,7 +109,6 @@ namespace HBL2
 		const char* DebugName = "";
 		uint32_t RendererId = 0;
 		uint32_t ByteSize = 0;
-		uint32_t BatchSize = 1;
 		uint32_t Usage = GL_ARRAY_BUFFER;
 		uint32_t UsageHint = GL_STATIC_DRAW;
 		void* Data = nullptr;

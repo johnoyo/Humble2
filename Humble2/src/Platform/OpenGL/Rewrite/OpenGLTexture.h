@@ -37,11 +37,11 @@ namespace HBL2
 			if (Data == nullptr)
 			{
 				uint32_t whiteTexture = 0xffffffff;
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Dimensions.x, Dimensions.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, &whiteTexture);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, &whiteTexture);
 			}
 			else
 			{
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Dimensions.x, Dimensions.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, Data);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, Data);
 				delete Data;
 			}
 		}

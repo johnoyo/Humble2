@@ -589,7 +589,7 @@ namespace HBL2
 			for (const auto& ubo : resources.uniform_buffers)
 			{
 				const auto& bufferType = compiler.get_type(ubo.base_type_id);
-				uint32_t bufferSize = compiler.get_declared_struct_size(bufferType);
+				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
 				uint32_t binding = compiler.get_decoration(ubo.id, spv::DecorationBinding);
 				uint32_t set = compiler.get_decoration(ubo.id, spv::DecorationDescriptorSet);
 				std::cout << "  Name: " << ubo.name << ", Set: " << set << ", Binding: " << binding << ", Size: " << bufferSize << std::endl;
@@ -600,7 +600,7 @@ namespace HBL2
 			for (const auto& ssbo : resources.storage_buffers) 
 			{
 				const auto& bufferType = compiler.get_type(ssbo.base_type_id);
-				uint32_t bufferSize = compiler.get_declared_struct_size(bufferType);
+				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
 				uint32_t binding = compiler.get_decoration(ssbo.id, spv::DecorationBinding);
 				uint32_t set = compiler.get_decoration(ssbo.id, spv::DecorationDescriptorSet);
 				std::cout << "  Name: " << ssbo.name << ", Set: " << set << ", Binding: " << binding << ", Size: " << bufferSize << std::endl;
@@ -657,7 +657,7 @@ namespace HBL2
 			for (const auto& ubo : resources.uniform_buffers)
 			{
 				const auto& bufferType = compiler.get_type(ubo.base_type_id);
-				uint32_t bufferSize = compiler.get_declared_struct_size(bufferType);
+				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
 				uint32_t binding = compiler.get_decoration(ubo.id, spv::DecorationBinding);
 				uint32_t set = compiler.get_decoration(ubo.id, spv::DecorationDescriptorSet);
 				std::cout << "  Name: " << ubo.name << ", Set: " << set << ", Binding: " << binding << ", Size: " << bufferSize << std::endl;
