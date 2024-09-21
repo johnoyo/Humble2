@@ -129,11 +129,8 @@ namespace HBL2
 			.renderPipeline {
 				.vertexBufferBindings = {
 					{
-						.byteStride = 20,
-						.attributes = {
-							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-							{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
-						},
+						.byteStride = reflectionData.ByteStride,
+						.attributes = reflectionData.Attributes,
 					},
 				}
 			},

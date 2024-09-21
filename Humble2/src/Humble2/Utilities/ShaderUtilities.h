@@ -33,11 +33,6 @@ namespace HBL2
 		std::string FragmentEntryPoint;
 		uint32_t VertexBindingCount;
 		uint32_t ByteStride;
-		struct Attribute
-		{
-			uint32_t ByteOffset = 0;
-			VertexFormat Format = VertexFormat::FLOAT32;
-		};
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding::Attribute> Attributes;
 	};
 

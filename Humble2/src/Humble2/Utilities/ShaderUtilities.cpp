@@ -261,15 +261,10 @@ namespace HBL2
 				.renderPipeline {
 					.vertexBufferBindings = {
 						{
-							.byteStride = 12,
+							.byteStride = 20,
 							.attributes = {
 								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-							},
-						},
-						{
-							.byteStride = 8,
-							.attributes = {
-								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+								{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
 							},
 						}
 					}
@@ -304,15 +299,10 @@ namespace HBL2
 				.renderPipeline {
 					.vertexBufferBindings = {
 						{
-							.byteStride = 12,
+							.byteStride = 20,
 							.attributes = {
 								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-							},
-						},
-						{
-							.byteStride = 8,
-							.attributes = {
-								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+								{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
 							},
 						}
 					}
@@ -347,15 +337,10 @@ namespace HBL2
 				.renderPipeline {
 					.vertexBufferBindings = {
 						{
-							.byteStride = 12,
+							.byteStride = 20,
 							.attributes = {
 								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-							},
-						},
-						{
-							.byteStride = 8,
-							.attributes = {
-								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+								{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
 							},
 						}
 					}
@@ -389,15 +374,10 @@ namespace HBL2
 				.renderPipeline {
 					.vertexBufferBindings = {
 						{
-							.byteStride = 12,
+							.byteStride = 20,
 							.attributes = {
 								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-							},
-						},
-						{
-							.byteStride = 8,
-							.attributes = {
-								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+								{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
 							},
 						}
 					}
@@ -446,6 +426,7 @@ namespace HBL2
 			}
 
 			uint32_t byteStride = 0;
+			reflectionData.Attributes.resize(resources.stage_inputs.size());
 
 			// Print shader inputs (vertex attributes)
 			std::cout << "Shader Inputs (Vertex Attributes):" << std::endl;
@@ -462,8 +443,7 @@ namespace HBL2
 				std::cout << "  Type: ";
 				if (type.basetype == spirv_cross::SPIRType::Float && type.vecsize == 1 && type.columns == 1)
 				{
-					reflectionData.Attributes.push_back({ byteStride, VertexFormat::FLOAT32 });
-					byteStride += sizeof(float);
+					reflectionData.Attributes[location] = { 0, VertexFormat::FLOAT32 };
 					std::cout << "float";
 				}
 				else if (type.basetype == spirv_cross::SPIRType::Float && type.vecsize > 1)
@@ -485,14 +465,12 @@ namespace HBL2
 						break;
 					}
 
-					reflectionData.Attributes.push_back({ byteStride, vertexFormat });
-					byteStride += sizeof(float) * type.vecsize;
+					reflectionData.Attributes[location] = { 0, vertexFormat };
 					std::cout << "vec" << type.vecsize;
 				}
 				else if (type.basetype == spirv_cross::SPIRType::Int && type.vecsize == 1)
 				{
-					reflectionData.Attributes.push_back({ byteStride, VertexFormat::INT32 });
-					byteStride += sizeof(int);
+					reflectionData.Attributes[location] = { 0, VertexFormat::INT32 };
 					std::cout << "int";
 				}
 				else if (type.basetype == spirv_cross::SPIRType::Int && type.vecsize > 1)
@@ -514,14 +492,12 @@ namespace HBL2
 						break;
 					}
 
-					reflectionData.Attributes.push_back({ byteStride, vertexFormat });
-					byteStride += sizeof(int) * type.vecsize;
+					reflectionData.Attributes[location] = { 0, vertexFormat };
 					std::cout << "ivec" << type.vecsize;
 				}
 				else if (type.basetype == spirv_cross::SPIRType::UInt && type.vecsize == 1)
 				{
-					reflectionData.Attributes.push_back({ byteStride, VertexFormat::UINT32 });
-					byteStride += sizeof(int);
+					reflectionData.Attributes[location] = { 0, VertexFormat::UINT32 };
 					std::cout << "int";
 				}
 				else if (type.basetype == spirv_cross::SPIRType::UInt && type.vecsize > 1)
@@ -543,46 +519,72 @@ namespace HBL2
 						break;
 					}
 
-					reflectionData.Attributes.push_back({ byteStride, vertexFormat });
-					byteStride += sizeof(unsigned int) * type.vecsize;
+					reflectionData.Attributes[location] = { 0, vertexFormat };
 					std::cout << "uvec" << type.vecsize;
-				}
-				else if (type.basetype == spirv_cross::SPIRType::Float && type.columns > 1)
-				{
-					byteStride += sizeof(float) * type.columns * type.vecsize;
-					std::cout << "mat" << type.columns << "x" << type.vecsize;
 				}
 				else
 				{
 					std::cout << "unknown";
 				}
 				std::cout << "\n";
-
-				reflectionData.ByteStride = byteStride;
-
-				// Check if it is an array and print the array size
-				if (type.array.size() > 0)
-				{
-					std::cout << "  Array Size: ";
-					if (type.array_size_literal[0])
-					{
-						std::cout << type.array[0] << "\n";
-					}
-					else
-					{
-						std::cout << "Runtime Array\n";
-					}
-				}
-
-				// Print component index if applicable
-				if (compiler.has_decoration(input.id, spv::DecorationComponent))
-				{
-					uint32_t componentIndex = compiler.get_decoration(input.id, spv::DecorationComponent);
-					std::cout << "  Component Index: " << componentIndex << "\n";
-				}
-
-				std::cout << std::endl;
 			}
+
+			for (int i = 0; i < reflectionData.Attributes.size(); i++)
+			{
+				switch (reflectionData.Attributes[i].format)
+				{
+				case VertexFormat::FLOAT32:
+					reflectionData.Attributes[i].byteOffset = byteStride;
+					byteStride += sizeof(float);
+					break;
+				case VertexFormat::FLOAT32x2:
+					reflectionData.Attributes[i].byteOffset = byteStride;
+					byteStride += sizeof(float) * 2;
+					break;
+				case VertexFormat::FLOAT32x3:
+					reflectionData.Attributes[i].byteOffset = byteStride;
+					byteStride += sizeof(float) * 3;
+					break;
+				case VertexFormat::FLOAT32x4:
+					reflectionData.Attributes[i].byteOffset = byteStride;
+					byteStride += sizeof(float) * 4;
+					break;
+				case VertexFormat::UINT32:
+					reflectionData.Attributes[i].byteOffset = byteStride;
+					byteStride += sizeof(uint32_t);
+					break;
+				case VertexFormat::UINT32x2:
+					reflectionData.Attributes[i].byteOffset = byteStride;
+					byteStride += sizeof(uint32_t) * 2;
+					break;
+				case VertexFormat::UINT32x3:
+					reflectionData.Attributes[i].byteOffset = byteStride;
+					byteStride += sizeof(uint32_t) * 3;
+					break;
+				case VertexFormat::UINT32x4:
+					reflectionData.Attributes[i].byteOffset = byteStride;
+					byteStride += sizeof(uint32_t) * 4;
+					break;
+				case VertexFormat::INT32:
+					reflectionData.Attributes[i].byteOffset = byteStride;
+					byteStride += sizeof(int32_t);
+					break;
+				case VertexFormat::INT32x2:
+					reflectionData.Attributes[i].byteOffset = byteStride;
+					byteStride += sizeof(int32_t) * 2;
+					break;
+				case VertexFormat::INT32x3:
+					reflectionData.Attributes[i].byteOffset = byteStride;
+					byteStride += sizeof(int32_t) * 3;
+					break;
+				case VertexFormat::INT32x4:
+					reflectionData.Attributes[i].byteOffset = byteStride;
+					byteStride += sizeof(int32_t) * 4;
+					break;
+				}
+			}
+
+			reflectionData.ByteStride = byteStride;
 
 			// Print uniform buffers
 			std::cout << "Uniform Buffers:" << std::endl;

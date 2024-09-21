@@ -106,6 +106,7 @@ namespace HBL2
 					case VertexFormat::FLOAT32x4:
 						size = 4;
 						type = GL_FLOAT;
+						break;
 					case VertexFormat::UINT32:
 						size = 1;
 						type = GL_UNSIGNED_INT;
