@@ -62,10 +62,18 @@ namespace HBL2
 			}
 		});
 
+		glm::vec3 lightPosition = glm::vec3(0.0f, 5.0f, 10.0f);
+
+		glm::mat4 T = glm::translate(glm::mat4(1.0f), lightPosition);
+		glm::quat R = glm::quat({ glm::radians(-30.0f), glm::radians(0.0f), glm::radians(0.0f) });
+		glm::mat4 S = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+
+		glm::mat4 Matrix = T * glm::toMat4(R) * S;
+
 		m_LightData.LightCount = 1.0f;
-		m_LightData.LightPositions[0] = glm::vec4(0.0f, 10.0f, 0.0f, 0.0f);
+		m_LightData.LightPositions[0] = Matrix * glm::vec4(lightPosition, 1.0f);
 		m_LightData.LightColors[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		m_LightData.LightIntensities[0].x = 0.5f;
+		m_LightData.LightIntensities[0].x = 1.5f;
 	}
 
 	void StaticMeshRenderingSystem::OnUpdate(float ts)
@@ -136,7 +144,9 @@ namespace HBL2
 			if (m_Context->MainCamera != entt::null)
 			{
 				m_CameraData.ViewProjection = m_Context->GetComponent<Component::Camera>(m_Context->MainCamera).ViewProjectionMatrix;
-				m_LightData.ViewPosition = m_Context->GetComponent<Component::Transform>(m_Context->MainCamera).WorldMatrix * glm::vec4(m_Context->GetComponent<Component::Transform>(m_Context->MainCamera).Translation, 1.0f);
+				Component::Transform& tr = m_Context->GetComponent<Component::Transform>(m_Context->MainCamera);
+				m_LightData.ViewPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
+				return;
 			}
 			else
 			{
@@ -148,7 +158,9 @@ namespace HBL2
 			if (m_EditorScene->MainCamera != entt::null)
 			{
 				m_CameraData.ViewProjection = m_EditorScene->GetComponent<Component::Camera>(m_EditorScene->MainCamera).ViewProjectionMatrix;
-				m_LightData.ViewPosition = m_EditorScene->GetComponent<Component::Transform>(m_EditorScene->MainCamera).WorldMatrix * glm::vec4(m_EditorScene->GetComponent<Component::Transform>(m_EditorScene->MainCamera).Translation, 1.0f);
+				Component::Transform& tr = m_EditorScene->GetComponent<Component::Transform>(m_EditorScene->MainCamera);
+				m_LightData.ViewPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
+				return;
 			}
 			else
 			{
