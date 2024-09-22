@@ -4,14 +4,14 @@ Entities:
     Component::Tag:
       Tag: YellowMonkeh
     Component::ID:
-      ID: 10212013228284741632
+      ID: 15804601475522879488
     Component::Transform:
       Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::StaticMesh_New:
       Enabled: true
-      Material: 15323823404803264542
+      Material: 988511922102612467
       Mesh: 17631668153373402826
   - Entity: 0
     Component::Tag:
@@ -28,5 +28,5 @@ Entities:
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 1.92109251
+      Aspect Ratio: 1.86646438
       Zoom Level: 300

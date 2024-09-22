@@ -2,30 +2,18 @@ Scene: TestScene
 Entities:
   - Entity: 2
     Component::Tag:
-      Tag: ActualSprite
-    Component::ID:
-      ID: 7392171364512436224
-    Component::Transform:
-      Translation: [1, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Sprite_New:
-      Enabled: true
-      Material: 7020287691825424313
-  - Entity: 1
-    Component::Tag:
       Tag: RedMonkeh
     Component::ID:
-      ID: 13890798416703205376
+      ID: 1330981814113217
     Component::Transform:
       Translation: [-1, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::StaticMesh_New:
       Enabled: true
-      Material: 16085425775331581885
+      Material: 12647810587411261016
       Mesh: 9402528107889883903
-  - Entity: 0
+  - Entity: 1
     Component::Tag:
       Tag: Camera
     Component::ID:
@@ -42,3 +30,15 @@ Entities:
       FOV: 30
       Aspect Ratio: 1.778
       Zoom Level: 300
+  - Entity: 0
+    Component::Tag:
+      Tag: ActualSprite
+    Component::ID:
+      ID: 7392171364512436224
+    Component::Transform:
+      Translation: [1, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Sprite_New:
+      Enabled: true
+      Material: 7020287691825424313
