@@ -67,6 +67,8 @@ namespace HBL2
 #endif
 
 		Input::SetWindow(m_Window);
+
+		AttachEventCallbacks();
 	}
 
 	void OpenGLWindow::Present()

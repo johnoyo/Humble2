@@ -1143,12 +1143,11 @@ namespace HBL2
 				}
 
 				m_Context->GetRegistry()
-					.group<Component::EditorCamera>(entt::get<HBL2::Component::Camera>)
+					.view<Component::EditorCamera, HBL2::Component::Camera>()
 					.each([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera)
 					{
 						if (editorCamera.Enabled)
 						{
-							editorCamera.ViewportSize = m_ViewportSize;
 							camera.AspectRatio = m_ViewportSize.x / m_ViewportSize.y;
 						}
 					});

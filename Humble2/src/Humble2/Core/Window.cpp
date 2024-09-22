@@ -57,17 +57,6 @@ namespace HBL2
 	void Window::Initialize(const WindowSpecification&& spec)
 	{
 		m_Spec = spec;
-
-		glfwSetWindowCloseCallback(m_Window, WindowCloseCallback);
-		glfwSetWindowSizeCallback(m_Window, WindowSizeCallback);
-		glfwSetFramebufferSizeCallback(m_Window, FramebufferSizeCallback);
-		glfwSetWindowFocusCallback(m_Window, WindowFocusCallback);
-		glfwSetWindowRefreshCallback(m_Window, WindowRefreshCallback);
-		glfwSetMouseButtonCallback(m_Window, MouseButtonCallback);
-		glfwSetScrollCallback(m_Window, ScrollCallback);
-		glfwSetCursorPosCallback(m_Window, CursorPosCallback);
-		glfwSetCursorEnterCallback(m_Window, CursorEnterCallback);
-		glfwSetKeyCallback(m_Window, KeyCallback);
 	}
 
 	void Window::DispatchMainEm(void* fp)
@@ -118,5 +107,19 @@ namespace HBL2
 	void Window::Terminate()
 	{
 		glfwTerminate();
+	}
+
+	void Window::AttachEventCallbacks()
+	{
+		glfwSetWindowCloseCallback(m_Window, WindowCloseCallback);
+		glfwSetWindowSizeCallback(m_Window, WindowSizeCallback);
+		glfwSetFramebufferSizeCallback(m_Window, FramebufferSizeCallback);
+		glfwSetWindowFocusCallback(m_Window, WindowFocusCallback);
+		glfwSetWindowRefreshCallback(m_Window, WindowRefreshCallback);
+		glfwSetMouseButtonCallback(m_Window, MouseButtonCallback);
+		glfwSetScrollCallback(m_Window, ScrollCallback);
+		glfwSetCursorPosCallback(m_Window, CursorPosCallback);
+		glfwSetCursorEnterCallback(m_Window, CursorEnterCallback);
+		glfwSetKeyCallback(m_Window, KeyCallback);
 	}
 }

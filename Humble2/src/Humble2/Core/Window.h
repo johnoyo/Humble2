@@ -48,6 +48,9 @@ namespace HBL2
 		void Terminate();
 
 	protected:
+		void AttachEventCallbacks();
+
+	protected:
 		GLFWwindow* m_Window;
 		WindowSpecification m_Spec;
 
