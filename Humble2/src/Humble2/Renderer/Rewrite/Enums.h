@@ -10,9 +10,9 @@ namespace HBL2
 
 	enum class ShaderStage
 	{
-		VERTEX = 0,
-		FRAGMENT = 1,
-		COMPUTE = 2,
+		VERTEX = 0x1,
+		FRAGMENT = 0x2,
+		COMPUTE = 0x4,
 	};
 
 	enum class BufferBindingType

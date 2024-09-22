@@ -15,6 +15,7 @@ namespace HBL2
 		Handle<Mesh> Mesh;
 		Handle<Material> Material;
 		uint32_t Offset;
+		uint32_t Size;
 	};
 
 	struct GlobalDrawStream

@@ -83,12 +83,6 @@ namespace HBL2
 
 		DrawList draws;
 
-		struct PerDrawData
-		{
-			glm::mat4 Model;
-			glm::vec4 Color;
-		};
-
 		m_Context->GetRegistry()
 			.group<Component::Sprite_New>(entt::get<Component::Transform>)
 			.each([&](Component::Sprite_New& sprite, Component::Transform& transform)
@@ -102,7 +96,7 @@ namespace HBL2
 
 					Material* material = ResourceManager::Instance->GetMaterial(sprite.Material);
 
-					auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawData>();
+					auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawDataSprite>();
 					alloc.Data->Model = transform.WorldMatrix;
 					alloc.Data->Color = material->AlbedoColor;
 
@@ -112,6 +106,7 @@ namespace HBL2
 						.Mesh = m_SpriteMesh,
 						.Material = sprite.Material,
 						.Offset = alloc.Offset,
+						.Size = sizeof(PerDrawDataSprite),
 					});
 				}
 			});

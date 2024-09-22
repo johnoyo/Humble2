@@ -209,13 +209,13 @@ namespace HBL2
 					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
 				}
 
-				if (ImGui::MenuItem("Create Sprite"))
+				if (ImGui::MenuItem("Create Sprite_New"))
 				{
 					auto entity = m_ActiveScene->CreateEntity();
 					m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name = "Sprite";
 					m_ActiveScene->GetComponent<HBL2::Component::Transform>(entity).Translation = { 0.f, 15.f, 0.f };
 					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
-					m_ActiveScene->AddComponent<HBL2::Component::Sprite>(entity);
+					m_ActiveScene->AddComponent<HBL2::Component::Sprite_New>(entity);
 				}
 
 				if (ImGui::MenuItem("Create Camera"))
@@ -225,34 +225,6 @@ namespace HBL2
 					m_ActiveScene->AddComponent<HBL2::Component::Camera>(entity).Enabled = true;
 					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
 					m_ActiveScene->GetComponent<HBL2::Component::Transform>(entity).Translation.z = 10.f;
-				}
-
-				if (ImGui::MenuItem("Create Monkeh"))
-				{
-					auto entity = m_ActiveScene->CreateEntity();
-					m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name = "Monkeh";
-					m_ActiveScene->GetComponent<HBL2::Component::Transform>(entity).Scale = { 5.f, 5.f, 5.f };
-					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
-					auto& mesh = m_ActiveScene->AddComponent<HBL2::Component::StaticMesh>(entity);
-
-					// TODO: Get active project.
-					mesh.Path = "EmptyProject\\Assets\\Meshes\\monkey_smooth.obj";
-					mesh.TexturePath = "";
-					mesh.ShaderName = "BasicMesh";
-				}
-
-				if (ImGui::MenuItem("Create Lost Empire"))
-				{
-					auto entity = m_ActiveScene->CreateEntity();
-					m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name = "LostEmpire";
-					m_ActiveScene->GetComponent<HBL2::Component::Transform>(entity).Scale = { 5.f, 5.f, 5.f };
-					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
-					auto& mesh = m_ActiveScene->AddComponent<HBL2::Component::StaticMesh>(entity);
-
-					// TODO: Get active project.
-					mesh.Path = "EmptyProject\\Assets\\Meshes\\lost_empire.obj";
-					mesh.TexturePath = "EmptyProject\\Assets\\Textures\\lost_empire-RGBA.png";
-					mesh.ShaderName = "BasicMesh";
 				}
 
 				ImGui::EndPopup();

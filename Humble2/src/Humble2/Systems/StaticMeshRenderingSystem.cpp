@@ -20,11 +20,16 @@ namespace HBL2
 			});
 
 		m_GlobalBindGroupLayout = rm->CreateBindGroupLayout({
-			.debugName = "unlit-colored-layout",
+			.debugName = "global-bind-group-layout",
 			.bufferBindings = {
 				{
 					.slot = 0,
 					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM,
+				},
+				{
+					.slot = 1,
+					.visibility = ShaderStage::FRAGMENT,
 					.type = BufferBindingType::UNIFORM,
 				},
 			},
@@ -35,37 +40,47 @@ namespace HBL2
 			.usage = BufferUsage::UNIFORM,
 			.usageHint = BufferUsageHint::DYNAMIC,
 			.memory = Memory::GPU_CPU,
-			.byteSize = 64,
+			.byteSize = sizeof(CameraData),
+			.initialData = nullptr
+		});
+
+		m_LightBuffer = rm->CreateBuffer({
+			.debugName = "light-uniform-buffer",
+			.usage = BufferUsage::UNIFORM,
+			.usageHint = BufferUsageHint::DYNAMIC,
+			.memory = Memory::GPU_CPU,
+			.byteSize = sizeof(LightData),
 			.initialData = nullptr
 		});
 
 		m_GlobalBindings = rm->CreateBindGroup({
-			.debugName = "unlit-colored-bind-group",
+			.debugName = "global-bind-group",
 			.layout = m_GlobalBindGroupLayout,
 			.buffers = {
 				{ .buffer = m_CameraBuffer },
+				{ .buffer = m_LightBuffer },
 			}
 		});
+
+		m_LightData.LightCount = 1.0f;
+		m_LightData.LightPositions[0] = glm::vec4(0.0f, 10.0f, 0.0f, 0.0f);
+		m_LightData.LightColors[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		m_LightData.LightIntensities[0].x = 0.5f;
 	}
 
 	void StaticMeshRenderingSystem::OnUpdate(float ts)
 	{
-		const glm::mat4& vp = GetViewProjection();
+		GetViewProjection();
 		
 		m_UniformRingBuffer->Invalidate();
 
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Handle<RenderPass>(), Handle<FrameBuffer>());
 
-		Renderer::Instance->SetBufferData(m_GlobalBindings, 0, (void*)&vp);
+		Renderer::Instance->SetBufferData(m_GlobalBindings, 0, (void*)&m_CameraData);
+		Renderer::Instance->SetBufferData(m_GlobalBindings, 1, (void*)&m_LightData);
 
 		DrawList draws;
-		
-		struct PerDrawData
-		{
-			glm::mat4 Model;
-			glm::vec4 Color;
-		};
 
 		m_Context->GetRegistry()
 			.group<Component::StaticMesh_New>(entt::get<Component::Transform>)
@@ -82,7 +97,10 @@ namespace HBL2
 
 					auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawData>();
 					alloc.Data->Model = transform.WorldMatrix;
+					alloc.Data->InverseModel = glm::transpose(glm::inverse(transform.WorldMatrix));
 					alloc.Data->Color = material->AlbedoColor;
+					alloc.Data->Metallicness = material->Metalicness;
+					alloc.Data->Roughness = material->Roughness;
 
 					draws.Insert({
 						.Shader = material->Shader,
@@ -90,6 +108,7 @@ namespace HBL2
 						.Mesh = staticMesh.Mesh,
 						.Material = staticMesh.Material,
 						.Offset = alloc.Offset,
+						.Size = sizeof(PerDrawData),
 					});
 				}
 			});
@@ -107,15 +126,17 @@ namespace HBL2
 		rm->DeleteBindGroup(m_GlobalBindings);
 		rm->DeleteBindGroupLayout(m_GlobalBindGroupLayout);
 		rm->DeleteBuffer(m_CameraBuffer);
+		rm->DeleteBuffer(m_LightBuffer);
 	}
 
-	const glm::mat4& StaticMeshRenderingSystem::GetViewProjection()
+	void StaticMeshRenderingSystem::GetViewProjection()
 	{
 		if (Context::Mode == Mode::Runtime)
 		{
 			if (m_Context->MainCamera != entt::null)
 			{
-				return m_Context->GetComponent<Component::Camera>(m_Context->MainCamera).ViewProjectionMatrix;
+				m_CameraData.ViewProjection = m_Context->GetComponent<Component::Camera>(m_Context->MainCamera).ViewProjectionMatrix;
+				m_LightData.ViewPosition = m_Context->GetComponent<Component::Transform>(m_Context->MainCamera).WorldMatrix * glm::vec4(m_Context->GetComponent<Component::Transform>(m_Context->MainCamera).Translation, 1.0f);
 			}
 			else
 			{
@@ -126,7 +147,8 @@ namespace HBL2
 		{
 			if (m_EditorScene->MainCamera != entt::null)
 			{
-				return m_EditorScene->GetComponent<Component::Camera>(m_EditorScene->MainCamera).ViewProjectionMatrix;
+				m_CameraData.ViewProjection = m_EditorScene->GetComponent<Component::Camera>(m_EditorScene->MainCamera).ViewProjectionMatrix;
+				m_LightData.ViewPosition = m_EditorScene->GetComponent<Component::Transform>(m_EditorScene->MainCamera).WorldMatrix * glm::vec4(m_EditorScene->GetComponent<Component::Transform>(m_EditorScene->MainCamera).Translation, 1.0f);
 			}
 			else
 			{
@@ -138,6 +160,7 @@ namespace HBL2
 			HBL2_CORE_WARN("No mode set for current context.");
 		}
 
-		return glm::mat4(1.0f);
+		m_CameraData.ViewProjection = glm::mat4(1.0f);
+		m_LightData.ViewPosition = glm::vec4(0.0f);
 	}
 }

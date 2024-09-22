@@ -179,7 +179,7 @@ namespace HBL2
 				},
 				.bufferBindings = {
 					{
-						.slot = 1,
+						.slot = 2,
 						.visibility = ShaderStage::VERTEX,
 						.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
 					},

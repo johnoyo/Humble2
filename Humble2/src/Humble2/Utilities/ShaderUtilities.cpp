@@ -337,10 +337,11 @@ namespace HBL2
 				.renderPipeline {
 					.vertexBufferBindings = {
 						{
-							.byteStride = 20,
+							.byteStride = 32,
 							.attributes = {
-								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-								{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
+								{.byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
+								{.byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
+								{.byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
 							},
 						}
 					}
@@ -374,10 +375,11 @@ namespace HBL2
 				.renderPipeline {
 					.vertexBufferBindings = {
 						{
-							.byteStride = 20,
+							.byteStride = 32,
 							.attributes = {
 								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-								{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
+								{ .byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
+								{ .byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
 							},
 						}
 					}

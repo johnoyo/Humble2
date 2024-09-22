@@ -67,14 +67,15 @@ namespace HBL2
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, openGLIndexBuffer->RendererId);
 		}
 
+		OpenGLShader* openGLShader = m_ResourceManager->GetShader(openGLMaterial->Shader);
+		HBL2_CORE_ASSERT(openGLShader != nullptr, "Shader handle for material \"" + std::string(openGLMaterial->DebugName) + "\" is invalid.");
+
 		for (uint32_t i = 0; i < openGLMesh->VertexBuffers.size(); i++)
 		{
 			if (openGLMesh->VertexBuffers[i].IsValid())
 			{
-				OpenGLShader* openGLShader = m_ResourceManager->GetShader(openGLMaterial->Shader);
 				OpenGLBuffer* openGLBuffer = m_ResourceManager->GetBuffer(openGLMesh->VertexBuffers[i]);
 
-				HBL2_CORE_ASSERT(openGLShader != nullptr, "Shader handle for material \"" + std::string(openGLMaterial->DebugName) + "\" is invalid.");
 				HBL2_CORE_ASSERT(openGLBuffer != nullptr, "Buffer handle for material \"" + std::string(openGLMaterial->DebugName) + "\" is invalid.", openGLMaterial->DebugName);
 				HBL2_CORE_ASSERT(openGLShader->VertexBufferBindings.size() >= openGLMesh->VertexBuffers.size(), "Shader: \"" + std::string(openGLShader->DebugName) + "\", Number of vertex buffers and number of buffer bindings dot not match.");
 
@@ -167,13 +168,19 @@ namespace HBL2
 	void OpenGLRenderer::WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex)
 	{
 		OpenGLBindGroup* openGLBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
-		WriteBuffer(openGLBindGroup->Buffers[bufferIndex].buffer, openGLBindGroup->Buffers[bufferIndex].byteOffset);
+		if (bufferIndex < openGLBindGroup->Buffers.size())
+		{
+			WriteBuffer(openGLBindGroup->Buffers[bufferIndex].buffer, openGLBindGroup->Buffers[bufferIndex].byteOffset);
+		}
 	}
 
 	void OpenGLRenderer::WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset)
 	{
 		OpenGLBindGroup* openGLBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
-		WriteBuffer(openGLBindGroup->Buffers[bufferIndex].buffer, offset);
+		if (bufferIndex < openGLBindGroup->Buffers.size())
+		{
+			WriteBuffer(openGLBindGroup->Buffers[bufferIndex].buffer, offset);
+		}
 	}
 
 	void OpenGLRenderer::SetBindGroups(Handle<Material> material)
@@ -194,15 +201,18 @@ namespace HBL2
 		}
 	}
 
-	void OpenGLRenderer::SetBindGroup(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset)
+	void OpenGLRenderer::SetBindGroup(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset, uint32_t size)
 	{
 		OpenGLBindGroup* openGLBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
 		OpenGLBindGroupLayout* bindGroupLayout = m_ResourceManager->GetBindGroupLayout(openGLBindGroup->BindGroupLayout);
 
-		if (bindGroupLayout->BufferBindings[bufferIndex].type == BufferBindingType::UNIFORM_DYNAMIC_OFFSET)
+		if (bufferIndex < openGLBindGroup->Buffers.size())
 		{
-			OpenGLBuffer* openGLBuffer = m_ResourceManager->GetBuffer(openGLBindGroup->Buffers[bufferIndex].buffer);
-			glBindBufferRange(GL_UNIFORM_BUFFER, bindGroupLayout->BufferBindings[bufferIndex].slot, openGLBuffer->RendererId, offset, 80);
+			if (bindGroupLayout->BufferBindings[bufferIndex].type == BufferBindingType::UNIFORM_DYNAMIC_OFFSET)
+			{
+				OpenGLBuffer* openGLBuffer = m_ResourceManager->GetBuffer(openGLBindGroup->Buffers[bufferIndex].buffer);
+				glBindBufferRange(GL_UNIFORM_BUFFER, bindGroupLayout->BufferBindings[bufferIndex].slot, openGLBuffer->RendererId, offset, size);
+			}
 		}
 	}
 
@@ -215,7 +225,10 @@ namespace HBL2
 	void OpenGLRenderer::SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData)
 	{
 		OpenGLBindGroup* openGLBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
-		SetBufferData(openGLBindGroup->Buffers[bufferIndex].buffer, openGLBindGroup->Buffers[bufferIndex].byteOffset, newData);
+		if (bufferIndex < openGLBindGroup->Buffers.size())
+		{
+			SetBufferData(openGLBindGroup->Buffers[bufferIndex].buffer, openGLBindGroup->Buffers[bufferIndex].byteOffset, newData);
+		}
 	}
 
 	void OpenGLRenderer::Draw(Handle<Mesh> mesh)

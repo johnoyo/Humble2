@@ -19,6 +19,12 @@
 
 namespace HBL2
 {
+	struct PerDrawDataSprite
+	{
+		glm::mat4 Model;
+		glm::vec4 Color;
+	};
+
 	class SpriteRenderingSystem final : public ISystem
 	{
 	public:

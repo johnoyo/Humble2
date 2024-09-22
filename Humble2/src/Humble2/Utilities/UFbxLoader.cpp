@@ -100,13 +100,13 @@ namespace HBL2
                     vertex.Position = glm::vec3(positionFbx.x, positionFbx.y, positionFbx.z);
                 }
 
-                //// normals, always defined if `ufbx_load_opts.generate_missing_normals` is used
-                //{
-                //    uint32_t fbxNormalIndex = fbxMesh.vertex_normal.indices[vertexPerFaceIndex];
-                //    HBL2_CORE_ASSERT(fbxNormalIndex < fbxMesh.vertex_normal.values.count, "LoadVertexData: memory violation normals");
-                //    ufbx_vec3& normalFbx = fbxMesh.vertex_normal.values.data[fbxNormalIndex];
-                //    vertex.Normal = glm::vec3(normalFbx.x, normalFbx.y, normalFbx.z);
-                //}
+                // normals, always defined if `ufbx_load_opts.generate_missing_normals` is used
+                {
+                    uint32_t fbxNormalIndex = fbxMesh.vertex_normal.indices[vertexPerFaceIndex];
+                    HBL2_CORE_ASSERT(fbxNormalIndex < fbxMesh.vertex_normal.values.count, "LoadVertexData: memory violation normals");
+                    ufbx_vec3& normalFbx = fbxMesh.vertex_normal.values.data[fbxNormalIndex];
+                    vertex.Normal = glm::vec3(normalFbx.x, normalFbx.y, normalFbx.z);
+                }
 
                 //// tangents (check `tangent space` in Blender when exporting fbx)
                 //if (hasTangents)

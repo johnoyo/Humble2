@@ -9,6 +9,7 @@ namespace HBL2
 		if (globalDraw.BindGroup.IsValid())
 		{
 			Renderer::Instance->WriteBuffer(globalDraw.BindGroup, 0);
+			Renderer::Instance->WriteBuffer(globalDraw.BindGroup, 1);
 		}
 
 		draws.PerShader([&](LocalDrawStream& draw)
@@ -20,7 +21,7 @@ namespace HBL2
 		{
 			Renderer::Instance->SetBuffers(draw.Mesh, draw.Material);
 			Renderer::Instance->SetBindGroups(draw.Material);
-			Renderer::Instance->SetBindGroup(draw.BindGroup, 0, draw.Offset);
+			Renderer::Instance->SetBindGroup(draw.BindGroup, 0, draw.Offset, draw.Size);
 
 			Mesh* openGLMesh = ResourceManager::Instance->GetMesh(draw.Mesh);
 

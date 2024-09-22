@@ -18,6 +18,30 @@
 
 namespace HBL2
 {
+	struct PerDrawData
+	{
+		glm::mat4 Model;
+		glm::mat4 InverseModel;
+		glm::vec4 Color;
+		float Metallicness;
+		float Roughness;
+	};
+
+	struct CameraData
+	{
+		glm::mat4 ViewProjection;
+	};
+
+	struct LightData
+	{
+		glm::vec4 ViewPosition;
+		glm::vec4 LightPositions[16];
+		glm::vec4 LightColors[16];
+		glm::vec4 LightIntensities[16];
+		float LightCount;
+		float _padding[3];
+	};
+
 	class StaticMeshRenderingSystem final : public ISystem
 	{
 	public:
@@ -26,13 +50,16 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
-		const glm::mat4& GetViewProjection();
+		void GetViewProjection();
 
 	private:
 		Handle<BindGroup> m_GlobalBindings;
 		Handle<BindGroupLayout> m_GlobalBindGroupLayout;
 		Handle<Buffer> m_CameraBuffer;
+		Handle<Buffer> m_LightBuffer;
 		UniformRingBuffer* m_UniformRingBuffer = nullptr;
 		Scene* m_EditorScene = nullptr;
+		LightData m_LightData{};
+		CameraData m_CameraData{};
 	};
 }
