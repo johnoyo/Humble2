@@ -29,7 +29,21 @@ namespace HBL2
 		static Scene* Copy(Scene* other);
 		static void Copy(Scene* src, Scene* dst);
 
-		void Clear();
+		void Clear()
+		{
+			m_Registry.clear();
+
+			m_EntityMap.clear();
+
+			for (ISystem* system : m_Systems)
+			{
+				delete system;
+			}
+
+			m_Systems.clear();
+			m_CoreSystems.clear();
+			m_RuntimeSystems.clear();
+		}
 
 		entt::entity CreateEntity()
 		{

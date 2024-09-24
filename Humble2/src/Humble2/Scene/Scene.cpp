@@ -15,22 +15,6 @@ namespace HBL2
     {
     }
 
-    void Scene::Clear()
-    {
-        m_Registry.clear();
-
-        m_EntityMap.clear();
-
-        for (ISystem* system : m_Systems)
-        {
-            delete system;
-        }
-
-        m_Systems.clear();
-        m_CoreSystems.clear();
-        m_RuntimeSystems.clear();
-    }
-
     Scene* Scene::Copy(Scene* other)
     {
         HBL2_FUNC_PROFILE();
