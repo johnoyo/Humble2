@@ -27,6 +27,7 @@
 
 #include "Utilities\Random.h"
 #include "Utilities\MeshUtilities.h"
+#include "Utilities\NativeScriptUtilities.h"
 
 #include <string>
 #include <sstream>

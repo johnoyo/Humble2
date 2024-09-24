@@ -25,9 +25,22 @@ namespace HBL2
 
 				// Delete temporary play mode scene.
 				Scene* currentScene = ResourceManager::Instance->GetScene(sce.CurrentScene);
-				if (currentScene != nullptr && currentScene->GetName() == "(Clone)")
+				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != std::string::npos)
 				{
+					// Delete dll systems instance.
+					for (ISystem* system : currentScene->GetRuntimeSystems())
+					{
+						if (system->GetType() == SystemType::User)
+						{
+							NativeScriptUtilities::Get().DeleteDLLInstance(system->Name);
+						}
+					}
+
+					// Delete play mode scene.
 					ResourceManager::Instance->DeleteScene(sce.CurrentScene);
+
+					// Delete scene.
+					currentScene->Clear();
 				}
 
 				m_ActiveScene = ResourceManager::Instance->GetScene(sce.NewScene);
@@ -785,53 +798,167 @@ namespace HBL2
 			// Pop up menu when right clicking on an empty space inside the Content Browser panel.
 			if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
 			{
-				if (ImGui::BeginMenu("Create Shader"))
+				if (ImGui::BeginMenu("Create"))
 				{
-					if (ImGui::MenuItem("Create Unlit Shader"))
+					if (ImGui::BeginMenu("Shader"))
 					{
-						m_SelectedShaderType = 0;
-						m_OpenShaderSetupPopup = true;
+						if (ImGui::MenuItem("Unlit"))
+						{
+							m_SelectedShaderType = 0;
+							m_OpenShaderSetupPopup = true;
+						}
+
+						if (ImGui::MenuItem("Blinn-Phong"))
+						{
+							m_SelectedShaderType = 1;
+							m_OpenShaderSetupPopup = true;
+						}
+
+						if (ImGui::MenuItem("PBR"))
+						{
+							m_SelectedShaderType = 2;
+							m_OpenShaderSetupPopup = true;
+						}
+
+						ImGui::EndMenu();
 					}
 
-					if (ImGui::MenuItem("Create Blinn-Phong Shader"))
+					if (ImGui::BeginMenu("Material"))
 					{
-						m_SelectedShaderType = 1;
-						m_OpenShaderSetupPopup = true;
+						if (ImGui::MenuItem("Unlit"))
+						{
+							m_SelectedMaterialType = 0;
+							m_OpenMaterialSetupPopup = true;
+						}
+
+						if (ImGui::MenuItem("Blinn-Phong"))
+						{
+							m_SelectedMaterialType = 1;
+							m_OpenMaterialSetupPopup = true;
+						}
+
+						if (ImGui::MenuItem("PBR"))
+						{
+							m_SelectedMaterialType = 2;
+							m_OpenMaterialSetupPopup = true;
+						}
+
+						ImGui::EndMenu();
 					}
 
-					if (ImGui::MenuItem("Create PBR Shader"))
+					if (ImGui::MenuItem("System"))
 					{
-						m_SelectedShaderType = 2;
-						m_OpenShaderSetupPopup = true;
-					}
-
-					ImGui::EndMenu();
-				}
-
-				if (ImGui::BeginMenu("Create Material"))
-				{
-					if (ImGui::MenuItem("Create Unlit Material"))
-					{
-						m_SelectedMaterialType = 0;
-						m_OpenMaterialSetupPopup = true;
-					}
-
-					if (ImGui::MenuItem("Create Blinn-Phong Material"))
-					{
-						m_SelectedMaterialType = 1;
-						m_OpenMaterialSetupPopup = true;
-					}
-
-					if (ImGui::MenuItem("Create PBR Material"))
-					{
-						m_SelectedMaterialType = 2;
-						m_OpenMaterialSetupPopup = true;
+						m_OpenScriptSetupPopup = true;
 					}
 
 					ImGui::EndMenu();
 				}
 
 				ImGui::EndPopup();
+			}
+
+			if (m_OpenScriptSetupPopup)
+			{
+				ImGui::Begin("System Setup", &m_OpenScriptSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+				static char systemNameBuffer[256] = "NewSystem";
+				ImGui::InputText("System Name", systemNameBuffer, 256);
+
+				ImGui::NewLine();
+
+				if (ImGui::Button("OK"))
+				{
+					// Create system file
+					std::ofstream systemFile(HBL2::Project::GetAssetDirectory() / "Scripts" / (std::string(systemNameBuffer) + ".cpp"), 0);
+					systemFile << NativeScriptUtilities::Get().GetDefaultSystemCode(systemNameBuffer);
+					systemFile.close();
+
+					// Create folder in ProjectFiles
+					const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles" / systemNameBuffer;
+					
+					try
+					{
+						std::filesystem::create_directories(projectFilesPath);
+					}
+					catch (std::exception& e)
+					{
+						HBL2_ERROR("Project directory creation failed: {0}", e.what());
+					}
+
+					// Create solution file for new system
+					std::ofstream solutionFile(projectFilesPath / (std::string(systemNameBuffer) + ".sln"));
+
+					if (!solutionFile.is_open())
+					{
+						return;
+					}
+
+					solutionFile << NativeScriptUtilities::Get().GetDefaultSolutionText(systemNameBuffer);
+					solutionFile.close();
+
+					// Create vcxproj file for new system
+					std::ofstream projectFile(projectFilesPath / (std::string(systemNameBuffer) + ".vcxproj"));
+
+					if (!projectFile.is_open())
+					{
+						return;
+					}
+
+					projectFile << NativeScriptUtilities::Get().GetDefaultProjectText(systemNameBuffer);
+					projectFile.close();
+
+					if (m_ActiveScene != nullptr)
+					{
+						m_ActiveScene->DeregisterSystem(systemNameBuffer);
+
+						// Remove old dll
+						try
+						{
+							if (std::filesystem::remove(std::filesystem::path("assets") / "dlls" / (std::string(systemNameBuffer) + ".dll")))
+							{
+								std::cout << "file " << std::filesystem::path("assets") / "dlls" / (std::string(systemNameBuffer) + ".dll") << " deleted.\n";
+							}
+							else
+							{
+								std::cout << "file " << std::filesystem::path("assets") / "dlls" / (std::string(systemNameBuffer) + ".dll") << " not found.\n";
+							}
+						}
+						catch (const std::filesystem::filesystem_error& err)
+						{
+							std::cout << "filesystem error: " << err.what() << '\n';
+						}
+					}
+
+					// Build the solution					
+#ifdef DEBUG
+					const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (std::string(systemNameBuffer) + ".sln")).string() + R"( /t:)" + systemNameBuffer + R"( /p:Configuration=Debug")";
+#else
+					const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (std::string(systemNameBuffer) + ".sln")).string() + R"( /t:)" + systemNameBuffer + R"( /p:Configuration=Release")";
+#endif // DEBUG
+					system(command.c_str());
+
+					// Load dll
+					const std::string& dllPath = "assets\\dlls\\" + std::string(systemNameBuffer) + "\\" + std::string(systemNameBuffer) + ".dll";
+					ISystem* newSystem = NativeScriptUtilities::Get().LoadDLL(dllPath);
+
+					HBL2_CORE_ASSERT(newSystem != nullptr, "Failed to load system.");
+
+					if (m_ActiveScene != nullptr)
+					{
+						m_ActiveScene->RegisterSystem(newSystem, SystemType::User);
+					}
+
+					m_OpenScriptSetupPopup = false;
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel"))
+				{
+					m_OpenScriptSetupPopup = false;
+				}
+
+				ImGui::End();
 			}
 
 			if (m_OpenShaderSetupPopup)
@@ -1049,6 +1176,79 @@ namespace HBL2
 
 				ImGui::Button(entry.path().filename().string().c_str(), { thumbnailSize, thumbnailSize });
 
+				if (ImGui::BeginPopupContextItem())
+				{
+					if (extension == ".cpp")
+					{
+						if (ImGui::MenuItem("Recompile"))
+						{
+							const auto& systemName = entry.path().filename().stem().string();
+							const std::string& dllPath = (std::filesystem::path("assets") / "dlls" / systemName / (systemName + ".dll")).string();
+							const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles" / systemName;
+							
+							if (m_ActiveScene != nullptr)
+							{
+								m_ActiveScene->DeregisterSystem(systemName);
+							}
+
+							// Create new vcxproj file for system
+							std::ofstream projectFile(projectFilesPath / (systemName + ".vcxproj"));
+
+							if (!projectFile.is_open())
+							{
+								return;
+							}
+
+							bool dllLocked = true;
+
+							while (dllLocked)
+							{
+								try
+								{
+									if (std::filesystem::remove(dllPath))
+									{
+										dllLocked = false;
+										std::cout << "file " << dllPath << " deleted.\n";
+									}
+									else
+									{
+										dllLocked = false;
+										std::cout << "file " << dllPath << " not found.\n";
+									}
+								}
+								catch (const std::filesystem::filesystem_error& err)
+								{
+									dllLocked = true;
+									std::cout << "filesystem error: " << err.what() << '\n';
+								}
+							}
+
+							projectFile << NativeScriptUtilities::Get().GetDefaultProjectText(systemName);
+							projectFile.close();
+
+							// Build the solution
+#ifdef DEBUG
+							const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (systemName + ".sln")).string() + R"( /t:)" + systemName + R"( /p:Configuration=Debug")";
+#else
+							const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (systemName + ".sln")).string() + R"( /t:)" + systemName + R"( /p:Configuration=Release")";
+#endif // DEBUG
+							system(command.c_str());
+
+							// Load dll
+							ISystem* newSystem = NativeScriptUtilities::Get().LoadDLL(dllPath);
+
+							HBL2_CORE_ASSERT(newSystem != nullptr, "Failed to load system.");
+
+							if (m_ActiveScene != nullptr)
+							{
+								newSystem->Name = systemName;
+								m_ActiveScene->RegisterSystem(newSystem, SystemType::User);
+							}
+						}
+					}
+					ImGui::EndPopup();
+				}
+
 				UUID assetUUID = std::hash<std::string>()(relativePath.string());
 				Handle<Asset> assetHandle;
 				Asset* asset = nullptr;
@@ -1199,7 +1399,7 @@ namespace HBL2
 				if (!m_ActiveSceneTemp.IsValid())
 				{
 					m_ActiveSceneTemp = Context::ActiveScene;
-					auto playSceneHandle = ResourceManager::Instance->CreateScene({ .name = "(Clone)" });
+					auto playSceneHandle = ResourceManager::Instance->CreateScene({ .name = m_ActiveScene->GetName() + "(Clone)" });
 					Scene* playScene = ResourceManager::Instance->GetScene(playSceneHandle);
 					Scene::Copy(m_ActiveScene, playScene);
 					SceneManager::Get().LoadScene(playSceneHandle, true);

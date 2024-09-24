@@ -181,18 +181,31 @@ namespace HBL2
 		out << YAML::BeginMap;
 		out << YAML::Key << "Scene" << YAML::Value << m_Scene->GetName();
 		out << YAML::Key << "Entities" << YAML::BeginSeq;
-		m_Scene->GetRegistry().each([&](entt::entity entity)
-		{
-			if (entity == entt::null)
+		m_Scene->GetRegistry()
+			.view<entt::entity>()
+			.each([&](entt::entity entity)
 			{
-				return;
-			}
+				if (entity == entt::null)
+				{
+					return;
+				}
 
-			if (m_Scene->GetComponent<Component::Tag>(entity).Name != "Hidden")
+				if (m_Scene->GetComponent<Component::Tag>(entity).Name != "Hidden")
+				{
+					SerializeEntity(out, entity);
+				}
+			});
+		out << YAML::EndSeq;
+		out << YAML::Key << "Systems" << YAML::BeginSeq;
+
+		for (ISystem* system : m_Scene->GetRuntimeSystems())
+		{
+			if (system->GetType() == SystemType::User)
 			{
-				SerializeEntity(out, entity);
+				out << YAML::Key << system->Name << YAML::Value;
 			}
-		});
+		}
+
 		out << YAML::EndSeq;
 		out << YAML::EndMap;
 
@@ -312,6 +325,24 @@ namespace HBL2
 					staticMesh.Enabled = staticMesh_NewComponent["Enabled"].as<bool>();
 					staticMesh.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
 					staticMesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(staticMesh_NewComponent["Mesh"].as<UUID>());
+				}
+			}
+		}
+
+		auto systems = data["Systems"];
+		if (systems)
+		{
+			for (auto system : systems)
+			{
+				const std::string& dllPath = "assets\\dlls\\" + system.as<std::string>() + "\\" + system.as<std::string>() + ".dll";
+				ISystem* newSystem = NativeScriptUtilities::Get().LoadDLL(dllPath);
+
+				HBL2_CORE_ASSERT(newSystem != nullptr, "Failed to load system.");
+
+				if (m_Scene != nullptr)
+				{
+					newSystem->Name = system.as<std::string>();
+					m_Scene->RegisterSystem(newSystem, SystemType::User);
 				}
 			}
 		}

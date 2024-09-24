@@ -9,6 +9,7 @@ namespace HBL2
 	{
 		Core = 0,
 		Runtime,
+		User,
 	};
 
 	class ISystem
@@ -30,6 +31,13 @@ namespace HBL2
 		{
 			m_Type = type;
 		}
+
+		SystemType GetType()
+		{
+			return m_Type;
+		}
+
+		std::string Name;
 
 	protected:
 		Scene* m_Context = nullptr;

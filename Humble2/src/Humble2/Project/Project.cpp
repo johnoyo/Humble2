@@ -11,6 +11,7 @@ namespace HBL2
 
 		s_ActiveProject->m_Spec.StartingScene = std::filesystem::path("Scenes") / std::filesystem::path("EmptyScene.humble");
 		s_ActiveProject->m_Spec.AssetDirectory = "Assets";
+		s_ActiveProject->m_Spec.ScriptDirectory = std::filesystem::path("Assets") / std::filesystem::path("Scripts");
 		s_ActiveProject->m_Spec.Name = name;		
 
 		return s_ActiveProject;

@@ -3,6 +3,8 @@
 #include "ISystem.h"
 #include "Components.h"
 
+#include "Utilities\NativeScriptUtilities.h"
+
 #include "Utilities\Random.h"
 
 #include <entt.hpp>
@@ -19,10 +21,15 @@ namespace HBL2
 	public:
 		Scene() = default;
 		Scene(const SceneDescriptor&& desc);
-		~Scene();
+		~Scene()
+		{
+			Clear();
+		}
 
 		static Scene* Copy(Scene* other);
 		static void Copy(Scene* src, Scene* dst);
+
+		void Clear();
 
 		entt::entity CreateEntity()
 		{
@@ -87,6 +94,69 @@ namespace HBL2
 			m_Registry.remove<T>(entity);
 		}
 
+		void DeregisterSystem(const std::string& systemName)
+		{
+			ISystem* systemToBeDeleted = nullptr;
+
+			for (ISystem* system : m_Systems)
+			{
+				if (system->Name == systemName)
+				{
+					systemToBeDeleted = system;
+					break;
+				}
+			}
+
+			DeregisterSystem(systemToBeDeleted);
+		}
+
+		void DeregisterSystem(ISystem* system)
+		{
+			if (system == nullptr)
+			{
+				return;
+			}
+
+			{
+				// Erase from systems vector
+				auto it = std::find(m_Systems.begin(), m_Systems.end(), system);
+
+				if (it != m_Systems.end())
+				{
+					m_Systems.erase(it);
+				}
+			}
+
+			{
+				// Erase from core systems vector
+				auto it = std::find(m_CoreSystems.begin(), m_CoreSystems.end(), system);
+
+				if (it != m_CoreSystems.end())
+				{
+					m_CoreSystems.erase(it);
+				}
+			}
+
+			{
+				// Erase from runtime systems vector
+				auto it = std::find(m_RuntimeSystems.begin(), m_RuntimeSystems.end(), system);
+
+				if (it != m_RuntimeSystems.end())
+				{
+					m_RuntimeSystems.erase(it);
+				}
+			}
+
+			if (system->GetType() == SystemType::User)
+			{
+				NativeScriptUtilities::Get().DeleteDLLInstance(system->Name);
+			}
+			else
+			{
+				delete system;
+			}
+		}
+
 		void RegisterSystem(ISystem* system, SystemType type = SystemType::Core)
 		{
 			system->SetType(type);
@@ -99,6 +169,9 @@ namespace HBL2
 				m_CoreSystems.push_back(system);
 				break;
 			case HBL2::SystemType::Runtime:
+				m_RuntimeSystems.push_back(system);
+				break;
+			case HBL2::SystemType::User:
 				m_RuntimeSystems.push_back(system);
 				break;
 			}

@@ -15,9 +15,11 @@ namespace HBL2
     {
     }
 
-    Scene::~Scene()
+    void Scene::Clear()
     {
         m_Registry.clear();
+
+        m_EntityMap.clear();
 
         for (ISystem* system : m_Systems)
         {
@@ -44,53 +46,65 @@ namespace HBL2
     {
         HBL2_FUNC_PROFILE();
 
-        SceneSerializer serializer(dst);
-        serializer.Deserialize(Project::GetAssetFileSystemPath(std::filesystem::path("Scenes") / (src->GetName() + ".humble")));
+        // Copy entites
+        src->m_Registry
+            .view<Component::ID>()
+            .each([&](entt::entity entity, Component::ID& id)
+            {
+                const auto& name = src->m_Registry.get<Component::Tag>(entity).Name;
 
-        //// Clone entites
-        //std::unordered_map<UUID, entt::entity> enttMap;
-        //other->m_Registry
-        //    .view<Component::ID>()
-        //    .each([&](entt::entity entity, Component::ID& id)
-        //    {
-        //        const auto& name = other->m_Registry.get<Component::Tag>(entity).Name;
-        //        entt::entity newEntity = newScene->CreateEntityWithUUID(id.Identifier, name);
-        //        enttMap[id.Identifier] = newEntity;
-        //    });
+                entt::entity newEntity = dst->m_Registry.create(entity);
 
-        //// Clone components
-        //{
-        //    auto view = other->m_Registry.view<Component::Transform>();
-        //    newScene->m_Registry.insert(other->m_Registry.data(), other->m_Registry.data() + other->m_Registry.size(), view);
-        //}
+                dst->m_Registry.emplace<Component::Tag>(newEntity).Name = name;
+                dst->m_Registry.emplace<Component::ID>(newEntity).Identifier = id.Identifier;
 
-        //{
-        //    auto view = other->m_Registry.view<Component::Link>();
-        //    newScene->m_Registry.insert(other->m_Registry.data(), other->m_Registry.data() + other->m_Registry.size(), view);
-        //}
+                dst->m_EntityMap[id.Identifier] = newEntity;
+            });
 
-        //{
-        //    auto view = other->m_Registry.view<Component::Camera>();
-        //    newScene->m_Registry.insert(other->m_Registry.data(), other->m_Registry.data() + other->m_Registry.size(), view);
-        //}
+        // Helper lambda to copy components of a given type.
+        auto copy_component = [&](auto component_type)
+        {
+            using Component = decltype(component_type);
 
-        //{
-        //    auto view = other->m_Registry.view<Component::StaticMesh_New>();
-        //    newScene->m_Registry.insert(other->m_Registry.data(), other->m_Registry.data() + other->m_Registry.size(), view);
-        //}
+            src->m_Registry
+                .view<Component>()
+                .each([&](auto entity, const auto& component)
+                {
+                    dst->m_Registry.emplace_or_replace<Component>(entity, component);
+                });
+        };
 
-        //{
-        //    auto view = other->m_Registry.view<Component::Sprite_New>();
-        //    newScene->m_Registry.insert(other->m_Registry.data(), other->m_Registry.data() + other->m_Registry.size(), view);
-        //}
+        // Copy components.
+        copy_component(Component::Transform{});
+        copy_component(Component::Link{});
+        copy_component(Component::Camera{});
+        copy_component(Component::EditorVisible{});
+        copy_component(Component::Sprite_New{});
+        copy_component(Component::StaticMesh_New{});
 
-        // Clone systems
+        // Clone systems.
         dst->RegisterSystem(new TransformSystem);
         dst->RegisterSystem(new LinkSystem);
         dst->RegisterSystem(new CameraSystem, SystemType::Runtime);
         dst->RegisterSystem(new StaticMeshRenderingSystem);
         dst->RegisterSystem(new SpriteRenderingSystem);
 
+        // Clone dll user systems.
+        for (ISystem* system : src->m_Systems)
+        {
+            if (system->GetType() == SystemType::User)
+            {
+                const std::string& dllPath = "assets\\dlls\\" + system->Name + "\\" + system->Name + ".dll";
+                ISystem* newSystem = NativeScriptUtilities::Get().LoadDLL(dllPath);
+
+                HBL2_CORE_ASSERT(newSystem != nullptr, "Failed to load system.");
+
+                newSystem->Name = system->Name;
+                dst->RegisterSystem(newSystem, SystemType::User);
+            }
+        }
+
+        // Set main camera.
         dst->MainCamera = src->MainCamera;
     }
 

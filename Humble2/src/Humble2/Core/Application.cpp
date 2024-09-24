@@ -15,6 +15,7 @@ namespace HBL2
 		EventDispatcher::Initialize();
 
 		MeshUtilities::Initialize();
+		NativeScriptUtilities::Initialize();
 
 		switch (m_Specification.GraphicsAPI)
 		{

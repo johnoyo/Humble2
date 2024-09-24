@@ -2,19 +2,6 @@ Scene: EmptyScene
 Entities:
   - Entity: 1
     Component::Tag:
-      Tag: YellowMonkeh
-    Component::ID:
-      ID: 15804601475522879488
-    Component::Transform:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::StaticMesh_New:
-      Enabled: true
-      Material: 988511922102612467
-      Mesh: 17631668153373402826
-  - Entity: 0
-    Component::Tag:
       Tag: Camera
     Component::ID:
       ID: 1275945063876455680
@@ -30,3 +17,18 @@ Entities:
       FOV: 30
       Aspect Ratio: 1.86646438
       Zoom Level: 300
+  - Entity: 0
+    Component::Tag:
+      Tag: YellowMonkeh
+    Component::ID:
+      ID: 15804601475522879488
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 988511922102612467
+      Mesh: 17631668153373402826
+Systems:
+  - NewSystem

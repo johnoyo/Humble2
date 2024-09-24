@@ -35,6 +35,7 @@ namespace HBL2
 			uint32_t m_SelectedShaderType = 0;
 			bool m_OpenMaterialSetupPopup = false;
 			uint32_t m_SelectedMaterialType = 0;
+			bool m_OpenScriptSetupPopup = false;
 
 			Scene* m_ActiveScene = nullptr;
 			Handle<Scene> m_ActiveSceneTemp;
