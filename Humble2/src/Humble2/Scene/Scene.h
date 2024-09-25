@@ -68,7 +68,7 @@ namespace HBL2
 			return entity;
 		}
 
-		entt::entity GetEntityByUUID(UUID uuid)
+		entt::entity FindEntityByUUID(UUID uuid)
 		{
 			if (m_EntityMap.find(uuid) != m_EntityMap.end())
 			{

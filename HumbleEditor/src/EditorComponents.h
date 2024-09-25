@@ -34,6 +34,7 @@ namespace HBL2
 					Menubar,
 					Stats,
 					PlayStop,
+					Systems,
 					Custom
 				} Type = Panel::None;
 

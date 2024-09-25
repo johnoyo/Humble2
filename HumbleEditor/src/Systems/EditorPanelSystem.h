@@ -18,6 +18,7 @@ namespace HBL2
 			virtual void OnDestroy() override;
 
 		private:
+			void DrawHierachy(entt::entity entity, const auto& entities);
 			void DrawHierachyPanel();
 			void DrawPropertiesPanel();
 			void DrawToolBarPanel();
@@ -26,6 +27,9 @@ namespace HBL2
 			void DrawViewportPanel();
 			void DrawContentBrowserPanel();
 			void DrawPlayStopPanel();
+			void DrawSystemsPanel();
+
+			entt::entity m_EntityToBeDeleted = entt::null;
 
 			glm::vec2 m_ViewportSize = { 0.f, 0.f };
 			std::filesystem::path m_EditorScenePath;

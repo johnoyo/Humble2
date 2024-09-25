@@ -71,6 +71,6 @@ namespace HBL2
 			serializer.Serialize(GetAssetFileSystemPath(s_ActiveProject->GetSpecification().StartingScene.string()));
 		}
 
-		SceneManager::Get().LoadScene(sceneHandle, true);
+		SceneManager::Get().LoadScene(sceneHandle);
 	}
 }

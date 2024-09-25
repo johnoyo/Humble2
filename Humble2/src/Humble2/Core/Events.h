@@ -1,12 +1,14 @@
 #pragma once
 
 #include "EventDispatcher.h"
-
-#include "Scene\Scene.h"
 #include "Resources\Handle.h"
 
 namespace HBL2
 {
+	class Scene;
+	class ISystem;
+	enum class SystemState;
+
 	class WindowCloseEvent final : public Event
 	{
 	public:
@@ -181,7 +183,7 @@ namespace HBL2
 	class SystemStateChangeEvent final : public Event
 	{
 	public:
-		SystemStateChangeEvent(ISystem* system, bool newState) : System(system), NewState(newState)
+		SystemStateChangeEvent(ISystem* system, SystemState oldState, SystemState newState) : System(system), OldState(oldState), NewState(newState)
 		{
 		}
 
@@ -191,6 +193,7 @@ namespace HBL2
 		}
 
 		ISystem* System;
-		bool NewState;
+		SystemState NewState;
+		SystemState OldState;
 	};
 }

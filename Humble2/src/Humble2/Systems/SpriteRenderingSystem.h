@@ -28,6 +28,8 @@ namespace HBL2
 	class SpriteRenderingSystem final : public ISystem
 	{
 	public:
+		SpriteRenderingSystem() { Name = "SpriteRenderingSystem"; }
+
 		virtual void OnCreate() override;
 		virtual void OnUpdate(float ts) override;
 		virtual void OnDestroy() override;

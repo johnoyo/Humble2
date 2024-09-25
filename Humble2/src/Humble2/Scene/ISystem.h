@@ -1,5 +1,6 @@
 #pragma once
-#include <Utilities\Log.h>
+
+#include <Core\Events.h>
 
 namespace HBL2
 {
@@ -10,6 +11,13 @@ namespace HBL2
 		Core = 0,
 		Runtime,
 		User,
+	};
+
+	enum class SystemState
+	{
+		Play = 0,
+		Pause,
+		Idle,
 	};
 
 	class ISystem
@@ -32,15 +40,28 @@ namespace HBL2
 			m_Type = type;
 		}
 
-		SystemType GetType()
+		const SystemType GetType() const
 		{
 			return m_Type;
 		}
 
-		std::string Name;
+		void SetState(SystemState newState)
+		{
+			SystemState previousState = m_State;
+			m_State = newState;
+			EventDispatcher::Get().Post(SystemStateChangeEvent(this, previousState, newState));
+		}
+
+		const SystemState GetState() const
+		{
+			return m_State;
+		}
+
+		std::string Name = "UnnamedSystem";
 
 	protected:
 		Scene* m_Context = nullptr;
 		SystemType m_Type = SystemType::Core;
+		SystemState m_State = SystemState::Idle;
 	};
 }

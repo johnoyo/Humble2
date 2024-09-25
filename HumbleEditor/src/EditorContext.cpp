@@ -67,14 +67,20 @@ namespace HBL2
 
 			for (HBL2::ISystem* system : m_ActiveScene->GetCoreSystems())
 			{
-				system->OnUpdate(ts);
+				if (system->GetState() == SystemState::Play)
+				{
+					system->OnUpdate(ts);
+				}
 			}
 
 			if (Mode == Mode::Runtime)
 			{
 				for (HBL2::ISystem* system : m_ActiveScene->GetRuntimeSystems())
 				{
-					system->OnUpdate(ts);
+					if (system->GetState() == SystemState::Play)
+					{
+						system->OnUpdate(ts);
+					}
 				}
 			}
 		}
@@ -96,7 +102,10 @@ namespace HBL2
 
 			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 			{
-				system->OnGuiRender(ts);
+				if (system->GetState() == SystemState::Play)
+				{
+					system->OnGuiRender(ts);
+				}
 			}
 		}
 

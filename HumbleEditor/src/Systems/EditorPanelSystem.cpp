@@ -44,6 +44,21 @@ namespace HBL2
 				}
 
 				m_ActiveScene = ResourceManager::Instance->GetScene(sce.NewScene);
+
+				if (Context::Mode == Mode::Runtime)
+				{
+					for (ISystem* system : m_ActiveScene->GetRuntimeSystems())
+					{
+						system->SetState(SystemState::Play);
+					}
+				}
+				else if (Context::Mode == Mode::Editor)
+				{
+					for (ISystem* system : m_ActiveScene->GetRuntimeSystems())
+					{
+						system->SetState(SystemState::Idle);
+					}
+				}
 			});
 
 			{
@@ -121,6 +136,15 @@ namespace HBL2
 				panel.Type = Component::EditorPanel::Panel::PlayStop;
 				panel.Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
 			}
+
+			{
+				// Systems panel.
+				auto systems = m_Context->CreateEntity();
+				m_Context->GetComponent<HBL2::Component::Tag>(systems).Name = "Hidden";
+				auto& panel = m_Context->AddComponent<Component::EditorPanel>(systems);
+				panel.Name = "Systems";
+				panel.Type = Component::EditorPanel::Panel::Systems;
+			}
 		}
 
 		void EditorPanelSystem::OnUpdate(float ts)
@@ -185,6 +209,10 @@ namespace HBL2
 							break;
 						case Component::EditorPanel::Panel::PlayStop:
 							DrawPlayStopPanel();
+							break;
+						case Component::EditorPanel::Panel::Systems:
+							DrawSystemsPanel();
+							break;
 						}
 
 						// Pop window from the stack.
@@ -206,6 +234,65 @@ namespace HBL2
 		{
 		}
 
+		void EditorPanelSystem::DrawHierachy(entt::entity entity, const auto& entities)
+		{
+			const auto& tag = m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity);
+
+			bool selectedEntityCondition = HBL2::Component::EditorVisible::Selected && HBL2::Component::EditorVisible::SelectedEntity == entity;
+
+			ImGuiTreeNodeFlags flags = (selectedEntityCondition ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+			bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.Name.c_str());
+
+			if (ImGui::BeginDragDropSource())
+			{
+				UUID entityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(entity).Identifier;
+
+				if (!m_ActiveScene->HasComponent<HBL2::Component::Link>(entity))
+				{
+					m_ActiveScene->AddComponent<HBL2::Component::Link>(entity);
+				}
+
+				ImGui::SetDragDropPayload("Entity_UUID", (void*)(UUID*)&entityUUID, sizeof(UUID));
+				ImGui::EndDragDropSource();
+			}
+
+			if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+			{
+				HBL2::Component::EditorVisible::Selected = true;
+				HBL2::Component::EditorVisible::SelectedEntity = entity;
+			}
+
+			if (ImGui::BeginPopupContextItem())
+			{
+				if (ImGui::MenuItem("Destroy"))
+				{
+					// Defer the deletion at the end of the function, for now just mark the entity.
+					m_EntityToBeDeleted = entity;
+				}
+
+				ImGui::EndPopup();
+			}
+
+			if (opened)
+			{
+				for (const auto e : entities)
+				{
+					if (m_ActiveScene->HasComponent<HBL2::Component::Link>(e))
+					{
+						const auto parentEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::Link>(e).Parent;
+						auto parentEntity = m_ActiveScene->FindEntityByUUID(parentEntityUUID);
+
+						if (parentEntity == entity)
+						{
+							DrawHierachy(e, entities);
+						}
+					}
+				}
+
+				ImGui::TreePop();
+			}
+		}
+
 		void EditorPanelSystem::DrawHierachyPanel()
 		{
 			if (m_ActiveScene == nullptr)
@@ -220,15 +307,20 @@ namespace HBL2
 				{
 					auto entity = m_ActiveScene->CreateEntity();
 					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
 				}
 
 				if (ImGui::MenuItem("Create Sprite_New"))
 				{
 					auto entity = m_ActiveScene->CreateEntity();
 					m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name = "Sprite";
-					m_ActiveScene->GetComponent<HBL2::Component::Transform>(entity).Translation = { 0.f, 15.f, 0.f };
 					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
 					m_ActiveScene->AddComponent<HBL2::Component::Sprite_New>(entity);
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
 				}
 
 				if (ImGui::MenuItem("Create Camera"))
@@ -238,52 +330,42 @@ namespace HBL2
 					m_ActiveScene->AddComponent<HBL2::Component::Camera>(entity).Enabled = true;
 					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
 					m_ActiveScene->GetComponent<HBL2::Component::Transform>(entity).Translation.z = 10.f;
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
 				}
 
 				ImGui::EndPopup();
 			}
 
-			entt::entity entityToBeDeleted = entt::null;
+			m_EntityToBeDeleted = entt::null;
 
-			// Iterate over all editor visible entities and draw the to the hierachy panel.
-			m_ActiveScene->GetRegistry()
-				.group<HBL2::Component::EditorVisible>(entt::get<HBL2::Component::Tag>)
-				.each([&](entt::entity entity, HBL2::Component::EditorVisible& editorVisible, HBL2::Component::Tag& tag)
+			const auto& entities = m_ActiveScene->GetRegistry().view<entt::entity>();
+
+			if (ImGui::CollapsingHeader("Entity Hierarchy", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				for (const auto entity : entities)
 				{
-					if (editorVisible.Enabled)
+					if (m_ActiveScene->HasComponent<HBL2::Component::Link>(entity))
 					{
-						ImGuiTreeNodeFlags flags = ((editorVisible.Selected && editorVisible.SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
-						bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.Name.c_str());
-
-						if (ImGui::IsItemClicked())
+						const auto parentEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::Link>(entity).Parent;
+						if (parentEntityUUID == 0)
 						{
-							editorVisible.Selected = true;
-							editorVisible.SelectedEntity = entity;
-						}
-
-						if (ImGui::BeginPopupContextItem())
-						{
-							if (ImGui::MenuItem("Destroy"))
-							{
-								// Defer the deletion at the end of the function, for now just mark the entity.
-								entityToBeDeleted = entity;
-							}
-
-							ImGui::EndPopup();
-						}
-
-						if (opened)
-						{
-							ImGui::TreePop();
+							DrawHierachy(entity, entities);
 						}
 					}
-				});
+					else
+					{
+						DrawHierachy(entity, entities);
+					}
+				}
+			}
 
-			if (entityToBeDeleted != entt::null)
+			if (m_EntityToBeDeleted != entt::null)
 			{
 				// Destroy entity and clear entityToBeDeleted value.
-				m_ActiveScene->DestroyEntity(entityToBeDeleted);
-				entityToBeDeleted = entt::null;
+				m_ActiveScene->DestroyEntity(m_EntityToBeDeleted);
+				m_EntityToBeDeleted = entt::null;
 
 				// Clear currently selected entity.
 				HBL2::Component::EditorVisible::SelectedEntity = entt::null;
@@ -356,7 +438,17 @@ namespace HBL2
 					{
 						auto& link = m_ActiveScene->GetComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity);
 
-						ImGui::InputScalar("Parent", ImGuiDataType_U32, &link.parent);
+						ImGui::InputScalar("Parent", ImGuiDataType_U32, &link.Parent);
+
+						if (ImGui::BeginDragDropTarget())
+						{
+							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
+							{
+								UUID parentEntityUUID = *((UUID*)payload->Data);
+								link.Parent = parentEntityUUID;
+								ImGui::EndDragDropTarget();
+							}
+						}
 
 						ImGui::TreePop();
 					}
@@ -655,7 +747,7 @@ namespace HBL2
 						Scene::Copy(m_ActiveScene, playScene);
 						AssetManager::Instance->SaveAsset(assetHandle);
 
-						SceneManager::Get().LoadScene(assetHandle, true);
+						SceneManager::Get().LoadScene(assetHandle);
 
 						m_EditorScenePath = filepath;
 					}
@@ -672,7 +764,7 @@ namespace HBL2
 
 						AssetManager::Instance->SaveAsset(std::hash<std::string>()(relativePath.string()));
 
-						HBL2::SceneManager::Get().LoadScene(assetHandle, true);
+						HBL2::SceneManager::Get().LoadScene(assetHandle);
 
 						m_EditorScenePath = filepath;
 					}
@@ -694,7 +786,7 @@ namespace HBL2
 							}
 						}
 
-						HBL2::SceneManager::Get().LoadScene(sceneAssetHandle, true);
+						HBL2::SceneManager::Get().LoadScene(sceneAssetHandle);
 
 						m_EditorScenePath = filepath;
 					}
@@ -1379,7 +1471,7 @@ namespace HBL2
 						return;
 					}
 
-					HBL2::SceneManager::Get().LoadScene(sceneAssetHandle, true);
+					HBL2::SceneManager::Get().LoadScene(sceneAssetHandle);
 
 					m_EditorScenePath = path;
 
@@ -1402,7 +1494,7 @@ namespace HBL2
 					auto playSceneHandle = ResourceManager::Instance->CreateScene({ .name = m_ActiveScene->GetName() + "(Clone)" });
 					Scene* playScene = ResourceManager::Instance->GetScene(playSceneHandle);
 					Scene::Copy(m_ActiveScene, playScene);
-					SceneManager::Get().LoadScene(playSceneHandle, true);
+					SceneManager::Get().LoadScene(playSceneHandle);
 				}
 
 				isPlaying = true;
@@ -1416,7 +1508,7 @@ namespace HBL2
 
 				if (m_ActiveSceneTemp.IsValid())
 				{
-					SceneManager::Get().LoadScene(m_ActiveSceneTemp, true);
+					SceneManager::Get().LoadScene(m_ActiveSceneTemp);
 					m_ActiveSceneTemp = {};
 				}
 
@@ -1432,6 +1524,43 @@ namespace HBL2
 			else
 			{
 				ImGui::Text("Editing ...");
+			}
+		}
+
+		void EditorPanelSystem::DrawSystemsPanel()
+		{
+			if (m_ActiveScene != nullptr)
+			{
+				ImGui::TextWrapped(m_ActiveScene->GetName().c_str());
+				ImGui::NewLine();
+				ImGui::Separator();
+
+				for (ISystem* system : m_ActiveScene->GetSystems())
+				{
+					ImGui::TextWrapped(system->Name.c_str());
+					ImGui::SameLine(ImGui::GetWindowWidth() - 80.0f);
+					switch (system->GetState())
+					{
+					case SystemState::Play:
+						ImGui::Button("Pause", ImVec2(60.f, 20.f));
+						if (ImGui::IsItemClicked())
+						{
+							system->SetState(SystemState::Pause);
+						}
+						break;
+					case SystemState::Pause:
+						ImGui::Button("Resume", ImVec2(60.f, 20.f));
+						if (ImGui::IsItemClicked())
+						{
+							system->SetState(SystemState::Play);
+						}
+						break;
+					case SystemState::Idle:
+						ImGui::Button("Idling", ImVec2(60.f, 20.f));
+						break;
+					}
+					ImGui::Separator();
+				}
 			}
 		}
 	}

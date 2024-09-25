@@ -43,7 +43,7 @@ namespace HBL2
 
 		struct Link
 		{
-			UUID parent = 0;
+			UUID Parent = 0;
 		};
 
 		struct Sprite

@@ -50,11 +50,18 @@ namespace HBL2
 				return;
 			}
 
+			for (ISystem* system : scene->GetCoreSystems())
+			{
+				system->OnCreate();
+				system->SetState(SystemState::Play);
+			}
+
 			if (m_RuntimeSceneChange)
 			{
-				for (ISystem* system : scene->GetSystems())
+				for (ISystem* system : scene->GetRuntimeSystems())
 				{
 					system->OnCreate();
+					system->SetState(SystemState::Play);
 				}
 			}
 
@@ -77,11 +84,18 @@ namespace HBL2
 				return;
 			}
 
+			for (ISystem* system : scene->GetCoreSystems())
+			{
+				system->OnCreate();
+				system->SetState(SystemState::Play);
+			}
+
 			if (m_RuntimeSceneChange)
 			{
-				for (ISystem* system : scene->GetSystems())
+				for (ISystem* system : scene->GetRuntimeSystems())
 				{
 					system->OnCreate();
+					system->SetState(SystemState::Play);
 				}
 			}
 

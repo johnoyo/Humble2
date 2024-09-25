@@ -12,6 +12,7 @@ namespace HBL2
 	class TransformSystem final : public ISystem
 	{
 	public:
+		TransformSystem() { Name = "TransformSystem"; }
 		virtual void OnCreate() override;
 		virtual void OnUpdate(float ts) override;
 	};

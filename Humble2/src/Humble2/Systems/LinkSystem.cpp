@@ -29,9 +29,9 @@ namespace HBL2
 	{
 		glm::mat4 transform = glm::mat4(1.0f);
 
-		if (link.parent != 0)
+		if (link.Parent != 0)
 		{
-			entt::entity parentEntity = m_Context->GetEntityByUUID(link.parent);
+			entt::entity parentEntity = m_Context->FindEntityByUUID(link.Parent);
 			if (parentEntity != entt::null)
 			{
 				Component::Link& parentLink = m_Context->GetComponent<Component::Link>(parentEntity);

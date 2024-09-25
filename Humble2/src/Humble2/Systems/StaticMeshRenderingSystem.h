@@ -45,6 +45,8 @@ namespace HBL2
 	class StaticMeshRenderingSystem final : public ISystem
 	{
 	public:
+		StaticMeshRenderingSystem() { Name = "StaticMeshRenderingSystem"; }
+
 		virtual void OnCreate() override;
 		virtual void OnUpdate(float ts) override;
 		virtual void OnDestroy() override;
