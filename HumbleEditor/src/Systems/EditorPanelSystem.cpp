@@ -380,6 +380,8 @@ namespace HBL2
 			{
 				for (const auto entity : entities)
 				{
+					// Only display entities that have no parent (i.e., true root entities)
+					// The child nodes will be displayed recursively in the DrawHierachy method.
 					if (m_ActiveScene->HasComponent<HBL2::Component::Link>(entity))
 					{
 						const auto parentEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::Link>(entity).Parent;
@@ -479,7 +481,11 @@ namespace HBL2
 							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
 							{
 								UUID parentEntityUUID = *((UUID*)payload->Data);
-								link.Parent = parentEntityUUID;
+								UUID childEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(HBL2::Component::EditorVisible::SelectedEntity).Identifier;
+								if (childEntityUUID != parentEntityUUID)
+								{
+									link.Parent = parentEntityUUID;
+								}
 								ImGui::EndDragDropTarget();
 							}
 						}
