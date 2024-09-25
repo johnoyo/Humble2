@@ -256,6 +256,33 @@ namespace HBL2
 				ImGui::EndDragDropSource();
 			}
 
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
+				{
+					UUID entityUUID = *((UUID*)payload->Data);
+
+					auto childEntity = m_ActiveScene->FindEntityByUUID(entityUUID);
+
+					// Add Link component to child entity if it does not have one.
+					if (!m_ActiveScene->HasComponent<HBL2::Component::Link>(childEntity))
+					{
+						m_ActiveScene->AddComponent<HBL2::Component::Link>(childEntity);
+					}
+
+					// Add Link component to this entity(parent of child entity) if it does not have one.
+					if (!m_ActiveScene->HasComponent<HBL2::Component::Link>(entity))
+					{
+						m_ActiveScene->AddComponent<HBL2::Component::Link>(entity);
+					}
+
+					// Set the parent of the child entity to be this entity that it was dragged into.
+					m_ActiveScene->GetComponent<HBL2::Component::Link>(childEntity).Parent = m_ActiveScene->GetComponent<HBL2::Component::ID>(entity).Identifier;
+
+					ImGui::EndDragDropTarget();
+				}
+			}
+
 			if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
 			{
 				HBL2::Component::EditorVisible::Selected = true;
@@ -264,7 +291,14 @@ namespace HBL2
 
 			if (ImGui::BeginPopupContextItem())
 			{
-				if (ImGui::MenuItem("Destroy"))
+				if (ImGui::MenuItem("Unparent"))
+				{
+					if (m_ActiveScene->HasComponent<HBL2::Component::Link>(entity))
+					{
+						m_ActiveScene->GetComponent<HBL2::Component::Link>(entity).Parent = 0;
+					}
+				}
+				else if (ImGui::MenuItem("Destroy"))
 				{
 					// Defer the deletion at the end of the function, for now just mark the entity.
 					m_EntityToBeDeleted = entity;
@@ -448,6 +482,16 @@ namespace HBL2
 								link.Parent = parentEntityUUID;
 								ImGui::EndDragDropTarget();
 							}
+						}
+
+						if (ImGui::BeginPopupContextItem())
+						{
+							if (ImGui::MenuItem("Unparent"))
+							{
+								link.Parent = 0;
+							}
+
+							ImGui::EndPopup();
 						}
 
 						ImGui::TreePop();
