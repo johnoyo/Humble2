@@ -842,60 +842,49 @@ namespace HBL2
 					}
 					if (ImGui::MenuItem("Build (Windows - Debug)"))
 					{
-						// TODO: Fix absolute paths.
-						// TODO: Get active project to build.
-
 						const std::string& projectName = HBL2::Project::GetActive()->GetSpecification().Name;
 
 						// Build.
-						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Debug");
+						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Debug");
 
 						// Copy assets to build folder.
-						std::filesystem::copy("./" + projectName, "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Debug-x86_64\\HumbleApp\\" + projectName, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						std::filesystem::copy("./" + projectName, "..\\bin\\Debug-x86_64\\HumbleApp\\" + projectName, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
 
 						// Copy assets to build folder.
-						std::filesystem::copy("./assets", "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Debug-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						std::filesystem::copy("./assets", "..\\bin\\Debug-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
 					}
 					if (ImGui::MenuItem("Build (Windows - Release)"))
 					{
-						// TODO: Fix absolute paths.
-						// TODO: Get active project to build.
-
 						const std::string& projectName = HBL2::Project::GetActive()->GetSpecification().Name;
 
 						// Build.
-						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
+						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
 
 						// Copy assets to build folder.
-						std::filesystem::copy("./" + projectName, "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\" + projectName, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						std::filesystem::copy("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
 
 						// Copy assets to build folder.
-						std::filesystem::copy("./assets", "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						std::filesystem::copy("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
 					}
 					if (ImGui::MenuItem("Build & Run (Windows)"))
 					{
-						// TODO: Fix absolute paths.
-						// TODO: Get active project to build.
-
 						const std::string& projectName = HBL2::Project::GetActive()->GetSpecification().Name;
 
 						// Build.
-						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
+						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
 
 						// Copy assets to build folder.
-						std::filesystem::copy("./" + projectName, "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\" + projectName, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						std::filesystem::copy("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
 
 						// Copy assets to build folder.
-						std::filesystem::copy("./assets", "C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						std::filesystem::copy("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
 
 						// Run.
-						system("C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\bin\\Release-x86_64\\HumbleApp\\HumbleApp.exe \"EmptyProject\\EmptyProject.hblproj\"");
+						system("..\\bin\\Release-x86_64\\HumbleApp\\HumbleApp.exe \"EmptyProject\\EmptyProject.hblproj\"");
 					}
 					if (ImGui::MenuItem("Build (Web)"))
 					{
-						// TODO: Fix absolute paths.
-
-						system("C:\\dev\\Graphics\\OpenGL_Projects\\HumbleGameEngine2\\Scripts\\emBuildAll.bat");
+						system("..\\Scripts\\emBuildAll.bat");
 					}
 					if (ImGui::MenuItem("Close"))
 					{

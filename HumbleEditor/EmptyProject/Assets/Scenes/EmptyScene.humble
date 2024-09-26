@@ -6,7 +6,7 @@ Entities:
     Component::ID:
       ID: 15804601475522879488
     Component::Transform:
-      Translation: [0, 0, 0]
+      Translation: [0, 5, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::StaticMesh_New:
@@ -19,7 +19,7 @@ Entities:
     Component::ID:
       ID: 1275945063876455680
     Component::Transform:
-      Translation: [0, 0, 10]
+      Translation: [0, 2, 15]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Camera:
@@ -28,7 +28,7 @@ Entities:
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 1.82852805
+      Aspect Ratio: 1.94043887
       Zoom Level: 300
 Systems:
   - NewSystem

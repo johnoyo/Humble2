@@ -3,14 +3,11 @@
 class NewSystem2 final : public HBL2::ISystem
 {
 	glm::vec3 velocity;
-	glm::vec3 hangPoint;
 
 public:
 	virtual void OnCreate() override
 	{
 		velocity = { 0.f, 0.f, 0.f };
-		hangPoint = { 0.0f, 3.0f, 0.0f };
-		
 	}
 
 	virtual void OnUpdate(float ts) override
@@ -41,19 +38,6 @@ public:
 								predictedPosition.y = 0.0f;
 							}
 
-							// Hang point
-							if (true)
-							{
-								float constraint = glm::distance(predictedPosition, hangPoint) - 2.0f;
-
-								// Gradient
-								glm::vec3 gradient = -glm::normalize(predictedPosition - hangPoint);
-
-								float lamda = -constraint / (1.0f + (0.0f / (subStepTime * subStepTime)));
-
-								predictedPosition += lamda * gradient;
-							}
-
 							velocity = (predictedPosition - transform.Translation) / subStepTime;
 							transform.Translation = predictedPosition;
 						}
@@ -63,7 +47,7 @@ public:
 };
 
 // Factory function to create the system
-extern "C" __declspec(dllexport) HBL2::ISystem* CreateSystem()
+extern "C" __declspec(dllexport) HBL2::ISystem * CreateSystem()
 {
 	return new NewSystem2();
 }
