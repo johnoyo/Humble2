@@ -51,7 +51,7 @@ namespace HBL2
 
 			auto& link = m_Scene->GetComponent<Component::Link>(entity);
 
-			out << YAML::Key << "Parent" << YAML::Value << (uint32_t)link.Parent;
+			out << YAML::Key << "Parent" << YAML::Value << (UUID)link.Parent;
 			out << YAML::EndMap;
 		}
 
@@ -292,7 +292,7 @@ namespace HBL2
 				auto linkComponent = entity["Component::Link"];
 				if (linkComponent)
 				{
-					auto& link = m_Scene->GetComponent<Component::Link>(deserializedEntity);
+					auto& link = m_Scene->AddComponent<Component::Link>(deserializedEntity);
 					link.Parent = linkComponent["Parent"].as<UUID>();
 				}
 

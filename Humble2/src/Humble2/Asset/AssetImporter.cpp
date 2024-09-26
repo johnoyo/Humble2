@@ -297,6 +297,20 @@ namespace HBL2
 				.name = asset->FilePath.filename().stem().string()
 			});
 
+			Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
+
+			if (scene == nullptr)
+			{
+				HBL2_CORE_ERROR("Scene asset \"{0}\" is invalid, aborting scene load.", asset->FilePath.filename().stem().string());
+				return;
+			}
+
+			scene->RegisterSystem(new TransformSystem);
+			scene->RegisterSystem(new LinkSystem);
+			scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
+			scene->RegisterSystem(new StaticMeshRenderingSystem);
+			scene->RegisterSystem(new SpriteRenderingSystem);
+
 			asset->Indentifier = sceneHandle.Pack();
 			asset->Loaded = true;
 		}

@@ -23,7 +23,7 @@ public:
 };
 
 // Factory function to create the system
-extern "C" __declspec(dllexport) HBL2::ISystem* CreateSystem()
+extern "C" __declspec(dllexport) HBL2::ISystem * CreateSystem()
 {
 	return new NewSystem();
 }
