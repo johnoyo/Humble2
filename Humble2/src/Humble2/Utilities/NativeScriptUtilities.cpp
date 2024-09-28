@@ -10,6 +10,7 @@ namespace HBL2
 	void NativeScriptUtilities::Initialize()
 	{
 		HBL2_CORE_ASSERT(s_Instance == nullptr, "NativeScriptUtilities::s_Instance is not null! NativeScriptUtilities::Initialize has been called twice.");
+
 		s_Instance = new NativeScriptUtilities;
 	}
 
@@ -131,8 +132,11 @@ EndGlobal
 
 	std::string NativeScriptUtilities::GetDefaultProjectText(const std::string& systemName)
 	{
+		const std::string& vulkanSDK = std::getenv("VULKAN_SDK");
+
 		const std::string& placeholder = "{SystemName}";
 		const std::string& placeholderPDB = "{randomPDB}";
+		const std::string& placeholderVulkan = "{VULKAN_SDK}";
 
 		const std::string& projectText = R"(<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -195,7 +199,7 @@ EndGlobal
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>GLEW_STATIC;YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\..\Humble2\src;..\..\..\..\Humble2\src\Humble2;..\..\..\..\Humble2\src\Vendor;..\..\..\..\Humble2\src\Vendor\entt\include;..\..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\..\Dependencies\ImGui\imgui;..\..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\..\Dependencies\GLFW\include;..\..\..\..\Dependencies\GLEW\include;..\..\..\..\Dependencies\stb_image;..\..\..\..\Dependencies\GLM;..\..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;C:\VulkanSDK\1.3.283.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\..\Humble2\src;..\..\..\..\Humble2\src\Humble2;..\..\..\..\Humble2\src\Vendor;..\..\..\..\Humble2\src\Vendor\entt\include;..\..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\..\Dependencies\ImGui\imgui;..\..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\..\Dependencies\GLFW\include;..\..\..\..\Dependencies\GLEW\include;..\..\..\..\Dependencies\stb_image;..\..\..\..\Dependencies\GLM;..\..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
@@ -216,7 +220,7 @@ EndGlobal
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>GLEW_STATIC;YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\..\Humble2\src;..\..\..\..\Humble2\src\Humble2;..\..\..\..\Humble2\src\Vendor;..\..\..\..\Humble2\src\Vendor\entt\include;..\..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\..\Dependencies\ImGui\imgui;..\..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\..\Dependencies\GLFW\include;..\..\..\..\Dependencies\GLEW\include;..\..\..\..\Dependencies\stb_image;..\..\..\..\Dependencies\GLM;..\..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;C:\VulkanSDK\1.3.283.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\..\Humble2\src;..\..\..\..\Humble2\src\Humble2;..\..\..\..\Humble2\src\Vendor;..\..\..\..\Humble2\src\Vendor\entt\include;..\..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\..\Dependencies\ImGui\imgui;..\..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\..\Dependencies\GLFW\include;..\..\..\..\Dependencies\GLEW\include;..\..\..\..\Dependencies\stb_image;..\..\..\..\Dependencies\GLM;..\..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -260,6 +264,15 @@ EndGlobal
 		{
 			((std::string&)projectText).replace(pos, placeholderPDB.length(), hash);
 			pos = projectText.find(placeholderPDB, pos + hash.length());
+		}
+
+		// Fill in vulkan SDK path
+		pos = projectText.find(placeholderVulkan);
+
+		while (pos != std::string::npos)
+		{
+			((std::string&)projectText).replace(pos, placeholderVulkan.length(), vulkanSDK);
+			pos = projectText.find(placeholderVulkan, pos + vulkanSDK.length());
 		}
 
 		return projectText;

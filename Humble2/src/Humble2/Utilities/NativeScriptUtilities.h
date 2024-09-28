@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <iostream>
 #include <filesystem>
+#include <cstdlib>
 
 namespace HBL2
 {
