@@ -34,7 +34,7 @@ namespace HBL2
 					.type = AssetType::Texture,
 				});
 			}
-			else if (extension == ".obj" || extension == ".gltf" || extension == ".glb" || extension == ".fbx")
+			else if (extension == ".obj" || extension == ".gltf" || extension == ".glb" || extension == ".fbx" || extension == ".FBX")
 			{
 				auto assetHandle = AssetManager::Instance->CreateAsset({
 					.debugName = "mesh-asset",

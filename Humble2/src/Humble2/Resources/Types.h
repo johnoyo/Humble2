@@ -58,7 +58,6 @@ namespace HBL2
 		Handle<BindGroup> BindGroup;
 
 		glm::vec4 AlbedoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		float Metalicness = 1.0f;
-		float Roughness = 1.0f;
+		float Glossiness = 3.0f;
 	};
 }

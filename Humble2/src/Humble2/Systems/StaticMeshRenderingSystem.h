@@ -23,8 +23,7 @@ namespace HBL2
 		glm::mat4 Model;
 		glm::mat4 InverseModel;
 		glm::vec4 Color;
-		float Metallicness;
-		float Roughness;
+		float Glossiness;
 	};
 
 	struct CameraData

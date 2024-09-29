@@ -5,3 +5,6 @@ Material:
   Metalicness: 1
   Roughness: 1
   AlbedoMap: 0
+  NormalMap: 0
+  MetallicMap: 0
+  RoughnessMap: 0

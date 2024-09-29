@@ -62,10 +62,10 @@ namespace HBL2
 			}
 		});
 
-		glm::vec3 lightPosition = glm::vec3(0.0f, 5.0f, 10.0f);
+		glm::vec3 lightPosition = glm::vec3(0.0f, 0.0f, 0.5f);
 
 		glm::mat4 T = glm::translate(glm::mat4(1.0f), lightPosition);
-		glm::quat R = glm::quat({ glm::radians(-30.0f), glm::radians(0.0f), glm::radians(0.0f) });
+		glm::quat R = glm::quat({ glm::radians(0.0f), glm::radians(0.0f), glm::radians(0.0f) });
 		glm::mat4 S = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 1.0f));
 
 		glm::mat4 Matrix = T * glm::toMat4(R) * S;
@@ -73,7 +73,7 @@ namespace HBL2
 		m_LightData.LightCount = 1.0f;
 		m_LightData.LightPositions[0] = Matrix * glm::vec4(lightPosition, 1.0f);
 		m_LightData.LightColors[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		m_LightData.LightIntensities[0].x = 1.5f;
+		m_LightData.LightIntensities[0].x = 5.0f;
 	}
 
 	void StaticMeshRenderingSystem::OnUpdate(float ts)
@@ -107,8 +107,7 @@ namespace HBL2
 					alloc.Data->Model = transform.WorldMatrix;
 					alloc.Data->InverseModel = glm::transpose(glm::inverse(transform.WorldMatrix));
 					alloc.Data->Color = material->AlbedoColor;
-					alloc.Data->Metallicness = material->Metalicness;
-					alloc.Data->Roughness = material->Roughness;
+					alloc.Data->Glossiness = material->Glossiness;
 
 					draws.Insert({
 						.Shader = material->Shader,

@@ -339,19 +339,7 @@ namespace HBL2
 			{
 				if (ImGui::MenuItem("Create Empty"))
 				{
-					auto entity = m_ActiveScene->CreateEntity();
-					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				if (ImGui::MenuItem("Create Sprite_New"))
-				{
-					auto entity = m_ActiveScene->CreateEntity();
-					m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name = "Sprite";
-					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
-					m_ActiveScene->AddComponent<HBL2::Component::Sprite_New>(entity);
+					auto entity = HBL2::EntityPreset::CreateEmpty();
 
 					HBL2::Component::EditorVisible::SelectedEntity = entity;
 					HBL2::Component::EditorVisible::Selected = true;
@@ -359,11 +347,31 @@ namespace HBL2
 
 				if (ImGui::MenuItem("Create Camera"))
 				{
-					auto entity = m_ActiveScene->CreateEntity();
-					m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name = "Camera";
-					m_ActiveScene->AddComponent<HBL2::Component::Camera>(entity).Enabled = true;
-					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(entity);
-					m_ActiveScene->GetComponent<HBL2::Component::Transform>(entity).Translation.z = 10.f;
+					auto entity = HBL2::EntityPreset::CreateCamera();
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
+				}
+
+				if (ImGui::MenuItem("Create Sprite_New"))
+				{
+					auto entity = HBL2::EntityPreset::CreateSprite();
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
+				}
+
+				if (ImGui::MenuItem("Create Plane"))
+				{
+					auto entity = HBL2::EntityPreset::CreatePlane();
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
+				}
+
+				if (ImGui::MenuItem("Create Sphere"))
+				{
+					auto entity = HBL2::EntityPreset::CreateSphere();
 
 					HBL2::Component::EditorVisible::SelectedEntity = entity;
 					HBL2::Component::EditorVisible::Selected = true;
@@ -1230,6 +1238,119 @@ namespace HBL2
 
 				Handle<Texture> albedoMapHandle = AssetManager::Instance->GetAsset<Texture>(albedoMapAssetHandle);
 
+				Handle<Asset> normalMapAssetHandle;
+				Handle<Asset> metallicMapAssetHandle;
+				Handle<Asset> roughnessMapAssetHandle;
+
+				if (m_SelectedMaterialType == 2)
+				{
+					// Normal map
+					static uint32_t normalMapHandlePacked = 0;
+					ImGui::InputScalar("NormalMap", ImGuiDataType_U32, (void*)(intptr_t*)&normalMapHandlePacked);
+
+					normalMapAssetHandle = Handle<Asset>::UnPack(normalMapHandlePacked);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+						{
+							normalMapHandlePacked = *((uint32_t*)payload->Data);
+							normalMapAssetHandle = Handle<Asset>::UnPack(normalMapHandlePacked);
+
+							if (normalMapAssetHandle.IsValid())
+							{
+								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(normalMapAssetHandle)->FilePath).string() + ".hbltexture", 0);
+
+								YAML::Emitter out;
+								out << YAML::BeginMap;
+								out << YAML::Key << "Texture" << YAML::Value;
+								out << YAML::BeginMap;
+								out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(normalMapAssetHandle)->UUID;
+								out << YAML::Key << "Flip" << YAML::Value << false;
+								out << YAML::EndMap;
+								out << YAML::EndMap;
+								fout << out.c_str();
+								fout.close();
+							}
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+
+
+					// Metalicness map
+					static uint32_t metallicMapHandlePacked = 0;
+					ImGui::InputScalar("MetallicMap", ImGuiDataType_U32, (void*)(intptr_t*)&metallicMapHandlePacked);
+
+					metallicMapAssetHandle = Handle<Asset>::UnPack(metallicMapHandlePacked);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+						{
+							metallicMapHandlePacked = *((uint32_t*)payload->Data);
+							metallicMapAssetHandle = Handle<Asset>::UnPack(metallicMapHandlePacked);
+
+							if (metallicMapAssetHandle.IsValid())
+							{
+								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(metallicMapAssetHandle)->FilePath).string() + ".hbltexture", 0);
+
+								YAML::Emitter out;
+								out << YAML::BeginMap;
+								out << YAML::Key << "Texture" << YAML::Value;
+								out << YAML::BeginMap;
+								out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(metallicMapAssetHandle)->UUID;
+								out << YAML::Key << "Flip" << YAML::Value << false;
+								out << YAML::EndMap;
+								out << YAML::EndMap;
+								fout << out.c_str();
+								fout.close();
+							}
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+
+
+					// Roughness map
+					static uint32_t roughnessMapHandlePacked = 0;
+					ImGui::InputScalar("RoughnessMap", ImGuiDataType_U32, (void*)(intptr_t*)&roughnessMapHandlePacked);
+
+					roughnessMapAssetHandle = Handle<Asset>::UnPack(roughnessMapHandlePacked);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+						{
+							roughnessMapHandlePacked = *((uint32_t*)payload->Data);
+							roughnessMapAssetHandle = Handle<Asset>::UnPack(roughnessMapHandlePacked);
+
+							if (roughnessMapAssetHandle.IsValid())
+							{
+								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(roughnessMapAssetHandle)->FilePath).string() + ".hbltexture", 0);
+
+								YAML::Emitter out;
+								out << YAML::BeginMap;
+								out << YAML::Key << "Texture" << YAML::Value;
+								out << YAML::BeginMap;
+								out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(roughnessMapAssetHandle)->UUID;
+								out << YAML::Key << "Flip" << YAML::Value << false;
+								out << YAML::EndMap;
+								out << YAML::EndMap;
+								fout << out.c_str();
+								fout.close();
+							}
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+
+				}
+
+				Handle<Texture> normalMapHandle = AssetManager::Instance->GetAsset<Texture>(normalMapAssetHandle);
+				Handle<Texture> metallicMapHandle = AssetManager::Instance->GetAsset<Texture>(metallicMapAssetHandle);
+				Handle<Texture> roughnessMapHandle = AssetManager::Instance->GetAsset<Texture>(roughnessMapAssetHandle);
+
 				ImGui::NewLine();
 
 				if (ImGui::Button("OK"))
@@ -1260,6 +1381,30 @@ namespace HBL2
 					else
 					{
 						out << YAML::Key << "AlbedoMap" << YAML::Value << (UUID)0;
+					}
+					if (normalMapHandle.IsValid())
+					{
+						out << YAML::Key << "NormalMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(normalMapAssetHandle)->UUID;
+					}
+					else
+					{
+						out << YAML::Key << "NormalMap" << YAML::Value << (UUID)0;
+					}
+					if (metallicMapHandle.IsValid())
+					{
+						out << YAML::Key << "MetallicMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(metallicMapAssetHandle)->UUID;
+					}
+					else
+					{
+						out << YAML::Key << "MetallicMap" << YAML::Value << (UUID)0;
+					}
+					if (roughnessMapHandle.IsValid())
+					{
+						out << YAML::Key << "RoughnessMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(roughnessMapAssetHandle)->UUID;
+					}
+					else
+					{
+						out << YAML::Key << "RoughnessMap" << YAML::Value << (UUID)0;
 					}
 					out << YAML::EndMap;
 					out << YAML::EndMap;

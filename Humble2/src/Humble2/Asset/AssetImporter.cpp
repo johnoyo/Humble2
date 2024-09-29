@@ -87,9 +87,11 @@ namespace HBL2
 			};
 			TextureData textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
 
+			const std::string& textureName = asset->FilePath.filename().stem().string();
+
 			// Create the texture
 			auto texture = ResourceManager::Instance->CreateTexture({
-				.debugName = "test-texture",
+				.debugName = _strdup(std::format("{}-texture", textureName).c_str()),
 				.dimensions = { textureData.Width, textureData.Height, 0 },
 				.initialData = textureData.Data,
 			});
@@ -117,9 +119,11 @@ namespace HBL2
 		// Reflect Shader.
 		const auto& reflectionData = ShaderUtilities::Get().GetReflectionData(shaderPath.string());
 
+		const std::string& shaderName = asset->FilePath.filename().stem().string();
+
 		// Create Resource.
 		auto shader = ResourceManager::Instance->CreateShader({
-			.debugName = "test-shader",
+			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
 			.VS {.code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
 			.FS {.code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
 			.bindGroups {
@@ -156,57 +160,108 @@ namespace HBL2
 		if (materialProperties)
 		{
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
+
 			UUID albedoMapUUID = materialProperties["AlbedoMap"].as<UUID>();
+			UUID normalMapUUID = materialProperties["NormalMap"].as<UUID>();
+			UUID metallicMapUUID = materialProperties["MetallicMap"].as<UUID>();
+			UUID roughnessMapUUID = materialProperties["RoughnessMap"].as<UUID>();
+
 			glm::vec4 albedoColor = materialProperties["AlbedoColor"].as<glm::vec4>();
-			float metalicness = materialProperties["Metalicness"].as<float>();
-			float roughness = materialProperties["Roughness"].as<float>();
+			float glossiness = materialProperties["Metalicness"].as<float>();
 
 			auto shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
 			auto albedoMapHandle = AssetManager::Instance->GetAsset<Texture>(albedoMapUUID);
+			auto normalMapHandle = AssetManager::Instance->GetAsset<Texture>(normalMapUUID);
+			auto metallicMapHandle = AssetManager::Instance->GetAsset<Texture>(metallicMapUUID);
+			auto roughnessMapHandle = AssetManager::Instance->GetAsset<Texture>(roughnessMapUUID);
 
 			if (!albedoMapHandle.IsValid())
 			{
 				albedoMapHandle = TextureUtilities::Get().WhiteTexture;
 			}
 
-			auto drawBindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
-				.debugName = "unlit-colored-layout",
-				.textureBindings = {
-					{
+			const std::string& materialName = asset->FilePath.filename().stem().string();
+
+			Handle<BindGroup> drawBindings;
+
+			if (normalMapHandle.IsValid() && metallicMapHandle.IsValid() && roughnessMapHandle.IsValid())
+			{
+				auto drawBindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
+					.debugName = _strdup(std::format("{}-bind-group-layout", materialName).c_str()),
+					.textureBindings = {
+						{
 						.slot = 0,
 						.visibility = ShaderStage::FRAGMENT,
-					}
-				},
-				.bufferBindings = {
-					{
-						.slot = 2,
-						.visibility = ShaderStage::VERTEX,
-						.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+						},
+						{
+							.slot = 1,
+							.visibility = ShaderStage::FRAGMENT,
+						},
+						{
+							.slot = 2,
+							.visibility = ShaderStage::FRAGMENT,
+						},
+						{
+							.slot = 3,
+							.visibility = ShaderStage::FRAGMENT,
+						},
 					},
-				},
-			});
+					.bufferBindings = {
+						{
+							.slot = 2,
+							.visibility = ShaderStage::VERTEX,
+							.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+						},
+					},
+				});
 
-			auto drawBindings = ResourceManager::Instance->CreateBindGroup({
-				.debugName = "unlit-colored-bind-group",
-				.layout = drawBindGroupLayout,
-				.textures = {
-					albedoMapHandle,
-				},
-				.buffers = {
-					{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer() },
-				}
-			});
+				drawBindings = ResourceManager::Instance->CreateBindGroup({
+					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
+					.layout = drawBindGroupLayout,
+					.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle },
+					.buffers = {
+						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer() },
+					}
+				});
+			}
+			else
+			{
+				auto drawBindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
+					.debugName = _strdup(std::format("{}-bind-group-layout", materialName).c_str()),
+					.textureBindings = {
+						{
+							.slot = 0,
+							.visibility = ShaderStage::FRAGMENT,
+						},
+					},
+					.bufferBindings = {
+						{
+							.slot = 2,
+							.visibility = ShaderStage::VERTEX,
+							.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+						},
+					},
+				});
+
+				drawBindings = ResourceManager::Instance->CreateBindGroup({
+					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
+					.layout = drawBindGroupLayout,
+					.textures = { albedoMapHandle },
+					.buffers = {
+						{.buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer() },
+					}
+				});
+			}
 
 			auto material = ResourceManager::Instance->CreateMaterial({
-				.debugName = "test-material",
+				.debugName = _strdup(std::format("{}-material", materialName).c_str()),
 				.shader = shaderHandle,
 				.bindGroup = drawBindings,
 			});
 
 			Material* mat = ResourceManager::Instance->GetMaterial(material);
 			mat->AlbedoColor = albedoColor;
-			mat->Metalicness = metalicness;
-			mat->Roughness = roughness;
+			mat->Glossiness = glossiness;
 
 			return material;
 		}
@@ -258,21 +313,23 @@ namespace HBL2
 		{
 			MeshData meshData = MeshUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath));
 
+			const std::string& meshName = asset->FilePath.filename().stem().string();
+
 			auto vertexBuffer = ResourceManager::Instance->CreateBuffer({
-				.debugName = "vertex-buffer",
+				.debugName = _strdup(std::format("{}-vertex-buffer", meshName).c_str()),
 				.byteSize = (uint32_t)(meshData.VertexBuffer.size() * sizeof(Vertex)),
 				.initialData = meshData.VertexBuffer.data(),
 			});
 
 			auto indexBuffer = ResourceManager::Instance->CreateBuffer({
-				.debugName = "index-buffer",
+				.debugName = _strdup(std::format("{}-index-buffer", meshName).c_str()),
 				.byteSize = (uint32_t)(meshData.IndexBuffer.size() * sizeof(uint32_t)),
 				.initialData = meshData.IndexBuffer.data(),
 			});
 
 			// Create the mesh
 			auto mesh = ResourceManager::Instance->CreateMesh({
-				.debugName = "test-mesh",
+				.debugName = _strdup(std::format("{}-mesh", meshName).c_str()),
 				.indexOffset = 0,
 				.indexCount = (uint32_t)meshData.IndexBuffer.size(),
 				.vertexOffset = 0,

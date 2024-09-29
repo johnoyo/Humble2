@@ -35,7 +35,7 @@ namespace HBL2
 
 		bool result = false;
 
-		if (extension == ".obj" || extension == ".fbx")
+		if (extension == ".obj" || extension == ".fbx" || extension == ".FBX")
 		{
 			result = m_UFbxLoader->Load(path, meshData);
 		}
