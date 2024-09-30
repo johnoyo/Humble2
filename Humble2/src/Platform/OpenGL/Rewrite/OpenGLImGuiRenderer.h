@@ -4,6 +4,7 @@
 #include "Core\Window.h"
 
 #include <imgui.h>
+#include <ImGuizmo.h>
 
 namespace HBL2
 {

@@ -115,9 +115,9 @@ namespace HBL2
 			uint32_t xSegments = 8;
 			uint32_t ySegments = 8;
 
-			for (int x = 0; x <= xSegments; x++)
+			for (uint32_t x = 0; x <= xSegments; x++)
 			{
-				for (int y = 0; y <= ySegments; y++)
+				for (uint32_t y = 0; y <= ySegments; y++)
 				{
 					float xSeg = (float)x / (float)xSegments;
 					float ySeg = (float)y / (float)ySegments;
@@ -132,11 +132,11 @@ namespace HBL2
 
 			bool oddRow = false;
 
-			for (int y = 0; y < ySegments; y++)
+			for (uint32_t y = 0; y < ySegments; y++)
 			{
 				if (!oddRow)
 				{
-					for (int x = 0; x <= xSegments; x++)
+					for (uint32_t x = 0; x <= xSegments; x++)
 					{
 						indices.push_back(y * (xSegments + 1) + x);
 						indices.push_back((y + 1) * (xSegments + 1) + x);
@@ -144,7 +144,7 @@ namespace HBL2
 				}
 				else
 				{
-					for (int x = xSegments; x >= 0; x--)
+					for (uint32_t x = xSegments; x >= 0; x--)
 					{
 						indices.push_back((y + 1) * (xSegments + 1) + x);
 						indices.push_back(y * (xSegments + 1) + x);

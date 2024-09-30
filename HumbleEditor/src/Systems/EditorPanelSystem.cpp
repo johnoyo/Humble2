@@ -1678,6 +1678,108 @@ namespace HBL2
 					ImGui::EndDragDropTarget();
 				}
 			}
+
+			// Gizmos
+			if (m_Context->MainCamera != entt::null && Context::Mode == Mode::Editor)
+			{
+				auto selectedEntity = HBL2::Component::EditorVisible::SelectedEntity;
+
+				if (!ImGuizmo::IsUsing())
+				{
+					if (Input::GetKeyPress(GLFW_KEY_W))
+					{
+						m_GizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+					}
+					else if (Input::GetKeyPress(GLFW_KEY_E))
+					{
+						m_GizmoOperation = ImGuizmo::OPERATION::ROTATE;
+					}
+					else if (Input::GetKeyPress(GLFW_KEY_R))
+					{
+						m_GizmoOperation = ImGuizmo::OPERATION::SCALE;
+					}
+					else if (Input::GetKeyPress(GLFW_KEY_Q))
+					{
+						m_GizmoOperation = ImGuizmo::OPERATION::BOUNDS;
+					}
+				}
+
+				auto& camera = m_Context->GetComponent<HBL2::Component::Camera>(m_Context->MainCamera);
+				ImGuizmo::SetOrthographic(camera.Type == HBL2::Component::Camera::Type::Orthographic);
+
+				// Set window for rendering into.
+				ImGuizmo::SetDrawlist();
+
+				// Set viewport size.
+				ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
+
+				if (selectedEntity != entt::null && m_GizmoOperation != ImGuizmo::OPERATION::BOUNDS)
+				{
+					bool snap = Input::GetKeyDown(GLFW_KEY_LEFT_CONTROL);
+					float snapValue = 45.0f;
+					if (m_GizmoOperation == ImGuizmo::OPERATION::ROTATE)
+					{
+						snapValue = 0.5f;
+					}
+					glm::vec3 snapValues = { snapValue, snapValue, snapValue };
+
+					float* snapValuesFinal = nullptr;
+					if (snap)
+					{
+						snapValuesFinal = glm::value_ptr(snapValues);
+					}
+
+					// Transformation gizmo
+					auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(selectedEntity);
+					bool editedTransformation = ImGuizmo::Manipulate(
+						glm::value_ptr(camera.View),
+						glm::value_ptr(camera.Projection),
+						m_GizmoOperation,
+						ImGuizmo::MODE::LOCAL,
+						glm::value_ptr(transform.Matrix),
+						nullptr,
+						snapValuesFinal
+					);
+
+					if (editedTransformation)
+					{
+						if (ImGuizmo::IsUsing())
+						{
+							glm::vec3 newTranslation;
+							glm::vec3 newRotation;
+							glm::vec3 newScale;
+							ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(transform.Matrix), glm::value_ptr(newTranslation), glm::value_ptr(newRotation), glm::value_ptr(newScale));
+							transform.Translation = glm::vec3(newTranslation.x, newTranslation.y, newTranslation.z);
+							transform.Rotation += glm::vec3(newRotation.x - transform.Rotation.x, newRotation.y - transform.Rotation.y, newRotation.z - transform.Rotation.z);
+							transform.Scale = glm::vec3(newScale.x, newScale.y, newScale.z);
+						}
+					}
+				}
+
+				// Camera gizmo
+				float viewManipulateRight = ImGui::GetWindowPos().x + ImGui::GetWindowWidth();
+				float viewManipulateTop = ImGui::GetWindowPos().y;
+
+				auto& cameraTransform = m_Context->GetComponent<HBL2::Component::Transform>(m_Context->MainCamera);
+				ImGuizmo::ViewManipulate(
+					glm::value_ptr(camera.View),
+					m_CameraPivotDistance,
+					ImVec2(viewManipulateRight - 128, viewManipulateTop),
+					ImVec2(128, 128),
+					0x10101010
+				);
+
+				if (ImGuizmo::IsUsingViewManipulate())
+				{
+					glm::vec3 newTranslation;
+					glm::vec3 newRotation;
+					glm::vec3 newScale;
+					ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(glm::inverse(camera.View)), glm::value_ptr(newTranslation), glm::value_ptr(newRotation), glm::value_ptr(newScale));
+					cameraTransform.Translation = glm::vec3(newTranslation.x, newTranslation.y, newTranslation.z);
+					cameraTransform.Rotation += glm::vec3(newRotation.x - cameraTransform.Rotation.x, newRotation.y - cameraTransform.Rotation.y, newRotation.z - cameraTransform.Rotation.z);
+					cameraTransform.Scale = glm::vec3(newScale.x, newScale.y, newScale.z);
+				}
+			}
 		}
 		
 		void EditorPanelSystem::DrawPlayStopPanel()

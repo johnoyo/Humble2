@@ -45,6 +45,7 @@ namespace HBL2
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
 	}
 
 	void OpenGLImGuiRenderer::EndFrame()

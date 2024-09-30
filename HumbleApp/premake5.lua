@@ -12,7 +12,9 @@ project "HumbleApp"
     files 
     { 
         "src/**.h", 
-        "src/**.cpp"
+        "src/**.cpp",
+        "../Dependencies/ImGuizmo/ImGuizmo.h",
+        "../Dependencies/ImGuizmo/ImGuizmo.cpp",
     }
 
     includedirs
@@ -26,6 +28,7 @@ project "HumbleApp"
         "../Dependencies/GLEW/include",
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
+        "../Dependencies/ImGuizmo",
         "../Dependencies/GLM",
         "../Dependencies/YAML-Cpp/yaml-cpp/include",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",

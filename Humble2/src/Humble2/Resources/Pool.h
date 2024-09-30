@@ -71,7 +71,7 @@ namespace HBL2
 			// Resize data array
 			T* oldData = m_Data;
 
-			m_Data = new T[m_Size * 2];
+			m_Data = new T[m_Size * (uint32_t)2];
 			memset(m_Data, 0, sizeof(m_Data));
 
 			for (uint32_t i = 0; i < m_Size; i++)
@@ -84,7 +84,7 @@ namespace HBL2
 			// Resize generational counter array
 			uint16_t* oldGenerationalCounter = m_GenerationalCounter;
 
-			m_GenerationalCounter = new uint16_t[m_Size * 2];
+			m_GenerationalCounter = new uint16_t[m_Size * (uint32_t)2];
 
 			for (uint32_t i = m_Size; i < m_Size * 2; i++)
 			{

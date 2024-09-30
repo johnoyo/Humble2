@@ -47,6 +47,9 @@ namespace HBL2
 			Scene* m_ActiveScene = nullptr;
 			Handle<Scene> m_ActiveSceneTemp;
 			bool m_ProjectChanged = false;
+
+			ImGuizmo::OPERATION m_GizmoOperation;
+			float m_CameraPivotDistance = 5.0f;
 		};
 	}
 }

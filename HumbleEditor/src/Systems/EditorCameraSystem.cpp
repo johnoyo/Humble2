@@ -37,7 +37,7 @@ namespace HBL2
 					return;
 				}
 
-				float zoomAmount = se.YOffset * m_EditorCamera->ScrollZoomSpeed * m_Timestep;
+				float zoomAmount = (float)se.YOffset * m_EditorCamera->ScrollZoomSpeed * m_Timestep;
 				m_Transform->Translation += m_EditorCamera->Front * zoomAmount;
 			});
 
@@ -52,7 +52,7 @@ namespace HBL2
 
 				if (Input::GetKeyDown(GLFW_KEY_LEFT_ALT) && Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
 				{
-					float dy = cps.YPosition - m_EditorCamera->MousePreviousPositionY;
+					float dy = (float)cps.YPosition - m_EditorCamera->MousePreviousPositionY;
 
 					float zoomAmount = dy * m_EditorCamera->ZoomSpeed * m_Timestep;
 
@@ -60,8 +60,8 @@ namespace HBL2
 				}
 				else if (Input::GetKeyDown(GLFW_KEY_LEFT_ALT) && HBL2::Input::GetKeyDown(GLFW_MOUSE_BUTTON_MIDDLE))
 				{
-					float dx = cps.XPosition - m_EditorCamera->MousePreviousPositionX;
-					float dy = cps.YPosition - m_EditorCamera->MousePreviousPositionY;
+					float dx = (float)cps.XPosition - m_EditorCamera->MousePreviousPositionX;
+					float dy = (float)cps.YPosition - m_EditorCamera->MousePreviousPositionY;
 
 					glm::vec3 panRight = m_EditorCamera->Right * -dx * m_EditorCamera->PanSpeed * m_Timestep;
 					glm::vec3 panUp = m_EditorCamera->Up * dy * m_EditorCamera->PanSpeed * m_Timestep;
@@ -70,8 +70,8 @@ namespace HBL2
 				}
 				else if (Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
 				{
-					float dx = cps.XPosition - m_EditorCamera->MousePreviousPositionX;
-					float dy = cps.YPosition - m_EditorCamera->MousePreviousPositionY;
+					float dx = (float)cps.XPosition - m_EditorCamera->MousePreviousPositionX;
+					float dy = (float)cps.YPosition - m_EditorCamera->MousePreviousPositionY;
 
 					dx *= -m_EditorCamera->MouseSensitivity * m_Timestep;
 					dy *= m_EditorCamera->MouseSensitivity * m_Timestep;
@@ -93,8 +93,8 @@ namespace HBL2
 					m_Transform->Rotation += glm::vec3(-dy, dx, 0.0f);
 				}
 
-				m_EditorCamera->MousePreviousPositionX = cps.XPosition;
-				m_EditorCamera->MousePreviousPositionY = cps.YPosition;
+				m_EditorCamera->MousePreviousPositionX = (float)cps.XPosition;
+				m_EditorCamera->MousePreviousPositionY = (float)cps.YPosition;
 			});
 		}
 

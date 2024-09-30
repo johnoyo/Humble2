@@ -31,8 +31,8 @@ namespace HBL2
 	{
 		std::string VertexEntryPoint;
 		std::string FragmentEntryPoint;
-		uint32_t VertexBindingCount;
-		uint32_t ByteStride;
+		uint32_t VertexBindingCount = 0;
+		uint32_t ByteStride = 0;
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding::Attribute> Attributes;
 	};
 
