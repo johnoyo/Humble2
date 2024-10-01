@@ -4,6 +4,22 @@ namespace HBL2
 {
 	void JobSystem::Initialize()
 	{
+        HBL2_CORE_ASSERT(s_Instance == nullptr, "JobSystem::s_Instance is not null! JobSystem::Initialize has been called twice.");
+        s_Instance = new JobSystem;
+
+        Get().InitializeInternal();
+	}
+
+    void JobSystem::Shutdown()
+    {
+        HBL2_CORE_ASSERT(s_Instance != nullptr, "JobSystem::s_Instance is null!");
+
+        delete s_Instance;
+        s_Instance = nullptr;
+    }
+
+    void JobSystem::InitializeInternal()
+    {
         // Initialize the worker execution state to 0:
         m_FinishedLabel.store(0);
 
@@ -18,7 +34,7 @@ namespace HBL2
         // Create all our worker threads while immediately starting them:
         for (uint32_t threadID = 0; threadID < m_NumThreads; ++threadID)
         {
-            std::thread worker([this] 
+            std::thread worker([this]
             {
                 std::function<void()> job;
 
@@ -44,7 +60,7 @@ namespace HBL2
 
             worker.detach(); // forget about this thread, let it do it's job in the infinite loop that we created above
         }
-	}
+    }
 
 	void JobSystem::Execute(const std::function<void()>& job)
 	{
@@ -60,6 +76,50 @@ namespace HBL2
 
         m_WakeCondition.notify_one();
 	}
+
+    void JobSystem::Dispatch(uint32_t jobCount, uint32_t groupSize, const std::function<void(JobDispatchArgs)>& job)
+    {
+        if (jobCount == 0 || groupSize == 0)
+        {
+            return;
+        }
+
+        // Calculate the amount of job groups to dispatch (overestimate, or "ceil"):
+        const uint32_t groupCount = (jobCount + groupSize - 1) / groupSize;
+
+        // The main thread label state is updated:
+        m_CurrentLabel += groupCount;
+
+        for (uint32_t groupIndex = 0; groupIndex < groupCount; ++groupIndex)
+        {
+            // For each group, generate one real job:
+            const auto& jobGroup = [jobCount, groupSize, job, groupIndex]()
+            {
+                // Calculate the current group's offset into the jobs:
+                const uint32_t groupJobOffset = groupIndex * groupSize;
+                const uint32_t groupJobEnd = std::min(groupJobOffset + groupSize, jobCount);
+
+                JobDispatchArgs args;
+                args.groupIndex = groupIndex;
+
+                // Inside the group, loop through all job indices and execute job for each index:
+                for (uint32_t i = groupJobOffset; i < groupJobEnd; ++i)
+                {
+                    args.jobIndex = i;
+                    job(args);
+                }
+            };
+
+            // Try to push a new job until it is pushed successfully:
+            while (!m_JobPool.push_back(jobGroup))
+            {
+                m_WakeCondition.notify_one();
+                std::this_thread::yield();
+            }
+
+            m_WakeCondition.notify_one(); // wake one thread
+        }
+    }
 
 	bool JobSystem::Busy()
 	{
