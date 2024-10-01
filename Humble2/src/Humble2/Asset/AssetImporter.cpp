@@ -85,15 +85,15 @@ namespace HBL2
 			{
 				.Flip = textureProperties["Flip"].as<bool>(),
 			};
-			TextureData textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
+			stbi_uc* textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
 
 			const std::string& textureName = asset->FilePath.filename().stem().string();
 
 			// Create the texture
 			auto texture = ResourceManager::Instance->CreateTexture({
 				.debugName = _strdup(std::format("{}-texture", textureName).c_str()),
-				.dimensions = { textureData.Width, textureData.Height, 0 },
-				.initialData = textureData.Data,
+				.dimensions = { textureSettings.Width, textureSettings.Height, 0 },
+				.initialData = textureData,
 			});
 
 			return texture;
@@ -311,29 +311,29 @@ namespace HBL2
 		auto meshProperties = data["Mesh"];
 		if (meshProperties)
 		{
-			MeshData meshData = MeshUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath));
+			MeshData* meshData = MeshUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath));
 
 			const std::string& meshName = asset->FilePath.filename().stem().string();
 
 			auto vertexBuffer = ResourceManager::Instance->CreateBuffer({
 				.debugName = _strdup(std::format("{}-vertex-buffer", meshName).c_str()),
-				.byteSize = (uint32_t)(meshData.VertexBuffer.size() * sizeof(Vertex)),
-				.initialData = meshData.VertexBuffer.data(),
+				.byteSize = (uint32_t)(meshData->VertexBuffer.size() * sizeof(Vertex)),
+				.initialData = meshData->VertexBuffer.data(),
 			});
 
 			auto indexBuffer = ResourceManager::Instance->CreateBuffer({
 				.debugName = _strdup(std::format("{}-index-buffer", meshName).c_str()),
-				.byteSize = (uint32_t)(meshData.IndexBuffer.size() * sizeof(uint32_t)),
-				.initialData = meshData.IndexBuffer.data(),
+				.byteSize = (uint32_t)(meshData->IndexBuffer.size() * sizeof(uint32_t)),
+				.initialData = meshData->IndexBuffer.data(),
 			});
 
 			// Create the mesh
 			auto mesh = ResourceManager::Instance->CreateMesh({
 				.debugName = _strdup(std::format("{}-mesh", meshName).c_str()),
 				.indexOffset = 0,
-				.indexCount = (uint32_t)meshData.IndexBuffer.size(),
+				.indexCount = (uint32_t)meshData->IndexBuffer.size(),
 				.vertexOffset = 0,
-				.vertexCount = (uint32_t)meshData.VertexBuffer.size(),
+				.vertexCount = (uint32_t)meshData->VertexBuffer.size(),
 				.indexBuffer = indexBuffer,
 				.vertexBuffers = { vertexBuffer },
 			});

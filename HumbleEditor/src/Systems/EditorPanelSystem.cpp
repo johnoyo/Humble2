@@ -45,6 +45,9 @@ namespace HBL2
 
 				m_ActiveScene = ResourceManager::Instance->GetScene(sce.NewScene);
 
+				// Clear selected entity
+				HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+
 				if (Context::Mode == Mode::Runtime)
 				{
 					for (ISystem* system : m_ActiveScene->GetRuntimeSystems())
@@ -377,6 +380,14 @@ namespace HBL2
 					HBL2::Component::EditorVisible::Selected = true;
 				}
 
+				if (ImGui::MenuItem("Create Light"))
+				{
+					auto entity = HBL2::EntityPreset::CreateLight();
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
+				}
+
 				ImGui::EndPopup();
 			}
 
@@ -545,6 +556,29 @@ namespace HBL2
 						ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 2);
 						ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
 
+						std::string selectedProjection = camera.Type == HBL2::Component::Camera::Type::Perspective ? "Perspective" : "Orthographic";
+						std::string projectionTypes[2] = { "Perspective", "Orthographic" };
+
+						if (ImGui::BeginCombo("Type", selectedProjection.c_str()))
+						{
+							for (const auto& type : projectionTypes)
+							{
+								bool isSelected = (selectedProjection == type);
+								if (ImGui::Selectable(type.c_str(), isSelected))
+								{
+									selectedProjection = type;
+								}
+
+								if (isSelected)
+								{
+									ImGui::SetItemDefaultFocus();
+								}
+							}
+							ImGui::EndCombo();
+						}
+
+						camera.Type = selectedProjection == "Perspective" ? HBL2::Component::Camera::Type::Perspective : HBL2::Component::Camera::Type::Orthographic;
+
 						ImGui::TreePop();
 					}
 
@@ -682,6 +716,66 @@ namespace HBL2
 					}
 				}
 
+				// Light component.
+				if (m_ActiveScene->HasComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity))
+				{
+					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Light).hash_code(), treeNodeFlags, "Light");
+
+					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
+
+					bool removeComponent = false;
+
+					if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+					{
+						removeComponent = true;
+					}
+
+					if (opened)
+					{
+						auto& light = m_ActiveScene->GetComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity);
+
+						ImGui::Checkbox("Enabled", &light.Enabled);
+						std::string selectedType = light.Type == HBL2::Component::Light::Type::Directional ? "Directional" : "Point";
+						std::string lightTypes[2] = { "Directional", "Point" };
+
+						if (ImGui::BeginCombo("Type", selectedType.c_str()))
+						{
+							for (const auto& type : lightTypes)
+							{
+								bool isSelected = (selectedType == type);
+								if (ImGui::Selectable(type.c_str(), isSelected))
+								{
+									selectedType = type;
+								}
+
+								if (isSelected)
+								{
+									ImGui::SetItemDefaultFocus();
+								}
+							}
+							ImGui::EndCombo();
+						}
+						ImGui::Checkbox("CastsShadows", &light.CastsShadows);
+						ImGui::SliderFloat("Intensity", &light.Intensity, 0, 20);
+						if (light.Type == HBL2::Component::Light::Type::Point)
+						{
+							ImGui::SliderFloat("Attenuation", &light.Attenuation, 0, 100);
+						}
+						ImGui::ColorEdit3("Color", glm::value_ptr(light.Color));
+
+						light.Type = selectedType == "Directional" ? HBL2::Component::Light::Type::Directional : HBL2::Component::Light::Type::Point;
+
+						ImGui::TreePop();
+					}
+
+					ImGui::Separator();
+
+					if (removeComponent)
+					{
+						m_ActiveScene->RemoveComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity);
+					}
+				}
+
 				// Add component button.
 				if (ImGui::Button("Add Component"))
 				{
@@ -711,6 +805,12 @@ namespace HBL2
 					if (ImGui::MenuItem("Link"))
 					{
 						m_ActiveScene->AddComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity);
+						ImGui::CloseCurrentPopup();
+					}
+
+					if (ImGui::MenuItem("Light"))
+					{
+						m_ActiveScene->AddComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity);
 						ImGui::CloseCurrentPopup();
 					}
 
@@ -1684,7 +1784,7 @@ namespace HBL2
 			{
 				auto selectedEntity = HBL2::Component::EditorVisible::SelectedEntity;
 
-				if (!ImGuizmo::IsUsing())
+				if (!ImGuizmo::IsUsing() && !Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
 				{
 					if (Input::GetKeyPress(GLFW_KEY_W))
 					{
@@ -1716,10 +1816,10 @@ namespace HBL2
 				if (selectedEntity != entt::null && m_GizmoOperation != ImGuizmo::OPERATION::BOUNDS)
 				{
 					bool snap = Input::GetKeyDown(GLFW_KEY_LEFT_CONTROL);
-					float snapValue = 45.0f;
+					float snapValue = 0.5f;
 					if (m_GizmoOperation == ImGuizmo::OPERATION::ROTATE)
 					{
-						snapValue = 0.5f;
+						snapValue = 45.0f;
 					}
 					glm::vec3 snapValues = { snapValue, snapValue, snapValue };
 

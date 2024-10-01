@@ -14,7 +14,7 @@ namespace HBL2
         ~ProfilerScope()
         {
             auto timeEnd = std::chrono::high_resolution_clock::now();
-            HBL2_CORE_TRACE("{0} running time: {1} milliseconds.", m_Name, std::chrono::duration_cast<std::chrono::milliseconds>(timeEnd - m_TimeStart).count());
+            HBL2_CORE_INFO("{0} running time: {1} milliseconds.", m_Name, std::chrono::duration_cast<std::chrono::milliseconds>(timeEnd - m_TimeStart).count());
         }
     private:
         std::string m_Name;

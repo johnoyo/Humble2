@@ -35,7 +35,7 @@ namespace HBL2
 			Wrap wrap = Wrap::CLAMP;
 		};
 
-		const unsigned char* initialData = nullptr;
+		stbi_uc* initialData = nullptr;
 	};
 
 	struct BufferDescriptor

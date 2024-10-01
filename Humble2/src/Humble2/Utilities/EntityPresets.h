@@ -45,7 +45,19 @@ namespace HBL2
 
 		static entt::entity CreateLight()
 		{
-			return entt::null;
+			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+			if (scene == nullptr)
+			{
+				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a light entity.");
+				return entt::null;
+			}
+
+			auto entity = scene->CreateEntity("New Light");
+			scene->AddComponent<HBL2::Component::Light>(entity);
+			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
+
+			return entity;
 		}
 
 		static entt::entity CreatePlane()

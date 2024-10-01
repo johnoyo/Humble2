@@ -31,6 +31,8 @@ namespace HBL2
 
 	std::vector<uint32_t> ShaderUtilities::Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage)
 	{
+		HBL2_FUNC_PROFILE();
+
 		GraphicsAPI target = Renderer::Instance->GetAPI();
 
 		CreateCacheDirectoryIfNeeded(target);
@@ -150,6 +152,8 @@ namespace HBL2
 
 	std::vector<std::vector<uint32_t>> ShaderUtilities::Compile(const std::string& shaderFilePath)
 	{
+		HBL2_FUNC_PROFILE();
+
 		std::fstream newFile;
 
 		enum class ShaderType
@@ -411,17 +415,17 @@ namespace HBL2
 			// Get all entry points and their execution stages
 			auto entryPoints = compiler.get_entry_points_and_stages();
 
-			std::cout << "Shader Entry Points:" << std::endl;
+			HBL2_CORE_TRACE("Shader Entry Points:");
 			for (const auto& entryPoint : entryPoints)
 			{
-				std::cout << "  Name: " << entryPoint.name << std::endl;
+				HBL2_CORE_TRACE("  Name: {}", entryPoint.name);
 
 				// Print the shader stage
-				std::cout << "  Stage: ";
+				HBL2_CORE_TRACE("  Stage: ");
 				switch (entryPoint.execution_model)
 				{
 				case spv::ExecutionModelVertex:
-					std::cout << "Vertex Shader" << std::endl;
+					HBL2_CORE_TRACE("Vertex Shader");
 					reflectionData.VertexEntryPoint = entryPoint.name;
 					break;
 				}
@@ -431,22 +435,21 @@ namespace HBL2
 			reflectionData.Attributes.resize(resources.stage_inputs.size());
 
 			// Print shader inputs (vertex attributes)
-			std::cout << "Shader Inputs (Vertex Attributes):" << std::endl;
+			HBL2_CORE_TRACE("Shader Inputs (Vertex Attributes):");
 			for (const auto& input : resources.stage_inputs)
 			{
 				uint32_t location = compiler.get_decoration(input.id, spv::DecorationLocation);
 				const spirv_cross::SPIRType& type = compiler.get_type(input.type_id);
 
 				// Print basic information
-				std::cout << "  Name: " << input.name << "\n";
-				std::cout << "  Location: " << location << "\n";
+				HBL2_CORE_TRACE("  Name: {}", input.name);
+				HBL2_CORE_TRACE("  Location: {}", location);
 
 				// Print type information (e.g., vec3, float, vec4)
-				std::cout << "  Type: ";
+				HBL2_CORE_TRACE("  Type: ");
 				if (type.basetype == spirv_cross::SPIRType::Float && type.vecsize == 1 && type.columns == 1)
 				{
 					reflectionData.Attributes[location] = { 0, VertexFormat::FLOAT32 };
-					std::cout << "float";
 				}
 				else if (type.basetype == spirv_cross::SPIRType::Float && type.vecsize > 1)
 				{
@@ -468,12 +471,10 @@ namespace HBL2
 					}
 
 					reflectionData.Attributes[location] = { 0, vertexFormat };
-					std::cout << "vec" << type.vecsize;
 				}
 				else if (type.basetype == spirv_cross::SPIRType::Int && type.vecsize == 1)
 				{
 					reflectionData.Attributes[location] = { 0, VertexFormat::INT32 };
-					std::cout << "int";
 				}
 				else if (type.basetype == spirv_cross::SPIRType::Int && type.vecsize > 1)
 				{
@@ -495,12 +496,10 @@ namespace HBL2
 					}
 
 					reflectionData.Attributes[location] = { 0, vertexFormat };
-					std::cout << "ivec" << type.vecsize;
 				}
 				else if (type.basetype == spirv_cross::SPIRType::UInt && type.vecsize == 1)
 				{
 					reflectionData.Attributes[location] = { 0, VertexFormat::UINT32 };
-					std::cout << "int";
 				}
 				else if (type.basetype == spirv_cross::SPIRType::UInt && type.vecsize > 1)
 				{
@@ -522,13 +521,11 @@ namespace HBL2
 					}
 
 					reflectionData.Attributes[location] = { 0, vertexFormat };
-					std::cout << "uvec" << type.vecsize;
 				}
 				else
 				{
-					std::cout << "unknown";
+					HBL2_CORE_TRACE("unknown");
 				}
-				std::cout << "\n";
 			}
 
 			for (int i = 0; i < reflectionData.Attributes.size(); i++)
@@ -536,50 +533,62 @@ namespace HBL2
 				switch (reflectionData.Attributes[i].format)
 				{
 				case VertexFormat::FLOAT32:
+					HBL2_CORE_TRACE("FLOAT32");
 					reflectionData.Attributes[i].byteOffset = byteStride;
 					byteStride += sizeof(float);
 					break;
 				case VertexFormat::FLOAT32x2:
+					HBL2_CORE_TRACE("FLOAT32x2");
 					reflectionData.Attributes[i].byteOffset = byteStride;
 					byteStride += sizeof(float) * 2;
 					break;
 				case VertexFormat::FLOAT32x3:
+					HBL2_CORE_TRACE("FLOAT32x3");
 					reflectionData.Attributes[i].byteOffset = byteStride;
 					byteStride += sizeof(float) * 3;
 					break;
 				case VertexFormat::FLOAT32x4:
+					HBL2_CORE_TRACE("FLOAT32x4");
 					reflectionData.Attributes[i].byteOffset = byteStride;
 					byteStride += sizeof(float) * 4;
 					break;
 				case VertexFormat::UINT32:
+					HBL2_CORE_TRACE("UINT32");
 					reflectionData.Attributes[i].byteOffset = byteStride;
 					byteStride += sizeof(uint32_t);
 					break;
 				case VertexFormat::UINT32x2:
+					HBL2_CORE_TRACE("UINT32x2");
 					reflectionData.Attributes[i].byteOffset = byteStride;
 					byteStride += sizeof(uint32_t) * 2;
 					break;
 				case VertexFormat::UINT32x3:
+					HBL2_CORE_TRACE("UINT32x3");
 					reflectionData.Attributes[i].byteOffset = byteStride;
 					byteStride += sizeof(uint32_t) * 3;
 					break;
 				case VertexFormat::UINT32x4:
+					HBL2_CORE_TRACE("UINT32x4");
 					reflectionData.Attributes[i].byteOffset = byteStride;
 					byteStride += sizeof(uint32_t) * 4;
 					break;
 				case VertexFormat::INT32:
+					HBL2_CORE_TRACE("INT32");
 					reflectionData.Attributes[i].byteOffset = byteStride;
 					byteStride += sizeof(int32_t);
 					break;
 				case VertexFormat::INT32x2:
+					HBL2_CORE_TRACE("INT32x2");
 					reflectionData.Attributes[i].byteOffset = byteStride;
 					byteStride += sizeof(int32_t) * 2;
 					break;
 				case VertexFormat::INT32x3:
+					HBL2_CORE_TRACE("INT32x3");
 					reflectionData.Attributes[i].byteOffset = byteStride;
 					byteStride += sizeof(int32_t) * 3;
 					break;
 				case VertexFormat::INT32x4:
+					HBL2_CORE_TRACE("INT32x4");
 					reflectionData.Attributes[i].byteOffset = byteStride;
 					byteStride += sizeof(int32_t) * 4;
 					break;
@@ -589,42 +598,42 @@ namespace HBL2
 			reflectionData.ByteStride = byteStride;
 
 			// Print uniform buffers
-			std::cout << "Uniform Buffers:" << std::endl;
+			HBL2_CORE_TRACE("Uniform Buffers:");
 			for (const auto& ubo : resources.uniform_buffers)
 			{
 				const auto& bufferType = compiler.get_type(ubo.base_type_id);
 				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
 				uint32_t binding = compiler.get_decoration(ubo.id, spv::DecorationBinding);
 				uint32_t set = compiler.get_decoration(ubo.id, spv::DecorationDescriptorSet);
-				std::cout << "  Name: " << ubo.name << ", Set: " << set << ", Binding: " << binding << ", Size: " << bufferSize << std::endl;
+				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}, Size: {}", ubo.name, set, binding, bufferSize);
 			}
 
 			// Print storage buffers
-			std::cout << "Storage Buffers:" << std::endl;
+			HBL2_CORE_TRACE("Storage Buffers:");
 			for (const auto& ssbo : resources.storage_buffers) 
 			{
 				const auto& bufferType = compiler.get_type(ssbo.base_type_id);
 				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
 				uint32_t binding = compiler.get_decoration(ssbo.id, spv::DecorationBinding);
 				uint32_t set = compiler.get_decoration(ssbo.id, spv::DecorationDescriptorSet);
-				std::cout << "  Name: " << ssbo.name << ", Set: " << set << ", Binding: " << binding << ", Size: " << bufferSize << std::endl;
+				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}, Size: {}", ssbo.name, set, binding, bufferSize);
 			}
 
 			// Print sampled images (textures)
-			std::cout << "Sampled Images (Textures):" << std::endl;
+			HBL2_CORE_TRACE("Sampled Images (Textures):");
 			for (const auto& sampler : resources.sampled_images)
 			{
 				uint32_t binding = compiler.get_decoration(sampler.id, spv::DecorationBinding);
 				uint32_t set = compiler.get_decoration(sampler.id, spv::DecorationDescriptorSet);
-				std::cout << "  Name: " << sampler.name << ", Set: " << set << ", Binding: " << binding << std::endl;
+				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}", sampler.name, set, binding);
 			}
 
 			// Print push constants
-			std::cout << "Push Constants:" << std::endl;
+			HBL2_CORE_TRACE("Push Constants:");
 			for (const auto& push_constant : resources.push_constant_buffers)
 			{
 				const spirv_cross::SPIRType& type = compiler.get_type(push_constant.base_type_id);
-				std::cout << "  Name: " << push_constant.name << ", Size: " << compiler.get_declared_struct_size(type) << " bytes" << std::endl;
+				HBL2_CORE_TRACE("  Name: {}, Size: {} bytes", push_constant.name, compiler.get_declared_struct_size(type));
 			}
 		}
 
@@ -640,40 +649,40 @@ namespace HBL2
 			// Get all entry points and their execution stages
 			auto entryPoints = compiler.get_entry_points_and_stages();
 
-			std::cout << "Shader Entry Points:" << std::endl;
+			HBL2_CORE_TRACE("Shader Entry Points:");
 			for (const auto& entryPoint : entryPoints)
 			{
-				std::cout << "  Name: " << entryPoint.name << std::endl;
+				HBL2_CORE_TRACE("  Name: {}", entryPoint.name);
 
 				// Print the shader stage
-				std::cout << "  Stage: ";
+				HBL2_CORE_TRACE("  Stage: ");
 				switch (entryPoint.execution_model)
 				{
 				case spv::ExecutionModelFragment:
-					std::cout << "Fragment Shader" << std::endl;
+					HBL2_CORE_TRACE("Fragment Shader");
 					reflectionData.FragmentEntryPoint = entryPoint.name;
 					break;
 				}
 			}
 
 			// Print uniform buffers
-			std::cout << "Uniform Buffers:" << std::endl;
+			HBL2_CORE_TRACE("Uniform Buffers:");
 			for (const auto& ubo : resources.uniform_buffers)
 			{
 				const auto& bufferType = compiler.get_type(ubo.base_type_id);
 				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
 				uint32_t binding = compiler.get_decoration(ubo.id, spv::DecorationBinding);
 				uint32_t set = compiler.get_decoration(ubo.id, spv::DecorationDescriptorSet);
-				std::cout << "  Name: " << ubo.name << ", Set: " << set << ", Binding: " << binding << ", Size: " << bufferSize << std::endl;
+				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}, Size: {}", ubo.name, set, binding, bufferSize);
 			}
 
 			// Print sampled images (textures)
-			std::cout << "Sampled Images (Textures):" << std::endl;
+			HBL2_CORE_TRACE("Sampled Images (Textures):");
 			for (const auto& sampler : resources.sampled_images)
 			{
 				uint32_t binding = compiler.get_decoration(sampler.id, spv::DecorationBinding);
 				uint32_t set = compiler.get_decoration(sampler.id, spv::DecorationDescriptorSet);
-				std::cout << "  Name: " << sampler.name << ", Set: " << set << ", Binding: " << binding << std::endl;
+				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}", sampler.name, set, binding);
 			}
 		}
 

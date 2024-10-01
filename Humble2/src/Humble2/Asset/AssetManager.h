@@ -5,6 +5,7 @@
 #include "Resources\Pool.h"
 
 #include <exception>
+#include <future>
 
 namespace HBL2
 {
@@ -75,57 +76,15 @@ namespace HBL2
 		}
 
 		template<typename T>
-		Handle<T> ReloadAsset(UUID assetUUID)
+		Handle<T> GetAssetAsync(UUID assetUUID)
 		{
-			Handle<Asset> assetHandle;
-
-			for (auto handle : m_RegisteredAssets)
-			{
-				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-				if (asset->UUID == assetUUID)
-				{
-					assetHandle = handle;
-					break;
-				}
-			}
-
-			return ReloadAsset<T>(assetHandle);
+			// TODO
 		}
 
 		template<typename T>
-		Handle<T> ReloadAssetFromResourceHandle(Handle<T> handle)
+		Handle<T> GetAssetAsync(Handle<Asset> assetHandle)
 		{
-			if (!handle.IsValid())
-			{
-				return Handle<T>();
-			}
-
-			Handle<Asset> assetHandle;
-
-			for (auto handle : m_RegisteredAssets)
-			{
-				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-				if (asset->Indentifier == handle.Pack())
-				{
-					assetHandle = handle;
-					break;
-				}
-			}
-
-			uint32_t packedHandle = LoadAsset(assetHandle);
-			return Handle<T>::UnPack(packedHandle);
-		}
-
-		template<typename T>
-		Handle<T> ReloadAsset(Handle<Asset> handle)
-		{
-			if (!handle.IsValid())
-			{
-				return Handle<T>();
-			}
-
-			uint32_t packedHandle = LoadAsset(handle);
-			return Handle<T>::UnPack(packedHandle);
+			// TODO
 		}
 
 		std::vector<Handle<Asset>>& GetRegisteredAssets() { return m_RegisteredAssets; }

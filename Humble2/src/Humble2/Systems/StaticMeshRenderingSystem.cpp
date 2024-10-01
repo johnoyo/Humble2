@@ -61,19 +61,6 @@ namespace HBL2
 				{ .buffer = m_LightBuffer },
 			}
 		});
-
-		glm::vec3 lightPosition = glm::vec3(0.0f, 0.0f, 0.5f);
-
-		glm::mat4 T = glm::translate(glm::mat4(1.0f), lightPosition);
-		glm::quat R = glm::quat({ glm::radians(0.0f), glm::radians(0.0f), glm::radians(0.0f) });
-		glm::mat4 S = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-
-		glm::mat4 Matrix = T * glm::toMat4(R) * S;
-
-		m_LightData.LightCount = 1.0f;
-		m_LightData.LightPositions[0] = Matrix * glm::vec4(lightPosition, 1.0f);
-		m_LightData.LightColors[0] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		m_LightData.LightIntensities[0].x = 5.0f;
 	}
 
 	void StaticMeshRenderingSystem::OnUpdate(float ts)
@@ -86,6 +73,22 @@ namespace HBL2
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Handle<RenderPass>(), Handle<FrameBuffer>());
 
 		Renderer::Instance->SetBufferData(m_GlobalBindings, 0, (void*)&m_CameraData);
+
+		m_LightData.LightCount = 0;
+
+		m_Context->GetRegistry()
+			.group<Component::Light>(entt::get<Component::Transform>)
+			.each([&](Component::Light& light, Component::Transform& transform)
+			{
+				if (light.Enabled)
+				{
+					m_LightData.LightPositions[(int)m_LightData.LightCount] = transform.Matrix * glm::vec4(transform.Translation, 1.0f);
+					m_LightData.LightIntensities[(int)m_LightData.LightCount].x = light.Intensity;
+					m_LightData.LightColors[(int)m_LightData.LightCount] = glm::vec4(light.Color, 1.0f);
+					m_LightData.LightCount++;
+				}
+			});
+
 		Renderer::Instance->SetBufferData(m_GlobalBindings, 1, (void*)&m_LightData);
 
 		DrawList draws;

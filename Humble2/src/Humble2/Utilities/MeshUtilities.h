@@ -28,12 +28,14 @@ namespace HBL2
 		static void Initialize();
 		static void Shutdown();
 
-		MeshData Load(const std::filesystem::path& path);
+		MeshData* Load(const std::filesystem::path& path);
 
 	private:
 		MeshUtilities() = default;
 		UFbxLoader* m_UFbxLoader = nullptr;
 		FastGltfLoader* m_FastGltfLoader = nullptr;
+
+		std::unordered_map<std::string, MeshData> m_LoadedMeshes;
 
 		inline static MeshUtilities* s_Instance = nullptr;
 	};

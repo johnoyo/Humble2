@@ -2,11 +2,9 @@
 
 #include "Base.h"
 
-#include <yaml-cpp\yaml.h>
-
 #include <fstream>
-#include<stdint.h>
-#include<filesystem>
+#include <stdint.h>
+#include <filesystem>
 
 namespace HBL2
 {

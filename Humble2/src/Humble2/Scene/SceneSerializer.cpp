@@ -69,6 +69,8 @@ namespace HBL2
 			out << YAML::Key << "FOV" << YAML::Value << camera.Fov;
 			out << YAML::Key << "Aspect Ratio" << YAML::Value << camera.AspectRatio;
 			out << YAML::Key << "Zoom Level" << YAML::Value << camera.ZoomLevel;
+			out << YAML::Key << "Type" << YAML::Value << (int)camera.Type;
+
 			out << YAML::EndMap;
 		}
 
@@ -168,6 +170,24 @@ namespace HBL2
 			{
 				out << YAML::Key << "Mesh" << YAML::Value << (UUID)0;
 			}
+
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::Light>(entity))
+		{
+			auto& light = m_Scene->GetComponent<Component::Light>(entity);
+
+			out << YAML::Key << "Component::Light";
+
+			out << YAML::BeginMap;
+
+			out << YAML::Key << "Enabled" << YAML::Value << light.Enabled;
+			out << YAML::Key << "CastsShadows" << YAML::Value << light.CastsShadows;
+			out << YAML::Key << "Intensity" << YAML::Value << light.Intensity;
+			out << YAML::Key << "Attenuation" << YAML::Value << light.Attenuation;
+			out << YAML::Key << "Color" << YAML::Value << light.Color;
+			out << YAML::Key << "Type" << YAML::Value << (int)light.Type;
 
 			out << YAML::EndMap;
 		}
@@ -308,6 +328,18 @@ namespace HBL2
 					camera.Fov = cameraComponent["FOV"].as<float>();
 					camera.AspectRatio = cameraComponent["Aspect Ratio"].as<float>();
 					camera.ZoomLevel = cameraComponent["Zoom Level"].as<float>();
+					if (cameraComponent["Type"])
+					{
+						switch (cameraComponent["Type"].as<int>())
+						{
+						case 1:
+							camera.Type = Component::Camera::Type::Perspective;
+						case 2:
+							camera.Type = Component::Camera::Type::Orthographic;
+						default:
+							break;
+						}
+					}
 				}
 
 				auto sprite_NewComponent = entity["Component::Sprite_New"];
@@ -325,6 +357,29 @@ namespace HBL2
 					staticMesh.Enabled = staticMesh_NewComponent["Enabled"].as<bool>();
 					staticMesh.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
 					staticMesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(staticMesh_NewComponent["Mesh"].as<UUID>());
+				}
+
+				auto lightComponent = entity["Component::Light"];
+				if (lightComponent)
+				{
+					auto& light = m_Scene->AddComponent<Component::Light>(deserializedEntity);
+					light.Enabled = lightComponent["Enabled"].as<bool>();
+					light.CastsShadows = lightComponent["CastsShadows"].as<bool>();
+					light.Intensity = lightComponent["Intensity"].as<float>();
+					light.Attenuation = lightComponent["Attenuation"].as<float>();
+					light.Color = lightComponent["Color"].as<glm::vec3>();
+					if (lightComponent["Type"])
+					{
+						switch (lightComponent["Type"].as<int>())
+						{
+						case 1:
+							light.Type = Component::Light::Type::Directional;
+						case 2:
+							light.Type = Component::Light::Type::Point;
+						default:
+							break;
+						}
+					}
 				}
 			}
 		}

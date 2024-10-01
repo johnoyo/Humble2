@@ -1,5 +1,21 @@
 Scene: EmptyScene
 Entities:
+  - Entity: 11
+    Component::Tag:
+      Tag: New Light
+    Component::ID:
+      ID: 410525494256037376
+    Component::Transform:
+      Translation: [0, 0, 0.5]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Light:
+      Enabled: true
+      CastsShadows: false
+      Intensity: 5
+      Attenuation: 10
+      Color: [1, 1, 1]
+      Type: 0
   - Entity: 10
     Component::Tag:
       Tag: M5
@@ -137,6 +153,7 @@ Entities:
       FOV: 30
       Aspect Ratio: 1.93103445
       Zoom Level: 300
+      Type: 0
   - Entity: 1
     Component::Tag:
       Tag: Cerberus

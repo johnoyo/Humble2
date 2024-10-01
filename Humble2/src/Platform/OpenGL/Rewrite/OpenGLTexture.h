@@ -42,7 +42,7 @@ namespace HBL2
 			else
 			{
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, Data);
-				delete Data;
+				stbi_image_free(Data);
 			}
 
 			glBindTexture(GL_TEXTURE_2D, 0);
@@ -52,6 +52,6 @@ namespace HBL2
 		uint32_t RendererId = 0;
 		glm::vec3 Dimensions = glm::vec3(0.0f);
 		uint32_t Format = 0;
-		const unsigned char* Data = nullptr;
+		stbi_uc* Data = nullptr;
 	};
 }

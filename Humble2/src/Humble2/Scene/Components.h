@@ -111,5 +111,27 @@ namespace HBL2
 
 			bool Enabled = true;
 		};
+
+		struct Light
+		{
+			enum class Type
+			{
+				Directional = 0,
+				Point,
+			};
+
+			float Intensity = 1.0f;
+			glm::vec3 Color = { 1.0f, 1.0f, 1.0f };
+			float Attenuation = 10.0f;
+			Type Type = Type::Directional;
+			bool CastsShadows = false;
+			bool Enabled = true;
+		};
+
+		struct SkyLight
+		{
+			float Intensity = 1.0f;
+			bool Enabled = true;
+		};
 	}
 }

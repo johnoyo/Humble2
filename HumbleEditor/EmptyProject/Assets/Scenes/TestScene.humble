@@ -1,18 +1,33 @@
 Scene: TestScene
 Entities:
-  - Entity: 2
+  - Entity: 3
     Component::Tag:
-      Tag: RedMonkeh
+      Tag: New Light
     Component::ID:
-      ID: 1330981814113217
+      ID: 14168701507802884096
     Component::Transform:
-      Translation: [-1, 0, 0]
+      Translation: [0, 0, 5]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::Light:
       Enabled: true
-      Material: 12647810587411261016
-      Mesh: 9402528107889883903
+      CastsShadows: false
+      Intensity: 1
+      Attenuation: 10
+      Color: [1, 1, 1]
+      Type: 0
+  - Entity: 2
+    Component::Tag:
+      Tag: ActualSprite
+    Component::ID:
+      ID: 7392171364512436224
+    Component::Transform:
+      Translation: [1, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Sprite_New:
+      Enabled: true
+      Material: 7020287691825424313
   - Entity: 1
     Component::Tag:
       Tag: Camera
@@ -30,15 +45,19 @@ Entities:
       FOV: 30
       Aspect Ratio: 1.778
       Zoom Level: 300
+      Type: 0
   - Entity: 0
     Component::Tag:
-      Tag: ActualSprite
+      Tag: RedMonkeh
     Component::ID:
-      ID: 7392171364512436224
+      ID: 1330981814113217
     Component::Transform:
-      Translation: [1, 0, 0]
+      Translation: [-1, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::StaticMesh_New:
       Enabled: true
-      Material: 7020287691825424313
+      Material: 12647810587411261016
+      Mesh: 9402528107889883903
+Systems:
+  []

@@ -65,6 +65,7 @@ namespace HBL2
         copy_component(Component::EditorVisible{});
         copy_component(Component::Sprite_New{});
         copy_component(Component::StaticMesh_New{});
+        copy_component(Component::Light{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
