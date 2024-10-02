@@ -1896,7 +1896,7 @@ namespace HBL2
 					auto playSceneHandle = ResourceManager::Instance->CreateScene({ .name = m_ActiveScene->GetName() + "(Clone)" });
 					Scene* playScene = ResourceManager::Instance->GetScene(playSceneHandle);
 					Scene::Copy(m_ActiveScene, playScene);
-					SceneManager::Get().LoadScene(playSceneHandle);
+					SceneManager::Get().LoadScene(playSceneHandle, true);
 				}
 
 				isPlaying = true;

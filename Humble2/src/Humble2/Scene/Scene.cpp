@@ -101,8 +101,5 @@ namespace HBL2
         m_RuntimeSystems = other.m_RuntimeSystems;
         m_EntityMap = other.m_EntityMap;
         MainCamera = other.MainCamera;
-
-        // Registry cannot be cloned automatically.
-        m_Registry.clear();
     }
 }

@@ -78,7 +78,7 @@ namespace HBL2Runtime
 
 		if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 		{
-			HBL2::Project::OpenStartingScene();
+			HBL2::Project::OpenStartingScene(true);
 			return true;
 		}
 

@@ -53,7 +53,7 @@ namespace HBL2
 		static Project* Load(const std::filesystem::path& path);
 		static void Save(const std::filesystem::path& path);
 
-		static void OpenStartingScene();
+		static void OpenStartingScene(bool runtime = false);
 
 	private:
 		ProjectSpecification m_Spec;

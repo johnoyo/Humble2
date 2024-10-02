@@ -11,6 +11,6 @@
 [submodule "Dependencies/YAML-Cpp/yaml-cpp"]
 	path = Dependencies/YAML-Cpp/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
-[submodule ".\\Dependencies\\ImGuizmo"]
-	path = .\\Dependencies\\ImGuizmo
+[submodule "Dependencies/ImGuizmo"]
+	path = Dependencies/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git

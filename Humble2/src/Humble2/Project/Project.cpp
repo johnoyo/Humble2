@@ -49,7 +49,7 @@ namespace HBL2
 		serializer.Serialize(path);
 	}
 
-	void Project::OpenStartingScene()
+	void Project::OpenStartingScene(bool runtime)
 	{
 		AssetManager::Instance->RegisterAssets();
 
@@ -71,6 +71,6 @@ namespace HBL2
 			serializer.Serialize(GetAssetFileSystemPath(s_ActiveProject->GetSpecification().StartingScene.string()));
 		}
 
-		SceneManager::Get().LoadScene(sceneHandle);
+		SceneManager::Get().LoadScene(sceneHandle, runtime);
 	}
 }
