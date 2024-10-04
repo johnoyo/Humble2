@@ -1,4 +1,7 @@
 -- main solution file.
+
+VULKAN_SDK = os.getenv("VULKAN_SDK")
+
 workspace "HumbleGameEngine2"
     architecture "x64"
 

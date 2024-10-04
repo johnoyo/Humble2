@@ -5,11 +5,11 @@ namespace HBL2
 	OpenGLVertexBuffer::OpenGLVertexBuffer(uint32_t size, VertexBufferLayout& layout) 
 		: m_TotalSize(size), m_Layout(layout), m_DynamicDraw(true)
 	{
-		m_Buffer = new Buffer[m_TotalSize];
+		m_Buffer = new HBL::Buffer[m_TotalSize];
 
 		glGenBuffers(1, &m_VertexBufferID);
 		glBindBuffer(GL_ARRAY_BUFFER, m_VertexBufferID);
-		glBufferData(GL_ARRAY_BUFFER, m_TotalSize * sizeof(struct Buffer), nullptr, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, m_TotalSize * sizeof(struct HBL::Buffer), nullptr, GL_DYNAMIC_DRAW);
 
 		GLsizei offset = 0;
 
@@ -44,7 +44,7 @@ namespace HBL2
 		}
 	}
 
-	OpenGLVertexBuffer::OpenGLVertexBuffer(Buffer* handle, uint32_t size, VertexBufferLayout& layout)
+	OpenGLVertexBuffer::OpenGLVertexBuffer(HBL::Buffer* handle, uint32_t size, VertexBufferLayout& layout)
 		: m_TotalSize(size), m_Layout(layout), m_DynamicDraw(false)
 	{
 		BatchSize = m_TotalSize;
@@ -52,7 +52,7 @@ namespace HBL2
 
 		glGenBuffers(1, &m_VertexBufferID);
 		glBindBuffer(GL_ARRAY_BUFFER, m_VertexBufferID);
-		glBufferData(GL_ARRAY_BUFFER, m_TotalSize * sizeof(struct Buffer), &m_Buffer[0], GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, m_TotalSize * sizeof(struct HBL::Buffer), &m_Buffer[0], GL_STATIC_DRAW);
 
 		GLsizei offset = 0;
 
@@ -89,7 +89,7 @@ namespace HBL2
 
 	void OpenGLVertexBuffer::SetData()
 	{
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct Buffer) * BatchSize, m_Buffer);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct HBL::Buffer) * BatchSize, m_Buffer);
 	}
 
 	void OpenGLVertexBuffer::Clean()

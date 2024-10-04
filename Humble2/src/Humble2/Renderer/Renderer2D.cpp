@@ -7,7 +7,7 @@ namespace HBL2
 		m_VertexArray = VertexArray::Create();
 		m_VertexArray->SetIndexBuffer(IndexBuffer::Create(MAX_BATCH_SIZE));
 
-		Texture::Load("")->Bind();
+		HBL::Texture::Load("")->Bind();
 
 		m_QuadVertexPosition[0] = { -0.5f, 0.5f, 0.0f, 1.0f };
 		m_QuadVertexPosition[1] = { 0.5f,  0.5f, 0.0f, 1.0f };
@@ -47,9 +47,9 @@ namespace HBL2
 		}
 		else if (Context::Mode == Mode::Editor)
 		{
-			if (Context::Core->MainCamera != entt::null)
+			if (Context::EditorScene->MainCamera != entt::null)
 			{
-				mvp = Context::Core->GetComponent<Component::Camera>(Context::Core->MainCamera).ViewProjectionMatrix;
+				mvp = Context::EditorScene->GetComponent<Component::Camera>(Context::EditorScene->MainCamera).ViewProjectionMatrix;
 			}
 			else
 			{
@@ -61,7 +61,7 @@ namespace HBL2
 			HBL2_CORE_WARN("No mode set for current context.");
 		}
 
-		Texture::ForEach([](Texture* texture)
+		HBL::Texture::ForEach([](HBL::Texture* texture)
 		{
 			texture->Bind();
 		});
@@ -76,13 +76,13 @@ namespace HBL2
 			m_VertexArray->GetIndexBuffer()->Bind();
 			m_VertexArray->GetIndexBuffer()->SetData(buffer->BatchSize);
 
-			Shader::Get(m_Shaders[buffer->BatchIndex])->Bind();
+			HBL::Shader::Get(m_Shaders[buffer->BatchIndex])->Bind();
 
-			Shader::Get(m_Shaders[buffer->BatchIndex])->SetMat4(mvp, "u_MVP");
+			HBL::Shader::Get(m_Shaders[buffer->BatchIndex])->SetMat4(mvp, "u_MVP");
 
 			RenderCommand::DrawIndexed(buffer);
 
-			Shader::Get(m_Shaders[buffer->BatchIndex])->UnBind();
+			HBL::Shader::Get(m_Shaders[buffer->BatchIndex])->UnBind();
 
 			m_VertexArray->GetIndexBuffer()->UnBind();
 
@@ -122,33 +122,33 @@ namespace HBL2
 
 		m_VertexArray->AddVertexBuffer(vertexBuffer);
 
-		Shader::Get(shaderName)->Bind();
+		HBL::Shader::Get(shaderName)->Bind();
 
 #ifdef EMSCRIPTEN
-		Shader::Get(shaderName)->SetInt1(0, "u_Textures0");
-		Shader::Get(shaderName)->SetInt1(1, "u_Textures1");
-		Shader::Get(shaderName)->SetInt1(2, "u_Textures2");
-		Shader::Get(shaderName)->SetInt1(3, "u_Textures3");
-		Shader::Get(shaderName)->SetInt1(4, "u_Textures4");
-		Shader::Get(shaderName)->SetInt1(5, "u_Textures5");
-		Shader::Get(shaderName)->SetInt1(6, "u_Textures6");
-		Shader::Get(shaderName)->SetInt1(7, "u_Textures7");
-		Shader::Get(shaderName)->SetInt1(8, "u_Textures8");
-		Shader::Get(shaderName)->SetInt1(9, "u_Textures9");
-		Shader::Get(shaderName)->SetInt1(10, "u_Textures10");
-		Shader::Get(shaderName)->SetInt1(11, "u_Textures11");
-		Shader::Get(shaderName)->SetInt1(12, "u_Textures12");
-		Shader::Get(shaderName)->SetInt1(13, "u_Textures13");
-		Shader::Get(shaderName)->SetInt1(14, "u_Textures14");
-		Shader::Get(shaderName)->SetInt1(15, "u_Textures15");
+		HBL::Shader::Get(shaderName)->SetInt1(0, "u_Textures0");
+		HBL::Shader::Get(shaderName)->SetInt1(1, "u_Textures1");
+		HBL::Shader::Get(shaderName)->SetInt1(2, "u_Textures2");
+		HBL::Shader::Get(shaderName)->SetInt1(3, "u_Textures3");
+		HBL::Shader::Get(shaderName)->SetInt1(4, "u_Textures4");
+		HBL::Shader::Get(shaderName)->SetInt1(5, "u_Textures5");
+		HBL::Shader::Get(shaderName)->SetInt1(6, "u_Textures6");
+		HBL::Shader::Get(shaderName)->SetInt1(7, "u_Textures7");
+		HBL::Shader::Get(shaderName)->SetInt1(8, "u_Textures8");
+		HBL::Shader::Get(shaderName)->SetInt1(9, "u_Textures9");
+		HBL::Shader::Get(shaderName)->SetInt1(10, "u_Textures10");
+		HBL::Shader::Get(shaderName)->SetInt1(11, "u_Textures11");
+		HBL::Shader::Get(shaderName)->SetInt1(12, "u_Textures12");
+		HBL::Shader::Get(shaderName)->SetInt1(13, "u_Textures13");
+		HBL::Shader::Get(shaderName)->SetInt1(14, "u_Textures14");
+		HBL::Shader::Get(shaderName)->SetInt1(15, "u_Textures15");
 #else
 		int samplers[32];
 		for (uint32_t i = 0; i < 32; i++)
 			samplers[i] = i;
 
-		Shader::Get(shaderName)->SetIntPtr1(samplers, 32, "u_Textures");
+		HBL::Shader::Get(shaderName)->SetIntPtr1(samplers, 32, "u_Textures");
 #endif
-		Shader::Get(shaderName)->SetMat4(mvp, "u_MVP");
+		HBL::Shader::Get(shaderName)->SetMat4(mvp, "u_MVP");
 
 		m_Shaders.push_back(shaderName);
 
@@ -159,7 +159,7 @@ namespace HBL2
 
 	void Renderer2D::DrawQuad(uint32_t batchIndex, Component::Transform& transform, float textureID, glm::vec4 color)
 	{
-		Buffer* buffer = m_VertexArray->GetVertexBuffers()[batchIndex]->GetHandle();
+		HBL::Buffer * buffer = m_VertexArray->GetVertexBuffers()[batchIndex]->GetHandle();
 		uint32_t& batchSize = m_VertexArray->GetVertexBuffers()[batchIndex]->BatchSize;
 
 		buffer[batchSize].Position = transform.Matrix * m_QuadVertexPosition[0];
@@ -189,7 +189,7 @@ namespace HBL2
 
 	void Renderer2D::DrawQuad(uint32_t batchIndex, glm::vec3& position, glm::vec3& scale, float textureID, glm::vec4 color)
 	{
-		Buffer* buffer = m_VertexArray->GetVertexBuffers()[batchIndex]->GetHandle();
+		HBL::Buffer* buffer = m_VertexArray->GetVertexBuffers()[batchIndex]->GetHandle();
 		uint32_t& batchSize = m_VertexArray->GetVertexBuffers()[batchIndex]->BatchSize;
 
 		buffer[batchSize].Position = { position.x - scale.x / 2.f, position.y + scale.y / 2.f, 0.f };

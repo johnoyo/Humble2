@@ -1,0 +1,247 @@
+Scene: NewScene
+Entities:
+  - Entity: 16
+    Component::Tag:
+      Tag: New Light
+    Component::ID:
+      ID: 13272436781382146048
+    Component::Transform:
+      Translation: [0, 0, 5]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Light:
+      Enabled: true
+      CastsShadows: false
+      Intensity: 1
+      Attenuation: 10
+      Color: [1, 1, 1]
+      Type: 0
+  - Entity: 15
+    Component::Tag:
+      Tag: O2
+    Component::ID:
+      ID: 13405960704553699328
+    Component::Transform:
+      Translation: [-3, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 2508607791272249856
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 988511922102612467
+      Mesh: 9402528107889883903
+  - Entity: 14
+    Component::Tag:
+      Tag: O3
+    Component::ID:
+      ID: 3372270763454955008
+    Component::Transform:
+      Translation: [3, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 2508607791272249856
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 988511922102612467
+      Mesh: 9402528107889883903
+  - Entity: 13
+    Component::Tag:
+      Tag: O4
+    Component::ID:
+      ID: 1031449406489827712
+    Component::Transform:
+      Translation: [0, -2, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 2508607791272249856
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 988511922102612467
+      Mesh: 9402528107889883903
+  - Entity: 12
+    Component::Tag:
+      Tag: SmoothObjects
+    Component::ID:
+      ID: 2508607791272249856
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 0
+  - Entity: 11
+    Component::Tag:
+      Tag: O1
+    Component::ID:
+      ID: 13708372911473332224
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 2508607791272249856
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 12647810587411261016
+      Mesh: 9402528107889883903
+  - Entity: 10
+    Component::Tag:
+      Tag: Camera
+    Component::ID:
+      ID: 8079866774374138880
+    Component::Transform:
+      Translation: [0, 0, 10]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Camera:
+      Enabled: true
+      Primary: true
+      Far: 1000
+      Near: 0.100000001
+      FOV: 30
+      Aspect Ratio: 1.778
+      Zoom Level: 300
+      Type: 0
+  - Entity: 9
+    Component::Tag:
+      Tag: FlatObjects
+    Component::ID:
+      ID: 7641987434148729856
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 0
+  - Entity: 8
+    Component::Tag:
+      Tag: FO4
+    Component::ID:
+      ID: 13323621895189864448
+    Component::Transform:
+      Translation: [0, -4.25, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 7641987434148729856
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 12647810587411261016
+      Mesh: 17631668153373402826
+  - Entity: 7
+    Component::Tag:
+      Tag: FO3
+    Component::ID:
+      ID: 11343201706713477120
+    Component::Transform:
+      Translation: [3, 3, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 7641987434148729856
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 12647810587411261016
+      Mesh: 17631668153373402826
+  - Entity: 6
+    Component::Tag:
+      Tag: FO2
+    Component::ID:
+      ID: 8686719225447854080
+    Component::Transform:
+      Translation: [0, 2.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 7641987434148729856
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 12647810587411261016
+      Mesh: 17631668153373402826
+  - Entity: 5
+    Component::Tag:
+      Tag: FO1
+    Component::ID:
+      ID: 5089779961884268544
+    Component::Transform:
+      Translation: [-3, 3, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 7641987434148729856
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 12647810587411261016
+      Mesh: 17631668153373402826
+  - Entity: 4
+    Component::Tag:
+      Tag: S1
+    Component::ID:
+      ID: 1100508188739819008
+    Component::Transform:
+      Translation: [-1.75, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 756618895416028544
+    Component::Sprite_New:
+      Enabled: true
+      Material: 7020287691825424313
+  - Entity: 3
+    Component::Tag:
+      Tag: Sprites
+    Component::ID:
+      ID: 756618895416028544
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 0
+  - Entity: 2
+    Component::Tag:
+      Tag: S3
+    Component::ID:
+      ID: 6077826152191219712
+    Component::Transform:
+      Translation: [1.5, 2.25, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 756618895416028544
+    Component::Sprite_New:
+      Enabled: true
+      Material: 7020287691825424313
+  - Entity: 1
+    Component::Tag:
+      Tag: S4
+    Component::ID:
+      ID: 8809475625149991936
+    Component::Transform:
+      Translation: [-1.75, 2.25, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 756618895416028544
+    Component::Sprite_New:
+      Enabled: true
+      Material: 7020287691825424313
+  - Entity: 0
+    Component::Tag:
+      Tag: S2
+    Component::ID:
+      ID: 15694273812685813760
+    Component::Transform:
+      Translation: [1.5, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 756618895416028544
+    Component::Sprite_New:
+      Enabled: true
+      Material: 7020287691825424313
+Systems:
+  []

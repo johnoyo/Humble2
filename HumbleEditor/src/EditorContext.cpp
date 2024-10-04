@@ -1,93 +1,156 @@
 #include "EditorContext.h"
 #include <Utilities\FileDialogs.h>
 
-namespace HBL2Editor
+namespace HBL2
 {
-	void EditorContext::OnAttach()
+	namespace Editor
 	{
-		Mode = HBL2::Mode::Editor;
-
-		// Create FrameBuffer.
-		HBL2::FrameBufferSpecification spec;
-		spec.Width = 1280;
-		spec.Height = 720;
-		HBL2::RenderCommand::FrameBuffer = HBL2::FrameBuffer::Create(spec);
-
-		if (!OpenEmptyProject())
+		void EditorContext::OnCreate()
 		{
-			ActiveScene = EmptyScene;
-			return;
+			Mode = HBL2::Mode::Editor;
+			AssetManager::Instance = new EditorAssetManager;
+
+			// Create FrameBuffer.
+			HBL2::Renderer::Instance->FrameBufferHandle = HBL2::ResourceManager::Instance->CreateFrameBuffer({
+				.debugName = "editor-viewport",
+				.width = 1280,
+				.height = 720,
+			});
+
+			if (!OpenEmptyProject())
+			{
+				ActiveScene = EmptyScene;
+				return;
+			}
+
+			m_EditorScene = ResourceManager::Instance->GetScene(EditorScene);
+			m_EmptyScene = ResourceManager::Instance->GetScene(EmptyScene);
+
+			// Create editor systems.
+			m_EditorScene->RegisterSystem(new EditorPanelSystem);
+			m_EditorScene->RegisterSystem(new TransformSystem);
+			m_EditorScene->RegisterSystem(new CameraSystem);
+			m_EditorScene->RegisterSystem(new EditorCameraSystem);
+
+			// Editor camera set up.
+			auto editorCameraEntity = m_EditorScene->CreateEntity("Hidden");
+			m_EditorScene->AddComponent<HBL2::Component::Camera>(editorCameraEntity).Enabled = true;
+			m_EditorScene->AddComponent<Component::EditorCamera>(editorCameraEntity);
+			m_EditorScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 5.f;
+
+			// Create editor systems.
+			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+			{
+				system->OnCreate();
+			}
+
+			EventDispatcher::Get().Register("SceneChangeEvent", [&](const HBL2::Event& e)
+			{
+				HBL2_CORE_INFO("EditorContext::SceneChangeEvent");
+				const SceneChangeEvent& sce = dynamic_cast<const SceneChangeEvent&>(e);
+				m_ActiveScene = ResourceManager::Instance->GetScene(sce.NewScene);
+			});
 		}
 
-		// Create editor systems.
-		Core->RegisterSystem(new EditorPanelSystem);
-		Core->RegisterSystem(new EditorCameraSystem);
-
-		// Editor camera set up.
-		auto editorCameraEntity = Core->CreateEntity();
-		Core->GetComponent<HBL2::Component::Tag>(editorCameraEntity).Name = "Hidden";
-		Core->AddComponent<Component::EditorCamera>(editorCameraEntity);
-		Core->AddComponent<HBL2::Component::Camera>(editorCameraEntity).Enabled = true;
-		Core->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 100.f;
-	}
-
-	void EditorContext::OnCreate()
-	{
-		for (HBL2::ISystem* system : Core->GetSystems())
+		void EditorContext::OnUpdate(float ts)
 		{
-			system->OnCreate();
+			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+			{
+				system->OnUpdate(ts);
+			}
+
+			if (m_ActiveScene == nullptr)
+			{
+				HBL2_CORE_TRACE("Active Scene is null.");
+				return;
+			}
+
+			for (HBL2::ISystem* system : m_ActiveScene->GetCoreSystems())
+			{
+				if (system->GetState() == SystemState::Play)
+				{
+					system->OnUpdate(ts);
+				}
+			}
+
+			if (Mode == Mode::Runtime)
+			{
+				for (HBL2::ISystem* system : m_ActiveScene->GetRuntimeSystems())
+				{
+					if (system->GetState() == SystemState::Play)
+					{
+						system->OnUpdate(ts);
+					}
+				}
+			}
 		}
 
-		for (HBL2::ISystem* system : ActiveScene->GetSystems())
+		void EditorContext::OnGuiRender(float ts)
 		{
-			system->OnCreate();
-		}
-	}
+			ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
-	void EditorContext::OnUpdate(float ts)
-	{
-		for (HBL2::ISystem* system : Core->GetSystems())
-		{
-			system->OnUpdate(ts);
-		}
+			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+			{
+				system->OnGuiRender(ts);
+			}
 
-		for (HBL2::ISystem* system : ActiveScene->GetSystems())
-		{
-			system->OnUpdate(ts);
-		}
-	}
+			if (m_ActiveScene == nullptr)
+			{
+				HBL2_CORE_TRACE("Active Scene is null.");
+				return;
+			}
 
-	void EditorContext::OnGuiRender(float ts)
-	{
-		ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
-
-		for (HBL2::ISystem* system : Core->GetSystems())
-		{
-			system->OnGuiRender(ts);
+			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+			{
+				if (system->GetState() == SystemState::Play)
+				{
+					system->OnGuiRender(ts);
+				}
+			}
 		}
 
-		for (HBL2::ISystem* system : ActiveScene->GetSystems())
+		void EditorContext::OnDestroy()
 		{
-			system->OnGuiRender(ts);
+			if (m_EditorScene != nullptr)
+			{
+				for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+				{
+					system->OnDestroy();
+				}
+			}
+
+			if (m_ActiveScene != nullptr)
+			{
+				for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+				{
+					system->OnDestroy();
+				}
+			}
 		}
-	}
 
-	bool EditorContext::OpenEmptyProject()
-	{
-		std::string filepath = HBL2::FileDialogs::OpenFile("Humble Project (*.hblproj)\0*.hblproj\0");
-
-		if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
+		bool EditorContext::OpenEmptyProject()
 		{
-			auto& startingScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
+			std::string filepath = HBL2::FileDialogs::OpenFile("Humble Project (*.hblproj)\0*.hblproj\0");
 
-			HBL2::Project::OpenScene(startingScenePath);
+			if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
+			{
+				LoadBuiltInAssets();
 
-			return true;
+				HBL2::Project::OpenStartingScene();
+
+				return true;
+			}
+
+			HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
+			HBL2::Window::Instance->Close();
+
+			return false;
 		}
 
-		HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
-		HBL2::Application::Get().GetWindow()->Close();
-
-		return false;
+		void EditorContext::LoadBuiltInAssets()
+		{
+			TextureUtilities::Get().LoadWhiteTexture();
+			ShaderUtilities::Get().LoadBuiltInShaders();
+		}
 	}
 }

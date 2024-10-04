@@ -9,12 +9,12 @@ namespace HBL2
 	{
 		switch (RenderCommand::GetAPI())
 		{
-		case GraphicsAPI::OpenGL:
+		case GraphicsAPI::OPENGL:
 			return new OpenGLIndexBuffer(size, generated);
-		case GraphicsAPI::Vulkan:
+		case GraphicsAPI::VULKAN:
 			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
 			return new OpenGLIndexBuffer(size, generated);
-		case GraphicsAPI::None:
+		case GraphicsAPI::NONE:
 			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 			return nullptr;

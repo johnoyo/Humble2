@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Renderer\Rewrite\Renderer.h"
 #include "RendererAPI.h"
 #include "Utilities/Log.h"
 #include "FrameBuffer.h"
@@ -16,9 +17,10 @@ namespace HBL2
 		static void Draw(VertexBuffer* vertexBuffer);
 		static void DrawIndexed(VertexBuffer* vertexBuffer);
 
-		static FrameBuffer* FrameBuffer;
+		static HBL::FrameBuffer* FrameBuffer;
 
 		static GraphicsAPI GetAPI();
+
 	private:
 		static RendererAPI* s_RendererAPI;
 		static GraphicsAPI s_API;

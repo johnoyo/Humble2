@@ -9,14 +9,15 @@ namespace HBL2
 	{
 		s_ActiveProject = new Project;
 
-		s_ActiveProject->m_Spec.StartingScene = "Scenes/EmptyScene.humble";
+		s_ActiveProject->m_Spec.StartingScene = std::filesystem::path("Scenes") / std::filesystem::path("EmptyScene.humble");
 		s_ActiveProject->m_Spec.AssetDirectory = "Assets";
+		s_ActiveProject->m_Spec.ScriptDirectory = std::filesystem::path("Assets") / std::filesystem::path("Scripts");
 		s_ActiveProject->m_Spec.Name = name;		
 
 		return s_ActiveProject;
 	}
 
-	Project* Project::Load(std::filesystem::path& path)
+	Project* Project::Load(const std::filesystem::path& path)
 	{
 		if (path.empty())
 		{
@@ -48,27 +49,28 @@ namespace HBL2
 		serializer.Serialize(path);
 	}
 
-	void Project::OpenScene(const std::filesystem::path& path)
+	void Project::OpenStartingScene(bool runtime)
 	{
-		if (path.extension().string() != ".humble")
+		AssetManager::Instance->RegisterAssets();
+
+		UUID assetUUID = std::hash<std::string>()(s_ActiveProject->GetSpecification().StartingScene.string());
+		Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(assetUUID);
+
+		if (!sceneHandle.IsValid())
 		{
-			HBL2_WARN("Could not load {0} - not a scene file", path.filename().string());
+			HBL2_CORE_ERROR("Scene asset handle of \"{0}\" is invalid, aborting scene load.", s_ActiveProject->GetSpecification().StartingScene.string());
 			return;
 		}
 
-		Scene* newScene = new Scene(s_ActiveProject->GetSpecification().StartingScene.string());
+		const std::filesystem::path& startingScenePath = GetAssetFileSystemPath(s_ActiveProject->GetSpecification().StartingScene.string());
 
-		SceneSerializer serializer(newScene);
-		if (serializer.Deserialize(path.string()))
+		if (!std::filesystem::is_directory(startingScenePath.parent_path()))
 		{
-			delete Context::ActiveScene;
-			Context::ActiveScene = newScene;
+			Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
+			HBL2::SceneSerializer serializer(scene);
+			serializer.Serialize(GetAssetFileSystemPath(s_ActiveProject->GetSpecification().StartingScene.string()));
 		}
-	}
 
-	void Project::SaveScene(Scene* scene, const std::filesystem::path& path)
-	{
-		HBL2::SceneSerializer serializer(scene);
-		serializer.Serialize(path.string());
+		SceneManager::Get().LoadScene(sceneHandle, runtime);
 	}
 }

@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-namespace HBL2
+namespace HBL
 {
 	struct FrameBufferSpecification
 	{

@@ -1,17 +1,33 @@
 #pragma once
 
 #include "Window.h"
+#include "Platform\OpenGL\Rewrite\OpenGLWindow.h"
+
 #include "Base.h"
 #include "Input.h"
 #include "Context.h"
-#include "Renderer/Renderer2D.h"
-#include "Renderer/Renderer3D.h"
-#include "ImGui/ImGuiRenderer.h"
-#include "Systems/CameraSystem.h"
-#include "Systems/MeshRendererSystem.h"
-#include "Systems/SpriteRendererSystem.h"
+#include "EventDispatcher.h"
 
-#include "Utilities\AssetManager.h"
+#include "ImGui\ImGuiRenderer.h"
+#include "Platform\OpenGL\Rewrite\OpenGLImGuiRenderer.h"
+
+#include "Systems\CameraSystem.h"
+#include "Systems\StaticMeshRenderingSystem.h"
+#include "Systems\TransformSystem.h"
+#include "Systems\LinkSystem.h"
+
+#include "Resources\ResourceManager.h"
+#include "Platform\OpenGL\Rewrite\OpenGLResourceManager.h"
+#include "Renderer\Rewrite\Renderer.h"
+#include "Platform\OpenGL\Rewrite\OpenGLRenderer.h"
+#include "Renderer\Rewrite\Device.h"
+#include "Platform\OpenGL\Rewrite\OpenGLDevice.h"
+
+#include "Scene\SceneManager.h"
+
+#include "Utilities\Random.h"
+#include "Utilities\MeshUtilities.h"
+#include "Utilities\NativeScriptUtilities.h"
 
 #include <string>
 #include <sstream>
@@ -30,11 +46,10 @@ namespace HBL2
 	{
 		std::string Name = "Humble2 Application";
 		std::string CommandLineArgs = "";
-		Platform Platform = Platform::Windows;
-		GraphicsAPI GraphicsAPI = GraphicsAPI::OpenGL;
+		GraphicsAPI GraphicsAPI = GraphicsAPI::OPENGL;
 		float Width = 1920.f;
 		float Height = 1080.f;
-		bool Vsync = true;
+		bool VerticalSync = true;
 		bool Fullscreen = false;
 
 		Context* Context = nullptr;
@@ -44,7 +59,7 @@ namespace HBL2
 	{
 	public:
 		Application(ApplicationSpec& specification);
-		~Application();
+		~Application() = default;
 
 		void Start();
 
@@ -53,18 +68,12 @@ namespace HBL2
 			return *s_Instance;
 		}
 
-		Window* GetWindow()
-		{
-			return m_Window;
-		}
-
 		const ApplicationSpec& GetSpec() const { return m_Specification; }
 
 	private:
 		static Application* s_Instance;
 
 		ApplicationSpec m_Specification;
-		Window* m_Window;
 
 		float m_LastTime = 0.0f;
 		float m_Timer = m_LastTime;
@@ -77,7 +86,6 @@ namespace HBL2
 
 		void BeginFrame();
 		void EndFrame();
-
 		void Shutdown();
 	};
 }

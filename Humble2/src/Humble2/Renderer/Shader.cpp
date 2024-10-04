@@ -1,9 +1,9 @@
 #include "Shader.h"
 
 #include "Renderer2D.h"
-#include "Platform/OpenGL/OpenGLShader.h"
+#include "Platform/OpenGL/OpenGLShaderOld.h"
 
-namespace HBL2
+namespace HBL
 {
 	std::unordered_map<std::string, Shader*> Shader::s_ShaderLib;
 
@@ -17,14 +17,14 @@ namespace HBL2
 		if (Exists(name))
 			return Get(name);
 
-		switch (RenderCommand::GetAPI())
+		switch (HBL2::RenderCommand::GetAPI())
 		{
-		case GraphicsAPI::OpenGL:
+		case HBL2::GraphicsAPI::OPENGL:
 			return new OpenGLShader(name, vertexSource, fragmentSource);
-		case GraphicsAPI::Vulkan:
+		case HBL2::GraphicsAPI::VULKAN:
 			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
 			return new OpenGLShader(name, vertexSource, fragmentSource);
-		case HBL2::GraphicsAPI::None:
+		case HBL2::GraphicsAPI::NONE:
 			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 			return nullptr;
@@ -78,14 +78,14 @@ namespace HBL2
 			HBL2_CORE_ERROR("Could not open file: {0}.", fragmentFilepath);
 		}
 
-		switch (RenderCommand::GetAPI())
+		switch (HBL2::RenderCommand::GetAPI())
 		{
-		case GraphicsAPI::OpenGL:
+		case HBL2::GraphicsAPI::OPENGL:
 			return new OpenGLShader(name, ssV.str(), ssF.str());
-		case GraphicsAPI::Vulkan:
+		case HBL2::GraphicsAPI::VULKAN:
 			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
 			return new OpenGLShader(name, ssV.str(), ssF.str());
-		case HBL2::GraphicsAPI::None:
+		case HBL2::GraphicsAPI::NONE:
 			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 			return nullptr;
@@ -136,14 +136,14 @@ namespace HBL2
 			HBL2_CORE_ERROR("Could not open file: {0}.", filepath);
 		}
 
-		switch (RenderCommand::GetAPI())
+		switch (HBL2::RenderCommand::GetAPI())
 		{
-		case GraphicsAPI::OpenGL:
+		case HBL2::GraphicsAPI::OPENGL:
 			return new OpenGLShader(name, ss[0].str(), ss[1].str());
-		case GraphicsAPI::Vulkan:
+		case HBL2::GraphicsAPI::VULKAN:
 			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
 			return new OpenGLShader(name, ss[0].str(), ss[1].str());
-		case HBL2::GraphicsAPI::None:
+		case HBL2::GraphicsAPI::NONE:
 			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 			return nullptr;

@@ -40,7 +40,7 @@ namespace HBL2
 		Renderer3D() {}
 
 		bool LoadFromObj(Component::StaticMesh& mesh);
-		FrameBuffer* m_FrameBuffer = nullptr;
+		HBL::FrameBuffer* m_FrameBuffer = nullptr;
 		std::vector<std::string> m_Shaders;
 	};
 }

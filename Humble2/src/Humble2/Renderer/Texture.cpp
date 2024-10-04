@@ -1,9 +1,9 @@
 #include "Texture.h"
 
 #include "Renderer2D.h"
-#include "Platform/OpenGL/OpenGLTexture.h"
+#include "Platform/OpenGL/OpenGLTextureOld.h"
 
-namespace HBL2
+namespace HBL
 {
 	std::unordered_map<std::string, Texture*> Texture::s_TextureLib;
 
@@ -12,14 +12,14 @@ namespace HBL2
 		if (Exists(path))
 			return Get(path);
 
-		switch (RenderCommand::GetAPI())
+		switch (HBL2::RenderCommand::GetAPI())
 		{
-		case GraphicsAPI::OpenGL:
+		case HBL2::GraphicsAPI::OPENGL:
 			return new OpenGLTexture(path);
-		case GraphicsAPI::Vulkan:
+		case HBL2::GraphicsAPI::VULKAN:
 			HBL2_CORE_WARN("Vulkan is not yet supported, falling back to OpenGL.");
 			return new OpenGLTexture(path);
-		case HBL2::GraphicsAPI::None:
+		case HBL2::GraphicsAPI::NONE:
 			HBL2_CORE_FATAL("No GraphicsAPI specified.");
 			exit(-1);
 		}

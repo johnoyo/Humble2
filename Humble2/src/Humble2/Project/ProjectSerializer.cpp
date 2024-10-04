@@ -27,6 +27,7 @@ namespace HBL2
 
 		std::ofstream fOut(filePath);
 		fOut << out.c_str();
+		fOut.close();
 	}
 
 	bool ProjectSerializer::Deserialize(const std::filesystem::path& filePath)

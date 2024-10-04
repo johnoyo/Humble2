@@ -2,7 +2,7 @@
 
 namespace HBL2
 {
-	OpenGLIndexBuffer::OpenGLIndexBuffer(uint32_t size, bool generated) : m_Size(size), m_Ganerated(generated)
+	OpenGLIndexBuffer::OpenGLIndexBuffer(uint32_t size, bool generated) : m_Size(size), m_Generated(generated)
 	{
 		if (generated)
 		{
@@ -25,8 +25,8 @@ namespace HBL2
 
 		m_Indeces = new uint32_t[m_Size * 6U];
 
-		int w = 0;
-		for (int k = 0; k < m_Size * 6; k += 6)
+		uint32_t w = 0;
+		for (uint32_t k = 0; k < m_Size * 6; k += 6)
 		{
 			m_Indeces[m_Index++] = 0 + w;
 			m_Indeces[m_Index++] = 3 + w;
@@ -54,7 +54,7 @@ namespace HBL2
 
 	void OpenGLIndexBuffer::SetData(uint32_t batchSize)
 	{
-		if (m_Ganerated)
+		if (m_Generated)
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, batchSize * 6U * sizeof(GLuint), m_Indeces, GL_STATIC_DRAW);
 		else
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, batchSize * sizeof(GLuint), m_Indeces, GL_STATIC_DRAW);

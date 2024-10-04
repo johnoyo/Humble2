@@ -1,76 +1,62 @@
 #include "Window.h"
 
+#include "Input.h"
+
 namespace HBL2
 {
-	void WindowResizeCallback(GLFWwindow* window, int width, int height)
+	static void WindowCloseCallback(GLFWwindow* window)
 	{
-		RenderCommand::SetViewport(0, 0, width, height);
+		EventDispatcher::Get().Post(WindowCloseEvent());
 	}
 
-	Window::Window(const std::string& title, float width, float height, bool fullScreen, bool vSync) :
-		m_Title(title), m_Width(width), m_Height(height), m_FullScreen(fullScreen), m_VSync(vSync)
+	static void WindowSizeCallback(GLFWwindow* window, int width, int height)
 	{
-		m_Window = nullptr;
-		m_RefreshRate = 0.f;
+		EventDispatcher::Get().Post(WindowSizeEvent(width, height));
 	}
 
-	GLFWwindow* Window::GetHandle()
+	static void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 	{
-		return m_Window;
+		EventDispatcher::Get().Post(FramebufferSizeEvent(width, height));
 	}
 
-	void Window::Create()
+	static void WindowFocusCallback(GLFWwindow* window, int focused)
 	{
-		if (!glfwInit()) 
-		{
-			std::cout << "Error initializing window!\n";
-			exit(-1);
-		}
+		EventDispatcher::Get().Post(WindowFocusEvent(focused));
+	}
 
-		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+	static void WindowRefreshCallback(GLFWwindow* window)
+	{
+		EventDispatcher::Get().Post(WindowRefreshEvent());
+	}
 
-		glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-		glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-		glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-		glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+	static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+	{
+		EventDispatcher::Get().Post(MouseButtonEvent(button, action, mods));
+	}
 
-		m_RefreshRate = (float)mode->refreshRate;
+	static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+	{
+		EventDispatcher::Get().Post(ScrollEvent(xoffset, yoffset));
+	}
 
-		if (m_FullScreen)
-		{
-			m_Window = glfwCreateWindow(mode->width, mode->height, m_Title.c_str(), glfwGetPrimaryMonitor(), NULL);
-		}
-		else
-		{
-			m_Window = glfwCreateWindow((int)m_Width, (int)m_Height, m_Title.c_str(), NULL, NULL);
-		}
+	static void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
+	{
+		EventDispatcher::Get().Post(CursorPositionEvent(xpos, ypos));
+	}
 
-		if (!m_Window)
-		{
-			std::cout << "Error creating window!\n";
-			glfwTerminate();
-			exit(-1);
-		}
+	static void CursorEnterCallback(GLFWwindow* window, int entered)
+	{
+		EventDispatcher::Get().Post(CursorEnterEvent(entered));
+	}
 
-		if (m_VSync)
-		{
-			glfwMakeContextCurrent(m_Window);
-			glfwSwapInterval(1);
-		}
-		else
-		{
-			glfwMakeContextCurrent(m_Window);
-			glfwSwapInterval(0);
-		}
+	static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+	{
+		EventDispatcher::Get().Post(KeyEvent(key, scancode, action, mods));
+	}
 
-#ifndef EMSCRIPTEN
-		if (glewInit() != GLEW_OK)
-		{
-			std::cout << "Error initializing GLEW!\n";
-			exit(-1);
-		}
-#endif
-		glfwSetWindowSizeCallback(m_Window, WindowResizeCallback);
+	void Window::Initialize(const WindowSpecification&& spec)
+	{
+		m_Spec = spec;
 	}
 
 	void Window::DispatchMainEm(void* fp)
@@ -84,26 +70,27 @@ namespace HBL2
 #ifdef EMSCRIPTEN
 		std::function<void()> mainLoopEm = [&]()
 		{
-			mainLoop();
-
-			glfwSwapBuffers(m_Window);
 			glfwPollEvents();
+			mainLoop();
 		};
 		emscripten_set_main_loop_arg(DispatchMainEm, &mainLoopEm, 0, 1);
 #else
 		while (!glfwWindowShouldClose(m_Window))
 		{
-			mainLoop();
-
-			glfwSwapBuffers(m_Window);
 			glfwPollEvents();
+			mainLoop();
 		}
 #endif
 	}
 
+	GLFWwindow* Window::GetHandle()
+	{
+		return m_Window;
+	}
+
 	void Window::SetTitle(const std::string& title)
 	{
-		m_Title = title;
+		m_Spec.Title = title;
 		glfwSetWindowTitle(m_Window, title.c_str());
 	}
 
@@ -120,5 +107,19 @@ namespace HBL2
 	void Window::Terminate()
 	{
 		glfwTerminate();
+	}
+
+	void Window::AttachEventCallbacks()
+	{
+		glfwSetWindowCloseCallback(m_Window, WindowCloseCallback);
+		glfwSetWindowSizeCallback(m_Window, WindowSizeCallback);
+		glfwSetFramebufferSizeCallback(m_Window, FramebufferSizeCallback);
+		glfwSetWindowFocusCallback(m_Window, WindowFocusCallback);
+		glfwSetWindowRefreshCallback(m_Window, WindowRefreshCallback);
+		glfwSetMouseButtonCallback(m_Window, MouseButtonCallback);
+		glfwSetScrollCallback(m_Window, ScrollCallback);
+		glfwSetCursorPosCallback(m_Window, CursorPosCallback);
+		glfwSetCursorEnterCallback(m_Window, CursorEnterCallback);
+		glfwSetKeyCallback(m_Window, KeyCallback);
 	}
 }

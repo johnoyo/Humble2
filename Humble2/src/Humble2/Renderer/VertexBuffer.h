@@ -60,18 +60,18 @@ namespace HBL2
 		virtual ~VertexBuffer() = default;
 
 		static VertexBuffer* Create(uint32_t size, VertexBufferLayout& layout);
-		static VertexBuffer* Create(Buffer* handle, uint32_t size, VertexBufferLayout& layout);
+		static VertexBuffer* Create(HBL::Buffer* handle, uint32_t size, VertexBufferLayout& layout);
 
 		virtual void Bind() = 0;
 		virtual void UnBind() = 0;
 		virtual void Clean() = 0;
 		virtual void SetData() = 0;
 
-		Buffer* GetHandle();
+		HBL::Buffer* GetHandle();
 
 		uint32_t BatchSize = 0;
 		uint32_t BatchIndex;
 	protected:
-		Buffer* m_Buffer = nullptr;
+		HBL::Buffer* m_Buffer = nullptr;
 	};
 }

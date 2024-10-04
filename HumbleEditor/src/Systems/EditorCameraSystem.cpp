@@ -1,132 +1,157 @@
 #include "EditorCameraSystem.h"
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/quaternion.hpp>
-
-namespace HBL2Editor
+namespace HBL2
 {
-	void EditorCameraSystem::OnCreate()
+	namespace Editor
 	{
-		m_Context = HBL2::Context::Core;
-
-		m_Context->GetRegistry()
-			.group<Component::EditorCamera>(entt::get<HBL2::Component::Camera, HBL2::Component::Transform>)
-			.each([&](entt::entity entity, Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera, HBL2::Component::Transform& transform)
-			{
-				if (editorCamera.Enabled)
+		void EditorCameraSystem::OnCreate()
+		{
+			m_Context->GetRegistry()
+				.group<Component::EditorCamera>(entt::get<HBL2::Component::Transform>)
+				.each([&](Component::EditorCamera& editorCamera, HBL2::Component::Transform& transform)
 				{
-					transform.QRotation = glm::quat(transform.Rotation);
+					if (editorCamera.Enabled)
+					{
+						editorCamera.Yaw += transform.Rotation.y;
+						editorCamera.Pitch += transform.Rotation.x;
 
-					transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) * glm::toMat4(transform.QRotation);
+						editorCamera.Pitch = glm::clamp(editorCamera.Pitch, -89.0f, 89.0f);
 
-					camera.View = glm::inverse(transform.Matrix);
+						glm::vec3 front{};
+						front.x = glm::cos(glm::radians(editorCamera.Yaw)) * glm::cos(glm::radians(editorCamera.Pitch));
+						front.y = glm::sin(glm::radians(editorCamera.Pitch));
+						front.z = glm::sin(glm::radians(-editorCamera.Yaw)) * glm::cos(glm::radians(editorCamera.Pitch));
 
-					camera.ViewProjectionMatrix = camera.Projection * camera.View;
+						editorCamera.Front = -glm::normalize(front);
+						editorCamera.Right = -glm::normalize(glm::cross(editorCamera.Front, -editorCamera.WorldUp));
+						editorCamera.Up = glm::normalize(glm::cross(editorCamera.Right, editorCamera.Front));
+					}
+				});
 
-					if (camera.Primary)
-						m_Context->MainCamera = entity;
+			EventDispatcher::Get().Register("ScrollEvent", [&](const Event& e)
+			{
+				const ScrollEvent& se = dynamic_cast<const ScrollEvent&>(e);
 
-					editorCamera.Distance = transform.Translation.z;
+				if (m_EditorCamera == nullptr || m_Transform == nullptr)
+				{
+					return;
 				}
+
+				float zoomAmount = (float)se.YOffset * m_EditorCamera->ScrollZoomSpeed * m_Timestep;
+				m_Transform->Translation += m_EditorCamera->Front * zoomAmount;
 			});
-	}
 
-	void EditorCameraSystem::OnUpdate(float ts)
-	{
-		m_Context->GetRegistry()
-			.group<Component::EditorCamera>(entt::get<HBL2::Component::Camera, HBL2::Component::Transform>)
-			.each([&](entt::entity entity, Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera, HBL2::Component::Transform& transform)
+			EventDispatcher::Get().Register("CursorPositionEvent", [&](const Event& e)
 			{
-				if (editorCamera.Enabled)
+				const CursorPositionEvent& cps = dynamic_cast<const CursorPositionEvent&>(e);
+
+				if (m_EditorCamera == nullptr || m_Transform == nullptr)
 				{
-					if (!camera.Static)
+					return;
+				}
+
+				if (Input::GetKeyDown(GLFW_KEY_LEFT_ALT) && Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
+				{
+					float dy = (float)cps.YPosition - m_EditorCamera->MousePreviousPositionY;
+
+					float zoomAmount = dy * m_EditorCamera->ZoomSpeed * m_Timestep;
+
+					m_Transform->Translation += m_EditorCamera->Front * zoomAmount;
+				}
+				else if (Input::GetKeyDown(GLFW_KEY_LEFT_ALT) && HBL2::Input::GetKeyDown(GLFW_MOUSE_BUTTON_MIDDLE))
+				{
+					float dx = (float)cps.XPosition - m_EditorCamera->MousePreviousPositionX;
+					float dy = (float)cps.YPosition - m_EditorCamera->MousePreviousPositionY;
+
+					glm::vec3 panRight = m_EditorCamera->Right * -dx * m_EditorCamera->PanSpeed * m_Timestep;
+					glm::vec3 panUp = m_EditorCamera->Up * dy * m_EditorCamera->PanSpeed * m_Timestep;
+
+					m_Transform->Translation += panRight + panUp;
+				}
+				else if (Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
+				{
+					float dx = (float)cps.XPosition - m_EditorCamera->MousePreviousPositionX;
+					float dy = (float)cps.YPosition - m_EditorCamera->MousePreviousPositionY;
+
+					dx *= -m_EditorCamera->MouseSensitivity * m_Timestep;
+					dy *= m_EditorCamera->MouseSensitivity * m_Timestep;
+
+					m_EditorCamera->Yaw += dx;
+					m_EditorCamera->Pitch += dy;
+
+					m_EditorCamera->Pitch = glm::clamp(m_EditorCamera->Pitch, -89.0f, 89.0f);
+
+					glm::vec3 front{};
+					front.x = glm::cos(glm::radians(m_EditorCamera->Yaw)) * glm::cos(glm::radians(m_EditorCamera->Pitch));
+					front.y = glm::sin(glm::radians(m_EditorCamera->Pitch));
+					front.z = glm::sin(glm::radians(-m_EditorCamera->Yaw)) * glm::cos(glm::radians(m_EditorCamera->Pitch));
+
+					m_EditorCamera->Front = -glm::normalize(front);
+					m_EditorCamera->Right = -glm::normalize(glm::cross(m_EditorCamera->Front, -m_EditorCamera->WorldUp));
+					m_EditorCamera->Up = glm::normalize(glm::cross(m_EditorCamera->Right, m_EditorCamera->Front));
+
+					m_Transform->Rotation += glm::vec3(-dy, dx, 0.0f);
+				}
+
+				m_EditorCamera->MousePreviousPositionX = (float)cps.XPosition;
+				m_EditorCamera->MousePreviousPositionY = (float)cps.YPosition;
+			});
+		}
+
+		void EditorCameraSystem::OnUpdate(float ts)
+		{
+			m_Context->GetRegistry()
+				.group<Component::EditorCamera>(entt::get<HBL2::Component::Transform>)
+				.each([&](Component::EditorCamera& editorCamera, HBL2::Component::Transform& transform)
+				{
+					if (editorCamera.Enabled)
 					{
-						transform.QRotation = glm::quat(transform.Rotation);
+						m_EditorCamera = &editorCamera;
+						m_Transform = &transform;
+						m_Timestep = ts;
 
-						transform.Matrix = glm::translate(glm::mat4(1.0f), transform.Translation) * glm::toMat4(transform.QRotation);
-
-						camera.View = glm::inverse(transform.Matrix);
-
-						camera.ViewProjectionMatrix = camera.Projection * camera.View;
-
-						if (camera.Primary)
-							m_Context->MainCamera = entity;
-					}
-					else if (camera.Static)
-					{
-						if (camera.Primary)
-							m_Context->MainCamera = entity;
-					}
-
-					if (HBL2::Input::GetKeyDown(GLFW_KEY_LEFT_ALT))
-					{
-						const glm::vec2& mouse{ HBL2::Input::GetMousePosition().x, HBL2::Input::GetMousePosition().y };
-						glm::vec2 delta = (mouse - editorCamera.InitialMousePosition) * 0.003f;
-						editorCamera.InitialMousePosition = mouse;
-
-						if (HBL2::Input::GetKeyDown(GLFW_MOUSE_BUTTON_MIDDLE))
+						float velocity = 0.0f;
+						
+						if (Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
 						{
-							// Pan Speed.
-							float x = std::min(editorCamera.ViewportSize.x / 1000.0f, 2.4f); // max = 2.4f
-							float xSpeed = 0.0366f * (x * x) - 0.1778f * x + 0.3021f;
+							velocity = editorCamera.MovementSpeed * ts;
 
-							float y = std::min(editorCamera.ViewportSize.y / 1000.0f, 2.4f); // max = 2.4f
-							float ySpeed = 0.0366f * (y * y) - 0.1778f * y + 0.3021f;
-
-							editorCamera.FocalPoint += -GetRightDirection(editorCamera.Yaw, editorCamera.Pitch) * delta.x * xSpeed * editorCamera.Distance;
-							editorCamera.FocalPoint += GetUpDirection(editorCamera.Yaw, editorCamera.Pitch) * delta.y * ySpeed * editorCamera.Distance;
-
-						}
-						else if (HBL2::Input::GetKeyDown(GLFW_MOUSE_BUTTON_LEFT))
-						{
-							float yawSign = GetUpDirection(editorCamera.Yaw, editorCamera.Pitch).y < 0.f ? -1.0f : 1.0f;
-							editorCamera.Yaw += yawSign * delta.x * editorCamera.RotationSpeed;
-							editorCamera.Pitch += delta.y * editorCamera.RotationSpeed;
-						}
-						else if (HBL2::Input::GetKeyDown(GLFW_MOUSE_BUTTON_RIGHT))
-						{
-							float distance = editorCamera.Distance * 0.5f;
-							distance = std::max(distance, 0.0f);
-							float speed = distance * distance;
-							speed = std::min(speed, 100.0f); // max speed = 100
-
-							editorCamera.Distance -= delta.y * speed;
-							if (editorCamera.Distance < 1.0f)
+							if (Input::GetKeyDown(GLFW_KEY_W))
 							{
-								editorCamera.FocalPoint += GetForwardDirection(editorCamera.Yaw, editorCamera.Pitch);
-								editorCamera.Distance = 1.0f;
+								transform.Translation += editorCamera.Front * velocity;
+							}
+							if (Input::GetKeyDown(GLFW_KEY_S))
+							{
+								transform.Translation -= editorCamera.Front * velocity;
+							}
+							if (Input::GetKeyDown(GLFW_KEY_D))
+							{
+								transform.Translation += editorCamera.Right * velocity;
+							}
+							if (Input::GetKeyDown(GLFW_KEY_A))
+							{
+								transform.Translation -= editorCamera.Right * velocity;
+							}
+							if (Input::GetKeyDown(GLFW_KEY_E))
+							{
+								transform.Translation += editorCamera.Up * velocity;
+							}
+							if (Input::GetKeyDown(GLFW_KEY_Q))
+							{
+								transform.Translation -= editorCamera.Up * velocity;
 							}
 						}
 					}
+					else
+					{
+						m_EditorCamera = nullptr;
+						m_Transform = nullptr;
+					}
+				});
+		}
 
-					transform.Translation = CalculatePosition(editorCamera.FocalPoint, editorCamera.Distance, editorCamera.Yaw, editorCamera.Pitch);
-					transform.Rotation = { -editorCamera.Pitch, -editorCamera.Yaw, 0.f };
-				}
-			});
-	}
-
-	glm::quat EditorCameraSystem::GetOrientation(float yaw, float pitch) const
-	{
-		return glm::quat(glm::vec3(-pitch, -yaw, 0.0f));
-	}
-
-	glm::vec3 EditorCameraSystem::GetUpDirection(float yaw, float pitch) const
-	{
-		return glm::rotate(GetOrientation(yaw, pitch), glm::vec3(0.0f, 1.0f, 0.0f));
-	}
-
-	glm::vec3 EditorCameraSystem::GetRightDirection(float yaw, float pitch) const
-	{
-		return glm::rotate(GetOrientation(yaw, pitch), glm::vec3(1.0f, 0.0f, 0.0f));
-	}
-
-	glm::vec3 EditorCameraSystem::GetForwardDirection(float yaw, float pitch) const
-	{
-		return glm::rotate(GetOrientation(yaw, pitch), glm::vec3(0.0f, 0.0f, -1.0f));
-	}
-
-	glm::vec3 EditorCameraSystem::CalculatePosition(glm::vec3 focalPoint, float distance, float yaw, float pitch) const
-	{
-		return focalPoint - GetForwardDirection(yaw, pitch) * distance;
+		void EditorCameraSystem::OnDestroy()
+		{
+		}
 	}
 }

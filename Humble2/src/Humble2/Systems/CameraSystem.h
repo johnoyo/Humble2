@@ -9,6 +9,8 @@ namespace HBL2
 	class CameraSystem final : public ISystem
 	{
 	public:
+		CameraSystem() { Name = "CameraSystem"; }
+
 		virtual void OnCreate() override;
 		virtual void OnUpdate(float ts) override;
 	};

@@ -1,8 +1,10 @@
 project "HumbleApp"
-    kind "ConsoleApp"
+    kind "WindowedApp"
     language "C++"
-    cppdialect "C++17"
-    staticruntime "off"
+    cppdialect "C++20"
+    staticruntime "Off"
+
+    flags { "MultiProcessorCompile" }
 
     targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
     objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
@@ -10,7 +12,9 @@ project "HumbleApp"
     files 
     { 
         "src/**.h", 
-        "src/**.cpp"
+        "src/**.cpp",
+        "../Dependencies/ImGuizmo/ImGuizmo.h",
+        "../Dependencies/ImGuizmo/ImGuizmo.cpp",
     }
 
     includedirs
@@ -24,9 +28,11 @@ project "HumbleApp"
         "../Dependencies/GLEW/include",
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
+        "../Dependencies/ImGuizmo",
         "../Dependencies/GLM",
         "../Dependencies/YAML-Cpp/yaml-cpp/include",
-        "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include"
+        "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
+        "%{VULKAN_SDK}/Include"
     }
 
     links

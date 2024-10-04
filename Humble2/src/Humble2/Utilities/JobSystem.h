@@ -11,6 +11,12 @@
 
 namespace HBL2
 {
+	struct JobDispatchArgs
+	{
+		uint32_t jobIndex;
+		uint32_t groupIndex;
+	};
+
 	class JobSystem
 	{
 	public:
@@ -18,17 +24,22 @@ namespace HBL2
 
 		static JobSystem& Get()
 		{
-			static JobSystem instance;
-			return instance;
+			HBL2_CORE_ASSERT(s_Instance != nullptr, "JobSystem::s_Instance is null! Call JobSystem::Initialize before use.");
+			return *s_Instance;
 		}
 
-		void Initialize();
+		static void Initialize();
+		static void Shutdown();
+
 		void Execute(const std::function<void()>& job);
+		void Dispatch(uint32_t jobCount, uint32_t groupSize, const std::function<void(JobDispatchArgs)>& job);
 		bool Busy();
 		void Wait();
 
 	private:
 		JobSystem() {}
+
+		void InitializeInternal();
 
 		uint32_t m_NumThreads = 0;
 		ThreadSafeRingBuffer<std::function<void()>, 256> m_JobPool;
@@ -36,5 +47,7 @@ namespace HBL2
 		std::mutex m_WakeMutex;
 		uint64_t m_CurrentLabel = 0;
 		std::atomic<uint64_t> m_FinishedLabel;
+
+		inline static JobSystem* s_Instance = nullptr;
 	};
 }

@@ -2,8 +2,10 @@
 project "Humble2"
     kind "StaticLib"
     language "C++"
-    cppdialect "C++17"
+    cppdialect "C++20"
     staticruntime "Off"
+
+    flags { "MultiProcessorCompile" }
 
     -- Directories for binary and intermediate files.
     targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
@@ -12,12 +14,16 @@ project "Humble2"
     files 
     { 
         "src/**.h", 
-        "src/**.cpp"
+        "src/**.cpp",
+        "../Dependencies/ImGuizmo/ImGuizmo.h",
+        "../Dependencies/ImGuizmo/ImGuizmo.cpp",
     }
 
     defines
 	{
-		"_CRT_SECURE_NO_WARNINGS"
+		"_CRT_SECURE_NO_WARNINGS",
+        "YAML_CPP_STATIC_DEFINE",
+        "GLEW_STATIC",
 	}
     
     -- Include directories.
@@ -32,15 +38,18 @@ project "Humble2"
         "../Dependencies/GLEW/include",
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
+        "../Dependencies/ImGuizmo",
         "../Dependencies/GLM",
         "../Dependencies/YAML-Cpp/yaml-cpp/include",
-        "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include"
+        "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
+        "%{VULKAN_SDK}/Include"
     }
     
     libdirs
     {
         "../Dependencies/GLFW/lib-vc2022",
-        "../Dependencies/GLEW/lib/Release/x64"
+        "../Dependencies/GLEW/lib/Release/x64",
+        "%{VULKAN_SDK}/Lib"
     }
     
     links
@@ -48,31 +57,49 @@ project "Humble2"
         "glew32s.lib",
         "glfw3.lib",
         "opengl32.lib",
+
+        "vulkan-1.lib",
+
         "ImGui",
         "YAML-Cpp"
     }
     
     filter "system:windows"
-    systemversion "latest"
-    
-    defines
-    {
-        "HBL2_PLATFORM_WINDOWS",
-        "YAML_CPP_STATIC_DEFINE",
-        "GLEW_STATIC",
-    }
+    systemversion "latest"    
+        defines { "HBL2_PLATFORM_WINDOWS" }
 
     filter "configurations:Debug"
         defines { "DEBUG" }
         runtime "Debug"
         symbols "On"
 
+        links
+        {
+            "shaderc_sharedd.lib",
+            "spirv-cross-cored.lib",
+            "spirv-cross-glsld.lib",
+        }
+
     filter "configurations:Release"
         defines { "RELEASE" }
         runtime "Release"
         optimize "On"
+
+        links
+        {
+            "shaderc_shared.lib",
+            "spirv-cross-core.lib",
+            "spirv-cross-glsl.lib",
+        }
         
     filter "configurations:Emscripten"
         defines { "EMSCRIPTEN" }
         runtime "Release"
         optimize "on"
+
+        links
+        {
+            "shaderc_shared.lib",
+            "spirv-cross-core.lib",
+            "spirv-cross-glsl.lib",
+        }

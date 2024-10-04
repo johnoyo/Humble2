@@ -1,8 +1,10 @@
 project "HumbleEditor"
     kind "ConsoleApp"
     language "C++"
-    cppdialect "C++17"
+    cppdialect "C++20"
     staticruntime "Off"
+
+    flags { "MultiProcessorCompile" }
 
     targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
     objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
@@ -10,7 +12,9 @@ project "HumbleEditor"
     files 
     { 
         "src/**.h", 
-        "src/**.cpp"
+        "src/**.cpp",
+        "../Dependencies/ImGuizmo/ImGuizmo.h",
+        "../Dependencies/ImGuizmo/ImGuizmo.cpp",
     }
 
     includedirs
@@ -21,15 +25,16 @@ project "HumbleEditor"
         "../Humble2/src/Vendor",
         "../Humble2/src/Vendor/entt/include",
         "../Humble2/src/Vendor/spdlog-1.x/include",
-        "../Humble2/src/Vendor/entt/include",
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
+        "../Dependencies/ImGuizmo",
         "../Dependencies/GLFW/include",
         "../Dependencies/GLEW/include",
         "../Dependencies/stb_image",
         "../Dependencies/GLM",
         "../Dependencies/YAML-Cpp/yaml-cpp/include",
-        "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include"
+        "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
+        "%{VULKAN_SDK}/Include"
     }
 
     links
@@ -37,7 +42,7 @@ project "HumbleEditor"
         "Humble2"
     }
 
-    defines 
+    defines
     {
         "GLEW_STATIC",
         "YAML_CPP_STATIC_DEFINE",
