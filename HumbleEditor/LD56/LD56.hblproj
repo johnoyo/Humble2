@@ -1,0 +1,5 @@
+Project:
+  Name: LD56
+  StartingScene: Scenes\EmptyScene.humble
+  AssetDirectory: Assets
+  ScriptDirectory: Assets\Scripts

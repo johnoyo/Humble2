@@ -1,0 +1,50 @@
+Scene: EmptyScene
+Entities:
+  - Entity: 2
+    Component::Tag:
+      Tag: Sprite
+    Component::ID:
+      ID: 5744909380790006784
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Sprite_New:
+      Enabled: true
+      Material: 557546327336039910
+  - Entity: 1
+    Component::Tag:
+      Tag: DirectionalLight
+    Component::ID:
+      ID: 16671928364831488000
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Light:
+      Enabled: true
+      CastsShadows: false
+      Intensity: 1
+      Attenuation: 10
+      Color: [1, 1, 1]
+      Type: 0
+  - Entity: 0
+    Component::Tag:
+      Tag: Camera
+    Component::ID:
+      ID: 9786473450477043712
+    Component::Transform:
+      Translation: [0, 0, 10]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Camera:
+      Enabled: true
+      Primary: true
+      Far: 1000
+      Near: 0.100000001
+      FOV: 30
+      Aspect Ratio: 1.778
+      Zoom Level: 300
+      Type: 0
+Systems:
+  []
