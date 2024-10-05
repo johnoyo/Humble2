@@ -23,7 +23,7 @@ namespace LD56
 				HBL2_ERROR("Camera entity not found!");
 			}
 
-			auto playerEntity = m_Context->FindEntityByUUID(2360173364745782784);
+			auto playerEntity = m_Context->FindEntityByUUID(11084216877952962560);
 
 			if (playerEntity != entt::null)
 			{
@@ -41,7 +41,7 @@ namespace LD56
 				.group<Component::CameraController>(entt::get<HBL2::Component::Transform, HBL2::Component::Camera>)
 				.each([&](auto entity, Component::CameraController& controller, HBL2::Component::Transform& transform, HBL2::Component::Camera& camera)
 				{
-					glm::vec3 targetPosition = m_PlayerTransform->Translation - glm::vec3(0.0f, -2.0f, -5.0f);
+					glm::vec3 targetPosition = m_PlayerTransform->Translation - glm::vec3(0.0f, -2.0f, -4.0f);
 					transform.Translation = glm::mix(transform.Translation, targetPosition, controller.SmoothFactor * ts);
 				});
 		}

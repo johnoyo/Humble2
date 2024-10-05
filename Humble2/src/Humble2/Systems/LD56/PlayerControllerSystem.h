@@ -17,7 +17,7 @@ namespace LD56
 
 		virtual void OnCreate() override
 		{
-			auto playerEntity = m_Context->FindEntityByUUID(2360173364745782784);
+			auto playerEntity = m_Context->FindEntityByUUID(11084216877952962560);
 
 			if (playerEntity != entt::null)
 			{
