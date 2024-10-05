@@ -115,10 +115,6 @@ namespace HBL2
 
 	void Application::Shutdown()
 	{
-		Window::Instance->Terminate();
-		delete Window::Instance;
-		Window::Instance = nullptr;
-
 		ImGuiRenderer::Instance->Clean();
 		delete ImGuiRenderer::Instance;
 		ImGuiRenderer::Instance = nullptr;
@@ -135,6 +131,11 @@ namespace HBL2
 		delete Device::Instance;
 		Device::Instance = nullptr;
 
+		Window::Instance->Terminate();
+		delete Window::Instance;
+		Window::Instance = nullptr;
+
+		NativeScriptUtilities::Shutdown();
 		MeshUtilities::Shutdown();
 
 		EventDispatcher::Shutdown();
