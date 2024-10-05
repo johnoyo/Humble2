@@ -9,6 +9,11 @@
 #include "Systems\StaticMeshRenderingSystem.h"
 #include "Systems\SpriteRenderingSystem.h"
 
+#include "Systems\LD56\PlayerControllerSystem.h"
+#include "Systems\LD56\CameraControllerSystem.h"
+#include "Systems\LD56\HouseComplexSystem.h"
+#include "Systems\LD56\ObstacleSystem.h"
+
 namespace HBL2
 {
     Scene::Scene(const SceneDescriptor&& desc) : m_Name(desc.name)
@@ -73,6 +78,11 @@ namespace HBL2
         dst->RegisterSystem(new CameraSystem, SystemType::Runtime);
         dst->RegisterSystem(new StaticMeshRenderingSystem);
         dst->RegisterSystem(new SpriteRenderingSystem);
+
+        dst->RegisterSystem(new LD56::PlayerControllerSystem, SystemType::Runtime);
+        dst->RegisterSystem(new LD56::CameraControllerSystem, SystemType::Runtime);
+        dst->RegisterSystem(new LD56::HouseComplexSystem, SystemType::Runtime);
+        dst->RegisterSystem(new LD56::ObstacleSystem, SystemType::Runtime);
 
         // Clone dll user systems.
         for (ISystem* system : src->m_Systems)

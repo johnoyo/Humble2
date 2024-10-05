@@ -36,6 +36,7 @@ namespace HBL2
 			auto editorCameraEntity = m_EditorScene->CreateEntity("Hidden");
 			m_EditorScene->AddComponent<HBL2::Component::Camera>(editorCameraEntity).Enabled = true;
 			m_EditorScene->AddComponent<Component::EditorCamera>(editorCameraEntity);
+			m_EditorScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.y = 5.f;
 			m_EditorScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 5.f;
 
 			// Create editor systems.

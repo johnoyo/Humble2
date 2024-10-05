@@ -1,7 +1,5 @@
 #include "Window.h"
 
-#include "Input.h"
-
 namespace HBL2
 {
 	static void WindowCloseCallback(GLFWwindow* window)

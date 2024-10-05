@@ -13,10 +13,7 @@ namespace HBL2
 {
 	struct Mesh;
 	struct Material;
-}
 
-namespace HBL2
-{
 	namespace Component
 	{
 		struct Tag
@@ -131,6 +128,45 @@ namespace HBL2
 		struct SkyLight
 		{
 			float Intensity = 1.0f;
+			bool Enabled = true;
+		};
+	}
+}
+
+namespace LD56
+{
+	namespace Component
+	{
+		struct CameraController
+		{
+			float SmoothFactor = 30.0f;
+			bool Enabled = true;
+		};
+
+		struct PlayerController
+		{
+			float MovementSpeed = 60.0f;
+			glm::vec3 Velocity = glm::vec3(0.0f);
+			float DampingFactor = 5.0f;
+			bool Enabled = true;
+		};
+
+		struct HouseComplex
+		{
+			glm::vec3 ResetPosition = glm::vec3(0.0f);
+			bool Enabled = true;
+		};
+
+		struct Obstacle
+		{
+			float ExtentX = 2.0f;
+			float ExtentY = 2.0f;
+
+			glm::vec2 TopRight = glm::vec2(0.0f);
+			glm::vec2 BottomRight = glm::vec2(0.0f);
+			glm::vec2 TopLeft = glm::vec2(0.0f);
+			glm::vec2 BottomLeft = glm::vec2(0.0f);
+
 			bool Enabled = true;
 		};
 	}

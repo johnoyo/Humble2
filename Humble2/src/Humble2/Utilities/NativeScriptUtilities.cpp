@@ -211,6 +211,8 @@ EndGlobal
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Humble2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\..\bin\Debug-x86_64\Humble2;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ImportLibrary>..\..\..\assets\dlls\{SystemName}\{SystemName}.lib</ImportLibrary>
       <ProgramDatabaseFile>..\..\..\assets\dlls\{SystemName}\{randomPDB}.pdb</ProgramDatabaseFile>
     </Link>
@@ -235,6 +237,8 @@ EndGlobal
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>Humble2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\..\bin\Release-x86_64\Humble2;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ImportLibrary>..\..\..\assets\dlls\{SystemName}\{SystemName}.lib</ImportLibrary>
       <ProgramDatabaseFile>..\..\..\assets\dlls\{SystemName}\{randomPDB}.pdb</ProgramDatabaseFile>
     </Link>

@@ -87,6 +87,8 @@ namespace HBL2
 	{
 		Window::Instance->Create();
 		
+		Input::Initialize();
+
 		Device::Instance->Initialize();
 		Renderer::Instance->Initialize();
 		ImGuiRenderer::Instance->Initialize();
@@ -134,6 +136,8 @@ namespace HBL2
 		Window::Instance->Terminate();
 		delete Window::Instance;
 		Window::Instance = nullptr;
+
+		Input::ShutDown();
 
 		NativeScriptUtilities::Shutdown();
 		MeshUtilities::Shutdown();

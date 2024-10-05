@@ -9,6 +9,11 @@
 #include "Systems\StaticMeshRenderingSystem.h"
 #include "Systems\SpriteRenderingSystem.h"
 
+#include "Systems\LD56\PlayerControllerSystem.h"
+#include "Systems\LD56\CameraControllerSystem.h"
+#include "Systems\LD56\HouseComplexSystem.h"
+#include "Systems\LD56\ObstacleSystem.h"
+
 namespace HBL2
 {
 	uint32_t AssetImporter::ImportAsset(Asset* asset)
@@ -292,6 +297,11 @@ namespace HBL2
 		scene->RegisterSystem(new StaticMeshRenderingSystem);
 		scene->RegisterSystem(new SpriteRenderingSystem);
 
+		scene->RegisterSystem(new LD56::PlayerControllerSystem, SystemType::Runtime);
+		scene->RegisterSystem(new LD56::CameraControllerSystem, SystemType::Runtime);
+		scene->RegisterSystem(new LD56::HouseComplexSystem, SystemType::Runtime);
+		scene->RegisterSystem(new LD56::ObstacleSystem, SystemType::Runtime);
+
 		return sceneHandle;
 	}
 
@@ -367,6 +377,11 @@ namespace HBL2
 			scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
 			scene->RegisterSystem(new StaticMeshRenderingSystem);
 			scene->RegisterSystem(new SpriteRenderingSystem);
+
+			scene->RegisterSystem(new LD56::PlayerControllerSystem, SystemType::Runtime);
+			scene->RegisterSystem(new LD56::CameraControllerSystem, SystemType::Runtime);
+			scene->RegisterSystem(new LD56::HouseComplexSystem, SystemType::Runtime);
+			scene->RegisterSystem(new LD56::ObstacleSystem, SystemType::Runtime);
 
 			asset->Indentifier = sceneHandle.Pack();
 			asset->Loaded = true;

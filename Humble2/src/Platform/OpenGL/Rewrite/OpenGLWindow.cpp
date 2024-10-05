@@ -71,9 +71,6 @@ namespace HBL2
 			exit(-1);
 		}
 #endif
-
-		Input::SetWindow(m_Window);
-
 		AttachEventCallbacks();
 	}
 
