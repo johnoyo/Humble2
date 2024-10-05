@@ -1660,34 +1660,35 @@ namespace HBL2
 				{
 					uint32_t packedHandle = assetHandle.Pack();
 
-					if (asset != nullptr)
+					if (asset == nullptr)
 					{
-						switch (asset->Type)
-						{
-						case AssetType::Shader:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Shader", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Texture:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Texture", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Material:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Material", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Mesh:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Mesh", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Scene:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Scene", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						default:
-							ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						}
+						HBL2_CORE_WARN("Asset at path: {0} and with UUID: {1} has not been registered. Registering it now.", entry.path().string(), assetUUID);
+
+						assetHandle = AssetManager::Instance->RegisterAsset(entry.path());
+						packedHandle = assetHandle.Pack();
+						asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 					}
-					else
+
+					switch (asset->Type)
 					{
-						HBL2_CORE_ERROR("Asset at path: {0} and with UUID: {1} has not been registered. Make sure is it registered before use.", entry.path().string(), assetUUID);
+					case AssetType::Shader:
+						ImGui::SetDragDropPayload("Content_Browser_Item_Shader", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+						break;
+					case AssetType::Texture:
+						ImGui::SetDragDropPayload("Content_Browser_Item_Texture", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+						break;
+					case AssetType::Material:
+						ImGui::SetDragDropPayload("Content_Browser_Item_Material", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+						break;
+					case AssetType::Mesh:
+						ImGui::SetDragDropPayload("Content_Browser_Item_Mesh", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+						break;
+					case AssetType::Scene:
+						ImGui::SetDragDropPayload("Content_Browser_Item_Scene", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+						break;
+					default:
 						ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+						break;
 					}
 
 					ImGui::EndDragDropSource();

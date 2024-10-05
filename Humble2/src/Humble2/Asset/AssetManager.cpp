@@ -23,50 +23,59 @@ namespace HBL2
 		// Register assets that are inside the Assets directory.
 		for (auto& entry : std::filesystem::recursive_directory_iterator(HBL2::Project::GetAssetDirectory()))
 		{
-			const std::string& extension = entry.path().extension().string();
-			auto relativePath = std::filesystem::relative(entry.path(), HBL2::Project::GetAssetDirectory());
-
-			if (extension == ".png" || extension == ".jpg")
-			{
-				auto assetHandle = AssetManager::Instance->CreateAsset({
-					.debugName = "texture-asset",
-					.filePath = relativePath,
-					.type = AssetType::Texture,
-				});
-			}
-			else if (extension == ".obj" || extension == ".gltf" || extension == ".glb" || extension == ".fbx" || extension == ".FBX")
-			{
-				auto assetHandle = AssetManager::Instance->CreateAsset({
-					.debugName = "mesh-asset",
-					.filePath = relativePath,
-					.type = AssetType::Mesh,
-				});
-			}
-			else if (extension == ".hblmat")
-			{
-				auto assetHandle = AssetManager::Instance->CreateAsset({
-					.debugName = "material-asset",
-					.filePath = relativePath,
-					.type = AssetType::Material,
-				});
-			}
-			else if (extension == ".hblshader")
-			{
-				auto assetHandle = AssetManager::Instance->CreateAsset({
-					.debugName = "shader-asset",
-					.filePath = relativePath,
-					.type = AssetType::Shader,
-				});
-			}
-			else if (extension == ".humble")
-			{
-				auto assetHandle = AssetManager::Instance->CreateAsset({
-					.debugName = "scene-asset",
-					.filePath = relativePath,
-					.type = AssetType::Scene,
-				});
-			}
+			RegisterAsset(entry.path());
 		}
+	}
+
+	Handle<Asset> AssetManager::RegisterAsset(const std::filesystem::path& assetPath)
+	{
+		const std::string& extension = assetPath.extension().string();
+		auto relativePath = std::filesystem::relative(assetPath, HBL2::Project::GetAssetDirectory());
+
+		Handle<Asset> assetHandle;
+
+		if (extension == ".png" || extension == ".jpg")
+		{
+			assetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "texture-asset",
+				.filePath = relativePath,
+				.type = AssetType::Texture,
+			});
+		}
+		else if (extension == ".obj" || extension == ".gltf" || extension == ".glb" || extension == ".fbx" || extension == ".FBX")
+		{
+			assetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "mesh-asset",
+				.filePath = relativePath,
+				.type = AssetType::Mesh,
+			});
+		}
+		else if (extension == ".hblmat")
+		{
+			assetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "material-asset",
+				.filePath = relativePath,
+				.type = AssetType::Material,
+			});
+		}
+		else if (extension == ".hblshader")
+		{
+			assetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "shader-asset",
+				.filePath = relativePath,
+				.type = AssetType::Shader,
+			});
+		}
+		else if (extension == ".humble")
+		{
+			assetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "scene-asset",
+				.filePath = relativePath,
+				.type = AssetType::Scene,
+			});
+		}
+
+		return assetHandle;
 	}
 
 	void AssetManager::DeregisterAssets()

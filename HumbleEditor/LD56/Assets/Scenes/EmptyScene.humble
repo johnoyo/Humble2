@@ -1,26 +1,186 @@
 Scene: EmptyScene
 Entities:
-  - Entity: 2
+  - Entity: 21
     Component::Tag:
-      Tag: Sprite
+      Tag: AntennaR
     Component::ID:
-      ID: 5744909380790006784
+      ID: 17725918696104282112
+    Component::Transform:
+      Translation: [-0.0649999976, 0.5, -0.272000015]
+      Rotation: [-30, 0, 0]
+      Scale: [0.000500000024, 0.00400000019, 0.000500000024]
+    Component::Link:
+      Parent: 2360173364745782784
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 9157482042888031304
+      Mesh: 2949579166652469233
+  - Entity: 20
+    Component::Tag:
+      Tag: AntennaL
+    Component::ID:
+      ID: 10560432397457301504
+    Component::Transform:
+      Translation: [-0.0654803962, 0.5, 0.272070199]
+      Rotation: [30, 0, 0]
+      Scale: [0.000470000057, 0.0037722101, 0.000470000028]
+    Component::Link:
+      Parent: 2360173364745782784
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 9157482042888031304
+      Mesh: 2949579166652469233
+  - Entity: 19
+    Component::Tag:
+      Tag: LLeg2
+    Component::ID:
+      ID: 12890840009945587712
+    Component::Transform:
+      Translation: [1.33222699, -0.202396363, 0.357150704]
+      Rotation: [-48.6959076, 13.134304, 11.291111]
+      Scale: [0.0010000004, 0.00999999978, 0.00100000016]
+    Component::Link:
+      Parent: 2360173364745782784
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 9157482042888031304
+      Mesh: 2949579166652469233
+  - Entity: 18
+    Component::Tag:
+      Tag: LLeg1
+    Component::ID:
+      ID: 8090330549894789120
+    Component::Transform:
+      Translation: [0.893696368, -0.210175782, 0.389396042]
+      Rotation: [-49.6051483, 7.3075304, 6.17717791]
+      Scale: [0.00100000016, 0.0100000026, 0.00100000005]
+    Component::Link:
+      Parent: 2360173364745782784
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 9157482042888031304
+      Mesh: 2949579166652469233
+  - Entity: 17
+    Component::Tag:
+      Tag: LLeg0
+    Component::ID:
+      ID: 12689561771995279360
+    Component::Transform:
+      Translation: [0.509892106, -0.133565515, 0.385658652]
+      Rotation: [-49.9999962, -12.4999981, -9.99999619]
+      Scale: [0.00100000005, 0.0100000016, 0.00100000016]
+    Component::Link:
+      Parent: 2360173364745782784
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 9157482042888031304
+      Mesh: 2949579166652469233
+  - Entity: 16
+    Component::Tag:
+      Tag: FloorTiles
+    Component::ID:
+      ID: 4580700550585319936
     Component::Transform:
       Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Link:
+      Parent: 0
+  - Entity: 15
+    Component::Tag:
+      Tag: FloorTile0
+    Component::ID:
+      ID: 14638864672112687104
+    Component::Transform:
+      Translation: [-29.9834671, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 4580700550585319936
+    Component::StaticMesh_New:
       Enabled: true
-      Material: 557546327336039910
-  - Entity: 1
+      Material: 24912425412063160
+      Mesh: 11023184532188938732
+  - Entity: 14
+    Component::Tag:
+      Tag: FloorTile1
+    Component::ID:
+      ID: 12211059190024015872
+    Component::Transform:
+      Translation: [-29.9907265, 0, -29.9551373]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 4580700550585319936
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 24912425412063160
+      Mesh: 11023184532188938732
+  - Entity: 13
+    Component::Tag:
+      Tag: FloorTile2
+    Component::ID:
+      ID: 7716627665155195904
+    Component::Transform:
+      Translation: [-0.00557756424, 0, -29.9857616]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 4580700550585319936
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 24912425412063160
+      Mesh: 11023184532188938732
+  - Entity: 12
+    Component::Tag:
+      Tag: FloorTile3
+    Component::ID:
+      ID: 11919997461050972160
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 4580700550585319936
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 24912425412063160
+      Mesh: 11023184532188938732
+  - Entity: 11
+    Component::Tag:
+      Tag: Monkey
+    Component::ID:
+      ID: 10539722279543709696
+    Component::Transform:
+      Translation: [-1.79522789, 1.85173476, -3.52483416]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 9157482042888031304
+      Mesh: 9402528107889883903
+  - Entity: 10
+    Component::Tag:
+      Tag: FloorTile
+    Component::ID:
+      ID: 451238237352856512
+    Component::Transform:
+      Translation: [-100, -2.27605438, 100]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 24912425412063160
+      Mesh: 13149883727407980174
+  - Entity: 9
     Component::Tag:
       Tag: DirectionalLight
     Component::ID:
-      ID: 16671928364831488000
+      ID: 5167553338823169024
     Component::Transform:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
+      Translation: [52.5, 100, 50]
+      Rotation: [-60, 0, 0]
+      Scale: [0.999999821, 0.999999762, 0.999999762]
     Component::Light:
       Enabled: true
       CastsShadows: false
@@ -28,11 +188,11 @@ Entities:
       Attenuation: 10
       Color: [1, 1, 1]
       Type: 0
-  - Entity: 0
+  - Entity: 8
     Component::Tag:
       Tag: Camera
     Component::ID:
-      ID: 9786473450477043712
+      ID: 12276041074768058368
     Component::Transform:
       Translation: [0, 0, 10]
       Rotation: [0, 0, 0]
@@ -42,9 +202,122 @@ Entities:
       Primary: true
       Far: 1000
       Near: 0.100000001
-      FOV: 30
-      Aspect Ratio: 1.778
+      FOV: 50.3079987
+      Aspect Ratio: 1.93858266
       Zoom Level: 300
       Type: 0
+  - Entity: 7
+    Component::Tag:
+      Tag: Ant
+    Component::ID:
+      ID: 2360173364745782784
+    Component::Transform:
+      Translation: [0, 0.337639749, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    Component::Link:
+      Parent: 0
+  - Entity: 6
+    Component::Tag:
+      Tag: Head
+    Component::ID:
+      ID: 11286295273537028096
+    Component::Transform:
+      Translation: [0, 0.0869734585, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.00724768452, 0.00724768452, 0.00724768452]
+    Component::Link:
+      Parent: 2360173364745782784
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 9157482042888031304
+      Mesh: 1536539093064298736
+  - Entity: 5
+    Component::Tag:
+      Tag: Body1
+    Component::ID:
+      ID: 14025680448400244736
+    Component::Transform:
+      Translation: [0.632717371, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.00740219653, 0.00544000044, 0.00544000044]
+    Component::Link:
+      Parent: 2360173364745782784
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 9157482042888031304
+      Mesh: 1536539093064298736
+  - Entity: 4
+    Component::Tag:
+      Tag: Body2
+    Component::ID:
+      ID: 12413415957325303808
+    Component::Transform:
+      Translation: [1.17713189, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.00496887369, 0.00400000019, 0.00400000019]
+    Component::Link:
+      Parent: 2360173364745782784
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 9157482042888031304
+      Mesh: 1536539093064298736
+  - Entity: 3
+    Component::Tag:
+      Tag: Tail
+    Component::ID:
+      ID: 11575000989524191232
+    Component::Transform:
+      Translation: [1.90278733, 0.124518245, 0]
+      Rotation: [0, 0, 7.42395782]
+      Scale: [0.0114340009, 0.00776000135, 0.00775999995]
+    Component::Link:
+      Parent: 2360173364745782784
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 9157482042888031304
+      Mesh: 1536539093064298736
+  - Entity: 2
+    Component::Tag:
+      Tag: House
+    Component::ID:
+      ID: 14020849497617446912
+    Component::Transform:
+      Translation: [-59.1947823, -0.0808930099, -12.1522837]
+      Rotation: [0, 89.9999771, 0]
+      Scale: [0.10895662, 0.10895656, 0.10895662]
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 24912425412063160
+      Mesh: 6917808322520527038
+  - Entity: 1
+    Component::Tag:
+      Tag: FloorTile5
+    Component::ID:
+      ID: 10838344730497511424
+    Component::Transform:
+      Translation: [-29.9829998, 0, -59.9078217]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 4580700550585319936
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 24912425412063160
+      Mesh: 11023184532188938732
+  - Entity: 0
+    Component::Tag:
+      Tag: FloorTile4
+    Component::ID:
+      ID: 14829164866548262912
+    Component::Transform:
+      Translation: [-0.00600000005, 0, -59.9036407]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 4580700550585319936
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 24912425412063160
+      Mesh: 11023184532188938732
 Systems:
-  []
