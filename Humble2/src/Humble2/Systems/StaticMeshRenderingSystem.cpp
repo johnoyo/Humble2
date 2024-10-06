@@ -82,7 +82,7 @@ namespace HBL2
 			{
 				if (light.Enabled)
 				{
-					m_LightData.LightPositions[(int)m_LightData.LightCount] = transform.Matrix * glm::vec4(transform.Translation, 1.0f);
+					m_LightData.LightPositions[(int)m_LightData.LightCount] = transform.LocalMatrix * glm::vec4(transform.Translation, 1.0f);
 					m_LightData.LightIntensities[(int)m_LightData.LightCount].x = light.Intensity;
 					m_LightData.LightColors[(int)m_LightData.LightCount] = glm::vec4(light.Color, 1.0f);
 					m_LightData.LightCount++;

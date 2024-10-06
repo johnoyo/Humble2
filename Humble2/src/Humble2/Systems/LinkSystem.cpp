@@ -39,6 +39,6 @@ namespace HBL2
 			}
 		}
 
-		return transform * m_Context->GetComponent<Component::Transform>(entity).Matrix;
+		return transform * m_Context->GetComponent<Component::Transform>(entity).LocalMatrix;
 	}
 }

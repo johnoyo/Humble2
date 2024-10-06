@@ -1838,7 +1838,7 @@ namespace HBL2
 						glm::value_ptr(camera.Projection),
 						m_GizmoOperation,
 						ImGuizmo::MODE::LOCAL,
-						glm::value_ptr(transform.Matrix),
+						glm::value_ptr(transform.LocalMatrix),
 						nullptr,
 						snapValuesFinal
 					);
@@ -1850,7 +1850,7 @@ namespace HBL2
 							glm::vec3 newTranslation;
 							glm::vec3 newRotation;
 							glm::vec3 newScale;
-							ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(transform.Matrix), glm::value_ptr(newTranslation), glm::value_ptr(newRotation), glm::value_ptr(newScale));
+							ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(transform.LocalMatrix), glm::value_ptr(newTranslation), glm::value_ptr(newRotation), glm::value_ptr(newScale));
 							transform.Translation = glm::vec3(newTranslation.x, newTranslation.y, newTranslation.z);
 							transform.Rotation += glm::vec3(newRotation.x - transform.Rotation.x, newRotation.y - transform.Rotation.y, newRotation.z - transform.Rotation.z);
 							transform.Scale = glm::vec3(newScale.x, newScale.y, newScale.z);

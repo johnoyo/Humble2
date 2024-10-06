@@ -12,8 +12,8 @@ namespace HBL2
 				transform.QRotation = glm::quat({ glm::radians(transform.Rotation.x), glm::radians(transform.Rotation.y), glm::radians(transform.Rotation.z) });
 				glm::mat4 S = glm::scale(glm::mat4(1.0f), transform.Scale);
 
-				transform.Matrix = T * glm::toMat4(transform.QRotation) * S;
-				transform.WorldMatrix = transform.Matrix;
+				transform.LocalMatrix = T * glm::toMat4(transform.QRotation) * S;
+				transform.WorldMatrix = transform.LocalMatrix;
 			});
 	}
 
@@ -29,8 +29,8 @@ namespace HBL2
 					transform.QRotation = glm::quat({ glm::radians(transform.Rotation.x), glm::radians(transform.Rotation.y), glm::radians(transform.Rotation.z) });
 					glm::mat4 S = glm::scale(glm::mat4(1.0f), transform.Scale);
 
-					transform.Matrix = T * glm::toMat4(transform.QRotation) * S;
-					transform.WorldMatrix = transform.Matrix;
+					transform.LocalMatrix = T * glm::toMat4(transform.QRotation) * S;
+					transform.WorldMatrix = transform.LocalMatrix;
 				}
 			});
 	}

@@ -80,10 +80,10 @@ namespace HBL2
         dst->RegisterSystem(new StaticMeshRenderingSystem);
         dst->RegisterSystem(new SpriteRenderingSystem);
 
+        dst->RegisterSystem(new LD56::ObstacleSystem, SystemType::User);
         dst->RegisterSystem(new LD56::PlayerControllerSystem, SystemType::User);
         dst->RegisterSystem(new LD56::CameraControllerSystem, SystemType::User);
         dst->RegisterSystem(new LD56::HouseComplexSystem, SystemType::User);
-        dst->RegisterSystem(new LD56::ObstacleSystem, SystemType::User);
         dst->RegisterSystem(new LD56::MenuSystem, SystemType::User);
 
         // Clone dll user systems.

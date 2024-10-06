@@ -33,7 +33,7 @@ namespace HBL2
 			glm::quat QRotation = glm::quat(Rotation);
 			glm::vec3 Scale = { 1.f, 1.f, 1.f };
 
-			glm::mat4 Matrix = glm::mat4(1.f);
+			glm::mat4 LocalMatrix = glm::mat4(1.f);
 			glm::mat4 WorldMatrix = glm::mat4(1.f);
 			bool Static = false;
 		};
@@ -154,19 +154,12 @@ namespace LD56
 		struct HouseComplex
 		{
 			glm::vec3 ResetPosition = glm::vec3(0.0f);
+			entt::entity Colliders = entt::null;
 			bool Enabled = true;
 		};
 
 		struct Obstacle
 		{
-			float ExtentX = 2.0f;
-			float ExtentY = 2.0f;
-
-			glm::vec2 TopRight = glm::vec2(0.0f);
-			glm::vec2 BottomRight = glm::vec2(0.0f);
-			glm::vec2 TopLeft = glm::vec2(0.0f);
-			glm::vec2 BottomLeft = glm::vec2(0.0f);
-
 			bool Enabled = true;
 		};
 	}

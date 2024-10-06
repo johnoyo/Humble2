@@ -15,25 +15,31 @@ namespace LD56
 		virtual void OnCreate() override
 		{
 			auto houseEntity0 = m_Context->FindEntityByUUID(5458692348207903744);
+			auto houseCollidersEntity0 = m_Context->FindEntityByUUID(4073195747501176320);
 			auto houseEntity1 = m_Context->FindEntityByUUID(12705467087370573824);
+			auto houseCollidersEntity1 = m_Context->FindEntityByUUID(1589691311269435136);
 			auto houseEntity2 = m_Context->FindEntityByUUID(572588895030259968);
+			auto houseCollidersEntity2 = m_Context->FindEntityByUUID(16787833864284327936);
 
 			if (houseEntity0 != entt::null)
 			{
 				auto& houseComplex = m_Context->AddComponent<Component::HouseComplex>(houseEntity0);
 				houseComplex.ResetPosition = m_Context->GetComponent<HBL2::Component::Transform>(houseEntity2).Translation;
+				houseComplex.Colliders = houseCollidersEntity0;
 			}
 
 			if (houseEntity1 != entt::null)
 			{
 				auto& houseComplex = m_Context->AddComponent<Component::HouseComplex>(houseEntity1);
 				houseComplex.ResetPosition = m_Context->GetComponent<HBL2::Component::Transform>(houseEntity2).Translation;
+				houseComplex.Colliders = houseCollidersEntity1;
 			}
 
 			if (houseEntity2 != entt::null)
 			{
 				auto& houseComplex = m_Context->AddComponent<Component::HouseComplex>(houseEntity2);
 				houseComplex.ResetPosition = m_Context->GetComponent<HBL2::Component::Transform>(houseEntity2).Translation;
+				houseComplex.Colliders = houseCollidersEntity2;
 			}
 
 			m_Player = m_Context->FindEntityByUUID(11084216877952962560);
