@@ -145,10 +145,10 @@ namespace LD56
 
 		struct PlayerController
 		{
-			float MovementSpeed = 60.0f;
+			float MovementSpeed = 3.5f;
 			glm::vec3 Velocity = glm::vec3(0.0f);
 			float DampingFactor = 5.0f;
-			bool Enabled = true;
+			bool Alive = true;
 		};
 
 		struct HouseComplex

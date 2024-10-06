@@ -25,7 +25,10 @@ namespace HBL2Runtime
 
 		for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 		{
-			system->OnUpdate(ts);
+			if (system->GetState() == HBL2::SystemState::Play)
+			{
+				system->OnUpdate(ts);
+			}
 		}
     }
 
@@ -38,7 +41,10 @@ namespace HBL2Runtime
 
 		for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 		{
-			system->OnGuiRender(ts);
+			if (system->GetState() == HBL2::SystemState::Play)
+			{
+				system->OnGuiRender(ts);
+			}
 		}
     }
 

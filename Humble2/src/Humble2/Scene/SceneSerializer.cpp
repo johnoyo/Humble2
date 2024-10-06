@@ -387,6 +387,7 @@ namespace HBL2
 		auto systems = data["Systems"];
 		if (systems)
 		{
+#ifdef false
 			for (auto system : systems)
 			{
 				const std::string& dllPath = "assets\\dlls\\" + system.as<std::string>() + "\\" + system.as<std::string>() + ".dll";
@@ -400,6 +401,7 @@ namespace HBL2
 					m_Scene->RegisterSystem(newSystem, SystemType::User);
 				}
 			}
+#endif
 		}
 
 		return true;

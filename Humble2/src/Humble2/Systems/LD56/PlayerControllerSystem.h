@@ -8,6 +8,8 @@
 #include "Core\Input.h"
 #include "Core\Events.h"
 
+#include <imgui.h>
+
 namespace LD56
 {
 	class PlayerControllerSystem final : public HBL2::ISystem
@@ -31,40 +33,53 @@ namespace LD56
 				.group<Component::PlayerController>(entt::get<HBL2::Component::Transform>)
 				.each([&](auto entity, Component::PlayerController& controller, HBL2::Component::Transform& transform)
 				{
-					float targetX = transform.Translation.x;
+					if (controller.Alive)
+					{
+						float targetX = transform.Translation.x;
 
-					if (HBL2::Input::GetKeyDown(GLFW_KEY_D))
-					{
-						if (transform.Translation.x <= 26.0f)
+						if (HBL2::Input::GetKeyDown(GLFW_KEY_D))
 						{
-							targetX += controller.MovementSpeed * ts;
+							if (transform.Translation.x <= 26.0f)
+							{
+								targetX += controller.MovementSpeed;
+							}
+							else
+							{
+								targetX = 26.0f;
+							}
 						}
-						else
+						else if (HBL2::Input::GetKeyDown(GLFW_KEY_A))
 						{
-							targetX = 26.0f;
+							if (transform.Translation.x >= -24.0f)
+							{
+								targetX -= controller.MovementSpeed;
+							}
+							else
+							{
+								targetX = -24.0f;
+							}
 						}
-					}
-					else if (HBL2::Input::GetKeyDown(GLFW_KEY_A))
-					{
-						if (transform.Translation.x >= -24.0f)
-						{
-							targetX -= controller.MovementSpeed * ts;
-						}
-						else
-						{
-							targetX = -24.0f;
-						}
-					}
 					
-					// Calculate the velocity change based on the difference between the current and target position
-					float desiredVelocityX = (targetX - transform.Translation.x) * controller.MovementSpeed;
+						float desiredVelocityX = (targetX - transform.Translation.x) * controller.MovementSpeed;
+						controller.Velocity.x = glm::mix(controller.Velocity.x, desiredVelocityX, controller.DampingFactor * ts);
+						transform.Translation.x += controller.Velocity.x * ts;
 
-					// Smoothly interpolate the velocity for more gradual movement
-					controller.Velocity.x = glm::mix(controller.Velocity.x, desiredVelocityX, controller.DampingFactor * ts);
-
-					// Apply the velocity to the position
-					transform.Translation.x += controller.Velocity.x * ts;
+						m_Score += controller.MovementSpeed * 10.0f * ts;
+					}
 				});
 		}
+
+		virtual void OnGuiRender(float ts) override
+		{
+			ImGui::SetNextWindowPos(ImVec2(15, 15));
+			ImGui::SetNextWindowSize(ImVec2(150, 32));
+
+			ImGui::Begin("Score", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+			ImGui::Text(std::format("Score {}", (uint32_t)m_Score).c_str());
+			ImGui::End();
+		}
+
+	private:
+		float m_Score = 0;
 	};
 }

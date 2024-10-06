@@ -9,6 +9,7 @@
 #include "Systems\StaticMeshRenderingSystem.h"
 #include "Systems\SpriteRenderingSystem.h"
 
+#include "Systems\LD56\MenuSystem.h"
 #include "Systems\LD56\PlayerControllerSystem.h"
 #include "Systems\LD56\CameraControllerSystem.h"
 #include "Systems\LD56\HouseComplexSystem.h"
@@ -79,16 +80,18 @@ namespace HBL2
         dst->RegisterSystem(new StaticMeshRenderingSystem);
         dst->RegisterSystem(new SpriteRenderingSystem);
 
-        dst->RegisterSystem(new LD56::PlayerControllerSystem, SystemType::Runtime);
-        dst->RegisterSystem(new LD56::CameraControllerSystem, SystemType::Runtime);
-        dst->RegisterSystem(new LD56::HouseComplexSystem, SystemType::Runtime);
-        dst->RegisterSystem(new LD56::ObstacleSystem, SystemType::Runtime);
+        dst->RegisterSystem(new LD56::PlayerControllerSystem, SystemType::User);
+        dst->RegisterSystem(new LD56::CameraControllerSystem, SystemType::User);
+        dst->RegisterSystem(new LD56::HouseComplexSystem, SystemType::User);
+        dst->RegisterSystem(new LD56::ObstacleSystem, SystemType::User);
+        dst->RegisterSystem(new LD56::MenuSystem, SystemType::User);
 
         // Clone dll user systems.
         for (ISystem* system : src->m_Systems)
         {
             if (system->GetType() == SystemType::User)
             {
+#ifdef false
                 const std::string& dllPath = "assets\\dlls\\" + system->Name + "\\" + system->Name + ".dll";
                 ISystem* newSystem = NativeScriptUtilities::Get().LoadDLL(dllPath);
 
@@ -96,6 +99,7 @@ namespace HBL2
 
                 newSystem->Name = system->Name;
                 dst->RegisterSystem(newSystem, SystemType::User);
+#endif
             }
         }
 

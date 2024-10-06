@@ -20,11 +20,11 @@ namespace LD56
 				{
 					if (tag.Name.find("Obstacle_") != std::string::npos)
 					{
-						auto& obstacle = m_Context->AddComponent<Component::Obstacle>(entity);
+						Component::Obstacle& obstacle = m_Context->AddComponent<Component::Obstacle>(entity);
 
 						if (tag.Name.find("Type0") != std::string::npos)
 						{
-							obstacle.ExtentX = 6.0f;
+							obstacle.ExtentX = 5.75f;
 							obstacle.ExtentY = 6.0f;
 						}
 						else if (tag.Name.find("Type1") != std::string::npos)
@@ -39,13 +39,18 @@ namespace LD56
 						}
 						else if (tag.Name.find("Type3") != std::string::npos)
 						{
-							obstacle.ExtentX = 9.0f;
+							obstacle.ExtentX = 8.0f;
 							obstacle.ExtentY = 4.0f;
 						}
 						else if (tag.Name.find("Type4") != std::string::npos)
 						{
-							obstacle.ExtentX = 12.0f;
+							obstacle.ExtentX = 11.5f;
 							obstacle.ExtentY = 8.0f;
+						}
+						else if (tag.Name.find("Type5") != std::string::npos)
+						{
+							obstacle.ExtentX = 9.0f;
+							obstacle.ExtentY = 15.0f;
 						}
 					}
 				});
@@ -86,7 +91,8 @@ namespace LD56
 
 						if (IsPointInQuad(playerPosition, obstacle.TopRight, obstacle.BottomRight, obstacle.BottomLeft, obstacle.TopLeft))
 						{
-							HBL2_INFO("Player hit obstacle!");
+							HBL2_INFO("Player hit obstacle: {}.", m_Context->GetComponent<HBL2::Component::Tag>(entity).Name);
+							// m_Context->GetComponent<Component::PlayerController>(m_Player).Alive = false;
 						}
 					}
 				});

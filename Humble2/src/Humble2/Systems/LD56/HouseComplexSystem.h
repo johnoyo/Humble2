@@ -52,14 +52,19 @@ namespace LD56
 				.group<Component::HouseComplex>(entt::get<HBL2::Component::Transform>)
 				.each([&](auto entity, Component::HouseComplex& houseComplex, HBL2::Component::Transform& transform)
 				{
+					if (!playerController.Alive)
+					{
+						houseComplex.Enabled = false;
+					}
+
 					if (houseComplex.Enabled)
 					{
 						transform.Translation.z += m_Speed * ts;
 
-						if (transform.Translation.z > 75.0f)
+						if (transform.Translation.z >= 80.0f)
 						{
 							m_Speed += 1.0f;
-							playerController.MovementSpeed += 0.5f;
+							playerController.MovementSpeed += 0.1f;
 							transform.Translation = houseComplex.ResetPosition;
 						}
 					}

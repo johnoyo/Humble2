@@ -1,0 +1,10 @@
+Material:
+  UUID: 696884196534632806
+  Shader: 1159462408460830113
+  AlbedoColor: [0.504902005, 0.27225107, 0.27225107, 1]
+  Metalicness: 1
+  Roughness: 1
+  AlbedoMap: 5078550172950226645
+  NormalMap: 0
+  MetallicMap: 0
+  RoughnessMap: 0

@@ -27,6 +27,7 @@ namespace HBL2
 				Scene* currentScene = ResourceManager::Instance->GetScene(sce.CurrentScene);
 				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != std::string::npos)
 				{
+#ifdef false
 					// Delete dll systems instance.
 					for (ISystem* system : currentScene->GetRuntimeSystems())
 					{
@@ -35,7 +36,7 @@ namespace HBL2
 							NativeScriptUtilities::Get().DeleteDLLInstance(system->Name);
 						}
 					}
-
+#endif
 					// Delete play mode scene.
 					ResourceManager::Instance->DeleteScene(sce.CurrentScene);
 
