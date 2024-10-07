@@ -1,6 +1,5 @@
 #include "SceneSerializer.h"
 
-#include "Renderer\Texture.h"
 #include "Utilities\YamlUtilities.h"
 
 namespace HBL2
