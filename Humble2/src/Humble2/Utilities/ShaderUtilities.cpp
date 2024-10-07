@@ -57,7 +57,7 @@ namespace HBL2
 				break;
 			}
 
-			options.SetOptimizationLevel(shaderc_optimization_level_performance);
+			options.SetOptimizationLevel(shaderc_optimization_level_zero);
 
 			std::filesystem::path cachedPath = cacheDirectory / (shaderPath.filename().string() + GLShaderStageCachedVulkanFileExtension(stage));
 
@@ -101,7 +101,7 @@ namespace HBL2
 			shaderc::Compiler compiler;
 			shaderc::CompileOptions options;
 			options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
-			options.SetOptimizationLevel(shaderc_optimization_level_performance);
+			options.SetOptimizationLevel(shaderc_optimization_level_zero);
 
 			std::filesystem::path cachedPath = cacheDirectory / (shaderPath.filename().string() + GLShaderStageCachedOpenGLFileExtension(stage));
 
@@ -119,8 +119,9 @@ namespace HBL2
 			{
 				spirv_cross::CompilerGLSL glslCompiler(vulkanShaderData);
 				glslCompiler.set_common_options({
-					.version = 310,
-					.es = true,
+					.version = 450,
+					.es = false,
+					.separate_shader_objects = true,
 				});
 				const auto& source = glslCompiler.compile();
 

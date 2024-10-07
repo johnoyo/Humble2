@@ -2,9 +2,7 @@
 
 #include "Base.h"
 
-#include "Renderer/VertexArray.h"
 #include "Resources\Handle.h"
-
 #include "Asset\Asset.h"
 
 #include <entt.hpp>
@@ -13,10 +11,7 @@ namespace HBL2
 {
 	struct Mesh;
 	struct Material;
-}
 
-namespace HBL2
-{
 	namespace Component
 	{
 		struct Tag
@@ -36,7 +31,7 @@ namespace HBL2
 			glm::quat QRotation = glm::quat(Rotation);
 			glm::vec3 Scale = { 1.f, 1.f, 1.f };
 
-			glm::mat4 Matrix = glm::mat4(1.f);
+			glm::mat4 LocalMatrix = glm::mat4(1.f);
 			glm::mat4 WorldMatrix = glm::mat4(1.f);
 			bool Static = false;
 		};
@@ -44,28 +39,6 @@ namespace HBL2
 		struct Link
 		{
 			UUID Parent = 0;
-		};
-
-		struct Sprite
-		{
-			glm::vec4 Color = { 1.f, 1.f, 1.f, 1.f };
-			std::string Path = "";
-			int TextureIndex = 0;
-
-			bool Enabled = true;
-		};
-
-		struct StaticMesh
-		{
-			std::vector<HBL::Buffer> Data;
-
-			VertexArray* VertexArray;
-			std::string Path;
-			std::string TexturePath = "";
-			int TextureIndex = 0;
-			std::string ShaderName;
-
-			bool Enabled = true;
 		};
 
 		struct Sprite_New

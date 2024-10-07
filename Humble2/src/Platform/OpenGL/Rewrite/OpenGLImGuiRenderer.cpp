@@ -19,7 +19,7 @@ namespace HBL2
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
 		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
 
@@ -34,7 +34,7 @@ namespace HBL2
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
 
-		m_GlslVersion = "#version 300 es";
+		m_GlslVersion = "#version 450 core";
 
 		ImGui_ImplGlfw_InitForOpenGL(m_Window->GetHandle(), true);
 		ImGui_ImplOpenGL3_Init(m_GlslVersion);

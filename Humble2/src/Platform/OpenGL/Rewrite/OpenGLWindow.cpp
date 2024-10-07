@@ -3,9 +3,9 @@
 
 namespace HBL2
 {
-	void WindowResizeCallback(GLFWwindow* window, int width, int height)
+	static void ErrorCallback(int error, const char* description)
 	{
-		glViewport(0, 0, width, height);
+		HBL2_CORE_ERROR("Error {}: {}", error, description);
 	}
 
 	void OpenGLWindow::Create()
@@ -21,6 +21,12 @@ namespace HBL2
 			std::cout << "Error initializing window!\n";
 			exit(-1);
 		}
+
+		glfwSetErrorCallback(ErrorCallback);
+
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
@@ -65,9 +71,6 @@ namespace HBL2
 			exit(-1);
 		}
 #endif
-
-		Input::SetWindow(m_Window);
-
 		AttachEventCallbacks();
 	}
 

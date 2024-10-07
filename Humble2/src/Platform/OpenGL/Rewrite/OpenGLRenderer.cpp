@@ -15,6 +15,12 @@ namespace HBL2
 
 		TempUniformRingBuffer = new UniformRingBuffer(4096, 256);
 
+		const GLubyte* vendor = glGetString(GL_VENDOR);
+		const GLubyte* renderer = glGetString(GL_RENDERER);
+		const GLubyte* version = glGetString(GL_VERSION);
+
+		HBL2_CORE_INFO("OpenGL Vendor: {}, Renderer: {}, Version: {}", (char*)vendor, (char*)renderer, (char*)version);
+
 #ifdef DEBUG
 		GLDebug::EnableGLDebugging();
 #endif

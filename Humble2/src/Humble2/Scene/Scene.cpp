@@ -79,6 +79,7 @@ namespace HBL2
         {
             if (system->GetType() == SystemType::User)
             {
+#ifdef false
                 const std::string& dllPath = "assets\\dlls\\" + system->Name + "\\" + system->Name + ".dll";
                 ISystem* newSystem = NativeScriptUtilities::Get().LoadDLL(dllPath);
 
@@ -86,6 +87,7 @@ namespace HBL2
 
                 newSystem->Name = system->Name;
                 dst->RegisterSystem(newSystem, SystemType::User);
+#endif
             }
         }
 

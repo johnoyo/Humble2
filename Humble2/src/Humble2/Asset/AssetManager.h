@@ -33,6 +33,7 @@ namespace HBL2
 		}
 
 		void RegisterAssets();
+		Handle<Asset> RegisterAsset(const std::filesystem::path& assetPath);
 		void DeregisterAssets();
 
 		template<typename T>

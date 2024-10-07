@@ -2,6 +2,34 @@
 
 namespace HBL2
 {
+	// Define the static member
+	Input* Input::s_Instance = nullptr;
+
+	// Define the singleton method
+	Input& Input::Get() {
+		if (!s_Instance)
+		{
+			s_Instance = new Input;
+		}
+		return *s_Instance;
+	}
+
+	void Input::Initialize()
+	{
+		HBL2_CORE_ASSERT(s_Instance == nullptr, "Input::s_Instance is not null! Input::Initialize has been called twice.");
+		s_Instance = new Input;
+
+		Get().m_Window = Window::Instance->GetHandle();
+	}
+
+	void Input::ShutDown()
+	{
+		HBL2_CORE_ASSERT(s_Instance != nullptr, "Input::s_Instance is null!");
+
+		delete s_Instance;
+		s_Instance = nullptr;
+	}
+
 	int Input::IGetKeyDown(int keyCode, int mode)
 	{
 		int result = 0;
@@ -9,9 +37,13 @@ namespace HBL2
 		if (m_Window != nullptr)
 		{
 			if (keyCode >= 0 && keyCode <= 7)
+			{
 				result = (glfwGetMouseButton(m_Window, keyCode) == mode);
+			}
 			else
+			{
 				result = (glfwGetKey(m_Window, keyCode) == mode);
+			}
 		}
 		else
 		{
@@ -26,7 +58,9 @@ namespace HBL2
 		int result = 0;
 
 		if (CheckState(keyCode) == GLFW_PRESS && m_LastPressedState[keyCode] == GLFW_RELEASE)
+		{
 			result = Get().IGetKeyDown(keyCode, GLFW_PRESS);
+		}
 
 		m_LastPressedState[keyCode] = CheckState(keyCode);
 
@@ -38,7 +72,9 @@ namespace HBL2
 		int result = 0;
 
 		if (CheckState(keyCode) == GLFW_RELEASE && m_LastReleasedState[keyCode] == GLFW_PRESS)
+		{
 			result = Get().IGetKeyDown(keyCode, GLFW_RELEASE);
+		}
 
 		m_LastReleasedState[keyCode] = CheckState(keyCode);
 
@@ -69,9 +105,13 @@ namespace HBL2
 		if (m_Window != nullptr)
 		{
 			if (keyCode >= 0 && keyCode <= 11)
+			{
 				return glfwGetMouseButton(m_Window, keyCode);
+			}
 			else
+			{
 				return glfwGetKey(m_Window, keyCode);
+			}
 		}
 		else
 		{
@@ -79,11 +119,5 @@ namespace HBL2
 		}
 
 		return 0;
-	}
-
-	void Input::ScrollCallback(GLFWwindow* window, double xOffset, double yOffset)
-	{
-		s_ScrollOffset.x = (float)xOffset;
-		s_ScrollOffset.y = (float)yOffset;
 	}
 }

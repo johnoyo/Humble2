@@ -3,7 +3,6 @@
 #include "Humble2.h"
 
 #include "Asset\EditorAssetManager.h"
-#include "Renderer\RenderCommand.h"
 
 #ifndef EMSCRIPTEN
 	#include "Systems/EditorPanelSystem.h"
