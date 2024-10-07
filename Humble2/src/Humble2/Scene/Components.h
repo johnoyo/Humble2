@@ -132,35 +132,3 @@ namespace HBL2
 		};
 	}
 }
-
-namespace LD56
-{
-	namespace Component
-	{
-		struct CameraController
-		{
-			float SmoothFactor = 30.0f;
-			bool Enabled = true;
-		};
-
-		struct PlayerController
-		{
-			float MovementSpeed = 3.5f;
-			glm::vec3 Velocity = glm::vec3(0.0f);
-			float DampingFactor = 5.0f;
-			bool Alive = true;
-		};
-
-		struct HouseComplex
-		{
-			glm::vec3 ResetPosition = glm::vec3(0.0f);
-			entt::entity Colliders = entt::null;
-			bool Enabled = true;
-		};
-
-		struct Obstacle
-		{
-			bool Enabled = true;
-		};
-	}
-}
