@@ -6,8 +6,8 @@
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
 	HBL2::ApplicationSpec applicationSpec;
-	applicationSpec.Name = "Run Ant Run";
-	applicationSpec.VerticalSync = true;
+	applicationSpec.Name = "Humble App";
+	applicationSpec.VerticalSync = false;
 	applicationSpec.GraphicsAPI = HBL2::GraphicsAPI::OPENGL;
 	applicationSpec.Context = new HBL2Runtime::RuntimeContext;
 
