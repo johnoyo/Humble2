@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ImGui\ImGuiRenderer.h"
-#include "Core\Window.h"
 
 #include <imgui.h>
 #include <ImGuizmo.h>

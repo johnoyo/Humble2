@@ -11,6 +11,6 @@ namespace HBL2
 	class RenderPassRenderer
 	{
 	public:
-		void DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws);
+		virtual void DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws) = 0;
 	};
 }

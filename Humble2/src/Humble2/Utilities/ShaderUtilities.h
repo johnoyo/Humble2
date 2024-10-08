@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Base.h"
-#include "Renderer\Rewrite\Renderer.h"
-#include "Renderer\Rewrite\Enums.h"
+#include "Renderer\Renderer.h"
+#include "Renderer\Enums.h"
 
 #include "Asset\AssetManager.h"
 

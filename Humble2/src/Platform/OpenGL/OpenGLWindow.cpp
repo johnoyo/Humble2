@@ -5,7 +5,7 @@ namespace HBL2
 {
 	static void ErrorCallback(int error, const char* description)
 	{
-		HBL2_CORE_ERROR("Error {}: {}", error, description);
+		HBL2_CORE_ERROR("GLFW Error {}: {}", error, description);
 	}
 
 	void OpenGLWindow::Create()
@@ -24,6 +24,7 @@ namespace HBL2
 
 		glfwSetErrorCallback(ErrorCallback);
 
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);

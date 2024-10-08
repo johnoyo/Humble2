@@ -6,6 +6,7 @@ namespace HBL2
 	{
 		MAIN = 0,
 		OFFSCREEN = 1,
+		UI = 2,
 	};
 
 	enum class ShaderStage

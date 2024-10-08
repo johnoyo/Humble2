@@ -4,16 +4,16 @@
 #include "Scene\ISystem.h"
 #include "Scene\Components.h"
 
-#include "Renderer\Rewrite\Renderer.h"
+#include "Renderer\Renderer.h"
 #include "Resources\ResourceManager.h"
 
-#include "Renderer\Rewrite\UniformRingBuffer.h"
+#include "Renderer\UniformRingBuffer.h"
 
 #include "Utilities\ShaderUtilities.h"
 #include "Utilities\TextureUtilities.h"
 
-#include "Platform\OpenGL\Rewrite\OpenGLBindGroup.h"
-#include "Platform\OpenGL\Rewrite\OpenGLResourceManager.h"
+#include "Platform\OpenGL\OpenGLBindGroup.h"
+#include "Platform\OpenGL\OpenGLResourceManager.h"
 
 #include <glm\gtx\quaternion.hpp>
 

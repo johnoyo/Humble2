@@ -4,9 +4,11 @@
 #include "Core\Context.h"
 
 #include "Scene\Components.h"
-#include "Renderer\Rewrite\Renderer.h"
+#include "Renderer\Renderer.h"
 #include "Resources\ResourceManager.h"
 
+#include "OpenGLCommandBuffer.h"
+#include "OpenGLDevice.h"
 #include "OpenGLResourceManager.h"
 
 #include "OpenGLBuffer.h"
@@ -18,7 +20,7 @@
 	#define GLFW_INCLUDE_ES3
 	#include <GLFW/glfw3.h>
 #else
-	#include "Platform\OpenGL\Rewrite\OpenGLDebug.h"
+	#include "Platform\OpenGL\OpenGLDebug.h"
 	#define GLFW_INCLUDE_NONE
 	#include <GL/glew.h>
 #endif
@@ -32,6 +34,9 @@ namespace HBL2
 
 		virtual void Initialize() override;
 		virtual void BeginFrame() override;
+		virtual void EndFrame() override;
+		virtual void Clean() override;
+
 		virtual void SetPipeline(Handle<Shader> shader) override;
 		virtual void SetBuffers(Handle<Mesh> mesh, Handle<Material> material) override;
 		virtual void SetBindGroups(Handle<Material> material) override;
@@ -44,8 +49,6 @@ namespace HBL2
 		virtual void Draw(Handle<Mesh> mesh) override;
 		virtual void DrawIndexed(Handle<Mesh> mesh) override;
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
-		virtual void EndFrame() override;
-		virtual void Clean() override;
 
 		virtual void ResizeFrameBuffer(uint32_t width, uint32_t height) override;
 		virtual void* GetDepthAttachment() override;
@@ -54,6 +57,7 @@ namespace HBL2
 	private:
 		OpenGLResourceManager* m_ResourceManager = nullptr;
 		CommandBuffer* m_MainCommandBuffer = nullptr;
-		CommandBuffer* m_SecondaryCommandBuffer = nullptr;
+		CommandBuffer* m_OffscreenCommandBuffer = nullptr;
+		CommandBuffer* m_UserInterfaceCommandBuffer = nullptr;
 	};
 }

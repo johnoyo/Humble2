@@ -21,14 +21,19 @@ namespace HBL2
 		{
 		case GraphicsAPI::OPENGL:
 			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
-			Device::Instance = new OpenGLDevice();
-			Window::Instance = new OpenGLWindow();
-			ResourceManager::Instance = new OpenGLResourceManager();
-			Renderer::Instance = new OpenGLRenderer();
-			ImGuiRenderer::Instance = new OpenGLImGuiRenderer();
+			Device::Instance = new OpenGLDevice;
+			Window::Instance = new OpenGLWindow;
+			ResourceManager::Instance = new OpenGLResourceManager;
+			Renderer::Instance = new OpenGLRenderer;
+			ImGuiRenderer::Instance = new OpenGLImGuiRenderer;
 			break;
 		case GraphicsAPI::VULKAN:
 			HBL2_CORE_INFO("Vulkan is selected as the renderer API.");
+			Device::Instance = new VulkanDevice;
+			Window::Instance = new VulkanWindow;
+			ResourceManager::Instance = new VulkanResourceManager;
+			Renderer::Instance = new VulkanRenderer;
+			ImGuiRenderer::Instance = new VulkanImGuiRenderer;
 			break;
 		case GraphicsAPI::NONE:
 			HBL2_CORE_ERROR("No RendererAPI specified. Please choose between OpenGL, or Vulkan depending on your target platform.");

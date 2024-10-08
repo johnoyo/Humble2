@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Renderer\Rewrite\Enums.h"
+#include "Renderer\Enums.h"
 #include "Handle.h"
 
 #include <glm\glm.hpp>

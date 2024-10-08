@@ -1,6 +1,11 @@
 #pragma once
 
-#include "Renderer\Rewrite\Device.h"
+#include "Base.h"
+#include "Renderer\Device.h"
+
+#include "GL\glew.h"
+
+#include <cstdint>
 
 namespace HBL2
 {

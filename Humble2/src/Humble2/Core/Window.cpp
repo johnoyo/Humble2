@@ -104,6 +104,7 @@ namespace HBL2
 
 	void Window::Terminate()
 	{
+		glfwDestroyWindow(m_Window);
 		glfwTerminate();
 	}
 

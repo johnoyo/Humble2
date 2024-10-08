@@ -3,14 +3,6 @@
 #include "Events.h"
 #include "EventDispatcher.h"
 
-#ifdef EMSCRIPTEN
-	#define GLFW_INCLUDE_ES3
-	#include <emscripten\emscripten.h>
-#else
-	#define GLFW_INCLUDE_NONE
-	#include <GL/glew.h>
-#endif
-
 #include <GLFW/glfw3.h>
 
 #include <string>
@@ -39,13 +31,14 @@ namespace HBL2
 
 		virtual void Create() = 0;
 		virtual void Present() = 0;
+		void Terminate();
+		void Close();
 
 		void DispatchMainLoop(const std::function<void()>& mainLoop);
 		void SetTitle(const std::string& title);
 		double GetTime();
-		void Close();
 		GLFWwindow* GetHandle();
-		void Terminate();
+		glm::u32vec2 GetExtents() { return { m_Spec.Width, m_Spec.Height }; }
 
 	protected:
 		void AttachEventCallbacks();
