@@ -10,6 +10,8 @@ namespace HBL2
 		{
 			Renderer::Instance->WriteBuffer(globalDraw.BindGroup, 0);
 			Renderer::Instance->WriteBuffer(globalDraw.BindGroup, 1);
+
+
 		}
 
 		for (auto&& [shaderID, drawList] : draws.m_Draws)

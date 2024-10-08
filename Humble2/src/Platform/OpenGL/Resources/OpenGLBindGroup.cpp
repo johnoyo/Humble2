@@ -1,6 +1,6 @@
 #include "OpenGLBindGroup.h"
 
-#include "OpenGLResourceManager.h"
+#include "../OpenGLResourceManager.h"
 
 namespace HBL2
 {

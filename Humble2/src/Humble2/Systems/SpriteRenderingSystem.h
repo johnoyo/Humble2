@@ -12,9 +12,6 @@
 #include "Utilities\ShaderUtilities.h"
 #include "Utilities\TextureUtilities.h"
 
-#include "Platform\OpenGL\OpenGLBindGroup.h"
-#include "Platform\OpenGL\OpenGLResourceManager.h"
-
 #include <glm\gtx\quaternion.hpp>
 
 namespace HBL2

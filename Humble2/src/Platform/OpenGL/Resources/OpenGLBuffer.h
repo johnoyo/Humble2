@@ -86,7 +86,7 @@ namespace HBL2
 			GLuint newRendererId;
 			glGenBuffers(1, &newRendererId);
 			glBindBuffer(Usage, newRendererId);
-			glBufferData(Usage, ByteSize * (uint32_t)2, nullptr, GL_DYNAMIC_DRAW);
+			glBufferData(Usage, (GLsizeiptr)(ByteSize * 2), nullptr, GL_DYNAMIC_DRAW);
 
 			// Copy existing data to the new buffer
 			glBindBuffer(GL_COPY_READ_BUFFER, RendererId);

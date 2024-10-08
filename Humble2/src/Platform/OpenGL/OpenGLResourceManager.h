@@ -6,14 +6,14 @@
 #include "Resources\Types.h"
 #include "Resources\TypeDescriptors.h"
 
-#include "OpenGLBuffer.h"
-#include "OpenGLShader.h"
-#include "OpenGLTexture.h"
-#include "OpenGLFrameBuffer.h"
-#include "OpenGLBindGroup.h"
-#include "OpenGLBindGroupLayout.h"
-#include "OpenGLRenderPass.h"
-#include "OpenGLRenderPassLayout.h"
+#include "Resources\OpenGLBuffer.h"
+#include "Resources\OpenGLShader.h"
+#include "Resources\OpenGLTexture.h"
+#include "Resources\OpenGLFrameBuffer.h"
+#include "Resources\OpenGLBindGroup.h"
+#include "Resources\OpenGLBindGroupLayout.h"
+#include "Resources\OpenGLRenderPass.h"
+#include "Resources\OpenGLRenderPassLayout.h"
 
 namespace HBL2
 {

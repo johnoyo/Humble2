@@ -11,10 +11,10 @@
 #include "OpenGLDevice.h"
 #include "OpenGLResourceManager.h"
 
-#include "OpenGLBuffer.h"
-#include "OpenGLShader.h"
-#include "OpenGLTexture.h"
-#include "OpenGLFrameBuffer.h"
+#include "Resources\OpenGLBuffer.h"
+#include "Resources\OpenGLShader.h"
+#include "Resources\OpenGLTexture.h"
+#include "Resources\OpenGLFrameBuffer.h"
 
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3

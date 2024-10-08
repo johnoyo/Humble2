@@ -4,14 +4,14 @@
 #include "Renderer\RenderPassRenderer.h"
 
 #include "Resources\ResourceManager.h"
-#include "OpenGLResourceManager.h"
+#include "VulkanResourceManager.h"
 
-#include "Resources\OpenGLBuffer.h"
-#include "Resources\OpenGLBindGroup.h"
+#include "Resources\VulkanBuffer.h"
+#include "Resources\VulkanBindGroup.h"
 
 namespace HBL2
 {
-	class OpenGLRenderPasRenderer final : public RenderPassRenderer
+	class VulkanRenderPasRenderer final : public RenderPassRenderer
 	{
 	public:
 		virtual void DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws) override;
