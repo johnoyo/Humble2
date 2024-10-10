@@ -24,6 +24,7 @@ namespace HBL2
 		virtual void Initialize() = 0;
 		virtual void BeginFrame() = 0;
 		virtual void EndFrame() = 0;
+		virtual void Present() = 0;
 		virtual void Clean() = 0;
 
 		virtual void SetPipeline(Handle<Shader> shader) = 0;

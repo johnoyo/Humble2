@@ -262,6 +262,11 @@ namespace HBL2
 		}
 	}
 
+	void OpenGLRenderer::Present()
+	{
+		glfwSwapBuffers(Window::Instance->GetHandle());
+	}
+
 	void OpenGLRenderer::Clean()
 	{
 	}

@@ -3,13 +3,12 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
-#define VK_VALIDATE(result, vkFunction) HBL2_CORE_ASSERT(result == VK_SUCCESS, std::format("Vulkan function: {}, failed!", vkFunction));
-
 namespace HBL2
 {
 	void VulkanImGuiRenderer::Initialize()
 	{
-		VulkanDevice* device = (VulkanDevice*)Device::Instance;
+		m_Device = (VulkanDevice*)Device::Instance;
+		m_Renderer = (VulkanRenderer*)Renderer::Instance;
 
 		// Create descriptor pool for IMGUI the size of the pool is very oversize, but it's copied from imgui demo itself.
 		VkDescriptorPoolSize poolSizes[] =
@@ -35,7 +34,7 @@ namespace HBL2
 		pool_info.pPoolSizes = poolSizes;
 
 		VkDescriptorPool m_ImGuiPool;
-		VK_VALIDATE(vkCreateDescriptorPool(device->Get(), &pool_info, nullptr, &m_ImGuiPool), "vkCreateDescriptorPool");
+		VK_VALIDATE(vkCreateDescriptorPool(m_Device->Get(), &pool_info, nullptr, &m_ImGuiPool), "vkCreateDescriptorPool");
 
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -64,9 +63,9 @@ namespace HBL2
 
 		ImGui_ImplVulkan_InitInfo init_info =
 		{
-			.Instance = device->GetInstance(),
-			.PhysicalDevice = device->GetPhysicalDevice(),
-			.Device = device->Get(),
+			.Instance = m_Device->GetInstance(),
+			.PhysicalDevice = m_Device->GetPhysicalDevice(),
+			.Device = m_Device->Get(),
 			.DescriptorPool = m_ImGuiPool,
 			.Subpass = 0,
 			.MinImageCount = 3,
@@ -106,7 +105,7 @@ namespace HBL2
 			.pClearValues = &clearValue,
 		};
 
-		VkCommandBuffer cmd; // = Renderer::Instance->GetCurrentFrame().ImGuiCommandBuffer; TODO: implement this.
+		VkCommandBuffer cmd = m_Renderer->GetCurrentFrame().ImGuiCommandBuffer;
 
 		VkCommandBufferBeginInfo cmdBeginInfo =
 		{
@@ -138,8 +137,7 @@ namespace HBL2
 
 	void VulkanImGuiRenderer::Clean()
 	{
-		VulkanDevice* device = (VulkanDevice*)Device::Instance;
-		vkDestroyDescriptorPool(device->Get(), m_ImGuiPool, nullptr);
+		vkDestroyDescriptorPool(m_Device->Get(), m_ImGuiPool, nullptr);
 
 		ImGui_ImplVulkan_Shutdown();
 		ImGui_ImplGlfw_Shutdown();

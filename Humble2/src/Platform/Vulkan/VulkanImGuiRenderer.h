@@ -4,6 +4,9 @@
 #include "Core\Window.h"
 
 #include "VulkanDevice.h"
+#include "VulkanRenderer.h"
+
+#include "VulkanCommon.h"
 
 #include <imgui.h>
 #include <ImGuizmo.h>
@@ -25,5 +28,7 @@ namespace HBL2
 
 	private:
 		VkDescriptorPool m_ImGuiPool;
+		VulkanDevice* m_Device = nullptr;
+		VulkanRenderer* m_Renderer = nullptr;
 	};
 }

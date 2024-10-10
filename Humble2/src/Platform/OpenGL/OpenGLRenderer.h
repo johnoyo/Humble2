@@ -16,6 +16,8 @@
 #include "Resources\OpenGLTexture.h"
 #include "Resources\OpenGLFrameBuffer.h"
 
+#include "OpenGLWindow.h"
+
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3
 	#include <GLFW/glfw3.h>
@@ -35,7 +37,14 @@ namespace HBL2
 		virtual void Initialize() override;
 		virtual void BeginFrame() override;
 		virtual void EndFrame() override;
+		virtual void Present() override;
 		virtual void Clean() override;
+
+		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
+
+		virtual void ResizeFrameBuffer(uint32_t width, uint32_t height) override;
+		virtual void* GetDepthAttachment() override;
+		virtual void* GetColorAttachment() override;
 
 		virtual void SetPipeline(Handle<Shader> shader) override;
 		virtual void SetBuffers(Handle<Mesh> mesh, Handle<Material> material) override;
@@ -48,11 +57,6 @@ namespace HBL2
 		virtual void WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset) override;
 		virtual void Draw(Handle<Mesh> mesh) override;
 		virtual void DrawIndexed(Handle<Mesh> mesh) override;
-		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
-
-		virtual void ResizeFrameBuffer(uint32_t width, uint32_t height) override;
-		virtual void* GetDepthAttachment() override;
-		virtual void* GetColorAttachment() override;
 
 	private:
 		OpenGLResourceManager* m_ResourceManager = nullptr;

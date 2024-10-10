@@ -1,5 +1,4 @@
 #include "OpenGLWindow.h"
-#include "Core/Input.h"
 
 namespace HBL2
 {
@@ -73,10 +72,5 @@ namespace HBL2
 		}
 #endif
 		AttachEventCallbacks();
-	}
-
-	void OpenGLWindow::Present()
-	{
-		glfwSwapBuffers(m_Window);
 	}
 }

@@ -88,6 +88,13 @@ namespace HBL2
 		STATIC = 1,
 		DYNAMIC = 2,
 	};
+	
+	enum class TextureType
+	{
+		D1 = 0,
+		D2 = 1,
+		D3 = 2,
+	};
 
 	enum class TextureUsage
 	{
@@ -96,12 +103,8 @@ namespace HBL2
 		TEXTURE_BINDING = 4,
 		STORAGE_BINDING = 8,
 		RENDER_ATTACHMENT = 16,
-	};
-
-	enum class TextureLayout
-	{
-		SAMPLED = 0,
-		DEPTH_STENCIL = 1,
+		SAMPLED = 32,
+		DEPTH_STENCIL = 64,
 	};
 
 	enum class BlendOperation
@@ -121,11 +124,13 @@ namespace HBL2
 	{
 		CLEAR = 0,
 		STORE = 1,
+		DONT_CARE = 2,
 	};
 
 	enum class LoadOperation
 	{
 		CLEAR = 0,
 		STORE = 1,
+		DONT_CARE = 2,
 	};
 }

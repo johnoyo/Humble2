@@ -3,6 +3,9 @@
 #include "Base.h"
 #include "Resources\TypeDescriptors.h"
 
+#include "vulkan\vulkan.h"
+#include "vma\vk_mem_alloc.h"
+
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -19,5 +22,7 @@ namespace HBL2
 		}
 
 		const char* DebugName = "";
+		VkBuffer Buffer;
+		VmaAllocation Allocation;
 	};
 }

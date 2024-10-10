@@ -47,8 +47,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	return VK_FALSE;
 }
 
-#define VK_VALIDATE(result, vkFunction) HBL2_CORE_ASSERT(result == VK_SUCCESS, std::format("Vulkan function: {}, failed!", vkFunction));
-
 namespace HBL2
 {
 	void VulkanDevice::Initialize()
@@ -212,57 +210,30 @@ namespace HBL2
 		}
 
 		vkGetPhysicalDeviceProperties(m_PhysicalDevice, &m_VkGPUProperties);
-
-		HBL2_CORE_INFO("The GPU has a minimum buffer alignment of {}", m_VkGPUProperties.limits.minUniformBufferOffsetAlignment);
 	}
 
 	void VulkanDevice::CreateLogicalDevice()
 	{
+		// Find swapchain capabilities
+		m_SwapChainSupportDetails = QuerySwapChainSupport(m_PhysicalDevice);
+
 		// Find queue families
-		QueueFamilyIndices indices;
-
-		uint32_t queueFamilyCount = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, nullptr);
-
-		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, queueFamilies.data());
-
-		int i = 0;
-		for (const auto& queueFamily : queueFamilies)
-		{
-			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-			{
-				indices.graphicsFamily = i;
-			}
-
-			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, i, m_Surface, &presentSupport);
-
-			if (presentSupport)
-			{
-				indices.presentFamily = i;
-			}
-
-			if (indices.isComplete())
-			{
-				break;
-			}
-
-			i++;
-		}
+		m_QueueFamilyIndices = FindQueueFamilies(m_PhysicalDevice);
 
 		// Create queue families info
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-		std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+		std::set<uint32_t> uniqueQueueFamilies = { m_QueueFamilyIndices.graphicsFamily.value(), m_QueueFamilyIndices.presentFamily.value() };
 
 		float queuePriority = 1.0f;
 		for (uint32_t queueFamily : uniqueQueueFamilies)
 		{
-			VkDeviceQueueCreateInfo queueCreateInfo{};
-			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-			queueCreateInfo.queueFamilyIndex = queueFamily;
-			queueCreateInfo.queueCount = 1;
-			queueCreateInfo.pQueuePriorities = &queuePriority;
+			VkDeviceQueueCreateInfo queueCreateInfo =
+			{
+				.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+				.queueFamilyIndex = queueFamily,
+				.queueCount = 1,
+				.pQueuePriorities = &queuePriority,
+			};
 			queueCreateInfos.push_back(queueCreateInfo);
 		}
 
@@ -273,7 +244,6 @@ namespace HBL2
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 		createInfo.pEnabledFeatures = &deviceFeatures;
-
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(m_DeviceExtensions.size());
 		createInfo.ppEnabledExtensionNames = m_DeviceExtensions.data();
 
@@ -288,9 +258,6 @@ namespace HBL2
 		}
 
 		VK_VALIDATE(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device), "vkCreateDevice");
-
-		vkGetDeviceQueue(m_Device, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
-		vkGetDeviceQueue(m_Device, indices.presentFamily.value(), 0, &m_PresentQueue);
 	}
 
 	// Helper
@@ -376,9 +343,8 @@ namespace HBL2
 		return true;
 	}
 	
-	bool VulkanDevice::IsDeviceSuitable(VkPhysicalDevice device)
+	QueueFamilyIndices VulkanDevice::FindQueueFamilies(VkPhysicalDevice device)
 	{
-		// Find queue families
 		QueueFamilyIndices indices;
 
 		uint32_t queueFamilyCount = 0;
@@ -411,6 +377,44 @@ namespace HBL2
 			i++;
 		}
 
+		return indices;
+	}
+
+	SwapChainSupportDetails VulkanDevice::QuerySwapChainSupport(VkPhysicalDevice device)
+	{
+		SwapChainSupportDetails details;
+
+		// Formats set up.
+		uint32_t formatCount;
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, nullptr);
+
+		if (formatCount != 0)
+		{
+			details.Formats.resize(formatCount);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, details.Formats.data());
+		}
+
+		// Present mode set up.
+		uint32_t presentModeCount;
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModeCount, nullptr);
+
+		if (presentModeCount != 0)
+		{
+			details.PresentModes.resize(presentModeCount);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModeCount, details.PresentModes.data());
+		}
+
+		// Capabilities set up.
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_Surface, &details.Capabilities);
+
+		return details;
+	}
+
+	bool VulkanDevice::IsDeviceSuitable(VkPhysicalDevice device)
+	{
+		// Find queue families
+		QueueFamilyIndices indices = FindQueueFamilies(device);
+
 		// Check device extension support
 		uint32_t extensionCount;
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -429,30 +433,7 @@ namespace HBL2
 		bool swapChainAdequate = false;
 		if (extensionsSupported)
 		{
-			SwapChainSupportDetails swapChainSupport;
-
-			// Formats set up.
-			uint32_t formatCount;
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, nullptr);
-
-			if (formatCount != 0)
-			{
-				swapChainSupport.Formats.resize(formatCount);
-				vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, swapChainSupport.Formats.data());
-			}
-
-			// Present mode set up.
-			uint32_t presentModeCount;
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModeCount, nullptr);
-
-			if (presentModeCount != 0)
-			{
-				swapChainSupport.PresentModes.resize(presentModeCount);
-				vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModeCount, swapChainSupport.PresentModes.data());
-			}
-
-			// Capabilities set up.
-			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_Surface, &swapChainSupport.Capabilities);
+			SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
 			swapChainAdequate = !swapChainSupport.Formats.empty() && !swapChainSupport.PresentModes.empty();
 		}
 

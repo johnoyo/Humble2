@@ -4,11 +4,31 @@
 #include "Renderer\Device.h"
 #include "Platform\Vulkan\VulkanWindow.h"
 
+#include "VulkanCommon.h"
+
 #include <set>
 #include <vector>
 
 namespace HBL2
 {
+	struct QueueFamilyIndices
+	{
+		std::optional<uint32_t> graphicsFamily;
+		std::optional<uint32_t> presentFamily;
+
+		bool isComplete()
+		{
+			return graphicsFamily.has_value() && presentFamily.has_value();
+		}
+	};
+
+	struct SwapChainSupportDetails
+	{
+		VkSurfaceCapabilitiesKHR Capabilities{};
+		std::vector<VkSurfaceFormatKHR> Formats;
+		std::vector<VkPresentModeKHR> PresentModes;
+	};
+
 	class VulkanDevice : public Device
 	{
 	public:
@@ -17,10 +37,12 @@ namespace HBL2
 		virtual void Initialize() override;
 		virtual void Destroy() override;
 
+		const VkDevice Get() const { return m_Device; }
 		const VkInstance GetInstance() const { return m_Instance; }
 		const VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
-		const VkDevice Get() const { return m_Device; }
-		const VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
+		const VkSurfaceKHR GetSurface() const { return m_Surface; }
+		const SwapChainSupportDetails& GetSwapChainSupportDetails() const { return m_SwapChainSupportDetails; }
+		const QueueFamilyIndices& GetQueueFamilyIndices() const { return m_QueueFamilyIndices; }
 
 	private:
 		void CreateInstance();
@@ -30,27 +52,11 @@ namespace HBL2
 		void CreateLogicalDevice();
 
 	private:
-		struct QueueFamilyIndices
-		{
-			std::optional<uint32_t> graphicsFamily;
-			std::optional<uint32_t> presentFamily;
-
-			bool isComplete()
-			{
-				return graphicsFamily.has_value() && presentFamily.has_value();
-			}
-		};
-
-		struct SwapChainSupportDetails
-		{
-			VkSurfaceCapabilitiesKHR Capabilities{};
-			std::vector<VkSurfaceFormatKHR> Formats;
-			std::vector<VkPresentModeKHR> PresentModes;
-		};
-
 		bool CheckValidationLayerSupport();
 		std::vector<const char*> GetRequiredExtensions();
 		bool CheckInstanceExtensionSupport(const std::vector<const char*>& glfwExtensionNames);
+		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
 		bool IsDeviceSuitable(VkPhysicalDevice device);
 
 	private:
@@ -60,8 +66,9 @@ namespace HBL2
 		VkPhysicalDeviceProperties m_VkGPUProperties;
 		VkDevice m_Device;
 		VkSurfaceKHR m_Surface;
-		VkQueue m_GraphicsQueue;
-		VkQueue m_PresentQueue;
+
+		QueueFamilyIndices m_QueueFamilyIndices{};
+		SwapChainSupportDetails m_SwapChainSupportDetails{};
 
 		const std::vector<const char*> m_DeviceExtensions =
 		{

@@ -69,9 +69,7 @@ namespace HBL2
 
 		if (Window::Instance->GetTime() - m_Timer > 1.0)
 		{
-			std::stringstream ss;
-			ss << m_Specification.Name << " [" << m_Frames << " FPS]";
-			Window::Instance->SetTitle(ss.str());
+			Window::Instance->SetTitle(std::format("{} [{}] FPS", m_Specification.Name, m_Frames));
 
 			HBL2_CORE_TRACE("FPS: {0}, DeltaTime: {1}", m_Frames, m_DeltaTime);
 
@@ -79,8 +77,6 @@ namespace HBL2
 			m_Frames = 0;
 			m_FixedUpdates = 0;
 		}
-
-		Window::Instance->Present();
 
 		if (SceneManager::Get().SceneChangeRequested)
 		{
@@ -98,13 +94,13 @@ namespace HBL2
 		Renderer::Instance->Initialize();
 		ImGuiRenderer::Instance->Initialize();
 
-		m_Specification.Context->OnCreate();
+		//m_Specification.Context->OnCreate();
 
 		Window::Instance->DispatchMainLoop([&]()
 		{
 			BeginFrame();
 
-			Renderer::Instance->BeginFrame();
+			/*Renderer::Instance->BeginFrame();
 			m_Specification.Context->OnUpdate(m_DeltaTime);
 			Renderer::Instance->EndFrame();
 
@@ -112,10 +108,12 @@ namespace HBL2
 			m_Specification.Context->OnGuiRender(m_DeltaTime);
 			ImGuiRenderer::Instance->EndFrame();
 
+			Renderer::Instance->Present();*/
+
 			EndFrame();
 		});
 
-		m_Specification.Context->OnDestroy();
+		//m_Specification.Context->OnDestroy();
 
 		Shutdown();
 	}

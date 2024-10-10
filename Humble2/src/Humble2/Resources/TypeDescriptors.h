@@ -3,6 +3,8 @@
 #include "Renderer\Enums.h"
 #include "Handle.h"
 
+#include "Utilities\Span.h"
+
 #include <glm\glm.hpp>
 
 #include <vector>
@@ -11,6 +13,7 @@
 namespace HBL2
 {
 	struct Texture;
+	struct TextureView;
 	struct Buffer;
 	struct Shader;
 	struct Framebuffer;
@@ -22,11 +25,12 @@ namespace HBL2
 	struct TextureDescriptor
 	{
 		const char* debugName;
-		glm::vec3 dimensions;
+		glm::u32vec3 dimensions;
 		uint32_t mips = 1;
-		uint32_t format = 347567;
-		uint32_t internalFormat = 347567;
+		Format format = Format::RGBA16_FLOAT;
+		Format internalFormat = Format::RGBA16_FLOAT;
 		TextureUsage usage = TextureUsage::TEXTURE_BINDING;
+		TextureType type = TextureType::D2;
 
 		struct Sampler
 		{
@@ -55,7 +59,7 @@ namespace HBL2
 		uint32_t height = 0;
 		Handle<RenderPassLayout> renderPassLayout;
 		Handle<Texture> depthTarget;
-		std::initializer_list<Handle<Texture>> colorTargets;
+		Span<const Handle<Texture>> colorTargets;
 	};
 
 	struct BindGroupLayoutDescriptor
@@ -144,7 +148,7 @@ namespace HBL2
 			uint32_t colorTargets = 0;
 		};
 
-		std::initializer_list<SubPass> subPasses;
+		Span<const SubPass> subPasses;
 	};
 
 	struct RenderPassDescriptor
@@ -153,7 +157,7 @@ namespace HBL2
 		{
 			LoadOperation loadOp = LoadOperation::CLEAR;
 			StoreOperation storeOp = StoreOperation::STORE;
-			TextureLayout nextUsage = TextureLayout::SAMPLED;
+			TextureUsage nextUsage = TextureUsage::SAMPLED;
 			glm::vec4 clearColor = glm::vec4(0.0f);
 		};
 
@@ -163,15 +167,15 @@ namespace HBL2
 			StoreOperation storeOp = StoreOperation::STORE;
 			LoadOperation stencilLoadOp = LoadOperation::CLEAR;
 			StoreOperation stencilStoreOp = StoreOperation::STORE;
-			TextureLayout nextUsage = TextureLayout::SAMPLED;
+			TextureUsage nextUsage = TextureUsage::SAMPLED;
 			float clearZ = 0.0f;
 			uint32_t clearStencil = 0;
 		};
 
 		const char* debugName;
-		Handle<RenderPassLayoutDescriptor> layout;
+		Handle<RenderPassLayout> layout;
 		DepthTarget depthTarget;
-		std::initializer_list<ColorTarget> colorTargets;
+		Span<const ColorTarget> colorTargets;
 	};
 
 	struct MeshDescriptor

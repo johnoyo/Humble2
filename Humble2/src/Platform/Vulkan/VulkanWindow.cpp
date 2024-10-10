@@ -52,9 +52,4 @@ namespace HBL2
 
 		AttachEventCallbacks();
 	}
-
-	void VulkanWindow::Present()
-	{
-		// TODO:
-	}
 }

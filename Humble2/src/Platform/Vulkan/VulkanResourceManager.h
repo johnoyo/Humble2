@@ -16,6 +16,7 @@
 #include "OpenGLRenderPass.h"
 #include "OpenGLRenderPassLayout.h"
 #endif
+#include "Resources\VulkanTexture.h"
 
 namespace HBL2
 {
@@ -31,16 +32,16 @@ namespace HBL2
 		// Textures
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) override
 		{
-			return {};// m_TexturePool.Insert(OpenGLTexture(std::forward<const TextureDescriptor>(desc)));
+			return m_TexturePool.Insert(VulkanTexture(std::forward<const TextureDescriptor>(desc)));
 		}
 		virtual void DeleteTexture(Handle<Texture> handle) override
 		{
-			// m_TexturePool.Remove(handle);
+			m_TexturePool.Remove(handle);
 		}
-		/*OpenGLTexture* GetTexture(Handle<Texture> handle) const
+		VulkanTexture* GetTexture(Handle<Texture> handle) const
 		{
 			return m_TexturePool.Get(handle);
-		}*/
+		}
 
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) override
@@ -148,16 +149,16 @@ namespace HBL2
 		{
 			return m_RenderPassLayoutPool.Get(handle);
 		}*/
-#ifdef false
 	private:
-		Pool<OpenGLTexture, Texture> m_TexturePool;
-		Pool<OpenGLBuffer, Buffer> m_BufferPool;
-		Pool<OpenGLShader, Shader> m_ShaderPool;
-		Pool<OpenGLFrameBuffer, FrameBuffer> m_FrameBufferPool;
-		Pool<OpenGLBindGroup, BindGroup> m_BindGroupPool;
-		Pool<OpenGLBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
-		Pool<OpenGLRenderPass, RenderPass> m_RenderPassPool;
-		Pool<OpenGLRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
+		Pool<VulkanTexture, Texture> m_TexturePool;
+#ifdef false
+		Pool<VulkanBuffer, Buffer> m_BufferPool;
+		Pool<VulkanShader, Shader> m_ShaderPool;
+		Pool<VulkanFrameBuffer, FrameBuffer> m_FrameBufferPool;
+		Pool<VulkanBindGroup, BindGroup> m_BindGroupPool;
+		Pool<VulkanBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
+		Pool<VulkanRenderPass, RenderPass> m_RenderPassPool;
+		Pool<VulkanRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
 #endif
 	};
 }

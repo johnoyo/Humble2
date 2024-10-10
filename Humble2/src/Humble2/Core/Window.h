@@ -30,7 +30,6 @@ namespace HBL2
 		void Initialize(const WindowSpecification&& spec);
 
 		virtual void Create() = 0;
-		virtual void Present() = 0;
 		void Terminate();
 		void Close();
 
