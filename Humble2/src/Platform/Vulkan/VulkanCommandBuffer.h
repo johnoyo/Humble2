@@ -14,5 +14,8 @@ namespace HBL2
 
 	private:
 		VulkanRenderPasRenderer m_CurrentRenderPassRenderer;
+		VkCommandBuffer m_MainCommandBuffer;
+
+		friend class VulkanRenderer;
 	};
 }

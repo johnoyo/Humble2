@@ -29,16 +29,16 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	switch (messageSeverity)
 	{
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-		HBL2_CORE_TRACE("{} Validation layer: {}", messageTypeAsString, pCallbackData->pMessage);
+		HBL2_CORE_TRACE("{} Validation layer: {}\n", messageTypeAsString, pCallbackData->pMessage);
 		break;
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-		HBL2_CORE_INFO("{} Validation layer: {}", messageTypeAsString, pCallbackData->pMessage);
+		HBL2_CORE_INFO("{} Validation layer: {}\n", messageTypeAsString, pCallbackData->pMessage);
 		break;
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-		HBL2_CORE_WARN("{} Validation layer: {}", messageTypeAsString, pCallbackData->pMessage);
+		HBL2_CORE_WARN("{} Validation layer: {}\n", messageTypeAsString, pCallbackData->pMessage);
 		break;
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-		HBL2_CORE_ERROR("{} Validation layer: {}", messageTypeAsString, pCallbackData->pMessage);
+		HBL2_CORE_ERROR("{} Validation layer: {}\n", messageTypeAsString, pCallbackData->pMessage);
 		break;
 	default:
 		break;

@@ -27,7 +27,12 @@ namespace HBL2
 		virtual void Clean() override;
 
 	private:
+		void CreateRenderPass();
+
+	private:
+		VkRenderPass m_ImGuiRenderPass;
 		VkDescriptorPool m_ImGuiPool;
+
 		VulkanDevice* m_Device = nullptr;
 		VulkanRenderer* m_Renderer = nullptr;
 	};

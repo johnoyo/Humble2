@@ -6,6 +6,8 @@
 #include "Scene\Components.h"
 #include "Renderer\Renderer.h"
 
+#include "VulkanCommandBuffer.h"
+
 #include "VulkanCommon.h"
 
 namespace HBL2
@@ -17,9 +19,11 @@ namespace HBL2
 
 	struct FrameData
 	{
-		VkSemaphore PresentSemaphore;
-		VkSemaphore	RenderSemaphore;
-		VkFence RenderFence;
+		VkSemaphore ImageAvailableSemaphore; // Signal from swapchain.
+		VkSemaphore MainRenderFinishedSemaphore; // Signal that main rendering is done.
+		VkSemaphore ImGuiRenderFinishedSemaphore; // Signal that UI render is done.
+
+		VkFence InFlightFence;
 
 		VkCommandPool CommandPool;
 		VkCommandBuffer MainCommandBuffer;
@@ -85,7 +89,12 @@ namespace HBL2
 		virtual void DrawIndexed(Handle<Mesh> mesh) override {}
 
 		const VmaAllocator& GetAllocator() const { return m_Allocator; }
-		const FrameData& GetCurrentFrame() { return m_Frames[m_FrameNumber % FRAME_OVERLAP]; }
+		const FrameData& GetCurrentFrame() const { return m_Frames[m_FrameNumber % FRAME_OVERLAP]; }
+		const VkFormat& GetSwapchainImageFormat() const { return m_SwapChainImageFormat; }
+		const VkFramebuffer& GetMainFrameBuffer() const { return m_FrameBuffers[m_SwapchainImageIndex]; }
+		const VkRenderPass& GetMainRenderPass() const { return m_RenderPass; }
+		const VkQueue& GetGraphicsQueue() const { return m_GraphicsQueue; }
+		const VkQueue& GetPresentQueue() const { return m_PresentQueue; }
 
 		void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
 
@@ -94,6 +103,9 @@ namespace HBL2
 		void CreateSwapchain();
 		void CreateImageViews();
 		void CreateCommands();
+		void CreateRenderPass();
+		void CreateFrameBuffers();
+		void CreateSyncStructures();
 
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
@@ -106,6 +118,7 @@ namespace HBL2
 		DeletionQueue m_MainDeletionQueue;
 
 		FrameData m_Frames[FRAME_OVERLAP];
+		VulkanCommandBuffer m_CommandBuffers[FRAME_OVERLAP];
 		UploadContext m_UploadContext;
 
 		uint32_t m_FrameNumber = 0;
@@ -122,5 +135,8 @@ namespace HBL2
 
 		Handle<Texture> m_DepthImage;
 		VkFormat m_DepthFormat;
+
+		VkRenderPass m_RenderPass;
+		std::vector<VkFramebuffer> m_FrameBuffers;
 	};
 }

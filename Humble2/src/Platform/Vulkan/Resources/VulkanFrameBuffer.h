@@ -19,5 +19,6 @@ namespace HBL2
 		}
 
 		const char* DebugName = "";
+		VkFramebuffer FrameBuffer;
 	};
 }

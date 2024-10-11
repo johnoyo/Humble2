@@ -1,13 +1,8 @@
 #pragma once
 
-#include "Renderer\Renderer.h"
 #include "Renderer\RenderPassRenderer.h"
 
-#include "Resources\ResourceManager.h"
-#include "VulkanResourceManager.h"
-
-#include "Resources\VulkanBuffer.h"
-#include "Resources\VulkanBindGroup.h"
+#include "VulkanCommon.h"
 
 namespace HBL2
 {
@@ -15,5 +10,10 @@ namespace HBL2
 	{
 	public:
 		virtual void DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws) override;
+
+	private:
+		VkCommandBuffer m_CommandBuffer;
+
+		friend class VulkanCommandBuffer;
 	};
 }

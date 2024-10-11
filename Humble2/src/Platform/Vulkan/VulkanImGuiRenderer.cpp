@@ -58,21 +58,29 @@ namespace HBL2
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
 
+		CreateRenderPass();
+
 		// Setup Platform/Renderer backends
 		ImGui_ImplGlfw_InitForVulkan(Window::Instance->GetHandle(), true);
 
-		ImGui_ImplVulkan_InitInfo init_info =
+		ImGui_ImplVulkan_InitInfo initInfo =
 		{
 			.Instance = m_Device->GetInstance(),
 			.PhysicalDevice = m_Device->GetPhysicalDevice(),
 			.Device = m_Device->Get(),
+			.Queue = m_Renderer->GetGraphicsQueue(),
 			.DescriptorPool = m_ImGuiPool,
 			.Subpass = 0,
 			.MinImageCount = 3,
 			.ImageCount = 3,
 			.MSAASamples = VK_SAMPLE_COUNT_1_BIT,
 		};
-		// ImGui_ImplVulkan_Init(&init_info, wd->RenderPass); TODO: Add render pass when we have it.
+		ImGui_ImplVulkan_Init(&initInfo, m_ImGuiRenderPass);
+
+		m_Renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
+		{
+			ImGui_ImplVulkan_CreateFontsTexture(cmd);
+		});
 	}
 
 	void VulkanImGuiRenderer::BeginFrame()
@@ -87,23 +95,22 @@ namespace HBL2
 		// Rendering
 		ImGui::Render();
 
-		VkClearValue clearValue;
-		clearValue.color = { { 0.0f, 0.0f, 0.0f, 1.0f } }; // TODO: Get from renderer
-
 		VkRenderPassBeginInfo renderPassInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 			.pNext = nullptr,
-			// .renderPass = renderPass, TODO: Add when available
+			.renderPass = m_ImGuiRenderPass,
+			.framebuffer = m_Renderer->GetMainFrameBuffer(),
 			.renderArea = 
 			{
 				.offset = { 0, 0 },
 				.extent = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y },
 			},
-			// .framebuffer = framebuffer, TODO: Add when available
-			.clearValueCount = 2,
-			.pClearValues = &clearValue,
+			.clearValueCount = 0,
+			.pClearValues = nullptr,
 		};
+
+		VK_VALIDATE(vkResetCommandBuffer(m_Renderer->GetCurrentFrame().ImGuiCommandBuffer, 0), "vkResetCommandBuffer");
 
 		VkCommandBuffer cmd = m_Renderer->GetCurrentFrame().ImGuiCommandBuffer;
 
@@ -133,14 +140,106 @@ namespace HBL2
 			ImGui::UpdatePlatformWindows();
 			ImGui::RenderPlatformWindowsDefault();
 		}
+
+		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+		VkSubmitInfo submitInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			.pNext = nullptr,
+			.waitSemaphoreCount = 1,
+			.pWaitSemaphores = &m_Renderer->GetCurrentFrame().MainRenderFinishedSemaphore,
+			.pWaitDstStageMask = &waitStage,
+			.commandBufferCount = 1,
+			.pCommandBuffers = &m_Renderer->GetCurrentFrame().ImGuiCommandBuffer,
+			.signalSemaphoreCount = 1,
+			.pSignalSemaphores = &m_Renderer->GetCurrentFrame().ImGuiRenderFinishedSemaphore,
+		};
+
+		// Submit command buffer to the queue and execute it.
+		// RenderFence will now block until the graphic commands finish execution
+		VK_VALIDATE(vkQueueSubmit(m_Renderer->GetGraphicsQueue(), 1, &submitInfo, m_Renderer->GetCurrentFrame().InFlightFence), "vkQueueSubmit");
 	}
 
 	void VulkanImGuiRenderer::Clean()
 	{
 		vkDestroyDescriptorPool(m_Device->Get(), m_ImGuiPool, nullptr);
+		vkDestroyRenderPass(m_Device->Get(), m_ImGuiRenderPass, nullptr);
 
 		ImGui_ImplVulkan_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
+	}
+
+	void VulkanImGuiRenderer::CreateRenderPass()
+	{
+		// the renderpass will use this color attachment.
+		VkAttachmentDescription colorAttachment = {};
+		colorAttachment.format = m_Renderer->GetSwapchainImageFormat();
+		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // Generally 1 sample for UI
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // Load existing contents (the scene)
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // Store the final output (UI + scene)
+		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // Layout after scene render pass
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // Layout for presenting to the screen
+
+		VkAttachmentReference colorAttachmentRef = {};
+		colorAttachmentRef.attachment = 0;
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// Depth attachment
+		VkAttachmentDescription depthAttachment = {};
+		depthAttachment.flags = 0;
+		depthAttachment.format = VK_FORMAT_D32_SFLOAT;
+		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // Load existing depth information (optional)
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // Often not needed for UI
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // After main scene pass
+		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference depthAttachmentRef = {};
+		depthAttachmentRef.attachment = 1;
+		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		//we are going to create 1 subpass, which is the minimum you can do
+		VkSubpassDescription subpass = {};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorAttachmentRef;
+		subpass.pDepthStencilAttachment = &depthAttachmentRef;
+		VkAttachmentDescription attachments[2] = { colorAttachment, depthAttachment };
+
+		VkRenderPassCreateInfo renderPassInfo = {};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		renderPassInfo.attachmentCount = 2;
+		renderPassInfo.pAttachments = &attachments[0];
+		renderPassInfo.subpassCount = 1;
+		renderPassInfo.pSubpasses = &subpass;
+
+		VkSubpassDependency dependency = {};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		VkSubpassDependency depthDependency = {};
+		depthDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		depthDependency.dstSubpass = 0;
+		depthDependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		depthDependency.srcAccessMask = 0;
+		depthDependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		depthDependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+		VkSubpassDependency dependencies[2] = { dependency, depthDependency };
+
+		renderPassInfo.dependencyCount = 2;
+		renderPassInfo.pDependencies = &dependencies[0];
+
+		VK_VALIDATE(vkCreateRenderPass(m_Device->Get(), &renderPassInfo, nullptr, &m_ImGuiRenderPass), "vkCreateRenderPass");
 	}
 }

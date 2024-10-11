@@ -94,26 +94,26 @@ namespace HBL2
 		Renderer::Instance->Initialize();
 		ImGuiRenderer::Instance->Initialize();
 
-		//m_Specification.Context->OnCreate();
+		m_Specification.Context->OnCreate();
 
 		Window::Instance->DispatchMainLoop([&]()
 		{
 			BeginFrame();
 
-			/*Renderer::Instance->BeginFrame();
-			m_Specification.Context->OnUpdate(m_DeltaTime);
+			Renderer::Instance->BeginFrame();
+			//m_Specification.Context->OnUpdate(m_DeltaTime);
 			Renderer::Instance->EndFrame();
 
 			ImGuiRenderer::Instance->BeginFrame();
 			m_Specification.Context->OnGuiRender(m_DeltaTime);
 			ImGuiRenderer::Instance->EndFrame();
 
-			Renderer::Instance->Present();*/
+			Renderer::Instance->Present();
 
 			EndFrame();
 		});
 
-		//m_Specification.Context->OnDestroy();
+		m_Specification.Context->OnDestroy();
 
 		Shutdown();
 	}

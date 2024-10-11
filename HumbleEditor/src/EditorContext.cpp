@@ -135,7 +135,7 @@ namespace HBL2
 
 			if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 			{
-				LoadBuiltInAssets();
+				// LoadBuiltInAssets();
 
 				HBL2::Project::OpenStartingScene();
 
