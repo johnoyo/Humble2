@@ -5,6 +5,7 @@
 
 #include "VulkanDevice.h"
 #include "VulkanRenderer.h"
+#include "VulkanResourceManager.h"
 
 #include "VulkanCommon.h"
 
@@ -30,10 +31,11 @@ namespace HBL2
 		void CreateRenderPass();
 
 	private:
-		VkRenderPass m_ImGuiRenderPass;
+		Handle<RenderPass> m_ImGuiRenderPass;
 		VkDescriptorPool m_ImGuiPool;
 
 		VulkanDevice* m_Device = nullptr;
 		VulkanRenderer* m_Renderer = nullptr;
+		VulkanResourceManager* m_ResourceManager = nullptr;
 	};
 }

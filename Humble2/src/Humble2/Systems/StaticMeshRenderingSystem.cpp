@@ -39,7 +39,7 @@ namespace HBL2
 			.debugName = "camera-uniform-buffer",
 			.usage = BufferUsage::UNIFORM,
 			.usageHint = BufferUsageHint::DYNAMIC,
-			.memory = Memory::GPU_CPU,
+			.memoryUsage = MemoryUsage::GPU_CPU,
 			.byteSize = sizeof(CameraData),
 			.initialData = nullptr
 		});
@@ -48,7 +48,7 @@ namespace HBL2
 			.debugName = "light-uniform-buffer",
 			.usage = BufferUsage::UNIFORM,
 			.usageHint = BufferUsageHint::DYNAMIC,
-			.memory = Memory::GPU_CPU,
+			.memoryUsage = MemoryUsage::GPU_CPU,
 			.byteSize = sizeof(LightData),
 			.initialData = nullptr
 		});

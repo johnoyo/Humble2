@@ -3,7 +3,7 @@
 #include "Renderer\Enums.h"
 #include "Handle.h"
 
-#include "Utilities\Span.h"
+#include "Utilities\Collections\Span.h"
 
 #include <glm\glm.hpp>
 
@@ -47,7 +47,7 @@ namespace HBL2
 		const char* debugName;
 		BufferUsage usage = BufferUsage::UNIFORM;
 		BufferUsageHint usageHint = BufferUsageHint::STATIC;
-		Memory memory = Memory::GPU_CPU;
+		MemoryUsage memoryUsage = MemoryUsage::GPU_CPU;
 		uint32_t byteSize = 0;
 		void* initialData = nullptr;
 	};
@@ -157,6 +157,7 @@ namespace HBL2
 		{
 			LoadOperation loadOp = LoadOperation::CLEAR;
 			StoreOperation storeOp = StoreOperation::STORE;
+			TextureUsage prevUsage = TextureUsage::SAMPLED;
 			TextureUsage nextUsage = TextureUsage::SAMPLED;
 			glm::vec4 clearColor = glm::vec4(0.0f);
 		};
@@ -167,6 +168,7 @@ namespace HBL2
 			StoreOperation storeOp = StoreOperation::STORE;
 			LoadOperation stencilLoadOp = LoadOperation::CLEAR;
 			StoreOperation stencilStoreOp = StoreOperation::STORE;
+			TextureUsage prevUsage = TextureUsage::SAMPLED;
 			TextureUsage nextUsage = TextureUsage::SAMPLED;
 			float clearZ = 0.0f;
 			uint32_t clearStencil = 0;

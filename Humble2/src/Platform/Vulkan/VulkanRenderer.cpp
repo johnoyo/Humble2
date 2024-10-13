@@ -150,10 +150,25 @@ namespace HBL2
 	{
 		// call vkAcquireNextImageKHR here???
 
-		// Now that we are sure that the commands finished executing, we can safely reset the command buffer to begin recording again.
-		VK_VALIDATE(vkResetCommandBuffer(GetCurrentFrame().MainCommandBuffer, 0), "vkResetCommandBuffer");
+		VkCommandBuffer cmd = VK_NULL_HANDLE;
 
-		VkCommandBuffer cmd = GetCurrentFrame().MainCommandBuffer;
+		switch (type)
+		{
+		case HBL2::CommandBufferType::MAIN:
+			cmd = GetCurrentFrame().MainCommandBuffer;
+			break;
+		case HBL2::CommandBufferType::OFFSCREEN:
+			cmd = GetCurrentFrame().MainCommandBuffer;
+			break;
+		case HBL2::CommandBufferType::UI:
+			cmd = GetCurrentFrame().ImGuiCommandBuffer;
+			break;
+		default:
+			break;
+		}
+
+		// Now that we are sure that the commands finished executing, we can safely reset the command buffer to begin recording again.
+		VK_VALIDATE(vkResetCommandBuffer(cmd, 0), "vkResetCommandBuffer");
 
 		// Begin the command buffer recording. We will use this command buffer exactly once, so we want to let Vulkan know that
 		VkCommandBufferBeginInfo cmdBeginInfo = {};
@@ -167,16 +182,11 @@ namespace HBL2
 		switch (type)
 		{
 		case HBL2::CommandBufferType::MAIN:
-			return &m_CommandBuffers[m_FrameNumber % FRAME_OVERLAP];
-			break;
-		case HBL2::CommandBufferType::OFFSCREEN:
-			return nullptr;
-			break;
+			return &m_MainCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
 		case HBL2::CommandBufferType::UI:
-			return nullptr;
-			break;
-		default:
-			break;
+			return &m_ImGuiCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
+		case HBL2::CommandBufferType::OFFSCREEN:
+			return &m_OffScreenCommandBuffer;
 		}
 
 		return nullptr;
@@ -372,7 +382,8 @@ namespace HBL2
 				vkDestroyCommandPool(m_Device->Get(), m_Frames[i].CommandPool, nullptr);
 			});
 
-			m_CommandBuffers[i].m_MainCommandBuffer = m_Frames[i].MainCommandBuffer;
+			m_MainCommandBuffers[i] = VulkanCommandBuffer(CommandBufferType::MAIN, m_Frames[i].MainCommandBuffer);
+			m_ImGuiCommandBuffers[i] = VulkanCommandBuffer(CommandBufferType::UI, m_Frames[i].ImGuiCommandBuffer);
 		}
 
 		VkCommandPoolCreateInfo uploadCommandPoolInfo =
@@ -401,6 +412,8 @@ namespace HBL2
 		};		
 
 		VK_VALIDATE(vkAllocateCommandBuffers(m_Device->Get(), &cmdAllocInfo, &m_UploadContext.CommandBuffer), "vkAllocateCommandBuffers");
+
+		m_OffScreenCommandBuffer = VulkanCommandBuffer(CommandBufferType::OFFSCREEN, m_UploadContext.CommandBuffer);
 	}
 
 	void VulkanRenderer::CreateRenderPass()
@@ -624,7 +637,8 @@ namespace HBL2
 	{
 		for (const auto& availableFormat : availableFormats)
 		{
-			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			// Chose VK_FORMAT_B8G8R8A8_UNORM over VK_FORMAT_B8G8R8A8_SRGB since ingui was rendered with washed out colors with SRGB, since it uses UNORM internally.
+			if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 			{
 				return availableFormat;
 			}

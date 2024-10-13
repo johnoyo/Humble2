@@ -6,8 +6,7 @@
 #include "Platform\Vulkan\VulkanDevice.h"
 #include "Platform\Vulkan\VulkanRenderer.h"
 
-#include "vulkan\vulkan.h"
-#include "vma\vk_mem_alloc.h"
+#include "Platform\Vulkan\VulkanCommon.h"
 
 #include <string>
 #include <fstream>

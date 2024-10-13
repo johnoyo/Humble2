@@ -62,7 +62,7 @@ namespace HBL2
 		RG16_FLOAT = 5,
 	};
 
-	enum class Memory
+	enum class MemoryUsage
 	{
 		CPU_CPU = 0,
 		GPU_CPU = 1,
@@ -98,6 +98,7 @@ namespace HBL2
 
 	enum class TextureUsage
 	{
+		UNDEFINED = 0,
 		COPY_SRC = 1,
 		COPY_DST = 2,
 		TEXTURE_BINDING = 4,
@@ -105,6 +106,7 @@ namespace HBL2
 		RENDER_ATTACHMENT = 16,
 		SAMPLED = 32,
 		DEPTH_STENCIL = 64,
+		PRESENT = 128,
 	};
 
 	enum class BlendOperation
@@ -122,7 +124,6 @@ namespace HBL2
 
 	enum class StoreOperation
 	{
-		CLEAR = 0,
 		STORE = 1,
 		DONT_CARE = 2,
 	};
@@ -130,7 +131,7 @@ namespace HBL2
 	enum class LoadOperation
 	{
 		CLEAR = 0,
-		STORE = 1,
+		LOAD = 1,
 		DONT_CARE = 2,
 	};
 }

@@ -1,7 +1,7 @@
 #pragma once
 
-#include<vector>
-#include<initializer_list>
+#include <vector>
+#include <initializer_list>
 
 namespace HBL2
 {
@@ -19,6 +19,11 @@ namespace HBL2
 
 		explicit Span(T* data) : Data(data), Size(1) {}
 		explicit Span(T& data) : Data(&data), Size(1) {}
+
+		T* begin() { return Data; }
+		T* end() { return Data + Size; }
+		const T* begin() const { return Data; }
+		const T* end() const { return Data + Size; }
 
 		T* Data = nullptr;
 		size_t Size = 0;

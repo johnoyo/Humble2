@@ -3,9 +3,14 @@
 #include "Base.h"
 #include "Resources\TypeDescriptors.h"
 
+#include "Platform\Vulkan\VulkanDevice.h"
+#include "Platform\Vulkan\VulkanRenderer.h"
+
+#include "Platform\Vulkan\VulkanCommon.h"
+
+#include "VulkanRenderPassLayout.h"
+
 #include <string>
-#include <fstream>
-#include <sstream>
 #include <stdint.h>
 
 namespace HBL2
@@ -13,9 +18,72 @@ namespace HBL2
 	struct VulkanRenderPass
 	{
 		VulkanRenderPass() = default;
-		VulkanRenderPass(const RenderPassDescriptor&& desc)
+		VulkanRenderPass(const RenderPassDescriptor&& desc);
+
+		VkAttachmentLoadOp LoadOperationToVkAttachmentLoadOp(LoadOperation loadOperation)
 		{
-			DebugName = desc.debugName;
+			switch (loadOperation)
+			{
+			case HBL2::LoadOperation::CLEAR:
+				return VK_ATTACHMENT_LOAD_OP_CLEAR;
+			case HBL2::LoadOperation::LOAD:
+				return VK_ATTACHMENT_LOAD_OP_LOAD;
+			case HBL2::LoadOperation::DONT_CARE:
+				return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			}
+
+			return VK_ATTACHMENT_LOAD_OP_MAX_ENUM;
+		}
+
+		VkAttachmentStoreOp StoreOperationVkAttachmentStoreOp(StoreOperation storeOperation)
+		{
+			switch (storeOperation)
+			{
+			case HBL2::StoreOperation::STORE:
+				return VK_ATTACHMENT_STORE_OP_STORE;
+			case HBL2::StoreOperation::DONT_CARE:
+				return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			}
+
+			return VK_ATTACHMENT_STORE_OP_MAX_ENUM;
+		}
+
+		VkImageLayout TextureUsageToVkImageLayout(TextureUsage textureUsage)
+		{
+			switch (textureUsage)
+			{
+			case HBL2::TextureUsage::UNDEFINED:
+				return VK_IMAGE_LAYOUT_UNDEFINED;
+			case HBL2::TextureUsage::COPY_SRC:
+				return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			case HBL2::TextureUsage::COPY_DST:
+				return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			case HBL2::TextureUsage::TEXTURE_BINDING:
+				break;
+			case HBL2::TextureUsage::STORAGE_BINDING:
+				break;
+			case HBL2::TextureUsage::RENDER_ATTACHMENT:
+				return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			case HBL2::TextureUsage::SAMPLED:
+				break;
+			case HBL2::TextureUsage::DEPTH_STENCIL:
+				return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			case HBL2::TextureUsage::PRESENT:
+				return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+			}
+
+			return VK_IMAGE_LAYOUT_MAX_ENUM;
+		}
+
+		VkFormat FormatToVkFormat(Format format)
+		{
+			switch (format)
+			{
+			case Format::D32_FLOAT:
+				return VK_FORMAT_D32_SFLOAT;
+			}
+
+			return VK_FORMAT_MAX_ENUM;
 		}
 
 		const char* DebugName = "";

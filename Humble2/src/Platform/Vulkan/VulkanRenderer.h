@@ -118,7 +118,9 @@ namespace HBL2
 		DeletionQueue m_MainDeletionQueue;
 
 		FrameData m_Frames[FRAME_OVERLAP];
-		VulkanCommandBuffer m_CommandBuffers[FRAME_OVERLAP];
+		VulkanCommandBuffer m_MainCommandBuffers[FRAME_OVERLAP];
+		VulkanCommandBuffer m_ImGuiCommandBuffers[FRAME_OVERLAP];
+		VulkanCommandBuffer m_OffScreenCommandBuffer;
 		UploadContext m_UploadContext;
 
 		uint32_t m_FrameNumber = 0;

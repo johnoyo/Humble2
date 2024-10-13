@@ -11,7 +11,7 @@
 	#include <GL/glew.h>
 #endif
 
-#include "Utilities\Span.h"
+#include "Utilities\Collections\Span.h"
 
 #include <string>
 #include <fstream>
