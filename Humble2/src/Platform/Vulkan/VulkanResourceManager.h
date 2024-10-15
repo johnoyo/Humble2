@@ -72,6 +72,11 @@ namespace HBL2
 		{
 			m_FrameBufferPool.Remove(handle);
 		}
+		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) override
+		{
+			VulkanFrameBuffer* frameBuffer = GetFrameBuffer(handle);
+			// frameBuffer->Resize(width, height);
+		}
 		VulkanFrameBuffer* GetFrameBuffer(Handle<FrameBuffer> handle) const
 		{
 			return m_FrameBufferPool.Get(handle);
@@ -156,5 +161,7 @@ namespace HBL2
 		Pool<VulkanBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
 		Pool<VulkanRenderPass, RenderPass> m_RenderPassPool;
 		Pool<VulkanRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
+
+		friend class VulkanRenderer; // This is required for a hack to create the swapchain images
 	};
 }

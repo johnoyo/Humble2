@@ -11,7 +11,7 @@ namespace HBL2
 			AssetManager::Instance = new EditorAssetManager;
 
 			// Create FrameBuffer.
-			HBL2::Renderer::Instance->FrameBufferHandle = HBL2::ResourceManager::Instance->CreateFrameBuffer({
+			HBL2::Context::FrameBuffer = HBL2::ResourceManager::Instance->CreateFrameBuffer({
 				.debugName = "editor-viewport",
 				.width = 1280,
 				.height = 720,

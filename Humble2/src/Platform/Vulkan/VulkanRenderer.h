@@ -72,7 +72,6 @@ namespace HBL2
 
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
 
-		virtual void ResizeFrameBuffer(uint32_t width, uint32_t height) override {}
 		virtual void* GetDepthAttachment() override { return nullptr; }
 		virtual void* GetColorAttachment() override { return nullptr; }
 
@@ -88,11 +87,14 @@ namespace HBL2
 		virtual void Draw(Handle<Mesh> mesh) override {}
 		virtual void DrawIndexed(Handle<Mesh> mesh) override {}
 
-		const VmaAllocator& GetAllocator() const { return m_Allocator; }
+		const VmaAllocator& GetAllocator() const { return m_Allocator; } // TODO: Move to VulkanResourceManager
+
 		const FrameData& GetCurrentFrame() const { return m_Frames[m_FrameNumber % FRAME_OVERLAP]; }
 		const VkFormat& GetSwapchainImageFormat() const { return m_SwapChainImageFormat; }
-		const VkFramebuffer& GetMainFrameBuffer() const { return m_FrameBuffers[m_SwapchainImageIndex]; }
-		const VkRenderPass& GetMainRenderPass() const { return m_RenderPass; }
+
+		Handle<FrameBuffer> GetMainFrameBuffer() const { return m_FrameBuffers[m_SwapchainImageIndex]; }
+		Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
+
 		const VkQueue& GetGraphicsQueue() const { return m_GraphicsQueue; }
 		const VkQueue& GetPresentQueue() const { return m_PresentQueue; }
 
@@ -135,10 +137,11 @@ namespace HBL2
 		std::vector<VkImage> m_SwapChainImages;
 		std::vector<VkImageView> m_SwapChainImageViews;
 
-		Handle<Texture> m_DepthImage;
 		VkFormat m_DepthFormat;
+		Handle<Texture> m_DepthImage;
+		std::vector<Handle<Texture>> m_SwapChainColorTextures;
 
-		VkRenderPass m_RenderPass;
-		std::vector<VkFramebuffer> m_FrameBuffers;
+		Handle<RenderPass> m_RenderPass;
+		std::vector<Handle<FrameBuffer>> m_FrameBuffers;
 	};
 }

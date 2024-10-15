@@ -48,27 +48,21 @@ namespace HBL2
 			return VK_ATTACHMENT_STORE_OP_MAX_ENUM;
 		}
 
-		VkImageLayout TextureUsageToVkImageLayout(TextureUsage textureUsage)
+		VkImageLayout TextureLayoutToVkImageLayout(TextureLayout textureLayout)
 		{
-			switch (textureUsage)
+			switch (textureLayout)
 			{
-			case HBL2::TextureUsage::UNDEFINED:
+			case HBL2::TextureLayout::UNDEFINED:
 				return VK_IMAGE_LAYOUT_UNDEFINED;
-			case HBL2::TextureUsage::COPY_SRC:
+			case HBL2::TextureLayout::COPY_SRC:
 				return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-			case HBL2::TextureUsage::COPY_DST:
+			case HBL2::TextureLayout::COPY_DST:
 				return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			case HBL2::TextureUsage::TEXTURE_BINDING:
-				break;
-			case HBL2::TextureUsage::STORAGE_BINDING:
-				break;
-			case HBL2::TextureUsage::RENDER_ATTACHMENT:
+			case HBL2::TextureLayout::RENDER_ATTACHMENT:
 				return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			case HBL2::TextureUsage::SAMPLED:
-				break;
-			case HBL2::TextureUsage::DEPTH_STENCIL:
+			case HBL2::TextureLayout::DEPTH_STENCIL:
 				return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-			case HBL2::TextureUsage::PRESENT:
+			case HBL2::TextureLayout::PRESENT:
 				return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 			}
 

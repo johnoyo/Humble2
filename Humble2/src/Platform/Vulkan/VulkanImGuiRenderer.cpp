@@ -100,7 +100,7 @@ namespace HBL2
 		ImGui::Render();
 
 		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI);
-		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_ImGuiRenderPass, Handle<FrameBuffer>());
+		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_ImGuiRenderPass, m_Renderer->GetMainFrameBuffer());
 
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);
 
@@ -149,15 +149,15 @@ namespace HBL2
 				.storeOp = StoreOperation::STORE,
 				.stencilLoadOp = LoadOperation::DONT_CARE,
 				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureUsage::DEPTH_STENCIL,
-				.nextUsage = TextureUsage::DEPTH_STENCIL,
+				.prevUsage = TextureLayout::DEPTH_STENCIL,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
 			},
 			.colorTargets = {
 				{
 					.loadOp = LoadOperation::LOAD,
 					.storeOp = StoreOperation::STORE,
-					.prevUsage = TextureUsage::RENDER_ATTACHMENT,
-					.nextUsage = TextureUsage::PRESENT,
+					.prevUsage = TextureLayout::RENDER_ATTACHMENT,
+					.nextUsage = TextureLayout::PRESENT,
 				},
 			},
 		});

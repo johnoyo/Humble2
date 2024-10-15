@@ -30,6 +30,7 @@ namespace HBL2
 		// FrameBuffers
 		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) = 0;
 		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) = 0;
+		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) = 0;
 
 		// Shaders
 		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) = 0;

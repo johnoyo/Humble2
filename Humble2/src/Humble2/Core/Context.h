@@ -1,9 +1,12 @@
 #pragma once
 
+#include "Resources\Handle.h"
 #include "Scene\Scene.h"
 
 namespace HBL2
 {
+	struct FrameBuffer;
+
 	enum class Mode
 	{
 		None = 0,
@@ -26,5 +29,6 @@ namespace HBL2
 		inline static Handle<Scene> EditorScene;
 
 		inline static Mode Mode = Mode::None;
+		inline static Handle<FrameBuffer> FrameBuffer;
 	};
 }

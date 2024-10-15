@@ -57,7 +57,7 @@ namespace HBL2
 		const char* debugName;
 		uint32_t width = 0;
 		uint32_t height = 0;
-		Handle<RenderPassLayout> renderPassLayout;
+		Handle<RenderPass> renderPass;
 		Handle<Texture> depthTarget;
 		Span<const Handle<Texture>> colorTargets;
 	};
@@ -157,8 +157,8 @@ namespace HBL2
 		{
 			LoadOperation loadOp = LoadOperation::CLEAR;
 			StoreOperation storeOp = StoreOperation::STORE;
-			TextureUsage prevUsage = TextureUsage::SAMPLED;
-			TextureUsage nextUsage = TextureUsage::SAMPLED;
+			TextureLayout prevUsage = TextureLayout::UNDEFINED;
+			TextureLayout nextUsage = TextureLayout::UNDEFINED;
 			glm::vec4 clearColor = glm::vec4(0.0f);
 		};
 
@@ -168,8 +168,8 @@ namespace HBL2
 			StoreOperation storeOp = StoreOperation::STORE;
 			LoadOperation stencilLoadOp = LoadOperation::CLEAR;
 			StoreOperation stencilStoreOp = StoreOperation::STORE;
-			TextureUsage prevUsage = TextureUsage::SAMPLED;
-			TextureUsage nextUsage = TextureUsage::SAMPLED;
+			TextureLayout prevUsage = TextureLayout::UNDEFINED;
+			TextureLayout nextUsage = TextureLayout::UNDEFINED;
 			float clearZ = 0.0f;
 			uint32_t clearStencil = 0;
 		};

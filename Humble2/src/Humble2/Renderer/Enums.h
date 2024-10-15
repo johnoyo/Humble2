@@ -98,7 +98,6 @@ namespace HBL2
 
 	enum class TextureUsage
 	{
-		UNDEFINED = 0,
 		COPY_SRC = 1,
 		COPY_DST = 2,
 		TEXTURE_BINDING = 4,
@@ -106,7 +105,16 @@ namespace HBL2
 		RENDER_ATTACHMENT = 16,
 		SAMPLED = 32,
 		DEPTH_STENCIL = 64,
-		PRESENT = 128,
+	};
+
+	enum class TextureLayout
+	{
+		UNDEFINED = 0,
+		COPY_SRC = 1,
+		COPY_DST = 2,
+		RENDER_ATTACHMENT = 4,
+		DEPTH_STENCIL = 8,
+		PRESENT = 16,
 	};
 
 	enum class BlendOperation

@@ -56,14 +56,18 @@ namespace HBL2
 		depthClear.depthStencil.depth = 1.f;
 		VkClearValue clearValues[] = { clearValue, depthClear };
 
+		VkRenderPass renderPass = m_ResourceManager->GetRenderPass(m_RenderPass)->RenderPass;
+
+		VulkanFrameBuffer* vkFrameBuffer = m_ResourceManager->GetFrameBuffer(m_FrameBuffers[m_SwapchainImageIndex]);
+
 		VkRenderPassBeginInfo rpInfo = {};
 		rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		rpInfo.pNext = nullptr;
-		rpInfo.renderPass = m_RenderPass;
+		rpInfo.renderPass = renderPass;
 		rpInfo.renderArea.offset.x = 0;
 		rpInfo.renderArea.offset.y = 0;
 		rpInfo.renderArea.extent = m_SwapChainExtent;
-		rpInfo.framebuffer = m_FrameBuffers[m_SwapchainImageIndex];
+		rpInfo.framebuffer = vkFrameBuffer->FrameBuffer;
 		rpInfo.clearValueCount = 2;
 		rpInfo.pClearValues = &clearValues[0];
 
@@ -130,15 +134,17 @@ namespace HBL2
 
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 
-		vkDestroyRenderPass(m_Device->Get(), m_RenderPass, nullptr);
-
-		VulkanTexture* vkTexture = m_ResourceManager->GetTexture(m_DepthImage);
+		VkRenderPass renderPass = m_ResourceManager->GetRenderPass(m_RenderPass)->RenderPass;
+		vkDestroyRenderPass(m_Device->Get(), renderPass, nullptr);
 
 		for (int i = 0; i < m_FrameBuffers.size(); i++)
 		{
-			vkDestroyFramebuffer(m_Device->Get(), m_FrameBuffers[i], nullptr);
+			VulkanFrameBuffer* vkFrameBuffer = m_ResourceManager->GetFrameBuffer(m_FrameBuffers[i]);
+			vkDestroyFramebuffer(m_Device->Get(), vkFrameBuffer->FrameBuffer, nullptr);
 			vkDestroyImageView(m_Device->Get(), m_SwapChainImageViews[i], nullptr);
 		}
+
+		VulkanTexture* vkTexture = m_ResourceManager->GetTexture(m_DepthImage);
 
 		vkDestroyImageView(m_Device->Get(), vkTexture->ImageView, nullptr);
 		vmaDestroyImage(m_Allocator, vkTexture->Image, vkTexture->Allocation);
@@ -341,6 +347,12 @@ namespace HBL2
 			createInfo.subresourceRange.layerCount = 1;
 
 			VK_VALIDATE(vkCreateImageView(m_Device->Get(), &createInfo, nullptr, &m_SwapChainImageViews[i]), "vkCreateImageView");
+
+			VulkanTexture swapchainImage;
+			swapchainImage.Image = m_SwapChainImages[i];
+			swapchainImage.ImageView = m_SwapChainImageViews[i];
+			swapchainImage.Extent = { m_SwapChainExtent.width, m_SwapChainExtent.height, 1 };
+			m_SwapChainColorTextures.push_back(m_ResourceManager->m_TexturePool.Insert(swapchainImage));
 		}
 	}
 
@@ -418,123 +430,55 @@ namespace HBL2
 
 	void VulkanRenderer::CreateRenderPass()
 	{
-		// the renderpass will use this color attachment.
-		VkAttachmentDescription colorAttachment = {};
-		//the attachment will have the format needed by the swapchain
-		colorAttachment.format = m_SwapChainImageFormat;
-		//1 sample, we won't be doing MSAA
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		// we Clear when this attachment is loaded
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		// we keep the attachment stored when the renderpass ends
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		//we don't care about stencil
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		Handle<RenderPassLayout> renderPassLayout = m_ResourceManager->CreateRenderPassLayout({
+			.debugName = "imgui-renderpass-layout",
+			.depthTargetFormat = Format::D32_FLOAT,
+			.subPasses = {
+				{ .depthTarget = true, .colorTargets = 1, },
+			},
+		});
 
-		//we don't know or care about the starting layout of the attachment
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-		//after the renderpass ends, the image has to be on a layout ready for display
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference colorAttachmentRef = {};
-		//attachment number will index into the pAttachments array in the parent renderpass itself
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentDescription depthAttachment = {};
-		// Depth attachment
-		depthAttachment.flags = 0;
-		depthAttachment.format = m_DepthFormat;
-		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference depthAttachmentRef = {};
-		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		//we are going to create 1 subpass, which is the minimum you can do
-		VkSubpassDescription subpass = {};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
-		//hook the depth attachment into the subpass
-		subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-		//array of 2 attachments, one for the color, and other for depth
-		VkAttachmentDescription attachments[2] = { colorAttachment, depthAttachment };
-
-		VkRenderPassCreateInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-
-		//2 attachments from said array
-		renderPassInfo.attachmentCount = 2;
-		renderPassInfo.pAttachments = &attachments[0];
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-
-		VkSubpassDependency dependency = {};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-		VkSubpassDependency depthDependency = {};
-		depthDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		depthDependency.dstSubpass = 0;
-		depthDependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-		depthDependency.srcAccessMask = 0;
-		depthDependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-		depthDependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-		VkSubpassDependency dependencies[2] = { dependency, depthDependency };
-
-		renderPassInfo.dependencyCount = 2;
-		renderPassInfo.pDependencies = &dependencies[0];
-
-		VkResult result = vkCreateRenderPass(m_Device->Get(), &renderPassInfo, nullptr, &m_RenderPass);
-		assert(result == VK_SUCCESS);
+		m_RenderPass = m_ResourceManager->CreateRenderPass({
+			.debugName = "imgui-renderpass",
+			.layout = renderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::CLEAR,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::UNDEFINED,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
+			},
+			.colorTargets = {
+				{
+					.loadOp = LoadOperation::CLEAR,
+					.storeOp = StoreOperation::STORE,
+					.prevUsage = TextureLayout::UNDEFINED,
+					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
+				},
+			},
+		});
 	}
 
 	void VulkanRenderer::CreateFrameBuffers()
 	{
 		VulkanTexture* vulkanDepthImage = m_ResourceManager->GetTexture(m_DepthImage);
-
-		// Create the framebuffers for the swapchain images. This will connect the render-pass to the images for rendering.
-		VkFramebufferCreateInfo frameBufferInfo = {};
-		frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		frameBufferInfo.pNext = nullptr;
-
-		frameBufferInfo.renderPass = m_RenderPass;
-		frameBufferInfo.attachmentCount = 1;
-		frameBufferInfo.width = m_SwapChainExtent.width;
-		frameBufferInfo.height = m_SwapChainExtent.height;
-		frameBufferInfo.layers = 1;
+		VulkanRenderPass* vkRenderPass = m_ResourceManager->GetRenderPass(m_RenderPass);
 
 		// Grab how many images we have in the swapchain.
 		const uint32_t swapChainImageCount = m_SwapChainImages.size();
-		m_FrameBuffers = std::vector<VkFramebuffer>(swapChainImageCount);
+		m_FrameBuffers = std::vector<Handle<FrameBuffer>>(swapChainImageCount);
 
-		// Create framebuffers for each of the swapchain image views.
 		for (int i = 0; i < swapChainImageCount; i++)
 		{
-			VkImageView attachments[2];
-			attachments[0] = m_SwapChainImageViews[i];
-			attachments[1] = vulkanDepthImage->ImageView;
-
-			frameBufferInfo.pAttachments = attachments;
-			frameBufferInfo.attachmentCount = 2;
-
-			VkResult result = vkCreateFramebuffer(m_Device->Get(), &frameBufferInfo, nullptr, &m_FrameBuffers[i]);
-			assert(result == VK_SUCCESS);
+			m_FrameBuffers[i] = m_ResourceManager->CreateFrameBuffer({
+				.debugName = "swapchain-framebuffer",
+				.width = m_SwapChainExtent.width,
+				.height = m_SwapChainExtent.height,
+				.renderPass = m_RenderPass,
+				.depthTarget = m_DepthImage,
+				.colorTargets = { m_SwapChainColorTextures[i] },
+			});
 		}
 	}
 

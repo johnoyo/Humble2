@@ -4,7 +4,7 @@
 
 namespace HBL2
 {
-	HBL2::VulkanRenderPass::VulkanRenderPass(const RenderPassDescriptor&& desc)
+	VulkanRenderPass::VulkanRenderPass(const RenderPassDescriptor&& desc)
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
@@ -30,8 +30,8 @@ namespace HBL2
 				.storeOp = StoreOperationVkAttachmentStoreOp(colorTarget.storeOp),
 				.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 				.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				.initialLayout = TextureUsageToVkImageLayout(colorTarget.prevUsage),
-				.finalLayout = TextureUsageToVkImageLayout(colorTarget.nextUsage),
+				.initialLayout = TextureLayoutToVkImageLayout(colorTarget.prevUsage),
+				.finalLayout = TextureLayoutToVkImageLayout(colorTarget.nextUsage),
 			});
 
 			colorAttachmentRefs.push_back(VkAttachmentReference{
@@ -54,8 +54,8 @@ namespace HBL2
 					.storeOp = StoreOperationVkAttachmentStoreOp(desc.depthTarget.storeOp),
 					.stencilLoadOp = LoadOperationToVkAttachmentLoadOp(desc.depthTarget.stencilLoadOp),
 					.stencilStoreOp = StoreOperationVkAttachmentStoreOp(desc.depthTarget.stencilStoreOp),
-					.initialLayout = TextureUsageToVkImageLayout(desc.depthTarget.prevUsage),
-					.finalLayout = TextureUsageToVkImageLayout(desc.depthTarget.nextUsage),
+					.initialLayout = TextureLayoutToVkImageLayout(desc.depthTarget.prevUsage),
+					.finalLayout = TextureLayoutToVkImageLayout(desc.depthTarget.nextUsage),
 				});
 
 				depthAttachmentRef = {

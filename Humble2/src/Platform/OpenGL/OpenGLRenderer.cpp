@@ -30,9 +30,9 @@ namespace HBL2
 
 	void OpenGLRenderer::BeginFrame()
 	{
-		if (FrameBufferHandle.IsValid())
+		if (Context::FrameBuffer.IsValid())
 		{
-			OpenGLFrameBuffer* openGLFrameBuffer = m_ResourceManager->GetFrameBuffer(FrameBufferHandle);
+			OpenGLFrameBuffer* openGLFrameBuffer = m_ResourceManager->GetFrameBuffer(Context::FrameBuffer);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, openGLFrameBuffer->RendererId);
 			glViewport(0, 0, openGLFrameBuffer->Width, openGLFrameBuffer->Height);
@@ -256,7 +256,7 @@ namespace HBL2
 
 	void OpenGLRenderer::EndFrame()
 	{
-		if (FrameBufferHandle.IsValid())
+		if (Context::FrameBuffer.IsValid())
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
@@ -271,20 +271,11 @@ namespace HBL2
 	{
 	}
 
-	void OpenGLRenderer::ResizeFrameBuffer(uint32_t width, uint32_t height)
-	{
-		if (FrameBufferHandle.IsValid())
-		{
-			OpenGLFrameBuffer* openGLFrameBuffer = m_ResourceManager->GetFrameBuffer(FrameBufferHandle);
-			openGLFrameBuffer->Resize(width, height);
-		}
-	}
-
 	void* OpenGLRenderer::GetDepthAttachment()
 	{
-		if (FrameBufferHandle.IsValid())
+		if (Context::FrameBuffer.IsValid())
 		{
-			OpenGLFrameBuffer* openGLFrameBuffer = m_ResourceManager->GetFrameBuffer(FrameBufferHandle);
+			OpenGLFrameBuffer* openGLFrameBuffer = m_ResourceManager->GetFrameBuffer(Context::FrameBuffer);
 			return (void*)(intptr_t)openGLFrameBuffer->DepthAttachmentId;
 		}
 
@@ -293,9 +284,9 @@ namespace HBL2
 
 	void* OpenGLRenderer::GetColorAttachment()
 	{
-		if (FrameBufferHandle.IsValid())
+		if (Context::FrameBuffer.IsValid())
 		{
-			OpenGLFrameBuffer* openGLFrameBuffer = m_ResourceManager->GetFrameBuffer(FrameBufferHandle);
+			OpenGLFrameBuffer* openGLFrameBuffer = m_ResourceManager->GetFrameBuffer(Context::FrameBuffer);
 			return (void*)(intptr_t)openGLFrameBuffer->ColorAttachmentId;
 		}
 

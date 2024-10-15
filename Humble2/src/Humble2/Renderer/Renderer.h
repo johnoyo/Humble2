@@ -65,13 +65,11 @@ namespace HBL2
 
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) = 0;
 
-		virtual void ResizeFrameBuffer(uint32_t width, uint32_t height) = 0;
 		virtual void* GetDepthAttachment() = 0;
 		virtual void* GetColorAttachment() = 0;
 
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
 
-		Handle<FrameBuffer> FrameBufferHandle;
 		UniformRingBuffer* TempUniformRingBuffer;
 
 	protected:

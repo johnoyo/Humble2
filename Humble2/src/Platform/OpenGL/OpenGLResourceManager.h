@@ -72,6 +72,11 @@ namespace HBL2
 		{
 			m_FrameBufferPool.Remove(handle);
 		}
+		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) override
+		{
+			OpenGLFrameBuffer* frameBuffer = GetFrameBuffer(handle);
+			frameBuffer->Resize(width, height);
+		}
 		OpenGLFrameBuffer* GetFrameBuffer(Handle<FrameBuffer> handle) const
 		{
 			return m_FrameBufferPool.Get(handle);

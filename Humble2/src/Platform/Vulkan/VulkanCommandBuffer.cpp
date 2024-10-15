@@ -28,7 +28,7 @@ namespace HBL2
 		rpInfo.renderPass = vkRenderPass->RenderPass;
 		rpInfo.renderArea.offset = { 0, 0 };
 		rpInfo.renderArea.extent = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y };
-		rpInfo.framebuffer = renderer->GetMainFrameBuffer(); // vkFrameBuffer->FrameBuffer; // TODO!
+		rpInfo.framebuffer = vkFrameBuffer->FrameBuffer;
 
 		if (m_Type == CommandBufferType::MAIN)
 		{

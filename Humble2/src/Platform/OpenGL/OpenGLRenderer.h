@@ -42,7 +42,6 @@ namespace HBL2
 
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
 
-		virtual void ResizeFrameBuffer(uint32_t width, uint32_t height) override;
 		virtual void* GetDepthAttachment() override;
 		virtual void* GetColorAttachment() override;
 
