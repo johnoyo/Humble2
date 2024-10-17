@@ -14,7 +14,7 @@ namespace HBL2
 		DebugName = desc.debugName;
 		VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
 
-		VkPipelineShaderStageCreateInfo shaderStages[2];
+		VkPipelineShaderStageCreateInfo shaderStages[2]{};
 		shaderStages[0] = CreateShaderStageInfo(VK_SHADER_STAGE_VERTEX_BIT, desc.VS);
 		shaderStages[1] = CreateShaderStageInfo(VK_SHADER_STAGE_FRAGMENT_BIT, desc.FS);
 
@@ -31,7 +31,7 @@ namespace HBL2
 
 		VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = CreateColorBlendStateCreateInfo(colorBlendAttachment);
 
-		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = CreatePipelineLayoutCreateInfo();
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = CreatePipelineLayoutCreateInfo(); // TODO: Add descriptor sets to pipeline layout
 
 		VK_VALIDATE(vkCreatePipelineLayout(Device->Get(), &pipelineLayoutCreateInfo, nullptr, &PipelineLayout), "vkCreatePipelineLayout")
 

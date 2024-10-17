@@ -126,8 +126,8 @@ namespace HBL2
 				BlendFactor srcColorFactor = BlendFactor::SRC_ALPHA;
 				BlendFactor dstColorFactor = BlendFactor::ONE_MINUS_SRC_ALPHA;
 				BlendOperation aplhaOp = BlendOperation::ADD;
-				BlendFactor srcAlhpaFactor = BlendFactor::SRC_ALPHA;
-				BlendFactor dstAlhpaFactor = BlendFactor::ONE_MINUS_SRC_ALPHA;
+				BlendFactor srcAlphaFactor = BlendFactor::SRC_ALPHA;
+				BlendFactor dstAlphaFactor = BlendFactor::ONE_MINUS_SRC_ALPHA;
 				bool enabled = true;
 			};
 

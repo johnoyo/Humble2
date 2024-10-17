@@ -36,8 +36,19 @@ namespace HBL2
 				.pCode = reinterpret_cast<const uint32_t*>(stage.code.data()),
 			};
 
-			VkShaderModule shaderModule;
-			VK_VALIDATE(vkCreateShaderModule(Device->Get(), &createInfo, nullptr, &shaderModule), "vkCreateShaderModule");
+			VkShaderModule shaderModule = shaderStage == VK_SHADER_STAGE_VERTEX_BIT ? VertexShaderModule : FragmentShaderModule;
+
+			switch (shaderStage)
+			{
+			case VK_SHADER_STAGE_VERTEX_BIT:
+				VK_VALIDATE(vkCreateShaderModule(Device->Get(), &createInfo, nullptr, &VertexShaderModule), "vkCreateShaderModule");
+				break;
+			case VK_SHADER_STAGE_FRAGMENT_BIT:
+				VK_VALIDATE(vkCreateShaderModule(Device->Get(), &createInfo, nullptr, &FragmentShaderModule), "vkCreateShaderModule");
+				break;
+			default:
+				HBL2_CORE_ASSERT(false, "Unsuppoerted shader stage. The supported shader stages are: VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT");
+			}
 
 			VkPipelineShaderStageCreateInfo shaderStageCreateInfo =
 			{
@@ -156,10 +167,15 @@ namespace HBL2
 		{
 			if (blend.enabled)
 			{
-				// TODO: Fill fields with info from blend
 				VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
 				{
 					.blendEnable = VK_TRUE,
+					.srcColorBlendFactor = BlendFactorToVkBlendFactor(blend.srcColorFactor),
+					.dstColorBlendFactor = BlendFactorToVkBlendFactor(blend.dstColorFactor),
+					.colorBlendOp = BlendOperationToVkBlendOp(blend.colorOp),
+					.srcAlphaBlendFactor = BlendFactorToVkBlendFactor(blend.srcAlphaFactor),
+					.dstAlphaBlendFactor = BlendFactorToVkBlendFactor(blend.dstAlphaFactor),
+					.alphaBlendOp = BlendOperationToVkBlendOp(blend.aplhaOp),
 					.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
 				};
 
@@ -183,7 +199,7 @@ namespace HBL2
 				.pNext = nullptr,
 				.depthTestEnable = depthTest.enabled ? VK_TRUE : VK_FALSE,
 				.depthWriteEnable = depthTest.writeEnabled ? VK_TRUE : VK_FALSE,
-				.depthCompareOp = depthTest.enabled ? VK_COMPARE_OP_LESS : VK_COMPARE_OP_ALWAYS, // TODO: get compare op from depthTest
+				.depthCompareOp = depthTest.enabled ? CompareToVkCompareOp(depthTest.depthTest) : VK_COMPARE_OP_ALWAYS,
 				.depthBoundsTestEnable = VK_FALSE,
 				.stencilTestEnable = depthTest.stencilEnabled ? VK_TRUE : VK_FALSE,
 				.minDepthBounds = 0.0f,
@@ -286,6 +302,59 @@ namespace HBL2
 			}
 
 			return VK_FORMAT_MAX_ENUM;
+		}
+
+		VkBlendOp BlendOperationToVkBlendOp(BlendOperation blendOperation)
+		{
+			switch (blendOperation)
+			{
+			case HBL2::BlendOperation::ADD:
+				return VK_BLEND_OP_ADD;
+			case HBL2::BlendOperation::MUL:
+				return VK_BLEND_OP_MULTIPLY_EXT;
+			case HBL2::BlendOperation::SUB:
+				return VK_BLEND_OP_SUBTRACT;
+			}
+
+			return VK_BLEND_OP_MAX_ENUM;
+		}
+
+		VkBlendFactor BlendFactorToVkBlendFactor(BlendFactor blendFactor)
+		{
+			switch (blendFactor)
+			{
+			case HBL2::BlendFactor::SRC_ALPHA:
+				return VK_BLEND_FACTOR_SRC_ALPHA;
+			case HBL2::BlendFactor::ONE_MINUS_SRC_ALPHA:
+				return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			}
+
+			return VK_BLEND_FACTOR_MAX_ENUM;
+		}
+
+		VkCompareOp CompareToVkCompareOp(Compare compare)
+		{
+			switch (compare)
+			{
+			case HBL2::Compare::ALAWAYS:
+				return VK_COMPARE_OP_ALWAYS;
+			case HBL2::Compare::NEVER:
+				return VK_COMPARE_OP_NEVER;
+			case HBL2::Compare::LESS:
+				return VK_COMPARE_OP_LESS;
+			case HBL2::Compare::LESS_OR_EQUAL:
+				return VK_COMPARE_OP_LESS_OR_EQUAL;
+			case HBL2::Compare::GREATER:
+				return VK_COMPARE_OP_GREATER;
+			case HBL2::Compare::GREATER_OR_EQUAL:
+				return VK_COMPARE_OP_GREATER_OR_EQUAL;
+			case HBL2::Compare::EQUAL:
+				return VK_COMPARE_OP_EQUAL;
+			case HBL2::Compare::NOT_EQUAL:
+				return VK_COMPARE_OP_NOT_EQUAL;
+			}
+
+			return VK_COMPARE_OP_MAX_ENUM;
 		}
 	};
 }

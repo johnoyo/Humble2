@@ -46,6 +46,10 @@ namespace HBL2
 		LESS_OR_EQUAL = 2,
 		GREATER = 3,
 		GREATER_OR_EQUAL = 4,
+		EQUAL = 5,
+		NOT_EQUAL = 6,
+		ALAWAYS = 7,
+		NEVER = 8,
 	};
 
 	enum class Wrap
@@ -60,6 +64,7 @@ namespace HBL2
 		RGBA16_FLOAT = 3,
 		RGBA8_UNORM = 4,
 		RG16_FLOAT = 5,
+		RGBA8_RGB = 6
 	};
 
 	enum class MemoryUsage
@@ -94,6 +99,14 @@ namespace HBL2
 		D1 = 0,
 		D2 = 1,
 		D3 = 2,
+	};
+
+	enum class TextureAspect
+	{
+		NONE = 0,
+		COLOR = 1,
+		DEPTH = 2,
+		STENCIL = 3,
 	};
 
 	enum class TextureUsage

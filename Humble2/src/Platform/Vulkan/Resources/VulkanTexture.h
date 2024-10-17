@@ -34,7 +34,7 @@ namespace HBL2
 				.arrayLayers = 1,
 				.samples = VK_SAMPLE_COUNT_1_BIT,
 				.tiling = VK_IMAGE_TILING_OPTIMAL,
-				.usage = TextureUsageToVkImageLayout(desc.usage) | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+				.usage = TextureUsageToVkImageLayout(desc.usage) | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // NOTE: Investigate if always needs VK_IMAGE_USAGE_TRANSFER_DST_BIT
 			};
 			
 			VmaAllocationCreateInfo allocationCreateInfo =
@@ -45,7 +45,6 @@ namespace HBL2
 			
 			VK_VALIDATE(vmaCreateImage(renderer->GetAllocator(), &imageCreateInfo, &allocationCreateInfo, &Image, &Allocation, nullptr), "vmaCreateImage");
 
-			// Transfer initiaData to staging buffer
 			if (desc.initialData == nullptr && Extent.width == 1 && Extent.height == 1)
 			{
 				VkBuffer stagingBuffer = VK_NULL_HANDLE;
@@ -57,6 +56,7 @@ namespace HBL2
 
 				uint32_t whiteTexture = 0xffffffff;
 
+				// Transfer initiaData to staging buffer
 				void* mappedData;
 				vmaMapMemory(renderer->GetAllocator(), stagingBufferAllocation, &mappedData);
 				memcpy(mappedData, &whiteTexture, (size_t)imageSize);
@@ -73,6 +73,7 @@ namespace HBL2
 
 				VkDeviceSize imageSize = Extent.width * Extent.height * 4;
 
+				// Transfer initiaData to staging buffer
 				void* mappedData;
 				vmaMapMemory(renderer->GetAllocator(), stagingBufferAllocation, &mappedData);
 				memcpy(mappedData, desc.initialData, (size_t)imageSize);
