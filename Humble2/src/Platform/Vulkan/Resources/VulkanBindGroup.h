@@ -3,10 +3,7 @@
 #include "Base.h"
 #include "Resources\TypeDescriptors.h"
 
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <stdint.h>
+#include "Platform\Vulkan\VulkanCommon.h"
 
 namespace HBL2
 {
@@ -19,5 +16,7 @@ namespace HBL2
 		}
 
 		const char* DebugName = "";
+		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE;
+		VkDescriptorSetLayout DescriptorSetLayout = VK_NULL_HANDLE;
 	};
 }

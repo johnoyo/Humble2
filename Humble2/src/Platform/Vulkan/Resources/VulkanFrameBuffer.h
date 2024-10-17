@@ -18,6 +18,6 @@ namespace HBL2
 		VulkanFrameBuffer(const FrameBufferDescriptor&& desc);
 
 		const char* DebugName = "";
-		VkFramebuffer FrameBuffer;
+		VkFramebuffer FrameBuffer = VK_NULL_HANDLE;
 	};
 }

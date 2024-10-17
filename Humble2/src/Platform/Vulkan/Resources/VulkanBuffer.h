@@ -15,31 +15,41 @@ namespace HBL2
 		VulkanBuffer() = default;
 		VulkanBuffer(const BufferDescriptor&& desc)
 		{
-			/*
 			VulkanDevice* device = (VulkanDevice*)Device::Instance;
 			VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 
 			DebugName = desc.debugName;
+			ByteSize = desc.byteSize;
 
 			VkBufferCreateInfo bufferCreateInfo =
 			{
 				.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-				.size = desc.byteSize,
+				.size = ByteSize,
 				.usage = BufferUsageToVkBufferUsageFlags(desc.usage),
 				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 				.queueFamilyIndexCount = 0,
 				.pQueueFamilyIndices = nullptr,
 			};
 
-			VmaAllocationCreateInfo vmaAllocInfo =
+			VmaAllocationCreateInfo vmaAllocCreateInfo =
 			{
 				.usage = MemoryUsageToVmaMemoryUsage(desc.memoryUsage),
 			};
 
-			VK_VALIDATE(vmaCreateBuffer(renderer->GetAllocator(), &bufferCreateInfo, &vmaAllocInfo, &Buffer, &Allocation, nullptr), "vmaCreateImage");
-			*/
+			VK_VALIDATE(vmaCreateBuffer(renderer->GetAllocator(), &bufferCreateInfo, &vmaAllocCreateInfo, &Buffer, &Allocation, nullptr), "vmaCreateImage");
+
+			Data = Allocation->GetMappedData();
 		}
 
+		const char* DebugName = "";
+		VkBuffer Buffer = VK_NULL_HANDLE;
+		VmaAllocation Allocation = VK_NULL_HANDLE;
+		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE;
+		uint32_t ByteOffset = 0;
+		uint32_t ByteSize = 0;
+		void* Data = nullptr;
+
+	private:
 		VkBufferUsageFlags BufferUsageToVkBufferUsageFlags(BufferUsage bufferUsage)
 		{
 			switch (bufferUsage)
@@ -68,7 +78,7 @@ namespace HBL2
 				break;
 			}
 
-			return 0;
+			return VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
 		}
 
 		VmaMemoryUsage MemoryUsageToVmaMemoryUsage(MemoryUsage memoryUsage)
@@ -82,10 +92,8 @@ namespace HBL2
 			case HBL2::MemoryUsage::CPU_GPU:
 				return VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU;
 			}
-		}
 
-		const char* DebugName = "";
-		VkBuffer Buffer;
-		VmaAllocation Allocation;
+			return VMA_MEMORY_USAGE_MAX_ENUM;
+		}
 	};
 }

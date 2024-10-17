@@ -20,6 +20,10 @@ namespace HBL2
 		VulkanRenderPass() = default;
 		VulkanRenderPass(const RenderPassDescriptor&& desc);
 
+		const char* DebugName = "";
+		VkRenderPass RenderPass = VK_NULL_HANDLE;
+
+	private:
 		VkAttachmentLoadOp LoadOperationToVkAttachmentLoadOp(LoadOperation loadOperation)
 		{
 			switch (loadOperation)
@@ -79,8 +83,5 @@ namespace HBL2
 
 			return VK_FORMAT_MAX_ENUM;
 		}
-
-		const char* DebugName = "";
-		VkRenderPass RenderPass;
 	};
 }

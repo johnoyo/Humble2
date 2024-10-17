@@ -8,11 +8,6 @@
 
 #include "Platform\Vulkan\VulkanCommon.h"
 
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <stdint.h>
-
 namespace HBL2
 {
 	struct VulkanTexture
@@ -59,6 +54,13 @@ namespace HBL2
 			VK_VALIDATE(vkCreateImageView(device->Get(), &imageViewCreateInfo, nullptr, &ImageView), "vkCreateImageView");
 		}
 
+		const char* DebugName = "";
+		VkImage Image = VK_NULL_HANDLE;
+		VkImageView ImageView = VK_NULL_HANDLE;
+		VmaAllocation Allocation = VK_NULL_HANDLE;
+		VkExtent3D Extent{};
+
+	private:
 		VkImageType TextureTypeToVkImageType(TextureType textureType)
 		{
 			switch (textureType)
@@ -128,11 +130,5 @@ namespace HBL2
 
 			return VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM;
 		}
-
-		const char* DebugName = "";
-		VkImage Image;
-		VkImageView ImageView;
-		VmaAllocation Allocation;
-		VkExtent3D Extent;
 	};
 }
