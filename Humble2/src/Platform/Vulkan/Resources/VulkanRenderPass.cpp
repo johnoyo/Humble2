@@ -23,7 +23,8 @@ namespace HBL2
 
 		for (const auto& colorTarget : desc.colorTargets)
 		{
-			attachments.push_back(VkAttachmentDescription{
+			attachments.push_back(VkAttachmentDescription
+			{
 				.format = renderer->GetSwapchainImageFormat(),
 				.samples = VK_SAMPLE_COUNT_1_BIT,
 				.loadOp = LoadOperationToVkAttachmentLoadOp(colorTarget.loadOp),
@@ -34,7 +35,8 @@ namespace HBL2
 				.finalLayout = TextureLayoutToVkImageLayout(colorTarget.nextUsage),
 			});
 
-			colorAttachmentRefs.push_back(VkAttachmentReference{
+			colorAttachmentRefs.push_back(VkAttachmentReference
+			{
 				.attachment = index++,
 				.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			});
@@ -46,7 +48,8 @@ namespace HBL2
 		{
 			if (subpass.depthTarget)
 			{
-				attachments.push_back(VkAttachmentDescription{
+				attachments.push_back(VkAttachmentDescription
+				{
 					.flags = 0,
 					.format = FormatToVkFormat(layout->DepthTargetFormat),
 					.samples = VK_SAMPLE_COUNT_1_BIT,
@@ -58,7 +61,8 @@ namespace HBL2
 					.finalLayout = TextureLayoutToVkImageLayout(desc.depthTarget.nextUsage),
 				});
 
-				depthAttachmentRef = {
+				depthAttachmentRef =
+				{
 					.attachment = index++,
 					.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 				};
@@ -66,38 +70,46 @@ namespace HBL2
 		}
 
 		//we are going to create 1 subpass, which is the minimum you can do
-		VkSubpassDescription subpass = {};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = colorAttachmentRefs.data();
-		subpass.pDepthStencilAttachment = &depthAttachmentRef;
+		VkSubpassDescription subpass =
+		{
+			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+			.colorAttachmentCount = 1,
+			.pColorAttachments = colorAttachmentRefs.data(),
+			.pDepthStencilAttachment = &depthAttachmentRef,
+		};
 
-		VkSubpassDependency dependency = {};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		VkSubpassDependency dependency =
+		{
+			.srcSubpass = VK_SUBPASS_EXTERNAL,
+			.dstSubpass = 0,
+			.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			.srcAccessMask = 0,
+			.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		};
 
-		VkSubpassDependency depthDependency = {};
-		depthDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		depthDependency.dstSubpass = 0;
-		depthDependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-		depthDependency.srcAccessMask = 0;
-		depthDependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-		depthDependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		VkSubpassDependency depthDependency =
+		{
+			.srcSubpass = VK_SUBPASS_EXTERNAL,
+			.dstSubpass = 0,
+			.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+			.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+			.srcAccessMask = 0,
+			.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+		};
 
 		VkSubpassDependency dependencies[2] = { dependency, depthDependency };
 
-		VkRenderPassCreateInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = 2;
-		renderPassInfo.pAttachments = attachments.data();
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-		renderPassInfo.dependencyCount = 2;
-		renderPassInfo.pDependencies = &dependencies[0];
+		VkRenderPassCreateInfo renderPassInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+			.attachmentCount = 2,
+			.pAttachments = attachments.data(),
+			.subpassCount = 1,
+			.pSubpasses = &subpass,
+			.dependencyCount = 2,
+			.pDependencies = &dependencies[0],
+		};		
 
 		VK_VALIDATE(vkCreateRenderPass(device->Get(), &renderPassInfo, nullptr, &RenderPass), "vkCreateRenderPass");
 	}

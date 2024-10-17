@@ -36,9 +36,51 @@ namespace HBL2
 				.usage = MemoryUsageToVmaMemoryUsage(desc.memoryUsage),
 			};
 
-			VK_VALIDATE(vmaCreateBuffer(renderer->GetAllocator(), &bufferCreateInfo, &vmaAllocCreateInfo, &Buffer, &Allocation, nullptr), "vmaCreateImage");
+			VK_VALIDATE(vmaCreateBuffer(renderer->GetAllocator(), &bufferCreateInfo, &vmaAllocCreateInfo, &Buffer, &Allocation, nullptr), "vmaCreateBuffer");
 
-			Data = Allocation->GetMappedData();
+			if (desc.initialData != nullptr)
+			{
+				Data = desc.initialData;
+
+				VkBuffer stagingBuffer = VK_NULL_HANDLE;
+				VmaAllocation stagingBufferAllocation = VK_NULL_HANDLE;
+
+				VkBufferCreateInfo stagingBufferCreateInfo =
+				{
+					.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+					.size = ByteSize,
+					.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+					.queueFamilyIndexCount = 0,
+					.pQueueFamilyIndices = nullptr,
+				};
+
+				VmaAllocationCreateInfo vmaStagingAllocCreateInfo =
+				{
+					.usage = VMA_MEMORY_USAGE_CPU_ONLY,
+				};
+
+				VK_VALIDATE(vmaCreateBuffer(renderer->GetAllocator(), &stagingBufferCreateInfo, &vmaStagingAllocCreateInfo, &stagingBuffer, &stagingBufferAllocation, nullptr), "vmaCreateBuffer");
+
+				void* mappedData;
+				vmaMapMemory(renderer->GetAllocator(), stagingBufferAllocation, &mappedData);
+				memcpy(mappedData, Data, ByteSize);
+				vmaUnmapMemory(renderer->GetAllocator(), stagingBufferAllocation);
+
+				renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
+				{
+					VkBufferCopy copy =
+					{
+						.srcOffset = 0,
+						.dstOffset = 0,
+						.size = ByteSize,
+					};
+					
+					vkCmdCopyBuffer(cmd, stagingBuffer, Buffer, 1, &copy);
+				});
+
+				vmaDestroyBuffer(renderer->GetAllocator(), stagingBuffer, stagingBufferAllocation);
+			}
 		}
 
 		const char* DebugName = "";

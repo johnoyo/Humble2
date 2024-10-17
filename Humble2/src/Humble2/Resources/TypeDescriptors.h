@@ -27,10 +27,11 @@ namespace HBL2
 		const char* debugName;
 		glm::u32vec3 dimensions;
 		uint32_t mips = 1;
-		Format format = Format::RGBA16_FLOAT;
-		Format internalFormat = Format::RGBA16_FLOAT;
+		Format format = Format::RGBA8_RGB;
+		Format internalFormat = Format::RGBA8_RGB;
 		TextureUsage usage = TextureUsage::TEXTURE_BINDING;
 		TextureType type = TextureType::D2;
+		TextureAspect aspect = TextureAspect::COLOR;
 
 		struct Sampler
 		{
@@ -127,14 +128,23 @@ namespace HBL2
 				BlendOperation aplhaOp = BlendOperation::ADD;
 				BlendFactor srcAlhpaFactor = BlendFactor::SRC_ALPHA;
 				BlendFactor dstAlhpaFactor = BlendFactor::ONE_MINUS_SRC_ALPHA;
+				bool enabled = true;
 			};
 
-			Compare depthTest = Compare::LESS;
+			struct DepthTest
+			{
+				bool enabled = true;
+				bool writeEnabled = true;
+				bool stencilEnabled = true;
+				Compare depthTest = Compare::LESS;
+			};
+
 			BlendState blend;
+			DepthTest depthTest;
 			std::initializer_list<VertexBufferBinding> vertexBufferBindings;
 		};
 		RenderPipeline renderPipeline;
-		Handle<RenderPassLayout> renderPassLayout;
+		Handle<RenderPass> renderPass;
 	};
 
 	struct RenderPassLayoutDescriptor

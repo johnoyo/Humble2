@@ -48,6 +48,6 @@ namespace HBL2
 			.layers = 1,
 		};
 
-		vkCreateFramebuffer(device->Get(), &frameBufferInfo, nullptr, &FrameBuffer);
+		VK_VALIDATE(vkCreateFramebuffer(device->Get(), &frameBufferInfo, nullptr, &FrameBuffer), "vkCreateFramebuffer");
 	}
 }

@@ -3,10 +3,7 @@
 #include "Base.h"
 #include "Resources\TypeDescriptors.h"
 
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <stdint.h>
+#include "Platform\Vulkan\VulkanCommon.h"
 
 namespace HBL2
 {

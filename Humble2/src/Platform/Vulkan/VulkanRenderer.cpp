@@ -3,9 +3,6 @@
 #include "VulkanDevice.h"
 #include "VulkanResourceManager.h"
 
-#define VMA_IMPLEMENTATION
-#include "vma\vk_mem_alloc.h"
-
 namespace HBL2
 {
 	void VulkanRenderer::Initialize()
@@ -319,6 +316,7 @@ namespace HBL2
 			.format = Format::D32_FLOAT,
 			.internalFormat = Format::D32_FLOAT,
 			.usage = TextureUsage::DEPTH_STENCIL,
+			.aspect = TextureAspect::DEPTH,
 		});
 	}
 

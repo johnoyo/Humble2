@@ -91,6 +91,7 @@ namespace HBL2
 
 		const FrameData& GetCurrentFrame() const { return m_Frames[m_FrameNumber % FRAME_OVERLAP]; }
 		const VkFormat& GetSwapchainImageFormat() const { return m_SwapChainImageFormat; }
+		const VkExtent2D& GetSwapchainExtent() const { return m_SwapChainExtent; }
 
 		Handle<FrameBuffer> GetMainFrameBuffer() const { return m_FrameBuffers[m_SwapchainImageIndex]; }
 		Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
