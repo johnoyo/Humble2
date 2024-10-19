@@ -20,6 +20,7 @@ namespace HBL2
 
 		m_VertexBuffer = rm->CreateBuffer({
 			.debugName = "quad_vertex_buffer",
+			.usage = BufferUsage::VERTEX,
 			.byteSize = sizeof(float) * 30,
 			.initialData = vertexBuffer,
 		});

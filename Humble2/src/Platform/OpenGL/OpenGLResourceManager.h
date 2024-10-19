@@ -33,6 +33,9 @@ namespace HBL2
 		}
 		virtual void DeleteTexture(Handle<Texture> handle) override
 		{
+			OpenGLTexture* texture = GetTexture(handle);
+			texture->Destroy();
+
 			m_TexturePool.Remove(handle);
 		}
 		OpenGLTexture* GetTexture(Handle<Texture> handle) const
@@ -47,6 +50,9 @@ namespace HBL2
 		}
 		virtual void DeleteBuffer(Handle<Buffer> handle) override
 		{
+			OpenGLBuffer* buffer = GetBuffer(handle);
+			buffer->Destroy();
+
 			m_BufferPool.Remove(handle);
 		}
 		virtual void ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset) override
@@ -70,6 +76,9 @@ namespace HBL2
 		}
 		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) override
 		{
+			OpenGLFrameBuffer* framebuffer = GetFrameBuffer(handle);
+			framebuffer->Destroy();
+
 			m_FrameBufferPool.Remove(handle);
 		}
 		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) override
@@ -89,6 +98,9 @@ namespace HBL2
 		}
 		virtual void DeleteShader(Handle<Shader> handle) override
 		{
+			OpenGLShader* shader = GetShader(handle);
+			shader->Destroy();
+
 			m_ShaderPool.Remove(handle);
 		}
 		OpenGLShader* GetShader(Handle<Shader> handle) const

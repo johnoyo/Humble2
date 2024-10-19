@@ -42,9 +42,7 @@ namespace HBL2
 		{
 			if (RendererId)
 			{
-				glDeleteFramebuffers(1, &RendererId);
-				glDeleteTextures(1, &ColorAttachmentId);
-				glDeleteTextures(1, &DepthAttachmentId);
+				Destroy();
 			}
 
 			// Build the texture that will serve as the color attachment for the framebuffer.
@@ -87,10 +85,17 @@ namespace HBL2
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 
+		void Destroy()
+		{
+			glDeleteFramebuffers(1, &RendererId);
+			glDeleteTextures(1, &ColorAttachmentId);
+			glDeleteTextures(1, &DepthAttachmentId);
+		}
+
 		const char* DebugName = "";
-		uint32_t RendererId = 0;
-		uint32_t ColorAttachmentId = 0;
-		uint32_t DepthAttachmentId = 0;
+		GLuint RendererId = 0;
+		GLuint ColorAttachmentId = 0;
+		GLuint DepthAttachmentId = 0;
 		uint32_t Width = 0;
 		uint32_t Height = 0;
 	};

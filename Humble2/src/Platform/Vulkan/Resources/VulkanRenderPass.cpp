@@ -27,12 +27,12 @@ namespace HBL2
 			{
 				.format = renderer->GetSwapchainImageFormat(),
 				.samples = VK_SAMPLE_COUNT_1_BIT,
-				.loadOp = LoadOperationToVkAttachmentLoadOp(colorTarget.loadOp),
-				.storeOp = StoreOperationVkAttachmentStoreOp(colorTarget.storeOp),
+				.loadOp = VkUtils::LoadOperationToVkAttachmentLoadOp(colorTarget.loadOp),
+				.storeOp = VkUtils::StoreOperationVkAttachmentStoreOp(colorTarget.storeOp),
 				.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 				.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				.initialLayout = TextureLayoutToVkImageLayout(colorTarget.prevUsage),
-				.finalLayout = TextureLayoutToVkImageLayout(colorTarget.nextUsage),
+				.initialLayout = VkUtils::TextureLayoutToVkImageLayout(colorTarget.prevUsage),
+				.finalLayout = VkUtils::TextureLayoutToVkImageLayout(colorTarget.nextUsage),
 			});
 
 			colorAttachmentRefs.push_back(VkAttachmentReference
@@ -51,14 +51,14 @@ namespace HBL2
 				attachments.push_back(VkAttachmentDescription
 				{
 					.flags = 0,
-					.format = FormatToVkFormat(layout->DepthTargetFormat),
+					.format = VkUtils::FormatToVkFormat(layout->DepthTargetFormat),
 					.samples = VK_SAMPLE_COUNT_1_BIT,
-					.loadOp = LoadOperationToVkAttachmentLoadOp(desc.depthTarget.loadOp),
-					.storeOp = StoreOperationVkAttachmentStoreOp(desc.depthTarget.storeOp),
-					.stencilLoadOp = LoadOperationToVkAttachmentLoadOp(desc.depthTarget.stencilLoadOp),
-					.stencilStoreOp = StoreOperationVkAttachmentStoreOp(desc.depthTarget.stencilStoreOp),
-					.initialLayout = TextureLayoutToVkImageLayout(desc.depthTarget.prevUsage),
-					.finalLayout = TextureLayoutToVkImageLayout(desc.depthTarget.nextUsage),
+					.loadOp = VkUtils::LoadOperationToVkAttachmentLoadOp(desc.depthTarget.loadOp),
+					.storeOp = VkUtils::StoreOperationVkAttachmentStoreOp(desc.depthTarget.storeOp),
+					.stencilLoadOp = VkUtils::LoadOperationToVkAttachmentLoadOp(desc.depthTarget.stencilLoadOp),
+					.stencilStoreOp = VkUtils::StoreOperationVkAttachmentStoreOp(desc.depthTarget.stencilStoreOp),
+					.initialLayout = VkUtils::TextureLayoutToVkImageLayout(desc.depthTarget.prevUsage),
+					.finalLayout = VkUtils::TextureLayoutToVkImageLayout(desc.depthTarget.nextUsage),
 				});
 
 				depthAttachmentRef =

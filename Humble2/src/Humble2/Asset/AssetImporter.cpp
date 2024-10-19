@@ -190,8 +190,8 @@ namespace HBL2
 					.debugName = _strdup(std::format("{}-bind-group-layout", materialName).c_str()),
 					.textureBindings = {
 						{
-						.slot = 0,
-						.visibility = ShaderStage::FRAGMENT,
+							.slot = 0,
+							.visibility = ShaderStage::FRAGMENT,
 						},
 						{
 							.slot = 1,
@@ -317,15 +317,21 @@ namespace HBL2
 
 			auto vertexBuffer = ResourceManager::Instance->CreateBuffer({
 				.debugName = _strdup(std::format("{}-vertex-buffer", meshName).c_str()),
+				.usage = BufferUsage::VERTEX,
 				.byteSize = (uint32_t)(meshData->VertexBuffer.size() * sizeof(Vertex)),
 				.initialData = meshData->VertexBuffer.data(),
 			});
 
-			auto indexBuffer = ResourceManager::Instance->CreateBuffer({
-				.debugName = _strdup(std::format("{}-index-buffer", meshName).c_str()),
-				.byteSize = (uint32_t)(meshData->IndexBuffer.size() * sizeof(uint32_t)),
-				.initialData = meshData->IndexBuffer.data(),
-			});
+			Handle<Buffer> indexBuffer;
+			if (meshData->IndexBuffer.size() > 0)
+			{
+				indexBuffer = ResourceManager::Instance->CreateBuffer({
+					.debugName = _strdup(std::format("{}-index-buffer", meshName).c_str()),
+					.usage = BufferUsage::INDEX,
+					.byteSize = (uint32_t)(meshData->IndexBuffer.size() * sizeof(uint32_t)),
+					.initialData = meshData->IndexBuffer.data(),
+				});
+			}
 
 			// Create the mesh
 			auto mesh = ResourceManager::Instance->CreateMesh({

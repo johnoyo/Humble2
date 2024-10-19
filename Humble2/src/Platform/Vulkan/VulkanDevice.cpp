@@ -77,8 +77,6 @@ namespace HBL2
 	{
 		vkDeviceWaitIdle(m_Device);
 
-		// ...
-
 		vkDestroyDevice(m_Device, nullptr);
 		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
 

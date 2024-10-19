@@ -25,7 +25,7 @@ namespace HBL2
 			{
 				.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 				.size = ByteSize,
-				.usage = BufferUsageToVkBufferUsageFlags(desc.usage),
+				.usage = VkUtils::BufferUsageToVkBufferUsageFlags(desc.usage) | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // NOTE: Investigate if always needs VK_IMAGE_USAGE_TRANSFER_DST_BIT
 				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 				.queueFamilyIndexCount = 0,
 				.pQueueFamilyIndices = nullptr,
@@ -33,7 +33,7 @@ namespace HBL2
 
 			VmaAllocationCreateInfo vmaAllocCreateInfo =
 			{
-				.usage = MemoryUsageToVmaMemoryUsage(desc.memoryUsage),
+				.usage = VkUtils::MemoryUsageToVmaMemoryUsage(desc.memoryUsage),
 			};
 
 			VK_VALIDATE(vmaCreateBuffer(renderer->GetAllocator(), &bufferCreateInfo, &vmaAllocCreateInfo, &Buffer, &Allocation, nullptr), "vmaCreateBuffer");
@@ -83,6 +83,22 @@ namespace HBL2
 			}
 		}
 
+		void ReAllocate(uint32_t currentOffset)
+		{
+			if (DescriptorSet == VK_NULL_HANDLE)
+			{
+				HBL2_CORE_WARN("Buffer with name: {0} is set for static usage, re-allocating will have no effect", DebugName);
+				return;
+			}
+		}
+
+		void Destroy()
+		{
+			VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
+
+			vmaDestroyBuffer(renderer->GetAllocator(), Buffer, Allocation);
+		}
+
 		const char* DebugName = "";
 		VkBuffer Buffer = VK_NULL_HANDLE;
 		VmaAllocation Allocation = VK_NULL_HANDLE;
@@ -90,52 +106,5 @@ namespace HBL2
 		uint32_t ByteOffset = 0;
 		uint32_t ByteSize = 0;
 		void* Data = nullptr;
-
-	private:
-		VkBufferUsageFlags BufferUsageToVkBufferUsageFlags(BufferUsage bufferUsage)
-		{
-			switch (bufferUsage)
-			{
-			case HBL2::BufferUsage::MAP_READ:
-				break;
-			case HBL2::BufferUsage::MAP_WRITE:
-				break;
-			case HBL2::BufferUsage::COPY_SRC:
-				break;
-			case HBL2::BufferUsage::COPY_DST:
-				break;
-			case HBL2::BufferUsage::INDEX:
-				return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-			case HBL2::BufferUsage::VERTEX:
-				return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-			case HBL2::BufferUsage::UNIFORM:
-				return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-			case HBL2::BufferUsage::STORAGE:
-				return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-			case HBL2::BufferUsage::INDIRECT:
-				return VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-			case HBL2::BufferUsage::QUERY_RESOLVE:
-				break;
-			default:
-				break;
-			}
-
-			return VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
-		}
-
-		VmaMemoryUsage MemoryUsageToVmaMemoryUsage(MemoryUsage memoryUsage)
-		{
-			switch (memoryUsage)
-			{
-			case HBL2::MemoryUsage::CPU_CPU:
-				return VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_ONLY;
-			case HBL2::MemoryUsage::GPU_CPU:
-				return VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_TO_CPU;
-			case HBL2::MemoryUsage::CPU_GPU:
-				return VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU;
-			}
-
-			return VMA_MEMORY_USAGE_MAX_ENUM;
-		}
 	};
 }

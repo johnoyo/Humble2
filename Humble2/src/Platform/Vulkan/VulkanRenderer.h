@@ -10,6 +10,8 @@
 
 #include "VulkanCommon.h"
 
+#include "Utilities\Collections\DeletionQueue.h"
+
 namespace HBL2
 {
 	class VulkanDevice;
@@ -39,26 +41,6 @@ namespace HBL2
 		VkCommandBuffer CommandBuffer;
 	};
 
-	struct DeletionQueue
-	{
-		std::deque<std::function<void()>> deletors;
-
-		void push_function(std::function<void()>&& function)
-		{
-			deletors.push_back(function);
-		}
-
-		void flush()
-		{
-			for (auto it = deletors.rbegin(); it != deletors.rend(); it++)
-			{
-				(*it)();
-			}
-
-			deletors.clear();
-		}
-	};
-
 	class VulkanRenderer final : public Renderer
 	{
 	public:
@@ -75,15 +57,9 @@ namespace HBL2
 		virtual void* GetDepthAttachment() override { return nullptr; }
 		virtual void* GetColorAttachment() override { return nullptr; }
 
-		virtual void SetPipeline(Handle<Shader> shader) override {}
-		virtual void SetBuffers(Handle<Mesh> mesh, Handle<Material> material) override {}
-		virtual void SetBindGroups(Handle<Material> material) override {}
-		virtual void SetBindGroup(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset, uint32_t size) override {}
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override {}
 		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override {}
-		virtual void WriteBuffer(Handle<Buffer> buffer, intptr_t offset) override {}
-		virtual void WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex) override {}
-		virtual void WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset) override {}
+
 		virtual void Draw(Handle<Mesh> mesh) override {}
 		virtual void DrawIndexed(Handle<Mesh> mesh) override {}
 
@@ -99,6 +75,8 @@ namespace HBL2
 		const VkQueue& GetGraphicsQueue() const { return m_GraphicsQueue; }
 		const VkQueue& GetPresentQueue() const { return m_PresentQueue; }
 
+		const VkDescriptorPool& GetDescriptorPool() const { return m_DescriptorPool; }
+
 		void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
 
 	private:
@@ -109,6 +87,7 @@ namespace HBL2
 		void CreateRenderPass();
 		void CreateFrameBuffers();
 		void CreateSyncStructures();
+		void CreateDescriptorPool();
 
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
@@ -144,5 +123,7 @@ namespace HBL2
 
 		Handle<RenderPass> m_RenderPass;
 		std::vector<Handle<FrameBuffer>> m_FrameBuffers;
+
+		VkDescriptorPool m_DescriptorPool;
 	};
 }

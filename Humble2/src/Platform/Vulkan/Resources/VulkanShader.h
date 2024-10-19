@@ -15,6 +15,14 @@ namespace HBL2
 		VulkanShader() = default;
 		VulkanShader(const ShaderDescriptor&& desc);
 		
+		void Destroy()
+		{
+			VulkanDevice* device = (VulkanDevice*)Device::Instance;
+
+			vkDestroyPipelineLayout(device->Get(), PipelineLayout, nullptr);
+			vkDestroyPipeline(device->Get(), Pipeline, nullptr);
+		}
+
 		const char* DebugName = "";
 		VkPipeline Pipeline = VK_NULL_HANDLE;
 		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
@@ -85,7 +93,7 @@ namespace HBL2
 					{
 						.location = j,
 						.binding = i,
-						.format = VertexFormatToVkFormat(attribute.format),
+						.format = VkUtils::VertexFormatToVkFormat(attribute.format),
 						.offset = attribute.byteOffset,
 					};
 				}
@@ -170,12 +178,12 @@ namespace HBL2
 				VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
 				{
 					.blendEnable = VK_TRUE,
-					.srcColorBlendFactor = BlendFactorToVkBlendFactor(blend.srcColorFactor),
-					.dstColorBlendFactor = BlendFactorToVkBlendFactor(blend.dstColorFactor),
-					.colorBlendOp = BlendOperationToVkBlendOp(blend.colorOp),
-					.srcAlphaBlendFactor = BlendFactorToVkBlendFactor(blend.srcAlphaFactor),
-					.dstAlphaBlendFactor = BlendFactorToVkBlendFactor(blend.dstAlphaFactor),
-					.alphaBlendOp = BlendOperationToVkBlendOp(blend.aplhaOp),
+					.srcColorBlendFactor = VkUtils::BlendFactorToVkBlendFactor(blend.srcColorFactor),
+					.dstColorBlendFactor = VkUtils::BlendFactorToVkBlendFactor(blend.dstColorFactor),
+					.colorBlendOp = VkUtils::BlendOperationToVkBlendOp(blend.colorOp),
+					.srcAlphaBlendFactor = VkUtils::BlendFactorToVkBlendFactor(blend.srcAlphaFactor),
+					.dstAlphaBlendFactor = VkUtils::BlendFactorToVkBlendFactor(blend.dstAlphaFactor),
+					.alphaBlendOp = VkUtils::BlendOperationToVkBlendOp(blend.aplhaOp),
 					.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
 				};
 
@@ -199,7 +207,7 @@ namespace HBL2
 				.pNext = nullptr,
 				.depthTestEnable = depthTest.enabled ? VK_TRUE : VK_FALSE,
 				.depthWriteEnable = depthTest.writeEnabled ? VK_TRUE : VK_FALSE,
-				.depthCompareOp = depthTest.enabled ? CompareToVkCompareOp(depthTest.depthTest) : VK_COMPARE_OP_ALWAYS,
+				.depthCompareOp = depthTest.enabled ? VkUtils::CompareToVkCompareOp(depthTest.depthTest) : VK_COMPARE_OP_ALWAYS,
 				.depthBoundsTestEnable = VK_FALSE,
 				.stencilTestEnable = depthTest.stencilEnabled ? VK_TRUE : VK_FALSE,
 				.minDepthBounds = 0.0f,
@@ -269,92 +277,6 @@ namespace HBL2
 			};
 
 			return pipelineLayoutCreateInfo;
-		}
-
-		VkFormat VertexFormatToVkFormat(VertexFormat vertexFormat)
-		{
-			switch (vertexFormat)
-			{
-			case HBL2::VertexFormat::FLOAT32:
-				return VK_FORMAT_R32_SFLOAT;
-			case HBL2::VertexFormat::FLOAT32x2:
-				return VK_FORMAT_R32G32_SFLOAT;
-			case HBL2::VertexFormat::FLOAT32x3:
-				return VK_FORMAT_R32G32B32_SFLOAT;
-			case HBL2::VertexFormat::FLOAT32x4:
-				return VK_FORMAT_R32G32B32A32_SFLOAT;
-			case HBL2::VertexFormat::INT32:
-				return VK_FORMAT_R32_SINT;
-			case HBL2::VertexFormat::INT32x2:
-				return VK_FORMAT_R32G32_SINT;
-			case HBL2::VertexFormat::INT32x3:
-				return VK_FORMAT_R32G32B32_SINT;
-			case HBL2::VertexFormat::INT32x4:
-				return VK_FORMAT_R32G32B32A32_SINT;
-			case HBL2::VertexFormat::UINT32:
-				return VK_FORMAT_R32_UINT;
-			case HBL2::VertexFormat::UINT32x2:
-				return VK_FORMAT_R32G32_UINT;
-			case HBL2::VertexFormat::UINT32x3:
-				return VK_FORMAT_R32G32B32_UINT;
-			case HBL2::VertexFormat::UINT32x4:
-				return VK_FORMAT_R32G32B32A32_UINT;
-			}
-
-			return VK_FORMAT_MAX_ENUM;
-		}
-
-		VkBlendOp BlendOperationToVkBlendOp(BlendOperation blendOperation)
-		{
-			switch (blendOperation)
-			{
-			case HBL2::BlendOperation::ADD:
-				return VK_BLEND_OP_ADD;
-			case HBL2::BlendOperation::MUL:
-				return VK_BLEND_OP_MULTIPLY_EXT;
-			case HBL2::BlendOperation::SUB:
-				return VK_BLEND_OP_SUBTRACT;
-			}
-
-			return VK_BLEND_OP_MAX_ENUM;
-		}
-
-		VkBlendFactor BlendFactorToVkBlendFactor(BlendFactor blendFactor)
-		{
-			switch (blendFactor)
-			{
-			case HBL2::BlendFactor::SRC_ALPHA:
-				return VK_BLEND_FACTOR_SRC_ALPHA;
-			case HBL2::BlendFactor::ONE_MINUS_SRC_ALPHA:
-				return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-			}
-
-			return VK_BLEND_FACTOR_MAX_ENUM;
-		}
-
-		VkCompareOp CompareToVkCompareOp(Compare compare)
-		{
-			switch (compare)
-			{
-			case HBL2::Compare::ALAWAYS:
-				return VK_COMPARE_OP_ALWAYS;
-			case HBL2::Compare::NEVER:
-				return VK_COMPARE_OP_NEVER;
-			case HBL2::Compare::LESS:
-				return VK_COMPARE_OP_LESS;
-			case HBL2::Compare::LESS_OR_EQUAL:
-				return VK_COMPARE_OP_LESS_OR_EQUAL;
-			case HBL2::Compare::GREATER:
-				return VK_COMPARE_OP_GREATER;
-			case HBL2::Compare::GREATER_OR_EQUAL:
-				return VK_COMPARE_OP_GREATER_OR_EQUAL;
-			case HBL2::Compare::EQUAL:
-				return VK_COMPARE_OP_EQUAL;
-			case HBL2::Compare::NOT_EQUAL:
-				return VK_COMPARE_OP_NOT_EQUAL;
-			}
-
-			return VK_COMPARE_OP_MAX_ENUM;
 		}
 	};
 }

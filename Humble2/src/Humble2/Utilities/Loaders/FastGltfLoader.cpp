@@ -1,6 +1,6 @@
 #include "FastGltfLoader.h"
 
-#include "MeshUtilities.h"
+#include "Utilities\MeshUtilities.h"
 
 namespace HBL2
 {

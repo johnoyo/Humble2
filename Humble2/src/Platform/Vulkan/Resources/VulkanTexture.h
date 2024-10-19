@@ -27,14 +27,14 @@ namespace HBL2
 			{
 				.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 				.pNext = nullptr,
-				.imageType = TextureTypeToVkImageType(desc.type),
-				.format = FormatToVkFormat(desc.format),
+				.imageType = VkUtils::TextureTypeToVkImageType(desc.type),
+				.format = VkUtils::FormatToVkFormat(desc.format),
 				.extent = Extent,
 				.mipLevels = 1,
 				.arrayLayers = 1,
 				.samples = VK_SAMPLE_COUNT_1_BIT,
 				.tiling = VK_IMAGE_TILING_OPTIMAL,
-				.usage = TextureUsageToVkImageLayout(desc.usage) | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // NOTE: Investigate if always needs VK_IMAGE_USAGE_TRANSFER_DST_BIT
+				.usage = VkUtils::TextureUsageToVkImageLayout(desc.usage) | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // NOTE: Investigate if always needs VK_IMAGE_USAGE_TRANSFER_DST_BIT
 			};
 			
 			VmaAllocationCreateInfo allocationCreateInfo =
@@ -90,11 +90,11 @@ namespace HBL2
 				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 				.pNext = nullptr,
 				.image = Image,
-				.viewType = TextureTypeToVkVkImageViewType(desc.type),
-				.format = FormatToVkFormat(desc.internalFormat),
+				.viewType = VkUtils::TextureTypeToVkVkImageViewType(desc.type),
+				.format = VkUtils::FormatToVkFormat(desc.internalFormat),
 				.subresourceRange = 
 				{
-					.aspectMask = TextureAspectToVkImageAspectFlags(desc.aspect),
+					.aspectMask = VkUtils::TextureAspectToVkImageAspectFlags(desc.aspect),
 					.baseMipLevel = 0,
 					.levelCount = 1,
 					.baseArrayLayer = 0,
@@ -103,6 +103,15 @@ namespace HBL2
 			};
 
 			VK_VALIDATE(vkCreateImageView(device->Get(), &imageViewCreateInfo, nullptr, &ImageView), "vkCreateImageView");
+		}
+
+		void Destroy()
+		{
+			VulkanDevice* device = (VulkanDevice*)Device::Instance;
+			VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
+
+			vkDestroyImageView(device->Get(), ImageView, nullptr);
+			vmaDestroyImage(renderer->GetAllocator(), Image, Allocation);
 		}
 
 		const char* DebugName = "";
@@ -192,95 +201,6 @@ namespace HBL2
 
 				vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrierToReadable);
 			});
-		}
-
-		VkImageType TextureTypeToVkImageType(TextureType textureType)
-		{
-			switch (textureType)
-			{
-			case HBL2::TextureType::D1:
-				return VK_IMAGE_TYPE_1D;
-			case HBL2::TextureType::D2:
-				return VK_IMAGE_TYPE_2D;
-			case HBL2::TextureType::D3:
-				return VK_IMAGE_TYPE_3D;
-			default:
-				break;
-			}
-
-			return VK_IMAGE_TYPE_MAX_ENUM;
-		}
-
-		VkImageViewType TextureTypeToVkVkImageViewType(TextureType textureType)
-		{
-			switch (textureType)
-			{
-			case HBL2::TextureType::D1:
-				return VK_IMAGE_VIEW_TYPE_1D;
-			case HBL2::TextureType::D2:
-				return VK_IMAGE_VIEW_TYPE_2D;
-			case HBL2::TextureType::D3:
-				return VK_IMAGE_VIEW_TYPE_3D;
-			default:
-				break;
-			}
-
-			return VK_IMAGE_VIEW_TYPE_MAX_ENUM;
-		}
-
-		VkFormat FormatToVkFormat(Format format)
-		{
-			switch (format)
-			{
-			case Format::D32_FLOAT:
-				return VK_FORMAT_D32_SFLOAT;
-			case Format::RGBA8_RGB:
-				return VK_FORMAT_R8G8B8A8_SRGB;
-			}
-
-			return VK_FORMAT_MAX_ENUM;
-		}
-
-		VkImageAspectFlags TextureAspectToVkImageAspectFlags(TextureAspect textureAspect)
-		{
-			switch (textureAspect)
-			{
-			case TextureAspect::NONE:
-				return VK_IMAGE_ASPECT_NONE;
-			case TextureAspect::COLOR:
-				return VK_IMAGE_ASPECT_COLOR_BIT;
-			case TextureAspect::DEPTH:
-				return VK_IMAGE_ASPECT_DEPTH_BIT;
-			case TextureAspect::STENCIL:
-				return VK_IMAGE_ASPECT_STENCIL_BIT;
-			}
-
-			return VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM;
-		}
-
-		VkImageUsageFlags TextureUsageToVkImageLayout(TextureUsage textureUsage)
-		{
-			switch (textureUsage)
-			{
-			case HBL2::TextureUsage::COPY_SRC:
-				return VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-			case HBL2::TextureUsage::COPY_DST:
-				return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-			case HBL2::TextureUsage::TEXTURE_BINDING:
-				return VK_ACCESS_INPUT_ATTACHMENT_READ_BIT; // TODO: Investigate if its the corrent enum
-			case HBL2::TextureUsage::STORAGE_BINDING:
-				return VK_IMAGE_USAGE_STORAGE_BIT;
-			case HBL2::TextureUsage::RENDER_ATTACHMENT:
-				return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-			case HBL2::TextureUsage::SAMPLED:
-				return VK_IMAGE_USAGE_SAMPLED_BIT;
-			case HBL2::TextureUsage::DEPTH_STENCIL:
-				return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-			default:
-				break;
-			}
-
-			return VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM;
 		}
 	};
 }

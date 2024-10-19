@@ -3,13 +3,7 @@
 #include "Base.h"
 #include "Resources\TypeDescriptors.h"
 
-#ifdef EMSCRIPTEN
-	#define GLFW_INCLUDE_ES3
-	#include <GLFW/glfw3.h>
-#else
-	#define GLFW_INCLUDE_NONE
-	#include <GL/glew.h>
-#endif
+#include "Platform\OpenGL\OpenGLCommon.h"
 
 #include <string>
 #include <fstream>
@@ -18,6 +12,8 @@
 
 namespace HBL2
 {
+	struct Material;
+
 	struct OpenGLBuffer
 	{
 		OpenGLBuffer() = default;
@@ -106,11 +102,63 @@ namespace HBL2
 			glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 		}
 
+		void SetData(void* newData, intptr_t offset = 0)
+		{
+			Data = newData;
+		}
+
+		void Write(intptr_t offset = 0, GLsizeiptr size = 0)
+		{
+			if (UsageHint == GL_STATIC_DRAW)
+			{
+				HBL2_CORE_WARN("Buffer with name: {0} is set for static usage, updating will have no effect", DebugName);
+				return;
+			}
+
+			if (size == 0)
+			{
+				size = ByteSize;
+			}
+
+			glBindBuffer(Usage, RendererId);
+			glBufferSubData(Usage, offset, size, Data);
+		}
+
+		void Bind(Handle<Material> material = {}, uint32_t bufferIndex = 0, intptr_t offset = 0, uint32_t size = 0)
+		{
+			switch (Usage)
+			{
+			case GL_ELEMENT_ARRAY_BUFFER:
+				BindIndexBuffer();
+				break;
+			case GL_ARRAY_BUFFER:
+				BindVertexBuffer(material, bufferIndex);
+				break;
+			case GL_UNIFORM_BUFFER:
+				BindUniformBuffer(material, bufferIndex, offset, size);
+				break;
+			case GL_SHADER_STORAGE_BUFFER:
+				BindStorageBuffer(material, bufferIndex);
+				break;
+			}
+		}
+
+		void Destroy()
+		{
+			glDeleteBuffers(1, &RendererId);
+		}
+
 		const char* DebugName = "";
-		uint32_t RendererId = 0;
+		GLuint RendererId = 0;
 		uint32_t ByteSize = 0;
 		uint32_t Usage = GL_ARRAY_BUFFER;
 		uint32_t UsageHint = GL_STATIC_DRAW;
 		void* Data = nullptr;
+
+	private:
+		void BindIndexBuffer();
+		void BindVertexBuffer(Handle<Material> material, uint32_t bufferIndex);
+		void BindUniformBuffer(Handle<Material> material, uint32_t bufferIndex, intptr_t offset, uint32_t size);
+		void BindStorageBuffer(Handle<Material> material, uint32_t bufferIndex);
 	};
 }

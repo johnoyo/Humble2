@@ -76,6 +76,22 @@ namespace HBL2
 			return shaderID;
 		}
 
+		void Bind()
+		{
+			glUseProgram(Program);
+		}
+
+		void BindPipeline()
+		{
+			glBindVertexArray(RenderPipeline);
+		}
+
+		void Destroy()
+		{
+			glDeleteProgram(Program);
+			glDeleteVertexArrays(1, &RenderPipeline);
+		}
+
 		const char* DebugName = "";
 		GLuint Program = 0;
 		GLuint RenderPipeline = 0;

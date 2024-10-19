@@ -23,6 +23,7 @@ namespace HBL2
 		CreateRenderPass();
 		CreateFrameBuffers();
 		CreateSyncStructures();
+		CreateDescriptorPool();
 	}
 
 	void VulkanRenderer::BeginFrame()
@@ -127,7 +128,7 @@ namespace HBL2
 	{
 		vkDeviceWaitIdle(m_Device->Get());
 
-		m_MainDeletionQueue.flush();
+		m_MainDeletionQueue.Flush();
 
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 
@@ -387,7 +388,7 @@ namespace HBL2
 			m_Frames[i].MainCommandBuffer = commandBuffers[0];
 			m_Frames[i].ImGuiCommandBuffer = commandBuffers[1];
 
-			m_MainDeletionQueue.push_function([=]()
+			m_MainDeletionQueue.PushFunction([=]()
 			{
 				vkDestroyCommandPool(m_Device->Get(), m_Frames[i].CommandPool, nullptr);
 			});
@@ -406,7 +407,7 @@ namespace HBL2
 
 		VK_VALIDATE(vkCreateCommandPool(m_Device->Get(), &uploadCommandPoolInfo, nullptr, &m_UploadContext.CommandPool), "vkCreateCommandPool");
 
-		m_MainDeletionQueue.push_function([=]()
+		m_MainDeletionQueue.PushFunction([=]()
 		{
 			vkDestroyCommandPool(m_Device->Get(), m_UploadContext.CommandPool, nullptr);
 		});
@@ -504,7 +505,7 @@ namespace HBL2
 			VK_VALIDATE(vkCreateFence(m_Device->Get(), &fenceCreateInfo, nullptr, &m_Frames[i].InFlightFence), "vkCreateFence");
 
 			//enqueue the destruction of the fence
-			m_MainDeletionQueue.push_function([=]()
+			m_MainDeletionQueue.PushFunction([=]()
 			{
 				vkDestroyFence(m_Device->Get(), m_Frames[i].InFlightFence, nullptr);
 			});
@@ -514,7 +515,7 @@ namespace HBL2
 			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].ImGuiRenderFinishedSemaphore), "vkCreateSemaphore");
 
 			//enqueue the destruction of semaphores
-			m_MainDeletionQueue.push_function([=]()
+			m_MainDeletionQueue.PushFunction([=]()
 			{
 				vkDestroySemaphore(m_Device->Get(), m_Frames[i].ImageAvailableSemaphore, nullptr);
 				vkDestroySemaphore(m_Device->Get(), m_Frames[i].MainRenderFinishedSemaphore, nullptr);
@@ -530,10 +531,31 @@ namespace HBL2
 
 		VK_VALIDATE(vkCreateFence(m_Device->Get(), &uploadFenceCreateInfo, nullptr, &m_UploadContext.UploadFence), "vkCreateFence");
 
-		m_MainDeletionQueue.push_function([=]()
+		m_MainDeletionQueue.PushFunction([=]()
 		{
 			vkDestroyFence(m_Device->Get(), m_UploadContext.UploadFence, nullptr);
 		});
+	}
+
+	void VulkanRenderer::CreateDescriptorPool()
+	{
+		VkDescriptorPoolSize poolSizes[] =
+		{
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 10 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 },
+		};
+
+		VkDescriptorPoolCreateInfo tDescriptorPoolInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.flags = 0,
+			.maxSets = 10,
+			.poolSizeCount = std::size(poolSizes),
+			.pPoolSizes = poolSizes,
+		};
+
+		VK_VALIDATE(vkCreateDescriptorPool(m_Device->Get(), &tDescriptorPoolInfo, NULL, &m_DescriptorPool), "vkCreateDescriptorPool");
 	}
 
 	// Helper

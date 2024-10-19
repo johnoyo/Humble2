@@ -13,8 +13,12 @@ namespace HBL2
 		VulkanBindGroupLayout(const BindGroupLayoutDescriptor&& desc)
 		{
 			DebugName = desc.debugName;
+			BufferBindings = desc.bufferBindings;
+			TextureBindings = desc.textureBindings;
 		}
 
 		const char* DebugName = "";
+		std::vector<BindGroupLayoutDescriptor::BufferBinding> BufferBindings;
+		std::vector<BindGroupLayoutDescriptor::TextureBinding> TextureBindings;
 	};
 }

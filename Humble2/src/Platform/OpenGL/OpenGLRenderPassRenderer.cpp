@@ -8,26 +8,59 @@ namespace HBL2
 
 		if (globalDraw.BindGroup.IsValid())
 		{
-			Renderer::Instance->WriteBuffer(globalDraw.BindGroup, 0);
-			Renderer::Instance->WriteBuffer(globalDraw.BindGroup, 1);
+			OpenGLBindGroup* globalBindGroup = rm->GetBindGroup(globalDraw.BindGroup);
+
+			// Write the global uniform buffers
+			for (const auto& bufferEntry : globalBindGroup->Buffers)
+			{
+				OpenGLBuffer* buffer = rm->GetBuffer(bufferEntry.buffer);
+				buffer->Write();
+			}
 		}
 
-		for (auto&& [shaderID, drawList] : draws.m_Draws)
+		for (auto&& [shaderID, drawList] : draws.GetDraws())
 		{
 			auto& localDraw = drawList[0];
 
-			Renderer::Instance->WriteBuffer(localDraw.BindGroup, 0);
-			Renderer::Instance->SetPipeline(localDraw.Shader);
+			// Write the entire dynamicUniformBuffer data 
+			OpenGLBindGroup* localDrawBindGroup = rm->GetBindGroup(localDraw.BindGroup);
+			OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(localDrawBindGroup->Buffers[0].buffer);
+			dynamicUniformBuffer->Write();
+
+			// Bind Vertex Array
+			OpenGLShader* shader = rm->GetShader(localDraw.Shader);
+			shader->BindPipeline();
 
 			for (auto& draw : drawList)
 			{
-				Renderer::Instance->SetBuffers(draw.Mesh, draw.Material);
-				Renderer::Instance->SetBindGroups(draw.Material);
-				Renderer::Instance->SetBindGroup(draw.BindGroup, 0, draw.Offset, draw.Size);
+				Mesh* mesh = rm->GetMesh(draw.Mesh);
+				Material* material = rm->GetMaterial(draw.Material);
 
-				Mesh* openGLMesh = ResourceManager::Instance->GetMesh(draw.Mesh);
+				// Bind Index buffer if applicable
+				if (mesh->IndexBuffer.IsValid())
+				{
+					OpenGLBuffer* indexBuffer = rm->GetBuffer(mesh->IndexBuffer);
+					indexBuffer->Bind();
+				}
 
-				if (openGLMesh->IndexBuffer.IsValid())
+				// Bind vertex buffers
+				for (int i = 0; i < mesh->VertexBuffers.size(); i++)
+				{
+					OpenGLBuffer* vertexBuffer = rm->GetBuffer(mesh->VertexBuffers[i]);
+					vertexBuffer->Bind(draw.Material, i);
+				}
+
+				// Bind shader
+				shader->Bind();
+
+				// Set bind group
+				localDrawBindGroup->Set();
+
+				// Bind dynamic uniform buffer with the current offset and size
+				dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);
+
+				// Draw the mesh accordingly
+				if (mesh->IndexBuffer.IsValid())
 				{
 					Renderer::Instance->DrawIndexed(draw.Mesh);
 				}

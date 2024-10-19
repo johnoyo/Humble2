@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Base.h>
+#include <Renderer\Enums.h>
 
 #include "vulkan\vulkan.h"
 #include "vma\vk_mem_alloc.h"
@@ -9,3 +10,37 @@
 #include <format>
 
 #define VK_VALIDATE(result, vkFunction) HBL2_CORE_ASSERT(result == VK_SUCCESS, std::format("Vulkan function: {}, failed!", vkFunction));
+
+namespace HBL2
+{
+	namespace VkUtils
+	{
+		VkFormat VertexFormatToVkFormat(VertexFormat vertexFormat);
+
+		VkBlendOp BlendOperationToVkBlendOp(BlendOperation blendOperation);
+
+		VkBlendFactor BlendFactorToVkBlendFactor(BlendFactor blendFactor);
+
+		VkCompareOp CompareToVkCompareOp(Compare compare);
+
+		VkImageType TextureTypeToVkImageType(TextureType textureType);
+
+		VkImageViewType TextureTypeToVkVkImageViewType(TextureType textureType);
+
+		VkFormat FormatToVkFormat(Format format);
+
+		VkImageAspectFlags TextureAspectToVkImageAspectFlags(TextureAspect textureAspect);
+
+		VkImageUsageFlags TextureUsageToVkImageLayout(TextureUsage textureUsage);
+
+		VkImageLayout TextureLayoutToVkImageLayout(TextureLayout textureLayout);
+
+		VkAttachmentLoadOp LoadOperationToVkAttachmentLoadOp(LoadOperation loadOperation);
+
+		VkAttachmentStoreOp StoreOperationVkAttachmentStoreOp(StoreOperation storeOperation);
+
+		VmaMemoryUsage MemoryUsageToVmaMemoryUsage(MemoryUsage memoryUsage);
+
+		VkBufferUsageFlags BufferUsageToVkBufferUsageFlags(BufferUsage bufferUsage);
+	}
+}

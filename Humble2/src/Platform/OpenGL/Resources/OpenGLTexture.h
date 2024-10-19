@@ -48,8 +48,13 @@ namespace HBL2
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 
+		void Destroy()
+		{
+			glDeleteTextures(1, &RendererId);
+		}
+
 		const char* DebugName = "";
-		uint32_t RendererId = 0;
+		GLuint RendererId = 0;
 		glm::vec3 Dimensions = glm::vec3(0.0f);
 		uint32_t Format = 0;
 		stbi_uc* Data = nullptr;

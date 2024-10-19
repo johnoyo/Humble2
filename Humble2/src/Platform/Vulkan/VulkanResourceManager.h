@@ -33,6 +33,9 @@ namespace HBL2
 		}
 		virtual void DeleteTexture(Handle<Texture> handle) override
 		{
+			VulkanTexture* texture = GetTexture(handle);
+			texture->Destroy();
+
 			m_TexturePool.Remove(handle);
 		}
 		VulkanTexture* GetTexture(Handle<Texture> handle) const
@@ -47,16 +50,19 @@ namespace HBL2
 		}
 		virtual void DeleteBuffer(Handle<Buffer> handle) override
 		{
+			VulkanBuffer* buffer = GetBuffer(handle);
+			buffer->Destroy();
+
 			m_BufferPool.Remove(handle);
 		}
 		virtual void ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset) override
 		{
-			//VulkanBuffer* buffer = GetBuffer(handle);
-			//buffer->ReAllocate(currentOffset);
+			VulkanBuffer* buffer = GetBuffer(handle);
+			buffer->ReAllocate(currentOffset);
 		}
 		virtual void* GetBufferData(Handle<Buffer> handle) override
 		{
-			return nullptr; // m_BufferPool.Get(handle)->Data;
+			return m_BufferPool.Get(handle)->Data;
 		}
 		VulkanBuffer* GetBuffer(Handle<Buffer> handle) const
 		{
@@ -70,12 +76,15 @@ namespace HBL2
 		}
 		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) override
 		{
+			VulkanFrameBuffer* frameBuffer = GetFrameBuffer(handle);
+			frameBuffer->Destroy();
+
 			m_FrameBufferPool.Remove(handle);
 		}
 		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) override
 		{
 			VulkanFrameBuffer* frameBuffer = GetFrameBuffer(handle);
-			// frameBuffer->Resize(width, height);
+			frameBuffer->Resize(width, height);
 		}
 		VulkanFrameBuffer* GetFrameBuffer(Handle<FrameBuffer> handle) const
 		{
@@ -89,6 +98,9 @@ namespace HBL2
 		}
 		virtual void DeleteShader(Handle<Shader> handle) override
 		{
+			VulkanShader* shader = GetShader(handle);
+			shader->Destroy();
+
 			m_ShaderPool.Remove(handle);
 		}
 		VulkanShader* GetShader(Handle<Shader> handle) const
@@ -103,6 +115,9 @@ namespace HBL2
 		}
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) override
 		{
+			VulkanBindGroup* bindGroup = GetBindGroup(handle);
+			bindGroup->Destroy();
+
 			m_BindGroupPool.Remove(handle);
 		}
 		VulkanBindGroup* GetBindGroup(Handle<BindGroup> handle) const
@@ -131,6 +146,9 @@ namespace HBL2
 		}
 		virtual void DeleteRenderPass(Handle<RenderPass> handle) override
 		{
+			VulkanRenderPass* renderPass = GetRenderPass(handle);
+			renderPass->Destroy();
+
 			m_RenderPassPool.Remove(handle);
 		}
 		VulkanRenderPass* GetRenderPass(Handle<RenderPass> handle) const
@@ -162,6 +180,6 @@ namespace HBL2
 		Pool<VulkanRenderPass, RenderPass> m_RenderPassPool;
 		Pool<VulkanRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
 
-		friend class VulkanRenderer; // This is required for a hack to create the swapchain images
+		friend class VulkanRenderer; // This is required for a hack to create the swapchain images in the VulkanRenderer
 	};
 }

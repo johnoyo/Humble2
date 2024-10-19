@@ -45,15 +45,9 @@ namespace HBL2
 		virtual void* GetDepthAttachment() override;
 		virtual void* GetColorAttachment() override;
 
-		virtual void SetPipeline(Handle<Shader> shader) override;
-		virtual void SetBuffers(Handle<Mesh> mesh, Handle<Material> material) override;
-		virtual void SetBindGroups(Handle<Material> material) override;
-		virtual void SetBindGroup(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset, uint32_t size) override;
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override;
 		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
-		virtual void WriteBuffer(Handle<Buffer> buffer, intptr_t offset) override;
-		virtual void WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex) override;
-		virtual void WriteBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset) override;
+
 		virtual void Draw(Handle<Mesh> mesh) override;
 		virtual void DrawIndexed(Handle<Mesh> mesh) override;
 

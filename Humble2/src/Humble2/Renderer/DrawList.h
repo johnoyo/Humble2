@@ -27,12 +27,9 @@ namespace HBL2
 	{
 	public:
 		void Insert(const LocalDrawStream&& draw);
-		DrawList& PerShader(std::function<void(LocalDrawStream&)> func);
-		DrawList& PerDraw(std::function<void(LocalDrawStream&)> func);
-		void Iterate();
-		std::unordered_map<uint32_t, std::vector<LocalDrawStream>> m_Draws;
+		const std::unordered_map<uint32_t, std::vector<LocalDrawStream>>& GetDraws() const { return m_Draws; };
+
 	private:
-		std::function<void(LocalDrawStream&)> m_PerDrawFunc;
-		std::function<void(LocalDrawStream&)> m_PerShaderFunc;
+		std::unordered_map<uint32_t, std::vector<LocalDrawStream>> m_Draws;
 	};
 }
