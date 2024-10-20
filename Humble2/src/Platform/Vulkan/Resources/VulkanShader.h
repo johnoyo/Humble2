@@ -183,7 +183,7 @@ namespace HBL2
 					.colorBlendOp = VkUtils::BlendOperationToVkBlendOp(blend.colorOp),
 					.srcAlphaBlendFactor = VkUtils::BlendFactorToVkBlendFactor(blend.srcAlphaFactor),
 					.dstAlphaBlendFactor = VkUtils::BlendFactorToVkBlendFactor(blend.dstAlphaFactor),
-					.alphaBlendOp = VkUtils::BlendOperationToVkBlendOp(blend.aplhaOp),
+					.alphaBlendOp = VkUtils::BlendOperationToVkBlendOp(blend.alphaOp),
 					.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
 				};
 

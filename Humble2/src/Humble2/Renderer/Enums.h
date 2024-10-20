@@ -146,12 +146,16 @@ namespace HBL2
 		ADD = 0,
 		MUL = 1,
 		SUB = 2,
+		MIN = 3,
+		MAX = 4,
 	};
 
 	enum class BlendFactor
 	{
 		SRC_ALPHA = 0,
 		ONE_MINUS_SRC_ALPHA = 1,
+		ONE = 2,
+		ZERO = 3,
 	};
 
 	enum class StoreOperation

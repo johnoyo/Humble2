@@ -124,20 +124,34 @@ namespace HBL2
 		// Create Resource.
 		auto shader = ResourceManager::Instance->CreateShader({
 			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
-			.VS {.code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
-			.FS {.code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
+			.VS { .code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
+			.FS { .code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
 			.bindGroups {
 				{}, // Global bind group (0)
 				{}, // Material bind group (1)
 			},
 			.renderPipeline {
+				.blend = {
+					.colorOp = BlendOperation::ADD,
+					.srcColorFactor = BlendFactor::SRC_ALPHA,
+					.dstColorFactor = BlendFactor::ONE_MINUS_SRC_ALPHA, // TODO: get them from the shader file.
+					.alphaOp = BlendOperation::ADD,
+					.srcAlphaFactor = BlendFactor::ONE,
+					.dstAlphaFactor = BlendFactor::ZERO,
+					.enabled = true,
+				},
+				.depthTest = {
+					.enabled = true,
+					.depthTest = Compare::LESS,
+				},
 				.vertexBufferBindings = {
 					{
 						.byteStride = reflectionData.ByteStride,
 						.attributes = reflectionData.Attributes,
 					},
-				}
+				},
 			},
+			.renderPass = Handle<RenderPass>(),
 		});
 
 		return shader;
@@ -248,7 +262,7 @@ namespace HBL2
 					.layout = drawBindGroupLayout,
 					.textures = { albedoMapHandle },
 					.buffers = {
-						{.buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer() },
+						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer() },
 					}
 				});
 			}

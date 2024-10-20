@@ -68,16 +68,14 @@ namespace HBL2
 			signalSemaphore = renderer->GetCurrentFrame().MainRenderFinishedSemaphore;
 			break;
 		case HBL2::CommandBufferType::OFFSCREEN:
+			blockFence = VK_NULL_HANDLE; // TODO: Use renderer->uploadContext.UploadFence
+			waitSemaphore = VK_NULL_HANDLE;
+			signalSemaphore = VK_NULL_HANDLE;
 			break;
 		case HBL2::CommandBufferType::UI:
 			blockFence = renderer->GetCurrentFrame().InFlightFence;
 			waitSemaphore = renderer->GetCurrentFrame().MainRenderFinishedSemaphore;
 			signalSemaphore = renderer->GetCurrentFrame().ImGuiRenderFinishedSemaphore;
-			break;
-		default:
-			blockFence = VK_NULL_HANDLE; // TODO: Use renderer->ploadContext.UploadFence
-			waitSemaphore = VK_NULL_HANDLE;
-			signalSemaphore = VK_NULL_HANDLE;
 			break;
 		}
 
