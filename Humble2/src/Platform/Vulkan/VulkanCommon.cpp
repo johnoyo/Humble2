@@ -91,6 +91,40 @@ namespace HBL2
 			return VK_COMPARE_OP_MAX_ENUM;
 		}
 
+		VkFilter FilterToVkFilter(Filter filter)
+		{
+			switch (filter)
+			{
+			case HBL2::Filter::NEAREST:
+				return VK_FILTER_NEAREST;
+			case HBL2::Filter::LINEAR:
+				return VK_FILTER_LINEAR;
+			case HBL2::Filter::CUBIC:
+				return VK_FILTER_CUBIC_EXT;
+			}
+
+			return VK_FILTER_MAX_ENUM;
+		}
+
+		VkSamplerAddressMode WrapToVkSamplerAddressMode(Wrap wrap)
+		{
+			switch (wrap)
+			{
+			case HBL2::Wrap::REPEAT:
+				return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			case HBL2::Wrap::REPEAT_MIRRORED:
+				return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+			case HBL2::Wrap::CLAMP_TO_EDGE:
+				return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			case HBL2::Wrap::CLAMP_TO_BORDER:
+				return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+			case HBL2::Wrap::MIRROR_CLAMP_TO_EDGE:
+				return VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
+			}
+
+			return VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
+		}
+
 		VkImageType TextureTypeToVkImageType(TextureType textureType)
 		{
 			switch (textureType)

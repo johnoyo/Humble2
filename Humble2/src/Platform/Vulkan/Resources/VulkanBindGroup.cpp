@@ -13,57 +13,88 @@ namespace HBL2
 		BindGroupLayout = desc.layout;
 
 		auto* rm = (VulkanResourceManager*)ResourceManager::Instance;
+		auto* renderer = (VulkanRenderer*)Renderer::Instance;
+		auto* device = (VulkanDevice*)Device::Instance;
 
 		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(BindGroupLayout);
 
+		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			.pNext = nullptr,
+			.descriptorPool = renderer->GetDescriptorPool(),
+			.descriptorSetCount = 1,
+			.pSetLayouts = &bindGroupLayout->DescriptorSetLayout,
+		};
+
+		VK_VALIDATE(vkAllocateDescriptorSets(device->Get(), &descriptorSetAllocateInfo, &DescriptorSet), "vkAllocateDescriptorSets");
+
+		std::vector<VkWriteDescriptorSet> writeDescriptorSet(Buffers.size() + Textures.size());
+
 		for (int i = 0; i < Buffers.size(); i++)
 		{
-			const auto& bufferEntry = Buffers[i];
+			VulkanBuffer* buffer = rm->GetBuffer(Buffers[i].buffer);
 
-			VulkanBuffer* vkBuffer = rm->GetBuffer(bufferEntry.buffer);
+			VkDescriptorBufferInfo descriptorBufferInfo =
+			{
+				.buffer = buffer->Buffer,
+				.offset = Buffers[i].byteOffset,
+				.range = buffer->ByteSize,
+			};
 
-			VkDescriptorType type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
+			VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_MAX_ENUM;
 
 			switch (bindGroupLayout->BufferBindings[i].type)
 			{
 			case BufferBindingType::UNIFORM:
-				type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 				break;
 			case BufferBindingType::UNIFORM_DYNAMIC_OFFSET:
-				type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+				descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 				break;
 			case BufferBindingType::STORAGE:
-				type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+				descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 				break;
 			case BufferBindingType::READ_ONLY_STORAGE:
-				type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+				descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 				break;
 			}
 
-			VkDescriptorSetLayoutBinding setBinding =
+			writeDescriptorSet[i] =
 			{
-				.binding = (uint32_t)i,
-				.descriptorType = type,
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.pNext = nullptr,
+				.dstSet = DescriptorSet,
+				.dstBinding = bindGroupLayout->BufferBindings[i].slot,
 				.descriptorCount = 1,
-				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, // TODO: Get it from visibility field of buffer entry
-				.pImmutableSamplers = nullptr,
+				.descriptorType = descriptorType,
+				.pBufferInfo = &descriptorBufferInfo,
 			};
 		}
 
 		for (int i = 0; i < Textures.size(); i++)
 		{
-			VulkanTexture* vkTexture = rm->GetTexture(Textures[i]);
+			VulkanTexture* texture = rm->GetTexture(Textures[i]);
 
-			VkDescriptorType type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
-
-			VkDescriptorSetLayoutBinding setBinding =
+			VkDescriptorImageInfo descriptorImageInfo =
 			{
-				.binding = bindGroupLayout->TextureBindings[i].slot,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.sampler = texture->Sampler,
+				.imageView = texture->ImageView,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
+
+			writeDescriptorSet[i] =
+			{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.pNext = nullptr,
+				.dstSet = DescriptorSet,
+				.dstBinding = bindGroupLayout->TextureBindings[i].slot,
 				.descriptorCount = 1,
-				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, // TODO: Get it from visibility field of texture entry
-				.pImmutableSamplers = nullptr,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &descriptorImageInfo,
 			};
 		}
+
+		vkUpdateDescriptorSets(device->Get(), writeDescriptorSet.size(), writeDescriptorSet.data(), 0, nullptr);
 	}
 }

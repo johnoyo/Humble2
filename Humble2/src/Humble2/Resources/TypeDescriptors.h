@@ -35,11 +35,13 @@ namespace HBL2
 
 		struct Sampler
 		{
-			uint32_t filter = 347567;
+			Filter filter = Filter::NEAREST;
 			Compare compare = Compare::LESS_OR_EQUAL;
-			Wrap wrap = Wrap::CLAMP;
+			Wrap wrap = Wrap::REPEAT;
+			bool compareEnable = false;
 		};
 
+		Sampler sampler;
 		stbi_uc* initialData = nullptr;
 	};
 

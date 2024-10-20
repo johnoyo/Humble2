@@ -23,6 +23,10 @@ namespace HBL2
 
 		VkCompareOp CompareToVkCompareOp(Compare compare);
 
+		VkFilter FilterToVkFilter(Filter filter);
+
+		VkSamplerAddressMode WrapToVkSamplerAddressMode(Wrap wrap);
+
 		VkImageType TextureTypeToVkImageType(TextureType textureType);
 
 		VkImageViewType TextureTypeToVkVkImageViewType(TextureType textureType);

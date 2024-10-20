@@ -103,6 +103,21 @@ namespace HBL2
 			};
 
 			VK_VALIDATE(vkCreateImageView(device->Get(), &imageViewCreateInfo, nullptr, &ImageView), "vkCreateImageView");
+
+			// Create sampler
+			VkSamplerCreateInfo samplerInfo =
+			{
+				.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+				.pNext = nullptr,
+				.magFilter = VkUtils::FilterToVkFilter(desc.sampler.filter),
+				.minFilter = VkUtils::FilterToVkFilter(desc.sampler.filter),
+				.addressModeU = VkUtils::WrapToVkSamplerAddressMode(desc.sampler.wrap),
+				.addressModeV = VkUtils::WrapToVkSamplerAddressMode(desc.sampler.wrap),
+				.addressModeW = VkUtils::WrapToVkSamplerAddressMode(desc.sampler.wrap),
+				.compareOp = desc.sampler.compareEnable ? VkUtils::CompareToVkCompareOp(desc.sampler.compare) : VK_COMPARE_OP_NEVER,
+			};
+
+			VK_VALIDATE(vkCreateSampler(device->Get(), &samplerInfo, nullptr, &Sampler), "vkCreateSampler");
 		}
 
 		void Destroy()
@@ -110,6 +125,7 @@ namespace HBL2
 			VulkanDevice* device = (VulkanDevice*)Device::Instance;
 			VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 
+			vkDestroySampler(device->Get(), Sampler, nullptr);
 			vkDestroyImageView(device->Get(), ImageView, nullptr);
 			vmaDestroyImage(renderer->GetAllocator(), Image, Allocation);
 		}
@@ -118,6 +134,7 @@ namespace HBL2
 		VkImage Image = VK_NULL_HANDLE;
 		VkImageView ImageView = VK_NULL_HANDLE;
 		VmaAllocation Allocation = VK_NULL_HANDLE;
+		VkSampler Sampler = VK_NULL_HANDLE;
 		VkExtent3D Extent{};
 
 	private:

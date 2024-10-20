@@ -40,6 +40,13 @@ namespace HBL2
 		UINT32x4 = 11,
 	};
 
+	enum class Filter
+	{
+		NEAREST = 0,
+		LINEAR = 1,
+		CUBIC = 2,
+	};
+
 	enum class Compare
 	{
 		LESS = 1,
@@ -54,7 +61,11 @@ namespace HBL2
 
 	enum class Wrap
 	{
-		CLAMP = 1,
+		REPEAT = 0,
+		REPEAT_MIRRORED = 1,
+		CLAMP_TO_EDGE = 2,
+		CLAMP_TO_BORDER = 3,
+		MIRROR_CLAMP_TO_EDGE = 4,
 	};
 
 	enum class Format
