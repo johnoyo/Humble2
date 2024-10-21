@@ -26,6 +26,79 @@ namespace HBL2
 		m_MainCommandBuffer = new OpenGLCommandBuffer();
 		m_OffscreenCommandBuffer = new OpenGLCommandBuffer();
 		m_UserInterfaceCommandBuffer = new OpenGLCommandBuffer();
+
+		// Global bindings for the 2D rendering.
+		m_GlobalBindingsLayout2D = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "unlit-colored-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+			},
+		});
+
+		auto cameraBuffer2D = m_ResourceManager->CreateBuffer({
+			.debugName = "camera-uniform-buffer",
+			.usage = BufferUsage::UNIFORM,
+			.usageHint = BufferUsageHint::DYNAMIC,
+			.memoryUsage = MemoryUsage::GPU_CPU,
+			.byteSize = 64,
+			.initialData = nullptr
+		});
+
+		m_GlobalBindings2D = m_ResourceManager->CreateBindGroup({
+			.debugName = "unlit-colored-bind-group",
+			.layout = m_GlobalBindingsLayout2D,
+			.buffers = {
+				{ .buffer = cameraBuffer2D },
+			}
+		});
+
+		// Global bindings for the 3D rendering.
+		m_GlobalBindingsLayout3D = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "global-bind-group-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+				{
+					.slot = 1,
+					.visibility = ShaderStage::FRAGMENT,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+			},
+		});
+
+		auto cameraBuffer3D = m_ResourceManager->CreateBuffer({
+			.debugName = "camera-uniform-buffer",
+			.usage = BufferUsage::UNIFORM,
+			.usageHint = BufferUsageHint::DYNAMIC,
+			.memoryUsage = MemoryUsage::GPU_CPU,
+			.byteSize = sizeof(CameraData),
+			.initialData = nullptr
+		});
+
+		auto lightBuffer = m_ResourceManager->CreateBuffer({
+			.debugName = "light-uniform-buffer",
+			.usage = BufferUsage::UNIFORM,
+			.usageHint = BufferUsageHint::DYNAMIC,
+			.memoryUsage = MemoryUsage::GPU_CPU,
+			.byteSize = sizeof(LightData),
+			.initialData = nullptr
+		});
+
+		m_GlobalBindings3D = m_ResourceManager->CreateBindGroup({
+			.debugName = "global-bind-group",
+			.layout = m_GlobalBindingsLayout3D,
+			.buffers = {
+				{ .buffer = cameraBuffer3D },
+				{ .buffer = lightBuffer },
+			}
+		});
 	}
 
 	void OpenGLRenderer::BeginFrame()
@@ -79,10 +152,9 @@ namespace HBL2
 			return m_OffscreenCommandBuffer;
 		case HBL2::CommandBufferType::UI:
 			return m_UserInterfaceCommandBuffer;
-		default:
-			assert(false);
-			return nullptr;
 		}
+
+		return nullptr;
 	}
 
 	void OpenGLRenderer::EndFrame()
@@ -100,6 +172,7 @@ namespace HBL2
 
 	void OpenGLRenderer::Clean()
 	{
+		// TODO!
 	}
 
 	void* OpenGLRenderer::GetDepthAttachment()

@@ -34,17 +34,15 @@ namespace HBL2
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding> VertexBufferBindings;
 
 	private:
-		VkPipelineShaderStageCreateInfo CreateShaderStageInfo(VkShaderStageFlagBits shaderStage, const ShaderDescriptor::ShaderStage& stage)
+		VkPipelineShaderStageCreateInfo CreateShaderStageInfo(VkShaderStageFlagBits shaderStage, VkShaderModule& shaderModule, const ShaderDescriptor::ShaderStage& stage)
 		{
 			VkShaderModuleCreateInfo createInfo =
 			{
 				.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 				.pNext = nullptr,
-				.codeSize = stage.code.size(),
+				.codeSize = 4 * stage.code.size(),
 				.pCode = reinterpret_cast<const uint32_t*>(stage.code.data()),
 			};
-
-			VkShaderModule shaderModule = shaderStage == VK_SHADER_STAGE_VERTEX_BIT ? VertexShaderModule : FragmentShaderModule;
 
 			switch (shaderStage)
 			{
@@ -83,7 +81,7 @@ namespace HBL2
 					.inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
 				};
 
-				vertexInputAttributeDescriptions.reserve(binding.attributes.size());
+				vertexInputAttributeDescriptions.resize(binding.attributes.size());
 
 				for (uint32_t j = 0; j < binding.attributes.size(); j++)
 				{
@@ -100,17 +98,15 @@ namespace HBL2
 			}
 		}
 
-		VkPipelineVertexInputStateCreateInfo CreateVertexInputStateCreateInfo()
+		VkPipelineVertexInputStateCreateInfo CreateVertexInputStateCreateInfo(std::vector<VkVertexInputBindingDescription>& vertexInputBindingDescriptions, std::vector<VkVertexInputAttributeDescription>& vertexInputAttributeDescriptions)
 		{
-			std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions(VertexBufferBindings.size());
-			std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
-
 			GetVertexDescription(vertexInputBindingDescriptions, vertexInputAttributeDescriptions);
 
 			VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo =
 			{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 				.pNext = nullptr,
+				.flags = 0,
 				.vertexBindingDescriptionCount = (uint32_t)vertexInputBindingDescriptions.size(),
 				.pVertexBindingDescriptions = vertexInputBindingDescriptions.data(),
 				.vertexAttributeDescriptionCount = (uint32_t)vertexInputAttributeDescriptions.size(),
@@ -120,20 +116,20 @@ namespace HBL2
 			return vertexInputStateCreateInfo;
 		}
 
-		VkPipelineInputAssemblyStateCreateInfo CreateInputAssemblyStateCreateInfo(VkPrimitiveTopology topology)
+		VkPipelineInputAssemblyStateCreateInfo CreateInputAssemblyStateCreateInfo(Topology topology)
 		{
 			VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo =
 			{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 				.pNext = nullptr,
-				.topology = topology,
+				.topology = VkUtils::TopologyToVkPrimitiveTopology(topology),
 				.primitiveRestartEnable = VK_FALSE,
 			};
 
 			return inputAssemblyStateCreateInfo;
 		}
 
-		VkPipelineRasterizationStateCreateInfo CreateRasterizationStateCreateInfo(VkPolygonMode polygonMode)
+		VkPipelineRasterizationStateCreateInfo CreateRasterizationStateCreateInfo(PolygonMode polygonMode, CullMode cullMode, FrontFace frontFace)
 		{
 			VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo =
 			{
@@ -141,9 +137,9 @@ namespace HBL2
 				.pNext = nullptr,
 				.depthClampEnable = VK_FALSE,
 				.rasterizerDiscardEnable = VK_FALSE,
-				.polygonMode = polygonMode,
-				.cullMode = VK_CULL_MODE_NONE,
-				.frontFace = VK_FRONT_FACE_CLOCKWISE,
+				.polygonMode = VkUtils::PolygonModeToVkPolygonMode(polygonMode),
+				.cullMode = VkUtils::CullModeToVkCullModeFlags(cullMode),
+				.frontFace = VkUtils::FrontFaceToVkFrontFace(frontFace),
 				.depthBiasEnable = VK_FALSE,
 				.depthBiasConstantFactor = 0.0f,
 				.depthBiasClamp = 0.0f,
@@ -217,24 +213,8 @@ namespace HBL2
 			return depthStencilStateCreateInfo;
 		}
 
-		VkPipelineViewportStateCreateInfo CreateViewportStateCreateInfo()
+		VkPipelineViewportStateCreateInfo CreateViewportStateCreateInfo(VkViewport& viewport, VkRect2D& scissor)
 		{
-			VkViewport viewport =
-			{
-				.x = 0.0f,
-				.y = 0.0f,
-				.width = (float)Renderer->GetSwapchainExtent().width,
-				.height = (float)Renderer->GetSwapchainExtent().height,
-				.minDepth = 0.0f,
-				.maxDepth = 1.0f,
-			};
-
-			VkRect2D scissor =
-			{
-				.offset = { 0, 0 },
-				.extent = Renderer->GetSwapchainExtent(),
-			};
-
 			VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
 			{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
@@ -261,22 +241,6 @@ namespace HBL2
 			};
 
 			return colorBlendStateCreateInfo;
-		}
-
-		VkPipelineLayoutCreateInfo CreatePipelineLayoutCreateInfo()
-		{
-			VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
-			{
-				.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-				.pNext = nullptr,
-				.flags = 0,
-				.setLayoutCount = 0,
-				.pSetLayouts = nullptr,
-				.pushConstantRangeCount = 0,
-				.pPushConstantRanges = nullptr,
-			};
-
-			return pipelineLayoutCreateInfo;
 		}
 	};
 }

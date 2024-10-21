@@ -18,49 +18,6 @@ namespace HBL2
 					HBL2_CORE_INFO("Setting up mesh");
 				}
 			});
-
-		m_GlobalBindGroupLayout = rm->CreateBindGroupLayout({
-			.debugName = "global-bind-group-layout",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM,
-				},
-				{
-					.slot = 1,
-					.visibility = ShaderStage::FRAGMENT,
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
-		m_CameraBuffer = rm->CreateBuffer({
-			.debugName = "camera-uniform-buffer",
-			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
-			.memoryUsage = MemoryUsage::GPU_CPU,
-			.byteSize = sizeof(CameraData),
-			.initialData = nullptr
-		});
-
-		m_LightBuffer = rm->CreateBuffer({
-			.debugName = "light-uniform-buffer",
-			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
-			.memoryUsage = MemoryUsage::GPU_CPU,
-			.byteSize = sizeof(LightData),
-			.initialData = nullptr
-		});
-
-		m_GlobalBindings = rm->CreateBindGroup({
-			.debugName = "global-bind-group",
-			.layout = m_GlobalBindGroupLayout,
-			.buffers = {
-				{ .buffer = m_CameraBuffer },
-				{ .buffer = m_LightBuffer },
-			}
-		});
 	}
 
 	void StaticMeshRenderingSystem::OnUpdate(float ts)
@@ -69,10 +26,12 @@ namespace HBL2
 		
 		m_UniformRingBuffer->Invalidate();
 
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Handle<RenderPass>(), Handle<FrameBuffer>());
+		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
 
-		Renderer::Instance->SetBufferData(m_GlobalBindings, 0, (void*)&m_CameraData);
+		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
+
+		Renderer::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData);
 
 		m_LightData.LightCount = 0;
 
@@ -89,7 +48,7 @@ namespace HBL2
 				}
 			});
 
-		Renderer::Instance->SetBufferData(m_GlobalBindings, 1, (void*)&m_LightData);
+		Renderer::Instance->SetBufferData(globalBindings, 1, (void*)&m_LightData);
 
 		DrawList draws;
 
@@ -123,7 +82,7 @@ namespace HBL2
 				}
 			});
 
-		GlobalDrawStream globalDrawStream = { .BindGroup = m_GlobalBindings };
+		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 		commandBuffer->EndRenderPass(*passRenderer);
 		commandBuffer->Submit();
@@ -131,12 +90,6 @@ namespace HBL2
 
 	void StaticMeshRenderingSystem::OnDestroy()
 	{
-		auto* rm = ResourceManager::Instance;
-
-		rm->DeleteBindGroup(m_GlobalBindings);
-		rm->DeleteBindGroupLayout(m_GlobalBindGroupLayout);
-		rm->DeleteBuffer(m_CameraBuffer);
-		rm->DeleteBuffer(m_LightBuffer);
 	}
 
 	void StaticMeshRenderingSystem::GetViewProjection()

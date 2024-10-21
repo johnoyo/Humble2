@@ -1228,7 +1228,7 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
-					auto relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".hblshader"), HBL2::Project::GetAssetDirectory());
+					auto relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), HBL2::Project::GetAssetDirectory());
 
 					auto shaderAssetHandle = AssetManager::Instance->CreateAsset({
 						.debugName = "shader-asset",
@@ -1251,7 +1251,23 @@ namespace HBL2
 						break;
 					}
 
-					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".hblshader"), 0);
+					if (shaderAssetHandle.IsValid())
+					{
+						std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->FilePath).string() + ".hblshader", 0);
+
+						YAML::Emitter out;
+						out << YAML::BeginMap;
+						out << YAML::Key << "Shader" << YAML::Value;
+						out << YAML::BeginMap;
+						out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->UUID;
+						out << YAML::Key << "Type" << YAML::Value << m_SelectedShaderType;
+						out << YAML::EndMap;
+						out << YAML::EndMap;
+						fout << out.c_str();
+						fout.close();
+					}
+
+					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), 0);
 					fout << shaderSource;
 					fout.close();
 

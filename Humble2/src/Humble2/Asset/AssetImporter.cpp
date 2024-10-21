@@ -37,6 +37,9 @@ namespace HBL2
 		case AssetType::Scene:
 			asset->Indentifier = ImportScene(asset).Pack();
 			return asset->Indentifier;
+		case AssetType::Script:
+			// asset->Indentifier = ImportScript(asset).Pack();
+			return 0; // asset->Indentifier;
 		}
 
 		return 0;
@@ -74,6 +77,7 @@ namespace HBL2
 		if (!data["Texture"].IsDefined())
 		{
 			HBL2_CORE_ERROR("Texture not found: {0}", asset->DebugName);
+			stream.close();
 			return Handle<Texture>();
 		}
 
@@ -92,20 +96,74 @@ namespace HBL2
 			// Create the texture
 			auto texture = ResourceManager::Instance->CreateTexture({
 				.debugName = _strdup(std::format("{}-texture", textureName).c_str()),
-				.dimensions = { textureSettings.Width, textureSettings.Height, 0 },
+				.dimensions = { textureSettings.Width, textureSettings.Height, 1 },
+				.usage = TextureUsage::SAMPLED,
+				.aspect = TextureAspect::COLOR,
 				.initialData = textureData,
 			});
 
+			stream.close();
 			return texture;
 		}
 
 		HBL2_CORE_ERROR("Texture not found: {0}", asset->DebugName);
-
+		
+		stream.close();
 		return Handle<Texture>();
     }
 
 	Handle<Shader> AssetImporter::ImportShader(Asset* asset)
     {
+		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblshader");
+
+		if (!stream.is_open())
+		{
+			HBL2_CORE_ERROR("Shader file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblshader");
+			return Handle<Shader>();
+		}
+
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Shader"].IsDefined())
+		{
+			HBL2_CORE_ERROR("Shader not found: {0}", asset->DebugName);
+			stream.close();
+			return Handle<Shader>();
+		}
+		
+		const std::string& shaderName = asset->FilePath.filename().stem().string();
+
+		Handle<BindGroupLayout> globalBindGroupLayout;
+		Handle<BindGroupLayout> drawBindGroupLayout;
+
+		auto shaderProperties = data["Shader"];
+		if (shaderProperties)
+		{
+			uint32_t type = shaderProperties["Type"].as<uint32_t>();
+
+			switch (type)
+			{
+			case 0:
+				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout2D();
+				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::UNLIT);
+				break;
+			case 1:
+				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
+				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG);
+				break;
+			case 2:
+				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
+				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR);
+				break;
+			default:
+				HBL2_CORE_ERROR("Unknown Shader type: {0}", asset->DebugName);
+				stream.close();
+				return Handle<Shader>();
+			}
+		}
+
 		// Compile Shader.
 		std::filesystem::path shaderPath = Project::GetAssetFileSystemPath(asset->FilePath);
 		auto shaderCode = ShaderUtilities::Get().Compile(shaderPath.string());
@@ -113,13 +171,12 @@ namespace HBL2
 		if (shaderCode.empty())
 		{
 			HBL2_CORE_ERROR("Shader asset: {0}, at path: {1}, could be compiled. Returning invalid shader.", asset->DebugName, shaderPath.string());
+			stream.close();
 			return ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::INVALID);
 		}
 
 		// Reflect Shader.
 		const auto& reflectionData = ShaderUtilities::Get().GetReflectionData(shaderPath.string());
-
-		const std::string& shaderName = asset->FilePath.filename().stem().string();
 
 		// Create Resource.
 		auto shader = ResourceManager::Instance->CreateShader({
@@ -127,8 +184,8 @@ namespace HBL2
 			.VS { .code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
 			.FS { .code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
 			.bindGroups {
-				{}, // Global bind group (0)
-				{}, // Material bind group (1)
+				globalBindGroupLayout,	// Global bind group (0)
+				drawBindGroupLayout,	// Material bind group (1)
 			},
 			.renderPipeline {
 				.blend = {
@@ -151,9 +208,10 @@ namespace HBL2
 					},
 				},
 			},
-			.renderPass = Handle<RenderPass>(),
+			.renderPass = Renderer::Instance->GetMainRenderPass(),
 		});
 
+		stream.close();
 		return shader;
     }
 
@@ -200,38 +258,9 @@ namespace HBL2
 
 			if (normalMapHandle.IsValid() && metallicMapHandle.IsValid() && roughnessMapHandle.IsValid())
 			{
-				auto drawBindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
-					.debugName = _strdup(std::format("{}-bind-group-layout", materialName).c_str()),
-					.textureBindings = {
-						{
-							.slot = 0,
-							.visibility = ShaderStage::FRAGMENT,
-						},
-						{
-							.slot = 1,
-							.visibility = ShaderStage::FRAGMENT,
-						},
-						{
-							.slot = 2,
-							.visibility = ShaderStage::FRAGMENT,
-						},
-						{
-							.slot = 3,
-							.visibility = ShaderStage::FRAGMENT,
-						},
-					},
-					.bufferBindings = {
-						{
-							.slot = 2,
-							.visibility = ShaderStage::VERTEX,
-							.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
-						},
-					},
-				});
-
 				drawBindings = ResourceManager::Instance->CreateBindGroup({
 					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-					.layout = drawBindGroupLayout,
+					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
 					.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle },
 					.buffers = {
 						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer() },
@@ -240,26 +269,9 @@ namespace HBL2
 			}
 			else
 			{
-				auto drawBindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
-					.debugName = _strdup(std::format("{}-bind-group-layout", materialName).c_str()),
-					.textureBindings = {
-						{
-							.slot = 0,
-							.visibility = ShaderStage::FRAGMENT,
-						},
-					},
-					.bufferBindings = {
-						{
-							.slot = 2,
-							.visibility = ShaderStage::VERTEX,
-							.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
-						},
-					},
-				});
-
 				drawBindings = ResourceManager::Instance->CreateBindGroup({
 					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-					.layout = drawBindGroupLayout,
+					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
 					.textures = { albedoMapHandle },
 					.buffers = {
 						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer() },
@@ -277,9 +289,11 @@ namespace HBL2
 			mat->AlbedoColor = albedoColor;
 			mat->Glossiness = glossiness;
 
+			stream.close();
 			return material;
 		}
 
+		stream.close();
 		return Handle<Material>();
 	}
 

@@ -140,6 +140,7 @@ namespace HBL2
 		void LoadBuiltInShaders();
 
 		Handle<Shader> GetBuiltInShader(BuiltInShader shader) { return m_Shaders[shader]; }
+		Handle<BindGroupLayout> GetBuiltInShaderLayout(BuiltInShader shader) { return m_ShaderLayouts[shader]; }
 
 	private:
 		ShaderUtilities() = default;
@@ -149,5 +150,6 @@ namespace HBL2
 	private:
 		std::unordered_map<std::string, ReflectionData> m_ShaderReflectionData;
 		std::unordered_map<BuiltInShader, Handle<Shader>> m_Shaders;
+		std::unordered_map<BuiltInShader, Handle<BindGroupLayout>> m_ShaderLayouts;
 	};
 }

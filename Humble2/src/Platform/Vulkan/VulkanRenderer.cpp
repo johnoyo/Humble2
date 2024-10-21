@@ -24,6 +24,9 @@ namespace HBL2
 		CreateFrameBuffers();
 		CreateSyncStructures();
 		CreateDescriptorPool();
+		CreateDescriptorSets();
+
+		TempUniformRingBuffer = new UniformRingBuffer(4096, Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
 	}
 
 	void VulkanRenderer::BeginFrame()
@@ -430,7 +433,7 @@ namespace HBL2
 	void VulkanRenderer::CreateRenderPass()
 	{
 		Handle<RenderPassLayout> renderPassLayout = m_ResourceManager->CreateRenderPassLayout({
-			.debugName = "imgui-renderpass-layout",
+			.debugName = "main-renderpass-layout",
 			.depthTargetFormat = Format::D32_FLOAT,
 			.subPasses = {
 				{ .depthTarget = true, .colorTargets = 1, },
@@ -438,7 +441,7 @@ namespace HBL2
 		});
 
 		m_RenderPass = m_ResourceManager->CreateRenderPass({
-			.debugName = "imgui-renderpass",
+			.debugName = "main-renderpass",
 			.layout = renderPassLayout,
 			.depthTarget = {
 				.loadOp = LoadOperation::CLEAR,
@@ -541,21 +544,103 @@ namespace HBL2
 	{
 		VkDescriptorPoolSize poolSizes[] =
 		{
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 10 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
 		};
 
 		VkDescriptorPoolCreateInfo tDescriptorPoolInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 			.flags = 0,
-			.maxSets = 10,
+			.maxSets = 100,
 			.poolSizeCount = std::size(poolSizes),
 			.pPoolSizes = poolSizes,
 		};
 
 		VK_VALIDATE(vkCreateDescriptorPool(m_Device->Get(), &tDescriptorPoolInfo, NULL, &m_DescriptorPool), "vkCreateDescriptorPool");
+	}
+
+	void VulkanRenderer::CreateDescriptorSets()
+	{
+		// Global bindings for the 2D rendering.
+		m_GlobalBindingsLayout2D = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "unlit-colored-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+			},
+		});
+
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			auto cameraBuffer2D = m_ResourceManager->CreateBuffer({
+				.debugName = "camera-uniform-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.usageHint = BufferUsageHint::DYNAMIC,
+				.memoryUsage = MemoryUsage::GPU_CPU,
+				.byteSize = 64,
+				.initialData = nullptr,
+			});
+
+			m_Frames[i].GlobalBindings2D = m_ResourceManager->CreateBindGroup({
+				.debugName = "unlit-colored-bind-group",
+				.layout = m_GlobalBindingsLayout2D,
+				.buffers = {
+					{ .buffer = cameraBuffer2D },
+				}
+			});
+		}
+
+		// Global bindings for the 3D rendering.
+		m_GlobalBindingsLayout3D = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "global-bind-group-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+				{
+					.slot = 1,
+					.visibility = ShaderStage::FRAGMENT,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+			},
+		});
+
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			auto cameraBuffer3D = m_ResourceManager->CreateBuffer({
+				.debugName = "camera-uniform-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.usageHint = BufferUsageHint::DYNAMIC,
+				.memoryUsage = MemoryUsage::GPU_CPU,
+				.byteSize = sizeof(CameraData),
+				.initialData = nullptr,
+			});
+
+			auto lightBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "light-uniform-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.usageHint = BufferUsageHint::DYNAMIC,
+				.memoryUsage = MemoryUsage::GPU_CPU,
+				.byteSize = sizeof(LightData),
+				.initialData = nullptr,
+			});
+
+			m_Frames[i].GlobalBindings3D = m_ResourceManager->CreateBindGroup({
+				.debugName = "global-bind-group",
+				.layout = m_GlobalBindingsLayout3D,
+				.buffers = {
+					{ .buffer = cameraBuffer3D },
+					{ .buffer = lightBuffer },
+				}
+			});
+		}
 	}
 
 	// Helper

@@ -15,23 +15,58 @@ namespace HBL2
 		VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
 
 		VkPipelineShaderStageCreateInfo shaderStages[2]{};
-		shaderStages[0] = CreateShaderStageInfo(VK_SHADER_STAGE_VERTEX_BIT, desc.VS);
-		shaderStages[1] = CreateShaderStageInfo(VK_SHADER_STAGE_FRAGMENT_BIT, desc.FS);
+		shaderStages[0] = CreateShaderStageInfo(VK_SHADER_STAGE_VERTEX_BIT, VertexShaderModule, desc.VS);
+		shaderStages[1] = CreateShaderStageInfo(VK_SHADER_STAGE_FRAGMENT_BIT, FragmentShaderModule, desc.FS);
 
-		VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = CreateVertexInputStateCreateInfo();
+		std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions(VertexBufferBindings.size());
+		std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
+		VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = CreateVertexInputStateCreateInfo(vertexInputBindingDescriptions, vertexInputAttributeDescriptions);
 
-		VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo = CreateInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST); // TODO: Add topology to desc
+		VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo = CreateInputAssemblyStateCreateInfo(desc.renderPipeline.topology);
 
-		VkPipelineViewportStateCreateInfo viewportStateCreateInfo = CreateViewportStateCreateInfo();
+		VkViewport viewport =
+		{
+			.x = 0.0f,
+			.y = 0.0f,
+			.width = (float)Renderer->GetSwapchainExtent().width,
+			.height = (float)Renderer->GetSwapchainExtent().height,
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f,
+		};
 
-		VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = CreateRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL); // TODO: Add fill to desc
+		VkRect2D scissor =
+		{
+			.offset = { 0, 0 },
+			.extent = Renderer->GetSwapchainExtent(),
+		};
+
+		VkPipelineViewportStateCreateInfo viewportStateCreateInfo = CreateViewportStateCreateInfo(viewport, scissor);
+
+		VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = CreateRasterizationStateCreateInfo(desc.renderPipeline.polygonMode, desc.renderPipeline.cullMode, desc.renderPipeline.frontFace);
 		VkPipelineColorBlendAttachmentState colorBlendAttachment = CreateColorBlendAttachmentState(desc.renderPipeline.blend);
 		VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = CreateMultisampleStateCreateInfo();
 		VkPipelineDepthStencilStateCreateInfo depthStencil = DepthStencilCreateInfo(desc.renderPipeline.depthTest);
 
 		VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = CreateColorBlendStateCreateInfo(colorBlendAttachment);
 
-		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = CreatePipelineLayoutCreateInfo(); // TODO: Add descriptor sets to pipeline layout
+		std::vector<VkDescriptorSetLayout> setLayouts;
+
+		for (const auto& bindGroup : desc.bindGroups)
+		{
+			VulkanBindGroupLayout* vkBindGroupLayout = rm->GetBindGroupLayout(bindGroup);
+			setLayouts.push_back(vkBindGroupLayout->DescriptorSetLayout);
+		}
+
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.setLayoutCount = (uint32_t)setLayouts.size(),
+			.pSetLayouts = setLayouts.data(),
+			.pushConstantRangeCount = 0,
+			.pPushConstantRanges = nullptr,
+		};
 
 		VK_VALIDATE(vkCreatePipelineLayout(Device->Get(), &pipelineLayoutCreateInfo, nullptr, &PipelineLayout), "vkCreatePipelineLayout")
 

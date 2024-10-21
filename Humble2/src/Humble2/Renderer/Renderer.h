@@ -7,6 +7,21 @@
 
 namespace HBL2
 {
+	struct CameraData
+	{
+		glm::mat4 ViewProjection;
+	};
+
+	struct LightData
+	{
+		glm::vec4 ViewPosition;
+		glm::vec4 LightPositions[16];
+		glm::vec4 LightColors[16];
+		glm::vec4 LightIntensities[16];
+		float LightCount;
+		float _padding[3];
+	};
+
 	enum class GraphicsAPI
 	{
 		NONE,
@@ -39,11 +54,21 @@ namespace HBL2
 		virtual void* GetDepthAttachment() = 0;
 		virtual void* GetColorAttachment() = 0;
 
+		virtual Handle<RenderPass> GetMainRenderPass() = 0;
+		virtual Handle<FrameBuffer> GetMainFrameBuffer() = 0;
+		virtual Handle<BindGroup> GetGlobalBindings2D() = 0;
+		virtual Handle<BindGroup> GetGlobalBindings3D() = 0;
+
+		Handle<BindGroupLayout> GetGlobalBindingsLayout2D() { return m_GlobalBindingsLayout2D; }
+		Handle<BindGroupLayout> GetGlobalBindingsLayout3D() { return m_GlobalBindingsLayout3D; }
+
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
 
 		UniformRingBuffer* TempUniformRingBuffer;
 
 	protected:
 		GraphicsAPI m_GraphicsAPI;
+		Handle<BindGroupLayout> m_GlobalBindingsLayout2D;
+		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
 	};
 }

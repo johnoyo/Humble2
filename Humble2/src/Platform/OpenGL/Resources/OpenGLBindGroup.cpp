@@ -43,6 +43,7 @@ namespace HBL2
 			// ...
 		}
 	}
+
 	void OpenGLBindGroup::Set()
 	{
 		OpenGLResourceManager* rm = (OpenGLResourceManager*)ResourceManager::Instance;

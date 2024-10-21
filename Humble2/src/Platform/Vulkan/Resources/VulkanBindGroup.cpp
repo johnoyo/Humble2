@@ -30,12 +30,14 @@ namespace HBL2
 		VK_VALIDATE(vkAllocateDescriptorSets(device->Get(), &descriptorSetAllocateInfo, &DescriptorSet), "vkAllocateDescriptorSets");
 
 		std::vector<VkWriteDescriptorSet> writeDescriptorSet(Buffers.size() + Textures.size());
+		std::vector<VkDescriptorBufferInfo> descriptorBufferInfo(Buffers.size());
+		std::vector<VkDescriptorImageInfo> descriptorImageInfo(Textures.size());
 
 		for (int i = 0; i < Buffers.size(); i++)
 		{
 			VulkanBuffer* buffer = rm->GetBuffer(Buffers[i].buffer);
 
-			VkDescriptorBufferInfo descriptorBufferInfo =
+			descriptorBufferInfo[i] =
 			{
 				.buffer = buffer->Buffer,
 				.offset = Buffers[i].byteOffset,
@@ -68,7 +70,7 @@ namespace HBL2
 				.dstBinding = bindGroupLayout->BufferBindings[i].slot,
 				.descriptorCount = 1,
 				.descriptorType = descriptorType,
-				.pBufferInfo = &descriptorBufferInfo,
+				.pBufferInfo = &descriptorBufferInfo[i],
 			};
 		}
 
@@ -76,14 +78,14 @@ namespace HBL2
 		{
 			VulkanTexture* texture = rm->GetTexture(Textures[i]);
 
-			VkDescriptorImageInfo descriptorImageInfo =
+			descriptorImageInfo[i] =
 			{
 				.sampler = texture->Sampler,
 				.imageView = texture->ImageView,
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			};
 
-			writeDescriptorSet[i] =
+			writeDescriptorSet[Buffers.size() + i] =
 			{
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				.pNext = nullptr,
@@ -91,7 +93,7 @@ namespace HBL2
 				.dstBinding = bindGroupLayout->TextureBindings[i].slot,
 				.descriptorCount = 1,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = &descriptorImageInfo,
+				.pImageInfo = &descriptorImageInfo[i],
 			};
 		}
 

@@ -31,7 +31,8 @@ namespace HBL2
 		VkCommandBuffer MainCommandBuffer;
 		VkCommandBuffer ImGuiCommandBuffer;
 
-		VkDescriptorSet GlobalDescriptor;
+		Handle<BindGroup> GlobalBindings2D;
+		Handle<BindGroup> GlobalBindings3D;
 	};
 
 	struct UploadContext
@@ -63,14 +64,16 @@ namespace HBL2
 		virtual void Draw(Handle<Mesh> mesh) override {}
 		virtual void DrawIndexed(Handle<Mesh> mesh) override {}
 
+		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalBindings2D; }
+		virtual Handle<BindGroup> GetGlobalBindings3D() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalBindings3D; }
+		virtual Handle<RenderPass> GetMainRenderPass() override { return m_RenderPass; }
+		virtual Handle<FrameBuffer> GetMainFrameBuffer() override { return m_FrameBuffers[m_SwapchainImageIndex]; }
+
 		const VmaAllocator& GetAllocator() const { return m_Allocator; } // TODO: Move to VulkanResourceManager
 
 		const FrameData& GetCurrentFrame() const { return m_Frames[m_FrameNumber % FRAME_OVERLAP]; }
 		const VkFormat& GetSwapchainImageFormat() const { return m_SwapChainImageFormat; }
 		const VkExtent2D& GetSwapchainExtent() const { return m_SwapChainExtent; }
-
-		Handle<FrameBuffer> GetMainFrameBuffer() const { return m_FrameBuffers[m_SwapchainImageIndex]; }
-		Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
 
 		const VkQueue& GetGraphicsQueue() const { return m_GraphicsQueue; }
 		const VkQueue& GetPresentQueue() const { return m_PresentQueue; }
@@ -88,6 +91,7 @@ namespace HBL2
 		void CreateFrameBuffers();
 		void CreateSyncStructures();
 		void CreateDescriptorPool();
+		void CreateDescriptorSets();
 
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);

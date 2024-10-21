@@ -68,6 +68,38 @@ namespace HBL2
 		MIRROR_CLAMP_TO_EDGE = 4,
 	};
 
+	enum class Topology
+	{
+		POINT_LIST = 0,
+		LINE_LIST = 1,
+		LINE_STRIP = 2,
+		TRIANGLE_LIST = 3,
+		TRIANGLE_STRIP = 4,
+		TRIANGLE_FAN = 5,
+		PATCH_LIST = 6,
+	};
+
+	enum class PolygonMode
+	{
+		FILL = 0,
+		LINE = 1,
+		POINT = 2,
+	};
+
+	enum class CullMode
+	{
+		NONE = 0,
+		FRONT_BIT = 0x00000001,
+		BACK_BIT = 0x00000002,
+		FRONT_AND_BACK = 0x00000003,
+	};
+
+	enum class FrontFace
+	{
+		COUNTER_CLOCKWISE = 0,
+		CLOCKWISE = 1,
+	};
+
 	enum class Format
 	{
 		RGB32_FLOAT = 1,

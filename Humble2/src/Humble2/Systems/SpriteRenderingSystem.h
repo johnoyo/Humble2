@@ -35,9 +35,6 @@ namespace HBL2
 		const glm::mat4& GetViewProjection();
 
 	private:
-		Handle<BindGroup> m_GlobalBindings;
-		Handle<BindGroupLayout> m_GlobalBindGroupLayout;
-		Handle<Buffer> m_CameraBuffer;
 		Handle<Buffer> m_VertexBuffer;
 		Handle<Mesh> m_SpriteMesh;
 		UniformRingBuffer* m_UniformRingBuffer = nullptr;

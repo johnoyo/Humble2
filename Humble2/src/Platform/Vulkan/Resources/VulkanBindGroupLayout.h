@@ -42,12 +42,24 @@ namespace HBL2
 					break;
 				}
 
+				VkShaderStageFlags stage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+
+				switch (BufferBindings[i].visibility)
+				{
+				case ShaderStage::VERTEX:
+					stage = VK_SHADER_STAGE_VERTEX_BIT;
+					break;
+				case ShaderStage::FRAGMENT:
+					stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+					break;
+				}
+
 				bindings[i] =
 				{
-					.binding = (uint32_t)i,
+					.binding = BufferBindings[i].slot,
 					.descriptorType = type,
 					.descriptorCount = 1,
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, // TODO: Get it from visibility field of buffer entry
+					.stageFlags = stage,
 					.pImmutableSamplers = nullptr,
 				};
 			}
@@ -56,12 +68,24 @@ namespace HBL2
 			{
 				VkDescriptorType type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
 
-				bindings[i] =
+				VkShaderStageFlags stage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+
+				switch (TextureBindings[i].visibility)
+				{
+				case ShaderStage::VERTEX:
+					stage = VK_SHADER_STAGE_VERTEX_BIT;
+					break;
+				case ShaderStage::FRAGMENT:
+					stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+					break;
+				}
+
+				bindings[BufferBindings.size() + i] =
 				{
 					.binding = TextureBindings[i].slot,
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.descriptorCount = 1,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, // TODO: Get it from visibility field of texture entry
+					.stageFlags = stage,
 					.pImmutableSamplers = nullptr,
 				};
 			}
@@ -70,6 +94,7 @@ namespace HBL2
 			{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 				.pNext = nullptr,
+				.flags = 0,
 				.bindingCount = (uint32_t)bindings.size(),
 				.pBindings = bindings.data(),
 			};

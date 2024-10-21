@@ -27,6 +27,14 @@ namespace HBL2
 
 		VkSamplerAddressMode WrapToVkSamplerAddressMode(Wrap wrap);
 
+		VkPrimitiveTopology TopologyToVkPrimitiveTopology(Topology topology);
+
+		VkPolygonMode PolygonModeToVkPolygonMode(PolygonMode polygonMode);
+
+		VkCullModeFlags CullModeToVkCullModeFlags(CullMode cullMode);
+
+		VkFrontFace FrontFaceToVkFrontFace(FrontFace frontFace);
+
 		VkImageType TextureTypeToVkImageType(TextureType textureType);
 
 		VkImageViewType TextureTypeToVkVkImageViewType(TextureType textureType);

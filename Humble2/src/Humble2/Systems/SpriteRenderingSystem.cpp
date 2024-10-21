@@ -41,34 +41,6 @@ namespace HBL2
 					HBL2_CORE_INFO("Setting up sprite");
 				}
 			});
-
-		m_GlobalBindGroupLayout = rm->CreateBindGroupLayout({
-			.debugName = "unlit-colored-layout",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
-		m_CameraBuffer = rm->CreateBuffer({
-			.debugName = "camera-uniform-buffer",
-			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
-			.memoryUsage = MemoryUsage::GPU_CPU,
-			.byteSize = 64,
-			.initialData = nullptr
-		});
-
-		m_GlobalBindings = rm->CreateBindGroup({
-			.debugName = "unlit-colored-bind-group",
-			.layout = m_GlobalBindGroupLayout,
-			.buffers = {
-				{ .buffer = m_CameraBuffer },
-			}
-		});
 	}
 
 	void SpriteRenderingSystem::OnUpdate(float ts)
@@ -77,10 +49,12 @@ namespace HBL2
 
 		m_UniformRingBuffer->Invalidate();
 
+		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
+
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Handle<RenderPass>(), Handle<FrameBuffer>());
 
-		Renderer::Instance->SetBufferData(m_GlobalBindings, 0, (void*)&vp);
+		Renderer::Instance->SetBufferData(globalBindings, 0, (void*)&vp);
 
 		DrawList draws;
 
@@ -112,7 +86,7 @@ namespace HBL2
 				}
 			});
 
-		GlobalDrawStream globalDrawStream = { .BindGroup = m_GlobalBindings };
+		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 		commandBuffer->EndRenderPass(*passRenderer);
 		commandBuffer->Submit();
@@ -122,9 +96,6 @@ namespace HBL2
 	{
 		auto* rm = ResourceManager::Instance;
 
-		rm->DeleteBindGroup(m_GlobalBindings);
-		rm->DeleteBindGroupLayout(m_GlobalBindGroupLayout);
-		rm->DeleteBuffer(m_CameraBuffer);
 		rm->DeleteBuffer(m_VertexBuffer);
 		rm->DeleteMesh(m_SpriteMesh);
 	}

@@ -61,6 +61,10 @@ namespace HBL2
 				return VK_BLEND_FACTOR_SRC_ALPHA;
 			case HBL2::BlendFactor::ONE_MINUS_SRC_ALPHA:
 				return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			case HBL2::BlendFactor::ONE:
+				return VK_BLEND_FACTOR_ONE;
+			case HBL2::BlendFactor::ZERO:
+				return VK_BLEND_FACTOR_ZERO;
 			}
 
 			return VK_BLEND_FACTOR_MAX_ENUM;
@@ -123,6 +127,74 @@ namespace HBL2
 			}
 
 			return VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
+		}
+
+		VkPrimitiveTopology TopologyToVkPrimitiveTopology(Topology topology)
+		{
+			switch (topology)
+			{
+			case HBL2::Topology::POINT_LIST:
+				return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+			case HBL2::Topology::LINE_LIST:
+				return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+			case HBL2::Topology::LINE_STRIP:
+				return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+			case HBL2::Topology::TRIANGLE_LIST:
+				return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			case HBL2::Topology::TRIANGLE_STRIP:
+				return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+			case HBL2::Topology::TRIANGLE_FAN:
+				return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+			case HBL2::Topology::PATCH_LIST:
+				return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+			}
+
+			return VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+		}
+
+		VkPolygonMode PolygonModeToVkPolygonMode(PolygonMode polygonMode)
+		{
+			switch (polygonMode)
+			{
+			case HBL2::PolygonMode::FILL:
+				return VK_POLYGON_MODE_FILL;
+			case HBL2::PolygonMode::LINE:
+				return VK_POLYGON_MODE_LINE;
+			case HBL2::PolygonMode::POINT:
+				return VK_POLYGON_MODE_POINT;
+			}
+
+			return VK_POLYGON_MODE_MAX_ENUM;
+		}
+
+		VkCullModeFlags CullModeToVkCullModeFlags(CullMode cullMode)
+		{
+			switch (cullMode)
+			{
+			case HBL2::CullMode::NONE:
+				return VK_CULL_MODE_NONE;
+			case HBL2::CullMode::FRONT_BIT:
+				return VK_CULL_MODE_FRONT_BIT;
+			case HBL2::CullMode::BACK_BIT:
+				return VK_CULL_MODE_BACK_BIT;
+			case HBL2::CullMode::FRONT_AND_BACK:
+				return VK_CULL_MODE_FRONT_AND_BACK;
+			}
+
+			return VK_CULL_MODE_FLAG_BITS_MAX_ENUM;
+		}
+
+		VkFrontFace FrontFaceToVkFrontFace(FrontFace frontFace)
+		{
+			switch (frontFace)
+			{
+			case HBL2::FrontFace::COUNTER_CLOCKWISE:
+				return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+			case HBL2::FrontFace::CLOCKWISE:
+				return VK_FRONT_FACE_CLOCKWISE;
+			}
+
+			return VK_FRONT_FACE_MAX_ENUM;
 		}
 
 		VkImageType TextureTypeToVkImageType(TextureType textureType)

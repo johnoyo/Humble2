@@ -23,8 +23,8 @@ namespace HBL2
 			auto& localDraw = drawList[0];
 
 			// Write the entire dynamicUniformBuffer data 
-			OpenGLBindGroup* localDrawBindGroup = rm->GetBindGroup(localDraw.BindGroup);
-			OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(localDrawBindGroup->Buffers[0].buffer);
+			OpenGLBindGroup* localDrawBindGroup0 = rm->GetBindGroup(localDraw.BindGroup);
+			OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(localDrawBindGroup0->Buffers[0].buffer);
 			dynamicUniformBuffer->Write();
 
 			// Bind Vertex Array
@@ -35,6 +35,7 @@ namespace HBL2
 			{
 				Mesh* mesh = rm->GetMesh(draw.Mesh);
 				Material* material = rm->GetMaterial(draw.Material);
+				OpenGLBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
 
 				// Bind Index buffer if applicable
 				if (mesh->IndexBuffer.IsValid())
@@ -54,7 +55,7 @@ namespace HBL2
 				shader->Bind();
 
 				// Set bind group
-				localDrawBindGroup->Set();
+				drawBindGroup->Set();
 
 				// Bind dynamic uniform buffer with the current offset and size
 				dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);

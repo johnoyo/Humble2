@@ -1,3 +1,16 @@
 Scene: EmptyScene
 Entities:
+  - Entity: 0
+    Component::Tag:
+      Tag: Sprite
+    Component::ID:
+      ID: 2898162071183314432
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Sprite_New:
+      Enabled: true
+      Material: 11734900218811993914
 Systems:
+  []

@@ -128,8 +128,8 @@ namespace HBL2
 				BlendFactor srcColorFactor = BlendFactor::SRC_ALPHA;
 				BlendFactor dstColorFactor = BlendFactor::ONE_MINUS_SRC_ALPHA;
 				BlendOperation alphaOp = BlendOperation::ADD;
-				BlendFactor srcAlphaFactor = BlendFactor::SRC_ALPHA;
-				BlendFactor dstAlphaFactor = BlendFactor::ONE_MINUS_SRC_ALPHA;
+				BlendFactor srcAlphaFactor = BlendFactor::ONE;
+				BlendFactor dstAlphaFactor = BlendFactor::ZERO;
 				bool enabled = true;
 			};
 
@@ -143,6 +143,10 @@ namespace HBL2
 
 			BlendState blend;
 			DepthTest depthTest;
+			Topology topology = Topology::TRIANGLE_LIST;
+			PolygonMode polygonMode = PolygonMode::FILL;
+			CullMode cullMode = CullMode::NONE;
+			FrontFace frontFace = FrontFace::CLOCKWISE;
 			std::initializer_list<VertexBufferBinding> vertexBufferBindings;
 		};
 		RenderPipeline renderPipeline;

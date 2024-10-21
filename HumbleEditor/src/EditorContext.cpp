@@ -151,7 +151,7 @@ namespace HBL2
 		void EditorContext::LoadBuiltInAssets()
 		{
 			TextureUtilities::Get().LoadWhiteTexture();
-			// ShaderUtilities::Get().LoadBuiltInShaders();
+			ShaderUtilities::Get().LoadBuiltInShaders();
 		}
 	}
 }

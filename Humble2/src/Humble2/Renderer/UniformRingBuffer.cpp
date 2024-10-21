@@ -11,6 +11,7 @@ namespace HBL2
 			.debugName = "dynamic-uniform-buffer",
 			.usage = BufferUsage::UNIFORM,
 			.usageHint = BufferUsageHint::DYNAMIC,
+			.memoryUsage = MemoryUsage::GPU_CPU,
 			.byteSize = m_BufferSize,
 			.initialData = nullptr,
 		});
