@@ -175,10 +175,10 @@ namespace HBL2
 			return ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::INVALID);
 		}
 
-		// Reflect Shader.
+		// Reflect shader.
 		const auto& reflectionData = ShaderUtilities::Get().GetReflectionData(shaderPath.string());
 
-		// Create Resource.
+		// Create resource.
 		auto shader = ResourceManager::Instance->CreateShader({
 			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
 			.VS { .code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },

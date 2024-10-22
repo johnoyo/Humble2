@@ -6,4 +6,9 @@ namespace HBL2
 	{
 		m_Draws[draw.Shader.HashKey()].push_back(draw);
 	}
+
+	void DrawList::Reset()
+	{
+		m_Draws.clear();
+	}
 }

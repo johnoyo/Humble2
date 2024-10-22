@@ -27,6 +27,8 @@ namespace HBL2
 	{
 	public:
 		void Insert(const LocalDrawStream&& draw);
+		void Reset();
+
 		const std::unordered_map<uint32_t, std::vector<LocalDrawStream>>& GetDraws() const { return m_Draws; };
 
 	private:

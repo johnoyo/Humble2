@@ -9,11 +9,15 @@ namespace HBL2
 		if (globalDraw.BindGroup.IsValid())
 		{
 			OpenGLBindGroup* globalBindGroup = rm->GetBindGroup(globalDraw.BindGroup);
+			OpenGLBindGroupLayout* globalBindGroupLayout = rm->GetBindGroupLayout(globalBindGroup->BindGroupLayout);
+
+			int index = 0;
 
 			// Write the global uniform buffers
 			for (const auto& bufferEntry : globalBindGroup->Buffers)
 			{
 				OpenGLBuffer* buffer = rm->GetBuffer(bufferEntry.buffer);
+				glBindBufferBase(GL_UNIFORM_BUFFER, globalBindGroupLayout->BufferBindings[index++].slot, buffer->RendererId);
 				buffer->Write();
 			}
 		}

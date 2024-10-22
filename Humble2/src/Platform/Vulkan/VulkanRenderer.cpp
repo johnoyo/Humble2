@@ -36,48 +36,48 @@ namespace HBL2
 		VK_VALIDATE(vkResetFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence), "vkResetFences");
 		VK_VALIDATE(vkAcquireNextImageKHR(m_Device->Get(), m_SwapChain, 1000000000, GetCurrentFrame().ImageAvailableSemaphore, nullptr, &m_SwapchainImageIndex), "vkAcquireNextImageKHR");
 
-		// Now that we are sure that the commands finished executing, we can safely reset the command buffer to begin recording again.
-		VK_VALIDATE(vkResetCommandBuffer(GetCurrentFrame().MainCommandBuffer, 0), "vkResetCommandBuffer");
+		//// Now that we are sure that the commands finished executing, we can safely reset the command buffer to begin recording again.
+		//VK_VALIDATE(vkResetCommandBuffer(GetCurrentFrame().MainCommandBuffer, 0), "vkResetCommandBuffer");
 
-		VkCommandBuffer cmd = GetCurrentFrame().MainCommandBuffer;
+		//VkCommandBuffer cmd = GetCurrentFrame().MainCommandBuffer;
 
-		// Begin the command buffer recording. We will use this command buffer exactly once, so we want to let Vulkan know that
-		VkCommandBufferBeginInfo cmdBeginInfo = {};
-		cmdBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		cmdBeginInfo.pNext = nullptr;
-		cmdBeginInfo.pInheritanceInfo = nullptr;
-		cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		//// Begin the command buffer recording. We will use this command buffer exactly once, so we want to let Vulkan know that
+		//VkCommandBufferBeginInfo cmdBeginInfo = {};
+		//cmdBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		//cmdBeginInfo.pNext = nullptr;
+		//cmdBeginInfo.pInheritanceInfo = nullptr;
+		//cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-		VK_VALIDATE(vkBeginCommandBuffer(cmd, &cmdBeginInfo), "vkBeginCommandBuffer");
+		//VK_VALIDATE(vkBeginCommandBuffer(cmd, &cmdBeginInfo), "vkBeginCommandBuffer");
 
-		VkClearValue clearValue;
-		float flash = std::abs(std::sin(m_FrameNumber / 480.f));
-		clearValue.color = { { 1.0f, flash, 0.f, 1.0f } };
-		VkClearValue depthClear;
-		depthClear.depthStencil.depth = 1.f;
-		VkClearValue clearValues[] = { clearValue, depthClear };
+		//VkClearValue clearValue;
+		//float flash = std::abs(std::sin(m_FrameNumber / 480.f));
+		//clearValue.color = { { 1.0f, flash, 0.f, 1.0f } };
+		//VkClearValue depthClear;
+		//depthClear.depthStencil.depth = 1.f;
+		//VkClearValue clearValues[] = { clearValue, depthClear };
 
-		VkRenderPass renderPass = m_ResourceManager->GetRenderPass(m_RenderPass)->RenderPass;
+		//VkRenderPass renderPass = m_ResourceManager->GetRenderPass(m_RenderPass)->RenderPass;
 
-		VulkanFrameBuffer* vkFrameBuffer = m_ResourceManager->GetFrameBuffer(m_FrameBuffers[m_SwapchainImageIndex]);
+		//VulkanFrameBuffer* vkFrameBuffer = m_ResourceManager->GetFrameBuffer(m_FrameBuffers[m_SwapchainImageIndex]);
 
-		VkRenderPassBeginInfo rpInfo = {};
-		rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		rpInfo.pNext = nullptr;
-		rpInfo.renderPass = renderPass;
-		rpInfo.renderArea.offset.x = 0;
-		rpInfo.renderArea.offset.y = 0;
-		rpInfo.renderArea.extent = m_SwapChainExtent;
-		rpInfo.framebuffer = vkFrameBuffer->FrameBuffer;
-		rpInfo.clearValueCount = 2;
-		rpInfo.pClearValues = &clearValues[0];
+		//VkRenderPassBeginInfo rpInfo = {};
+		//rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		//rpInfo.pNext = nullptr;
+		//rpInfo.renderPass = renderPass;
+		//rpInfo.renderArea.offset.x = 0;
+		//rpInfo.renderArea.offset.y = 0;
+		//rpInfo.renderArea.extent = m_SwapChainExtent;
+		//rpInfo.framebuffer = vkFrameBuffer->FrameBuffer;
+		//rpInfo.clearValueCount = 2;
+		//rpInfo.pClearValues = &clearValues[0];
 
-		vkCmdBeginRenderPass(cmd, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
+		//vkCmdBeginRenderPass(cmd, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		// DrawObjects(cmd, m_Renderables.data(), m_Renderables.size());
+		//// DrawObjects(cmd, m_Renderables.data(), m_Renderables.size());
 
-		vkCmdEndRenderPass(cmd);
-		VK_VALIDATE(vkEndCommandBuffer(cmd), "vkEndCommandBuffer");
+		//vkCmdEndRenderPass(cmd);
+		//VK_VALIDATE(vkEndCommandBuffer(cmd), "vkEndCommandBuffer");
 	}
 
 	void VulkanRenderer::EndFrame()
@@ -86,24 +86,39 @@ namespace HBL2
 		// We want to wait on the PresentSemaphore, as that semaphore is signaled when the swapchain is ready.
 		// We will signal the RenderSemaphore, to signal that rendering has finished.
 		
-		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		//VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-		VkSubmitInfo submitInfo =
-		{
-			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			.pNext = nullptr,
-			.waitSemaphoreCount = 1,
-			.pWaitSemaphores = &GetCurrentFrame().ImageAvailableSemaphore,
-			.pWaitDstStageMask = &waitStage,
-			.commandBufferCount = 1,
-			.pCommandBuffers = &GetCurrentFrame().MainCommandBuffer,
-			.signalSemaphoreCount = 1,
-			.pSignalSemaphores = &GetCurrentFrame().MainRenderFinishedSemaphore,
-		};
+		//VkSubmitInfo submitInfo =
+		//{
+		//	.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		//	.pNext = nullptr,
+		//	.waitSemaphoreCount = 1,
+		//	.pWaitSemaphores = &GetCurrentFrame().ImageAvailableSemaphore,
+		//	.pWaitDstStageMask = &waitStage,
+		//	.commandBufferCount = 1,
+		//	.pCommandBuffers = &GetCurrentFrame().MainCommandBuffer,
+		//	.signalSemaphoreCount = 1,
+		//	.pSignalSemaphores = &GetCurrentFrame().MainRenderFinishedSemaphore,
+		//};
 
-		// Submit command buffer to the queue and execute it.
-		// RenderFence will now block until the graphic commands finish execution
-		VK_VALIDATE(vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "vkQueueSubmit");
+		//// Submit command buffer to the queue and execute it.
+		//// RenderFence will now block until the graphic commands finish execution
+		//VK_VALIDATE(vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "vkQueueSubmit");
+
+		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
+
+		GlobalDrawStream globalDrawStream3D = { .BindGroup = GetGlobalBindings3D() };
+		passRenderer->DrawSubPass(globalDrawStream3D, m_DrawList3D);
+
+		GlobalDrawStream globalDrawStream2D = { .BindGroup = GetGlobalBindings2D()};
+		passRenderer->DrawSubPass(globalDrawStream2D, m_DrawList2D);
+
+		commandBuffer->EndRenderPass(*passRenderer);
+		commandBuffer->Submit();
+
+		m_DrawList2D.Reset();
+		m_DrawList3D.Reset();
 	}
 
 	void VulkanRenderer::Present()

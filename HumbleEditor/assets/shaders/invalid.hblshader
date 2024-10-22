@@ -8,7 +8,7 @@ layout(std140, set = 0, binding = 0) uniform Camera
     mat4 ViewProjection;
 } u_Camera;
 
-layout(std140, set = 1, binding = 0) uniform Object
+layout(std140, set = 1, binding = 2) uniform Object
 {
     mat4 Model;
     vec4 Color;
@@ -27,7 +27,7 @@ void main()
 layout(location = 0) out vec4 FragColor;
 layout(location = 0) in vec2 v_TextureCoord;
 
-layout (set = 1, binding = 1) uniform sampler2D u_AlbedoMap;
+layout (set = 1, binding = 0) uniform sampler2D u_AlbedoMap;
 
 void main()
 {

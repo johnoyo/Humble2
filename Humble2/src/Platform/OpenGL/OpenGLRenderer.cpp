@@ -159,6 +159,21 @@ namespace HBL2
 
 	void OpenGLRenderer::EndFrame()
 	{
+		//CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
+		//RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
+
+		////GlobalDrawStream globalDrawStream3D = { .BindGroup = GetGlobalBindings3D() };
+		////passRenderer->DrawSubPass(globalDrawStream3D, m_DrawList3D);
+
+		//GlobalDrawStream globalDrawStream2D = { .BindGroup = GetGlobalBindings2D() };
+		//passRenderer->DrawSubPass(globalDrawStream2D, m_DrawList2D);
+
+		//commandBuffer->EndRenderPass(*passRenderer);
+		//commandBuffer->Submit();
+
+		//m_DrawList2D.Reset();
+		//m_DrawList3D.Reset();
+
 		if (Context::FrameBuffer.IsValid())
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);

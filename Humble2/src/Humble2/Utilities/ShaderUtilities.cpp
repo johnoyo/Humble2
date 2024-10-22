@@ -249,13 +249,23 @@ namespace HBL2
 			.debugName = "simple-lit-bind-group-layout",
 			.textureBindings = {
 				{
-					.slot = 1,
+					/*
+					* Here we start the texture binds from zero despite having already buffers bound there.
+					* Thats because in a set each type (buffer, image, etc) has unique binding points.
+					* This also coms in handy in openGL when binding textures.
+					*/
+					.slot = 0,
 					.visibility = ShaderStage::FRAGMENT,
 				},
 			},
 			.bufferBindings = {
 				{
-					.slot = 0,
+					/*
+					* We use binding 2 since despite being in another bind group with no other bindings, 
+					* for compatibility with opengl we must have unique bindings for buffers, 
+					* so since 0 and 1 are used in the global bind group we must use the slot 2 here.
+					*/
+					.slot = 2, 
 					.visibility = ShaderStage::VERTEX,
 					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
 				},
@@ -268,6 +278,15 @@ namespace HBL2
 		auto drawBindGroupLayout1 = ResourceManager::Instance->CreateBindGroupLayout({
 			.debugName = "lit-bind-group-layout",
 			.textureBindings = {
+				/*
+				* Here we start the texture binds from zero despite having already buffers bound there.
+				* Thats because in a set each type (buffer, image, etc) has unique binding points.
+				* This also coms in handy in openGL when binding textures.
+				*/
+				{
+					.slot = 0,
+					.visibility = ShaderStage::FRAGMENT,
+				},
 				{
 					.slot = 1,
 					.visibility = ShaderStage::FRAGMENT,
@@ -280,14 +299,15 @@ namespace HBL2
 					.slot = 3,
 					.visibility = ShaderStage::FRAGMENT,
 				},
-				{
-					.slot = 4,
-					.visibility = ShaderStage::FRAGMENT,
-				},
 			},
 			.bufferBindings = {
 				{
-					.slot = 0,
+					/*
+					* We use binding 2 since despite being in another bind group with no other bindings,
+					* for compatibility with opengl we must have unique bindings for buffers,
+					* so since 0 and 1 are used in the global bind group we must use the slot 2 here.
+					*/
+					.slot = 2,
 					.visibility = ShaderStage::VERTEX,
 					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
 				},

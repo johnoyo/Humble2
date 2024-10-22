@@ -63,11 +63,15 @@ namespace HBL2
 		Handle<BindGroupLayout> GetGlobalBindingsLayout3D() { return m_GlobalBindingsLayout3D; }
 
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
+		DrawList& GetDrawList2D() { return m_DrawList2D; }
+		DrawList& GetDrawList3D() { return m_DrawList3D; }
 
 		UniformRingBuffer* TempUniformRingBuffer;
 
 	protected:
 		GraphicsAPI m_GraphicsAPI;
+		DrawList m_DrawList2D;
+		DrawList m_DrawList3D;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout2D;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
 	};

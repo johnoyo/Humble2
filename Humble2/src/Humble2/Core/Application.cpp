@@ -101,7 +101,7 @@ namespace HBL2
 			BeginFrame();
 
 			Renderer::Instance->BeginFrame();
-			// m_Specification.Context->OnUpdate(m_DeltaTime);
+			m_Specification.Context->OnUpdate(m_DeltaTime);
 			Renderer::Instance->EndFrame();
 
 			ImGuiRenderer::Instance->BeginFrame();

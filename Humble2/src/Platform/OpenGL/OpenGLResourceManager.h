@@ -83,6 +83,11 @@ namespace HBL2
 		}
 		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) override
 		{
+			if (!handle.IsValid())
+			{
+				return;
+			}
+
 			OpenGLFrameBuffer* frameBuffer = GetFrameBuffer(handle);
 			frameBuffer->Resize(width, height);
 		}

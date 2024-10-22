@@ -52,6 +52,10 @@ namespace HBL2
 			{
 				glBindBufferRange(GL_UNIFORM_BUFFER, bindGroupLayout->BufferBindings[bufferIndex].slot, RendererId, offset, size);
 			}
+			else
+			{
+				glBindBufferBase(GL_UNIFORM_BUFFER, bindGroupLayout->BufferBindings[bufferIndex].slot, RendererId);
+			}
 		}
 	}
 
