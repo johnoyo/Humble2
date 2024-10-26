@@ -339,8 +339,10 @@ namespace HBL2
 		{
 			switch (memoryUsage)
 			{
-			case HBL2::MemoryUsage::CPU_CPU:
+			case HBL2::MemoryUsage::CPU_ONLY:
 				return VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_ONLY;
+			case HBL2::MemoryUsage::GPU_ONLY:
+				return VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY;
 			case HBL2::MemoryUsage::GPU_CPU:
 				return VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_TO_CPU;
 			case HBL2::MemoryUsage::CPU_GPU:

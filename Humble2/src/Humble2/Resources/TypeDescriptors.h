@@ -50,7 +50,7 @@ namespace HBL2
 		const char* debugName;
 		BufferUsage usage = BufferUsage::UNIFORM;
 		BufferUsageHint usageHint = BufferUsageHint::STATIC;
-		MemoryUsage memoryUsage = MemoryUsage::GPU_CPU;
+		MemoryUsage memoryUsage = MemoryUsage::CPU_GPU;
 		uint32_t byteSize = 0;
 		void* initialData = nullptr;
 	};
@@ -62,7 +62,7 @@ namespace HBL2
 		uint32_t height = 0;
 		Handle<RenderPass> renderPass;
 		Handle<Texture> depthTarget;
-		Span<const Handle<Texture>> colorTargets;
+		std::initializer_list<Handle<Texture>> colorTargets;
 	};
 
 	struct BindGroupLayoutDescriptor

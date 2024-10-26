@@ -4,16 +4,14 @@
 
 namespace HBL2
 {
-	VulkanFrameBuffer::VulkanFrameBuffer(const FrameBufferDescriptor&& desc)
+	void VulkanFrameBuffer::Create()
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
-		DebugName = desc.debugName;
-
 		std::vector<VkImageView> attachments;
 
-		for (const auto& colorTarget : desc.colorTargets)
+		for (const auto& colorTarget : ColorTargets)
 		{
 			if (colorTarget.IsValid())
 			{
@@ -22,19 +20,19 @@ namespace HBL2
 			}
 		}
 
-		if (desc.depthTarget.IsValid())
+		if (DepthTarget.IsValid())
 		{
-			VulkanTexture* depthTexture = rm->GetTexture(desc.depthTarget);
+			VulkanTexture* depthTexture = rm->GetTexture(DepthTarget);
 			attachments.push_back(depthTexture->ImageView);
 		}
 
-		if (!desc.renderPass.IsValid())
+		if (!RenderPass.IsValid())
 		{
 			HBL2_CORE_ERROR("RenderPass handle provided in framebuffer: {}, is invalid.", DebugName);
 			return;
 		}
 
-		VulkanRenderPass* vkRenderPass = rm->GetRenderPass(desc.renderPass);
+		VulkanRenderPass* vkRenderPass = rm->GetRenderPass(RenderPass);
 
 		VkFramebufferCreateInfo frameBufferInfo =
 		{
@@ -43,8 +41,8 @@ namespace HBL2
 			.renderPass = vkRenderPass->RenderPass,
 			.attachmentCount = (uint32_t)attachments.size(),
 			.pAttachments = attachments.data(),
-			.width = desc.width,
-			.height = desc.height,
+			.width = Width,
+			.height = Height,
 			.layers = 1,
 		};
 

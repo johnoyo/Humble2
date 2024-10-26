@@ -23,7 +23,6 @@ namespace HBL2
 		void Destroy()
 		{
 			VulkanDevice* device = (VulkanDevice*)Device::Instance;
-
 			vkDestroyRenderPass(device->Get(), RenderPass, nullptr);
 		}
 

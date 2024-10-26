@@ -349,6 +349,7 @@ namespace HBL2
 			auto vertexBuffer = ResourceManager::Instance->CreateBuffer({
 				.debugName = _strdup(std::format("{}-vertex-buffer", meshName).c_str()),
 				.usage = BufferUsage::VERTEX,
+				.memoryUsage = MemoryUsage::GPU_ONLY,
 				.byteSize = (uint32_t)(meshData->VertexBuffer.size() * sizeof(Vertex)),
 				.initialData = meshData->VertexBuffer.data(),
 			});
@@ -359,6 +360,7 @@ namespace HBL2
 				indexBuffer = ResourceManager::Instance->CreateBuffer({
 					.debugName = _strdup(std::format("{}-index-buffer", meshName).c_str()),
 					.usage = BufferUsage::INDEX,
+					.memoryUsage = MemoryUsage::GPU_ONLY,
 					.byteSize = (uint32_t)(meshData->IndexBuffer.size() * sizeof(uint32_t)),
 					.initialData = meshData->IndexBuffer.data(),
 				});

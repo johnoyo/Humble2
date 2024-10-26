@@ -112,9 +112,10 @@ namespace HBL2
 
 	enum class MemoryUsage
 	{
-		CPU_CPU = 0,
-		GPU_CPU = 1,
-		CPU_GPU = 2,
+		CPU_ONLY = 0,
+		GPU_ONLY = 1,
+		GPU_CPU = 2,
+		CPU_GPU = 3,
 	};
 
 	enum class BufferUsage
