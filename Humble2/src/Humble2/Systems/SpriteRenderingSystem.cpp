@@ -52,7 +52,7 @@ namespace HBL2
 		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
 
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Handle<RenderPass>(), Handle<FrameBuffer>());
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
 
 		Renderer::Instance->SetBufferData(globalBindings, 0, (void*)&vp);
 

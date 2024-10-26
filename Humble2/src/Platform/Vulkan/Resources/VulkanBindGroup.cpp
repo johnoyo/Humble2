@@ -41,7 +41,7 @@ namespace HBL2
 			{
 				.buffer = buffer->Buffer,
 				.offset = Buffers[i].byteOffset,
-				.range = buffer->ByteSize,
+				.range = Buffers[i].range == 0 ? buffer->ByteSize : Buffers[i].range,
 			};
 
 			VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_MAX_ENUM;

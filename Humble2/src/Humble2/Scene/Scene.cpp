@@ -71,7 +71,7 @@ namespace HBL2
         dst->RegisterSystem(new TransformSystem);
         dst->RegisterSystem(new LinkSystem);
         dst->RegisterSystem(new CameraSystem, SystemType::Runtime);
-        dst->RegisterSystem(new StaticMeshRenderingSystem);
+        // dst->RegisterSystem(new StaticMeshRenderingSystem);
         dst->RegisterSystem(new SpriteRenderingSystem);
 
         // Clone dll user systems.

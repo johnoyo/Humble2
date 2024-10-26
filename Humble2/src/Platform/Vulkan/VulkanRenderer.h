@@ -58,8 +58,8 @@ namespace HBL2
 		virtual void* GetDepthAttachment() override { return nullptr; }
 		virtual void* GetColorAttachment() override { return nullptr; }
 
-		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override {}
-		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override {}
+		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override;
+		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
 
 		virtual void Draw(Handle<Mesh> mesh) override {}
 		virtual void DrawIndexed(Handle<Mesh> mesh) override {}
@@ -71,6 +71,7 @@ namespace HBL2
 
 		const VmaAllocator& GetAllocator() const { return m_Allocator; } // TODO: Move to VulkanResourceManager
 
+		const uint32_t GetFrameIndex() const { return m_FrameNumber % FRAME_OVERLAP; }
 		const FrameData& GetCurrentFrame() const { return m_Frames[m_FrameNumber % FRAME_OVERLAP]; }
 		const VkFormat& GetSwapchainImageFormat() const { return m_SwapChainImageFormat; }
 		const VkExtent2D& GetSwapchainExtent() const { return m_SwapChainExtent; }

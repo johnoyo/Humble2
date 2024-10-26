@@ -1487,6 +1487,7 @@ namespace HBL2
 					out << YAML::Key << "Material" << YAML::Value;
 					out << YAML::BeginMap;
 					out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(materialAssetHandle)->UUID;
+					out << YAML::Key << "Type" << YAML::Value << m_SelectedMaterialType;
 					out << YAML::Key << "Shader" << YAML::Value << AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->UUID;
 					out << YAML::Key << "AlbedoColor" << YAML::Value << glm::vec4(color[0], color[1], color[2], color[3]);
 					out << YAML::Key << "Metalicness" << YAML::Value << metalicness;

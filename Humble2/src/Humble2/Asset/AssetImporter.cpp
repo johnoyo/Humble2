@@ -231,6 +231,8 @@ namespace HBL2
 		auto materialProperties = data["Material"];
 		if (materialProperties)
 		{
+			uint32_t type = materialProperties["Type"].as<uint32_t>();
+
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
 
 			UUID albedoMapUUID = materialProperties["AlbedoMap"].as<UUID>();
@@ -255,6 +257,7 @@ namespace HBL2
 			const std::string& materialName = asset->FilePath.filename().stem().string();
 
 			Handle<BindGroup> drawBindings;
+			uint32_t dynamicUniformBufferRange = type == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData);
 
 			if (normalMapHandle.IsValid() && metallicMapHandle.IsValid() && roughnessMapHandle.IsValid())
 			{
@@ -263,7 +266,7 @@ namespace HBL2
 					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
 					.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle },
 					.buffers = {
-						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer() },
+						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
 					}
 				});
 			}
@@ -274,7 +277,7 @@ namespace HBL2
 					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
 					.textures = { albedoMapHandle },
 					.buffers = {
-						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer() },
+						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
 					}
 				});
 			}
@@ -317,7 +320,7 @@ namespace HBL2
 		scene->RegisterSystem(new TransformSystem);
 		scene->RegisterSystem(new LinkSystem);
 		scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
-		scene->RegisterSystem(new StaticMeshRenderingSystem);
+		// scene->RegisterSystem(new StaticMeshRenderingSystem);
 		scene->RegisterSystem(new SpriteRenderingSystem);
 
 		return sceneHandle;
@@ -399,7 +402,7 @@ namespace HBL2
 			scene->RegisterSystem(new TransformSystem);
 			scene->RegisterSystem(new LinkSystem);
 			scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
-			scene->RegisterSystem(new StaticMeshRenderingSystem);
+			// scene->RegisterSystem(new StaticMeshRenderingSystem);
 			scene->RegisterSystem(new SpriteRenderingSystem);
 
 			asset->Indentifier = sceneHandle.Pack();

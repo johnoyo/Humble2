@@ -105,7 +105,7 @@ namespace HBL2
 		//// RenderFence will now block until the graphic commands finish execution
 		//VK_VALIDATE(vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "vkQueueSubmit");
 
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
+		/*CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
 
 		GlobalDrawStream globalDrawStream3D = { .BindGroup = GetGlobalBindings3D() };
@@ -115,7 +115,7 @@ namespace HBL2
 		passRenderer->DrawSubPass(globalDrawStream2D, m_DrawList2D);
 
 		commandBuffer->EndRenderPass(*passRenderer);
-		commandBuffer->Submit();
+		commandBuffer->Submit();*/
 
 		m_DrawList2D.Reset();
 		m_DrawList3D.Reset();
@@ -212,6 +212,21 @@ namespace HBL2
 		}
 
 		return nullptr;
+	}
+
+	void VulkanRenderer::SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData)
+	{
+		VulkanBuffer* vulkanBuffer = m_ResourceManager->GetBuffer(buffer);
+		vulkanBuffer->Data = newData;
+	}
+
+	void VulkanRenderer::SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData)
+	{
+		VulkanBindGroup* vulkanBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
+		if (bufferIndex < vulkanBindGroup->Buffers.size())
+		{
+			SetBufferData(vulkanBindGroup->Buffers[bufferIndex].buffer, vulkanBindGroup->Buffers[bufferIndex].byteOffset, newData);
+		}
 	}
 
 	void VulkanRenderer::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function)
@@ -585,7 +600,7 @@ namespace HBL2
 				{
 					.slot = 0,
 					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+					.type = BufferBindingType::UNIFORM,
 				},
 			},
 		});
@@ -617,12 +632,12 @@ namespace HBL2
 				{
 					.slot = 0,
 					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+					.type = BufferBindingType::UNIFORM,
 				},
 				{
 					.slot = 1,
 					.visibility = ShaderStage::FRAGMENT,
-					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+					.type = BufferBindingType::UNIFORM,
 				},
 			},
 		});

@@ -1,5 +1,6 @@
 Material:
   UUID: 12647810587411261016
+  Type: 1
   Shader: 3371212649963697754
   AlbedoColor: [0.813725471, 0.171520561, 0.171520561, 1]
   Metalicness: 1

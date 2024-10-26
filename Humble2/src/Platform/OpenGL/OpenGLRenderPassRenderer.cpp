@@ -31,9 +31,20 @@ namespace HBL2
 			OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(localDrawBindGroup0->Buffers[0].buffer);
 			dynamicUniformBuffer->Write();
 
-			// Bind Vertex Array
-			OpenGLShader* shader = rm->GetShader(localDraw.Shader);
-			shader->BindPipeline();
+			if (localDraw.Shader.IsValid())
+			{
+				OpenGLShader* shader = rm->GetShader(localDraw.Shader);
+
+				// Bind Vertex Array
+				shader->BindPipeline();
+
+				// Bind shader
+				shader->Bind();
+			}
+			else
+			{
+				continue;
+			}
 
 			for (auto& draw : drawList)
 			{
@@ -54,9 +65,6 @@ namespace HBL2
 					OpenGLBuffer* vertexBuffer = rm->GetBuffer(mesh->VertexBuffers[i]);
 					vertexBuffer->Bind(draw.Material, i);
 				}
-
-				// Bind shader
-				shader->Bind();
 
 				// Set bind group
 				drawBindGroup->Set();

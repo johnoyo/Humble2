@@ -34,7 +34,7 @@ namespace HBL2
 				{
 					.slot = 0,
 					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+					.type = BufferBindingType::UNIFORM,
 				},
 			},
 		});
@@ -63,12 +63,12 @@ namespace HBL2
 				{
 					.slot = 0,
 					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+					.type = BufferBindingType::UNIFORM,
 				},
 				{
 					.slot = 1,
 					.visibility = ShaderStage::FRAGMENT,
-					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+					.type = BufferBindingType::UNIFORM,
 				},
 			},
 		});

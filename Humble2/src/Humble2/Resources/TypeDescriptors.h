@@ -93,6 +93,7 @@ namespace HBL2
 		{
 			Handle<Buffer> buffer;
 			uint32_t byteOffset = 0;
+			uint32_t range = 0;
 		};
 		std::initializer_list<BufferEntry> buffers;
 	};
