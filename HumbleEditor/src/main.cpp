@@ -4,11 +4,13 @@
 
 int main()
 {
-	HBL2::ApplicationSpec applicationSpec;
-	applicationSpec.Name = "Humble2 Editor";
-	applicationSpec.VerticalSync = false;
-	applicationSpec.GraphicsAPI = HBL2::GraphicsAPI::OPENGL;
-	applicationSpec.Context = new HBL2::Editor::EditorContext;
+	HBL2::ApplicationSpec applicationSpec =
+	{
+		.Name = "Humble2 Editor",
+		.GraphicsAPI = HBL2::GraphicsAPI::OPENGL,
+		.VerticalSync = false,
+		.Context = new HBL2::Editor::EditorContext,
+	};
 
 	HBL2::Application* app = new HBL2::Application(applicationSpec);
 
