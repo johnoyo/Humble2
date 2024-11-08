@@ -104,6 +104,10 @@ namespace HBL2
 			m_Specification.Context->OnUpdate(m_DeltaTime);
 			Renderer::Instance->EndFrame();
 
+			/*DebugRenderer::Instance->BeginFrame();
+			m_Specification.Context->OnGizmoRender(m_DeltaTime);
+			DebugRenderer::Instance->EndFrame();*/
+
 			ImGuiRenderer::Instance->BeginFrame();
 			m_Specification.Context->OnGuiRender(m_DeltaTime);
 			ImGuiRenderer::Instance->EndFrame();

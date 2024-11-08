@@ -43,7 +43,7 @@ namespace HBL2
 
 		VkImageAspectFlags TextureAspectToVkImageAspectFlags(TextureAspect textureAspect);
 
-		VkImageUsageFlags TextureUsageToVkImageLayout(TextureUsage textureUsage);
+		VkImageUsageFlags TextureUsageToVkImageUsageFlags(TextureUsage textureUsage);
 
 		VkImageLayout TextureLayoutToVkImageLayout(TextureLayout textureLayout);
 

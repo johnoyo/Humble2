@@ -37,6 +37,8 @@ namespace HBL2
 	private:
 		Handle<Buffer> m_VertexBuffer;
 		Handle<Mesh> m_SpriteMesh;
+		Handle<RenderPass> m_RenderPass;
+		Handle<FrameBuffer> m_FrameBuffer;
 		UniformRingBuffer* m_UniformRingBuffer = nullptr;
 		Scene* m_EditorScene = nullptr;
 	};

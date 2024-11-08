@@ -15,6 +15,8 @@ namespace HBL2
 		VulkanBindGroup() = default;
 		VulkanBindGroup(const BindGroupDescriptor&& desc);
 
+		void Update();
+
 		void Destroy()
 		{
 		}

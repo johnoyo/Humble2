@@ -34,13 +34,12 @@ namespace HBL2
 	public:
 		virtual ~OpenGLRenderer() = default;
 
-		virtual void Initialize() override;
 		virtual void BeginFrame() override;
 		virtual void EndFrame() override;
 		virtual void Present() override;
 		virtual void Clean() override;
 
-		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
+		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type, RenderPassStage stage) override;
 
 		virtual void* GetDepthAttachment() override;
 		virtual void* GetColorAttachment() override;
@@ -51,20 +50,29 @@ namespace HBL2
 		virtual void Draw(Handle<Mesh> mesh) override;
 		virtual void DrawIndexed(Handle<Mesh> mesh) override;
 
-		virtual Handle<BindGroup> GetGlobalBindings2D() { return m_GlobalBindings2D; }
-		virtual Handle<BindGroup> GetGlobalBindings3D() { return m_GlobalBindings3D; }
-		virtual Handle<RenderPass> GetMainRenderPass() { return m_MainRenderPass; }
-		virtual Handle<FrameBuffer> GetMainFrameBuffer() { return m_MainFrameBuffer; }
+		virtual Handle<FrameBuffer> GetMainFrameBuffer() override { return m_MainFrameBuffer; }
+		
+		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_GlobalBindings2D; }
+		virtual Handle<BindGroup> GetGlobalBindings3D() override { return m_GlobalBindings3D; }
+		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_GlobalPresentBindings; }
+
+	protected:
+		virtual void InitializeInternal() override;
+
+	private:
+		void CreateBindings();
+		void CreateRenderPass();
 
 	private:
 		OpenGLResourceManager* m_ResourceManager = nullptr;
-		CommandBuffer* m_MainCommandBuffer = nullptr;
-		CommandBuffer* m_OffscreenCommandBuffer = nullptr;
+		CommandBuffer* m_OpaqueCommandBuffer = nullptr;
+		CommandBuffer* m_OpaqueSpriteCommandBuffer = nullptr;
+		CommandBuffer* m_PresentCommandBuffer = nullptr;
 		CommandBuffer* m_UserInterfaceCommandBuffer = nullptr;
 
 		Handle<BindGroup> m_GlobalBindings2D;
 		Handle<BindGroup> m_GlobalBindings3D;
-		Handle<RenderPass> m_MainRenderPass;
+		Handle<BindGroup> m_GlobalPresentBindings;
 		Handle<FrameBuffer> m_MainFrameBuffer;
 	};
 }

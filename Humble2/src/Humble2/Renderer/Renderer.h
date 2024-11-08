@@ -30,6 +30,39 @@ namespace HBL2
 		WEBGPU,
 	};
 
+	enum class RenderPassEvent
+	{
+		BeforeRendering = 0,
+		BeforeRenderingShadows,
+		AfterRenderingShadows,
+		BeforeRenderingPrePasses,
+		AfterRenderingPrePasses,
+		BeforeRenderingOpaques,
+		AfterRenderingOpaques,
+		BeforeRenderingSkybox,
+		AfterRenderingSkybox,
+		BeforeRenderingTransparents,
+		AfterRenderingTransparents,
+		BeforeRenderingOpaqueSprites,
+		AfterRenderingOpaqueSprites,
+		BeforeRenderingPostProcess,
+		AfterRenderingPostProcess,
+		AfterRendering,
+	};
+
+	enum class RenderPassStage
+	{
+		Shadow,
+		PrePass,
+		Opaque,
+		Skybox,
+		Transparent,
+		OpaqueSprite,
+		PostProcess,
+		Present,
+		UserInterface,
+	};
+
 	class Renderer
 	{
 	public:
@@ -37,7 +70,7 @@ namespace HBL2
 
 		virtual ~Renderer() = default;
 
-		virtual void Initialize() = 0;
+		void Initialize();
 		virtual void BeginFrame() = 0;
 		virtual void EndFrame() = 0;
 		virtual void Present() = 0;
@@ -49,30 +82,36 @@ namespace HBL2
 		virtual void Draw(Handle<Mesh> mesh) = 0;
 		virtual void DrawIndexed(Handle<Mesh> mesh) = 0;
 
-		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) = 0;
+		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type, RenderPassStage stage) = 0;
 
 		virtual void* GetDepthAttachment() = 0;
 		virtual void* GetColorAttachment() = 0;
 
-		virtual Handle<RenderPass> GetMainRenderPass() = 0;
+		const Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() = 0;
+
 		virtual Handle<BindGroup> GetGlobalBindings2D() = 0;
 		virtual Handle<BindGroup> GetGlobalBindings3D() = 0;
+		virtual Handle<BindGroup> GetGlobalPresentBindings() = 0;
 
-		Handle<BindGroupLayout> GetGlobalBindingsLayout2D() { return m_GlobalBindingsLayout2D; }
-		Handle<BindGroupLayout> GetGlobalBindingsLayout3D() { return m_GlobalBindingsLayout3D; }
+		const Handle<BindGroupLayout> GetGlobalBindingsLayout2D() const { return m_GlobalBindingsLayout2D; }
+		const Handle<BindGroupLayout> GetGlobalBindingsLayout3D() const { return m_GlobalBindingsLayout3D; }
+		const Handle<BindGroupLayout> GetGlobalPresentBindingsLayout() const { return m_GlobalPresentBindingsLayout; }
 
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
-		DrawList& GetDrawList2D() { return m_DrawList2D; }
-		DrawList& GetDrawList3D() { return m_DrawList3D; }
 
 		UniformRingBuffer* TempUniformRingBuffer;
+		Handle<Texture> MainColorTexture;
+		Handle<Texture> MainDepthTexture;
+
+	protected:
+		virtual void InitializeInternal() = 0;
 
 	protected:
 		GraphicsAPI m_GraphicsAPI;
-		DrawList m_DrawList2D;
-		DrawList m_DrawList3D;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout2D;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
+		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
+		Handle<RenderPass> m_RenderPass;
 	};
 }

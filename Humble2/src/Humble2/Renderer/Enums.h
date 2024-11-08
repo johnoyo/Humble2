@@ -5,7 +5,7 @@ namespace HBL2
 	enum class CommandBufferType
 	{
 		MAIN = 0,
-		OFFSCREEN = 1,
+		CUSTOM = 1,
 		UI = 2,
 	};
 
@@ -103,11 +103,14 @@ namespace HBL2
 	enum class Format
 	{
 		RGB32_FLOAT = 1,
-		D32_FLOAT = 2,
-		RGBA16_FLOAT = 3,
-		RGBA8_UNORM = 4,
-		RG16_FLOAT = 5,
-		RGBA8_RGB = 6
+		D16_FLOAT,
+		D24_FLOAT,
+		D32_FLOAT,
+		RGBA16_FLOAT,
+		RGBA8_UNORM,
+		BGRA8_UNORM,
+		RG16_FLOAT,
+		RGBA8_RGB,
 	};
 
 	enum class MemoryUsage
@@ -170,8 +173,9 @@ namespace HBL2
 		COPY_SRC = 1,
 		COPY_DST = 2,
 		RENDER_ATTACHMENT = 4,
-		DEPTH_STENCIL = 8,
-		PRESENT = 16,
+		SHADER_READ_ONLY = 8,
+		DEPTH_STENCIL = 16,
+		PRESENT = 32,
 	};
 
 	enum class BlendOperation

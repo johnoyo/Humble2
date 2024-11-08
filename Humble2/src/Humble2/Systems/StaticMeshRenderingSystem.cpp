@@ -18,18 +18,54 @@ namespace HBL2
 					HBL2_CORE_INFO("Setting up mesh");
 				}
 			});
+
+		Handle<RenderPassLayout> renderPassLayout = rm->CreateRenderPassLayout({
+			.debugName = "main-renderpass-layout",
+			.depthTargetFormat = Format::D32_FLOAT,
+			.subPasses = {
+				{ .depthTarget = true, .colorTargets = 1, },
+			},
+		});
+
+		m_RenderPass = rm->CreateRenderPass({
+			.debugName = "main-renderpass",
+			.layout = renderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::CLEAR,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::UNDEFINED,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
+			},
+			.colorTargets = {
+				{
+					.loadOp = LoadOperation::CLEAR,
+					.storeOp = StoreOperation::STORE,
+					.prevUsage = TextureLayout::UNDEFINED,
+					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
+				},
+			},
+		});
+
+		m_FrameBuffer = rm->CreateFrameBuffer({
+			.debugName = "viewport",
+			.width = 1920,
+			.height = 1080,
+			.renderPass = m_RenderPass,
+			.depthTarget = Renderer::Instance->MainDepthTexture,
+			.colorTargets = { Renderer::Instance->MainColorTexture },
+		});
 	}
 
 	void StaticMeshRenderingSystem::OnUpdate(float ts)
 	{
 		GetViewProjection();
 		
-		m_UniformRingBuffer->Invalidate();
-
 		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
 
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
+		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Opaque);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_RenderPass, m_FrameBuffer);
 
 		Renderer::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData);
 
@@ -90,6 +126,9 @@ namespace HBL2
 
 	void StaticMeshRenderingSystem::OnDestroy()
 	{
+		auto* rm = ResourceManager::Instance;
+		rm->DeleteRenderPass(m_RenderPass);
+		rm->DeleteFrameBuffer(m_FrameBuffer);
 	}
 
 	void StaticMeshRenderingSystem::GetViewProjection()

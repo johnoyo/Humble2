@@ -1,5 +1,5 @@
 #shader vertex
-#version 450
+#version 450 core
 layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec3 a_Normal;
 layout(location = 2) in vec2 a_TextureCoord;
@@ -9,7 +9,7 @@ layout(std140, set = 0, binding = 0) uniform Camera
     mat4 ViewProjection;
 } u_Camera;
 
-layout(std140, set = 0, binding = 2) uniform Object
+layout(std140, set = 1, binding = 4) uniform Object
 {
     mat4 Model;
     mat4 InverseModel;
@@ -33,7 +33,7 @@ void main()
 }
 
 #shader fragment
-#version 450
+#version 450 core
 layout(location = 0) out vec4 FragColor;
 
 layout(location = 0) in vec4 v_Color;
@@ -41,10 +41,10 @@ layout(location = 1) in vec3 v_Position;
 layout(location = 2) in vec3 v_Normal;
 layout(location = 3) in vec2 v_TextureCoord;
 
-layout (set = 0, binding = 0) uniform sampler2D u_AlbedoMap;
-layout (set = 0, binding = 1) uniform sampler2D u_NormalMap;
-layout (set = 0, binding = 2) uniform sampler2D u_MetallicMap;
-layout (set = 0, binding = 3) uniform sampler2D u_RoughnessMap;
+layout (set = 1, binding = 0) uniform sampler2D u_AlbedoMap;
+layout (set = 1, binding = 1) uniform sampler2D u_NormalMap;
+layout (set = 1, binding = 2) uniform sampler2D u_MetallicMap;
+layout (set = 1, binding = 3) uniform sampler2D u_RoughnessMap;
 
 layout(std140, set = 0, binding = 1) uniform Light
 {

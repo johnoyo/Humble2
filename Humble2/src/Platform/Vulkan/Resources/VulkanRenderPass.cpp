@@ -23,6 +23,8 @@ namespace HBL2
 
 		for (const auto& colorTarget : desc.colorTargets)
 		{
+			ColorClearValues.push_back(colorTarget.loadOp == LoadOperation::CLEAR);
+
 			attachments.push_back(VkAttachmentDescription
 			{
 				.format = renderer->GetSwapchainImageFormat(),
@@ -48,6 +50,8 @@ namespace HBL2
 		{
 			if (subpass.depthTarget)
 			{
+				DepthClearValue = desc.depthTarget.loadOp == LoadOperation::CLEAR;
+
 				attachments.push_back(VkAttachmentDescription
 				{
 					.flags = 0,

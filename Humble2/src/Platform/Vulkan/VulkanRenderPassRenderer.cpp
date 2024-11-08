@@ -36,13 +36,16 @@ namespace HBL2
 			Material* localMaterial0 = rm->GetMaterial(localDraw.Material);
 			VulkanShader* localShader0 = rm->GetShader(localMaterial0->Shader);
 
-			VulkanBindGroup* localDrawBindGroup0 = rm->GetBindGroup(localDraw.BindGroup);
-			VulkanBuffer* dynamicUniformBuffer = rm->GetBuffer(localDrawBindGroup0->Buffers[0].buffer);
+			if (localDraw.BindGroup.IsValid())
+			{
+				VulkanBindGroup* localDrawBindGroup0 = rm->GetBindGroup(localDraw.BindGroup);
+				VulkanBuffer* dynamicUniformBuffer = rm->GetBuffer(localDrawBindGroup0->Buffers[0].buffer);
 
-			void* data;
-			vmaMapMemory(renderer->GetAllocator(), dynamicUniformBuffer->Allocation, &data);
-			memcpy(data, dynamicUniformBuffer->Data, dynamicUniformBuffer->ByteSize);
-			vmaUnmapMemory(renderer->GetAllocator(), dynamicUniformBuffer->Allocation);
+				void* data;
+				vmaMapMemory(renderer->GetAllocator(), dynamicUniformBuffer->Allocation, &data);
+				memcpy(data, dynamicUniformBuffer->Data, dynamicUniformBuffer->ByteSize);
+				vmaUnmapMemory(renderer->GetAllocator(), dynamicUniformBuffer->Allocation);
+			}
 
 			// Bind pipeline
 			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, localShader0->Pipeline);
@@ -58,7 +61,6 @@ namespace HBL2
 				Mesh* mesh = rm->GetMesh(draw.Mesh);
 				Material* material = rm->GetMaterial(draw.Material);
 				VulkanShader* shader = rm->GetShader(material->Shader);
-				VulkanBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
 
 				// vkCmdBindIndexBuffer
 				if (mesh->IndexBuffer.IsValid())
@@ -81,7 +83,11 @@ namespace HBL2
 				vkCmdBindVertexBuffers(m_CommandBuffer, 0, bufferCounter, buffers.data(), offsets.data());
 
 				// vkCmdBindDescriptorSets
-				vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 1, 1, &drawBindGroup->DescriptorSet, 1, &draw.Offset);
+				if (draw.BindGroup.IsValid())
+				{
+					VulkanBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
+					vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 1, 1, &drawBindGroup->DescriptorSet, 1, &draw.Offset);
+				}
 
 				// Draw the mesh accordingly
 				if (mesh->IndexBuffer.IsValid())

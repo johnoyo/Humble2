@@ -22,6 +22,20 @@ namespace HBL2
 
 			Extent = { desc.dimensions.x, desc.dimensions.y, desc.dimensions.z };
 
+			VkImageUsageFlags usage = VkUtils::TextureUsageToVkImageUsageFlags(desc.usage);
+
+			if ((desc.initialData == nullptr && Extent.width == 1 && Extent.height == 1) || desc.initialData != nullptr)
+			{
+				usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+			}
+			else
+			{
+				if (desc.usage != TextureUsage::DEPTH_STENCIL)
+				{
+					usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+				}
+			}
+
 			// Allocate Image
 			VkImageCreateInfo imageCreateInfo =
 			{
@@ -34,7 +48,7 @@ namespace HBL2
 				.arrayLayers = 1,
 				.samples = VK_SAMPLE_COUNT_1_BIT,
 				.tiling = VK_IMAGE_TILING_OPTIMAL,
-				.usage = VkUtils::TextureUsageToVkImageLayout(desc.usage) | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // NOTE: Investigate if always needs VK_IMAGE_USAGE_TRANSFER_DST_BIT
+				.usage = usage,
 			};
 			
 			VmaAllocationCreateInfo allocationCreateInfo =
@@ -104,20 +118,23 @@ namespace HBL2
 
 			VK_VALIDATE(vkCreateImageView(device->Get(), &imageViewCreateInfo, nullptr, &ImageView), "vkCreateImageView");
 
-			// Create sampler
-			VkSamplerCreateInfo samplerInfo =
+			if (desc.createSampler)
 			{
-				.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-				.pNext = nullptr,
-				.magFilter = VkUtils::FilterToVkFilter(desc.sampler.filter),
-				.minFilter = VkUtils::FilterToVkFilter(desc.sampler.filter),
-				.addressModeU = VkUtils::WrapToVkSamplerAddressMode(desc.sampler.wrap),
-				.addressModeV = VkUtils::WrapToVkSamplerAddressMode(desc.sampler.wrap),
-				.addressModeW = VkUtils::WrapToVkSamplerAddressMode(desc.sampler.wrap),
-				.compareOp = desc.sampler.compareEnable ? VkUtils::CompareToVkCompareOp(desc.sampler.compare) : VK_COMPARE_OP_NEVER,
-			};
+				// Create sampler
+				VkSamplerCreateInfo samplerInfo =
+				{
+					.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+					.pNext = nullptr,
+					.magFilter = VkUtils::FilterToVkFilter(desc.sampler.filter),
+					.minFilter = VkUtils::FilterToVkFilter(desc.sampler.filter),
+					.addressModeU = VkUtils::WrapToVkSamplerAddressMode(desc.sampler.wrap),
+					.addressModeV = VkUtils::WrapToVkSamplerAddressMode(desc.sampler.wrap),
+					.addressModeW = VkUtils::WrapToVkSamplerAddressMode(desc.sampler.wrap),
+					.compareOp = desc.sampler.compareEnable ? VkUtils::CompareToVkCompareOp(desc.sampler.compare) : VK_COMPARE_OP_NEVER,
+				};
 
-			VK_VALIDATE(vkCreateSampler(device->Get(), &samplerInfo, nullptr, &Sampler), "vkCreateSampler");
+				VK_VALIDATE(vkCreateSampler(device->Get(), &samplerInfo, nullptr, &Sampler), "vkCreateSampler");
+			}
 		}
 
 		void Destroy()

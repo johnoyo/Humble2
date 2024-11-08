@@ -3,18 +3,7 @@
 #include "Base.h"
 #include "Resources\TypeDescriptors.h"
 
-#ifdef EMSCRIPTEN
-	#define GLFW_INCLUDE_ES3
-	#include <GLFW/glfw3.h>
-#else
-	#define GLFW_INCLUDE_NONE
-	#include <GL/glew.h>
-#endif
-
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <stdint.h>
+#include "Platform\OpenGL\OpenGLCommon.h"
 
 namespace HBL2
 {
@@ -29,19 +18,33 @@ namespace HBL2
 
 			glGenTextures(1, &RendererId);
 			glBindTexture(GL_TEXTURE_2D, RendererId);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGLUtils::FilterToGLenum(desc.sampler.filter));
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGLUtils::FilterToGLenum(desc.sampler.filter));
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, OpenGLUtils::WrapToGLenum(desc.sampler.wrap));
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, OpenGLUtils::WrapToGLenum(desc.sampler.wrap));
 
-			if (Data == nullptr)
+			GLenum type;
+			GLenum internalFormat;
+
+			if (desc.aspect == TextureAspect::COLOR)
+			{
+				type = GL_UNSIGNED_BYTE;
+				internalFormat = GL_RGBA;
+			}
+			else if(desc.aspect == TextureAspect::DEPTH)
+			{
+				type = GL_UNSIGNED_INT;
+				internalFormat = GL_DEPTH_COMPONENT;
+			}
+
+			if (Data == nullptr && Dimensions.x == 1 && Dimensions.y == 1)
 			{
 				uint32_t whiteTexture = 0xffffffff;
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, &whiteTexture);
+				glTexImage2D(GL_TEXTURE_2D, 0, OpenGLUtils::FormatToGLenum(desc.format), (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, internalFormat, type, &whiteTexture);
 			}
 			else
 			{
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, Data);
+				glTexImage2D(GL_TEXTURE_2D, 0, OpenGLUtils::FormatToGLenum(desc.format), (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, internalFormat, type, Data);
 				stbi_image_free(Data);
 			}
 

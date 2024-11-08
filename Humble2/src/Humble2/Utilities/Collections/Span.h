@@ -20,6 +20,11 @@ namespace HBL2
 		explicit Span(T* data) : Data(data), Size(1) {}
 		explicit Span(T& data) : Data(&data), Size(1) {}
 
+		operator std::initializer_list<T>() const
+		{
+			return std::initializer_list<T>(begin(), end());
+		}
+
 		T* begin() { return Data; }
 		T* end() { return Data + Size; }
 		const T* begin() const { return Data; }

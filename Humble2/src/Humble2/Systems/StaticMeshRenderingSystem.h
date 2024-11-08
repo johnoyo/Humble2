@@ -40,5 +40,8 @@ namespace HBL2
 		Scene* m_EditorScene = nullptr;
 		LightData m_LightData{};
 		CameraData m_CameraData{};
+
+		Handle<RenderPass> m_RenderPass;
+		Handle<FrameBuffer> m_FrameBuffer;
 	};
 }

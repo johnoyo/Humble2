@@ -33,8 +33,6 @@ namespace HBL2
 			Width = width;
 			Height = height;
 
-			Destroy();
-
 			Create();
 		}
 

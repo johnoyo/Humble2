@@ -24,10 +24,10 @@ namespace HBL2
 						camera.Projection = glm::ortho(-camera.AspectRatio * camera.ZoomLevel, camera.AspectRatio * camera.ZoomLevel, -camera.ZoomLevel, camera.ZoomLevel, -1.f, 1.f);
 					}
 
-					if (Renderer::Instance->GetAPI() != GraphicsAPI::OPENGL)
+					/*if (Renderer::Instance->GetAPI() != GraphicsAPI::OPENGL)
 					{
 						camera.Projection[1][1] *= -1;
-					}
+					}*/
 
 					camera.View = glm::inverse(transform.WorldMatrix);
 					camera.ViewProjectionMatrix = camera.Projection * camera.View;
@@ -59,10 +59,10 @@ namespace HBL2
 							camera.Projection = glm::ortho(-camera.AspectRatio * camera.ZoomLevel, camera.AspectRatio * camera.ZoomLevel, -camera.ZoomLevel, camera.ZoomLevel, -1.f, 1.f);
 						}
 
-						if (Renderer::Instance->GetAPI() != GraphicsAPI::OPENGL)
+						/*if (Renderer::Instance->GetAPI() != GraphicsAPI::OPENGL)
 						{
 							camera.Projection[1][1] *= -1;
-						}
+						}*/
 
 						camera.View = glm::inverse(transform.WorldMatrix);
 						camera.ViewProjectionMatrix = camera.Projection * camera.View;

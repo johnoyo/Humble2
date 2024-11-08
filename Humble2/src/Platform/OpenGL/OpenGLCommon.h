@@ -18,5 +18,8 @@ namespace HBL2
 	{
 		GLenum VertexFormatToGLenum(VertexFormat vertexFormat);
 		uint32_t VertexFormatSize(VertexFormat vertexFormat);
+		GLenum FormatToGLenum(Format format);
+		GLenum FilterToGLenum(Filter filter);
+		GLenum WrapToGLenum(Wrap wrap);
 	}
 }

@@ -41,6 +41,7 @@ namespace HBL2
 			bool compareEnable = false;
 		};
 
+		bool createSampler = true;
 		Sampler sampler;
 		stbi_uc* initialData = nullptr;
 	};

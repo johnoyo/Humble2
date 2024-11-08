@@ -1,0 +1,37 @@
+#include "Renderer.h"
+
+#include "Device.h"
+
+namespace HBL2
+{
+	void Renderer::Initialize()
+	{
+		InitializeInternal();
+
+		TempUniformRingBuffer = new UniformRingBuffer(4096, Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
+
+		MainColorTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "viewport-color-target",
+			.dimensions = { 1920, 1080, 1 },
+			.format = Format::BGRA8_UNORM,
+			.internalFormat = Format::BGRA8_UNORM,
+			.usage = TextureUsage::RENDER_ATTACHMENT,
+			.aspect = TextureAspect::COLOR,
+			.sampler =
+			{
+				.filter = Filter::LINEAR,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
+		MainDepthTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "viewport-depth-target",
+			.dimensions = { 1920, 1080, 1 },
+			.format = Format::D32_FLOAT,
+			.internalFormat = Format::D32_FLOAT,
+			.usage = TextureUsage::DEPTH_STENCIL,
+			.aspect = TextureAspect::DEPTH,
+			.createSampler = false,
+		});
+	}
+}

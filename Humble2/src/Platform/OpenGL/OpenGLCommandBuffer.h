@@ -14,5 +14,6 @@ namespace HBL2
 
 	private:
 		OpenGLRenderPasRenderer m_CurrentRenderPassRenderer;
+		Handle<FrameBuffer> m_FrameBuffer;
 	};
 }

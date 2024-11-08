@@ -6,6 +6,11 @@ namespace HBL2
 {
 	void VulkanFrameBuffer::Create()
 	{
+		if (FrameBuffer != VK_NULL_HANDLE)
+		{
+			Destroy();
+		}
+
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 

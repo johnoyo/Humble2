@@ -239,6 +239,10 @@ namespace HBL2
 				return VK_FORMAT_D32_SFLOAT;
 			case Format::RGBA8_RGB:
 				return VK_FORMAT_R8G8B8A8_SRGB;
+			case Format::RGBA8_UNORM:
+				return VK_FORMAT_R8G8B8A8_UNORM;
+			case Format::BGRA8_UNORM:
+				return VK_FORMAT_B8G8R8A8_UNORM;
 			}
 
 			return VK_FORMAT_MAX_ENUM;
@@ -261,7 +265,7 @@ namespace HBL2
 			return VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM;
 		}
 
-		VkImageUsageFlags TextureUsageToVkImageLayout(TextureUsage textureUsage)
+		VkImageUsageFlags TextureUsageToVkImageUsageFlags(TextureUsage textureUsage)
 		{
 			switch (textureUsage)
 			{
@@ -298,6 +302,8 @@ namespace HBL2
 				return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 			case HBL2::TextureLayout::RENDER_ATTACHMENT:
 				return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			case HBL2::TextureLayout::SHADER_READ_ONLY:
+				return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			case HBL2::TextureLayout::DEPTH_STENCIL:
 				return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 			case HBL2::TextureLayout::PRESENT:

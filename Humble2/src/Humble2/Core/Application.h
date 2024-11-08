@@ -8,11 +8,6 @@
 #include "Context.h"
 #include "EventDispatcher.h"
 
-#include "Systems\CameraSystem.h"
-#include "Systems\StaticMeshRenderingSystem.h"
-#include "Systems\TransformSystem.h"
-#include "Systems\LinkSystem.h"
-
 #include "ImGui\ImGuiRenderer.h"
 #include "Renderer\Device.h"
 #include "Renderer\Renderer.h"

@@ -8,6 +8,7 @@
 #include "Systems\CameraSystem.h"
 #include "Systems\StaticMeshRenderingSystem.h"
 #include "Systems\SpriteRenderingSystem.h"
+#include "Systems\CompositeRenderingSystem.h"
 
 namespace HBL2
 {
@@ -320,8 +321,9 @@ namespace HBL2
 		scene->RegisterSystem(new TransformSystem);
 		scene->RegisterSystem(new LinkSystem);
 		scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
-		// scene->RegisterSystem(new StaticMeshRenderingSystem);
+		scene->RegisterSystem(new StaticMeshRenderingSystem);
 		scene->RegisterSystem(new SpriteRenderingSystem);
+		scene->RegisterSystem(new CompositeRenderingSystem);
 
 		return sceneHandle;
 	}
@@ -404,8 +406,9 @@ namespace HBL2
 			scene->RegisterSystem(new TransformSystem);
 			scene->RegisterSystem(new LinkSystem);
 			scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
-			// scene->RegisterSystem(new StaticMeshRenderingSystem);
+			scene->RegisterSystem(new StaticMeshRenderingSystem);
 			scene->RegisterSystem(new SpriteRenderingSystem);
+			scene->RegisterSystem(new CompositeRenderingSystem);
 
 			asset->Indentifier = sceneHandle.Pack();
 			asset->Loaded = true;

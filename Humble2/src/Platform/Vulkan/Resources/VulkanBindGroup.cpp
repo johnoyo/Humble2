@@ -29,6 +29,16 @@ namespace HBL2
 
 		VK_VALIDATE(vkAllocateDescriptorSets(device->Get(), &descriptorSetAllocateInfo, &DescriptorSet), "vkAllocateDescriptorSets");
 
+		Update();
+	}
+
+	void VulkanBindGroup::Update()
+	{
+		auto* rm = (VulkanResourceManager*)ResourceManager::Instance;
+		auto* device = (VulkanDevice*)Device::Instance;
+
+		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(BindGroupLayout);
+
 		std::vector<VkWriteDescriptorSet> writeDescriptorSet(Buffers.size() + Textures.size());
 		std::vector<VkDescriptorBufferInfo> descriptorBufferInfo(Buffers.size());
 		std::vector<VkDescriptorImageInfo> descriptorImageInfo(Textures.size());

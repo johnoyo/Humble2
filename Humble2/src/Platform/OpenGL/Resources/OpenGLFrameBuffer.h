@@ -22,20 +22,19 @@ namespace HBL2
 	{
 		OpenGLFrameBuffer() = default;
 		OpenGLFrameBuffer(const FrameBufferDescriptor&& desc)
+			: DebugName(desc.debugName), Width(desc.width), Height(desc.height), ColorTargets(desc.colorTargets), DepthTarget(desc.depthTarget)
 		{
-			DebugName = desc.debugName;
-			Width = desc.width;
-			Height = desc.height;
-
-			Invalidate();
+			Create();
 		}
+
+		void Create();
 
 		void Resize(uint32_t width, uint32_t height)
 		{
 			Width = width;
 			Height = height;
 
-			Invalidate();
+			Create();
 		}
 
 		void Invalidate()
@@ -88,15 +87,18 @@ namespace HBL2
 		void Destroy()
 		{
 			glDeleteFramebuffers(1, &RendererId);
-			glDeleteTextures(1, &ColorAttachmentId);
-			glDeleteTextures(1, &DepthAttachmentId);
 		}
 
 		const char* DebugName = "";
 		GLuint RendererId = 0;
+
 		GLuint ColorAttachmentId = 0;
 		GLuint DepthAttachmentId = 0;
+
 		uint32_t Width = 0;
 		uint32_t Height = 0;
+
+		std::vector<Handle<Texture>> ColorTargets;
+		Handle<Texture> DepthTarget;
 	};
 }

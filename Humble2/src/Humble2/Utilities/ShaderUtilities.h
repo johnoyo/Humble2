@@ -21,6 +21,7 @@ namespace HBL2
 	enum class BuiltInShader
 	{
 		INVALID = 0,
+		PRESENT,
 		UNLIT,
 		BLINN_PHONG,
 		PBR,

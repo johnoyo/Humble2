@@ -20,16 +20,24 @@ namespace HBL2
 				glBindBufferBase(GL_UNIFORM_BUFFER, globalBindGroupLayout->BufferBindings[index++].slot, buffer->RendererId);
 				buffer->Write();
 			}
+
+			// Set global bind group
+			globalBindGroup->Set();
 		}
 
 		for (auto&& [shaderID, drawList] : draws.GetDraws())
 		{
 			auto& localDraw = drawList[0];
 
-			// Write the entire dynamicUniformBuffer data 
-			OpenGLBindGroup* localDrawBindGroup0 = rm->GetBindGroup(localDraw.BindGroup);
-			OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(localDrawBindGroup0->Buffers[0].buffer);
-			dynamicUniformBuffer->Write();
+			OpenGLBuffer* dynamicUniformBuffer = nullptr;
+
+			// Write the entire dynamicUniformBuffer data
+			if (localDraw.BindGroup.IsValid())
+			{
+				OpenGLBindGroup* localDrawBindGroup0 = rm->GetBindGroup(localDraw.BindGroup);
+				dynamicUniformBuffer = rm->GetBuffer(localDrawBindGroup0->Buffers[0].buffer);
+				dynamicUniformBuffer->Write();
+			}
 
 			if (localDraw.Shader.IsValid())
 			{
@@ -50,7 +58,6 @@ namespace HBL2
 			{
 				Mesh* mesh = rm->GetMesh(draw.Mesh);
 				Material* material = rm->GetMaterial(draw.Material);
-				OpenGLBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
 
 				// Bind Index buffer if applicable
 				if (mesh->IndexBuffer.IsValid())
@@ -67,10 +74,17 @@ namespace HBL2
 				}
 
 				// Set bind group
-				drawBindGroup->Set();
+				if (draw.BindGroup.IsValid())
+				{
+					OpenGLBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
+					drawBindGroup->Set();
+				}
 
 				// Bind dynamic uniform buffer with the current offset and size
-				dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);
+				if (dynamicUniformBuffer != nullptr)
+				{
+					dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);
+				}
 
 				// Draw the mesh accordingly
 				if (mesh->IndexBuffer.IsValid())

@@ -27,12 +27,14 @@ namespace HBL2
 			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
 		};
 
-		VkDescriptorPoolCreateInfo pool_info = {};
-		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-		pool_info.maxSets = 1000;
-		pool_info.poolSizeCount = std::size(poolSizes);
-		pool_info.pPoolSizes = poolSizes;
+		VkDescriptorPoolCreateInfo pool_info =
+		{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+			.maxSets = 1000,
+			.poolSizeCount = std::size(poolSizes),
+			.pPoolSizes = poolSizes,
+		};
 
 		VkDescriptorPool m_ImGuiPool;
 		VK_VALIDATE(vkCreateDescriptorPool(m_Device->Get(), &pool_info, nullptr, &m_ImGuiPool), "vkCreateDescriptorPool");
@@ -43,7 +45,7 @@ namespace HBL2
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-		//io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
 		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 		//io.ConfigViewportsNoAutoMerge = true;
 		//io.ConfigViewportsNoTaskBarIcon = true;
@@ -98,7 +100,7 @@ namespace HBL2
 	{
 		ImGui::Render();
 
-		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI);
+		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI, RenderPassStage::UserInterface);
 		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_ImGuiRenderPass, m_Renderer->GetMainFrameBuffer());
 
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);

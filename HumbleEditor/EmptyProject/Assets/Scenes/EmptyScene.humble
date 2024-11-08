@@ -1,6 +1,22 @@
 Scene: EmptyScene
 Entities:
-  - Entity: 0
+  - Entity: 2
+    Component::Tag:
+      Tag: New Light
+    Component::ID:
+      ID: 5092772676877043712
+    Component::Transform:
+      Translation: [0, 2.62240148, 1.66328478]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Light:
+      Enabled: true
+      CastsShadows: false
+      Intensity: 1
+      Attenuation: 10
+      Color: [1, 1, 1]
+      Type: 0
+  - Entity: 1
     Component::Tag:
       Tag: Sprite
     Component::ID:
@@ -12,5 +28,18 @@ Entities:
     Component::Sprite_New:
       Enabled: true
       Material: 11734900218811993914
+  - Entity: 0
+    Component::Tag:
+      Tag: Monkeh
+    Component::ID:
+      ID: 18396450913416425472
+    Component::Transform:
+      Translation: [2, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 17674126706215361874
+      Mesh: 17631668153373402826
 Systems:
   []
