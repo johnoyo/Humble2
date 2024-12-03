@@ -12,10 +12,10 @@ namespace HBL2
 			OpenProject();
 
 			HBL2::EventDispatcher::Get().Register("SceneChangeEvent", [&](const HBL2::Event& e)
-				{
-					const HBL2::SceneChangeEvent& sce = dynamic_cast<const HBL2::SceneChangeEvent&>(e);
-					m_ActiveScene = HBL2::ResourceManager::Instance->GetScene(sce.NewScene);
-				});
+			{
+				const HBL2::SceneChangeEvent& sce = dynamic_cast<const HBL2::SceneChangeEvent&>(e);
+				m_ActiveScene = HBL2::ResourceManager::Instance->GetScene(sce.NewScene);
+			});
 		}
 
 		void RuntimeContext::OnUpdate(float ts)

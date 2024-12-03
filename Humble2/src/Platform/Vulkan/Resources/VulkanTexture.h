@@ -113,7 +113,7 @@ namespace HBL2
 					.levelCount = 1,
 					.baseArrayLayer = 0,
 					.layerCount = 1,
-				}
+				},
 			};
 
 			VK_VALIDATE(vkCreateImageView(device->Get(), &imageViewCreateInfo, nullptr, &ImageView), "vkCreateImageView");

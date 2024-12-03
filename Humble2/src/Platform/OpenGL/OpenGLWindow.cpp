@@ -24,9 +24,6 @@ namespace HBL2
 		glfwSetErrorCallback(ErrorCallback);
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
@@ -64,13 +61,20 @@ namespace HBL2
 			glfwSwapInterval(0);
 		}
 
-#ifndef EMSCRIPTEN
 		if (glewInit() != GLEW_OK)
 		{
 			std::cout << "Error initializing GLEW!\n";
 			exit(-1);
 		}
-#endif
+
+		GLint versionMajor = 0;
+		glGetIntegerv(GL_MAJOR_VERSION, &versionMajor);
+		HBL2_CORE_ASSERT(versionMajor >= 4, "Humble2 requires an minimum OpenGL version of 4.5!");
+
+		GLint versionMinor = 0;
+		glGetIntegerv(GL_MINOR_VERSION, &versionMinor);
+		HBL2_CORE_ASSERT(versionMinor >= 5, "Humble2 requires an minimum OpenGL version of 4.5!");
+
 		AttachEventCallbacks();
 	}
 }

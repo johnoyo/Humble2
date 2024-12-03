@@ -9,7 +9,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	{
 		.Name = "Humble App",
 		.GraphicsAPI = HBL2::GraphicsAPI::OPENGL,
-		.VerticalSync = true,
+		.VerticalSync = false,
 		.Context = new HBL2::Runtime::RuntimeContext,
 	};
 

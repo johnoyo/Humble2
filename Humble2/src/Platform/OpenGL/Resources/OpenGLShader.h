@@ -59,8 +59,8 @@ namespace HBL2
 		GLuint Compile(GLuint type, const char* entryPoint, const std::vector<uint32_t>& binaryCode)
 		{
 			GLuint shaderID = glCreateShader(type);
-			glShaderBinary(1, &shaderID, GL_SHADER_BINARY_FORMAT_SPIR_V_ARB, binaryCode.data(), (GLuint)binaryCode.size() * sizeof(uint32_t));
-			glSpecializeShaderARB(shaderID, entryPoint, 0, nullptr, nullptr);
+			glShaderBinary(1, &shaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, binaryCode.data(), (GLuint)binaryCode.size() * sizeof(uint32_t));
+			glSpecializeShader(shaderID, entryPoint, 0, nullptr, nullptr);
 
 			GLint compileStatus;
 			glGetShaderiv(shaderID, GL_COMPILE_STATUS, &compileStatus);

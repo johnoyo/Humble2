@@ -10,40 +10,6 @@ namespace HBL2
 			Mode = HBL2::Mode::Editor;
 			AssetManager::Instance = new EditorAssetManager;
 
-			/*Handle<Texture> colorTarget = HBL2::ResourceManager::Instance->CreateTexture({
-				.debugName = "editor-viewport-color-target",
-				.dimensions = {1280, 720, 1},
-				.format = Format::BGRA8_UNORM,
-				.internalFormat = Format::BGRA8_UNORM,
-				.usage = TextureUsage::RENDER_ATTACHMENT,
-				.aspect = TextureAspect::COLOR,
-				.sampler = 
-				{
-					.filter = Filter::LINEAR,
-					.wrap = Wrap::CLAMP_TO_EDGE,
-				}
-			});
-
-			Handle<Texture> depthTarget = HBL2::ResourceManager::Instance->CreateTexture({
-				.debugName = "editor-viewport-depth-target",
-				.dimensions = {1280, 720, 1},
-				.format = Format::D32_FLOAT,
-				.internalFormat = Format::D32_FLOAT,
-				.usage = TextureUsage::DEPTH_STENCIL,
-				.aspect = TextureAspect::DEPTH,
-				.createSampler = false,
-			});
-
-			// Create FrameBuffer.
-			HBL2::Context::FrameBuffer = HBL2::ResourceManager::Instance->CreateFrameBuffer({
-				.debugName = "editor-viewport",
-				.width = 1280,
-				.height = 720,
-				.renderPass = HBL2::Renderer::Instance->GetMainRenderPass(),
-				.depthTarget = depthTarget,
-				.colorTargets =  { colorTarget },
-			});*/
-
 			if (!OpenEmptyProject())
 			{
 				ActiveScene = EmptyScene;

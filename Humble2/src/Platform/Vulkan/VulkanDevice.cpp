@@ -189,7 +189,7 @@ namespace HBL2
 		}
 
 		std::vector<VkPhysicalDevice> devices(deviceCount);
-		vkEnumeratePhysicalDevices(m_Instance, &deviceCount, devices.data());
+		VK_VALIDATE(vkEnumeratePhysicalDevices(m_Instance, &deviceCount, devices.data()), "vkEnumeratePhysicalDevices");
 
 		m_PhysicalDevice = VK_NULL_HANDLE;
 
