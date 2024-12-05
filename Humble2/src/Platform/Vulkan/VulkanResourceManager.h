@@ -24,6 +24,10 @@ namespace HBL2
 
 		virtual void Clean() override
 		{
+			// Flush(Renderer::Instance->GetFrameNumber());
+
+			HBL2_CORE_TRACE("m_TexturePool Balance: {}", m_TexturePool.Balance);
+			HBL2_CORE_TRACE("m_BufferPool Balance: {}", m_BufferPool.Balance);
 		}
 
 		// Textures
@@ -33,10 +37,13 @@ namespace HBL2
 		}
 		virtual void DeleteTexture(Handle<Texture> handle) override
 		{
-			VulkanTexture* texture = GetTexture(handle);
-			texture->Destroy();
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+			{
+				VulkanTexture* texture = GetTexture(handle);
+				texture->Destroy();
 
-			m_TexturePool.Remove(handle);
+				m_TexturePool.Remove(handle);
+			});
 		}
 		VulkanTexture* GetTexture(Handle<Texture> handle) const
 		{
@@ -50,10 +57,13 @@ namespace HBL2
 		}
 		virtual void DeleteBuffer(Handle<Buffer> handle) override
 		{
-			VulkanBuffer* buffer = GetBuffer(handle);
-			buffer->Destroy();
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+			{
+				VulkanBuffer* buffer = GetBuffer(handle);
+				buffer->Destroy();
 
-			m_BufferPool.Remove(handle);
+				m_BufferPool.Remove(handle);
+			});
 		}
 		virtual void ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset) override
 		{
@@ -76,10 +86,13 @@ namespace HBL2
 		}
 		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) override
 		{
-			VulkanFrameBuffer* frameBuffer = GetFrameBuffer(handle);
-			frameBuffer->Destroy();
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+			{
+				VulkanFrameBuffer* frameBuffer = GetFrameBuffer(handle);
+				frameBuffer->Destroy();
 
-			m_FrameBufferPool.Remove(handle);
+				m_FrameBufferPool.Remove(handle);
+			});
 		}
 		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) override
 		{
@@ -103,10 +116,13 @@ namespace HBL2
 		}
 		virtual void DeleteShader(Handle<Shader> handle) override
 		{
-			VulkanShader* shader = GetShader(handle);
-			shader->Destroy();
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+			{
+				VulkanShader* shader = GetShader(handle);
+				shader->Destroy();
 
-			m_ShaderPool.Remove(handle);
+				m_ShaderPool.Remove(handle);
+			});
 		}
 		VulkanShader* GetShader(Handle<Shader> handle) const
 		{
@@ -120,10 +136,13 @@ namespace HBL2
 		}
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) override
 		{
-			VulkanBindGroup* bindGroup = GetBindGroup(handle);
-			bindGroup->Destroy();
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+			{
+				VulkanBindGroup* bindGroup = GetBindGroup(handle);
+				bindGroup->Destroy();
 
-			m_BindGroupPool.Remove(handle);
+				m_BindGroupPool.Remove(handle);
+			});
 		}
 		VulkanBindGroup* GetBindGroup(Handle<BindGroup> handle) const
 		{
@@ -137,7 +156,10 @@ namespace HBL2
 		}
 		virtual void DeleteBindGroupLayout(Handle<BindGroupLayout> handle) override
 		{
-			m_BindGroupLayoutPool.Remove(handle);
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+			{
+				m_BindGroupLayoutPool.Remove(handle);
+			});
 		}
 		VulkanBindGroupLayout* GetBindGroupLayout(Handle<BindGroupLayout> handle) const
 		{
@@ -151,10 +173,13 @@ namespace HBL2
 		}
 		virtual void DeleteRenderPass(Handle<RenderPass> handle) override
 		{
-			VulkanRenderPass* renderPass = GetRenderPass(handle);
-			renderPass->Destroy();
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+			{
+				VulkanRenderPass* renderPass = GetRenderPass(handle);
+				renderPass->Destroy();
 
-			m_RenderPassPool.Remove(handle);
+				m_RenderPassPool.Remove(handle);
+			});
 		}
 		VulkanRenderPass* GetRenderPass(Handle<RenderPass> handle) const
 		{
@@ -168,7 +193,10 @@ namespace HBL2
 		}
 		virtual void DeleteRenderPassLayout(Handle<RenderPassLayout> handle) override
 		{
-			m_RenderPassLayoutPool.Remove(handle);
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+			{
+				m_RenderPassLayoutPool.Remove(handle);
+			});
 		}
 		VulkanRenderPassLayout* GetRenderPassLayout(Handle<RenderPassLayout> handle) const
 		{

@@ -61,6 +61,10 @@ namespace HBL2
 		}
 	}
 
+	void AssetImporter::DestroyAsset(Asset* asset)
+	{
+	}
+
     Handle<Texture> AssetImporter::ImportTexture(Asset* asset)
     {
 		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture");

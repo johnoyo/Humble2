@@ -87,6 +87,8 @@ namespace HBL2
 		virtual void* GetDepthAttachment() = 0;
 		virtual void* GetColorAttachment() = 0;
 
+		const uint32_t GetFrameNumber() const { return m_FrameNumber; }
+
 		const Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() = 0;
 
@@ -108,6 +110,7 @@ namespace HBL2
 		virtual void InitializeInternal() = 0;
 
 	protected:
+		uint32_t m_FrameNumber = 0;
 		GraphicsAPI m_GraphicsAPI;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout2D;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;

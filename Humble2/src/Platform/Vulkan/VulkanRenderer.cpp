@@ -56,6 +56,8 @@ namespace HBL2
 				m_ColorAttachmentID = ImGui_ImplVulkan_AddTexture(offScreenImageSampler, offScreenImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 			}
 		}
+
+		m_ResourceManager->Flush(m_FrameNumber);
 	}
 
 	void VulkanRenderer::Present()
@@ -84,6 +86,18 @@ namespace HBL2
 		vkDeviceWaitIdle(m_Device->Get());
 
 		m_MainDeletionQueue.Flush();
+
+		if (MainColorTexture.IsValid())
+		{
+			VulkanTexture* vkMainColorTexture = m_ResourceManager->GetTexture(MainColorTexture);
+			vkMainColorTexture->Destroy();
+		}
+
+		if (MainDepthTexture.IsValid())
+		{
+			VulkanTexture* vkMainDepthTexture = m_ResourceManager->GetTexture(MainDepthTexture);
+			vkMainDepthTexture->Destroy();
+		}
 
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 

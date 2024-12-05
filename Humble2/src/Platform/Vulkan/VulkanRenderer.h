@@ -158,7 +158,6 @@ namespace HBL2
 		std::vector<VulkanCommandBuffer> m_SecondaryTransparentCommandBuffers[FRAME_OVERLAP];
 		std::vector<VulkanCommandBuffer> m_SecondaryPostProcessCommandBuffers[FRAME_OVERLAP];
 
-		uint32_t m_FrameNumber = 0;
 		uint32_t m_SwapchainImageIndex = 0;
 
 		VkQueue m_GraphicsQueue;

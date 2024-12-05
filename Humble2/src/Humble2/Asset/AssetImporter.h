@@ -27,6 +27,7 @@ namespace HBL2
 
 		uint32_t ImportAsset(Asset* asset);
 		void SaveAsset(Asset* asset);
+		void DestroyAsset(Asset* asset);
 
 	private:
 		Handle<Texture> ImportTexture(Asset* asset);

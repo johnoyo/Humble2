@@ -17,6 +17,7 @@ namespace HBL2
 
 	private:
 		Handle<RenderPass> m_RenderPass;
+		Handle<FrameBuffer> m_FrameBuffer;
 		Handle<Buffer> m_VertexBuffer;
 		Handle<Mesh> m_QuadMesh;
 		Handle<Material> m_QuadMaterial;

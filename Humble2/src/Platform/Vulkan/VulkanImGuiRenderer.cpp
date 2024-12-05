@@ -36,7 +36,6 @@ namespace HBL2
 			.pPoolSizes = poolSizes,
 		};
 
-		VkDescriptorPool m_ImGuiPool;
 		VK_VALIDATE(vkCreateDescriptorPool(m_Device->Get(), &pool_info, nullptr, &m_ImGuiPool), "vkCreateDescriptorPool");
 
 		// Setup Dear ImGui context
@@ -122,9 +121,9 @@ namespace HBL2
 	{
 		vkDeviceWaitIdle(m_Device->Get());
 
-		VulkanRenderPass* renderPass = m_ResourceManager->GetRenderPass(m_ImGuiRenderPass);
-
 		vkDestroyDescriptorPool(m_Device->Get(), m_ImGuiPool, nullptr);
+
+		VulkanRenderPass* renderPass = m_ResourceManager->GetRenderPass(m_ImGuiRenderPass);
 		vkDestroyRenderPass(m_Device->Get(), renderPass->RenderPass, nullptr);
 
 		ImGui_ImplVulkan_Shutdown();

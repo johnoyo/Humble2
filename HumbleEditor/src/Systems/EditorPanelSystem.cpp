@@ -933,19 +933,7 @@ namespace HBL2
 						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
 						UUID sceneUUID = std::hash<std::string>()(relativePath.string());
 
-						Handle<Asset> sceneAssetHandle;
-
-						for (auto handle : AssetManager::Instance->GetRegisteredAssets())
-						{
-							Asset* currentAsset = AssetManager::Instance->GetAssetMetadata(handle);
-							if (currentAsset->Type == AssetType::Scene && currentAsset->UUID == sceneUUID)
-							{
-								sceneAssetHandle = handle;
-								break;
-							}
-						}
-
-						HBL2::SceneManager::Get().LoadScene(sceneAssetHandle);
+						HBL2::SceneManager::Get().LoadScene(AssetManager::Instance->GetHandleFromUUID(sceneUUID));
 
 						m_EditorScenePath = filepath;
 					}
@@ -1660,19 +1648,8 @@ namespace HBL2
 				}
 
 				UUID assetUUID = std::hash<std::string>()(relativePath.string());
-				Handle<Asset> assetHandle;
-				Asset* asset = nullptr;
-
-				for (auto handle : AssetManager::Instance->GetRegisteredAssets())
-				{
-					Asset* currentAsset = AssetManager::Instance->GetAssetMetadata(handle);
-					if (currentAsset->UUID == assetUUID)
-					{
-						assetHandle = handle;
-						asset = currentAsset;
-						break;
-					}
-				}
+				Handle<Asset> assetHandle = AssetManager::Instance->GetHandleFromUUID(assetUUID);
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 
 				if (ImGui::BeginDragDropSource())
 				{

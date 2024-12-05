@@ -145,10 +145,8 @@ namespace HBL2
 		Window::Instance = nullptr;
 
 		Input::ShutDown();
-
 		NativeScriptUtilities::Shutdown();
 		MeshUtilities::Shutdown();
-
 		EventDispatcher::Shutdown();
 	}
 }

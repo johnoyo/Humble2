@@ -92,27 +92,31 @@ namespace HBL2
 	void CompositeRenderingSystem::OnUpdate(float ts)
 	{
 		// Post Process Pass
-		/*CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::PostProcess);
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_RenderPass, Renderer::Instance->GetMainFrameBuffer());
+		{
+			/*CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::PostProcess);
+			RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_RenderPass, m_FrameBuffer);
 
-		commandBuffer->EndRenderPass(*passRenderer);
-		commandBuffer->Submit();*/
+			commandBuffer->EndRenderPass(*passRenderer);
+			commandBuffer->Submit();*/
+		}
 
 		// Render final image to full screen quad
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Present);
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
+		{
+			CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Present);
+			RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
 
-		DrawList draws;
-		draws.Insert({
-			.Shader = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PRESENT),
-			.Mesh = m_QuadMesh,
-			.Material = m_QuadMaterial,
-		});
+			DrawList draws;
+			draws.Insert({
+				.Shader = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PRESENT),
+				.Mesh = m_QuadMesh,
+				.Material = m_QuadMaterial,
+			});
 
-		GlobalDrawStream globalDrawStream = { .BindGroup = m_GlobalPresentBindings };
-		passRenderer->DrawSubPass(globalDrawStream, draws);
-		commandBuffer->EndRenderPass(*passRenderer);
-		commandBuffer->Submit();
+			GlobalDrawStream globalDrawStream = { .BindGroup = m_GlobalPresentBindings };
+			passRenderer->DrawSubPass(globalDrawStream, draws);
+			commandBuffer->EndRenderPass(*passRenderer);
+			commandBuffer->Submit();
+		}
 	}
 
 	void CompositeRenderingSystem::OnDestroy()
