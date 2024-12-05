@@ -20,6 +20,7 @@ namespace HBL2
 		OpenGLBindGroup(const BindGroupDescriptor&& desc);		
 
 		void Set();
+		void Destroy();
 
 		const char* DebugName = "";
 		std::vector<BindGroupDescriptor::BufferEntry> Buffers;

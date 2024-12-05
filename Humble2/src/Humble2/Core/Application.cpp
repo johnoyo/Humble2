@@ -128,6 +128,10 @@ namespace HBL2
 		delete ImGuiRenderer::Instance;
 		ImGuiRenderer::Instance = nullptr;
 
+		AssetManager::Instance->DeregisterAssets();
+		delete AssetManager::Instance;
+		AssetManager::Instance = nullptr;
+
 		Renderer::Instance->Clean();
 		delete Renderer::Instance;
 		Renderer::Instance = nullptr;

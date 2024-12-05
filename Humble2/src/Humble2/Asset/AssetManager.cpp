@@ -86,5 +86,6 @@ namespace HBL2
 		}
 
 		m_RegisteredAssets.clear();
+		m_RegisteredAssetMap.clear();
 	}
 }

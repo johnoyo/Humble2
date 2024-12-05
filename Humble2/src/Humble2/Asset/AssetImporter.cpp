@@ -63,7 +63,44 @@ namespace HBL2
 
 	void AssetImporter::DestroyAsset(Asset* asset)
 	{
+		if (asset == nullptr)
+		{
+			return;
+		}
+
+		switch (asset->Type)
+		{
+		case AssetType::Texture:
+			DestroyTexture(asset);
+			break;
+		}
 	}
+
+	void AssetImporter::UnloadAsset(Asset* asset)
+	{
+		if (asset == nullptr)
+		{
+			return;
+		}
+
+		switch (asset->Type)
+		{
+		case AssetType::Texture:
+			UnloadTexture(asset);
+			break;
+		case AssetType::Shader:
+			UnloadShader(asset);
+			break;
+		case AssetType::Mesh:
+			UnloadMesh(asset);
+			break;
+		case AssetType::Material:
+			UnloadMaterial(asset);
+			break;
+		}
+	}
+
+	/// Import methods
 
     Handle<Texture> AssetImporter::ImportTexture(Asset* asset)
     {
@@ -389,6 +426,8 @@ namespace HBL2
 		return Handle<Mesh>();
 	}
 
+	/// Save methods
+
 	void AssetImporter::SaveScene(Asset* asset)
 	{
 		if (!asset->Loaded)
@@ -429,5 +468,113 @@ namespace HBL2
 		Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
 		SceneSerializer serializer(scene);
 		serializer.Serialize(Project::GetAssetFileSystemPath(asset->FilePath));
+	}
+
+	/// Destroy methods
+
+	void AssetImporter::DestroyTexture(Asset* asset)
+	{
+		if (asset->Loaded)
+		{
+			UnloadTexture(asset);
+		}
+
+		// TODO: Delete files
+	}
+
+	/// Unload methods
+
+	void AssetImporter::UnloadTexture(Asset* asset)
+	{
+		Handle<Texture> textureAssetHandle = Handle<Texture>::UnPack(asset->Indentifier);
+
+		if (!textureAssetHandle.IsValid())
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" has an invalid handle, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		ResourceManager::Instance->DeleteTexture(textureAssetHandle);
+
+		asset->Loaded = false;
+		asset->Indentifier = 0;
+	}
+
+	void AssetImporter::UnloadShader(Asset* asset)
+	{
+		Handle<Shader> shaderAssetHandle = Handle<Shader>::UnPack(asset->Indentifier);
+
+		if (!shaderAssetHandle.IsValid())
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" has an invalid handle, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		ResourceManager::Instance->DeleteShader(shaderAssetHandle);
+
+		asset->Loaded = false;
+		asset->Indentifier = 0;
+	}
+	
+	void AssetImporter::UnloadMesh(Asset* asset)
+	{
+		Handle<Mesh> meshAssetHandle = Handle<Mesh>::UnPack(asset->Indentifier);
+
+		if (!meshAssetHandle.IsValid())
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" has an invalid handle, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		Mesh* mesh = ResourceManager::Instance->GetMesh(meshAssetHandle);
+
+		ResourceManager::Instance->DeleteBuffer(mesh->IndexBuffer);
+
+		for (const auto vertexBuffer : mesh->VertexBuffers)
+		{
+			ResourceManager::Instance->DeleteBuffer(vertexBuffer);
+		}
+
+		ResourceManager::Instance->DeleteMesh(meshAssetHandle);
+	}
+
+	void AssetImporter::UnloadMaterial(Asset* asset)
+	{
+		Handle<Material> materialAssetHandle = Handle<Material>::UnPack(asset->Indentifier);
+
+		if (!materialAssetHandle.IsValid())
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" has an invalid handle, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		Material* material = ResourceManager::Instance->GetMaterial(materialAssetHandle);
+
+		ResourceManager::Instance->DeleteShader(material->Shader);
+		ResourceManager::Instance->DeleteBindGroup(material->BindGroup);
 	}
 }

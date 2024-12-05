@@ -246,7 +246,7 @@ namespace HBL2
 	void ShaderUtilities::LoadBuiltInShaders()
 	{
 		auto drawBindGroupLayout0 = ResourceManager::Instance->CreateBindGroupLayout({
-			.debugName = "simple-lit-bind-group-layout",
+			.debugName = "built-in-simple-lit-bind-group-layout",
 			.textureBindings = {
 				{
 					/*
@@ -277,7 +277,7 @@ namespace HBL2
 		m_ShaderLayouts[BuiltInShader::BLINN_PHONG] = drawBindGroupLayout0;
 
 		auto drawBindGroupLayout1 = ResourceManager::Instance->CreateBindGroupLayout({
-			.debugName = "lit-bind-group-layout",
+			.debugName = "built-in-lit-bind-group-layout",
 			.textureBindings = {
 				/*
 				* Here we start the texture binds from zero despite having already buffers bound there.
@@ -319,7 +319,7 @@ namespace HBL2
 		// Invalid shader
 		{
 			auto invalidShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "shader-asset",
+				.debugName = "invalid-shader-asset",
 				.filePath = "assets/shaders/invalid.shader",
 				.type = AssetType::Shader,
 			});
@@ -358,7 +358,7 @@ namespace HBL2
 		// Present shader
 		{
 			auto presentShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "shader-asset",
+				.debugName = "present-shader-asset",
 				.filePath = "assets/shaders/present.shader",
 				.type = AssetType::Shader,
 			});
@@ -396,7 +396,7 @@ namespace HBL2
 		// Unlit shader
 		{
 			auto unlitShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "shader-asset",
+				.debugName = "unlit-shader-asset",
 				.filePath = "assets/shaders/unlit.shader",
 				.type = AssetType::Shader,
 			});
@@ -435,7 +435,7 @@ namespace HBL2
 		// Blinn-Phnog shader
 		{
 			auto blinnPhongShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "shader-asset",
+				.debugName = "blinn-phong-shader-asset",
 				.filePath = "assets/shaders/blinn-phong.shader",
 				.type = AssetType::Shader,
 			});
@@ -475,7 +475,7 @@ namespace HBL2
 		// PBR shader
 		{
 			auto pbrShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "shader-asset",
+				.debugName = "pbr-shader-asset",
 				.filePath = "assets/shaders/pbr.shader",
 				.type = AssetType::Shader,
 			});

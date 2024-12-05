@@ -27,10 +27,18 @@ namespace HBL2
 
 			return handle;
 		}
-		void DeleteAsset(Handle<Asset> handle)
+		void DeleteAsset(Handle<Asset> handle, bool destroy = false)
 		{
 			// NOTE(John): Maybe consider removing the handle from m_RegisteredAssets and m_RegisteredAssetMap??
-			DestroyAsset(handle);
+			if (destroy)
+			{
+				DestroyAsset(handle);
+			}
+			else
+			{
+				UnloadAsset(handle);
+			}
+
 			m_AssetPool.Remove(handle);
 		}
 		Asset* GetAssetMetadata(Handle<Asset> handle) const
@@ -102,6 +110,9 @@ namespace HBL2
 		}
 
 		virtual void SaveAsset(Handle<Asset> handle) = 0;
+
+		virtual void UnloadAsset(Handle<Asset> handle) = 0;
+
 		virtual bool IsAssetValid(Handle<Asset> handle) = 0;
 		virtual bool IsAssetLoaded(Handle<Asset> handle) = 0;
 

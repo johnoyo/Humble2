@@ -37,6 +37,8 @@ namespace HBL2
 
 		void Invalidate();
 
+		void Free();
+
 	private:
 		void ReAllocate();
 

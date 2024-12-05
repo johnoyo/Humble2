@@ -81,12 +81,6 @@ namespace HBL2
 			.debugName = "fullscreen-quad-material",
 			.shader = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PRESENT),
 		});
-
-		m_GlobalPresentBindings = rm->CreateBindGroup({
-			.debugName = "global-present-bind-group",
-			.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
-			.textures = { Renderer::Instance->MainColorTexture },
-		});
 	}
 
 	void CompositeRenderingSystem::OnUpdate(float ts)
@@ -112,7 +106,7 @@ namespace HBL2
 				.Material = m_QuadMaterial,
 			});
 
-			GlobalDrawStream globalDrawStream = { .BindGroup = m_GlobalPresentBindings };
+			GlobalDrawStream globalDrawStream = { .BindGroup = Renderer::Instance->GetGlobalPresentBindings() };
 			passRenderer->DrawSubPass(globalDrawStream, draws);
 			commandBuffer->EndRenderPass(*passRenderer);
 			commandBuffer->Submit();
@@ -125,7 +119,6 @@ namespace HBL2
 
 		rm->DeleteBuffer(m_VertexBuffer);
 		rm->DeleteMesh(m_QuadMesh);
-		rm->DeleteBindGroup(m_GlobalPresentBindings);
 		rm->DeleteMaterial(m_QuadMaterial);
 		rm->DeleteRenderPass(m_RenderPass);
 	}

@@ -5,10 +5,11 @@
 #include <imgui_impl_vulkan.h>
 
 #include "Utilities\TextureUtilities.h"
+#include "Utilities\ShaderUtilities.h"
 
 namespace HBL2
 {
-	void VulkanRenderer::InitializeInternal()
+	void VulkanRenderer::PreInitialize()
 	{
 		m_GraphicsAPI = GraphicsAPI::VULKAN;
 
@@ -28,6 +29,18 @@ namespace HBL2
 		CreateFrameBuffers();
 		CreateDescriptorPool();
 		CreateDescriptorSets();
+	}
+
+	void VulkanRenderer::PostInitialize()
+	{
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			m_Frames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
+				.debugName = "global-present-bind-group",
+				.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
+				.textures = { Renderer::Instance->MainColorTexture },
+			});
+		}
 	}
 
 	void VulkanRenderer::BeginFrame()
@@ -83,26 +96,31 @@ namespace HBL2
 
 	void VulkanRenderer::Clean()
 	{
-		vkDeviceWaitIdle(m_Device->Get());
+		VK_VALIDATE(vkDeviceWaitIdle(m_Device->Get()), "vkDeviceWaitIdle");
 
 		m_MainDeletionQueue.Flush();
 
-		if (MainColorTexture.IsValid())
-		{
-			VulkanTexture* vkMainColorTexture = m_ResourceManager->GetTexture(MainColorTexture);
-			vkMainColorTexture->Destroy();
-		}
-
-		if (MainDepthTexture.IsValid())
-		{
-			VulkanTexture* vkMainDepthTexture = m_ResourceManager->GetTexture(MainDepthTexture);
-			vkMainDepthTexture->Destroy();
-		}
+		m_ResourceManager->DeleteTexture(MainColorTexture);
+		m_ResourceManager->DeleteTexture(MainDepthTexture);
 
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 
 		VkRenderPass renderPass = m_ResourceManager->GetRenderPass(m_RenderPass)->RenderPass;
 		vkDestroyRenderPass(m_Device->Get(), renderPass, nullptr);
+
+		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
+		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
+		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
+
+		m_ResourceManager->DeleteBindGroupLayout(ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::INVALID));
+		m_ResourceManager->DeleteBindGroupLayout(ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR));
+
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalBindings2D);
+			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalBindings3D);
+			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalPresentBindings);
+		}
 
 		for (int i = 0; i < m_FrameBuffers.size(); i++)
 		{
@@ -111,10 +129,17 @@ namespace HBL2
 			vkDestroyImageView(m_Device->Get(), m_SwapChainImageViews[i], nullptr);
 		}
 
-		VulkanTexture* vkTexture = m_ResourceManager->GetTexture(m_DepthImage);
+		for (int i = 0; i < m_SwapChainColorTextures.size(); i++)
+		{
+			m_ResourceManager->m_TexturePool.Remove(m_SwapChainColorTextures[i]);
+		}
 
-		vkDestroyImageView(m_Device->Get(), vkTexture->ImageView, nullptr);
-		vmaDestroyImage(m_Allocator, vkTexture->Image, vkTexture->Allocation);
+		m_ResourceManager->DeleteTexture(m_DepthImage);
+		m_ResourceManager->DeleteTexture(TextureUtilities::Get().WhiteTexture);
+
+		TempUniformRingBuffer->Free();
+
+		m_ResourceManager->Flush(UINT32_MAX);
 
 		vmaDestroyAllocator(m_Allocator);
 	}
@@ -686,6 +711,11 @@ namespace HBL2
 		};
 
 		VK_VALIDATE(vkCreateDescriptorPool(m_Device->Get(), &tDescriptorPoolInfo, NULL, &m_DescriptorPool), "vkCreateDescriptorPool");
+
+		m_MainDeletionQueue.PushFunction([=]()
+		{
+			vkDestroyDescriptorPool(m_Device->Get(), m_DescriptorPool, nullptr);
+		});
 	}
 
 	void VulkanRenderer::CreateDescriptorSets()

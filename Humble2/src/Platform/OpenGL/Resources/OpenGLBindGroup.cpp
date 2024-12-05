@@ -47,15 +47,31 @@ namespace HBL2
 	void OpenGLBindGroup::Set()
 	{
 		OpenGLResourceManager* rm = (OpenGLResourceManager*)ResourceManager::Instance;
-
 		OpenGLBindGroupLayout* openGLBindGroupLayout = rm->GetBindGroupLayout(BindGroupLayout);
 
 		for (int i = 0; i < Textures.size(); i++)
 		{
 			OpenGLTexture* openGLTexture = rm->GetTexture(Textures[i]);
 
+
 			glActiveTexture(openGLBindGroupLayout->TextureBindings[i].slot + GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, openGLTexture->RendererId);
+		}
+	}
+
+	void OpenGLBindGroup::Destroy()
+	{
+		OpenGLResourceManager* rm = (OpenGLResourceManager*)ResourceManager::Instance;
+		
+		for (int i = 0; i < Buffers.size(); i++)
+		{
+			rm->DeleteBuffer(Buffers[i].buffer);
+		}
+
+		for (int i = 0; i < Textures.size(); i++)
+		{
+			// NOTE(John): Do not delete texture since we might use it else where.
+			// rm->DeleteTexture(Textures[i]);
 		}
 	}
 }

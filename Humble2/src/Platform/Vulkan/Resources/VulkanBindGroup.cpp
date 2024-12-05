@@ -109,4 +109,22 @@ namespace HBL2
 
 		vkUpdateDescriptorSets(device->Get(), writeDescriptorSet.size(), writeDescriptorSet.data(), 0, nullptr);
 	}
+
+	void VulkanBindGroup::Destroy()
+	{
+		auto* rm = (VulkanResourceManager*)ResourceManager::Instance;
+
+		for (int i = 0; i < Buffers.size(); i++)
+		{
+			rm->DeleteBuffer(Buffers[i].buffer);
+		}
+
+		for (int i = 0; i < Textures.size(); i++)
+		{
+			// NOTE(John): Do not delete texture since we might use it else where.
+			// rm->DeleteTexture(Textures[i]);
+		}
+
+		rm->DeleteBindGroupLayout(BindGroupLayout);
+	}
 }

@@ -114,7 +114,8 @@ namespace HBL2
 		void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
 
 	protected:
-		virtual void InitializeInternal() override;
+		virtual void PreInitialize() override;
+		virtual void PostInitialize() override;
 
 	private:
 		void CreateAllocator();

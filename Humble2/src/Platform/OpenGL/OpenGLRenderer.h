@@ -17,15 +17,9 @@
 #include "Resources\OpenGLFrameBuffer.h"
 
 #include "OpenGLWindow.h"
+#include "OpenGLCommon.h"
 
-#ifdef EMSCRIPTEN
-	#define GLFW_INCLUDE_ES3
-	#include <GLFW/glfw3.h>
-#else
-	#include "Platform\OpenGL\OpenGLDebug.h"
-	#define GLFW_INCLUDE_NONE
-	#include <GL/glew.h>
-#endif
+#include "Utilities\TextureUtilities.h"
 
 namespace HBL2
 {
@@ -57,7 +51,8 @@ namespace HBL2
 		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_GlobalPresentBindings; }
 
 	protected:
-		virtual void InitializeInternal() override;
+		virtual void PreInitialize() override;
+		virtual void PostInitialize() override;
 
 	private:
 		void CreateBindings();

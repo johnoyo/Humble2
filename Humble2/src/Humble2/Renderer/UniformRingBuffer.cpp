@@ -28,6 +28,12 @@ namespace HBL2
 		memset(m_BufferData, 0, m_BufferSize);
 	}
 
+	void UniformRingBuffer::Free()
+	{
+		operator delete(m_BufferData);
+		ResourceManager::Instance->DeleteBuffer(m_Buffer);
+	}
+
 	void UniformRingBuffer::ReAllocate()
 	{
 		// Reallocate GPU buffer.

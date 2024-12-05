@@ -6,7 +6,7 @@ namespace HBL2
 {
 	void Renderer::Initialize()
 	{
-		InitializeInternal();
+		PreInitialize();
 
 		TempUniformRingBuffer = new UniformRingBuffer(4096, Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
 
@@ -33,5 +33,7 @@ namespace HBL2
 			.aspect = TextureAspect::DEPTH,
 			.createSampler = false,
 		});
+
+		PostInitialize();
 	}
 }

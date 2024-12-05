@@ -76,7 +76,9 @@ namespace HBL2
 				memcpy(mappedData, &whiteTexture, (size_t)imageSize);
 				vmaUnmapMemory(renderer->GetAllocator(), stagingBufferAllocation);
 
-				CopyBufferTotexture(renderer, stagingBuffer);
+				CopyBufferToTexture(renderer, stagingBuffer);
+
+				vmaDestroyBuffer(renderer->GetAllocator(), stagingBuffer, stagingBufferAllocation);
 			}
 			else if (desc.initialData != nullptr)
 			{
@@ -95,7 +97,9 @@ namespace HBL2
 
 				stbi_image_free(desc.initialData);
 
-				CopyBufferTotexture(renderer, stagingBuffer);
+				CopyBufferToTexture(renderer, stagingBuffer);
+
+				vmaDestroyBuffer(renderer->GetAllocator(), stagingBuffer, stagingBufferAllocation);
 			}
 
 			// Allocate ImageView
@@ -142,7 +146,11 @@ namespace HBL2
 			VulkanDevice* device = (VulkanDevice*)Device::Instance;
 			VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 
-			vkDestroySampler(device->Get(), Sampler, nullptr);
+			if (Sampler != VK_NULL_HANDLE)
+			{
+				vkDestroySampler(device->Get(), Sampler, nullptr);
+			}
+
 			vkDestroyImageView(device->Get(), ImageView, nullptr);
 			vmaDestroyImage(renderer->GetAllocator(), Image, Allocation);
 		}
@@ -178,7 +186,7 @@ namespace HBL2
 			VK_VALIDATE(vmaCreateBuffer(renderer->GetAllocator(), &stagingBufferCreateInfo, &vmaStagingAllocCreateInfo, stagingBuffer, stagingBufferAllocation, nullptr), "vmaCreateBuffer");
 		}
 
-		void CopyBufferTotexture(VulkanRenderer* renderer, VkBuffer stagingBuffer)
+		void CopyBufferToTexture(VulkanRenderer* renderer, VkBuffer stagingBuffer)
 		{
 			// Copy the data of the staging buffer to the GPU memory of Image
 			renderer->ImmediateSubmit([&](VkCommandBuffer cmd)

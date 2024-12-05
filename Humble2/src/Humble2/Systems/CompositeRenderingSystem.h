@@ -21,6 +21,5 @@ namespace HBL2
 		Handle<Buffer> m_VertexBuffer;
 		Handle<Mesh> m_QuadMesh;
 		Handle<Material> m_QuadMaterial;
-		Handle<BindGroup> m_GlobalPresentBindings;
 	};
 }

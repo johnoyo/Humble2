@@ -107,7 +107,8 @@ namespace HBL2
 		Handle<Texture> MainDepthTexture;
 
 	protected:
-		virtual void InitializeInternal() = 0;
+		virtual void PreInitialize() = 0;
+		virtual void PostInitialize() = 0;
 
 	protected:
 		uint32_t m_FrameNumber = 0;

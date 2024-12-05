@@ -16,10 +16,7 @@ namespace HBL2
 		VulkanBindGroup(const BindGroupDescriptor&& desc);
 
 		void Update();
-
-		void Destroy()
-		{
-		}
+		void Destroy();
 
 		const char* DebugName = "";
 		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE;

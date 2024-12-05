@@ -22,13 +22,7 @@ namespace HBL2
 	public:
 		virtual ~VulkanResourceManager() = default;
 
-		virtual void Clean() override
-		{
-			// Flush(Renderer::Instance->GetFrameNumber());
-
-			HBL2_CORE_TRACE("m_TexturePool Balance: {}", m_TexturePool.Balance);
-			HBL2_CORE_TRACE("m_BufferPool Balance: {}", m_BufferPool.Balance);
-		}
+		virtual void Clean() override {}
 
 		// Textures
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) override
@@ -40,9 +34,11 @@ namespace HBL2
 			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 			{
 				VulkanTexture* texture = GetTexture(handle);
-				texture->Destroy();
-
-				m_TexturePool.Remove(handle);
+				if (texture != nullptr)
+				{
+					texture->Destroy();
+					m_TexturePool.Remove(handle);
+				}
 			});
 		}
 		VulkanTexture* GetTexture(Handle<Texture> handle) const
@@ -60,9 +56,11 @@ namespace HBL2
 			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 			{
 				VulkanBuffer* buffer = GetBuffer(handle);
-				buffer->Destroy();
-
-				m_BufferPool.Remove(handle);
+				if (buffer != nullptr)
+				{
+					buffer->Destroy();
+					m_BufferPool.Remove(handle);
+				}
 			});
 		}
 		virtual void ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset) override
@@ -89,9 +87,11 @@ namespace HBL2
 			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 			{
 				VulkanFrameBuffer* frameBuffer = GetFrameBuffer(handle);
-				frameBuffer->Destroy();
-
-				m_FrameBufferPool.Remove(handle);
+				if (frameBuffer != nullptr)
+				{
+					frameBuffer->Destroy();
+					m_FrameBufferPool.Remove(handle);
+				}
 			});
 		}
 		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) override
@@ -119,9 +119,11 @@ namespace HBL2
 			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 			{
 				VulkanShader* shader = GetShader(handle);
-				shader->Destroy();
-
-				m_ShaderPool.Remove(handle);
+				if (shader != nullptr)
+				{
+					shader->Destroy();
+					m_ShaderPool.Remove(handle);
+				}
 			});
 		}
 		VulkanShader* GetShader(Handle<Shader> handle) const
@@ -139,9 +141,11 @@ namespace HBL2
 			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 			{
 				VulkanBindGroup* bindGroup = GetBindGroup(handle);
-				bindGroup->Destroy();
-
-				m_BindGroupPool.Remove(handle);
+				if (bindGroup != nullptr)
+				{
+					bindGroup->Destroy();
+					m_BindGroupPool.Remove(handle);
+				}
 			});
 		}
 		VulkanBindGroup* GetBindGroup(Handle<BindGroup> handle) const
@@ -158,7 +162,12 @@ namespace HBL2
 		{
 			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 			{
-				m_BindGroupLayoutPool.Remove(handle);
+				VulkanBindGroupLayout* bindGroupLayout = GetBindGroupLayout(handle);
+				if (bindGroupLayout != nullptr)
+				{
+					bindGroupLayout->Destroy();
+					m_BindGroupLayoutPool.Remove(handle);
+				}
 			});
 		}
 		VulkanBindGroupLayout* GetBindGroupLayout(Handle<BindGroupLayout> handle) const
@@ -176,9 +185,11 @@ namespace HBL2
 			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 			{
 				VulkanRenderPass* renderPass = GetRenderPass(handle);
-				renderPass->Destroy();
-
-				m_RenderPassPool.Remove(handle);
+				if (renderPass != nullptr)
+				{
+					renderPass->Destroy();
+					m_RenderPassPool.Remove(handle);
+				}
 			});
 		}
 		VulkanRenderPass* GetRenderPass(Handle<RenderPass> handle) const

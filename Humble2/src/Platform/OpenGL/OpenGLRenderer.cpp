@@ -2,7 +2,7 @@
 
 namespace HBL2
 {
-	void OpenGLRenderer::InitializeInternal()
+	void OpenGLRenderer::PreInitialize()
 	{
 		m_GraphicsAPI = GraphicsAPI::OPENGL;
 		m_ResourceManager = (OpenGLResourceManager*)ResourceManager::Instance;
@@ -28,6 +28,15 @@ namespace HBL2
 
 		CreateBindings();
 		CreateRenderPass();
+	}
+
+	void OpenGLRenderer::PostInitialize()
+	{
+		m_GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
+			.debugName = "global-present-bind-group",
+			.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
+			.textures = { Renderer::Instance->MainColorTexture },
+		});
 	}
 
 	void OpenGLRenderer::BeginFrame()
@@ -96,16 +105,34 @@ namespace HBL2
 
 	void OpenGLRenderer::EndFrame()
 	{
+		m_ResourceManager->Flush(m_FrameNumber);
 	}
 
 	void OpenGLRenderer::Present()
 	{
 		glfwSwapBuffers(Window::Instance->GetHandle());
+		m_FrameNumber++;
 	}
 
 	void OpenGLRenderer::Clean()
 	{
-		// TODO!
+		m_ResourceManager->DeleteTexture(MainColorTexture);
+		m_ResourceManager->DeleteTexture(MainDepthTexture);
+
+		m_ResourceManager->DeleteTexture(TextureUtilities::Get().WhiteTexture);
+
+		TempUniformRingBuffer->Free();
+
+		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
+		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
+		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
+
+		m_ResourceManager->DeleteBindGroup(m_GlobalBindings2D);
+		m_ResourceManager->DeleteBindGroup(m_GlobalBindings3D);
+		m_ResourceManager->DeleteBindGroup(m_GlobalPresentBindings);
+
+		m_ResourceManager->DeleteRenderPass(m_RenderPass);
+		m_ResourceManager->DeleteFrameBuffer(m_MainFrameBuffer);
 	}
 
 	void* OpenGLRenderer::GetDepthAttachment()

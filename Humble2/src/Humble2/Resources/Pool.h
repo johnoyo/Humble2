@@ -30,8 +30,6 @@ namespace HBL2
 
 		Handle<H> Insert(const T& data)
 		{
-			Balance++;
-
 			if (m_FreeList.empty())
 			{
 				ReAllocate();
@@ -48,7 +46,6 @@ namespace HBL2
 
 		void Remove(Handle<H> handle)
 		{
-			Balance--;
 			m_GenerationalCounter[handle.m_ArrayIndex]++;
 			m_FreeList.push(handle.m_ArrayIndex);
 		}
@@ -67,8 +64,6 @@ namespace HBL2
 
 			return &m_Data[handle.m_ArrayIndex];
 		}
-
-		int32_t Balance = 0;
 
 	private:
 		void ReAllocate()
