@@ -55,6 +55,11 @@ namespace HBL2
 
 	void VulkanRenderer::EndFrame()
 	{
+		if (!Context::ActiveScene.IsValid())
+		{
+			StubRenderPass();
+		}
+
 		if (MainColorTexture.IsValid())
 		{
 			if (m_ColorAttachmentID == VK_NULL_HANDLE)
@@ -142,6 +147,30 @@ namespace HBL2
 		m_ResourceManager->Flush(UINT32_MAX);
 
 		vmaDestroyAllocator(m_Allocator);
+	}
+
+	void VulkanRenderer::StubRenderPass()
+	{
+		{
+			CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Opaque);
+			RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(GetMainRenderPass(), GetMainFrameBuffer());
+			commandBuffer->EndRenderPass(*passRenderer);
+			commandBuffer->Submit();
+		}
+
+		{
+			CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::OpaqueSprite);
+			RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(GetMainRenderPass(), GetMainFrameBuffer());
+			commandBuffer->EndRenderPass(*passRenderer);
+			commandBuffer->Submit();
+		}
+
+		{
+			CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Present);
+			RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(GetMainRenderPass(), GetMainFrameBuffer());
+			commandBuffer->EndRenderPass(*passRenderer);
+			commandBuffer->Submit();
+		}
 	}
 
 	CommandBuffer* VulkanRenderer::BeginCommandRecording(CommandBufferType type, RenderPassStage stage)

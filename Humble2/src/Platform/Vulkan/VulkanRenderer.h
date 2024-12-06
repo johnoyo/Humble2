@@ -132,6 +132,8 @@ namespace HBL2
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
+		void StubRenderPass();
+
 	private:
 		VulkanDevice* m_Device;
 		VulkanResourceManager* m_ResourceManager;
