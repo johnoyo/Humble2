@@ -5,6 +5,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
+#include "UI\LayoutLib.h"
+
 namespace HBL2
 {
 	void CameraSystem::OnCreate()
@@ -74,5 +76,105 @@ namespace HBL2
 					}
 				}
 			});
+	}
+
+	void CameraSystem::OnGuiRender(float ts)
+	{
+		UI::UserInterface(UI::Configuration{
+			.ID = "OuterContainer",
+			.mode = UI::Rectagle{
+				.color = { 43, 41, 51, 255 },
+			},
+			.layout = UI::Layout{
+				.sizing = {
+					.width = 400,
+					.height = 400
+				},
+				.padding = { 16, 16 },
+			}
+		}, UI::Body{
+			CONTENTS {
+				//UI::Text("OuterContainer text 1", { .color = { 255, 0, 0, 255 } });
+				//UI::Text("OuterContainer text 2");
+
+				UI::UserInterface(UI::Configuration{
+					.ID = "HeaderBar",
+					.mode = UI::Rectagle{
+						.color = { 90, 90, 90, 255 },
+						.cornerRadius = 8.0f,
+					},
+					.layout = UI::Layout{
+						.sizing = {
+							.width = 400 - 32,
+							.height = 60
+						},
+					}
+				}, UI::Body{
+					CONTENTS {
+						//UI::Text("InnerContainer text 1");
+						//UI::Text("InnerContainer text 2");
+					}
+				});
+
+				UI::UserInterface(UI::Configuration{
+					.ID = "HeaderBar2",
+						.mode = UI::Rectagle{
+							.color = { 120, 120, 120, 255 },
+							.cornerRadius = 8.0f,
+					},
+					.layout = UI::Layout{
+						.sizing = {
+							.width = 400 - 32,
+							.height = 60
+						},
+					}
+				}, UI::Body{
+					CONTENTS {
+						//UI::Text("InnerContainer text 1");
+						//UI::Text("InnerContainer text 2");
+					}
+				});
+
+				UI::UserInterface(UI::Configuration{
+					.ID = "HeaderBar3",
+						.mode = UI::Rectagle{
+							.color = { 180, 180, 180, 255 },
+							.cornerRadius = 8.0f,
+					},
+					.layout = UI::Layout{
+						.sizing = {
+							.width = 400 - 32,
+							.height = 60
+						},
+					}
+				}, UI::Body{
+					CONTENTS {
+						//UI::Text("InnerContainer text 1");
+						//UI::Text("InnerContainer text 2");
+					}
+				});
+
+				//UI::UserInterface(UI::Configuration{
+				//	.ID = "LowerContent",
+				//		.mode = UI::Rectagle{
+				//			.color = { 90, 90, 90, 255 },
+				//			.cornerRadius = 8.0f,
+				//	},
+				//	.layout = UI::Layout{
+				//		.sizing = {
+				//			.width = 200,
+				//			.height = 60
+				//		},
+				//	}
+				//}, UI::Body{
+				//	CONTENTS {
+				//		//UI::Text("InnerContainer text 1");
+				//		//UI::Text("InnerContainer text 2");
+				//	}
+				//});
+			}
+		}).Invalidate();
+
+		HBL2_CORE_INFO("UI DONE");
 	}
 }
