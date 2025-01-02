@@ -80,101 +80,135 @@ namespace HBL2
 
 	void CameraSystem::OnGuiRender(float ts)
 	{
-		UI::UserInterface(UI::Configuration{
-			.ID = "OuterContainer",
-			.mode = UI::Rectagle{
-				.color = { 43, 41, 51, 255 },
-			},
-			.layout = UI::Layout{
-				.sizing = {
-					.width = 400,
-					.height = 400
-				},
-				.padding = { 16, 16 },
-			}
-		}, UI::Body{
-			CONTENTS {
-				//UI::Text("OuterContainer text 1", { .color = { 255, 0, 0, 255 } });
-				//UI::Text("OuterContainer text 2");
-
-				UI::UserInterface(UI::Configuration{
-					.ID = "HeaderBar",
+#ifdef false
+		UI::Panel(
+			UI::Config{
+				.id = "SettingsUI",
+				.mode = UI::Rectagle {.color = {0, 0, 0, 50} },
+				.layout = {
+					.sizing =
+					{
+						.width = UI::Width::Grow(),
+						.height = UI::Height::Grow(),
+					},
+					.padding = { UI::Utils::GetWindowSize().x / 4.f, UI::Utils::GetWindowSize().y / 4.f }
+				}
+			}, [&](UI::Panel* parent)
+			{
+				parent->AddChild(UI::Panel(UI::Config{
+					.id = "OuterContainer",
+					.parent = parent,
 					.mode = UI::Rectagle{
-						.color = { 90, 90, 90, 255 },
-						.cornerRadius = 8.0f,
+						.color = { 43, 41, 51, 255 },
 					},
 					.layout = UI::Layout{
+						.layoutDirection = UI::LayoutDirection::TOP_TO_BOTTOM,
 						.sizing = {
-							.width = 400 - 32,
-							.height = 60
+							.width = UI::Width::Grow(),
+							.height = UI::Height::Grow(),
 						},
+						.padding = { 16, 16 },
+						.childGap = 16,
 					}
-				}, UI::Body{
-					CONTENTS {
-						//UI::Text("InnerContainer text 1");
-						//UI::Text("InnerContainer text 2");
-					}
-				});
+					}, [&](UI::Panel* parent) {
+						parent->AddChild(UI::Panel(UI::Config{
+							.id = "HeaderBar",
+							.parent = parent,
+							.mode = UI::Rectagle{
+								.color = { 90, 90, 90, 255 },
+								.cornerRadius = 8.0f,
+							},
+							.layout = UI::Layout{
+								.layoutDirection = UI::LayoutDirection::LEFT_TO_RIGHT,
+								.sizing = {
+									.width = UI::Width::Grow(),
+									.height = UI::Height::Fixed(44.f)
+								},
+								.padding = { 4, 4 },
+								.childGap = 4.0f,
+							}
+							}, [&](UI::Panel* parent) {
+								parent->AddChild(UI::Panel(UI::Config{
+										.id = "SoundTab",
+										.parent = parent,
+										.mode = UI::Rectagle{
+											.color = { 255, 90, 90, 255 },
+											.cornerRadius = 8.0f,
+										},
+										.layout = UI::Layout{
+											.sizing = {
+												.width = UI::Width::Fixed(72.f),
+												.height = UI::Height::Fixed(36.f),
+											},
+										}
+									}, [&](UI::Panel* parent) {
+										UI::Text("Sound");
 
-				UI::UserInterface(UI::Configuration{
-					.ID = "HeaderBar2",
-						.mode = UI::Rectagle{
-							.color = { 120, 120, 120, 255 },
-							.cornerRadius = 8.0f,
-					},
-					.layout = UI::Layout{
-						.sizing = {
-							.width = 400 - 32,
-							.height = 60
-						},
-					}
-				}, UI::Body{
-					CONTENTS {
-						//UI::Text("InnerContainer text 1");
-						//UI::Text("InnerContainer text 2");
-					}
-				});
+										if (UI::Panel::Clicked())
+										{
+											HBL2_CORE_INFO("soundTab clicked");
+											m_SoundTabClicked = true;
+											m_GraphicsTabClicked = false;
+										}
+									}
+								));
 
-				UI::UserInterface(UI::Configuration{
-					.ID = "HeaderBar3",
-						.mode = UI::Rectagle{
-							.color = { 180, 180, 180, 255 },
-							.cornerRadius = 8.0f,
-					},
-					.layout = UI::Layout{
-						.sizing = {
-							.width = 400 - 32,
-							.height = 60
-						},
-					}
-				}, UI::Body{
-					CONTENTS {
-						//UI::Text("InnerContainer text 1");
-						//UI::Text("InnerContainer text 2");
-					}
-				});
+								parent->AddChild(UI::Panel(UI::Config{
+										.id = "GraphicsTab",
+										.parent = parent,
+										.mode = UI::Rectagle{
+											.color = { 255, 90, 90, 255 },
+											.cornerRadius = 8.0f,
+										},
+										.layout = UI::Layout{
+											.sizing = {
+												.width = UI::Width::Fixed(72.f),
+												.height = UI::Height::Fixed(36.f),
+											},
+										}
+									}, [&](UI::Panel* parent) {
+										UI::Text("Graphics");
 
-				//UI::UserInterface(UI::Configuration{
-				//	.ID = "LowerContent",
-				//		.mode = UI::Rectagle{
-				//			.color = { 90, 90, 90, 255 },
-				//			.cornerRadius = 8.0f,
-				//	},
-				//	.layout = UI::Layout{
-				//		.sizing = {
-				//			.width = 200,
-				//			.height = 60
-				//		},
-				//	}
-				//}, UI::Body{
-				//	CONTENTS {
-				//		//UI::Text("InnerContainer text 1");
-				//		//UI::Text("InnerContainer text 2");
-				//	}
-				//});
-			}
-		}).Invalidate();
+										if (UI::Panel::Clicked())
+										{
+											HBL2_CORE_INFO("graphicsTab clicked");
+											m_GraphicsTabClicked = true;
+											m_SoundTabClicked = false;
+										}
+									}
+								));
+							}
+						));
 
-		HBL2_CORE_INFO("UI DONE");
+						parent->AddChild(UI::Panel(UI::Config{
+							.id = "Content",
+							.parent = parent,
+							.mode = UI::Rectagle{
+								.color = { 120, 120, 120, 255 },
+								.cornerRadius = 8.0f,
+							},
+							.layout = UI::Layout{
+								.sizing = {
+									.width = UI::Width::Grow(),
+									.height = UI::Height::Grow(),
+								},
+							}
+							}, [&](UI::Panel* parent) {
+								if (m_SoundTabClicked)
+								{
+									UI::Text("InnerContainer text 1");
+								}
+								else if (m_GraphicsTabClicked)
+								{
+									UI::Text("InnerContainer text 2");
+								}
+							}
+						));
+					}
+				));				
+			});
+
+			//HBL2_CORE_INFO("UI DONE");
+#endif
 	}
 }

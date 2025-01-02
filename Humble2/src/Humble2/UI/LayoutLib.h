@@ -54,21 +54,8 @@ class MenuSystem : public ISystem
 }
 */
 
-namespace HBL2
-{
-	namespace UI
-	{
-		struct Offset
-		{
-			float x = 0.0f;
-			float y = 0.0f;
-		};
-
-		inline static Offset g_Offset;
-	}
-}
-
-#include "Body.h"
-#include "UserInterface.h"
+#include "Panel.h"
 
 #include "Text.h"
+
+#include "UserInterfaceUtilities.h"

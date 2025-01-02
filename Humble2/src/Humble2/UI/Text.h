@@ -4,13 +4,10 @@
 
 #include "imgui.h"
 
-
 namespace HBL2
 {
 	namespace UI
 	{
-		extern Offset g_Offset;
-
 		struct TextConfiguration
 		{
 			float fontSize = 12;
@@ -24,12 +21,9 @@ namespace HBL2
 			{
 				ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(config.color.r, config.color.g, config.color.b, config.color.a));
 
-				ImGui::SetCursorPos(ImVec2(g_Offset.x, g_Offset.y));
 				ImGui::Text(text);
 
 				ImGui::PopStyleColor();
-
-				g_Offset.y += 10.0f; // TODO: Fix
 			}
 		};
 	}
