@@ -10,7 +10,12 @@ namespace HBL2
 		{
 			static inline ImVec2 GetWindowSize()
 			{
-				return ImGui::GetMainViewport()->Size;
+				return *(ImVec2*)&Context::ViewportSize;
+			}
+
+			static inline ImVec2 GetWindowPosition()
+			{
+				return *(ImVec2*)&Context::ViewportPosition;
 			}
 
 			static inline float GetFontSize()

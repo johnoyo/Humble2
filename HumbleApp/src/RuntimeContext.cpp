@@ -16,6 +16,15 @@ namespace HBL2
 				const HBL2::SceneChangeEvent& sce = dynamic_cast<const HBL2::SceneChangeEvent&>(e);
 				m_ActiveScene = HBL2::ResourceManager::Instance->GetScene(sce.NewScene);
 			});
+
+			Context::ViewportPosition = { 0, 0 };
+			Context::ViewportSize = Window::Instance->GetExtents();
+
+			HBL2::EventDispatcher::Get().Register("WindowSizeEvent", [&](const HBL2::Event& e)
+			{
+				const HBL2::WindowSizeEvent& wse = dynamic_cast<const HBL2::WindowSizeEvent&>(e);
+				Context::ViewportSize = { wse.Width, wse.Height };
+			});
 		}
 
 		void RuntimeContext::OnUpdate(float ts)

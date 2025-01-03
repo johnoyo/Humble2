@@ -2,6 +2,8 @@
 
 #include "Base.h"
 
+#include "UserInterfaceUtilities.h"
+
 #include <vector>
 #include <initializer_list>
 
@@ -113,6 +115,9 @@ namespace HBL2
 			Panel(Config&& config, const std::function<void(Panel*)>& body)
 				: m_Configuration(std::move(config)), m_Body(body)
 			{
+				m_OffsetX = Utils::GetWindowPosition().x;
+				m_OffsetY = Utils::GetWindowPosition().y;
+
 				if (m_Configuration.parent == nullptr)
 				{
 					Render();
@@ -275,7 +280,7 @@ namespace HBL2
 						break;
 
 					case FlexStyle::GROW:
-						m_Configuration.layout.sizing.width.Value = ImGui::GetMainViewport()->Size.x;
+						m_Configuration.layout.sizing.width.Value = Utils::GetWindowSize().x;
 						break;
 					}
 
@@ -285,7 +290,7 @@ namespace HBL2
 						break;
 
 					case FlexStyle::GROW:
-						m_Configuration.layout.sizing.height.Value = ImGui::GetMainViewport()->Size.y;
+						m_Configuration.layout.sizing.height.Value = Utils::GetWindowSize().y;
 						break;
 					}
 				}
@@ -325,20 +330,17 @@ namespace HBL2
 					}
 				}
 
-				ImGuiIO& io = ImGui::GetIO();
-				ImVec2 screenCenter = ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
-				//windowPos = ImVec2(screenCenter.x - windowSize.x * 0.5f, screenCenter.y - windowSize.y * 0.5f);
-
 				ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
 				ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
 
 				ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, m_Configuration.mode.cornerRadius);
 				ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(m_Configuration.mode.color.r, m_Configuration.mode.color.g, m_Configuration.mode.color.b, m_Configuration.mode.color.a));
 
+
 				ImGui::Begin(m_Configuration.id, nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
 
 				// This is added to prevent windows getting in front when clicked and hiding other child windows.
-				ImGui::SetNextWindowFocus();
+				ImGui::SetNextWindowFocus(); // TODO: Fix! Other panel interactions are broken because of this.
 
 				m_Body(this);
 

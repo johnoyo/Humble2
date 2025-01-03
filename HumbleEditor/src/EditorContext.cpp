@@ -94,11 +94,22 @@ namespace HBL2
 				return;
 			}
 
-			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+			for (HBL2::ISystem* system : m_ActiveScene->GetCoreSystems())
 			{
 				if (system->GetState() == SystemState::Play)
 				{
 					system->OnGuiRender(ts);
+				}
+			}
+
+			if (Mode == Mode::Runtime)
+			{
+				for (HBL2::ISystem* system : m_ActiveScene->GetRuntimeSystems())
+				{
+					if (system->GetState() == SystemState::Play)
+					{
+						system->OnGuiRender(ts);
+					}
 				}
 			}
 		}

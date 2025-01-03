@@ -22,6 +22,9 @@ namespace HBL2
 		virtual void OnGuiRender(float ts) {}
 		virtual void OnDestroy() {}
 
+		inline static glm::vec2 ViewportSize;
+		inline static glm::vec2 ViewportPosition;
+
 		inline static Handle<Scene> ActiveScene;
 		inline static Handle<Scene> EmptyScene;
 		inline static Handle<Scene> EditorScene;

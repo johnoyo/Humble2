@@ -198,7 +198,7 @@ namespace HBL2
 							DrawToolBarPanel();
 							if (m_ProjectChanged)
 							{
-								m_ProjectChanged = false;
+								m_ProjectChanged = false;			// TODO: Fix! Move this inside the DrawToolBarPanel method.
 								return;
 							}
 							break;
@@ -1710,6 +1710,9 @@ namespace HBL2
 
 		void EditorPanelSystem::DrawViewportPanel()
 		{
+			Context::ViewportSize = { ImGui::GetWindowWidth(), ImGui::GetWindowHeight() };
+			Context::ViewportPosition = { ImGui::GetWindowPos().x, ImGui::GetWindowPos().y };
+
 			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 
 			if (m_ViewportSize != *(glm::vec2*)&viewportPanelSize)
