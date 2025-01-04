@@ -9,6 +9,8 @@
 #include "Resources\Types.h"
 #include "Resources\TypeDescriptors.h"
 
+#include "UI/LayoutLib.h"
+
 namespace HBL2
 {
 	namespace Editor
@@ -149,6 +151,12 @@ namespace HBL2
 				panel.Name = "Systems";
 				panel.Type = Component::EditorPanel::Panel::Systems;
 			}
+
+			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Link, LinkEditor>();
+			HBL2::EditorUtilities::Get().InitCustomEditor<HBL2::Component::Link, LinkEditor>();
+
+			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Camera, CameraEditor>();
+			HBL2::EditorUtilities::Get().InitCustomEditor<HBL2::Component::Camera, CameraEditor>();
 		}
 
 		void EditorPanelSystem::OnUpdate(float ts)
@@ -479,7 +487,7 @@ namespace HBL2
 				// Link component.
 				if (m_ActiveScene->HasComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
-					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Camera).hash_code(), treeNodeFlags, "Link");
+					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Link).hash_code(), treeNodeFlags, "Link");
 
 					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
 
@@ -494,30 +502,40 @@ namespace HBL2
 					{
 						auto& link = m_ActiveScene->GetComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity);
 
-						ImGui::InputScalar("Parent", ImGuiDataType_U32, &link.Parent);
+						bool renderBaseEditor = true;
 
-						if (ImGui::BeginDragDropTarget())
+						if (HBL2::EditorUtilities::Get().HasCustomEditor<HBL2::Component::Link>())
 						{
-							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
-							{
-								UUID parentEntityUUID = *((UUID*)payload->Data);
-								UUID childEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(HBL2::Component::EditorVisible::SelectedEntity).Identifier;
-								if (childEntityUUID != parentEntityUUID)
-								{
-									link.Parent = parentEntityUUID;
-								}
-								ImGui::EndDragDropTarget();
-							}
+							renderBaseEditor = HBL2::EditorUtilities::Get().DrawCustomEditor<HBL2::Component::Link, LinkEditor>(link);
 						}
 
-						if (ImGui::BeginPopupContextItem())
+						if (renderBaseEditor)
 						{
-							if (ImGui::MenuItem("Unparent"))
+							ImGui::InputScalar("Parent", ImGuiDataType_U32, &link.Parent);
+
+							if (ImGui::BeginDragDropTarget())
 							{
-								link.Parent = 0;
+								if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
+								{
+									UUID parentEntityUUID = *((UUID*)payload->Data);
+									UUID childEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(HBL2::Component::EditorVisible::SelectedEntity).Identifier;
+									if (childEntityUUID != parentEntityUUID)
+									{
+										link.Parent = parentEntityUUID;
+									}
+									ImGui::EndDragDropTarget();
+								}
 							}
 
-							ImGui::EndPopup();
+							if (ImGui::BeginPopupContextItem())
+							{
+								if (ImGui::MenuItem("Unparent"))
+								{
+									link.Parent = 0;
+								}
+
+								ImGui::EndPopup();
+							}
 						}
 
 						ImGui::TreePop();
@@ -549,36 +567,46 @@ namespace HBL2
 					{
 						auto& camera = m_ActiveScene->GetComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
 
-						ImGui::Checkbox("Enabled", &camera.Enabled);
-						ImGui::Checkbox("Primary", &camera.Primary);
-						ImGui::SliderFloat("Far", &camera.Far, 0, 100);
-						ImGui::SliderFloat("Near", &camera.Near, 100, 1500);
-						ImGui::SliderFloat("FOV", &camera.Fov, 0, 120);
-						ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 2);
-						ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
+						bool renderBaseEditor = true;
 
-						std::string selectedProjection = camera.Type == HBL2::Component::Camera::Type::Perspective ? "Perspective" : "Orthographic";
-						std::string projectionTypes[2] = { "Perspective", "Orthographic" };
-
-						if (ImGui::BeginCombo("Type", selectedProjection.c_str()))
+						if (HBL2::EditorUtilities::Get().HasCustomEditor<HBL2::Component::Camera>())
 						{
-							for (const auto& type : projectionTypes)
-							{
-								bool isSelected = (selectedProjection == type);
-								if (ImGui::Selectable(type.c_str(), isSelected))
-								{
-									selectedProjection = type;
-								}
-
-								if (isSelected)
-								{
-									ImGui::SetItemDefaultFocus();
-								}
-							}
-							ImGui::EndCombo();
+							renderBaseEditor = HBL2::EditorUtilities::Get().DrawCustomEditor<HBL2::Component::Camera, CameraEditor>(camera);
 						}
 
-						camera.Type = selectedProjection == "Perspective" ? HBL2::Component::Camera::Type::Perspective : HBL2::Component::Camera::Type::Orthographic;
+						if (renderBaseEditor)
+						{
+							ImGui::Checkbox("Enabled", &camera.Enabled);
+							ImGui::Checkbox("Primary", &camera.Primary);
+							ImGui::SliderFloat("Far", &camera.Far, 0, 100);
+							ImGui::SliderFloat("Near", &camera.Near, 100, 1500);
+							ImGui::SliderFloat("FOV", &camera.Fov, 0, 120);
+							ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 2);
+							ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
+
+							std::string selectedProjection = camera.Type == HBL2::Component::Camera::Type::Perspective ? "Perspective" : "Orthographic";
+							std::string projectionTypes[2] = { "Perspective", "Orthographic" };
+
+							if (ImGui::BeginCombo("Type", selectedProjection.c_str()))
+							{
+								for (const auto& type : projectionTypes)
+								{
+									bool isSelected = (selectedProjection == type);
+									if (ImGui::Selectable(type.c_str(), isSelected))
+									{
+										selectedProjection = type;
+									}
+
+									if (isSelected)
+									{
+										ImGui::SetItemDefaultFocus();
+									}
+								}
+								ImGui::EndCombo();
+							}
+
+							camera.Type = selectedProjection == "Perspective" ? HBL2::Component::Camera::Type::Perspective : HBL2::Component::Camera::Type::Orthographic;
+						}
 
 						ImGui::TreePop();
 					}

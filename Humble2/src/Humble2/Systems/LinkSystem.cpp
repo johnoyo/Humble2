@@ -40,7 +40,7 @@ namespace HBL2
 						.width = UI::Width::Grow(),
 						.height = UI::Height::Grow(),
 					},
-					.padding = { UI::Utils::GetWindowSize().x / 4.f, UI::Utils::GetWindowSize().y / 4.f }
+					.padding = { UI::Utils::GetViewportSize().x / 4.f, UI::Utils::GetViewportSize().y / 4.f }
 				}
 			}, [&](UI::Panel* parent)
 			{

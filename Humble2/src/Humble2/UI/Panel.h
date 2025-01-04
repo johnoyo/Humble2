@@ -124,15 +124,24 @@ namespace HBL2
 		{
 		public:
 			Panel(Config&& config, const std::function<void(Panel*)>& body)
-				: m_Configuration(std::move(config)), m_Body(body)
+				: m_Configuration(std::move(config)), m_Body(body), m_PanelName("Viewport")
 			{
-				m_OffsetX = Utils::GetWindowPosition().x;
-				m_OffsetY = Utils::GetWindowPosition().y;
+				m_OffsetX = Utils::GetViewportPosition().x;
+				m_OffsetY = Utils::GetViewportPosition().y;
 
 				if (m_Configuration.parent == nullptr)
 				{
 					Render();
 				}
+			}
+
+			Panel(const char* panelName, Config&& config, const std::function<void(Panel*)>& body)
+				: m_Configuration(std::move(config)), m_Body(body), m_Editor(true), m_PanelName(panelName)
+			{
+				m_OffsetX = ImGui::GetCursorScreenPos().x;
+				m_OffsetY = ImGui::GetCursorScreenPos().y;
+
+				Render();
 			}
 
 			void AddChild(Panel&& child)
@@ -291,7 +300,14 @@ namespace HBL2
 						break;
 
 					case FlexStyle::GROW:
-						m_Configuration.layout.sizing.width.Value = Utils::GetWindowSize().x;
+						if (m_Editor)
+						{
+							m_Configuration.layout.sizing.width.Value = ImGui::GetWindowWidth() - 60.f;
+						}
+						else
+						{
+							m_Configuration.layout.sizing.width.Value = Utils::GetViewportSize().x;
+						}
 						break;
 					}
 
@@ -301,7 +317,14 @@ namespace HBL2
 						break;
 
 					case FlexStyle::GROW:
-						m_Configuration.layout.sizing.height.Value = Utils::GetWindowSize().y;
+						if (m_Editor)
+						{
+							m_Configuration.layout.sizing.height.Value = ImGui::GetWindowHeight(); // TODO: Fix! overflows.
+						}
+						else
+						{
+							m_Configuration.layout.sizing.height.Value = Utils::GetViewportSize().y;
+						}
 						break;
 					}
 				}
@@ -385,6 +408,7 @@ namespace HBL2
 								m_Configuration.mode.borderWidth
 							);
 						}
+
 					}
 					else if (m_Configuration.type == ElementType::TEXT)
 					{
@@ -413,7 +437,7 @@ namespace HBL2
 
 						const glm::vec4& color = m_Configuration.mode.color;
 
-						// Draw text on top
+						// Draw image on top
 						ImGui::SetCursorScreenPos(ImVec2(position.x, position.y));
 						ImGui::Image(nullptr, ImVec2{ m_Configuration.layout.sizing.width.Value, m_Configuration.layout.sizing.height.Value });
 						ImGui::SetCursorScreenPos(ImVec2(position.x + size.x, position.y + size.y));
@@ -428,6 +452,13 @@ namespace HBL2
 					ImGui::End();
 					ImGui::PopStyleColor();
 					ImGui::PopStyleVar();
+
+					if (m_Editor)
+					{
+						// Set cursor position so native ImGui elements render in the expected position. (Only applicable to editor windows)
+						const ImVec2& cursorScreenPos = ImGui::GetCursorScreenPos();
+						ImGui::SetCursorScreenPos(ImVec2(cursorScreenPos.x, cursorScreenPos.y + m_Configuration.layout.sizing.height.Value + 10.0f));
+					}
 				}
 				else
 				{
@@ -464,6 +495,8 @@ namespace HBL2
 			std::function<void(Panel*)> m_Body;
 			float m_OffsetX = 0.0f;
 			float m_OffsetY = 0.0f;
+			bool m_Editor = false;
+			const std::string& m_PanelName;
 		};
 	}
 }
