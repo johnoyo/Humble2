@@ -57,5 +57,6 @@ class MenuSystem : public ISystem
 #include "Panel.h"
 
 #include "Text.h"
+#include "Image.h"
 
 #include "UserInterfaceUtilities.h"

@@ -2,28 +2,39 @@
 
 #include "Base.h"
 
+#include "Panel.h"
+
 #include "imgui.h"
 
 namespace HBL2
 {
 	namespace UI
 	{
-		struct TextConfiguration
-		{
-			float fontSize = 12;
-			glm::vec4 color = { 255, 255, 255, 255 };
-		};
-
 		class Text
 		{
 		public:
-			Text(const char* text, TextConfiguration&& config = {})
+			Text(Panel* parent, const char* text, glm::vec4 color = { 255, 255, 255, 255 })
 			{
-				ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(config.color.r, config.color.g, config.color.b, config.color.a));
+				const ImVec2& textSize = ImGui::CalcTextSize(text);
 
-				ImGui::Text(text);
-
-				ImGui::PopStyleColor();
+				parent->AddChild(UI::Panel{
+					UI::Config{
+						.id = text,
+						.parent = parent,
+						.mode = Rectagle{
+							.color = { color.r, color.g, color.b, color.a },
+						},
+						.layout = Layout{
+							.sizing = {
+								.width = textSize.x,
+								.height = textSize.y
+							},
+							.padding = { 20, 20 },
+						},
+						.type = ElementType::TEXT,
+					},
+					[&](UI::Panel* parent) { }
+				});
 			}
 		};
 	}

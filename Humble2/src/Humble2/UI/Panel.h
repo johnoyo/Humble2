@@ -13,7 +13,14 @@ namespace HBL2
 {
 	namespace UI
 	{
-		enum FlexStyle
+		enum class ElementType
+		{
+			PANEL = 0,
+			TEXT,
+			IMAGE,
+		};
+
+		enum class FlexStyle
 		{
 			FIXED = 0,
 			PERCENT,
@@ -75,7 +82,10 @@ namespace HBL2
 		struct Rectagle
 		{
 			glm::vec4 color;
-			float cornerRadius = 0;
+			float cornerRadius = 0.f;
+			float borderWidth = 0.f;
+			glm::vec4 borderColor = { 255, 255, 255, 255 };
+			float borderCornerRadius = 0.f;
 		};
 
 		struct Sizing
@@ -94,7 +104,7 @@ namespace HBL2
 		{
 			LayoutDirection layoutDirection = LayoutDirection::TOP_TO_BOTTOM;
 			Sizing sizing;
-			glm::vec2 padding;
+			glm::vec2 padding = { 0, 0 };
 			float childGap = 0.0f;
 			Alignment childAlignment;
 		};
@@ -107,6 +117,7 @@ namespace HBL2
 			Panel* parent = nullptr;
 			Rectagle mode;
 			Layout layout;
+			ElementType type = ElementType::PANEL;
 		};
 
 		class Panel
@@ -175,7 +186,7 @@ namespace HBL2
 				return count;
 			}
 
-			void ComputeSizing()
+			void ComputeWidthAndHeight()
 			{
 				if (m_Configuration.parent != nullptr)
 				{
@@ -296,22 +307,19 @@ namespace HBL2
 				}
 			}
 
-			void Render()
+			void ComputeSizeAndPosition(ImVec2* position, ImVec2* size)
 			{
-				ComputeSizing();
-
-				const ImVec2 windowSize = ImVec2(m_Configuration.layout.sizing.width.Value, m_Configuration.layout.sizing.height.Value);
-				ImVec2 windowPos;
+				*size = ImVec2(m_Configuration.layout.sizing.width.Value, m_Configuration.layout.sizing.height.Value);
 
 				if (m_Configuration.parent == nullptr)
 				{
-					windowPos = ImVec2(m_OffsetX, m_OffsetY);
+					*position = ImVec2(m_OffsetX, m_OffsetY);
 					m_OffsetX += m_Configuration.layout.padding.x;
 					m_OffsetY += m_Configuration.layout.padding.y;
 				}
 				else
 				{
-					windowPos = ImVec2(m_Configuration.parent->m_OffsetX, m_Configuration.parent->m_OffsetY);
+					*position = ImVec2(m_Configuration.parent->m_OffsetX, m_Configuration.parent->m_OffsetY);
 
 					// Set up offsets for panel to be utilized by child nodes
 					m_OffsetX = m_Configuration.parent->m_OffsetX + m_Configuration.layout.padding.x;
@@ -329,18 +337,116 @@ namespace HBL2
 						break;
 					}
 				}
+			}
 
-				ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
-				ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+			void BeginPanel(const ImVec2& position, const ImVec2& size)
+			{
+				if (m_Configuration.parent == nullptr)
+				{
+					ImGui::SetNextWindowPos(position, ImGuiCond_Always);
+					ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+					
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, m_Configuration.mode.cornerRadius);
+					ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(m_Configuration.mode.color.r, m_Configuration.mode.color.g, m_Configuration.mode.color.b, m_Configuration.mode.color.a));
 
-				ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, m_Configuration.mode.cornerRadius);
-				ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(m_Configuration.mode.color.r, m_Configuration.mode.color.g, m_Configuration.mode.color.b, m_Configuration.mode.color.a));
+					ImGui::Begin(m_Configuration.id, nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+				}
+				else
+				{
+					ImDrawList* drawList = ImGui::GetWindowDrawList();
 
+					if (m_Configuration.type == ElementType::PANEL)
+					{
+						ImGui::SetNextWindowPos(position, ImGuiCond_Always);
+						ImGui::SetNextWindowSize(size, ImGuiCond_Always);
 
-				ImGui::Begin(m_Configuration.id, nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+						ImGui::BeginChild(m_Configuration.id, size);
 
-				// This is added to prevent windows getting in front when clicked and hiding other child windows.
-				ImGui::SetNextWindowFocus(); // TODO: Fix! Other panel interactions are broken because of this.
+						const glm::vec4& color = m_Configuration.mode.color;
+
+						// Draw a custom rounded background for the child window
+						drawList->AddRectFilled(
+							position,                                          // Top-left corner
+							ImVec2(position.x + size.x, position.y + size.y), // Bottom-right corner
+							IM_COL32(color.r, color.g, color.b, color.a),
+							m_Configuration.mode.cornerRadius
+						);
+
+						if (m_Configuration.mode.borderWidth > 0.0f)
+						{
+							const glm::vec4& color = m_Configuration.mode.borderColor;
+
+							drawList->AddRect(
+								position,
+								ImVec2(position.x + size.x, position.y + size.y),
+								IM_COL32(color.r, color.g, color.b, color.a),
+								m_Configuration.mode.borderCornerRadius,
+								0,
+								m_Configuration.mode.borderWidth
+							);
+						}
+					}
+					else if (m_Configuration.type == ElementType::TEXT)
+					{
+						// Draw panel background
+						drawList->AddRectFilled(
+							position,                                          // Top-left corner
+							ImVec2(position.x + size.x, position.y + size.y), // Bottom-right corner
+							IM_COL32(0, 0, 0, 0));
+
+						const glm::vec4& color = m_Configuration.mode.color;
+
+						// Draw text on top
+						ImGui::SetCursorScreenPos(ImVec2(position.x, position.y));
+						ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(color.r, color.g, color.b, color.a));
+						ImGui::Text(m_Configuration.id);
+						ImGui::PopStyleColor();
+						ImGui::SetCursorScreenPos(ImVec2(position.x + size.x, position.y + size.y));
+					}
+					else if (m_Configuration.type == ElementType::IMAGE)
+					{
+						// Draw panel background
+						drawList->AddRectFilled(
+							position,                                          // Top-left corner
+							ImVec2(position.x + size.x, position.y + size.y), // Bottom-right corner
+							IM_COL32(0, 0, 0, 0));
+
+						const glm::vec4& color = m_Configuration.mode.color;
+
+						// Draw text on top
+						ImGui::SetCursorScreenPos(ImVec2(position.x, position.y));
+						ImGui::Image(nullptr, ImVec2{ m_Configuration.layout.sizing.width.Value, m_Configuration.layout.sizing.height.Value });
+						ImGui::SetCursorScreenPos(ImVec2(position.x + size.x, position.y + size.y));
+					}
+				}
+			}
+
+			void EndPanel()
+			{
+				if (m_Configuration.parent == nullptr)
+				{
+					ImGui::End();
+					ImGui::PopStyleColor();
+					ImGui::PopStyleVar();
+				}
+				else
+				{
+					if (m_Configuration.type == ElementType::PANEL)
+					{
+						ImGui::EndChild();
+					}
+				}
+			}
+
+			void Render()
+			{
+				ComputeWidthAndHeight();
+
+				ImVec2 windowPosition, windowSize;
+
+				ComputeSizeAndPosition(&windowPosition, &windowSize);
+
+				BeginPanel(windowPosition, windowSize);
 
 				m_Body(this);
 
@@ -349,10 +455,7 @@ namespace HBL2
 					panel.Render();
 				}
 
-				ImGui::End();
-
-				ImGui::PopStyleColor();
-				ImGui::PopStyleVar();
+				EndPanel();
 			}
 			
 		private:

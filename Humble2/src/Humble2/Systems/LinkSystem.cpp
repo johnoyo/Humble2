@@ -29,11 +29,11 @@ namespace HBL2
 
 	void LinkSystem::OnGuiRender(float ts)
 	{
-#ifndef false
+#ifdef false
 		UI::Panel(
 			UI::Config{
 				.id = "SettingsUI",
-				.mode = UI::Rectagle {.color = {0, 0, 0, 0} },
+				.mode = UI::Rectagle { .color = {0, 0, 0, 0} },
 				.layout = {
 					.sizing =
 					{
@@ -49,6 +49,7 @@ namespace HBL2
 					.parent = parent,
 					.mode = UI::Rectagle{
 						.color = { 43, 41, 51, 255 },
+						.borderWidth = 4.f,
 					},
 					.layout = UI::Layout{
 						.layoutDirection = UI::LayoutDirection::TOP_TO_BOTTOM,
@@ -89,9 +90,10 @@ namespace HBL2
 												.width = UI::Width::Fixed(72.f),
 												.height = UI::Height::Fixed(36.f),
 											},
+											.padding = { 8, 8 },
 										}
 									}, [&](UI::Panel* parent) {
-										UI::Text("Sound");
+										UI::Text(parent, "Sound");
 
 										if (UI::Panel::Clicked())
 										{
@@ -114,9 +116,10 @@ namespace HBL2
 												.width = UI::Width::Fixed(72.f),
 												.height = UI::Height::Fixed(36.f),
 											},
+											.padding = { 8, 8 },
 										}
 									}, [&](UI::Panel* parent) {
-										UI::Text("Graphics");
+										UI::Text(parent, "Graphics");
 
 										if (UI::Panel::Clicked())
 										{
@@ -128,6 +131,8 @@ namespace HBL2
 								));
 							}
 						));
+
+						UI::Text(parent, "separator");
 
 						parent->AddChild(UI::Panel(UI::Config{
 							.id = "Content",
@@ -141,17 +146,17 @@ namespace HBL2
 									.width = UI::Width::Grow(),
 									.height = UI::Height::Grow(),
 								},
+								.padding = { 4, 4 },
+								.childGap = 4,
 							}
 							}, [&](UI::Panel* parent) {
 								if (m_SoundTabClicked)
 								{
-									UI::Text("InnerContainer text 1");
+									UI::Text(parent, "InnerContainer text 1");
 								}
 								else if (m_GraphicsTabClicked)
 								{
-									UI::Text("InnerContainer text 2");
-
-									ImGui::Image(nullptr, ImVec2{ 50, 50 });
+									UI::Text(parent, "InnerContainer text 2");
 								}
 							}
 						));
