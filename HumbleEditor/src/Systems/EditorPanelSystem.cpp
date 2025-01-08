@@ -152,11 +152,25 @@ namespace HBL2
 				panel.Type = Component::EditorPanel::Panel::Systems;
 			}
 
+			// TODO: Remove from here!
+
 			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Link, LinkEditor>();
 			HBL2::EditorUtilities::Get().InitCustomEditor<HBL2::Component::Link, LinkEditor>();
 
 			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Camera, CameraEditor>();
 			HBL2::EditorUtilities::Get().InitCustomEditor<HBL2::Component::Camera, CameraEditor>();
+
+			using namespace entt::literals;
+
+			entt::meta<HBL2::Component::Transform>()
+				.type(entt::hashed_string(typeid(HBL2::Component::Transform).name()))
+				.data<&HBL2::Component::Transform::Translation>("Translation"_hs).prop("name"_hs, "Translation")
+				.data<&HBL2::Component::Transform::Rotation>("Rotation"_hs).prop("name"_hs, "Rotation")
+				.data<&HBL2::Component::Transform::QRotation>("QRotation"_hs).prop("name"_hs, "QRotation")
+				.data<&HBL2::Component::Transform::Scale>("Scale"_hs).prop("name"_hs, "Scale")
+				.data<&HBL2::Component::Transform::LocalMatrix>("LocalMatrix"_hs).prop("name"_hs, "LocalMatrix")
+				.data<&HBL2::Component::Transform::WorldMatrix>("WorldMatrix"_hs).prop("name"_hs, "WorldMatrix")
+				.data<&HBL2::Component::Transform::Static>("Static"_hs).prop("name"_hs, "Static");
 		}
 
 		void EditorPanelSystem::OnUpdate(float ts)
@@ -450,6 +464,31 @@ namespace HBL2
 
 			if (HBL2::Component::EditorVisible::SelectedEntity != entt::null)
 			{
+				/*
+
+				// Iterate over all components of entity
+				m_ActiveScene->GetRegistry().view<HBL2::Component::ID, HBL2::Component::Tag>().each([&](auto& id, auto& name)
+					{
+						std::cout << name.Name << " (" << id.Identifier << ")" << std::endl;
+						std::cout << "\tComponents:" << std::endl;
+
+						for (auto&& curr : m_ActiveScene->GetRegistry().storage())
+						{
+							entt::id_type cid = curr.first;
+							auto& storage = curr.second;
+							entt::type_info ctype = storage.type();
+
+							if (storage.contains(HBL2::Component::EditorVisible::SelectedEntity))
+							{
+								std::cout << "\t\t" << typeid(HBL2::Component::Tag).name() << std::endl;
+								std::cout << "\t\t" << ctype.hash() << std::endl;
+								std::cout << "\t\t" << ctype.name() << std::endl;
+							}
+						}
+					});
+
+				*/
+
 				// Tag component.
 				if (m_ActiveScene->HasComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
@@ -474,9 +513,11 @@ namespace HBL2
 					{
 						auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity);
 
-						ImGui::DragFloat3("Translation", glm::value_ptr(transform.Translation), 0.25f);
-						ImGui::DragFloat3("Rotation", glm::value_ptr(transform.Rotation), 0.25f);
-						ImGui::DragFloat3("Scale", glm::value_ptr(transform.Scale), 0.25f);
+						HBL2::EditorUtilities::Get().DrawDefaultEditor<HBL2::Component::Transform>(transform);
+
+						//ImGui::DragFloat3("Translation", glm::value_ptr(transform.Translation), 0.25f);
+						//ImGui::DragFloat3("Rotation", glm::value_ptr(transform.Rotation), 0.25f);
+						//ImGui::DragFloat3("Scale", glm::value_ptr(transform.Scale), 0.25f);
 
 						ImGui::TreePop();
 					}
