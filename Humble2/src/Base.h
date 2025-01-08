@@ -3,6 +3,8 @@
 #include "Humble2/Utilities/Log.h"
 #include "Humble2/Utilities/ProfilerScope.h"
 
+#include "Humble2API.h"
+
 #ifdef DEBUG
 	#define HBL2_PROFILE(...) HBL2::ProfilerScope profiler = HBL2::ProfilerScope(__VA_ARGS__);
 	#define HBL2_FUNC_PROFILE() HBL2_PROFILE(__FUNCTION__)
@@ -16,7 +18,7 @@
 		#error "Platform is not supported yet!"
 	#endif
 
-	#define HBL2_ENABLE_ASSERTS
+	#define HBL2_ENABLE_ASSERTS // TODO: figure out whats wrong and it needs asserts enabled.
 #else
 	#define HBL2_PROFILE(...)
 	#define HBL2_FUNC_PROFILE()

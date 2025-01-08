@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Humble2API.h"
+
 #include "spdlog\spdlog.h"
 #include <spdlog\fmt\ostr.h>
 #include "spdlog\sinks\stdout_color_sinks.h"
@@ -8,7 +10,7 @@
 
 namespace HBL2
 {
-	class Log 
+	class HBL2_API Log
 	{
 	public:
 		static void Initialize();

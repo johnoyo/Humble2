@@ -35,14 +35,14 @@
 
 namespace HBL2
 {
-	enum class Platform
+	enum class HBL2_API Platform
 	{
 		Windows,
 		Web,
 		None
 	};
 
-	struct ApplicationSpec
+	struct HBL2_API ApplicationSpec
 	{
 		std::string Name = "Humble2 Application";
 		std::string CommandLineArgs = "";
@@ -55,7 +55,7 @@ namespace HBL2
 		Context* Context = nullptr;
 	};
 
-	class Application
+	class HBL2_API Application
 	{
 	public:
 		Application(ApplicationSpec& specification);

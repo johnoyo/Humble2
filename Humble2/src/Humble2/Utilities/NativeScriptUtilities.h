@@ -69,11 +69,7 @@ namespace HBL2
 	public:
 		NativeScriptUtilities(const NativeScriptUtilities&) = delete;
 
-		static NativeScriptUtilities& Get()
-		{
-			HBL2_CORE_ASSERT(s_Instance != nullptr, "MeshUtilities::s_Instance is null! Call MeshUtilities::Initialize before use.");
-			return *s_Instance;
-		}
+		static NativeScriptUtilities& Get();
 
 		static void Initialize();
 		static void Shutdown();
@@ -90,6 +86,6 @@ namespace HBL2
 
 		std::unordered_map<std::string, HINSTANCE> m_DLLInstances;
 
-		inline static NativeScriptUtilities* s_Instance = nullptr;
+		static NativeScriptUtilities* s_Instance;
 	};
 }

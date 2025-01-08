@@ -2,6 +2,14 @@
 
 namespace HBL2
 {
+	MeshUtilities* MeshUtilities::s_Instance = nullptr;
+	
+	MeshUtilities& MeshUtilities::Get()
+	{
+		HBL2_CORE_ASSERT(s_Instance != nullptr, "MeshUtilities::s_Instance is null! Call MeshUtilities::Initialize before use.");
+		return *s_Instance;
+	}
+
 	void MeshUtilities::Initialize()
 	{
 		HBL2_CORE_ASSERT(s_Instance == nullptr, "MeshUtilities::s_Instance is not null! MeshUtilities::Initialize has been called twice.");

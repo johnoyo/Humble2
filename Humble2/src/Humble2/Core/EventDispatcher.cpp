@@ -6,6 +6,12 @@ namespace HBL2
 	{
 	}
 
+	EventDispatcher& EventDispatcher::Get()
+	{
+		HBL2_CORE_ASSERT(s_Instance != nullptr, "EventDispatcher s_Instance is null! Call EventDispatcher::Initialize before use.");
+		return *s_Instance;
+	}
+
 	void EventDispatcher::Initialize()
 	{
 		HBL2_CORE_ASSERT(s_Instance == nullptr, "EventDispatcher s_Instance is not null! EventDispatcher::Initialize has been called twice.");

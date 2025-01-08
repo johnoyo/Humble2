@@ -2,6 +2,12 @@
 
 namespace HBL2
 {
+	TextureUtilities& TextureUtilities::Get()
+	{
+		static TextureUtilities instance;
+		return instance;
+	}
+
 	stbi_uc* TextureUtilities::Load(const std::string& path, TextureSettings& settings)
 	{
 		HBL2_FUNC_PROFILE();

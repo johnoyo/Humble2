@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core\Context.h"
 #include "Editor.h"
 
 #include "Vendor/entt/include/entt.hpp"
@@ -12,80 +13,26 @@
 
 namespace HBL2
 {
-	static inline void RegisterComponentToReflection(const std::string& structCode)
-	{
-		// Regex pattern to match member declarations
-		std::regex memberRegex(R"(([a-zA-Z_][a-zA-Z0-9_:<>]*)\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*=\s*[^;]*)?;)");
-
-		// Extract the struct name
-		std::regex structNameRegex(R"(struct\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\{)");
-		std::smatch match;
-
-		std::string structName;
-		if (std::regex_search(structCode, match, structNameRegex))
-		{
-			structName = match[1];
-		}
-		else
-		{
-			std::cerr << "Error: Could not extract struct name!" << std::endl;
-			return;
-		}
-
-		// Begin generating reflection code
-		std::ostringstream reflectionCode;
-		reflectionCode << "entt::meta<" << structName << ">()\n";
-		reflectionCode << "    .type(\"entt::hashed_string(typeid(" << structName << "\").name()))";
-
-		// Match and process each member
-		auto memberBegin = std::sregex_iterator(structCode.begin(), structCode.end(), memberRegex);
-		auto memberEnd = std::sregex_iterator();
-
-		for (auto it = memberBegin; it != memberEnd; ++it)
-		{
-			std::string type = (*it)[1].str();
-			std::string name = (*it)[2].str();
-
-			reflectionCode << "\n    .data<&" << structName << "::" << name << ">(\"" << name << "\"_hs).prop(\"name\"_hs, \"" << name << "\")";
-		}
-
-		reflectionCode << ";\n";
-
-		// Output the generated code
-		std::cout << "Generated Reflection Code:\n" << reflectionCode.str() << std::endl;
-	}
+	HBL2_API void RegisterComponentToReflection(const std::string& structCode);
 
 	namespace UI
 	{
 		namespace Utils
 		{
-			static inline ImVec2 GetViewportSize()
-			{
-				return *(ImVec2*)&Context::ViewportSize;
-			}
+			HBL2_API ImVec2 GetViewportSize();
 
-			static inline ImVec2 GetViewportPosition()
-			{
-				return *(ImVec2*)&Context::ViewportPosition;
-			}
+			HBL2_API ImVec2 GetViewportPosition();
 
-			static inline float GetFontSize()
-			{
-				return ImGui::GetFontSize();
-			}
+			HBL2_API float GetFontSize();
 		}
 	}
 
-	class EditorUtilities
+	class HBL2_API EditorUtilities
 	{
 	public:
 		EditorUtilities(const EditorUtilities&) = delete;
 
-		static EditorUtilities& Get()
-		{
-			static EditorUtilities instance;
-			return instance;
-		}
+		static EditorUtilities& Get();
 
 		template<typename C>
 		void DrawDefaultEditor(C& component)

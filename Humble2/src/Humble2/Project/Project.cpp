@@ -5,6 +5,8 @@
 
 namespace HBL2
 {
+	Project* Project::s_ActiveProject = nullptr;
+
 	Project* Project::Create(const std::string& name)
 	{
 		s_ActiveProject = new Project;

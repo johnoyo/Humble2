@@ -18,7 +18,7 @@
 
 namespace HBL2
 {
-	enum class BuiltInShader
+	enum class HBL2_API BuiltInShader
 	{
 		INVALID = 0,
 		PRESENT,
@@ -28,7 +28,7 @@ namespace HBL2
 		TEXTURED_SPRITE,
 	};
 
-	struct ReflectionData
+	struct HBL2_API ReflectionData
 	{
 		std::string VertexEntryPoint;
 		std::string FragmentEntryPoint;
@@ -37,16 +37,12 @@ namespace HBL2
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding::Attribute> Attributes;
 	};
 
-	class ShaderUtilities
+	class HBL2_API ShaderUtilities
 	{
 	public:
 		ShaderUtilities(const ShaderUtilities&) = delete;
 
-		static ShaderUtilities& Get()
-		{
-			static ShaderUtilities instance;
-			return instance;
-		}
+		static ShaderUtilities& Get();
 
 		const char* GetCacheDirectory(GraphicsAPI target)
 		{

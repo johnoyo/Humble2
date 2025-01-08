@@ -9,10 +9,10 @@
 
 namespace HBL2
 {
-	class ResourceManager
+	class HBL2_API ResourceManager
 	{
 	public:
-		static inline ResourceManager* Instance;
+		static ResourceManager* Instance;
 
 		virtual ~ResourceManager() = default;
 

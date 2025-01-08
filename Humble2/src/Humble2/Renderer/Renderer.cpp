@@ -4,6 +4,8 @@
 
 namespace HBL2
 {
+	Renderer* Renderer::Instance = nullptr;
+
 	void Renderer::Initialize()
 	{
 		PreInitialize();

@@ -8,21 +8,17 @@
 
 namespace HBL2
 {
-	class Event {
+	class HBL2_API Event {
 	public:
 		virtual ~Event();
 		virtual std::string GetDescription() const = 0;
 	};
 
-	class EventDispatcher {
+	class HBL2_API EventDispatcher {
 	public:
 		EventDispatcher(const EventDispatcher&) = delete;
 
-		static EventDispatcher& Get()
-		{
-			HBL2_CORE_ASSERT(s_Instance != nullptr, "EventDispatcher s_Instance is null! Call EventDispatcher::Initialize before use.");
-			return *s_Instance;
-		}
+		static EventDispatcher& Get();
 
 		static void Initialize();
 		static void Shutdown();

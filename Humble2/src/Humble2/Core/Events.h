@@ -9,7 +9,7 @@ namespace HBL2
 	class ISystem;
 	enum class SystemState;
 
-	class WindowCloseEvent final : public Event
+	class HBL2_API WindowCloseEvent final : public Event
 	{
 	public:
 		WindowCloseEvent()
@@ -22,7 +22,7 @@ namespace HBL2
 		}
 	};
 
-	class WindowSizeEvent final : public Event
+	class HBL2_API WindowSizeEvent final : public Event
 	{
 	public:
 		WindowSizeEvent(int width, int height) : Width(width), Height(height)
@@ -38,7 +38,7 @@ namespace HBL2
 		int Height = 0;
 	};
 
-	class FramebufferSizeEvent final : public Event
+	class HBL2_API FramebufferSizeEvent final : public Event
 	{
 	public:
 		FramebufferSizeEvent(int width, int height) : Width(width), Height(height)
@@ -54,7 +54,7 @@ namespace HBL2
 		int Height = 0;
 	};
 
-	class WindowFocusEvent final : public Event
+	class HBL2_API WindowFocusEvent final : public Event
 	{
 	public:
 		WindowFocusEvent(int focused) : Focused(focused)
@@ -69,7 +69,7 @@ namespace HBL2
 		int Focused = 0;
 	};
 
-	class WindowRefreshEvent final : public Event
+	class HBL2_API WindowRefreshEvent final : public Event
 	{
 	public:
 		WindowRefreshEvent()
@@ -82,7 +82,7 @@ namespace HBL2
 		}
 	};
 
-	class MouseButtonEvent final : public Event
+	class HBL2_API MouseButtonEvent final : public Event
 	{
 	public:
 		MouseButtonEvent(int button, int action, int mods) : Button(button), Action(action), Mods(mods)
@@ -99,7 +99,7 @@ namespace HBL2
 		int Mods;
 	};
 
-	class ScrollEvent final : public Event
+	class HBL2_API ScrollEvent final : public Event
 	{
 	public:
 		ScrollEvent(double xoffset, double yoffset) : XOffset(xoffset), YOffset(yoffset)
@@ -115,7 +115,7 @@ namespace HBL2
 		double YOffset;
 	};
 
-	class CursorPositionEvent final : public Event
+	class HBL2_API CursorPositionEvent final : public Event
 	{
 	public:
 		CursorPositionEvent(double xpos, double ypos) : XPosition(xpos), YPosition(ypos)
@@ -131,7 +131,7 @@ namespace HBL2
 		double YPosition;
 	};
 
-	class CursorEnterEvent final : public Event
+	class HBL2_API CursorEnterEvent final : public Event
 	{
 	public:
 		CursorEnterEvent(int entered) : Entered(entered)
@@ -146,7 +146,7 @@ namespace HBL2
 		int Entered;
 	};
 
-	class KeyEvent final : public Event
+	class HBL2_API KeyEvent final : public Event
 	{
 	public:
 		KeyEvent(int key, int scancode, int action, int mods) : Key(key), Scancode(scancode), Action(action), Mods(mods)
@@ -164,7 +164,7 @@ namespace HBL2
 		int Mods;
 	};
 
-	class SceneChangeEvent final : public Event
+	class HBL2_API SceneChangeEvent final : public Event
 	{
 	public:
 		SceneChangeEvent(Handle<Scene> currentScene, Handle<Scene> newScene) : CurrentScene(currentScene), NewScene(newScene)
@@ -180,7 +180,7 @@ namespace HBL2
 		Handle<Scene> NewScene;
 	};
 
-	class SystemStateChangeEvent final : public Event
+	class HBL2_API SystemStateChangeEvent final : public Event
 	{
 	public:
 		SystemStateChangeEvent(ISystem* system, SystemState oldState, SystemState newState) : System(system), OldState(oldState), NewState(newState)

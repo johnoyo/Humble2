@@ -14,17 +14,17 @@ namespace HBL2
 
 	namespace Component
 	{
-		struct Tag
+		struct HBL2_API Tag
 		{
 			std::string Name = "Unnamed Entity";
 		};
 
-		struct ID
+		struct HBL2_API ID
 		{
 			UUID Identifier = 0;
 		};
 
-		struct Transform
+		struct HBL2_API Transform
 		{
 			glm::vec3 Translation = { 0.f, 0.f, 0.f };
 			glm::vec3 Rotation = { 0.f, 0.f, 0.f };
@@ -36,25 +36,25 @@ namespace HBL2
 			bool Static = false;
 		};
 
-		struct Link
+		struct HBL2_API Link
 		{
 			UUID Parent = 0;
 		};
 
-		struct Sprite_New
+		struct HBL2_API Sprite_New
 		{
 			Handle<Material> Material;
 			bool Enabled = true;
 		};
 
-		struct StaticMesh_New
+		struct HBL2_API StaticMesh_New
 		{
 			Handle<Mesh> Mesh;
 			Handle<Material> Material;
 			bool Enabled = true;
 		};
 
-		struct Camera
+		struct HBL2_API Camera
 		{
 			enum class Type
 			{
@@ -77,7 +77,7 @@ namespace HBL2
 			bool Enabled = false;
 		};
 
-		struct EditorVisible
+		struct HBL2_API EditorVisible
 		{
 			static inline bool Selected = false;
 			static inline entt::entity SelectedEntity = entt::null;
@@ -85,7 +85,7 @@ namespace HBL2
 			bool Enabled = true;
 		};
 
-		struct Light
+		struct HBL2_API Light
 		{
 			enum class Type
 			{
@@ -101,7 +101,7 @@ namespace HBL2
 			bool Enabled = true;
 		};
 
-		struct SkyLight
+		struct HBL2_API SkyLight
 		{
 			float Intensity = 1.0f;
 			bool Enabled = true;

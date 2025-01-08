@@ -2,6 +2,12 @@
 
 namespace HBL2
 {
+	ShaderUtilities& ShaderUtilities::Get()
+	{
+		static ShaderUtilities instance;
+		return instance;
+	}
+
 	std::string ShaderUtilities::ReadFile(const std::string& filepath)
 	{
 		std::string result;

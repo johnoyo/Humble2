@@ -6,10 +6,10 @@
 
 namespace HBL2
 {
-	class ImGuiRenderer
+	class HBL2_API ImGuiRenderer
 	{
 	public:
-		static inline ImGuiRenderer* Instance;
+		static ImGuiRenderer* Instance;
 
 		virtual void Initialize() = 0;
 

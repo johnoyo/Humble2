@@ -7,6 +7,14 @@ namespace HBL2
 		typedef ISystem* (*CreateSystemFunc)();
 	}
 
+	NativeScriptUtilities* NativeScriptUtilities::s_Instance = nullptr;
+
+	NativeScriptUtilities& NativeScriptUtilities::Get()
+	{
+		HBL2_CORE_ASSERT(s_Instance != nullptr, "MeshUtilities::s_Instance is null! Call MeshUtilities::Initialize before use.");
+		return *s_Instance;
+	}
+
 	void NativeScriptUtilities::Initialize()
 	{
 		HBL2_CORE_ASSERT(s_Instance == nullptr, "NativeScriptUtilities::s_Instance is not null! NativeScriptUtilities::Initialize has been called twice.");

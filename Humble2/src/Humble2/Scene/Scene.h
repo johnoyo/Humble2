@@ -16,7 +16,7 @@ namespace HBL2
 		std::string name;
 	};
 
-	class Scene
+	class HBL2_API Scene
 	{
 	public:
 		Scene() = default;

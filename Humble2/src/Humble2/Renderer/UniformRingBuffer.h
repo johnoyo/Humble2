@@ -12,7 +12,7 @@ namespace HBL2
 		uint32_t Offset;
 	};
 
-	class UniformRingBuffer
+	class HBL2_API UniformRingBuffer
 	{
 	public:
 		UniformRingBuffer(uint32_t size, uint32_t uniformOffset);

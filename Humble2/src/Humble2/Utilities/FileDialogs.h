@@ -6,10 +6,9 @@
 
 namespace HBL2
 {
-	class FileDialogs
+	namespace FileDialogs
 	{
-	public:
-		static std::string OpenFile(const char* filter);
-		static std::string SaveFile(const char* filter);
+		HBL2_API std::string OpenFile(const char* filter);
+		HBL2_API std::string SaveFile(const char* filter);
 	};
 }
