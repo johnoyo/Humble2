@@ -22,7 +22,7 @@ project "Humble2"
 		"_CRT_SECURE_NO_WARNINGS",
         "YAML_CPP_STATIC_DEFINE",
 
-        "HBL_BUILD_DLL"
+        "HBL2_BUILD_DLL"
 	}
     
     -- Include directories.
