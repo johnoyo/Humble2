@@ -64,7 +64,7 @@ namespace HBL2
 		void* library = nullptr;
 	};
 
-	class NativeScriptUtilities
+	class HBL2_API NativeScriptUtilities
 	{
 	public:
 		NativeScriptUtilities(const NativeScriptUtilities&) = delete;

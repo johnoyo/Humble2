@@ -19,8 +19,15 @@ project "ImGui"
 		"imgui/imstb_rectpack.h",
 		"imgui/imstb_textedit.h",
 		"imgui/imstb_truetype.h",
-		"imgui/imgui_demo.cpp"
+		"imgui/imgui_demo.cpp",
+		"../ImGuizmo/ImGuizmo.h",
+		"../ImGuizmo/ImGuizmo.cpp",
 	}
+
+	includedirs
+    {
+        "../ImGui/imgui",
+    }
 
 	filter "system:windows"
 		systemversion "latest"

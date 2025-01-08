@@ -12,6 +12,12 @@
 
 namespace HBL2
 {
+	AssetImporter& AssetImporter::Get()
+	{
+		static AssetImporter instance;
+		return instance;
+	}
+
 	uint32_t AssetImporter::ImportAsset(Asset* asset)
 	{
 		if (asset == nullptr)

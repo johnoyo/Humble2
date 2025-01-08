@@ -18,8 +18,11 @@ namespace HBL2
 
 		virtual void Clean() = 0;
 
+		ImGuiContext* GetContext();
+
 	protected:
 		Window* m_Window = nullptr;
+		ImGuiContext* m_ImGuiContext = nullptr;
 		const char* m_GlslVersion = nullptr;
 	};
 }

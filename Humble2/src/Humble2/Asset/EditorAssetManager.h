@@ -5,7 +5,7 @@
 
 namespace HBL2
 {
-	class EditorAssetManager final : public AssetManager
+	class HBL2_API EditorAssetManager final : public AssetManager
 	{
 	public:
 		virtual ~EditorAssetManager() = default;

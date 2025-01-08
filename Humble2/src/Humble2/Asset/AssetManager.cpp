@@ -4,6 +4,8 @@
 
 namespace HBL2
 {
+	AssetManager* AssetManager::Instance = nullptr;
+
 	void AssetManager::RegisterAssets()
 	{
 		// Create Asset directory if it does not exist.

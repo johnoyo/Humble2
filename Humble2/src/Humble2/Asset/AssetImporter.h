@@ -19,11 +19,7 @@ namespace HBL2
 	public:
 		AssetImporter(const AssetImporter&) = delete;
 
-		static AssetImporter& Get()
-		{
-			static AssetImporter instance;
-			return instance;
-		}
+		static AssetImporter& Get();
 
 		uint32_t ImportAsset(Asset* asset);
 		void SaveAsset(Asset* asset);

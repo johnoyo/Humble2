@@ -13,8 +13,6 @@ project "HumbleEditor"
     { 
         "src/**.h", 
         "src/**.cpp",
-        "../Dependencies/ImGuizmo/ImGuizmo.h",
-        "../Dependencies/ImGuizmo/ImGuizmo.cpp",
     }
 
     includedirs
@@ -39,12 +37,13 @@ project "HumbleEditor"
 
     links
     {
-        "Humble2"
+        "Humble2",
+        "ImGui",
+        "YAML-Cpp"
     }
 
     defines
     {
-        "GLEW_STATIC",
         "YAML_CPP_STATIC_DEFINE",
     }
 

@@ -15,8 +15,8 @@ namespace HBL2
 	{
 		std::string Title = "Humble App";
 		float RefreshRate = 0.0f;
-		float Width = 1920.0f;
-		float Height = 1080.0f;
+		float Width = 1280.f;
+		float Height = 720.f;
 		bool FullScreen = false;
 		bool VerticalSync = false;
 	};
@@ -37,7 +37,7 @@ namespace HBL2
 		void SetTitle(const std::string& title);
 		double GetTime();
 		GLFWwindow* GetHandle();
-		const glm::u32vec2& GetExtents() const { return { m_Spec.Width, m_Spec.Height }; }
+		glm::u32vec2 GetExtents() const { return { m_Spec.Width, m_Spec.Height }; }
 
 	protected:
 		void AttachEventCallbacks();

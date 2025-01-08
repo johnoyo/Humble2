@@ -47,8 +47,8 @@ namespace HBL2
 		std::string Name = "Humble2 Application";
 		std::string CommandLineArgs = "";
 		GraphicsAPI GraphicsAPI = GraphicsAPI::OPENGL;
-		float Width = 1920.f;
-		float Height = 1080.f;
+		float Width = 1280.f;
+		float Height = 720.f;
 		bool VerticalSync = true;
 		bool Fullscreen = false;
 
