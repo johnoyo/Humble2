@@ -4,16 +4,13 @@
 #include "Scene\ISystem.h"
 #include "Scene\Components.h"
 
-#include "Renderer\Rewrite\Renderer.h"
+#include "Renderer\Renderer.h"
 #include "Resources\ResourceManager.h"
 
-#include "Renderer\Rewrite\UniformRingBuffer.h"
+#include "Renderer\UniformRingBuffer.h"
 
 #include "Utilities\ShaderUtilities.h"
 #include "Utilities\TextureUtilities.h"
-
-#include "Platform\OpenGL\Rewrite\OpenGLBindGroup.h"
-#include "Platform\OpenGL\Rewrite\OpenGLResourceManager.h"
 
 #include <glm\gtx\quaternion.hpp>
 
@@ -38,11 +35,10 @@ namespace HBL2
 		const glm::mat4& GetViewProjection();
 
 	private:
-		Handle<BindGroup> m_GlobalBindings;
-		Handle<BindGroupLayout> m_GlobalBindGroupLayout;
-		Handle<Buffer> m_CameraBuffer;
 		Handle<Buffer> m_VertexBuffer;
 		Handle<Mesh> m_SpriteMesh;
+		Handle<RenderPass> m_RenderPass;
+		Handle<FrameBuffer> m_FrameBuffer;
 		UniformRingBuffer* m_UniformRingBuffer = nullptr;
 		Scene* m_EditorScene = nullptr;
 	};

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Base.h"
-#include "UFbxLoader.h"
-#include "FastGltfLoader.h"
+#include "Loaders\UFbxLoader.h"
+#include "Loaders\FastGltfLoader.h"
 
 #include <filesystem>
 

@@ -27,6 +27,8 @@ namespace HBL2
 		WhiteTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "white-texture",
 			.dimensions = { 1.0f, 1.0f, 1.0f },
+			.usage = TextureUsage::SAMPLED,
+			.aspect = TextureAspect::COLOR,
 			.initialData = nullptr,
 		});
 	}

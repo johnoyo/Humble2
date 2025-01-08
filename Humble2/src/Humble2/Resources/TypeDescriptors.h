@@ -1,7 +1,9 @@
 #pragma once
 
-#include "Renderer\Rewrite\Enums.h"
+#include "Renderer\Enums.h"
 #include "Handle.h"
+
+#include "Utilities\Collections\Span.h"
 
 #include <glm\glm.hpp>
 
@@ -11,6 +13,7 @@
 namespace HBL2
 {
 	struct Texture;
+	struct TextureView;
 	struct Buffer;
 	struct Shader;
 	struct Framebuffer;
@@ -22,19 +25,24 @@ namespace HBL2
 	struct TextureDescriptor
 	{
 		const char* debugName;
-		glm::vec3 dimensions;
+		glm::u32vec3 dimensions;
 		uint32_t mips = 1;
-		uint32_t format = 347567;
-		uint32_t internalFormat = 347567;
+		Format format = Format::RGBA8_RGB;
+		Format internalFormat = Format::RGBA8_RGB;
 		TextureUsage usage = TextureUsage::TEXTURE_BINDING;
+		TextureType type = TextureType::D2;
+		TextureAspect aspect = TextureAspect::COLOR;
 
 		struct Sampler
 		{
-			uint32_t filter = 347567;
+			Filter filter = Filter::NEAREST;
 			Compare compare = Compare::LESS_OR_EQUAL;
-			Wrap wrap = Wrap::CLAMP;
+			Wrap wrap = Wrap::REPEAT;
+			bool compareEnable = false;
 		};
 
+		bool createSampler = true;
+		Sampler sampler;
 		stbi_uc* initialData = nullptr;
 	};
 
@@ -43,7 +51,7 @@ namespace HBL2
 		const char* debugName;
 		BufferUsage usage = BufferUsage::UNIFORM;
 		BufferUsageHint usageHint = BufferUsageHint::STATIC;
-		Memory memory = Memory::GPU_CPU;
+		MemoryUsage memoryUsage = MemoryUsage::CPU_GPU;
 		uint32_t byteSize = 0;
 		void* initialData = nullptr;
 	};
@@ -53,7 +61,7 @@ namespace HBL2
 		const char* debugName;
 		uint32_t width = 0;
 		uint32_t height = 0;
-		Handle<RenderPassLayout> renderPassLayout;
+		Handle<RenderPass> renderPass;
 		Handle<Texture> depthTarget;
 		std::initializer_list<Handle<Texture>> colorTargets;
 	};
@@ -86,6 +94,7 @@ namespace HBL2
 		{
 			Handle<Buffer> buffer;
 			uint32_t byteOffset = 0;
+			uint32_t range = 0;
 		};
 		std::initializer_list<BufferEntry> buffers;
 	};
@@ -120,17 +129,30 @@ namespace HBL2
 				BlendOperation colorOp = BlendOperation::ADD;
 				BlendFactor srcColorFactor = BlendFactor::SRC_ALPHA;
 				BlendFactor dstColorFactor = BlendFactor::ONE_MINUS_SRC_ALPHA;
-				BlendOperation aplhaOp = BlendOperation::ADD;
-				BlendFactor srcAlhpaFactor = BlendFactor::SRC_ALPHA;
-				BlendFactor dstAlhpaFactor = BlendFactor::ONE_MINUS_SRC_ALPHA;
+				BlendOperation alphaOp = BlendOperation::ADD;
+				BlendFactor srcAlphaFactor = BlendFactor::ONE;
+				BlendFactor dstAlphaFactor = BlendFactor::ZERO;
+				bool enabled = true;
 			};
 
-			Compare depthTest = Compare::LESS;
+			struct DepthTest
+			{
+				bool enabled = true;
+				bool writeEnabled = true;
+				bool stencilEnabled = true;
+				Compare depthTest = Compare::LESS;
+			};
+
 			BlendState blend;
+			DepthTest depthTest;
+			Topology topology = Topology::TRIANGLE_LIST;
+			PolygonMode polygonMode = PolygonMode::FILL;
+			CullMode cullMode = CullMode::NONE;
+			FrontFace frontFace = FrontFace::CLOCKWISE;
 			std::initializer_list<VertexBufferBinding> vertexBufferBindings;
 		};
 		RenderPipeline renderPipeline;
-		Handle<RenderPassLayout> renderPassLayout;
+		Handle<RenderPass> renderPass;
 	};
 
 	struct RenderPassLayoutDescriptor
@@ -144,7 +166,7 @@ namespace HBL2
 			uint32_t colorTargets = 0;
 		};
 
-		std::initializer_list<SubPass> subPasses;
+		Span<const SubPass> subPasses;
 	};
 
 	struct RenderPassDescriptor
@@ -153,7 +175,8 @@ namespace HBL2
 		{
 			LoadOperation loadOp = LoadOperation::CLEAR;
 			StoreOperation storeOp = StoreOperation::STORE;
-			TextureLayout nextUsage = TextureLayout::SAMPLED;
+			TextureLayout prevUsage = TextureLayout::UNDEFINED;
+			TextureLayout nextUsage = TextureLayout::UNDEFINED;
 			glm::vec4 clearColor = glm::vec4(0.0f);
 		};
 
@@ -163,15 +186,16 @@ namespace HBL2
 			StoreOperation storeOp = StoreOperation::STORE;
 			LoadOperation stencilLoadOp = LoadOperation::CLEAR;
 			StoreOperation stencilStoreOp = StoreOperation::STORE;
-			TextureLayout nextUsage = TextureLayout::SAMPLED;
+			TextureLayout prevUsage = TextureLayout::UNDEFINED;
+			TextureLayout nextUsage = TextureLayout::UNDEFINED;
 			float clearZ = 0.0f;
 			uint32_t clearStencil = 0;
 		};
 
 		const char* debugName;
-		Handle<RenderPassLayoutDescriptor> layout;
+		Handle<RenderPassLayout> layout;
 		DepthTarget depthTarget;
-		std::initializer_list<ColorTarget> colorTargets;
+		Span<const ColorTarget> colorTargets;
 	};
 
 	struct MeshDescriptor

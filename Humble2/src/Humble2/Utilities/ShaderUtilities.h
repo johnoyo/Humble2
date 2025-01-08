@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Base.h"
-#include "Renderer\Rewrite\Renderer.h"
-#include "Renderer\Rewrite\Enums.h"
+#include "Renderer\Renderer.h"
+#include "Renderer\Enums.h"
 
 #include "Asset\AssetManager.h"
 
@@ -21,6 +21,7 @@ namespace HBL2
 	enum class BuiltInShader
 	{
 		INVALID = 0,
+		PRESENT,
 		UNLIT,
 		BLINN_PHONG,
 		PBR,
@@ -140,6 +141,7 @@ namespace HBL2
 		void LoadBuiltInShaders();
 
 		Handle<Shader> GetBuiltInShader(BuiltInShader shader) { return m_Shaders[shader]; }
+		Handle<BindGroupLayout> GetBuiltInShaderLayout(BuiltInShader shader) { return m_ShaderLayouts[shader]; }
 
 	private:
 		ShaderUtilities() = default;
@@ -149,5 +151,6 @@ namespace HBL2
 	private:
 		std::unordered_map<std::string, ReflectionData> m_ShaderReflectionData;
 		std::unordered_map<BuiltInShader, Handle<Shader>> m_Shaders;
+		std::unordered_map<BuiltInShader, Handle<BindGroupLayout>> m_ShaderLayouts;
 	};
 }

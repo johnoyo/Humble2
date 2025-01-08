@@ -39,6 +39,8 @@ namespace HBL2
 		uint32_t IndexCount = 0;
 		uint32_t VertexOffset = 0;
 		uint32_t VertexCount = 0;
+		uint32_t InstanceOffset = 0;
+		uint32_t InstanceCount = 1;
 		Handle<Buffer> IndexBuffer;
 		std::vector<Handle<Buffer>> VertexBuffers;
 	};

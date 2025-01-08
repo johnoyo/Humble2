@@ -20,6 +20,7 @@ namespace HBL2
 
 		m_VertexBuffer = rm->CreateBuffer({
 			.debugName = "quad_vertex_buffer",
+			.usage = BufferUsage::VERTEX,
 			.byteSize = sizeof(float) * 30,
 			.initialData = vertexBuffer,
 		});
@@ -41,32 +42,42 @@ namespace HBL2
 				}
 			});
 
-		m_GlobalBindGroupLayout = rm->CreateBindGroupLayout({
-			.debugName = "unlit-colored-layout",
-			.bufferBindings = {
+		Handle<RenderPassLayout> renderPassLayout = rm->CreateRenderPassLayout({
+			.debugName = "sprite-renderpass-layout",
+			.depthTargetFormat = Format::D32_FLOAT,
+			.subPasses = {
+				{ .depthTarget = true, .colorTargets = 1, },
+			},
+		});
+
+		m_RenderPass = rm->CreateRenderPass({
+			.debugName = "sprite-renderpass",
+			.layout = renderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::LOAD,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::DEPTH_STENCIL,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
+			},
+			.colorTargets = {
 				{
-					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM,
+					.loadOp = LoadOperation::LOAD,
+					.storeOp = StoreOperation::STORE,
+					.prevUsage = TextureLayout::RENDER_ATTACHMENT,
+					.nextUsage = TextureLayout::SHADER_READ_ONLY,
 				},
 			},
 		});
 
-		m_CameraBuffer = rm->CreateBuffer({
-			.debugName = "camera-uniform-buffer",
-			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
-			.memory = Memory::GPU_CPU,
-			.byteSize = 64,
-			.initialData = nullptr
-		});
-
-		m_GlobalBindings = rm->CreateBindGroup({
-			.debugName = "unlit-colored-bind-group",
-			.layout = m_GlobalBindGroupLayout,
-			.buffers = {
-				{ .buffer = m_CameraBuffer },
-			}
+		m_FrameBuffer = rm->CreateFrameBuffer({
+			.debugName = "viewport",
+			.width = 1920,
+			.height = 1080,
+			.renderPass = m_RenderPass,
+			.depthTarget = Renderer::Instance->MainDepthTexture,
+			.colorTargets = { Renderer::Instance->MainColorTexture },
 		});
 	}
 
@@ -74,12 +85,12 @@ namespace HBL2
 	{
 		const glm::mat4& vp = GetViewProjection();
 
-		m_UniformRingBuffer->Invalidate();
+		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
 
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Handle<RenderPass>(), Handle<FrameBuffer>());
+		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::OpaqueSprite);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_RenderPass, m_FrameBuffer);
 
-		Renderer::Instance->SetBufferData(m_GlobalBindings, 0, (void*)&vp);
+		Renderer::Instance->SetBufferData(globalBindings, 0, (void*)&vp);
 
 		DrawList draws;
 
@@ -111,21 +122,111 @@ namespace HBL2
 				}
 			});
 
-		GlobalDrawStream globalDrawStream = { .BindGroup = m_GlobalBindings };
+		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 		commandBuffer->EndRenderPass(*passRenderer);
 		commandBuffer->Submit();
+
+		/*
+		
+		DrawList& draws = GetDrawList3D();
+
+		auto& renderPasses = Renderer::Instance->GetRenderPassess3D();
+
+		renderPasses.Execute(RenderPassEvent::BeforeRendering);
+
+		renderPasses.Execute(RenderPassEvent::BeforeRenderingShadows);
+		ShadowPass();
+		renderPasses.Execute(RenderPassEvent::AfterRenderingShadows);
+
+		renderPasses.Execute(RenderPassEvent::BeforeRenderingOpaques);
+		OpaqueGeometryPass();
+		renderPasses.Execute(RenderPassEvent::AfterRenderingOpaques);
+
+		renderPasses.Execute(RenderPassEvent::BeforeRenderingSkybox);
+		SkyboxPass();
+		renderPasses.Execute(RenderPassEvent::AfterRenderingSkybox);
+
+		renderPasses.Execute(RenderPassEvent::BeforeRenderingTransparents);
+		TransparentGeometryPass();
+		renderPasses.Execute(RenderPassEvent::AfterRenderingTransparents);
+
+		renderPasses.Execute(RenderPassEvent::BeforeRenderingPostProcess);
+		PostProcessPass();
+		renderPasses.Execute(RenderPassEvent::AfterRenderingPostProcess);
+
+		renderPasses.Execute(RenderPassEvent::AfterRendering);	
+
+		class RenderPassPool
+		{
+		public:
+			void AddRenderPass(ScriptableRenderPass* renderPass);
+			void SetUp(RenderPassEvent event);
+			void Execute(RenderPassEvent event)
+			{
+				for (const auto& renderPass : renderPasses)
+				{
+					if (renderPass->GetInjectionPoint() == event)
+					{
+						renderPass->Excecute();
+					}
+				}
+			}
+			void CleanUp(RenderPassEvent event);
+
+		private:
+			std::vector<ScriptableRenderPass*> m_RenderPasses;
+		};
+
+		class ScriptableRenderPass
+		{
+		public:
+			virtual void SetUp() = 0;
+			virtual void Execute() = 0;
+			virtual void CleanUp() = 0;
+
+			const RenderPassEvent& GetInjectionPoint() const { return m_InjectionPoint; }
+
+		protected:
+			RenderPassEvent m_InjectionPoint;
+			const char* m_PassName;
+		};
+
+		class DitherRenderPass : public ScriptableRenderPass
+		{
+		public:
+			virtual void SetUp() override
+			{
+				m_PassName = "DitherRenderPass";
+				m_InjectionPoint = RenderPassEvent::AfterRenderingPostProcess;
+			}
+
+			virtual void Execute() override
+			{
+				CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::CUSTOM, RenderPassStage::PostProcess);
+				RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
+
+				GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
+				passRenderer->DrawSubPass(globalDrawStream, draws);
+				commandBuffer->EndRenderPass(*passRenderer);
+				commandBuffer->Submit();
+			}
+
+			virtual void CleanUp() override
+			{
+			}
+		};
+		*/
 	}
 
 	void SpriteRenderingSystem::OnDestroy()
 	{
 		auto* rm = ResourceManager::Instance;
 
-		rm->DeleteBindGroup(m_GlobalBindings);
-		rm->DeleteBindGroupLayout(m_GlobalBindGroupLayout);
-		rm->DeleteBuffer(m_CameraBuffer);
 		rm->DeleteBuffer(m_VertexBuffer);
 		rm->DeleteMesh(m_SpriteMesh);
+		rm->DeleteRenderPass(m_RenderPass);
+		rm->DeleteFrameBuffer(m_FrameBuffer);
 	}
 
 	const glm::mat4& SpriteRenderingSystem::GetViewProjection()

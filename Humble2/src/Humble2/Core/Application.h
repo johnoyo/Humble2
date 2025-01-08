@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Window.h"
-#include "Platform\OpenGL\Rewrite\OpenGLWindow.h"
+#include "Platform\OpenGL\OpenGLWindow.h"
+#include "Platform\Vulkan\VulkanWindow.h"
 
 #include "Base.h"
 #include "Input.h"
@@ -9,19 +9,19 @@
 #include "EventDispatcher.h"
 
 #include "ImGui\ImGuiRenderer.h"
-#include "Platform\OpenGL\Rewrite\OpenGLImGuiRenderer.h"
-
-#include "Systems\CameraSystem.h"
-#include "Systems\StaticMeshRenderingSystem.h"
-#include "Systems\TransformSystem.h"
-#include "Systems\LinkSystem.h"
-
+#include "Renderer\Device.h"
+#include "Renderer\Renderer.h"
 #include "Resources\ResourceManager.h"
-#include "Platform\OpenGL\Rewrite\OpenGLResourceManager.h"
-#include "Renderer\Rewrite\Renderer.h"
-#include "Platform\OpenGL\Rewrite\OpenGLRenderer.h"
-#include "Renderer\Rewrite\Device.h"
-#include "Platform\OpenGL\Rewrite\OpenGLDevice.h"
+
+#include "Platform\OpenGL\OpenGLResourceManager.h"
+#include "Platform\OpenGL\OpenGLImGuiRenderer.h"
+#include "Platform\OpenGL\OpenGLRenderer.h"
+#include "Platform\OpenGL\OpenGLDevice.h"
+
+#include "Platform\Vulkan\VulkanImGuiRenderer.h"
+#include "Platform\Vulkan\VulkanResourceManager.h"
+#include "Platform\Vulkan\VulkanRenderer.h"
+#include "Platform\Vulkan\VulkanDevice.h"
 
 #include "Scene\SceneManager.h"
 

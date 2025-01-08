@@ -21,14 +21,19 @@ namespace HBL2
 		{
 		case GraphicsAPI::OPENGL:
 			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
-			Device::Instance = new OpenGLDevice();
-			Window::Instance = new OpenGLWindow();
-			ResourceManager::Instance = new OpenGLResourceManager();
-			Renderer::Instance = new OpenGLRenderer();
-			ImGuiRenderer::Instance = new OpenGLImGuiRenderer();
+			Device::Instance = new OpenGLDevice;
+			Window::Instance = new OpenGLWindow;
+			ResourceManager::Instance = new OpenGLResourceManager;
+			Renderer::Instance = new OpenGLRenderer;
+			ImGuiRenderer::Instance = new OpenGLImGuiRenderer;
 			break;
 		case GraphicsAPI::VULKAN:
 			HBL2_CORE_INFO("Vulkan is selected as the renderer API.");
+			Device::Instance = new VulkanDevice;
+			Window::Instance = new VulkanWindow;
+			ResourceManager::Instance = new VulkanResourceManager;
+			Renderer::Instance = new VulkanRenderer;
+			ImGuiRenderer::Instance = new VulkanImGuiRenderer;
 			break;
 		case GraphicsAPI::NONE:
 			HBL2_CORE_ERROR("No RendererAPI specified. Please choose between OpenGL, or Vulkan depending on your target platform.");
@@ -64,9 +69,7 @@ namespace HBL2
 
 		if (Window::Instance->GetTime() - m_Timer > 1.0)
 		{
-			std::stringstream ss;
-			ss << m_Specification.Name << " [" << m_Frames << " FPS]";
-			Window::Instance->SetTitle(ss.str());
+			Window::Instance->SetTitle(std::format("{} [{}] FPS", m_Specification.Name, m_Frames));
 
 			HBL2_CORE_TRACE("FPS: {0}, DeltaTime: {1}", m_Frames, m_DeltaTime);
 
@@ -74,8 +77,6 @@ namespace HBL2
 			m_Frames = 0;
 			m_FixedUpdates = 0;
 		}
-
-		Window::Instance->Present();
 
 		if (SceneManager::Get().SceneChangeRequested)
 		{
@@ -103,9 +104,15 @@ namespace HBL2
 			m_Specification.Context->OnUpdate(m_DeltaTime);
 			Renderer::Instance->EndFrame();
 
+			/*DebugRenderer::Instance->BeginFrame();
+			m_Specification.Context->OnGizmoRender(m_DeltaTime);
+			DebugRenderer::Instance->EndFrame();*/
+
 			ImGuiRenderer::Instance->BeginFrame();
 			m_Specification.Context->OnGuiRender(m_DeltaTime);
 			ImGuiRenderer::Instance->EndFrame();
+
+			Renderer::Instance->Present();
 
 			EndFrame();
 		});
@@ -120,6 +127,10 @@ namespace HBL2
 		ImGuiRenderer::Instance->Clean();
 		delete ImGuiRenderer::Instance;
 		ImGuiRenderer::Instance = nullptr;
+
+		AssetManager::Instance->DeregisterAssets();
+		delete AssetManager::Instance;
+		AssetManager::Instance = nullptr;
 
 		Renderer::Instance->Clean();
 		delete Renderer::Instance;
@@ -138,10 +149,8 @@ namespace HBL2
 		Window::Instance = nullptr;
 
 		Input::ShutDown();
-
 		NativeScriptUtilities::Shutdown();
 		MeshUtilities::Shutdown();
-
 		EventDispatcher::Shutdown();
 	}
 }

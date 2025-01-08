@@ -21,10 +21,24 @@ namespace HBL2
 		{
 			auto handle = m_AssetPool.Insert(Asset(std::forward<const AssetDescriptor>(desc)));
 			m_RegisteredAssets.push_back(handle);
+
+			Asset* asset = GetAssetMetadata(handle);
+			m_RegisteredAssetMap[asset->UUID] = handle;
+
 			return handle;
 		}
-		void DeleteAsset(Handle<Asset> handle)
+		void DeleteAsset(Handle<Asset> handle, bool destroy = false)
 		{
+			// NOTE(John): Maybe consider removing the handle from m_RegisteredAssets and m_RegisteredAssetMap??
+			if (destroy)
+			{
+				DestroyAsset(handle);
+			}
+			else
+			{
+				UnloadAsset(handle);
+			}
+
 			m_AssetPool.Remove(handle);
 		}
 		Asset* GetAssetMetadata(Handle<Asset> handle) const
@@ -39,19 +53,7 @@ namespace HBL2
 		template<typename T>
 		Handle<T> GetAsset(UUID assetUUID)
 		{
-			Handle<Asset> assetHandle;
-
-			for (auto handle : m_RegisteredAssets)
-			{
-				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-				if (asset->UUID == assetUUID)
-				{
-					assetHandle = handle;
-					break;
-				}
-			}			
-
-			return GetAsset<T>(assetHandle);
+			return GetAsset<T>(GetHandleFromUUID(assetUUID));
 		}
 		
 		template<typename T>
@@ -90,32 +92,37 @@ namespace HBL2
 
 		std::vector<Handle<Asset>>& GetRegisteredAssets() { return m_RegisteredAssets; }
 
-		void SaveAsset(UUID assetUUID)
+		Handle<Asset> GetHandleFromUUID(UUID assetUUID)
 		{
 			Handle<Asset> assetHandle;
 
-			for (auto handle : m_RegisteredAssets)
+			if (m_RegisteredAssetMap.find(assetUUID) != m_RegisteredAssetMap.end())
 			{
-				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-				if (asset->UUID == assetUUID)
-				{
-					assetHandle = handle;
-					break;
-				}
+				assetHandle = m_RegisteredAssetMap[assetUUID];
 			}
 
-			return SaveAsset(assetHandle);
+			return assetHandle;
+		}
+
+		void SaveAsset(UUID assetUUID)
+		{
+			return SaveAsset(GetHandleFromUUID(assetUUID));
 		}
 
 		virtual void SaveAsset(Handle<Asset> handle) = 0;
+
+		virtual void UnloadAsset(Handle<Asset> handle) = 0;
+
 		virtual bool IsAssetValid(Handle<Asset> handle) = 0;
 		virtual bool IsAssetLoaded(Handle<Asset> handle) = 0;
 
 	protected:
 		virtual uint32_t LoadAsset(Handle<Asset> handle) = 0;
+		virtual void DestroyAsset(Handle<Asset> handle) = 0;
 
 	private:
 		Pool<Asset, Asset> m_AssetPool;
+		std::unordered_map<UUID, Handle<Asset>> m_RegisteredAssetMap;
 		std::vector<Handle<Asset>> m_RegisteredAssets;
 	};
 }

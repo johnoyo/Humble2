@@ -16,6 +16,7 @@ namespace HBL2
 		Material = 3,
 		Mesh = 4,
 		Scene = 5,
+		Script = 6,
 	};
 
 	struct AssetDescriptor

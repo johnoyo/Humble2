@@ -19,47 +19,42 @@ namespace HBL2
 				}
 			});
 
-		m_GlobalBindGroupLayout = rm->CreateBindGroupLayout({
-			.debugName = "global-bind-group-layout",
-			.bufferBindings = {
+		Handle<RenderPassLayout> renderPassLayout = rm->CreateRenderPassLayout({
+			.debugName = "main-renderpass-layout",
+			.depthTargetFormat = Format::D32_FLOAT,
+			.subPasses = {
+				{ .depthTarget = true, .colorTargets = 1, },
+			},
+		});
+
+		m_RenderPass = rm->CreateRenderPass({
+			.debugName = "main-renderpass",
+			.layout = renderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::CLEAR,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::UNDEFINED,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
+			},
+			.colorTargets = {
 				{
-					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM,
-				},
-				{
-					.slot = 1,
-					.visibility = ShaderStage::FRAGMENT,
-					.type = BufferBindingType::UNIFORM,
+					.loadOp = LoadOperation::CLEAR,
+					.storeOp = StoreOperation::STORE,
+					.prevUsage = TextureLayout::UNDEFINED,
+					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
 				},
 			},
 		});
 
-		m_CameraBuffer = rm->CreateBuffer({
-			.debugName = "camera-uniform-buffer",
-			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
-			.memory = Memory::GPU_CPU,
-			.byteSize = sizeof(CameraData),
-			.initialData = nullptr
-		});
-
-		m_LightBuffer = rm->CreateBuffer({
-			.debugName = "light-uniform-buffer",
-			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
-			.memory = Memory::GPU_CPU,
-			.byteSize = sizeof(LightData),
-			.initialData = nullptr
-		});
-
-		m_GlobalBindings = rm->CreateBindGroup({
-			.debugName = "global-bind-group",
-			.layout = m_GlobalBindGroupLayout,
-			.buffers = {
-				{ .buffer = m_CameraBuffer },
-				{ .buffer = m_LightBuffer },
-			}
+		m_FrameBuffer = rm->CreateFrameBuffer({
+			.debugName = "viewport",
+			.width = 1920,
+			.height = 1080,
+			.renderPass = m_RenderPass,
+			.depthTarget = Renderer::Instance->MainDepthTexture,
+			.colorTargets = { Renderer::Instance->MainColorTexture },
 		});
 	}
 
@@ -67,12 +62,12 @@ namespace HBL2
 	{
 		GetViewProjection();
 		
-		m_UniformRingBuffer->Invalidate();
+		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
 
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Handle<RenderPass>(), Handle<FrameBuffer>());
+		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Opaque);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_RenderPass, m_FrameBuffer);
 
-		Renderer::Instance->SetBufferData(m_GlobalBindings, 0, (void*)&m_CameraData);
+		Renderer::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData);
 
 		m_LightData.LightCount = 0;
 
@@ -89,7 +84,7 @@ namespace HBL2
 				}
 			});
 
-		Renderer::Instance->SetBufferData(m_GlobalBindings, 1, (void*)&m_LightData);
+		Renderer::Instance->SetBufferData(globalBindings, 1, (void*)&m_LightData);
 
 		DrawList draws;
 
@@ -123,7 +118,7 @@ namespace HBL2
 				}
 			});
 
-		GlobalDrawStream globalDrawStream = { .BindGroup = m_GlobalBindings };
+		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 		commandBuffer->EndRenderPass(*passRenderer);
 		commandBuffer->Submit();
@@ -132,11 +127,8 @@ namespace HBL2
 	void StaticMeshRenderingSystem::OnDestroy()
 	{
 		auto* rm = ResourceManager::Instance;
-
-		rm->DeleteBindGroup(m_GlobalBindings);
-		rm->DeleteBindGroupLayout(m_GlobalBindGroupLayout);
-		rm->DeleteBuffer(m_CameraBuffer);
-		rm->DeleteBuffer(m_LightBuffer);
+		rm->DeleteRenderPass(m_RenderPass);
+		rm->DeleteFrameBuffer(m_FrameBuffer);
 	}
 
 	void StaticMeshRenderingSystem::GetViewProjection()

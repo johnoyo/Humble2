@@ -1,36 +1,12 @@
 Scene: EmptyScene
 Entities:
-  - Entity: 11
-    Component::Tag:
-      Tag: Monkeys
-    Component::ID:
-      ID: 768349726158572544
-    Component::Transform:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 0
-  - Entity: 10
-    Component::Tag:
-      Tag: Cerberus
-    Component::ID:
-      ID: 5613358100414213120
-    Component::Transform:
-      Translation: [-0.75, 0, 0]
-      Rotation: [-90, 126, 0]
-      Scale: [0.0250000004, 0.0250000004, 0.0250000004]
-    Component::StaticMesh_New:
-      Enabled: true
-      Material: 2189016804467519822
-      Mesh: 9516882302051536726
-  - Entity: 9
+  - Entity: 3
     Component::Tag:
       Tag: Camera
     Component::ID:
-      ID: 1275945063876455680
+      ID: 11463086572280647680
     Component::Transform:
-      Translation: [0, 0, 15]
+      Translation: [0, 0, 10]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Camera:
@@ -39,145 +15,49 @@ Entities:
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 1.93103445
+      Aspect Ratio: 1.778
       Zoom Level: 300
       Type: 0
-  - Entity: 8
-    Component::Tag:
-      Tag: M4
-    Component::ID:
-      ID: 9445907177094690816
-    Component::Transform:
-      Translation: [3, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 768349726158572544
-    Component::StaticMesh_New:
-      Enabled: true
-      Material: 6529785834438868337
-      Mesh: 9402528107889883903
-  - Entity: 7
-    Component::Tag:
-      Tag: M3
-    Component::ID:
-      ID: 9640240341468971008
-    Component::Transform:
-      Translation: [3, 2.5, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 768349726158572544
-    Component::StaticMesh_New:
-      Enabled: true
-      Material: 12647810587411261016
-      Mesh: 9402528107889883903
-  - Entity: 6
-    Component::Tag:
-      Tag: M2
-    Component::ID:
-      ID: 39808922932238768
-    Component::Transform:
-      Translation: [0, 2.5, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 768349726158572544
-    Component::StaticMesh_New:
-      Enabled: true
-      Material: 5343654619209405726
-      Mesh: 9402528107889883903
-  - Entity: 5
-    Component::Tag:
-      Tag: M1
-    Component::ID:
-      ID: 10316096184304750592
-    Component::Transform:
-      Translation: [-3, 2.5, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 768349726158572544
-    Component::StaticMesh_New:
-      Enabled: true
-      Material: 988511922102612467
-      Mesh: 9402528107889883903
-  - Entity: 4
-    Component::Tag:
-      Tag: M8
-    Component::ID:
-      ID: 1739618541474305280
-    Component::Transform:
-      Translation: [-3, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 768349726158572544
-    Component::StaticMesh_New:
-      Enabled: true
-      Material: 12526318322274005186
-      Mesh: 9402528107889883903
-  - Entity: 3
-    Component::Tag:
-      Tag: M7
-    Component::ID:
-      ID: 9425355388556222464
-    Component::Transform:
-      Translation: [-3, -2.5, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 768349726158572544
-    Component::StaticMesh_New:
-      Enabled: true
-      Material: 12647810587411261016
-      Mesh: 9402528107889883903
   - Entity: 2
     Component::Tag:
-      Tag: M6
+      Tag: Monkeh
     Component::ID:
-      ID: 784971702966519552
+      ID: 18396450913416425472
     Component::Transform:
-      Translation: [0, -2.5, 0]
+      Translation: [2, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 768349726158572544
     Component::StaticMesh_New:
       Enabled: true
-      Material: 4858063610482492385
-      Mesh: 9402528107889883903
+      Material: 17674126706215361874
+      Mesh: 17631668153373402826
   - Entity: 1
     Component::Tag:
-      Tag: M5
+      Tag: Sprite
     Component::ID:
-      ID: 13581805541037139968
+      ID: 2898162071183314432
     Component::Transform:
-      Translation: [3, -2.5, 0]
+      Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 768349726158572544
-    Component::StaticMesh_New:
+    Component::Sprite_New:
       Enabled: true
-      Material: 988511922102612467
-      Mesh: 9402528107889883903
+      Material: 11734900218811993914
   - Entity: 0
     Component::Tag:
       Tag: New Light
     Component::ID:
-      ID: 410525494256037376
+      ID: 5092772676877043712
     Component::Transform:
-      Translation: [0, 0, 0.5]
+      Translation: [0, 2.62240148, 1.66328478]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Light:
       Enabled: true
       CastsShadows: false
-      Intensity: 5
+      Intensity: 1
       Attenuation: 10
       Color: [1, 1, 1]
       Type: 0
 Systems:
-  - NewSystem
-  - CustomComponentSystem
+  []

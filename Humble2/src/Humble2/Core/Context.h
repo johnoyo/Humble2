@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Resources\Handle.h"
 #include "Scene\Scene.h"
 
 namespace HBL2
@@ -20,6 +21,9 @@ namespace HBL2
 		virtual void OnUpdate(float ts) {}
 		virtual void OnGuiRender(float ts) {}
 		virtual void OnDestroy() {}
+
+		inline static glm::vec2 ViewportSize;
+		inline static glm::vec2 ViewportPosition;
 
 		inline static Handle<Scene> ActiveScene;
 		inline static Handle<Scene> EmptyScene;

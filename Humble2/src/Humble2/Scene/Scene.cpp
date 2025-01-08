@@ -8,6 +8,7 @@
 #include "Systems\CameraSystem.h"
 #include "Systems\StaticMeshRenderingSystem.h"
 #include "Systems\SpriteRenderingSystem.h"
+#include "Systems\CompositeRenderingSystem.h"
 
 namespace HBL2
 {
@@ -73,6 +74,7 @@ namespace HBL2
         dst->RegisterSystem(new CameraSystem, SystemType::Runtime);
         dst->RegisterSystem(new StaticMeshRenderingSystem);
         dst->RegisterSystem(new SpriteRenderingSystem);
+        dst->RegisterSystem(new CompositeRenderingSystem);
 
         // Clone dll user systems.
         for (ISystem* system : src->m_Systems)

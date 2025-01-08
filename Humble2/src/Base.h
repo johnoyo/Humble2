@@ -21,6 +21,7 @@
 	#define HBL2_PROFILE(...)
 	#define HBL2_FUNC_PROFILE()
 	#define HBL2_DEBUGBREAK()
+	#define HBL2_ENABLE_ASSERTS
 #endif
 
 #define HBL2_EXPAND_MACRO(x) x

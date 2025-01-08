@@ -1,8 +1,5 @@
 #include "MeshUtilities.h"
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "Utilities/tiny_obj_loader.h"
-
 namespace HBL2
 {
 	void MeshUtilities::Initialize()

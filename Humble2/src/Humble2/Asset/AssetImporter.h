@@ -27,6 +27,8 @@ namespace HBL2
 
 		uint32_t ImportAsset(Asset* asset);
 		void SaveAsset(Asset* asset);
+		void DestroyAsset(Asset* asset);
+		void UnloadAsset(Asset* asset);
 
 	private:
 		Handle<Texture> ImportTexture(Asset* asset);
@@ -36,6 +38,13 @@ namespace HBL2
 		Handle<Scene> ImportScene(Asset* asset);
 
 		void SaveScene(Asset* asset);
+
+		void DestroyTexture(Asset* asset);
+
+		void UnloadTexture(Asset* asset);
+		void UnloadShader(Asset* asset);
+		void UnloadMesh(Asset* asset);
+		void UnloadMaterial(Asset* asset);
 
 		AssetImporter() = default;
 	};

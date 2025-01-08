@@ -9,6 +9,8 @@
 #include "Resources\Types.h"
 #include "Resources\TypeDescriptors.h"
 
+#include "UI/LayoutLib.h"
+
 namespace HBL2
 {
 	namespace Editor
@@ -149,6 +151,26 @@ namespace HBL2
 				panel.Name = "Systems";
 				panel.Type = Component::EditorPanel::Panel::Systems;
 			}
+
+			// TODO: Remove from here!
+
+			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Link, LinkEditor>();
+			HBL2::EditorUtilities::Get().InitCustomEditor<HBL2::Component::Link, LinkEditor>();
+
+			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Camera, CameraEditor>();
+			HBL2::EditorUtilities::Get().InitCustomEditor<HBL2::Component::Camera, CameraEditor>();
+
+			using namespace entt::literals;
+
+			entt::meta<HBL2::Component::Transform>()
+				.type(entt::hashed_string(typeid(HBL2::Component::Transform).name()))
+				.data<&HBL2::Component::Transform::Translation>("Translation"_hs).prop("name"_hs, "Translation")
+				.data<&HBL2::Component::Transform::Rotation>("Rotation"_hs).prop("name"_hs, "Rotation")
+				.data<&HBL2::Component::Transform::QRotation>("QRotation"_hs).prop("name"_hs, "QRotation")
+				.data<&HBL2::Component::Transform::Scale>("Scale"_hs).prop("name"_hs, "Scale")
+				.data<&HBL2::Component::Transform::LocalMatrix>("LocalMatrix"_hs).prop("name"_hs, "LocalMatrix")
+				.data<&HBL2::Component::Transform::WorldMatrix>("WorldMatrix"_hs).prop("name"_hs, "WorldMatrix")
+				.data<&HBL2::Component::Transform::Static>("Static"_hs).prop("name"_hs, "Static");
 		}
 
 		void EditorPanelSystem::OnUpdate(float ts)
@@ -198,7 +220,7 @@ namespace HBL2
 							DrawToolBarPanel();
 							if (m_ProjectChanged)
 							{
-								m_ProjectChanged = false;
+								m_ProjectChanged = false;			// TODO: Fix! Move this inside the DrawToolBarPanel method.
 								return;
 							}
 							break;
@@ -442,6 +464,31 @@ namespace HBL2
 
 			if (HBL2::Component::EditorVisible::SelectedEntity != entt::null)
 			{
+				/*
+
+				// Iterate over all components of entity
+				m_ActiveScene->GetRegistry().view<HBL2::Component::ID, HBL2::Component::Tag>().each([&](auto& id, auto& name)
+					{
+						std::cout << name.Name << " (" << id.Identifier << ")" << std::endl;
+						std::cout << "\tComponents:" << std::endl;
+
+						for (auto&& curr : m_ActiveScene->GetRegistry().storage())
+						{
+							entt::id_type cid = curr.first;
+							auto& storage = curr.second;
+							entt::type_info ctype = storage.type();
+
+							if (storage.contains(HBL2::Component::EditorVisible::SelectedEntity))
+							{
+								std::cout << "\t\t" << typeid(HBL2::Component::Tag).name() << std::endl;
+								std::cout << "\t\t" << ctype.hash() << std::endl;
+								std::cout << "\t\t" << ctype.name() << std::endl;
+							}
+						}
+					});
+
+				*/
+
 				// Tag component.
 				if (m_ActiveScene->HasComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
@@ -466,9 +513,11 @@ namespace HBL2
 					{
 						auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity);
 
-						ImGui::DragFloat3("Translation", glm::value_ptr(transform.Translation), 0.25f);
-						ImGui::DragFloat3("Rotation", glm::value_ptr(transform.Rotation), 0.25f);
-						ImGui::DragFloat3("Scale", glm::value_ptr(transform.Scale), 0.25f);
+						HBL2::EditorUtilities::Get().DrawDefaultEditor<HBL2::Component::Transform>(transform);
+
+						//ImGui::DragFloat3("Translation", glm::value_ptr(transform.Translation), 0.25f);
+						//ImGui::DragFloat3("Rotation", glm::value_ptr(transform.Rotation), 0.25f);
+						//ImGui::DragFloat3("Scale", glm::value_ptr(transform.Scale), 0.25f);
 
 						ImGui::TreePop();
 					}
@@ -479,7 +528,7 @@ namespace HBL2
 				// Link component.
 				if (m_ActiveScene->HasComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
-					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Camera).hash_code(), treeNodeFlags, "Link");
+					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Link).hash_code(), treeNodeFlags, "Link");
 
 					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
 
@@ -494,30 +543,40 @@ namespace HBL2
 					{
 						auto& link = m_ActiveScene->GetComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity);
 
-						ImGui::InputScalar("Parent", ImGuiDataType_U32, &link.Parent);
+						bool renderBaseEditor = true;
 
-						if (ImGui::BeginDragDropTarget())
+						if (HBL2::EditorUtilities::Get().HasCustomEditor<HBL2::Component::Link>())
 						{
-							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
-							{
-								UUID parentEntityUUID = *((UUID*)payload->Data);
-								UUID childEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(HBL2::Component::EditorVisible::SelectedEntity).Identifier;
-								if (childEntityUUID != parentEntityUUID)
-								{
-									link.Parent = parentEntityUUID;
-								}
-								ImGui::EndDragDropTarget();
-							}
+							renderBaseEditor = HBL2::EditorUtilities::Get().DrawCustomEditor<HBL2::Component::Link, LinkEditor>(link);
 						}
 
-						if (ImGui::BeginPopupContextItem())
+						if (renderBaseEditor)
 						{
-							if (ImGui::MenuItem("Unparent"))
+							ImGui::InputScalar("Parent", ImGuiDataType_U32, &link.Parent);
+
+							if (ImGui::BeginDragDropTarget())
 							{
-								link.Parent = 0;
+								if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
+								{
+									UUID parentEntityUUID = *((UUID*)payload->Data);
+									UUID childEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(HBL2::Component::EditorVisible::SelectedEntity).Identifier;
+									if (childEntityUUID != parentEntityUUID)
+									{
+										link.Parent = parentEntityUUID;
+									}
+									ImGui::EndDragDropTarget();
+								}
 							}
 
-							ImGui::EndPopup();
+							if (ImGui::BeginPopupContextItem())
+							{
+								if (ImGui::MenuItem("Unparent"))
+								{
+									link.Parent = 0;
+								}
+
+								ImGui::EndPopup();
+							}
 						}
 
 						ImGui::TreePop();
@@ -549,36 +608,46 @@ namespace HBL2
 					{
 						auto& camera = m_ActiveScene->GetComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
 
-						ImGui::Checkbox("Enabled", &camera.Enabled);
-						ImGui::Checkbox("Primary", &camera.Primary);
-						ImGui::SliderFloat("Far", &camera.Far, 0, 100);
-						ImGui::SliderFloat("Near", &camera.Near, 100, 1500);
-						ImGui::SliderFloat("FOV", &camera.Fov, 0, 120);
-						ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 2);
-						ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
+						bool renderBaseEditor = true;
 
-						std::string selectedProjection = camera.Type == HBL2::Component::Camera::Type::Perspective ? "Perspective" : "Orthographic";
-						std::string projectionTypes[2] = { "Perspective", "Orthographic" };
-
-						if (ImGui::BeginCombo("Type", selectedProjection.c_str()))
+						if (HBL2::EditorUtilities::Get().HasCustomEditor<HBL2::Component::Camera>())
 						{
-							for (const auto& type : projectionTypes)
-							{
-								bool isSelected = (selectedProjection == type);
-								if (ImGui::Selectable(type.c_str(), isSelected))
-								{
-									selectedProjection = type;
-								}
-
-								if (isSelected)
-								{
-									ImGui::SetItemDefaultFocus();
-								}
-							}
-							ImGui::EndCombo();
+							renderBaseEditor = HBL2::EditorUtilities::Get().DrawCustomEditor<HBL2::Component::Camera, CameraEditor>(camera);
 						}
 
-						camera.Type = selectedProjection == "Perspective" ? HBL2::Component::Camera::Type::Perspective : HBL2::Component::Camera::Type::Orthographic;
+						if (renderBaseEditor)
+						{
+							ImGui::Checkbox("Enabled", &camera.Enabled);
+							ImGui::Checkbox("Primary", &camera.Primary);
+							ImGui::SliderFloat("Far", &camera.Far, 0, 100);
+							ImGui::SliderFloat("Near", &camera.Near, 100, 1500);
+							ImGui::SliderFloat("FOV", &camera.Fov, 0, 120);
+							ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 2);
+							ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
+
+							std::string selectedProjection = camera.Type == HBL2::Component::Camera::Type::Perspective ? "Perspective" : "Orthographic";
+							std::string projectionTypes[2] = { "Perspective", "Orthographic" };
+
+							if (ImGui::BeginCombo("Type", selectedProjection.c_str()))
+							{
+								for (const auto& type : projectionTypes)
+								{
+									bool isSelected = (selectedProjection == type);
+									if (ImGui::Selectable(type.c_str(), isSelected))
+									{
+										selectedProjection = type;
+									}
+
+									if (isSelected)
+									{
+										ImGui::SetItemDefaultFocus();
+									}
+								}
+								ImGui::EndCombo();
+							}
+
+							camera.Type = selectedProjection == "Perspective" ? HBL2::Component::Camera::Type::Perspective : HBL2::Component::Camera::Type::Orthographic;
+						}
 
 						ImGui::TreePop();
 					}
@@ -933,19 +1002,7 @@ namespace HBL2
 						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
 						UUID sceneUUID = std::hash<std::string>()(relativePath.string());
 
-						Handle<Asset> sceneAssetHandle;
-
-						for (auto handle : AssetManager::Instance->GetRegisteredAssets())
-						{
-							Asset* currentAsset = AssetManager::Instance->GetAssetMetadata(handle);
-							if (currentAsset->Type == AssetType::Scene && currentAsset->UUID == sceneUUID)
-							{
-								sceneAssetHandle = handle;
-								break;
-							}
-						}
-
-						HBL2::SceneManager::Get().LoadScene(sceneAssetHandle);
+						HBL2::SceneManager::Get().LoadScene(AssetManager::Instance->GetHandleFromUUID(sceneUUID));
 
 						m_EditorScenePath = filepath;
 					}
@@ -1228,7 +1285,7 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
-					auto relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".hblshader"), HBL2::Project::GetAssetDirectory());
+					auto relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), HBL2::Project::GetAssetDirectory());
 
 					auto shaderAssetHandle = AssetManager::Instance->CreateAsset({
 						.debugName = "shader-asset",
@@ -1251,7 +1308,23 @@ namespace HBL2
 						break;
 					}
 
-					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".hblshader"), 0);
+					if (shaderAssetHandle.IsValid())
+					{
+						std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->FilePath).string() + ".hblshader", 0);
+
+						YAML::Emitter out;
+						out << YAML::BeginMap;
+						out << YAML::Key << "Shader" << YAML::Value;
+						out << YAML::BeginMap;
+						out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->UUID;
+						out << YAML::Key << "Type" << YAML::Value << m_SelectedShaderType;
+						out << YAML::EndMap;
+						out << YAML::EndMap;
+						fout << out.c_str();
+						fout.close();
+					}
+
+					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), 0);
 					fout << shaderSource;
 					fout.close();
 
@@ -1471,6 +1544,7 @@ namespace HBL2
 					out << YAML::Key << "Material" << YAML::Value;
 					out << YAML::BeginMap;
 					out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(materialAssetHandle)->UUID;
+					out << YAML::Key << "Type" << YAML::Value << m_SelectedMaterialType;
 					out << YAML::Key << "Shader" << YAML::Value << AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->UUID;
 					out << YAML::Key << "AlbedoColor" << YAML::Value << glm::vec4(color[0], color[1], color[2], color[3]);
 					out << YAML::Key << "Metalicness" << YAML::Value << metalicness;
@@ -1643,19 +1717,8 @@ namespace HBL2
 				}
 
 				UUID assetUUID = std::hash<std::string>()(relativePath.string());
-				Handle<Asset> assetHandle;
-				Asset* asset = nullptr;
-
-				for (auto handle : AssetManager::Instance->GetRegisteredAssets())
-				{
-					Asset* currentAsset = AssetManager::Instance->GetAssetMetadata(handle);
-					if (currentAsset->UUID == assetUUID)
-					{
-						assetHandle = handle;
-						asset = currentAsset;
-						break;
-					}
-				}
+				Handle<Asset> assetHandle = AssetManager::Instance->GetHandleFromUUID(assetUUID);
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 
 				if (ImGui::BeginDragDropSource())
 				{
@@ -1716,11 +1779,14 @@ namespace HBL2
 
 		void EditorPanelSystem::DrawViewportPanel()
 		{
+			Context::ViewportSize = { ImGui::GetWindowWidth(), ImGui::GetWindowHeight() };
+			Context::ViewportPosition = { ImGui::GetWindowPos().x, ImGui::GetWindowPos().y };
+
 			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 
 			if (m_ViewportSize != *(glm::vec2*)&viewportPanelSize)
 			{
-				HBL2::Renderer::Instance->ResizeFrameBuffer((uint32_t)viewportPanelSize.x, (uint32_t)viewportPanelSize.y);
+				// HBL2::ResourceManager::Instance->ResizeFrameBuffer(HBL2::Renderer::Instance->GetMainFrameBuffer(), (uint32_t)viewportPanelSize.x, (uint32_t)viewportPanelSize.y);
 				m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 
 				if (m_ActiveScene != nullptr)

@@ -10,13 +10,6 @@ namespace HBL2
 			Mode = HBL2::Mode::Editor;
 			AssetManager::Instance = new EditorAssetManager;
 
-			// Create FrameBuffer.
-			HBL2::Renderer::Instance->FrameBufferHandle = HBL2::ResourceManager::Instance->CreateFrameBuffer({
-				.debugName = "editor-viewport",
-				.width = 1280,
-				.height = 720,
-			});
-
 			if (!OpenEmptyProject())
 			{
 				ActiveScene = EmptyScene;
@@ -36,7 +29,7 @@ namespace HBL2
 			auto editorCameraEntity = m_EditorScene->CreateEntity("Hidden");
 			m_EditorScene->AddComponent<HBL2::Component::Camera>(editorCameraEntity).Enabled = true;
 			m_EditorScene->AddComponent<Component::EditorCamera>(editorCameraEntity);
-			m_EditorScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.y = 5.f;
+			m_EditorScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.y = 0.5f;
 			m_EditorScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 5.f;
 
 			// Create editor systems.
@@ -101,11 +94,22 @@ namespace HBL2
 				return;
 			}
 
-			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+			for (HBL2::ISystem* system : m_ActiveScene->GetCoreSystems())
 			{
 				if (system->GetState() == SystemState::Play)
 				{
 					system->OnGuiRender(ts);
+				}
+			}
+
+			if (Mode == Mode::Runtime)
+			{
+				for (HBL2::ISystem* system : m_ActiveScene->GetRuntimeSystems())
+				{
+					if (system->GetState() == SystemState::Play)
+					{
+						system->OnGuiRender(ts);
+					}
 				}
 			}
 		}

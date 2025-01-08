@@ -45,7 +45,7 @@ namespace HBL2
 		{
 			shaderc::Compiler compiler;
 			shaderc::CompileOptions options;
-			options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+			options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
 
 			switch (target)
 			{
@@ -245,23 +245,94 @@ namespace HBL2
 
 	void ShaderUtilities::LoadBuiltInShaders()
 	{
+		auto drawBindGroupLayout0 = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "built-in-simple-lit-bind-group-layout",
+			.textureBindings = {
+				{
+					/*
+					* Here we start the texture binds from zero despite having already buffers bound there.
+					* Thats because in a set each type (buffer, image, etc) has unique binding points.
+					* This also comes in handy in openGL when binding textures.
+					*/
+					.slot = 0,
+					.visibility = ShaderStage::FRAGMENT,
+				},
+			},
+			.bufferBindings = {
+				{
+					/*
+					* We use binding 2 since despite being in another bind group with no other bindings, 
+					* for compatibility with opengl we must have unique bindings for buffers, 
+					* so since 0 and 1 are used in the global bind group we must use the slot 2 here.
+					*/
+					.slot = 2, 
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+			},
+		});
+		m_ShaderLayouts[BuiltInShader::INVALID] = drawBindGroupLayout0;
+		m_ShaderLayouts[BuiltInShader::PRESENT] = {};
+		m_ShaderLayouts[BuiltInShader::UNLIT] = drawBindGroupLayout0;
+		m_ShaderLayouts[BuiltInShader::BLINN_PHONG] = drawBindGroupLayout0;
+
+		auto drawBindGroupLayout1 = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "built-in-lit-bind-group-layout",
+			.textureBindings = {
+				/*
+				* Here we start the texture binds from zero despite having already buffers bound there.
+				* Thats because in a set each type (buffer, image, etc) has unique binding points.
+				* This also comes in handy in openGL when binding textures.
+				*/
+				{
+					.slot = 0,
+					.visibility = ShaderStage::FRAGMENT,
+				},
+				{
+					.slot = 1,
+					.visibility = ShaderStage::FRAGMENT,
+				},
+				{
+					.slot = 2,
+					.visibility = ShaderStage::FRAGMENT,
+				},
+				{
+					.slot = 3,
+					.visibility = ShaderStage::FRAGMENT,
+				},
+			},
+			.bufferBindings = {
+				{
+					/*
+					* We use binding 4 since despite being a different type of resource,
+					* each binding within a descriptor set must be unique, so since we have 0, 1, 2, 3
+					* used by textures, the next empty is 4.
+					*/
+					.slot = 4,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+			},
+		});
+		m_ShaderLayouts[BuiltInShader::PBR] = drawBindGroupLayout1;
+
 		// Invalid shader
 		{
 			auto invalidShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "shader-asset",
-				.filePath = "assets/shaders/invalid.hblshader",
+				.debugName = "invalid-shader-asset",
+				.filePath = "assets/shaders/invalid.shader",
 				.type = AssetType::Shader,
 			});
 
-			auto invalidShaderCode = Compile("assets/shaders/invalid.hblshader");
+			auto invalidShaderCode = Compile("assets/shaders/invalid.shader");
 
 			auto invalidShaderHandle = ResourceManager::Instance->CreateShader({
 				.debugName = "invalid-shader",
-				.VS {.code = invalidShaderCode[0], .entryPoint = "main" },
-				.FS {.code = invalidShaderCode[1], .entryPoint = "main" },
+				.VS { .code = invalidShaderCode[0], .entryPoint = "main" },
+				.FS { .code = invalidShaderCode[1], .entryPoint = "main" },
 				.bindGroups {
-					{}, // Global bind group (0)
-					{}, // Material bind group (1)
+					Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
+					drawBindGroupLayout0,								// Material bind group (1)
 				},
 				.renderPipeline {
 					.vertexBufferBindings = {
@@ -274,6 +345,7 @@ namespace HBL2
 						}
 					}
 				},
+				.renderPass = Renderer::Instance->GetMainRenderPass(),
 			});
 
 			m_Shaders[BuiltInShader::INVALID] = invalidShaderHandle;
@@ -283,23 +355,61 @@ namespace HBL2
 			invalidShaderAsset->Indentifier = invalidShaderHandle.Pack();
 		}
 		
-		// Unlit shader
+		// Present shader
 		{
-			auto unlitShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "shader-asset",
-				.filePath = "assets/shaders/unlit.hblshader",
+			auto presentShaderAssetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "present-shader-asset",
+				.filePath = "assets/shaders/present.shader",
 				.type = AssetType::Shader,
 			});
 
-			auto unlitShaderCode = Compile("assets/shaders/unlit.hblshader");
+			auto presentShaderCode = Compile("assets/shaders/present.shader");
+
+			auto presentShaderHandle = ResourceManager::Instance->CreateShader({
+				.debugName = "present-shader",
+				.VS { .code = presentShaderCode[0], .entryPoint = "main" },
+				.FS { .code = presentShaderCode[1], .entryPoint = "main" },
+				.bindGroups {
+					Renderer::Instance->GetGlobalPresentBindingsLayout(),	// Global bind group (0)
+				},
+				.renderPipeline {
+					.vertexBufferBindings = {
+						{
+							.byteStride = 16,
+							.attributes = {
+								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+								{ .byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
+							},
+						}
+					}
+				},
+				.renderPass = Renderer::Instance->GetMainRenderPass(),
+			});
+
+			m_Shaders[BuiltInShader::PRESENT] = presentShaderHandle;
+
+			Asset* presentShaderAsset = AssetManager::Instance->GetAssetMetadata(presentShaderAssetHandle);
+			presentShaderAsset->Loaded = true;
+			presentShaderAsset->Indentifier = presentShaderHandle.Pack();
+		}
+
+		// Unlit shader
+		{
+			auto unlitShaderAssetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "unlit-shader-asset",
+				.filePath = "assets/shaders/unlit.shader",
+				.type = AssetType::Shader,
+			});
+
+			auto unlitShaderCode = Compile("assets/shaders/unlit.shader");
 
 			auto unlitShaderHandle = ResourceManager::Instance->CreateShader({
 				.debugName = "unlit-shader",
-				.VS {.code = unlitShaderCode[0], .entryPoint = "main" },
-				.FS {.code = unlitShaderCode[1], .entryPoint = "main" },
+				.VS { .code = unlitShaderCode[0], .entryPoint = "main" },
+				.FS { .code = unlitShaderCode[1], .entryPoint = "main" },
 				.bindGroups {
-					{}, // Global bind group (0)
-					{}, // Material bind group (1)
+					Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
+					drawBindGroupLayout0,								// Material bind group (1)
 				},
 				.renderPipeline {
 					.vertexBufferBindings = {
@@ -312,6 +422,7 @@ namespace HBL2
 						}
 					}
 				},
+				.renderPass = Renderer::Instance->GetMainRenderPass(),
 			});
 
 			m_Shaders[BuiltInShader::UNLIT] = unlitShaderHandle;
@@ -324,58 +435,20 @@ namespace HBL2
 		// Blinn-Phnog shader
 		{
 			auto blinnPhongShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "shader-asset",
-				.filePath = "assets/shaders/blinn-phong.hblshader",
+				.debugName = "blinn-phong-shader-asset",
+				.filePath = "assets/shaders/blinn-phong.shader",
 				.type = AssetType::Shader,
 			});
 
-			auto blinnPhongShaderCode = Compile("assets/shaders/blinn-phong.hblshader");
+			auto blinnPhongShaderCode = Compile("assets/shaders/blinn-phong.shader");
 
 			auto blinnPhongShaderHandle = ResourceManager::Instance->CreateShader({
 				.debugName = "blinn-phong-shader",
-				.VS {.code = blinnPhongShaderCode[0], .entryPoint = "main" },
-				.FS {.code = blinnPhongShaderCode[1], .entryPoint = "main" },
+				.VS { .code = blinnPhongShaderCode[0], .entryPoint = "main" },
+				.FS { .code = blinnPhongShaderCode[1], .entryPoint = "main" },
 				.bindGroups {
-					{}, // Global bind group (0)
-					{}, // Material bind group (1)
-				},
-				.renderPipeline {
-					.vertexBufferBindings = {
-						{
-							.byteStride = 32,
-							.attributes = {
-								{.byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-								{.byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
-								{.byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
-							},
-						}
-					}
-				},
-			});
-
-			m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderHandle;
-
-			Asset* blinnPhongShaderAsset = AssetManager::Instance->GetAssetMetadata(blinnPhongShaderAssetHandle);
-			blinnPhongShaderAsset->Loaded = true;
-			blinnPhongShaderAsset->Indentifier = blinnPhongShaderHandle.Pack();
-		}
-
-		{
-			auto pbrShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "shader-asset",
-				.filePath = "assets/shaders/pbr.hblshader",
-				.type = AssetType::Shader,
-			});
-
-			auto pbrShaderCode = Compile("assets/shaders/pbr.hblshader");
-
-			auto pbrShaderHandle = ResourceManager::Instance->CreateShader({
-				.debugName = "pbr-shader",
-				.VS {.code = pbrShaderCode[0], .entryPoint = "main" },
-				.FS {.code = pbrShaderCode[1], .entryPoint = "main" },
-				.bindGroups {
-					{}, // Global bind group (0)
-					{}, // Material bind group (1)
+					Renderer::Instance->GetGlobalBindingsLayout3D(),	// Global bind group (0)
+					drawBindGroupLayout0,								// Material bind group (1)
 				},
 				.renderPipeline {
 					.vertexBufferBindings = {
@@ -389,6 +462,47 @@ namespace HBL2
 						}
 					}
 				},
+				.renderPass = Renderer::Instance->GetMainRenderPass(),
+			});
+
+			m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderHandle;
+
+			Asset* blinnPhongShaderAsset = AssetManager::Instance->GetAssetMetadata(blinnPhongShaderAssetHandle);
+			blinnPhongShaderAsset->Loaded = true;
+			blinnPhongShaderAsset->Indentifier = blinnPhongShaderHandle.Pack();
+		}
+
+		// PBR shader
+		{
+			auto pbrShaderAssetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "pbr-shader-asset",
+				.filePath = "assets/shaders/pbr.shader",
+				.type = AssetType::Shader,
+			});
+
+			auto pbrShaderCode = Compile("assets/shaders/pbr.shader");
+
+			auto pbrShaderHandle = ResourceManager::Instance->CreateShader({
+				.debugName = "pbr-shader",
+				.VS { .code = pbrShaderCode[0], .entryPoint = "main" },
+				.FS { .code = pbrShaderCode[1], .entryPoint = "main" },
+				.bindGroups {
+					Renderer::Instance->GetGlobalBindingsLayout3D(),	// Global bind group (0)
+					drawBindGroupLayout1,								// Material bind group (1)
+				},
+				.renderPipeline {
+					.vertexBufferBindings = {
+						{
+							.byteStride = 32,
+							.attributes = {
+								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
+								{ .byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
+								{ .byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
+							},
+						}
+					}
+				},
+				.renderPass = Renderer::Instance->GetMainRenderPass(),
 			});
 
 			m_Shaders[BuiltInShader::PBR] = pbrShaderHandle;

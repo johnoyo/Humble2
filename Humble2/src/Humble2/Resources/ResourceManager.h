@@ -5,6 +5,7 @@
 #include "Types.h"
 #include "Scene\Scene.h"
 #include "TypeDescriptors.h"
+#include "ResourceDeletionQueue.h"
 
 namespace HBL2
 {
@@ -14,6 +15,11 @@ namespace HBL2
 		static inline ResourceManager* Instance;
 
 		virtual ~ResourceManager() = default;
+
+		void Flush(uint32_t currentFrame)
+		{
+			m_DeletionQueue.Flush(currentFrame);
+		}
 
 		virtual void Clean() = 0;
 
@@ -30,6 +36,7 @@ namespace HBL2
 		// FrameBuffers
 		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) = 0;
 		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) = 0;
+		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) = 0;
 
 		// Shaders
 		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) = 0;
@@ -92,6 +99,9 @@ namespace HBL2
 		{
 			return m_ScenePool.Get(handle);
 		}
+
+	protected:
+		ResourceDeletionQueue m_DeletionQueue;
 
 	private:
 		Pool<Mesh, Mesh> m_MeshPool;

@@ -4,10 +4,11 @@
 
 #include "Asset\EditorAssetManager.h"
 
-#ifndef EMSCRIPTEN
-	#include "Systems/EditorPanelSystem.h"
-	#include "Systems/EditorCameraSystem.h"
-#endif
+#include "Humble2\Systems\TransformSystem.h"
+#include "Humble2\Systems\CameraSystem.h"
+
+#include "Systems/EditorPanelSystem.h"
+#include "Systems/EditorCameraSystem.h"
 
 namespace HBL2
 {

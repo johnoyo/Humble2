@@ -8,6 +8,7 @@
 #include "Systems\CameraSystem.h"
 #include "Systems\StaticMeshRenderingSystem.h"
 #include "Systems\SpriteRenderingSystem.h"
+#include "Systems\CompositeRenderingSystem.h"
 
 namespace HBL2
 {
@@ -37,6 +38,9 @@ namespace HBL2
 		case AssetType::Scene:
 			asset->Indentifier = ImportScene(asset).Pack();
 			return asset->Indentifier;
+		case AssetType::Script:
+			// asset->Indentifier = ImportScript(asset).Pack();
+			return 0; // asset->Indentifier;
 		}
 
 		return 0;
@@ -57,6 +61,47 @@ namespace HBL2
 		}
 	}
 
+	void AssetImporter::DestroyAsset(Asset* asset)
+	{
+		if (asset == nullptr)
+		{
+			return;
+		}
+
+		switch (asset->Type)
+		{
+		case AssetType::Texture:
+			DestroyTexture(asset);
+			break;
+		}
+	}
+
+	void AssetImporter::UnloadAsset(Asset* asset)
+	{
+		if (asset == nullptr)
+		{
+			return;
+		}
+
+		switch (asset->Type)
+		{
+		case AssetType::Texture:
+			UnloadTexture(asset);
+			break;
+		case AssetType::Shader:
+			UnloadShader(asset);
+			break;
+		case AssetType::Mesh:
+			UnloadMesh(asset);
+			break;
+		case AssetType::Material:
+			UnloadMaterial(asset);
+			break;
+		}
+	}
+
+	/// Import methods
+
     Handle<Texture> AssetImporter::ImportTexture(Asset* asset)
     {
 		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture");
@@ -74,6 +119,7 @@ namespace HBL2
 		if (!data["Texture"].IsDefined())
 		{
 			HBL2_CORE_ERROR("Texture not found: {0}", asset->DebugName);
+			stream.close();
 			return Handle<Texture>();
 		}
 
@@ -92,20 +138,74 @@ namespace HBL2
 			// Create the texture
 			auto texture = ResourceManager::Instance->CreateTexture({
 				.debugName = _strdup(std::format("{}-texture", textureName).c_str()),
-				.dimensions = { textureSettings.Width, textureSettings.Height, 0 },
+				.dimensions = { textureSettings.Width, textureSettings.Height, 1 },
+				.usage = TextureUsage::SAMPLED,
+				.aspect = TextureAspect::COLOR,
 				.initialData = textureData,
 			});
 
+			stream.close();
 			return texture;
 		}
 
 		HBL2_CORE_ERROR("Texture not found: {0}", asset->DebugName);
-
+		
+		stream.close();
 		return Handle<Texture>();
     }
 
 	Handle<Shader> AssetImporter::ImportShader(Asset* asset)
     {
+		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblshader");
+
+		if (!stream.is_open())
+		{
+			HBL2_CORE_ERROR("Shader file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblshader");
+			return Handle<Shader>();
+		}
+
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Shader"].IsDefined())
+		{
+			HBL2_CORE_ERROR("Shader not found: {0}", asset->DebugName);
+			stream.close();
+			return Handle<Shader>();
+		}
+		
+		const std::string& shaderName = asset->FilePath.filename().stem().string();
+
+		Handle<BindGroupLayout> globalBindGroupLayout;
+		Handle<BindGroupLayout> drawBindGroupLayout;
+
+		auto shaderProperties = data["Shader"];
+		if (shaderProperties)
+		{
+			uint32_t type = shaderProperties["Type"].as<uint32_t>();
+
+			switch (type)
+			{
+			case 0:
+				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout2D();
+				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::UNLIT);
+				break;
+			case 1:
+				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
+				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG);
+				break;
+			case 2:
+				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
+				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR);
+				break;
+			default:
+				HBL2_CORE_ERROR("Unknown Shader type: {0}", asset->DebugName);
+				stream.close();
+				return Handle<Shader>();
+			}
+		}
+
 		// Compile Shader.
 		std::filesystem::path shaderPath = Project::GetAssetFileSystemPath(asset->FilePath);
 		auto shaderCode = ShaderUtilities::Get().Compile(shaderPath.string());
@@ -113,33 +213,47 @@ namespace HBL2
 		if (shaderCode.empty())
 		{
 			HBL2_CORE_ERROR("Shader asset: {0}, at path: {1}, could be compiled. Returning invalid shader.", asset->DebugName, shaderPath.string());
+			stream.close();
 			return ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::INVALID);
 		}
 
-		// Reflect Shader.
+		// Reflect shader.
 		const auto& reflectionData = ShaderUtilities::Get().GetReflectionData(shaderPath.string());
 
-		const std::string& shaderName = asset->FilePath.filename().stem().string();
-
-		// Create Resource.
+		// Create resource.
 		auto shader = ResourceManager::Instance->CreateShader({
 			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
-			.VS {.code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
-			.FS {.code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
+			.VS { .code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
+			.FS { .code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
 			.bindGroups {
-				{}, // Global bind group (0)
-				{}, // Material bind group (1)
+				globalBindGroupLayout,	// Global bind group (0)
+				drawBindGroupLayout,	// Material bind group (1)
 			},
 			.renderPipeline {
+				.blend = {
+					.colorOp = BlendOperation::ADD,
+					.srcColorFactor = BlendFactor::SRC_ALPHA,
+					.dstColorFactor = BlendFactor::ONE_MINUS_SRC_ALPHA, // TODO: get them from the shader file.
+					.alphaOp = BlendOperation::ADD,
+					.srcAlphaFactor = BlendFactor::ONE,
+					.dstAlphaFactor = BlendFactor::ZERO,
+					.enabled = true,
+				},
+				.depthTest = {
+					.enabled = true,
+					.depthTest = Compare::LESS,
+				},
 				.vertexBufferBindings = {
 					{
 						.byteStride = reflectionData.ByteStride,
 						.attributes = reflectionData.Attributes,
 					},
-				}
+				},
 			},
+			.renderPass = Renderer::Instance->GetMainRenderPass(),
 		});
 
+		stream.close();
 		return shader;
     }
 
@@ -159,6 +273,8 @@ namespace HBL2
 		auto materialProperties = data["Material"];
 		if (materialProperties)
 		{
+			uint32_t type = materialProperties["Type"].as<uint32_t>();
+
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
 
 			UUID albedoMapUUID = materialProperties["AlbedoMap"].as<UUID>();
@@ -183,72 +299,27 @@ namespace HBL2
 			const std::string& materialName = asset->FilePath.filename().stem().string();
 
 			Handle<BindGroup> drawBindings;
+			uint32_t dynamicUniformBufferRange = type == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData);
 
 			if (normalMapHandle.IsValid() && metallicMapHandle.IsValid() && roughnessMapHandle.IsValid())
 			{
-				auto drawBindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
-					.debugName = _strdup(std::format("{}-bind-group-layout", materialName).c_str()),
-					.textureBindings = {
-						{
-						.slot = 0,
-						.visibility = ShaderStage::FRAGMENT,
-						},
-						{
-							.slot = 1,
-							.visibility = ShaderStage::FRAGMENT,
-						},
-						{
-							.slot = 2,
-							.visibility = ShaderStage::FRAGMENT,
-						},
-						{
-							.slot = 3,
-							.visibility = ShaderStage::FRAGMENT,
-						},
-					},
-					.bufferBindings = {
-						{
-							.slot = 2,
-							.visibility = ShaderStage::VERTEX,
-							.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
-						},
-					},
-				});
-
 				drawBindings = ResourceManager::Instance->CreateBindGroup({
 					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-					.layout = drawBindGroupLayout,
+					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
 					.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle },
 					.buffers = {
-						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer() },
+						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
 					}
 				});
 			}
 			else
 			{
-				auto drawBindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
-					.debugName = _strdup(std::format("{}-bind-group-layout", materialName).c_str()),
-					.textureBindings = {
-						{
-							.slot = 0,
-							.visibility = ShaderStage::FRAGMENT,
-						},
-					},
-					.bufferBindings = {
-						{
-							.slot = 2,
-							.visibility = ShaderStage::VERTEX,
-							.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
-						},
-					},
-				});
-
 				drawBindings = ResourceManager::Instance->CreateBindGroup({
 					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-					.layout = drawBindGroupLayout,
+					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
 					.textures = { albedoMapHandle },
 					.buffers = {
-						{.buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer() },
+						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
 					}
 				});
 			}
@@ -263,9 +334,11 @@ namespace HBL2
 			mat->AlbedoColor = albedoColor;
 			mat->Glossiness = glossiness;
 
+			stream.close();
 			return material;
 		}
 
+		stream.close();
 		return Handle<Material>();
 	}
 
@@ -291,6 +364,7 @@ namespace HBL2
 		scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
 		scene->RegisterSystem(new StaticMeshRenderingSystem);
 		scene->RegisterSystem(new SpriteRenderingSystem);
+		scene->RegisterSystem(new CompositeRenderingSystem);
 
 		return sceneHandle;
 	}
@@ -317,15 +391,23 @@ namespace HBL2
 
 			auto vertexBuffer = ResourceManager::Instance->CreateBuffer({
 				.debugName = _strdup(std::format("{}-vertex-buffer", meshName).c_str()),
+				.usage = BufferUsage::VERTEX,
+				.memoryUsage = MemoryUsage::GPU_ONLY,
 				.byteSize = (uint32_t)(meshData->VertexBuffer.size() * sizeof(Vertex)),
 				.initialData = meshData->VertexBuffer.data(),
 			});
 
-			auto indexBuffer = ResourceManager::Instance->CreateBuffer({
-				.debugName = _strdup(std::format("{}-index-buffer", meshName).c_str()),
-				.byteSize = (uint32_t)(meshData->IndexBuffer.size() * sizeof(uint32_t)),
-				.initialData = meshData->IndexBuffer.data(),
-			});
+			Handle<Buffer> indexBuffer;
+			if (meshData->IndexBuffer.size() > 0)
+			{
+				indexBuffer = ResourceManager::Instance->CreateBuffer({
+					.debugName = _strdup(std::format("{}-index-buffer", meshName).c_str()),
+					.usage = BufferUsage::INDEX,
+					.memoryUsage = MemoryUsage::GPU_ONLY,
+					.byteSize = (uint32_t)(meshData->IndexBuffer.size() * sizeof(uint32_t)),
+					.initialData = meshData->IndexBuffer.data(),
+				});
+			}
 
 			// Create the mesh
 			auto mesh = ResourceManager::Instance->CreateMesh({
@@ -343,6 +425,8 @@ namespace HBL2
 
 		return Handle<Mesh>();
 	}
+
+	/// Save methods
 
 	void AssetImporter::SaveScene(Asset* asset)
 	{
@@ -367,6 +451,7 @@ namespace HBL2
 			scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
 			scene->RegisterSystem(new StaticMeshRenderingSystem);
 			scene->RegisterSystem(new SpriteRenderingSystem);
+			scene->RegisterSystem(new CompositeRenderingSystem);
 
 			asset->Indentifier = sceneHandle.Pack();
 			asset->Loaded = true;
@@ -383,5 +468,113 @@ namespace HBL2
 		Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
 		SceneSerializer serializer(scene);
 		serializer.Serialize(Project::GetAssetFileSystemPath(asset->FilePath));
+	}
+
+	/// Destroy methods
+
+	void AssetImporter::DestroyTexture(Asset* asset)
+	{
+		if (asset->Loaded)
+		{
+			UnloadTexture(asset);
+		}
+
+		// TODO: Delete files
+	}
+
+	/// Unload methods
+
+	void AssetImporter::UnloadTexture(Asset* asset)
+	{
+		Handle<Texture> textureAssetHandle = Handle<Texture>::UnPack(asset->Indentifier);
+
+		if (!textureAssetHandle.IsValid())
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" has an invalid handle, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		ResourceManager::Instance->DeleteTexture(textureAssetHandle);
+
+		asset->Loaded = false;
+		asset->Indentifier = 0;
+	}
+
+	void AssetImporter::UnloadShader(Asset* asset)
+	{
+		Handle<Shader> shaderAssetHandle = Handle<Shader>::UnPack(asset->Indentifier);
+
+		if (!shaderAssetHandle.IsValid())
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" has an invalid handle, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		ResourceManager::Instance->DeleteShader(shaderAssetHandle);
+
+		asset->Loaded = false;
+		asset->Indentifier = 0;
+	}
+	
+	void AssetImporter::UnloadMesh(Asset* asset)
+	{
+		Handle<Mesh> meshAssetHandle = Handle<Mesh>::UnPack(asset->Indentifier);
+
+		if (!meshAssetHandle.IsValid())
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" has an invalid handle, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		Mesh* mesh = ResourceManager::Instance->GetMesh(meshAssetHandle);
+
+		ResourceManager::Instance->DeleteBuffer(mesh->IndexBuffer);
+
+		for (const auto vertexBuffer : mesh->VertexBuffers)
+		{
+			ResourceManager::Instance->DeleteBuffer(vertexBuffer);
+		}
+
+		ResourceManager::Instance->DeleteMesh(meshAssetHandle);
+	}
+
+	void AssetImporter::UnloadMaterial(Asset* asset)
+	{
+		Handle<Material> materialAssetHandle = Handle<Material>::UnPack(asset->Indentifier);
+
+		if (!materialAssetHandle.IsValid())
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" has an invalid handle, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		Material* material = ResourceManager::Instance->GetMaterial(materialAssetHandle);
+
+		ResourceManager::Instance->DeleteShader(material->Shader);
+		ResourceManager::Instance->DeleteBindGroup(material->BindGroup);
 	}
 }

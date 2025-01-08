@@ -15,7 +15,7 @@
 
 #include "Resources\Handle.h"
 #include "Resources\ResourceManager.h"
-#include "Renderer\Rewrite\Renderer.h"
+#include "Renderer\Renderer.h"
 
 #include "Resources\Types.h"
 #include "Resources\TypeDescriptors.h"
