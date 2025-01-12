@@ -63,30 +63,33 @@ namespace HBL2
 							glm::vec3* vec = value.try_cast<glm::vec3>();
 							if (vec)
 							{
-								ImGui::DragFloat3(memberName, glm::value_ptr(*vec));
+								if (ImGui::DragFloat3(memberName, glm::value_ptr(*vec)))
+								{
+									data.set(componentMeta, *vec);
+								}
 							}
-
-							data.set(componentMeta, vec);
 						}
 						else if (value.type() == entt::resolve<glm::vec2>())
 						{
 							glm::vec2* vec = value.try_cast<glm::vec2>();
 							if (vec)
 							{
-								ImGui::DragFloat2(memberName, glm::value_ptr(*vec));
+								if (ImGui::DragFloat2(memberName, glm::value_ptr(*vec)))
+								{
+									data.set(componentMeta, *vec);
+								}
 							}
-
-							data.set(componentMeta, vec);
 						}
 						else if (value.type() == entt::resolve<float>())
 						{
 							float* fpNumber = value.try_cast<float>();
 							if (fpNumber)
 							{
-								ImGui::SliderFloat(memberName, fpNumber, 0, 150);
+								if (ImGui::SliderFloat(memberName, fpNumber, 0, 150))
+								{
+									data.set(componentMeta, *fpNumber);
+								}
 							}
-
-							data.set(componentMeta, *fpNumber);
 						}
 						else if (value.type() == entt::resolve<double>())
 						{
@@ -95,29 +98,33 @@ namespace HBL2
 
 							if (fpNumber)
 							{
-								ImGui::SliderFloat(memberName, fpNumber, 0, 150);
+								if (ImGui::SliderFloat(memberName, fpNumber, 0, 150))
+								{
+									data.set(componentMeta, *dpNumber);
+								}
 							}
-							data.set(componentMeta, *dpNumber);
 						}
 						else if (value.type() == entt::resolve<UUID>())
 						{
 							UUID* scalar = value.try_cast<UUID>();
 							if (scalar)
 							{
-								ImGui::InputScalar(memberName, ImGuiDataType_U32, scalar);
+								if (ImGui::InputScalar(memberName, ImGuiDataType_U32, scalar))
+								{
+									data.set(componentMeta, *scalar);
+								}
 							}
-
-							data.set(componentMeta, *scalar);
 						}
 						else if (value.type() == entt::resolve<bool>())
 						{
 							bool* flag = value.try_cast<bool>();
 							if (flag)
 							{
-								ImGui::Checkbox(memberName, flag);
+								if (ImGui::Checkbox(memberName, flag))
+								{
+									data.set(componentMeta, *flag);
+								}
 							}
-
-							data.set(componentMeta, *flag);
 						}
 					}
 				}

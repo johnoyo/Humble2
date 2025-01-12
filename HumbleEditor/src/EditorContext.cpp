@@ -133,6 +133,8 @@ namespace HBL2
 					system->OnDestroy();
 				}
 			}
+
+			ImGui::SetCurrentContext(nullptr);
 		}
 
 		bool EditorContext::OpenEmptyProject()
