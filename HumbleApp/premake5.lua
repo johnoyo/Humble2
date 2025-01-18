@@ -40,6 +40,11 @@ project "HumbleApp"
         "YAML-Cpp"
     }
 
+    defines
+    {
+        "YAML_CPP_STATIC_DEFINE",
+    }
+
     filter "system:windows"
         systemversion "latest"
         defines { "HBL2_PLATFORM_WINDOWS" }

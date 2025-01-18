@@ -54,6 +54,22 @@ namespace HBL2
 		int Height = 0;
 	};
 
+	class HBL2_API ViewportSizeEvent final : public Event
+	{
+	public:
+		ViewportSizeEvent(int width, int height) : Width(width), Height(height)
+		{
+		}
+
+		virtual std::string GetDescription() const override
+		{
+			return "ViewportSizeEvent";
+		}
+
+		int Width = 0;
+		int Height = 0;
+	};
+
 	class HBL2_API WindowFocusEvent final : public Event
 	{
 	public:

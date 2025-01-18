@@ -1,5 +1,7 @@
 #include "Scene.h"
 
+#include "Utilities/NativeScriptUtilities.h"
+
 #include "Project\Project.h"
 #include "SceneSerializer.h"
 
@@ -81,20 +83,60 @@ namespace HBL2
         {
             if (system->GetType() == SystemType::User)
             {
-#ifdef false
                 const std::string& dllPath = "assets\\dlls\\" + system->Name + "\\" + system->Name + ".dll";
-                ISystem* newSystem = NativeScriptUtilities::Get().LoadDLL(dllPath);
-
-                HBL2_CORE_ASSERT(newSystem != nullptr, "Failed to load system.");
-
-                newSystem->Name = system->Name;
-                dst->RegisterSystem(newSystem, SystemType::User);
-#endif
+                ISystem* newSystem = NativeScriptUtilities::Get().LoadSystem(dllPath, dst);
             }
         }
 
         // Set main camera.
         dst->MainCamera = src->MainCamera;
+    }
+
+    void Scene::DeregisterSystem(ISystem* system)
+    {
+        if (system == nullptr)
+        {
+            return;
+        }
+
+        {
+            // Erase from systems vector
+            auto it = std::find(m_Systems.begin(), m_Systems.end(), system);
+
+            if (it != m_Systems.end())
+            {
+                m_Systems.erase(it);
+            }
+        }
+
+        {
+            // Erase from core systems vector
+            auto it = std::find(m_CoreSystems.begin(), m_CoreSystems.end(), system);
+
+            if (it != m_CoreSystems.end())
+            {
+                m_CoreSystems.erase(it);
+            }
+        }
+
+        {
+            // Erase from runtime systems vector
+            auto it = std::find(m_RuntimeSystems.begin(), m_RuntimeSystems.end(), system);
+
+            if (it != m_RuntimeSystems.end())
+            {
+                m_RuntimeSystems.erase(it);
+            }
+        }
+
+        if (system->GetType() == SystemType::User)
+        {
+            NativeScriptUtilities::Get().UnloadSystem(system->Name, this);
+        }
+        else
+        {
+            delete system;
+        }
     }
 
     void Scene::operator=(const HBL2::Scene& other)

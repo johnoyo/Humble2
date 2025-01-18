@@ -69,11 +69,25 @@ project "Humble2"
 
         postbuildcommands
         {
+            -- Ensure the HumbleEditor directory exists and copy the target file
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} %{cfg.buildtarget.directory}/Humble2.pdb ../bin/" .. outputdir .. "/HumbleEditor"),
+            
+            -- Ensure the HumbleApp directory exists and copy the target file
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} %{cfg.buildtarget.directory}/Humble2.pdb ../bin/" .. outputdir .. "/HumbleApp"),
+            
+            -- Ensure the GLEW DLL is copied to HumbleEditor
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/GLEW/bin/Release/x64/glew32.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+            
+            -- Ensure the GLEW DLL is copied to HumbleApp
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} ../Dependencies/GLEW/bin/Release/x64/glew32.dll ../bin/" .. outputdir .. "/HumbleApp")
         }
+
 
     filter "configurations:Debug"
         defines { "DEBUG" }

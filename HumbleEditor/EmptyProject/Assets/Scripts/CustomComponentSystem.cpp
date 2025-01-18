@@ -2,35 +2,32 @@
 
 struct CustomComponent
 {
-	float value = 10.f;
+	float Value = 10.f;
 };
 
-class CustomComponentSystem final : public HBL2::ISystem
+// Factory function to register the component
+extern "C" __declspec(dllexport) const char* RegisterComponent()
 {
-public:
-	virtual void OnCreate() override
-	{
-		entt::entity cerberus = m_Context->FindEntityByUUID(5613358100414213120);
+	using namespace entt::literals;
 
-		if (cerberus != entt::null)
-		{
-			m_Context->AddComponent<CustomComponent>(cerberus).value = 20.f;
-		}
-	}
+	entt::meta<CustomComponent>()
+		.type(entt::hashed_string(typeid(CustomComponent).name()))
+		.data<&CustomComponent::FValue>("FValue"_hs).prop("name"_hs, "FValue")
+		.data<&CustomComponent::IValue>("IValue"_hs).prop("name"_hs, "IValue")
 
-	virtual void OnUpdate(float ts) override
-	{
-		m_Context->GetRegistry()
-			.group<CustomComponent>(entt::get<HBL2::Component::Transform>)
-			.each([&](CustomComponent& custom, HBL2::Component::Transform& transform)
-			{
-				transform.Rotation.x += custom.value * ts;
-			});
-	}
-};
+	return typeid(CustomComponent).name();
+}
 
-// Factory function to create the system
-extern "C" __declspec(dllexport) HBL2::ISystem* CreateSystem()
+// Factory function to add the component
+extern "C" __declspec(dllexport) entt::meta_any AddNewComponent(HBL2::Scene* ctx, entt::entity entity)
 {
-	return new CustomComponentSystem();
+	auto& component = ctx->AddComponent<CustomComponent>(entity);
+	return entt::forward_as_meta(component);
+}
+
+// Factory function to add the component
+extern "C" __declspec(dllexport) entt::meta_any GetNewComponent(HBL2::Scene* ctx, entt::entity entity)
+{
+	auto& component = ctx->GetComponent<CustomComponent>(entity);
+	return entt::forward_as_meta(component);
 }

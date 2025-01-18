@@ -41,8 +41,6 @@ namespace HBL2
 
 			entt::meta_any componentMeta = entt::forward_as_meta(component);
 
-			using namespace entt::literals;
-
 			// List all members
 			for (auto [id, data] : entt::resolve<C>().data())
 			{

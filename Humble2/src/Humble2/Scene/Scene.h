@@ -3,8 +3,6 @@
 #include "ISystem.h"
 #include "Components.h"
 
-#include "Utilities\NativeScriptUtilities.h"
-
 #include "Utilities\Random.h"
 
 #include <entt.hpp>
@@ -124,52 +122,7 @@ namespace HBL2
 			DeregisterSystem(systemToBeDeleted);
 		}
 
-		void DeregisterSystem(ISystem* system)
-		{
-			if (system == nullptr)
-			{
-				return;
-			}
-
-			{
-				// Erase from systems vector
-				auto it = std::find(m_Systems.begin(), m_Systems.end(), system);
-
-				if (it != m_Systems.end())
-				{
-					m_Systems.erase(it);
-				}
-			}
-
-			{
-				// Erase from core systems vector
-				auto it = std::find(m_CoreSystems.begin(), m_CoreSystems.end(), system);
-
-				if (it != m_CoreSystems.end())
-				{
-					m_CoreSystems.erase(it);
-				}
-			}
-
-			{
-				// Erase from runtime systems vector
-				auto it = std::find(m_RuntimeSystems.begin(), m_RuntimeSystems.end(), system);
-
-				if (it != m_RuntimeSystems.end())
-				{
-					m_RuntimeSystems.erase(it);
-				}
-			}
-
-			if (system->GetType() == SystemType::User)
-			{
-				NativeScriptUtilities::Get().DeleteDLLInstance(system->Name);
-			}
-			else
-			{
-				delete system;
-			}
-		}
+		void DeregisterSystem(ISystem* system);
 
 		void RegisterSystem(ISystem* system, SystemType type = SystemType::Core)
 		{
@@ -230,4 +183,9 @@ namespace HBL2
 
 		friend class Pool<Scene, Scene>;
 	};
+
+	/*HBL2_COMPONENT(HBL2::Component::CustomComponent,
+		HBL2_COMPONENT_MEMBER(HBL2::Component::CustomComponent, FValue)
+		HBL2_COMPONENT_MEMBER(HBL2::Component::CustomComponent, IValue)
+	)*/
 }

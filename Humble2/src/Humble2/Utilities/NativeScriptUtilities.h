@@ -3,7 +3,10 @@
 #include "Base.h"
 #include "Scene\ISystem.h"
 
+#include <Project/Project.h>
 #include "Utilities\Random.h"
+
+#include <entt.hpp>
 
 #include <iostream>
 #include <filesystem>
@@ -20,32 +23,33 @@ namespace HBL2
 	class DynamicLibrary
 	{
 	public:
-		explicit DynamicLibrary(const std::string& path)
+		DynamicLibrary() = default;
+		DynamicLibrary(const std::string& path)
+		{
+			Load(path);
+		}
+
+		void Load(const std::string& path)
 		{
 #if defined(_WIN32)
-			library = LoadLibraryA(path.c_str());
+			m_Library = LoadLibraryA(path.c_str());
 #else
-			library = dlopen(path.c_str(), RTLD_LAZY);
+			m_Library = dlopen(path.c_str(), RTLD_LAZY);
 #endif
-			if (!library)
+			if (!m_Library)
 			{
 				HBL2_CORE_ERROR("Failed to load library: {}", path);
 			}
 		}
 
-		~DynamicLibrary()
-		{
-			Free();
-		}
-
 		void Free()
 		{
-			if (library)
+			if (m_Library)
 			{
 #if defined(_WIN32)
-				FreeLibrary((HMODULE)library);
+				FreeLibrary((HMODULE)m_Library);
 #else
-				dlclose(library);
+				dlclose(m_Library);
 #endif
 			}
 		}
@@ -54,14 +58,14 @@ namespace HBL2
 		Func GetFunction(const std::string& name)
 		{
 #if defined(_WIN32)
-			return reinterpret_cast<Func>(GetProcAddress((HMODULE)library, name.c_str()));
+			return reinterpret_cast<Func>(GetProcAddress((HMODULE)m_Library, name.c_str()));
 #else
-			return reinterpret_cast<Func>(dlsym(library, name.c_str()));
+			return reinterpret_cast<Func>(dlsym(m_Library, name.c_str()));
 #endif
 		}
 
 	private:
-		void* library = nullptr;
+		void* m_Library = nullptr;
 	};
 
 	class HBL2_API NativeScriptUtilities
@@ -74,17 +78,44 @@ namespace HBL2
 		static void Initialize();
 		static void Shutdown();
 
-		ISystem* LoadDLL(const std::string& dllPath);
-		void DeleteDLLInstance(const std::string& dllName);
+		ISystem* GenerateSystem(const std::string& systemName);
+		ISystem* CompileSystem(const std::string& systemName);
+		ISystem* LoadSystem(const std::string& path, Scene* ctx);
+		void UnloadSystem(const std::string& dllName, Scene* ctx);
 
 		std::string GetDefaultSystemCode(const std::string& systemName);		
 		std::string GetDefaultSolutionText(const std::string& systemName);	
 		std::string GetDefaultProjectText(const std::string& systemName);	
 
+		void LoadComponent(const std::string& path);
+		entt::meta_any AddComponent(const std::string& name, Scene* ctx);
+		entt::meta_any GetComponent(const std::string& name, Scene* ctx);
+
+	private:
+		const std::string& RegisterSystemFuncCode = R"(
+// Factory function to create the system
+extern "C" __declspec(dllexport) HBL2::ISystem* CreateSystem()
+{
+	return new {SystemName}();
+})";
+		const std::string& AddComponentFuncCode = R"(
+// Factory function to add the component
+extern "C" __declspec(dllexport) entt::meta_any AddNewComponent(HBL2::Scene* ctx, entt::entity entity)
+{
+	auto& component = ctx->AddComponent<{ComponentName}>(entity);
+	return entt::forward_as_meta(component);
+})";
+		const std::string& GetComponentFuncCode = R"(
+// Factory function to add the component
+extern "C" __declspec(dllexport) entt::meta_any GetNewComponent(HBL2::Scene* ctx, entt::entity entity)
+{
+	auto& component = ctx->GetComponent<{ComponentName}>(entity);
+	return entt::forward_as_meta(component);
+})";
+
 	private:
 		NativeScriptUtilities() = default;
-
-		std::unordered_map<std::string, HINSTANCE> m_DLLInstances;
+		std::unordered_map<std::string, DynamicLibrary> m_DynamicLibraries;
 
 		static NativeScriptUtilities* s_Instance;
 	};

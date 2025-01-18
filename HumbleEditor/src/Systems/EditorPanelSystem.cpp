@@ -11,6 +11,8 @@
 
 #include "UI/LayoutLib.h"
 
+#include<vector>
+
 namespace HBL2
 {
 	namespace Editor
@@ -29,16 +31,15 @@ namespace HBL2
 				Scene* currentScene = ResourceManager::Instance->GetScene(sce.CurrentScene);
 				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != std::string::npos)
 				{
-#ifdef false
 					// Delete dll systems instance.
 					for (ISystem* system : currentScene->GetRuntimeSystems())
 					{
 						if (system->GetType() == SystemType::User)
 						{
-							NativeScriptUtilities::Get().DeleteDLLInstance(system->Name);
+							NativeScriptUtilities::Get().UnloadSystem(system->Name, currentScene);
 						}
 					}
-#endif
+
 					// Delete play mode scene.
 					ResourceManager::Instance->DeleteScene(sce.CurrentScene);
 
@@ -464,30 +465,62 @@ namespace HBL2
 
 			if (HBL2::Component::EditorVisible::SelectedEntity != entt::null)
 			{
-				/*
+				using namespace entt::literals;
 
 				// Iterate over all components of entity
 				m_ActiveScene->GetRegistry().view<HBL2::Component::ID, HBL2::Component::Tag>().each([&](auto& id, auto& name)
+				{
+					std::cout << name.Name << " (" << id.Identifier << ")" << std::endl;
+					std::cout << "\tComponents:" << std::endl;
+
+					for (auto&& curr : m_ActiveScene->GetRegistry().storage())
 					{
-						std::cout << name.Name << " (" << id.Identifier << ")" << std::endl;
-						std::cout << "\tComponents:" << std::endl;
+						entt::id_type cid = curr.first;
+						auto& storage = curr.second;
+						entt::type_info ctype = storage.type();
 
-						for (auto&& curr : m_ActiveScene->GetRegistry().storage())
+						if (storage.contains(HBL2::Component::EditorVisible::SelectedEntity))
 						{
-							entt::id_type cid = curr.first;
-							auto& storage = curr.second;
-							entt::type_info ctype = storage.type();
+							std::cout << "\t\t" << typeid(HBL2::Component::Tag).name() << std::endl;
+							std::cout << "\t\t" << ctype.hash() << std::endl;
+							std::cout << "\t\t" << ctype.name() << std::endl;
 
-							if (storage.contains(HBL2::Component::EditorVisible::SelectedEntity))
+							// Get the component from the storage
+							auto component = storage.value(HBL2::Component::EditorVisible::SelectedEntity);
+							if (component)
 							{
-								std::cout << "\t\t" << typeid(HBL2::Component::Tag).name() << std::endl;
-								std::cout << "\t\t" << ctype.hash() << std::endl;
-								std::cout << "\t\t" << ctype.name() << std::endl;
+								std::cout << "\t\tComponent retrieved!" << std::endl;
+
+								entt::meta_any componentMeta = entt::forward_as_meta(component);
+
+								// Use reflection API to interact with the component
+								auto metaType = entt::resolve(ctype.hash());
+								if (metaType)
+								{
+									for (auto [id, data] : metaType.data())
+									{
+										// Retrieve the name property of the member
+										auto name_prop = data.prop("name"_hs);
+										if (name_prop)
+										{
+											const char* memberName = name_prop.value().cast<const char*>();
+
+											auto data = entt::resolve(ctype.hash()).data(entt::hashed_string(memberName));
+											auto value = data.get(componentMeta);
+
+											if (value)
+											{
+												//std::cout << "Member: " << data.prop("name"_hs).value().cast<std::string>() << std::endl;	
+											}
+										}
+
+										//std::cout << "Value: " << data.get(component).cast<std::string>() << std::endl;
+									}
+								}
 							}
 						}
-					});
-
-				*/
+					}
+				});
 
 				// Tag component.
 				if (m_ActiveScene->HasComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity))
@@ -1181,85 +1214,7 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
-					// Create system file
-					std::ofstream systemFile(HBL2::Project::GetAssetDirectory() / "Scripts" / (std::string(systemNameBuffer) + ".cpp"), 0);
-					systemFile << NativeScriptUtilities::Get().GetDefaultSystemCode(systemNameBuffer);
-					systemFile.close();
-
-					// Create folder in ProjectFiles
-					const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles" / systemNameBuffer;
-					
-					try
-					{
-						std::filesystem::create_directories(projectFilesPath);
-					}
-					catch (std::exception& e)
-					{
-						HBL2_ERROR("Project directory creation failed: {0}", e.what());
-					}
-
-					// Create solution file for new system
-					std::ofstream solutionFile(projectFilesPath / (std::string(systemNameBuffer) + ".sln"));
-
-					if (!solutionFile.is_open())
-					{
-						return;
-					}
-
-					solutionFile << NativeScriptUtilities::Get().GetDefaultSolutionText(systemNameBuffer);
-					solutionFile.close();
-
-					// Create vcxproj file for new system
-					std::ofstream projectFile(projectFilesPath / (std::string(systemNameBuffer) + ".vcxproj"));
-
-					if (!projectFile.is_open())
-					{
-						return;
-					}
-
-					projectFile << NativeScriptUtilities::Get().GetDefaultProjectText(systemNameBuffer);
-					projectFile.close();
-
-					if (m_ActiveScene != nullptr)
-					{
-						m_ActiveScene->DeregisterSystem(systemNameBuffer);
-
-						// Remove old dll
-						try
-						{
-							if (std::filesystem::remove(std::filesystem::path("assets") / "dlls" / (std::string(systemNameBuffer) + ".dll")))
-							{
-								std::cout << "file " << std::filesystem::path("assets") / "dlls" / (std::string(systemNameBuffer) + ".dll") << " deleted.\n";
-							}
-							else
-							{
-								std::cout << "file " << std::filesystem::path("assets") / "dlls" / (std::string(systemNameBuffer) + ".dll") << " not found.\n";
-							}
-						}
-						catch (const std::filesystem::filesystem_error& err)
-						{
-							std::cout << "filesystem error: " << err.what() << '\n';
-						}
-					}
-
-					// Build the solution					
-#ifdef DEBUG
-					const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (std::string(systemNameBuffer) + ".sln")).string() + R"( /t:)" + systemNameBuffer + R"( /p:Configuration=Debug")";
-#else
-					const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (std::string(systemNameBuffer) + ".sln")).string() + R"( /t:)" + systemNameBuffer + R"( /p:Configuration=Release")";
-#endif // DEBUG
-					system(command.c_str());
-
-					// Load dll
-					const std::string& dllPath = "assets\\dlls\\" + std::string(systemNameBuffer) + "\\" + std::string(systemNameBuffer) + ".dll";
-					ISystem* newSystem = NativeScriptUtilities::Get().LoadDLL(dllPath);
-
-					HBL2_CORE_ASSERT(newSystem != nullptr, "Failed to load system.");
-
-					if (m_ActiveScene != nullptr)
-					{
-						m_ActiveScene->RegisterSystem(newSystem, SystemType::User);
-					}
+					ISystem* newSystem = NativeScriptUtilities::Get().GenerateSystem(systemNameBuffer);
 
 					m_OpenScriptSetupPopup = false;
 				}
@@ -1650,67 +1605,8 @@ namespace HBL2
 						if (ImGui::MenuItem("Recompile"))
 						{
 							const auto& systemName = entry.path().filename().stem().string();
-							const std::string& dllPath = (std::filesystem::path("assets") / "dlls" / systemName / (systemName + ".dll")).string();
-							const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles" / systemName;
-							
-							if (m_ActiveScene != nullptr)
-							{
-								m_ActiveScene->DeregisterSystem(systemName);
-							}
 
-							// Create new vcxproj file for system
-							std::ofstream projectFile(projectFilesPath / (systemName + ".vcxproj"));
-
-							if (!projectFile.is_open())
-							{
-								return;
-							}
-
-							bool dllLocked = true;
-
-							while (dllLocked)
-							{
-								try
-								{
-									if (std::filesystem::remove(dllPath))
-									{
-										dllLocked = false;
-										std::cout << "file " << dllPath << " deleted.\n";
-									}
-									else
-									{
-										dllLocked = false;
-										std::cout << "file " << dllPath << " not found.\n";
-									}
-								}
-								catch (const std::filesystem::filesystem_error& err)
-								{
-									dllLocked = true;
-									std::cout << "filesystem error: " << err.what() << '\n';
-								}
-							}
-
-							projectFile << NativeScriptUtilities::Get().GetDefaultProjectText(systemName);
-							projectFile.close();
-
-							// Build the solution
-#ifdef DEBUG
-							const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (systemName + ".sln")).string() + R"( /t:)" + systemName + R"( /p:Configuration=Debug")";
-#else
-							const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (systemName + ".sln")).string() + R"( /t:)" + systemName + R"( /p:Configuration=Release")";
-#endif // DEBUG
-							system(command.c_str());
-
-							// Load dll
-							ISystem* newSystem = NativeScriptUtilities::Get().LoadDLL(dllPath);
-
-							HBL2_CORE_ASSERT(newSystem != nullptr, "Failed to load system.");
-
-							if (m_ActiveScene != nullptr)
-							{
-								newSystem->Name = systemName;
-								m_ActiveScene->RegisterSystem(newSystem, SystemType::User);
-							}
+							ISystem* newSystem = NativeScriptUtilities::Get().CompileSystem(systemName);
 						}
 					}
 					ImGui::EndPopup();
@@ -1788,6 +1684,8 @@ namespace HBL2
 			{
 				// HBL2::ResourceManager::Instance->ResizeFrameBuffer(HBL2::Renderer::Instance->GetMainFrameBuffer(), (uint32_t)viewportPanelSize.x, (uint32_t)viewportPanelSize.y);
 				m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+
+				EventDispatcher::Get().Post(ViewportSizeEvent(m_ViewportSize.x, m_ViewportSize.y));
 
 				if (m_ActiveScene != nullptr)
 				{

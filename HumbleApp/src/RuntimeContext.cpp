@@ -25,6 +25,8 @@ namespace HBL2
 				const HBL2::WindowSizeEvent& wse = dynamic_cast<const HBL2::WindowSizeEvent&>(e);
 				Context::ViewportSize = { wse.Width, wse.Height };
 			});
+
+			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
 		}
 
 		void RuntimeContext::OnUpdate(float ts)
@@ -70,6 +72,8 @@ namespace HBL2
 			{
 				system->OnDestroy();
 			}
+
+			ImGui::SetCurrentContext(nullptr);
 		}
 
 		bool RuntimeContext::OpenProject()

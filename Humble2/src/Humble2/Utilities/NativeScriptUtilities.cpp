@@ -5,6 +5,12 @@ namespace HBL2
 	extern "C"
 	{
 		typedef ISystem* (*CreateSystemFunc)();
+		
+		typedef const char* (*RegisterComponentFunc)();
+
+		typedef entt::meta_any (*AddNewComponentFunc)(Scene*);
+
+		typedef entt::meta_any (*GetNewComponentFunc)(Scene*, entt::entity);
 	}
 
 	NativeScriptUtilities* NativeScriptUtilities::s_Instance = nullptr;
@@ -30,41 +36,150 @@ namespace HBL2
 		s_Instance = nullptr;
 	}
 
-	ISystem* NativeScriptUtilities::LoadDLL(const std::string& dllPath)
+	ISystem* NativeScriptUtilities::GenerateSystem(const std::string& systemName)
 	{
-		HINSTANCE hModule = LoadLibraryA(dllPath.c_str());
+		// Create system file
+		std::ofstream systemFile(HBL2::Project::GetAssetDirectory() / "Scripts" / (systemName + ".cpp"), 0);
+		systemFile << NativeScriptUtilities::Get().GetDefaultSystemCode(systemName);
+		systemFile.close();
 
-		if (!hModule)
+		// Create folder in ProjectFiles
+		const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles" / systemName;
+
+		try
 		{
-			std::cerr << "Failed to load DLL!" << std::endl;
+			std::filesystem::create_directories(projectFilesPath);
+		}
+		catch (std::exception& e)
+		{
+			HBL2_ERROR("Project directory creation failed: {0}", e.what());
+		}
+
+		// Create solution file for new system
+		std::ofstream solutionFile(projectFilesPath / (systemName + ".sln"));
+
+		if (!solutionFile.is_open())
+		{
 			return nullptr;
 		}
 
-		CreateSystemFunc createSystem = (CreateSystemFunc)GetProcAddress(hModule, "CreateSystem");
-		if (!createSystem)
+		solutionFile << NativeScriptUtilities::Get().GetDefaultSolutionText(systemName);
+		solutionFile.close();
+
+		// Create vcxproj file for new system
+		std::ofstream projectFile(projectFilesPath / (systemName + ".vcxproj"));
+
+		if (!projectFile.is_open())
 		{
-			std::cerr << "Failed to find CreateSystem in DLL!" << std::endl;
-			FreeLibrary(hModule);
 			return nullptr;
 		}
 
-		ISystem* system = createSystem();
+		projectFile << NativeScriptUtilities::Get().GetDefaultProjectText(systemName);
+		projectFile.close();
 
-		// Set name
-		system->Name = std::filesystem::path(dllPath).filename().stem().string();
+		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
-		m_DLLInstances[system->Name] = hModule;
+		if (activeScene != nullptr)
+		{
+			activeScene->DeregisterSystem(systemName);
 
-		return system;
+			// Remove old dll
+			try
+			{
+				if (std::filesystem::remove(std::filesystem::path("assets") / "dlls" / (systemName + ".dll")))
+				{
+					std::cout << "file " << std::filesystem::path("assets") / "dlls" / (systemName + ".dll") << " deleted.\n";
+				}
+				else
+				{
+					std::cout << "file " << std::filesystem::path("assets") / "dlls" / (systemName + ".dll") << " not found.\n";
+				}
+			}
+			catch (const std::filesystem::filesystem_error& err)
+			{
+				std::cout << "filesystem error: " << err.what() << '\n';
+			}
+		}
+
+		// Build the solution					
+#ifdef DEBUG
+		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (systemName + ".sln")).string() + R"( /t:)" + systemName + R"( /p:Configuration=Debug")";
+#else
+		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (systemName + ".sln")).string() + R"( /t:)" + systemName + R"( /p:Configuration=Release")";
+#endif // DEBUG
+		system(command.c_str());
+
+		// Load system dll
+		const std::string& dllPath = "assets\\dlls\\" + systemName + "\\" + systemName + ".dll";
+		ISystem* newSystem = NativeScriptUtilities::Get().LoadSystem(dllPath, activeScene);
+
+		HBL2_CORE_ASSERT(newSystem != nullptr, "Failed to load system.");
+
+		return newSystem;
 	}
 
-	void NativeScriptUtilities::DeleteDLLInstance(const std::string& dllName)
+	ISystem* NativeScriptUtilities::CompileSystem(const std::string& systemName)
 	{
-		if (m_DLLInstances.find(dllName) != m_DLLInstances.end())
+		const std::string& dllPath = (std::filesystem::path("assets") / "dlls" / systemName / (systemName + ".dll")).string();
+
+		const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles" / systemName;
+
+		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+		if (activeScene != nullptr)
 		{
-			FreeLibrary(m_DLLInstances[dllName]);
-			// TODO: Investigate why setting m_DLLInstances[dllName] to nullptr or erasing key dllName causes errors to dll.
+			activeScene->DeregisterSystem(systemName);
 		}
+
+		// Create new vcxproj file for system
+		std::ofstream projectFile(projectFilesPath / (systemName + ".vcxproj"));
+
+		if (!projectFile.is_open())
+		{
+			return nullptr;
+		}
+
+		bool dllLocked = true;
+
+		while (dllLocked)
+		{
+			try
+			{
+				if (std::filesystem::remove(dllPath))
+				{
+					dllLocked = false;
+					std::cout << "file " << dllPath << " deleted.\n";
+				}
+				else
+				{
+					dllLocked = false;
+					std::cout << "file " << dllPath << " not found.\n";
+				}
+			}
+			catch (const std::filesystem::filesystem_error& err)
+			{
+				dllLocked = true;
+				std::cout << "filesystem error: " << err.what() << '\n';
+			}
+		}
+
+		projectFile << NativeScriptUtilities::Get().GetDefaultProjectText(systemName);
+		projectFile.close();
+
+		// Build the solution
+#ifdef DEBUG
+		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (systemName + ".sln")).string() + R"( /t:)" + systemName + R"( /p:Configuration=Debug")";
+#else
+		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (systemName + ".sln")).string() + R"( /t:)" + systemName + R"( /p:Configuration=Release")";
+#endif // DEBUG
+		system(command.c_str());
+
+		// Load dll
+		ISystem* newSystem = NativeScriptUtilities::Get().LoadSystem(dllPath, activeScene);
+
+		HBL2_CORE_ASSERT(newSystem != nullptr, "Failed to load system.");
+
+		return newSystem;
 	}
 
 	std::string NativeScriptUtilities::GetDefaultSystemCode(const std::string& systemName)
@@ -206,7 +321,7 @@ EndGlobal
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>GLEW_STATIC;YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\Humble2\src;..\..\..\..\Humble2\src\Humble2;..\..\..\..\Humble2\src\Vendor;..\..\..\..\Humble2\src\Vendor\entt\include;..\..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\..\Dependencies\ImGui\imgui;..\..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\..\Dependencies\GLFW\include;..\..\..\..\Dependencies\GLEW\include;..\..\..\..\Dependencies\stb_image;..\..\..\..\Dependencies\GLM;..\..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
@@ -229,7 +344,7 @@ EndGlobal
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>GLEW_STATIC;YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\Humble2\src;..\..\..\..\Humble2\src\Humble2;..\..\..\..\Humble2\src\Vendor;..\..\..\..\Humble2\src\Vendor\entt\include;..\..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\..\Dependencies\ImGui\imgui;..\..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\..\Dependencies\GLFW\include;..\..\..\..\Dependencies\GLEW\include;..\..\..\..\Dependencies\stb_image;..\..\..\..\Dependencies\GLM;..\..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -288,5 +403,77 @@ EndGlobal
 		}
 
 		return projectText;
+	}
+
+	ISystem* NativeScriptUtilities::LoadSystem(const std::string& path, Scene* ctx)
+	{
+		// Load new system dll.
+		DynamicLibrary newSystem = DynamicLibrary(path);
+
+		const std::string& name = std::filesystem::path(path).filename().stem().string() + ctx->GetName();
+
+		// Retrieve function that creates the system from the dll.
+		CreateSystemFunc createSystem = newSystem.GetFunction<CreateSystemFunc>("CreateSystem");
+
+		// Create the system
+		ISystem* system = createSystem();
+
+		if (system != nullptr)
+		{
+			// Set system name
+			system->Name = std::filesystem::path(path).filename().stem().string();
+
+			m_DynamicLibraries[name] = newSystem;
+
+			ctx->RegisterSystem(system, SystemType::User);
+
+			return system;
+		}
+		
+		HBL2_CORE_ERROR("Failed to load system: {0}.", name);
+
+		return nullptr;
+	}
+
+	void NativeScriptUtilities::UnloadSystem(const std::string& dllName, Scene* ctx)
+	{
+		const std::string& fullDllName = dllName + ctx->GetName();
+
+		if (m_DynamicLibraries.find(fullDllName) != m_DynamicLibraries.end())
+		{
+			m_DynamicLibraries[fullDllName].Free();
+			m_DynamicLibraries.erase(dllName);
+		}
+	}
+
+	void NativeScriptUtilities::LoadComponent(const std::string& path)
+	{
+		// Load new component dll.
+		DynamicLibrary newComponent(path);
+
+		// Retrieve function that registers the component from the dll.
+		RegisterComponentFunc registerComponent = newComponent.GetFunction<RegisterComponentFunc>("RegisterComponent");
+
+		// Register the component.
+		const char* name = registerComponent();
+
+		m_DynamicLibraries[name] = newComponent;
+	}
+
+	entt::meta_any NativeScriptUtilities::AddComponent(const std::string& name, Scene* ctx)
+	{
+		// Load new component dll.
+		DynamicLibrary& component = m_DynamicLibraries[name];
+
+		// Retrieve function that registers the component from the dll.
+		AddNewComponentFunc addComponent = component.GetFunction<AddNewComponentFunc>("AddNewComponent");
+
+		// Register the component.
+		return addComponent(ctx);
+	}
+
+	entt::meta_any NativeScriptUtilities::GetComponent(const std::string& name, Scene* ctx)
+	{
+		return entt::meta_any();
 	}
 }
