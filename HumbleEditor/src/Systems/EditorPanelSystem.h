@@ -6,6 +6,8 @@
 
 #include "Utilities\EntityPresets.h"
 
+#include "ImGui\ImGuiRenderer.h"
+
 #include "EditorComponents.h"
 
 namespace HBL2

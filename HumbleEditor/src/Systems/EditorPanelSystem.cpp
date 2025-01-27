@@ -1813,7 +1813,7 @@ namespace HBL2
 			{
 				auto selectedEntity = HBL2::Component::EditorVisible::SelectedEntity;
 
-				if (!ImGuizmo::IsUsing() && !Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
+				if (!ImGuiRenderer::Instance->Gizmos_IsUsing() && !Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
 				{
 					if (Input::GetKeyPress(GLFW_KEY_W))
 					{
@@ -1834,13 +1834,13 @@ namespace HBL2
 				}
 
 				auto& camera = m_Context->GetComponent<HBL2::Component::Camera>(m_Context->MainCamera);
-				ImGuizmo::SetOrthographic(camera.Type == HBL2::Component::Camera::Type::Orthographic);
+				ImGuiRenderer::Instance->Gizmos_SetOrthographic(camera.Type == HBL2::Component::Camera::Type::Orthographic);
 
 				// Set window for rendering into.
-				ImGuizmo::SetDrawlist();
+				ImGuiRenderer::Instance->Gizmos_SetDrawlist();
 
 				// Set viewport size.
-				ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
+				ImGuiRenderer::Instance->Gizmos_SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
 
 				if (selectedEntity != entt::null && m_GizmoOperation != ImGuizmo::OPERATION::BOUNDS)
 				{
@@ -1860,7 +1860,7 @@ namespace HBL2
 
 					// Transformation gizmo
 					auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(selectedEntity);
-					bool editedTransformation = ImGuizmo::Manipulate(
+					bool editedTransformation = ImGuiRenderer::Instance->Gizmos_Manipulate(
 						glm::value_ptr(camera.View),
 						glm::value_ptr(camera.Projection),
 						m_GizmoOperation,
@@ -1872,7 +1872,7 @@ namespace HBL2
 
 					if (editedTransformation)
 					{
-						if (ImGuizmo::IsUsing())
+						if (ImGuiRenderer::Instance->Gizmos_IsUsing())
 						{
 							glm::vec3 newTranslation;
 							glm::vec3 newRotation;
@@ -1890,7 +1890,7 @@ namespace HBL2
 				float viewManipulateTop = ImGui::GetWindowPos().y;
 
 				auto& cameraTransform = m_Context->GetComponent<HBL2::Component::Transform>(m_Context->MainCamera);
-				ImGuizmo::ViewManipulate(
+				ImGuiRenderer::Instance->Gizmos_ViewManipulate(
 					glm::value_ptr(camera.View),
 					m_CameraPivotDistance,
 					ImVec2(viewManipulateRight - 128, viewManipulateTop),
@@ -1898,7 +1898,7 @@ namespace HBL2
 					0x10101010
 				);
 
-				if (ImGuizmo::IsUsingViewManipulate())
+				if (ImGuiRenderer::Instance->Gizmos_IsUsingViewManipulate())
 				{
 					glm::vec3 newTranslation;
 					glm::vec3 newRotation;
