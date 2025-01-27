@@ -633,14 +633,23 @@ extern "C" __declspec(dllexport) bool HasNewComponent(HBL2::Scene* ctx, entt::en
 	{
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
+		std::vector<ISystem*> systemsToBeDeregistered;
+
 		// Deregister systems.
 		for (ISystem* userSystem : ctx->GetRuntimeSystems())
 		{
 			if (userSystem->GetType() == SystemType::User)
 			{
-				ctx->DeregisterSystem(userSystem);
+				systemsToBeDeregistered.push_back(userSystem);
 			}
 		}
+
+		for (const auto& system : systemsToBeDeregistered)
+		{
+			ctx->DeregisterSystem(system);
+		}
+
+		systemsToBeDeregistered.clear();
 
 		// Free dll and remove from map.
 		if (m_DynamicLibraries.find(fullDllName) != m_DynamicLibraries.end())

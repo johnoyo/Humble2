@@ -521,7 +521,34 @@ namespace HBL2
 		}
 
 		Script* script = ResourceManager::Instance->GetScript(scriptHandle);
+
+		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+		std::vector<std::string> userSystemNames;
+
+		// Store registered user system names.
+		for (ISystem* userSystem : activeScene->GetRuntimeSystems())
+		{
+			if (userSystem->GetType() == SystemType::User)
+			{
+				userSystemNames.push_back(userSystem->Name);
+			}
+		}
+
+		// Unload unity build dll.
+		NativeScriptUtilities::Get().UnloadUnityBuild(activeScene);
+
+		// Combine all .cpp files in assets in unity build source file.
+		UnityBuilder::Get().Combine();
+
+		// Build unity build source dll.
 		UnityBuilder::Get().Build();
+
+		// Re-register systems
+		for (const auto& userSystemName : userSystemNames)
+		{
+			NativeScriptUtilities::Get().RegisterSystem(userSystemName, activeScene);
+		}
 	}
 
 	/// Destroy methods

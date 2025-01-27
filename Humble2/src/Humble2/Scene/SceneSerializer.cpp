@@ -217,11 +217,23 @@ namespace HBL2
 		out << YAML::EndSeq;
 		out << YAML::Key << "Systems" << YAML::BeginSeq;
 
-		for (ISystem* system : m_Scene->GetRuntimeSystems())
+		const std::vector<Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+		for (auto handle : assetHandles)
 		{
-			if (system->GetType() == SystemType::User)
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+
+			if (asset->Type == AssetType::Script)
 			{
-				out << YAML::Key << system->Name << YAML::Value;
+				Script* script = ResourceManager::Instance->GetScript(Handle<Script>::UnPack(asset->Indentifier));
+
+				if (script != nullptr)
+				{
+					if (script->Type == ScriptType::SYSTEM)
+					{
+						out << YAML::Key << asset->UUID << YAML::Value;
+					}
+				}
 			}
 		}
 
@@ -386,9 +398,21 @@ namespace HBL2
 		auto systems = data["Systems"];
 		if (systems)
 		{
-			for (auto system : systems)
+			for (auto systemUUID : systems)
 			{
-				NativeScriptUtilities::Get().RegisterSystem(system.as<std::string>(), m_Scene);
+				//NativeScriptUtilities::Get().RegisterSystem(system.as<std::string>(), m_Scene);
+#ifndef false
+				Handle<Script> systemScriptHandle = AssetManager::Instance->GetAsset<Script>(systemUUID.as<UUID>());
+				if (systemScriptHandle.IsValid())
+				{
+					Script* systemScript = ResourceManager::Instance->GetScript(systemScriptHandle);
+					NativeScriptUtilities::Get().RegisterSystem(systemScript->Name, m_Scene);
+				}
+				else
+				{
+					HBL2_CORE_ERROR("Could not load system with UUID: {}", systemUUID.as<UUID>());
+				}
+#endif
 			}
 		}
 

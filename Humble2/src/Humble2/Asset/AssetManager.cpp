@@ -76,6 +76,14 @@ namespace HBL2
 				.type = AssetType::Scene,
 			});
 		}
+		else if (extension == ".h")
+		{
+			assetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "script-asset",
+				.filePath = relativePath,
+				.type = AssetType::Script,
+			});
+		}
 
 		return assetHandle;
 	}

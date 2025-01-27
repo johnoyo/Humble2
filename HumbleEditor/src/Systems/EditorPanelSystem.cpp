@@ -1236,35 +1236,14 @@ namespace HBL2
 				{
 					// ISystem* newSystem = NativeScriptUtilities::Get().GenerateSystem(systemNameBuffer);
 
-					std::vector<std::string> userSystemNames;
-
-					// Store registered user system names.
-					for (ISystem* userSystem : m_ActiveScene->GetRuntimeSystems())
-					{
-						if (userSystem->GetType() == SystemType::User)
-						{
-							userSystemNames.push_back(userSystem->Name);
-						}
-					}
-
-					NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
-
 					// Create .cpp file with placeholder code.
 					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateSystemFile(m_CurrentDirectory, systemNameBuffer);
 
+					// Import script.
 					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
 
-					// Combine all .cpp files in assets in unity build source file.
-					UnityBuilder::Get().Combine();
-
-					// Build unity build source dll.
-					UnityBuilder::Get().Build();
-
-					// Re-register systems
-					for (const auto& userSystemName : userSystemNames)
-					{
-						NativeScriptUtilities::Get().RegisterSystem(userSystemName, m_ActiveScene);
-					}
+					// Save script (build).
+					AssetManager::Instance->SaveAsset(scriptAssetHandle);
 
 					m_OpenScriptSetupPopup = false;
 				}
@@ -1680,35 +1659,8 @@ namespace HBL2
 					{
 						if (ImGui::MenuItem("Recompile"))
 						{
-							const auto& systemName = entry.path().filename().stem().string();
-
-							// ISystem* newSystem = NativeScriptUtilities::Get().CompileSystem(systemName);
-
-							std::vector<std::string> userSystemNames;
-
-							// Store registered user system names.
-							for (ISystem* userSystem : m_ActiveScene->GetRuntimeSystems())
-							{
-								if (userSystem->GetType() == SystemType::User)
-								{
-									userSystemNames.push_back(userSystem->Name);
-								}
-							}
-
-							// Unload unity build dll.
-							NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
-
-							// Combine all .cpp files in assets in unity build source file.
-							UnityBuilder::Get().Combine();
-
-							// Build unity build source dll.
-							UnityBuilder::Get().Build();
-
-							// Re-register systems
-							for (const auto& userSystemName : userSystemNames)
-							{
-								NativeScriptUtilities::Get().RegisterSystem(userSystemName, m_ActiveScene);
-							}
+							UUID assetUUID = std::hash<std::string>()(relativePath.string());
+							AssetManager::Instance->SaveAsset(assetUUID);
 						}
 					}
 					ImGui::EndPopup();
