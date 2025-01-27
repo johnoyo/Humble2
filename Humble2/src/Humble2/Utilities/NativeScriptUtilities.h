@@ -82,7 +82,7 @@ namespace HBL2
 
 		ISystem* GenerateSystem(const std::string& systemName);
 		ISystem* CompileSystem(const std::string& systemName);
-		ISystem* LoadSystem(const std::string& path, Scene* ctx);
+		void RegisterSystem(const std::string& name, Scene* ctx);
 		void UnloadSystem(const std::string& dllName, Scene* ctx);
 
 		void LoadUnityBuild(Scene* ctx);

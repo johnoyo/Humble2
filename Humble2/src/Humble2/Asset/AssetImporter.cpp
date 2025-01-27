@@ -63,6 +63,7 @@ namespace HBL2
 		{
 		case AssetType::Scene:
 			SaveScene(asset);
+			break;
 		case AssetType::Script:
 			SaveScript(asset);
 			break;

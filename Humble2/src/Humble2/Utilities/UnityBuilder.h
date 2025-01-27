@@ -35,13 +35,7 @@ namespace HBL2
 	private:
 		UnityBuilder() = default;
 
-		const std::string m_UnityBuildSource = R"({Includes}
-
-extern "C" __declspec(dllexport) void RegisterSystems(HBL2::Scene* ctx)
-{
-    {SystemsRegistration}
-}
-)";
+		const std::string m_UnityBuildSource = R"({Includes})";
 		std::string m_UnityBuildSourceFinal;
 
 		static UnityBuilder* s_Instance;

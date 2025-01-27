@@ -1236,6 +1236,19 @@ namespace HBL2
 				{
 					// ISystem* newSystem = NativeScriptUtilities::Get().GenerateSystem(systemNameBuffer);
 
+					std::vector<std::string> userSystemNames;
+
+					// Store registered user system names.
+					for (ISystem* userSystem : m_ActiveScene->GetRuntimeSystems())
+					{
+						if (userSystem->GetType() == SystemType::User)
+						{
+							userSystemNames.push_back(userSystem->Name);
+						}
+					}
+
+					NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
+
 					// Create .cpp file with placeholder code.
 					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateSystemFile(m_CurrentDirectory, systemNameBuffer);
 
@@ -1246,6 +1259,12 @@ namespace HBL2
 
 					// Build unity build source dll.
 					UnityBuilder::Get().Build();
+
+					// Re-register systems
+					for (const auto& userSystemName : userSystemNames)
+					{
+						NativeScriptUtilities::Get().RegisterSystem(userSystemName, m_ActiveScene);
+					}
 
 					m_OpenScriptSetupPopup = false;
 				}
@@ -1665,6 +1684,18 @@ namespace HBL2
 
 							// ISystem* newSystem = NativeScriptUtilities::Get().CompileSystem(systemName);
 
+							std::vector<std::string> userSystemNames;
+
+							// Store registered user system names.
+							for (ISystem* userSystem : m_ActiveScene->GetRuntimeSystems())
+							{
+								if (userSystem->GetType() == SystemType::User)
+								{
+									userSystemNames.push_back(userSystem->Name);
+								}
+							}
+
+							// Unload unity build dll.
 							NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
 
 							// Combine all .cpp files in assets in unity build source file.
@@ -1672,6 +1703,12 @@ namespace HBL2
 
 							// Build unity build source dll.
 							UnityBuilder::Get().Build();
+
+							// Re-register systems
+							for (const auto& userSystemName : userSystemNames)
+							{
+								NativeScriptUtilities::Get().RegisterSystem(userSystemName, m_ActiveScene);
+							}
 						}
 					}
 					ImGui::EndPopup();
@@ -1710,6 +1747,9 @@ namespace HBL2
 						break;
 					case AssetType::Scene:
 						ImGui::SetDragDropPayload("Content_Browser_Item_Scene", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+						break;
+					case AssetType::Script:
+						ImGui::SetDragDropPayload("Content_Browser_Item_Script", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
 						break;
 					default:
 						ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
@@ -1964,6 +2004,45 @@ namespace HBL2
 		{
 			if (m_ActiveScene != nullptr)
 			{
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Script"))
+					{
+						uint32_t scriptAssetHandlePacked = *((uint32_t*)payload->Data);
+						Handle<Asset> scriptAssetHandle = Handle<Asset>::UnPack(scriptAssetHandlePacked);
+						Asset* scriptAsset = AssetManager::Instance->GetAssetMetadata(scriptAssetHandle);
+
+						if (scriptAsset == nullptr)
+						{
+							HBL2_WARN("Could not load script - invalid asset handle.");
+						}
+						else
+						{
+							Handle<Script> scriptHandle = AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
+
+							if (scriptHandle.IsValid())
+							{
+								Script* script = ResourceManager::Instance->GetScript(scriptHandle);
+
+								if (script->Type == ScriptType::SYSTEM)
+								{
+									NativeScriptUtilities::Get().RegisterSystem(script->Name, m_ActiveScene);
+								}
+								else
+								{
+									HBL2_WARN("Could not load script - not a system script.");
+								}
+							}
+							else
+							{
+								HBL2_WARN("Could not load script - invalid script handle.");
+							}
+						}
+
+						ImGui::EndDragDropTarget();
+					}
+				}
+
 				ImGui::TextWrapped(m_ActiveScene->GetName().c_str());
 				ImGui::NewLine();
 				ImGui::Separator();

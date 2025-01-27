@@ -31,7 +31,7 @@ namespace HBL2
 		// Create directory.
 		try
 		{
-			std::filesystem::create_directories(Project::GetProjectDirectory() / "ProjectFiles" / activeScene->GetName());
+			std::filesystem::create_directories(Project::GetProjectDirectory() / "ProjectFiles");
 		}
 		catch (std::exception& e)
 		{
@@ -39,11 +39,11 @@ namespace HBL2
 		}
 
 		// Open and inject final code.
-		std::ofstream stream(Project::GetProjectDirectory() / "ProjectFiles" / activeScene->GetName() / "UnityBuildSource.cpp", std::ios::out);
+		std::ofstream stream(Project::GetProjectDirectory() / "ProjectFiles" / "UnityBuildSource.cpp", std::ios::out);
 
 		if (!stream.is_open())
 		{
-			HBL2_CORE_ERROR("UnityBuildSource file not found: {0}", Project::GetProjectDirectory() / "ProjectFiles" / activeScene->GetName() / "UnityBuildSource.cpp");
+			HBL2_CORE_ERROR("UnityBuildSource file not found: {0}", Project::GetProjectDirectory() / "UnityBuildSource.cpp");
 			return false;
 		}
 
@@ -55,9 +55,9 @@ namespace HBL2
 		const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles";
 
 #ifdef DEBUG
-		const auto& dllPath = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / activeScene->GetName() / "UnityBuild.dll";
+		const auto& dllPath = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
 #else
-		const auto& dllPath = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / activeScene->GetName() / "UnityBuild.dll";
+		const auto& dllPath = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
 #endif
 
 		if (activeScene != nullptr)
@@ -82,9 +82,9 @@ namespace HBL2
 
 		// Build the solution					
 #ifdef DEBUG
-		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / activeScene->GetName() / "UnityBuild.sln").string() + R"( /t:)" + "UnityBuild" + R"( /p:Configuration=Debug")";
+		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / "UnityBuild.sln").string() + R"( /t:)" + "UnityBuild" + R"( /p:Configuration=Debug")";
 #else
-		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / activeScene->GetName() / "UnityBuild.sln").string() + R"( /t:)" + "UnityBuild" + R"( /p:Configuration=Release")";
+		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / "UnityBuild.sln").string() + R"( /t:)" + "UnityBuild" + R"( /p:Configuration=Release")";
 #endif // DEBUG
 		system(command.c_str());
 
@@ -100,7 +100,7 @@ namespace HBL2
 		// Create directory.
 		try
 		{
-			std::filesystem::create_directories(Project::GetProjectDirectory() / "ProjectFiles" / activeScene->GetName());
+			std::filesystem::create_directories(Project::GetProjectDirectory() / "ProjectFiles");
 		}
 		catch (std::exception& e)
 		{
@@ -112,7 +112,6 @@ namespace HBL2
 		// Collect includes and systems registration
 		std::string includes;
 		std::string projectIncludes;
-		std::string systemsRegistration;
 
 		for (const auto assetHandle : AssetManager::Instance->GetRegisteredAssets())
 		{
@@ -132,16 +131,7 @@ namespace HBL2
 					}
 
 					includes += std::format("#include \"{}\"\n", script->Path.string());
-					projectIncludes += std::format("  <ClInclude Include=\"..\Assets\{}\" />\n", script->Path.string());
-
-					const std::string& scriptName = std::string(script->Name);
-
-					switch (script->Type)
-					{
-					case ScriptType::SYSTEM:
-						systemsRegistration += std::format("HBL2::ISystem* new{} = new {};\n\tnew{}->Name = \"{}\";\n\tctx->RegisterSystem(new{}, HBL2::SystemType::User);\n", scriptName, std::string(script->Name), scriptName, scriptName, scriptName);
-						break;
-					}
+					projectIncludes += std::format("  <ClInclude Include=\"..\\Assets\\{}\" />\n", script->Path.string());
 				}
 			}
 		}
@@ -159,23 +149,10 @@ namespace HBL2
 			}
 		}
 
-		// Inject systems to register in the code.
-		{
-			const std::string& placeholder = "{SystemsRegistration}";
-
-			size_t pos = m_UnityBuildSourceFinal.find(placeholder);
-
-			while (pos != std::string::npos)
-			{
-				((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), systemsRegistration);
-				pos = m_UnityBuildSourceFinal.find(placeholder, pos + systemsRegistration.length());
-			}
-		}
-
 		const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles";
 
 		// Create solution file for new system
-		std::ofstream solutionFile(projectFilesPath / activeScene->GetName() / "UnityBuild.sln");
+		std::ofstream solutionFile(projectFilesPath / "UnityBuild.sln");
 
 		if (!solutionFile.is_open())
 		{
@@ -186,7 +163,7 @@ namespace HBL2
 		solutionFile.close();
 
 		// Create vcxproj file for new system
-		std::ofstream projectFile(projectFilesPath / activeScene->GetName() / "UnityBuild.vcxproj");
+		std::ofstream projectFile(projectFilesPath / "UnityBuild.vcxproj");
 
 		if (!projectFile.is_open())
 		{

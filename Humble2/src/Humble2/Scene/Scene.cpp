@@ -78,28 +78,13 @@ namespace HBL2
         dst->RegisterSystem(new SpriteRenderingSystem);
         dst->RegisterSystem(new CompositeRenderingSystem);
 
-        bool hasUserSystems = false;
-
         // Check for user systems.
         for (ISystem* system : src->m_RuntimeSystems)
         {
             if (system->GetType() == SystemType::User)
             {
-                hasUserSystems = true;
-                break;
+                NativeScriptUtilities::Get().RegisterSystem(system->Name, dst);
             }
-        }
-
-        if (hasUserSystems)
-        {
-            const std::string& projectName = Project::GetActive()->GetName();
-
-    #ifdef DEBUG
-            const auto& dllPath = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / src->GetName() / "UnityBuild.dll";
-    #else
-            const auto& dllPath = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / src->GetName() / "UnityBuild.dll";
-    #endif
-            NativeScriptUtilities::Get().LoadUnityBuild(dst, dllPath.string());
         }
 
         // Set main camera.

@@ -388,8 +388,7 @@ namespace HBL2
 		{
 			for (auto system : systems)
 			{
-				const std::string& dllPath = "assets\\dlls\\" + system.as<std::string>() + "\\" + system.as<std::string>() + ".dll";
-				ISystem* newSystem = NativeScriptUtilities::Get().LoadSystem(dllPath, m_Scene);
+				NativeScriptUtilities::Get().RegisterSystem(system.as<std::string>(), m_Scene);
 			}
 		}
 
