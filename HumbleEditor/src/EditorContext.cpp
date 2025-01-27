@@ -160,7 +160,6 @@ namespace HBL2
 		{
 			TextureUtilities::Get().LoadWhiteTexture();
 			ShaderUtilities::Get().LoadBuiltInShaders();
-			UnityBuilder::Get().LoadUnityBuildScript();
 		}
 	}
 }

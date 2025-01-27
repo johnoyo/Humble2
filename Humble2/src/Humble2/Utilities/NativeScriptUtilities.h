@@ -80,10 +80,7 @@ namespace HBL2
 
 		Handle<Asset> CreateSystemFile(const std::filesystem::path& currentDir, const std::string& systemName);
 
-		ISystem* GenerateSystem(const std::string& systemName);
-		ISystem* CompileSystem(const std::string& systemName);
 		void RegisterSystem(const std::string& name, Scene* ctx);
-		void UnloadSystem(const std::string& dllName, Scene* ctx);
 
 		void LoadUnityBuild(Scene* ctx);
 		void LoadUnityBuild(Scene* ctx, const std::string& path);
@@ -103,28 +100,6 @@ namespace HBL2
 		entt::meta_any GetComponent(const std::string& name, Scene* ctx, entt::entity entity);
 		bool HasComponent(const std::string& name, Scene* ctx, entt::entity entity);
 		std::string CleanComponentName(const std::string& input);
-
-	private:
-		const std::string& RegisterSystemFuncCode = R"(
-// Factory function to create the system
-extern "C" __declspec(dllexport) HBL2::ISystem* CreateSystem()
-{
-	return new {SystemName}();
-})";
-		const std::string& AddComponentFuncCode = R"(
-// Factory function to add the component
-extern "C" __declspec(dllexport) entt::meta_any AddNewComponent(HBL2::Scene* ctx, entt::entity entity)
-{
-	auto& component = ctx->AddComponent<{ComponentName}>(entity);
-	return entt::forward_as_meta(component);
-})";
-		const std::string& GetComponentFuncCode = R"(
-// Factory function to add the component
-extern "C" __declspec(dllexport) entt::meta_any GetNewComponent(HBL2::Scene* ctx, entt::entity entity)
-{
-	auto& component = ctx->GetComponent<{ComponentName}>(entity);
-	return entt::forward_as_meta(component);
-})";
 
 	private:
 		NativeScriptUtilities() = default;

@@ -30,8 +30,6 @@ namespace HBL2
 		bool Build();
 		void Combine();
 
-		void LoadUnityBuildScript();
-
 	private:
 		UnityBuilder() = default;
 

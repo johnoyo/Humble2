@@ -173,14 +173,5 @@ namespace HBL2
 		projectFile << NativeScriptUtilities::Get().GetDefaultProjectText(projectIncludes);
 		projectFile.close();
 	}
-
-	void UnityBuilder::LoadUnityBuildScript()
-	{
-		auto script = ResourceManager::Instance->CreateScript({
-			.debugName = "UnityBuildSource",
-			.type = ScriptType::UNITY_BUILD_SCRIPT,
-			.path = Project::GetProjectDirectory() / "ProjectFiles",
-		});
-	}
 }
 
