@@ -78,18 +78,27 @@ namespace HBL2
 		static void Initialize();
 		static void Shutdown();
 
+		Handle<Asset> CreateSystemFile(const std::filesystem::path& currentDir, const std::string& systemName);
+
 		ISystem* GenerateSystem(const std::string& systemName);
 		ISystem* CompileSystem(const std::string& systemName);
 		ISystem* LoadSystem(const std::string& path, Scene* ctx);
 		void UnloadSystem(const std::string& dllName, Scene* ctx);
 
-		std::string GetDefaultSystemCode(const std::string& systemName);		
+		std::string GetDefaultSystemCode(const std::string& systemName);	
 		std::string GetDefaultSolutionText(const std::string& systemName);	
-		std::string GetDefaultProjectText(const std::string& systemName);	
+		std::string GetDefaultProjectText(const std::string& projectIncludes);
 
-		void LoadComponent(const std::string& path);
-		entt::meta_any AddComponent(const std::string& name, Scene* ctx);
-		entt::meta_any GetComponent(const std::string& name, Scene* ctx);
+		std::string GetDefaultComponentCode(const std::string& componentName);	
+
+		void GenerateComponent(const std::string& componentName);
+		void CompileComponent(const std::string& componentName);
+
+		void LoadComponent(const std::string& path, Scene* ctx);
+		entt::meta_any AddComponent(const std::string& name, Scene* ctx, entt::entity entity);
+		entt::meta_any GetComponent(const std::string& name, Scene* ctx, entt::entity entity);
+		bool HasComponent(const std::string& name, Scene* ctx, entt::entity entity);
+		std::string CleanComponentName(const std::string& input);
 
 	private:
 		const std::string& RegisterSystemFuncCode = R"(

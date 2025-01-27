@@ -164,6 +164,11 @@ namespace HBL2
 			return m_Registry;
 		}
 
+		entt::meta_ctx& GetMetaContext()
+		{
+			return m_MetaContext;
+		}
+
 		const std::string& GetName() const
 		{
 			return m_Name;
@@ -174,6 +179,7 @@ namespace HBL2
 	private:
 		std::string m_Name;
 		entt::registry m_Registry;
+		entt::meta_ctx m_MetaContext;
 		std::vector<ISystem*> m_Systems;
 		std::vector<ISystem*> m_CoreSystems;
 		std::vector<ISystem*> m_RuntimeSystems;

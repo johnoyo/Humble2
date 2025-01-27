@@ -6,18 +6,20 @@ namespace HBL2
 	{
 		typedef ISystem* (*CreateSystemFunc)();
 		
-		typedef const char* (*RegisterComponentFunc)();
+		typedef const char* (*RegisterComponentFunc)(entt::meta_ctx* meta_ctx);
 
-		typedef entt::meta_any (*AddNewComponentFunc)(Scene*);
+		typedef entt::meta_any (*AddNewComponentFunc)(Scene*, entt::entity);
 
 		typedef entt::meta_any (*GetNewComponentFunc)(Scene*, entt::entity);
+
+		typedef bool (*HasNewComponentFunc)(Scene*, entt::entity);
 	}
 
 	NativeScriptUtilities* NativeScriptUtilities::s_Instance = nullptr;
 
 	NativeScriptUtilities& NativeScriptUtilities::Get()
 	{
-		HBL2_CORE_ASSERT(s_Instance != nullptr, "MeshUtilities::s_Instance is null! Call MeshUtilities::Initialize before use.");
+		HBL2_CORE_ASSERT(s_Instance != nullptr, "NativeScriptUtilities::s_Instance is null! Call NativeScriptUtilities::Initialize before use.");
 		return *s_Instance;
 	}
 
@@ -34,6 +36,38 @@ namespace HBL2
 
 		delete s_Instance;
 		s_Instance = nullptr;
+	}
+
+	Handle<Asset> NativeScriptUtilities::CreateSystemFile(const std::filesystem::path& currentDir, const std::string& systemName)
+	{
+		auto relativePath = std::filesystem::relative(currentDir / (systemName + ".h"), HBL2::Project::GetAssetDirectory());
+
+		auto scriptAssetHandle = AssetManager::Instance->CreateAsset({
+			.debugName = "script-asset",
+			.filePath = relativePath,
+			.type = AssetType::Script,
+		});
+
+		if (scriptAssetHandle.IsValid())
+		{
+			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblscript", 0);
+			YAML::Emitter out;
+			out << YAML::BeginMap;
+			out << YAML::Key << "Script" << YAML::Value;
+			out << YAML::BeginMap;
+			out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(scriptAssetHandle)->UUID;
+			out << YAML::Key << "Type" << YAML::Value << (uint32_t)ScriptType::SYSTEM;
+			out << YAML::EndMap;
+			out << YAML::EndMap;
+			fout << out.c_str();
+			fout.close();
+		}
+
+		std::ofstream fout(currentDir / (systemName + ".h"), 0);
+		fout << GetDefaultSystemCode(systemName);
+		fout.close();
+
+		return scriptAssetHandle;
 	}
 
 	ISystem* NativeScriptUtilities::GenerateSystem(const std::string& systemName)
@@ -405,6 +439,122 @@ EndGlobal
 		return projectText;
 	}
 
+	std::string NativeScriptUtilities::GetDefaultComponentCode(const std::string& componentName)
+	{
+		const std::string& placeholder = "{ComponentName}";
+
+		const std::string& componentCode = R"(#include "Humble2Core.h"
+
+struct {ComponentName}
+{
+	int Value = 0;
+};
+
+// Factory function to register the component
+extern "C" __declspec(dllexport) const char* RegisterComponent(entt::meta_ctx* meta_ctx)
+{
+	using namespace entt::literals;
+
+    // Register the component in the shared reflection context
+	entt::meta<{ComponentName}>(*meta_ctx)
+		.type(entt::hashed_string(typeid({ComponentName}).name()))
+		.data<&{ComponentName}::Value>("Value"_hs).prop("name"_hs, "Value");
+
+	return typeid({ComponentName}).name();
+}
+
+// Factory function to add the component
+extern "C" __declspec(dllexport) entt::meta_any AddNewComponent(HBL2::Scene* ctx, entt::entity entity)
+{
+	auto& component = ctx->AddComponent<{ComponentName}>(entity);
+	return entt::forward_as_meta(ctx->GetMetaContext(), component);
+}
+
+// Factory function to add the component
+extern "C" __declspec(dllexport) entt::meta_any GetNewComponent(HBL2::Scene* ctx, entt::entity entity)
+{
+	auto& component = ctx->GetComponent<{ComponentName}>(entity);
+	return entt::forward_as_meta(ctx->GetMetaContext(), component);
+}
+
+// Factory function to add the component
+extern "C" __declspec(dllexport) bool HasNewComponent(HBL2::Scene* ctx, entt::entity entity)
+{
+	return ctx->HasComponent<{ComponentName}>(entity);
+}
+)";
+
+		size_t pos = componentCode.find(placeholder);
+
+		while (pos != std::string::npos)
+		{
+			((std::string&)componentCode).replace(pos, placeholder.length(), componentName);
+			pos = componentCode.find(placeholder, pos + componentName.length());
+		}
+
+		return componentCode;
+	}
+
+	void NativeScriptUtilities::GenerateComponent(const std::string& componentName)
+	{
+		// Create component file
+		std::ofstream systemFile(HBL2::Project::GetAssetDirectory() / "Scripts" / (componentName + ".cpp"), 0);
+		systemFile << NativeScriptUtilities::Get().GetDefaultComponentCode(componentName);
+		systemFile.close();
+
+		// Create folder in ProjectFiles
+		const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles" / componentName;
+
+		try
+		{
+			std::filesystem::create_directories(projectFilesPath);
+		}
+		catch (std::exception& e)
+		{
+			HBL2_ERROR("Project directory creation failed: {0}", e.what());
+		}
+
+		// Create solution file for new system
+		std::ofstream solutionFile(projectFilesPath / (componentName + ".sln"));
+
+		if (!solutionFile.is_open())
+		{
+			return;
+		}
+
+		solutionFile << NativeScriptUtilities::Get().GetDefaultSolutionText(componentName);
+		solutionFile.close();
+
+		// Create vcxproj file for new system
+		std::ofstream projectFile(projectFilesPath / (componentName + ".vcxproj"));
+
+		if (!projectFile.is_open())
+		{
+			return;
+		}
+
+		projectFile << NativeScriptUtilities::Get().GetDefaultProjectText(componentName);
+		projectFile.close();
+
+		// Build the solution					
+#ifdef DEBUG
+		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (componentName + ".sln")).string() + R"( /t:)" + componentName + R"( /p:Configuration=Debug")";
+#else
+		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (componentName + ".sln")).string() + R"( /t:)" + componentName + R"( /p:Configuration=Release")";
+#endif // DEBUG
+		system(command.c_str());
+
+		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+		// Load system dll
+		const std::string& dllPath = "assets\\dlls\\" + componentName + "\\" + componentName + ".dll";
+		NativeScriptUtilities::Get().LoadComponent(dllPath, activeScene);
+	}
+
+	void NativeScriptUtilities::CompileComponent(const std::string& componentName)
+	{
+	}
+
 	ISystem* NativeScriptUtilities::LoadSystem(const std::string& path, Scene* ctx)
 	{
 		// Load new system dll.
@@ -446,7 +596,7 @@ EndGlobal
 		}
 	}
 
-	void NativeScriptUtilities::LoadComponent(const std::string& path)
+	void NativeScriptUtilities::LoadComponent(const std::string& path, Scene* ctx)
 	{
 		// Load new component dll.
 		DynamicLibrary newComponent(path);
@@ -455,12 +605,12 @@ EndGlobal
 		RegisterComponentFunc registerComponent = newComponent.GetFunction<RegisterComponentFunc>("RegisterComponent");
 
 		// Register the component.
-		const char* name = registerComponent();
+		const char* name = registerComponent(&ctx->GetMetaContext());
 
 		m_DynamicLibraries[name] = newComponent;
 	}
 
-	entt::meta_any NativeScriptUtilities::AddComponent(const std::string& name, Scene* ctx)
+	entt::meta_any NativeScriptUtilities::AddComponent(const std::string& name, Scene* ctx, entt::entity entity)
 	{
 		// Load new component dll.
 		DynamicLibrary& component = m_DynamicLibraries[name];
@@ -469,11 +619,40 @@ EndGlobal
 		AddNewComponentFunc addComponent = component.GetFunction<AddNewComponentFunc>("AddNewComponent");
 
 		// Register the component.
-		return addComponent(ctx);
+		return addComponent(ctx, entity);
 	}
 
-	entt::meta_any NativeScriptUtilities::GetComponent(const std::string& name, Scene* ctx)
+	entt::meta_any NativeScriptUtilities::GetComponent(const std::string& name, Scene* ctx, entt::entity entity)
 	{
-		return entt::meta_any();
+		// Load new component dll.
+		DynamicLibrary& component = m_DynamicLibraries[name];
+
+		// Retrieve function that registers the component from the dll.
+		GetNewComponentFunc getComponent = component.GetFunction<GetNewComponentFunc>("GetNewComponent");
+
+		// Register the component.
+		return getComponent(ctx, entity);
+	}
+
+	bool NativeScriptUtilities::HasComponent(const std::string& name, Scene* ctx, entt::entity entity)
+	{
+		// Load new component dll.
+		DynamicLibrary& component = m_DynamicLibraries[name];
+
+		// Retrieve function that registers the component from the dll.
+		HasNewComponentFunc hasComponent = component.GetFunction<HasNewComponentFunc>("HasNewComponent");
+
+		// Register the component.
+		return hasComponent(ctx, entity);
+	}
+	
+	std::string NativeScriptUtilities::CleanComponentName(const std::string& input)
+	{
+		size_t pos = input.find('>');
+		if (pos != std::string::npos)
+		{
+			return input.substr(0, pos);
+		}
+		return input;
 	}
 }

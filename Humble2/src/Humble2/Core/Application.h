@@ -28,6 +28,7 @@
 #include "Utilities\Random.h"
 #include "Utilities\MeshUtilities.h"
 #include "Utilities\NativeScriptUtilities.h"
+#include "Utilities\UnityBuilder.h"
 
 #include <string>
 #include <sstream>

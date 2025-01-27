@@ -90,6 +90,7 @@ namespace HBL2
 
         // Set main camera.
         dst->MainCamera = src->MainCamera;
+        dst->m_MetaContext = src->m_MetaContext;
     }
 
     void Scene::DeregisterSystem(ISystem* system)
@@ -146,6 +147,7 @@ namespace HBL2
         m_CoreSystems = other.m_CoreSystems;
         m_RuntimeSystems = other.m_RuntimeSystems;
         m_EntityMap = other.m_EntityMap;
+        m_MetaContext = other.m_MetaContext;
         MainCamera = other.MainCamera;
     }
 }

@@ -1,6 +1,6 @@
 VULKAN_SDK = os.getenv("VULKAN_SDK")
 
-workspace "NewSystem_New"
+workspace "UnityBuild"
     architecture "x64"
 
     configurations 
@@ -13,7 +13,7 @@ workspace "NewSystem_New"
 outputdir = "%{cfg.buildcfg}-%{cfg.architecture}"
 
 -- Engine project.
-project "NewSystem_New"
+project "UnityBuild"
     kind "SharedLib"
     language "C++"
     cppdialect "C++20"
@@ -22,13 +22,13 @@ project "NewSystem_New"
     flags { "MultiProcessorCompile" }
 
     -- Directories for binary and intermediate files.
-    targetdir ("../../../assets/dlls/" .. outputdir .. "/%{prj.name}")
-    objdir ("../../../assets/dlls-int/" .. outputdir .. "/%{prj.name}")
+    targetdir ("../../assets/dlls/" .. outputdir .. "/%{prj.name}")
+    objdir ("../../assets/dlls-int/" .. outputdir .. "/%{prj.name}")
 
     files 
     { 
-        "../../Assets/Scripts/%{prj.name}**.h",
-        "../../Assets/Scripts/%{prj.name}.cpp",
+        "../Assets/**.h",
+        "UnityBuildSource.cpp",
     }
 
     defines
@@ -40,19 +40,20 @@ project "NewSystem_New"
     -- Include directories.
     includedirs
     {
-        "../../../../Humble2/src",
-        "../../../../Humble2/src/Humble2",
-        "../../../../Humble2/src/Vendor",
-        "../../../../Humble2src/Vendor/spdlog-1.x/include",
-        "../../../../Humble2/src/Vendor/entt/include",
-        "../../../../Dependencies/GLFW/include",
-        "../../../../Dependencies/GLEW/include",
-        "../../../../Dependencies/ImGui/imgui",
-        "../../../../Dependencies/ImGui/imgui/backends",
-        "../../../../Dependencies/ImGuizmo",
-        "../../../../Dependencies/GLM",
-        "../../../../Dependencies/YAML-Cpp/yaml-cpp/include",
-        "../../../../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
+        "../Assets",
+        "../../../Humble2/src",
+        "../../../Humble2/src/Humble2",
+        "../../../Humble2/src/Vendor",
+        "../../../Humble2/src/Vendor/spdlog-1.x/include",
+        "../../../Humble2/src/Vendor/entt/include",
+        "../../../Dependencies/GLFW/include",
+        "../../../Dependencies/GLEW/include",
+        "../../../Dependencies/ImGui/imgui",
+        "../../../Dependencies/ImGui/imgui/backends",
+        "../../../Dependencies/ImGuizmo",
+        "../../../Dependencies/GLM",
+        "../../../Dependencies/YAML-Cpp/yaml-cpp/include",
+        "../../../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "%{VULKAN_SDK}/Include"
     }
     

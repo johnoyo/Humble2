@@ -43,6 +43,7 @@ namespace HBL2
 			bool m_OpenMaterialSetupPopup = false;
 			uint32_t m_SelectedMaterialType = 0;
 			bool m_OpenScriptSetupPopup = false;
+			bool m_OpenComponentSetupPopup = false;
 
 			Scene* m_ActiveScene = nullptr;
 			Handle<Scene> m_ActiveSceneTemp;

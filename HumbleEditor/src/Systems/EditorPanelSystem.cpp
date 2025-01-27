@@ -10,6 +10,7 @@
 #include "Resources\TypeDescriptors.h"
 
 #include "UI/LayoutLib.h"
+#include "Utilities/UnityBuilder.h"
 
 #include<vector>
 
@@ -160,18 +161,6 @@ namespace HBL2
 
 			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Camera, CameraEditor>();
 			HBL2::EditorUtilities::Get().InitCustomEditor<HBL2::Component::Camera, CameraEditor>();
-
-			using namespace entt::literals;
-
-			entt::meta<HBL2::Component::Transform>()
-				.type(entt::hashed_string(typeid(HBL2::Component::Transform).name()))
-				.data<&HBL2::Component::Transform::Translation>("Translation"_hs).prop("name"_hs, "Translation")
-				.data<&HBL2::Component::Transform::Rotation>("Rotation"_hs).prop("name"_hs, "Rotation")
-				.data<&HBL2::Component::Transform::QRotation>("QRotation"_hs).prop("name"_hs, "QRotation")
-				.data<&HBL2::Component::Transform::Scale>("Scale"_hs).prop("name"_hs, "Scale")
-				.data<&HBL2::Component::Transform::LocalMatrix>("LocalMatrix"_hs).prop("name"_hs, "LocalMatrix")
-				.data<&HBL2::Component::Transform::WorldMatrix>("WorldMatrix"_hs).prop("name"_hs, "WorldMatrix")
-				.data<&HBL2::Component::Transform::Static>("Static"_hs).prop("name"_hs, "Static");
 		}
 
 		void EditorPanelSystem::OnUpdate(float ts)
@@ -465,62 +454,58 @@ namespace HBL2
 
 			if (HBL2::Component::EditorVisible::SelectedEntity != entt::null)
 			{
-				using namespace entt::literals;
+				//// Iterate over all components of entity
+				//m_ActiveScene->GetRegistry().view<HBL2::Component::ID, HBL2::Component::Tag>().each([&](auto& id, auto& name)
+				//{
+				//	std::cout << name.Name << " (" << id.Identifier << ")" << std::endl;
+				//	std::cout << "\tComponents:" << std::endl;
 
-				// Iterate over all components of entity
-				m_ActiveScene->GetRegistry().view<HBL2::Component::ID, HBL2::Component::Tag>().each([&](auto& id, auto& name)
-				{
-					std::cout << name.Name << " (" << id.Identifier << ")" << std::endl;
-					std::cout << "\tComponents:" << std::endl;
+				//	for (auto&& curr : m_ActiveScene->GetRegistry().storage())
+				//	{
+				//		entt::id_type cid = curr.first;
+				//		auto& storage = curr.second;
+				//		entt::type_info ctype = storage.type();
 
-					for (auto&& curr : m_ActiveScene->GetRegistry().storage())
-					{
-						entt::id_type cid = curr.first;
-						auto& storage = curr.second;
-						entt::type_info ctype = storage.type();
+				//		if (storage.contains(HBL2::Component::EditorVisible::SelectedEntity))
+				//		{
+				//			// Get the component from the storage
+				//			auto component = storage.value(HBL2::Component::EditorVisible::SelectedEntity);
+				//			if (component)
+				//			{
+				//				entt::meta_any componentMeta = entt::forward_as_meta(m_ActiveScene->GetMetaContext(), component);
 
-						if (storage.contains(HBL2::Component::EditorVisible::SelectedEntity))
-						{
-							std::cout << "\t\t" << typeid(HBL2::Component::Tag).name() << std::endl;
-							std::cout << "\t\t" << ctype.hash() << std::endl;
-							std::cout << "\t\t" << ctype.name() << std::endl;
+				//				// Use reflection API to interact with the component
+				//				auto metaType = entt::resolve(m_ActiveScene->GetMetaContext(), ctype.hash());
+				//				if (metaType)
+				//				{
+				//					std::cout << "\t\t" << ctype.hash() << std::endl;
+				//					std::cout << "\t\t" << ctype.name() << std::endl;
+				//					std::cout << "\t\tComponent retrieved!" << std::endl;
 
-							// Get the component from the storage
-							auto component = storage.value(HBL2::Component::EditorVisible::SelectedEntity);
-							if (component)
-							{
-								std::cout << "\t\tComponent retrieved!" << std::endl;
+				//					//for (auto [id, data] : metaType.data())
+				//					//{
+				//					//	// Retrieve the name property of the member
+				//					//	auto name_prop = data.prop("name"_hs);
+				//					//	if (name_prop)
+				//					//	{
+				//					//		const char* memberName = name_prop.value().cast<const char*>();
 
-								entt::meta_any componentMeta = entt::forward_as_meta(component);
+				//					//		auto data = entt::resolve(ctype.hash()).data(entt::hashed_string(memberName));
+				//					//		auto value = data.get(componentMeta);
 
-								// Use reflection API to interact with the component
-								auto metaType = entt::resolve(ctype.hash());
-								if (metaType)
-								{
-									for (auto [id, data] : metaType.data())
-									{
-										// Retrieve the name property of the member
-										auto name_prop = data.prop("name"_hs);
-										if (name_prop)
-										{
-											const char* memberName = name_prop.value().cast<const char*>();
+				//					//		if (value)
+				//					//		{
+				//					//			//std::cout << "Member: " << data.prop("name"_hs).value().cast<std::string>() << std::endl;	
+				//					//		}
+				//					//	}
 
-											auto data = entt::resolve(ctype.hash()).data(entt::hashed_string(memberName));
-											auto value = data.get(componentMeta);
-
-											if (value)
-											{
-												//std::cout << "Member: " << data.prop("name"_hs).value().cast<std::string>() << std::endl;	
-											}
-										}
-
-										//std::cout << "Value: " << data.get(component).cast<std::string>() << std::endl;
-									}
-								}
-							}
-						}
-					}
-				});
+				//					//	//std::cout << "Value: " << data.get(component).cast<std::string>() << std::endl;
+				//					//}
+				//				}
+				//			}
+				//		}
+				//	}
+				//});
 
 				// Tag component.
 				if (m_ActiveScene->HasComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity))
@@ -546,11 +531,11 @@ namespace HBL2
 					{
 						auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity);
 
-						HBL2::EditorUtilities::Get().DrawDefaultEditor<HBL2::Component::Transform>(transform);
+						// HBL2::EditorUtilities::Get().DrawDefaultEditor<HBL2::Component::Transform>(transform);
 
-						//ImGui::DragFloat3("Translation", glm::value_ptr(transform.Translation), 0.25f);
-						//ImGui::DragFloat3("Rotation", glm::value_ptr(transform.Rotation), 0.25f);
-						//ImGui::DragFloat3("Scale", glm::value_ptr(transform.Scale), 0.25f);
+						ImGui::DragFloat3("Translation", glm::value_ptr(transform.Translation), 0.25f);
+						ImGui::DragFloat3("Rotation", glm::value_ptr(transform.Rotation), 0.25f);
+						ImGui::DragFloat3("Scale", glm::value_ptr(transform.Scale), 0.25f);
 
 						ImGui::TreePop();
 					}
@@ -879,6 +864,29 @@ namespace HBL2
 					}
 				}
 
+				using namespace entt::literals;
+
+				// Iterate over all registered meta types
+				for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
+				{
+					std::string componentName = meta_type.second.info().name().data();
+					componentName = NativeScriptUtilities::Get().CleanComponentName(componentName);
+
+					if (NativeScriptUtilities::Get().HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::TreeNodeEx((void*)meta_type.second.info().hash(), treeNodeFlags, componentName.c_str()))
+						{
+							entt::meta_any componentMeta = HBL2::NativeScriptUtilities::Get().GetComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+
+							HBL2::EditorUtilities::Get().DrawDefaultEditor(componentMeta);
+
+							ImGui::TreePop();
+						}
+
+						ImGui::Separator();
+					}
+				}
+
 				// Add component button.
 				if (ImGui::Button("Add Component"))
 				{
@@ -915,6 +923,19 @@ namespace HBL2
 					{
 						m_ActiveScene->AddComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity);
 						ImGui::CloseCurrentPopup();
+					}
+
+					// Iterate over all registered meta types
+					for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
+					{
+						std::string componentName = meta_type.second.info().name().data();
+						componentName = NativeScriptUtilities::Get().CleanComponentName(componentName);
+
+						if (ImGui::MenuItem(componentName.c_str()))
+						{
+							HBL2::NativeScriptUtilities::Get().AddComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
 					}
 
 					ImGui::EndPopup();
@@ -1197,6 +1218,11 @@ namespace HBL2
 						m_OpenScriptSetupPopup = true;
 					}
 
+					if (ImGui::MenuItem("Component"))
+					{
+						m_OpenComponentSetupPopup = true;
+					}
+
 					ImGui::EndMenu();
 				}
 
@@ -1216,6 +1242,17 @@ namespace HBL2
 				{
 					ISystem* newSystem = NativeScriptUtilities::Get().GenerateSystem(systemNameBuffer);
 
+					//// Create .cpp file with placeholder code.
+					//auto scriptAssetHandle = NativeScriptUtilities::Get().CreateSystemFile(m_CurrentDirectory, systemNameBuffer);
+
+					//AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
+
+					//// Combine all .cpp files in assets in unity build source file.
+					//UnityBuilder::Get().Combine();
+
+					//// Build unity build source dll.
+					//UnityBuilder::Get().Build();
+
 					m_OpenScriptSetupPopup = false;
 				}
 
@@ -1224,6 +1261,32 @@ namespace HBL2
 				if (ImGui::Button("Cancel"))
 				{
 					m_OpenScriptSetupPopup = false;
+				}
+
+				ImGui::End();
+			}
+
+			if (m_OpenComponentSetupPopup)
+			{
+				ImGui::Begin("Component Setup", &m_OpenComponentSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+				static char componentNameBuffer[256] = "NewComponent";
+				ImGui::InputText("Component Name", componentNameBuffer, 256);
+
+				ImGui::NewLine();
+
+				if (ImGui::Button("OK"))
+				{
+					NativeScriptUtilities::Get().GenerateComponent(componentNameBuffer);
+
+					m_OpenComponentSetupPopup = false;
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel"))
+				{
+					m_OpenComponentSetupPopup = false;
 				}
 
 				ImGui::End();
@@ -1265,7 +1328,7 @@ namespace HBL2
 
 					if (shaderAssetHandle.IsValid())
 					{
-						std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->FilePath).string() + ".hblshader", 0);
+						std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblshader", 0);
 
 						YAML::Emitter out;
 						out << YAML::BeginMap;

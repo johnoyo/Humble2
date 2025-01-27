@@ -45,8 +45,8 @@ namespace HBL2
 			asset->Indentifier = ImportScene(asset).Pack();
 			return asset->Indentifier;
 		case AssetType::Script:
-			// asset->Indentifier = ImportScript(asset).Pack();
-			return 0; // asset->Indentifier;
+			asset->Indentifier = ImportScript(asset).Pack();
+			return asset->Indentifier;
 		}
 
 		return 0;
@@ -63,6 +63,8 @@ namespace HBL2
 		{
 		case AssetType::Scene:
 			SaveScene(asset);
+		case AssetType::Script:
+			SaveScript(asset);
 			break;
 		}
 	}
@@ -375,6 +377,37 @@ namespace HBL2
 		return sceneHandle;
 	}
 
+	Handle<Script> AssetImporter::ImportScript(Asset* asset)
+	{
+		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscript");
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Script"].IsDefined())
+		{
+			HBL2_CORE_TRACE("Script not found: {0}", ss.str());
+			return Handle<Script>();
+		}
+
+		auto scriptProperties = data["Script"];
+		if (scriptProperties)
+		{
+			const std::string& scriptName = asset->FilePath.filename().stem().string();
+			uint32_t type = scriptProperties["Type"].as<uint32_t>();
+
+			auto script = ResourceManager::Instance->CreateScript({
+				.debugName = scriptName.c_str(),
+				.type = (ScriptType)type,
+				.path = asset->FilePath,
+			});
+
+			return script;
+		}
+
+		return Handle<Script>();
+	}
+
 	Handle<Mesh> AssetImporter::ImportMesh(Asset* asset)
 	{
 		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmesh");
@@ -476,6 +509,20 @@ namespace HBL2
 		serializer.Serialize(Project::GetAssetFileSystemPath(asset->FilePath));
 	}
 
+	void AssetImporter::SaveScript(Asset* asset)
+	{
+		Handle<Script> scriptHandle = Handle<Script>::UnPack(asset->Indentifier);
+
+		if (!scriptHandle.IsValid())
+		{
+			HBL2_CORE_ERROR("Could not save asset {0} at path: {1}, because the handle is invalid.", asset->DebugName, asset->FilePath.string());
+			return;
+		}
+
+		Script* script = ResourceManager::Instance->GetScript(scriptHandle);
+		UnityBuilder::Get().Build();
+	}
+
 	/// Destroy methods
 
 	void AssetImporter::DestroyTexture(Asset* asset)
@@ -486,6 +533,10 @@ namespace HBL2
 		}
 
 		// TODO: Delete files
+	}
+
+	void AssetImporter::DestroyScript(Asset* asset)
+	{
 	}
 
 	/// Unload methods
@@ -582,5 +633,9 @@ namespace HBL2
 
 		ResourceManager::Instance->DeleteShader(material->Shader);
 		ResourceManager::Instance->DeleteBindGroup(material->BindGroup);
+	}
+	
+	void AssetImporter::UnloadScript(Asset* asset)
+	{
 	}
 }
