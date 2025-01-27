@@ -32,14 +32,8 @@ namespace HBL2
 				Scene* currentScene = ResourceManager::Instance->GetScene(sce.CurrentScene);
 				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != std::string::npos)
 				{
-					// Delete dll systems instance.
-					for (ISystem* system : currentScene->GetRuntimeSystems())
-					{
-						if (system->GetType() == SystemType::User)
-						{
-							NativeScriptUtilities::Get().UnloadSystem(system->Name, currentScene);
-						}
-					}
+					// Unload unity build dll.
+					NativeScriptUtilities::Get().UnloadUnityBuild(currentScene);
 
 					// Delete play mode scene.
 					ResourceManager::Instance->DeleteScene(sce.CurrentScene);
@@ -1240,18 +1234,18 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
-					ISystem* newSystem = NativeScriptUtilities::Get().GenerateSystem(systemNameBuffer);
+					// ISystem* newSystem = NativeScriptUtilities::Get().GenerateSystem(systemNameBuffer);
 
-					//// Create .cpp file with placeholder code.
-					//auto scriptAssetHandle = NativeScriptUtilities::Get().CreateSystemFile(m_CurrentDirectory, systemNameBuffer);
+					// Create .cpp file with placeholder code.
+					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateSystemFile(m_CurrentDirectory, systemNameBuffer);
 
-					//AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
+					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
 
-					//// Combine all .cpp files in assets in unity build source file.
-					//UnityBuilder::Get().Combine();
+					// Combine all .cpp files in assets in unity build source file.
+					UnityBuilder::Get().Combine();
 
-					//// Build unity build source dll.
-					//UnityBuilder::Get().Build();
+					// Build unity build source dll.
+					UnityBuilder::Get().Build();
 
 					m_OpenScriptSetupPopup = false;
 				}
@@ -1663,13 +1657,21 @@ namespace HBL2
 
 				if (ImGui::BeginPopupContextItem())
 				{
-					if (extension == ".cpp")
+					if (extension == ".h")
 					{
 						if (ImGui::MenuItem("Recompile"))
 						{
 							const auto& systemName = entry.path().filename().stem().string();
 
-							ISystem* newSystem = NativeScriptUtilities::Get().CompileSystem(systemName);
+							// ISystem* newSystem = NativeScriptUtilities::Get().CompileSystem(systemName);
+
+							NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
+
+							// Combine all .cpp files in assets in unity build source file.
+							UnityBuilder::Get().Combine();
+
+							// Build unity build source dll.
+							UnityBuilder::Get().Build();
 						}
 					}
 					ImGui::EndPopup();

@@ -49,6 +49,11 @@ namespace HBL2
 			return GetAssetDirectory() / path;
 		}
 
+		static const std::string& GetName()
+		{
+			return s_ActiveProject->m_Spec.Name;
+		}
+
 		static Project* Create(const std::string& name = "");
 		static Project* Load(const std::filesystem::path& path);
 		static void Save(const std::filesystem::path& path);

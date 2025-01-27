@@ -8,7 +8,12 @@
 
 /*
 
-Create System -> Update UnityBuild
+Create system .h file:
+- Update combined file.
+- Build unity build source file to dll.
+
+When drag and drop system to systems:
+- Register it to active scene.
 
 */
 

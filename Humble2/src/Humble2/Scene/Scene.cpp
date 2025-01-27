@@ -78,14 +78,28 @@ namespace HBL2
         dst->RegisterSystem(new SpriteRenderingSystem);
         dst->RegisterSystem(new CompositeRenderingSystem);
 
-        // Clone dll user systems.
-        for (ISystem* system : src->m_Systems)
+        bool hasUserSystems = false;
+
+        // Check for user systems.
+        for (ISystem* system : src->m_RuntimeSystems)
         {
             if (system->GetType() == SystemType::User)
             {
-                const std::string& dllPath = "assets\\dlls\\" + system->Name + "\\" + system->Name + ".dll";
-                ISystem* newSystem = NativeScriptUtilities::Get().LoadSystem(dllPath, dst);
+                hasUserSystems = true;
+                break;
             }
+        }
+
+        if (hasUserSystems)
+        {
+            const std::string& projectName = Project::GetActive()->GetName();
+
+    #ifdef DEBUG
+            const auto& dllPath = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / src->GetName() / "UnityBuild.dll";
+    #else
+            const auto& dllPath = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / src->GetName() / "UnityBuild.dll";
+    #endif
+            NativeScriptUtilities::Get().LoadUnityBuild(dst, dllPath.string());
         }
 
         // Set main camera.
@@ -130,14 +144,7 @@ namespace HBL2
             }
         }
 
-        if (system->GetType() == SystemType::User)
-        {
-            NativeScriptUtilities::Get().UnloadSystem(system->Name, this);
-        }
-        else
-        {
-            delete system;
-        }
+        delete system;
     }
 
     void Scene::operator=(const HBL2::Scene& other)

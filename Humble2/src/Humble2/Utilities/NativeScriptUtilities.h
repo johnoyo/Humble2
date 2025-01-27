@@ -85,6 +85,10 @@ namespace HBL2
 		ISystem* LoadSystem(const std::string& path, Scene* ctx);
 		void UnloadSystem(const std::string& dllName, Scene* ctx);
 
+		void LoadUnityBuild(Scene* ctx);
+		void LoadUnityBuild(Scene* ctx, const std::string& path);
+		void UnloadUnityBuild(Scene* ctx);
+
 		std::string GetDefaultSystemCode(const std::string& systemName);	
 		std::string GetDefaultSolutionText(const std::string& systemName);	
 		std::string GetDefaultProjectText(const std::string& projectIncludes);

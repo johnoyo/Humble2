@@ -5,8 +5,10 @@ namespace HBL2
 	extern "C"
 	{
 		typedef ISystem* (*CreateSystemFunc)();
+
+		typedef void (*RegisterSystemsFunc)(Scene*);
 		
-		typedef const char* (*RegisterComponentFunc)(entt::meta_ctx* meta_ctx);
+		typedef const char* (*RegisterComponentFunc)(entt::meta_ctx*);
 
 		typedef entt::meta_any (*AddNewComponentFunc)(Scene*, entt::entity);
 
@@ -233,12 +235,12 @@ public:
 	{
 	}
 };
-
+/*
 // Factory function to create the system
 extern "C" __declspec(dllexport) HBL2::ISystem* CreateSystem()
 {
 	return new {SystemName}();
-})";
+}*/)";
 
 		size_t pos = systemCode.find(placeholder);
 
@@ -253,11 +255,10 @@ extern "C" __declspec(dllexport) HBL2::ISystem* CreateSystem()
 
 	std::string NativeScriptUtilities::GetDefaultSolutionText(const std::string& systemName)
 	{
-		const std::string& placeholder = "{SystemName}";
-
-		const std::string& solutionText = R"(Microsoft Visual Studio Solution File, Format Version 12.00
+		const std::string& solutionText = R"(
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "{SystemName}", "{SystemName}.vcxproj", "{999790BD-0504-4CB8-CEF7-E3153A236E20}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnityBuild", "UnityBuild.vcxproj", "{0EF03882-FAA7-7ACF-63AF-532B4F8615C0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -265,10 +266,10 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{999790BD-0504-4CB8-CEF7-E3153A236E20}.Debug|x64.ActiveCfg = Debug|x64
-		{999790BD-0504-4CB8-CEF7-E3153A236E20}.Debug|x64.Build.0 = Debug|x64
-		{999790BD-0504-4CB8-CEF7-E3153A236E20}.Release|x64.ActiveCfg = Release|x64
-		{999790BD-0504-4CB8-CEF7-E3153A236E20}.Release|x64.Build.0 = Release|x64
+		{0EF03882-FAA7-7ACF-63AF-532B4F8615C0}.Debug|x64.ActiveCfg = Debug|x64
+		{0EF03882-FAA7-7ACF-63AF-532B4F8615C0}.Debug|x64.Build.0 = Debug|x64
+		{0EF03882-FAA7-7ACF-63AF-532B4F8615C0}.Release|x64.ActiveCfg = Release|x64
+		{0EF03882-FAA7-7ACF-63AF-532B4F8615C0}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -276,24 +277,20 @@ Global
 EndGlobal
 		)";
 
-		size_t pos = solutionText.find(placeholder);
-
-		while (pos != std::string::npos)
-		{
-			((std::string&)solutionText).replace(pos, placeholder.length(), systemName);
-			pos = solutionText.find(placeholder, pos + systemName.length());
-		}
-
 		return solutionText;
 	}
 
-	std::string NativeScriptUtilities::GetDefaultProjectText(const std::string& systemName)
+	std::string NativeScriptUtilities::GetDefaultProjectText(const std::string& projectIncludes)
 	{
 		const std::string& vulkanSDK = std::getenv("VULKAN_SDK");
 
-		const std::string& placeholder = "{SystemName}";
+		const std::string& placeholderIncludes = "{Includes}";
 		const std::string& placeholderPDB = "{randomPDB}";
 		const std::string& placeholderVulkan = "{VULKAN_SDK}";
+		const std::string& placeholderScene = "{Scene}";
+		const std::string& placeholderProject = "{Project}";
+
+		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 		const std::string& projectText = R"(<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -308,10 +305,10 @@ EndGlobal
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{999790BD-0504-4CB8-CEF7-E3153A236E20}</ProjectGuid>
+    <ProjectGuid>{0EF03882-FAA7-7ACF-63AF-532B4F8615C0}</ProjectGuid>
     <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>{SystemName}</RootNamespace>
+    <RootNamespace>UnityBuild</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -339,24 +336,24 @@ EndGlobal
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>..\..\..\assets\dlls\{SystemName}\</OutDir>
-    <IntDir>..\..\..\assets\dlls-int\{SystemName}\Debug\</IntDir>
-    <TargetName>{SystemName}</TargetName>
+    <OutDir>..\..\..\assets\dlls\Debug-x86_64\{Project}\{Scene}\</OutDir>
+    <IntDir>..\..\..\assets\dlls-int\Debug-x86_64\{Project}\{Scene}\</IntDir>
+    <TargetName>UnityBuild</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\..\..\assets\dlls\{SystemName}\</OutDir>
-    <IntDir>..\..\..\assets\dlls-int\{SystemName}\Release\</IntDir>
-    <TargetName>{SystemName}</TargetName>
+    <OutDir>..\..\..\assets\dlls\Release-x86_64\{Project}\{Scene}\</OutDir>
+    <IntDir>..\..\..\assets\dlls-int\Release-x86_64\{Project}\{Scene}\</IntDir>
+    <TargetName>UnityBuild</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\..\Humble2\src;..\..\..\..\Humble2\src\Humble2;..\..\..\..\Humble2\src\Vendor;..\..\..\..\Humble2\src\Vendor\entt\include;..\..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\..\Dependencies\ImGui\imgui;..\..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\..\Dependencies\GLFW\include;..\..\..\..\Dependencies\GLEW\include;..\..\..\..\Dependencies\stb_image;..\..\..\..\Dependencies\GLM;..\..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\Assets;..\..\..\..\Humble2\src;..\..\..\..\Humble2\src\Humble2;..\..\..\..\Humble2\src\Vendor;..\..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\..\Humble2\src\Vendor\entt\include;..\..\..\..\Dependencies\GLFW\include;..\..\..\..\Dependencies\GLEW\include;..\..\..\..\Dependencies\ImGui\imgui;..\..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\..\Dependencies\ImGuizmo;..\..\..\..\Dependencies\GLM;..\..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;..\..\..\..\Dependencies\Emscripten\emsdk\upstream\emscripten\system\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
@@ -370,16 +367,16 @@ EndGlobal
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Humble2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\bin\Debug-x86_64\Humble2;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <ImportLibrary>..\..\..\assets\dlls\{SystemName}\{SystemName}.lib</ImportLibrary>
-      <ProgramDatabaseFile>..\..\..\assets\dlls\{SystemName}\{randomPDB}.pdb</ProgramDatabaseFile>
+      <ImportLibrary>..\..\..\assets\dlls\Debug-x86_64\{Project}\{Scene}\UnityBuild.lib</ImportLibrary>
+      <ProgramDatabaseFile>..\..\..\assets\dlls\Debug-x86_64\{Project}\{Scene}\{randomPDB}.pdb</ProgramDatabaseFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\..\Humble2\src;..\..\..\..\Humble2\src\Humble2;..\..\..\..\Humble2\src\Vendor;..\..\..\..\Humble2\src\Vendor\entt\include;..\..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\..\Dependencies\ImGui\imgui;..\..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\..\Dependencies\GLFW\include;..\..\..\..\Dependencies\GLEW\include;..\..\..\..\Dependencies\stb_image;..\..\..\..\Dependencies\GLM;..\..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\Assets;..\..\..\..\Humble2\src;..\..\..\..\Humble2\src\Humble2;..\..\..\..\Humble2\src\Vendor;..\..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\..\Humble2\src\Vendor\entt\include;..\..\..\..\Dependencies\GLFW\include;..\..\..\..\Dependencies\GLEW\include;..\..\..\..\Dependencies\ImGui\imgui;..\..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\..\Dependencies\ImGuizmo;..\..\..\..\Dependencies\GLM;..\..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;..\..\..\..\Dependencies\Emscripten\emsdk\upstream\emscripten\system\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -396,12 +393,15 @@ EndGlobal
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>Humble2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\bin\Release-x86_64\Humble2;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <ImportLibrary>..\..\..\assets\dlls\{SystemName}\{SystemName}.lib</ImportLibrary>
-      <ProgramDatabaseFile>..\..\..\assets\dlls\{SystemName}\{randomPDB}.pdb</ProgramDatabaseFile>
+      <ImportLibrary>..\..\..\assets\dlls\Release-x86_64\{Project}\{Scene}\UnityBuild.lib</ImportLibrary>
+      <ProgramDatabaseFile>..\..\..\assets\dlls\Release-x86_64\{Project}\{Scene}\{randomPDB}.pdb</ProgramDatabaseFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Assets\Scripts\{SystemName}.cpp" />
+    {Includes}
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="UnityBuildSource.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
@@ -409,12 +409,33 @@ EndGlobal
 </Project>
 		)";
 
-		size_t pos = projectText.find(placeholder);
+		// Fill in project includes
+		size_t pos = projectText.find(placeholderIncludes);
 
 		while (pos != std::string::npos)
 		{
-			((std::string&)projectText).replace(pos, placeholder.length(), systemName);
-			pos = projectText.find(placeholder, pos + systemName.length());
+			((std::string&)projectText).replace(pos, placeholderIncludes.length(), projectIncludes);
+			pos = projectText.find(placeholderIncludes, pos + projectIncludes.length());
+		}
+
+		// Fill in project name
+		pos = projectText.find(placeholderProject);
+		const std::string& projectName = Project::GetActive()->GetName();
+
+		while (pos != std::string::npos)
+		{
+			((std::string&)projectText).replace(pos, placeholderProject.length(), projectName);
+			pos = projectText.find(placeholderProject, pos + projectName.length());
+		}
+
+		// Fill in scene name
+		pos = projectText.find(placeholderScene);
+		const std::string& sceneName = activeScene->GetName();
+
+		while (pos != std::string::npos)
+		{
+			((std::string&)projectText).replace(pos, placeholderScene.length(), sceneName);
+			pos = projectText.find(placeholderScene, pos + sceneName.length());
 		}
 
 		// Fill in pdb file name
@@ -592,7 +613,55 @@ extern "C" __declspec(dllexport) bool HasNewComponent(HBL2::Scene* ctx, entt::en
 		if (m_DynamicLibraries.find(fullDllName) != m_DynamicLibraries.end())
 		{
 			m_DynamicLibraries[fullDllName].Free();
-			m_DynamicLibraries.erase(dllName);
+			m_DynamicLibraries.erase(fullDllName);
+		}
+	}
+
+	void NativeScriptUtilities::LoadUnityBuild(Scene* ctx)
+	{
+		const std::string& projectName = Project::GetActive()->GetName();
+
+#ifdef DEBUG
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / ctx->GetName() / "UnityBuild.dll";
+#else
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / ctx->GetName() / "UnityBuild.dll";
+#endif
+
+		LoadUnityBuild(ctx, path.string());
+	}
+
+	void NativeScriptUtilities::LoadUnityBuild(Scene* ctx, const std::string& path)
+	{
+		// Load new unity build dll.
+		DynamicLibrary unityBuild = DynamicLibrary(path);
+
+		// Retrieve function that registers the systems from the dll.
+		RegisterSystemsFunc registerSystems = unityBuild.GetFunction<RegisterSystemsFunc>("RegisterSystems");
+
+		// Invoke the register systems func.
+		registerSystems(ctx);
+
+		m_DynamicLibraries[ctx->GetName() + "_UnityBuild"] = unityBuild;
+	}
+
+	void NativeScriptUtilities::UnloadUnityBuild(Scene* ctx)
+	{
+		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
+
+		// Deregister systems.
+		for (ISystem* userSystem : ctx->GetRuntimeSystems())
+		{
+			if (userSystem->GetType() == SystemType::User)
+			{
+				ctx->DeregisterSystem(userSystem);
+			}
+		}
+
+		// Free dll and remove from map.
+		if (m_DynamicLibraries.find(fullDllName) != m_DynamicLibraries.end())
+		{
+			m_DynamicLibraries[fullDllName].Free();
+			m_DynamicLibraries.erase(fullDllName);
 		}
 	}
 
