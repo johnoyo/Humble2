@@ -535,6 +535,19 @@ namespace HBL2
 			}
 		}
 
+		std::vector<std::string> userComponentNames;
+		std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>> data;
+
+		// Store all registered meta types.
+		for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
+		{
+			std::string componentName = meta_type.second.info().name().data();
+			componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+			userComponentNames.push_back(componentName);
+
+			NativeScriptUtilities::Get().SerializeComponents(componentName, activeScene, data);
+		}
+
 		// Unload unity build dll.
 		NativeScriptUtilities::Get().UnloadUnityBuild(activeScene);
 
@@ -544,10 +557,33 @@ namespace HBL2
 		// Build unity build source dll.
 		UnityBuilder::Get().Build();
 
-		// Re-register systems
+		// Re-register systems.
 		for (const auto& userSystemName : userSystemNames)
 		{
 			NativeScriptUtilities::Get().RegisterSystem(userSystemName, activeScene);
+		}
+
+		bool newComponentTobeRegistered = true;
+
+		// Re-register the components.
+		for (const auto& userComponentName : userComponentNames)
+		{
+			if (script->Type == ScriptType::COMPONENT)
+			{
+				if (userComponentName == script->Name)
+				{
+					newComponentTobeRegistered = false;
+				}
+			}
+
+			NativeScriptUtilities::Get().RegisterComponent(userComponentName, activeScene);
+
+			NativeScriptUtilities::Get().DeserializeComponents(userComponentName, activeScene, data);
+		}
+
+		if (newComponentTobeRegistered && script->Type == ScriptType::COMPONENT)
+		{
+			NativeScriptUtilities::Get().RegisterComponent(script->Name, activeScene);
 		}
 	}
 

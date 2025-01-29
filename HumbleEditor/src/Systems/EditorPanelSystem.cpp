@@ -864,11 +864,22 @@ namespace HBL2
 				for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
 				{
 					std::string componentName = meta_type.second.info().name().data();
-					componentName = NativeScriptUtilities::Get().CleanComponentName(componentName);
+					componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
 
 					if (NativeScriptUtilities::Get().HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
 					{
-						if (ImGui::TreeNodeEx((void*)meta_type.second.info().hash(), treeNodeFlags, componentName.c_str()))
+						bool opened = ImGui::TreeNodeEx((void*)meta_type.second.info().hash(), treeNodeFlags, componentName.c_str());
+
+						ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
+
+						bool removeComponent = false;
+
+						if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+						{
+							removeComponent = true;
+						}
+
+						if (opened)
 						{
 							entt::meta_any componentMeta = HBL2::NativeScriptUtilities::Get().GetComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
 
@@ -878,6 +889,11 @@ namespace HBL2
 						}
 
 						ImGui::Separator();
+
+						if (removeComponent)
+						{
+							HBL2::NativeScriptUtilities::Get().RemoveComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+						}
 					}
 				}
 
@@ -923,7 +939,7 @@ namespace HBL2
 					for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
 					{
 						std::string componentName = meta_type.second.info().name().data();
-						componentName = NativeScriptUtilities::Get().CleanComponentName(componentName);
+						componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
 
 						if (ImGui::MenuItem(componentName.c_str()))
 						{
@@ -1234,9 +1250,7 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
-					// ISystem* newSystem = NativeScriptUtilities::Get().GenerateSystem(systemNameBuffer);
-
-					// Create .cpp file with placeholder code.
+					// Create .h file with placeholder code.
 					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateSystemFile(m_CurrentDirectory, systemNameBuffer);
 
 					// Import script.
@@ -1269,7 +1283,14 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
-					NativeScriptUtilities::Get().GenerateComponent(componentNameBuffer);
+					// Create .h file with placeholder code.
+					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateComponentFile(m_CurrentDirectory, componentNameBuffer);
+
+					// Import script.
+					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
+
+					// Save script (build).
+					AssetManager::Instance->SaveAsset(scriptAssetHandle);
 
 					m_OpenComponentSetupPopup = false;
 				}
@@ -1660,7 +1681,7 @@ namespace HBL2
 						if (ImGui::MenuItem("Recompile"))
 						{
 							UUID assetUUID = std::hash<std::string>()(relativePath.string());
-							AssetManager::Instance->SaveAsset(assetUUID);
+							AssetManager::Instance->SaveAsset(assetUUID);						// NOTE: Consider changing this!
 						}
 					}
 					ImGui::EndPopup();

@@ -52,7 +52,7 @@ namespace HBL2
 				{
 					std::string typeName = componentMeta.type().info().name().data();
 
-					typeName = NativeScriptUtilities::Get().CleanComponentName(typeName);
+					typeName = NativeScriptUtilities::Get().CleanComponentNameO1(typeName);
 
 					const char* typeNameClean = typeName.c_str();
 					const char* memberName = name_prop.value().cast<const char*>();

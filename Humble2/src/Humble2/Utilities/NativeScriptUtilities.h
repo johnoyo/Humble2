@@ -79,8 +79,10 @@ namespace HBL2
 		static void Shutdown();
 
 		Handle<Asset> CreateSystemFile(const std::filesystem::path& currentDir, const std::string& systemName);
+		Handle<Asset> CreateComponentFile(const std::filesystem::path& currentDir, const std::string& componentName);
 
 		void RegisterSystem(const std::string& name, Scene* ctx);
+		void RegisterComponent(const std::string& name, Scene* ctx);
 
 		void LoadUnityBuild(Scene* ctx);
 		void LoadUnityBuild(Scene* ctx, const std::string& path);
@@ -98,8 +100,14 @@ namespace HBL2
 		void LoadComponent(const std::string& path, Scene* ctx);
 		entt::meta_any AddComponent(const std::string& name, Scene* ctx, entt::entity entity);
 		entt::meta_any GetComponent(const std::string& name, Scene* ctx, entt::entity entity);
+		void RemoveComponent(const std::string& name, Scene* ctx, entt::entity entity);
 		bool HasComponent(const std::string& name, Scene* ctx, entt::entity entity);
-		std::string CleanComponentName(const std::string& input);
+
+		void SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data);
+		void DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data);
+
+		std::string CleanComponentNameO1(const std::string& input);
+		std::string CleanComponentNameO3(const std::string& input);
 
 	private:
 		NativeScriptUtilities() = default;

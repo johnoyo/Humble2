@@ -33,7 +33,10 @@ namespace HBL2
 	private:
 		UnityBuilder() = default;
 
-		const std::string m_UnityBuildSource = R"({Includes})";
+		const std::string m_UnityBuildSource = R"({ComponentIncludes}
+
+{SystemIncludes}
+)";
 		std::string m_UnityBuildSourceFinal;
 
 		static UnityBuilder* s_Instance;

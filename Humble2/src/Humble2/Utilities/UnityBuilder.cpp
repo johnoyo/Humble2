@@ -110,7 +110,8 @@ namespace HBL2
 		m_UnityBuildSourceFinal = m_UnityBuildSource;
 
 		// Collect includes and systems registration
-		std::string includes;
+		std::string componentIncludes;
+		std::string systemIncludes;
 		std::string projectIncludes;
 
 		for (const auto assetHandle : AssetManager::Instance->GetRegisteredAssets())
@@ -125,12 +126,15 @@ namespace HBL2
 				{
 					Script* script = ResourceManager::Instance->GetScript(scriptHandle);
 
-					if (script->Type == ScriptType::UNITY_BUILD_SCRIPT)
+					if (script->Type == ScriptType::COMPONENT)
 					{
-						continue;
+						componentIncludes += std::format("#include \"{}\"\n", script->Path.string());
+					}
+					else if (script->Type == ScriptType::SYSTEM)
+					{
+						systemIncludes += std::format("#include \"{}\"\n", script->Path.string());
 					}
 
-					includes += std::format("#include \"{}\"\n", script->Path.string());
 					projectIncludes += std::format("  <ClInclude Include=\"..\\Assets\\{}\" />\n", script->Path.string());
 				}
 			}
@@ -138,14 +142,26 @@ namespace HBL2
 
 		// Inject includes in the code.
 		{
-			const std::string& placeholder = "{Includes}";
+			const std::string& placeholder = "{ComponentIncludes}";
 
 			size_t pos = m_UnityBuildSourceFinal.find(placeholder);
 
 			while (pos != std::string::npos)
 			{
-				((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), includes);
-				pos = m_UnityBuildSourceFinal.find(placeholder, pos + includes.length());
+				((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), componentIncludes);
+				pos = m_UnityBuildSourceFinal.find(placeholder, pos + componentIncludes.length());
+			}
+		}
+
+		{
+			const std::string& placeholder = "{SystemIncludes}";
+
+			size_t pos = m_UnityBuildSourceFinal.find(placeholder);
+
+			while (pos != std::string::npos)
+			{
+				((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), systemIncludes);
+				pos = m_UnityBuildSourceFinal.find(placeholder, pos + systemIncludes.length());
 			}
 		}
 

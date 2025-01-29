@@ -174,6 +174,22 @@ namespace HBL2
 			return m_Name;
 		}
 
+		template <typename T>
+		static std::vector<std::byte> Serialize(const T& component)
+		{
+			std::vector<std::byte> data(sizeof(T));
+			std::memcpy(data.data(), &component, sizeof(T));
+			return data;
+		}
+
+		template <typename T>
+		static T Deserialize(const std::vector<std::byte>& data)
+		{
+			T component;
+			std::memcpy(&component, data.data(), sizeof(T));
+			return component;
+		}
+
 		entt::entity MainCamera = entt::null;
 
 	private:

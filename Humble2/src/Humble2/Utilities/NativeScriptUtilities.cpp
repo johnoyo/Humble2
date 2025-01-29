@@ -5,16 +5,20 @@ namespace HBL2
 	extern "C"
 	{
 		typedef void (*RegisterSystemFunc)(Scene*);
+				
+		typedef const char* (*RegisterComponentFunc)(Scene*);
 
-		typedef void (*RegisterSystemsFunc)(Scene*);
-		
-		typedef const char* (*RegisterComponentFunc)(entt::meta_ctx*);
+		typedef entt::meta_any (*AddComponentFunc)(Scene*, entt::entity);
 
-		typedef entt::meta_any (*AddNewComponentFunc)(Scene*, entt::entity);
+		typedef entt::meta_any (*GetComponentFunc)(Scene*, entt::entity);
 
-		typedef entt::meta_any (*GetNewComponentFunc)(Scene*, entt::entity);
+		typedef void (*RemoveComponentFunc)(Scene*, entt::entity);
 
-		typedef bool (*HasNewComponentFunc)(Scene*, entt::entity);
+		typedef bool (*HasComponentFunc)(Scene*, entt::entity);
+
+		typedef void (*SerializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>&);
+
+		typedef void (*DeserializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>&);
 	}
 
 	NativeScriptUtilities* NativeScriptUtilities::s_Instance = nullptr;
@@ -72,11 +76,44 @@ namespace HBL2
 		return scriptAssetHandle;
 	}
 
+	Handle<Asset> NativeScriptUtilities::CreateComponentFile(const std::filesystem::path& currentDir, const std::string& componentName)
+	{
+		auto relativePath = std::filesystem::relative(currentDir / (componentName + ".h"), HBL2::Project::GetAssetDirectory());
+
+		auto scriptAssetHandle = AssetManager::Instance->CreateAsset({
+			.debugName = "script-asset",
+			.filePath = relativePath,
+			.type = AssetType::Script,
+		});
+
+		if (scriptAssetHandle.IsValid())
+		{
+			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblscript", 0);
+			YAML::Emitter out;
+			out << YAML::BeginMap;
+			out << YAML::Key << "Script" << YAML::Value;
+			out << YAML::BeginMap;
+			out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(scriptAssetHandle)->UUID;
+			out << YAML::Key << "Type" << YAML::Value << (uint32_t)ScriptType::COMPONENT;
+			out << YAML::EndMap;
+			out << YAML::EndMap;
+			fout << out.c_str();
+			fout.close();
+		}
+
+		std::ofstream fout(currentDir / (componentName + ".h"), 0);
+		fout << GetDefaultComponentCode(componentName);
+		fout.close();
+
+		return scriptAssetHandle;
+	}
+
 	std::string NativeScriptUtilities::GetDefaultSystemCode(const std::string& systemName)
 	{
 		const std::string& placeholder = "{SystemName}";
 
-		const std::string& systemCode = R"(#include "Humble2Core.h"
+		const std::string& systemCode = R"(#pragma once
+#include "Humble2Core.h"
 
 class {SystemName} final : public HBL2::ISystem
 {
@@ -144,6 +181,7 @@ EndGlobal
 		const std::string& placeholderPDB = "{randomPDB}";
 		const std::string& placeholderVulkan = "{VULKAN_SDK}";
 		const std::string& placeholderProject = "{Project}";
+		const std::string& placeholderHash = "{Hash}";
 
 		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
@@ -207,7 +245,7 @@ EndGlobal
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;COMPONENT_NAME_HASH={Hash};HBL2_PLATFORM_WINDOWS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\Assets;..\..\..\Humble2\src;..\..\..\Humble2\src\Humble2;..\..\..\Humble2\src\Vendor;..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\Humble2\src\Vendor\entt\include;..\..\..\Dependencies\GLFW\include;..\..\..\Dependencies\GLEW\include;..\..\..\Dependencies\ImGui\imgui;..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\Dependencies\ImGuizmo;..\..\..\Dependencies\GLM;..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;..\..\..\Dependencies\Emscripten\emsdk\upstream\emscripten\system\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
@@ -230,7 +268,7 @@ EndGlobal
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;COMPONENT_NAME_HASH={Hash};HBL2_PLATFORM_WINDOWS;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\Assets;..\..\..\Humble2\src;..\..\..\Humble2\src\Humble2;..\..\..\Humble2\src\Vendor;..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\Humble2\src\Vendor\entt\include;..\..\..\Dependencies\GLFW\include;..\..\..\Dependencies\GLEW\include;..\..\..\Dependencies\ImGui\imgui;..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\Dependencies\ImGuizmo;..\..\..\Dependencies\GLM;..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;..\..\..\Dependencies\Emscripten\emsdk\upstream\emscripten\system\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -302,6 +340,16 @@ EndGlobal
 			pos = projectText.find(placeholderVulkan, pos + vulkanSDK.length());
 		}
 
+		// Fill in hash
+		pos = projectText.find(placeholderHash);
+		const std::string& componentNameHash = std::to_string(Random::UInt64());
+
+		while (pos != std::string::npos)
+		{
+			((std::string&)projectText).replace(pos, placeholderHash.length(), componentNameHash);
+			pos = projectText.find(placeholderHash, pos + componentNameHash.length());
+		}
+
 		return projectText;
 	}
 
@@ -309,53 +357,99 @@ EndGlobal
 	{
 		const std::string& placeholder = "{ComponentName}";
 
-		const std::string& componentCode = R"(#include "Humble2Core.h"
+		const std::string& componentCode = R"(#pragma once
 
-struct {ComponentName}
+#include "Humble2Core.h"
+
+// Just a POD struct
+COMPONENT({ComponentName},
 {
-	int Value = 0;
-};
+    int Value = 1;
+})
 
 // Factory function to register the component
-extern "C" __declspec(dllexport) const char* RegisterComponent(entt::meta_ctx* meta_ctx)
+extern "C" __declspec(dllexport) const char* RegisterComponent_{ComponentName}(HBL2::Scene* ctx)
 {
 	using namespace entt::literals;
 
     // Register the component in the shared reflection context
-	entt::meta<{ComponentName}>(*meta_ctx)
+	entt::meta<{ComponentName}>(ctx->GetMetaContext())
 		.type(entt::hashed_string(typeid({ComponentName}).name()))
 		.data<&{ComponentName}::Value>("Value"_hs).prop("name"_hs, "Value");
+
+	// TODO: Register members above ^
 
 	return typeid({ComponentName}).name();
 }
 
 // Factory function to add the component
-extern "C" __declspec(dllexport) entt::meta_any AddNewComponent(HBL2::Scene* ctx, entt::entity entity)
+extern "C" __declspec(dllexport) entt::meta_any AddComponent_{ComponentName}(HBL2::Scene* ctx, entt::entity entity)
 {
 	auto& component = ctx->AddComponent<{ComponentName}>(entity);
 	return entt::forward_as_meta(ctx->GetMetaContext(), component);
 }
 
-// Factory function to add the component
-extern "C" __declspec(dllexport) entt::meta_any GetNewComponent(HBL2::Scene* ctx, entt::entity entity)
+// Factory function to get the component
+extern "C" __declspec(dllexport) entt::meta_any GetComponent_{ComponentName}(HBL2::Scene* ctx, entt::entity entity)
 {
 	auto& component = ctx->GetComponent<{ComponentName}>(entity);
 	return entt::forward_as_meta(ctx->GetMetaContext(), component);
 }
 
-// Factory function to add the component
-extern "C" __declspec(dllexport) bool HasNewComponent(HBL2::Scene* ctx, entt::entity entity)
+// Factory function to remove the component
+extern "C" __declspec(dllexport) void RemoveComponent_{ComponentName}(HBL2::Scene* ctx, entt::entity entity)
+{
+	ctx->RemoveComponent<{ComponentName}>(entity);
+}
+
+// Factory function to check if entity has the component
+extern "C" __declspec(dllexport) bool HasComponent_{ComponentName}(HBL2::Scene* ctx, entt::entity entity)
 {
 	return ctx->HasComponent<{ComponentName}>(entity);
 }
+
+// Factory function to serialize component data
+extern "C" __declspec(dllexport) void SerializeComponents_{ComponentName}(HBL2::Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data)
+{
+	std::vector<entt::entity> entitiesToRemoveTheComponentFrom;
+
+	for (auto entity : ctx->GetRegistry().view<{ComponentName}>())
+	{
+		auto& component = ctx->GetComponent<{ComponentName}>(entity);
+		data["{ComponentName}"][entity] = HBL2::Scene::Serialize(component);
+	}
+
+	for (auto entity : entitiesToRemoveTheComponentFrom)
+	{
+		ctx->RemoveComponent<{ComponentName}>(entity);
+	}
+
+	entitiesToRemoveTheComponentFrom.clear();
+
+	ctx->GetRegistry().clear<{ComponentName}>();
+	ctx->GetRegistry().storage<{ComponentName}>().clear();
+}
+
+// Factory function to deserialize component data
+extern "C" __declspec(dllexport) void DeserializeComponents_{ComponentName}(HBL2::Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data)
+{
+	for (auto& [entity, bytes] : data["{ComponentName}"])
+	{
+		auto& c = ctx->AddComponent<{ComponentName}>(entity);
+		c = HBL2::Scene::Deserialize<{ComponentName}>(bytes);
+	}
+}
+
 )";
 
-		size_t pos = componentCode.find(placeholder);
-
-		while (pos != std::string::npos)
 		{
-			((std::string&)componentCode).replace(pos, placeholder.length(), componentName);
-			pos = componentCode.find(placeholder, pos + componentName.length());
+			size_t pos = componentCode.find(placeholder);
+
+			while (pos != std::string::npos)
+			{
+				((std::string&)componentCode).replace(pos, placeholder.length(), componentName);
+				pos = componentCode.find(placeholder, pos + componentName.length());
+			}
 		}
 
 		return componentCode;
@@ -452,6 +546,37 @@ extern "C" __declspec(dllexport) bool HasNewComponent(HBL2::Scene* ctx, entt::en
 		registerSystem(ctx);
 	}
 
+	void NativeScriptUtilities::RegisterComponent(const std::string& name, Scene* ctx)
+	{
+		const std::string& projectName = Project::GetActive()->GetName();
+
+#ifdef DEBUG
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
+#else
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
+#endif
+		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
+
+		DynamicLibrary unityBuild;
+
+		// Retrieve or open dll.
+		if (m_DynamicLibraries.find(fullDllName) != m_DynamicLibraries.end())
+		{
+			unityBuild = m_DynamicLibraries[fullDllName];
+		}
+		else
+		{
+			unityBuild = DynamicLibrary(path.string());
+			m_DynamicLibraries[fullDllName] = unityBuild;
+		}
+
+		// Retrieve function that registers the component from the dll.
+		RegisterComponentFunc registerComponent = unityBuild.GetFunction<RegisterComponentFunc>("RegisterComponent_" + name);
+
+		// Register the component.
+		const char* properName = registerComponent(ctx);
+	}
+
 	void NativeScriptUtilities::LoadUnityBuild(Scene* ctx)
 	{
 		const std::string& projectName = Project::GetActive()->GetName();
@@ -492,6 +617,8 @@ extern "C" __declspec(dllexport) bool HasNewComponent(HBL2::Scene* ctx, entt::en
 			ctx->DeregisterSystem(system);
 		}
 
+		entt::meta_reset(ctx->GetMetaContext());
+
 		systemsToBeDeregistered.clear();
 
 		// Free dll and remove from map.
@@ -511,18 +638,27 @@ extern "C" __declspec(dllexport) bool HasNewComponent(HBL2::Scene* ctx, entt::en
 		RegisterComponentFunc registerComponent = newComponent.GetFunction<RegisterComponentFunc>("RegisterComponent");
 
 		// Register the component.
-		const char* name = registerComponent(&ctx->GetMetaContext());
+		const char* name = registerComponent(ctx);
 
 		m_DynamicLibraries[name] = newComponent;
 	}
 
 	entt::meta_any NativeScriptUtilities::AddComponent(const std::string& name, Scene* ctx, entt::entity entity)
 	{
+		const std::string& projectName = Project::GetActive()->GetName();
+
+#ifdef DEBUG
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
+#else
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
+#endif
+		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
+
 		// Load new component dll.
-		DynamicLibrary& component = m_DynamicLibraries[name];
+		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
 
 		// Retrieve function that registers the component from the dll.
-		AddNewComponentFunc addComponent = component.GetFunction<AddNewComponentFunc>("AddNewComponent");
+		AddComponentFunc addComponent = unityBuild.GetFunction<AddComponentFunc>("AddComponent_" + name);
 
 		// Register the component.
 		return addComponent(ctx, entity);
@@ -530,35 +666,155 @@ extern "C" __declspec(dllexport) bool HasNewComponent(HBL2::Scene* ctx, entt::en
 
 	entt::meta_any NativeScriptUtilities::GetComponent(const std::string& name, Scene* ctx, entt::entity entity)
 	{
-		// Load new component dll.
-		DynamicLibrary& component = m_DynamicLibraries[name];
+		const std::string& projectName = Project::GetActive()->GetName();
 
-		// Retrieve function that registers the component from the dll.
-		GetNewComponentFunc getComponent = component.GetFunction<GetNewComponentFunc>("GetNewComponent");
+#ifdef DEBUG
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
+#else
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
+#endif
+		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
+
+		// Load new component dll.
+		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
+
+		// Retrieve function that gets the component from the dll.
+		GetComponentFunc getComponent = unityBuild.GetFunction<GetComponentFunc>("GetComponent_" + name);
 
 		// Register the component.
 		return getComponent(ctx, entity);
 	}
 
+	void NativeScriptUtilities::RemoveComponent(const std::string& name, Scene* ctx, entt::entity entity)
+	{
+		const std::string& projectName = Project::GetActive()->GetName();
+
+#ifdef DEBUG
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
+#else
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
+#endif
+		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
+
+		// Load new component dll.
+		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
+
+		// Retrieve function that removes the component from the dll.
+		RemoveComponentFunc removeComponent = unityBuild.GetFunction<RemoveComponentFunc>("RemoveComponent_" + name);
+
+		// Remove the component.
+		removeComponent(ctx, entity);
+	}
+
 	bool NativeScriptUtilities::HasComponent(const std::string& name, Scene* ctx, entt::entity entity)
 	{
-		// Load new component dll.
-		DynamicLibrary& component = m_DynamicLibraries[name];
+		const std::string& projectName = Project::GetActive()->GetName();
 
-		// Retrieve function that registers the component from the dll.
-		HasNewComponentFunc hasComponent = component.GetFunction<HasNewComponentFunc>("HasNewComponent");
+#ifdef DEBUG
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
+#else
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
+#endif
+		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
+
+		// Load new component dll.
+		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
+
+		// Retrieve function that checks if the entity has the component from the dll.
+		HasComponentFunc hasComponent = unityBuild.GetFunction<HasComponentFunc>("HasComponent_" + name);
 
 		// Register the component.
 		return hasComponent(ctx, entity);
 	}
-	
-	std::string NativeScriptUtilities::CleanComponentName(const std::string& input)
+
+	void NativeScriptUtilities::SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data)
 	{
-		size_t pos = input.find('>');
+		const std::string& projectName = Project::GetActive()->GetName();
+
+#ifdef DEBUG
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
+#else
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
+#endif
+		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
+
+		// Load new component dll.
+		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
+
+		SerializeComponentsFunc serializeComponents = unityBuild.GetFunction<SerializeComponentsFunc>("SerializeComponents_" + name);
+
+		serializeComponents(ctx, data);
+	}
+
+	void NativeScriptUtilities::DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data)
+	{
+		const std::string& projectName = Project::GetActive()->GetName();
+
+#ifdef DEBUG
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
+#else
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
+#endif
+		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
+
+		// Load new component dll.
+		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
+
+		DeserializeComponentsFunc deserializeComponents = unityBuild.GetFunction<DeserializeComponentsFunc>("DeserializeComponents_" + name);
+
+		deserializeComponents(ctx, data);
+	}
+
+	std::string NativeScriptUtilities::CleanComponentNameO1(const std::string& input)
+	{
+		std::string output = input;
+
+		// Find the '>' character and truncate the string if it exists
+		size_t pos = output.find('>');
 		if (pos != std::string::npos)
 		{
-			return input.substr(0, pos);
+			return output = output.substr(0, pos);
 		}
-		return input;
+
+		return output;
+	}
+	
+	std::string NativeScriptUtilities::CleanComponentNameO3(const std::string& input)
+	{
+		std::string output = input;
+
+		// Remove "struct " if it exists
+		const std::string structPrefix = "struct ";
+		size_t structPos = output.find(structPrefix);
+		if (structPos != std::string::npos)
+		{
+			output.erase(structPos, structPrefix.length());
+		}
+
+		// Remove "class " if it exists
+		const std::string classPrefix = "class ";
+		size_t classPos = output.find(classPrefix);
+		if (classPos != std::string::npos)
+		{
+			output.erase(classPos, classPrefix.length());
+		}
+
+		// TODO: Handle namespaces
+
+		// Find the '>' character and truncate the string if it exists
+		size_t pos1 = output.find('>');
+		if (pos1 != std::string::npos)
+		{
+			output = output.substr(0, pos1);
+		}
+
+		// Find the '_' character and truncate the string if it exists
+		size_t pos2 = output.find('_');
+		if (pos2 != std::string::npos)
+		{
+			return output.substr(0, pos2);
+		}
+
+		return output;
 	}
 }
