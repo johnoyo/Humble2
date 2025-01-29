@@ -62,6 +62,9 @@ namespace HBL2
 		std::string Name = "UnnamedSystem";
 
 	protected:
+
+		// TODO: Add execution order.
+
 		Scene* m_Context = nullptr;
 		SystemType m_Type = SystemType::Core;
 		SystemState m_State = SystemState::Idle;

@@ -1664,7 +1664,7 @@ namespace HBL2
 				auto relativePath = std::filesystem::relative(entry.path(), HBL2::Project::GetAssetDirectory());
 				const std::string extension = entry.path().extension().string();
 
-				if (extension == ".meta")
+				if (extension == ".meta") // NOTE: Deprecated, maybe now we will hide .hbl* files?
 				{
 					ImGui::PopID();
 					continue;
@@ -1674,22 +1674,22 @@ namespace HBL2
 
 				ImGui::Button(entry.path().filename().string().c_str(), { thumbnailSize, thumbnailSize });
 
+				UUID assetUUID = std::hash<std::string>()(relativePath.string());
+				Handle<Asset> assetHandle = AssetManager::Instance->GetHandleFromUUID(assetUUID);
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
 				if (ImGui::BeginPopupContextItem())
 				{
 					if (extension == ".h")
 					{
 						if (ImGui::MenuItem("Recompile"))
 						{
-							UUID assetUUID = std::hash<std::string>()(relativePath.string());
-							AssetManager::Instance->SaveAsset(assetUUID);						// NOTE: Consider changing this!
+							AssetManager::Instance->GetAsset<Script>(assetHandle);
+							AssetManager::Instance->SaveAsset(assetHandle);				// NOTE: Consider changing this!
 						}
 					}
 					ImGui::EndPopup();
 				}
-
-				UUID assetUUID = std::hash<std::string>()(relativePath.string());
-				Handle<Asset> assetHandle = AssetManager::Instance->GetHandleFromUUID(assetUUID);
-				Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 
 				if (ImGui::BeginDragDropSource())
 				{
@@ -2020,9 +2020,23 @@ namespace HBL2
 				ImGui::NewLine();
 				ImGui::Separator();
 
+				ISystem* systemToBeDeregistered = nullptr;
+
 				for (ISystem* system : m_ActiveScene->GetSystems())
 				{
 					ImGui::TextWrapped(system->Name.c_str());
+
+					const std::string& name = "Deregister System " + system->Name;
+
+					if (ImGui::BeginPopupContextItem(name.c_str()))
+					{
+						if (ImGui::MenuItem("Deregister"))
+						{
+							systemToBeDeregistered = system;
+						}
+						ImGui::EndPopup();
+					}
+
 					ImGui::SameLine(ImGui::GetWindowWidth() - 80.0f);
 					switch (system->GetState())
 					{
@@ -2045,6 +2059,11 @@ namespace HBL2
 						break;
 					}
 					ImGui::Separator();
+				}
+
+				if (systemToBeDeregistered != nullptr)
+				{
+					m_ActiveScene->DeregisterSystem(systemToBeDeregistered);
 				}
 			}
 		}
