@@ -89,7 +89,7 @@ namespace HBL2
 		void UnloadUnityBuild(Scene* ctx);
 
 		std::string GetDefaultSystemCode(const std::string& systemName);	
-		std::string GetDefaultSolutionText(const std::string& systemName);	
+		std::string GetDefaultSolutionText();	
 		std::string GetDefaultProjectText(const std::string& projectIncludes);
 
 		std::string GetDefaultComponentCode(const std::string& componentName);	

@@ -146,7 +146,7 @@ extern "C" __declspec(dllexport) void RegisterSystem_{SystemName}(HBL2::Scene* c
 		return systemCode;
 	}
 
-	std::string NativeScriptUtilities::GetDefaultSolutionText(const std::string& systemName)
+	std::string NativeScriptUtilities::GetDefaultSolutionText()
 	{
 		const std::string& solutionText = R"(
 Microsoft Visual Studio Solution File, Format Version 12.00
