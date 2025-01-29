@@ -78,12 +78,14 @@ namespace HBL2
         dst->RegisterSystem(new SpriteRenderingSystem);
         dst->RegisterSystem(new CompositeRenderingSystem);
 
+        // TODO: Clone user defined components.
+
         // Check for user systems.
         for (ISystem* system : src->m_RuntimeSystems)
         {
             if (system->GetType() == SystemType::User)
             {
-                NativeScriptUtilities::Get().RegisterSystem(system->Name, dst);
+                NativeScriptUtilities::Get().RegisterSystem(system->Name, dst); // NOTE: If no systems present now the new dll does not get loaded.
             }
         }
 

@@ -94,10 +94,6 @@ namespace HBL2
 
 		std::string GetDefaultComponentCode(const std::string& componentName);	
 
-		void GenerateComponent(const std::string& componentName);
-		void CompileComponent(const std::string& componentName);
-
-		void LoadComponent(const std::string& path, Scene* ctx);
 		entt::meta_any AddComponent(const std::string& name, Scene* ctx, entt::entity entity);
 		entt::meta_any GetComponent(const std::string& name, Scene* ctx, entt::entity entity);
 		void RemoveComponent(const std::string& name, Scene* ctx, entt::entity entity);

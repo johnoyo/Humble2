@@ -455,66 +455,6 @@ extern "C" __declspec(dllexport) void DeserializeComponents_{ComponentName}(HBL2
 		return componentCode;
 	}
 
-	void NativeScriptUtilities::GenerateComponent(const std::string& componentName)
-	{
-		// Create component file
-		std::ofstream systemFile(HBL2::Project::GetAssetDirectory() / "Scripts" / (componentName + ".cpp"), 0);
-		systemFile << NativeScriptUtilities::Get().GetDefaultComponentCode(componentName);
-		systemFile.close();
-
-		// Create folder in ProjectFiles
-		const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles" / componentName;
-
-		try
-		{
-			std::filesystem::create_directories(projectFilesPath);
-		}
-		catch (std::exception& e)
-		{
-			HBL2_ERROR("Project directory creation failed: {0}", e.what());
-		}
-
-		// Create solution file for new system
-		std::ofstream solutionFile(projectFilesPath / (componentName + ".sln"));
-
-		if (!solutionFile.is_open())
-		{
-			return;
-		}
-
-		solutionFile << NativeScriptUtilities::Get().GetDefaultSolutionText(componentName);
-		solutionFile.close();
-
-		// Create vcxproj file for new system
-		std::ofstream projectFile(projectFilesPath / (componentName + ".vcxproj"));
-
-		if (!projectFile.is_open())
-		{
-			return;
-		}
-
-		projectFile << NativeScriptUtilities::Get().GetDefaultProjectText(componentName);
-		projectFile.close();
-
-		// Build the solution					
-#ifdef DEBUG
-		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (componentName + ".sln")).string() + R"( /t:)" + componentName + R"( /p:Configuration=Debug")";
-#else
-		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (componentName + ".sln")).string() + R"( /t:)" + componentName + R"( /p:Configuration=Release")";
-#endif // DEBUG
-		system(command.c_str());
-
-		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
-
-		// Load system dll
-		const std::string& dllPath = "assets\\dlls\\" + componentName + "\\" + componentName + ".dll";
-		NativeScriptUtilities::Get().LoadComponent(dllPath, activeScene);
-	}
-
-	void NativeScriptUtilities::CompileComponent(const std::string& componentName)
-	{
-	}
-
 	void NativeScriptUtilities::RegisterSystem(const std::string& name, Scene* ctx)
 	{
 		const std::string& projectName = Project::GetActive()->GetName();
@@ -627,20 +567,6 @@ extern "C" __declspec(dllexport) void DeserializeComponents_{ComponentName}(HBL2
 			m_DynamicLibraries[fullDllName].Free();
 			m_DynamicLibraries.erase(fullDllName);
 		}
-	}
-
-	void NativeScriptUtilities::LoadComponent(const std::string& path, Scene* ctx)
-	{
-		// Load new component dll.
-		DynamicLibrary newComponent(path);
-
-		// Retrieve function that registers the component from the dll.
-		RegisterComponentFunc registerComponent = newComponent.GetFunction<RegisterComponentFunc>("RegisterComponent");
-
-		// Register the component.
-		const char* name = registerComponent(ctx);
-
-		m_DynamicLibraries[name] = newComponent;
 	}
 
 	entt::meta_any NativeScriptUtilities::AddComponent(const std::string& name, Scene* ctx, entt::entity entity)
