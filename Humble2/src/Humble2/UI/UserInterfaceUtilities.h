@@ -59,8 +59,53 @@ namespace HBL2
 
 					DrawComponent(activeScene, componentMeta, typeNameClean, memberName);
 				}
+			}			
+		}
+
+		void SerializeComponentToYAML(YAML::Emitter& out, entt::meta_any& componentMeta, Scene* ctx)
+		{
+			using namespace entt::literals;
+
+			// List all members
+			for (auto [id, data] : entt::resolve(ctx->GetMetaContext(), componentMeta.type().info().hash()).data())
+			{
+				// Retrieve the name property of the member
+				auto name_prop = data.prop("name"_hs);
+				if (name_prop)
+				{
+					std::string typeName = componentMeta.type().info().name().data();
+
+					typeName = NativeScriptUtilities::Get().CleanComponentNameO1(typeName);
+
+					const char* typeNameClean = typeName.c_str();
+					const char* memberName = name_prop.value().cast<const char*>();
+
+					SerializeComponent(out, ctx, componentMeta, typeNameClean, memberName);
+				}
 			}
-			
+		}
+
+		void DeserializeComponentFromYAML(YAML::Node& node, entt::meta_any& componentMeta, Scene* ctx)
+		{
+			using namespace entt::literals;
+
+			// List all members
+			for (auto [id, data] : entt::resolve(ctx->GetMetaContext(), componentMeta.type().info().hash()).data())
+			{
+				// Retrieve the name property of the member
+				auto name_prop = data.prop("name"_hs);
+				if (name_prop)
+				{
+					std::string typeName = componentMeta.type().info().name().data();
+
+					typeName = NativeScriptUtilities::Get().CleanComponentNameO1(typeName);
+
+					const char* typeNameClean = typeName.c_str();
+					const char* memberName = name_prop.value().cast<const char*>();
+
+					DeserializeComponent(node, ctx, componentMeta, typeNameClean, memberName);
+				}
+			}
 		}
 
 		template<typename C>
@@ -115,98 +160,11 @@ namespace HBL2
 		}
 
 	private:
-		void DrawComponent(Scene* cxt, entt::meta_any& componentMeta, const char* typeName, const char* memberName)
-		{
-			auto data = entt::resolve(cxt->GetMetaContext(), entt::hashed_string(typeName)).data(entt::hashed_string(memberName));
-			auto value = data.get(componentMeta);
+		void DrawComponent(Scene* cxt, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
 
-			if (value)
-			{
-				if (value.type() == entt::resolve<glm::vec3>(cxt->GetMetaContext()))
-				{
-					glm::vec3* vec = value.try_cast<glm::vec3>();
-					if (vec)
-					{
-						if (ImGui::DragFloat3(memberName, glm::value_ptr(*vec)))
-						{
-							data.set(componentMeta, *vec);
-						}
-					}
-				}
-				else if (value.type() == entt::resolve<glm::vec2>(cxt->GetMetaContext()))
-				{
-					glm::vec2* vec = value.try_cast<glm::vec2>();
-					if (vec)
-					{
-						if (ImGui::DragFloat2(memberName, glm::value_ptr(*vec)))
-						{
-							data.set(componentMeta, *vec);
-						}
-					}
-				}
-				else if (value.type() == entt::resolve<float>(cxt->GetMetaContext()))
-				{
-					float* fpNumber = value.try_cast<float>();
-					if (fpNumber)
-					{
-						if (ImGui::SliderFloat(memberName, fpNumber, 0, 150))
-						{
-							data.set(componentMeta, *fpNumber);
-						}
-					}
-				}
-				else if (value.type() == entt::resolve<double>(cxt->GetMetaContext()))
-				{
-					double* dpNumber = value.try_cast<double>();
-					float* fpNumber = ((float*)dpNumber);
+		void SerializeComponent(YAML::Emitter& out, Scene* cxt, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
 
-					if (fpNumber)
-					{
-						if (ImGui::SliderFloat(memberName, fpNumber, 0, 150))
-						{
-							data.set(componentMeta, *dpNumber);
-						}
-					}
-				}
-				else if (value.type() == entt::resolve<UUID>(cxt->GetMetaContext()))
-				{
-					UUID* scalar = value.try_cast<UUID>();
-					if (scalar)
-					{
-						if (ImGui::InputScalar(memberName, ImGuiDataType_U32, scalar))
-						{
-							data.set(componentMeta, *scalar);
-						}
-					}
-				}
-				else if (value.type() == entt::resolve<int>(cxt->GetMetaContext()))
-				{
-					int* scalar = value.try_cast<int>();
-					if (scalar)
-					{
-						if (ImGui::InputScalar(memberName, ImGuiDataType_U32, scalar))
-						{
-							data.set(componentMeta, *scalar);
-						}
-					}
-				}
-				else if (value.type() == entt::resolve<bool>(cxt->GetMetaContext()))
-				{
-					bool* flag = value.try_cast<bool>();
-					if (flag)
-					{
-						if (ImGui::Checkbox(memberName, flag))
-						{
-							data.set(componentMeta, *flag);
-						}
-					}
-				}
-			}
-			else
-			{
-				std::cerr << "Failed to retrieve member name!" << std::endl;
-			}
-		}
+		void DeserializeComponent(YAML::Node& node, Scene* cxt, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
 
 	private:
 		EditorUtilities() = default;

@@ -1,6 +1,7 @@
 #include "SceneSerializer.h"
 
 #include "Utilities\YamlUtilities.h"
+#include "UI\UserInterfaceUtilities.h"
 
 namespace HBL2
 {
@@ -191,6 +192,23 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
+		{
+			const std::string& componentName = meta_type.second.info().name().data();
+
+			const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+
+			if (NativeScriptUtilities::Get().HasComponent(cleanedComponentName, m_Scene, entity))
+			{
+				auto componentMeta = NativeScriptUtilities::Get().GetComponent(cleanedComponentName, m_Scene, entity);
+				out << YAML::Key << cleanedComponentName;
+
+				out << YAML::BeginMap;
+				EditorUtilities::Get().SerializeComponentToYAML(out, componentMeta, m_Scene);
+				out << YAML::EndMap;
+			}
+		}
+
 		out << YAML::EndMap;
 	}
 
@@ -215,7 +233,9 @@ namespace HBL2
 				}
 			});
 		out << YAML::EndSeq;
-		out << YAML::Key << "Systems" << YAML::BeginSeq;
+
+		std::vector<UUID> componentUUIDs;
+		std::vector<UUID> systemUUIDs;
 
 		const std::vector<Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
 
@@ -231,13 +251,30 @@ namespace HBL2
 				{
 					if (script->Type == ScriptType::SYSTEM)
 					{
-						out << YAML::Key << asset->UUID << YAML::Value;
+						systemUUIDs.push_back(asset->UUID);
+					}
+					else if (script->Type == ScriptType::COMPONENT)
+					{
+						componentUUIDs.push_back(asset->UUID);
 					}
 				}
 			}
 		}
 
+		out << YAML::Key << "User Systems" << YAML::BeginSeq;
+		for (UUID systemUUID : systemUUIDs)
+		{
+			out << YAML::Key << systemUUID << YAML::Value;
+		}
 		out << YAML::EndSeq;
+
+		out << YAML::Key << "User Components" << YAML::BeginSeq;
+		for (UUID componentUUID : componentUUIDs)
+		{
+			out << YAML::Key << componentUUID << YAML::Value;
+		}
+		out << YAML::EndSeq;
+
 		out << YAML::EndMap;
 
 		try 
@@ -283,6 +320,46 @@ namespace HBL2
 
 		std::string sceneName = data["Scene"].as<std::string>();
 		HBL2_CORE_TRACE("Deserializing scene: {0}", sceneName);
+
+		HBL2_CORE_TRACE("Deserializing user components of scene: {0}", sceneName);
+		auto components = data["User Components"];
+		if (components)
+		{
+			for (auto componentUUID : components)
+			{
+				Handle<Script> componentScriptHandle = AssetManager::Instance->GetAsset<Script>(componentUUID.as<UUID>());
+				if (componentScriptHandle.IsValid())
+				{
+					Script* componentScript = ResourceManager::Instance->GetScript(componentScriptHandle);
+					NativeScriptUtilities::Get().RegisterComponent(componentScript->Name, m_Scene);
+					HBL2_CORE_TRACE("Successfully resgistered user component: {0}", componentScript->Name);
+				}
+				else
+				{
+					HBL2_CORE_ERROR("Could not load component with UUID: {}", componentUUID.as<UUID>());
+				}
+			}
+		}
+
+		HBL2_CORE_TRACE("Deserializing user systems of scene: {0}", sceneName);
+		auto systems = data["User Systems"];
+		if (systems)
+		{
+			for (auto systemUUID : systems)
+			{
+				Handle<Script> systemScriptHandle = AssetManager::Instance->GetAsset<Script>(systemUUID.as<UUID>());
+				if (systemScriptHandle.IsValid())
+				{
+					Script* systemScript = ResourceManager::Instance->GetScript(systemScriptHandle);
+					NativeScriptUtilities::Get().RegisterSystem(systemScript->Name, m_Scene);
+					HBL2_CORE_TRACE("Successfully resgistered user system: {0}", systemScript->Name);
+				}
+				else
+				{
+					HBL2_CORE_ERROR("Could not load system with UUID: {}", systemUUID.as<UUID>());
+				}
+			}
+		}
 
 		auto entities = data["Entities"];
 		if (entities)
@@ -392,27 +469,19 @@ namespace HBL2
 						}
 					}
 				}
-			}
-		}
 
-		auto systems = data["Systems"];
-		if (systems)
-		{
-			for (auto systemUUID : systems)
-			{
-				//NativeScriptUtilities::Get().RegisterSystem(system.as<std::string>(), m_Scene);
-#ifndef false
-				Handle<Script> systemScriptHandle = AssetManager::Instance->GetAsset<Script>(systemUUID.as<UUID>());
-				if (systemScriptHandle.IsValid())
+				for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 				{
-					Script* systemScript = ResourceManager::Instance->GetScript(systemScriptHandle);
-					NativeScriptUtilities::Get().RegisterSystem(systemScript->Name, m_Scene);
+					const std::string& componentName = meta_type.second.info().name().data();
+					const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+
+					auto userComponent = entity[cleanedComponentName];
+					if (userComponent)
+					{
+						auto componentMeta = NativeScriptUtilities::Get().AddComponent(cleanedComponentName, m_Scene, deserializedEntity);
+						EditorUtilities::Get().DeserializeComponentFromYAML(userComponent, componentMeta, m_Scene);
+					}
 				}
-				else
-				{
-					HBL2_CORE_ERROR("Could not load system with UUID: {}", systemUUID.as<UUID>());
-				}
-#endif
 			}
 		}
 
