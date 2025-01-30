@@ -81,7 +81,18 @@ namespace HBL2
 
 		if (value)
 		{
-			if (value.type() == entt::resolve<glm::vec3>(cxt->GetMetaContext()))
+			if (value.type() == entt::resolve<glm::vec4>(cxt->GetMetaContext()))
+			{
+				glm::vec4* vec = value.try_cast<glm::vec4>();
+				if (vec)
+				{
+					if (ImGui::DragFloat4(memberName, glm::value_ptr(*vec)))
+					{
+						data.set(componentMeta, *vec);
+					}
+				}
+			}
+			else if (value.type() == entt::resolve<glm::vec3>(cxt->GetMetaContext()))
 			{
 				glm::vec3* vec = value.try_cast<glm::vec3>();
 				if (vec)
@@ -174,7 +185,15 @@ namespace HBL2
 
 		if (value)
 		{
-			if (value.type() == entt::resolve<glm::vec3>(cxt->GetMetaContext()))
+			if (value.type() == entt::resolve<glm::vec4>(cxt->GetMetaContext()))
+			{
+				glm::vec4* vec = value.try_cast<glm::vec4>();
+				if (vec)
+				{
+					out << YAML::Key << memberName << YAML::Value << *vec;
+				}
+			}
+			else if (value.type() == entt::resolve<glm::vec3>(cxt->GetMetaContext()))
 			{
 				glm::vec3* vec = value.try_cast<glm::vec3>();
 				if (vec)
@@ -246,7 +265,14 @@ namespace HBL2
 
 		if (value)
 		{
-			if (value.type() == entt::resolve<glm::vec3>(cxt->GetMetaContext()))
+			if (value.type() == entt::resolve<glm::vec4>(cxt->GetMetaContext()))
+			{
+				if (value.try_cast<glm::vec4>())
+				{
+					data.set(componentMeta, node[memberName].as<glm::vec4>());
+				}
+			}
+			else if (value.type() == entt::resolve<glm::vec3>(cxt->GetMetaContext()))
 			{
 				if (value.try_cast<glm::vec3>())
 				{
