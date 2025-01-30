@@ -21,9 +21,9 @@ namespace HBL2
 
 	struct HBL2_API AssetDescriptor
 	{
-		const char* debugName;
+		const char* debugName = "";
 		std::filesystem::path filePath;
-		AssetType type;
+		AssetType type = AssetType::None;
 	};
 
 	struct HBL2_API Asset

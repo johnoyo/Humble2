@@ -1,5 +1,7 @@
 #include "ShaderUtilities.h"
 
+#include <Project\Project.h>
+
 namespace HBL2
 {
 	ShaderUtilities& ShaderUtilities::Get()
@@ -517,6 +519,26 @@ namespace HBL2
 			pbrShaderAsset->Loaded = true;
 			pbrShaderAsset->Indentifier = pbrShaderHandle.Pack();
 		}
+	}
+
+	void ShaderUtilities::CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType)
+	{
+		std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(handle)->FilePath).string() + ".hblshader", 0);
+
+		YAML::Emitter out;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Shader" << YAML::Value;
+		out << YAML::BeginMap;
+		out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(handle)->UUID;
+		out << YAML::Key << "Type" << YAML::Value << shaderType;
+		out << YAML::EndMap;
+		out << YAML::EndMap;
+		fout << out.c_str();
+		fout.close();
+	}
+
+	void ShaderUtilities::CreateMaterialMetadataFile(Handle<Asset> handle)
+	{
 	}
 
 	ReflectionData ShaderUtilities::Reflect(const std::vector<uint32_t>& vertexShaderData, const std::vector<uint32_t>& fragmentShaderData)

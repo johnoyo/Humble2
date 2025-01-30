@@ -23,6 +23,8 @@ namespace HBL2
 
 		stbi_uc* Load(const std::string& path, TextureSettings& settings);
 
+		void CreateAssetMetadataFile(Handle<Asset> handle);
+
 		void LoadWhiteTexture();
 
 		Handle<Texture> WhiteTexture;

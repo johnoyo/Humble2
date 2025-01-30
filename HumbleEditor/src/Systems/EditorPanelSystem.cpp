@@ -1341,18 +1341,7 @@ namespace HBL2
 
 					if (shaderAssetHandle.IsValid())
 					{
-						std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblshader", 0);
-
-						YAML::Emitter out;
-						out << YAML::BeginMap;
-						out << YAML::Key << "Shader" << YAML::Value;
-						out << YAML::BeginMap;
-						out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->UUID;
-						out << YAML::Key << "Type" << YAML::Value << m_SelectedShaderType;
-						out << YAML::EndMap;
-						out << YAML::EndMap;
-						fout << out.c_str();
-						fout.close();
+						ShaderUtilities::Get().CreateShaderMetadataFile(shaderAssetHandle, m_SelectedShaderType);
 					}
 
 					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), 0);
@@ -1423,18 +1412,7 @@ namespace HBL2
 
 						if (albedoMapAssetHandle.IsValid())
 						{
-							std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(albedoMapAssetHandle)->FilePath).string() + ".hbltexture", 0);
-
-							YAML::Emitter out;
-							out << YAML::BeginMap;
-							out << YAML::Key << "Texture" << YAML::Value;
-							out << YAML::BeginMap;
-							out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(albedoMapAssetHandle)->UUID;
-							out << YAML::Key << "Flip" << YAML::Value << false;
-							out << YAML::EndMap;
-							out << YAML::EndMap;
-							fout << out.c_str();
-							fout.close();
+							TextureUtilities::Get().CreateAssetMetadataFile(albedoMapAssetHandle);
 						}
 
 						ImGui::EndDragDropTarget();
@@ -1464,18 +1442,7 @@ namespace HBL2
 
 							if (normalMapAssetHandle.IsValid())
 							{
-								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(normalMapAssetHandle)->FilePath).string() + ".hbltexture", 0);
-
-								YAML::Emitter out;
-								out << YAML::BeginMap;
-								out << YAML::Key << "Texture" << YAML::Value;
-								out << YAML::BeginMap;
-								out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(normalMapAssetHandle)->UUID;
-								out << YAML::Key << "Flip" << YAML::Value << false;
-								out << YAML::EndMap;
-								out << YAML::EndMap;
-								fout << out.c_str();
-								fout.close();
+								TextureUtilities::Get().CreateAssetMetadataFile(normalMapAssetHandle);
 							}
 
 							ImGui::EndDragDropTarget();
@@ -1498,18 +1465,7 @@ namespace HBL2
 
 							if (metallicMapAssetHandle.IsValid())
 							{
-								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(metallicMapAssetHandle)->FilePath).string() + ".hbltexture", 0);
-
-								YAML::Emitter out;
-								out << YAML::BeginMap;
-								out << YAML::Key << "Texture" << YAML::Value;
-								out << YAML::BeginMap;
-								out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(metallicMapAssetHandle)->UUID;
-								out << YAML::Key << "Flip" << YAML::Value << false;
-								out << YAML::EndMap;
-								out << YAML::EndMap;
-								fout << out.c_str();
-								fout.close();
+								TextureUtilities::Get().CreateAssetMetadataFile(metallicMapAssetHandle);
 							}
 
 							ImGui::EndDragDropTarget();
@@ -1532,24 +1488,12 @@ namespace HBL2
 
 							if (roughnessMapAssetHandle.IsValid())
 							{
-								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(roughnessMapAssetHandle)->FilePath).string() + ".hbltexture", 0);
-
-								YAML::Emitter out;
-								out << YAML::BeginMap;
-								out << YAML::Key << "Texture" << YAML::Value;
-								out << YAML::BeginMap;
-								out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(roughnessMapAssetHandle)->UUID;
-								out << YAML::Key << "Flip" << YAML::Value << false;
-								out << YAML::EndMap;
-								out << YAML::EndMap;
-								fout << out.c_str();
-								fout.close();
+								TextureUtilities::Get().CreateAssetMetadataFile(roughnessMapAssetHandle);
 							}
 
 							ImGui::EndDragDropTarget();
 						}
 					}
-
 				}
 
 				Handle<Texture> normalMapHandle = AssetManager::Instance->GetAsset<Texture>(normalMapAssetHandle);
@@ -1664,7 +1608,8 @@ namespace HBL2
 				auto relativePath = std::filesystem::relative(entry.path(), HBL2::Project::GetAssetDirectory());
 				const std::string extension = entry.path().extension().string();
 
-				if (extension == ".meta") // NOTE: Deprecated, maybe now we will hide .hbl* files?
+				// Do not show engine metadata files.
+				if (extension.find(".hbl") != std::string::npos && extension.find(".hblmat") == std::string::npos)
 				{
 					ImGui::PopID();
 					continue;

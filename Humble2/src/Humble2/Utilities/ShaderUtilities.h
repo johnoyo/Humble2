@@ -53,8 +53,7 @@ namespace HBL2
 			case GraphicsAPI::VULKAN:
 				return "assets/cache/shader/vulkan";
 			default:
-				HBL2_CORE_ERROR("Stage not supported");
-				assert(false);
+				HBL2_CORE_ASSERT(false, "Stage not supported");
 				return "";
 			}
 		}
@@ -78,8 +77,7 @@ namespace HBL2
 			case ShaderStage::FRAGMENT:
 				return ".cached_vulkan.frag";
 			default:
-				HBL2_CORE_ERROR("Stage not supported");
-				assert(false);
+				HBL2_CORE_ASSERT(false, "Stage not supported");
 				return "";
 			}
 		}
@@ -93,8 +91,7 @@ namespace HBL2
 			case ShaderStage::FRAGMENT:
 				return ".cached_opengl.frag";
 			default:
-				HBL2_CORE_ERROR("Stage not supported");
-				assert(false);
+				HBL2_CORE_ASSERT(false, "Stage not supported");
 				return "";
 			}
 		}
@@ -107,10 +104,10 @@ namespace HBL2
 					return shaderc_glsl_vertex_shader;
 				case ShaderStage::FRAGMENT:
 					return shaderc_glsl_fragment_shader;
+				default:
+					HBL2_CORE_ASSERT(false, "Stage not supported");
+					return (shaderc_shader_kind)0;
 			}
-			// HBL2_CORE_ASSERT(false);
-			assert(false);
-			return (shaderc_shader_kind)0;
 		}
 
 		const char* GLShaderStageToString(ShaderStage stage)
@@ -122,8 +119,7 @@ namespace HBL2
 			case ShaderStage::FRAGMENT:
 				return "ShaderStage::FRAGMENT";
 			default:
-				// HBL2_CORE_ASSERT(false);
-				assert(false);
+				HBL2_CORE_ASSERT(false, "Stage not supported");
 				return "";
 			}
 		}
@@ -138,6 +134,9 @@ namespace HBL2
 
 		Handle<Shader> GetBuiltInShader(BuiltInShader shader) { return m_Shaders[shader]; }
 		Handle<BindGroupLayout> GetBuiltInShaderLayout(BuiltInShader shader) { return m_ShaderLayouts[shader]; }
+
+		void CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType);
+		void CreateMaterialMetadataFile(Handle<Asset> handle);
 
 	private:
 		ShaderUtilities() = default;
