@@ -205,9 +205,4 @@ namespace HBL2
 
 		friend class Pool<Scene, Scene>;
 	};
-
-	/*HBL2_COMPONENT(HBL2::Component::CustomComponent,
-		HBL2_COMPONENT_MEMBER(HBL2::Component::CustomComponent, FValue)
-		HBL2_COMPONENT_MEMBER(HBL2::Component::CustomComponent, IValue)
-	)*/
 }

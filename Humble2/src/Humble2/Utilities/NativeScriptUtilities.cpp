@@ -362,87 +362,15 @@ EndGlobal
 #include "Humble2Core.h"
 
 // Just a POD struct
-COMPONENT({ComponentName},
+HBL2_COMPONENT({ComponentName},
 {
     int Value = 1;
 })
 
-// Factory function to register the component
-extern "C" __declspec(dllexport) const char* RegisterComponent_{ComponentName}(HBL2::Scene* ctx)
-{
-	using namespace entt::literals;
-
-    // Register the component in the shared reflection context
-	entt::meta<{ComponentName}>(ctx->GetMetaContext())
-		.type(entt::hashed_string(typeid({ComponentName}).name()))
-		.data<&{ComponentName}::Value>("Value"_hs).prop("name"_hs, "Value");
-
-	// TODO: Register members above ^
-
-	return typeid({ComponentName}).name();
-}
-
-// Factory function to add the component
-extern "C" __declspec(dllexport) entt::meta_any AddComponent_{ComponentName}(HBL2::Scene* ctx, entt::entity entity)
-{
-	auto& component = ctx->AddComponent<{ComponentName}>(entity);
-	return entt::forward_as_meta(ctx->GetMetaContext(), component);
-}
-
-// Factory function to get the component
-extern "C" __declspec(dllexport) entt::meta_any GetComponent_{ComponentName}(HBL2::Scene* ctx, entt::entity entity)
-{
-	auto& component = ctx->GetComponent<{ComponentName}>(entity);
-	return entt::forward_as_meta(ctx->GetMetaContext(), component);
-}
-
-// Factory function to remove the component
-extern "C" __declspec(dllexport) void RemoveComponent_{ComponentName}(HBL2::Scene* ctx, entt::entity entity)
-{
-	ctx->RemoveComponent<{ComponentName}>(entity);
-}
-
-// Factory function to check if entity has the component
-extern "C" __declspec(dllexport) bool HasComponent_{ComponentName}(HBL2::Scene* ctx, entt::entity entity)
-{
-	return ctx->HasComponent<{ComponentName}>(entity);
-}
-
-// Factory function to serialize component data
-extern "C" __declspec(dllexport) void SerializeComponents_{ComponentName}(HBL2::Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data, bool cleanRegistry)
-{
-	std::vector<entt::entity> entitiesToRemoveTheComponentFrom;
-
-	for (auto entity : ctx->GetRegistry().view<{ComponentName}>())
-	{
-		auto& component = ctx->GetComponent<{ComponentName}>(entity);
-		data["{ComponentName}"][entity] = HBL2::Scene::Serialize(component);
-	}
-	
-	if (cleanRegistry)
-	{
-		for (auto entity : entitiesToRemoveTheComponentFrom)
-		{
-			ctx->RemoveComponent<{ComponentName}>(entity);
-		}
-
-		entitiesToRemoveTheComponentFrom.clear();
-
-		ctx->GetRegistry().clear<{ComponentName}>();
-		ctx->GetRegistry().storage<{ComponentName}>().clear();
-	}
-}
-
-// Factory function to deserialize component data
-extern "C" __declspec(dllexport) void DeserializeComponents_{ComponentName}(HBL2::Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data)
-{
-	for (auto& [entity, bytes] : data["{ComponentName}"])
-	{
-		auto& c = ctx->AddComponent<{ComponentName}>(entity);
-		c = HBL2::Scene::Deserialize<{ComponentName}>(bytes);
-	}
-}
-
+// Register members
+REGISTER_HBL2_COMPONENT({ComponentName},
+	HBL2_COMPONENT_MEMBER({ComponentName}, Value)
+)
 )";
 
 		{
