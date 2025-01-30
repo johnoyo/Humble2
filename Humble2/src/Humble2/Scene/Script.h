@@ -19,7 +19,7 @@ namespace HBL2
 	struct HBL2_API ScriptDescriptor
 	{
 		const char* debugName;
-		ScriptType type;
+		ScriptType type = ScriptType::NONE;
 		std::filesystem::path path;
 	};
 
@@ -34,7 +34,7 @@ namespace HBL2
 		}
 
 		std::string Name;
-		ScriptType Type;
+		ScriptType Type = ScriptType::NONE;
 		std::filesystem::path Path;
 	};
 }

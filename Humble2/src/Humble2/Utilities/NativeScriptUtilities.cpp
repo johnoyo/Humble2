@@ -127,14 +127,8 @@ public:
 	}
 };
 
-// Factory function to create the system
-extern "C" __declspec(dllexport) void RegisterSystem_{SystemName}(HBL2::Scene* ctx)
-{
-    HBL2::ISystem* new{SystemName} = new {SystemName};
-	new{SystemName}->Name = "{SystemName}";
-	ctx->RegisterSystem(new{SystemName}, HBL2::SystemType::User);
-})";
-
+REGISTER_HBL2_SYSTEM({SystemName})
+)";
 		size_t pos = systemCode.find(placeholder);
 
 		while (pos != std::string::npos)
@@ -372,15 +366,12 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 	HBL2_COMPONENT_MEMBER({ComponentName}, Value)
 )
 )";
+		size_t pos = componentCode.find(placeholder);
 
+		while (pos != std::string::npos)
 		{
-			size_t pos = componentCode.find(placeholder);
-
-			while (pos != std::string::npos)
-			{
-				((std::string&)componentCode).replace(pos, placeholder.length(), componentName);
-				pos = componentCode.find(placeholder, pos + componentName.length());
-			}
+			((std::string&)componentCode).replace(pos, placeholder.length(), componentName);
+			pos = componentCode.find(placeholder, pos + componentName.length());
 		}
 
 		return componentCode;

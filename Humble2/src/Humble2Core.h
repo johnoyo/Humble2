@@ -10,6 +10,15 @@
 #include "Asset\EditorAssetManager.h"
 #include "Resources\ResourceManager.h"
 
+// Macro to generate system registration factory function
+#define REGISTER_HBL2_SYSTEM(TYPE)                                                                                              \
+    extern "C" __declspec(dllexport) void RegisterSystem_##TYPE(HBL2::Scene* ctx)                                               \
+    {                                                                                                                           \
+        HBL2::ISystem* new##TYPE = new TYPE;                                                                                    \
+        new##TYPE->Name = #TYPE;                                                                                                \
+        ctx->RegisterSystem(new##TYPE, HBL2::SystemType::User);                                                                 \
+    }                                                                                                                           \
+
 // Concatenation Macros
 #define CONCAT_HELPER(x, y) x##_##y
 #define CONCAT(x, y) CONCAT_HELPER(x, y)
