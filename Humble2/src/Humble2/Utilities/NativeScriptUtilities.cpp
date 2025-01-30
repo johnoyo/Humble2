@@ -16,7 +16,7 @@ namespace HBL2
 
 		typedef bool (*HasComponentFunc)(Scene*, entt::entity);
 
-		typedef void (*SerializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>&);
+		typedef void (*SerializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>&, bool);
 
 		typedef void (*DeserializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>&);
 	}
@@ -409,7 +409,7 @@ extern "C" __declspec(dllexport) bool HasComponent_{ComponentName}(HBL2::Scene* 
 }
 
 // Factory function to serialize component data
-extern "C" __declspec(dllexport) void SerializeComponents_{ComponentName}(HBL2::Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data)
+extern "C" __declspec(dllexport) void SerializeComponents_{ComponentName}(HBL2::Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data, bool cleanRegistry)
 {
 	std::vector<entt::entity> entitiesToRemoveTheComponentFrom;
 
@@ -418,16 +418,19 @@ extern "C" __declspec(dllexport) void SerializeComponents_{ComponentName}(HBL2::
 		auto& component = ctx->GetComponent<{ComponentName}>(entity);
 		data["{ComponentName}"][entity] = HBL2::Scene::Serialize(component);
 	}
-
-	for (auto entity : entitiesToRemoveTheComponentFrom)
+	
+	if (cleanRegistry)
 	{
-		ctx->RemoveComponent<{ComponentName}>(entity);
+		for (auto entity : entitiesToRemoveTheComponentFrom)
+		{
+			ctx->RemoveComponent<{ComponentName}>(entity);
+		}
+
+		entitiesToRemoveTheComponentFrom.clear();
+
+		ctx->GetRegistry().clear<{ComponentName}>();
+		ctx->GetRegistry().storage<{ComponentName}>().clear();
 	}
-
-	entitiesToRemoveTheComponentFrom.clear();
-
-	ctx->GetRegistry().clear<{ComponentName}>();
-	ctx->GetRegistry().storage<{ComponentName}>().clear();
 }
 
 // Factory function to deserialize component data
@@ -653,7 +656,7 @@ extern "C" __declspec(dllexport) void DeserializeComponents_{ComponentName}(HBL2
 		return hasComponent(ctx, entity);
 	}
 
-	void NativeScriptUtilities::SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data)
+	void NativeScriptUtilities::SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data, bool cleanRegistry)
 	{
 		const std::string& projectName = Project::GetActive()->GetName();
 
@@ -664,12 +667,23 @@ extern "C" __declspec(dllexport) void DeserializeComponents_{ComponentName}(HBL2
 #endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
-		// Load new component dll.
-		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
+		// Load new unityBuild dll.
+		DynamicLibrary unityBuild;
+
+		// Retrieve or open dll.
+		if (m_DynamicLibraries.find(fullDllName) != m_DynamicLibraries.end())
+		{
+			unityBuild = m_DynamicLibraries[fullDllName];
+		}
+		else
+		{
+			unityBuild = DynamicLibrary(path.string());
+			m_DynamicLibraries[fullDllName] = unityBuild;
+		}
 
 		SerializeComponentsFunc serializeComponents = unityBuild.GetFunction<SerializeComponentsFunc>("SerializeComponents_" + name);
 
-		serializeComponents(ctx, data);
+		serializeComponents(ctx, data, cleanRegistry);
 	}
 
 	void NativeScriptUtilities::DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data)
@@ -683,8 +697,19 @@ extern "C" __declspec(dllexport) void DeserializeComponents_{ComponentName}(HBL2
 #endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
-		// Load new component dll.
-		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
+		// Load new unityBuild dll.
+		DynamicLibrary unityBuild;
+
+		// Retrieve or open dll.
+		if (m_DynamicLibraries.find(fullDllName) != m_DynamicLibraries.end())
+		{
+			unityBuild = m_DynamicLibraries[fullDllName];
+		}
+		else
+		{
+			unityBuild = DynamicLibrary(path.string());
+			m_DynamicLibraries[fullDllName] = unityBuild;
+		}
 
 		DeserializeComponentsFunc deserializeComponents = unityBuild.GetFunction<DeserializeComponentsFunc>("DeserializeComponents_" + name);
 

@@ -78,15 +78,33 @@ namespace HBL2
         dst->RegisterSystem(new SpriteRenderingSystem);
         dst->RegisterSystem(new CompositeRenderingSystem);
 
-        // TODO: Clone user defined components.
-
-        // Check for user systems.
+        // Register any user systems to new scene.
         for (ISystem* system : src->m_RuntimeSystems)
         {
             if (system->GetType() == SystemType::User)
             {
                 NativeScriptUtilities::Get().RegisterSystem(system->Name, dst); // NOTE: If no systems present now the new dll does not get loaded.
             }
+        }
+
+        // Clone user defined components.
+        std::vector<std::string> userComponentNames;
+        std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>> data;
+
+        // Store all registered meta types of the source scene.
+        for (auto meta_type : entt::resolve(src->GetMetaContext()))
+        {
+            std::string componentName = meta_type.second.info().name().data();
+            componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+            userComponentNames.push_back(componentName);
+
+            NativeScriptUtilities::Get().SerializeComponents(componentName, src, data, false);
+        }
+
+        // Register the components to the new scene.
+        for (const auto& userComponentName : userComponentNames)
+        {
+            NativeScriptUtilities::Get().DeserializeComponents(userComponentName, dst, data);
         }
 
         // Set main camera.

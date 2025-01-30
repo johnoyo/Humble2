@@ -175,7 +175,7 @@ namespace HBL2
 			return;
 		}
 
-		solutionFile << NativeScriptUtilities::Get().GetDefaultSolutionText("");
+		solutionFile << NativeScriptUtilities::Get().GetDefaultSolutionText();
 		solutionFile.close();
 
 		// Create vcxproj file for new system
