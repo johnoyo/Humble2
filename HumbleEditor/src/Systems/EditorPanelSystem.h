@@ -47,6 +47,9 @@ namespace HBL2
 			bool m_OpenScriptSetupPopup = false;
 			bool m_OpenComponentSetupPopup = false;
 
+			bool m_OpenDeleteConfirmationWindow = false;
+			Handle<Asset> m_AssetToBeDeleted;
+
 			Scene* m_ActiveScene = nullptr;
 			Handle<Scene> m_ActiveSceneTemp;
 			bool m_ProjectChanged = false;

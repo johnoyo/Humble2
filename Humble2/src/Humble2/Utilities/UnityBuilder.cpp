@@ -60,26 +60,6 @@ namespace HBL2
 		const auto& dllPath = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
 #endif
 
-		//if (activeScene != nullptr)
-		//{
-		//	// Remove old dll
-		//	try
-		//	{
-		//		if (std::filesystem::remove(dllPath))
-		//		{
-		//			std::cout << "file " << dllPath << " deleted.\n";
-		//		}
-		//		else
-		//		{
-		//			std::cout << "file " << dllPath << " not found.\n";
-		//		}
-		//	}
-		//	catch (const std::filesystem::filesystem_error& err)
-		//	{
-		//		std::cout << "filesystem error: " << err.what() << '\n';
-		//	}
-		//}
-
 		// Build the solution					
 #ifdef DEBUG
 		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / "UnityBuild.sln").string() + R"( /t:)" + "UnityBuild" + R"( /p:Configuration=Debug")";

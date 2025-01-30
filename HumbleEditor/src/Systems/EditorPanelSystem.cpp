@@ -1688,6 +1688,13 @@ namespace HBL2
 							AssetManager::Instance->SaveAsset(assetHandle);				// NOTE: Consider changing this!
 						}
 					}
+
+					if (ImGui::MenuItem("Delete"))
+					{
+						m_OpenDeleteConfirmationWindow = true;
+						m_AssetToBeDeleted = assetHandle;
+					}					
+
 					ImGui::EndPopup();
 				}
 
@@ -1731,8 +1738,8 @@ namespace HBL2
 
 					ImGui::EndDragDropSource();
 				}
-
 				ImGui::PopStyleColor();
+
 				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 				{
 					if (entry.is_directory())
@@ -1749,6 +1756,34 @@ namespace HBL2
 			}
 
 			ImGui::Columns(1);
+
+			if (m_OpenDeleteConfirmationWindow && m_AssetToBeDeleted.IsValid())
+			{
+				Asset* assetToBeDeleted = AssetManager::Instance->GetAssetMetadata(m_AssetToBeDeleted);
+
+				ImGui::Begin("Delete Confirmation Window", &m_OpenDeleteConfirmationWindow, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+				ImGui::Text("Are you sure you want to delete the asset: %s.\n\nThis action can not be undone.", assetToBeDeleted->FilePath.string().c_str());
+
+				ImGui::NewLine();
+
+				if (ImGui::Button("OK"))
+				{
+					AssetManager::Instance->DeleteAsset(m_AssetToBeDeleted, true);
+					m_OpenDeleteConfirmationWindow = false;
+					m_AssetToBeDeleted = Handle<Asset>();
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel"))
+				{
+					m_OpenDeleteConfirmationWindow = false;
+					m_AssetToBeDeleted = Handle<Asset>();
+				}
+
+				ImGui::End();
+			}
 		}
 
 		void EditorPanelSystem::DrawViewportPanel()

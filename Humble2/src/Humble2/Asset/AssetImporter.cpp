@@ -82,6 +82,9 @@ namespace HBL2
 		case AssetType::Texture:
 			DestroyTexture(asset);
 			break;
+		case AssetType::Script:
+			DestroyScript(asset);
+			break;
 		}
 	}
 
@@ -105,6 +108,9 @@ namespace HBL2
 			break;
 		case AssetType::Material:
 			UnloadMaterial(asset);
+			break;
+		case AssetType::Script:
+			UnloadScript(asset);
 			break;
 		}
 	}
@@ -596,11 +602,47 @@ namespace HBL2
 			UnloadTexture(asset);
 		}
 
-		// TODO: Delete files
+		// Delete files
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath)))
+			{
+				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", asset->FilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+		}
 	}
 
 	void AssetImporter::DestroyScript(Asset* asset)
 	{
+		if (asset->Loaded)
+		{
+			UnloadScript(asset);
+		}
+
+		// Delete files
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath)))
+			{
+				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", asset->FilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+		}
 	}
 
 	/// Unload methods
@@ -701,5 +743,35 @@ namespace HBL2
 	
 	void AssetImporter::UnloadScript(Asset* asset)
 	{
+		Handle<Script> scriptAssetHandle = Handle<Script>::UnPack(asset->Indentifier);
+
+		if (!scriptAssetHandle.IsValid())
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" has an invalid handle, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		Script* script = ResourceManager::Instance->GetScript(scriptAssetHandle);
+
+		switch (script->Type)
+		{
+		case ScriptType::SYSTEM:
+			// TODO
+			break;
+		case ScriptType::COMPONENT:
+			// TODO
+			break;
+		}
+
+		ResourceManager::Instance->DeleteScript(scriptAssetHandle);
+
+		asset->Loaded = false;
+		asset->Indentifier = 0;
 	}
 }
