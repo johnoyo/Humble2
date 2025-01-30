@@ -60,25 +60,25 @@ namespace HBL2
 		const auto& dllPath = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
 #endif
 
-		if (activeScene != nullptr)
-		{
-			// Remove old dll
-			try
-			{
-				if (std::filesystem::remove(dllPath))
-				{
-					std::cout << "file " << dllPath << " deleted.\n";
-				}
-				else
-				{
-					std::cout << "file " << dllPath << " not found.\n";
-				}
-			}
-			catch (const std::filesystem::filesystem_error& err)
-			{
-				std::cout << "filesystem error: " << err.what() << '\n';
-			}
-		}
+		//if (activeScene != nullptr)
+		//{
+		//	// Remove old dll
+		//	try
+		//	{
+		//		if (std::filesystem::remove(dllPath))
+		//		{
+		//			std::cout << "file " << dllPath << " deleted.\n";
+		//		}
+		//		else
+		//		{
+		//			std::cout << "file " << dllPath << " not found.\n";
+		//		}
+		//	}
+		//	catch (const std::filesystem::filesystem_error& err)
+		//	{
+		//		std::cout << "filesystem error: " << err.what() << '\n';
+		//	}
+		//}
 
 		// Build the solution					
 #ifdef DEBUG
