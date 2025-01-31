@@ -66,10 +66,14 @@
         return ctx->HasComponent<TYPE>(entity);                                                                                 \
     }                                                                                                                           \
                                                                                                                                 \
+    extern "C" __declspec(dllexport) void ClearComponentStorage_##TYPE(HBL2::Scene* ctx)                                        \
+    {                                                                                                                           \
+        ctx->GetRegistry().clear<TYPE>();                                                                                       \
+        ctx->GetRegistry().storage<TYPE>().clear();                                                                             \
+    }                                                                                                                           \
+                                                                                                                                \
     extern "C" __declspec(dllexport) void SerializeComponents_##TYPE(HBL2::Scene* ctx, ByteStorage& data, bool cleanRegistry)   \
     {                                                                                                                           \
-        std::vector<entt::entity> entitiesToRemoveTheComponentFrom;                                                             \
-                                                                                                                                \
         for (auto entity : ctx->GetRegistry().view<TYPE>())                                                                     \
         {                                                                                                                       \
             auto& component = ctx->GetComponent<TYPE>(entity);                                                                  \
@@ -78,13 +82,6 @@
                                                                                                                                 \
         if (cleanRegistry)                                                                                                      \
         {                                                                                                                       \
-            for (auto entity : entitiesToRemoveTheComponentFrom)                                                                \
-            {                                                                                                                   \
-                ctx->RemoveComponent<TYPE>(entity);                                                                             \
-            }                                                                                                                   \
-                                                                                                                                \
-            entitiesToRemoveTheComponentFrom.clear();                                                                           \
-                                                                                                                                \
             ctx->GetRegistry().clear<TYPE>();                                                                                   \
             ctx->GetRegistry().storage<TYPE>().clear();                                                                         \
         }                                                                                                                       \

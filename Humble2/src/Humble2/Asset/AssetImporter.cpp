@@ -762,10 +762,38 @@ namespace HBL2
 		switch (script->Type)
 		{
 		case ScriptType::SYSTEM:
-			// TODO
+			{
+				Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+				// Delete registered user system.
+				for (ISystem* userSystem : activeScene->GetRuntimeSystems())
+				{
+					if (userSystem->Name == script->Name && userSystem->GetType() == SystemType::User)
+					{
+						activeScene->DeregisterSystem(userSystem);
+						break;
+					}
+				}
+			}
 			break;
 		case ScriptType::COMPONENT:
-			// TODO
+			{
+				Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+				// Store all registered meta types of the source scene.
+				for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
+				{
+					std::string componentName = meta_type.second.info().name().data();
+					componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+
+					if (script->Name == componentName)
+					{
+						NativeScriptUtilities::Get().ClearComponentStorage(componentName, activeScene);
+						entt::meta_reset(activeScene->GetMetaContext(), meta_type.first);
+						break;
+					}
+				}
+			}
 			break;
 		}
 

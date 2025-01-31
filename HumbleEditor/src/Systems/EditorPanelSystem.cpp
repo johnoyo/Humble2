@@ -448,59 +448,6 @@ namespace HBL2
 
 			if (HBL2::Component::EditorVisible::SelectedEntity != entt::null)
 			{
-				//// Iterate over all components of entity
-				//m_ActiveScene->GetRegistry().view<HBL2::Component::ID, HBL2::Component::Tag>().each([&](auto& id, auto& name)
-				//{
-				//	std::cout << name.Name << " (" << id.Identifier << ")" << std::endl;
-				//	std::cout << "\tComponents:" << std::endl;
-
-				//	for (auto&& curr : m_ActiveScene->GetRegistry().storage())
-				//	{
-				//		entt::id_type cid = curr.first;
-				//		auto& storage = curr.second;
-				//		entt::type_info ctype = storage.type();
-
-				//		if (storage.contains(HBL2::Component::EditorVisible::SelectedEntity))
-				//		{
-				//			// Get the component from the storage
-				//			auto component = storage.value(HBL2::Component::EditorVisible::SelectedEntity);
-				//			if (component)
-				//			{
-				//				entt::meta_any componentMeta = entt::forward_as_meta(m_ActiveScene->GetMetaContext(), component);
-
-				//				// Use reflection API to interact with the component
-				//				auto metaType = entt::resolve(m_ActiveScene->GetMetaContext(), ctype.hash());
-				//				if (metaType)
-				//				{
-				//					std::cout << "\t\t" << ctype.hash() << std::endl;
-				//					std::cout << "\t\t" << ctype.name() << std::endl;
-				//					std::cout << "\t\tComponent retrieved!" << std::endl;
-
-				//					//for (auto [id, data] : metaType.data())
-				//					//{
-				//					//	// Retrieve the name property of the member
-				//					//	auto name_prop = data.prop("name"_hs);
-				//					//	if (name_prop)
-				//					//	{
-				//					//		const char* memberName = name_prop.value().cast<const char*>();
-
-				//					//		auto data = entt::resolve(ctype.hash()).data(entt::hashed_string(memberName));
-				//					//		auto value = data.get(componentMeta);
-
-				//					//		if (value)
-				//					//		{
-				//					//			//std::cout << "Member: " << data.prop("name"_hs).value().cast<std::string>() << std::endl;	
-				//					//		}
-				//					//	}
-
-				//					//	//std::cout << "Value: " << data.get(component).cast<std::string>() << std::endl;
-				//					//}
-				//				}
-				//			}
-				//		}
-				//	}
-				//});
-
 				// Tag component.
 				if (m_ActiveScene->HasComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity))
 				{

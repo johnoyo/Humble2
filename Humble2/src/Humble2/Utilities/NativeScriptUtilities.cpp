@@ -16,6 +16,8 @@ namespace HBL2
 
 		typedef bool (*HasComponentFunc)(Scene*, entt::entity);
 
+		typedef void (*ClearComponentStorageFunc)(Scene*);
+
 		typedef void (*SerializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>&, bool);
 
 		typedef void (*DeserializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>&);
@@ -573,6 +575,27 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 
 		// Register the component.
 		return hasComponent(ctx, entity);
+	}
+
+	void NativeScriptUtilities::ClearComponentStorage(const std::string& name, Scene* ctx)
+	{
+		const std::string& projectName = Project::GetActive()->GetName();
+
+#ifdef DEBUG
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
+#else
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
+#endif
+		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
+
+		// Load new component dll.
+		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
+
+		// Retrieve function that checks if the entity has the component from the dll.
+		ClearComponentStorageFunc clearComponentStorage = unityBuild.GetFunction<ClearComponentStorageFunc>("ClearComponentStorage_" + name);
+
+		// Register the component.
+		clearComponentStorage(ctx);
 	}
 
 	void NativeScriptUtilities::SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data, bool cleanRegistry)

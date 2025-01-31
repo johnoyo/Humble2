@@ -98,6 +98,7 @@ namespace HBL2
 		entt::meta_any GetComponent(const std::string& name, Scene* ctx, entt::entity entity);
 		void RemoveComponent(const std::string& name, Scene* ctx, entt::entity entity);
 		bool HasComponent(const std::string& name, Scene* ctx, entt::entity entity);
+		void ClearComponentStorage(const std::string& name, Scene* ctx);
 
 		void SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data, bool cleanRegistry = true);
 		void DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data);
