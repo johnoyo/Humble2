@@ -1,26 +1,28 @@
 #pragma once
 
+#include "Base.h"
+
 #include <Core\Events.h>
 
 namespace HBL2
 {
 	class Scene;
 
-	enum class SystemType
+	enum class HBL2_API SystemType
 	{
 		Core = 0,
 		Runtime,
 		User,
 	};
 
-	enum class SystemState
+	enum class HBL2_API SystemState
 	{
 		Play = 0,
 		Pause,
 		Idle,
 	};
 
-	class ISystem
+	class HBL2_API ISystem
 	{
 	public:
 		virtual ~ISystem() = default;
@@ -60,6 +62,9 @@ namespace HBL2
 		std::string Name = "UnnamedSystem";
 
 	protected:
+
+		// TODO: Add execution order.
+
 		Scene* m_Context = nullptr;
 		SystemType m_Type = SystemType::Core;
 		SystemState m_State = SystemState::Idle;

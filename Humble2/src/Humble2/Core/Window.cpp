@@ -2,6 +2,8 @@
 
 namespace HBL2
 {
+	Window* Window::Instance = nullptr;
+
 	static void WindowCloseCallback(GLFWwindow* window)
 	{
 		EventDispatcher::Get().Post(WindowCloseEvent());

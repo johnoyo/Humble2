@@ -9,7 +9,7 @@
 
 namespace HBL2
 {
-	class TransformSystem final : public ISystem
+	class HBL2_API TransformSystem final : public ISystem
 	{
 	public:
 		TransformSystem() { Name = "TransformSystem"; }

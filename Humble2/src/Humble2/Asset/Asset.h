@@ -8,7 +8,7 @@
 
 namespace HBL2
 {
-	enum class AssetType
+	enum class HBL2_API AssetType
 	{
 		None = 0,
 		Texture = 1,
@@ -19,14 +19,14 @@ namespace HBL2
 		Script = 6,
 	};
 
-	struct AssetDescriptor
+	struct HBL2_API AssetDescriptor
 	{
-		const char* debugName;
+		const char* debugName = "";
 		std::filesystem::path filePath;
-		AssetType type;
+		AssetType type = AssetType::None;
 	};
 
-	struct Asset
+	struct HBL2_API Asset
 	{
 		Asset() = default;
 		Asset(const AssetDescriptor&& desc)

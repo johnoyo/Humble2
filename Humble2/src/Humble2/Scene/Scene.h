@@ -3,8 +3,6 @@
 #include "ISystem.h"
 #include "Components.h"
 
-#include "Utilities\NativeScriptUtilities.h"
-
 #include "Utilities\Random.h"
 
 #include <entt.hpp>
@@ -16,7 +14,7 @@ namespace HBL2
 		std::string name;
 	};
 
-	class Scene
+	class HBL2_API Scene
 	{
 	public:
 		Scene() = default;
@@ -124,52 +122,7 @@ namespace HBL2
 			DeregisterSystem(systemToBeDeleted);
 		}
 
-		void DeregisterSystem(ISystem* system)
-		{
-			if (system == nullptr)
-			{
-				return;
-			}
-
-			{
-				// Erase from systems vector
-				auto it = std::find(m_Systems.begin(), m_Systems.end(), system);
-
-				if (it != m_Systems.end())
-				{
-					m_Systems.erase(it);
-				}
-			}
-
-			{
-				// Erase from core systems vector
-				auto it = std::find(m_CoreSystems.begin(), m_CoreSystems.end(), system);
-
-				if (it != m_CoreSystems.end())
-				{
-					m_CoreSystems.erase(it);
-				}
-			}
-
-			{
-				// Erase from runtime systems vector
-				auto it = std::find(m_RuntimeSystems.begin(), m_RuntimeSystems.end(), system);
-
-				if (it != m_RuntimeSystems.end())
-				{
-					m_RuntimeSystems.erase(it);
-				}
-			}
-
-			if (system->GetType() == SystemType::User)
-			{
-				NativeScriptUtilities::Get().DeleteDLLInstance(system->Name);
-			}
-			else
-			{
-				delete system;
-			}
-		}
+		void DeregisterSystem(ISystem* system);
 
 		void RegisterSystem(ISystem* system, SystemType type = SystemType::Core)
 		{
@@ -211,9 +164,30 @@ namespace HBL2
 			return m_Registry;
 		}
 
+		entt::meta_ctx& GetMetaContext()
+		{
+			return m_MetaContext;
+		}
+
 		const std::string& GetName() const
 		{
 			return m_Name;
+		}
+
+		template <typename T>
+		static std::vector<std::byte> Serialize(const T& component)
+		{
+			std::vector<std::byte> data(sizeof(T));
+			std::memcpy(data.data(), &component, sizeof(T));
+			return data;
+		}
+
+		template <typename T>
+		static T Deserialize(const std::vector<std::byte>& data)
+		{
+			T component;
+			std::memcpy(&component, data.data(), sizeof(T));
+			return component;
 		}
 
 		entt::entity MainCamera = entt::null;
@@ -221,6 +195,7 @@ namespace HBL2
 	private:
 		std::string m_Name;
 		entt::registry m_Registry;
+		entt::meta_ctx m_MetaContext;
 		std::vector<ISystem*> m_Systems;
 		std::vector<ISystem*> m_CoreSystems;
 		std::vector<ISystem*> m_RuntimeSystems;

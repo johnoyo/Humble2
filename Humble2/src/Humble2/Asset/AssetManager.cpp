@@ -4,6 +4,8 @@
 
 namespace HBL2
 {
+	AssetManager* AssetManager::Instance = nullptr;
+
 	void AssetManager::RegisterAssets()
 	{
 		// Create Asset directory if it does not exist.
@@ -72,6 +74,14 @@ namespace HBL2
 				.debugName = "scene-asset",
 				.filePath = relativePath,
 				.type = AssetType::Scene,
+			});
+		}
+		else if (extension == ".h")
+		{
+			assetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "script-asset",
+				.filePath = relativePath,
+				.type = AssetType::Script,
 			});
 		}
 

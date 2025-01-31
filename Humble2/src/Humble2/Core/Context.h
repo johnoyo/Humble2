@@ -1,18 +1,20 @@
 #pragma once
 
+#include "Humble2API.h"
+
 #include "Resources\Handle.h"
 #include "Scene\Scene.h"
 
 namespace HBL2
 {
-	enum class Mode
+	enum class HBL2_API Mode
 	{
 		None = 0,
 		Runtime,
 		Editor,
 	};
 
-	class Context
+	class HBL2_API Context
 	{
 	public:
 		virtual ~Context() {}

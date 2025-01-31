@@ -4,7 +4,7 @@
 
 namespace HBL2
 {
-	class CommandBuffer
+	class HBL2_API CommandBuffer
 	{
 	public:
 		virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer) = 0;

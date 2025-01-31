@@ -13,8 +13,6 @@ project "HumbleApp"
     { 
         "src/**.h", 
         "src/**.cpp",
-        "../Dependencies/ImGuizmo/ImGuizmo.h",
-        "../Dependencies/ImGuizmo/ImGuizmo.cpp",
     }
 
     includedirs
@@ -37,7 +35,14 @@ project "HumbleApp"
 
     links
     {
-        "Humble2"
+        "Humble2",
+        "ImGui",
+        "YAML-Cpp"
+    }
+
+    defines
+    {
+        "YAML_CPP_STATIC_DEFINE",
     }
 
     filter "system:windows"

@@ -4,7 +4,7 @@
 
 namespace HBL2
 {
-	class ProjectSerializer
+	class HBL2_API ProjectSerializer
 	{
 	public:
 		ProjectSerializer(Project* project);

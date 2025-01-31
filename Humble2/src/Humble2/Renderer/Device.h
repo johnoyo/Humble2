@@ -1,8 +1,12 @@
 #pragma once
 
+#include "Humble2API.h"
+
+#include <cstdint>
+
 namespace HBL2
 {
-	struct GPUProperties
+	struct HBL2_API GPUProperties
 	{
 		const char* vendorID;
 		const char* deviceName;
@@ -16,10 +20,10 @@ namespace HBL2
 		Limits limits;
 	};
 
-	class Device
+	class HBL2_API Device
 	{
 	public:
-		static inline Device* Instance;
+		static Device* Instance;
 		virtual ~Device() = default;
 
 		virtual void Initialize() = 0;

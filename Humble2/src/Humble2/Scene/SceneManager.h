@@ -11,16 +11,12 @@
 
 namespace HBL2
 {
-	class SceneManager
+	class HBL2_API SceneManager
 	{
 	public:
 		SceneManager(const SceneManager&) = delete;
 
-		static SceneManager& Get()
-		{
-			static SceneManager instance;
-			return instance;
-		}
+		static SceneManager& Get();
 
 		void LoadScene(Handle<Asset> sceneAssetHandle, bool runtime = false);
 		void LoadScene(Handle<Scene> sceneHandle, bool runtime = false);

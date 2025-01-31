@@ -7,25 +7,23 @@
 
 namespace HBL2
 {
-	struct TextureSettings
+	struct HBL2_API TextureSettings
 	{
 		int Width;
 		int Height;
 		bool Flip = false;
 	};
 
-	class TextureUtilities
+	class HBL2_API TextureUtilities
 	{
 	public:
 		TextureUtilities(const TextureUtilities&) = delete;
 
-		static TextureUtilities& Get()
-		{
-			static TextureUtilities instance;
-			return instance;
-		}
+		static TextureUtilities& Get();
 
 		stbi_uc* Load(const std::string& path, TextureSettings& settings);
+
+		void CreateAssetMetadataFile(Handle<Asset> handle);
 
 		void LoadWhiteTexture();
 

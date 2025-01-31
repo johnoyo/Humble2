@@ -1,7 +1,15 @@
 #include "TextureUtilities.h"
 
+#include <Project\Project.h>
+
 namespace HBL2
 {
+	TextureUtilities& TextureUtilities::Get()
+	{
+		static TextureUtilities instance;
+		return instance;
+	}
+
 	stbi_uc* TextureUtilities::Load(const std::string& path, TextureSettings& settings)
 	{
 		HBL2_FUNC_PROFILE();
@@ -20,6 +28,22 @@ namespace HBL2
 		}
 
 		return pixels;
+	}
+
+	void TextureUtilities::CreateAssetMetadataFile(Handle<Asset> handle)
+	{
+		std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(handle)->FilePath).string() + ".hbltexture", 0);
+
+		YAML::Emitter out;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Texture" << YAML::Value;
+		out << YAML::BeginMap;
+		out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(handle)->UUID;
+		out << YAML::Key << "Flip" << YAML::Value << false;
+		out << YAML::EndMap;
+		out << YAML::EndMap;
+		fout << out.c_str();
+		fout.close();
 	}
 
 	void TextureUtilities::LoadWhiteTexture()

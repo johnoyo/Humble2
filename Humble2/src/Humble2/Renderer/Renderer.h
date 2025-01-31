@@ -22,7 +22,7 @@ namespace HBL2
 		float _padding[3];
 	};
 
-	enum class GraphicsAPI
+	enum class HBL2_API GraphicsAPI
 	{
 		NONE,
 		OPENGL,
@@ -30,7 +30,7 @@ namespace HBL2
 		WEBGPU,
 	};
 
-	enum class RenderPassEvent
+	enum class HBL2_API RenderPassEvent
 	{
 		BeforeRendering = 0,
 		BeforeRenderingShadows,
@@ -50,7 +50,7 @@ namespace HBL2
 		AfterRendering,
 	};
 
-	enum class RenderPassStage
+	enum class HBL2_API RenderPassStage
 	{
 		Shadow,
 		PrePass,
@@ -63,10 +63,10 @@ namespace HBL2
 		UserInterface,
 	};
 
-	class Renderer
+	class HBL2_API Renderer
 	{
 	public:
-		static inline Renderer* Instance;
+		static Renderer* Instance;
 
 		virtual ~Renderer() = default;
 

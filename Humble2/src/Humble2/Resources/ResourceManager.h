@@ -4,15 +4,16 @@
 #include "Pool.h"
 #include "Types.h"
 #include "Scene\Scene.h"
+#include "Scene\Script.h"
 #include "TypeDescriptors.h"
 #include "ResourceDeletionQueue.h"
 
 namespace HBL2
 {
-	class ResourceManager
+	class HBL2_API ResourceManager
 	{
 	public:
-		static inline ResourceManager* Instance;
+		static ResourceManager* Instance;
 
 		virtual ~ResourceManager() = default;
 
@@ -100,6 +101,20 @@ namespace HBL2
 			return m_ScenePool.Get(handle);
 		}
 
+		// Scripts
+		Handle<Script> CreateScript(const ScriptDescriptor&& desc)
+		{
+			return m_ScriptPool.Insert(Script(std::forward<const ScriptDescriptor>(desc)));
+		}
+		void DeleteScript(Handle<Script> handle)
+		{
+			m_ScriptPool.Remove(handle);
+		}
+		Script* GetScript(Handle<Script> handle) const
+		{
+			return m_ScriptPool.Get(handle);
+		}
+
 	protected:
 		ResourceDeletionQueue m_DeletionQueue;
 
@@ -107,5 +122,6 @@ namespace HBL2
 		Pool<Mesh, Mesh> m_MeshPool;
 		Pool<Material, Material> m_MaterialPool;
 		Pool<Scene, Scene> m_ScenePool;
+		Pool<Script, Script> m_ScriptPool;
 	};
 }

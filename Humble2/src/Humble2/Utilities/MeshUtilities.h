@@ -19,11 +19,7 @@ namespace HBL2
 	public:
 		MeshUtilities(const MeshUtilities&) = delete;
 
-		static MeshUtilities& Get()
-		{
-			HBL2_CORE_ASSERT(s_Instance != nullptr, "MeshUtilities::s_Instance is null! Call MeshUtilities::Initialize before use.");
-			return *s_Instance;
-		}
+		static MeshUtilities& Get();
 
 		static void Initialize();
 		static void Shutdown();
@@ -37,6 +33,6 @@ namespace HBL2
 
 		std::unordered_map<std::string, MeshData> m_LoadedMeshes;
 
-		inline static MeshUtilities* s_Instance = nullptr;
+		static MeshUtilities* s_Instance;
 	};
 }

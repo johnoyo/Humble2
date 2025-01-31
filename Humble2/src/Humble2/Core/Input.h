@@ -7,7 +7,7 @@
 
 namespace HBL2
 {
-	class Input {
+	class HBL2_API Input {
 	public:
 		Input(const Input&) = delete;
 

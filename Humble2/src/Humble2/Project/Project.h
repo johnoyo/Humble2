@@ -13,7 +13,7 @@
 
 namespace HBL2
 {
-	struct ProjectSpecification
+	struct HBL2_API ProjectSpecification
 	{
 		std::string Name = "Untitled";
 
@@ -22,7 +22,7 @@ namespace HBL2
 		std::filesystem::path ScriptDirectory;
 	};
 
-	class Project
+	class HBL2_API Project
 	{
 	public:
 		Project() = default;
@@ -49,6 +49,11 @@ namespace HBL2
 			return GetAssetDirectory() / path;
 		}
 
+		static const std::string& GetName()
+		{
+			return s_ActiveProject->m_Spec.Name;
+		}
+
 		static Project* Create(const std::string& name = "");
 		static Project* Load(const std::filesystem::path& path);
 		static void Save(const std::filesystem::path& path);
@@ -59,6 +64,6 @@ namespace HBL2
 		ProjectSpecification m_Spec;
 		std::filesystem::path m_ProjectDirectory;
 
-		inline static Project* s_ActiveProject;
+		static Project* s_ActiveProject;
 	};
 }

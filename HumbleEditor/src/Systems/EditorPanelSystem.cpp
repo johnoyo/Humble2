@@ -10,6 +10,9 @@
 #include "Resources\TypeDescriptors.h"
 
 #include "UI/LayoutLib.h"
+#include "Utilities/UnityBuilder.h"
+
+#include<vector>
 
 namespace HBL2
 {
@@ -29,16 +32,9 @@ namespace HBL2
 				Scene* currentScene = ResourceManager::Instance->GetScene(sce.CurrentScene);
 				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != std::string::npos)
 				{
-#ifdef false
-					// Delete dll systems instance.
-					for (ISystem* system : currentScene->GetRuntimeSystems())
-					{
-						if (system->GetType() == SystemType::User)
-						{
-							NativeScriptUtilities::Get().DeleteDLLInstance(system->Name);
-						}
-					}
-#endif
+					// Unload unity build dll.
+					NativeScriptUtilities::Get().UnloadUnityBuild(currentScene);
+
 					// Delete play mode scene.
 					ResourceManager::Instance->DeleteScene(sce.CurrentScene);
 
@@ -159,18 +155,6 @@ namespace HBL2
 
 			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Camera, CameraEditor>();
 			HBL2::EditorUtilities::Get().InitCustomEditor<HBL2::Component::Camera, CameraEditor>();
-
-			using namespace entt::literals;
-
-			entt::meta<HBL2::Component::Transform>()
-				.type(entt::hashed_string(typeid(HBL2::Component::Transform).name()))
-				.data<&HBL2::Component::Transform::Translation>("Translation"_hs).prop("name"_hs, "Translation")
-				.data<&HBL2::Component::Transform::Rotation>("Rotation"_hs).prop("name"_hs, "Rotation")
-				.data<&HBL2::Component::Transform::QRotation>("QRotation"_hs).prop("name"_hs, "QRotation")
-				.data<&HBL2::Component::Transform::Scale>("Scale"_hs).prop("name"_hs, "Scale")
-				.data<&HBL2::Component::Transform::LocalMatrix>("LocalMatrix"_hs).prop("name"_hs, "LocalMatrix")
-				.data<&HBL2::Component::Transform::WorldMatrix>("WorldMatrix"_hs).prop("name"_hs, "WorldMatrix")
-				.data<&HBL2::Component::Transform::Static>("Static"_hs).prop("name"_hs, "Static");
 		}
 
 		void EditorPanelSystem::OnUpdate(float ts)
@@ -464,31 +448,6 @@ namespace HBL2
 
 			if (HBL2::Component::EditorVisible::SelectedEntity != entt::null)
 			{
-				/*
-
-				// Iterate over all components of entity
-				m_ActiveScene->GetRegistry().view<HBL2::Component::ID, HBL2::Component::Tag>().each([&](auto& id, auto& name)
-					{
-						std::cout << name.Name << " (" << id.Identifier << ")" << std::endl;
-						std::cout << "\tComponents:" << std::endl;
-
-						for (auto&& curr : m_ActiveScene->GetRegistry().storage())
-						{
-							entt::id_type cid = curr.first;
-							auto& storage = curr.second;
-							entt::type_info ctype = storage.type();
-
-							if (storage.contains(HBL2::Component::EditorVisible::SelectedEntity))
-							{
-								std::cout << "\t\t" << typeid(HBL2::Component::Tag).name() << std::endl;
-								std::cout << "\t\t" << ctype.hash() << std::endl;
-								std::cout << "\t\t" << ctype.name() << std::endl;
-							}
-						}
-					});
-
-				*/
-
 				// Tag component.
 				if (m_ActiveScene->HasComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
@@ -513,11 +472,11 @@ namespace HBL2
 					{
 						auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity);
 
-						HBL2::EditorUtilities::Get().DrawDefaultEditor<HBL2::Component::Transform>(transform);
+						// HBL2::EditorUtilities::Get().DrawDefaultEditor<HBL2::Component::Transform>(transform);
 
-						//ImGui::DragFloat3("Translation", glm::value_ptr(transform.Translation), 0.25f);
-						//ImGui::DragFloat3("Rotation", glm::value_ptr(transform.Rotation), 0.25f);
-						//ImGui::DragFloat3("Scale", glm::value_ptr(transform.Scale), 0.25f);
+						ImGui::DragFloat3("Translation", glm::value_ptr(transform.Translation), 0.25f);
+						ImGui::DragFloat3("Rotation", glm::value_ptr(transform.Rotation), 0.25f);
+						ImGui::DragFloat3("Scale", glm::value_ptr(transform.Scale), 0.25f);
 
 						ImGui::TreePop();
 					}
@@ -846,6 +805,45 @@ namespace HBL2
 					}
 				}
 
+				using namespace entt::literals;
+
+				// Iterate over all registered meta types
+				for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
+				{
+					std::string componentName = meta_type.second.info().name().data();
+					componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+
+					if (NativeScriptUtilities::Get().HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						bool opened = ImGui::TreeNodeEx((void*)meta_type.second.info().hash(), treeNodeFlags, componentName.c_str());
+
+						ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
+
+						bool removeComponent = false;
+
+						if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+						{
+							removeComponent = true;
+						}
+
+						if (opened)
+						{
+							entt::meta_any componentMeta = HBL2::NativeScriptUtilities::Get().GetComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+
+							HBL2::EditorUtilities::Get().DrawDefaultEditor(componentMeta);
+
+							ImGui::TreePop();
+						}
+
+						ImGui::Separator();
+
+						if (removeComponent)
+						{
+							HBL2::NativeScriptUtilities::Get().RemoveComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+						}
+					}
+				}
+
 				// Add component button.
 				if (ImGui::Button("Add Component"))
 				{
@@ -882,6 +880,19 @@ namespace HBL2
 					{
 						m_ActiveScene->AddComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity);
 						ImGui::CloseCurrentPopup();
+					}
+
+					// Iterate over all registered meta types
+					for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
+					{
+						std::string componentName = meta_type.second.info().name().data();
+						componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+
+						if (ImGui::MenuItem(componentName.c_str()))
+						{
+							HBL2::NativeScriptUtilities::Get().AddComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
 					}
 
 					ImGui::EndPopup();
@@ -1164,6 +1175,11 @@ namespace HBL2
 						m_OpenScriptSetupPopup = true;
 					}
 
+					if (ImGui::MenuItem("Component"))
+					{
+						m_OpenComponentSetupPopup = true;
+					}
+
 					ImGui::EndMenu();
 				}
 
@@ -1181,85 +1197,14 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
-					// Create system file
-					std::ofstream systemFile(HBL2::Project::GetAssetDirectory() / "Scripts" / (std::string(systemNameBuffer) + ".cpp"), 0);
-					systemFile << NativeScriptUtilities::Get().GetDefaultSystemCode(systemNameBuffer);
-					systemFile.close();
+					// Create .h file with placeholder code.
+					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateSystemFile(m_CurrentDirectory, systemNameBuffer);
 
-					// Create folder in ProjectFiles
-					const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles" / systemNameBuffer;
-					
-					try
-					{
-						std::filesystem::create_directories(projectFilesPath);
-					}
-					catch (std::exception& e)
-					{
-						HBL2_ERROR("Project directory creation failed: {0}", e.what());
-					}
+					// Import script.
+					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
 
-					// Create solution file for new system
-					std::ofstream solutionFile(projectFilesPath / (std::string(systemNameBuffer) + ".sln"));
-
-					if (!solutionFile.is_open())
-					{
-						return;
-					}
-
-					solutionFile << NativeScriptUtilities::Get().GetDefaultSolutionText(systemNameBuffer);
-					solutionFile.close();
-
-					// Create vcxproj file for new system
-					std::ofstream projectFile(projectFilesPath / (std::string(systemNameBuffer) + ".vcxproj"));
-
-					if (!projectFile.is_open())
-					{
-						return;
-					}
-
-					projectFile << NativeScriptUtilities::Get().GetDefaultProjectText(systemNameBuffer);
-					projectFile.close();
-
-					if (m_ActiveScene != nullptr)
-					{
-						m_ActiveScene->DeregisterSystem(systemNameBuffer);
-
-						// Remove old dll
-						try
-						{
-							if (std::filesystem::remove(std::filesystem::path("assets") / "dlls" / (std::string(systemNameBuffer) + ".dll")))
-							{
-								std::cout << "file " << std::filesystem::path("assets") / "dlls" / (std::string(systemNameBuffer) + ".dll") << " deleted.\n";
-							}
-							else
-							{
-								std::cout << "file " << std::filesystem::path("assets") / "dlls" / (std::string(systemNameBuffer) + ".dll") << " not found.\n";
-							}
-						}
-						catch (const std::filesystem::filesystem_error& err)
-						{
-							std::cout << "filesystem error: " << err.what() << '\n';
-						}
-					}
-
-					// Build the solution					
-#ifdef DEBUG
-					const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (std::string(systemNameBuffer) + ".sln")).string() + R"( /t:)" + systemNameBuffer + R"( /p:Configuration=Debug")";
-#else
-					const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (std::string(systemNameBuffer) + ".sln")).string() + R"( /t:)" + systemNameBuffer + R"( /p:Configuration=Release")";
-#endif // DEBUG
-					system(command.c_str());
-
-					// Load dll
-					const std::string& dllPath = "assets\\dlls\\" + std::string(systemNameBuffer) + "\\" + std::string(systemNameBuffer) + ".dll";
-					ISystem* newSystem = NativeScriptUtilities::Get().LoadDLL(dllPath);
-
-					HBL2_CORE_ASSERT(newSystem != nullptr, "Failed to load system.");
-
-					if (m_ActiveScene != nullptr)
-					{
-						m_ActiveScene->RegisterSystem(newSystem, SystemType::User);
-					}
+					// Save script (build).
+					AssetManager::Instance->SaveAsset(scriptAssetHandle);
 
 					m_OpenScriptSetupPopup = false;
 				}
@@ -1269,6 +1214,39 @@ namespace HBL2
 				if (ImGui::Button("Cancel"))
 				{
 					m_OpenScriptSetupPopup = false;
+				}
+
+				ImGui::End();
+			}
+
+			if (m_OpenComponentSetupPopup)
+			{
+				ImGui::Begin("Component Setup", &m_OpenComponentSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+				static char componentNameBuffer[256] = "NewComponent";
+				ImGui::InputText("Component Name", componentNameBuffer, 256);
+
+				ImGui::NewLine();
+
+				if (ImGui::Button("OK"))
+				{
+					// Create .h file with placeholder code.
+					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateComponentFile(m_CurrentDirectory, componentNameBuffer);
+
+					// Import script.
+					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
+
+					// Save script (build).
+					AssetManager::Instance->SaveAsset(scriptAssetHandle);
+
+					m_OpenComponentSetupPopup = false;
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel"))
+				{
+					m_OpenComponentSetupPopup = false;
 				}
 
 				ImGui::End();
@@ -1310,18 +1288,7 @@ namespace HBL2
 
 					if (shaderAssetHandle.IsValid())
 					{
-						std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->FilePath).string() + ".hblshader", 0);
-
-						YAML::Emitter out;
-						out << YAML::BeginMap;
-						out << YAML::Key << "Shader" << YAML::Value;
-						out << YAML::BeginMap;
-						out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->UUID;
-						out << YAML::Key << "Type" << YAML::Value << m_SelectedShaderType;
-						out << YAML::EndMap;
-						out << YAML::EndMap;
-						fout << out.c_str();
-						fout.close();
+						ShaderUtilities::Get().CreateShaderMetadataFile(shaderAssetHandle, m_SelectedShaderType);
 					}
 
 					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), 0);
@@ -1392,18 +1359,7 @@ namespace HBL2
 
 						if (albedoMapAssetHandle.IsValid())
 						{
-							std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(albedoMapAssetHandle)->FilePath).string() + ".hbltexture", 0);
-
-							YAML::Emitter out;
-							out << YAML::BeginMap;
-							out << YAML::Key << "Texture" << YAML::Value;
-							out << YAML::BeginMap;
-							out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(albedoMapAssetHandle)->UUID;
-							out << YAML::Key << "Flip" << YAML::Value << false;
-							out << YAML::EndMap;
-							out << YAML::EndMap;
-							fout << out.c_str();
-							fout.close();
+							TextureUtilities::Get().CreateAssetMetadataFile(albedoMapAssetHandle);
 						}
 
 						ImGui::EndDragDropTarget();
@@ -1433,18 +1389,7 @@ namespace HBL2
 
 							if (normalMapAssetHandle.IsValid())
 							{
-								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(normalMapAssetHandle)->FilePath).string() + ".hbltexture", 0);
-
-								YAML::Emitter out;
-								out << YAML::BeginMap;
-								out << YAML::Key << "Texture" << YAML::Value;
-								out << YAML::BeginMap;
-								out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(normalMapAssetHandle)->UUID;
-								out << YAML::Key << "Flip" << YAML::Value << false;
-								out << YAML::EndMap;
-								out << YAML::EndMap;
-								fout << out.c_str();
-								fout.close();
+								TextureUtilities::Get().CreateAssetMetadataFile(normalMapAssetHandle);
 							}
 
 							ImGui::EndDragDropTarget();
@@ -1467,18 +1412,7 @@ namespace HBL2
 
 							if (metallicMapAssetHandle.IsValid())
 							{
-								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(metallicMapAssetHandle)->FilePath).string() + ".hbltexture", 0);
-
-								YAML::Emitter out;
-								out << YAML::BeginMap;
-								out << YAML::Key << "Texture" << YAML::Value;
-								out << YAML::BeginMap;
-								out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(metallicMapAssetHandle)->UUID;
-								out << YAML::Key << "Flip" << YAML::Value << false;
-								out << YAML::EndMap;
-								out << YAML::EndMap;
-								fout << out.c_str();
-								fout.close();
+								TextureUtilities::Get().CreateAssetMetadataFile(metallicMapAssetHandle);
 							}
 
 							ImGui::EndDragDropTarget();
@@ -1501,24 +1435,12 @@ namespace HBL2
 
 							if (roughnessMapAssetHandle.IsValid())
 							{
-								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(roughnessMapAssetHandle)->FilePath).string() + ".hbltexture", 0);
-
-								YAML::Emitter out;
-								out << YAML::BeginMap;
-								out << YAML::Key << "Texture" << YAML::Value;
-								out << YAML::BeginMap;
-								out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(roughnessMapAssetHandle)->UUID;
-								out << YAML::Key << "Flip" << YAML::Value << false;
-								out << YAML::EndMap;
-								out << YAML::EndMap;
-								fout << out.c_str();
-								fout.close();
+								TextureUtilities::Get().CreateAssetMetadataFile(roughnessMapAssetHandle);
 							}
 
 							ImGui::EndDragDropTarget();
 						}
 					}
-
 				}
 
 				Handle<Texture> normalMapHandle = AssetManager::Instance->GetAsset<Texture>(normalMapAssetHandle);
@@ -1633,7 +1555,8 @@ namespace HBL2
 				auto relativePath = std::filesystem::relative(entry.path(), HBL2::Project::GetAssetDirectory());
 				const std::string extension = entry.path().extension().string();
 
-				if (extension == ".meta")
+				// Do not show engine metadata files.
+				if (extension.find(".hbl") != std::string::npos && extension.find(".hblmat") == std::string::npos)
 				{
 					ImGui::PopID();
 					continue;
@@ -1643,82 +1566,29 @@ namespace HBL2
 
 				ImGui::Button(entry.path().filename().string().c_str(), { thumbnailSize, thumbnailSize });
 
-				if (ImGui::BeginPopupContextItem())
-				{
-					if (extension == ".cpp")
-					{
-						if (ImGui::MenuItem("Recompile"))
-						{
-							const auto& systemName = entry.path().filename().stem().string();
-							const std::string& dllPath = (std::filesystem::path("assets") / "dlls" / systemName / (systemName + ".dll")).string();
-							const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles" / systemName;
-							
-							if (m_ActiveScene != nullptr)
-							{
-								m_ActiveScene->DeregisterSystem(systemName);
-							}
-
-							// Create new vcxproj file for system
-							std::ofstream projectFile(projectFilesPath / (systemName + ".vcxproj"));
-
-							if (!projectFile.is_open())
-							{
-								return;
-							}
-
-							bool dllLocked = true;
-
-							while (dllLocked)
-							{
-								try
-								{
-									if (std::filesystem::remove(dllPath))
-									{
-										dllLocked = false;
-										std::cout << "file " << dllPath << " deleted.\n";
-									}
-									else
-									{
-										dllLocked = false;
-										std::cout << "file " << dllPath << " not found.\n";
-									}
-								}
-								catch (const std::filesystem::filesystem_error& err)
-								{
-									dllLocked = true;
-									std::cout << "filesystem error: " << err.what() << '\n';
-								}
-							}
-
-							projectFile << NativeScriptUtilities::Get().GetDefaultProjectText(systemName);
-							projectFile.close();
-
-							// Build the solution
-#ifdef DEBUG
-							const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (systemName + ".sln")).string() + R"( /t:)" + systemName + R"( /p:Configuration=Debug")";
-#else
-							const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / (systemName + ".sln")).string() + R"( /t:)" + systemName + R"( /p:Configuration=Release")";
-#endif // DEBUG
-							system(command.c_str());
-
-							// Load dll
-							ISystem* newSystem = NativeScriptUtilities::Get().LoadDLL(dllPath);
-
-							HBL2_CORE_ASSERT(newSystem != nullptr, "Failed to load system.");
-
-							if (m_ActiveScene != nullptr)
-							{
-								newSystem->Name = systemName;
-								m_ActiveScene->RegisterSystem(newSystem, SystemType::User);
-							}
-						}
-					}
-					ImGui::EndPopup();
-				}
-
 				UUID assetUUID = std::hash<std::string>()(relativePath.string());
 				Handle<Asset> assetHandle = AssetManager::Instance->GetHandleFromUUID(assetUUID);
 				Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+				if (ImGui::BeginPopupContextItem())
+				{
+					if (extension == ".h")
+					{
+						if (ImGui::MenuItem("Recompile"))
+						{
+							AssetManager::Instance->GetAsset<Script>(assetHandle);
+							AssetManager::Instance->SaveAsset(assetHandle);				// NOTE: Consider changing this!
+						}
+					}
+
+					if (ImGui::MenuItem("Delete"))
+					{
+						m_OpenDeleteConfirmationWindow = true;
+						m_AssetToBeDeleted = assetHandle;
+					}					
+
+					ImGui::EndPopup();
+				}
 
 				if (ImGui::BeginDragDropSource())
 				{
@@ -1750,6 +1620,9 @@ namespace HBL2
 					case AssetType::Scene:
 						ImGui::SetDragDropPayload("Content_Browser_Item_Scene", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
 						break;
+					case AssetType::Script:
+						ImGui::SetDragDropPayload("Content_Browser_Item_Script", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+						break;
 					default:
 						ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
 						break;
@@ -1757,8 +1630,8 @@ namespace HBL2
 
 					ImGui::EndDragDropSource();
 				}
-
 				ImGui::PopStyleColor();
+
 				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 				{
 					if (entry.is_directory())
@@ -1775,6 +1648,34 @@ namespace HBL2
 			}
 
 			ImGui::Columns(1);
+
+			if (m_OpenDeleteConfirmationWindow && m_AssetToBeDeleted.IsValid())
+			{
+				Asset* assetToBeDeleted = AssetManager::Instance->GetAssetMetadata(m_AssetToBeDeleted);
+
+				ImGui::Begin("Delete Confirmation Window", &m_OpenDeleteConfirmationWindow, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+				ImGui::Text("Are you sure you want to delete the asset: %s.\n\nThis action can not be undone.", assetToBeDeleted->FilePath.string().c_str());
+
+				ImGui::NewLine();
+
+				if (ImGui::Button("OK"))
+				{
+					AssetManager::Instance->DeleteAsset(m_AssetToBeDeleted, true);
+					m_OpenDeleteConfirmationWindow = false;
+					m_AssetToBeDeleted = Handle<Asset>();
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel"))
+				{
+					m_OpenDeleteConfirmationWindow = false;
+					m_AssetToBeDeleted = Handle<Asset>();
+				}
+
+				ImGui::End();
+			}
 		}
 
 		void EditorPanelSystem::DrawViewportPanel()
@@ -1788,6 +1689,8 @@ namespace HBL2
 			{
 				// HBL2::ResourceManager::Instance->ResizeFrameBuffer(HBL2::Renderer::Instance->GetMainFrameBuffer(), (uint32_t)viewportPanelSize.x, (uint32_t)viewportPanelSize.y);
 				m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+
+				EventDispatcher::Get().Post(ViewportSizeEvent(m_ViewportSize.x, m_ViewportSize.y));
 
 				if (m_ActiveScene != nullptr)
 				{
@@ -1852,7 +1755,7 @@ namespace HBL2
 			{
 				auto selectedEntity = HBL2::Component::EditorVisible::SelectedEntity;
 
-				if (!ImGuizmo::IsUsing() && !Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
+				if (!ImGuiRenderer::Instance->Gizmos_IsUsing() && !Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
 				{
 					if (Input::GetKeyPress(GLFW_KEY_W))
 					{
@@ -1873,13 +1776,13 @@ namespace HBL2
 				}
 
 				auto& camera = m_Context->GetComponent<HBL2::Component::Camera>(m_Context->MainCamera);
-				ImGuizmo::SetOrthographic(camera.Type == HBL2::Component::Camera::Type::Orthographic);
+				ImGuiRenderer::Instance->Gizmos_SetOrthographic(camera.Type == HBL2::Component::Camera::Type::Orthographic);
 
 				// Set window for rendering into.
-				ImGuizmo::SetDrawlist();
+				ImGuiRenderer::Instance->Gizmos_SetDrawlist();
 
 				// Set viewport size.
-				ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
+				ImGuiRenderer::Instance->Gizmos_SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
 
 				if (selectedEntity != entt::null && m_GizmoOperation != ImGuizmo::OPERATION::BOUNDS)
 				{
@@ -1899,7 +1802,7 @@ namespace HBL2
 
 					// Transformation gizmo
 					auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(selectedEntity);
-					bool editedTransformation = ImGuizmo::Manipulate(
+					bool editedTransformation = ImGuiRenderer::Instance->Gizmos_Manipulate(
 						glm::value_ptr(camera.View),
 						glm::value_ptr(camera.Projection),
 						m_GizmoOperation,
@@ -1911,7 +1814,7 @@ namespace HBL2
 
 					if (editedTransformation)
 					{
-						if (ImGuizmo::IsUsing())
+						if (ImGuiRenderer::Instance->Gizmos_IsUsing())
 						{
 							glm::vec3 newTranslation;
 							glm::vec3 newRotation;
@@ -1929,7 +1832,7 @@ namespace HBL2
 				float viewManipulateTop = ImGui::GetWindowPos().y;
 
 				auto& cameraTransform = m_Context->GetComponent<HBL2::Component::Transform>(m_Context->MainCamera);
-				ImGuizmo::ViewManipulate(
+				ImGuiRenderer::Instance->Gizmos_ViewManipulate(
 					glm::value_ptr(camera.View),
 					m_CameraPivotDistance,
 					ImVec2(viewManipulateRight - 128, viewManipulateTop),
@@ -1937,7 +1840,7 @@ namespace HBL2
 					0x10101010
 				);
 
-				if (ImGuizmo::IsUsingViewManipulate())
+				if (ImGuiRenderer::Instance->Gizmos_IsUsingViewManipulate())
 				{
 					glm::vec3 newTranslation;
 					glm::vec3 newRotation;
@@ -2001,13 +1904,66 @@ namespace HBL2
 		{
 			if (m_ActiveScene != nullptr)
 			{
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Script"))
+					{
+						uint32_t scriptAssetHandlePacked = *((uint32_t*)payload->Data);
+						Handle<Asset> scriptAssetHandle = Handle<Asset>::UnPack(scriptAssetHandlePacked);
+						Asset* scriptAsset = AssetManager::Instance->GetAssetMetadata(scriptAssetHandle);
+
+						if (scriptAsset == nullptr)
+						{
+							HBL2_WARN("Could not load script - invalid asset handle.");
+						}
+						else
+						{
+							Handle<Script> scriptHandle = AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
+
+							if (scriptHandle.IsValid())
+							{
+								Script* script = ResourceManager::Instance->GetScript(scriptHandle);
+
+								if (script->Type == ScriptType::SYSTEM)
+								{
+									NativeScriptUtilities::Get().RegisterSystem(script->Name, m_ActiveScene);
+								}
+								else
+								{
+									HBL2_WARN("Could not load script - not a system script.");
+								}
+							}
+							else
+							{
+								HBL2_WARN("Could not load script - invalid script handle.");
+							}
+						}
+
+						ImGui::EndDragDropTarget();
+					}
+				}
+
 				ImGui::TextWrapped(m_ActiveScene->GetName().c_str());
 				ImGui::NewLine();
 				ImGui::Separator();
 
+				ISystem* systemToBeDeregistered = nullptr;
+
 				for (ISystem* system : m_ActiveScene->GetSystems())
 				{
 					ImGui::TextWrapped(system->Name.c_str());
+
+					const std::string& name = "Deregister System " + system->Name;
+
+					if (ImGui::BeginPopupContextItem(name.c_str()))
+					{
+						if (ImGui::MenuItem("Deregister"))
+						{
+							systemToBeDeregistered = system;
+						}
+						ImGui::EndPopup();
+					}
+
 					ImGui::SameLine(ImGui::GetWindowWidth() - 80.0f);
 					switch (system->GetState())
 					{
@@ -2030,6 +1986,11 @@ namespace HBL2
 						break;
 					}
 					ImGui::Separator();
+				}
+
+				if (systemToBeDeregistered != nullptr)
+				{
+					m_ActiveScene->DeregisterSystem(systemToBeDeregistered);
 				}
 			}
 		}

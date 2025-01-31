@@ -8,7 +8,7 @@
 
 namespace HBL2
 {
-	class RenderPassRenderer
+	class HBL2_API RenderPassRenderer
 	{
 	public:
 		virtual void DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws) = 0;

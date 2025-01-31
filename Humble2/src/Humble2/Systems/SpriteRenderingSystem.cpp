@@ -73,8 +73,8 @@ namespace HBL2
 
 		m_FrameBuffer = rm->CreateFrameBuffer({
 			.debugName = "viewport",
-			.width = 1920,
-			.height = 1080,
+			.width = 1280,
+			.height = 720,
 			.renderPass = m_RenderPass,
 			.depthTarget = Renderer::Instance->MainDepthTexture,
 			.colorTargets = { Renderer::Instance->MainColorTexture },

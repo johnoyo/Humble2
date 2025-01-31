@@ -1,6 +1,6 @@
 -- Engine project.
 project "Humble2"
-    kind "StaticLib"
+    kind "SharedLib"
     language "C++"
     cppdialect "C++20"
     staticruntime "Off"
@@ -15,15 +15,14 @@ project "Humble2"
     { 
         "src/**.h", 
         "src/**.cpp",
-        "../Dependencies/ImGuizmo/ImGuizmo.h",
-        "../Dependencies/ImGuizmo/ImGuizmo.cpp",
     }
 
     defines
 	{
 		"_CRT_SECURE_NO_WARNINGS",
         "YAML_CPP_STATIC_DEFINE",
-        "GLEW_STATIC",
+
+        "HBL2_BUILD_DLL"
 	}
     
     -- Include directories.
@@ -54,7 +53,7 @@ project "Humble2"
     
     links
     {
-        "glew32s.lib",
+        "glew32.lib",
         "glfw3.lib",
         "opengl32.lib",
 
@@ -67,6 +66,28 @@ project "Humble2"
     filter "system:windows"
     systemversion "latest"    
         defines { "HBL2_PLATFORM_WINDOWS" }
+
+        postbuildcommands
+        {
+            -- Ensure the HumbleEditor directory exists and copy the target file
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} %{cfg.buildtarget.directory}/Humble2.pdb ../bin/" .. outputdir .. "/HumbleEditor"),
+            
+            -- Ensure the HumbleApp directory exists and copy the target file
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} %{cfg.buildtarget.directory}/Humble2.pdb ../bin/" .. outputdir .. "/HumbleApp"),
+            
+            -- Ensure the GLEW DLL is copied to HumbleEditor
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/GLEW/bin/Release/x64/glew32.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+            
+            -- Ensure the GLEW DLL is copied to HumbleApp
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/GLEW/bin/Release/x64/glew32.dll ../bin/" .. outputdir .. "/HumbleApp")
+        }
+
 
     filter "configurations:Debug"
         defines { "DEBUG" }

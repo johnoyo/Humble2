@@ -6,7 +6,7 @@
 
 namespace HBL2
 {
-	class CameraSystem final : public ISystem
+	class HBL2_API CameraSystem final : public ISystem
 	{
 	public:
 		CameraSystem() { Name = "CameraSystem"; }

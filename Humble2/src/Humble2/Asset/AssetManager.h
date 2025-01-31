@@ -9,10 +9,10 @@
 
 namespace HBL2
 {
-	class AssetManager
+	class HBL2_API AssetManager
 	{
 	public:
-		static inline AssetManager* Instance;
+		static AssetManager* Instance;
 
 		AssetManager() = default;
 		virtual ~AssetManager() = default;

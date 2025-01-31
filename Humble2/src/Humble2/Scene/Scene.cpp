@@ -1,5 +1,7 @@
 #include "Scene.h"
 
+#include "Utilities/NativeScriptUtilities.h"
+
 #include "Project\Project.h"
 #include "SceneSerializer.h"
 
@@ -76,25 +78,78 @@ namespace HBL2
         dst->RegisterSystem(new SpriteRenderingSystem);
         dst->RegisterSystem(new CompositeRenderingSystem);
 
-        // Clone dll user systems.
-        for (ISystem* system : src->m_Systems)
+        // Register any user systems to new scene.
+        for (ISystem* system : src->m_RuntimeSystems)
         {
             if (system->GetType() == SystemType::User)
             {
-#ifdef false
-                const std::string& dllPath = "assets\\dlls\\" + system->Name + "\\" + system->Name + ".dll";
-                ISystem* newSystem = NativeScriptUtilities::Get().LoadDLL(dllPath);
-
-                HBL2_CORE_ASSERT(newSystem != nullptr, "Failed to load system.");
-
-                newSystem->Name = system->Name;
-                dst->RegisterSystem(newSystem, SystemType::User);
-#endif
+                NativeScriptUtilities::Get().RegisterSystem(system->Name, dst); // NOTE: If no systems present now the new dll does not get loaded.
             }
+        }
+
+        // Clone user defined components.
+        std::vector<std::string> userComponentNames;
+        std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>> data;
+
+        // Store all registered meta types of the source scene.
+        for (auto meta_type : entt::resolve(src->GetMetaContext()))
+        {
+            std::string componentName = meta_type.second.info().name().data();
+            componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+            userComponentNames.push_back(componentName);
+
+            NativeScriptUtilities::Get().SerializeComponents(componentName, src, data, false);
+        }
+
+        // Register the components to the new scene.
+        for (const auto& userComponentName : userComponentNames)
+        {
+            NativeScriptUtilities::Get().DeserializeComponents(userComponentName, dst, data);
         }
 
         // Set main camera.
         dst->MainCamera = src->MainCamera;
+        dst->m_MetaContext = src->m_MetaContext;
+    }
+
+    void Scene::DeregisterSystem(ISystem* system)
+    {
+        if (system == nullptr)
+        {
+            return;
+        }
+
+        {
+            // Erase from systems vector
+            auto it = std::find(m_Systems.begin(), m_Systems.end(), system);
+
+            if (it != m_Systems.end())
+            {
+                m_Systems.erase(it);
+            }
+        }
+
+        {
+            // Erase from core systems vector
+            auto it = std::find(m_CoreSystems.begin(), m_CoreSystems.end(), system);
+
+            if (it != m_CoreSystems.end())
+            {
+                m_CoreSystems.erase(it);
+            }
+        }
+
+        {
+            // Erase from runtime systems vector
+            auto it = std::find(m_RuntimeSystems.begin(), m_RuntimeSystems.end(), system);
+
+            if (it != m_RuntimeSystems.end())
+            {
+                m_RuntimeSystems.erase(it);
+            }
+        }
+
+        delete system;
     }
 
     void Scene::operator=(const HBL2::Scene& other)
@@ -104,6 +159,7 @@ namespace HBL2
         m_CoreSystems = other.m_CoreSystems;
         m_RuntimeSystems = other.m_RuntimeSystems;
         m_EntityMap = other.m_EntityMap;
+        m_MetaContext = other.m_MetaContext;
         MainCamera = other.MainCamera;
     }
 }

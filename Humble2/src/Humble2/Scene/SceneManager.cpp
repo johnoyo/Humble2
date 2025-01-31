@@ -2,6 +2,12 @@
 
 namespace HBL2
 {
+	SceneManager& SceneManager::Get()
+	{
+		static SceneManager instance;
+		return instance;
+	}
+
 	void SceneManager::LoadScene(Handle<Asset> sceneAssetHandle, bool runtime)
 	{
 		m_NewSceneAssetHandle = sceneAssetHandle;

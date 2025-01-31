@@ -15,7 +15,7 @@ Entities:
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 1.778
+      Aspect Ratio: 2.10094643
       Zoom Level: 300
       Type: 0
   - Entity: 2
@@ -60,4 +60,3 @@ Entities:
       Color: [1, 1, 1]
       Type: 0
 Systems:
-  []

@@ -28,6 +28,7 @@
 #include "Utilities\Random.h"
 #include "Utilities\MeshUtilities.h"
 #include "Utilities\NativeScriptUtilities.h"
+#include "Utilities\UnityBuilder.h"
 
 #include <string>
 #include <sstream>
@@ -35,27 +36,27 @@
 
 namespace HBL2
 {
-	enum class Platform
+	enum class HBL2_API Platform
 	{
 		Windows,
 		Web,
 		None
 	};
 
-	struct ApplicationSpec
+	struct HBL2_API ApplicationSpec
 	{
 		std::string Name = "Humble2 Application";
 		std::string CommandLineArgs = "";
 		GraphicsAPI GraphicsAPI = GraphicsAPI::OPENGL;
-		float Width = 1920.f;
-		float Height = 1080.f;
+		float Width = 1280.f;
+		float Height = 720.f;
 		bool VerticalSync = true;
 		bool Fullscreen = false;
 
 		Context* Context = nullptr;
 	};
 
-	class Application
+	class HBL2_API Application
 	{
 	public:
 		Application(ApplicationSpec& specification);

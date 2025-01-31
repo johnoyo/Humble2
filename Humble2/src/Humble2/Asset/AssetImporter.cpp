@@ -12,6 +12,12 @@
 
 namespace HBL2
 {
+	AssetImporter& AssetImporter::Get()
+	{
+		static AssetImporter instance;
+		return instance;
+	}
+
 	uint32_t AssetImporter::ImportAsset(Asset* asset)
 	{
 		if (asset == nullptr)
@@ -39,8 +45,8 @@ namespace HBL2
 			asset->Indentifier = ImportScene(asset).Pack();
 			return asset->Indentifier;
 		case AssetType::Script:
-			// asset->Indentifier = ImportScript(asset).Pack();
-			return 0; // asset->Indentifier;
+			asset->Indentifier = ImportScript(asset).Pack();
+			return asset->Indentifier;
 		}
 
 		return 0;
@@ -58,6 +64,9 @@ namespace HBL2
 		case AssetType::Scene:
 			SaveScene(asset);
 			break;
+		case AssetType::Script:
+			SaveScript(asset);
+			break;
 		}
 	}
 
@@ -72,6 +81,9 @@ namespace HBL2
 		{
 		case AssetType::Texture:
 			DestroyTexture(asset);
+			break;
+		case AssetType::Script:
+			DestroyScript(asset);
 			break;
 		}
 	}
@@ -96,6 +108,9 @@ namespace HBL2
 			break;
 		case AssetType::Material:
 			UnloadMaterial(asset);
+			break;
+		case AssetType::Script:
+			UnloadScript(asset);
 			break;
 		}
 	}
@@ -369,6 +384,37 @@ namespace HBL2
 		return sceneHandle;
 	}
 
+	Handle<Script> AssetImporter::ImportScript(Asset* asset)
+	{
+		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscript");
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Script"].IsDefined())
+		{
+			HBL2_CORE_TRACE("Script not found: {0}", ss.str());
+			return Handle<Script>();
+		}
+
+		auto scriptProperties = data["Script"];
+		if (scriptProperties)
+		{
+			const std::string& scriptName = asset->FilePath.filename().stem().string();
+			uint32_t type = scriptProperties["Type"].as<uint32_t>();
+
+			auto script = ResourceManager::Instance->CreateScript({
+				.debugName = scriptName.c_str(),
+				.type = (ScriptType)type,
+				.path = asset->FilePath,
+			});
+
+			return script;
+		}
+
+		return Handle<Script>();
+	}
+
 	Handle<Mesh> AssetImporter::ImportMesh(Asset* asset)
 	{
 		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmesh");
@@ -470,6 +516,83 @@ namespace HBL2
 		serializer.Serialize(Project::GetAssetFileSystemPath(asset->FilePath));
 	}
 
+	void AssetImporter::SaveScript(Asset* asset)
+	{
+		Handle<Script> scriptHandle = Handle<Script>::UnPack(asset->Indentifier);
+
+		if (!scriptHandle.IsValid())
+		{
+			HBL2_CORE_ERROR("Could not save asset {0} at path: {1}, because the handle is invalid.", asset->DebugName, asset->FilePath.string());
+			return;
+		}
+
+		Script* script = ResourceManager::Instance->GetScript(scriptHandle);
+
+		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+		std::vector<std::string> userSystemNames;
+
+		// Store registered user system names.
+		for (ISystem* userSystem : activeScene->GetRuntimeSystems())
+		{
+			if (userSystem->GetType() == SystemType::User)
+			{
+				userSystemNames.push_back(userSystem->Name);
+			}
+		}
+
+		std::vector<std::string> userComponentNames;
+		std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>> data;
+
+		// Store all registered meta types.
+		for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
+		{
+			std::string componentName = meta_type.second.info().name().data();
+			componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+			userComponentNames.push_back(componentName);
+
+			NativeScriptUtilities::Get().SerializeComponents(componentName, activeScene, data);
+		}
+
+		// Unload unity build dll.
+		NativeScriptUtilities::Get().UnloadUnityBuild(activeScene);
+
+		// Combine all .cpp files in assets in unity build source file.
+		UnityBuilder::Get().Combine();
+
+		// Build unity build source dll.
+		UnityBuilder::Get().Build();
+
+		// Re-register systems.
+		for (const auto& userSystemName : userSystemNames)
+		{
+			NativeScriptUtilities::Get().RegisterSystem(userSystemName, activeScene);
+		}
+
+		bool newComponentTobeRegistered = true;
+
+		// Re-register the components.
+		for (const auto& userComponentName : userComponentNames)
+		{
+			if (script->Type == ScriptType::COMPONENT)
+			{
+				if (userComponentName == script->Name)
+				{
+					newComponentTobeRegistered = false;
+				}
+			}
+
+			NativeScriptUtilities::Get().RegisterComponent(userComponentName, activeScene);
+
+			NativeScriptUtilities::Get().DeserializeComponents(userComponentName, activeScene, data);
+		}
+
+		if (newComponentTobeRegistered && script->Type == ScriptType::COMPONENT)
+		{
+			NativeScriptUtilities::Get().RegisterComponent(script->Name, activeScene);
+		}
+	}
+
 	/// Destroy methods
 
 	void AssetImporter::DestroyTexture(Asset* asset)
@@ -479,7 +602,47 @@ namespace HBL2
 			UnloadTexture(asset);
 		}
 
-		// TODO: Delete files
+		// Delete files
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath)))
+			{
+				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", asset->FilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+		}
+	}
+
+	void AssetImporter::DestroyScript(Asset* asset)
+	{
+		if (asset->Loaded)
+		{
+			UnloadScript(asset);
+		}
+
+		// Delete files
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath)))
+			{
+				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", asset->FilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+		}
 	}
 
 	/// Unload methods
@@ -576,5 +739,67 @@ namespace HBL2
 
 		ResourceManager::Instance->DeleteShader(material->Shader);
 		ResourceManager::Instance->DeleteBindGroup(material->BindGroup);
+	}
+	
+	void AssetImporter::UnloadScript(Asset* asset)
+	{
+		Handle<Script> scriptAssetHandle = Handle<Script>::UnPack(asset->Indentifier);
+
+		if (!scriptAssetHandle.IsValid())
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" has an invalid handle, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		Script* script = ResourceManager::Instance->GetScript(scriptAssetHandle);
+
+		switch (script->Type)
+		{
+		case ScriptType::SYSTEM:
+			{
+				Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+				// Delete registered user system.
+				for (ISystem* userSystem : activeScene->GetRuntimeSystems())
+				{
+					if (userSystem->Name == script->Name && userSystem->GetType() == SystemType::User)
+					{
+						activeScene->DeregisterSystem(userSystem);
+						break;
+					}
+				}
+			}
+			break;
+		case ScriptType::COMPONENT:
+			{
+				Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+				// Store all registered meta types of the source scene.
+				for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
+				{
+					std::string componentName = meta_type.second.info().name().data();
+					componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+
+					if (script->Name == componentName)
+					{
+						NativeScriptUtilities::Get().ClearComponentStorage(componentName, activeScene);
+						entt::meta_reset(activeScene->GetMetaContext(), meta_type.first);
+						break;
+					}
+				}
+			}
+			break;
+		}
+
+		ResourceManager::Instance->DeleteScript(scriptAssetHandle);
+
+		asset->Loaded = false;
+		asset->Indentifier = 0;
 	}
 }

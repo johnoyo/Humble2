@@ -1,6 +1,10 @@
 #pragma once
 
+#include "Core\Context.h"
 #include "Editor.h"
+
+#include "Resources/ResourceManager.h"
+#include "Utilities/NativeScriptUtilities.h"
 
 #include "Vendor/entt/include/entt.hpp"
 #include "imgui.h"
@@ -12,79 +16,96 @@
 
 namespace HBL2
 {
-	static inline void RegisterComponentToReflection(const std::string& structCode)
-	{
-		// Regex pattern to match member declarations
-		std::regex memberRegex(R"(([a-zA-Z_][a-zA-Z0-9_:<>]*)\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*=\s*[^;]*)?;)");
-
-		// Extract the struct name
-		std::regex structNameRegex(R"(struct\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\{)");
-		std::smatch match;
-
-		std::string structName;
-		if (std::regex_search(structCode, match, structNameRegex))
-		{
-			structName = match[1];
-		}
-		else
-		{
-			std::cerr << "Error: Could not extract struct name!" << std::endl;
-			return;
-		}
-
-		// Begin generating reflection code
-		std::ostringstream reflectionCode;
-		reflectionCode << "entt::meta<" << structName << ">()\n";
-		reflectionCode << "    .type(\"entt::hashed_string(typeid(" << structName << "\").name()))";
-
-		// Match and process each member
-		auto memberBegin = std::sregex_iterator(structCode.begin(), structCode.end(), memberRegex);
-		auto memberEnd = std::sregex_iterator();
-
-		for (auto it = memberBegin; it != memberEnd; ++it)
-		{
-			std::string type = (*it)[1].str();
-			std::string name = (*it)[2].str();
-
-			reflectionCode << "\n    .data<&" << structName << "::" << name << ">(\"" << name << "\"_hs).prop(\"name\"_hs, \"" << name << "\")";
-		}
-
-		reflectionCode << ";\n";
-
-		// Output the generated code
-		std::cout << "Generated Reflection Code:\n" << reflectionCode.str() << std::endl;
-	}
+	HBL2_API void RegisterComponentToReflection(const std::string& structCode);
 
 	namespace UI
 	{
 		namespace Utils
 		{
-			static inline ImVec2 GetViewportSize()
-			{
-				return *(ImVec2*)&Context::ViewportSize;
-			}
+			HBL2_API ImVec2 GetViewportSize();
 
-			static inline ImVec2 GetViewportPosition()
-			{
-				return *(ImVec2*)&Context::ViewportPosition;
-			}
+			HBL2_API ImVec2 GetViewportPosition();
 
-			static inline float GetFontSize()
-			{
-				return ImGui::GetFontSize();
-			}
+			HBL2_API float GetFontSize();
 		}
 	}
 
-	class EditorUtilities
+	class HBL2_API EditorUtilities
 	{
 	public:
 		EditorUtilities(const EditorUtilities&) = delete;
 
-		static EditorUtilities& Get()
+		static EditorUtilities& Get();
+
+		void DrawDefaultEditor(entt::meta_any& componentMeta)
 		{
-			static EditorUtilities instance;
-			return instance;
+			using namespace entt::literals;
+
+			Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+			// List all members
+			for (auto [id, data] : entt::resolve(activeScene->GetMetaContext(), componentMeta.type().info().hash()).data())
+			{
+				// Retrieve the name property of the member
+				auto name_prop = data.prop("name"_hs);
+				if (name_prop)
+				{
+					std::string typeName = componentMeta.type().info().name().data();
+
+					typeName = NativeScriptUtilities::Get().CleanComponentNameO1(typeName);
+
+					const char* typeNameClean = typeName.c_str();
+					const char* memberName = name_prop.value().cast<const char*>();
+
+					DrawComponent(activeScene, componentMeta, typeNameClean, memberName);
+				}
+			}			
+		}
+
+		void SerializeComponentToYAML(YAML::Emitter& out, entt::meta_any& componentMeta, Scene* ctx)
+		{
+			using namespace entt::literals;
+
+			// List all members
+			for (auto [id, data] : entt::resolve(ctx->GetMetaContext(), componentMeta.type().info().hash()).data())
+			{
+				// Retrieve the name property of the member
+				auto name_prop = data.prop("name"_hs);
+				if (name_prop)
+				{
+					std::string typeName = componentMeta.type().info().name().data();
+
+					typeName = NativeScriptUtilities::Get().CleanComponentNameO1(typeName);
+
+					const char* typeNameClean = typeName.c_str();
+					const char* memberName = name_prop.value().cast<const char*>();
+
+					SerializeComponent(out, ctx, componentMeta, typeNameClean, memberName);
+				}
+			}
+		}
+
+		void DeserializeComponentFromYAML(YAML::Node& node, entt::meta_any& componentMeta, Scene* ctx)
+		{
+			using namespace entt::literals;
+
+			// List all members
+			for (auto [id, data] : entt::resolve(ctx->GetMetaContext(), componentMeta.type().info().hash()).data())
+			{
+				// Retrieve the name property of the member
+				auto name_prop = data.prop("name"_hs);
+				if (name_prop)
+				{
+					std::string typeName = componentMeta.type().info().name().data();
+
+					typeName = NativeScriptUtilities::Get().CleanComponentNameO1(typeName);
+
+					const char* typeNameClean = typeName.c_str();
+					const char* memberName = name_prop.value().cast<const char*>();
+
+					DeserializeComponent(node, ctx, componentMeta, typeNameClean, memberName);
+				}
+			}
 		}
 
 		template<typename C>
@@ -92,12 +113,12 @@ namespace HBL2
 		{
 			using namespace entt::literals;
 
-			entt::meta_any componentMeta = entt::forward_as_meta(component);
+			Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
-			using namespace entt::literals;
+			entt::meta_any componentMeta = entt::forward_as_meta(activeScene->GetMetaContext(), component);
 
 			// List all members
-			for (auto [id, data] : entt::resolve<C>().data())
+			for (auto [id, data] : entt::resolve<C>(activeScene->GetMetaContext()).data())
 			{
 				// Retrieve the name property of the member
 				auto name_prop = data.prop("name"_hs);
@@ -106,77 +127,7 @@ namespace HBL2
 					const char* typeName = typeid(C).name();
 					const char* memberName = name_prop.value().cast<const char*>();
 
-					auto data = entt::resolve(entt::hashed_string(typeName)).data(entt::hashed_string(memberName));
-					auto value = data.get(componentMeta);
-
-					if (value)
-					{
-						if (value.type() == entt::resolve<glm::vec3>())
-						{
-							glm::vec3* vec = value.try_cast<glm::vec3>();
-							if (vec)
-							{
-								ImGui::DragFloat3(memberName, glm::value_ptr(*vec));
-							}
-
-							data.set(componentMeta, vec);
-						}
-						else if (value.type() == entt::resolve<glm::vec2>())
-						{
-							glm::vec2* vec = value.try_cast<glm::vec2>();
-							if (vec)
-							{
-								ImGui::DragFloat2(memberName, glm::value_ptr(*vec));
-							}
-
-							data.set(componentMeta, vec);
-						}
-						else if (value.type() == entt::resolve<float>())
-						{
-							float* fpNumber = value.try_cast<float>();
-							if (fpNumber)
-							{
-								ImGui::SliderFloat(memberName, fpNumber, 0, 150);
-							}
-
-							data.set(componentMeta, *fpNumber);
-						}
-						else if (value.type() == entt::resolve<double>())
-						{
-							double* dpNumber = value.try_cast<double>();
-							float* fpNumber = ((float*)dpNumber);
-
-							if (fpNumber)
-							{
-								ImGui::SliderFloat(memberName, fpNumber, 0, 150);
-							}
-							data.set(componentMeta, *dpNumber);
-						}
-						else if (value.type() == entt::resolve<UUID>())
-						{
-							UUID* scalar = value.try_cast<UUID>();
-							if (scalar)
-							{
-								ImGui::InputScalar(memberName, ImGuiDataType_U32, scalar);
-							}
-
-							data.set(componentMeta, *scalar);
-						}
-						else if (value.type() == entt::resolve<bool>())
-						{
-							bool* flag = value.try_cast<bool>();
-							if (flag)
-							{
-								ImGui::Checkbox(memberName, flag);
-							}
-
-							data.set(componentMeta, *flag);
-						}
-					}
-				}
-				else
-				{
-					std::cerr << "Failed to retrieve member name!" << std::endl;
+					DrawComponent(activeScene, componentMeta, typeName, memberName);
 				}
 			}
 		}
@@ -207,6 +158,13 @@ namespace HBL2
 		{
 			m_CustomEditors[typeid(C).hash_code()] = new E;
 		}
+
+	private:
+		void DrawComponent(Scene* cxt, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
+
+		void SerializeComponent(YAML::Emitter& out, Scene* cxt, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
+
+		void DeserializeComponent(YAML::Node& node, Scene* cxt, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
 
 	private:
 		EditorUtilities() = default;

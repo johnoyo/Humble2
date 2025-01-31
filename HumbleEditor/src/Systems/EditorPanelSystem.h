@@ -6,6 +6,8 @@
 
 #include "Utilities\EntityPresets.h"
 
+#include "ImGui\ImGuiRenderer.h"
+
 #include "EditorComponents.h"
 
 namespace HBL2
@@ -43,6 +45,10 @@ namespace HBL2
 			bool m_OpenMaterialSetupPopup = false;
 			uint32_t m_SelectedMaterialType = 0;
 			bool m_OpenScriptSetupPopup = false;
+			bool m_OpenComponentSetupPopup = false;
+
+			bool m_OpenDeleteConfirmationWindow = false;
+			Handle<Asset> m_AssetToBeDeleted;
 
 			Scene* m_ActiveScene = nullptr;
 			Handle<Scene> m_ActiveSceneTemp;

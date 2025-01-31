@@ -44,6 +44,8 @@ namespace HBL2
 				const SceneChangeEvent& sce = dynamic_cast<const SceneChangeEvent&>(e);
 				m_ActiveScene = ResourceManager::Instance->GetScene(sce.NewScene);
 			});
+
+			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
 		}
 
 		void EditorContext::OnUpdate(float ts)
@@ -131,6 +133,8 @@ namespace HBL2
 					system->OnDestroy();
 				}
 			}
+
+			ImGui::SetCurrentContext(nullptr);
 		}
 
 		bool EditorContext::OpenEmptyProject()
