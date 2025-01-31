@@ -618,6 +618,22 @@ namespace HBL2
 		{
 			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
 		}
+
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture"))
+			{
+				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", asset->FilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+		}
 	}
 
 	void AssetImporter::DestroyScript(Asset* asset)
@@ -631,6 +647,22 @@ namespace HBL2
 		try
 		{
 			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath)))
+			{
+				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", asset->FilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+		}
+
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscript"))
 			{
 				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
 			}

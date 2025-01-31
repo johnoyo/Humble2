@@ -1576,8 +1576,15 @@ namespace HBL2
 					{
 						if (ImGui::MenuItem("Recompile"))
 						{
-							AssetManager::Instance->GetAsset<Script>(assetHandle);
-							AssetManager::Instance->SaveAsset(assetHandle);				// NOTE: Consider changing this!
+							if (Context::Mode == Mode::Runtime)
+							{
+								HBL2_WARN("Hot reloading is not available yet. Skipping requested recompilation.");
+							}
+							else
+							{
+								AssetManager::Instance->GetAsset<Script>(assetHandle);
+								AssetManager::Instance->SaveAsset(assetHandle);				// NOTE: Consider changing this!
+							}
 						}
 					}
 
