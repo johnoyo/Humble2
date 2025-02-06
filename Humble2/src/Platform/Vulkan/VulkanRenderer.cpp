@@ -71,24 +71,13 @@ namespace HBL2
 			StubRenderPass();
 		}
 
+		// NOTE: Maybe this is not needed to happen every end of the frame, since all the frames in flight use the same texture.
 		if (MainColorTexture.IsValid())
 		{
-			// if (m_ColorAttachmentID == VK_NULL_HANDLE)
-			{
-				/*VulkanTexture* colorTarget = m_ResourceManager->GetTexture(MainColorTexture);
+			Handle<BindGroup> presentBindGroupHandle = m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalPresentBindings;
 
-				VkImage offScreenImage = colorTarget->Image;
-				VkImageView offScreenImageView = colorTarget->ImageView;
-				VkSampler offScreenImageSampler = colorTarget->Sampler;
-
-				ImGui_ImplVulkan_RemoveTexture(m_ColorAttachmentID);				
-				m_ColorAttachmentID = ImGui_ImplVulkan_AddTexture(offScreenImageSampler, offScreenImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);*/
-
-				Handle<BindGroup> presentBindGroupHandle = m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalPresentBindings;
-
-				VulkanBindGroup* vkPresentBindGroup = m_ResourceManager->GetBindGroup(presentBindGroupHandle);
-				m_ColorAttachmentID = vkPresentBindGroup->DescriptorSet;
-			}
+			VulkanBindGroup* vkPresentBindGroup = m_ResourceManager->GetBindGroup(presentBindGroupHandle);
+			m_ColorAttachmentID = vkPresentBindGroup->DescriptorSet;
 		}
 
 		m_ResourceManager->Flush(m_FrameNumber);
@@ -365,12 +354,9 @@ namespace HBL2
 		VK_VALIDATE(vkDeviceWaitIdle(m_Device->Get()), "vkDeviceWaitIdle");
 
 		// Cleanup old swapchain resources
-		for (auto framebuffer : m_FrameBuffers)
+		for (auto frameBuffer : m_FrameBuffers)
 		{
-			VulkanFrameBuffer* vkFrameBuffer = m_ResourceManager->GetFrameBuffer(framebuffer);
-			vkFrameBuffer->Destroy();
-
-			m_ResourceManager->m_FrameBufferPool.Remove(framebuffer);
+			m_ResourceManager->DeleteFrameBuffer(frameBuffer);
 		}
 
 		m_FrameBuffers.clear();
@@ -385,19 +371,14 @@ namespace HBL2
 		m_SwapChainColorTextures.clear();
 
 		// Destroy the depth buffer
-		VulkanTexture* vkDepthTexture = m_ResourceManager->GetTexture(m_DepthImage);
-		vkDepthTexture->Destroy();
-		m_ResourceManager->m_TexturePool.Remove(m_DepthImage);
+		m_ResourceManager->DeleteTexture(m_DepthImage);
 
 		// Destroy the swapchain
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 
 		// Destroy old offscreen textures
-		auto oldMainColorTexture = MainColorTexture;
-		auto oldMainDepthTexture = MainDepthTexture;
-
-		m_ResourceManager->DeleteTexture(oldMainColorTexture);
-		m_ResourceManager->DeleteTexture(oldMainDepthTexture);
+		m_ResourceManager->DeleteTexture(MainColorTexture);
+		m_ResourceManager->DeleteTexture(MainDepthTexture);
 
 		m_Device->UpdateSwapChainSupportDetails();
 
@@ -434,8 +415,7 @@ namespace HBL2
 		// Update descriptor sets (for the quad shader)
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
-			auto oldGlobalPresentBindings = m_Frames[i].GlobalPresentBindings;
-			m_ResourceManager->DeleteBindGroup(oldGlobalPresentBindings);
+			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalPresentBindings);
 
 			m_Frames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "global-present-bind-group",
