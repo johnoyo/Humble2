@@ -106,6 +106,16 @@ namespace HBL2
 		Handle<Texture> MainColorTexture;
 		Handle<Texture> MainDepthTexture;
 
+		void AddCallbackOnResize(const std::string& callbackName, std::function<void(uint32_t, uint32_t)>&& callback)
+		{
+			m_OnResizeCallbacks[callbackName] = callback;
+		}
+
+		void RemoveOnResizeCallback(const std::string& callbackName)
+		{
+			m_OnResizeCallbacks.erase(callbackName);
+		}
+
 	protected:
 		virtual void PreInitialize() = 0;
 		virtual void PostInitialize() = 0;
@@ -117,5 +127,7 @@ namespace HBL2
 		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
 		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
 		Handle<RenderPass> m_RenderPass;
+
+		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 	};
 }

@@ -1,5 +1,7 @@
 #include "SpriteRenderingSystem.h"
 
+#include "Core/Window.h"
+
 namespace HBL2
 {
 	void SpriteRenderingSystem::OnCreate()
@@ -73,12 +75,14 @@ namespace HBL2
 
 		m_FrameBuffer = rm->CreateFrameBuffer({
 			.debugName = "viewport",
-			.width = 1280,
-			.height = 720,
+			.width = Window::Instance->GetExtents().x,
+			.height = Window::Instance->GetExtents().y,
 			.renderPass = m_RenderPass,
 			.depthTarget = Renderer::Instance->MainDepthTexture,
 			.colorTargets = { Renderer::Instance->MainColorTexture },
 		});
+
+		Renderer::Instance->AddCallbackOnResize("Sprite-Resize-FrameBuffer", [this](uint32_t w, uint32_t h) { OnResize(w, h); });
 	}
 
 	void SpriteRenderingSystem::OnUpdate(float ts)
@@ -227,6 +231,23 @@ namespace HBL2
 		rm->DeleteMesh(m_SpriteMesh);
 		rm->DeleteRenderPass(m_RenderPass);
 		rm->DeleteFrameBuffer(m_FrameBuffer);
+
+		Renderer::Instance->RemoveOnResizeCallback("Sprite-Resize-FrameBuffer");
+	}
+
+	void SpriteRenderingSystem::OnResize(uint32_t width, uint32_t height)
+	{
+		auto oldFrameBuffer = m_FrameBuffer;
+		ResourceManager::Instance->DeleteFrameBuffer(oldFrameBuffer);
+
+		m_FrameBuffer = ResourceManager::Instance->CreateFrameBuffer({
+			.debugName = "viewport",
+			.width = width,
+			.height = height,
+			.renderPass = m_RenderPass,
+			.depthTarget = Renderer::Instance->MainDepthTexture,
+			.colorTargets = { Renderer::Instance->MainColorTexture },
+		});
 	}
 
 	const glm::mat4& SpriteRenderingSystem::GetViewProjection()

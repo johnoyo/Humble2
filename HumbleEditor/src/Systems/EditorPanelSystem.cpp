@@ -1694,9 +1694,7 @@ namespace HBL2
 
 			if (m_ViewportSize != *(glm::vec2*)&viewportPanelSize)
 			{
-				// HBL2::ResourceManager::Instance->ResizeFrameBuffer(HBL2::Renderer::Instance->GetMainFrameBuffer(), (uint32_t)viewportPanelSize.x, (uint32_t)viewportPanelSize.y);
 				m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-
 				EventDispatcher::Get().Post(ViewportSizeEvent(m_ViewportSize.x, m_ViewportSize.y));
 
 				if (m_ActiveScene != nullptr)

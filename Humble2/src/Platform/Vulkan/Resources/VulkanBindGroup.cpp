@@ -116,6 +116,7 @@ namespace HBL2
 
 		for (int i = 0; i < Buffers.size(); i++)
 		{
+			// NOTE: Maybe do not delete this as well, since it might be shared.
 			rm->DeleteBuffer(Buffers[i].buffer);
 		}
 
@@ -125,6 +126,7 @@ namespace HBL2
 			// rm->DeleteTexture(Textures[i]);
 		}
 
-		rm->DeleteBindGroupLayout(BindGroupLayout);
+		// NOTE: Maybe do not delete this as well, since it might be shared.
+		// rm->DeleteBindGroupLayout(BindGroupLayout);
 	}
 }

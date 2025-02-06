@@ -32,6 +32,7 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
+		void OnResize(uint32_t width, uint32_t height);
 		const glm::mat4& GetViewProjection();
 
 	private:

@@ -42,6 +42,7 @@ namespace HBL2
 		const VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
 		const VkSurfaceKHR GetSurface() const { return m_Surface; }
 		const SwapChainSupportDetails& GetSwapChainSupportDetails() const { return m_SwapChainSupportDetails; }
+		void UpdateSwapChainSupportDetails() { m_SwapChainSupportDetails = QuerySwapChainSupport(m_PhysicalDevice); }
 		const QueueFamilyIndices& GetQueueFamilyIndices() const { return m_QueueFamilyIndices; }
 
 	private:

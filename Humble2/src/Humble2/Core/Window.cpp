@@ -11,11 +11,13 @@ namespace HBL2
 
 	static void WindowSizeCallback(GLFWwindow* window, int width, int height)
 	{
+		Window::Instance->SetExtents(width, height);
 		EventDispatcher::Get().Post(WindowSizeEvent(width, height));
 	}
 
 	static void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 	{
+		Window::Instance->SetExtents(width, height);
 		EventDispatcher::Get().Post(FramebufferSizeEvent(width, height));
 	}
 

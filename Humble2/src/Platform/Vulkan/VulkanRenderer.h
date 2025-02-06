@@ -113,6 +113,8 @@ namespace HBL2
 
 		void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
 
+		void Resize(uint32_t width, uint32_t height);
+
 	protected:
 		virtual void PreInitialize() override;
 		virtual void PostInitialize() override;
@@ -180,5 +182,8 @@ namespace HBL2
 
 		VkDescriptorPool m_DescriptorPool;
 		VkDescriptorSet m_ColorAttachmentID = VK_NULL_HANDLE;
+
+		bool m_Resize = false;
+		glm::uvec2 m_NewSize{};
 	};
 }
