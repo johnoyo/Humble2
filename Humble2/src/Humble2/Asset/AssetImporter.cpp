@@ -812,7 +812,7 @@ namespace HBL2
 			{
 				Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
-				// Store all registered meta types of the source scene.
+				// Remove component from all the entities of the source scene.
 				for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
 				{
 					std::string componentName = meta_type.second.info().name().data();

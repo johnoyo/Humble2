@@ -64,6 +64,8 @@ namespace HBL2
 			m_Registry.destroy(entity);
 		}
 
+		entt::entity DuplicateEntity(entt::entity entity);
+
 		template<typename... T>
 		auto GetAllEntitiesWith()
 		{

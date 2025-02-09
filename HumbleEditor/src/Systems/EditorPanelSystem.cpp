@@ -326,6 +326,10 @@ namespace HBL2
 					// Defer the deletion at the end of the function, for now just mark the entity.
 					m_EntityToBeDeleted = entity;
 				}
+				else if (ImGui::MenuItem("Duplicate"))
+				{
+					m_ActiveScene->DuplicateEntity(entity);
+				}
 
 				ImGui::EndPopup();
 			}

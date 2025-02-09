@@ -101,7 +101,7 @@ namespace HBL2
             NativeScriptUtilities::Get().SerializeComponents(componentName, src, data, false);
         }
 
-        // Register the components to the new scene.
+        // Copy the components to the new scene.
         for (const auto& userComponentName : userComponentNames)
         {
             NativeScriptUtilities::Get().DeserializeComponents(userComponentName, dst, data);
@@ -123,45 +123,45 @@ namespace HBL2
             NativeScriptUtilities::Get().ClearComponentStorage(cleanedComponentName, this);
         }
 
-        // Reset reflection system.
+        // Clear reflection system.
         entt::meta_reset(m_MetaContext);
 
         // Clear built in components.
-        m_Registry.clear<HBL2::Component::ID>();
-        m_Registry.storage<HBL2::Component::ID>().clear();
-        m_Registry.compact<HBL2::Component::ID>();
+        m_Registry.clear<Component::ID>();
+        m_Registry.storage<Component::ID>().clear();
+        m_Registry.compact<Component::ID>();
 
-        m_Registry.clear<HBL2::Component::Tag>();
-        m_Registry.storage<HBL2::Component::Tag>().clear();
-        m_Registry.compact<HBL2::Component::Tag>();
+        m_Registry.clear<Component::Tag>();
+        m_Registry.storage<Component::Tag>().clear();
+        m_Registry.compact<Component::Tag>();
 
-        m_Registry.clear<HBL2::Component::EditorVisible>();
-        m_Registry.storage<HBL2::Component::EditorVisible>().clear();
-        m_Registry.compact<HBL2::Component::EditorVisible>();
+        m_Registry.clear<Component::EditorVisible>();
+        m_Registry.storage<Component::EditorVisible>().clear();
+        m_Registry.compact<Component::EditorVisible>();
 
-        m_Registry.clear<HBL2::Component::Transform>();
-        m_Registry.storage<HBL2::Component::Transform>().clear();
-        m_Registry.compact<HBL2::Component::Transform>();
+        m_Registry.clear<Component::Transform>();
+        m_Registry.storage<Component::Transform>().clear();
+        m_Registry.compact<Component::Transform>();
 
-        m_Registry.clear<HBL2::Component::Link>();
-        m_Registry.storage<HBL2::Component::Link>().clear();
-        m_Registry.compact<HBL2::Component::Link>();
+        m_Registry.clear<Component::Link>();
+        m_Registry.storage<Component::Link>().clear();
+        m_Registry.compact<Component::Link>();
 
-        m_Registry.clear<HBL2::Component::Camera>();
-        m_Registry.storage<HBL2::Component::Camera>().clear();
-        m_Registry.compact<HBL2::Component::Camera>();
+        m_Registry.clear<Component::Camera>();
+        m_Registry.storage<Component::Camera>().clear();
+        m_Registry.compact<Component::Camera>();
 
-        m_Registry.clear<HBL2::Component::Sprite_New>();
-        m_Registry.storage<HBL2::Component::Sprite_New>().clear();
-        m_Registry.compact<HBL2::Component::Sprite_New>();
+        m_Registry.clear<Component::Sprite_New>();
+        m_Registry.storage<Component::Sprite_New>().clear();
+        m_Registry.compact<Component::Sprite_New>();
 
-        m_Registry.clear<HBL2::Component::StaticMesh_New>();
-        m_Registry.storage<HBL2::Component::StaticMesh_New>().clear();
-        m_Registry.compact<HBL2::Component::StaticMesh_New>();
+        m_Registry.clear<Component::StaticMesh_New>();
+        m_Registry.storage<Component::StaticMesh_New>().clear();
+        m_Registry.compact<Component::StaticMesh_New>();
 
-        m_Registry.clear<HBL2::Component::Light>();
-        m_Registry.storage<HBL2::Component::Light>().clear();
-        m_Registry.compact<HBL2::Component::Light>();
+        m_Registry.clear<Component::Light>();
+        m_Registry.storage<Component::Light>().clear();
+        m_Registry.compact<Component::Light>();
 
         // Destroy all entities.
         for (auto& [uuid, entity] : m_EntityMap)
@@ -182,6 +182,52 @@ namespace HBL2
         m_Systems.clear();
         m_CoreSystems.clear();
         m_RuntimeSystems.clear();
+    }
+
+    entt::entity Scene::DuplicateEntity(entt::entity entity)
+    {
+        std::string name = GetComponent<Component::Tag>(entity).Name;
+        entt::entity newEntity = CreateEntity(name + "(Clone)");
+
+        // Helper lamda for component copying
+        auto copy_component = [&](auto component_type)
+        {
+            using Component = decltype(component_type);
+
+            if (HasComponent<Component>(entity))
+            {
+                auto& component = GetComponent<Component>(entity);
+                m_Registry.emplace_or_replace<Component>(newEntity, component);
+            }
+        };
+
+        // Copy built in components
+        copy_component(Component::Transform{});
+        copy_component(Component::Link{});
+        copy_component(Component::Camera{});
+        copy_component(Component::EditorVisible{});
+        copy_component(Component::Sprite_New{});
+        copy_component(Component::StaticMesh_New{});
+        copy_component(Component::Light{});
+
+        // Copy user defined components.
+        std::vector<std::string> userComponentNames;
+        std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>> data;
+
+        for (auto meta_type : entt::resolve(m_MetaContext))
+        {
+            std::string componentName = meta_type.second.info().name().data();
+            componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+
+            if (NativeScriptUtilities::Get().HasComponent(componentName, this, entity))
+            {
+                auto componentMeta = NativeScriptUtilities::Get().GetComponent(componentName, this, entity);
+                auto newComponentMeta = NativeScriptUtilities::Get().AddComponent(componentName, this, newEntity);
+                newComponentMeta.assign(componentMeta);
+            }
+        }
+
+        return newEntity;
     }
 
     void Scene::DeregisterSystem(ISystem* system)
