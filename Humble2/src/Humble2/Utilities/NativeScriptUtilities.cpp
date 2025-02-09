@@ -147,6 +147,7 @@ namespace HBL2
 		const std::string& placeholder = "{SystemName}";
 
 		const std::string& systemCode = R"(#pragma once
+
 #include "Humble2Core.h"
 
 class {SystemName} final : public HBL2::ISystem
@@ -422,9 +423,7 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 class {ScriptName}
 {
 	public:
-		
     private:
-		
 };
 )";
 		size_t pos = scriptCode.find(placeholder);
