@@ -542,6 +542,8 @@ class {ScriptName}
 
 		entt::meta_reset(ctx->GetMetaContext());
 
+		ctx->GetRegistry().compact();
+
 		systemsToBeDeregistered.clear();
 
 		// Free dll and remove from map.

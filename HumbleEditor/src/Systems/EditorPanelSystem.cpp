@@ -32,6 +32,7 @@ namespace HBL2
 				Scene* currentScene = ResourceManager::Instance->GetScene(sce.CurrentScene);
 				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != std::string::npos)
 				{
+					// Clear entire scene
 					currentScene->Clear();
 
 					// Unload unity build dll.

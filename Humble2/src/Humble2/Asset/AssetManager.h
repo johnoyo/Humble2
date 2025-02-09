@@ -29,20 +29,38 @@ namespace HBL2
 		}
 		void DeleteAsset(Handle<Asset> handle, bool destroy = false)
 		{
-			// NOTE(John): Maybe consider removing the handle from m_RegisteredAssets and m_RegisteredAssetMap??
 			if (destroy)
 			{
 				DestroyAsset(handle);
+
+				Asset* asset = GetAssetMetadata(handle);
+				if (asset != nullptr)
+				{
+					m_RegisteredAssetMap.erase(asset->UUID);
+				}
+			
+				std::vector<Handle<Asset>>::iterator assetIterator;
+				bool assetFound = false;
+
+				for (auto it = m_RegisteredAssets.begin(); it < m_RegisteredAssets.end(); it++)
+				{
+					if (*it == handle)
+					{
+						assetIterator = it;
+						assetFound = true;
+						break;
+					}
+				}
+
+				if (assetFound)
+				{
+					m_RegisteredAssets.erase(assetIterator);
+				}
 			}
 			else
 			{
 				UnloadAsset(handle);
 			}
-
-			Asset* asset = GetAssetMetadata(handle);
-			m_RegisteredAssetMap.erase(asset->UUID);
-			 
-			// TODO: remove from m_RegisteredAssets.
 
 			m_AssetPool.Remove(handle);
 		}
@@ -116,13 +134,12 @@ namespace HBL2
 
 		virtual void SaveAsset(Handle<Asset> handle) = 0;
 
-		virtual void UnloadAsset(Handle<Asset> handle) = 0;
-
 		virtual bool IsAssetValid(Handle<Asset> handle) = 0;
 		virtual bool IsAssetLoaded(Handle<Asset> handle) = 0;
 
 	protected:
 		virtual uint32_t LoadAsset(Handle<Asset> handle) = 0;
+		virtual void UnloadAsset(Handle<Asset> handle) = 0;
 		virtual void DestroyAsset(Handle<Asset> handle) = 0;
 
 	private:

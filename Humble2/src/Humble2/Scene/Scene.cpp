@@ -112,6 +112,78 @@ namespace HBL2
         dst->m_MetaContext = src->m_MetaContext;
     }
 
+    void Scene::Clear()
+    {
+        // Clear user defined components.
+        for (auto meta_type : entt::resolve(m_MetaContext))
+        {
+            const std::string& componentName = meta_type.second.info().name().data();
+
+            const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+            NativeScriptUtilities::Get().ClearComponentStorage(cleanedComponentName, this);
+        }
+
+        // Reset reflection system.
+        entt::meta_reset(m_MetaContext);
+
+        // Clear built in components.
+        m_Registry.clear<HBL2::Component::ID>();
+        m_Registry.storage<HBL2::Component::ID>().clear();
+        m_Registry.compact<HBL2::Component::ID>();
+
+        m_Registry.clear<HBL2::Component::Tag>();
+        m_Registry.storage<HBL2::Component::Tag>().clear();
+        m_Registry.compact<HBL2::Component::Tag>();
+
+        m_Registry.clear<HBL2::Component::EditorVisible>();
+        m_Registry.storage<HBL2::Component::EditorVisible>().clear();
+        m_Registry.compact<HBL2::Component::EditorVisible>();
+
+        m_Registry.clear<HBL2::Component::Transform>();
+        m_Registry.storage<HBL2::Component::Transform>().clear();
+        m_Registry.compact<HBL2::Component::Transform>();
+
+        m_Registry.clear<HBL2::Component::Link>();
+        m_Registry.storage<HBL2::Component::Link>().clear();
+        m_Registry.compact<HBL2::Component::Link>();
+
+        m_Registry.clear<HBL2::Component::Camera>();
+        m_Registry.storage<HBL2::Component::Camera>().clear();
+        m_Registry.compact<HBL2::Component::Camera>();
+
+        m_Registry.clear<HBL2::Component::Sprite_New>();
+        m_Registry.storage<HBL2::Component::Sprite_New>().clear();
+        m_Registry.compact<HBL2::Component::Sprite_New>();
+
+        m_Registry.clear<HBL2::Component::StaticMesh_New>();
+        m_Registry.storage<HBL2::Component::StaticMesh_New>().clear();
+        m_Registry.compact<HBL2::Component::StaticMesh_New>();
+
+        m_Registry.clear<HBL2::Component::Light>();
+        m_Registry.storage<HBL2::Component::Light>().clear();
+        m_Registry.compact<HBL2::Component::Light>();
+
+        // Destroy all entities.
+        for (auto& [uuid, entity] : m_EntityMap)
+        {
+            m_Registry.destroy(entity);
+        }
+
+        m_EntityMap.clear();
+
+        for (ISystem* system : m_Systems)
+        {
+            if (system != nullptr)
+            {
+                delete system;
+            }
+        }
+
+        m_Systems.clear();
+        m_CoreSystems.clear();
+        m_RuntimeSystems.clear();
+    }
+
     void Scene::DeregisterSystem(ISystem* system)
     {
         if (system == nullptr)
