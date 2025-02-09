@@ -33,7 +33,10 @@ namespace HBL2
 
 			for (ISystem* system : m_Systems)
 			{
-				delete system;
+				if (system != nullptr)
+				{
+					delete system;
+				}
 			}
 
 			m_Systems.clear();

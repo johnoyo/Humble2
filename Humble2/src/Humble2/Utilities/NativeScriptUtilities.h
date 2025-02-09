@@ -80,6 +80,7 @@ namespace HBL2
 
 		Handle<Asset> CreateSystemFile(const std::filesystem::path& currentDir, const std::string& systemName);
 		Handle<Asset> CreateComponentFile(const std::filesystem::path& currentDir, const std::string& componentName);
+		Handle<Asset> CreateHelperScriptFile(const std::filesystem::path& currentDir, const std::string& scriptName);
 
 		void RegisterSystem(const std::string& name, Scene* ctx);
 		void RegisterComponent(const std::string& name, Scene* ctx);
@@ -87,12 +88,12 @@ namespace HBL2
 		void LoadUnityBuild(Scene* ctx);
 		void LoadUnityBuild(Scene* ctx, const std::string& path);
 		void UnloadUnityBuild(Scene* ctx);
-
+		
 		std::string GetDefaultSystemCode(const std::string& systemName);	
 		std::string GetDefaultSolutionText();	
 		std::string GetDefaultProjectText(const std::string& projectIncludes);
-
 		std::string GetDefaultComponentCode(const std::string& componentName);	
+		std::string GetDefaultHelperScriptCode(const std::string& scriptName);
 
 		entt::meta_any AddComponent(const std::string& name, Scene* ctx, entt::entity entity);
 		entt::meta_any GetComponent(const std::string& name, Scene* ctx, entt::entity entity);

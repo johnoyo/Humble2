@@ -32,14 +32,13 @@ namespace HBL2
 				Scene* currentScene = ResourceManager::Instance->GetScene(sce.CurrentScene);
 				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != std::string::npos)
 				{
+					currentScene->Clear();
+
 					// Unload unity build dll.
 					NativeScriptUtilities::Get().UnloadUnityBuild(currentScene);
 
 					// Delete play mode scene.
 					ResourceManager::Instance->DeleteScene(sce.CurrentScene);
-
-					// Delete scene.
-					currentScene->Clear();
 				}
 
 				m_ActiveScene = ResourceManager::Instance->GetScene(sce.NewScene);
@@ -148,6 +147,16 @@ namespace HBL2
 				panel.Type = Component::EditorPanel::Panel::Systems;
 			}
 
+			{
+				// Bottom tray panel.
+				auto bottomTrayPanel = m_Context->CreateEntity();
+				m_Context->GetComponent<HBL2::Component::Tag>(bottomTrayPanel).Name = "Hidden";
+				auto& panel = m_Context->AddComponent<Component::EditorPanel>(bottomTrayPanel);
+				panel.Name = "Bottom Tray";
+				panel.Type = Component::EditorPanel::Panel::Tray;
+				panel.Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
+			}
+
 			// TODO: Remove from here!
 
 			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Link, LinkEditor>();
@@ -222,6 +231,9 @@ namespace HBL2
 							break;
 						case Component::EditorPanel::Panel::Systems:
 							DrawSystemsPanel();
+							break;
+						case Component::EditorPanel::Panel::Tray:
+							DrawTrayPanel();
 							break;
 						}
 
@@ -1180,6 +1192,11 @@ namespace HBL2
 						m_OpenComponentSetupPopup = true;
 					}
 
+					if (ImGui::MenuItem("Helper Script"))
+					{
+						m_OpenHelperScriptSetupPopup = true;
+					}
+
 					ImGui::EndMenu();
 				}
 
@@ -1203,8 +1220,15 @@ namespace HBL2
 					// Import script.
 					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
 
-					// Save script (build).
-					AssetManager::Instance->SaveAsset(scriptAssetHandle);
+					if (Context::Mode == Mode::Runtime)
+					{
+						HBL2_WARN("Hot reloading is not available yet. Skipping requested recompilation. Recompile script after leaving Play mode.");
+					}
+					else
+					{
+						// Save script (build).
+						AssetManager::Instance->SaveAsset(scriptAssetHandle);
+					}
 
 					m_OpenScriptSetupPopup = false;
 				}
@@ -1236,8 +1260,15 @@ namespace HBL2
 					// Import script.
 					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
 
-					// Save script (build).
-					AssetManager::Instance->SaveAsset(scriptAssetHandle);
+					if (Context::Mode == Mode::Runtime)
+					{
+						HBL2_WARN("Hot reloading is not available yet. Skipping requested recompilation. Recompile script after leaving Play mode.");
+					}
+					else
+					{
+						// Save script (build).
+						AssetManager::Instance->SaveAsset(scriptAssetHandle);
+					}
 
 					m_OpenComponentSetupPopup = false;
 				}
@@ -1247,6 +1278,46 @@ namespace HBL2
 				if (ImGui::Button("Cancel"))
 				{
 					m_OpenComponentSetupPopup = false;
+				}
+
+				ImGui::End();
+			}
+
+			if (m_OpenHelperScriptSetupPopup)
+			{
+				ImGui::Begin("Helper Script Setup", &m_OpenHelperScriptSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+				static char scriptNameBuffer[256] = "NewHelperScript";
+				ImGui::InputText("Script Name", scriptNameBuffer, 256);
+
+				ImGui::NewLine();
+
+				if (ImGui::Button("OK"))
+				{
+					// Create .h file with placeholder code.
+					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateHelperScriptFile(m_CurrentDirectory, scriptNameBuffer);
+
+					// Import script.
+					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
+
+					if (Context::Mode == Mode::Runtime)
+					{
+						HBL2_WARN("Hot reloading is not available yet. Skipping requested recompilation. Recompile script after leaving Play mode.");
+					}
+					else
+					{
+						// Save script (build).
+						AssetManager::Instance->SaveAsset(scriptAssetHandle);
+					}
+
+					m_OpenHelperScriptSetupPopup = false;
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel"))
+				{
+					m_OpenHelperScriptSetupPopup = false;
 				}
 
 				ImGui::End();
@@ -1574,6 +1645,7 @@ namespace HBL2
 				{
 					if (extension == ".h")
 					{
+
 						if (ImGui::MenuItem("Recompile"))
 						{
 							if (Context::Mode == Mode::Runtime)
@@ -1996,6 +2068,21 @@ namespace HBL2
 				if (systemToBeDeregistered != nullptr)
 				{
 					m_ActiveScene->DeregisterSystem(systemToBeDeregistered);
+				}
+			}
+		}
+
+		void EditorPanelSystem::DrawTrayPanel()
+		{
+			if (ImGui::Button("Recompile Scripts"))
+			{
+				if (Context::Mode == Mode::Runtime)
+				{
+					HBL2_WARN("Hot reloading is not available yet. Skipping requested recompilation.");
+				}
+				else
+				{
+					UnityBuilder::Get().Recompile();
 				}
 			}
 		}

@@ -110,6 +110,38 @@ namespace HBL2
 		return scriptAssetHandle;
 	}
 
+	Handle<Asset> NativeScriptUtilities::CreateHelperScriptFile(const std::filesystem::path& currentDir, const std::string& scriptName)
+	{
+		auto relativePath = std::filesystem::relative(currentDir / (scriptName + ".h"), HBL2::Project::GetAssetDirectory());
+
+		auto scriptAssetHandle = AssetManager::Instance->CreateAsset({
+			.debugName = "script-asset",
+			.filePath = relativePath,
+			.type = AssetType::Script,
+		});
+
+		if (scriptAssetHandle.IsValid())
+		{
+			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblscript", 0);
+			YAML::Emitter out;
+			out << YAML::BeginMap;
+			out << YAML::Key << "Script" << YAML::Value;
+			out << YAML::BeginMap;
+			out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(scriptAssetHandle)->UUID;
+			out << YAML::Key << "Type" << YAML::Value << (uint32_t)ScriptType::HELPER_SCRIPT;
+			out << YAML::EndMap;
+			out << YAML::EndMap;
+			fout << out.c_str();
+			fout.close();
+		}
+
+		std::ofstream fout(currentDir / (scriptName + ".h"), 0);
+		fout << GetDefaultHelperScriptCode(scriptName);
+		fout.close();
+
+		return scriptAssetHandle;
+	}
+
 	std::string NativeScriptUtilities::GetDefaultSystemCode(const std::string& systemName)
 	{
 		const std::string& placeholder = "{SystemName}";
@@ -377,6 +409,33 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 		}
 
 		return componentCode;
+	}
+
+	std::string NativeScriptUtilities::GetDefaultHelperScriptCode(const std::string& scriptName)
+	{
+		const std::string& placeholder = "{ScriptName}";
+
+		const std::string& scriptCode = R"(#pragma once
+
+#include "Humble2Core.h"
+
+class {ScriptName}
+{
+	public:
+		
+    private:
+		
+};
+)";
+		size_t pos = scriptCode.find(placeholder);
+
+		while (pos != std::string::npos)
+		{
+			((std::string&)scriptCode).replace(pos, placeholder.length(), scriptName);
+			pos = scriptCode.find(placeholder, pos + scriptName.length());
+		}
+
+		return scriptCode;
 	}
 
 	void NativeScriptUtilities::RegisterSystem(const std::string& name, Scene* ctx)

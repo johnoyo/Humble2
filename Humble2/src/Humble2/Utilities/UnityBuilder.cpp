@@ -91,6 +91,7 @@ namespace HBL2
 
 		// Collect includes and systems registration
 		std::string componentIncludes;
+		std::string helperScriptsIncludes;
 		std::string systemIncludes;
 		std::string projectIncludes;
 
@@ -114,6 +115,10 @@ namespace HBL2
 					{
 						systemIncludes += std::format("#include \"{}\"\n", script->Path.string());
 					}
+					else if (script->Type == ScriptType::HELPER_SCRIPT)
+					{
+						helperScriptsIncludes += std::format("#include \"{}\"\n", script->Path.string());
+					}
 
 					projectIncludes += std::format("  <ClInclude Include=\"..\\Assets\\{}\" />\n", script->Path.string());
 				}
@@ -130,6 +135,18 @@ namespace HBL2
 			{
 				((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), componentIncludes);
 				pos = m_UnityBuildSourceFinal.find(placeholder, pos + componentIncludes.length());
+			}
+		}
+
+		{
+			const std::string& placeholder = "{HelperScriptIncludes}";
+
+			size_t pos = m_UnityBuildSourceFinal.find(placeholder);
+
+			while (pos != std::string::npos)
+			{
+				((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), helperScriptsIncludes);
+				pos = m_UnityBuildSourceFinal.find(placeholder, pos + helperScriptsIncludes.length());
 			}
 		}
 
@@ -168,6 +185,57 @@ namespace HBL2
 
 		projectFile << NativeScriptUtilities::Get().GetDefaultProjectText(projectIncludes);
 		projectFile.close();
+	}
+	
+	void UnityBuilder::Recompile()
+	{
+		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+		std::vector<std::string> userSystemNames;
+
+		// Store registered user system names.
+		for (ISystem* userSystem : activeScene->GetRuntimeSystems())
+		{
+			if (userSystem->GetType() == SystemType::User)
+			{
+				userSystemNames.push_back(userSystem->Name);
+			}
+		}
+
+		std::vector<std::string> userComponentNames;
+		std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>> data;
+
+		// Store all registered meta types.
+		for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
+		{
+			std::string componentName = meta_type.second.info().name().data();
+			componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+			userComponentNames.push_back(componentName);
+
+			NativeScriptUtilities::Get().SerializeComponents(componentName, activeScene, data);
+		}
+
+		// Unload unity build dll.
+		NativeScriptUtilities::Get().UnloadUnityBuild(activeScene);
+
+		// Combine all .cpp files in assets in unity build source file.
+		Combine();
+
+		// Build unity build source dll.
+		Build();
+
+		// Re-register systems.
+		for (const auto& userSystemName : userSystemNames)
+		{
+			NativeScriptUtilities::Get().RegisterSystem(userSystemName, activeScene);
+		}
+
+		// Re-register the components.
+		for (const auto& userComponentName : userComponentNames)
+		{
+			NativeScriptUtilities::Get().RegisterComponent(userComponentName, activeScene);
+			NativeScriptUtilities::Get().DeserializeComponents(userComponentName, activeScene, data);
+		}
 	}
 }
 

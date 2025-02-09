@@ -39,6 +39,11 @@ namespace HBL2
 				UnloadAsset(handle);
 			}
 
+			Asset* asset = GetAssetMetadata(handle);
+			m_RegisteredAssetMap.erase(asset->UUID);
+			 
+			// TODO: remove from m_RegisteredAssets.
+
 			m_AssetPool.Remove(handle);
 		}
 		Asset* GetAssetMetadata(Handle<Asset> handle) const

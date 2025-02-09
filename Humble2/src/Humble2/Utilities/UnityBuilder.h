@@ -29,11 +29,14 @@ namespace HBL2
 
 		bool Build();
 		void Combine();
+		void Recompile();
 
 	private:
 		UnityBuilder() = default;
 
 		const std::string m_UnityBuildSource = R"({ComponentIncludes}
+
+{HelperScriptIncludes}
 
 {SystemIncludes}
 )";

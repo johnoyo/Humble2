@@ -33,6 +33,7 @@ namespace HBL2
 			void DrawContentBrowserPanel();
 			void DrawPlayStopPanel();
 			void DrawSystemsPanel();
+			void DrawTrayPanel();
 
 			entt::entity m_EntityToBeDeleted = entt::null;
 
@@ -46,6 +47,7 @@ namespace HBL2
 			uint32_t m_SelectedMaterialType = 0;
 			bool m_OpenScriptSetupPopup = false;
 			bool m_OpenComponentSetupPopup = false;
+			bool m_OpenHelperScriptSetupPopup = false;
 
 			bool m_OpenDeleteConfirmationWindow = false;
 			Handle<Asset> m_AssetToBeDeleted;

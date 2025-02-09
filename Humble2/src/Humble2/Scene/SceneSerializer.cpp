@@ -235,6 +235,7 @@ namespace HBL2
 		out << YAML::EndSeq;
 
 		std::vector<UUID> componentUUIDs;
+		std::vector<UUID> helperScriptUUIDs;
 		std::vector<UUID> systemUUIDs;
 
 		const std::vector<Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
@@ -257,6 +258,10 @@ namespace HBL2
 					{
 						componentUUIDs.push_back(asset->UUID);
 					}
+					else if (script->Type == ScriptType::HELPER_SCRIPT)
+					{
+						helperScriptUUIDs.push_back(asset->UUID);
+					}
 				}
 			}
 		}
@@ -272,6 +277,13 @@ namespace HBL2
 		for (UUID componentUUID : componentUUIDs)
 		{
 			out << YAML::Key << componentUUID << YAML::Value;
+		}
+		out << YAML::EndSeq;
+
+		out << YAML::Key << "User Helper Scripts" << YAML::BeginSeq;
+		for (UUID helperScriptUUID : helperScriptUUIDs)
+		{
+			out << YAML::Key << helperScriptUUID << YAML::Value;
 		}
 		out << YAML::EndSeq;
 
@@ -337,6 +349,21 @@ namespace HBL2
 				else
 				{
 					HBL2_CORE_ERROR("Could not load component with UUID: {}", componentUUID.as<UUID>());
+				}
+			}
+		}
+
+		HBL2_CORE_TRACE("Deserializing user helper scripts of scene: {0}", sceneName);
+		auto helperScripts = data["User Helper Scripts"];
+		if (helperScripts)
+		{
+			for (auto helperScriptUUID : helperScripts)
+			{
+				Handle<Script> helperScriptHandle = AssetManager::Instance->GetAsset<Script>(helperScriptUUID.as<UUID>());
+				
+				if (!helperScriptHandle.IsValid())
+				{
+					HBL2_CORE_ERROR("Could not load helper script with UUID: {}", helperScriptUUID.as<UUID>());
 				}
 			}
 		}
@@ -422,8 +449,10 @@ namespace HBL2
 						{
 						case 1:
 							camera.Type = Component::Camera::Type::Perspective;
+							break;
 						case 2:
 							camera.Type = Component::Camera::Type::Orthographic;
+							break;
 						default:
 							break;
 						}
@@ -462,8 +491,10 @@ namespace HBL2
 						{
 						case 1:
 							light.Type = Component::Light::Type::Directional;
+							break;
 						case 2:
 							light.Type = Component::Light::Type::Point;
+							break;
 						default:
 							break;
 						}

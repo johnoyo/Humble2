@@ -35,6 +35,7 @@ namespace HBL2
 					Stats,
 					PlayStop,
 					Systems,
+					Tray,
 					Custom
 				} Type = Panel::None;
 
