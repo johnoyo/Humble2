@@ -139,8 +139,7 @@ namespace HBL2
 
 	void StaticMeshRenderingSystem::OnResize(uint32_t width, uint32_t height)
 	{
-		auto oldFrameBuffer = m_FrameBuffer;
-		ResourceManager::Instance->DeleteFrameBuffer(oldFrameBuffer);
+		ResourceManager::Instance->DeleteFrameBuffer(m_FrameBuffer);
 
 		m_FrameBuffer = ResourceManager::Instance->CreateFrameBuffer({
 			.debugName = "viewport",

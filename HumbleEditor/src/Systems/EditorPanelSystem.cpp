@@ -1141,6 +1141,11 @@ namespace HBL2
 			{
 				if (ImGui::BeginMenu("Create"))
 				{
+					if (ImGui::MenuItem("Folder"))
+					{
+						m_OpenNewFolderSetupPopup = true;
+					}
+
 					if (ImGui::BeginMenu("Shader"))
 					{
 						if (ImGui::MenuItem("Unlit"))
@@ -1206,6 +1211,39 @@ namespace HBL2
 				}
 
 				ImGui::EndPopup();
+			}
+
+			if (m_OpenNewFolderSetupPopup)
+			{
+				ImGui::Begin("New Folder", &m_OpenNewFolderSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+				static char folderNameBuffer[256] = "NewFolder";
+				ImGui::InputText("Folder Name", folderNameBuffer, 256);
+
+				ImGui::NewLine();
+
+				if (ImGui::Button("OK"))
+				{
+					try
+					{
+						std::filesystem::create_directory(m_CurrentDirectory / folderNameBuffer);
+					}
+					catch (std::exception& e)
+					{
+						HBL2_ERROR("New folder creation failed: {0}", e.what());
+					}
+
+					m_OpenNewFolderSetupPopup = false;
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel"))
+				{
+					m_OpenNewFolderSetupPopup = false;
+				}
+
+				ImGui::End();
 			}
 
 			if (m_OpenScriptSetupPopup)
@@ -1735,6 +1773,8 @@ namespace HBL2
 
 			if (m_OpenDeleteConfirmationWindow && m_AssetToBeDeleted.IsValid())
 			{
+				// TODO: Handle deletion of folder. (Make folders assets??)
+
 				Asset* assetToBeDeleted = AssetManager::Instance->GetAssetMetadata(m_AssetToBeDeleted);
 
 				ImGui::Begin("Delete Confirmation Window", &m_OpenDeleteConfirmationWindow, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);

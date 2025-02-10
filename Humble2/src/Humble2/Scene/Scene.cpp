@@ -83,7 +83,7 @@ namespace HBL2
         {
             if (system->GetType() == SystemType::User)
             {
-                NativeScriptUtilities::Get().RegisterSystem(system->Name, dst); // NOTE: If no systems present now the new dll does not get loaded.
+                NativeScriptUtilities::Get().RegisterSystem(system->Name, dst);
             }
         }
 

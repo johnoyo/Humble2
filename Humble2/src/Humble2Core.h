@@ -70,7 +70,7 @@
     {                                                                                                                           \
         ctx->GetRegistry().clear<TYPE>();                                                                                       \
         ctx->GetRegistry().storage<TYPE>().clear();                                                                             \
-        ctx->GetRegistry().compact<TYPE>();                                                                             \
+        ctx->GetRegistry().compact<TYPE>();                                                                                     \
     }                                                                                                                           \
                                                                                                                                 \
     extern "C" __declspec(dllexport) void SerializeComponents_##TYPE(HBL2::Scene* ctx, ByteStorage& data, bool cleanRegistry)   \
@@ -85,7 +85,7 @@
         {                                                                                                                       \
             ctx->GetRegistry().clear<TYPE>();                                                                                   \
             ctx->GetRegistry().storage<TYPE>().clear();                                                                         \
-            ctx->GetRegistry().compact<TYPE>();                                                                         \
+            ctx->GetRegistry().compact<TYPE>();                                                                                 \
         }                                                                                                                       \
     }                                                                                                                           \
                                                                                                                                 \
