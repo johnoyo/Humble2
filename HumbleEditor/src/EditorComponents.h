@@ -39,6 +39,8 @@ namespace HBL2
 					Custom
 				} Type = Panel::None;
 
+				std::function<void(void)> Render;
+
 				bool Enabled = true;
 			};
 

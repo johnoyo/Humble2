@@ -38,8 +38,8 @@ namespace HBL2
 			entt::entity m_EntityToBeDeleted = entt::null;
 
 			glm::vec2 m_ViewportSize = { 0.f, 0.f };
-			std::filesystem::path m_EditorScenePath;
 			std::filesystem::path m_CurrentDirectory;
+			std::filesystem::path m_EditorScenePath;
 
 			bool m_OpenNewFolderSetupPopup = false;
 			bool m_OpenShaderSetupPopup = false;

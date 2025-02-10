@@ -5,6 +5,7 @@
 
 #include "Base.h"
 #include "Input.h"
+#include "Time.h"
 #include "Context.h"
 #include "EventDispatcher.h"
 

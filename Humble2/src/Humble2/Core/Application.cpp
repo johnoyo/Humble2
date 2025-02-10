@@ -62,6 +62,9 @@ namespace HBL2
 		m_DeltaTime = time - m_LastTime;
 		m_FixedDeltaTime += (time - m_LastTime) / m_LimitFPS;
 		m_LastTime = time;
+
+		Time::DeltaTime = m_DeltaTime;
+		Time::DeltaTime = m_FixedDeltaTime;
 	}
 
 	void Application::EndFrame()
