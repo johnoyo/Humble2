@@ -274,7 +274,45 @@ namespace HBL2
 
 	Handle<Material> AssetImporter::ImportMaterial(Asset* asset)
 	{
+		// Open metadata file.
+		std::ifstream metaDataStream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmat");
+
+		if (!metaDataStream.is_open())
+		{
+			HBL2_CORE_ERROR("Material metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmat");
+			return Handle<Material>();
+		}
+
+		std::stringstream ssMetadata;
+		ssMetadata << metaDataStream.rdbuf();
+
+		YAML::Node dataMetadata = YAML::Load(ssMetadata.str());
+		if (!dataMetadata["Material"].IsDefined())
+		{
+			HBL2_CORE_TRACE("Material not found in metadata file: {0}", ssMetadata.str());
+			metaDataStream.close();
+			return Handle<Material>();
+		}
+
+		uint32_t type = UINT32_MAX;
+
+		auto materialMetadataProperties = dataMetadata["Material"];
+		if (materialMetadataProperties)
+		{
+			type = materialMetadataProperties["Type"].as<uint32_t>();
+		}
+
+		metaDataStream.close();
+
+		// Open regular material file.
 		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath));
+
+		if (!stream.is_open())
+		{
+			HBL2_CORE_ERROR("Material file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath));
+			return Handle<Material>();
+		}
+
 		std::stringstream ss;
 		ss << stream.rdbuf();
 
@@ -282,14 +320,13 @@ namespace HBL2
 		if (!data["Material"].IsDefined())
 		{
 			HBL2_CORE_TRACE("Material not found: {0}", ss.str());
+			stream.close();
 			return Handle<Material>();
 		}
 
 		auto materialProperties = data["Material"];
 		if (materialProperties)
 		{
-			uint32_t type = materialProperties["Type"].as<uint32_t>();
-
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
 
 			UUID albedoMapUUID = materialProperties["AlbedoMap"].as<UUID>();

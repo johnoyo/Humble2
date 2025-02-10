@@ -136,7 +136,7 @@ namespace HBL2
 		Handle<BindGroupLayout> GetBuiltInShaderLayout(BuiltInShader shader) { return m_ShaderLayouts[shader]; }
 
 		void CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType);
-		void CreateMaterialMetadataFile(Handle<Asset> handle);
+		void CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType);
 
 	private:
 		ShaderUtilities() = default;

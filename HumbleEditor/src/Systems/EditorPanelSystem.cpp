@@ -1390,13 +1390,13 @@ namespace HBL2
 					switch (m_SelectedShaderType)
 					{
 					case 0:
-						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/unlit.hblshader");
+						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/unlit.shader");
 						break;
 					case 1:
-						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/blinn-phong.hblshader");
+						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/blinn-phong.shader");
 						break;
 					case 2:
-						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/pbr.hblshader");
+						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/pbr.shader");
 						break;
 					}
 
@@ -1565,7 +1565,7 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
-					auto relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(materialNameBuffer) + ".hblmat"), HBL2::Project::GetAssetDirectory());
+					auto relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(materialNameBuffer) + ".mat"), HBL2::Project::GetAssetDirectory());
 
 					auto materialAssetHandle = AssetManager::Instance->CreateAsset({
 						.debugName = "material-asset",
@@ -1573,14 +1573,17 @@ namespace HBL2
 						.type = AssetType::Material,
 					});
 
-					std::ofstream fout(m_CurrentDirectory / (std::string(materialNameBuffer) + ".hblmat"), 0);
+					if (materialAssetHandle.IsValid())
+					{
+						ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, m_SelectedMaterialType);
+					}
+
+					std::ofstream fout(m_CurrentDirectory / (std::string(materialNameBuffer) + ".mat"), 0);
 
 					YAML::Emitter out;
 					out << YAML::BeginMap;
 					out << YAML::Key << "Material" << YAML::Value;
 					out << YAML::BeginMap;
-					out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(materialAssetHandle)->UUID;
-					out << YAML::Key << "Type" << YAML::Value << m_SelectedMaterialType;
 					out << YAML::Key << "Shader" << YAML::Value << AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->UUID;
 					out << YAML::Key << "AlbedoColor" << YAML::Value << glm::vec4(color[0], color[1], color[2], color[3]);
 					out << YAML::Key << "Metalicness" << YAML::Value << metalicness;
@@ -1670,7 +1673,7 @@ namespace HBL2
 				const std::string extension = entry.path().extension().string();
 
 				// Do not show engine metadata files.
-				if (extension.find(".hbl") != std::string::npos && extension.find(".hblmat") == std::string::npos)
+				if (extension.find(".hbl") != std::string::npos)
 				{
 					ImGui::PopID();
 					continue;

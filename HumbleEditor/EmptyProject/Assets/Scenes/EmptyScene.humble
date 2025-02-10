@@ -2,37 +2,6 @@ Scene: EmptyScene
 Entities:
   - Entity: 3
     Component::Tag:
-      Tag: Camera
-    Component::ID:
-      ID: 11463086572280647680
-    Component::Transform:
-      Translation: [0, 0, 10]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Camera:
-      Enabled: true
-      Primary: true
-      Far: 1000
-      Near: 0.100000001
-      FOV: 30
-      Aspect Ratio: 2.10094643
-      Zoom Level: 300
-      Type: 0
-  - Entity: 2
-    Component::Tag:
-      Tag: Monkeh
-    Component::ID:
-      ID: 18396450913416425472
-    Component::Transform:
-      Translation: [2, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::StaticMesh_New:
-      Enabled: true
-      Material: 17674126706215361874
-      Mesh: 17631668153373402826
-  - Entity: 1
-    Component::Tag:
       Tag: Sprite
     Component::ID:
       ID: 2898162071183314432
@@ -42,8 +11,8 @@ Entities:
       Scale: [1, 1, 1]
     Component::Sprite_New:
       Enabled: true
-      Material: 11734900218811993914
-  - Entity: 0
+      Material: 5092745295480585008
+  - Entity: 2
     Component::Tag:
       Tag: New Light
     Component::ID:
@@ -59,4 +28,40 @@ Entities:
       Attenuation: 10
       Color: [1, 1, 1]
       Type: 0
-Systems:
+  - Entity: 1
+    Component::Tag:
+      Tag: Camera
+    Component::ID:
+      ID: 11463086572280647680
+    Component::Transform:
+      Translation: [0, 0, 10]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Camera:
+      Enabled: true
+      Primary: true
+      Far: 1000
+      Near: 0.100000001
+      FOV: 30
+      Aspect Ratio: 2.35125446
+      Zoom Level: 300
+      Type: 0
+  - Entity: 0
+    Component::Tag:
+      Tag: Monkeh
+    Component::ID:
+      ID: 18396450913416425472
+    Component::Transform:
+      Translation: [2, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::StaticMesh_New:
+      Enabled: true
+      Material: 10749047289362499544
+      Mesh: 17631668153373402826
+User Systems:
+  []
+User Components:
+  []
+User Helper Scripts:
+  []

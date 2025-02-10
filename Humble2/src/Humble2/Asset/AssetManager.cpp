@@ -52,7 +52,7 @@ namespace HBL2
 				.type = AssetType::Mesh,
 			});
 		}
-		else if (extension == ".hblmat")
+		else if (extension == ".mat")
 		{
 			assetHandle = AssetManager::Instance->CreateAsset({
 				.debugName = "material-asset",
