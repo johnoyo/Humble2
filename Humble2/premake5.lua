@@ -41,6 +41,7 @@ project "Humble2"
         "../Dependencies/GLM",
         "../Dependencies/YAML-Cpp/yaml-cpp/include",
         "../Dependencies/PortableFileDialogs",
+        "../Dependencies/FMOD/core/include",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "%{VULKAN_SDK}/Include"
     }
@@ -49,6 +50,7 @@ project "Humble2"
     {
         "../Dependencies/GLFW/lib-vc2022",
         "../Dependencies/GLEW/lib/Release/x64",
+        "../Dependencies/FMOD/core/lib/x64",
         "%{VULKAN_SDK}/Lib"
     }
     
@@ -65,7 +67,7 @@ project "Humble2"
     }
     
     filter "system:windows"
-    systemversion "latest"    
+        systemversion "latest"    
         defines { "HBL2_PLATFORM_WINDOWS" }
 
         postbuildcommands
@@ -80,15 +82,14 @@ project "Humble2"
             ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} %{cfg.buildtarget.directory}/Humble2.pdb ../bin/" .. outputdir .. "/HumbleApp"),
             
-            -- Ensure the GLEW DLL is copied to HumbleEditor
+            -- Ensure the GLEW and FMOD DLLs are copied to HumbleEditor
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/GLEW/bin/Release/x64/glew32.dll ../bin/" .. outputdir .. "/HumbleEditor"),
-            
-            -- Ensure the GLEW DLL is copied to HumbleApp
-            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/GLEW/bin/Release/x64/glew32.dll ../bin/" .. outputdir .. "/HumbleApp")
-        }
 
+            -- Ensure the GLEW and FMOD DLLs are copied to HumbleApp
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/GLEW/bin/Release/x64/glew32.dll ../bin/" .. outputdir .. "/HumbleApp"),
+        }
 
     filter "configurations:Debug"
         defines { "DEBUG" }
@@ -97,31 +98,67 @@ project "Humble2"
 
         links
         {
+            "fmodL_vc.lib",
             "shaderc_sharedd.lib",
             "spirv-cross-cored.lib",
             "spirv-cross-glsld.lib",
         }
 
-    filter "configurations:Release"
+        postbuildcommands
+        {
+            -- Ensure the GLEW and FMOD DLLs are copied to HumbleEditor
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmodL.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+
+            -- Ensure the GLEW and FMOD DLLs are copied to HumbleApp
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmodL.dll ../bin/" .. outputdir .. "/HumbleApp"),
+        }
+        
+        filter "configurations:Release"
         defines { "RELEASE" }
         runtime "Release"
         optimize "On"
-
+        
         links
         {
+            "fmod_vc.lib",
             "shaderc_shared.lib",
             "spirv-cross-core.lib",
             "spirv-cross-glsl.lib",
         }
+
+        postbuildcommands
+        {
+            -- Ensure the GLEW and FMOD DLLs are copied to HumbleEditor
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+
+            -- Ensure the GLEW and FMOD DLLs are copied to HumbleApp
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleApp"),
+        }
         
-    filter "configurations:Emscripten"
+        filter "configurations:Emscripten"
         defines { "EMSCRIPTEN" }
         runtime "Release"
         optimize "on"
-
+        
         links
         {
+            "fmod_vc.lib",
             "shaderc_shared.lib",
             "spirv-cross-core.lib",
             "spirv-cross-glsl.lib",
+        }
+
+        postbuildcommands
+        {
+            -- Ensure the GLEW and FMOD DLLs are copied to HumbleEditor
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+
+            -- Ensure the GLEW and FMOD DLLs are copied to HumbleApp
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleApp"),
         }
