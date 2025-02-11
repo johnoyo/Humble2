@@ -132,7 +132,7 @@ namespace HBL2
 
 		if (!stream.is_open())
 		{
-			HBL2_CORE_ERROR("Texture file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture");
+			HBL2_CORE_ERROR("Texture metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture");
 			return Handle<Texture>();
 		}
 
@@ -184,7 +184,7 @@ namespace HBL2
 
 		if (!stream.is_open())
 		{
-			HBL2_CORE_ERROR("Shader file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblshader");
+			HBL2_CORE_ERROR("Shader metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblshader");
 			return Handle<Shader>();
 		}
 
@@ -405,6 +405,14 @@ namespace HBL2
 
 	Handle<Scene> AssetImporter::ImportScene(Asset* asset)
 	{
+		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscene");
+
+		if (!stream.is_open())
+		{
+			HBL2_CORE_ERROR("Scene metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscene");
+			return Handle<Scene>();
+		}
+
 		auto sceneHandle = ResourceManager::Instance->CreateScene({
 			.name = asset->FilePath.filename().stem().string()
 		});
@@ -524,7 +532,19 @@ namespace HBL2
 	{
 		if (!asset->Loaded)
 		{
-			HBL2_CORE_ERROR(" Scene: {0}, at path: {1}, loading it now.", asset->DebugName, asset->FilePath.string());
+			HBL2_CORE_WARN(" Scene: {0}, at path: {1} is not loaded, loading it now.", asset->DebugName, asset->FilePath.string());
+
+			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscene", 0);
+
+			YAML::Emitter out;
+			out << YAML::BeginMap;
+			out << YAML::Key << "Scene" << YAML::Value;
+			out << YAML::BeginMap;
+			out << YAML::Key << "UUID" << YAML::Value << asset->UUID;
+			out << YAML::EndMap;
+			out << YAML::EndMap;
+			fout << out.c_str();
+			fout.close();
 
 			auto sceneHandle = ResourceManager::Instance->CreateScene({
 				.name = asset->FilePath.filename().stem().string()
