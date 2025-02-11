@@ -63,4 +63,7 @@ struct Vertex
 	//glm::vec3 Tangent;
 };
 
-using UUID = uint64_t;
+namespace HBL2
+{
+	using UUID = uint64_t;
+}

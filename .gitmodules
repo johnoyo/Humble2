@@ -14,3 +14,6 @@
 [submodule "Dependencies/ImGuizmo"]
 	path = Dependencies/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "Dependencies/PortableFileDialogs"]
+	path = Dependencies/PortableFileDialogs
+	url = https://github.com/samhocevar/portable-file-dialogs.git

@@ -31,6 +31,7 @@ project "HumbleEditor"
         "../Dependencies/stb_image",
         "../Dependencies/GLM",
         "../Dependencies/YAML-Cpp/yaml-cpp/include",
+        "../Dependencies/PortableFileDialogs",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "%{VULKAN_SDK}/Include"
     }
