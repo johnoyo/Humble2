@@ -660,6 +660,9 @@ namespace HBL2
 					case AssetType::Texture:
 						ImGui::SetDragDropPayload("Content_Browser_Item_Texture", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
 						break;
+					case AssetType::Sound:
+						ImGui::SetDragDropPayload("Content_Browser_Item_Sound", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+						break;
 					case AssetType::Material:
 						ImGui::SetDragDropPayload("Content_Browser_Item_Material", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
 						break;

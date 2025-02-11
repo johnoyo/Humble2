@@ -35,6 +35,7 @@ namespace HBL2
 		Handle<Mesh> ImportMesh(Asset* asset);
 		Handle<Scene> ImportScene(Asset* asset);
 		Handle<Script> ImportScript(Asset* asset);
+		Handle<Sound> ImportSound(Asset* asset);
 
 		void SaveScene(Asset* asset);
 		void SaveScript(Asset* asset);
@@ -45,6 +46,7 @@ namespace HBL2
 		bool DestroyMesh(Asset* asset);
 		bool DestroyScript(Asset* asset);
 		bool DestroyScene(Asset* asset);
+		bool DestroySound(Asset* asset);
 
 		void UnloadTexture(Asset* asset);
 		void UnloadShader(Asset* asset);
@@ -52,6 +54,7 @@ namespace HBL2
 		void UnloadMaterial(Asset* asset);
 		void UnloadScript(Asset* asset);
 		void UnloadScene(Asset* asset);
+		void UnloadSound(Asset* asset);
 
 		AssetImporter() = default;
 	};

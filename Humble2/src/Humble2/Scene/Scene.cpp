@@ -11,6 +11,7 @@
 #include "Systems\StaticMeshRenderingSystem.h"
 #include "Systems\SpriteRenderingSystem.h"
 #include "Systems\CompositeRenderingSystem.h"
+#include "Systems\SoundSystem.h"
 
 namespace HBL2
 {
@@ -69,6 +70,7 @@ namespace HBL2
         copy_component(Component::Sprite_New{});
         copy_component(Component::StaticMesh_New{});
         copy_component(Component::Light{});
+        copy_component(Component::SoundSource{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
@@ -77,6 +79,7 @@ namespace HBL2
         dst->RegisterSystem(new StaticMeshRenderingSystem);
         dst->RegisterSystem(new SpriteRenderingSystem);
         dst->RegisterSystem(new CompositeRenderingSystem);
+        dst->RegisterSystem(new SoundSystem, SystemType::Runtime);
 
         // Register any user systems to new scene.
         for (ISystem* system : src->m_RuntimeSystems)
@@ -163,6 +166,10 @@ namespace HBL2
         m_Registry.storage<Component::Light>().clear();
         m_Registry.compact<Component::Light>();
 
+        m_Registry.clear<Component::SoundSource>();
+        m_Registry.storage<Component::SoundSource>().clear();
+        m_Registry.compact<Component::SoundSource>();
+
         // Destroy all entities.
         for (auto& [uuid, entity] : m_EntityMap)
         {
@@ -209,6 +216,7 @@ namespace HBL2
         copy_component(Component::Sprite_New{});
         copy_component(Component::StaticMesh_New{});
         copy_component(Component::Light{});
+        copy_component(Component::SoundSource{});
 
         // Copy user defined components.
         std::vector<std::string> userComponentNames;

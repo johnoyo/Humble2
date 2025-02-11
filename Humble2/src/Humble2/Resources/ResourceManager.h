@@ -7,6 +7,7 @@
 #include "Scene\Script.h"
 #include "TypeDescriptors.h"
 #include "ResourceDeletionQueue.h"
+#include <Sound\Sound.h>
 
 namespace HBL2
 {
@@ -115,6 +116,20 @@ namespace HBL2
 			return m_ScriptPool.Get(handle);
 		}
 
+		// Sounds
+		Handle<Sound> CreateSound(const SoundDescriptor&& desc)
+		{
+			return m_SoundPool.Insert(Sound(std::forward<const SoundDescriptor>(desc)));
+		}
+		void DeleteSound(Handle<Sound> handle)
+		{
+			m_SoundPool.Remove(handle);
+		}
+		Sound* GetSound(Handle<Sound> handle) const
+		{
+			return m_SoundPool.Get(handle);
+		}
+
 	protected:
 		ResourceDeletionQueue m_DeletionQueue;
 
@@ -123,5 +138,6 @@ namespace HBL2
 		Pool<Material, Material> m_MaterialPool;
 		Pool<Scene, Scene> m_ScenePool;
 		Pool<Script, Script> m_ScriptPool;
+		Pool<Sound, Sound> m_SoundPool;
 	};
 }

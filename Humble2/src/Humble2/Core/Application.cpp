@@ -93,7 +93,6 @@ namespace HBL2
 		Window::Instance->Create();
 		
 		Input::Initialize();
-		SoundManager::Initialize();
 
 		Device::Instance->Initialize();
 		Renderer::Instance->Initialize();
@@ -118,8 +117,6 @@ namespace HBL2
 			ImGuiRenderer::Instance->EndFrame();
 
 			Renderer::Instance->Present();
-
-			SoundManager::Get().Update();
 
 			EndFrame();
 		});
@@ -155,7 +152,6 @@ namespace HBL2
 		delete Window::Instance;
 		Window::Instance = nullptr;
 
-		SoundManager::Shutdown();
 		Input::ShutDown();
 		UnityBuilder::Shutdown();
 		NativeScriptUtilities::Shutdown();

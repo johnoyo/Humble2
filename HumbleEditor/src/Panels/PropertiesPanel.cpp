@@ -372,6 +372,71 @@ namespace HBL2
 					}
 				}
 
+				// SoundSource component.
+				if (m_ActiveScene->HasComponent<HBL2::Component::SoundSource>(HBL2::Component::EditorVisible::SelectedEntity))
+				{
+					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::SoundSource).hash_code(), treeNodeFlags, "SoundSource");
+
+					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
+
+					bool removeComponent = false;
+
+					if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+					{
+						removeComponent = true;
+					}
+
+					if (opened)
+					{
+						auto& soundSource = m_ActiveScene->GetComponent<HBL2::Component::SoundSource>(HBL2::Component::EditorVisible::SelectedEntity);
+						uint32_t soundHandle = soundSource.Sound.Pack();
+
+						ImGui::Checkbox("Enabled", &soundSource.Enabled);
+						ImGui::InputScalar("Sound", ImGuiDataType_U32, (void*)(intptr_t*)&soundHandle);
+
+						if (ImGui::BeginDragDropTarget())
+						{
+							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Sound"))
+							{
+								uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+								Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+								if (assetHandle.IsValid())
+								{
+									Asset* soundAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+									std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound", 0);
+
+									YAML::Emitter out;
+									out << YAML::BeginMap;
+									out << YAML::Key << "Sound" << YAML::Value;
+									out << YAML::BeginMap;
+									out << YAML::Key << "UUID" << YAML::Value << soundAsset->UUID;
+									out << YAML::Key << "Loop" << YAML::Value << false;
+									out << YAML::Key << "StartPaused" << YAML::Value << false;
+									out << YAML::EndMap;
+									out << YAML::EndMap;
+									fout << out.c_str();
+									fout.close();
+								}
+
+								soundSource.Sound = AssetManager::Instance->GetAsset<Sound>(assetHandle);
+
+								ImGui::EndDragDropTarget();
+							}
+						}
+
+						ImGui::TreePop();
+					}
+
+					ImGui::Separator();
+
+					if (removeComponent)
+					{
+						m_ActiveScene->RemoveComponent<HBL2::Component::SoundSource>(HBL2::Component::EditorVisible::SelectedEntity);
+					}
+				}
+
 				using namespace entt::literals;
 
 				// Iterate over all registered meta types
@@ -446,6 +511,12 @@ namespace HBL2
 					if (ImGui::MenuItem("Light"))
 					{
 						m_ActiveScene->AddComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity);
+						ImGui::CloseCurrentPopup();
+					}
+
+					if (ImGui::MenuItem("SoundSource"))
+					{
+						m_ActiveScene->AddComponent<HBL2::Component::SoundSource>(HBL2::Component::EditorVisible::SelectedEntity);
 						ImGui::CloseCurrentPopup();
 					}
 

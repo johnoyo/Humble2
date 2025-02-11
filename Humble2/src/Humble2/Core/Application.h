@@ -31,8 +31,6 @@
 #include "Utilities\NativeScriptUtilities.h"
 #include "Utilities\UnityBuilder.h"
 
-#include "Sound\SoundManager.h"
-
 #include <string>
 #include <sstream>
 #include <iostream>

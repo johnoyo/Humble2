@@ -192,6 +192,47 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::SoundSource>(entity))
+		{
+			out << YAML::Key << "Component::SoundSource";
+			out << YAML::BeginMap;
+
+			auto& soundSource = m_Scene->GetComponent<Component::SoundSource>(entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << soundSource.Enabled;
+
+			const std::vector<Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+			Asset* soundAsset = nullptr;
+			bool soundFound = false;
+
+			for (auto handle : assetHandles)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+				if (asset->Type == AssetType::Sound && asset->Indentifier != 0 && asset->Indentifier == soundSource.Sound.Pack() && !soundFound)
+				{
+					soundFound = true;
+					soundAsset = asset;
+				}
+
+				if (soundFound)
+				{
+					break;
+				}
+			}
+
+			if (soundAsset != nullptr)
+			{
+				out << YAML::Key << "Sound" << YAML::Value << soundAsset->UUID;
+			}
+			else
+			{
+				out << YAML::Key << "Sound" << YAML::Value << (UUID)0;
+			}
+
+			out << YAML::EndMap;
+		}
+
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
 			const std::string& componentName = meta_type.second.info().name().data();
@@ -499,6 +540,14 @@ namespace HBL2
 							break;
 						}
 					}
+				}
+
+				auto soundSource_NewComponent = entity["Component::SoundSource"];
+				if (soundSource_NewComponent)
+				{
+					auto& soundSource = m_Scene->AddComponent<Component::SoundSource>(deserializedEntity);
+					soundSource.Enabled = soundSource_NewComponent["Enabled"].as<bool>();
+					soundSource.Sound = AssetManager::Instance->GetAsset<Sound>(soundSource_NewComponent["Sound"].as<UUID>());
 				}
 
 				for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))

@@ -9,6 +9,7 @@
 #include "Systems\StaticMeshRenderingSystem.h"
 #include "Systems\SpriteRenderingSystem.h"
 #include "Systems\CompositeRenderingSystem.h"
+#include "Systems\SoundSystem.h"
 
 namespace HBL2
 {
@@ -46,6 +47,9 @@ namespace HBL2
 			return asset->Indentifier;
 		case AssetType::Script:
 			asset->Indentifier = ImportScript(asset).Pack();
+			return asset->Indentifier;
+		case AssetType::Sound:
+			asset->Indentifier = ImportSound(asset).Pack();
 			return asset->Indentifier;
 		}
 
@@ -91,6 +95,8 @@ namespace HBL2
 			return DestroyScript(asset);
 		case AssetType::Scene:
 			return DestroyScene(asset);
+		case AssetType::Sound:
+			return DestroySound(asset);
 		}
 	}
 
@@ -120,6 +126,9 @@ namespace HBL2
 			break;
 		case AssetType::Scene:
 			UnloadScene(asset);
+			break;
+		case AssetType::Sound:
+			UnloadSound(asset);
 			break;
 		}
 	}
@@ -434,6 +443,7 @@ namespace HBL2
 		scene->RegisterSystem(new StaticMeshRenderingSystem);
 		scene->RegisterSystem(new SpriteRenderingSystem);
 		scene->RegisterSystem(new CompositeRenderingSystem);
+		scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
 
 		return sceneHandle;
 	}
@@ -467,6 +477,50 @@ namespace HBL2
 		}
 
 		return Handle<Script>();
+	}
+
+	Handle<Sound> AssetImporter::ImportSound(Asset* asset)
+	{
+		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblsound");
+
+		if (!stream.is_open())
+		{
+			HBL2_CORE_ERROR("Sound metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblsound");
+			return Handle<Sound>();
+		}
+
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Sound"].IsDefined())
+		{
+			HBL2_CORE_ERROR("Sound not found: {0}", asset->DebugName);
+			stream.close();
+			return Handle<Sound>();
+		}
+
+		auto soundProperties = data["Sound"];
+		if (soundProperties)
+		{
+			const std::string& soundName = asset->FilePath.filename().stem().string();
+
+			// Create the texture
+			auto sound = ResourceManager::Instance->CreateSound({
+				.debugName = _strdup(std::format("{}-sound", soundName).c_str()),
+				.path = asset->FilePath,
+				.loop = soundProperties["Loop"].as<bool>(),
+				.startPaused = soundProperties["StartPaused"].as<bool>(),
+			});
+
+			stream.close();
+			return sound;
+		}
+
+		HBL2_CORE_ERROR("Sound not found: {0}", asset->DebugName);
+
+		stream.close();
+		return Handle<Sound>();
 	}
 
 	Handle<Mesh> AssetImporter::ImportMesh(Asset* asset)
@@ -564,6 +618,7 @@ namespace HBL2
 			scene->RegisterSystem(new StaticMeshRenderingSystem);
 			scene->RegisterSystem(new SpriteRenderingSystem);
 			scene->RegisterSystem(new CompositeRenderingSystem);
+			scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
 
 			asset->Indentifier = sceneHandle.Pack();
 			asset->Loaded = true;
@@ -951,6 +1006,53 @@ namespace HBL2
 		return true;
 	}
 
+	bool AssetImporter::DestroySound(Asset* asset)
+	{
+		if (asset->Loaded)
+		{
+			UnloadSound(asset);
+		}
+
+		// Delete files
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath)))
+			{
+				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", asset->FilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), asset->FilePath);
+			return false;
+		}
+
+		const std::string& metafilePath = asset->FilePath.string() + ".hblsound";
+
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblsound"))
+			{
+				HBL2_CORE_INFO("File {} deleted.", metafilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", metafilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), metafilePath);
+			return false;
+		}
+
+		return true;
+	}
+
 	/// Unload methods
 
 	void AssetImporter::UnloadTexture(Asset* asset)
@@ -1159,6 +1261,36 @@ namespace HBL2
 
 		// Delete from pool.
 		ResourceManager::Instance->DeleteScene(sceneHandle);
+
+		asset->Loaded = false;
+		asset->Indentifier = 0;
+	}
+
+	void AssetImporter::UnloadSound(Asset* asset)
+	{
+		Handle<Sound> soundHandle = Handle<Sound>::UnPack(asset->Indentifier);
+
+		if (!soundHandle.IsValid())
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" has an invalid resource handle, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		// Retrieve and destroy sound.
+		Sound* sound = ResourceManager::Instance->GetSound(soundHandle);
+		if (sound != nullptr)
+		{
+			sound->Destroy();
+		}
+
+		// Delete from pool.
+		ResourceManager::Instance->DeleteSound(soundHandle);
 
 		asset->Loaded = false;
 		asset->Indentifier = 0;

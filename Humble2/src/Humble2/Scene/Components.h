@@ -11,6 +11,7 @@ namespace HBL2
 {
 	struct Mesh;
 	struct Material;
+	struct Sound;
 
 	namespace Component
 	{
@@ -104,6 +105,12 @@ namespace HBL2
 		struct HBL2_API SkyLight
 		{
 			float Intensity = 1.0f;
+			bool Enabled = true;
+		};
+
+		struct HBL2_API SoundSource
+		{
+			Handle<Sound> Sound;
 			bool Enabled = true;
 		};
 	}

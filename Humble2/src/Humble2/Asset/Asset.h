@@ -17,6 +17,7 @@ namespace HBL2
 		Mesh = 4,
 		Scene = 5,
 		Script = 6,
+		Sound = 7,
 	};
 
 	struct HBL2_API AssetDescriptor
