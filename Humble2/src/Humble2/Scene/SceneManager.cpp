@@ -26,9 +26,9 @@ namespace HBL2
 
 	void SceneManager::LoadSceneDeffered()
 	{
-		if (Context::ActiveScene.IsValid())
+		if (m_CurrentSceneHandle.IsValid())
 		{
-			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+			Scene* scene = ResourceManager::Instance->GetScene(m_CurrentSceneHandle);
 
 			if (scene != nullptr)
 			{
@@ -39,13 +39,22 @@ namespace HBL2
 			}
 		}
 
+		// To handle when a scene change happens either from code or by drag-n-drop from the editor or menu bar.
 		if (m_NewSceneAssetHandle.IsValid())
 		{
+			// Delete old loaded scene.
+			AssetManager::Instance->DeleteAsset(m_CurrentSceneAssetHandle);
+
+			// Load new scene.
 			Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(m_NewSceneAssetHandle);
 
-			EventDispatcher::Get().Post(SceneChangeEvent(Context::ActiveScene, sceneHandle));
+			// Trigger scene change event
+			EventDispatcher::Get().Post(SceneChangeEvent(m_CurrentSceneHandle, sceneHandle));
 
 			Context::ActiveScene = sceneHandle;
+
+			m_CurrentSceneAssetHandle = m_NewSceneAssetHandle;
+			m_CurrentSceneHandle = sceneHandle;
 
 			Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
 
@@ -75,11 +84,13 @@ namespace HBL2
 			return;
 		}
 
+		// To handle play mode scene change where no scene asset exists, only in-memory from a copy of the active scene.
 		if (m_NewSceneHandle.IsValid())
 		{
-			EventDispatcher::Get().Post(SceneChangeEvent(Context::ActiveScene, m_NewSceneHandle));
+			EventDispatcher::Get().Post(SceneChangeEvent(m_CurrentSceneHandle, m_NewSceneHandle));
 
 			Context::ActiveScene = m_NewSceneHandle;
+			m_CurrentSceneHandle = m_NewSceneHandle;
 
 			Scene* scene = ResourceManager::Instance->GetScene(m_NewSceneHandle);
 

@@ -27,7 +27,7 @@ namespace HBL2
 				const SceneChangeEvent& sce = dynamic_cast<const SceneChangeEvent&>(e);
 
 				// Delete temporary play mode scene.
-				Scene* currentScene = ResourceManager::Instance->GetScene(sce.CurrentScene);
+				Scene* currentScene = ResourceManager::Instance->GetScene(sce.OldScene);
 				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != std::string::npos)
 				{
 					// Clear entire scene
@@ -37,7 +37,7 @@ namespace HBL2
 					NativeScriptUtilities::Get().UnloadUnityBuild(currentScene);
 
 					// Delete play mode scene.
-					ResourceManager::Instance->DeleteScene(sce.CurrentScene);
+					ResourceManager::Instance->DeleteScene(sce.OldScene);
 				}
 
 				m_ActiveScene = ResourceManager::Instance->GetScene(sce.NewScene);

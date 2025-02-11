@@ -94,6 +94,9 @@ namespace HBL2
 		case AssetType::Script:
 			DestroyScript(asset);
 			break;
+		case AssetType::Scene:
+			DestroyScene(asset);
+			break;
 		}
 	}
 
@@ -120,6 +123,9 @@ namespace HBL2
 			break;
 		case AssetType::Script:
 			UnloadScript(asset);
+			break;
+		case AssetType::Scene:
+			UnloadScene(asset);
 			break;
 		}
 	}
@@ -861,8 +867,50 @@ namespace HBL2
 
 		try
 		{
-
 			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscript"))
+			{
+				HBL2_CORE_INFO("File {} deleted.", metafilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", metafilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", metafilePath);
+		}
+	}
+
+	void AssetImporter::DestroyScene(Asset* asset)
+	{
+		if (asset->Loaded)
+		{
+			UnloadScene(asset);
+		}
+
+		// Delete files
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath)))
+			{
+				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", asset->FilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+		}
+
+		const std::string& metafilePath = asset->FilePath.string() + ".hblscene";
+
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscene"))
 			{
 				HBL2_CORE_INFO("File {} deleted.", metafilePath);
 			}
@@ -1002,6 +1050,12 @@ namespace HBL2
 			{
 				Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
+				// If active scene is null, it means it is already unloaded and all the attached scripts are unloaded as well.
+				if (activeScene == nullptr)
+				{
+					break;
+				}
+
 				// Delete registered user system.
 				for (ISystem* userSystem : activeScene->GetRuntimeSystems())
 				{
@@ -1016,6 +1070,12 @@ namespace HBL2
 		case ScriptType::COMPONENT:
 			{
 				Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+				// If active scene is null, it means it is already unloaded and all the attached scripts are unloaded as well.
+				if (activeScene == nullptr)
+				{
+					break;
+				}
 
 				// Remove component from all the entities of the source scene.
 				for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
@@ -1035,6 +1095,38 @@ namespace HBL2
 		}
 
 		ResourceManager::Instance->DeleteScript(scriptAssetHandle);
+
+		asset->Loaded = false;
+		asset->Indentifier = 0;
+	}
+	
+	void AssetImporter::UnloadScene(Asset* asset)
+	{
+		Handle<Scene> sceneHandle = Handle<Scene>::UnPack(asset->Indentifier);
+
+		if (!sceneHandle.IsValid())
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" has an invalid resource handle, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		// Retrieve scene.
+		Scene* currentScene = ResourceManager::Instance->GetScene(sceneHandle);
+
+		// Clear entire scene.
+		currentScene->Clear();
+
+		// Unload unity build dll.
+		NativeScriptUtilities::Get().UnloadUnityBuild(currentScene);
+
+		// Delete from pool.
+		ResourceManager::Instance->DeleteScene(sceneHandle);
 
 		asset->Loaded = false;
 		asset->Indentifier = 0;

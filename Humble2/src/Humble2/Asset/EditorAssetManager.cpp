@@ -28,12 +28,12 @@ namespace HBL2
 
     bool EditorAssetManager::IsAssetValid(Handle<Asset> handle)
     {
-        return handle.IsValid();
+        return handle.IsValid() && GetAssetMetadata(handle) != nullptr;
     }
 
     bool EditorAssetManager::IsAssetLoaded(Handle<Asset> handle)
     {
-        if (!handle.IsValid())
+        if (!IsAssetValid(handle))
         {
             return false;
         }

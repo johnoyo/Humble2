@@ -1,6 +1,7 @@
 #include "Systems\EditorPanelSystem.h"
 
 #include "Utilities\YamlUtilities.h"
+#include <Utilities\FileDialogs.h>
 
 namespace HBL2
 {
@@ -16,6 +17,11 @@ namespace HBL2
 					if (ImGui::MenuItem("Folder"))
 					{
 						m_OpenNewFolderSetupPopup = true;
+					}
+
+					if (ImGui::MenuItem("Scene"))
+					{
+						m_OpenSceneSetupPopup = true;
 					}
 
 					if (ImGui::BeginMenu("Shader"))
@@ -113,6 +119,45 @@ namespace HBL2
 				if (ImGui::Button("Cancel"))
 				{
 					m_OpenNewFolderSetupPopup = false;
+				}
+
+				ImGui::End();
+			}
+
+			if (m_OpenSceneSetupPopup)
+			{
+				ImGui::Begin("New Scene", &m_OpenSceneSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+				static char sceneNameBuffer[256] = "NewScene";
+				ImGui::InputText("Scene Name", sceneNameBuffer, 256);
+
+				ImGui::NewLine();
+
+				if (ImGui::Button("OK"))
+				{
+					auto filepath = m_CurrentDirectory / (std::string(sceneNameBuffer) + ".humble");
+					auto relativePath = std::filesystem::relative(filepath, HBL2::Project::GetAssetDirectory());
+
+					auto assetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "New Scene",
+						.filePath = relativePath,
+						.type = AssetType::Scene,
+					});
+
+					AssetManager::Instance->SaveAsset(assetHandle);
+
+					HBL2::SceneManager::Get().LoadScene(assetHandle);
+
+					m_EditorScenePath = filepath;
+
+					m_OpenSceneSetupPopup = false;
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel"))
+				{
+					m_OpenSceneSetupPopup = false;
 				}
 
 				ImGui::End();
@@ -657,11 +702,9 @@ namespace HBL2
 			{
 				// TODO: Handle deletion of folder. (Make folders assets??)
 
-				Asset* assetToBeDeleted = AssetManager::Instance->GetAssetMetadata(m_AssetToBeDeleted);
-
 				ImGui::Begin("Delete Confirmation Window", &m_OpenDeleteConfirmationWindow, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-				ImGui::Text("Are you sure you want to delete the asset: %s.\n\nThis action can not be undone.", assetToBeDeleted->FilePath.string().c_str());
+				ImGui::Text("Are you sure you want to delete this asset.\n\nThis action can not be undone.");
 
 				ImGui::NewLine();
 

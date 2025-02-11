@@ -44,12 +44,14 @@ namespace HBL2
 		void DestroyMaterial(Asset* asset);
 		void DestroyMesh(Asset* asset);
 		void DestroyScript(Asset* asset);
+		void DestroyScene(Asset* asset);
 
 		void UnloadTexture(Asset* asset);
 		void UnloadShader(Asset* asset);
 		void UnloadMesh(Asset* asset);
 		void UnloadMaterial(Asset* asset);
 		void UnloadScript(Asset* asset);
+		void UnloadScene(Asset* asset);
 
 		AssetImporter() = default;
 	};

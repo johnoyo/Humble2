@@ -19,7 +19,14 @@ namespace HBL2
 
 		Handle<Asset> CreateAsset(const AssetDescriptor&& desc)
 		{
-			auto handle = m_AssetPool.Insert(Asset(std::forward<const AssetDescriptor>(desc)));
+			auto handle = GetHandleFromUUID(std::hash<std::string>()(desc.filePath.string()));
+
+			if (IsAssetValid(handle))
+			{
+				return handle;
+			}
+
+			handle = m_AssetPool.Insert(Asset(std::forward<const AssetDescriptor>(desc)));
 			m_RegisteredAssets.push_back(handle);
 
 			Asset* asset = GetAssetMetadata(handle);
@@ -38,31 +45,21 @@ namespace HBL2
 				{
 					m_RegisteredAssetMap.erase(asset->UUID);
 				}
-			
-				std::vector<Handle<Asset>>::iterator assetIterator;
-				bool assetFound = false;
 
-				for (auto it = m_RegisteredAssets.begin(); it < m_RegisteredAssets.end(); it++)
-				{
-					if (*it == handle)
-					{
-						assetIterator = it;
-						assetFound = true;
-						break;
-					}
-				}
-
-				if (assetFound)
+				auto assetIterator = std::find(m_RegisteredAssets.begin(), m_RegisteredAssets.end(), handle);
+				
+				if (assetIterator != m_RegisteredAssets.end())
 				{
 					m_RegisteredAssets.erase(assetIterator);
 				}
+
+				m_AssetPool.Remove(handle);
 			}
 			else
 			{
 				UnloadAsset(handle);
 			}
 
-			m_AssetPool.Remove(handle);
 		}
 		Asset* GetAssetMetadata(Handle<Asset> handle) const
 		{

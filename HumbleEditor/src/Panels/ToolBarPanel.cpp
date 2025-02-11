@@ -88,8 +88,8 @@ namespace HBL2
 
 						Handle<Scene> sceneHandle = Handle<Scene>::UnPack(asset->Indentifier);
 
-						Scene* playScene = ResourceManager::Instance->GetScene(sceneHandle);
-						Scene::Copy(m_ActiveScene, playScene);
+						Scene* newScene = ResourceManager::Instance->GetScene(sceneHandle);
+						Scene::Copy(m_ActiveScene, newScene);
 						AssetManager::Instance->SaveAsset(assetHandle);
 
 						SceneManager::Get().LoadScene(assetHandle);
@@ -107,7 +107,7 @@ namespace HBL2
 							.type = AssetType::Scene,
 						});
 
-						AssetManager::Instance->SaveAsset(std::hash<std::string>()(relativePath.string()));
+						AssetManager::Instance->SaveAsset(assetHandle);
 
 						HBL2::SceneManager::Get().LoadScene(assetHandle);
 

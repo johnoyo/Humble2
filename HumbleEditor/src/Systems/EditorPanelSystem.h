@@ -42,6 +42,7 @@ namespace HBL2
 			std::filesystem::path m_EditorScenePath;
 
 			bool m_OpenNewFolderSetupPopup = false;
+			bool m_OpenSceneSetupPopup = false;
 			bool m_OpenShaderSetupPopup = false;
 			uint32_t m_SelectedShaderType = 0;
 			bool m_OpenMaterialSetupPopup = false;

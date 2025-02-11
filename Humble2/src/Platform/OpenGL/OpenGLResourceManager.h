@@ -22,9 +22,7 @@ namespace HBL2
 	public:
 		virtual ~OpenGLResourceManager() = default;
 
-		virtual void Clean() override
-		{
-		}
+		virtual void Clean() override {}
 
 		// Textures
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) override
