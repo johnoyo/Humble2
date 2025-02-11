@@ -70,33 +70,27 @@ namespace HBL2
 		}
 	}
 
-	void AssetImporter::DestroyAsset(Asset* asset)
+	bool AssetImporter::DestroyAsset(Asset* asset)
 	{
 		if (asset == nullptr)
 		{
-			return;
+			return false;
 		}
 
 		switch (asset->Type)
 		{
 		case AssetType::Texture:
-			DestroyTexture(asset);
-			break;
+			return DestroyTexture(asset);
 		case AssetType::Shader:
-			DestroyShader(asset);
-			break;
+			return DestroyShader(asset);
 		case AssetType::Material:
-			DestroyMaterial(asset);
-			break;
+			return DestroyMaterial(asset);
 		case AssetType::Mesh:
-			DestroyMesh(asset);
-			break;
+			return DestroyMesh(asset);
 		case AssetType::Script:
-			DestroyScript(asset);
-			break;
+			return DestroyScript(asset);
 		case AssetType::Scene:
-			DestroyScene(asset);
-			break;
+			return DestroyScene(asset);
 		}
 	}
 
@@ -667,7 +661,7 @@ namespace HBL2
 
 	/// Destroy methods
 
-	void AssetImporter::DestroyTexture(Asset* asset)
+	bool AssetImporter::DestroyTexture(Asset* asset)
 	{
 		if (asset->Loaded)
 		{
@@ -688,7 +682,8 @@ namespace HBL2
 		}
 		catch (const std::filesystem::filesystem_error& err)
 		{
-			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), asset->FilePath);
+			return false;
 		}
 
 		const std::string& metafilePath = asset->FilePath.string() + ".hbltexture";
@@ -706,11 +701,14 @@ namespace HBL2
 		}
 		catch (const std::filesystem::filesystem_error& err)
 		{
-			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", metafilePath);
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), metafilePath);
+			return false;
 		}
+
+		return true;
 	}
 
-	void AssetImporter::DestroyShader(Asset* asset)
+	bool AssetImporter::DestroyShader(Asset* asset)
 	{
 		if (asset->Loaded)
 		{
@@ -731,7 +729,8 @@ namespace HBL2
 		}
 		catch (const std::filesystem::filesystem_error& err)
 		{
-			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), asset->FilePath);
+			return false;
 		}
 
 		const std::string& metafilePath = asset->FilePath.string() + ".hblshader";
@@ -749,11 +748,14 @@ namespace HBL2
 		}
 		catch (const std::filesystem::filesystem_error& err)
 		{
-			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", metafilePath);
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), metafilePath);
+			return false;
 		}
+
+		return true;
 	}
 
-	void AssetImporter::DestroyMaterial(Asset* asset)
+	bool AssetImporter::DestroyMaterial(Asset* asset)
 	{
 		if (asset->Loaded)
 		{
@@ -774,7 +776,8 @@ namespace HBL2
 		}
 		catch (const std::filesystem::filesystem_error& err)
 		{
-			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), asset->FilePath);
+			return false;
 		}
 
 		const std::string& metafilePath = asset->FilePath.string() + ".hblmat";
@@ -792,11 +795,14 @@ namespace HBL2
 		}
 		catch (const std::filesystem::filesystem_error& err)
 		{
-			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", metafilePath);
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), metafilePath);
+			return false;
 		}
+
+		return true;
 	}
 
-	void AssetImporter::DestroyMesh(Asset* asset)
+	bool AssetImporter::DestroyMesh(Asset* asset)
 	{
 		if (asset->Loaded)
 		{
@@ -817,7 +823,8 @@ namespace HBL2
 		}
 		catch (const std::filesystem::filesystem_error& err)
 		{
-			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), asset->FilePath);
+			return false;
 		}
 
 		const std::string& metafilePath = asset->FilePath.string() + ".hblmesh";
@@ -835,11 +842,14 @@ namespace HBL2
 		}
 		catch (const std::filesystem::filesystem_error& err)
 		{
-			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", metafilePath);
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), metafilePath);
+			return false;
 		}
+
+		return true;
 	}
 
-	void AssetImporter::DestroyScript(Asset* asset)
+	bool AssetImporter::DestroyScript(Asset* asset)
 	{
 		if (asset->Loaded)
 		{
@@ -860,7 +870,8 @@ namespace HBL2
 		}
 		catch (const std::filesystem::filesystem_error& err)
 		{
-			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), asset->FilePath);
+			return false;
 		}
 
 		const std::string& metafilePath = asset->FilePath.string() + ".hblscript";
@@ -878,15 +889,26 @@ namespace HBL2
 		}
 		catch (const std::filesystem::filesystem_error& err)
 		{
-			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", metafilePath);
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), metafilePath);
+			return false;
 		}
+
+		return true;
 	}
 
-	void AssetImporter::DestroyScene(Asset* asset)
+	bool AssetImporter::DestroyScene(Asset* asset)
 	{
 		if (asset->Loaded)
 		{
 			UnloadScene(asset);
+		}
+
+		Handle<Scene> sceneHandle = Handle<Scene>::UnPack(asset->Indentifier);
+
+		if (sceneHandle == Context::ActiveScene)
+		{
+			HBL2_CORE_WARN("Scene asset \"{0}\" is currently open, skipping destroy operation. Close it and then destroy.", asset->DebugName);
+			return false;
 		}
 
 		// Delete files
@@ -903,7 +925,8 @@ namespace HBL2
 		}
 		catch (const std::filesystem::filesystem_error& err)
 		{
-			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), asset->FilePath);
+			return false;
 		}
 
 		const std::string& metafilePath = asset->FilePath.string() + ".hblscene";
@@ -921,8 +944,11 @@ namespace HBL2
 		}
 		catch (const std::filesystem::filesystem_error& err)
 		{
-			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", metafilePath);
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), metafilePath);
+			return false;
 		}
+
+		return true;
 	}
 
 	/// Unload methods
@@ -1113,6 +1139,12 @@ namespace HBL2
 		if (!asset->Loaded)
 		{
 			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (sceneHandle == Context::ActiveScene)
+		{
+			HBL2_CORE_WARN("Scene asset \"{0}\" is currently open, skipping unload operation. Close it and then unload.", asset->DebugName);
 			return;
 		}
 

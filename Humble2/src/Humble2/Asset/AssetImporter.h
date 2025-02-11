@@ -25,7 +25,7 @@ namespace HBL2
 
 		uint32_t ImportAsset(Asset* asset);
 		void SaveAsset(Asset* asset);
-		void DestroyAsset(Asset* asset);
+		bool DestroyAsset(Asset* asset);
 		void UnloadAsset(Asset* asset);
 
 	private:
@@ -39,12 +39,12 @@ namespace HBL2
 		void SaveScene(Asset* asset);
 		void SaveScript(Asset* asset);
 
-		void DestroyTexture(Asset* asset);
-		void DestroyShader(Asset* asset);
-		void DestroyMaterial(Asset* asset);
-		void DestroyMesh(Asset* asset);
-		void DestroyScript(Asset* asset);
-		void DestroyScene(Asset* asset);
+		bool DestroyTexture(Asset* asset);
+		bool DestroyShader(Asset* asset);
+		bool DestroyMaterial(Asset* asset);
+		bool DestroyMesh(Asset* asset);
+		bool DestroyScript(Asset* asset);
+		bool DestroyScene(Asset* asset);
 
 		void UnloadTexture(Asset* asset);
 		void UnloadShader(Asset* asset);

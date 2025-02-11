@@ -38,22 +38,23 @@ namespace HBL2
 		{
 			if (destroy)
 			{
-				DestroyAsset(handle);
-
-				Asset* asset = GetAssetMetadata(handle);
-				if (asset != nullptr)
+				if (DestroyAsset(handle))
 				{
-					m_RegisteredAssetMap.erase(asset->UUID);
-				}
+					Asset* asset = GetAssetMetadata(handle);
+					if (asset != nullptr)
+					{
+						m_RegisteredAssetMap.erase(asset->UUID);
+					}
 
-				auto assetIterator = std::find(m_RegisteredAssets.begin(), m_RegisteredAssets.end(), handle);
+					auto assetIterator = std::find(m_RegisteredAssets.begin(), m_RegisteredAssets.end(), handle);
 				
-				if (assetIterator != m_RegisteredAssets.end())
-				{
-					m_RegisteredAssets.erase(assetIterator);
-				}
+					if (assetIterator != m_RegisteredAssets.end())
+					{
+						m_RegisteredAssets.erase(assetIterator);
+					}
 
-				m_AssetPool.Remove(handle);
+					m_AssetPool.Remove(handle);
+				}
 			}
 			else
 			{
@@ -137,7 +138,7 @@ namespace HBL2
 	protected:
 		virtual uint32_t LoadAsset(Handle<Asset> handle) = 0;
 		virtual void UnloadAsset(Handle<Asset> handle) = 0;
-		virtual void DestroyAsset(Handle<Asset> handle) = 0;
+		virtual bool DestroyAsset(Handle<Asset> handle) = 0;
 
 	private:
 		Pool<Asset, Asset> m_AssetPool;
