@@ -56,4 +56,9 @@ namespace HBL2
 			.initialData = nullptr,
 		});
 	}
+
+	void TextureUtilities::DeleteWhiteTexture()
+	{
+		ResourceManager::Instance->DeleteTexture(WhiteTexture);
+	}
 }

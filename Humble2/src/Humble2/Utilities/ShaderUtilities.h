@@ -131,6 +131,7 @@ namespace HBL2
 		const ReflectionData& GetReflectionData(const std::string& shaderFilePath) { return m_ShaderReflectionData[shaderFilePath]; }
 
 		void LoadBuiltInShaders();
+		void DeleteBuiltInShaders();
 
 		Handle<Shader> GetBuiltInShader(BuiltInShader shader) { return m_Shaders[shader]; }
 		Handle<BindGroupLayout> GetBuiltInShaderLayout(BuiltInShader shader) { return m_ShaderLayouts[shader]; }

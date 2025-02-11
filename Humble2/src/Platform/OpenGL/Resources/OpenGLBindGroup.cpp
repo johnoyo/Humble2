@@ -65,7 +65,11 @@ namespace HBL2
 		
 		for (int i = 0; i < Buffers.size(); i++)
 		{
-			rm->DeleteBuffer(Buffers[i].buffer);
+			// If the range is not 0, this means its a dynamic uniform buffer meaning that is shared across bindgroup, so do not delete.
+			if (Buffers[i].range == 0)
+			{
+				rm->DeleteBuffer(Buffers[i].buffer);
+			}
 		}
 
 		for (int i = 0; i < Textures.size(); i++)

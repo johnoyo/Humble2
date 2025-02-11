@@ -437,67 +437,74 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
-					auto relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(materialNameBuffer) + ".mat"), HBL2::Project::GetAssetDirectory());
+					if (!shaderAssetHandle.IsValid())
+					{
+						HBL2_CORE_WARN("Shader field cannot be left blank. Please select the shader you want to use in your material.");
+					}
+					else
+					{
+						auto relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(materialNameBuffer) + ".mat"), HBL2::Project::GetAssetDirectory());
 
-					auto materialAssetHandle = AssetManager::Instance->CreateAsset({
-						.debugName = "material-asset",
-						.filePath = relativePath,
-						.type = AssetType::Material,
+						auto materialAssetHandle = AssetManager::Instance->CreateAsset({
+							.debugName = "material-asset",
+							.filePath = relativePath,
+							.type = AssetType::Material,
 						});
 
-					if (materialAssetHandle.IsValid())
-					{
-						ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, m_SelectedMaterialType);
-					}
+						if (materialAssetHandle.IsValid())
+						{
+							ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, m_SelectedMaterialType);
+						}
 
-					std::ofstream fout(m_CurrentDirectory / (std::string(materialNameBuffer) + ".mat"), 0);
+						std::ofstream fout(m_CurrentDirectory / (std::string(materialNameBuffer) + ".mat"), 0);
 
-					YAML::Emitter out;
-					out << YAML::BeginMap;
-					out << YAML::Key << "Material" << YAML::Value;
-					out << YAML::BeginMap;
-					out << YAML::Key << "Shader" << YAML::Value << AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->UUID;
-					out << YAML::Key << "AlbedoColor" << YAML::Value << glm::vec4(color[0], color[1], color[2], color[3]);
-					out << YAML::Key << "Metalicness" << YAML::Value << metalicness;
-					out << YAML::Key << "Roughness" << YAML::Value << roughness;
-					if (albedoMapHandle.IsValid())
-					{
-						out << YAML::Key << "AlbedoMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(albedoMapAssetHandle)->UUID;
-					}
-					else
-					{
-						out << YAML::Key << "AlbedoMap" << YAML::Value << (UUID)0;
-					}
-					if (normalMapHandle.IsValid())
-					{
-						out << YAML::Key << "NormalMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(normalMapAssetHandle)->UUID;
-					}
-					else
-					{
-						out << YAML::Key << "NormalMap" << YAML::Value << (UUID)0;
-					}
-					if (metallicMapHandle.IsValid())
-					{
-						out << YAML::Key << "MetallicMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(metallicMapAssetHandle)->UUID;
-					}
-					else
-					{
-						out << YAML::Key << "MetallicMap" << YAML::Value << (UUID)0;
-					}
-					if (roughnessMapHandle.IsValid())
-					{
-						out << YAML::Key << "RoughnessMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(roughnessMapAssetHandle)->UUID;
-					}
-					else
-					{
-						out << YAML::Key << "RoughnessMap" << YAML::Value << (UUID)0;
-					}
-					out << YAML::EndMap;
-					out << YAML::EndMap;
-					fout << out.c_str();
-					fout.close();
+						YAML::Emitter out;
+						out << YAML::BeginMap;
+						out << YAML::Key << "Material" << YAML::Value;
+						out << YAML::BeginMap;
+						out << YAML::Key << "Shader" << YAML::Value << AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->UUID;
+						out << YAML::Key << "AlbedoColor" << YAML::Value << glm::vec4(color[0], color[1], color[2], color[3]);
+						out << YAML::Key << "Metalicness" << YAML::Value << metalicness;
+						out << YAML::Key << "Roughness" << YAML::Value << roughness;
+						if (albedoMapHandle.IsValid())
+						{
+							out << YAML::Key << "AlbedoMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(albedoMapAssetHandle)->UUID;
+						}
+						else
+						{
+							out << YAML::Key << "AlbedoMap" << YAML::Value << (UUID)0;
+						}
+						if (normalMapHandle.IsValid())
+						{
+							out << YAML::Key << "NormalMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(normalMapAssetHandle)->UUID;
+						}
+						else
+						{
+							out << YAML::Key << "NormalMap" << YAML::Value << (UUID)0;
+						}
+						if (metallicMapHandle.IsValid())
+						{
+							out << YAML::Key << "MetallicMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(metallicMapAssetHandle)->UUID;
+						}
+						else
+						{
+							out << YAML::Key << "MetallicMap" << YAML::Value << (UUID)0;
+						}
+						if (roughnessMapHandle.IsValid())
+						{
+							out << YAML::Key << "RoughnessMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(roughnessMapAssetHandle)->UUID;
+						}
+						else
+						{
+							out << YAML::Key << "RoughnessMap" << YAML::Value << (UUID)0;
+						}
+						out << YAML::EndMap;
+						out << YAML::EndMap;
+						fout << out.c_str();
+						fout.close();
 
-					m_OpenMaterialSetupPopup = false;
+						m_OpenMaterialSetupPopup = false;
+					}
 				}
 
 				ImGui::SameLine();

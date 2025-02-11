@@ -119,8 +119,6 @@ namespace HBL2
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
 
-		m_ResourceManager->DeleteTexture(TextureUtilities::Get().WhiteTexture);
-
 		TempUniformRingBuffer->Free();
 
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
@@ -184,7 +182,7 @@ namespace HBL2
 			.debugName = "unlit-colored-bind-group",
 			.layout = m_GlobalBindingsLayout2D,
 			.buffers = {
-				{.buffer = cameraBuffer2D },
+				{ .buffer = cameraBuffer2D },
 			}
 		});
 
@@ -227,8 +225,8 @@ namespace HBL2
 			.debugName = "global-bind-group",
 			.layout = m_GlobalBindingsLayout3D,
 			.buffers = {
-				{.buffer = cameraBuffer3D },
-				{.buffer = lightBuffer },
+				{ .buffer = cameraBuffer3D },
+				{ .buffer = lightBuffer },
 			}
 		});
 

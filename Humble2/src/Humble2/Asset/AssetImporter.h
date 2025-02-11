@@ -40,6 +40,9 @@ namespace HBL2
 		void SaveScript(Asset* asset);
 
 		void DestroyTexture(Asset* asset);
+		void DestroyShader(Asset* asset);
+		void DestroyMaterial(Asset* asset);
+		void DestroyMesh(Asset* asset);
 		void DestroyScript(Asset* asset);
 
 		void UnloadTexture(Asset* asset);

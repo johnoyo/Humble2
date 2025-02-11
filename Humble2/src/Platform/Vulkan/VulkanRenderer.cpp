@@ -132,9 +132,6 @@ namespace HBL2
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
 
-		m_ResourceManager->DeleteBindGroupLayout(ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::INVALID));
-		m_ResourceManager->DeleteBindGroupLayout(ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR));
-
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalBindings2D);
@@ -155,7 +152,6 @@ namespace HBL2
 		}
 
 		m_ResourceManager->DeleteTexture(m_DepthImage);
-		m_ResourceManager->DeleteTexture(TextureUtilities::Get().WhiteTexture);
 
 		TempUniformRingBuffer->Free();
 

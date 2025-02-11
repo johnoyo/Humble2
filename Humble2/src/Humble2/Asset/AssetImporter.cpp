@@ -82,6 +82,15 @@ namespace HBL2
 		case AssetType::Texture:
 			DestroyTexture(asset);
 			break;
+		case AssetType::Shader:
+			DestroyShader(asset);
+			break;
+		case AssetType::Material:
+			DestroyMaterial(asset);
+			break;
+		case AssetType::Mesh:
+			DestroyMesh(asset);
+			break;
 		case AssetType::Script:
 			DestroyScript(asset);
 			break;
@@ -351,7 +360,7 @@ namespace HBL2
 			const std::string& materialName = asset->FilePath.filename().stem().string();
 
 			Handle<BindGroup> drawBindings;
-			uint32_t dynamicUniformBufferRange = type == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData);
+			uint32_t dynamicUniformBufferRange = (type == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData));
 
 			if (normalMapHandle.IsValid() && metallicMapHandle.IsValid() && roughnessMapHandle.IsValid())
 			{
@@ -656,9 +665,36 @@ namespace HBL2
 			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
 		}
 
+		const std::string& metafilePath = asset->FilePath.string() + ".hbltexture";
+
 		try
 		{
 			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture"))
+			{
+				HBL2_CORE_INFO("File {} deleted.", metafilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", metafilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", metafilePath);
+		}
+	}
+
+	void AssetImporter::DestroyShader(Asset* asset)
+	{
+		if (asset->Loaded)
+		{
+			UnloadShader(asset);
+		}
+
+		// Delete files
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath)))
 			{
 				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
 			}
@@ -670,6 +706,110 @@ namespace HBL2
 		catch (const std::filesystem::filesystem_error& err)
 		{
 			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+		}
+
+		const std::string& metafilePath = asset->FilePath.string() + ".hblshader";
+
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblshader"))
+			{
+				HBL2_CORE_INFO("File {} deleted.", metafilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", metafilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", metafilePath);
+		}
+	}
+
+	void AssetImporter::DestroyMaterial(Asset* asset)
+	{
+		if (asset->Loaded)
+		{
+			UnloadMaterial(asset);
+		}
+
+		// Delete files
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath)))
+			{
+				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", asset->FilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+		}
+
+		const std::string& metafilePath = asset->FilePath.string() + ".hblmat";
+
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmat"))
+			{
+				HBL2_CORE_INFO("File {} deleted.", metafilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", metafilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", metafilePath);
+		}
+	}
+
+	void AssetImporter::DestroyMesh(Asset* asset)
+	{
+		if (asset->Loaded)
+		{
+			UnloadMesh(asset);
+		}
+
+		// Delete files
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath)))
+			{
+				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", asset->FilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+		}
+
+		const std::string& metafilePath = asset->FilePath.string() + ".hblmesh";
+
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmesh"))
+			{
+				HBL2_CORE_INFO("File {} deleted.", metafilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", metafilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", metafilePath);
 		}
 	}
 
@@ -697,20 +837,23 @@ namespace HBL2
 			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
 		}
 
+		const std::string& metafilePath = asset->FilePath.string() + ".hblscript";
+
 		try
 		{
+
 			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscript"))
 			{
-				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
+				HBL2_CORE_INFO("File {} deleted.", metafilePath);
 			}
 			else
 			{
-				HBL2_CORE_WARN("File {} not found.", asset->FilePath);
+				HBL2_CORE_WARN("File {} not found.", metafilePath);
 			}
 		}
 		catch (const std::filesystem::filesystem_error& err)
 		{
-			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", asset->FilePath);
+			HBL2_CORE_ERROR("Filesystem error when trying to delete {}.", metafilePath);
 		}
 	}
 
@@ -786,6 +929,9 @@ namespace HBL2
 		}
 
 		ResourceManager::Instance->DeleteMesh(meshAssetHandle);
+
+		asset->Loaded = false;
+		asset->Indentifier = 0;
 	}
 
 	void AssetImporter::UnloadMaterial(Asset* asset)
@@ -806,8 +952,10 @@ namespace HBL2
 
 		Material* material = ResourceManager::Instance->GetMaterial(materialAssetHandle);
 
-		ResourceManager::Instance->DeleteShader(material->Shader);
-		ResourceManager::Instance->DeleteBindGroup(material->BindGroup);
+		ResourceManager::Instance->DeleteMaterial(materialAssetHandle);
+
+		asset->Loaded = false;
+		asset->Indentifier = 0;
 	}
 	
 	void AssetImporter::UnloadScript(Asset* asset)

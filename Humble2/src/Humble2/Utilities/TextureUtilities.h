@@ -26,6 +26,7 @@ namespace HBL2
 		void CreateAssetMetadataFile(Handle<Asset> handle);
 
 		void LoadWhiteTexture();
+		void DeleteWhiteTexture();
 
 		Handle<Texture> WhiteTexture;
 

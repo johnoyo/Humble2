@@ -521,6 +521,23 @@ namespace HBL2
 		}
 	}
 
+	void ShaderUtilities::DeleteBuiltInShaders()
+	{
+		for (auto& [shaderType, layoutHandle] : m_ShaderLayouts)
+		{
+			ResourceManager::Instance->DeleteBindGroupLayout(layoutHandle);
+		}
+
+		m_ShaderLayouts.clear();
+
+		for (auto& [shaderType, shaderHandle] : m_Shaders)
+		{
+			ResourceManager::Instance->DeleteShader(shaderHandle);
+		}
+
+		m_Shaders.clear();
+	}
+
 	void ShaderUtilities::CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType)
 	{
 		std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(handle)->FilePath).string() + ".hblshader", 0);
