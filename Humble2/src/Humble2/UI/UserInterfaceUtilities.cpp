@@ -196,6 +196,131 @@ namespace HBL2
 					}					
 				}
 			}
+			else if (value.type() == entt::resolve<Handle<Sound>>(cxt->GetMetaContext()))
+			{
+				Handle<Sound>* soundHandle = value.try_cast<Handle<Sound>>();
+				if (soundHandle)
+				{
+					uint32_t soundHandlePacked = soundHandle->Pack();
+					ImGui::InputScalar(memberName, ImGuiDataType_U32, (void*)(intptr_t*)&soundHandlePacked);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Sound"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							if (assetHandle.IsValid())
+							{
+								data.set(componentMeta, AssetManager::Instance->GetAsset<Sound>(assetHandle));
+							}
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Shader>>(cxt->GetMetaContext()))
+			{
+				Handle<Shader>* shaderHandle = value.try_cast<Handle<Shader>>();
+				if (shaderHandle)
+				{
+					uint32_t shaderHandlePacked = shaderHandle->Pack();
+					ImGui::InputScalar(memberName, ImGuiDataType_U32, (void*)(intptr_t*)&shaderHandlePacked);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Shader"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							if (assetHandle.IsValid())
+							{
+								data.set(componentMeta, AssetManager::Instance->GetAsset<Shader>(assetHandle));
+							}
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Material>>(cxt->GetMetaContext()))
+			{
+				Handle<Material>* materialHandle = value.try_cast<Handle<Material>>();
+				if (materialHandle)
+				{
+					uint32_t materialHandlePacked = materialHandle->Pack();
+					ImGui::InputScalar(memberName, ImGuiDataType_U32, (void*)(intptr_t*)&materialHandlePacked);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							if (assetHandle.IsValid())
+							{
+								data.set(componentMeta, AssetManager::Instance->GetAsset<Material>(assetHandle));
+							}
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Mesh>>(cxt->GetMetaContext()))
+			{
+				Handle<Mesh>* meshHandle = value.try_cast<Handle<Mesh>>();
+				if (meshHandle)
+				{
+					uint32_t meshHandlePacked = meshHandle->Pack();
+					ImGui::InputScalar(memberName, ImGuiDataType_U32, (void*)(intptr_t*)&meshHandlePacked);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							if (assetHandle.IsValid())
+							{
+								data.set(componentMeta, AssetManager::Instance->GetAsset<Mesh>(assetHandle));
+							}
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Texture>>(cxt->GetMetaContext()))
+			{
+				Handle<Texture>* textureHandle = value.try_cast<Handle<Texture>>();
+				if (textureHandle)
+				{
+					uint32_t textureHandlePacked = textureHandle->Pack();
+					ImGui::InputScalar(memberName, ImGuiDataType_U32, (void*)(intptr_t*)&textureHandlePacked);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							if (assetHandle.IsValid())
+							{
+								data.set(componentMeta, AssetManager::Instance->GetAsset<Texture>(assetHandle));
+							}
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+				}
+			}
 		}
 		else
 		{
@@ -284,19 +409,13 @@ namespace HBL2
 					const auto& assetHandles = AssetManager::Instance->GetRegisteredAssets();
 
 					Asset* sceneAsset = nullptr;
-					bool sceneFound = false;
 
 					for (auto handle : assetHandles)
 					{
 						Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-						if (asset->Type == AssetType::Scene && asset->Indentifier != 0 && asset->Indentifier == sceneHandle->Pack() && !sceneFound)
+						if (asset->Type == AssetType::Scene && asset->Indentifier != 0 && asset->Indentifier == sceneHandle->Pack())
 						{
-							sceneFound = true;
 							sceneAsset = asset;
-						}
-
-						if (sceneFound)
-						{
 							break;
 						}
 					}
@@ -304,6 +423,151 @@ namespace HBL2
 					if (sceneAsset != nullptr)
 					{
 						out << YAML::Key << memberName << YAML::Value << sceneAsset->UUID;
+					}
+					else
+					{
+						out << YAML::Key << memberName << YAML::Value << (UUID)0;
+					}
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Sound>>(cxt->GetMetaContext()))
+			{
+				Handle<Sound>* soundHandle = value.try_cast<Handle<Sound>>();
+				if (soundHandle)
+				{
+					const auto& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+					Asset* soundAsset = nullptr;
+
+					for (auto handle : assetHandles)
+					{
+						Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+						if (asset->Type == AssetType::Sound && asset->Indentifier != 0 && asset->Indentifier == soundHandle->Pack())
+						{
+							soundAsset = asset;
+							break;
+						}
+					}
+
+					if (soundAsset != nullptr)
+					{
+						out << YAML::Key << memberName << YAML::Value << soundAsset->UUID;
+					}
+					else
+					{
+						out << YAML::Key << memberName << YAML::Value << (UUID)0;
+					}
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Shader>>(cxt->GetMetaContext()))
+			{
+				Handle<Shader>* shaderHandle = value.try_cast<Handle<Shader>>();
+				if (shaderHandle)
+				{
+					const auto& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+					Asset* shaderAsset = nullptr;
+
+					for (auto handle : assetHandles)
+					{
+						Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+						if (asset->Type == AssetType::Shader && asset->Indentifier != 0 && asset->Indentifier == shaderHandle->Pack())
+						{
+							shaderAsset = asset;
+							break;
+						}
+					}
+
+					if (shaderAsset != nullptr)
+					{
+						out << YAML::Key << memberName << YAML::Value << shaderAsset->UUID;
+					}
+					else
+					{
+						out << YAML::Key << memberName << YAML::Value << (UUID)0;
+					}
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Material>>(cxt->GetMetaContext()))
+			{
+				Handle<Material>* materialHandle = value.try_cast<Handle<Material>>();
+				if (materialHandle)
+				{
+					const auto& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+					Asset* materialAsset = nullptr;
+
+					for (auto handle : assetHandles)
+					{
+						Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+						if (asset->Type == AssetType::Material && asset->Indentifier != 0 && asset->Indentifier == materialHandle->Pack())
+						{
+							materialAsset = asset;
+							break;
+						}
+					}
+
+					if (materialAsset != nullptr)
+					{
+						out << YAML::Key << memberName << YAML::Value << materialAsset->UUID;
+					}
+					else
+					{
+						out << YAML::Key << memberName << YAML::Value << (UUID)0;
+					}
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Mesh>>(cxt->GetMetaContext()))
+			{
+				Handle<Mesh>* meshHandle = value.try_cast<Handle<Mesh>>();
+				if (meshHandle)
+				{
+					const auto& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+					Asset* meshAsset = nullptr;
+
+					for (auto handle : assetHandles)
+					{
+						Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+						if (asset->Type == AssetType::Mesh && asset->Indentifier != 0 && asset->Indentifier == meshHandle->Pack())
+						{
+							meshAsset = asset;
+							break;
+						}
+					}
+
+					if (meshAsset != nullptr)
+					{
+						out << YAML::Key << memberName << YAML::Value << meshAsset->UUID;
+					}
+					else
+					{
+						out << YAML::Key << memberName << YAML::Value << (UUID)0;
+					}
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Texture>>(cxt->GetMetaContext()))
+			{
+				Handle<Texture>* textureHandle = value.try_cast<Handle<Texture>>();
+				if (textureHandle)
+				{
+					const auto& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+					Asset* textureAsset = nullptr;
+
+					for (auto handle : assetHandles)
+					{
+						Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+						if (asset->Type == AssetType::Texture && asset->Indentifier != 0 && asset->Indentifier == textureHandle->Pack())
+						{
+							textureAsset = asset;
+							break;
+						}
+					}
+
+					if (textureAsset != nullptr)
+					{
+						out << YAML::Key << memberName << YAML::Value << textureAsset->UUID;
 					}
 					else
 					{
@@ -386,6 +650,41 @@ namespace HBL2
 				if (value.try_cast<Handle<Scene>>())
 				{
 					data.set(componentMeta, AssetManager::Instance->GetAsset<Scene>(node[memberName].as<UUID>()));
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Sound>>(cxt->GetMetaContext()))
+			{
+				if (value.try_cast<Handle<Sound>>())
+				{
+					data.set(componentMeta, AssetManager::Instance->GetAsset<Sound>(node[memberName].as<UUID>()));
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Shader>>(cxt->GetMetaContext()))
+			{
+				if (value.try_cast<Handle<Shader>>())
+				{
+					data.set(componentMeta, AssetManager::Instance->GetAsset<Shader>(node[memberName].as<UUID>()));
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Material>>(cxt->GetMetaContext()))
+			{
+				if (value.try_cast<Handle<Material>>())
+				{
+					data.set(componentMeta, AssetManager::Instance->GetAsset<Material>(node[memberName].as<UUID>()));
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Mesh>>(cxt->GetMetaContext()))
+			{
+				if (value.try_cast<Handle<Mesh>>())
+				{
+					data.set(componentMeta, AssetManager::Instance->GetAsset<Mesh>(node[memberName].as<UUID>()));
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Texture>>(cxt->GetMetaContext()))
+			{
+				if (value.try_cast<Handle<Texture>>())
+				{
+					data.set(componentMeta, AssetManager::Instance->GetAsset<Texture>(node[memberName].as<UUID>()));
 				}
 			}
 		}
