@@ -11,8 +11,16 @@ public:
 
 	virtual void OnUpdate(float ts) override
 	{
-		HBL2_INFO("Hello!");
-		NewHelperScript::Print();
+		m_Context->GetRegistry()
+			.view<NewComponent>()
+			.each([&](NewComponent& newComponent)
+			{
+				if (HBL2::Input::GetKeyPress(GLFW_KEY_C))
+				{
+					HBL2_INFO("Hello!");
+					HBL2::SceneManager::Get().LoadScene(newComponent.SceneHandle);
+				}
+			});
 	}
 };
 

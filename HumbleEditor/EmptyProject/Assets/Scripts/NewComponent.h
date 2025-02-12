@@ -6,11 +6,11 @@
 HBL2_COMPONENT(NewComponent,
 {
     int Value = 1;
-    int Value2 = 2;
+	HBL2::Handle<HBL2::Scene> SceneHandle = {};
 })
 
 // Register members
 REGISTER_HBL2_COMPONENT(NewComponent,
 	HBL2_COMPONENT_MEMBER(NewComponent, Value)
-	HBL2_COMPONENT_MEMBER(NewComponent, Value2)
+	HBL2_COMPONENT_MEMBER(NewComponent, SceneHandle)
 )
