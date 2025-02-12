@@ -1,6 +1,7 @@
 #include "UserInterfaceUtilities.h"
 
 #include "Utilities\YamlUtilities.h"
+#include "Resources\Types.h"
 
 namespace HBL2
 {
