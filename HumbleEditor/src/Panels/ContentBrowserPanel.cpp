@@ -146,7 +146,7 @@ namespace HBL2
 
 					AssetManager::Instance->SaveAsset(assetHandle);
 
-					HBL2::SceneManager::Get().LoadScene(assetHandle);
+					HBL2::SceneManager::Get().LoadScene(assetHandle, false);
 
 					m_EditorScenePath = filepath;
 

@@ -92,7 +92,7 @@ namespace HBL2
 						Scene::Copy(m_ActiveScene, newScene);
 						AssetManager::Instance->SaveAsset(assetHandle);
 
-						SceneManager::Get().LoadScene(assetHandle);
+						SceneManager::Get().LoadScene(assetHandle, false);
 
 						m_EditorScenePath = filepath;
 					}
@@ -109,7 +109,7 @@ namespace HBL2
 
 						AssetManager::Instance->SaveAsset(assetHandle);
 
-						HBL2::SceneManager::Get().LoadScene(assetHandle);
+						HBL2::SceneManager::Get().LoadScene(assetHandle, false);
 
 						m_EditorScenePath = filepath;
 					}
@@ -120,7 +120,7 @@ namespace HBL2
 						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
 						UUID sceneUUID = std::hash<std::string>()(relativePath.string());
 
-						HBL2::SceneManager::Get().LoadScene(AssetManager::Instance->GetHandleFromUUID(sceneUUID));
+						HBL2::SceneManager::Get().LoadScene(AssetManager::Instance->GetHandleFromUUID(sceneUUID), false);
 
 						m_EditorScenePath = filepath;
 					}

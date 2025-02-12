@@ -66,7 +66,7 @@ namespace HBL2
 						return;
 					}
 
-					HBL2::SceneManager::Get().LoadScene(sceneAssetHandle);
+					HBL2::SceneManager::Get().LoadScene(sceneAssetHandle, false);
 
 					m_EditorScenePath = path;
 

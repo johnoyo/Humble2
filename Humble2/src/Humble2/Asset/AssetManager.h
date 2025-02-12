@@ -80,7 +80,7 @@ namespace HBL2
 		template<typename T>
 		Handle<T> GetAsset(Handle<Asset> handle)
 		{
-			if (!handle.IsValid())
+			if (!IsAssetValid(handle))
 			{
 				return Handle<T>();
 			}

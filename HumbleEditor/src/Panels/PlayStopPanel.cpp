@@ -18,7 +18,7 @@ namespace HBL2
 					auto playSceneHandle = ResourceManager::Instance->CreateScene({ .name = m_ActiveScene->GetName() + "(Clone)" });
 					Scene* playScene = ResourceManager::Instance->GetScene(playSceneHandle);
 					Scene::Copy(m_ActiveScene, playScene);
-					SceneManager::Get().LoadScene(playSceneHandle, true);
+					SceneManager::Get().LoadPlaymodeScene(playSceneHandle, true);
 				}
 
 				isPlaying = true;
@@ -32,7 +32,7 @@ namespace HBL2
 
 				if (m_ActiveSceneTemp.IsValid())
 				{
-					SceneManager::Get().LoadScene(m_ActiveSceneTemp);
+					SceneManager::Get().LoadPlaymodeScene(m_ActiveSceneTemp, false);
 					m_ActiveSceneTemp = {};
 				}
 

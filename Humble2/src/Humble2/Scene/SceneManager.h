@@ -23,11 +23,18 @@ namespace HBL2
 
 		static SceneManager& Get();
 
-		void LoadScene(Handle<Asset> sceneAssetHandle, bool runtime = false);
+		void LoadScene(Handle<Asset> sceneAssetHandle) { LoadScene(sceneAssetHandle, true); }
+		void LoadScene(Handle<Scene> sceneHandle) { LoadScene(sceneHandle, true); }
 
 	private:
-		void LoadScene(Handle<Scene> sceneHandle, bool runtime = false);
+		void LoadPlaymodeScene(Handle<Scene> sceneHandle, bool runtime);
+		void LoadScene(Handle<Asset> sceneAssetHandle, bool runtime);
+		void LoadScene(Handle<Scene> sceneHandle, bool runtime);
 		void LoadSceneDeffered();
+
+		void LoadSceneFromAsset();
+		void LoadSceneFromResource();
+		void LoadSceneFromResourceForPlaymode();
 
 		bool SceneChangeRequested = false;
 
@@ -40,7 +47,16 @@ namespace HBL2
 		Handle<Scene> m_CurrentSceneHandle;
 		Handle<Asset> m_CurrentSceneAssetHandle;
 
+		enum class SceneChangeSource
+		{
+			None = 0,
+			Asset,
+			Resource,
+			ResourcePlayMode,
+		};
+
 		bool m_RuntimeSceneChange = false;
+		SceneChangeSource m_SceneChangeSource = SceneChangeSource::None;
 
 		friend class Project;
 		friend class Application;

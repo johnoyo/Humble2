@@ -171,6 +171,31 @@ namespace HBL2
 					}
 				}
 			}
+			else if (value.type() == entt::resolve<Handle<Scene>>(cxt->GetMetaContext()))
+			{
+				Handle<Scene>* sceneHandle = value.try_cast<Handle<Scene>>();
+				if (sceneHandle)
+				{
+					uint32_t sceneHandlePacked = sceneHandle->Pack();
+					ImGui::InputScalar(memberName, ImGuiDataType_U32, (void*)(intptr_t*)&sceneHandlePacked);
+					
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Scene"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							if (assetHandle.IsValid())
+							{
+								data.set(componentMeta, AssetManager::Instance->GetAsset<Scene>(assetHandle));
+							}
+
+							ImGui::EndDragDropTarget();
+						}
+					}					
+				}
+			}
 		}
 		else
 		{
@@ -251,6 +276,41 @@ namespace HBL2
 					out << YAML::Key << memberName << YAML::Value << *flag;
 				}
 			}
+			else if (value.type() == entt::resolve<Handle<Scene>>(cxt->GetMetaContext()))
+			{
+				Handle<Scene>* sceneHandle = value.try_cast<Handle<Scene>>();
+				if (sceneHandle)
+				{
+					const auto& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+					Asset* sceneAsset = nullptr;
+					bool sceneFound = false;
+
+					for (auto handle : assetHandles)
+					{
+						Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+						if (asset->Type == AssetType::Scene && asset->Indentifier != 0 && asset->Indentifier == sceneHandle->Pack() && !sceneFound)
+						{
+							sceneFound = true;
+							sceneAsset = asset;
+						}
+
+						if (sceneFound)
+						{
+							break;
+						}
+					}
+
+					if (sceneAsset != nullptr)
+					{
+						out << YAML::Key << memberName << YAML::Value << sceneAsset->UUID;
+					}
+					else
+					{
+						out << YAML::Key << memberName << YAML::Value << (UUID)0;
+					}
+				}
+			}
 		}
 		else
 		{
@@ -319,6 +379,13 @@ namespace HBL2
 				if (value.try_cast<bool>())
 				{
 					data.set(componentMeta, node[memberName].as<bool>());
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Scene>>(cxt->GetMetaContext()))
+			{
+				if (value.try_cast<Handle<Scene>>())
+				{
+					data.set(componentMeta, AssetManager::Instance->GetAsset<Scene>(node[memberName].as<UUID>()));
 				}
 			}
 		}
