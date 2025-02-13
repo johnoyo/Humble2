@@ -9,6 +9,7 @@
 namespace HBL2
 {
 	struct MeshData;
+	struct Vertex;
 
 	class UFbxLoader
 	{

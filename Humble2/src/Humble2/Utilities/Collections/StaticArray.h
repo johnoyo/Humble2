@@ -1,21 +1,25 @@
 #pragma once
 
+#include <stdint.h>
+
 namespace HBL2
 {
-	template<typename T, size_t N>
+	template<typename T, uint32_t N>
 	class StaticArray
 	{
 	public:
-		T Data[N];
+		T& operator[](uint32_t i) { return m_Data[i]; }
+		const T& operator[](uint32_t i) { return Data[i]; }
 
-		T& operator[](size_t i) { return Data[i]; }
-		const T& operator[](size_t i) { return Data[i]; }
+		uint32_t Size() { return N; }
+		T* Data() { return m_Data; }
 
-		size_t Size() { return N; }
+		T* begin() { return m_Data; }
+		T* end() { return m_Data + N; }
+		const T* begin() const { return m_Data; }
+		const T* end() const { return m_Data + N; }
 
-		T* begin() { return Data; }
-		T* end() { return Data + N; }
-		const T* begin() const { return Data; }
-		const T* end() const { return Data + N; }
+	private:
+		T m_Data[N];
 	};
 }

@@ -42,28 +42,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <stb_image/stb_image.h>
 
-namespace HBL
-{
-	struct Buffer
-	{
-		glm::vec3 Position;
-		glm::vec4 Color;
-		glm::vec2 TextureCoord;
-		float TextureID;
-		glm::vec3 Normal;
-	};
-}
-
-struct Vertex
-{
-	glm::vec3 Position;
-	glm::vec3 Normal;
-	glm::vec2 UV;
-	//glm::vec4 Color;
-	//glm::vec3 Tangent;
-};
-
 namespace HBL2
 {
 	using UUID = uint64_t;
+
+	constexpr size_t operator"" B (unsigned long long value) { return value; }
+	constexpr size_t operator"" KB(unsigned long long value) { return value * 1024; }
+	constexpr size_t operator"" MB(unsigned long long value) { return value * 1024 * 1024; }
+	constexpr size_t operator"" GB(unsigned long long value) { return value * 1024 * 1024 * 1024; }
 }
