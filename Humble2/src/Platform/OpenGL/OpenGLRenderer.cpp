@@ -44,21 +44,6 @@ namespace HBL2
 		TempUniformRingBuffer->Invalidate();
 	}
 
-	void OpenGLRenderer::SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData)
-	{
-		OpenGLBuffer* openGLBuffer = m_ResourceManager->GetBuffer(buffer);
-		openGLBuffer->Data = newData;
-	}
-
-	void OpenGLRenderer::SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData)
-	{
-		OpenGLBindGroup* openGLBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
-		if (bufferIndex < openGLBindGroup->Buffers.size())
-		{
-			SetBufferData(openGLBindGroup->Buffers[bufferIndex].buffer, openGLBindGroup->Buffers[bufferIndex].byteOffset, newData);
-		}
-	}
-
 	void OpenGLRenderer::Draw(Handle<Mesh> mesh)
 	{
 		Mesh* openGLMesh = m_ResourceManager->GetMesh(mesh);

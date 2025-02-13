@@ -65,11 +65,17 @@ namespace HBL2
 
 		switch (asset->Type)
 		{
+		case AssetType::Material:
+			SaveMaterial(asset);
+			break;
 		case AssetType::Scene:
 			SaveScene(asset);
 			break;
 		case AssetType::Script:
 			SaveScript(asset);
+			break;
+		case AssetType::Sound:
+			SaveSound(asset);
 			break;
 		}
 	}
@@ -353,7 +359,7 @@ namespace HBL2
 			UUID roughnessMapUUID = materialProperties["RoughnessMap"].as<UUID>();
 
 			glm::vec4 albedoColor = materialProperties["AlbedoColor"].as<glm::vec4>();
-			float glossiness = materialProperties["Metalicness"].as<float>();
+			float glossiness = materialProperties["Glossiness"].as<float>();
 
 			auto shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
 			auto albedoMapHandle = AssetManager::Instance->GetAsset<Texture>(albedoMapUUID);
@@ -582,6 +588,50 @@ namespace HBL2
 
 	/// Save methods
 
+	void AssetImporter::SaveMaterial(Asset* asset)
+	{
+		Handle<Material> materialHandle = Handle<Material>::UnPack(asset->Indentifier);
+
+		if (!materialHandle.IsValid())
+		{
+			HBL2_CORE_ERROR("Could not save asset {0} at path: {1}, because the handle is invalid.", asset->DebugName, asset->FilePath.string());
+			return;
+		}
+
+		Material* mat = ResourceManager::Instance->GetMaterial(materialHandle);
+
+		std::fstream ioStream(Project::GetAssetFileSystemPath(asset->FilePath), std::ios::in | std::ios::out);
+
+		if (!ioStream.is_open())
+		{
+			HBL2_CORE_ERROR("Material file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath));
+			return;
+		}
+
+		std::stringstream ss;
+		ss << ioStream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Material"].IsDefined())
+		{
+			HBL2_CORE_TRACE("Material not found: {0}", ss.str());
+			ioStream.close();
+			return;
+		}
+
+		auto materialProperties = data["Material"];
+		if (materialProperties)
+		{
+			materialProperties["AlbedoColor"] = mat->AlbedoColor;
+			materialProperties["Glossiness"] = mat->Glossiness;
+		}
+
+		ioStream.seekg(0, std::ios::beg);
+		ioStream << data;
+
+		ioStream.close();
+	}
+
 	void AssetImporter::SaveScene(Asset* asset)
 	{
 		if (!asset->Loaded)
@@ -712,6 +762,57 @@ namespace HBL2
 		{
 			NativeScriptUtilities::Get().RegisterComponent(script->Name, activeScene);
 		}
+	}
+
+	void AssetImporter::SaveSound(Asset* asset)
+	{
+		Handle<Sound> soundHandle = Handle<Sound>::UnPack(asset->Indentifier);
+
+		if (!soundHandle.IsValid())
+		{
+			HBL2_CORE_ERROR("Could not save asset {0} at path: {1}, because the handle is invalid.", asset->DebugName, asset->FilePath.string());
+			return;
+		}
+
+		Sound* sound = ResourceManager::Instance->GetSound(soundHandle);
+
+		std::ifstream ifStream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblsound", std::ios::in);
+
+		if (!ifStream.is_open())
+		{
+			HBL2_CORE_ERROR("Sound file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblsound");
+			return;
+		}
+
+		std::stringstream ss;
+		ss << ifStream.rdbuf();
+		ifStream.close();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Sound"].IsDefined())
+		{
+			HBL2_CORE_TRACE("Sound not found: {0}", ss.str());
+			ifStream.close();
+			return;
+		}
+
+		auto soundProperties = data["Sound"];
+		if (soundProperties)
+		{
+			soundProperties["Loop"] = sound->Loop;
+			soundProperties["StartPaused"] = sound->StartPaused;
+		}
+
+		std::ofstream ofStream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblsound", std::ios::out);
+
+		if (!ofStream.is_open())
+		{
+			HBL2_CORE_ERROR("Sound file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblsound");
+			return;
+		}
+
+		ofStream << data;
+		ofStream.close();
 	}
 
 	/// Destroy methods

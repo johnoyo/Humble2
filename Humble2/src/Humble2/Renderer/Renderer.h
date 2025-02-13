@@ -76,9 +76,6 @@ namespace HBL2
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
 
-		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) = 0;
-		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) = 0;
-
 		virtual void Draw(Handle<Mesh> mesh) = 0;
 		virtual void DrawIndexed(Handle<Mesh> mesh) = 0;
 

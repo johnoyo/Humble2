@@ -87,9 +87,6 @@ namespace HBL2
 		virtual void* GetDepthAttachment() override { return nullptr; }
 		virtual void* GetColorAttachment() override { return m_ColorAttachmentID; }
 
-		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override;
-		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
-
 		virtual void Draw(Handle<Mesh> mesh) override {}
 		virtual void DrawIndexed(Handle<Mesh> mesh) override {}
 

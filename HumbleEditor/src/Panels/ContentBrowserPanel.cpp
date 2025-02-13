@@ -370,11 +370,8 @@ namespace HBL2
 				static float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 				ImGui::ColorEdit4("AlbedoColor", color);
 
-				static float metalicness = 1.0f;
-				ImGui::InputFloat("Metalicness", &metalicness, 0.05f);
-
-				static float roughness = 1.0f;
-				ImGui::InputFloat("Roughness", &roughness, 0.05f);
+				static float glossiness = 1.0f;
+				ImGui::InputFloat("Glossiness", &glossiness, 0.05f);
 
 				static uint32_t albedoMapHandlePacked = 0;
 				ImGui::InputScalar("AlbedoMap", ImGuiDataType_U32, (void*)(intptr_t*)&albedoMapHandlePacked);
@@ -509,8 +506,7 @@ namespace HBL2
 						out << YAML::BeginMap;
 						out << YAML::Key << "Shader" << YAML::Value << AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->UUID;
 						out << YAML::Key << "AlbedoColor" << YAML::Value << glm::vec4(color[0], color[1], color[2], color[3]);
-						out << YAML::Key << "Metalicness" << YAML::Value << metalicness;
-						out << YAML::Key << "Roughness" << YAML::Value << roughness;
+						out << YAML::Key << "Glossiness" << YAML::Value << glossiness;
 						if (albedoMapHandle.IsValid())
 						{
 							out << YAML::Key << "AlbedoMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(albedoMapAssetHandle)->UUID;
@@ -605,11 +601,23 @@ namespace HBL2
 
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 
-				ImGui::Button(entry.path().filename().string().c_str(), { thumbnailSize, thumbnailSize });
-
 				UUID assetUUID = std::hash<std::string>()(relativePath.string());
 				Handle<Asset> assetHandle = AssetManager::Instance->GetHandleFromUUID(assetUUID);
 				Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+				if (ImGui::Button(entry.path().filename().string().c_str(), { thumbnailSize, thumbnailSize }))
+				{
+					if (!entry.is_directory())
+					{
+						HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+						m_SelectedAsset = assetHandle;
+					}
+					else
+					{
+						HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+						m_SelectedAsset = {};
+					}
+				}
 
 				if (ImGui::BeginPopupContextItem())
 				{

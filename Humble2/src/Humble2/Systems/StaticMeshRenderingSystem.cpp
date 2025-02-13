@@ -71,7 +71,7 @@ namespace HBL2
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Opaque);
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_RenderPass, m_FrameBuffer);
 
-		Renderer::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData);
+		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData);
 
 		m_LightData.LightCount = 0;
 
@@ -88,7 +88,7 @@ namespace HBL2
 				}
 			});
 
-		Renderer::Instance->SetBufferData(globalBindings, 1, (void*)&m_LightData);
+		ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&m_LightData);
 
 		DrawList draws;
 

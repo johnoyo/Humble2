@@ -281,21 +281,6 @@ namespace HBL2
 		return vkCmdObj;
 	}
 
-	void VulkanRenderer::SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData)
-	{
-		VulkanBuffer* vulkanBuffer = m_ResourceManager->GetBuffer(buffer);
-		vulkanBuffer->Data = newData;
-	}
-
-	void VulkanRenderer::SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData)
-	{
-		VulkanBindGroup* vulkanBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
-		if (bufferIndex < vulkanBindGroup->Buffers.size())
-		{
-			SetBufferData(vulkanBindGroup->Buffers[bufferIndex].buffer, vulkanBindGroup->Buffers[bufferIndex].byteOffset, newData);
-		}
-	}
-
 	void VulkanRenderer::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function)
 	{
 		VkCommandBuffer cmd = m_UploadContext.CommandBuffer;

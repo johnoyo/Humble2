@@ -26,15 +26,16 @@ namespace HBL2
 			GLenum type;
 			GLenum internalFormat;
 
-			if (desc.aspect == TextureAspect::COLOR)
+			switch (desc.aspect)
 			{
+			case TextureAspect::COLOR:
 				type = GL_UNSIGNED_BYTE;
 				internalFormat = GL_RGBA;
-			}
-			else if(desc.aspect == TextureAspect::DEPTH)
-			{
+				break;
+			case TextureAspect::DEPTH:
 				type = GL_UNSIGNED_INT;
 				internalFormat = GL_DEPTH_COMPONENT;
+				break;
 			}
 
 			if (Data == nullptr && Dimensions.x == 1 && Dimensions.y == 1)

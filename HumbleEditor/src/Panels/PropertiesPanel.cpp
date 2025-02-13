@@ -536,6 +536,79 @@ namespace HBL2
 					ImGui::EndPopup();
 				}
 			}
+			else
+			{
+				if (m_SelectedAsset.IsValid())
+				{
+					Asset* asset = AssetManager::Instance->GetAssetMetadata(m_SelectedAsset);
+
+					if (asset == nullptr)
+					{
+						m_SelectedAsset = {};
+						return;
+					}
+
+					ImGui::Text(std::format("Asset: {}", asset->DebugName).c_str());
+					ImGui::Text(std::format("Asset UUID: {}", asset->UUID).c_str());
+
+					ImGui::NewLine();
+
+					switch (asset->Type)
+					{
+					case AssetType::Texture:
+						break;
+					case AssetType::Shader:
+						break;
+					case AssetType::Material:
+						{
+							Handle<Material> handle = AssetManager::Instance->GetAsset<Material>(m_SelectedAsset);
+							Material* mat = ResourceManager::Instance->GetMaterial(handle);
+
+							if (mat == nullptr)
+							{
+								break;
+							}
+
+							ImGui::Text(std::format("Name: {}", mat->DebugName).c_str());
+
+							ImGui::ColorEdit4("AlbedoColor", glm::value_ptr(mat->AlbedoColor));
+							ImGui::InputFloat("Glossiness", &mat->Glossiness, 0.05f);
+						}
+						break;
+					case AssetType::Mesh:
+						break;
+					case AssetType::Sound:
+						{
+							Handle<Sound> handle = AssetManager::Instance->GetAsset<Sound>(m_SelectedAsset);
+							Sound* sound = ResourceManager::Instance->GetSound(handle);
+
+							if (sound == nullptr)
+							{
+								break;
+							}
+
+							ImGui::Text(std::format("Name: {}", sound->Name).c_str());
+
+							ImGui::Checkbox("Loop", &sound->Loop);
+							ImGui::Checkbox("StartPaused", &sound->StartPaused);
+						}
+						break;
+					case AssetType::Scene:
+						break;
+					case AssetType::Script:
+						break;
+					default:
+						break;
+					}
+
+					ImGui::NewLine();
+
+					if (ImGui::Button("Save"))
+					{
+						AssetManager::Instance->SaveAsset(m_SelectedAsset);
+					}
+				}
+			}
 		}
 	}
 }

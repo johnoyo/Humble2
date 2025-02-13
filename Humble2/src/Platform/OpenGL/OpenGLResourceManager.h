@@ -66,6 +66,19 @@ namespace HBL2
 		{
 			return m_BufferPool.Get(handle)->Data;
 		}
+		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override
+		{
+			OpenGLBuffer* openGLBuffer = GetBuffer(buffer);
+			openGLBuffer->Data = newData;
+		}
+		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override
+		{
+			OpenGLBindGroup* openGLBindGroup = GetBindGroup(bindGroup);
+			if (bufferIndex < openGLBindGroup->Buffers.size())
+			{
+				SetBufferData(openGLBindGroup->Buffers[bufferIndex].buffer, openGLBindGroup->Buffers[bufferIndex].byteOffset, newData);
+			}
+		}
 		OpenGLBuffer* GetBuffer(Handle<Buffer> handle) const
 		{
 			return m_BufferPool.Get(handle);

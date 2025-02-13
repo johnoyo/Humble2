@@ -1,8 +1,7 @@
 Material:
   Shader: 14543399164346579054
   AlbedoColor: [0.965686262, 0.801118612, 0.0331363045, 1]
-  Metalicness: 1
-  Roughness: 1
+  Glossiness: 1
   AlbedoMap: 0
   NormalMap: 0
   MetallicMap: 0

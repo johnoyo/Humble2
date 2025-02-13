@@ -94,7 +94,7 @@ namespace HBL2
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::OpaqueSprite);
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_RenderPass, m_FrameBuffer);
 
-		Renderer::Instance->SetBufferData(globalBindings, 0, (void*)&vp);
+		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&vp);
 
 		DrawList draws;
 

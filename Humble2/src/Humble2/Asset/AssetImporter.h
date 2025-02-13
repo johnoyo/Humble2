@@ -37,8 +37,10 @@ namespace HBL2
 		Handle<Script> ImportScript(Asset* asset);
 		Handle<Sound> ImportSound(Asset* asset);
 
+		void SaveMaterial(Asset* asset);
 		void SaveScene(Asset* asset);
 		void SaveScript(Asset* asset);
+		void SaveSound(Asset* asset);
 
 		bool DestroyTexture(Asset* asset);
 		bool DestroyShader(Asset* asset);

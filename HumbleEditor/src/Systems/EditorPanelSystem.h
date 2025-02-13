@@ -53,6 +53,7 @@ namespace HBL2
 
 			bool m_OpenDeleteConfirmationWindow = false;
 			Handle<Asset> m_AssetToBeDeleted;
+			Handle<Asset> m_SelectedAsset;
 
 			Scene* m_ActiveScene = nullptr;
 			Handle<Scene> m_ActiveSceneTemp;

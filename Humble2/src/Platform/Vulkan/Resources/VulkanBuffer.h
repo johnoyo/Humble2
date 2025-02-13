@@ -27,7 +27,7 @@ namespace HBL2
 			{
 				.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 				.size = ByteSize,
-				.usage = BufferUsageFlags | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // NOTE: Investigate if always needs VK_IMAGE_USAGE_TRANSFER_DST_BIT
+				.usage = BufferUsageFlags | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // NOTE: Investigate if always needs VK_IMAGE_USAGE_TRANSFER_DST_BIT
 				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 				.queueFamilyIndexCount = 0,
 				.pQueueFamilyIndices = nullptr,
@@ -117,7 +117,7 @@ namespace HBL2
 			// Check if there is existing data to copy from the old buffer
 			if (oldBuffer != VK_NULL_HANDLE && currentOffset > 0)
 			{
-				renderer->ImmediateSubmit([&](VkCommandBuffer cmd)
+				renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
 				{
 					VkBufferCopy copyRegion =
 					{
