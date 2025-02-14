@@ -21,13 +21,16 @@ namespace HBL2
 		Span(std::initializer_list<T> initializer_list) : m_Data(initializer_list.begin()), m_Size(initializer_list.size()) {}
 		Span(T* data, size_t size) : m_Data(data), m_Size(size) {}
 		Span(std::vector<T>& list) : m_Data(list.data()), m_Size(list.size()) {}
-		Span(DynamicArray<T>& list) : m_Data(list.m_Data()), m_Size(list.Size()) {}
+		Span(DynamicArray<T>& list) : m_Data(list.Data()), m_Size(list.Size()) {}
+
+		template<typename TAllocator>
+		Span(DynamicArray<T, TAllocator>& list) : m_Data(list.Data()), m_Size(list.Size()) {}
 
 		template<size_t N>
 		Span(T(&array)[N]) : m_Data(array), m_Size(sizeof(array) / sizeof(T)) {}
 
 		template<size_t N>
-		Span(StaticArray<T, N> array) : m_Data(array.m_Data()), m_Size(array.Size()) {}
+		Span(StaticArray<T, N> array) : m_Data(array.Data()), m_Size(array.Size()) {}
 
 		explicit Span(T* data) : m_Data(data), m_Size(1) {}
 		explicit Span(T& data) : m_Data(&data), m_Size(1) {}

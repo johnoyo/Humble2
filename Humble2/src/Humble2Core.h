@@ -13,6 +13,7 @@
 #include "Utilities\Allocators\BaseAllocator.h"
 #include "Utilities\Allocators\StandardAllocator.h"
 #include "Utilities\Allocators\ArenaAllocator.h"
+#include "Utilities\Allocators\FreeListAllocator.h"
 
 #include "Utilities\Collections\StaticArray.h"
 #include "Utilities\Collections\DynamicArray.h"
