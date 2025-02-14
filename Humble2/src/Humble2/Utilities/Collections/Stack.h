@@ -9,10 +9,20 @@
 
 namespace HBL2
 {
+    /// <summary>
+    /// A Last-In, First-Out (LIFO) data structure that supports push, pop, and peek operations in O(1) time.
+    /// Used for function call management, undo operations, and depth-first search.
+    /// </summary>
+    /// <typeparam name="T">The type of the element to store in the array.</typeparam>
+    /// <typeparam name="TAllocator">The allocator type to use.</typeparam>
     template<typename T, typename TAllocator = StandardAllocator>
     class Stack
     {
     public:
+        /// <summary>
+        /// Constructs a Stack with an optional initial capacity.
+        /// </summary>
+        /// <param name="initialCapacity">The starting capacity of the stack.</param>
         Stack(uint32_t initialCapacity = 8)
             : m_Capacity(initialCapacity), m_CurrentSize(0)
         {
@@ -20,17 +30,29 @@ namespace HBL2
             m_Data = m_Allocator->Allocate<T>(sizeof(T) * m_Capacity);
         }
 
+        /// <summary>
+        /// Constructs a Stack with an optional initial capacity and a custom allocator.
+        /// </summary>
+        /// <param name="allocator">The allocator to use for memory allocation.</param>
+        /// <param name="initialCapacity">The starting capacity of the stack.</param>
         Stack(TAllocator* allocator, uint32_t initialCapacity = 8)
             : m_Capacity(initialCapacity), m_CurrentSize(0), m_Allocator(allocator)
         {
             m_Data = m_Allocator->Allocate<T>(sizeof(T) * m_Capacity);
         }
 
+        /// <summary>
+        /// Destructor to release allocated memory.
+        /// </summary>
         ~Stack()
         {
             m_Allocator->Deallocate<T>(m_Data);
         }
 
+        /// <summary>
+        /// Pushes an element to the top of the stack.
+        /// </summary>
+        /// <param name="value">The element to push.</param>
         void Push(const T& value)
         {
             if (m_CurrentSize >= m_Capacity)
@@ -48,25 +70,45 @@ namespace HBL2
             m_Data[m_CurrentSize++] = value;
         }
 
+        /// <summary>
+        /// Removes the element in top of the stack.
+        /// </summary>
         void Pop()
         {
             HBL2_CORE_ASSERT(m_CurrentSize > 0, "Stack underflow!");
             --m_CurrentSize;
         }
 
+        /// <summary>
+        /// Returns the top element of the stack.
+        /// </summary>
+        /// <returns>The top element of the stack.</returns>
         T& Top()
         {
             HBL2_CORE_ASSERT(m_CurrentSize > 0, "Stack is empty!");
             return m_Data[m_CurrentSize - 1];
         }
 
+        /// <summary>
+        /// Returns the top element of the stack.
+        /// </summary>
+        /// <returns>The top element of the stack.</returns>
         const T& Top() const
         {
             HBL2_CORE_ASSERT(m_CurrentSize > 0, "Stack is empty!");
             return m_Data[m_CurrentSize - 1];
         }
 
+        /// <summary>
+        /// Returns the number of elements in the stack.
+        /// </summary>
+        /// <returns>The number of elements in the stack.</returns>
         uint32_t Size() const { return m_CurrentSize; }
+
+        /// <summary>
+        /// Check if the stack is empty.
+        /// </summary>
+        /// <returns>True if the stack is empty, false otherwise.</returns>
         bool IsEmpty() const { return m_CurrentSize == 0; }
 
         T* begin() { return m_Data; }

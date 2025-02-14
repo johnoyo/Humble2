@@ -9,126 +9,377 @@
 
 namespace HBL2
 {
+    /// <summary>
+    /// A key-value data structure that offers O(1) average-time complexity for insertions, deletions, and lookups.
+    /// Uses hashing for fast access and collision resolution techniques like linear probing.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the key.</typeparam>
+    /// <typeparam name="TAllocator">The type of the allocator to use.</typeparam>
+    /// <typeparam name="TValue">The type of the key.</typeparam>
     template<typename TKey, typename TValue, typename TAllocator = StandardAllocator>
     class HashMap
     {
+    private:
+        struct Entry
+        {
+            TKey Key;
+            TValue Value;
+            bool IsOccupied = false;
+            bool IsDeleted = false;
+        };
+
     public:
+        /// <summary>
+        /// Constructs a HashMap with an optional initial capacity.
+        /// </summary>
+        /// <param name="initialCapacity">The starting capacity of the map.</param>
         HashMap(uint32_t initialCapacity = 16)
             : m_Capacity(initialCapacity), m_CurrentSize(0)
         {
             m_Allocator = new TAllocator;
-            m_Entries = m_Allocator->Allocate<Entry>(sizeof(Entry) * m_Capacity);
+            m_Data = m_Allocator->Allocate<Entry>(sizeof(Entry) * m_Capacity);
         }
 
+        /// <summary>
+        /// Constructs a HashMap with an optional initial capacity and a custom allocator.
+        /// </summary>
+        /// <param name="allocator">The allocator to use for memory allocation.</param>
+        /// <param name="initialCapacity">The starting capacity of the map.</param>
         HashMap(TAllocator* allocator, uint32_t initialCapacity = 16)
             : m_Capacity(initialCapacity), m_CurrentSize(0), m_Allocator(allocator)
         {
-            m_Entries = m_Allocator->Allocate<Entry>(sizeof(Entry) * m_Capacity);
+            m_Data = m_Allocator->Allocate<Entry>(sizeof(Entry) * m_Capacity);
         }
 
+        /// <summary>
+        /// Destructor to release allocated memory.
+        /// </summary>
         ~HashMap()
         {
-            m_Allocator->Deallocate<Entry>(m_Entries);
+            m_Allocator->Deallocate<Entry>(m_Data);
         }
 
+        /// <summary>
+        /// Insert a key-value pair into the hash map.
+        /// </summary>
         void Insert(const TKey& key, const TValue& value)
         {
-            if (m_CurrentSize >= m_Capacity / 2)
+            size_t index = Hash(key) % m_Capacity;
+
+            while (m_Data[index].IsOccupied && !m_Data[index].IsDeleted)
             {
-                Entry* oldEntries = m_Entries;
-                uint32_t oldCapacity = m_Capacity;
-
-                m_Capacity = m_Capacity * 2;
-                m_Entries = m_Allocator->Allocate<Entry>(sizeof(Entry) * m_Capacity);
-                HBL2_CORE_ASSERT(m_Entries, "Memory allocation failed!");
-
-                m_CurrentSize = 0;
-                for (uint32_t i = 0; i < oldCapacity; i++)
+                if (m_Data[index].Key == key)
                 {
-                    if (oldEntries[i].occupied && !oldEntries[i].deleted)
-                    {
-                        Insert(oldEntries[i].key, oldEntries[i].value);
-                    }
-                }
-
-                m_Allocator->Deallocate<Entry>(oldEntries);
-            }
-
-            uint32_t index = Hash(key) % m_Capacity;
-
-            while (m_Entries[index].occupied) // Linear probing if collision
-            {
-                if (m_Entries[index].key == key) // Update existing key
-                {
-                    m_Entries[index].value = value;
+                    m_Data[index].Value = value;  // Update existing key-value pair
                     return;
                 }
 
                 index = (index + 1) % m_Capacity;
             }
 
-            m_Entries[index] = { key, value, true };
+            if (IsString<TKey>())
+            {
+                new (&m_Data[index].Key) TKey(key);
+            }
+            else
+            {
+                m_Data[index].Key = key;
+            }
+
+            if (IsString<TValue>())
+            {
+                new (&m_Data[index].Value) TValue(value);
+            }
+            else
+            {
+                m_Data[index].Value = value;
+            }
+
+            m_Data[index].IsOccupied = true;
+            m_Data[index].IsDeleted = false;
             ++m_CurrentSize;
+
+            // Reallocate if the load factor exceeds 0.7
+            if (m_CurrentSize > m_Capacity * 0.7f)
+            {
+                ReAllocate();
+            }
         }
 
-        bool Remove(const TKey& key)
+        /// <summary>
+        /// Find a value by key.
+        /// </summary>
+        bool Find(const TKey& key, TValue& outValue) const
         {
-            uint32_t index = Hash(key) % m_Capacity;
+            size_t index = Hash(key) % m_Capacity;
 
-            while (m_Entries[index].occupied)
+            while (m_Data[index].IsOccupied)
             {
-                if (m_Entries[index].key == key)
+                if (m_Data[index].Key == key && !m_Data[index].IsDeleted)
                 {
-                    m_Entries[index].deleted = true;
-                    --m_CurrentSize;
+                    outValue = m_Data[index].Value;
                     return true;
                 }
 
                 index = (index + 1) % m_Capacity;
             }
 
-            return false; // Key not found
+            return false;
         }
 
-        TValue* Find(const TKey& key)
+        /// <summary>
+        /// Remove a key-value pair by key.
+        /// </summary>
+        void Remove(const TKey& key)
         {
-            uint32_t index = Hash(key) % m_Capacity;
+            size_t index = Hash(key) % m_Capacity;
 
-            while (m_Entries[index].occupied)
+            while (m_Data[index].IsOccupied)
             {
-                if (m_Entries[index].key == key)
+                if (m_Data[index].Key == key && !m_Data[index].IsDeleted)
                 {
-                    return &m_Entries[index].value;
+                    m_Data[index].IsDeleted = true;
+                    --m_CurrentSize;
+                    return;
                 }
 
                 index = (index + 1) % m_Capacity;
             }
-
-            return nullptr; // Key not found
         }
 
-        uint32_t Size() const { return m_CurrentSize; }
-        bool IsEmpty() const { return m_CurrentSize == 0; }
+        /// <summary>
+        /// Get the current size of the hash map.
+        /// </summary>
+        size_t Size() const { return m_CurrentSize; }
 
-        // TODO: Add iterator support
-        
-    private:
-        struct Entry
+        /// <summary>
+        /// Get the capacity of the hash map.
+        /// </summary>
+        size_t Capacity() const { return m_Capacity; }
+
+        /// <summary>
+        /// Returns an iterator to the first valid element in the hash map.
+        /// </summary>
+        class Iterator
         {
-            TKey key;
-            TValue value;
-            bool occupied;
-            bool deleted;
+        public:
+            Iterator(Entry* data, size_t capacity, size_t index)
+                : m_Data(data), m_Capacity(capacity), m_Index(index)
+            {
+                SkipToValid();
+            }
+
+            std::pair<TKey, TValue>& operator*()
+            {
+                return *reinterpret_cast<std::pair<TKey, TValue>*>(&m_Data[m_Index]);
+            }
+
+            Iterator& operator++()
+            {
+                ++m_Index;
+                SkipToValid();
+                return *this;
+            }
+
+            Iterator operator++(int)
+            {
+                Iterator temp = *this;
+                ++(*this);
+                return temp;
+            }
+
+            bool operator!=(const Iterator& other) const
+            {
+                return m_Index != other.m_Index;
+            }
+
+        private:
+            Entry* m_Data;
+            size_t m_Capacity;
+            size_t m_Index;
+
+            void SkipToValid()
+            {
+                while (m_Index < m_Capacity && (!m_Data[m_Index].IsOccupied || m_Data[m_Index].IsDeleted))
+                {
+                    ++m_Index;
+                }
+            }
         };
 
-    private:
-        uint32_t Hash(const TKey& key) const
+        class ConstIterator
         {
-            return static_cast<uint32_t>(std::hash<TKey>{}(key));
+        public:
+            ConstIterator(const Entry* data, size_t capacity, size_t index)
+                : m_Data(data), m_Capacity(capacity), m_Index(index)
+            {
+                SkipToValid();
+            }
+
+            const std::pair<TKey, TValue>& operator*() const
+            {
+                return *reinterpret_cast<const std::pair<TKey, TValue>*>(&m_Data[m_Index]);
+            }
+
+            ConstIterator& operator++()
+            {
+                ++m_Index;
+                SkipToValid();
+                return *this;
+            }
+
+            ConstIterator operator++(int)
+            {
+                ConstIterator temp = *this;
+                ++(*this);
+                return temp;
+            }
+
+            bool operator!=(const ConstIterator& other) const
+            {
+                return m_Index != other.m_Index;
+            }
+
+        private:
+            const Entry* m_Data;
+            size_t m_Capacity;
+            size_t m_Index;
+
+            void SkipToValid()
+            {
+                while (m_Index < m_Capacity && (!m_Data[m_Index].IsOccupied || m_Data[m_Index].IsDeleted))
+                {
+                    ++m_Index;
+                }
+            }
+        };
+
+        /// <summary>
+        /// Returns an iterator to the first valid element in the hash map.
+        /// </summary>
+        Iterator begin() { return Iterator(m_Data, m_Capacity, 0); }
+
+        /// <summary>
+        /// Returns an iterator representing the end of the hash map.
+        /// </summary>
+        Iterator end() { return Iterator(m_Data, m_Capacity, m_Capacity); }
+
+        /// <summary>
+        /// Returns a const iterator to the first valid element in the hash map.
+        /// </summary>
+        ConstIterator begin() const { return ConstIterator(m_Data, m_Capacity, 0); }
+
+        /// <summary>
+        /// Returns a const iterator representing the end of the hash map.
+        /// </summary>
+        ConstIterator end() const { return ConstIterator(m_Data, m_Capacity, m_Capacity); }
+
+        TValue& operator[](const TKey& key)
+        {
+            size_t index = Hash(key) % m_Capacity;
+
+            while (m_Data[index].IsOccupied)
+            {
+                if (m_Data[index].Key == key)
+                {
+                    return m_Data[index].Value;  // Return the existing value if found
+                }
+                index = (index + 1) % m_Capacity;  // Linear probing in case of collisions
+            }
+
+            // If the key doesn't exist, insert it with a default-constructed value
+            if (IsString<TKey>())
+            {
+                new (&m_Data[index].Key) TKey(key);
+            }
+            else
+            {
+                m_Data[index].Key = key;
+            }
+
+            if (IsString<TValue>())
+            {
+                new (&m_Data[index].Value) TValue(TValue());
+            }
+            else
+            {
+                m_Data[index].Value = TValue();
+            }
+
+            m_Data[index].IsOccupied = true;
+            m_Data[index].IsDeleted = false;
+            ++m_CurrentSize;
+
+            // Reallocate if the load factor exceeds 0.7
+            if (m_CurrentSize > m_Capacity * 0.7f)
+            {
+                ReAllocate();
+            }
+
+            index = Hash(key) % m_Capacity;
+
+            return m_Data[index].Value;  // Return the newly created value
+        }
+        
+    private:
+        size_t Hash(const TKey& key) const
+        {
+            return std::hash<TKey>()(key);
+        }
+
+        void ReAllocate()
+        {
+            size_t newCapacity = m_Capacity * 2;
+            Entry* newData = m_Allocator->Allocate<Entry>(sizeof(Entry) * newCapacity);
+            HBL2_CORE_ASSERT(newData, "Memory allocation failed!");
+
+            // Rehash all entries
+            for (size_t i = 0; i < m_Capacity; ++i)
+            {
+                if (m_Data[i].IsOccupied && !m_Data[i].IsDeleted)
+                {
+                    size_t index = Hash(m_Data[i].Key) % newCapacity;
+                    while (newData[index].IsOccupied)
+                    {
+                        index = (index + 1) % newCapacity;
+                    }
+
+                    if (IsString<TKey>())
+                    {
+                        new (&newData[index].Key) TKey(m_Data[i].Key);
+                    }
+                    else
+                    {
+                        newData[index].Key = m_Data[i].Key;
+                    }
+
+                    if (IsString<TValue>())
+                    {
+                        new (&newData[index].Value) TValue(m_Data[i].Value);
+                    }
+                    else
+                    {
+                        newData[index].Value = m_Data[i].Value;
+                    }
+
+                    newData[index].IsOccupied = m_Data[i].IsOccupied;
+                    newData[index].IsDeleted = m_Data[i].IsDeleted;
+                }
+            }
+
+            m_Allocator->Deallocate<Entry>(m_Data);
+            m_Data = newData;
+            m_Capacity = newCapacity;
+        }
+
+        template<typename T>
+        bool IsString()
+        {
+            return std::is_same<T, std::string>::value;
         }
 
     private:
-        Entry* m_Entries;
+        Entry* m_Data;
         uint32_t m_Capacity;
         uint32_t m_CurrentSize;
         TAllocator* m_Allocator;
