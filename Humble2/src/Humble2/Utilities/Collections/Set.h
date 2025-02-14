@@ -132,6 +132,16 @@ namespace HBL2
         /// <returns>The number of elements in the set.</returns>
         uint32_t Size() const { return m_CurrentSize; }
 
+        /// <summary>
+        /// Clears the entire set.
+        /// </summary>
+        void Clear()
+        {
+            std::memset(m_Used, 0, m_CurrentSize * sizeof(bool));
+            std::memset(m_Data, 0, m_CurrentSize * sizeof(T));
+            m_CurrentSize = 0;
+        }
+
     private:
         void AllocateMemory(uint32_t capacity)
         {
@@ -167,10 +177,10 @@ namespace HBL2
             return static_cast<uint32_t>(std::hash<T>{}(value) % m_Capacity);
         }
 
-        T* m_Data = nullptr;     // Storage for elements
-        bool* m_Used = nullptr;  // Keeps track of occupied slots
-        uint32_t m_Capacity;     // Total capacity
-        uint32_t m_CurrentSize;  // Number of elements
+        T* m_Data = nullptr;
+        bool* m_Used = nullptr;
+        uint32_t m_Capacity;  // Not in bytes
+        uint32_t m_CurrentSize; // Not in bytes
         TAllocator* m_Allocator;
     };
 }

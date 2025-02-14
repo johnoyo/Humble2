@@ -141,6 +141,17 @@ namespace HBL2
         /// <returns>True if the deque is empty, false otherwise.</returns>
         bool IsEmpty() const { return m_CurrentSize == 0; }
 
+        /// <summary>
+        /// Clears the entire deqeue.
+        /// </summary>
+        void Clear()
+        {
+            std::memset(m_Data, 0, m_CurrentSize * sizeof(T));
+            m_Front = 0;
+            m_Back = 0;
+            m_CurrentSize = 0;
+        }
+
         class Iterator
         {
         public:

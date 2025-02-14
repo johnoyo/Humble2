@@ -75,7 +75,11 @@ namespace HBL2
         /// </summary>
         void Pop()
         {
-            HBL2_CORE_ASSERT(m_CurrentSize > 0, "Stack underflow!");
+            if (m_CurrentSize <= 0)
+            {
+                return;
+            }
+
             --m_CurrentSize;
         }
 
@@ -111,6 +115,15 @@ namespace HBL2
         /// <returns>True if the stack is empty, false otherwise.</returns>
         bool IsEmpty() const { return m_CurrentSize == 0; }
 
+        /// <summary>
+        /// Clears the entire stack.
+        /// </summary>
+        void Clear()
+        {
+            std::memset(m_Data, 0, m_CurrentSize * sizeof(T));
+            m_CurrentSize = 0;
+        }
+
         T* begin() { return m_Data; }
         T* end() { return m_Data + m_CurrentSize; }
         const T* begin() const { return m_Data; }
@@ -118,8 +131,8 @@ namespace HBL2
 
     private:
         T* m_Data;
-        uint32_t m_Capacity;
-        uint32_t m_CurrentSize;
+        uint32_t m_Capacity; // Not in bytes
+        uint32_t m_CurrentSize; // Not in bytes
         TAllocator* m_Allocator = nullptr;
     };
 }

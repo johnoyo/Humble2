@@ -127,7 +127,7 @@ namespace HBL2
 					HBL2::Component::EditorVisible::Selected = true;
 				}
 
-				if (ImGui::MenuItem("Create Sprite_New"))
+				if (ImGui::MenuItem("Create Sprite"))
 				{
 					auto entity = HBL2::EntityPreset::CreateSprite();
 

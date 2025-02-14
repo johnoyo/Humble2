@@ -132,6 +132,15 @@ namespace HBL2
             --m_CurrentSize;
         }
 
+        /// <summary>
+        /// Clears the entire array.
+        /// </summary>
+        void Clear()
+        {
+            std::memset(m_Data, 0, m_CurrentSize * sizeof(T));
+            m_CurrentSize = 0;
+        }
+
         T* begin() { return m_Data; }
         T* end() { return m_Data + m_CurrentSize; }
         const T* begin() const { return m_Data; }

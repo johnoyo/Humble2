@@ -188,6 +188,15 @@ namespace HBL2
         size_t Capacity() const { return m_Capacity; }
 
         /// <summary>
+        /// Clears the entire queue.
+        /// </summary>
+        void Clear()
+        {
+            std::memset(m_Data, 0, m_CurrentSize * sizeof(Entry));
+            m_CurrentSize = 0;
+        }
+
+        /// <summary>
         /// Returns an iterator to the first valid element in the hash map.
         /// </summary>
         class Iterator
@@ -417,8 +426,8 @@ namespace HBL2
 
     private:
         Entry* m_Data;
-        uint32_t m_Capacity;
-        uint32_t m_CurrentSize;
+        uint32_t m_Capacity; // Not in bytes
+        uint32_t m_CurrentSize; // Not in bytes
         TAllocator* m_Allocator;
     };
 }

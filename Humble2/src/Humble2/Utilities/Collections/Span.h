@@ -18,31 +18,32 @@ namespace HBL2
 	{
 	public:
 		Span() = default;
-		Span(std::initializer_list<T> initializer_list) : Data(initializer_list.begin()), Size(initializer_list.size()) {}
-		Span(T* data, size_t size) : Data(data), Size(size) {}
-		Span(std::vector<T>& list) : Data(list.data()), Size(list.size()) {}
-		Span(DynamicArray<T>& list) : Data(list.Data()), Size(list.Size()) {}
+		Span(std::initializer_list<T> initializer_list) : m_Data(initializer_list.begin()), m_Size(initializer_list.size()) {}
+		Span(T* data, size_t size) : m_Data(data), m_Size(size) {}
+		Span(std::vector<T>& list) : m_Data(list.data()), m_Size(list.size()) {}
+		Span(DynamicArray<T>& list) : m_Data(list.m_Data()), m_Size(list.Size()) {}
 
 		template<size_t N>
-		Span(T(&array)[N]) : Data(array), Size(sizeof(array) / sizeof(T)) {}
+		Span(T(&array)[N]) : m_Data(array), m_Size(sizeof(array) / sizeof(T)) {}
 
 		template<size_t N>
-		Span(StaticArray<T, N> array) : Data(array.Data()), Size(array.Size()) {}
+		Span(StaticArray<T, N> array) : m_Data(array.m_Data()), m_Size(array.Size()) {}
 
-		explicit Span(T* data) : Data(data), Size(1) {}
-		explicit Span(T& data) : Data(&data), Size(1) {}
+		explicit Span(T* data) : m_Data(data), m_Size(1) {}
+		explicit Span(T& data) : m_Data(&data), m_Size(1) {}
 
-		operator std::initializer_list<T>() const
-		{
-			return std::initializer_list<T>(begin(), end());
-		}
+		operator std::initializer_list<T>() const { return std::initializer_list<T>(begin(), end()); }
 
-		T* begin() { return Data; }
-		T* end() { return Data + Size; }
-		const T* begin() const { return Data; }
-		const T* end() const { return Data + Size; }
+		T* Data() { return m_Data; }
+		const size_t Size() const { return m_Size; }
 
-		T* Data = nullptr;
-		size_t Size = 0;
+		T* begin() { return m_Data; }
+		T* end() { return m_Data + m_Size; }
+		const T* begin() const { return m_Data; }
+		const T* end() const { return m_Data + m_Size; }
+
+	private:
+		T* m_Data = nullptr;
+		size_t m_Size = 0;
 	};
 }

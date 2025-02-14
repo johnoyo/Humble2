@@ -186,10 +186,10 @@ namespace HBL2
 					}
 				}
 
-				// Sprite_New component.
-				if (m_ActiveScene->HasComponent<HBL2::Component::Sprite_New>(HBL2::Component::EditorVisible::SelectedEntity))
+				// Sprite component.
+				if (m_ActiveScene->HasComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
-					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Sprite_New).hash_code(), treeNodeFlags, "Sprite New");
+					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Sprite).hash_code(), treeNodeFlags, "Sprite New");
 
 					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
 
@@ -202,7 +202,7 @@ namespace HBL2
 
 					if (opened)
 					{
-						auto& sprite = m_ActiveScene->GetComponent<HBL2::Component::Sprite_New>(HBL2::Component::EditorVisible::SelectedEntity);
+						auto& sprite = m_ActiveScene->GetComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity);
 
 						uint32_t materialHandle = sprite.Material.Pack();
 
@@ -230,14 +230,14 @@ namespace HBL2
 
 					if (removeComponent)
 					{
-						m_ActiveScene->RemoveComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity);
+						m_ActiveScene->RemoveComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
 					}
 				}
 
-				// StaticMesh_New component.
-				if (m_ActiveScene->HasComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity))
+				// StaticMesh component.
+				if (m_ActiveScene->HasComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
-					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::StaticMesh_New).hash_code(), treeNodeFlags, "Static Mesh New");
+					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::StaticMesh).hash_code(), treeNodeFlags, "Static Mesh New");
 
 					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
 
@@ -250,7 +250,7 @@ namespace HBL2
 
 					if (opened)
 					{
-						auto& mesh = m_ActiveScene->GetComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity);
+						auto& mesh = m_ActiveScene->GetComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
 
 						uint32_t meshHandle = mesh.Mesh.Pack();
 						uint32_t materialHandle = mesh.Material.Pack();
@@ -308,7 +308,7 @@ namespace HBL2
 
 					if (removeComponent)
 					{
-						m_ActiveScene->RemoveComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity);
+						m_ActiveScene->RemoveComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
 					}
 				}
 
@@ -372,10 +372,10 @@ namespace HBL2
 					}
 				}
 
-				// SoundSource component.
-				if (m_ActiveScene->HasComponent<HBL2::Component::SoundSource>(HBL2::Component::EditorVisible::SelectedEntity))
+				// AudioSource component.
+				if (m_ActiveScene->HasComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity))
 				{
-					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::SoundSource).hash_code(), treeNodeFlags, "SoundSource");
+					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::AudioSource).hash_code(), treeNodeFlags, "AudioSource");
 
 					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
 
@@ -388,7 +388,7 @@ namespace HBL2
 
 					if (opened)
 					{
-						auto& soundSource = m_ActiveScene->GetComponent<HBL2::Component::SoundSource>(HBL2::Component::EditorVisible::SelectedEntity);
+						auto& soundSource = m_ActiveScene->GetComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity);
 						uint32_t soundHandle = soundSource.Sound.Pack();
 
 						ImGui::Checkbox("Enabled", &soundSource.Enabled);
@@ -433,7 +433,7 @@ namespace HBL2
 
 					if (removeComponent)
 					{
-						m_ActiveScene->RemoveComponent<HBL2::Component::SoundSource>(HBL2::Component::EditorVisible::SelectedEntity);
+						m_ActiveScene->RemoveComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity);
 					}
 				}
 
@@ -484,15 +484,15 @@ namespace HBL2
 
 				if (ImGui::BeginPopup("AddComponent"))
 				{
-					if (ImGui::MenuItem("Sprite_New"))
+					if (ImGui::MenuItem("Sprite"))
 					{
-						m_ActiveScene->AddComponent<HBL2::Component::Sprite_New>(HBL2::Component::EditorVisible::SelectedEntity);
+						m_ActiveScene->AddComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity);
 						ImGui::CloseCurrentPopup();
 					}
 
-					if (ImGui::MenuItem("StaticMesh_New"))
+					if (ImGui::MenuItem("StaticMesh"))
 					{
-						m_ActiveScene->AddComponent<HBL2::Component::StaticMesh_New>(HBL2::Component::EditorVisible::SelectedEntity);
+						m_ActiveScene->AddComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
 						ImGui::CloseCurrentPopup();
 					}
 
@@ -514,9 +514,9 @@ namespace HBL2
 						ImGui::CloseCurrentPopup();
 					}
 
-					if (ImGui::MenuItem("SoundSource"))
+					if (ImGui::MenuItem("AudioSource"))
 					{
-						m_ActiveScene->AddComponent<HBL2::Component::SoundSource>(HBL2::Component::EditorVisible::SelectedEntity);
+						m_ActiveScene->AddComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity);
 						ImGui::CloseCurrentPopup();
 					}
 

@@ -9,7 +9,7 @@ Entities:
       Translation: [5.83119631, -2.07541156, -3.20364404]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 5943600009211747259
       Mesh: 9402528107889883903
@@ -22,7 +22,7 @@ Entities:
       Translation: [5.74079943, 0.297164619, -3.20358276]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 5943600009211747259
       Mesh: 9402528107889883903
@@ -35,7 +35,7 @@ Entities:
       Translation: [5.42081213, 2.74652481, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
       Mesh: 9402528107889883903
@@ -48,7 +48,7 @@ Entities:
       Translation: [2.99299812, 4.39135647, -3.20358229]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 5943600009211747259
       Mesh: 9402528107889883903
@@ -61,7 +61,7 @@ Entities:
       Translation: [-0.254260957, 4.66823769, -3.20358229]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 5943600009211747259
       Mesh: 9402528107889883903
@@ -74,7 +74,7 @@ Entities:
       Translation: [-3.77239847, 4.32256794, -3.20358229]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 5943600009211747259
       Mesh: 9402528107889883903
@@ -87,7 +87,7 @@ Entities:
       Translation: [-6.08373976, 2.60773468, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
       Mesh: 9402528107889883903
@@ -100,7 +100,7 @@ Entities:
       Translation: [-6.08373976, 0.299074769, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 5943600009211747259
       Mesh: 9402528107889883903
@@ -113,7 +113,7 @@ Entities:
       Translation: [-6.08373976, -1.99996018, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 5943600009211747259
       Mesh: 9402528107889883903
@@ -126,7 +126,7 @@ Entities:
       Translation: [-6.08373976, -4.77783537, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
       Mesh: 9402528107889883903
@@ -139,7 +139,7 @@ Entities:
       Translation: [-3.24019575, -4.77783537, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 5943600009211747259
       Mesh: 9402528107889883903
@@ -152,7 +152,7 @@ Entities:
       Translation: [0.0457981825, -4.77783537, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 5943600009211747259
       Mesh: 9402528107889883903
@@ -165,7 +165,7 @@ Entities:
       Translation: [3.5875411, -4.77783537, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 5943600009211747259
       Mesh: 9402528107889883903
@@ -178,7 +178,7 @@ Entities:
       Translation: [2.99347329, -2.31261826, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
       Mesh: 17631668153373402826
@@ -191,7 +191,7 @@ Entities:
       Translation: [1.35897422, 3.44154596, -3.0380702]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 5092745295480585008
   - Entity: 25
@@ -203,7 +203,7 @@ Entities:
       Translation: [4.27121687, -2.83554935, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 3944921849210950209
   - Entity: 24
@@ -215,7 +215,7 @@ Entities:
       Translation: [4.27121687, -0.371162415, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 5092745295480585008
   - Entity: 23
@@ -227,7 +227,7 @@ Entities:
       Translation: [4.27121687, 1.4586587, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 3944921849210950209
   - Entity: 22
@@ -239,7 +239,7 @@ Entities:
       Translation: [-4.27009487, 1.4586587, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 3944921849210950209
   - Entity: 21
@@ -251,7 +251,7 @@ Entities:
       Translation: [-4.27009487, -0.336810112, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 5092745295480585008
   - Entity: 20
@@ -263,7 +263,7 @@ Entities:
       Translation: [-4.27009487, -2.7538271, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 3944921849210950209
   - Entity: 19
@@ -275,7 +275,7 @@ Entities:
       Translation: [-1.46132219, -4.37300444, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 5092745295480585008
   - Entity: 18
@@ -287,7 +287,7 @@ Entities:
       Translation: [1.39949548, -4.37300444, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 5092745295480585008
   - Entity: 17
@@ -299,7 +299,7 @@ Entities:
       Translation: [1.39949548, -2.82781649, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 3944921849210950209
   - Entity: 16
@@ -311,7 +311,7 @@ Entities:
       Translation: [-1.47215271, -2.82781649, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 3944921849210950209
   - Entity: 15
@@ -323,7 +323,7 @@ Entities:
       Translation: [-1.47215271, 1.40050983, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 3944921849210950209
   - Entity: 14
@@ -335,7 +335,7 @@ Entities:
       Translation: [1.33267975, 1.40050983, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 3944921849210950209
   - Entity: 13
@@ -347,7 +347,7 @@ Entities:
       Translation: [1.33267975, -0.348781288, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 3944921849210950209
   - Entity: 12
@@ -359,7 +359,7 @@ Entities:
       Translation: [-1.41645002, -0.348781288, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 3944921849210950209
   - Entity: 11
@@ -371,7 +371,7 @@ Entities:
       Translation: [0.00782239437, -2.31261826, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
       Mesh: 17631668153373402826
@@ -384,7 +384,7 @@ Entities:
       Translation: [-2.79179835, -2.31261826, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
       Mesh: 17631668153373402826
@@ -397,7 +397,7 @@ Entities:
       Translation: [-2.79179835, 2.07798862, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
       Mesh: 17631668153373402826
@@ -410,7 +410,7 @@ Entities:
       Translation: [-0.0125973821, 2.07798862, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
       Mesh: 17631668153373402826
@@ -423,7 +423,7 @@ Entities:
       Translation: [2.7681303, 2.07798862, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
       Mesh: 17631668153373402826
@@ -436,7 +436,7 @@ Entities:
       Translation: [2.7681303, 0, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
       Mesh: 17631668153373402826
@@ -449,7 +449,7 @@ Entities:
       Translation: [-2.78786135, 0, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
       Mesh: 17631668153373402826
@@ -462,7 +462,7 @@ Entities:
       Translation: [0, 0, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 5943600009211747259
       Mesh: 17631668153373402826
@@ -475,7 +475,7 @@ Entities:
       Translation: [6.18952227, -4.65664577, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
       Mesh: 9402528107889883903
@@ -488,7 +488,7 @@ Entities:
       Translation: [-1.42562401, 3.44154596, -3.0380702]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 5092745295480585008
   - Entity: 1

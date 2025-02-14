@@ -53,6 +53,8 @@ namespace HBL2
 		virtual void Free() override
 		{
 			::operator delete(m_Data);
+			m_CurrentOffset = 0;
+			m_Capacity = 0;
 		}
 
 	private:

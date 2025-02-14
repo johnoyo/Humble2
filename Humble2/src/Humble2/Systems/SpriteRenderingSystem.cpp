@@ -35,8 +35,8 @@ namespace HBL2
 		});
 
 		m_Context->GetRegistry()
-			.group<Component::Sprite_New>(entt::get<Component::Transform>)
-			.each([&](Component::Sprite_New& sprite, Component::Transform& transform)
+			.group<Component::Sprite>(entt::get<Component::Transform>)
+			.each([&](Component::Sprite& sprite, Component::Transform& transform)
 			{
 				if (sprite.Enabled)
 				{
@@ -99,8 +99,8 @@ namespace HBL2
 		DrawList draws;
 
 		m_Context->GetRegistry()
-			.group<Component::Sprite_New>(entt::get<Component::Transform>)
-			.each([&](Component::Sprite_New& sprite, Component::Transform& transform)
+			.group<Component::Sprite>(entt::get<Component::Transform>)
+			.each([&](Component::Sprite& sprite, Component::Transform& transform)
 			{
 				if (sprite.Enabled)
 				{

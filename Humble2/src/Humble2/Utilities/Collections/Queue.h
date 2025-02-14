@@ -120,6 +120,17 @@ namespace HBL2
         /// <returns>True if the queue is empty, false otherwise.</returns>
         bool IsEmpty() const { return m_CurrentSize == 0; }
 
+        /// <summary>
+        /// Clears the entire queue.
+        /// </summary>
+        void Clear()
+        {
+            std::memset(m_Data, 0, m_CurrentSize * sizeof(T));
+            m_Front = 0;
+            m_Back = 0;
+            m_CurrentSize = 0;
+        }
+
         T* begin() { return &m_Data[m_Front]; }
         T* end() { return &m_Data[m_Back]; }
         const T* begin() const { return &m_Data[m_Front]; }

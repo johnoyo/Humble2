@@ -9,7 +9,7 @@ Entities:
       Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite_New:
+    Component::Sprite:
       Enabled: true
       Material: 5092745295480585008
   - Entity: 2
@@ -55,11 +55,11 @@ Entities:
       Translation: [2, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::StaticMesh_New:
+    Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
       Mesh: 17631668153373402826
-    Component::SoundSource:
+    Component::AudioSource:
       Enabled: true
       Sound: 374884297105595585
     NewComponent:

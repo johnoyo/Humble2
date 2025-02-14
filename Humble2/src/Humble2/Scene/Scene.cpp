@@ -67,10 +67,10 @@ namespace HBL2
         copy_component(Component::Link{});
         copy_component(Component::Camera{});
         copy_component(Component::EditorVisible{});
-        copy_component(Component::Sprite_New{});
-        copy_component(Component::StaticMesh_New{});
+        copy_component(Component::Sprite{});
+        copy_component(Component::StaticMesh{});
         copy_component(Component::Light{});
-        copy_component(Component::SoundSource{});
+        copy_component(Component::AudioSource{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
@@ -154,21 +154,21 @@ namespace HBL2
         m_Registry.storage<Component::Camera>().clear();
         m_Registry.compact<Component::Camera>();
 
-        m_Registry.clear<Component::Sprite_New>();
-        m_Registry.storage<Component::Sprite_New>().clear();
-        m_Registry.compact<Component::Sprite_New>();
+        m_Registry.clear<Component::Sprite>();
+        m_Registry.storage<Component::Sprite>().clear();
+        m_Registry.compact<Component::Sprite>();
 
-        m_Registry.clear<Component::StaticMesh_New>();
-        m_Registry.storage<Component::StaticMesh_New>().clear();
-        m_Registry.compact<Component::StaticMesh_New>();
+        m_Registry.clear<Component::StaticMesh>();
+        m_Registry.storage<Component::StaticMesh>().clear();
+        m_Registry.compact<Component::StaticMesh>();
 
         m_Registry.clear<Component::Light>();
         m_Registry.storage<Component::Light>().clear();
         m_Registry.compact<Component::Light>();
 
-        m_Registry.clear<Component::SoundSource>();
-        m_Registry.storage<Component::SoundSource>().clear();
-        m_Registry.compact<Component::SoundSource>();
+        m_Registry.clear<Component::AudioSource>();
+        m_Registry.storage<Component::AudioSource>().clear();
+        m_Registry.compact<Component::AudioSource>();
 
         // Destroy all entities.
         for (auto& [uuid, entity] : m_EntityMap)
@@ -213,10 +213,10 @@ namespace HBL2
         copy_component(Component::Link{});
         copy_component(Component::Camera{});
         copy_component(Component::EditorVisible{});
-        copy_component(Component::Sprite_New{});
-        copy_component(Component::StaticMesh_New{});
+        copy_component(Component::Sprite{});
+        copy_component(Component::StaticMesh{});
         copy_component(Component::Light{});
-        copy_component(Component::SoundSource{});
+        copy_component(Component::AudioSource{});
 
         // Copy user defined components.
         std::vector<std::string> userComponentNames;

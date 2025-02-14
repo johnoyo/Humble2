@@ -74,12 +74,12 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
-		if (m_Scene->HasComponent<Component::Sprite_New>(entity))
+		if (m_Scene->HasComponent<Component::Sprite>(entity))
 		{
-			out << YAML::Key << "Component::Sprite_New";
+			out << YAML::Key << "Component::Sprite";
 			out << YAML::BeginMap;
 
-			auto& sprite = m_Scene->GetComponent<Component::Sprite_New>(entity);
+			auto& sprite = m_Scene->GetComponent<Component::Sprite>(entity);
 
 			out << YAML::Key << "Enabled" << YAML::Value << sprite.Enabled;
 
@@ -116,12 +116,12 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
-		if (m_Scene->HasComponent<Component::StaticMesh_New>(entity))
+		if (m_Scene->HasComponent<Component::StaticMesh>(entity))
 		{
-			out << YAML::Key << "Component::StaticMesh_New";
+			out << YAML::Key << "Component::StaticMesh";
 			out << YAML::BeginMap;
 
-			auto& staticMesh = m_Scene->GetComponent<Component::StaticMesh_New>(entity);
+			auto& staticMesh = m_Scene->GetComponent<Component::StaticMesh>(entity);
 
 			out << YAML::Key << "Enabled" << YAML::Value << staticMesh.Enabled;
 
@@ -192,12 +192,12 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
-		if (m_Scene->HasComponent<Component::SoundSource>(entity))
+		if (m_Scene->HasComponent<Component::AudioSource>(entity))
 		{
-			out << YAML::Key << "Component::SoundSource";
+			out << YAML::Key << "Component::AudioSource";
 			out << YAML::BeginMap;
 
-			auto& soundSource = m_Scene->GetComponent<Component::SoundSource>(entity);
+			auto& soundSource = m_Scene->GetComponent<Component::AudioSource>(entity);
 
 			out << YAML::Key << "Enabled" << YAML::Value << soundSource.Enabled;
 
@@ -500,18 +500,18 @@ namespace HBL2
 					}
 				}
 
-				auto sprite_NewComponent = entity["Component::Sprite_New"];
+				auto sprite_NewComponent = entity["Component::Sprite"];
 				if (sprite_NewComponent)
 				{
-					auto& sprite = m_Scene->AddComponent<Component::Sprite_New>(deserializedEntity);
+					auto& sprite = m_Scene->AddComponent<Component::Sprite>(deserializedEntity);
 					sprite.Enabled = sprite_NewComponent["Enabled"].as<bool>();
 					sprite.Material = AssetManager::Instance->GetAsset<Material>(sprite_NewComponent["Material"].as<UUID>());
 				}
 
-				auto staticMesh_NewComponent = entity["Component::StaticMesh_New"];
+				auto staticMesh_NewComponent = entity["Component::StaticMesh"];
 				if (staticMesh_NewComponent)
 				{
-					auto& staticMesh = m_Scene->AddComponent<Component::StaticMesh_New>(deserializedEntity);
+					auto& staticMesh = m_Scene->AddComponent<Component::StaticMesh>(deserializedEntity);
 					staticMesh.Enabled = staticMesh_NewComponent["Enabled"].as<bool>();
 					staticMesh.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
 					staticMesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(staticMesh_NewComponent["Mesh"].as<UUID>());
@@ -542,10 +542,10 @@ namespace HBL2
 					}
 				}
 
-				auto soundSource_NewComponent = entity["Component::SoundSource"];
+				auto soundSource_NewComponent = entity["Component::AudioSource"];
 				if (soundSource_NewComponent)
 				{
-					auto& soundSource = m_Scene->AddComponent<Component::SoundSource>(deserializedEntity);
+					auto& soundSource = m_Scene->AddComponent<Component::AudioSource>(deserializedEntity);
 					soundSource.Enabled = soundSource_NewComponent["Enabled"].as<bool>();
 					soundSource.Sound = AssetManager::Instance->GetAsset<Sound>(soundSource_NewComponent["Sound"].as<UUID>());
 				}

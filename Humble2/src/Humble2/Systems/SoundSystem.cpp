@@ -28,8 +28,8 @@ namespace HBL2
         }
 
         m_Context->GetRegistry()
-            .view<Component::SoundSource>()
-            .each([&](entt::entity entity, Component::SoundSource& soundSource)
+            .view<Component::AudioSource>()
+            .each([&](entt::entity entity, Component::AudioSource& soundSource)
             {
                 Sound* sound = ResourceManager::Instance->GetSound(soundSource.Sound);
 
@@ -43,8 +43,8 @@ namespace HBL2
 	void SoundSystem::OnUpdate(float ts)
 	{
         m_Context->GetRegistry()
-            .view<Component::SoundSource>()
-            .each([&](entt::entity entity, Component::SoundSource& soundSource)
+            .view<Component::AudioSource>()
+            .each([&](entt::entity entity, Component::AudioSource& soundSource)
             {
                 Sound* sound = ResourceManager::Instance->GetSound(soundSource.Sound);
 
@@ -70,8 +70,8 @@ namespace HBL2
     void SoundSystem::OnDestroy()
     {
         m_Context->GetRegistry()
-            .view<Component::SoundSource>()
-            .each([&](entt::entity entity, Component::SoundSource& soundSource)
+            .view<Component::AudioSource>()
+            .each([&](entt::entity entity, Component::AudioSource& soundSource)
             {
                 Sound* sound = ResourceManager::Instance->GetSound(soundSource.Sound);
 

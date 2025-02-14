@@ -42,13 +42,13 @@ namespace HBL2
 			UUID Parent = 0;
 		};
 
-		struct HBL2_API Sprite_New
+		struct HBL2_API Sprite
 		{
 			Handle<Material> Material;
 			bool Enabled = true;
 		};
 
-		struct HBL2_API StaticMesh_New
+		struct HBL2_API StaticMesh
 		{
 			Handle<Mesh> Mesh;
 			Handle<Material> Material;
@@ -108,7 +108,7 @@ namespace HBL2
 			bool Enabled = true;
 		};
 
-		struct HBL2_API SoundSource
+		struct HBL2_API AudioSource
 		{
 			Handle<Sound> Sound;
 			bool Enabled = true;

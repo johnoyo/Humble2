@@ -12,8 +12,8 @@ namespace HBL2
 		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 
 		m_Context->GetRegistry()
-			.group<Component::StaticMesh_New>(entt::get<Component::Transform>)
-			.each([&](Component::StaticMesh_New& staticMesh, Component::Transform& transform)
+			.group<Component::StaticMesh>(entt::get<Component::Transform>)
+			.each([&](Component::StaticMesh& staticMesh, Component::Transform& transform)
 			{
 				if (staticMesh.Enabled)
 				{
@@ -93,8 +93,8 @@ namespace HBL2
 		DrawList draws;
 
 		m_Context->GetRegistry()
-			.group<Component::StaticMesh_New>(entt::get<Component::Transform>)
-			.each([&](Component::StaticMesh_New& staticMesh, Component::Transform& transform)
+			.group<Component::StaticMesh>(entt::get<Component::Transform>)
+			.each([&](Component::StaticMesh& staticMesh, Component::Transform& transform)
 			{
 				if (staticMesh.Enabled)
 				{

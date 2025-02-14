@@ -4,11 +4,24 @@
 #include "Scene\ISystem.h"
 #include "Scene\Scene.h"
 
-#include "Core/Input.h"
+#include "Core\Input.h"
 
 #include "Core\Context.h"
-#include "Asset\EditorAssetManager.h"
+#include "Asset\AssetManager.h"
 #include "Resources\ResourceManager.h"
+
+#include "Utilities\Allocators\BaseAllocator.h"
+#include "Utilities\Allocators\StandardAllocator.h"
+#include "Utilities\Allocators\ArenaAllocator.h"
+
+#include "Utilities\Collections\StaticArray.h"
+#include "Utilities\Collections\DynamicArray.h"
+#include "Utilities\Collections\HashMap.h"
+#include "Utilities\Collections\Set.h"
+#include "Utilities\Collections\Stack.h"
+#include "Utilities\Collections\Queue.h"
+#include "Utilities\Collections\Deque.h"
+#include "Utilities\Collections\BitFlags.h"
 
 // Macro to generate system registration factory function
 #define REGISTER_HBL2_SYSTEM(TYPE)                                                                                              \
