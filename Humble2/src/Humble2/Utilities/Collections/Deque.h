@@ -86,7 +86,11 @@ namespace HBL2
         /// </summary>
         void PopFront()
         {
-            assert(m_CurrentSize > 0 && "Deque is empty!");
+            if (m_CurrentSize <= 0)
+            {
+                return;
+            }
+
             m_Front = (m_Front + 1) % m_Capacity;
             m_CurrentSize--;
         }
@@ -96,7 +100,11 @@ namespace HBL2
         /// </summary>
         void PopBack()
         {
-            assert(m_CurrentSize > 0 && "Deque is empty!");
+            if (m_CurrentSize <= 0)
+            {
+                return;
+            }
+
             m_Back = (m_Back - 1 + m_Capacity) % m_Capacity;
             m_CurrentSize--;
         }
@@ -107,7 +115,7 @@ namespace HBL2
         /// <returns>Reference to the front element.</returns>
         T& Front()
         {
-            assert(m_CurrentSize > 0 && "Deque is empty!");
+            HBL2_CORE_ASSERT(m_CurrentSize > 0, "Deque is empty!");
             return m_Data[m_Front];
         }
 
@@ -117,7 +125,7 @@ namespace HBL2
         /// <returns>Reference to the back element.</returns>
         T& Back()
         {
-            assert(m_CurrentSize > 0 && "Deque is empty!");
+            HBL2_CORE_ASSERT(m_CurrentSize > 0, "Deque is empty!");
             return m_Data[(m_Back - 1 + m_Capacity) % m_Capacity];
         }
 

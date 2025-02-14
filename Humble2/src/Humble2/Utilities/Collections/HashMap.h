@@ -58,10 +58,12 @@ namespace HBL2
         {
             m_Allocator->Deallocate<Entry>(m_Data);
         }
-
+                
         /// <summary>
         /// Insert a key-value pair into the hash map.
         /// </summary>
+        /// <param name="key">The key to insert the value to.</param>
+        /// <param name="value">The value to insert to the key.</param>
         void Insert(const TKey& key, const TValue& value)
         {
             size_t index = Hash(key) % m_Capacity;
@@ -105,10 +107,13 @@ namespace HBL2
                 ReAllocate();
             }
         }
-
+                
         /// <summary>
         /// Find a value by key.
         /// </summary>
+        /// <param name="key">The key to find.</param>
+        /// <param name="outValue">The value to emplace the found value.</param>
+        /// <returns>True if the key was found, false if not found.</returns>
         bool Find(const TKey& key, TValue& outValue) const
         {
             size_t index = Hash(key) % m_Capacity;
@@ -128,8 +133,31 @@ namespace HBL2
         }
 
         /// <summary>
+        /// Find if a key exists in the map.
+        /// </summary>
+        /// <param name="key">The key to find.</param>
+        /// <returns>True if the key was found, false if not found.</returns>
+        bool ContainsKey(const TKey& key) const
+        {
+            size_t index = Hash(key) % m_Capacity;
+
+            while (m_Data[index].IsOccupied)
+            {
+                if (m_Data[index].Key == key && !m_Data[index].IsDeleted)
+                {
+                    return true;
+                }
+
+                index = (index + 1) % m_Capacity;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Remove a key-value pair by key.
         /// </summary>
+        /// <param name="key">The key to remove.</param>
         void Remove(const TKey& key)
         {
             size_t index = Hash(key) % m_Capacity;
@@ -150,11 +178,13 @@ namespace HBL2
         /// <summary>
         /// Get the current size of the hash map.
         /// </summary>
+        /// <returns>The current size of the hash map.</returns>
         size_t Size() const { return m_CurrentSize; }
 
         /// <summary>
         /// Get the capacity of the hash map.
         /// </summary>
+        /// <returns>The capacity of the hash map.</returns>
         size_t Capacity() const { return m_Capacity; }
 
         /// <summary>
@@ -207,6 +237,9 @@ namespace HBL2
             }
         };
 
+        /// <summary>
+        /// Returns an const iterator to the first valid element in the hash map.
+        /// </summary>
         class ConstIterator
         {
         public:
@@ -274,6 +307,11 @@ namespace HBL2
         /// </summary>
         ConstIterator end() const { return ConstIterator(m_Data, m_Capacity, m_Capacity); }
 
+        /// <summary>
+        /// Gets or inserts a value in the given key.
+        /// </summary>
+        /// <param name="key">The key to get or set.</param>
+        /// <returns>The value of the key or default.</returns>
         TValue& operator[](const TKey& key)
         {
             size_t index = Hash(key) % m_Capacity;
@@ -282,12 +320,12 @@ namespace HBL2
             {
                 if (m_Data[index].Key == key)
                 {
-                    return m_Data[index].Value;  // Return the existing value if found
+                    return m_Data[index].Value;
                 }
-                index = (index + 1) % m_Capacity;  // Linear probing in case of collisions
+
+                index = (index + 1) % m_Capacity;
             }
 
-            // If the key doesn't exist, insert it with a default-constructed value
             if (IsString<TKey>())
             {
                 new (&m_Data[index].Key) TKey(key);
@@ -310,7 +348,6 @@ namespace HBL2
             m_Data[index].IsDeleted = false;
             ++m_CurrentSize;
 
-            // Reallocate if the load factor exceeds 0.7
             if (m_CurrentSize > m_Capacity * 0.7f)
             {
                 ReAllocate();
@@ -318,7 +355,7 @@ namespace HBL2
 
             index = Hash(key) % m_Capacity;
 
-            return m_Data[index].Value;  // Return the newly created value
+            return m_Data[index].Value;
         }
         
     private:
