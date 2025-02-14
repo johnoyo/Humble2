@@ -114,14 +114,35 @@ namespace HBL2
         }
 
         /// <summary>
-        /// Removes an element at the provided index from the array.
+        /// Erases the provided element from the array.
         /// </summary>
-        /// <param name="index">The index of the element to remove.</param>
-        void Erase(uint32_t index)
+        /// <param name="value">The element to erase.</param>
+        void Erase(const T& value)
+        {
+            uint32_t index = UINT32_MAX;
+
+            for (uint32_t i = 0; i < m_CurrentSize; ++i)
+            {
+                if (m_Data[i] == value)
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            EraseAt(index);
+        }
+
+        /// <summary>
+        /// Erases an element at the provided index from the array.
+        /// </summary>
+        /// <param name="index">The index of the element to erase.</param>
+        void EraseAt(uint32_t index)
         {
             if (index >= m_CurrentSize)
             {
-                HBL2_CORE_ERROR("DynamicArray::Erase -> Index out of range!");
+                HBL2_CORE_ERROR("DynamicArray::EraseAt(), Index out of range!");
+                return;
             }
 
             // Shift elements left
