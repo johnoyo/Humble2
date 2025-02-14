@@ -54,6 +54,7 @@ namespace HBL2
 	private:
 		void CreateBindings();
 		void CreateRenderPass();
+		void Resize(uint32_t width, uint32_t height);
 
 	private:
 		OpenGLResourceManager* m_ResourceManager = nullptr;
@@ -66,5 +67,8 @@ namespace HBL2
 		Handle<BindGroup> m_GlobalBindings3D;
 		Handle<BindGroup> m_GlobalPresentBindings;
 		Handle<FrameBuffer> m_MainFrameBuffer;
+
+		bool m_Resize = false;
+		glm::uvec2 m_NewSize{};
 	};
 }

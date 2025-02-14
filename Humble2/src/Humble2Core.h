@@ -3,6 +3,7 @@
 #include "Scene\Components.h"
 #include "Scene\ISystem.h"
 #include "Scene\Scene.h"
+#include "Scene\SceneManager.h"
 
 #include "Core\Input.h"
 

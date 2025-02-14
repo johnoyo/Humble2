@@ -329,12 +329,12 @@ namespace HBL2
 	{
 		if (width == 0 || height == 0)
 		{
-			return; // Avoid resizing to zero dimensions
+			return;
 		}
 
 		VK_VALIDATE(vkDeviceWaitIdle(m_Device->Get()), "vkDeviceWaitIdle");
 
-		// Cleanup old swapchain resources
+		// Cleanup old swapchain resources.
 		for (auto frameBuffer : m_FrameBuffers)
 		{
 			m_ResourceManager->DeleteFrameBuffer(frameBuffer);
@@ -351,24 +351,24 @@ namespace HBL2
 		m_SwapChainImageViews.clear();
 		m_SwapChainColorTextures.clear();
 
-		// Destroy the depth buffer
+		// Destroy the depth buffer.
 		m_ResourceManager->DeleteTexture(m_DepthImage);
 
 		// Destroy the swapchain
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 
-		// Destroy old offscreen textures
+		// Destroy old offscreen textures.
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
 
 		m_Device->UpdateSwapChainSupportDetails();
 
-		// Recreate swapchain and associated resources
+		// Recreate swapchain and associated resources.
 		CreateSwapchain();
 		CreateImageViews();
 		CreateFrameBuffers();
 
-		// Recreate the offscreen texture (render target)
+		// Recreate the offscreen texture (render target).
 		MainColorTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "viewport-color-target",
 			.dimensions = { width, height, 1 },
@@ -393,7 +393,7 @@ namespace HBL2
 			.createSampler = false,
 		});
 
-		// Update descriptor sets (for the quad shader)
+		// Update descriptor sets (for the quad shader).
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalPresentBindings);
@@ -408,6 +408,7 @@ namespace HBL2
 			vkGlobalPresentBindings->Update();
 		}
 
+		// Call on resize callbacks.
 		for (auto&& [name, callback] : m_OnResizeCallbacks)
 		{
 			callback(width, height);

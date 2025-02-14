@@ -37,6 +37,14 @@ namespace HBL2
 			.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
 			.textures = { Renderer::Instance->MainColorTexture },
 		});
+
+		EventDispatcher::Get().Register("FramebufferSizeEvent", [&](const Event& e)
+		{
+			const FramebufferSizeEvent& wse = dynamic_cast<const FramebufferSizeEvent&>(e);
+
+			m_Resize = true;
+			m_NewSize = { wse.Width, wse.Height };
+		});
 	}
 
 	void OpenGLRenderer::BeginFrame()
@@ -97,6 +105,67 @@ namespace HBL2
 	{
 		glfwSwapBuffers(Window::Instance->GetHandle());
 		m_FrameNumber++;
+
+		if (m_Resize)
+		{
+			Resize(m_NewSize.x, m_NewSize.y);
+			m_Resize = false;
+		}
+	}
+
+	void OpenGLRenderer::Resize(uint32_t width, uint32_t height)
+	{
+		if (width == 0 || height == 0)
+		{
+			return;
+		}
+
+		// Destroy old offscreen textures
+		m_ResourceManager->DeleteTexture(MainColorTexture);
+		m_ResourceManager->DeleteTexture(MainDepthTexture);
+
+		// Recreate the offscreen texture (render target)
+		MainColorTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "viewport-color-target",
+			.dimensions = { width, height, 1 },
+			.format = Format::BGRA8_UNORM,
+			.internalFormat = Format::BGRA8_UNORM,
+			.usage = TextureUsage::RENDER_ATTACHMENT,
+			.aspect = TextureAspect::COLOR,
+			.sampler =
+			{
+				.filter = Filter::LINEAR,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
+		MainDepthTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "viewport-depth-target",
+			.dimensions = { width, height, 1 },
+			.format = Format::D32_FLOAT,
+			.internalFormat = Format::D32_FLOAT,
+			.usage = TextureUsage::DEPTH_STENCIL,
+			.aspect = TextureAspect::DEPTH,
+			.createSampler = false,
+		});
+
+		// Update descriptor sets (for the quad shader)
+		m_ResourceManager->DeleteBindGroup(m_GlobalPresentBindings);
+
+		m_GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
+			.debugName = "global-present-bind-group",
+			.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
+			.textures = { MainColorTexture },  // Updated with new size
+		});
+
+		OpenGLBindGroup* globalPresentBindings = m_ResourceManager->GetBindGroup(m_GlobalPresentBindings);
+		globalPresentBindings->Set();
+
+		// Call on resize callbacks.
+		for (auto&& [name, callback] : m_OnResizeCallbacks)
+		{
+			callback(width, height);
+		}
 	}
 
 	void OpenGLRenderer::Clean()
