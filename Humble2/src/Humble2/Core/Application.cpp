@@ -16,7 +16,7 @@ namespace HBL2
 
 		MeshUtilities::Initialize();
 		NativeScriptUtilities::Initialize();
-		UnityBuilder::Initialize();
+		UnityBuild::Initialize();
 
 		switch (m_Specification.GraphicsAPI)
 		{
@@ -153,7 +153,7 @@ namespace HBL2
 		Window::Instance = nullptr;
 
 		Input::ShutDown();
-		UnityBuilder::Shutdown();
+		UnityBuild::Shutdown();
 		NativeScriptUtilities::Shutdown();
 		MeshUtilities::Shutdown();
 		EventDispatcher::Shutdown();

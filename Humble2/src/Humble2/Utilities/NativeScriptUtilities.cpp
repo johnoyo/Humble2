@@ -508,7 +508,6 @@ class {ScriptName}
 #else
 		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
 #endif
-
 		LoadUnityBuild(ctx, path.string());
 	}
 

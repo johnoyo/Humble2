@@ -75,10 +75,9 @@ namespace HBL2
 					{
 						std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
 						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
-						const char* sceneName = relativePath.filename().stem().string().c_str();
 
 						auto assetHandle = AssetManager::Instance->CreateAsset({
-							.debugName = sceneName,
+							.debugName = _strdup(relativePath.filename().stem().string().c_str()),
 							.filePath = relativePath,
 							.type = AssetType::Scene,
 						});
@@ -126,58 +125,58 @@ namespace HBL2
 					}
 					if (ImGui::MenuItem("Build (Windows - Debug)"))
 					{
-						const std::string& projectName = HBL2::Project::GetActive()->GetSpecification().Name;
+						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 						// Build.
 						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Debug");
 
-						// Copy assets to build folder.
-						std::filesystem::copy("./" + projectName, "..\\bin\\Debug-x86_64\\HumbleApp\\" + projectName, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						// Copy project folder to build folder.
+						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Debug-x86_64\\HumbleApp\\" + projectName);
 
-						// Copy assets to build folder.
-						std::filesystem::copy("./assets", "..\\bin\\Debug-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						// Copy assets folder to build folder.
+						FileUtils::CopyFolder("./assets", "..\\bin\\Debug-x86_64\\HumbleApp\\assets");
 					}
 					if (ImGui::MenuItem("Build (Windows - Release)"))
 					{
-						const std::string& projectName = HBL2::Project::GetActive()->GetSpecification().Name;
+						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 						// Build.
 						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
 
-						// Copy assets to build folder.
-						std::filesystem::copy("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						// Copy project folder to build folder.
+						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName);
 
-						// Copy assets to build folder.
-						std::filesystem::copy("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						// Copy assets folder to build folder.
+						FileUtils::CopyFolder("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets");
 					}
 					if (ImGui::MenuItem("Build & Run (Windows - Debug)"))
 					{
-						const std::string& projectName = HBL2::Project::GetActive()->GetSpecification().Name;
+						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 						// Build.
 						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Debug");
 
-						// Copy assets to build folder.
-						std::filesystem::copy("./" + projectName, "..\\bin\\Debug-x86_64\\HumbleApp\\" + projectName, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						// Copy project folder to build folder.
+						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Debug-x86_64\\HumbleApp\\" + projectName);
 
-						// Copy assets to build folder.
-						std::filesystem::copy("./assets", "..\\bin\\Debug-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						// Copy assets folder to build folder.
+						FileUtils::CopyFolder("./assets", "..\\bin\\Debug-x86_64\\HumbleApp\\assets");
 
 						// Run.
 						system("cd ..\\bin\\Debug-x86_64\\HumbleApp && HumbleApp.exe");
 					}
 					if (ImGui::MenuItem("Build & Run (Windows - Release)"))
 					{
-						const std::string& projectName = HBL2::Project::GetActive()->GetSpecification().Name;
+						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 						// Build.
 						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
 
-						// Copy assets to build folder.
-						std::filesystem::copy("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						// Copy project folder to build folder.
+						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName);
 
-						// Copy assets to build folder.
-						std::filesystem::copy("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets", std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+						// Copy assets folder to build folder.
+						FileUtils::CopyFolder("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets");
 
 						// Run.
 						system("cd ..\\bin\\Release-x86_64\\HumbleApp && HumbleApp.exe");

@@ -729,10 +729,10 @@ namespace HBL2
 		NativeScriptUtilities::Get().UnloadUnityBuild(activeScene);
 
 		// Combine all .cpp files in assets in unity build source file.
-		UnityBuilder::Get().Combine();
+		UnityBuild::Get().Combine();
 
 		// Build unity build source dll.
-		UnityBuilder::Get().Build();
+		UnityBuild::Get().Build();
 
 		// Re-register systems.
 		for (const auto& userSystemName : userSystemNames)

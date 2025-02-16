@@ -19,20 +19,23 @@ When drag and drop system to systems:
 
 namespace HBL2
 {
-	class HBL2_API UnityBuilder
+	class HBL2_API UnityBuild
 	{
 	public:
-		static UnityBuilder& Get();
+		static UnityBuild& Get();
 
 		static void Initialize();
 		static void Shutdown();
 
-		bool Build();
 		void Combine();
+		bool Build();
+		bool Build(Scene* ctx);
 		void Recompile();
 
+		bool Exists();
+
 	private:
-		UnityBuilder() = default;
+		UnityBuild() = default;
 
 		const std::string m_UnityBuildSource = R"({ComponentIncludes}
 
@@ -42,6 +45,6 @@ namespace HBL2
 )";
 		std::string m_UnityBuildSourceFinal;
 
-		static UnityBuilder* s_Instance;
+		static UnityBuild* s_Instance;
 	};
 }

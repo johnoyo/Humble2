@@ -1,5 +1,6 @@
 #include "SceneSerializer.h"
 
+#include "Utilities\UnityBuild.h"
 #include "Utilities\YamlUtilities.h"
 #include "UI\UserInterfaceUtilities.h"
 
@@ -374,10 +375,26 @@ namespace HBL2
 		std::string sceneName = data["Scene"].as<std::string>();
 		HBL2_CORE_TRACE("Deserializing scene: {0}", sceneName);
 
-		HBL2_CORE_TRACE("Deserializing user components of scene: {0}", sceneName);
+		std::cout << "Deserializing scene: " << sceneName << "\n";
+		std::cout << "m_Scene: " << m_Scene->GetName() << "\n";
+
 		auto components = data["User Components"];
+		auto helperScripts = data["User Helper Scripts"];
+		auto systems = data["User Systems"];
+
+		// If we have user defined scripts but no dll exists, build it.
+		if ((components.size() > 0 || systems.size() > 0 || helperScripts.size() > 0) && !UnityBuild::Get().Exists())
+		{
+			HBL2_CORE_TRACE("No user defined scripts dll found for scene: {}, building one now...", m_Scene->GetName());
+
+			UnityBuild::Get().Combine();
+			UnityBuild::Get().Build(m_Scene);
+		}
+
 		if (components)
 		{
+			HBL2_CORE_TRACE("Deserializing user components of scene: {0}", sceneName);
+
 			for (auto componentUUID : components)
 			{
 				Handle<Script> componentScriptHandle = AssetManager::Instance->GetAsset<Script>(componentUUID.as<UUID>());
@@ -394,10 +411,10 @@ namespace HBL2
 			}
 		}
 
-		HBL2_CORE_TRACE("Deserializing user helper scripts of scene: {0}", sceneName);
-		auto helperScripts = data["User Helper Scripts"];
 		if (helperScripts)
 		{
+			HBL2_CORE_TRACE("Deserializing user helper scripts of scene: {0}", sceneName);
+
 			for (auto helperScriptUUID : helperScripts)
 			{
 				Handle<Script> helperScriptHandle = AssetManager::Instance->GetAsset<Script>(helperScriptUUID.as<UUID>());
@@ -409,10 +426,10 @@ namespace HBL2
 			}
 		}
 
-		HBL2_CORE_TRACE("Deserializing user systems of scene: {0}", sceneName);
-		auto systems = data["User Systems"];
 		if (systems)
 		{
+			HBL2_CORE_TRACE("Deserializing user systems of scene: {0}", sceneName);
+
 			for (auto systemUUID : systems)
 			{
 				Handle<Script> systemScriptHandle = AssetManager::Instance->GetAsset<Script>(systemUUID.as<UUID>());

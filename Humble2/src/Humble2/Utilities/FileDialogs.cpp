@@ -14,4 +14,32 @@ namespace HBL2
 	{
 		return pfd::save_file(title, defaultPath, filters).result();
 	}
+
+	void HBL2::FileUtils::CopyFolder(const std::filesystem::path& source, const std::filesystem::path& destination)
+    {
+        try
+        {
+            // Ensure source exists and is a directory
+            if (!std::filesystem::exists(source) || !std::filesystem::is_directory(source))
+            {
+                HBL2_CORE_ERROR("Source folder {} does not exist or is not a directory.", source);
+            }
+
+            // Create destination if it doesn't exist
+            if (!std::filesystem::exists(destination))
+            {
+                std::filesystem::create_directories(destination);
+            }
+
+            // Use std::filesystem::copy with recursive option
+            std::filesystem::copy(source, destination, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+
+            HBL2_CORE_TRACE("Folder copied successfully from {} to {}",source, destination);
+        }
+        catch (const std::exception& e)
+        {
+            HBL2_CORE_ERROR("CopyFolder error: {}", e.what());
+        }
+    }
 }
+

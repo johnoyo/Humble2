@@ -14,7 +14,7 @@ namespace HBL2
 				}
 				else
 				{
-					UnityBuilder::Get().Recompile();
+					UnityBuild::Get().Recompile();
 				}
 			}
 		}

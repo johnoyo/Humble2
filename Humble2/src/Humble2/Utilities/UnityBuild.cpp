@@ -1,33 +1,36 @@
-#include "UnityBuilder.h"
+#include "UnityBuild.h"
 
 namespace HBL2
 {
-	UnityBuilder* UnityBuilder::s_Instance = nullptr;
+	UnityBuild* UnityBuild::s_Instance = nullptr;
 
-	UnityBuilder& UnityBuilder::Get()
+	UnityBuild& UnityBuild::Get()
 	{
-		HBL2_CORE_ASSERT(s_Instance != nullptr, "UnityBuilder::s_Instance is null! Call UnityBuilder::Initialize before use.");
+		HBL2_CORE_ASSERT(s_Instance != nullptr, "UnityBuild::s_Instance is null! Call UnityBuild::Initialize before use.");
 		return *s_Instance;
 	}
 
-	void UnityBuilder::Initialize()
+	void UnityBuild::Initialize()
 	{
-		HBL2_CORE_ASSERT(s_Instance == nullptr, "UnityBuilder::s_Instance is not null! UnityBuilder::Initialize has been called twice.");
-		s_Instance = new UnityBuilder;
+		HBL2_CORE_ASSERT(s_Instance == nullptr, "UnityBuild::s_Instance is not null! UnityBuild::Initialize has been called twice.");
+		s_Instance = new UnityBuild;
 	}
 
-	void UnityBuilder::Shutdown()
+	void UnityBuild::Shutdown()
 	{
-		HBL2_CORE_ASSERT(s_Instance != nullptr, "UnityBuilder::s_Instance is null!");
+		HBL2_CORE_ASSERT(s_Instance != nullptr, "UnityBuild::s_Instance is null!");
 		delete s_Instance;
 		s_Instance = nullptr;
 	}
 
-	bool UnityBuilder::Build()
+	bool UnityBuild::Build()
 	{
 		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
-		const std::string& projectName = Project::GetActive()->GetName();
+		return Build(activeScene);
+	}
 
+	bool UnityBuild::Build(Scene* ctx)
+	{
 		// Create directory.
 		try
 		{
@@ -54,29 +57,22 @@ namespace HBL2
 		// Build
 		const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles";
 
-#ifdef DEBUG
-		const auto& dllPath = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& dllPath = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
-
 		// Build the solution					
 #ifdef DEBUG
 		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / "UnityBuild.sln").string() + R"( /t:)" + "UnityBuild" + R"( /p:Configuration=Debug")";
 #else
 		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / "UnityBuild.sln").string() + R"( /t:)" + "UnityBuild" + R"( /p:Configuration=Release")";
 #endif // DEBUG
+
 		system(command.c_str());
 
-		NativeScriptUtilities::Get().LoadUnityBuild(activeScene);
+		NativeScriptUtilities::Get().LoadUnityBuild(ctx);
 
 		return true;
 	}
 
-	void UnityBuilder::Combine()
+	void UnityBuild::Combine()
 	{
-		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
-
 		// Create directory.
 		try
 		{
@@ -97,11 +93,16 @@ namespace HBL2
 
 		for (const auto assetHandle : AssetManager::Instance->GetRegisteredAssets())
 		{
+			if (!AssetManager::Instance->IsAssetValid(assetHandle))
+			{
+				continue;
+			}
+
 			Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 
 			if (asset->Type == AssetType::Script)
 			{
-				Handle<Script> scriptHandle = Handle<Script>::UnPack(asset->Indentifier);
+				Handle<Script> scriptHandle = AssetManager::Instance->GetAsset<Script>(asset->UUID);
 
 				if (scriptHandle.IsValid())
 				{
@@ -187,7 +188,7 @@ namespace HBL2
 		projectFile.close();
 	}
 	
-	void UnityBuilder::Recompile()
+	void UnityBuild::Recompile()
 	{
 		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
@@ -236,6 +237,18 @@ namespace HBL2
 			NativeScriptUtilities::Get().RegisterComponent(userComponentName, activeScene);
 			NativeScriptUtilities::Get().DeserializeComponents(userComponentName, activeScene, data);
 		}
+	}
+	
+	bool UnityBuild::Exists()
+	{
+		const std::string& projectName = Project::GetActive()->GetName();
+
+#ifdef DEBUG
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
+#else
+		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
+#endif
+		return std::filesystem::exists(path);
 	}
 }
 
