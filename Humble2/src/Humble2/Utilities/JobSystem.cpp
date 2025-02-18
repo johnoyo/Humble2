@@ -56,9 +56,25 @@ namespace HBL2
                 }
             });
 
-            // *****Here we could do platform specific thread setup...
+            auto handle = worker.native_handle();
 
-            worker.detach(); // forget about this thread, let it do it's job in the infinite loop that we created above
+            // Put threads on increasing cores starting from 2nd.
+            int core = threadID + 1;
+
+#ifdef _WIN32
+            // Put each thread on to dedicated core:
+            DWORD_PTR affinityMask = 1ull << core;
+            DWORD_PTR affinity_result = SetThreadAffinityMask(handle, affinityMask);
+            assert(affinity_result > 0);
+
+            BOOL priority_result = SetThreadPriority(handle, THREAD_PRIORITY_NORMAL);
+            assert(priority_result != 0);
+
+            std::wstring wthreadname = L"HBL2::Job_" + std::to_wstring(threadID);
+            HRESULT hr = SetThreadDescription(handle, wthreadname.c_str());
+            assert(SUCCEEDED(hr));
+#endif
+            worker.detach();
         }
     }
 

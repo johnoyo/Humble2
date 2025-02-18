@@ -20,6 +20,15 @@ namespace HBL2
 	{
 		Handle<T> ResourceHandle = Handle<T>();
 		bool Finished = false;
+
+		/// <summary>
+		/// Busy wait until the resource has finished loading.
+		/// </summary>
+		/// <remarks>This will block the thread it was called from.</remarks>
+		void WaitUntilFinished()
+		{
+			while (!Finished) { }
+		}
 	};
 
 	class HBL2_API AssetManager
