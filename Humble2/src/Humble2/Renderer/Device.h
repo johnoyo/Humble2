@@ -27,8 +27,10 @@ namespace HBL2
 		virtual ~Device() = default;
 
 		virtual void Initialize() = 0;
-		const GPUProperties& GetGPUProperties() const { return m_GPUProperties; }
 		virtual void Destroy() = 0;
+		virtual void SetContext(void* windowContext) = 0;
+
+		const GPUProperties& GetGPUProperties() const { return m_GPUProperties; }
 
 	protected:
 		GPUProperties m_GPUProperties;

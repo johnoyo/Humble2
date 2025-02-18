@@ -13,6 +13,7 @@ namespace HBL2
 		Log::Initialize();
 		Random::Initialize();
 		EventDispatcher::Initialize();
+		JobSystem::Initialize();
 
 		MeshUtilities::Initialize();
 		NativeScriptUtilities::Initialize();
@@ -157,5 +158,6 @@ namespace HBL2
 		NativeScriptUtilities::Shutdown();
 		MeshUtilities::Shutdown();
 		EventDispatcher::Shutdown();
+		JobSystem::Shutdown();
 	}
 }

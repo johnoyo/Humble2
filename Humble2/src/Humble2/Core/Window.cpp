@@ -90,6 +90,11 @@ namespace HBL2
 		return m_Window;
 	}
 
+	GLFWwindow* Window::GetWorkerHandle()
+	{
+		return m_WorkerWindow;
+	}
+
 	void Window::SetTitle(const std::string& title)
 	{
 		m_Spec.Title = title;
@@ -108,6 +113,11 @@ namespace HBL2
 
 	void Window::Terminate()
 	{
+		if (m_WorkerWindow)
+		{
+			glfwDestroyWindow(m_WorkerWindow);
+		}
+
 		glfwDestroyWindow(m_Window);
 		glfwTerminate();
 	}

@@ -29,7 +29,7 @@ namespace HBL2
         HBL2_CORE_TRACE("Number of hardware threads in this system: {0}", numCores);
 
         // Calculate the actual number of worker threads we want:
-        m_NumThreads = std::max(1u, numCores);
+        m_NumThreads = std::max(1u, numCores - 1);
 
         // Create all our worker threads while immediately starting them:
         for (uint32_t threadID = 0; threadID < m_NumThreads; ++threadID)

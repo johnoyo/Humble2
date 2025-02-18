@@ -11,13 +11,13 @@
 
 namespace HBL2
 {
-	struct JobDispatchArgs
+	struct HBL2_API JobDispatchArgs
 	{
 		uint32_t jobIndex;
 		uint32_t groupIndex;
 	};
 
-	class JobSystem
+	class HBL2_API JobSystem
 	{
 	public:
 		JobSystem(const JobSystem&) = delete;

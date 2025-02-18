@@ -17,7 +17,7 @@ namespace HBL2
 
 		if (!glfwInit())
 		{
-			std::cout << "Error initializing window!\n";
+			HBL2_CORE_FATAL("Error initializing window!");
 			exit(-1);
 		}
 
@@ -45,7 +45,7 @@ namespace HBL2
 
 		if (!m_Window)
 		{
-			std::cout << "Error creating window!\n";
+			HBL2_CORE_FATAL("Error creating window!");
 			glfwTerminate();
 			exit(-1);
 		}
@@ -76,5 +76,16 @@ namespace HBL2
 		HBL2_CORE_ASSERT(versionMinor >= 5, "Humble2 requires an minimum OpenGL version of 4.5!");
 
 		AttachEventCallbacks();
+
+		// Create worker thread context
+		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+		m_WorkerWindow = glfwCreateWindow(1, 1, "Worker OpenGL Context", nullptr, m_Window);
+		if (!m_WorkerWindow)
+		{
+			HBL2_CORE_ERROR("Failed to create worker OpenGL context!");
+			return;
+		}
+
+		HBL2_CORE_INFO("Worker OpenGL Context Created!");
 	}
 }

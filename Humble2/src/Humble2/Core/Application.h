@@ -26,6 +26,7 @@
 
 #include "Scene\SceneManager.h"
 
+#include "Utilities\JobSystem.h"
 #include "Utilities\Random.h"
 #include "Utilities\MeshUtilities.h"
 #include "Utilities\NativeScriptUtilities.h"

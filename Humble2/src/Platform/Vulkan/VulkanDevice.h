@@ -36,6 +36,7 @@ namespace HBL2
 
 		virtual void Initialize() override;
 		virtual void Destroy() override;
+		virtual void SetContext(void* windowContext) override {}
 
 		const VkDevice Get() const { return m_Device; }
 		const VkInstance GetInstance() const { return m_Instance; }

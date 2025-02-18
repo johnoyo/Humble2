@@ -4,11 +4,24 @@
 #include "Resources\Handle.h"
 #include "Resources\Pool.h"
 
+#include "Renderer\Device.h"
+
+#include "Utilities\JobSystem.h"
+
 #include <exception>
 #include <future>
 
 namespace HBL2
 {
+	class Window;
+
+	template<typename T>
+	struct ResourceTask
+	{
+		Handle<T> ResourceHandle = Handle<T>();
+		bool Finished = false;
+	};
+
 	class HBL2_API AssetManager
 	{
 	public:
@@ -100,15 +113,41 @@ namespace HBL2
 		}
 
 		template<typename T>
-		Handle<T> GetAssetAsync(UUID assetUUID)
+		ResourceTask<T>* GetAssetAsync(UUID assetUUID)
 		{
-			// TODO
+			return GetAssetAsync<T>(GetHandleFromUUID(assetUUID));
 		}
 
 		template<typename T>
-		Handle<T> GetAssetAsync(Handle<Asset> assetHandle)
+		ResourceTask<T>* GetAssetAsync(Handle<Asset> assetHandle)
 		{
-			// TODO
+			// Do not schedule job if the asset handle is invalid.
+			if (!IsAssetValid(assetHandle))
+			{
+				return nullptr;
+			}
+
+			// Use shared pointer for auto clean up.
+			std::shared_ptr<ResourceTask<T>> task = std::make_shared<ResourceTask<T>>();
+			task->Finished = false;
+
+			// Do not schedule job if the asset is loaded.
+			if (IsAssetLoaded(assetHandle))
+			{
+				task->ResourceHandle = GetAsset<T>(assetHandle);
+				task->Finished = true;
+				return task.get();
+			}
+
+			JobSystem::Get().Execute([this, assetHandle, task]()
+			{
+				Device::Instance->SetContext(Window::Instance->GetWorkerHandle());
+				task->ResourceHandle = GetAsset<T>(assetHandle);
+				task->Finished = true;
+				Device::Instance->SetContext(nullptr);
+			});
+
+			return task.get();
 		}
 
 		std::vector<Handle<Asset>>& GetRegisteredAssets() { return m_RegisteredAssets; }

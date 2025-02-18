@@ -93,7 +93,7 @@ namespace HBL2
 		template<typename T>
 		bool HasComponent(entt::entity entity)
 		{
-			return m_Registry.try_get<T>(entity) == nullptr ? false : true;
+			return m_Registry.any_of<T>(entity);
 		}
 
 		template<typename T>
