@@ -148,7 +148,7 @@ namespace HBL2
 				return task.get();
 			}
 
-			JobSystem::Get().Execute([this, assetHandle, task]()
+			JobSystem::Get().Execute(m_ResourceJobCtx, [this, assetHandle, task]()
 			{
 				Device::Instance->SetContext(Window::Instance->GetWorkerHandle());
 				task->ResourceHandle = GetAsset<T>(assetHandle);
@@ -189,6 +189,7 @@ namespace HBL2
 		virtual bool DestroyAsset(Handle<Asset> handle) = 0;
 
 	private:
+		JobContext m_ResourceJobCtx;
 		Pool<Asset, Asset> m_AssetPool;
 		std::unordered_map<UUID, Handle<Asset>> m_RegisteredAssetMap;
 		std::vector<Handle<Asset>> m_RegisteredAssets;
