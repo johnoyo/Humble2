@@ -105,6 +105,11 @@ namespace HBL2
 
 					Material* material = ResourceManager::Instance->GetMaterial(staticMesh.Material);
 
+					if (material == nullptr)
+					{
+						return;
+					}
+
 					auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawData>();
 					alloc.Data->Model = transform.WorldMatrix;
 					alloc.Data->InverseModel = glm::transpose(glm::inverse(transform.WorldMatrix));

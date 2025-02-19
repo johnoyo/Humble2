@@ -20,15 +20,6 @@ namespace HBL2
 	{
 		Handle<T> ResourceHandle = Handle<T>();
 		bool Finished = false;
-
-		/// <summary>
-		/// Busy wait until the resource has finished loading.
-		/// </summary>
-		/// <remarks>This will block the thread it was called from.</remarks>
-		void WaitUntilFinished()
-		{
-			while (!Finished) { }
-		}
 	};
 
 	class HBL2_API AssetManager
@@ -128,7 +119,7 @@ namespace HBL2
 		}
 
 		template<typename T>
-		ResourceTask<T>* GetAssetAsync(Handle<Asset> assetHandle)
+		ResourceTask<T>* GetAssetAsync(Handle<Asset> assetHandle, JobContext* customCtx = nullptr)
 		{
 			// Do not schedule job if the asset handle is invalid.
 			if (!IsAssetValid(assetHandle))
@@ -148,7 +139,9 @@ namespace HBL2
 				return task.get();
 			}
 
-			JobSystem::Get().Execute(m_ResourceJobCtx, [this, assetHandle, task]()
+			JobContext& ctx = (customCtx == nullptr ? m_ResourceJobCtx : *customCtx);
+
+			JobSystem::Get().Execute(ctx, [this, assetHandle, task]()
 			{
 				Device::Instance->SetContext(Window::Instance->GetWorkerHandle());
 				task->ResourceHandle = GetAsset<T>(assetHandle);

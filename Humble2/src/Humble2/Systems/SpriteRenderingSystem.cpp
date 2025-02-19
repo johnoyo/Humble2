@@ -111,6 +111,11 @@ namespace HBL2
 
 					Material* material = ResourceManager::Instance->GetMaterial(sprite.Material);
 
+					if (material == nullptr)
+					{
+						return;
+					}
+
 					auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawDataSprite>();
 					alloc.Data->Model = transform.WorldMatrix;
 					alloc.Data->Color = material->AlbedoColor;

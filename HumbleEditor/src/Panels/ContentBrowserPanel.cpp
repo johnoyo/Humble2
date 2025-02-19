@@ -7,6 +7,11 @@ namespace HBL2
 {
 	namespace Editor
 	{
+		static ResourceTask<Texture>* s_AlbedoMapTask = nullptr;	
+		static ResourceTask<Texture>* s_NormalMapTask = nullptr;	
+		static ResourceTask<Texture>* s_MetallicMapTask = nullptr;	
+		static ResourceTask<Texture>* s_RoughnessMapTask = nullptr;
+
 		void EditorPanelSystem::DrawContentBrowserPanel()
 		{
 			// Pop up menu when right clicking on an empty space inside the Content Browser panel.
@@ -374,7 +379,20 @@ namespace HBL2
 				ImGui::InputFloat("Glossiness", &glossiness, 0.05f);
 
 				static uint32_t albedoMapHandlePacked = 0;
+
+				if (s_AlbedoMapTask && s_AlbedoMapTask->Finished)
+				{
+					ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
+				}
+				else if(s_AlbedoMapTask && !s_AlbedoMapTask->Finished)
+				{
+					ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
+				}
 				ImGui::InputScalar("AlbedoMap", ImGuiDataType_U32, (void*)(intptr_t*)&albedoMapHandlePacked);
+				if (s_AlbedoMapTask)
+				{
+					ImGui::PopStyleColor();
+				}
 
 				Handle<Asset> albedoMapAssetHandle = Handle<Asset>::UnPack(albedoMapHandlePacked);
 
@@ -390,11 +408,11 @@ namespace HBL2
 							TextureUtilities::Get().CreateAssetMetadataFile(albedoMapAssetHandle);
 						}
 
+						s_AlbedoMapTask = AssetManager::Instance->GetAssetAsync<Texture>(albedoMapAssetHandle);
+
 						ImGui::EndDragDropTarget();
 					}
 				}
-
-				Handle<Texture> albedoMapHandle = AssetManager::Instance->GetAsset<Texture>(albedoMapAssetHandle);
 
 				Handle<Asset> normalMapAssetHandle;
 				Handle<Asset> metallicMapAssetHandle;
@@ -404,7 +422,19 @@ namespace HBL2
 				{
 					// Normal map
 					static uint32_t normalMapHandlePacked = 0;
+					if (s_NormalMapTask && s_NormalMapTask->Finished)
+					{
+						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
+					}
+					else if (s_NormalMapTask && !s_NormalMapTask->Finished)
+					{
+						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
+					}
 					ImGui::InputScalar("NormalMap", ImGuiDataType_U32, (void*)(intptr_t*)&normalMapHandlePacked);
+					if (s_NormalMapTask)
+					{
+						ImGui::PopStyleColor();
+					}
 
 					normalMapAssetHandle = Handle<Asset>::UnPack(normalMapHandlePacked);
 
@@ -420,14 +450,27 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(normalMapAssetHandle);
 							}
 
+							s_NormalMapTask = AssetManager::Instance->GetAssetAsync<Texture>(normalMapAssetHandle);
+
 							ImGui::EndDragDropTarget();
 						}
 					}
 
-
 					// Metalicness map
 					static uint32_t metallicMapHandlePacked = 0;
+					if (s_MetallicMapTask && s_MetallicMapTask->Finished)
+					{
+						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
+					}
+					else if (s_MetallicMapTask && !s_MetallicMapTask->Finished)
+					{
+						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
+					}
 					ImGui::InputScalar("MetallicMap", ImGuiDataType_U32, (void*)(intptr_t*)&metallicMapHandlePacked);
+					if (s_MetallicMapTask)
+					{
+						ImGui::PopStyleColor();
+					}
 
 					metallicMapAssetHandle = Handle<Asset>::UnPack(metallicMapHandlePacked);
 
@@ -443,14 +486,27 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(metallicMapAssetHandle);
 							}
 
+							s_MetallicMapTask = AssetManager::Instance->GetAssetAsync<Texture>(metallicMapAssetHandle);
+
 							ImGui::EndDragDropTarget();
 						}
 					}
 
-
 					// Roughness map
 					static uint32_t roughnessMapHandlePacked = 0;
+					if (s_RoughnessMapTask && s_RoughnessMapTask->Finished)
+					{
+						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
+					}
+					else if (s_RoughnessMapTask && !s_RoughnessMapTask->Finished)
+					{
+						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
+					}
 					ImGui::InputScalar("RoughnessMap", ImGuiDataType_U32, (void*)(intptr_t*)&roughnessMapHandlePacked);
+					if (s_RoughnessMapTask)
+					{
+						ImGui::PopStyleColor();
+					}
 
 					roughnessMapAssetHandle = Handle<Asset>::UnPack(roughnessMapHandlePacked);
 
@@ -465,15 +521,13 @@ namespace HBL2
 							{
 								TextureUtilities::Get().CreateAssetMetadataFile(roughnessMapAssetHandle);
 							}
+							
+							s_RoughnessMapTask = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapAssetHandle);
 
 							ImGui::EndDragDropTarget();
 						}
 					}
 				}
-
-				Handle<Texture> normalMapHandle = AssetManager::Instance->GetAsset<Texture>(normalMapAssetHandle);
-				Handle<Texture> metallicMapHandle = AssetManager::Instance->GetAsset<Texture>(metallicMapAssetHandle);
-				Handle<Texture> roughnessMapHandle = AssetManager::Instance->GetAsset<Texture>(roughnessMapAssetHandle);
 
 				ImGui::NewLine();
 
@@ -482,6 +536,13 @@ namespace HBL2
 					if (!shaderAssetHandle.IsValid())
 					{
 						HBL2_CORE_WARN("Shader field cannot be left blank. Please select the shader you want to use in your material.");
+					}
+					else if ((s_AlbedoMapTask    != nullptr && !s_AlbedoMapTask->Finished)   ||
+							 (s_NormalMapTask    != nullptr && !s_NormalMapTask->Finished)   ||
+							 (s_MetallicMapTask  != nullptr && !s_MetallicMapTask->Finished) ||
+							 (s_RoughnessMapTask != nullptr && !s_RoughnessMapTask->Finished))
+					{
+						HBL2_CORE_WARN("Please wait until the textures have finished loading.");
 					}
 					else
 					{
@@ -507,7 +568,7 @@ namespace HBL2
 						out << YAML::Key << "Shader" << YAML::Value << AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->UUID;
 						out << YAML::Key << "AlbedoColor" << YAML::Value << glm::vec4(color[0], color[1], color[2], color[3]);
 						out << YAML::Key << "Glossiness" << YAML::Value << glossiness;
-						if (albedoMapHandle.IsValid())
+						if (s_AlbedoMapTask && s_AlbedoMapTask->ResourceHandle.IsValid())
 						{
 							out << YAML::Key << "AlbedoMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(albedoMapAssetHandle)->UUID;
 						}
@@ -515,7 +576,7 @@ namespace HBL2
 						{
 							out << YAML::Key << "AlbedoMap" << YAML::Value << (UUID)0;
 						}
-						if (normalMapHandle.IsValid())
+						if (s_NormalMapTask && s_NormalMapTask->ResourceHandle.IsValid())
 						{
 							out << YAML::Key << "NormalMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(normalMapAssetHandle)->UUID;
 						}
@@ -523,7 +584,7 @@ namespace HBL2
 						{
 							out << YAML::Key << "NormalMap" << YAML::Value << (UUID)0;
 						}
-						if (metallicMapHandle.IsValid())
+						if (s_MetallicMapTask && s_MetallicMapTask->ResourceHandle.IsValid())
 						{
 							out << YAML::Key << "MetallicMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(metallicMapAssetHandle)->UUID;
 						}
@@ -531,7 +592,7 @@ namespace HBL2
 						{
 							out << YAML::Key << "MetallicMap" << YAML::Value << (UUID)0;
 						}
-						if (roughnessMapHandle.IsValid())
+						if (s_RoughnessMapTask && s_RoughnessMapTask->ResourceHandle.IsValid())
 						{
 							out << YAML::Key << "RoughnessMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(roughnessMapAssetHandle)->UUID;
 						}
