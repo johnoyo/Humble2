@@ -89,17 +89,9 @@ namespace HBL2
             ctx.counter.fetch_sub(1, std::memory_order_release);
         };
 
-        uint32_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id()) % m_NumThreads;
-        if (!m_LocalJobQueues[threadID].PushBack(wrappedJob))
-        {
-            // If the local queue is full, we push to another worker.
-            uint32_t victimThread = (threadID + 1) % m_NumThreads;
-            if (!m_LocalJobQueues[victimThread].PushBack(wrappedJob))
-            {
-                // If all are full, fallback to global queue.
-                m_GlobalJobQueue.PushBack(wrappedJob);
-            }
-        }
+        uint32_t threadID = m_NextQueue.fetch_add(1, std::memory_order_relaxed) % m_NumThreads;
+        m_LocalJobQueues[threadID].PushBack(wrappedJob);
+
         m_WakeCondition.notify_one();
     }
 
@@ -111,7 +103,7 @@ namespace HBL2
         }
 
         uint32_t groupCount = (jobCount + groupSize - 1) / groupSize;
-        ctx.counter.fetch_add(groupCount, std::memory_order_relaxed);
+        ctx.counter.fetch_add(groupCount, std::memory_order_acquire);
 
         for (uint32_t i = 0; i < groupCount; ++i)
         {
@@ -123,16 +115,16 @@ namespace HBL2
                 {
                     job(JobDispatchArgs{ j, i });
                 }
-                ctx.counter.fetch_sub(1, std::memory_order_release);
+
+                ctx.counter.fetch_sub(1, std::memory_order_acq_rel);
             };
 
             uint32_t threadID = i % m_NumThreads;
-            if (!m_LocalJobQueues[threadID].PushBack(task))
-            {
-                m_GlobalJobQueue.PushBack(task);
-            }
-            m_WakeCondition.notify_one();
+            m_LocalJobQueues[threadID].PushBack(task);
         }
+
+        // Wake up all worker threads to start processing the work.
+        m_WakeCondition.notify_all();
     }
 
     bool JobSystem::Busy(const JobContext& ctx)
@@ -147,48 +139,25 @@ namespace HBL2
             // Wake up all worker threads to ensure work is being processed.
             m_WakeCondition.notify_all();
 
-            // Try to pick up jobs while waiting.
-            while (Busy(ctx))
+            std::function<void()> job;
+
+            // Try to pick up jobs from other threads while waiting.
+            for (uint32_t i = 0; i < m_NumThreads; ++i)
             {
-                std::function<void()> job;
-                bool jobFound = false;
-
-                uint32_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id()) % m_NumThreads;
-
-                // 1️. First, try to pop from the local queue
-                if (m_LocalJobQueues[threadID].PopFront(job))
-                {
-                    jobFound = true;
-                }
-                else
-                {
-                    // 2️. If no job found in local queue, steal from another thread
-                    for (uint32_t i = 0; i < m_NumThreads; ++i)
-                    {
-                        uint32_t victimThread = (threadID + i + 1) % m_NumThreads;
-                        if (m_LocalJobQueues[victimThread].PopFront(job))
-                        {
-                            jobFound = true;
-                            break;
-                        }
-                    }
-
-                    // 3️. If no jobs in local queues, take from the global queue
-                    if (!jobFound && m_GlobalJobQueue.PopFront(job))
-                    {
-                        jobFound = true;
-                    }
-                }
-
-                if (jobFound)
+                while (m_LocalJobQueues[i].PopFront(job))
                 {
                     job();
                 }
-                else
-                {
-                    // If no work is found, yield so OS can swap out the thread
-                    std::this_thread::yield();
-                }
+            }
+
+            // This thread did not find any available jobs to pick up.
+            while (Busy(ctx))
+            {
+                // If we are here, then there are still remaining jobs that this thread couldn't pick up.
+                //	In this case those jobs are not standing by on a queue but currently executing
+                //	on other threads, so they cannot be picked up by this thread.
+                //	Allow to swap out this thread by OS to not spin endlessly for nothing
+                std::this_thread::yield();
             }
         }
     }
@@ -216,12 +185,6 @@ namespace HBL2
                         jobFound = true;
                         break;
                     }
-                }
-
-                // 3️. If no jobs in local queues, take from the global queue
-                if (!jobFound && m_GlobalJobQueue.PopFront(job))
-                {
-                    jobFound = true;
                 }
             }
 
