@@ -375,9 +375,6 @@ namespace HBL2
 		std::string sceneName = data["Scene"].as<std::string>();
 		HBL2_CORE_TRACE("Deserializing scene: {0}", sceneName);
 
-		std::cout << "Deserializing scene: " << sceneName << "\n";
-		std::cout << "m_Scene: " << m_Scene->GetName() << "\n";
-
 		auto components = data["User Components"];
 		auto helperScripts = data["User Helper Scripts"];
 		auto systems = data["User Systems"];

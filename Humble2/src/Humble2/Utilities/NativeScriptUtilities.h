@@ -89,6 +89,7 @@ namespace HBL2
 		void LoadUnityBuild(Scene* ctx, const std::string& path);
 		void UnloadUnityBuild(Scene* ctx);
 		
+		const std::filesystem::path GetUnityBuildPath() const;
 		std::string GetDefaultSystemCode(const std::string& systemName);	
 		std::string GetDefaultSolutionText();	
 		std::string GetDefaultProjectText(const std::string& projectIncludes);

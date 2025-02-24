@@ -142,6 +142,17 @@ namespace HBL2
 		return scriptAssetHandle;
 	}
 
+	const std::filesystem::path NativeScriptUtilities::GetUnityBuildPath() const
+	{
+		const std::string& projectName = Project::GetActive()->GetName();
+
+#ifdef DEBUG
+		return std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
+#else
+		return std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
+#endif
+	}
+
 	std::string NativeScriptUtilities::GetDefaultSystemCode(const std::string& systemName)
 	{
 		const std::string& placeholder = "{SystemName}";
@@ -439,13 +450,8 @@ class {ScriptName}
 
 	void NativeScriptUtilities::RegisterSystem(const std::string& name, Scene* ctx)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		DynamicLibrary unityBuild;
@@ -470,13 +476,8 @@ class {ScriptName}
 
 	void NativeScriptUtilities::RegisterComponent(const std::string& name, Scene* ctx)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		DynamicLibrary unityBuild;
@@ -501,13 +502,8 @@ class {ScriptName}
 
 	void NativeScriptUtilities::LoadUnityBuild(Scene* ctx)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		LoadUnityBuild(ctx, path.string());
 	}
 
@@ -554,13 +550,8 @@ class {ScriptName}
 
 	entt::meta_any NativeScriptUtilities::AddComponent(const std::string& name, Scene* ctx, entt::entity entity)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new component dll.
@@ -575,13 +566,8 @@ class {ScriptName}
 
 	entt::meta_any NativeScriptUtilities::GetComponent(const std::string& name, Scene* ctx, entt::entity entity)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new component dll.
@@ -596,13 +582,8 @@ class {ScriptName}
 
 	void NativeScriptUtilities::RemoveComponent(const std::string& name, Scene* ctx, entt::entity entity)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new component dll.
@@ -617,13 +598,8 @@ class {ScriptName}
 
 	bool NativeScriptUtilities::HasComponent(const std::string& name, Scene* ctx, entt::entity entity)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new component dll.
@@ -638,13 +614,8 @@ class {ScriptName}
 
 	void NativeScriptUtilities::ClearComponentStorage(const std::string& name, Scene* ctx)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new component dll.
@@ -659,13 +630,8 @@ class {ScriptName}
 
 	void NativeScriptUtilities::SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data, bool cleanRegistry)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new unityBuild dll.
@@ -689,13 +655,8 @@ class {ScriptName}
 
 	void NativeScriptUtilities::DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new unityBuild dll.

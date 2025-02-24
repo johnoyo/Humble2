@@ -11,7 +11,7 @@ namespace HBL2
 	{
 		PreInitialize();
 
-		TempUniformRingBuffer = new UniformRingBuffer(4096, Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
+		TempUniformRingBuffer = new UniformRingBuffer(4_KB, Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
 
 		MainColorTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "viewport-color-target",

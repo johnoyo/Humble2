@@ -63,10 +63,11 @@ namespace HBL2
 		Handle<FrameBuffer> m_MeshFrameBuffer;
 
 		Handle<Mesh> m_SpriteMesh;
+		Handle<Buffer> m_VertexBuffer;
 		Handle<RenderPass> m_SpriteRenderPass;
 		Handle<FrameBuffer> m_SpriteFrameBuffer;
 
-		Handle<Buffer> m_VertexBuffer;
+		Handle<Buffer> m_QuadVertexBuffer;
 		Handle<Mesh> m_QuadMesh;
 		Handle<Material> m_QuadMaterial;
 	};

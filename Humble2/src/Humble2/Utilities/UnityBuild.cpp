@@ -241,13 +241,7 @@ namespace HBL2
 	
 	bool UnityBuild::Exists()
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
-
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
+		const auto& path = NativeScriptUtilities::Get().GetUnityBuildPath();
 		return std::filesystem::exists(path);
 	}
 }

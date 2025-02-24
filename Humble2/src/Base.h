@@ -19,11 +19,24 @@
 	#endif
 
 	#define HBL2_ENABLE_ASSERTS // TODO: figure out whats wrong and it needs asserts enabled.
+#elif RELEASE
+	#define HBL2_PROFILE(...) HBL2::ProfilerScope profiler = HBL2::ProfilerScope(__VA_ARGS__);
+	#define HBL2_FUNC_PROFILE() HBL2_PROFILE(__FUNCTION__)
+
+	#ifdef HBL2_PLATFORM_WINDOWS
+		#define HBL2_DEBUGBREAK() __debugbreak()
+	#elif HBL2_PLATFORM_LINUX
+		#include <signal.h>
+		#define HBL_DEBUGBREAK() raise(SIGTRAP)
+	#else
+		#error "Platform is not supported yet!"
+	#endif
+
+	#define HBL2_ENABLE_ASSERTS
 #else
 	#define HBL2_PROFILE(...)
 	#define HBL2_FUNC_PROFILE()
 	#define HBL2_DEBUGBREAK()
-	#define HBL2_ENABLE_ASSERTS
 #endif
 
 #define HBL2_EXPAND_MACRO(x) x

@@ -81,7 +81,7 @@ namespace HBL2
 			.pPushConstantRanges = nullptr,
 		};
 
-		VK_VALIDATE(vkCreatePipelineLayout(Device->Get(), &pipelineLayoutCreateInfo, nullptr, &PipelineLayout), "vkCreatePipelineLayout")
+		VK_VALIDATE(vkCreatePipelineLayout(Device->Get(), &pipelineLayoutCreateInfo, nullptr, &PipelineLayout), "vkCreatePipelineLayout");
 
 		VulkanRenderPass* vkRenderPass = rm->GetRenderPass(desc.renderPass);
 

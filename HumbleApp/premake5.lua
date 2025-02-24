@@ -61,6 +61,12 @@ project "HumbleApp"
         runtime "Release"
         optimize "On"
 
+    filter "configurations:Dist"
+        defines { "DIST" }
+        runtime "Release"
+        optimize "Full"
+        symbols "Off"
+
     filter "configurations:Emscripten"
         defines { "EMSCRIPTEN", "__EMSCRIPTEN__" }
         runtime "Release"

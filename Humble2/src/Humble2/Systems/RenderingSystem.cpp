@@ -36,6 +36,8 @@ namespace HBL2
 
 	void RenderingSystem::OnDestroy()
 	{
+		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
+
 		m_ResourceManager->DeleteRenderPass(m_MeshRenderPass);
 		m_ResourceManager->DeleteFrameBuffer(m_MeshFrameBuffer);
 		Renderer::Instance->RemoveOnResizeCallback("Mesh-Resize-FrameBuffer");
@@ -46,7 +48,7 @@ namespace HBL2
 		m_ResourceManager->DeleteFrameBuffer(m_SpriteFrameBuffer);
 		Renderer::Instance->RemoveOnResizeCallback("Sprite-Resize-FrameBuffer");
 
-		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
+		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
 		m_ResourceManager->DeleteMesh(m_QuadMesh);
 		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
 	}
@@ -114,7 +116,7 @@ namespace HBL2
 			.usage = BufferUsage::VERTEX,
 			.byteSize = sizeof(float) * 30,
 			.initialData = vertexBuffer,
-			});
+		});
 
 		m_SpriteMesh = m_ResourceManager->CreateMesh({
 			.debugName = "quad_mesh",
@@ -195,7 +197,7 @@ namespace HBL2
 			};
 		}
 
-		m_VertexBuffer = m_ResourceManager->CreateBuffer({
+		m_QuadVertexBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "quad-vertex-buffer",
 			.usage = BufferUsage::VERTEX,
 			.byteSize = sizeof(float) * 24,
@@ -206,7 +208,7 @@ namespace HBL2
 			.debugName = "fullscreen-quad-mesh",
 			.vertexOffset = 0,
 			.vertexCount = 6,
-			.vertexBuffers = { m_VertexBuffer },
+			.vertexBuffers = { m_QuadVertexBuffer },
 		});
 
 		m_QuadMaterial = m_ResourceManager->CreateMaterial({

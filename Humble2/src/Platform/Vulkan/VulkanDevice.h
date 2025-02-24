@@ -84,7 +84,7 @@ namespace HBL2
 
 #ifdef DEBUG
 		const bool m_EnableValidationLayers = true;
-#elif RELEASE
+#else
 		const bool m_EnableValidationLayers = false;
 #endif
 	};
