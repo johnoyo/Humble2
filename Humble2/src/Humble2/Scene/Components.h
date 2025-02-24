@@ -74,6 +74,17 @@ namespace HBL2
 			glm::mat4 Projection = glm::mat4(1.f);
 			glm::mat4 ViewProjectionMatrix = glm::mat4(1.f);
 
+			struct FrustumPlane
+			{
+				glm::vec3 normal;
+				float distance;
+			};
+
+			struct CameraFrustum
+			{
+				FrustumPlane Planes[6];
+			} Frustum;
+
 			bool Primary = true;
 			bool Enabled = false;
 		};

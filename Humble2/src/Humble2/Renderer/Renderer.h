@@ -63,6 +63,16 @@ namespace HBL2
 		UserInterface,
 	};
 
+	struct RendererStats
+	{
+		uint32_t DrawCalls = 0;
+
+		void Reset()
+		{
+			DrawCalls = 0;
+		}
+	};
+
 	class HBL2_API Renderer
 	{
 	public:
@@ -85,6 +95,7 @@ namespace HBL2
 		virtual void* GetColorAttachment() = 0;
 
 		const uint32_t GetFrameNumber() const { return m_FrameNumber; }
+		RendererStats& GetRendererStats() { return m_Stats; }
 
 		const Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() = 0;
@@ -120,6 +131,7 @@ namespace HBL2
 	protected:
 		uint32_t m_FrameNumber = 0;
 		GraphicsAPI m_GraphicsAPI;
+		RendererStats m_Stats;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout2D;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
 		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;

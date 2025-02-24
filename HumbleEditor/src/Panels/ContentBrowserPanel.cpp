@@ -380,11 +380,11 @@ namespace HBL2
 
 				static uint32_t albedoMapHandlePacked = 0;
 
-				if (s_AlbedoMapTask && s_AlbedoMapTask->Finished)
+				if (s_AlbedoMapTask && s_AlbedoMapTask->Finished())
 				{
 					ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
 				}
-				else if(s_AlbedoMapTask && !s_AlbedoMapTask->Finished)
+				else if(s_AlbedoMapTask && !s_AlbedoMapTask->Finished())
 				{
 					ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 				}
@@ -422,11 +422,11 @@ namespace HBL2
 				{
 					// Normal map
 					static uint32_t normalMapHandlePacked = 0;
-					if (s_NormalMapTask && s_NormalMapTask->Finished)
+					if (s_NormalMapTask && s_NormalMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
 					}
-					else if (s_NormalMapTask && !s_NormalMapTask->Finished)
+					else if (s_NormalMapTask && !s_NormalMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 					}
@@ -458,11 +458,11 @@ namespace HBL2
 
 					// Metalicness map
 					static uint32_t metallicMapHandlePacked = 0;
-					if (s_MetallicMapTask && s_MetallicMapTask->Finished)
+					if (s_MetallicMapTask && s_MetallicMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
 					}
-					else if (s_MetallicMapTask && !s_MetallicMapTask->Finished)
+					else if (s_MetallicMapTask && !s_MetallicMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 					}
@@ -494,11 +494,11 @@ namespace HBL2
 
 					// Roughness map
 					static uint32_t roughnessMapHandlePacked = 0;
-					if (s_RoughnessMapTask && s_RoughnessMapTask->Finished)
+					if (s_RoughnessMapTask && s_RoughnessMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
 					}
-					else if (s_RoughnessMapTask && !s_RoughnessMapTask->Finished)
+					else if (s_RoughnessMapTask && !s_RoughnessMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 					}
@@ -537,10 +537,10 @@ namespace HBL2
 					{
 						HBL2_CORE_WARN("Shader field cannot be left blank. Please select the shader you want to use in your material.");
 					}
-					else if ((s_AlbedoMapTask    != nullptr && !s_AlbedoMapTask->Finished)   ||
-							 (s_NormalMapTask    != nullptr && !s_NormalMapTask->Finished)   ||
-							 (s_MetallicMapTask  != nullptr && !s_MetallicMapTask->Finished) ||
-							 (s_RoughnessMapTask != nullptr && !s_RoughnessMapTask->Finished))
+					else if ((s_AlbedoMapTask    != nullptr && !s_AlbedoMapTask->Finished())   ||
+							 (s_NormalMapTask    != nullptr && !s_NormalMapTask->Finished())   ||
+							 (s_MetallicMapTask  != nullptr && !s_MetallicMapTask->Finished()) ||
+							 (s_RoughnessMapTask != nullptr && !s_RoughnessMapTask->Finished()))
 					{
 						HBL2_CORE_WARN("Please wait until the textures have finished loading.");
 					}

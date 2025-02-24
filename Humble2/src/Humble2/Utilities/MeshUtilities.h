@@ -8,12 +8,6 @@
 
 namespace HBL2
 {
-	struct MeshData
-	{
-		std::vector<Vertex> VertexBuffer;
-		std::vector<uint32_t> IndexBuffer;
-	};
-
 	struct Vertex
 	{
 		glm::vec3 Position;
@@ -21,6 +15,17 @@ namespace HBL2
 		glm::vec2 UV;
 		//glm::vec4 Color;
 		//glm::vec3 Tangent;
+	};
+
+	struct MeshData
+	{
+		std::vector<Vertex> VertexBuffer;
+		std::vector<uint32_t> IndexBuffer;
+		struct Extents
+		{
+			glm::vec3 Min;
+			glm::vec3 Max;
+		} MeshExtents;
 	};
 
 	class MeshUtilities

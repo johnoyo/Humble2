@@ -28,8 +28,6 @@ namespace HBL2
 	{
 		GetViewProjection();
 
-		FrustrumCulling();
-
 		StaticMeshPass();
 		SpritePass();
 		PostProcessPass();
@@ -217,8 +215,70 @@ namespace HBL2
 		});
 	}
 
-	void RenderingSystem::FrustrumCulling()
+	bool RenderingSystem::IsInFrustum(const Component::Transform& transform)
 	{
+		glm::vec3 position = transform.Translation;
+		float radius = glm::length(transform.Scale) * 0.5f;
+
+		for (const auto& plane : m_CameraFrustum.Planes)
+		{
+			float distance = glm::dot(plane.normal, position) + plane.distance;
+
+			// If the sphere is completely outside the frustum, reject it
+			if (distance < -radius)
+			{
+				return false; // Outside
+			}
+		}
+
+		return true; // Inside or intersecting
+	}
+
+	bool RenderingSystem::IsInFrustum(Handle<Mesh> meshHandle, const Component::Transform& transform)
+	{
+		Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
+
+		if (mesh == nullptr)
+		{
+			return false;
+		}
+
+		// Transform AABB min/max to world space
+		glm::vec3 worldMin = glm::vec3(transform.WorldMatrix * glm::vec4(mesh->Extents.Min.x, mesh->Extents.Min.y, mesh->Extents.Min.z, 1.0f));
+		glm::vec3 worldMax = glm::vec3(transform.WorldMatrix * glm::vec4(mesh->Extents.Max.x, mesh->Extents.Max.y, mesh->Extents.Max.z, 1.0f));
+
+		// Generate 8 corners of AABB
+		std::array<glm::vec3, 8> corners = {
+			glm::vec3(worldMin.x, worldMin.y, worldMin.z),
+			glm::vec3(worldMax.x, worldMin.y, worldMin.z),
+			glm::vec3(worldMin.x, worldMax.y, worldMin.z),
+			glm::vec3(worldMax.x, worldMax.y, worldMin.z),
+			glm::vec3(worldMin.x, worldMin.y, worldMax.z),
+			glm::vec3(worldMax.x, worldMin.y, worldMax.z),
+			glm::vec3(worldMin.x, worldMax.y, worldMax.z),
+			glm::vec3(worldMax.x, worldMax.y, worldMax.z),
+		};
+
+		// Check if any of the 8 corners are inside the frustum
+		for (const auto& plane : m_CameraFrustum.Planes)
+		{
+			bool inside = false;
+			for (const glm::vec3& corner : corners)
+			{
+				if (glm::dot(plane.normal, corner) + plane.distance >= 0)
+				{
+					inside = true;
+					break;  // If at least one point is inside, we continue
+				}
+			}
+
+			if (!inside)
+			{
+				return false;  // If all points are outside any plane, it's not in frustum
+			}
+		}
+
+		return true;  // If we pass all planes, the object is inside the frustum
 	}
 
 	void RenderingSystem::StaticMeshPass()
@@ -255,6 +315,11 @@ namespace HBL2
 			{
 				if (staticMesh.Enabled)
 				{
+					if (!IsInFrustum(staticMesh.Mesh, transform))
+					{
+						return;
+					}
+
 					if (!staticMesh.Material.IsValid() || !staticMesh.Mesh.IsValid())
 					{
 						return;
@@ -309,6 +374,11 @@ namespace HBL2
 			{
 				if (sprite.Enabled)
 				{
+					if (!IsInFrustum(transform))
+					{
+						return;
+					}
+
 					if (!sprite.Material.IsValid())
 					{
 						return;
@@ -376,7 +446,9 @@ namespace HBL2
 		{
 			if (m_Context->MainCamera != entt::null)
 			{
-				m_CameraData.ViewProjection = m_Context->GetComponent<Component::Camera>(m_Context->MainCamera).ViewProjectionMatrix;
+				Component::Camera& camera = m_Context->GetComponent<Component::Camera>(m_Context->MainCamera);
+				m_CameraData.ViewProjection = camera.ViewProjectionMatrix;
+				m_CameraFrustum = camera.Frustum;
 				Component::Transform& tr = m_Context->GetComponent<Component::Transform>(m_Context->MainCamera);
 				m_LightData.ViewPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
 				return;
@@ -390,7 +462,9 @@ namespace HBL2
 		{
 			if (m_EditorScene->MainCamera != entt::null)
 			{
-				m_CameraData.ViewProjection = m_EditorScene->GetComponent<Component::Camera>(m_EditorScene->MainCamera).ViewProjectionMatrix;
+				Component::Camera& camera = m_EditorScene->GetComponent<Component::Camera>(m_EditorScene->MainCamera);
+				m_CameraData.ViewProjection = camera.ViewProjectionMatrix;
+				m_CameraFrustum = camera.Frustum;
 				Component::Transform& tr = m_EditorScene->GetComponent<Component::Transform>(m_EditorScene->MainCamera);
 				m_LightData.ViewPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
 				return;
@@ -407,6 +481,7 @@ namespace HBL2
 
 		m_CameraData.ViewProjection = glm::mat4(1.0f);
 		m_LightData.ViewPosition = glm::vec4(0.0f);
+		m_CameraFrustum = {};
 	}
 }
 

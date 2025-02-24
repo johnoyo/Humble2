@@ -207,6 +207,8 @@ namespace HBL2
 		uint32_t vertexCount;
 		Handle<Buffer> indexBuffer;
 		std::initializer_list<Handle<Buffer>> vertexBuffers;
+		glm::vec3 minVertex;
+		glm::vec3 maxVertex;
 	};
 
 	struct MaterialDescriptor

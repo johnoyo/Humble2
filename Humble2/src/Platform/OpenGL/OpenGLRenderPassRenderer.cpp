@@ -54,6 +54,8 @@ namespace HBL2
 				continue;
 			}
 
+			Renderer::Instance->GetRendererStats().DrawCalls += drawList.size();
+
 			for (auto& draw : drawList)
 			{
 				Mesh* mesh = rm->GetMesh(draw.Mesh);

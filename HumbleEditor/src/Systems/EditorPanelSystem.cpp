@@ -68,7 +68,7 @@ namespace HBL2
 				auto& panel = m_Context->AddComponent<Component::EditorPanel>(hierachyPanel);
 				panel.Name = "Hierachy";
 				panel.Type = Component::EditorPanel::Panel::Hierachy;
-				panel.Render = [this]() { DrawHierachyPanel(); };
+				panel.Render = [this](float ts) { DrawHierachyPanel(); };
 			}
 
 			{
@@ -78,7 +78,7 @@ namespace HBL2
 				auto& panel = m_Context->AddComponent<Component::EditorPanel>(propertiesPanel);
 				panel.Name = "Properties";
 				panel.Type = Component::EditorPanel::Panel::Properties;
-				panel.Render = [this]() { DrawPropertiesPanel(); };
+				panel.Render = [this](float ts) { DrawPropertiesPanel(); };
 			}
 
 			{
@@ -89,7 +89,7 @@ namespace HBL2
 				panel.Name = "Menubar";
 				panel.Type = Component::EditorPanel::Panel::Menubar;
 				panel.UseBeginEnd = false;
-				panel.Render = [this]() { DrawToolBarPanel(); };
+				panel.Render = [this](float ts) { DrawToolBarPanel(); };
 			}
 
 			{
@@ -99,7 +99,7 @@ namespace HBL2
 				auto& panel = m_Context->AddComponent<Component::EditorPanel>(statsPanel);
 				panel.Name = "Stats";
 				panel.Type = Component::EditorPanel::Panel::Stats;
-				panel.Render = [this]() { DrawStatsPanel(Time::DeltaTime); };
+				panel.Render = [this](float ts) { DrawStatsPanel(ts); };
 			}
 
 			{
@@ -110,7 +110,7 @@ namespace HBL2
 				panel.Name = "Content Browser";
 				panel.Type = Component::EditorPanel::Panel::ContentBrowser;
 				m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
-				panel.Render = [this]() { DrawContentBrowserPanel(); };
+				panel.Render = [this](float ts) { DrawContentBrowserPanel(); };
 			}
 
 			{
@@ -120,7 +120,7 @@ namespace HBL2
 				auto& panel = m_Context->AddComponent<Component::EditorPanel>(consolePanel);
 				panel.Name = "Console";
 				panel.Type = Component::EditorPanel::Panel::Console;
-				panel.Render = [this]() { DrawConsolePanel(Time::DeltaTime); };
+				panel.Render = [this](float ts) { DrawConsolePanel(ts); };
 			}
 
 			{
@@ -131,7 +131,7 @@ namespace HBL2
 				panel.Name = "Viewport";
 				panel.Type = Component::EditorPanel::Panel::Viewport;
 				panel.Styles.push_back({ ImGuiStyleVar_WindowPadding, ImVec2{ 0.f, 0.f }, 0.f, false });
-				panel.Render = [this]() { DrawViewportPanel(); };
+				panel.Render = [this](float ts) { DrawViewportPanel(); };
 			}
 
 			{
@@ -142,7 +142,7 @@ namespace HBL2
 				panel.Name = "Play / Stop";
 				panel.Type = Component::EditorPanel::Panel::PlayStop;
 				panel.Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
-				panel.Render = [this]() { DrawPlayStopPanel(); };
+				panel.Render = [this](float ts) { DrawPlayStopPanel(); };
 			}
 
 			{
@@ -152,7 +152,7 @@ namespace HBL2
 				auto& panel = m_Context->AddComponent<Component::EditorPanel>(systems);
 				panel.Name = "Systems";
 				panel.Type = Component::EditorPanel::Panel::Systems;
-				panel.Render = [this]() { DrawSystemsPanel(); };
+				panel.Render = [this](float ts) { DrawSystemsPanel(); };
 			}
 
 			{
@@ -163,7 +163,7 @@ namespace HBL2
 				panel.Name = "Bottom Tray";
 				panel.Type = Component::EditorPanel::Panel::Tray;
 				panel.Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
-				panel.Render = [this]() { DrawTrayPanel(); };
+				panel.Render = [this](float ts) { DrawTrayPanel(); };
 			}
 
 			// TODO: Remove from here!
@@ -206,7 +206,7 @@ namespace HBL2
 							ImGui::Begin(panel.Name.c_str(), &panel.Closeable, panel.Flags);
 						}
 
-						panel.Render();
+						panel.Render(ts);
 
 						if (m_ProjectChanged)
 						{

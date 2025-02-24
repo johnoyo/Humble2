@@ -16,10 +16,15 @@ namespace HBL2
 	class Window;
 
 	template<typename T>
-	struct ResourceTask
+	class ResourceTask
 	{
+	public:
 		Handle<T> ResourceHandle = Handle<T>();
-		bool Finished = false;
+		inline const bool Finished() const { return m_Finished; }
+
+	private:
+		bool m_Finished = false;
+		friend class AssetManager;
 	};
 
 	class HBL2_API AssetManager
@@ -129,13 +134,13 @@ namespace HBL2
 
 			// Use shared pointer for auto clean up.
 			std::shared_ptr<ResourceTask<T>> task = std::make_shared<ResourceTask<T>>();
-			task->Finished = false;
+			task->m_Finished = false;
 
 			// Do not schedule job if the asset is loaded.
 			if (IsAssetLoaded(assetHandle))
 			{
 				task->ResourceHandle = GetAsset<T>(assetHandle);
-				task->Finished = true;
+				task->m_Finished = true;
 				return task.get();
 			}
 
@@ -145,7 +150,7 @@ namespace HBL2
 			{
 				Device::Instance->SetContext(Window::Instance->GetWorkerHandle());
 				task->ResourceHandle = GetAsset<T>(assetHandle);
-				task->Finished = true;
+				task->m_Finished = true;
 				Device::Instance->SetContext(nullptr);
 			});
 

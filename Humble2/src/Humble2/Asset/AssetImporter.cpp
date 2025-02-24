@@ -579,6 +579,8 @@ namespace HBL2
 				.vertexCount = (uint32_t)meshData->VertexBuffer.size(),
 				.indexBuffer = indexBuffer,
 				.vertexBuffers = { vertexBuffer },
+				.minVertex = meshData->MeshExtents.Min,
+				.maxVertex = meshData->MeshExtents.Max,
 			});
 
 			return mesh;

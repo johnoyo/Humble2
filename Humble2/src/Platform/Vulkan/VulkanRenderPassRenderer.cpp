@@ -56,6 +56,8 @@ namespace HBL2
 				vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, localShader0->PipelineLayout, 0, 1, &globalBindGroup->DescriptorSet, 0, nullptr);
 			}
 
+			renderer->GetRendererStats().DrawCalls += drawList.size();
+
 			for (auto& draw : drawList)
 			{
 				Mesh* mesh = rm->GetMesh(draw.Mesh);

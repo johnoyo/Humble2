@@ -40,7 +40,8 @@ namespace HBL2
 		void SpriteRenderingSetup();
 		void FullScreenQuadSetup();
 
-		void FrustrumCulling();
+		bool IsInFrustum(const Component::Transform& transform);
+		bool IsInFrustum(Handle<Mesh> meshHandle, const Component::Transform& transform);
 		void StaticMeshPass();
 		void SpritePass();
 		void PostProcessPass();
@@ -54,6 +55,7 @@ namespace HBL2
 		Scene* m_EditorScene = nullptr;
 		LightData m_LightData{};
 		CameraData m_CameraData{};
+		Component::Camera::CameraFrustum m_CameraFrustum;
 
 		Handle<RenderPassLayout> m_RenderPassLayout;
 

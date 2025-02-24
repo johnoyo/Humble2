@@ -50,6 +50,8 @@ namespace HBL2
 	void OpenGLRenderer::BeginFrame()
 	{
 		TempUniformRingBuffer->Invalidate();
+
+		m_Stats.Reset();
 	}
 
 	void OpenGLRenderer::Draw(Handle<Mesh> mesh)

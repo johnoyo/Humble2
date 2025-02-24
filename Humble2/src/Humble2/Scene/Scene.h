@@ -72,6 +72,11 @@ namespace HBL2
 			return m_Registry.view<T...>();
 		}
 
+		const uint32_t GetEntityCount() const
+		{
+			return m_EntityMap.size();
+		}
+
 		template<typename T>
 		T& GetComponent(entt::entity entity)
 		{
