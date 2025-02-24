@@ -8,9 +8,7 @@
 #include "Systems\TransformSystem.h"
 #include "Systems\LinkSystem.h"
 #include "Systems\CameraSystem.h"
-#include "Systems\StaticMeshRenderingSystem.h"
-#include "Systems\SpriteRenderingSystem.h"
-#include "Systems\CompositeRenderingSystem.h"
+#include "Systems\RenderingSystem.h"
 #include "Systems\SoundSystem.h"
 
 namespace HBL2
@@ -76,9 +74,7 @@ namespace HBL2
         dst->RegisterSystem(new TransformSystem);
         dst->RegisterSystem(new LinkSystem);
         dst->RegisterSystem(new CameraSystem, SystemType::Runtime);
-        dst->RegisterSystem(new StaticMeshRenderingSystem);
-        dst->RegisterSystem(new SpriteRenderingSystem);
-        dst->RegisterSystem(new CompositeRenderingSystem);
+        dst->RegisterSystem(new RenderingSystem);
         dst->RegisterSystem(new SoundSystem, SystemType::Runtime);
 
         // Register any user systems to new scene.

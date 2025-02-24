@@ -29,9 +29,9 @@ namespace HBL2
 
         m_Context->GetRegistry()
             .view<Component::AudioSource>()
-            .each([&](entt::entity entity, Component::AudioSource& soundSource)
+            .each([&](entt::entity entity, Component::AudioSource& audioSource)
             {
-                Sound* sound = ResourceManager::Instance->GetSound(soundSource.Sound);
+                Sound* sound = ResourceManager::Instance->GetSound(audioSource.Sound);
 
                 if (sound != nullptr)
                 {
@@ -44,11 +44,11 @@ namespace HBL2
 	{
         m_Context->GetRegistry()
             .view<Component::AudioSource>()
-            .each([&](entt::entity entity, Component::AudioSource& soundSource)
+            .each([&](entt::entity entity, Component::AudioSource& audioSource)
             {
-                Sound* sound = ResourceManager::Instance->GetSound(soundSource.Sound);
+                Sound* sound = ResourceManager::Instance->GetSound(audioSource.Sound);
 
-                if (soundSource.Enabled)
+                if (audioSource.Enabled)
                 {
                     if (sound != nullptr)
                     {
@@ -71,9 +71,9 @@ namespace HBL2
     {
         m_Context->GetRegistry()
             .view<Component::AudioSource>()
-            .each([&](entt::entity entity, Component::AudioSource& soundSource)
+            .each([&](entt::entity entity, Component::AudioSource& audioSource)
             {
-                Sound* sound = ResourceManager::Instance->GetSound(soundSource.Sound);
+                Sound* sound = ResourceManager::Instance->GetSound(audioSource.Sound);
 
                 if (sound != nullptr)
                 {
