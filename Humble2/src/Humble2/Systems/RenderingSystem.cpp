@@ -309,6 +309,9 @@ namespace HBL2
 
 		ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&m_LightData);
 
+		// Store the offset that the static meshes start from in the dynamic uniform buffer.
+		uint32_t offset = m_UniformRingBuffer->GetCurrentOffset();
+
 		DrawList draws;
 
 		m_Context->GetRegistry()
@@ -351,7 +354,10 @@ namespace HBL2
 				}
 			});
 
-		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
+		// Store the total size of the static mesh draw data in the dynamic uniform data.
+		uint32_t size = draws.GetCount() * m_UniformRingBuffer->GetAlignedSize(sizeof(PerDrawData));
+
+		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = offset, .DynamicUniformBufferSize = size };
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 		commandBuffer->EndRenderPass(*passRenderer);
 		commandBuffer->Submit();
@@ -367,6 +373,9 @@ namespace HBL2
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_SpriteRenderPass, m_SpriteFrameBuffer);
 
 		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&vp);
+
+		// Store the offset that the sprites start from in the dynamic uniform buffer.
+		uint32_t offset = m_UniformRingBuffer->GetCurrentOffset();
 
 		DrawList draws;
 
@@ -408,7 +417,10 @@ namespace HBL2
 				}
 			});
 
-		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
+		// Store the total size of the sprite draw data in the dynamic uniform data.
+		uint32_t size = draws.GetCount() * m_UniformRingBuffer->GetAlignedSize(sizeof(PerDrawDataSprite));
+
+		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = offset, .DynamicUniformBufferSize = size };
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 		commandBuffer->EndRenderPass(*passRenderer);
 		commandBuffer->Submit();

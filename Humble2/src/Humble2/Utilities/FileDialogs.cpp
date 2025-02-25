@@ -41,5 +41,28 @@ namespace HBL2
             HBL2_CORE_ERROR("CopyFolder error: {}", e.what());
         }
     }
+
+    std::string FileUtils::RelativePath(const std::filesystem::path& path, const std::filesystem::path& base)
+    {
+        const std::string& pathString = path.string();
+        const std::string& baseString = base.string();
+
+        size_t baseLen = baseString.size();
+        size_t pathLen = pathString.size();
+
+        // Check if 'path' starts with 'base'
+        if (pathLen >= baseLen && std::strncmp(pathString.data(), baseString.data(), baseLen) == 0)
+        {
+            size_t start = baseLen;
+            if (start < pathLen && (pathString[start] == '/' || pathString[start] == '\\'))
+            {
+                start++; // Skip the leading separator
+            }
+
+            return pathString.substr(start); // Only one allocation now
+        }
+
+        return pathString; // Only one allocation in worst case
+    }
 }
 

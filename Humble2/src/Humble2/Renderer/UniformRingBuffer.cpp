@@ -25,7 +25,6 @@ namespace HBL2
 	void UniformRingBuffer::Invalidate()
 	{
 		m_CurrentOffset = 0;
-		memset(m_BufferData, 0, m_BufferSize);
 	}
 
 	void UniformRingBuffer::Free()

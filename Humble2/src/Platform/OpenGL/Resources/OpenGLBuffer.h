@@ -104,7 +104,7 @@ namespace HBL2
 
 		void SetData(void* newData, intptr_t offset = 0)
 		{
-			Data = newData;
+			Data = (void*)((char*)newData + offset);
 		}
 
 		void Write(intptr_t offset = 0, GLsizeiptr size = 0)

@@ -34,6 +34,8 @@ namespace HBL2
 		}
 
 		Handle<Buffer> GetBuffer() const { return m_Buffer; }
+		const uint32_t GetCurrentOffset() const { return m_CurrentOffset; }
+		const uint32_t GetAlignedSize(uint32_t byteSize) { return CeilToNextMultiple(byteSize, m_UniformOffset); }
 
 		void Invalidate();
 

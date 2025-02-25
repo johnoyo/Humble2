@@ -141,7 +141,7 @@ namespace HBL2
 				if (ImGui::Button("OK"))
 				{
 					auto filepath = m_CurrentDirectory / (std::string(sceneNameBuffer) + ".humble");
-					auto relativePath = std::filesystem::relative(filepath, HBL2::Project::GetAssetDirectory());
+					const auto& relativePath = std::filesystem::relative(filepath, HBL2::Project::GetAssetDirectory());
 
 					auto assetHandle = AssetManager::Instance->CreateAsset({
 						.debugName = "New Scene",
@@ -299,7 +299,7 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
-					auto relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), HBL2::Project::GetAssetDirectory());
+					const auto& relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), HBL2::Project::GetAssetDirectory());
 
 					auto shaderAssetHandle = AssetManager::Instance->CreateAsset({
 						.debugName = "shader-asset",
@@ -546,7 +546,7 @@ namespace HBL2
 					}
 					else
 					{
-						auto relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(materialNameBuffer) + ".mat"), HBL2::Project::GetAssetDirectory());
+						const auto& relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(materialNameBuffer) + ".mat"), HBL2::Project::GetAssetDirectory());
 
 						auto materialAssetHandle = AssetManager::Instance->CreateAsset({
 							.debugName = "material-asset",
@@ -624,7 +624,8 @@ namespace HBL2
 			ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
 
 			std::filesystem::path tempPath = HBL2::Project::GetProjectDirectory();
-			for (const auto& part : std::filesystem::relative(m_CurrentDirectory, HBL2::Project::GetProjectDirectory()))
+			const std::filesystem::path& relativeCurrentDirectory = FileUtils::RelativePath(m_CurrentDirectory, HBL2::Project::GetProjectDirectory());
+			for (const auto& part : relativeCurrentDirectory)
 			{
 				tempPath /= part;
 				ImGui::SameLine();
@@ -690,7 +691,7 @@ namespace HBL2
 					ImGui::PushID(id++);
 
 					const std::string& path = entry.path().string();
-					auto relativePath = std::filesystem::relative(entry.path(), HBL2::Project::GetAssetDirectory());
+					const auto& relativePath = FileUtils::RelativePath(entry.path(), HBL2::Project::GetAssetDirectory());
 					const std::string extension = entry.path().extension().string();
 
 					// Do not show engine metadata files.
@@ -702,7 +703,7 @@ namespace HBL2
 
 					//ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 
-					UUID assetUUID = std::hash<std::string>()(relativePath.string());
+					UUID assetUUID = std::hash<std::string>()(relativePath);
 					Handle<Asset> assetHandle = AssetManager::Instance->GetHandleFromUUID(assetUUID);
 					Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 
