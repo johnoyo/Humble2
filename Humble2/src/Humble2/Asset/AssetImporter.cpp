@@ -1346,12 +1346,6 @@ namespace HBL2
 			return;
 		}
 
-		if (sceneHandle == Context::ActiveScene)
-		{
-			HBL2_CORE_WARN("Scene asset \"{0}\" is currently open, skipping unload operation. Close it and then unload.", asset->DebugName);
-			return;
-		}
-
 		// Retrieve scene.
 		Scene* currentScene = ResourceManager::Instance->GetScene(sceneHandle);
 

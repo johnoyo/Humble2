@@ -619,8 +619,7 @@ namespace HBL2
 				ImGui::End();
 			}
 
-			// Top bar
-			// 
+
 			// Path bar
 			ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
 
@@ -637,6 +636,7 @@ namespace HBL2
 				ImGui::Text("/");
 			}
 
+			// Search bar
 			ImGui::SameLine(contentRegionAvailable.x - 200);
 			ImGui::SetNextItemWidth(200);
 			static char searchQueryBuffer[256] = "";
