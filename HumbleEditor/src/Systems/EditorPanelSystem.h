@@ -31,6 +31,7 @@ namespace HBL2
 			void DrawStatsPanel(float ts);
 			void DrawViewportPanel();
 			void DrawContentBrowserPanel();
+			void DrawDirectoryRecursive(const std::filesystem::path& path);
 			void DrawPlayStopPanel();
 			void DrawSystemsPanel();
 			void DrawTrayPanel();
@@ -61,6 +62,8 @@ namespace HBL2
 
 			ImGuizmo::OPERATION m_GizmoOperation = ImGuizmo::OPERATION::BOUNDS;
 			float m_CameraPivotDistance = 5.0f;
+
+			std::string m_SearchQuery;
 		};
 	}
 }
