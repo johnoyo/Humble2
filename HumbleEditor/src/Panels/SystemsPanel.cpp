@@ -72,21 +72,21 @@ namespace HBL2
 					switch (system->GetState())
 					{
 					case SystemState::Play:
-						ImGui::Button("Pause", ImVec2(60.f, 20.f));
+						ImGui::Button("Pause", ImVec2(60.f, 30.f));
 						if (ImGui::IsItemClicked())
 						{
 							system->SetState(SystemState::Pause);
 						}
 						break;
 					case SystemState::Pause:
-						ImGui::Button("Resume", ImVec2(60.f, 20.f));
+						ImGui::Button("Resume", ImVec2(60.f, 30.f));
 						if (ImGui::IsItemClicked())
 						{
 							system->SetState(SystemState::Play);
 						}
 						break;
 					case SystemState::Idle:
-						ImGui::Button("Idling", ImVec2(60.f, 20.f));
+						ImGui::Button("Idling", ImVec2(60.f, 30.f));
 						break;
 					}
 					ImGui::Separator();

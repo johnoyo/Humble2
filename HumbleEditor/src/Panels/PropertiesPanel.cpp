@@ -9,9 +9,49 @@ namespace HBL2
 {
 	namespace Editor
 	{
+		template<typename T>
+		static void DrawComponent(const std::string& name, Scene* ctx, std::function<void(T&)> drawUI)
+		{
+			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowItemOverlap;
+
+			if (ctx->HasComponent<T>(HBL2::Component::EditorVisible::SelectedEntity))
+			{
+				ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+				float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+				bool opened = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, name.c_str());
+				ImGui::PopStyleVar();
+				ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
+
+				bool removeComponent = false;
+
+				if (ImGui::Button("-", ImVec2{ lineHeight, lineHeight }))
+				{
+					removeComponent = true;
+				}
+
+				if (opened)
+				{
+					auto& component = ctx->GetComponent<T>(HBL2::Component::EditorVisible::SelectedEntity);
+
+					drawUI(component);
+
+					ImGui::TreePop();
+				}
+
+				ImGui::Separator();
+
+				if (removeComponent)
+				{
+					ctx->RemoveComponent<T>(HBL2::Component::EditorVisible::SelectedEntity);
+				}
+			}
+		}
+
 		void EditorPanelSystem::DrawPropertiesPanel()
 		{
-			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowItemOverlap;
+			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowItemOverlap;
 
 			if (HBL2::Component::EditorVisible::SelectedEntity != entt::null)
 			{
@@ -51,297 +91,75 @@ namespace HBL2
 					ImGui::Separator();
 				}
 
-				// Link component.
-				if (m_ActiveScene->HasComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity))
+				DrawComponent<HBL2::Component::Link>("Link", m_ActiveScene, [this](HBL2::Component::Link& link)
 				{
-					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Link).hash_code(), treeNodeFlags, "Link");
+					bool renderBaseEditor = true;
 
-					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
-
-					bool removeComponent = false;
-
-					if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+					if (HBL2::EditorUtilities::Get().HasCustomEditor<HBL2::Component::Link>())
 					{
-						removeComponent = true;
+						renderBaseEditor = HBL2::EditorUtilities::Get().DrawCustomEditor<HBL2::Component::Link, LinkEditor>(link);
 					}
 
-					if (opened)
+					if (renderBaseEditor)
 					{
-						auto& link = m_ActiveScene->GetComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity);
-
-						bool renderBaseEditor = true;
-
-						if (HBL2::EditorUtilities::Get().HasCustomEditor<HBL2::Component::Link>())
-						{
-							renderBaseEditor = HBL2::EditorUtilities::Get().DrawCustomEditor<HBL2::Component::Link, LinkEditor>(link);
-						}
-
-						if (renderBaseEditor)
-						{
-							ImGui::InputScalar("Parent", ImGuiDataType_U32, &link.Parent);
-
-							if (ImGui::BeginDragDropTarget())
-							{
-								if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
-								{
-									UUID parentEntityUUID = *((UUID*)payload->Data);
-									UUID childEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(HBL2::Component::EditorVisible::SelectedEntity).Identifier;
-									if (childEntityUUID != parentEntityUUID)
-									{
-										link.Parent = parentEntityUUID;
-									}
-									ImGui::EndDragDropTarget();
-								}
-							}
-
-							if (ImGui::BeginPopupContextItem())
-							{
-								if (ImGui::MenuItem("Unparent"))
-								{
-									link.Parent = 0;
-								}
-
-								ImGui::EndPopup();
-							}
-						}
-
-						ImGui::TreePop();
-					}
-
-					ImGui::Separator();
-
-					if (removeComponent)
-					{
-						m_ActiveScene->RemoveComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity);
-					}
-				}
-
-				// Camera component.
-				if (m_ActiveScene->HasComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity))
-				{
-					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Camera).hash_code(), treeNodeFlags, "Camera");
-
-					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
-
-					bool removeComponent = false;
-
-					if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
-					{
-						removeComponent = true;
-					}
-
-					if (opened)
-					{
-						auto& camera = m_ActiveScene->GetComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
-
-						bool renderBaseEditor = true;
-
-						if (HBL2::EditorUtilities::Get().HasCustomEditor<HBL2::Component::Camera>())
-						{
-							renderBaseEditor = HBL2::EditorUtilities::Get().DrawCustomEditor<HBL2::Component::Camera, CameraEditor>(camera);
-						}
-
-						if (renderBaseEditor)
-						{
-							ImGui::Checkbox("Enabled", &camera.Enabled);
-							ImGui::Checkbox("Primary", &camera.Primary);
-							ImGui::SliderFloat("Far", &camera.Far, 0, 100);
-							ImGui::SliderFloat("Near", &camera.Near, 100, 1500);
-							ImGui::SliderFloat("FOV", &camera.Fov, 0, 120);
-							ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 2);
-							ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
-
-							std::string selectedProjection = camera.Type == HBL2::Component::Camera::Type::Perspective ? "Perspective" : "Orthographic";
-							std::string projectionTypes[2] = { "Perspective", "Orthographic" };
-
-							if (ImGui::BeginCombo("Type", selectedProjection.c_str()))
-							{
-								for (const auto& type : projectionTypes)
-								{
-									bool isSelected = (selectedProjection == type);
-									if (ImGui::Selectable(type.c_str(), isSelected))
-									{
-										selectedProjection = type;
-									}
-
-									if (isSelected)
-									{
-										ImGui::SetItemDefaultFocus();
-									}
-								}
-								ImGui::EndCombo();
-							}
-
-							camera.Type = selectedProjection == "Perspective" ? HBL2::Component::Camera::Type::Perspective : HBL2::Component::Camera::Type::Orthographic;
-						}
-
-						ImGui::TreePop();
-					}
-
-					ImGui::Separator();
-
-					if (removeComponent)
-					{
-						m_ActiveScene->RemoveComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
-					}
-				}
-
-				// Sprite component.
-				if (m_ActiveScene->HasComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity))
-				{
-					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Sprite).hash_code(), treeNodeFlags, "Sprite New");
-
-					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
-
-					bool removeComponent = false;
-
-					if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
-					{
-						removeComponent = true;
-					}
-
-					if (opened)
-					{
-						auto& sprite = m_ActiveScene->GetComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity);
-
-						uint32_t materialHandle = sprite.Material.Pack();
-
-						ImGui::Checkbox("Enabled", &sprite.Enabled);
-
-						ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
+						ImGui::InputScalar("Parent", ImGuiDataType_U32, &link.Parent);
 
 						if (ImGui::BeginDragDropTarget())
 						{
-							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
+							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
 							{
-								uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-								Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
-
-								sprite.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
-
+								UUID parentEntityUUID = *((UUID*)payload->Data);
+								UUID childEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(HBL2::Component::EditorVisible::SelectedEntity).Identifier;
+								if (childEntityUUID != parentEntityUUID)
+								{
+									link.Parent = parentEntityUUID;
+								}
 								ImGui::EndDragDropTarget();
 							}
 						}
 
-						ImGui::TreePop();
-					}
-
-					ImGui::Separator();
-
-					if (removeComponent)
-					{
-						m_ActiveScene->RemoveComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
-					}
-				}
-
-				// StaticMesh component.
-				if (m_ActiveScene->HasComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity))
-				{
-					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::StaticMesh).hash_code(), treeNodeFlags, "Static Mesh New");
-
-					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
-
-					bool removeComponent = false;
-
-					if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
-					{
-						removeComponent = true;
-					}
-
-					if (opened)
-					{
-						auto& mesh = m_ActiveScene->GetComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
-
-						uint32_t meshHandle = mesh.Mesh.Pack();
-						uint32_t materialHandle = mesh.Material.Pack();
-
-						ImGui::Checkbox("Enabled", &mesh.Enabled);
-						ImGui::InputScalar("Mesh", ImGuiDataType_U32, (void*)(intptr_t*)&meshHandle);
-
-						if (ImGui::BeginDragDropTarget())
+						if (ImGui::BeginPopupContextItem())
 						{
-							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
+							if (ImGui::MenuItem("Unparent"))
 							{
-								uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-								Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
-
-								if (assetHandle.IsValid())
-								{
-									std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(assetHandle)->FilePath).string() + ".hblmesh", 0);
-
-									YAML::Emitter out;
-									out << YAML::BeginMap;
-									out << YAML::Key << "Mesh" << YAML::Value;
-									out << YAML::BeginMap;
-									out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(assetHandle)->UUID;
-									out << YAML::EndMap;
-									out << YAML::EndMap;
-									fout << out.c_str();
-									fout.close();
-								}
-
-								mesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(assetHandle);
-
-								ImGui::EndDragDropTarget();
+								link.Parent = 0;
 							}
+
+							ImGui::EndPopup();
 						}
-
-						ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
-
-						if (ImGui::BeginDragDropTarget())
-						{
-							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
-							{
-								uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-								Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
-
-								mesh.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
-
-								ImGui::EndDragDropTarget();
-							}
-						}
-
-						ImGui::TreePop();
 					}
+				});
 
-					ImGui::Separator();
-
-					if (removeComponent)
-					{
-						m_ActiveScene->RemoveComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
-					}
-				}
-
-				// Light component.
-				if (m_ActiveScene->HasComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity))
+				DrawComponent<HBL2::Component::Camera>("Camera", m_ActiveScene, [this](HBL2::Component::Camera& camera)
 				{
-					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::Light).hash_code(), treeNodeFlags, "Light");
+					bool renderBaseEditor = true;
 
-					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
-
-					bool removeComponent = false;
-
-					if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+					if (HBL2::EditorUtilities::Get().HasCustomEditor<HBL2::Component::Camera>())
 					{
-						removeComponent = true;
+						renderBaseEditor = HBL2::EditorUtilities::Get().DrawCustomEditor<HBL2::Component::Camera, CameraEditor>(camera);
 					}
 
-					if (opened)
+					if (renderBaseEditor)
 					{
-						auto& light = m_ActiveScene->GetComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity);
+						ImGui::Checkbox("Enabled", &camera.Enabled);
+						ImGui::Checkbox("Primary", &camera.Primary);
+						ImGui::SliderFloat("Far", &camera.Far, 0, 100);
+						ImGui::SliderFloat("Near", &camera.Near, 100, 1500);
+						ImGui::SliderFloat("FOV", &camera.Fov, 0, 120);
+						ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 2);
+						ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
 
-						ImGui::Checkbox("Enabled", &light.Enabled);
-						std::string selectedType = light.Type == HBL2::Component::Light::Type::Directional ? "Directional" : "Point";
-						std::string lightTypes[2] = { "Directional", "Point" };
+						std::string selectedProjection = camera.Type == HBL2::Component::Camera::Type::Perspective ? "Perspective" : "Orthographic";
+						std::string projectionTypes[2] = { "Perspective", "Orthographic" };
 
-						if (ImGui::BeginCombo("Type", selectedType.c_str()))
+						if (ImGui::BeginCombo("Type", selectedProjection.c_str()))
 						{
-							for (const auto& type : lightTypes)
+							for (const auto& type : projectionTypes)
 							{
-								bool isSelected = (selectedType == type);
+								bool isSelected = (selectedProjection == type);
 								if (ImGui::Selectable(type.c_str(), isSelected))
 								{
-									selectedType = type;
+									selectedProjection = type;
 								}
 
 								if (isSelected)
@@ -351,91 +169,158 @@ namespace HBL2
 							}
 							ImGui::EndCombo();
 						}
-						ImGui::Checkbox("CastsShadows", &light.CastsShadows);
-						ImGui::SliderFloat("Intensity", &light.Intensity, 0, 20);
-						if (light.Type == HBL2::Component::Light::Type::Point)
-						{
-							ImGui::SliderFloat("Attenuation", &light.Attenuation, 0, 100);
-						}
-						ImGui::ColorEdit3("Color", glm::value_ptr(light.Color));
 
-						light.Type = selectedType == "Directional" ? HBL2::Component::Light::Type::Directional : HBL2::Component::Light::Type::Point;
-
-						ImGui::TreePop();
+						camera.Type = selectedProjection == "Perspective" ? HBL2::Component::Camera::Type::Perspective : HBL2::Component::Camera::Type::Orthographic;
 					}
+				});
 
-					ImGui::Separator();
-
-					if (removeComponent)
-					{
-						m_ActiveScene->RemoveComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity);
-					}
-				}
-
-				// AudioSource component.
-				if (m_ActiveScene->HasComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity))
+				DrawComponent<HBL2::Component::Sprite>("Sprite", m_ActiveScene, [this](HBL2::Component::Sprite& sprite)
 				{
-					bool opened = ImGui::TreeNodeEx((void*)typeid(HBL2::Component::AudioSource).hash_code(), treeNodeFlags, "AudioSource");
+					uint32_t materialHandle = sprite.Material.Pack();
 
-					ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
+					ImGui::Checkbox("Enabled", &sprite.Enabled);
 
-					bool removeComponent = false;
+					ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
 
-					if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+					if (ImGui::BeginDragDropTarget())
 					{
-						removeComponent = true;
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							sprite.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+				});
+
+				DrawComponent<HBL2::Component::StaticMesh>("StaticMesh", m_ActiveScene, [this](HBL2::Component::StaticMesh& mesh)
+				{
+					uint32_t meshHandle = mesh.Mesh.Pack();
+					uint32_t materialHandle = mesh.Material.Pack();
+
+					ImGui::Checkbox("Enabled", &mesh.Enabled);
+					ImGui::InputScalar("Mesh", ImGuiDataType_U32, (void*)(intptr_t*)&meshHandle);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							if (assetHandle.IsValid())
+							{
+								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(assetHandle)->FilePath).string() + ".hblmesh", 0);
+
+								YAML::Emitter out;
+								out << YAML::BeginMap;
+								out << YAML::Key << "Mesh" << YAML::Value;
+								out << YAML::BeginMap;
+								out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(assetHandle)->UUID;
+								out << YAML::EndMap;
+								out << YAML::EndMap;
+								fout << out.c_str();
+								fout.close();
+							}
+
+							mesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(assetHandle);
+
+							ImGui::EndDragDropTarget();
+						}
 					}
 
-					if (opened)
+					ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
+
+					if (ImGui::BeginDragDropTarget())
 					{
-						auto& soundSource = m_ActiveScene->GetComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity);
-						uint32_t soundHandle = soundSource.Sound.Pack();
-
-						ImGui::Checkbox("Enabled", &soundSource.Enabled);
-						ImGui::InputScalar("Sound", ImGuiDataType_U32, (void*)(intptr_t*)&soundHandle);
-
-						if (ImGui::BeginDragDropTarget())
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
 						{
-							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Sound"))
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							mesh.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+				});
+
+				DrawComponent<HBL2::Component::Light>("Light", m_ActiveScene, [this](HBL2::Component::Light& light)
+				{
+					ImGui::Checkbox("Enabled", &light.Enabled);
+					std::string selectedType = light.Type == HBL2::Component::Light::Type::Directional ? "Directional" : "Point";
+					std::string lightTypes[2] = { "Directional", "Point" };
+
+					if (ImGui::BeginCombo("Type", selectedType.c_str()))
+					{
+						for (const auto& type : lightTypes)
+						{
+							bool isSelected = (selectedType == type);
+							if (ImGui::Selectable(type.c_str(), isSelected))
 							{
-								uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-								Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+								selectedType = type;
+							}
 
-								if (assetHandle.IsValid())
-								{
-									Asset* soundAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
-
-									std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound", 0);
-
-									YAML::Emitter out;
-									out << YAML::BeginMap;
-									out << YAML::Key << "Sound" << YAML::Value;
-									out << YAML::BeginMap;
-									out << YAML::Key << "UUID" << YAML::Value << soundAsset->UUID;
-									out << YAML::Key << "Loop" << YAML::Value << false;
-									out << YAML::Key << "StartPaused" << YAML::Value << false;
-									out << YAML::EndMap;
-									out << YAML::EndMap;
-									fout << out.c_str();
-									fout.close();
-								}
-
-								soundSource.Sound = AssetManager::Instance->GetAsset<Sound>(assetHandle);
-
-								ImGui::EndDragDropTarget();
+							if (isSelected)
+							{
+								ImGui::SetItemDefaultFocus();
 							}
 						}
-
-						ImGui::TreePop();
+						ImGui::EndCombo();
 					}
-
-					ImGui::Separator();
-
-					if (removeComponent)
+					ImGui::Checkbox("CastsShadows", &light.CastsShadows);
+					ImGui::SliderFloat("Intensity", &light.Intensity, 0, 20);
+					if (light.Type == HBL2::Component::Light::Type::Point)
 					{
-						m_ActiveScene->RemoveComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity);
+						ImGui::SliderFloat("Attenuation", &light.Attenuation, 0, 100);
 					}
-				}
+					ImGui::ColorEdit3("Color", glm::value_ptr(light.Color));
+
+					light.Type = selectedType == "Directional" ? HBL2::Component::Light::Type::Directional : HBL2::Component::Light::Type::Point;
+				});
+
+				DrawComponent<HBL2::Component::AudioSource>("AudioSource", m_ActiveScene, [this](HBL2::Component::AudioSource& audioSource)
+				{
+					uint32_t soundHandle = audioSource.Sound.Pack();
+
+					ImGui::Checkbox("Enabled", &audioSource.Enabled);
+					ImGui::InputScalar("Sound", ImGuiDataType_U32, (void*)(intptr_t*)&soundHandle);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Sound"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							if (assetHandle.IsValid())
+							{
+								Asset* soundAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound", 0);
+
+								YAML::Emitter out;
+								out << YAML::BeginMap;
+								out << YAML::Key << "Sound" << YAML::Value;
+								out << YAML::BeginMap;
+								out << YAML::Key << "UUID" << YAML::Value << soundAsset->UUID;
+								out << YAML::Key << "Loop" << YAML::Value << false;
+								out << YAML::Key << "StartPaused" << YAML::Value << false;
+								out << YAML::EndMap;
+								out << YAML::EndMap;
+								fout << out.c_str();
+								fout.close();
+							}
+
+							audioSource.Sound = AssetManager::Instance->GetAsset<Sound>(assetHandle);
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+				});
 
 				using namespace entt::literals;
 
@@ -447,13 +332,17 @@ namespace HBL2
 
 					if (NativeScriptUtilities::Get().HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
 					{
-						bool opened = ImGui::TreeNodeEx((void*)meta_type.second.info().hash(), treeNodeFlags, componentName.c_str());
+						ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
 
-						ImGui::SameLine(ImGui::GetWindowWidth() - 25.f);
+						ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+						float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+						bool opened = ImGui::TreeNodeEx((void*)meta_type.second.info().hash(), treeNodeFlags, componentName.c_str());
+						ImGui::PopStyleVar();
+						ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
 
 						bool removeComponent = false;
 
-						if (ImGui::Button("-", ImVec2{ 18.f, 18.f }))
+						if (ImGui::Button("-", ImVec2{ lineHeight, lineHeight }))
 						{
 							removeComponent = true;
 						}
@@ -484,40 +373,58 @@ namespace HBL2
 
 				if (ImGui::BeginPopup("AddComponent"))
 				{
-					if (ImGui::MenuItem("Sprite"))
+					if (!m_ActiveScene->HasComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity))
 					{
-						m_ActiveScene->AddComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity);
-						ImGui::CloseCurrentPopup();
+						if (ImGui::MenuItem("Sprite"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
 					}
 
-					if (ImGui::MenuItem("StaticMesh"))
+					if (!m_ActiveScene->HasComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity))
 					{
-						m_ActiveScene->AddComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
-						ImGui::CloseCurrentPopup();
+						if (ImGui::MenuItem("StaticMesh"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
 					}
 
-					if (ImGui::MenuItem("Camera"))
+					if (!m_ActiveScene->HasComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity))
 					{
-						m_ActiveScene->AddComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
-						ImGui::CloseCurrentPopup();
+						if (ImGui::MenuItem("Camera"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
 					}
 
-					if (ImGui::MenuItem("Link"))
+					if (!m_ActiveScene->HasComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity))
 					{
-						m_ActiveScene->AddComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity);
-						ImGui::CloseCurrentPopup();
+						if (ImGui::MenuItem("Link"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
 					}
 
-					if (ImGui::MenuItem("Light"))
+					if (!m_ActiveScene->HasComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity))
 					{
-						m_ActiveScene->AddComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity);
-						ImGui::CloseCurrentPopup();
+						if (ImGui::MenuItem("Light"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
 					}
 
-					if (ImGui::MenuItem("AudioSource"))
+					if (!m_ActiveScene->HasComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity))
 					{
-						m_ActiveScene->AddComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity);
-						ImGui::CloseCurrentPopup();
+						if (ImGui::MenuItem("AudioSource"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
 					}
 
 					// Iterate over all registered meta types
@@ -526,10 +433,13 @@ namespace HBL2
 						std::string componentName = meta_type.second.info().name().data();
 						componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
 
-						if (ImGui::MenuItem(componentName.c_str()))
+						if (!HBL2::NativeScriptUtilities::Get().HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
 						{
-							HBL2::NativeScriptUtilities::Get().AddComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
+							if (ImGui::MenuItem(componentName.c_str()))
+							{
+								HBL2::NativeScriptUtilities::Get().AddComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+								ImGui::CloseCurrentPopup();
+							}
 						}
 					}
 

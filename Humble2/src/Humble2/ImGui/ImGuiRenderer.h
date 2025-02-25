@@ -3,6 +3,7 @@
 #include "Core/Window.h"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <ImGuizmo.h>
 
 namespace HBL2
@@ -29,6 +30,10 @@ namespace HBL2
 		void Gizmos_ViewManipulate(float* view, float length, ImVec2 position, ImVec2 size, ImU32 backgroundColor);
 
 		ImGuiContext* GetContext();
+		void SetEditorTheme(const ImVec4& accentColor);
+
+	protected:
+		void SetImGuiStyle();
 
 	protected:
 		Window* m_Window = nullptr;
