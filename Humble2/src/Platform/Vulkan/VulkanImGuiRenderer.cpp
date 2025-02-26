@@ -3,6 +3,8 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
+#include "Core\Input.h"
+
 namespace HBL2
 {
 	void VulkanImGuiRenderer::Initialize()
@@ -49,8 +51,13 @@ namespace HBL2
 		//io.ConfigViewportsNoAutoMerge = true;
 		//io.ConfigViewportsNoTaskBarIcon = true;
 
+		float fontSize = 18.0f;
+		io.Fonts->AddFontFromFileTTF("assets/fonts/OpenSans-Bold.ttf", fontSize);
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/OpenSans-Regular.ttf", fontSize);
+
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
+		SetImGuiStyle();
 
 		// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
 		ImGuiStyle& style = ImGui::GetStyle();

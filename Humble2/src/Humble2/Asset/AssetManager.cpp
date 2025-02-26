@@ -52,7 +52,15 @@ namespace HBL2
 				.type = AssetType::Mesh,
 			});
 		}
-		else if (extension == ".hblmat")
+		else if (extension == ".mp3" || extension == ".wav" || extension == ".ogg")
+		{
+			assetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "sound-asset",
+				.filePath = relativePath,
+				.type = AssetType::Sound,
+			});
+		}
+		else if (extension == ".mat")
 		{
 			assetHandle = AssetManager::Instance->CreateAsset({
 				.debugName = "material-asset",

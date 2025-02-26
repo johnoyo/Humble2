@@ -44,3 +44,8 @@ project "ImGui"
 		runtime "Release"
 		optimize "on"
         symbols "off"
+
+	filter "configurations:Emscripten"
+        defines { "EMSCRIPTEN" }
+        runtime "Release"
+        optimize "on"

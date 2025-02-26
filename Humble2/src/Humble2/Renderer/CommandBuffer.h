@@ -96,7 +96,7 @@ class RenderPass
 
 void OnUpdate()
 {
-	auto& renderables = m_Context->GetRegistry().group<Component::StaticMesh_New>(entt::get<Component::Transform>)
+	auto& renderables = m_Context->GetRegistry().group<Component::StaticMesh>(entt::get<Component::Transform>)
 
 	RenderPass::Shadow->Bake();
 	RenderPass::Main->Bake();

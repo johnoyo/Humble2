@@ -1,5 +1,6 @@
 #include "SceneSerializer.h"
 
+#include "Utilities\UnityBuild.h"
 #include "Utilities\YamlUtilities.h"
 #include "UI\UserInterfaceUtilities.h"
 
@@ -74,12 +75,12 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
-		if (m_Scene->HasComponent<Component::Sprite_New>(entity))
+		if (m_Scene->HasComponent<Component::Sprite>(entity))
 		{
-			out << YAML::Key << "Component::Sprite_New";
+			out << YAML::Key << "Component::Sprite";
 			out << YAML::BeginMap;
 
-			auto& sprite = m_Scene->GetComponent<Component::Sprite_New>(entity);
+			auto& sprite = m_Scene->GetComponent<Component::Sprite>(entity);
 
 			out << YAML::Key << "Enabled" << YAML::Value << sprite.Enabled;
 
@@ -116,12 +117,12 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
-		if (m_Scene->HasComponent<Component::StaticMesh_New>(entity))
+		if (m_Scene->HasComponent<Component::StaticMesh>(entity))
 		{
-			out << YAML::Key << "Component::StaticMesh_New";
+			out << YAML::Key << "Component::StaticMesh";
 			out << YAML::BeginMap;
 
-			auto& staticMesh = m_Scene->GetComponent<Component::StaticMesh_New>(entity);
+			auto& staticMesh = m_Scene->GetComponent<Component::StaticMesh>(entity);
 
 			out << YAML::Key << "Enabled" << YAML::Value << staticMesh.Enabled;
 
@@ -192,6 +193,47 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::AudioSource>(entity))
+		{
+			out << YAML::Key << "Component::AudioSource";
+			out << YAML::BeginMap;
+
+			auto& soundSource = m_Scene->GetComponent<Component::AudioSource>(entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << soundSource.Enabled;
+
+			const std::vector<Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+			Asset* soundAsset = nullptr;
+			bool soundFound = false;
+
+			for (auto handle : assetHandles)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+				if (asset->Type == AssetType::Sound && asset->Indentifier != 0 && asset->Indentifier == soundSource.Sound.Pack() && !soundFound)
+				{
+					soundFound = true;
+					soundAsset = asset;
+				}
+
+				if (soundFound)
+				{
+					break;
+				}
+			}
+
+			if (soundAsset != nullptr)
+			{
+				out << YAML::Key << "Sound" << YAML::Value << soundAsset->UUID;
+			}
+			else
+			{
+				out << YAML::Key << "Sound" << YAML::Value << (UUID)0;
+			}
+
+			out << YAML::EndMap;
+		}
+
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
 			const std::string& componentName = meta_type.second.info().name().data();
@@ -235,6 +277,7 @@ namespace HBL2
 		out << YAML::EndSeq;
 
 		std::vector<UUID> componentUUIDs;
+		std::vector<UUID> helperScriptUUIDs;
 		std::vector<UUID> systemUUIDs;
 
 		const std::vector<Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
@@ -257,6 +300,10 @@ namespace HBL2
 					{
 						componentUUIDs.push_back(asset->UUID);
 					}
+					else if (script->Type == ScriptType::HELPER_SCRIPT)
+					{
+						helperScriptUUIDs.push_back(asset->UUID);
+					}
 				}
 			}
 		}
@@ -272,6 +319,13 @@ namespace HBL2
 		for (UUID componentUUID : componentUUIDs)
 		{
 			out << YAML::Key << componentUUID << YAML::Value;
+		}
+		out << YAML::EndSeq;
+
+		out << YAML::Key << "User Helper Scripts" << YAML::BeginSeq;
+		for (UUID helperScriptUUID : helperScriptUUIDs)
+		{
+			out << YAML::Key << helperScriptUUID << YAML::Value;
 		}
 		out << YAML::EndSeq;
 
@@ -321,10 +375,23 @@ namespace HBL2
 		std::string sceneName = data["Scene"].as<std::string>();
 		HBL2_CORE_TRACE("Deserializing scene: {0}", sceneName);
 
-		HBL2_CORE_TRACE("Deserializing user components of scene: {0}", sceneName);
 		auto components = data["User Components"];
+		auto helperScripts = data["User Helper Scripts"];
+		auto systems = data["User Systems"];
+
+		// If we have user defined scripts but no dll exists, build it.
+		if ((components.size() > 0 || systems.size() > 0 || helperScripts.size() > 0) && !UnityBuild::Get().Exists())
+		{
+			HBL2_CORE_TRACE("No user defined scripts dll found for scene: {}, building one now...", m_Scene->GetName());
+
+			UnityBuild::Get().Combine();
+			UnityBuild::Get().Build(m_Scene);
+		}
+
 		if (components)
 		{
+			HBL2_CORE_TRACE("Deserializing user components of scene: {0}", sceneName);
+
 			for (auto componentUUID : components)
 			{
 				Handle<Script> componentScriptHandle = AssetManager::Instance->GetAsset<Script>(componentUUID.as<UUID>());
@@ -341,10 +408,25 @@ namespace HBL2
 			}
 		}
 
-		HBL2_CORE_TRACE("Deserializing user systems of scene: {0}", sceneName);
-		auto systems = data["User Systems"];
+		if (helperScripts)
+		{
+			HBL2_CORE_TRACE("Deserializing user helper scripts of scene: {0}", sceneName);
+
+			for (auto helperScriptUUID : helperScripts)
+			{
+				Handle<Script> helperScriptHandle = AssetManager::Instance->GetAsset<Script>(helperScriptUUID.as<UUID>());
+				
+				if (!helperScriptHandle.IsValid())
+				{
+					HBL2_CORE_ERROR("Could not load helper script with UUID: {}", helperScriptUUID.as<UUID>());
+				}
+			}
+		}
+
 		if (systems)
 		{
+			HBL2_CORE_TRACE("Deserializing user systems of scene: {0}", sceneName);
+
 			for (auto systemUUID : systems)
 			{
 				Handle<Script> systemScriptHandle = AssetManager::Instance->GetAsset<Script>(systemUUID.as<UUID>());
@@ -422,26 +504,28 @@ namespace HBL2
 						{
 						case 1:
 							camera.Type = Component::Camera::Type::Perspective;
+							break;
 						case 2:
 							camera.Type = Component::Camera::Type::Orthographic;
+							break;
 						default:
 							break;
 						}
 					}
 				}
 
-				auto sprite_NewComponent = entity["Component::Sprite_New"];
+				auto sprite_NewComponent = entity["Component::Sprite"];
 				if (sprite_NewComponent)
 				{
-					auto& sprite = m_Scene->AddComponent<Component::Sprite_New>(deserializedEntity);
+					auto& sprite = m_Scene->AddComponent<Component::Sprite>(deserializedEntity);
 					sprite.Enabled = sprite_NewComponent["Enabled"].as<bool>();
 					sprite.Material = AssetManager::Instance->GetAsset<Material>(sprite_NewComponent["Material"].as<UUID>());
 				}
 
-				auto staticMesh_NewComponent = entity["Component::StaticMesh_New"];
+				auto staticMesh_NewComponent = entity["Component::StaticMesh"];
 				if (staticMesh_NewComponent)
 				{
-					auto& staticMesh = m_Scene->AddComponent<Component::StaticMesh_New>(deserializedEntity);
+					auto& staticMesh = m_Scene->AddComponent<Component::StaticMesh>(deserializedEntity);
 					staticMesh.Enabled = staticMesh_NewComponent["Enabled"].as<bool>();
 					staticMesh.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
 					staticMesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(staticMesh_NewComponent["Mesh"].as<UUID>());
@@ -462,12 +546,22 @@ namespace HBL2
 						{
 						case 1:
 							light.Type = Component::Light::Type::Directional;
+							break;
 						case 2:
 							light.Type = Component::Light::Type::Point;
+							break;
 						default:
 							break;
 						}
 					}
+				}
+
+				auto soundSource_NewComponent = entity["Component::AudioSource"];
+				if (soundSource_NewComponent)
+				{
+					auto& soundSource = m_Scene->AddComponent<Component::AudioSource>(deserializedEntity);
+					soundSource.Enabled = soundSource_NewComponent["Enabled"].as<bool>();
+					soundSource.Sound = AssetManager::Instance->GetAsset<Sound>(soundSource_NewComponent["Sound"].as<UUID>());
 				}
 
 				for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))

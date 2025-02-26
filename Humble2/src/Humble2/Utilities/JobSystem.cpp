@@ -1,137 +1,202 @@
-#include "JobSystem.h"
+﻿#include "JobSystem.h"
 
 namespace HBL2
 {
+    JobSystem* JobSystem::s_Instance = nullptr;
+
 	void JobSystem::Initialize()
 	{
         HBL2_CORE_ASSERT(s_Instance == nullptr, "JobSystem::s_Instance is not null! JobSystem::Initialize has been called twice.");
         s_Instance = new JobSystem;
 
-        Get().InitializeInternal();
+        Get().InternalInitialize();
 	}
 
     void JobSystem::Shutdown()
     {
         HBL2_CORE_ASSERT(s_Instance != nullptr, "JobSystem::s_Instance is null!");
 
+        Get().InternalShutdown();
+
         delete s_Instance;
         s_Instance = nullptr;
     }
 
-    void JobSystem::InitializeInternal()
+    bool JobSystem::IsShuttingDown()
     {
-        // Initialize the worker execution state to 0:
-        m_FinishedLabel.store(0);
+        return Get().m_Shutdown.load() == true;
+    }
 
-        // Retrieve the number of hardware threads in this system:
-        auto numCores = std::thread::hardware_concurrency();
+    void JobSystem::InternalInitialize()
+    {
+        m_NumThreads = std::max(1u, std::thread::hardware_concurrency() - 1);
 
-        HBL2_CORE_TRACE("Number of hardware threads in this system: {0}", numCores);
+        m_LocalJobQueues.resize(m_NumThreads);
+        m_Workers.reserve(m_NumThreads);
 
-        // Calculate the actual number of worker threads we want:
-        m_NumThreads = std::max(1u, numCores);
-
-        // Create all our worker threads while immediately starting them:
         for (uint32_t threadID = 0; threadID < m_NumThreads; ++threadID)
         {
-            std::thread worker([this]
-            {
-                std::function<void()> job;
+            std::thread& worker = m_Workers.emplace_back([this, threadID] { WorkerThreadFunc(threadID); });
 
-                // This is the infinite loop that a worker thread will do 
-                while (true)
-                {
-                    if (m_JobPool.pop_front(job)) // try to grab a job from the jobPool queue
-                    {
-                        // It found a job, execute it:
-                        job(); // execute job
-                        m_FinishedLabel.fetch_add(1); // update worker label state
-                    }
-                    else
-                    {
-                        // no job, put thread to sleep
-                        std::unique_lock<std::mutex> lock(m_WakeMutex);
-                        m_WakeCondition.wait(lock);
-                    }
-                }
-            });
+            auto handle = worker.native_handle();
 
-            // *****Here we could do platform specific thread setup...
+            // Put threads on increasing cores starting from 2nd.
+            int core = threadID + 1;
+#ifdef _WIN32
+            // Put each thread on to dedicated core.
+            DWORD_PTR affinityMask = 1ull << core;
+            DWORD_PTR affinity_result = SetThreadAffinityMask(handle, affinityMask);
+            assert(affinity_result > 0);
 
-            worker.detach(); // forget about this thread, let it do it's job in the infinite loop that we created above
+            // Set priority to normal.
+            BOOL priority_result = SetThreadPriority(handle, THREAD_PRIORITY_NORMAL);
+            assert(priority_result != 0);
+
+            // Give a name to each thread for easier debugging.
+            std::wstring wthreadname = L"HBL2::Job_" + std::to_wstring(threadID);
+            HRESULT hr = SetThreadDescription(handle, wthreadname.c_str());
+            assert(SUCCEEDED(hr));
+#endif
         }
     }
 
-	void JobSystem::Execute(const std::function<void()>& job)
-	{
-        // The main thread label state is updated:
-        m_CurrentLabel += 1;
-
-        // Try to push a new job until it is pushed successfully:
-        while (!m_JobPool.push_back(job)) 
-        { 
-            m_WakeCondition.notify_one();
-            std::this_thread::yield();
+    void JobSystem::InternalShutdown()
+    {
+        if (JobSystem::IsShuttingDown())
+        {
+            return;
         }
 
-        m_WakeCondition.notify_one();
-	}
+        m_Shutdown.store(true);
+        m_WakeCondition.notify_all();
 
-    void JobSystem::Dispatch(uint32_t jobCount, uint32_t groupSize, const std::function<void(JobDispatchArgs)>& job)
+        for (std::thread& worker : m_Workers)
+        {
+            if (worker.joinable())
+            {
+                worker.join();
+            }
+        }
+    }
+
+    void JobSystem::Execute(JobContext& ctx, const std::function<void()>& job)
+    {
+        ctx.counter.fetch_add(1, std::memory_order_relaxed);
+
+        auto wrappedJob = [job, &ctx]()
+        {
+            job();
+            ctx.counter.fetch_sub(1, std::memory_order_release);
+        };
+
+        uint32_t threadID = m_NextQueue.fetch_add(1, std::memory_order_relaxed) % m_NumThreads;
+        m_LocalJobQueues[threadID].PushBack(wrappedJob);
+
+        m_WakeCondition.notify_one();
+    }
+
+    void JobSystem::Dispatch(JobContext& ctx, uint32_t jobCount, uint32_t groupSize, const std::function<void(JobDispatchArgs)>& job)
     {
         if (jobCount == 0 || groupSize == 0)
         {
             return;
         }
 
-        // Calculate the amount of job groups to dispatch (overestimate, or "ceil"):
-        const uint32_t groupCount = (jobCount + groupSize - 1) / groupSize;
+        uint32_t groupCount = (jobCount + groupSize - 1) / groupSize;
+        ctx.counter.fetch_add(groupCount, std::memory_order_acquire);
 
-        // The main thread label state is updated:
-        m_CurrentLabel += groupCount;
-
-        for (uint32_t groupIndex = 0; groupIndex < groupCount; ++groupIndex)
+        for (uint32_t i = 0; i < groupCount; ++i)
         {
-            // For each group, generate one real job:
-            const auto& jobGroup = [jobCount, groupSize, job, groupIndex]()
+            auto task = [=, &ctx]()
             {
-                // Calculate the current group's offset into the jobs:
-                const uint32_t groupJobOffset = groupIndex * groupSize;
-                const uint32_t groupJobEnd = std::min(groupJobOffset + groupSize, jobCount);
-
-                JobDispatchArgs args;
-                args.groupIndex = groupIndex;
-
-                // Inside the group, loop through all job indices and execute job for each index:
-                for (uint32_t i = groupJobOffset; i < groupJobEnd; ++i)
+                uint32_t start = i * groupSize;
+                uint32_t end = std::min(start + groupSize, jobCount);
+                for (uint32_t j = start; j < end; ++j)
                 {
-                    args.jobIndex = i;
-                    job(args);
+                    job(JobDispatchArgs{ j, i });
                 }
+
+                ctx.counter.fetch_sub(1, std::memory_order_acq_rel);
             };
 
-            // Try to push a new job until it is pushed successfully:
-            while (!m_JobPool.push_back(jobGroup))
+            uint32_t threadID = i % m_NumThreads;
+            m_LocalJobQueues[threadID].PushBack(task);
+        }
+
+        // Wake up all worker threads to start processing the work.
+        m_WakeCondition.notify_all();
+    }
+
+    bool JobSystem::Busy(const JobContext& ctx)
+    {
+        return ctx.counter.load(std::memory_order_acquire) > 0;
+    }
+
+    void JobSystem::Wait(const JobContext& ctx)
+    {
+        if (Busy(ctx))
+        {
+            // Wake up all worker threads to ensure work is being processed.
+            m_WakeCondition.notify_all();
+
+            std::function<void()> job;
+
+            // Try to pick up jobs from other threads while waiting.
+            for (uint32_t i = 0; i < m_NumThreads; ++i)
             {
-                m_WakeCondition.notify_one();
-                std::this_thread::yield();
+                while (m_LocalJobQueues[i].PopFront(job))
+                {
+                    job();
+                }
             }
 
-            m_WakeCondition.notify_one(); // wake one thread
+            // This thread did not find any available jobs to pick up.
+            while (Busy(ctx))
+            {
+                // If we are here, then there are still remaining jobs that this thread couldn't pick up.
+                //	In this case those jobs are not standing by on a queue but currently executing
+                //	on other threads, so they cannot be picked up by this thread.
+                //	Allow to swap out this thread by OS to not spin endlessly for nothing
+                std::this_thread::yield();
+            }
         }
     }
 
-	bool JobSystem::Busy()
-	{
-		return m_FinishedLabel.load() < m_CurrentLabel;
-	}
+    void JobSystem::WorkerThreadFunc(uint32_t threadIndex)
+    {
+        while (!m_Shutdown.load())
+        {
+            std::function<void()> job;
+            bool jobFound = false;
 
-	void JobSystem::Wait()
-	{
-        while (Busy())
-        { 
-            m_WakeCondition.notify_one();
-            std::this_thread::yield();
+            // 1️. First, try to pop from the local queue
+            if (m_LocalJobQueues[threadIndex].PopFront(job))
+            {
+                jobFound = true;
+            }
+            else
+            {
+                // 2️. If no job found in local queue, steal from another thread
+                for (uint32_t i = 0; i < m_NumThreads; ++i)
+                {
+                    uint32_t victimThread = (threadIndex + i + 1) % m_NumThreads;
+                    if (m_LocalJobQueues[victimThread].PopFront(job))
+                    {
+                        jobFound = true;
+                        break;
+                    }
+                }
+            }
+
+            if (jobFound)
+            {
+                job();
+            }
+            else
+            {
+                std::unique_lock<std::mutex> lock(m_WakeMutex);
+                m_WakeCondition.wait(lock);
+            }
         }
-	}
+    }
 }

@@ -17,6 +17,6 @@ namespace HBL2
 
 	protected:
 		virtual uint32_t LoadAsset(Handle<Asset> handle) override;
-		virtual void DestroyAsset(Handle<Asset> handle) override;
+		virtual bool DestroyAsset(Handle<Asset> handle) override;
 	};
 }

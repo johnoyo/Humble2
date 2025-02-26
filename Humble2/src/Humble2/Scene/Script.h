@@ -9,11 +9,11 @@ namespace HBL2
 	enum class HBL2_API ScriptType
 	{
 		NONE = 0,
-		UNITY_BUILD_SCRIPT,
 		SYSTEM,
 		COMPONENT,
 		EDITOR,
 		RENDER_PASS,
+		HELPER_SCRIPT,
 	};
 
 	struct HBL2_API ScriptDescriptor

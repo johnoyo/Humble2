@@ -41,6 +41,14 @@ namespace HBL2
 				.textures = { Renderer::Instance->MainColorTexture },
 			});
 		}
+
+		EventDispatcher::Get().Register("FramebufferSizeEvent", [&](const Event& e)
+		{
+			const FramebufferSizeEvent& wse = dynamic_cast<const FramebufferSizeEvent&>(e);
+
+			m_Resize = true;
+			m_NewSize = { wse.Width, wse.Height };
+		});
 	}
 
 	void VulkanRenderer::BeginFrame()
@@ -51,28 +59,27 @@ namespace HBL2
 		VK_VALIDATE(vkAcquireNextImageKHR(m_Device->Get(), m_SwapChain, 1000000000, GetCurrentFrame().ImageAvailableSemaphore, nullptr, &m_SwapchainImageIndex), "vkAcquireNextImageKHR");
 
 		TempUniformRingBuffer->Invalidate();
+
+		m_Stats.Reset();
 	}
 
 	void VulkanRenderer::EndFrame()
 	{
+		// In the 1st frame there is no active scene, the rendering systems do not get called.
+		// So the semaphores that renderer waits on are never updated so there are validation errors.
+		// To prevent this, we have a stub pass that does no rendering but follows the flow that the renderer expects.
 		if (!Context::ActiveScene.IsValid())
 		{
 			StubRenderPass();
 		}
 
+		// NOTE: Maybe this is not needed to happen every end of the frame, since all the frames in flight use the same texture.
 		if (MainColorTexture.IsValid())
 		{
-			if (m_ColorAttachmentID == VK_NULL_HANDLE)
-			{
-				VulkanTexture* colorTarget = m_ResourceManager->GetTexture(MainColorTexture);
+			Handle<BindGroup> presentBindGroupHandle = m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalPresentBindings;
 
-				VkImage offScreenImage = colorTarget->Image;
-				VkImageView offScreenImageView = colorTarget->ImageView;
-				VkSampler offScreenImageSampler = colorTarget->Sampler;
-
-				//ImGui_ImplVulkan_RemoveTexture(m_ColorAttachmentID);				
-				m_ColorAttachmentID = ImGui_ImplVulkan_AddTexture(offScreenImageSampler, offScreenImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-			}
+			VulkanBindGroup* vkPresentBindGroup = m_ResourceManager->GetBindGroup(presentBindGroupHandle);
+			m_ColorAttachmentID = vkPresentBindGroup->DescriptorSet;
 		}
 
 		m_ResourceManager->Flush(m_FrameNumber);
@@ -94,9 +101,19 @@ namespace HBL2
 			.pImageIndices = &m_SwapchainImageIndex,
 		};		
 
-		VK_VALIDATE(vkQueuePresentKHR(m_PresentQueue, &presentInfo), "vkQueuePresentKHR");
+		VkResult result = vkQueuePresentKHR(m_PresentQueue, &presentInfo);
 
 		m_FrameNumber++;
+
+		if (m_Resize)
+		{
+			Resize(m_NewSize.x, m_NewSize.y);
+			m_Resize = false;
+		}
+		else
+		{
+			VK_VALIDATE(result, "vkQueuePresentKHR");
+		}
 	}
 
 	void VulkanRenderer::Clean()
@@ -116,9 +133,6 @@ namespace HBL2
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
-
-		m_ResourceManager->DeleteBindGroupLayout(ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::INVALID));
-		m_ResourceManager->DeleteBindGroupLayout(ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR));
 
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
@@ -140,7 +154,6 @@ namespace HBL2
 		}
 
 		m_ResourceManager->DeleteTexture(m_DepthImage);
-		m_ResourceManager->DeleteTexture(TextureUtilities::Get().WhiteTexture);
 
 		TempUniformRingBuffer->Free();
 
@@ -270,21 +283,6 @@ namespace HBL2
 		return vkCmdObj;
 	}
 
-	void VulkanRenderer::SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData)
-	{
-		VulkanBuffer* vulkanBuffer = m_ResourceManager->GetBuffer(buffer);
-		vulkanBuffer->Data = newData;
-	}
-
-	void VulkanRenderer::SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData)
-	{
-		VulkanBindGroup* vulkanBindGroup = m_ResourceManager->GetBindGroup(bindGroup);
-		if (bufferIndex < vulkanBindGroup->Buffers.size())
-		{
-			SetBufferData(vulkanBindGroup->Buffers[bufferIndex].buffer, vulkanBindGroup->Buffers[bufferIndex].byteOffset, newData);
-		}
-	}
-
 	void VulkanRenderer::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function)
 	{
 		VkCommandBuffer cmd = m_UploadContext.CommandBuffer;
@@ -327,6 +325,96 @@ namespace HBL2
 
 		// Reset the command buffers inside the command pool
 		vkResetCommandPool(m_Device->Get(), m_UploadContext.CommandPool, 0);
+	}
+
+	void VulkanRenderer::Resize(uint32_t width, uint32_t height)
+	{
+		if (width == 0 || height == 0)
+		{
+			return;
+		}
+
+		VK_VALIDATE(vkDeviceWaitIdle(m_Device->Get()), "vkDeviceWaitIdle");
+
+		// Cleanup old swapchain resources.
+		for (auto frameBuffer : m_FrameBuffers)
+		{
+			m_ResourceManager->DeleteFrameBuffer(frameBuffer);
+		}
+
+		m_FrameBuffers.clear();
+
+		for (auto imageView : m_SwapChainImageViews)
+		{
+			vkDestroyImageView(m_Device->Get(), imageView, nullptr);
+		}
+
+		m_SwapChainImages.clear();
+		m_SwapChainImageViews.clear();
+		m_SwapChainColorTextures.clear();
+
+		// Destroy the depth buffer.
+		m_ResourceManager->DeleteTexture(m_DepthImage);
+
+		// Destroy the swapchain
+		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
+
+		// Destroy old offscreen textures.
+		m_ResourceManager->DeleteTexture(MainColorTexture);
+		m_ResourceManager->DeleteTexture(MainDepthTexture);
+
+		m_Device->UpdateSwapChainSupportDetails();
+
+		// Recreate swapchain and associated resources.
+		CreateSwapchain();
+		CreateImageViews();
+		CreateFrameBuffers();
+
+		// Recreate the offscreen texture (render target).
+		MainColorTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "viewport-color-target",
+			.dimensions = { width, height, 1 },
+			.format = Format::BGRA8_UNORM,
+			.internalFormat = Format::BGRA8_UNORM,
+			.usage = TextureUsage::RENDER_ATTACHMENT,
+			.aspect = TextureAspect::COLOR,
+			.sampler =
+			{
+				.filter = Filter::LINEAR,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
+		MainDepthTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "viewport-depth-target",
+			.dimensions = { width, height, 1 },
+			.format = Format::D32_FLOAT,
+			.internalFormat = Format::D32_FLOAT,
+			.usage = TextureUsage::DEPTH_STENCIL,
+			.aspect = TextureAspect::DEPTH,
+			.createSampler = false,
+		});
+
+		// Update descriptor sets (for the quad shader).
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalPresentBindings);
+
+			m_Frames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
+				.debugName = "global-present-bind-group",
+				.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
+				.textures = { MainColorTexture },  // Updated with new size
+			});
+
+			VulkanBindGroup* vkGlobalPresentBindings = m_ResourceManager->GetBindGroup(m_Frames[i].GlobalPresentBindings);
+			vkGlobalPresentBindings->Update();
+		}
+
+		// Call on resize callbacks.
+		for (auto&& [name, callback] : m_OnResizeCallbacks)
+		{
+			callback(width, height);
+		}
 	}
 
 	void VulkanRenderer::CreateAllocator()

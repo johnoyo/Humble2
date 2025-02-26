@@ -19,13 +19,12 @@ namespace HBL2
 		m_BufferData = operator new(m_BufferSize);
 		memset(m_BufferData, 0, m_BufferSize);
 
-		Renderer::Instance->SetBufferData(m_Buffer, 0, m_BufferData);
+		ResourceManager::Instance->SetBufferData(m_Buffer, 0, m_BufferData);
 	}
 
 	void UniformRingBuffer::Invalidate()
 	{
 		m_CurrentOffset = 0;
-		memset(m_BufferData, 0, m_BufferSize);
 	}
 
 	void UniformRingBuffer::Free()
@@ -51,7 +50,7 @@ namespace HBL2
 		m_BufferSize = m_BufferSize * 2;
 
 		// Update buffer.
-		Renderer::Instance->SetBufferData(m_Buffer, 0, m_BufferData);
+		ResourceManager::Instance->SetBufferData(m_Buffer, 0, m_BufferData);
 	}
 
 	uint32_t UniformRingBuffer::CeilToNextMultiple(uint32_t value, uint32_t step)

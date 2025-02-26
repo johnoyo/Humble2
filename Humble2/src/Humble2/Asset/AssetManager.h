@@ -4,11 +4,29 @@
 #include "Resources\Handle.h"
 #include "Resources\Pool.h"
 
+#include "Renderer\Device.h"
+
+#include "Utilities\JobSystem.h"
+
 #include <exception>
 #include <future>
 
 namespace HBL2
 {
+	class Window;
+
+	template<typename T>
+	class ResourceTask
+	{
+	public:
+		Handle<T> ResourceHandle = Handle<T>();
+		inline const bool Finished() const { return m_Finished; }
+
+	private:
+		bool m_Finished = false;
+		friend class AssetManager;
+	};
+
 	class HBL2_API AssetManager
 	{
 	public:
@@ -19,7 +37,14 @@ namespace HBL2
 
 		Handle<Asset> CreateAsset(const AssetDescriptor&& desc)
 		{
-			auto handle = m_AssetPool.Insert(Asset(std::forward<const AssetDescriptor>(desc)));
+			auto handle = GetHandleFromUUID(std::hash<std::string>()(desc.filePath.string()));
+
+			if (IsAssetValid(handle))
+			{
+				return handle;
+			}
+
+			handle = m_AssetPool.Insert(Asset(std::forward<const AssetDescriptor>(desc)));
 			m_RegisteredAssets.push_back(handle);
 
 			Asset* asset = GetAssetMetadata(handle);
@@ -29,17 +54,31 @@ namespace HBL2
 		}
 		void DeleteAsset(Handle<Asset> handle, bool destroy = false)
 		{
-			// NOTE(John): Maybe consider removing the handle from m_RegisteredAssets and m_RegisteredAssetMap??
 			if (destroy)
 			{
-				DestroyAsset(handle);
+				if (DestroyAsset(handle))
+				{
+					Asset* asset = GetAssetMetadata(handle);
+					if (asset != nullptr)
+					{
+						m_RegisteredAssetMap.erase(asset->UUID);
+					}
+
+					auto assetIterator = std::find(m_RegisteredAssets.begin(), m_RegisteredAssets.end(), handle);
+				
+					if (assetIterator != m_RegisteredAssets.end())
+					{
+						m_RegisteredAssets.erase(assetIterator);
+					}
+
+					m_AssetPool.Remove(handle);
+				}
 			}
 			else
 			{
 				UnloadAsset(handle);
 			}
 
-			m_AssetPool.Remove(handle);
 		}
 		Asset* GetAssetMetadata(Handle<Asset> handle) const
 		{
@@ -59,7 +98,7 @@ namespace HBL2
 		template<typename T>
 		Handle<T> GetAsset(Handle<Asset> handle)
 		{
-			if (!handle.IsValid())
+			if (!IsAssetValid(handle))
 			{
 				return Handle<T>();
 			}
@@ -79,15 +118,43 @@ namespace HBL2
 		}
 
 		template<typename T>
-		Handle<T> GetAssetAsync(UUID assetUUID)
+		ResourceTask<T>* GetAssetAsync(UUID assetUUID)
 		{
-			// TODO
+			return GetAssetAsync<T>(GetHandleFromUUID(assetUUID));
 		}
 
 		template<typename T>
-		Handle<T> GetAssetAsync(Handle<Asset> assetHandle)
+		ResourceTask<T>* GetAssetAsync(Handle<Asset> assetHandle, JobContext* customCtx = nullptr)
 		{
-			// TODO
+			// Do not schedule job if the asset handle is invalid.
+			if (!IsAssetValid(assetHandle))
+			{
+				return nullptr;
+			}
+
+			// Use shared pointer for auto clean up.
+			std::shared_ptr<ResourceTask<T>> task = std::make_shared<ResourceTask<T>>();
+			task->m_Finished = false;
+
+			// Do not schedule job if the asset is loaded.
+			if (IsAssetLoaded(assetHandle))
+			{
+				task->ResourceHandle = GetAsset<T>(assetHandle);
+				task->m_Finished = true;
+				return task.get();
+			}
+
+			JobContext& ctx = (customCtx == nullptr ? m_ResourceJobCtx : *customCtx);
+
+			JobSystem::Get().Execute(ctx, [this, assetHandle, task]()
+			{
+				Device::Instance->SetContext(Window::Instance->GetWorkerHandle());
+				task->ResourceHandle = GetAsset<T>(assetHandle);
+				task->m_Finished = true;
+				Device::Instance->SetContext(nullptr);
+			});
+
+			return task.get();
 		}
 
 		std::vector<Handle<Asset>>& GetRegisteredAssets() { return m_RegisteredAssets; }
@@ -111,16 +178,16 @@ namespace HBL2
 
 		virtual void SaveAsset(Handle<Asset> handle) = 0;
 
-		virtual void UnloadAsset(Handle<Asset> handle) = 0;
-
 		virtual bool IsAssetValid(Handle<Asset> handle) = 0;
 		virtual bool IsAssetLoaded(Handle<Asset> handle) = 0;
 
 	protected:
 		virtual uint32_t LoadAsset(Handle<Asset> handle) = 0;
-		virtual void DestroyAsset(Handle<Asset> handle) = 0;
+		virtual void UnloadAsset(Handle<Asset> handle) = 0;
+		virtual bool DestroyAsset(Handle<Asset> handle) = 0;
 
 	private:
+		JobContext m_ResourceJobCtx;
 		Pool<Asset, Asset> m_AssetPool;
 		std::unordered_map<UUID, Handle<Asset>> m_RegisteredAssetMap;
 		std::vector<Handle<Asset>> m_RegisteredAssets;

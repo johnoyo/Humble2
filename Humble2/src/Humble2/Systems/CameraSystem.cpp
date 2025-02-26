@@ -35,6 +35,7 @@ namespace HBL2
 					if (camera.Primary)
 					{
 						m_Context->MainCamera = entity;
+						CalculateFrustum(camera);
 					}
 				}
 			});
@@ -71,8 +72,46 @@ namespace HBL2
 					if (camera.Primary)
 					{
 						m_Context->MainCamera = entity;
+						CalculateFrustum(camera);
 					}
 				}
 			});
+	}
+
+	void CameraSystem::CalculateFrustum(Component::Camera& camera)
+	{
+		const glm::mat4& vp = camera.ViewProjectionMatrix;
+
+		// Left plane
+		camera.Frustum.Planes[0].normal = glm::vec3(vp[0][3] + vp[0][0], vp[1][3] + vp[1][0], vp[2][3] + vp[2][0]);
+		camera.Frustum.Planes[0].distance = vp[3][3] + vp[3][0];
+
+		// Right plane
+		camera.Frustum.Planes[1].normal = glm::vec3(vp[0][3] - vp[0][0], vp[1][3] - vp[1][0], vp[2][3] - vp[2][0]);
+		camera.Frustum.Planes[1].distance = vp[3][3] - vp[3][0];
+
+		// Bottom plane
+		camera.Frustum.Planes[2].normal = glm::vec3(vp[0][3] + vp[0][1], vp[1][3] + vp[1][1], vp[2][3] + vp[2][1]);
+		camera.Frustum.Planes[2].distance = vp[3][3] + vp[3][1];
+
+		// Top plane
+		camera.Frustum.Planes[3].normal = glm::vec3(vp[0][3] - vp[0][1], vp[1][3] - vp[1][1], vp[2][3] - vp[2][1]);
+		camera.Frustum.Planes[3].distance = vp[3][3] - vp[3][1];
+
+		// Near plane
+		camera.Frustum.Planes[4].normal = glm::vec3(vp[0][3] + vp[0][2], vp[1][3] + vp[1][2], vp[2][3] + vp[2][2]);
+		camera.Frustum.Planes[4].distance = vp[3][3] + vp[3][2];
+
+		// Far plane
+		camera.Frustum.Planes[5].normal = glm::vec3(vp[0][3] - vp[0][2], vp[1][3] - vp[1][2], vp[2][3] - vp[2][2]);
+		camera.Frustum.Planes[5].distance = vp[3][3] - vp[3][2];
+
+		// Normalize the planes
+		for (auto& plane : camera.Frustum.Planes)
+		{
+			float length = glm::length(plane.normal);
+			plane.normal /= length;
+			plane.distance /= length;
+		}
 	}
 }

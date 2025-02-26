@@ -14,10 +14,10 @@ namespace HBL2
         return AssetImporter::Get().UnloadAsset(asset);
     }
 
-    void EditorAssetManager::DestroyAsset(Handle<Asset> handle)
+    bool EditorAssetManager::DestroyAsset(Handle<Asset> handle)
     {
         Asset* asset = GetAssetMetadata(handle);
-        AssetImporter::Get().DestroyAsset(asset);
+        return AssetImporter::Get().DestroyAsset(asset);
     }
 
     void EditorAssetManager::SaveAsset(Handle<Asset> handle)
@@ -28,12 +28,12 @@ namespace HBL2
 
     bool EditorAssetManager::IsAssetValid(Handle<Asset> handle)
     {
-        return handle.IsValid();
+        return handle.IsValid() && GetAssetMetadata(handle) != nullptr;
     }
 
     bool EditorAssetManager::IsAssetLoaded(Handle<Asset> handle)
     {
-        if (!handle.IsValid())
+        if (!IsAssetValid(handle))
         {
             return false;
         }

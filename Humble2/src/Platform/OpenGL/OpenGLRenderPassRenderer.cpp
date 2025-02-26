@@ -4,6 +4,8 @@ namespace HBL2
 {
 	void OpenGLRenderPasRenderer::DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws)
 	{
+		Renderer::Instance->GetRendererStats().DrawCalls += draws.GetCount();
+
 		OpenGLResourceManager* rm = (OpenGLResourceManager*)ResourceManager::Instance;
 
 		if (globalDraw.BindGroup.IsValid())
@@ -25,19 +27,20 @@ namespace HBL2
 			globalBindGroup->Set();
 		}
 
+		if (globalDraw.DynamicUniformBufferSize != 0)
+		{
+			OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(Renderer::Instance->TempUniformRingBuffer->GetBuffer());
+
+			glBindBuffer(GL_UNIFORM_BUFFER, dynamicUniformBuffer->RendererId);
+
+			void* ptr = glMapBufferRange(GL_UNIFORM_BUFFER, globalDraw.DynamicUniformBufferOffset, globalDraw.DynamicUniformBufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+			memcpy(ptr, (void*)((char*)dynamicUniformBuffer->Data + globalDraw.DynamicUniformBufferOffset), globalDraw.DynamicUniformBufferSize);
+			glUnmapBuffer(GL_UNIFORM_BUFFER);
+		}
+
 		for (auto&& [shaderID, drawList] : draws.GetDraws())
 		{
 			auto& localDraw = drawList[0];
-
-			OpenGLBuffer* dynamicUniformBuffer = nullptr;
-
-			// Write the entire dynamicUniformBuffer data
-			if (localDraw.BindGroup.IsValid())
-			{
-				OpenGLBindGroup* localDrawBindGroup0 = rm->GetBindGroup(localDraw.BindGroup);
-				dynamicUniformBuffer = rm->GetBuffer(localDrawBindGroup0->Buffers[0].buffer);
-				dynamicUniformBuffer->Write();
-			}
 
 			if (localDraw.Shader.IsValid())
 			{
@@ -78,11 +81,9 @@ namespace HBL2
 				{
 					OpenGLBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
 					drawBindGroup->Set();
-				}
 
-				// Bind dynamic uniform buffer with the current offset and size
-				if (dynamicUniformBuffer != nullptr)
-				{
+					// Bind dynamic uniform buffer with the current offset and size
+					OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(drawBindGroup->Buffers[0].buffer);
 					dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);
 				}
 

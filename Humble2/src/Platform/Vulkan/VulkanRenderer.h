@@ -87,9 +87,6 @@ namespace HBL2
 		virtual void* GetDepthAttachment() override { return nullptr; }
 		virtual void* GetColorAttachment() override { return m_ColorAttachmentID; }
 
-		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override;
-		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
-
 		virtual void Draw(Handle<Mesh> mesh) override {}
 		virtual void DrawIndexed(Handle<Mesh> mesh) override {}
 
@@ -112,6 +109,8 @@ namespace HBL2
 		const VkDescriptorPool& GetDescriptorPool() const { return m_DescriptorPool; }
 
 		void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
+
+		void Resize(uint32_t width, uint32_t height);
 
 	protected:
 		virtual void PreInitialize() override;
@@ -180,5 +179,8 @@ namespace HBL2
 
 		VkDescriptorPool m_DescriptorPool;
 		VkDescriptorSet m_ColorAttachmentID = VK_NULL_HANDLE;
+
+		bool m_Resize = false;
+		glm::uvec2 m_NewSize{};
 	};
 }

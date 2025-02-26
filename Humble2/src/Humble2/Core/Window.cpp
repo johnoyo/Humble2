@@ -11,11 +11,13 @@ namespace HBL2
 
 	static void WindowSizeCallback(GLFWwindow* window, int width, int height)
 	{
+		Window::Instance->SetExtents(width, height);
 		EventDispatcher::Get().Post(WindowSizeEvent(width, height));
 	}
 
 	static void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 	{
+		Window::Instance->SetExtents(width, height);
 		EventDispatcher::Get().Post(FramebufferSizeEvent(width, height));
 	}
 
@@ -88,6 +90,11 @@ namespace HBL2
 		return m_Window;
 	}
 
+	GLFWwindow* Window::GetWorkerHandle()
+	{
+		return m_WorkerWindow;
+	}
+
 	void Window::SetTitle(const std::string& title)
 	{
 		m_Spec.Title = title;
@@ -106,6 +113,11 @@ namespace HBL2
 
 	void Window::Terminate()
 	{
+		if (m_WorkerWindow)
+		{
+			glfwDestroyWindow(m_WorkerWindow);
+		}
+
 		glfwDestroyWindow(m_Window);
 		glfwTerminate();
 	}

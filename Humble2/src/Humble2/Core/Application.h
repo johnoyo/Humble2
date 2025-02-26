@@ -5,6 +5,7 @@
 
 #include "Base.h"
 #include "Input.h"
+#include "Time.h"
 #include "Context.h"
 #include "EventDispatcher.h"
 
@@ -25,10 +26,11 @@
 
 #include "Scene\SceneManager.h"
 
+#include "Utilities\JobSystem.h"
 #include "Utilities\Random.h"
 #include "Utilities\MeshUtilities.h"
 #include "Utilities\NativeScriptUtilities.h"
-#include "Utilities\UnityBuilder.h"
+#include "Utilities\UnityBuild.h"
 
 #include <string>
 #include <sstream>
@@ -48,8 +50,8 @@ namespace HBL2
 		std::string Name = "Humble2 Application";
 		std::string CommandLineArgs = "";
 		GraphicsAPI GraphicsAPI = GraphicsAPI::OPENGL;
-		float Width = 1280.f;
-		float Height = 720.f;
+		float Width = 1600.f;
+		float Height = 900.f;
 		bool VerticalSync = true;
 		bool Fullscreen = false;
 

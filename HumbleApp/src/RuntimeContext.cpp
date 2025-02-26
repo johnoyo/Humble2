@@ -74,6 +74,9 @@ namespace HBL2
 			}
 
 			ImGui::SetCurrentContext(nullptr);
+
+			TextureUtilities::Get().DeleteWhiteTexture();
+			ShaderUtilities::Get().DeleteBuiltInShaders();
 		}
 
 		bool RuntimeContext::OpenProject()

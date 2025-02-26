@@ -19,11 +19,24 @@
 	#endif
 
 	#define HBL2_ENABLE_ASSERTS // TODO: figure out whats wrong and it needs asserts enabled.
+#elif RELEASE
+	#define HBL2_PROFILE(...) HBL2::ProfilerScope profiler = HBL2::ProfilerScope(__VA_ARGS__);
+	#define HBL2_FUNC_PROFILE() HBL2_PROFILE(__FUNCTION__)
+
+	#ifdef HBL2_PLATFORM_WINDOWS
+		#define HBL2_DEBUGBREAK() __debugbreak()
+	#elif HBL2_PLATFORM_LINUX
+		#include <signal.h>
+		#define HBL_DEBUGBREAK() raise(SIGTRAP)
+	#else
+		#error "Platform is not supported yet!"
+	#endif
+
+	#define HBL2_ENABLE_ASSERTS
 #else
 	#define HBL2_PROFILE(...)
 	#define HBL2_FUNC_PROFILE()
 	#define HBL2_DEBUGBREAK()
-	#define HBL2_ENABLE_ASSERTS
 #endif
 
 #define HBL2_EXPAND_MACRO(x) x
@@ -42,25 +55,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <stb_image/stb_image.h>
 
-namespace HBL
+namespace HBL2
 {
-	struct Buffer
-	{
-		glm::vec3 Position;
-		glm::vec4 Color;
-		glm::vec2 TextureCoord;
-		float TextureID;
-		glm::vec3 Normal;
-	};
+	using UUID = uint64_t;
+
+	constexpr size_t operator""_B (unsigned long long value) { return value; }
+	constexpr size_t operator""_KB(unsigned long long value) { return value * 1024; }
+	constexpr size_t operator""_MB(unsigned long long value) { return value * 1024 * 1024; }
+	constexpr size_t operator""_GB(unsigned long long value) { return value * 1024 * 1024 * 1024; }
 }
-
-struct Vertex
-{
-	glm::vec3 Position;
-	glm::vec3 Normal;
-	glm::vec2 UV;
-	//glm::vec4 Color;
-	//glm::vec3 Tangent;
-};
-
-using UUID = uint64_t;

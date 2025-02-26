@@ -9,7 +9,13 @@
 #include <string>
 #include <format>
 
-#define VK_VALIDATE(result, vkFunction) HBL2_CORE_ASSERT(result == VK_SUCCESS, std::format("Vulkan function: {}, failed!", vkFunction));
+#ifdef DEBUG
+	#define VK_VALIDATE(result, vkFunction) HBL2_CORE_ASSERT(result == VK_SUCCESS, std::format("Vulkan function: {}, failed!", vkFunction));
+#elif RELEASE
+	#define VK_VALIDATE(result, vkFunction) HBL2_CORE_ASSERT(result == VK_SUCCESS, std::format("Vulkan function: {}, failed!", vkFunction));
+#else
+	#define VK_VALIDATE(result, vkFunction) result
+#endif
 
 namespace HBL2
 {

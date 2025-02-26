@@ -28,10 +28,20 @@ namespace HBL2
 			return ((float)s_Distribution(s_RandomEngine) / (float)(std::numeric_limits<uint64_t>::max)()) * (ceiling - floor) + floor;
 		}
 
+		static int32_t Int32()
+		{
+			return Int32((std::numeric_limits<int32_t>::min)(), (std::numeric_limits<int32_t>::max)());
+		}
+
 		static int32_t Int32(int32_t floor, int32_t ceiling)
 		{
 			assert(floor < ceiling);
 			return (int32_t)((((float)s_Distribution(s_RandomEngine) / (float)(std::numeric_limits<uint64_t>::max)()) * (ceiling - floor) + floor));
+		}
+
+		static int64_t Int64()
+		{
+			return Int64((std::numeric_limits<int64_t>::min)(), (std::numeric_limits<int64_t>::max)());
 		}
 
 		static int64_t Int64(int64_t floor, int64_t ceiling)
@@ -40,7 +50,7 @@ namespace HBL2
 			return (int64_t)((((double)s_Distribution(s_RandomEngine) / (double)(std::numeric_limits<uint64_t>::max)()) * (ceiling - floor) + floor));
 		}
 
-		static uint64_t UInt32()
+		static uint32_t UInt32()
 		{
 			return UInt32(0, (std::numeric_limits<uint32_t>::max)());
 		}

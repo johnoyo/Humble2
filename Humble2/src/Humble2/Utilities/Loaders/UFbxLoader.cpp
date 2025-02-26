@@ -78,6 +78,9 @@ namespace HBL2
             fbxSkin = fbxMesh.skin_deformers.data[0];
         }
 
+        glm::vec3 minVertex = { (std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)() };
+        glm::vec3 maxVertex = { (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::min)() };
+
         for (size_t fbxFaceIndex = 0; fbxFaceIndex < numFaces; ++fbxFaceIndex)
         {
             ufbx_face& fbxFace = fbxMesh.faces[fbxSubmesh.face_indices.data[fbxFaceIndex]];
@@ -98,6 +101,14 @@ namespace HBL2
                 {
                     ufbx_vec3& positionFbx = fbxMesh.vertices[fbxVertexIndex];
                     vertex.Position = glm::vec3(positionFbx.x, positionFbx.y, positionFbx.z);
+
+                    minVertex.x = glm::min(vertex.Position.x, minVertex.x);
+                    minVertex.y = glm::min(vertex.Position.y, minVertex.y);
+                    minVertex.z = glm::min(vertex.Position.z, minVertex.z);
+
+                    maxVertex.x = glm::max(vertex.Position.x, maxVertex.x);
+                    maxVertex.y = glm::max(vertex.Position.y, maxVertex.y);
+                    maxVertex.z = glm::max(vertex.Position.z, maxVertex.z);
                 }
 
                 // normals, always defined if `ufbx_load_opts.generate_missing_normals` is used
@@ -144,6 +155,8 @@ namespace HBL2
 
                 meshData.VertexBuffer.push_back(vertex);
             }
+
+            meshData.MeshExtents = { minVertex, maxVertex };
         }
 
         // resolve indices

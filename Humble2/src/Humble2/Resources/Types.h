@@ -11,9 +11,9 @@
 
 namespace HBL2
 {
-	struct Texture;
+	struct Texture {};
 	struct Buffer;
-	struct Shader;
+	struct Shader {};
 	struct FrameBuffer;
 	struct BindGroup;
 	struct BindGroupLayout;
@@ -32,6 +32,7 @@ namespace HBL2
 			VertexCount = desc.vertexCount;
 			IndexBuffer = desc.indexBuffer;
 			VertexBuffers = desc.vertexBuffers;
+			Extents = { desc.minVertex, desc.maxVertex };
 		}
 
 		const char* DebugName = "";
@@ -43,6 +44,14 @@ namespace HBL2
 		uint32_t InstanceCount = 1;
 		Handle<Buffer> IndexBuffer;
 		std::vector<Handle<Buffer>> VertexBuffers;
+		
+		struct MeshExtents
+		{
+			glm::vec3 Min;
+			glm::vec3 Max;
+		};
+
+		MeshExtents Extents;
 	};
 
 	struct Material

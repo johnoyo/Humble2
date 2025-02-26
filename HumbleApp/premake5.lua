@@ -29,6 +29,8 @@ project "HumbleApp"
         "../Dependencies/ImGuizmo",
         "../Dependencies/GLM",
         "../Dependencies/YAML-Cpp/yaml-cpp/include",
+        "../Dependencies/PortableFileDialogs",
+        "../Dependencies/FMOD/core/include",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "%{VULKAN_SDK}/Include"
     }
@@ -58,6 +60,12 @@ project "HumbleApp"
         defines { "RELEASE" }
         runtime "Release"
         optimize "On"
+
+    filter "configurations:Dist"
+        defines { "DIST" }
+        runtime "Release"
+        optimize "Full"
+        symbols "Off"
 
     filter "configurations:Emscripten"
         defines { "EMSCRIPTEN", "__EMSCRIPTEN__" }

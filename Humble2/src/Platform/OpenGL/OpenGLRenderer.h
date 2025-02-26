@@ -38,9 +38,6 @@ namespace HBL2
 		virtual void* GetDepthAttachment() override;
 		virtual void* GetColorAttachment() override;
 
-		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override;
-		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
-
 		virtual void Draw(Handle<Mesh> mesh) override;
 		virtual void DrawIndexed(Handle<Mesh> mesh) override;
 
@@ -57,6 +54,7 @@ namespace HBL2
 	private:
 		void CreateBindings();
 		void CreateRenderPass();
+		void Resize(uint32_t width, uint32_t height);
 
 	private:
 		OpenGLResourceManager* m_ResourceManager = nullptr;
@@ -69,5 +67,8 @@ namespace HBL2
 		Handle<BindGroup> m_GlobalBindings3D;
 		Handle<BindGroup> m_GlobalPresentBindings;
 		Handle<FrameBuffer> m_MainFrameBuffer;
+
+		bool m_Resize = false;
+		glm::uvec2 m_NewSize{};
 	};
 }

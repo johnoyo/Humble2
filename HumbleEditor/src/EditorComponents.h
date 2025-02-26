@@ -35,8 +35,11 @@ namespace HBL2
 					Stats,
 					PlayStop,
 					Systems,
+					Tray,
 					Custom
 				} Type = Panel::None;
+
+				std::function<void(float)> Render;
 
 				bool Enabled = true;
 			};

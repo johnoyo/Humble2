@@ -13,10 +13,11 @@ namespace HBL2
 		Log::Initialize();
 		Random::Initialize();
 		EventDispatcher::Initialize();
+		JobSystem::Initialize();
 
 		MeshUtilities::Initialize();
 		NativeScriptUtilities::Initialize();
-		UnityBuilder::Initialize();
+		UnityBuild::Initialize();
 
 		switch (m_Specification.GraphicsAPI)
 		{
@@ -62,6 +63,9 @@ namespace HBL2
 		m_DeltaTime = time - m_LastTime;
 		m_FixedDeltaTime += (time - m_LastTime) / m_LimitFPS;
 		m_LastTime = time;
+
+		Time::DeltaTime = m_DeltaTime;
+		Time::DeltaTime = m_FixedDeltaTime;
 	}
 
 	void Application::EndFrame()
@@ -150,9 +154,10 @@ namespace HBL2
 		Window::Instance = nullptr;
 
 		Input::ShutDown();
-		UnityBuilder::Shutdown();
+		UnityBuild::Shutdown();
 		NativeScriptUtilities::Shutdown();
 		MeshUtilities::Shutdown();
 		EventDispatcher::Shutdown();
+		JobSystem::Shutdown();
 	}
 }

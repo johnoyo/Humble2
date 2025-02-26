@@ -7,7 +7,7 @@
 #include "Utilities\ShaderUtilities.h"
 #include "Utilities\TextureUtilities.h"
 #include "Utilities\MeshUtilities.h"
-#include "Utilities\UnityBuilder.h"
+#include "Utilities\UnityBuild.h"
 
 #include "Scene\SceneSerializer.h"
 #include "Project\Project.h"
@@ -25,7 +25,7 @@ namespace HBL2
 
 		uint32_t ImportAsset(Asset* asset);
 		void SaveAsset(Asset* asset);
-		void DestroyAsset(Asset* asset);
+		bool DestroyAsset(Asset* asset);
 		void UnloadAsset(Asset* asset);
 
 	private:
@@ -35,18 +35,28 @@ namespace HBL2
 		Handle<Mesh> ImportMesh(Asset* asset);
 		Handle<Scene> ImportScene(Asset* asset);
 		Handle<Script> ImportScript(Asset* asset);
+		Handle<Sound> ImportSound(Asset* asset);
 
+		void SaveMaterial(Asset* asset);
 		void SaveScene(Asset* asset);
 		void SaveScript(Asset* asset);
+		void SaveSound(Asset* asset);
 
-		void DestroyTexture(Asset* asset);
-		void DestroyScript(Asset* asset);
+		bool DestroyTexture(Asset* asset);
+		bool DestroyShader(Asset* asset);
+		bool DestroyMaterial(Asset* asset);
+		bool DestroyMesh(Asset* asset);
+		bool DestroyScript(Asset* asset);
+		bool DestroyScene(Asset* asset);
+		bool DestroySound(Asset* asset);
 
 		void UnloadTexture(Asset* asset);
 		void UnloadShader(Asset* asset);
 		void UnloadMesh(Asset* asset);
 		void UnloadMaterial(Asset* asset);
 		void UnloadScript(Asset* asset);
+		void UnloadScene(Asset* asset);
+		void UnloadSound(Asset* asset);
 
 		AssetImporter() = default;
 	};

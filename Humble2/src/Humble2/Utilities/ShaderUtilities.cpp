@@ -521,6 +521,23 @@ namespace HBL2
 		}
 	}
 
+	void ShaderUtilities::DeleteBuiltInShaders()
+	{
+		for (auto& [shaderType, layoutHandle] : m_ShaderLayouts)
+		{
+			ResourceManager::Instance->DeleteBindGroupLayout(layoutHandle);
+		}
+
+		m_ShaderLayouts.clear();
+
+		for (auto& [shaderType, shaderHandle] : m_Shaders)
+		{
+			ResourceManager::Instance->DeleteShader(shaderHandle);
+		}
+
+		m_Shaders.clear();
+	}
+
 	void ShaderUtilities::CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType)
 	{
 		std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(handle)->FilePath).string() + ".hblshader", 0);
@@ -537,8 +554,20 @@ namespace HBL2
 		fout.close();
 	}
 
-	void ShaderUtilities::CreateMaterialMetadataFile(Handle<Asset> handle)
+	void ShaderUtilities::CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType)
 	{
+		std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(handle)->FilePath).string() + ".hblmat", 0);
+
+		YAML::Emitter out;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Material" << YAML::Value;
+		out << YAML::BeginMap;
+		out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(handle)->UUID;
+		out << YAML::Key << "Type" << YAML::Value << materialType;
+		out << YAML::EndMap;
+		out << YAML::EndMap;
+		fout << out.c_str();
+		fout.close();
 	}
 
 	ReflectionData ShaderUtilities::Reflect(const std::vector<uint32_t>& vertexShaderData, const std::vector<uint32_t>& fragmentShaderData)

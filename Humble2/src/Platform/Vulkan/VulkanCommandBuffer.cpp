@@ -43,14 +43,36 @@ namespace HBL2
 			.framebuffer = vkFrameBuffer->FrameBuffer,
 			.renderArea = 
 			{
-				.offset = {0, 0},
-				.extent = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y },
+				.offset = { 0, 0 },
+				.extent = { vkFrameBuffer->Width, vkFrameBuffer->Height },
 			},
 			.clearValueCount = (uint32_t)clearValues.size(),
 			.pClearValues = clearValues.data(),
 		};
 
 		vkCmdBeginRenderPass(CommandBuffer, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		// Set viewport
+		VkViewport viewport =
+		{
+			.x = 0,
+			.y = 0,
+			.width = (float)vkFrameBuffer->Width + 50,
+			.height = (float)vkFrameBuffer->Height,
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f,
+		};
+
+		vkCmdSetViewport(CommandBuffer, 0, 1, &viewport);
+
+		// Set scissor
+		VkRect2D scissor =
+		{
+			.offset = { 0, 0 },
+			.extent = { vkFrameBuffer->Width + 50, vkFrameBuffer->Height },
+		};
+
+		vkCmdSetScissor(CommandBuffer, 0, 1, &scissor);
 
         return &m_CurrentRenderPassRenderer;
     }

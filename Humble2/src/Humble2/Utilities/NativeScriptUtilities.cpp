@@ -110,11 +110,55 @@ namespace HBL2
 		return scriptAssetHandle;
 	}
 
+	Handle<Asset> NativeScriptUtilities::CreateHelperScriptFile(const std::filesystem::path& currentDir, const std::string& scriptName)
+	{
+		auto relativePath = std::filesystem::relative(currentDir / (scriptName + ".h"), HBL2::Project::GetAssetDirectory());
+
+		auto scriptAssetHandle = AssetManager::Instance->CreateAsset({
+			.debugName = "script-asset",
+			.filePath = relativePath,
+			.type = AssetType::Script,
+		});
+
+		if (scriptAssetHandle.IsValid())
+		{
+			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblscript", 0);
+			YAML::Emitter out;
+			out << YAML::BeginMap;
+			out << YAML::Key << "Script" << YAML::Value;
+			out << YAML::BeginMap;
+			out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(scriptAssetHandle)->UUID;
+			out << YAML::Key << "Type" << YAML::Value << (uint32_t)ScriptType::HELPER_SCRIPT;
+			out << YAML::EndMap;
+			out << YAML::EndMap;
+			fout << out.c_str();
+			fout.close();
+		}
+
+		std::ofstream fout(currentDir / (scriptName + ".h"), 0);
+		fout << GetDefaultHelperScriptCode(scriptName);
+		fout.close();
+
+		return scriptAssetHandle;
+	}
+
+	const std::filesystem::path NativeScriptUtilities::GetUnityBuildPath() const
+	{
+		const std::string& projectName = Project::GetActive()->GetName();
+
+#ifdef DEBUG
+		return std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
+#else
+		return std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
+#endif
+	}
+
 	std::string NativeScriptUtilities::GetDefaultSystemCode(const std::string& systemName)
 	{
 		const std::string& placeholder = "{SystemName}";
 
 		const std::string& systemCode = R"(#pragma once
+
 #include "Humble2Core.h"
 
 class {SystemName} final : public HBL2::ISystem
@@ -242,7 +286,7 @@ EndGlobal
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;COMPONENT_NAME_HASH={Hash};HBL2_PLATFORM_WINDOWS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\Assets;..\..\..\Humble2\src;..\..\..\Humble2\src\Humble2;..\..\..\Humble2\src\Vendor;..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\Humble2\src\Vendor\entt\include;..\..\..\Dependencies\GLFW\include;..\..\..\Dependencies\GLEW\include;..\..\..\Dependencies\ImGui\imgui;..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\Dependencies\ImGuizmo;..\..\..\Dependencies\GLM;..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;..\..\..\Dependencies\Emscripten\emsdk\upstream\emscripten\system\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Assets;..\..\..\Humble2\src;..\..\..\Humble2\src\Humble2;..\..\..\Humble2\src\Vendor;..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\Humble2\src\Vendor\entt\include;..\..\..\Dependencies\GLFW\include;..\..\..\Dependencies\GLEW\include;..\..\..\Dependencies\ImGui\imgui;..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\Dependencies\ImGuizmo;..\..\..\Dependencies\GLM;..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;..\..\..\Dependencies\PortableFileDialogs;..\..\..\Dependencies\FMOD\core\include;..\..\..\Dependencies\Emscripten\emsdk\upstream\emscripten\system\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
@@ -265,7 +309,7 @@ EndGlobal
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;COMPONENT_NAME_HASH={Hash};HBL2_PLATFORM_WINDOWS;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\Assets;..\..\..\Humble2\src;..\..\..\Humble2\src\Humble2;..\..\..\Humble2\src\Vendor;..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\Humble2\src\Vendor\entt\include;..\..\..\Dependencies\GLFW\include;..\..\..\Dependencies\GLEW\include;..\..\..\Dependencies\ImGui\imgui;..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\Dependencies\ImGuizmo;..\..\..\Dependencies\GLM;..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;..\..\..\Dependencies\Emscripten\emsdk\upstream\emscripten\system\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Assets;..\..\..\Humble2\src;..\..\..\Humble2\src\Humble2;..\..\..\Humble2\src\Vendor;..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\Humble2\src\Vendor\entt\include;..\..\..\Dependencies\GLFW\include;..\..\..\Dependencies\GLEW\include;..\..\..\Dependencies\ImGui\imgui;..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\Dependencies\ImGuizmo;..\..\..\Dependencies\GLM;..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;..\..\..\Dependencies\PortableFileDialogs;..\..\..\Dependencies\FMOD\core\include;..\..\..\Dependencies\Emscripten\emsdk\upstream\emscripten\system\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -379,15 +423,35 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 		return componentCode;
 	}
 
+	std::string NativeScriptUtilities::GetDefaultHelperScriptCode(const std::string& scriptName)
+	{
+		const std::string& placeholder = "{ScriptName}";
+
+		const std::string& scriptCode = R"(#pragma once
+
+#include "Humble2Core.h"
+
+class {ScriptName}
+{
+	public:
+    private:
+};
+)";
+		size_t pos = scriptCode.find(placeholder);
+
+		while (pos != std::string::npos)
+		{
+			((std::string&)scriptCode).replace(pos, placeholder.length(), scriptName);
+			pos = scriptCode.find(placeholder, pos + scriptName.length());
+		}
+
+		return scriptCode;
+	}
+
 	void NativeScriptUtilities::RegisterSystem(const std::string& name, Scene* ctx)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		DynamicLibrary unityBuild;
@@ -412,13 +476,8 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 
 	void NativeScriptUtilities::RegisterComponent(const std::string& name, Scene* ctx)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		DynamicLibrary unityBuild;
@@ -443,13 +502,7 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 
 	void NativeScriptUtilities::LoadUnityBuild(Scene* ctx)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
-
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
+		const auto& path = GetUnityBuildPath();
 
 		LoadUnityBuild(ctx, path.string());
 	}
@@ -483,6 +536,8 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 
 		entt::meta_reset(ctx->GetMetaContext());
 
+		ctx->GetRegistry().compact();
+
 		systemsToBeDeregistered.clear();
 
 		// Free dll and remove from map.
@@ -495,13 +550,8 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 
 	entt::meta_any NativeScriptUtilities::AddComponent(const std::string& name, Scene* ctx, entt::entity entity)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new component dll.
@@ -516,13 +566,8 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 
 	entt::meta_any NativeScriptUtilities::GetComponent(const std::string& name, Scene* ctx, entt::entity entity)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new component dll.
@@ -537,13 +582,8 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 
 	void NativeScriptUtilities::RemoveComponent(const std::string& name, Scene* ctx, entt::entity entity)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new component dll.
@@ -558,13 +598,8 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 
 	bool NativeScriptUtilities::HasComponent(const std::string& name, Scene* ctx, entt::entity entity)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new component dll.
@@ -579,13 +614,8 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 
 	void NativeScriptUtilities::ClearComponentStorage(const std::string& name, Scene* ctx)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new component dll.
@@ -600,13 +630,8 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 
 	void NativeScriptUtilities::SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data, bool cleanRegistry)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new unityBuild dll.
@@ -630,13 +655,8 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 
 	void NativeScriptUtilities::DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data)
 	{
-		const std::string& projectName = Project::GetActive()->GetName();
+		const auto& path = GetUnityBuildPath();
 
-#ifdef DEBUG
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		const auto& path = std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
 		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
 
 		// Load new unityBuild dll.

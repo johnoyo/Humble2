@@ -72,7 +72,7 @@ namespace HBL2
 
 			auto entity = scene->CreateEntity("Plane");
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
-			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh_New>(entity);
+			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
 			float vertexBuffer[] =
 			{
@@ -119,7 +119,7 @@ namespace HBL2
 
 			auto entity = scene->CreateEntity("Sphere");
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
-			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh_New>(entity);
+			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
 			std::vector<float> vertexBuffer;
 			std::vector<uint32_t> indices;
@@ -203,7 +203,7 @@ namespace HBL2
 
 			auto entity = scene->CreateEntity("Sprite");
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
-			scene->AddComponent<HBL2::Component::Sprite_New>(entity);
+			scene->AddComponent<HBL2::Component::Sprite>(entity);
 
 			return entity;
 		}

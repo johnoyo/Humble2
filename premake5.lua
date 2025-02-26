@@ -9,6 +9,7 @@ workspace "HumbleGameEngine2"
     { 
         "Debug",
         "Release",
+        "Dist",
         "Emscripten"
     }
 

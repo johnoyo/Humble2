@@ -62,6 +62,7 @@ public:
 	void OnCreate()
 	{
 		HBL2_CORE_INFO("Camera Editor OnCreate");
+		m_RenderBaseEditor = true;
 	}
 
 	void OnUpdate(const HBL2::Component::Camera& component)

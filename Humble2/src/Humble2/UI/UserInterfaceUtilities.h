@@ -6,7 +6,7 @@
 #include "Resources/ResourceManager.h"
 #include "Utilities/NativeScriptUtilities.h"
 
-#include "Vendor/entt/include/entt.hpp"
+#include "entt.hpp"
 #include "imgui.h"
 
 #include <iostream>

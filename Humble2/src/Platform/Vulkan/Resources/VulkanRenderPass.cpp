@@ -15,9 +15,9 @@ namespace HBL2
 		VulkanRenderPassLayout* layout = rm->GetRenderPassLayout(desc.layout);
 
 		std::vector<VkAttachmentDescription> attachments;
-		attachments.reserve(desc.colorTargets.Size);
+		attachments.reserve(desc.colorTargets.Size());
 		std::vector<VkAttachmentReference> colorAttachmentRefs;
-		colorAttachmentRefs.reserve(desc.colorTargets.Size);
+		colorAttachmentRefs.reserve(desc.colorTargets.Size());
 
 		uint32_t index = 0;
 

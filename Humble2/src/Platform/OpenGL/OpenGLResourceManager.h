@@ -22,9 +22,7 @@ namespace HBL2
 	public:
 		virtual ~OpenGLResourceManager() = default;
 
-		virtual void Clean() override
-		{
-		}
+		virtual void Clean() override {}
 
 		// Textures
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) override
@@ -67,6 +65,19 @@ namespace HBL2
 		virtual void* GetBufferData(Handle<Buffer> handle) override
 		{
 			return m_BufferPool.Get(handle)->Data;
+		}
+		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override
+		{
+			OpenGLBuffer* openGLBuffer = GetBuffer(buffer);
+			openGLBuffer->Data = (void*)((char*)newData + offset);
+		}
+		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override
+		{
+			OpenGLBindGroup* openGLBindGroup = GetBindGroup(bindGroup);
+			if (bufferIndex < openGLBindGroup->Buffers.size())
+			{
+				SetBufferData(openGLBindGroup->Buffers[bufferIndex].buffer, openGLBindGroup->Buffers[bufferIndex].byteOffset, newData);
+			}
 		}
 		OpenGLBuffer* GetBuffer(Handle<Buffer> handle) const
 		{

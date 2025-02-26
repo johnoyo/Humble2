@@ -135,11 +135,14 @@ namespace HBL2
 			}
 
 			ImGui::SetCurrentContext(nullptr);
+
+			TextureUtilities::Get().DeleteWhiteTexture();
+			ShaderUtilities::Get().DeleteBuiltInShaders();
 		}
 
 		bool EditorContext::OpenEmptyProject()
 		{
-			std::string filepath = HBL2::FileDialogs::OpenFile("Humble Project (*.hblproj)\0*.hblproj\0");
+			std::string filepath = HBL2::FileDialogs::OpenFile("Humble Project", "", {"Humble Project Files (*.hblproj)", "*.hblproj"});
 
 			if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 			{

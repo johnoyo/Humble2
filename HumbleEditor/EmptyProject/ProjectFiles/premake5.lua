@@ -34,7 +34,7 @@ project "UnityBuild"
     defines
 	{
 		"_CRT_SECURE_NO_WARNINGS",
-        "YAML_CPP_STATIC_DEFINE"
+        "YAML_CPP_STATIC_DEFINE",
 	}
     
     -- Include directories.
@@ -53,6 +53,8 @@ project "UnityBuild"
         "../../../Dependencies/ImGuizmo",
         "../../../Dependencies/GLM",
         "../../../Dependencies/YAML-Cpp/yaml-cpp/include",
+        "../../../Dependencies/PortableFileDialogs",
+        "../../../Dependencies/FMOD/core/include",
         "../../../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "%{VULKAN_SDK}/Include"
     }

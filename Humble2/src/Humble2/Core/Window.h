@@ -37,13 +37,16 @@ namespace HBL2
 		void SetTitle(const std::string& title);
 		double GetTime();
 		GLFWwindow* GetHandle();
+		GLFWwindow* GetWorkerHandle();
 		glm::u32vec2 GetExtents() const { return { m_Spec.Width, m_Spec.Height }; }
+		void SetExtents(uint32_t x, uint32_t y) { m_Spec.Width = x; m_Spec.Height = y; }
 
 	protected:
 		void AttachEventCallbacks();
 
 	protected:
-		GLFWwindow* m_Window;
+		GLFWwindow* m_Window = nullptr;
+		GLFWwindow* m_WorkerWindow = nullptr;
 		WindowSpecification m_Spec;
 
 		static void DispatchMainEm(void* fp);

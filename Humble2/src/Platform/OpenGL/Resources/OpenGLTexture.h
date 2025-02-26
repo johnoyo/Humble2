@@ -14,7 +14,6 @@ namespace HBL2
 		{
 			DebugName = desc.debugName;
 			Dimensions = desc.dimensions;
-			Data = desc.initialData;
 
 			glGenTextures(1, &RendererId);
 			glBindTexture(GL_TEXTURE_2D, RendererId);
@@ -26,26 +25,27 @@ namespace HBL2
 			GLenum type;
 			GLenum internalFormat;
 
-			if (desc.aspect == TextureAspect::COLOR)
+			switch (desc.aspect)
 			{
+			case TextureAspect::COLOR:
 				type = GL_UNSIGNED_BYTE;
 				internalFormat = GL_RGBA;
-			}
-			else if(desc.aspect == TextureAspect::DEPTH)
-			{
+				break;
+			case TextureAspect::DEPTH:
 				type = GL_UNSIGNED_INT;
 				internalFormat = GL_DEPTH_COMPONENT;
+				break;
 			}
 
-			if (Data == nullptr && Dimensions.x == 1 && Dimensions.y == 1)
+			if (desc.initialData == nullptr && Dimensions.x == 1 && Dimensions.y == 1)
 			{
 				uint32_t whiteTexture = 0xffffffff;
 				glTexImage2D(GL_TEXTURE_2D, 0, OpenGLUtils::FormatToGLenum(desc.format), (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, internalFormat, type, &whiteTexture);
 			}
 			else
 			{
-				glTexImage2D(GL_TEXTURE_2D, 0, OpenGLUtils::FormatToGLenum(desc.format), (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, internalFormat, type, Data);
-				stbi_image_free(Data);
+				glTexImage2D(GL_TEXTURE_2D, 0, OpenGLUtils::FormatToGLenum(desc.format), (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, internalFormat, type, desc.initialData);
+				stbi_image_free(desc.initialData);
 			}
 
 			glBindTexture(GL_TEXTURE_2D, 0);
@@ -60,6 +60,5 @@ namespace HBL2
 		GLuint RendererId = 0;
 		glm::vec3 Dimensions = glm::vec3(0.0f);
 		uint32_t Format = 0;
-		stbi_uc* Data = nullptr;
 	};
 }

@@ -37,6 +37,11 @@ namespace HBL2
 			m_Context = context;
 		}
 
+		const Scene* GetContext() const
+		{
+			return m_Context;
+		}
+
 		void SetType(SystemType type)
 		{
 			m_Type = type;

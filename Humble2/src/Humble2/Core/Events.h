@@ -183,7 +183,7 @@ namespace HBL2
 	class HBL2_API SceneChangeEvent final : public Event
 	{
 	public:
-		SceneChangeEvent(Handle<Scene> currentScene, Handle<Scene> newScene) : CurrentScene(currentScene), NewScene(newScene)
+		SceneChangeEvent(Handle<Scene> oldScene, Handle<Scene> newScene) : OldScene(oldScene), NewScene(newScene)
 		{
 		}
 
@@ -192,7 +192,7 @@ namespace HBL2
 			return "SceneChangeEvent";
 		}
 
-		Handle<Scene> CurrentScene;
+		Handle<Scene> OldScene;
 		Handle<Scene> NewScene;
 	};
 
@@ -209,7 +209,7 @@ namespace HBL2
 		}
 
 		ISystem* System;
-		SystemState NewState;
 		SystemState OldState;
+		SystemState NewState;
 	};
 }

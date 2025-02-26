@@ -36,12 +36,14 @@ namespace HBL2
 
 		virtual void Initialize() override;
 		virtual void Destroy() override;
+		virtual void SetContext(void* windowContext) override {}
 
 		const VkDevice Get() const { return m_Device; }
 		const VkInstance GetInstance() const { return m_Instance; }
 		const VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
 		const VkSurfaceKHR GetSurface() const { return m_Surface; }
 		const SwapChainSupportDetails& GetSwapChainSupportDetails() const { return m_SwapChainSupportDetails; }
+		void UpdateSwapChainSupportDetails() { m_SwapChainSupportDetails = QuerySwapChainSupport(m_PhysicalDevice); }
 		const QueueFamilyIndices& GetQueueFamilyIndices() const { return m_QueueFamilyIndices; }
 
 	private:
@@ -82,7 +84,7 @@ namespace HBL2
 
 #ifdef DEBUG
 		const bool m_EnableValidationLayers = true;
-#elif RELEASE
+#else
 		const bool m_EnableValidationLayers = false;
 #endif
 	};

@@ -72,6 +72,19 @@ namespace HBL2
 		{
 			return m_BufferPool.Get(handle)->Data;
 		}
+		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override
+		{
+			VulkanBuffer* vulkanBuffer = GetBuffer(buffer);
+			vulkanBuffer->Data = newData;
+		}
+		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override
+		{
+			VulkanBindGroup* vulkanBindGroup = GetBindGroup(bindGroup);
+			if (bufferIndex < vulkanBindGroup->Buffers.size())
+			{
+				SetBufferData(vulkanBindGroup->Buffers[bufferIndex].buffer, vulkanBindGroup->Buffers[bufferIndex].byteOffset, newData);
+			}
+		}
 		VulkanBuffer* GetBuffer(Handle<Buffer> handle) const
 		{
 			return m_BufferPool.Get(handle);

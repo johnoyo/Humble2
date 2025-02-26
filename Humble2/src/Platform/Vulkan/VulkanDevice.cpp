@@ -97,6 +97,7 @@ namespace HBL2
 		if (m_EnableValidationLayers && !CheckValidationLayerSupport())
 		{
 			HBL2_CORE_ASSERT(false, "Validation layers requested, but not available!");
+			exit(-1);
 		}
 
 		// Application Info
@@ -181,11 +182,12 @@ namespace HBL2
 	void VulkanDevice::SelectPhysicalDevice()
 	{
 		uint32_t deviceCount = 0;
-		vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
+		VK_VALIDATE(vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr), "vkEnumeratePhysicalDevices");
 
 		if (deviceCount == 0)
 		{
 			HBL2_CORE_ASSERT(false, "Failed to find GPUs with Vulkan support!");
+			exit(-1);
 		}
 
 		std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -205,6 +207,7 @@ namespace HBL2
 		if (m_PhysicalDevice == VK_NULL_HANDLE)
 		{
 			HBL2_CORE_ASSERT(false, "Failed to find a suitable GPU!");
+			exit(-1);
 		}
 
 		vkGetPhysicalDeviceProperties(m_PhysicalDevice, &m_VkGPUProperties);
@@ -305,7 +308,8 @@ namespace HBL2
 
 		if (!CheckInstanceExtensionSupport(extensions))
 		{
-			HBL2_CORE_ASSERT(false, "Device does not support required extensions!")
+			HBL2_CORE_ASSERT(false, "Device does not support required extensions!");
+			exit(-1);
 		}
 
 		return extensions;
@@ -314,10 +318,10 @@ namespace HBL2
 	bool VulkanDevice::CheckInstanceExtensionSupport(const std::vector<const char*>& glfwExtensionNames)
 	{
 		uint32_t extensionCount = 0;
-		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+		VK_VALIDATE(vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr), "vkEnumerateInstanceExtensionProperties");
 
 		std::vector<VkExtensionProperties> extensions(extensionCount);
-		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+		VK_VALIDATE(vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data()), "vkEnumerateInstanceExtensionProperties");
 
 		for (const char* extensionName : glfwExtensionNames)
 		{

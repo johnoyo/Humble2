@@ -23,23 +23,7 @@ namespace HBL2
 		static Scene* Copy(Scene* other);
 		static void Copy(Scene* src, Scene* dst);
 
-		void Clear()
-		{
-			m_Registry.clear();
-
-			entt::meta_reset(m_MetaContext);
-
-			m_EntityMap.clear();
-
-			for (ISystem* system : m_Systems)
-			{
-				delete system;
-			}
-
-			m_Systems.clear();
-			m_CoreSystems.clear();
-			m_RuntimeSystems.clear();
-		}
+		void Clear();
 
 		entt::entity CreateEntity()
 		{
@@ -80,6 +64,19 @@ namespace HBL2
 			m_Registry.destroy(entity);
 		}
 
+		entt::entity DuplicateEntity(entt::entity entity);
+
+		template<typename... T>
+		auto GetAllEntitiesWith()
+		{
+			return m_Registry.view<T...>();
+		}
+
+		const uint32_t GetEntityCount() const
+		{
+			return m_EntityMap.size();
+		}
+
 		template<typename T>
 		T& GetComponent(entt::entity entity)
 		{
@@ -87,15 +84,33 @@ namespace HBL2
 		}
 
 		template<typename T>
+		T* TryGetComponent(entt::entity entity)
+		{
+			return m_Registry.try_get<T>(entity);
+		}
+
+		template<typename T>
+		T& GetOrAddComponent(entt::entity entity)
+		{
+			return m_Registry.get_or_emplace<T>(entity);
+		}
+
+		template<typename T>
 		bool HasComponent(entt::entity entity)
 		{
-			return m_Registry.try_get<T>(entity) == nullptr ? false : true;
+			return m_Registry.any_of<T>(entity);
 		}
 
 		template<typename T>
 		T& AddComponent(entt::entity entity)
 		{
 			return m_Registry.emplace<T>(entity);
+		}
+
+		template<typename T>
+		T& AddOrReplaceComponent(entt::entity entity)
+		{
+			return m_Registry.emplace_or_replace<T>(entity);
 		}
 
 		template<typename T>

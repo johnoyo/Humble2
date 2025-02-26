@@ -13,5 +13,8 @@ namespace HBL2
 
 		virtual void OnCreate() override;
 		virtual void OnUpdate(float ts) override;
+
+	private:
+		void CalculateFrustum(Component::Camera& camera);
 	};
 }

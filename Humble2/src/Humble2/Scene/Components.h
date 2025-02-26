@@ -11,6 +11,7 @@ namespace HBL2
 {
 	struct Mesh;
 	struct Material;
+	struct Sound;
 
 	namespace Component
 	{
@@ -41,13 +42,13 @@ namespace HBL2
 			UUID Parent = 0;
 		};
 
-		struct HBL2_API Sprite_New
+		struct HBL2_API Sprite
 		{
 			Handle<Material> Material;
 			bool Enabled = true;
 		};
 
-		struct HBL2_API StaticMesh_New
+		struct HBL2_API StaticMesh
 		{
 			Handle<Mesh> Mesh;
 			Handle<Material> Material;
@@ -72,6 +73,17 @@ namespace HBL2
 			glm::mat4 View = glm::mat4(1.f);
 			glm::mat4 Projection = glm::mat4(1.f);
 			glm::mat4 ViewProjectionMatrix = glm::mat4(1.f);
+
+			struct FrustumPlane
+			{
+				glm::vec3 normal;
+				float distance;
+			};
+
+			struct CameraFrustum
+			{
+				FrustumPlane Planes[6];
+			} Frustum;
 
 			bool Primary = true;
 			bool Enabled = false;
@@ -104,6 +116,12 @@ namespace HBL2
 		struct HBL2_API SkyLight
 		{
 			float Intensity = 1.0f;
+			bool Enabled = true;
+		};
+
+		struct HBL2_API AudioSource
+		{
+			Handle<Sound> Sound;
 			bool Enabled = true;
 		};
 	}

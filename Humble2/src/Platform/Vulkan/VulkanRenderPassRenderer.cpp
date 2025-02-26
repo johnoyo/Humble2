@@ -8,6 +8,8 @@ namespace HBL2
 {
 	void VulkanRenderPasRenderer::DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws)
 	{
+		Renderer::Instance->GetRendererStats().DrawCalls += draws.GetCount();
+
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
@@ -29,23 +31,22 @@ namespace HBL2
 			}
 		}
 
+		if (globalDraw.DynamicUniformBufferSize != 0)
+		{
+			VulkanBuffer* dynamicUniformBuffer = rm->GetBuffer(Renderer::Instance->TempUniformRingBuffer->GetBuffer());
+
+			void* data;
+			vmaMapMemory(renderer->GetAllocator(), dynamicUniformBuffer->Allocation, &data);
+			memcpy((void*)((char*)data + globalDraw.DynamicUniformBufferOffset), (void*)((char*)dynamicUniformBuffer->Data + globalDraw.DynamicUniformBufferOffset), globalDraw.DynamicUniformBufferSize);
+			vmaUnmapMemory(renderer->GetAllocator(), dynamicUniformBuffer->Allocation);
+		}
+
 		for (auto&& [shaderID, drawList] : draws.GetDraws())
 		{
 			auto& localDraw = drawList[0];
 
 			Material* localMaterial0 = rm->GetMaterial(localDraw.Material);
 			VulkanShader* localShader0 = rm->GetShader(localMaterial0->Shader);
-
-			if (localDraw.BindGroup.IsValid())
-			{
-				VulkanBindGroup* localDrawBindGroup0 = rm->GetBindGroup(localDraw.BindGroup);
-				VulkanBuffer* dynamicUniformBuffer = rm->GetBuffer(localDrawBindGroup0->Buffers[0].buffer);
-
-				void* data;
-				vmaMapMemory(renderer->GetAllocator(), dynamicUniformBuffer->Allocation, &data);
-				memcpy(data, dynamicUniformBuffer->Data, dynamicUniformBuffer->ByteSize);
-				vmaUnmapMemory(renderer->GetAllocator(), dynamicUniformBuffer->Allocation);
-			}
 
 			// Bind pipeline
 			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, localShader0->Pipeline);

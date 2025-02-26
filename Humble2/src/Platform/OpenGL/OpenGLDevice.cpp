@@ -1,5 +1,7 @@
 #include "OpenGLDevice.h"
 
+#include <GLFW\glfw3.h>
+
 namespace HBL2
 {
 	void OpenGLDevice::Initialize()
@@ -27,5 +29,11 @@ namespace HBL2
 
 	void OpenGLDevice::Destroy()
 	{
+	}
+
+	void OpenGLDevice::SetContext(void* windowContext)
+	{
+		std::lock_guard<std::mutex> lock(m_WorkerMutex);
+		glfwMakeContextCurrent((GLFWwindow*)windowContext);
 	}
 }

@@ -63,6 +63,16 @@ namespace HBL2
 		UserInterface,
 	};
 
+	struct RendererStats
+	{
+		uint32_t DrawCalls = 0;
+
+		void Reset()
+		{
+			DrawCalls = 0;
+		}
+	};
+
 	class HBL2_API Renderer
 	{
 	public:
@@ -76,9 +86,6 @@ namespace HBL2
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
 
-		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) = 0;
-		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) = 0;
-
 		virtual void Draw(Handle<Mesh> mesh) = 0;
 		virtual void DrawIndexed(Handle<Mesh> mesh) = 0;
 
@@ -88,6 +95,7 @@ namespace HBL2
 		virtual void* GetColorAttachment() = 0;
 
 		const uint32_t GetFrameNumber() const { return m_FrameNumber; }
+		RendererStats& GetRendererStats() { return m_Stats; }
 
 		const Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() = 0;
@@ -106,6 +114,16 @@ namespace HBL2
 		Handle<Texture> MainColorTexture;
 		Handle<Texture> MainDepthTexture;
 
+		void AddCallbackOnResize(const std::string& callbackName, std::function<void(uint32_t, uint32_t)>&& callback)
+		{
+			m_OnResizeCallbacks[callbackName] = callback;
+		}
+
+		void RemoveOnResizeCallback(const std::string& callbackName)
+		{
+			m_OnResizeCallbacks.erase(callbackName);
+		}
+
 	protected:
 		virtual void PreInitialize() = 0;
 		virtual void PostInitialize() = 0;
@@ -113,9 +131,12 @@ namespace HBL2
 	protected:
 		uint32_t m_FrameNumber = 0;
 		GraphicsAPI m_GraphicsAPI;
+		RendererStats m_Stats;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout2D;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
 		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
 		Handle<RenderPass> m_RenderPass;
+
+		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 	};
 }
