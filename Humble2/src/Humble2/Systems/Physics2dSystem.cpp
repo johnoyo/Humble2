@@ -55,8 +55,10 @@ namespace HBL2
 
 	void Physics2dSystem::OnUpdate(float ts)
 	{
+		// Progress the simulation.
 		b2World_Step(m_PhysicsWorld, Time::FixedTimeStep, m_SubStepCount);
 
+		// Update the transform of rigidbodies
 		m_Context->GetRegistry()
 			.group<Component::Rigidbody2D>(entt::get<Component::Transform>)
 			.each([this](entt::entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
@@ -68,10 +70,6 @@ namespace HBL2
 				const auto& rotation = b2Body_GetRotation(rb2d.BodyId);
 				transform.Rotation.z = glm::degrees(b2Rot_GetAngle(rotation));
 			});
-	}
-
-	void Physics2dSystem::OnFixedUpdate(float ts)
-	{
 	}
 
 	void Physics2dSystem::OnDestroy()

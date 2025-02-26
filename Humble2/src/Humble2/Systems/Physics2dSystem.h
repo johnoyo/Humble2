@@ -13,7 +13,6 @@ namespace HBL2
 	public:
 		virtual void OnCreate() override;
 		virtual void OnUpdate(float ts) override;
-		virtual void OnFixedUpdate(float ts) override;
 		virtual void OnDestroy() override;
 
 	private:
