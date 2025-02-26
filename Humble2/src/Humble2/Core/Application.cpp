@@ -104,6 +104,7 @@ namespace HBL2
 
 			Renderer::Instance->BeginFrame();
 			m_Specification.Context->OnUpdate(Time::DeltaTime);
+			m_Specification.Context->OnFixedUpdate();
 			Renderer::Instance->EndFrame();
 
 			/*DebugRenderer::Instance->BeginFrame();

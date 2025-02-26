@@ -19,6 +19,7 @@ namespace HBL2
 		public:
 			virtual void OnCreate() override;
 			virtual void OnUpdate(float ts) override;
+			virtual void OnFixedUpdate() override;
 			virtual void OnGuiRender(float ts) override;
 			virtual void OnDestroy() override;
 
@@ -30,6 +31,7 @@ namespace HBL2
 			Scene* m_EditorScene = nullptr;
 			Scene* m_ActiveScene = nullptr;
 			Scene* m_EmptyScene = nullptr;
+			float m_AccumulatedTime = 0.0f;
 		};
 	}
 }

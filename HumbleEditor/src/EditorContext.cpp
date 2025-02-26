@@ -81,6 +81,46 @@ namespace HBL2
 			}
 		}
 
+		void EditorContext::OnFixedUpdate()
+		{
+			m_AccumulatedTime += Time::DeltaTime;
+
+			while (m_AccumulatedTime >= Time::FixedTimeStep)
+			{
+				for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+				{
+					system->OnFixedUpdate();
+				}
+
+				if (m_ActiveScene == nullptr)
+				{
+					HBL2_CORE_TRACE("Active Scene is null.");
+					return;
+				}
+
+				for (HBL2::ISystem* system : m_ActiveScene->GetCoreSystems())
+				{
+					if (system->GetState() == SystemState::Play)
+					{
+						system->OnFixedUpdate();
+					}
+				}
+
+				if (Mode == Mode::Runtime)
+				{
+					for (HBL2::ISystem* system : m_ActiveScene->GetRuntimeSystems())
+					{
+						if (system->GetState() == SystemState::Play)
+						{
+							system->OnFixedUpdate();
+						}
+					}
+				}
+
+				m_AccumulatedTime -= Time::FixedTimeStep;
+			}
+		}
+
 		void EditorContext::OnGuiRender(float ts)
 		{
 			ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());

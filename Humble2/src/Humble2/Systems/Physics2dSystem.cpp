@@ -53,7 +53,7 @@ namespace HBL2
 			});
 	}
 
-	void Physics2dSystem::OnUpdate(float ts)
+	void Physics2dSystem::OnFixedUpdate()
 	{
 		// Progress the simulation.
 		b2World_Step(m_PhysicsWorld, Time::FixedTimeStep, m_SubStepCount);

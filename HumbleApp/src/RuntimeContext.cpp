@@ -45,6 +45,29 @@ namespace HBL2
 			}
 		}
 
+		void RuntimeContext::OnFixedUpdate()
+		{
+			m_AccumulatedTime += Time::DeltaTime;
+
+			while (m_AccumulatedTime >= Time::FixedTimeStep)
+			{
+				if (m_ActiveScene == nullptr)
+				{
+					return;
+				}
+
+				for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+				{
+					if (system->GetState() == HBL2::SystemState::Play)
+					{
+						system->OnFixedUpdate();
+					}
+				}
+
+				m_AccumulatedTime -= Time::FixedTimeStep;
+			}
+		}
+
 		void RuntimeContext::OnGuiRender(float ts)
 		{
 			if (m_ActiveScene == nullptr)

@@ -11,8 +11,11 @@ namespace HBL2
 	class HBL2_API Physics2dSystem final : public ISystem
 	{
 	public:
+		Physics2dSystem() { Name = "Physics2dSystem"; }
+
 		virtual void OnCreate() override;
-		virtual void OnUpdate(float ts) override;
+		virtual void OnUpdate(float ts) override {}
+		virtual void OnFixedUpdate() override;
 		virtual void OnDestroy() override;
 
 	private:
