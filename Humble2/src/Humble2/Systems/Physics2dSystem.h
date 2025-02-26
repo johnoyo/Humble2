@@ -18,5 +18,6 @@ namespace HBL2
 	private:
 		b2WorldId m_PhysicsWorld = {};
 		int m_SubStepCount = 4;
+		float m_GravityForce = -9.81f;
 	};
 }

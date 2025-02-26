@@ -20,7 +20,7 @@ namespace HBL2
 	void Physics2dSystem::OnCreate()
 	{
 		b2WorldDef worldDef = b2DefaultWorldDef();
-		worldDef.gravity = { 0, -9.81f };
+		worldDef.gravity = { 0, m_GravityForce };
 		worldDef.restitutionThreshold = 0.5f;
 
 		m_PhysicsWorld = b2CreateWorld(&worldDef);
