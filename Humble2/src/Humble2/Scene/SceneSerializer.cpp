@@ -234,6 +234,37 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::Rigidbody2D>(entity))
+		{
+			out << YAML::Key << "Component::Rigidbody2D";
+			out << YAML::BeginMap;
+
+			auto& rb2d = m_Scene->GetComponent<Component::Rigidbody2D>(entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << rb2d.Enabled;
+			out << YAML::Key << "Type" << YAML::Value << (int)rb2d.Type;
+			out << YAML::Key << "FixedRotation" << YAML::Value << rb2d.FixedRotation;
+
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::BoxCollider2D>(entity))
+		{
+			out << YAML::Key << "Component::BoxCollider2D";
+			out << YAML::BeginMap;
+
+			auto& bc2d = m_Scene->GetComponent<Component::BoxCollider2D>(entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << bc2d.Enabled;
+			out << YAML::Key << "Density" << YAML::Value << bc2d.Density;
+			out << YAML::Key << "Friction" << YAML::Value << bc2d.Friction;
+			out << YAML::Key << "Restitution" << YAML::Value << bc2d.Restitution;
+			out << YAML::Key << "Size" << YAML::Value << bc2d.Size;
+			out << YAML::Key << "Offset" << YAML::Value << bc2d.Offset;
+
+			out << YAML::EndMap;
+		}
+
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
 			const std::string& componentName = meta_type.second.info().name().data();
@@ -562,6 +593,44 @@ namespace HBL2
 					auto& soundSource = m_Scene->AddComponent<Component::AudioSource>(deserializedEntity);
 					soundSource.Enabled = soundSource_NewComponent["Enabled"].as<bool>();
 					soundSource.Sound = AssetManager::Instance->GetAsset<Sound>(soundSource_NewComponent["Sound"].as<UUID>());
+				}
+
+				auto rb2d_NewComponent = entity["Component::Rigidbody2D"];
+				if (rb2d_NewComponent)
+				{
+					auto& rb2d = m_Scene->AddComponent<Component::Rigidbody2D>(deserializedEntity);
+					rb2d.Enabled = rb2d_NewComponent["Enabled"].as<bool>();
+					if (rb2d_NewComponent["Type"])
+					{
+						switch (rb2d_NewComponent["Type"].as<int>())
+						{
+						case 0:
+							rb2d.Type = Component::Rigidbody2D::BodyType::Static;
+							break;
+						case 1:
+							rb2d.Type = Component::Rigidbody2D::BodyType::Dynamic;
+							break;
+						case 2:
+							rb2d.Type = Component::Rigidbody2D::BodyType::Kinematic;
+							break;
+						default:
+							rb2d.Type = Component::Rigidbody2D::BodyType::Static;
+							break;
+						}
+					}
+					rb2d.FixedRotation = rb2d_NewComponent["FixedRotation"].as<bool>();
+				}
+
+				auto bc2d_NewComponent = entity["Component::BoxCollider2D"];
+				if (bc2d_NewComponent)
+				{
+					auto& bc2d = m_Scene->AddComponent<Component::BoxCollider2D>(deserializedEntity);
+					bc2d.Enabled = bc2d_NewComponent["Enabled"].as<bool>();
+					bc2d.Density = bc2d_NewComponent["Density"].as<float>();
+					bc2d.Friction = bc2d_NewComponent["Friction"].as<float>();
+					bc2d.Restitution = bc2d_NewComponent["Restitution"].as<float>();
+					bc2d.Size = bc2d_NewComponent["Size"].as<glm::vec2>();
+					bc2d.Offset = bc2d_NewComponent["Offset"].as<glm::vec2>();
 				}
 
 				for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))

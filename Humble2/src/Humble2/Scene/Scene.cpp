@@ -10,6 +10,7 @@
 #include "Systems\CameraSystem.h"
 #include "Systems\RenderingSystem.h"
 #include "Systems\SoundSystem.h"
+#include "Systems\Physics2dSystem.h"
 
 namespace HBL2
 {
@@ -69,6 +70,8 @@ namespace HBL2
         copy_component(Component::StaticMesh{});
         copy_component(Component::Light{});
         copy_component(Component::AudioSource{});
+        copy_component(Component::Rigidbody2D{});
+        copy_component(Component::BoxCollider2D{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
@@ -76,6 +79,7 @@ namespace HBL2
         dst->RegisterSystem(new CameraSystem, SystemType::Runtime);
         dst->RegisterSystem(new RenderingSystem);
         dst->RegisterSystem(new SoundSystem, SystemType::Runtime);
+        dst->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 
         // Register any user systems to new scene.
         for (ISystem* system : src->m_RuntimeSystems)
@@ -166,6 +170,14 @@ namespace HBL2
         m_Registry.storage<Component::AudioSource>().clear();
         m_Registry.compact<Component::AudioSource>();
 
+        m_Registry.clear<Component::Rigidbody2D>();
+        m_Registry.storage<Component::Rigidbody2D>().clear();
+        m_Registry.compact<Component::Rigidbody2D>();
+
+        m_Registry.clear<Component::BoxCollider2D>();
+        m_Registry.storage<Component::BoxCollider2D>().clear();
+        m_Registry.compact<Component::BoxCollider2D>();
+
         // Destroy all entities.
         for (auto& [uuid, entity] : m_EntityMap)
         {
@@ -213,6 +225,8 @@ namespace HBL2
         copy_component(Component::StaticMesh{});
         copy_component(Component::Light{});
         copy_component(Component::AudioSource{});
+        copy_component(Component::Rigidbody2D{});
+        copy_component(Component::BoxCollider2D{});
 
         // Copy user defined components.
         std::vector<std::string> userComponentNames;

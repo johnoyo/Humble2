@@ -59,6 +59,19 @@ namespace HBL2
 						system->SetState(SystemState::Idle);
 					}
 				}
+
+				if (m_ActiveScene != nullptr)
+				{
+					m_ActiveScene->GetRegistry()
+						.view<HBL2::Component::Camera>()
+						.each([&](HBL2::Component::Camera& camera)
+						{
+							if (camera.Enabled)
+							{
+								camera.AspectRatio = m_ViewportSize.x / m_ViewportSize.y;
+							}
+						});
+				}
 			});
 
 			{

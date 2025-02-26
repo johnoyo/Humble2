@@ -2,9 +2,12 @@
 
 #include "Humble2API.h"
 
-#include "spdlog\spdlog.h"
+// Ignore all warnings raised inside those headers
+#pragma warning(push, 0)
+#include <spdlog\spdlog.h>
 #include <spdlog\fmt\ostr.h>
-#include "spdlog\sinks\stdout_color_sinks.h"
+#include <spdlog\sinks\stdout_color_sinks.h>
+#pragma warning(pop)
 
 #include <memory>
 

@@ -14,6 +14,262 @@ namespace HBL2
 
 		void EditorPanelSystem::DrawContentBrowserPanel()
 		{
+			// Path bar
+			ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+
+			std::filesystem::path tempPath = HBL2::Project::GetProjectDirectory();
+			const std::filesystem::path& relativeCurrentDirectory = FileUtils::RelativePath(m_CurrentDirectory, HBL2::Project::GetProjectDirectory());
+			for (const auto& part : relativeCurrentDirectory)
+			{
+				tempPath /= part;
+				ImGui::SameLine();
+				if (ImGui::Button(part.string().c_str()))
+				{
+					m_CurrentDirectory = tempPath;
+				}
+				ImGui::SameLine();
+				ImGui::Text("/");
+			}
+
+			// Search bar
+			ImGui::SameLine(contentRegionAvailable.x - 200);
+			ImGui::SetNextItemWidth(200);
+			static char searchQueryBuffer[256] = "";
+			ImGui::InputTextWithHint("##Search", "Search...", searchQueryBuffer, 256);
+			m_SearchQuery = searchQueryBuffer;
+
+			if (!m_SearchQuery.empty())
+			{
+				for (const auto& entry : std::filesystem::recursive_directory_iterator(HBL2::Project::GetAssetDirectory()))
+				{
+					std::string filename = entry.path().filename().string();
+					if (filename.find(m_SearchQuery) != std::string::npos)
+					{
+						if (entry.is_directory())
+						{
+							m_CurrentDirectory = entry.path();
+						}
+						else
+						{
+							m_CurrentDirectory = entry.path().parent_path();
+						}
+					}
+				}
+			}
+
+			ImGui::Columns(2, "BrowserColumns", true);
+			ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() * 0.2f); // 20% for the sidebar
+
+			// Side bar
+			ImGui::BeginChild("##Sidebar", ImVec2(0, 0), true);
+			DrawDirectoryRecursive(HBL2::Project::GetAssetDirectory());
+			ImGui::EndChild();
+
+			ImGui::NextColumn();
+
+			// File view
+			ImGui::BeginChild("##FileView", ImVec2(0, 0), true);
+
+			DrawContentBrowserContextMenu();
+
+			float padding = 16.f;
+			float thumbnailSize = 128.f;
+			float panelWidth = ImGui::GetContentRegionAvail().x;
+
+			int columnCount = (int)(panelWidth / (padding + thumbnailSize));
+			columnCount = columnCount < 1 ? 1 : columnCount;
+
+			if (ImGui::BeginTable("FileGrid", columnCount))
+			{
+				int id = 0;
+
+				for (const auto& entry : std::filesystem::directory_iterator(m_CurrentDirectory))
+				{
+					ImGui::PushID(id++);
+
+					const std::string& path = entry.path().string();
+					const auto& relativePath = FileUtils::RelativePath(entry.path(), HBL2::Project::GetAssetDirectory());
+					const std::string extension = entry.path().extension().string();
+
+					// Do not show engine metadata files.
+					if (extension.find(".hbl") != std::string::npos)
+					{
+						ImGui::PopID();
+						continue;
+					}
+
+					//ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+
+					UUID assetUUID = std::hash<std::string>()(relativePath);
+					Handle<Asset> assetHandle = AssetManager::Instance->GetHandleFromUUID(assetUUID);
+					Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+					ImGui::TableNextColumn();
+
+					if (ImGui::Button(entry.path().filename().string().c_str(), { thumbnailSize, thumbnailSize }))
+					{
+						if (!entry.is_directory())
+						{
+							HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+							m_SelectedAsset = assetHandle;
+						}
+						else
+						{
+							HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+							m_SelectedAsset = {};
+						}
+					}
+
+					if (ImGui::BeginPopupContextItem())
+					{
+						if (extension == ".h")
+						{
+							if (ImGui::MenuItem("Recompile"))
+							{
+								if (Context::Mode == Mode::Runtime)
+								{
+									HBL2_WARN("Hot reloading is not available yet. Skipping requested recompilation.");
+								}
+								else
+								{
+									AssetManager::Instance->GetAsset<Script>(assetHandle);
+									AssetManager::Instance->SaveAsset(assetHandle);				// NOTE: Consider changing this!
+								}
+							}
+						}
+
+						if (ImGui::MenuItem("Delete"))
+						{
+							m_OpenDeleteConfirmationWindow = true;
+							m_AssetToBeDeleted = assetHandle;
+						}
+
+						ImGui::EndPopup();
+					}
+
+					if (ImGui::BeginDragDropSource())
+					{
+						uint32_t packedHandle = assetHandle.Pack();
+
+						if (asset == nullptr)
+						{
+							HBL2_CORE_WARN("Asset at path: {0} and with UUID: {1} has not been registered. Registering it now.", entry.path().string(), assetUUID);
+
+							assetHandle = AssetManager::Instance->RegisterAsset(entry.path());
+							packedHandle = assetHandle.Pack();
+							asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+						}
+
+						switch (asset->Type)
+						{
+						case AssetType::Shader:
+							ImGui::SetDragDropPayload("Content_Browser_Item_Shader", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+							break;
+						case AssetType::Texture:
+							ImGui::SetDragDropPayload("Content_Browser_Item_Texture", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+							break;
+						case AssetType::Sound:
+							ImGui::SetDragDropPayload("Content_Browser_Item_Sound", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+							break;
+						case AssetType::Material:
+							ImGui::SetDragDropPayload("Content_Browser_Item_Material", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+							break;
+						case AssetType::Mesh:
+							ImGui::SetDragDropPayload("Content_Browser_Item_Mesh", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+							break;
+						case AssetType::Scene:
+							ImGui::SetDragDropPayload("Content_Browser_Item_Scene", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+							break;
+						case AssetType::Script:
+							ImGui::SetDragDropPayload("Content_Browser_Item_Script", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+							break;
+						default:
+							ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+							break;
+						}
+
+						ImGui::EndDragDropSource();
+					}
+					//ImGui::PopStyleColor();
+
+					if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+					{
+						if (entry.is_directory())
+						{
+							m_CurrentDirectory /= entry.path().filename();
+						}
+					}
+
+					ImGui::TextWrapped(entry.path().filename().string().c_str());
+
+					ImGui::PopID();
+				}
+
+				ImGui::EndTable();
+			}
+
+			ImGui::EndChild();
+
+			if (m_OpenDeleteConfirmationWindow && m_AssetToBeDeleted.IsValid())
+			{
+				// TODO: Handle deletion of folder. (Make folders assets??)
+
+				ImGui::Begin("Delete Confirmation Window", &m_OpenDeleteConfirmationWindow, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+				ImGui::Text("Are you sure you want to delete this asset.\n\nThis action can not be undone.");
+
+				ImGui::NewLine();
+
+				if (ImGui::Button("OK"))
+				{
+					AssetManager::Instance->DeleteAsset(m_AssetToBeDeleted, true);
+					m_OpenDeleteConfirmationWindow = false;
+					m_AssetToBeDeleted = Handle<Asset>();
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel"))
+				{
+					m_OpenDeleteConfirmationWindow = false;
+					m_AssetToBeDeleted = Handle<Asset>();
+				}
+
+				ImGui::End();
+			}
+		}
+
+		void EditorPanelSystem::DrawDirectoryRecursive(const std::filesystem::path& path)
+		{
+			if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path))
+			{
+				return;
+			}
+
+			for (const auto& entry : std::filesystem::directory_iterator(path))
+			{
+				if (!entry.is_directory())
+				{
+					continue;
+				}
+
+				ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+				bool open = ImGui::TreeNodeEx(entry.path().filename().string().c_str(), flags);
+				if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+				{
+					m_CurrentDirectory = entry.path();
+				}
+
+				if (open)
+				{
+					DrawDirectoryRecursive(entry.path());
+					ImGui::TreePop();
+				}
+			}
+		}
+
+		void EditorPanelSystem::DrawContentBrowserContextMenu()
+		{
 			// Pop up menu when right clicking on an empty space inside the Content Browser panel.
 			if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
 			{
@@ -147,7 +403,7 @@ namespace HBL2
 						.debugName = "New Scene",
 						.filePath = relativePath,
 						.type = AssetType::Scene,
-					});
+						});
 
 					AssetManager::Instance->SaveAsset(assetHandle);
 
@@ -384,7 +640,7 @@ namespace HBL2
 				{
 					ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
 				}
-				else if(s_AlbedoMapTask && !s_AlbedoMapTask->Finished())
+				else if (s_AlbedoMapTask && !s_AlbedoMapTask->Finished())
 				{
 					ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 				}
@@ -521,7 +777,7 @@ namespace HBL2
 							{
 								TextureUtilities::Get().CreateAssetMetadataFile(roughnessMapAssetHandle);
 							}
-							
+
 							s_RoughnessMapTask = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapAssetHandle);
 
 							ImGui::EndDragDropTarget();
@@ -537,10 +793,10 @@ namespace HBL2
 					{
 						HBL2_CORE_WARN("Shader field cannot be left blank. Please select the shader you want to use in your material.");
 					}
-					else if ((s_AlbedoMapTask    != nullptr && !s_AlbedoMapTask->Finished())   ||
-							 (s_NormalMapTask    != nullptr && !s_NormalMapTask->Finished())   ||
-							 (s_MetallicMapTask  != nullptr && !s_MetallicMapTask->Finished()) ||
-							 (s_RoughnessMapTask != nullptr && !s_RoughnessMapTask->Finished()))
+					else if ((s_AlbedoMapTask != nullptr && !s_AlbedoMapTask->Finished()) ||
+						(s_NormalMapTask != nullptr && !s_NormalMapTask->Finished()) ||
+						(s_MetallicMapTask != nullptr && !s_MetallicMapTask->Finished()) ||
+						(s_RoughnessMapTask != nullptr && !s_RoughnessMapTask->Finished()))
 					{
 						HBL2_CORE_WARN("Please wait until the textures have finished loading.");
 					}
@@ -552,7 +808,7 @@ namespace HBL2
 							.debugName = "material-asset",
 							.filePath = relativePath,
 							.type = AssetType::Material,
-						});
+							});
 
 						if (materialAssetHandle.IsValid())
 						{
@@ -617,257 +873,6 @@ namespace HBL2
 				}
 
 				ImGui::End();
-			}
-
-
-			// Path bar
-			ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
-
-			std::filesystem::path tempPath = HBL2::Project::GetProjectDirectory();
-			const std::filesystem::path& relativeCurrentDirectory = FileUtils::RelativePath(m_CurrentDirectory, HBL2::Project::GetProjectDirectory());
-			for (const auto& part : relativeCurrentDirectory)
-			{
-				tempPath /= part;
-				ImGui::SameLine();
-				if (ImGui::Button(part.string().c_str()))
-				{
-					m_CurrentDirectory = tempPath;
-				}
-				ImGui::SameLine();
-				ImGui::Text("/");
-			}
-
-			// Search bar
-			ImGui::SameLine(contentRegionAvailable.x - 200);
-			ImGui::SetNextItemWidth(200);
-			static char searchQueryBuffer[256] = "";
-			ImGui::InputTextWithHint("##Search", "Search...", searchQueryBuffer, 256);
-			m_SearchQuery = searchQueryBuffer;
-
-			if (!m_SearchQuery.empty())
-			{
-				for (const auto& entry : std::filesystem::recursive_directory_iterator(HBL2::Project::GetAssetDirectory()))
-				{
-					std::string filename = entry.path().filename().string();
-					if (filename.find(m_SearchQuery) != std::string::npos)
-					{
-						if (entry.is_directory())
-						{
-							m_CurrentDirectory = entry.path();
-						}
-						else
-						{
-							m_CurrentDirectory = entry.path().parent_path();
-						}
-					}
-				}
-			}
-
-			ImGui::Columns(2, "BrowserColumns", true);
-			ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() * 0.2f); // 20% for the sidebar
-
-			// Side bar
-			ImGui::BeginChild("##Sidebar", ImVec2(0, 0), true);
-			DrawDirectoryRecursive(HBL2::Project::GetAssetDirectory());
-			ImGui::EndChild();
-
-			ImGui::NextColumn();
-
-			// File view
-			ImGui::BeginChild("##FileView", ImVec2(0, 0), true);
-			float padding = 16.f;
-			float thumbnailSize = 128.f;
-			float panelWidth = ImGui::GetContentRegionAvail().x;
-
-			int columnCount = (int)(panelWidth / (padding + thumbnailSize));
-			columnCount = columnCount < 1 ? 1 : columnCount;
-
-			if (ImGui::BeginTable("FileGrid", columnCount))
-			{
-				int id = 0;
-
-				for (const auto& entry : std::filesystem::directory_iterator(m_CurrentDirectory))
-				{
-					ImGui::PushID(id++);
-
-					const std::string& path = entry.path().string();
-					const auto& relativePath = FileUtils::RelativePath(entry.path(), HBL2::Project::GetAssetDirectory());
-					const std::string extension = entry.path().extension().string();
-
-					// Do not show engine metadata files.
-					if (extension.find(".hbl") != std::string::npos)
-					{
-						ImGui::PopID();
-						continue;
-					}
-
-					//ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-
-					UUID assetUUID = std::hash<std::string>()(relativePath);
-					Handle<Asset> assetHandle = AssetManager::Instance->GetHandleFromUUID(assetUUID);
-					Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
-
-					ImGui::TableNextColumn();
-
-					if (ImGui::Button(entry.path().filename().string().c_str(), { thumbnailSize, thumbnailSize }))
-					{
-						if (!entry.is_directory())
-						{
-							HBL2::Component::EditorVisible::SelectedEntity = entt::null;
-							m_SelectedAsset = assetHandle;
-						}
-						else
-						{
-							HBL2::Component::EditorVisible::SelectedEntity = entt::null;
-							m_SelectedAsset = {};
-						}
-					}
-
-					if (ImGui::BeginPopupContextItem())
-					{
-						if (extension == ".h")
-						{
-							if (ImGui::MenuItem("Recompile"))
-							{
-								if (Context::Mode == Mode::Runtime)
-								{
-									HBL2_WARN("Hot reloading is not available yet. Skipping requested recompilation.");
-								}
-								else
-								{
-									AssetManager::Instance->GetAsset<Script>(assetHandle);
-									AssetManager::Instance->SaveAsset(assetHandle);				// NOTE: Consider changing this!
-								}
-							}
-						}
-
-						if (ImGui::MenuItem("Delete"))
-						{
-							m_OpenDeleteConfirmationWindow = true;
-							m_AssetToBeDeleted = assetHandle;
-						}
-
-						ImGui::EndPopup();
-					}
-
-					if (ImGui::BeginDragDropSource())
-					{
-						uint32_t packedHandle = assetHandle.Pack();
-
-						if (asset == nullptr)
-						{
-							HBL2_CORE_WARN("Asset at path: {0} and with UUID: {1} has not been registered. Registering it now.", entry.path().string(), assetUUID);
-
-							assetHandle = AssetManager::Instance->RegisterAsset(entry.path());
-							packedHandle = assetHandle.Pack();
-							asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
-						}
-
-						switch (asset->Type)
-						{
-						case AssetType::Shader:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Shader", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Texture:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Texture", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Sound:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Sound", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Material:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Material", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Mesh:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Mesh", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Scene:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Scene", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Script:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Script", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						default:
-							ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						}
-
-						ImGui::EndDragDropSource();
-					}
-					//ImGui::PopStyleColor();
-
-					if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-					{
-						if (entry.is_directory())
-						{
-							m_CurrentDirectory /= entry.path().filename();
-						}
-					}
-
-					ImGui::TextWrapped(entry.path().filename().string().c_str());
-
-					ImGui::PopID();
-				}
-
-				ImGui::EndTable();
-			}
-
-			ImGui::EndChild();
-
-			if (m_OpenDeleteConfirmationWindow && m_AssetToBeDeleted.IsValid())
-			{
-				// TODO: Handle deletion of folder. (Make folders assets??)
-
-				ImGui::Begin("Delete Confirmation Window", &m_OpenDeleteConfirmationWindow, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
-
-				ImGui::Text("Are you sure you want to delete this asset.\n\nThis action can not be undone.");
-
-				ImGui::NewLine();
-
-				if (ImGui::Button("OK"))
-				{
-					AssetManager::Instance->DeleteAsset(m_AssetToBeDeleted, true);
-					m_OpenDeleteConfirmationWindow = false;
-					m_AssetToBeDeleted = Handle<Asset>();
-				}
-
-				ImGui::SameLine();
-
-				if (ImGui::Button("Cancel"))
-				{
-					m_OpenDeleteConfirmationWindow = false;
-					m_AssetToBeDeleted = Handle<Asset>();
-				}
-
-				ImGui::End();
-			}
-		}
-
-		void EditorPanelSystem::DrawDirectoryRecursive(const std::filesystem::path& path)
-		{
-			if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path))
-			{
-				return;
-			}
-
-			for (const auto& entry : std::filesystem::directory_iterator(path))
-			{
-				if (!entry.is_directory())
-				{
-					continue;
-				}
-
-				ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-				bool open = ImGui::TreeNodeEx(entry.path().filename().string().c_str(), flags);
-				if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
-				{
-					m_CurrentDirectory = entry.path();
-				}
-
-				if (open)
-				{
-					DrawDirectoryRecursive(entry.path());
-					ImGui::TreePop();
-				}
 			}
 		}
 	}
