@@ -1,6 +1,7 @@
 #include "Physics2dSystem.h"
 
 #include "Core\Time.h"
+#include "Utilities\Physics2d.h"
 
 namespace HBL2
 {
@@ -34,6 +35,7 @@ namespace HBL2
 				bodyDef.position = { transform.Translation.x, transform.Translation.y };
 				bodyDef.rotation = b2MakeRot(glm::radians(transform.Rotation.z));
 				bodyDef.fixedRotation = rb2d.FixedRotation;
+				bodyDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>(entity));
 
 				rb2d.BodyId = b2CreateBody(m_PhysicsWorld, &bodyDef);
 
@@ -45,6 +47,8 @@ namespace HBL2
 					shapeDef.friction = bc2d.Friction;
 					shapeDef.restitution = bc2d.Restitution;
 					shapeDef.density = bc2d.Density;
+					shapeDef.enableContactEvents = true;
+					shapeDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>(entity));
 
 					const b2Polygon polygon = b2MakeBox(bc2d.Size.x * transform.Scale.x, bc2d.Size.y * transform.Scale.y);
 
@@ -70,6 +74,26 @@ namespace HBL2
 				const auto& rotation = b2Body_GetRotation(rb2d.BodyId);
 				transform.Rotation.z = glm::degrees(b2Rot_GetAngle(rotation));
 			});
+
+		b2ContactEvents contactEvents = b2World_GetContactEvents(m_PhysicsWorld);
+
+		for (int i = 0; i < contactEvents.beginCount; ++i)
+		{
+			b2ContactBeginTouchEvent* beginEvent = contactEvents.beginEvents + i;
+			Physics2D::DispatchContactEvent(Physics2D::ContactEventType::BeginTouch, beginEvent);
+		}
+
+		for (int i = 0; i < contactEvents.endCount; ++i)
+		{
+			b2ContactEndTouchEvent* endEvent = contactEvents.endEvents + i;
+			Physics2D::DispatchContactEvent(Physics2D::ContactEventType::EndTouch, endEvent);
+		}
+
+		for (int i = 0; i < contactEvents.hitCount; ++i)
+		{
+			b2ContactHitEvent* hitEvent = contactEvents.hitEvents + i;
+			Physics2D::DispatchContactEvent(Physics2D::ContactEventType::Hit, hitEvent);
+		}
 	}
 
 	void Physics2dSystem::OnDestroy()
