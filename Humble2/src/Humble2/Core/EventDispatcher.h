@@ -17,11 +17,7 @@ namespace HBL2
     };
 
     template <typename T>
-    class EventType : public Event
-    {
-    public:
-        static std::type_index GetType() { return typeid(T); }
-    };
+    class EventType : public Event {};
 
     class HBL2_API EventDispatcher
     {
