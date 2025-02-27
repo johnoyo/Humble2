@@ -18,6 +18,11 @@ namespace HBL2
 
 						std::string projectName = std::filesystem::path(filepath).filename().stem().string();
 
+						for (ISystem* system : m_ActiveScene->GetSystems())
+						{
+							system->OnDestroy();
+						}
+
 						AssetManager::Instance->DeregisterAssets();
 
 						HBL2::Project::Create(projectName)->Save(filepath);
@@ -37,6 +42,11 @@ namespace HBL2
 					if (ImGui::MenuItem("Open Project"))
 					{
 						std::string filepath = HBL2::FileDialogs::OpenFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), {"Humble Project Files (*.hblproj)", "*.hblproj"});
+
+						for (ISystem* system : m_ActiveScene->GetSystems())
+						{
+							system->OnDestroy();
+						}
 
 						AssetManager::Instance->DeregisterAssets();
 

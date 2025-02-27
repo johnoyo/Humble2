@@ -60,32 +60,37 @@ namespace HBL2
 		// Open metadata file to retrieve asset UUID.
 		std::ifstream stream(startingSceneMetadataPath);
 
-		if (!stream.is_open())
-		{
-			HBL2_CORE_ERROR("Scene metadata file of starting scene not found: {0}", startingSceneMetadataPath);
-			return;
-		}
-
-		std::stringstream ss;
-		ss << stream.rdbuf();
-
-		YAML::Node dataMetadata = YAML::Load(ss.str());
-		if (!dataMetadata["Scene"].IsDefined())
-		{
-			HBL2_CORE_TRACE("Scene not found in metadata file: {0}, not a valid file format.", ss.str());
-			stream.close();
-			return;
-		}
-
 		UUID assetUUID = 0;
 
-		auto sceneMetadataProperties = dataMetadata["Scene"];
-		if (sceneMetadataProperties)
+		if (!stream.is_open())
 		{
-			assetUUID = sceneMetadataProperties["UUID"].as<UUID>();
+			// If it is a newly created project and the starting scene file is not created, create them.
+			HBL2_CORE_ERROR("Scene metadata file of starting scene not found: {0}", startingSceneMetadataPath);
+			assetUUID = std::hash<std::string>()(s_ActiveProject->GetSpecification().StartingScene.string());
+			AssetManager::Instance->SaveAsset(assetUUID);
 		}
+		else
+		{
+			std::stringstream ss;
+			ss << stream.rdbuf();
 
-		stream.close();
+			YAML::Node dataMetadata = YAML::Load(ss.str());
+			if (!dataMetadata["Scene"].IsDefined())
+			{
+				HBL2_CORE_TRACE("Scene not found in metadata file: {0}, not a valid file format.", ss.str());
+				stream.close();
+				return;
+			}
+
+
+			auto sceneMetadataProperties = dataMetadata["Scene"];
+			if (sceneMetadataProperties)
+			{
+				assetUUID = sceneMetadataProperties["UUID"].as<UUID>();
+			}
+
+			stream.close();
+		}
 
 		// Load scene asset.
 		Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(assetUUID);
@@ -94,16 +99,6 @@ namespace HBL2
 		{
 			HBL2_CORE_ERROR("Scene asset handle of \"{0}\" is invalid, aborting scene load.", s_ActiveProject->GetSpecification().StartingScene.string());
 			return;
-		}
-
-		const std::filesystem::path& startingScenePath = GetAssetFileSystemPath(s_ActiveProject->GetSpecification().StartingScene.string());
-
-		// If it is a newly created project and the starting scene file is not created, create them.
-		if (!std::filesystem::is_directory(startingScenePath.parent_path()))
-		{
-			Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
-			HBL2::SceneSerializer serializer(scene);
-			serializer.Serialize(GetAssetFileSystemPath(s_ActiveProject->GetSpecification().StartingScene.string()));
 		}
 
 		SceneManager::Get().LoadScene(sceneHandle, runtime);

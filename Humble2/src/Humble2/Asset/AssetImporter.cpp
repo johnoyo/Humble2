@@ -643,7 +643,18 @@ namespace HBL2
 		{
 			HBL2_CORE_WARN(" Scene: {0}, at path: {1} is not loaded, loading it now.", asset->DebugName, asset->FilePath.string());
 
-			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscene", 0);
+			const auto& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath);
+
+			try
+			{
+				std::filesystem::create_directories(filePath.parent_path());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_ERROR("Project directory creation failed: {0}", e.what());
+			}
+
+			std::ofstream fout(filePath.string() + ".hblscene", 0);
 
 			YAML::Emitter out;
 			out << YAML::BeginMap;

@@ -55,7 +55,7 @@ namespace HBL2
 				system->OnUpdate(ts);
 			}
 
-			if (m_ActiveScene == nullptr)
+			if (!IsActiveSceneValid())
 			{
 				HBL2_CORE_TRACE("Active Scene is null.");
 				return;
@@ -92,7 +92,7 @@ namespace HBL2
 					system->OnFixedUpdate();
 				}
 
-				if (m_ActiveScene == nullptr)
+				if (!IsActiveSceneValid())
 				{
 					HBL2_CORE_TRACE("Active Scene is null.");
 					return;
@@ -130,7 +130,7 @@ namespace HBL2
 				system->OnGuiRender(ts);
 			}
 
-			if (m_ActiveScene == nullptr)
+			if (!IsActiveSceneValid())
 			{
 				HBL2_CORE_TRACE("Active Scene is null.");
 				return;
@@ -166,7 +166,7 @@ namespace HBL2
 				}
 			}
 
-			if (m_ActiveScene != nullptr)
+			if (IsActiveSceneValid())
 			{
 				for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 				{
@@ -203,6 +203,12 @@ namespace HBL2
 		{
 			TextureUtilities::Get().LoadWhiteTexture();
 			ShaderUtilities::Get().LoadBuiltInShaders();
+		}
+
+		bool EditorContext::IsActiveSceneValid()
+		{
+			Scene* activeScene = ResourceManager::Instance->GetScene(ActiveScene);
+			return m_ActiveScene != nullptr && activeScene != nullptr;
 		}
 	}
 }

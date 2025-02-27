@@ -142,11 +142,13 @@ namespace HBL2
 		}
 
 		// Delete old loaded scene.
-		AssetManager::Instance->DeleteAsset(m_CurrentSceneAssetHandle);
+		if (m_CurrentSceneAssetHandle != m_NewSceneAssetHandle)
+		{
+			AssetManager::Instance->DeleteAsset(m_CurrentSceneAssetHandle);
+		}
 
 		// Load new scene.
 		Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(m_NewSceneAssetHandle);
-
 
 		EventDispatcher::Get().Post(SceneChangeEvent(m_CurrentSceneHandle, m_NewSceneHandle));
 

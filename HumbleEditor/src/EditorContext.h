@@ -26,6 +26,7 @@ namespace HBL2
 		private:
 			bool OpenEmptyProject();
 			void LoadBuiltInAssets();
+			bool IsActiveSceneValid();
 
 		private:
 			Scene* m_EditorScene = nullptr;
