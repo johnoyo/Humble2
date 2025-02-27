@@ -18,7 +18,7 @@ namespace HBL2
     {
         HBL2_CORE_ASSERT(s_Instance == nullptr, "Input::Initialize called twice.");
         s_Instance = new Input;
-        Get().m_Window = Window::Instance->GetHandle();
+        s_Instance->m_Window = Window::Instance->GetHandle();
     }
 
     void Input::ShutDown()
@@ -30,7 +30,7 @@ namespace HBL2
 
     bool Input::IsGamepadConnected(int gamepad)
     {
-        return glfwJoystickPresent(gamepad) && glfwJoystickIsGamepad(gamepad);
+        return glfwJoystickPresent(gamepad) == GLFW_TRUE && glfwJoystickIsGamepad(gamepad) == GLFW_TRUE;
     }
 
     bool Input::GetGamepadButtonDown(GamepadButton button, int gamepad)
@@ -59,7 +59,7 @@ namespace HBL2
         GLFWgamepadstate state;
         if (glfwGetGamepadState(gamepad, &state))
         {
-            bool pressed = (state.buttons[static_cast<int>(button)] == GLFW_PRESS);
+            bool pressed = (state.buttons[(int)button] == GLFW_PRESS);
             bool wasPressed = s_Instance->m_LastGamepadState[gamepad][(int)button];
 
             s_Instance->m_LastGamepadState[gamepad][(int)button] = pressed;
@@ -140,6 +140,7 @@ namespace HBL2
         glfwGetCursorPos(m_Window, &x, &y);
         m_MousePosition.x = (float)x;
         m_MousePosition.y = (float)y;
+
         return m_MousePosition;
     }
 

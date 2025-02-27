@@ -6,6 +6,7 @@
 #include "Scene\SceneManager.h"
 
 #include "Core\Input.h"
+#include "Core\InputMapping.h"
 
 #include "Core\Context.h"
 #include "Asset\AssetManager.h"
