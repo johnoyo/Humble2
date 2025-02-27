@@ -28,7 +28,15 @@ public:
 			{
 				if (HBL2::Input::GetKeyPress(KeyCode::C))
 				{
-					HBL2_INFO("Hello!");
+					if (newComponent.Mario == entt::null)
+					{
+						HBL2_INFO("Hello!");
+					}
+					else
+					{
+						HBL2_INFO("Hello {}!", m_Context->GetComponent<Component::Tag>(newComponent.Mario).Name);
+					}
+
 					HBL2::SceneManager::Get().LoadScene(newComponent.SceneHandle);
 				}
 			});		

@@ -160,11 +160,11 @@ namespace HBL2
 		}
 
 	private:
-		void DrawComponent(Scene* cxt, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
+		void DrawComponent(Scene* ctx, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
 
-		void SerializeComponent(YAML::Emitter& out, Scene* cxt, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
+		void SerializeComponent(YAML::Emitter& out, Scene* ctx, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
 
-		void DeserializeComponent(YAML::Node& node, Scene* cxt, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
+		void DeserializeComponent(YAML::Node& node, Scene* ctx, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
 
 	private:
 		EditorUtilities() = default;
