@@ -98,7 +98,9 @@ namespace HBL2
 
 	void Physics2dSystem::OnDestroy()
 	{
-		if (m_PhysicsWorld.index1 != 0)
+		Physics2D::ClearContactEvents();		
+
+		if (b2World_IsValid(m_PhysicsWorld))
 		{
 			b2DestroyWorld(m_PhysicsWorld);
 		}

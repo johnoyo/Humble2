@@ -59,5 +59,6 @@ namespace HBL2
 		HBL2_API void OnHitEvent(std::function<void(ContactHitEvent*)>&& hitEventFunc);
 
 		HBL2_API void DispatchContactEvent(ContactEventType contactEventType, void* contactEventData);
+		HBL2_API void ClearContactEvents();
 	}
 }

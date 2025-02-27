@@ -2,9 +2,9 @@
 
 namespace HBL2
 {
-	static std::function<void(Physics2D::ContactBeginTouchEvent*)> s_BeginEventFunc = nullptr;
-	static std::function<void(Physics2D::ContactEndTouchEvent*)> s_EndEventFunc = nullptr;
-	static std::function<void(Physics2D::ContactHitEvent*)> s_HitEventFunc = nullptr;
+	static std::vector<std::function<void(Physics2D::ContactBeginTouchEvent*)>> s_BeginEventFunc;
+	static std::vector<std::function<void(Physics2D::ContactEndTouchEvent*)>> s_EndEventFunc;
+	static std::vector<std::function<void(Physics2D::ContactHitEvent*)>> s_HitEventFunc;
 
 	bool Physics2D::Equals(b2BodyId bodyA, b2BodyId bodyB)
 	{
@@ -64,17 +64,20 @@ namespace HBL2
 
 	void Physics2D::OnBeginTouchEvent(std::function<void(ContactBeginTouchEvent*)>&& beginEventFunc)
 	{
-		s_BeginEventFunc = beginEventFunc;
+		// TODO: This is not thread safe, add lock when system scheduling is added.
+		s_BeginEventFunc.emplace_back(beginEventFunc);
 	}
 
 	void Physics2D::OnEndTouchEvent(std::function<void(ContactEndTouchEvent*)>&& endEventFunc)
 	{
-		s_EndEventFunc = endEventFunc;
+		// TODO: This is not thread safe, add lock when system scheduling is added.
+		s_EndEventFunc.emplace_back(endEventFunc);
 	}
 
 	void Physics2D::OnHitEvent(std::function<void(ContactHitEvent*)>&& hitEventFunc)
 	{
-		s_HitEventFunc = hitEventFunc;
+		// TODO: This is not thread safe, add lock when system scheduling is added.
+		s_HitEventFunc.emplace_back(hitEventFunc);
 	}
 
 	void Physics2D::DispatchContactEvent(ContactEventType contactEventType, void* contactEventData)
@@ -82,35 +85,54 @@ namespace HBL2
 		switch (contactEventType)
 		{
 		case HBL2::Physics2D::ContactEventType::BeginTouch:
-			if (s_BeginEventFunc != nullptr)
+			if (!s_BeginEventFunc.empty())
 			{
 				ContactBeginTouchEvent contactBeginTouchEvent{};
 				contactBeginTouchEvent.payload = (b2ContactBeginTouchEvent*)contactEventData;
 				contactBeginTouchEvent.entityA = GetEntityFromShapeId(contactBeginTouchEvent.payload->shapeIdA);
 				contactBeginTouchEvent.entityB = GetEntityFromShapeId(contactBeginTouchEvent.payload->shapeIdB);
-				s_BeginEventFunc(&contactBeginTouchEvent);
+
+				for (const auto& callback : s_BeginEventFunc)
+				{
+					callback(&contactBeginTouchEvent);
+				}
 			}
 			break;
 		case HBL2::Physics2D::ContactEventType::EndTouch:
-			if (s_EndEventFunc != nullptr)
+			if (!s_EndEventFunc.empty())
 			{
 				ContactEndTouchEvent contactEndTouchEvent{};
 				contactEndTouchEvent.payload = (b2ContactEndTouchEvent*)contactEventData;
 				contactEndTouchEvent.entityA = GetEntityFromShapeId(contactEndTouchEvent.payload->shapeIdA);
 				contactEndTouchEvent.entityB = GetEntityFromShapeId(contactEndTouchEvent.payload->shapeIdB);
-				s_EndEventFunc(&contactEndTouchEvent);
+				
+				for (const auto& callback : s_EndEventFunc)
+				{
+					callback(&contactEndTouchEvent);
+				}
 			}
 			break;
 		case HBL2::Physics2D::ContactEventType::Hit:
-			if (s_HitEventFunc != nullptr)
+			if (!s_HitEventFunc.empty())
 			{
 				ContactHitEvent contactHitEvent{};
 				contactHitEvent.payload = (b2ContactHitEvent*)contactEventData;
 				contactHitEvent.entityA = GetEntityFromShapeId(contactHitEvent.payload->shapeIdA);
 				contactHitEvent.entityB = GetEntityFromShapeId(contactHitEvent.payload->shapeIdB);
-				s_HitEventFunc(&contactHitEvent);
+				
+				for (const auto& callback : s_HitEventFunc)
+				{
+					callback(&contactHitEvent);
+				}
 			}
 			break;
 		}
+	}
+
+	HBL2_API void Physics2D::ClearContactEvents()
+	{
+		s_BeginEventFunc.clear();
+		s_EndEventFunc.clear();
+		s_HitEventFunc.clear();
 	}
 }
