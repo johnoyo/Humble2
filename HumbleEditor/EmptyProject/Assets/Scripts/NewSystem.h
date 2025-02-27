@@ -26,7 +26,7 @@ public:
 			.view<NewComponent>()
 			.each([&](NewComponent& newComponent)
 			{
-				if (HBL2::Input::GetKeyPress(GLFW_KEY_C))
+				if (HBL2::Input::GetKeyPress(KeyCode::C))
 				{
 					HBL2_INFO("Hello!");
 					HBL2::SceneManager::Get().LoadScene(newComponent.SceneHandle);
@@ -42,16 +42,16 @@ public:
 			{
 				if (rb2d.Type == Component::Rigidbody2D::BodyType::Dynamic)
 				{
-					if (Input::GetKeyPress(GLFW_KEY_W) && m_Grounded)
+					if (Input::GetKeyPress(KeyCode::W) && m_Grounded)
 					{
 						m_Grounded = false;
 						Physics2D::ApplyLinearImpulse(rb2d, { 0.0f, 10.0f }, true);
 					}
-					if (Input::GetKeyDown(GLFW_KEY_D))
+					if (Input::GetKeyDown(KeyCode::D))
 					{
 						Physics2D::ApplyForce(rb2d, { 10.0f, 0.0f }, true);
 					}
-					if (Input::GetKeyDown(GLFW_KEY_A))
+					if (Input::GetKeyDown(KeyCode::A))
 					{
 						Physics2D::ApplyForce(rb2d, { -10.0f, 0.0f }, true);
 					}
