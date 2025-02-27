@@ -38,12 +38,10 @@ namespace HBL2
 			.textures = { Renderer::Instance->MainColorTexture },
 		});
 
-		EventDispatcher::Get().Register("FramebufferSizeEvent", [&](const Event& e)
+		EventDispatcher::Get().Register<FramebufferSizeEvent>([&](const FramebufferSizeEvent& e)
 		{
-			const FramebufferSizeEvent& wse = dynamic_cast<const FramebufferSizeEvent&>(e);
-
 			m_Resize = true;
-			m_NewSize = { wse.Width, wse.Height };
+			m_NewSize = { e.Width, e.Height };
 		});
 	}
 

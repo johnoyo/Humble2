@@ -2,9 +2,7 @@
 
 namespace HBL2
 {
-	Event::~Event()
-	{
-	}
+	EventDispatcher* EventDispatcher::s_Instance = nullptr;
 
 	EventDispatcher& EventDispatcher::Get()
 	{
@@ -22,26 +20,5 @@ namespace HBL2
 	{
 		delete s_Instance;
 		s_Instance = nullptr;
-	}
-
-	void EventDispatcher::Register(const std::string& descriptor, std::function<void(const Event&)>&& callback)
-	{
-		m_CallbackSlots[descriptor].push_back(callback);
-	}
-
-	void EventDispatcher::Post(const Event& event) const
-	{
-		auto desc = event.GetDescription();
-		if (m_CallbackSlots.find(desc) == m_CallbackSlots.end())
-		{
-			return;
-		}
-
-		auto&& callbacks = m_CallbackSlots.at(desc);
-
-		for (auto&& callback : callbacks)
-		{
-			callback(event);
-		}
 	}
 }

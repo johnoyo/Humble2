@@ -38,11 +38,10 @@ namespace HBL2
 				system->OnCreate();
 			}
 
-			EventDispatcher::Get().Register("SceneChangeEvent", [&](const HBL2::Event& e)
+			EventDispatcher::Get().Register<SceneChangeEvent>([&](const HBL2::SceneChangeEvent& e)
 			{
 				HBL2_CORE_INFO("EditorContext::SceneChangeEvent");
-				const SceneChangeEvent& sce = dynamic_cast<const SceneChangeEvent&>(e);
-				m_ActiveScene = ResourceManager::Instance->GetScene(sce.NewScene);
+				m_ActiveScene = ResourceManager::Instance->GetScene(e.NewScene);
 			});
 
 			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());

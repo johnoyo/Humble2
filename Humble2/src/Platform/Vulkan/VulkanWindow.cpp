@@ -9,9 +9,8 @@ namespace HBL2
 
 	void VulkanWindow::Create()
 	{
-		EventDispatcher::Get().Register("WindowSizeEvent", [](const Event& e)
+		EventDispatcher::Get().Register<WindowSizeEvent>([](const WindowSizeEvent& e)
 		{
-			const WindowSizeEvent& wse = dynamic_cast<const WindowSizeEvent&>(e);
 			// TODO
 		});
 

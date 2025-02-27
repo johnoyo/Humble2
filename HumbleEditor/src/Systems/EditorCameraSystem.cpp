@@ -28,23 +28,19 @@ namespace HBL2
 					}
 				});
 
-			EventDispatcher::Get().Register("ScrollEvent", [&](const Event& e)
+			EventDispatcher::Get().Register<ScrollEvent>([&](const ScrollEvent& e)
 			{
-				const ScrollEvent& se = dynamic_cast<const ScrollEvent&>(e);
-
 				if (m_EditorCamera == nullptr || m_Transform == nullptr)
 				{
 					return;
 				}
 
-				float zoomAmount = (float)se.YOffset * m_EditorCamera->ScrollZoomSpeed * m_Timestep;
+				float zoomAmount = (float)e.YOffset * m_EditorCamera->ScrollZoomSpeed * m_Timestep;
 				m_Transform->Translation += m_EditorCamera->Front * zoomAmount;
 			});
 
-			EventDispatcher::Get().Register("CursorPositionEvent", [&](const Event& e)
+			EventDispatcher::Get().Register<CursorPositionEvent>([&](const CursorPositionEvent& e)
 			{
-				const CursorPositionEvent& cps = dynamic_cast<const CursorPositionEvent&>(e);
-
 				if (m_EditorCamera == nullptr || m_Transform == nullptr)
 				{
 					return;
@@ -52,7 +48,7 @@ namespace HBL2
 
 				if (Input::GetKeyDown(KeyCode::LeftAlt) && Input::GetKeyDown(KeyCode::MouseRight))
 				{
-					float dy = (float)cps.YPosition - m_EditorCamera->MousePreviousPositionY;
+					float dy = (float)e.YPosition - m_EditorCamera->MousePreviousPositionY;
 
 					float zoomAmount = dy * m_EditorCamera->ZoomSpeed * m_Timestep;
 
@@ -60,8 +56,8 @@ namespace HBL2
 				}
 				else if (Input::GetKeyDown(KeyCode::LeftAlt) && HBL2::Input::GetKeyDown(KeyCode::MouseMiddle))
 				{
-					float dx = (float)cps.XPosition - m_EditorCamera->MousePreviousPositionX;
-					float dy = (float)cps.YPosition - m_EditorCamera->MousePreviousPositionY;
+					float dx = (float)e.XPosition - m_EditorCamera->MousePreviousPositionX;
+					float dy = (float)e.YPosition - m_EditorCamera->MousePreviousPositionY;
 
 					glm::vec3 panRight = m_EditorCamera->Right * -dx * m_EditorCamera->PanSpeed * m_Timestep;
 					glm::vec3 panUp = m_EditorCamera->Up * dy * m_EditorCamera->PanSpeed * m_Timestep;
@@ -70,8 +66,8 @@ namespace HBL2
 				}
 				else if (Input::GetKeyDown(KeyCode::MouseRight))
 				{
-					float dx = (float)cps.XPosition - m_EditorCamera->MousePreviousPositionX;
-					float dy = (float)cps.YPosition - m_EditorCamera->MousePreviousPositionY;
+					float dx = (float)e.XPosition - m_EditorCamera->MousePreviousPositionX;
+					float dy = (float)e.YPosition - m_EditorCamera->MousePreviousPositionY;
 
 					dx *= -m_EditorCamera->MouseSensitivity * m_Timestep;
 					dy *= m_EditorCamera->MouseSensitivity * m_Timestep;
@@ -93,8 +89,8 @@ namespace HBL2
 					m_Transform->Rotation += glm::vec3(-dy, dx, 0.0f);
 				}
 
-				m_EditorCamera->MousePreviousPositionX = (float)cps.XPosition;
-				m_EditorCamera->MousePreviousPositionY = (float)cps.YPosition;
+				m_EditorCamera->MousePreviousPositionX = (float)e.XPosition;
+				m_EditorCamera->MousePreviousPositionY = (float)e.YPosition;
 			});
 		}
 
