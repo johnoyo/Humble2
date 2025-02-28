@@ -202,6 +202,9 @@ namespace HBL2
 		entt::entity MainCamera = entt::null;
 
 	private:
+		void InternalDestroyEntity(entt::entity entity, bool isRootCall);
+
+	private:
 		std::string m_Name;
 		entt::registry m_Registry;
 		entt::meta_ctx m_MetaContext;

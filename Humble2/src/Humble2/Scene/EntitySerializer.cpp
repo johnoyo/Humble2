@@ -328,6 +328,7 @@ namespace HBL2
 		{
 			auto& link = m_Scene->AddComponent<Component::Link>(m_Entity);
 			link.Parent = linkComponent["Parent"].as<UUID>();
+			link.PrevParent = link.Parent;
 			if (linkComponent["Children"].IsDefined())
 			{
 				link.Children = linkComponent["Children"].as<std::vector<UUID>>();

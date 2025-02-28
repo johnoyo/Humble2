@@ -38,6 +38,7 @@ namespace HBL2
 			void DrawTrayPanel();
 
 			entt::entity m_EntityToBeDeleted = entt::null;
+			entt::entity m_EntityToBeDuplicated = entt::null;
 
 			glm::vec2 m_ViewportSize = { 0.f, 0.f };
 			std::filesystem::path m_CurrentDirectory;
