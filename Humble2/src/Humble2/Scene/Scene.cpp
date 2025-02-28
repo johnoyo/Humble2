@@ -250,8 +250,6 @@ namespace HBL2
 
                 if (typeid(Component) == typeid(HBL2::Component::Link))
                 {
-                    HBL2_CORE_INFO("Found a link component");
-
                     auto& newLink = AddComponent<HBL2::Component::Link>(newEntity);
 
                     for (auto child : ((HBL2::Component::Link&)component).Children)
