@@ -17,6 +17,8 @@ namespace HBL2
 
 	private:
 		glm::mat4 GetWorldSpaceTransform(entt::entity entity, Component::Link& link);
+		void AddChildren(entt::entity entity, Component::Link& link);
+		void UpdateChildren(entt::entity entity, Component::Link& link);
 
 	private:
 		bool m_GraphicsTabClicked = false;

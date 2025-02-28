@@ -20,9 +20,6 @@ namespace HBL2
 		bool Deserialize(const std::filesystem::path& filePath);
 
 	private:
-		void SerializeEntity(YAML::Emitter& out, entt::entity entity);
-
-	private:
 		Scene* m_Scene = nullptr;
 	};
 }

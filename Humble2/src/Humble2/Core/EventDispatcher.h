@@ -71,7 +71,7 @@ namespace HBL2
                 {
                     callback(event);
                 }
-                m_OneShotCallbacks.erase(oneShotIt); // Remove one-shot callbacks
+                m_OneShotCallbacks.erase(oneShotIt);
             }
         }
 

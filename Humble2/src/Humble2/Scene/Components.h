@@ -41,6 +41,8 @@ namespace HBL2
 		struct HBL2_API Link
 		{
 			UUID Parent = 0;
+			UUID PrevParent = 0;
+			std::vector<UUID> Children;
 		};
 
 		struct HBL2_API Sprite

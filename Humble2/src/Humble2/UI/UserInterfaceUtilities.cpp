@@ -601,8 +601,11 @@ namespace HBL2
 				entt::entity* entity = value.try_cast<entt::entity>();
 				if (entity)
 				{
-					auto& id = ctx->GetComponent<Component::ID>(*entity);
-					out << YAML::Key << memberName << YAML::Value << id.Identifier;
+					auto* id = ctx->TryGetComponent<Component::ID>(*entity);
+					if (id)
+					{
+						out << YAML::Key << memberName << YAML::Value << id->Identifier;
+					}
 				}
 			}
 		}

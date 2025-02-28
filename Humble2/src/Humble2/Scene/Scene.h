@@ -58,11 +58,7 @@ namespace HBL2
 			return entt::null;
 		}
 
-		void DestroyEntity(entt::entity entity)
-		{
-			m_EntityMap.erase(m_Registry.get<Component::ID>(entity).Identifier);
-			m_Registry.destroy(entity);
-		}
+		void DestroyEntity(entt::entity entity);
 
 		entt::entity DuplicateEntity(entt::entity entity);
 

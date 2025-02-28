@@ -10,7 +10,9 @@ namespace HBL2
 			.group<Component::Link>(entt::get<Component::Transform>)
 			.each([&](entt::entity entity, Component::Link& link, Component::Transform& transform)
 			{
+				link.Children.clear();
 				transform.WorldMatrix = GetWorldSpaceTransform(entity, link);
+				AddChildren(entity, link);
 			});
 	}
 
@@ -23,6 +25,7 @@ namespace HBL2
 				if (!transform.Static)
 				{
 					transform.WorldMatrix = GetWorldSpaceTransform(entity, link);
+					UpdateChildren(entity, link);
 				}
 			});
 	}
@@ -183,5 +186,63 @@ namespace HBL2
 		}
 
 		return transform * m_Context->GetComponent<Component::Transform>(entity).LocalMatrix;
+	}
+
+	void LinkSystem::AddChildren(entt::entity entity, Component::Link& link)
+	{
+		// Add the entity to its new parent's children list, if it has one.
+		if (link.Parent != 0)
+		{
+			entt::entity parent = m_Context->FindEntityByUUID(link.Parent);
+			auto* parentLink = m_Context->TryGetComponent<Component::Link>(parent);
+
+			if (parentLink)
+			{
+				parentLink->Children.push_back(m_Context->GetComponent<Component::ID>(entity).Identifier);
+			}
+		}
+	}
+
+	void LinkSystem::UpdateChildren(entt::entity entity, Component::Link& link)
+	{
+		// Check if the entity's parent has changed or if it's no longer a child.
+		if (link.PrevParent == link.Parent)
+		{
+			return;
+		}
+
+		// Remove the entity from its previous parent's children list, if it had one.
+		if (link.PrevParent != 0)
+		{
+			entt::entity prevParent = m_Context->FindEntityByUUID(link.PrevParent);
+			auto* prevParentLink = m_Context->TryGetComponent<Component::Link>(prevParent);
+
+			if (prevParentLink)
+			{
+				UUID childUUID = m_Context->GetComponent<Component::ID>(entity).Identifier;
+				auto childrenIterator = std::find(prevParentLink->Children.begin(), prevParentLink->Children.end(), childUUID);
+
+				if (childrenIterator != prevParentLink->Children.end())
+				{
+					prevParentLink->Children.erase(childrenIterator);
+				}
+			}
+		}
+
+		// Add the entity to its new parent's children list, if it has one.
+		if (link.Parent != 0)
+		{
+			entt::entity parent = m_Context->FindEntityByUUID(link.Parent);
+			auto* parentLink = m_Context->TryGetComponent<Component::Link>(parent);
+
+			if (parentLink)
+			{
+				UUID childUUID = m_Context->GetComponent<Component::ID>(entity).Identifier;
+				parentLink->Children.push_back(childUUID);
+			}
+		}
+
+		// Update previous parent to be the current
+		link.PrevParent = link.Parent;
 	}
 }

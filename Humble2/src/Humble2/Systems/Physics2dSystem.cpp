@@ -75,6 +75,7 @@ namespace HBL2
 				transform.Rotation.z = glm::degrees(b2Rot_GetAngle(rotation));
 			});
 
+		// Dispatch any events that occured during this simulation step.
 		b2ContactEvents contactEvents = b2World_GetContactEvents(m_PhysicsWorld);
 
 		for (int i = 0; i < contactEvents.beginCount; ++i)

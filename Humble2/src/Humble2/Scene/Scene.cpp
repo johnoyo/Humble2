@@ -199,6 +199,41 @@ namespace HBL2
         m_RuntimeSystems.clear();
     }
 
+    void Scene::DestroyEntity(entt::entity entity)
+    {
+        auto* link = TryGetComponent<Component::Link>(entity);
+
+        if (link)
+        {
+            for (auto child : link->Children)
+            {
+                entt::entity childEntity = FindEntityByUUID(child);
+                DestroyEntity(childEntity);
+            }
+
+            // Remove this entity from its parent children list, if it has a parent.
+            if (link->Parent != 0)
+            {
+                entt::entity parentEntity = FindEntityByUUID(link->Parent);
+                auto* parentLink = TryGetComponent<Component::Link>(parentEntity);
+
+                if (parentLink)
+                {
+                    UUID uuid = GetComponent<Component::ID>(entity).Identifier;
+                    auto childrenIterator = std::find(parentLink->Children.begin(), parentLink->Children.end(), uuid);
+
+                    if (childrenIterator != parentLink->Children.end())
+                    {
+                        parentLink->Children.erase(childrenIterator);
+                    }
+                }
+            }
+        }
+
+        m_EntityMap.erase(m_Registry.get<Component::ID>(entity).Identifier);
+        m_Registry.destroy(entity);
+    }
+
     entt::entity Scene::DuplicateEntity(entt::entity entity)
     {
         std::string name = GetComponent<Component::Tag>(entity).Name;
@@ -212,7 +247,31 @@ namespace HBL2
             if (HasComponent<Component>(entity))
             {
                 auto& component = GetComponent<Component>(entity);
-                m_Registry.emplace_or_replace<Component>(newEntity, component);
+
+                if (typeid(Component) == typeid(HBL2::Component::Link))
+                {
+                    HBL2_CORE_INFO("Found a link component");
+
+                    auto& newLink = AddComponent<HBL2::Component::Link>(newEntity);
+
+                    for (auto child : ((HBL2::Component::Link&)component).Children)
+                    {
+                        entt::entity childEntity = FindEntityByUUID(child);
+                        entt::entity newChildEntity = DuplicateEntity(childEntity);
+
+                        // Add the base entity as the parent of this
+                        HBL2::Component::Link& newChildLink = GetComponent<HBL2::Component::Link>(newChildEntity);
+                        newChildLink.Parent = GetComponent<HBL2::Component::ID>(newEntity).Identifier;
+
+                        // Add the new child entity to the new base entity
+                        newLink.Children.push_back(GetComponent<HBL2::Component::ID>(newChildEntity).Identifier);
+                    }
+                }
+                else
+                {
+                    m_Registry.emplace_or_replace<Component>(newEntity, component);
+                }
+
             }
         };
 
