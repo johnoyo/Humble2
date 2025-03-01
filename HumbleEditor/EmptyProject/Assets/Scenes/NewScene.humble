@@ -1,18 +1,6 @@
 Scene: NewScene
 Entities:
-  - Entity: 1048576
-    Component::Tag:
-      Tag: Sprite
-    Component::ID:
-      ID: 16230168575244650496
-    Component::Transform:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Sprite:
-      Enabled: true
-      Material: 3944921849210950209
-  - Entity: 1
+  - Entity: 2097230
     Component::Tag:
       Tag: Camera
     Component::ID:
@@ -27,9 +15,21 @@ Entities:
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 1.778
+      Aspect Ratio: 2.52407932
       Zoom Level: 300
       Type: 0
+  - Entity: 2097229
+    Component::Tag:
+      Tag: Sprite
+    Component::ID:
+      ID: 16230168575244650496
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Sprite:
+      Enabled: true
+      Material: 3944921849210950209
 User Systems:
   - 1446947720767051862
 User Components:

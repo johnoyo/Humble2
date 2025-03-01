@@ -6,10 +6,13 @@
 #include "Scene\SceneManager.h"
 
 #include "Core\Input.h"
+#include "Core\InputMapping.h"
 
 #include "Core\Context.h"
 #include "Asset\AssetManager.h"
 #include "Resources\ResourceManager.h"
+
+#include "Utilities\Physics2d.h"
 
 #include "Utilities\Allocators\BaseAllocator.h"
 #include "Utilities\Allocators\StandardAllocator.h"

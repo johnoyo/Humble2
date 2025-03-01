@@ -76,7 +76,8 @@ namespace HBL2
 				}
 				else if (ImGui::MenuItem("Duplicate"))
 				{
-					m_ActiveScene->DuplicateEntity(entity);
+					// Defer the duplication at the end of the function, for now just mark the entity.
+					m_EntityToBeDuplicated = entity;
 				}
 
 				ImGui::EndPopup();
@@ -197,6 +198,13 @@ namespace HBL2
 				// Clear currently selected entity.
 				HBL2::Component::EditorVisible::SelectedEntity = entt::null;
 				HBL2::Component::EditorVisible::Selected = false;
+			}
+
+			if (m_EntityToBeDuplicated != entt::null)
+			{
+				// Duplicate entity and clear entityToBeDuplicated value.
+				m_ActiveScene->DuplicateEntity(m_EntityToBeDuplicated);
+				m_EntityToBeDuplicated = entt::null;
 			}
 
 			// Clear selection if clicked on empty space inside hierachy panel.

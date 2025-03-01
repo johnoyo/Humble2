@@ -10,6 +10,7 @@
 #include "Systems\CameraSystem.h"
 #include "Systems\RenderingSystem.h"
 #include "Systems\SoundSystem.h"
+#include "Systems\Physics2dSystem.h"
 
 namespace HBL2
 {
@@ -69,6 +70,8 @@ namespace HBL2
         copy_component(Component::StaticMesh{});
         copy_component(Component::Light{});
         copy_component(Component::AudioSource{});
+        copy_component(Component::Rigidbody2D{});
+        copy_component(Component::BoxCollider2D{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
@@ -76,6 +79,7 @@ namespace HBL2
         dst->RegisterSystem(new CameraSystem, SystemType::Runtime);
         dst->RegisterSystem(new RenderingSystem);
         dst->RegisterSystem(new SoundSystem, SystemType::Runtime);
+        dst->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 
         // Register any user systems to new scene.
         for (ISystem* system : src->m_RuntimeSystems)
@@ -166,6 +170,14 @@ namespace HBL2
         m_Registry.storage<Component::AudioSource>().clear();
         m_Registry.compact<Component::AudioSource>();
 
+        m_Registry.clear<Component::Rigidbody2D>();
+        m_Registry.storage<Component::Rigidbody2D>().clear();
+        m_Registry.compact<Component::Rigidbody2D>();
+
+        m_Registry.clear<Component::BoxCollider2D>();
+        m_Registry.storage<Component::BoxCollider2D>().clear();
+        m_Registry.compact<Component::BoxCollider2D>();
+
         // Destroy all entities.
         for (auto& [uuid, entity] : m_EntityMap)
         {
@@ -187,10 +199,16 @@ namespace HBL2
         m_RuntimeSystems.clear();
     }
 
+    void Scene::DestroyEntity(entt::entity entity)
+    {
+        InternalDestroyEntity(entity, true);
+    }
+
     entt::entity Scene::DuplicateEntity(entt::entity entity)
     {
         std::string name = GetComponent<Component::Tag>(entity).Name;
         entt::entity newEntity = CreateEntity(name + "(Clone)");
+        auto& newLink = AddComponent<HBL2::Component::Link>(newEntity);
 
         // Helper lamda for component copying
         auto copy_component = [&](auto component_type)
@@ -200,7 +218,28 @@ namespace HBL2
             if (HasComponent<Component>(entity))
             {
                 auto& component = GetComponent<Component>(entity);
-                m_Registry.emplace_or_replace<Component>(newEntity, component);
+
+                if (typeid(Component) == typeid(HBL2::Component::Link))
+                {
+                    for (auto child : ((HBL2::Component::Link&)component).Children)
+                    {
+                        entt::entity childEntity = FindEntityByUUID(child);
+                        entt::entity newChildEntity = DuplicateEntity(childEntity);
+
+                        // Add the base entity as the parent of this
+                        HBL2::Component::Link& newChildLink = GetComponent<HBL2::Component::Link>(newChildEntity);
+                        newChildLink.Parent = GetComponent<HBL2::Component::ID>(newEntity).Identifier;
+                        newChildLink.PrevParent = newChildLink.Parent;
+
+                        // Add the new child entity to the new base entity
+                        newLink.Children.push_back(GetComponent<HBL2::Component::ID>(newChildEntity).Identifier);
+                    }
+                }
+                else
+                {
+                    m_Registry.emplace_or_replace<Component>(newEntity, component);
+                }
+
             }
         };
 
@@ -213,6 +252,8 @@ namespace HBL2
         copy_component(Component::StaticMesh{});
         copy_component(Component::Light{});
         copy_component(Component::AudioSource{});
+        copy_component(Component::Rigidbody2D{});
+        copy_component(Component::BoxCollider2D{});
 
         // Copy user defined components.
         std::vector<std::string> userComponentNames;
@@ -272,6 +313,47 @@ namespace HBL2
         }
 
         delete system;
+    }
+
+    void Scene::InternalDestroyEntity(entt::entity entity, bool isRootCall)
+    {
+        auto* link = TryGetComponent<Component::Link>(entity);
+
+        if (link)
+        {
+            // Save parent UUID, since for some reason when deleting a child which has other children,
+            // when returning from the recursive deletion of those children the starting entity which was right clicked 
+            // to be deleted has changed and has no children and the parent UUID of the child entity that was deleted.
+            // I have no idea why!
+            UUID parentId = link->Parent;
+
+            for (auto child : link->Children)
+            {
+                entt::entity childEntity = FindEntityByUUID(child);
+                InternalDestroyEntity(childEntity, false);
+            }
+
+            // Remove this entity from its parent children list, if it has a parent.
+            if (parentId != 0 && isRootCall)
+            {
+                entt::entity parentEntity = FindEntityByUUID(parentId);
+                auto* parentLink = TryGetComponent<Component::Link>(parentEntity);
+
+                if (parentLink)
+                {
+                    UUID uuid = GetComponent<Component::ID>(entity).Identifier;
+                    auto childrenIterator = std::find(parentLink->Children.begin(), parentLink->Children.end(), uuid);
+
+                    if (childrenIterator != parentLink->Children.end())
+                    {
+                        parentLink->Children.erase(childrenIterator);
+                    }
+                }
+            }
+        }
+
+        m_EntityMap.erase(m_Registry.get<Component::ID>(entity).Identifier);
+        m_Registry.destroy(entity);
     }
 
     void Scene::operator=(const HBL2::Scene& other)

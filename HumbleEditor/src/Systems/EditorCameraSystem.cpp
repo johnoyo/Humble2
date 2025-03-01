@@ -28,50 +28,46 @@ namespace HBL2
 					}
 				});
 
-			EventDispatcher::Get().Register("ScrollEvent", [&](const Event& e)
+			EventDispatcher::Get().Register<ScrollEvent>([&](const ScrollEvent& e)
 			{
-				const ScrollEvent& se = dynamic_cast<const ScrollEvent&>(e);
-
 				if (m_EditorCamera == nullptr || m_Transform == nullptr)
 				{
 					return;
 				}
 
-				float zoomAmount = (float)se.YOffset * m_EditorCamera->ScrollZoomSpeed * m_Timestep;
+				float zoomAmount = (float)e.YOffset * m_EditorCamera->ScrollZoomSpeed * m_Timestep;
 				m_Transform->Translation += m_EditorCamera->Front * zoomAmount;
 			});
 
-			EventDispatcher::Get().Register("CursorPositionEvent", [&](const Event& e)
+			EventDispatcher::Get().Register<CursorPositionEvent>([&](const CursorPositionEvent& e)
 			{
-				const CursorPositionEvent& cps = dynamic_cast<const CursorPositionEvent&>(e);
-
 				if (m_EditorCamera == nullptr || m_Transform == nullptr)
 				{
 					return;
 				}
 
-				if (Input::GetKeyDown(GLFW_KEY_LEFT_ALT) && Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
+				if (Input::GetKeyDown(KeyCode::LeftAlt) && Input::GetKeyDown(KeyCode::MouseRight))
 				{
-					float dy = (float)cps.YPosition - m_EditorCamera->MousePreviousPositionY;
+					float dy = (float)e.YPosition - m_EditorCamera->MousePreviousPositionY;
 
 					float zoomAmount = dy * m_EditorCamera->ZoomSpeed * m_Timestep;
 
 					m_Transform->Translation += m_EditorCamera->Front * zoomAmount;
 				}
-				else if (Input::GetKeyDown(GLFW_KEY_LEFT_ALT) && HBL2::Input::GetKeyDown(GLFW_MOUSE_BUTTON_MIDDLE))
+				else if (Input::GetKeyDown(KeyCode::LeftAlt) && HBL2::Input::GetKeyDown(KeyCode::MouseMiddle))
 				{
-					float dx = (float)cps.XPosition - m_EditorCamera->MousePreviousPositionX;
-					float dy = (float)cps.YPosition - m_EditorCamera->MousePreviousPositionY;
+					float dx = (float)e.XPosition - m_EditorCamera->MousePreviousPositionX;
+					float dy = (float)e.YPosition - m_EditorCamera->MousePreviousPositionY;
 
 					glm::vec3 panRight = m_EditorCamera->Right * -dx * m_EditorCamera->PanSpeed * m_Timestep;
 					glm::vec3 panUp = m_EditorCamera->Up * dy * m_EditorCamera->PanSpeed * m_Timestep;
 
 					m_Transform->Translation += panRight + panUp;
 				}
-				else if (Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
+				else if (Input::GetKeyDown(KeyCode::MouseRight))
 				{
-					float dx = (float)cps.XPosition - m_EditorCamera->MousePreviousPositionX;
-					float dy = (float)cps.YPosition - m_EditorCamera->MousePreviousPositionY;
+					float dx = (float)e.XPosition - m_EditorCamera->MousePreviousPositionX;
+					float dy = (float)e.YPosition - m_EditorCamera->MousePreviousPositionY;
 
 					dx *= -m_EditorCamera->MouseSensitivity * m_Timestep;
 					dy *= m_EditorCamera->MouseSensitivity * m_Timestep;
@@ -93,8 +89,8 @@ namespace HBL2
 					m_Transform->Rotation += glm::vec3(-dy, dx, 0.0f);
 				}
 
-				m_EditorCamera->MousePreviousPositionX = (float)cps.XPosition;
-				m_EditorCamera->MousePreviousPositionY = (float)cps.YPosition;
+				m_EditorCamera->MousePreviousPositionX = (float)e.XPosition;
+				m_EditorCamera->MousePreviousPositionY = (float)e.YPosition;
 			});
 		}
 
@@ -112,31 +108,31 @@ namespace HBL2
 
 						float velocity = 0.0f;
 						
-						if (Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
+						if (Input::GetKeyDown(KeyCode::MouseRight))
 						{
 							velocity = editorCamera.MovementSpeed * ts;
 
-							if (Input::GetKeyDown(GLFW_KEY_W))
+							if (Input::GetKeyDown(KeyCode::W))
 							{
 								transform.Translation += editorCamera.Front * velocity;
 							}
-							if (Input::GetKeyDown(GLFW_KEY_S))
+							if (Input::GetKeyDown(KeyCode::S))
 							{
 								transform.Translation -= editorCamera.Front * velocity;
 							}
-							if (Input::GetKeyDown(GLFW_KEY_D))
+							if (Input::GetKeyDown(KeyCode::D))
 							{
 								transform.Translation += editorCamera.Right * velocity;
 							}
-							if (Input::GetKeyDown(GLFW_KEY_A))
+							if (Input::GetKeyDown(KeyCode::A))
 							{
 								transform.Translation -= editorCamera.Right * velocity;
 							}
-							if (Input::GetKeyDown(GLFW_KEY_E))
+							if (Input::GetKeyDown(KeyCode::E))
 							{
 								transform.Translation += editorCamera.Up * velocity;
 							}
-							if (Input::GetKeyDown(GLFW_KEY_Q))
+							if (Input::GetKeyDown(KeyCode::Q))
 							{
 								transform.Translation -= editorCamera.Up * velocity;
 							}

@@ -79,21 +79,21 @@ namespace HBL2
 			{
 				auto selectedEntity = HBL2::Component::EditorVisible::SelectedEntity;
 
-				if (!ImGuiRenderer::Instance->Gizmos_IsUsing() && !Input::GetKeyDown(GLFW_MOUSE_BUTTON_2))
+				if (!ImGuiRenderer::Instance->Gizmos_IsUsing() && !Input::GetKeyDown(KeyCode::MouseRight))
 				{
-					if (Input::GetKeyPress(GLFW_KEY_W))
+					if (Input::GetKeyPress(KeyCode::W))
 					{
 						m_GizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
 					}
-					else if (Input::GetKeyPress(GLFW_KEY_E))
+					else if (Input::GetKeyPress(KeyCode::E))
 					{
 						m_GizmoOperation = ImGuizmo::OPERATION::ROTATE;
 					}
-					else if (Input::GetKeyPress(GLFW_KEY_R))
+					else if (Input::GetKeyPress(KeyCode::R))
 					{
 						m_GizmoOperation = ImGuizmo::OPERATION::SCALE;
 					}
-					else if (Input::GetKeyPress(GLFW_KEY_Q))
+					else if (Input::GetKeyPress(KeyCode::Q))
 					{
 						m_GizmoOperation = ImGuizmo::OPERATION::BOUNDS;
 					}
@@ -110,7 +110,7 @@ namespace HBL2
 
 				if (selectedEntity != entt::null && m_GizmoOperation != ImGuizmo::OPERATION::BOUNDS)
 				{
-					bool snap = Input::GetKeyDown(GLFW_KEY_LEFT_CONTROL);
+					bool snap = Input::GetKeyDown(KeyCode::LeftControl);
 					float snapValue = 0.5f;
 					if (m_GizmoOperation == ImGuizmo::OPERATION::ROTATE)
 					{

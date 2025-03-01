@@ -326,12 +326,6 @@ namespace HBL2
 
 		// Invalid shader
 		{
-			auto invalidShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "invalid-shader-asset",
-				.filePath = "assets/shaders/invalid.shader",
-				.type = AssetType::Shader,
-			});
-
 			auto invalidShaderCode = Compile("assets/shaders/invalid.shader");
 
 			auto invalidShaderHandle = ResourceManager::Instance->CreateShader({
@@ -357,20 +351,10 @@ namespace HBL2
 			});
 
 			m_Shaders[BuiltInShader::INVALID] = invalidShaderHandle;
-
-			Asset* invalidShaderAsset = AssetManager::Instance->GetAssetMetadata(invalidShaderAssetHandle);
-			invalidShaderAsset->Loaded = true;
-			invalidShaderAsset->Indentifier = invalidShaderHandle.Pack();
 		}
 		
 		// Present shader
 		{
-			auto presentShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "present-shader-asset",
-				.filePath = "assets/shaders/present.shader",
-				.type = AssetType::Shader,
-			});
-
 			auto presentShaderCode = Compile("assets/shaders/present.shader");
 
 			auto presentShaderHandle = ResourceManager::Instance->CreateShader({
@@ -395,20 +379,10 @@ namespace HBL2
 			});
 
 			m_Shaders[BuiltInShader::PRESENT] = presentShaderHandle;
-
-			Asset* presentShaderAsset = AssetManager::Instance->GetAssetMetadata(presentShaderAssetHandle);
-			presentShaderAsset->Loaded = true;
-			presentShaderAsset->Indentifier = presentShaderHandle.Pack();
 		}
 
 		// Unlit shader
 		{
-			auto unlitShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "unlit-shader-asset",
-				.filePath = "assets/shaders/unlit.shader",
-				.type = AssetType::Shader,
-			});
-
 			auto unlitShaderCode = Compile("assets/shaders/unlit.shader");
 
 			auto unlitShaderHandle = ResourceManager::Instance->CreateShader({
@@ -434,20 +408,10 @@ namespace HBL2
 			});
 
 			m_Shaders[BuiltInShader::UNLIT] = unlitShaderHandle;
-
-			Asset* unlitShaderAsset = AssetManager::Instance->GetAssetMetadata(unlitShaderAssetHandle);
-			unlitShaderAsset->Loaded = true;
-			unlitShaderAsset->Indentifier = unlitShaderHandle.Pack();
 		}
 
 		// Blinn-Phnog shader
 		{
-			auto blinnPhongShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "blinn-phong-shader-asset",
-				.filePath = "assets/shaders/blinn-phong.shader",
-				.type = AssetType::Shader,
-			});
-
 			auto blinnPhongShaderCode = Compile("assets/shaders/blinn-phong.shader");
 
 			auto blinnPhongShaderHandle = ResourceManager::Instance->CreateShader({
@@ -474,20 +438,10 @@ namespace HBL2
 			});
 
 			m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderHandle;
-
-			Asset* blinnPhongShaderAsset = AssetManager::Instance->GetAssetMetadata(blinnPhongShaderAssetHandle);
-			blinnPhongShaderAsset->Loaded = true;
-			blinnPhongShaderAsset->Indentifier = blinnPhongShaderHandle.Pack();
 		}
 
 		// PBR shader
 		{
-			auto pbrShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "pbr-shader-asset",
-				.filePath = "assets/shaders/pbr.shader",
-				.type = AssetType::Shader,
-			});
-
 			auto pbrShaderCode = Compile("assets/shaders/pbr.shader");
 
 			auto pbrShaderHandle = ResourceManager::Instance->CreateShader({
@@ -514,10 +468,6 @@ namespace HBL2
 			});
 
 			m_Shaders[BuiltInShader::PBR] = pbrShaderHandle;
-
-			Asset* pbrShaderAsset = AssetManager::Instance->GetAssetMetadata(pbrShaderAssetHandle);
-			pbrShaderAsset->Loaded = true;
-			pbrShaderAsset->Indentifier = pbrShaderHandle.Pack();
 		}
 	}
 

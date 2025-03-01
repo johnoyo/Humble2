@@ -2,364 +2,499 @@ Scene: StressTestScene
 Entities:
   - Entity: 82
     Component::Tag:
-      Tag: MonkeysFlat
+      Tag: OuterBricks
     Component::ID:
-      ID: 10761736410644717568
-    Component::Transform:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 5773126192449842176
-  - Entity: 81
-    Component::Tag:
-      Tag: MonkeysSmooth
-    Component::ID:
-      ID: 5568771373940677632
-    Component::Transform:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 5773126192449842176
-  - Entity: 80
-    Component::Tag:
-      Tag: Monkeys
-    Component::ID:
-      ID: 5773126192449842176
+      ID: 61814511244457384
     Component::Transform:
       Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
       Parent: 0
+      Children:
+        - 422721157100459776
+        - 1715813375421463552
+        - 5738806673409192960
+        - 13417868912929159168
+        - 6903224790356608000
+        - 5747717067760689152
+        - 100630444002295280
+        - 4464218828988936192
+        - 7303075233999256576
+        - 13294983363065870336
+        - 16554427810311178240
+        - 1005474731026787968
+        - 11279784421776887808
+        - 12693200229770889216
+        - 9111644610943377408
+        - 9103656332214609920
+        - 12818987910777952256
+        - 10260953595336247296
+        - 5292017780627330048
+        - 11960268443458867200
+        - 16073085112899635200
+        - 14427313817534060544
+        - 11260653024396046336
+        - 10979791433389174784
+        - 17283283821606563840
+        - 176553035858643104
+        - 7965748040300090368
+        - 9714122925336559616
+        - 14384239710125625344
+        - 18088070267832236032
+        - 9550070889785327616
+        - 11555530471724800000
+        - 8388936820576812032
+        - 990353032440904064
+        - 4106344454524526080
+        - 422721157100459776
+        - 1715813375421463552
+        - 5738806673409192960
+        - 13417868912929159168
+        - 6903224790356608000
+        - 5747717067760689152
+        - 100630444002295280
+        - 4464218828988936192
+        - 7303075233999256576
+        - 13294983363065870336
+        - 16554427810311178240
+        - 1005474731026787968
+        - 11279784421776887808
+        - 12693200229770889216
+        - 9111644610943377408
+        - 9103656332214609920
+        - 12818987910777952256
+        - 10260953595336247296
+        - 5292017780627330048
+        - 11960268443458867200
+        - 16073085112899635200
+        - 14427313817534060544
+        - 11260653024396046336
+        - 10979791433389174784
+        - 17283283821606563840
+        - 176553035858643104
+        - 7965748040300090368
+        - 9714122925336559616
+        - 14384239710125625344
+        - 18088070267832236032
+        - 9550070889785327616
+        - 11555530471724800000
+        - 8388936820576812032
+        - 990353032440904064
+        - 4106344454524526080
+  - Entity: 81
+    Component::Tag:
+      Tag: Sprite(Clone)
+    Component::ID:
+      ID: 422721157100459776
+    Component::Transform:
+      Translation: [-8.61675549, 1.52541351, -3.03806996]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
+      Enabled: true
+      Material: 501681363808066930
+  - Entity: 80
+    Component::Tag:
+      Tag: Sprite(Clone)
+    Component::ID:
+      ID: 1715813375421463552
+    Component::Transform:
+      Translation: [-8.61675549, 0.525413513, -3.03806996]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
+      Enabled: true
+      Material: 501681363808066930
   - Entity: 79
     Component::Tag:
-      Tag: MonkehSmooth(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 1858223868009177344
+      ID: 5738806673409192960
     Component::Transform:
-      Translation: [5.83119631, -2.07541156, -3.20364404]
+      Translation: [-8.61675549, -0.474586487, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 5943600009211747259
-      Mesh: 9402528107889883903
+      Material: 501681363808066930
   - Entity: 78
     Component::Tag:
-      Tag: MonkehSmooth(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 9091223918241235968
+      ID: 13417868912929159168
     Component::Transform:
-      Translation: [5.74079943, 0.297164619, -3.20358276]
+      Translation: [-8.61675549, -1.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 5943600009211747259
-      Mesh: 9402528107889883903
+      Material: 501681363808066930
   - Entity: 77
     Component::Tag:
-      Tag: MonkehSmooth(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 7638605403100829696
+      ID: 6903224790356608000
     Component::Transform:
-      Translation: [5.42081213, 2.74652481, -3.20358253]
+      Translation: [-8.61675549, -2.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 10749047289362499544
-      Mesh: 9402528107889883903
+      Material: 501681363808066930
   - Entity: 76
     Component::Tag:
-      Tag: MonkehSmooth(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 3051774028660285440
+      ID: 5747717067760689152
     Component::Transform:
-      Translation: [2.99299812, 4.39135647, -3.20358229]
+      Translation: [-8.61675549, -3.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 5943600009211747259
-      Mesh: 9402528107889883903
+      Material: 501681363808066930
   - Entity: 75
     Component::Tag:
-      Tag: MonkehSmooth(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 13659606360931889152
+      ID: 100630444002295280
     Component::Transform:
-      Translation: [-0.254260957, 4.66823769, -3.20358229]
+      Translation: [-8.61675549, -4.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 5943600009211747259
-      Mesh: 9402528107889883903
+      Material: 501681363808066930
   - Entity: 74
     Component::Tag:
-      Tag: MonkehSmooth(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 1854771380628774400
+      ID: 4464218828988936192
     Component::Transform:
-      Translation: [-3.77239847, 4.32256794, -3.20358229]
+      Translation: [-8.61675549, -5.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 5943600009211747259
-      Mesh: 9402528107889883903
+      Material: 501681363808066930
   - Entity: 73
     Component::Tag:
-      Tag: MonkehSmooth(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 8835382815164766208
+      ID: 7303075233999256576
     Component::Transform:
-      Translation: [-6.08373976, 2.60773468, -3.20358253]
+      Translation: [-8.61675549, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 10749047289362499544
-      Mesh: 9402528107889883903
+      Material: 501681363808066930
   - Entity: 72
     Component::Tag:
-      Tag: MonkehSmooth(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 671086872660796672
+      ID: 13294983363065870336
     Component::Transform:
-      Translation: [-6.08373976, 0.299074769, -3.20358253]
+      Translation: [8.38324451, 2.52541351, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 5943600009211747259
-      Mesh: 9402528107889883903
+      Material: 501681363808066930
   - Entity: 71
     Component::Tag:
-      Tag: MonkehSmooth(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 16452294280130144256
+      ID: 16554427810311178240
     Component::Transform:
-      Translation: [-6.08373976, -1.99996018, -3.20358253]
+      Translation: [8.38324451, 1.52541351, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 5943600009211747259
-      Mesh: 9402528107889883903
+      Material: 501681363808066930
   - Entity: 70
     Component::Tag:
-      Tag: MonkehSmooth(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 10255646944485969920
+      ID: 1005474731026787968
     Component::Transform:
-      Translation: [-6.08373976, -4.77783537, -3.20358253]
+      Translation: [8.38324451, 0.525413513, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 10749047289362499544
-      Mesh: 9402528107889883903
+      Material: 501681363808066930
   - Entity: 69
     Component::Tag:
-      Tag: MonkehSmooth(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 11288886358406443008
+      ID: 11279784421776887808
     Component::Transform:
-      Translation: [-3.24019575, -4.77783537, -3.20358253]
+      Translation: [8.38324451, -0.474586487, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 5943600009211747259
-      Mesh: 9402528107889883903
+      Material: 501681363808066930
   - Entity: 68
     Component::Tag:
-      Tag: MonkehSmooth(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 4765371160854234112
+      ID: 12693200229770889216
     Component::Transform:
-      Translation: [0.0457981825, -4.77783537, -3.20358253]
+      Translation: [8.38324451, -1.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 5943600009211747259
-      Mesh: 9402528107889883903
+      Material: 501681363808066930
   - Entity: 67
     Component::Tag:
-      Tag: MonkehSmooth(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 12261631362613526528
+      ID: 9111644610943377408
     Component::Transform:
-      Translation: [3.5875411, -4.77783537, -3.20358253]
+      Translation: [8.38324451, -2.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 5943600009211747259
-      Mesh: 9402528107889883903
+      Material: 501681363808066930
   - Entity: 66
     Component::Tag:
-      Tag: Monkeh(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 13308758307847694336
+      ID: 9103656332214609920
     Component::Transform:
-      Translation: [2.99347329, -2.31261826, -3.2036438]
+      Translation: [8.38324451, -3.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 10761736410644717568
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 10749047289362499544
-      Mesh: 17631668153373402826
+      Material: 501681363808066930
   - Entity: 65
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 48375656485559952
+      ID: 12818987910777952256
     Component::Transform:
-      Translation: [1.35897422, 3.44154596, -3.0380702]
+      Translation: [8.38324451, -4.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
-      Material: 5092745295480585008
+      Material: 501681363808066930
   - Entity: 64
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 2726534166569687040
+      ID: 10260953595336247296
     Component::Transform:
-      Translation: [4.27121687, -2.83554935, -3.03812885]
+      Translation: [8.38324451, -5.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
-      Material: 3944921849210950209
+      Material: 501681363808066930
   - Entity: 63
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 14989329894640586752
+      ID: 5292017780627330048
     Component::Transform:
-      Translation: [4.27121687, -0.371162415, -3.03812885]
+      Translation: [8.38324451, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
-      Material: 5092745295480585008
+      Material: 501681363808066930
   - Entity: 62
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 11548537497952778240
+      ID: 11960268443458867200
     Component::Transform:
-      Translation: [4.27121687, 1.4586587, -3.03812885]
+      Translation: [7.38324451, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
-      Material: 3944921849210950209
+      Material: 501681363808066930
   - Entity: 61
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 13078837487148138496
+      ID: 16073085112899635200
     Component::Transform:
-      Translation: [-4.27009487, 1.4586587, -3.03812885]
+      Translation: [6.38324451, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
-      Material: 3944921849210950209
+      Material: 501681363808066930
   - Entity: 60
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 4673977579920860160
+      ID: 14427313817534060544
     Component::Transform:
-      Translation: [-4.27009487, -0.336810112, -3.03812885]
+      Translation: [5.38324451, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
-      Material: 5092745295480585008
+      Material: 501681363808066930
   - Entity: 59
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 8141375513872705536
+      ID: 11260653024396046336
     Component::Transform:
-      Translation: [-4.27009487, -2.7538271, -3.03812885]
+      Translation: [4.38324451, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
-      Material: 3944921849210950209
+      Material: 501681363808066930
   - Entity: 58
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 2233466651071056128
+      ID: 10979791433389174784
     Component::Transform:
-      Translation: [-1.46132219, -4.37300444, -3.03812885]
+      Translation: [3.38324451, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
-      Material: 5092745295480585008
+      Material: 501681363808066930
   - Entity: 57
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 4189155620501853696
+      ID: 17283283821606563840
     Component::Transform:
-      Translation: [1.39949548, -4.37300444, -3.03812885]
+      Translation: [2.38324451, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
-      Material: 5092745295480585008
+      Material: 501681363808066930
   - Entity: 56
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 5236287813369007104
+      ID: 176553035858643104
     Component::Transform:
-      Translation: [1.39949548, -2.82781649, -3.03812885]
+      Translation: [1.38324451, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
       Material: 501681363808066930
@@ -367,11 +502,15 @@ Entities:
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 1069563157576665728
+      ID: 7965748040300090368
     Component::Transform:
-      Translation: [-1.47215271, -2.82781649, -3.03812885]
+      Translation: [0.383244514, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
       Material: 501681363808066930
@@ -379,11 +518,15 @@ Entities:
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 350645300770172864
+      ID: 9714122925336559616
     Component::Transform:
-      Translation: [-1.47215271, 1.40050983, -3.03812885]
+      Translation: [-0.616755486, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
       Material: 501681363808066930
@@ -391,11 +534,15 @@ Entities:
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 6081215205467507712
+      ID: 14384239710125625344
     Component::Transform:
-      Translation: [1.33267975, 1.40050983, -3.03812885]
+      Translation: [-1.61675549, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
       Material: 501681363808066930
@@ -403,174 +550,153 @@ Entities:
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 11256336816164718592
+      ID: 18088070267832236032
     Component::Transform:
-      Translation: [1.33267975, -0.348781288, -3.03812885]
+      Translation: [-2.61675549, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
-      Material: 3944921849210950209
+      Material: 501681363808066930
   - Entity: 51
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 8942542264794245120
+      ID: 9550070889785327616
     Component::Transform:
-      Translation: [-1.41645002, -0.348781288, -3.03812885]
+      Translation: [-3.61675549, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 61814511244457384
+      Children:
+        []
     Component::Sprite:
       Enabled: true
-      Material: 3944921849210950209
+      Material: 501681363808066930
   - Entity: 50
     Component::Tag:
-      Tag: Monkeh(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 5783629655256657920
+      ID: 11555530471724800000
     Component::Transform:
-      Translation: [0.00782239437, -2.31261826, -3.2036438]
+      Translation: [-4.61675549, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 10761736410644717568
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 6805961995243789723
-      Mesh: 17631668153373402826
+      Material: 501681363808066930
   - Entity: 49
     Component::Tag:
-      Tag: Monkeh(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 11910911551581937664
+      ID: 8388936820576812032
     Component::Transform:
-      Translation: [-2.79179835, -2.31261826, -3.2036438]
+      Translation: [-5.61675549, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 10761736410644717568
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 10749047289362499544
-      Mesh: 17631668153373402826
+      Material: 501681363808066930
   - Entity: 48
     Component::Tag:
-      Tag: Monkeh(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 15697663463926153216
+      ID: 990353032440904064
     Component::Transform:
-      Translation: [-2.79179835, 2.07798862, -3.2036438]
+      Translation: [-6.61675549, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 10761736410644717568
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 10749047289362499544
-      Mesh: 17631668153373402826
+      Material: 501681363808066930
   - Entity: 47
     Component::Tag:
-      Tag: Monkeh(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 8741866348423040000
+      ID: 4106344454524526080
     Component::Transform:
-      Translation: [-0.0125973821, 2.07798862, -3.2036438]
+      Translation: [-7.61675549, -6.47458649, -3.03806996]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 10761736410644717568
-    Component::StaticMesh:
+      Parent: 61814511244457384
+      Children:
+        []
+    Component::Sprite:
       Enabled: true
-      Material: 6805961995243789723
-      Mesh: 17631668153373402826
+      Material: 501681363808066930
   - Entity: 46
     Component::Tag:
-      Tag: Monkeh(Clone)
+      Tag: Sprite(Clone)
     Component::ID:
-      ID: 17315348171491389440
+      ID: 13266311716219744256
     Component::Transform:
-      Translation: [2.7681303, 2.07798862, -3.2036438]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 10761736410644717568
-    Component::StaticMesh:
-      Enabled: true
-      Material: 10749047289362499544
-      Mesh: 17631668153373402826
-  - Entity: 45
-    Component::Tag:
-      Tag: Monkeh(Clone)
-    Component::ID:
-      ID: 3688757032457756160
-    Component::Transform:
-      Translation: [2.7681303, 0, -3.2036438]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 10761736410644717568
-    Component::StaticMesh:
-      Enabled: true
-      Material: 6805961995243789723
-      Mesh: 17631668153373402826
-  - Entity: 44
-    Component::Tag:
-      Tag: Monkeh(Clone)
-    Component::ID:
-      ID: 14954986594404786176
-    Component::Transform:
-      Translation: [-2.78786135, 0, -3.2036438]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 10761736410644717568
-    Component::StaticMesh:
-      Enabled: true
-      Material: 6805961995243789723
-      Mesh: 17631668153373402826
-  - Entity: 43
-    Component::Tag:
-      Tag: Monkeh(Clone)
-    Component::ID:
-      ID: 10444517185952548864
-    Component::Transform:
-      Translation: [0, 0, -3.2036438]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 10761736410644717568
-    Component::StaticMesh:
-      Enabled: true
-      Material: 5943600009211747259
-      Mesh: 17631668153373402826
-  - Entity: 42
-    Component::Tag:
-      Tag: MonkehSmooth
-    Component::ID:
-      ID: 452941638128440576
-    Component::Transform:
-      Translation: [6.18952227, -4.65664577, -3.2036438]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 5568771373940677632
-    Component::StaticMesh:
-      Enabled: true
-      Material: 10749047289362499544
-      Mesh: 9402528107889883903
-  - Entity: 41
-    Component::Tag:
-      Tag: Sprite
-    Component::ID:
-      ID: 1881774367748816128
-    Component::Transform:
-      Translation: [-8.61675549, 2.52541351, -3.03806996]
+      Translation: [1.51460218, 5.41821146, -3.03807044]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Sprite:
       Enabled: true
       Material: 501681363808066930
-  - Entity: 40
+  - Entity: 45
+    Component::Tag:
+      Tag: Sprite(Clone)
+    Component::ID:
+      ID: 14923011143050115072
+    Component::Transform:
+      Translation: [-2.18757296, 5.30815554, -3.03807044]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Sprite:
+      Enabled: true
+      Material: 501681363808066930
+  - Entity: 44
+    Component::Tag:
+      Tag: Sprite(Clone)
+    Component::ID:
+      ID: 15098948801242535936
+    Component::Transform:
+      Translation: [-1.42562401, 3.44154596, -3.0380702]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Sprite:
+      Enabled: true
+      Material: 5092745295480585008
+  - Entity: 43
+    Component::Tag:
+      Tag: Camera
+    Component::ID:
+      ID: 10333358025037621248
+    Component::Transform:
+      Translation: [0, 0, 37.5]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Camera:
+      Enabled: true
+      Primary: true
+      Far: 1000
+      Near: 0.100000001
+      FOV: 19.3439999
+      Aspect Ratio: 2.52407932
+      Zoom Level: 300
+      Type: 0
+  - Entity: 42
     Component::Tag:
       Tag: New Light
     Component::ID:
@@ -586,155 +712,204 @@ Entities:
       Attenuation: 10
       Color: [1, 1, 1]
       Type: 0
+  - Entity: 41
+    Component::Tag:
+      Tag: Sprite
+    Component::ID:
+      ID: 1881774367748816128
+    Component::Transform:
+      Translation: [-8.61675549, 2.52541351, -3.03806996]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Sprite:
+      Enabled: true
+      Material: 501681363808066930
+  - Entity: 40
+    Component::Tag:
+      Tag: MonkehSmooth
+    Component::ID:
+      ID: 452941638128440576
+    Component::Transform:
+      Translation: [6.18952227, -4.65664577, -3.2036438]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 10749047289362499544
+      Mesh: 9402528107889883903
   - Entity: 39
     Component::Tag:
-      Tag: Camera
+      Tag: Monkeh(Clone)
     Component::ID:
-      ID: 10333358025037621248
+      ID: 10444517185952548864
     Component::Transform:
-      Translation: [0, 0, 37.5]
+      Translation: [0, 0, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Camera:
+    Component::Link:
+      Parent: 10761736410644717568
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Primary: true
-      Far: 1000
-      Near: 0.100000001
-      FOV: 19.3439999
-      Aspect Ratio: 2.01590657
-      Zoom Level: 300
-      Type: 0
+      Material: 5943600009211747259
+      Mesh: 17631668153373402826
   - Entity: 38
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: Monkeh(Clone)
     Component::ID:
-      ID: 15098948801242535936
+      ID: 14954986594404786176
     Component::Transform:
-      Translation: [-1.42562401, 3.44154596, -3.0380702]
+      Translation: [-2.78786135, 0, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite:
+    Component::Link:
+      Parent: 10761736410644717568
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 5092745295480585008
+      Material: 6805961995243789723
+      Mesh: 17631668153373402826
   - Entity: 37
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: Monkeh(Clone)
     Component::ID:
-      ID: 14923011143050115072
+      ID: 3688757032457756160
     Component::Transform:
-      Translation: [-2.18757296, 5.30815554, -3.03807044]
+      Translation: [2.7681303, 0, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite:
+    Component::Link:
+      Parent: 10761736410644717568
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 6805961995243789723
+      Mesh: 17631668153373402826
   - Entity: 36
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: Monkeh(Clone)
     Component::ID:
-      ID: 13266311716219744256
+      ID: 17315348171491389440
     Component::Transform:
-      Translation: [1.51460218, 5.41821146, -3.03807044]
+      Translation: [2.7681303, 2.07798862, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Sprite:
+    Component::Link:
+      Parent: 10761736410644717568
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 10749047289362499544
+      Mesh: 17631668153373402826
   - Entity: 35
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: Monkeh(Clone)
     Component::ID:
-      ID: 4106344454524526080
+      ID: 8741866348423040000
     Component::Transform:
-      Translation: [-7.61675549, -6.47458649, -3.03806996]
+      Translation: [-0.0125973821, 2.07798862, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 10761736410644717568
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 6805961995243789723
+      Mesh: 17631668153373402826
   - Entity: 34
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: Monkeh(Clone)
     Component::ID:
-      ID: 990353032440904064
+      ID: 15697663463926153216
     Component::Transform:
-      Translation: [-6.61675549, -6.47458649, -3.03806996]
+      Translation: [-2.79179835, 2.07798862, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 10761736410644717568
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 10749047289362499544
+      Mesh: 17631668153373402826
   - Entity: 33
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: Monkeh(Clone)
     Component::ID:
-      ID: 8388936820576812032
+      ID: 11910911551581937664
     Component::Transform:
-      Translation: [-5.61675549, -6.47458649, -3.03806996]
+      Translation: [-2.79179835, -2.31261826, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 10761736410644717568
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 10749047289362499544
+      Mesh: 17631668153373402826
   - Entity: 32
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: Monkeh(Clone)
     Component::ID:
-      ID: 11555530471724800000
+      ID: 5783629655256657920
     Component::Transform:
-      Translation: [-4.61675549, -6.47458649, -3.03806996]
+      Translation: [0.00782239437, -2.31261826, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 10761736410644717568
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 6805961995243789723
+      Mesh: 17631668153373402826
   - Entity: 31
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 9550070889785327616
+      ID: 8942542264794245120
     Component::Transform:
-      Translation: [-3.61675549, -6.47458649, -3.03806996]
+      Translation: [-1.41645002, -0.348781288, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
-      Material: 501681363808066930
+      Material: 3944921849210950209
   - Entity: 30
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 18088070267832236032
+      ID: 11256336816164718592
     Component::Transform:
-      Translation: [-2.61675549, -6.47458649, -3.03806996]
+      Translation: [1.33267975, -0.348781288, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
-      Material: 501681363808066930
+      Material: 3944921849210950209
   - Entity: 29
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 14384239710125625344
+      ID: 6081215205467507712
     Component::Transform:
-      Translation: [-1.61675549, -6.47458649, -3.03806996]
+      Translation: [1.33267975, 1.40050983, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
       Material: 501681363808066930
@@ -742,13 +917,11 @@ Entities:
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 9714122925336559616
+      ID: 350645300770172864
     Component::Transform:
-      Translation: [-0.616755486, -6.47458649, -3.03806996]
+      Translation: [-1.47215271, 1.40050983, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
       Material: 501681363808066930
@@ -756,13 +929,11 @@ Entities:
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 7965748040300090368
+      ID: 1069563157576665728
     Component::Transform:
-      Translation: [0.383244514, -6.47458649, -3.03806996]
+      Translation: [-1.47215271, -2.82781649, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
       Material: 501681363808066930
@@ -770,13 +941,11 @@ Entities:
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 176553035858643104
+      ID: 5236287813369007104
     Component::Transform:
-      Translation: [1.38324451, -6.47458649, -3.03806996]
+      Translation: [1.39949548, -2.82781649, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
       Material: 501681363808066930
@@ -784,363 +953,411 @@ Entities:
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 17283283821606563840
+      ID: 4189155620501853696
     Component::Transform:
-      Translation: [2.38324451, -6.47458649, -3.03806996]
+      Translation: [1.39949548, -4.37300444, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5092745295480585008
   - Entity: 24
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 10979791433389174784
+      ID: 2233466651071056128
     Component::Transform:
-      Translation: [3.38324451, -6.47458649, -3.03806996]
+      Translation: [-1.46132219, -4.37300444, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5092745295480585008
   - Entity: 23
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 11260653024396046336
+      ID: 8141375513872705536
     Component::Transform:
-      Translation: [4.38324451, -6.47458649, -3.03806996]
+      Translation: [-4.27009487, -2.7538271, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
-      Material: 501681363808066930
+      Material: 3944921849210950209
   - Entity: 22
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 14427313817534060544
+      ID: 4673977579920860160
     Component::Transform:
-      Translation: [5.38324451, -6.47458649, -3.03806996]
+      Translation: [-4.27009487, -0.336810112, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5092745295480585008
   - Entity: 21
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 16073085112899635200
+      ID: 13078837487148138496
     Component::Transform:
-      Translation: [6.38324451, -6.47458649, -3.03806996]
+      Translation: [-4.27009487, 1.4586587, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
-      Material: 501681363808066930
+      Material: 3944921849210950209
   - Entity: 20
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 11960268443458867200
+      ID: 11548537497952778240
     Component::Transform:
-      Translation: [7.38324451, -6.47458649, -3.03806996]
+      Translation: [4.27121687, 1.4586587, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
-      Material: 501681363808066930
+      Material: 3944921849210950209
   - Entity: 19
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 5292017780627330048
+      ID: 14989329894640586752
     Component::Transform:
-      Translation: [8.38324451, -6.47458649, -3.03806996]
+      Translation: [4.27121687, -0.371162415, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5092745295480585008
   - Entity: 18
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 10260953595336247296
+      ID: 2726534166569687040
     Component::Transform:
-      Translation: [8.38324451, -5.47458649, -3.03806996]
+      Translation: [4.27121687, -2.83554935, -3.03812885]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
-      Material: 501681363808066930
+      Material: 3944921849210950209
   - Entity: 17
     Component::Tag:
       Tag: Sprite(Clone)
     Component::ID:
-      ID: 12818987910777952256
+      ID: 48375656485559952
     Component::Transform:
-      Translation: [8.38324451, -4.47458649, -3.03806996]
+      Translation: [1.35897422, 3.44154596, -3.0380702]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
     Component::Sprite:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5092745295480585008
   - Entity: 16
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: Monkeh(Clone)
     Component::ID:
-      ID: 9103656332214609920
+      ID: 13308758307847694336
     Component::Transform:
-      Translation: [8.38324451, -3.47458649, -3.03806996]
+      Translation: [2.99347329, -2.31261826, -3.2036438]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 10761736410644717568
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 10749047289362499544
+      Mesh: 17631668153373402826
   - Entity: 15
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: MonkehSmooth(Clone)
     Component::ID:
-      ID: 9111644610943377408
+      ID: 12261631362613526528
     Component::Transform:
-      Translation: [8.38324451, -2.47458649, -3.03806996]
+      Translation: [3.5875411, -4.77783537, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5943600009211747259
+      Mesh: 9402528107889883903
   - Entity: 14
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: MonkehSmooth(Clone)
     Component::ID:
-      ID: 12693200229770889216
+      ID: 4765371160854234112
     Component::Transform:
-      Translation: [8.38324451, -1.47458649, -3.03806996]
+      Translation: [0.0457981825, -4.77783537, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5943600009211747259
+      Mesh: 9402528107889883903
   - Entity: 13
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: MonkehSmooth(Clone)
     Component::ID:
-      ID: 11279784421776887808
+      ID: 11288886358406443008
     Component::Transform:
-      Translation: [8.38324451, -0.474586487, -3.03806996]
+      Translation: [-3.24019575, -4.77783537, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5943600009211747259
+      Mesh: 9402528107889883903
   - Entity: 12
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: MonkehSmooth(Clone)
     Component::ID:
-      ID: 1005474731026787968
+      ID: 10255646944485969920
     Component::Transform:
-      Translation: [8.38324451, 0.525413513, -3.03806996]
+      Translation: [-6.08373976, -4.77783537, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 10749047289362499544
+      Mesh: 9402528107889883903
   - Entity: 11
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: MonkehSmooth(Clone)
     Component::ID:
-      ID: 16554427810311178240
+      ID: 16452294280130144256
     Component::Transform:
-      Translation: [8.38324451, 1.52541351, -3.03806996]
+      Translation: [-6.08373976, -1.99996018, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5943600009211747259
+      Mesh: 9402528107889883903
   - Entity: 10
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: MonkehSmooth(Clone)
     Component::ID:
-      ID: 13294983363065870336
+      ID: 671086872660796672
     Component::Transform:
-      Translation: [8.38324451, 2.52541351, -3.03806996]
+      Translation: [-6.08373976, 0.299074769, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5943600009211747259
+      Mesh: 9402528107889883903
   - Entity: 9
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: MonkehSmooth(Clone)
     Component::ID:
-      ID: 7303075233999256576
+      ID: 8835382815164766208
     Component::Transform:
-      Translation: [-8.61675549, -6.47458649, -3.03806996]
+      Translation: [-6.08373976, 2.60773468, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 10749047289362499544
+      Mesh: 9402528107889883903
   - Entity: 8
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: MonkehSmooth(Clone)
     Component::ID:
-      ID: 4464218828988936192
+      ID: 1854771380628774400
     Component::Transform:
-      Translation: [-8.61675549, -5.47458649, -3.03806996]
+      Translation: [-3.77239847, 4.32256794, -3.20358229]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5943600009211747259
+      Mesh: 9402528107889883903
   - Entity: 7
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: MonkehSmooth(Clone)
     Component::ID:
-      ID: 100630444002295280
+      ID: 13659606360931889152
     Component::Transform:
-      Translation: [-8.61675549, -4.47458649, -3.03806996]
+      Translation: [-0.254260957, 4.66823769, -3.20358229]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5943600009211747259
+      Mesh: 9402528107889883903
   - Entity: 6
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: MonkehSmooth(Clone)
     Component::ID:
-      ID: 5747717067760689152
+      ID: 3051774028660285440
     Component::Transform:
-      Translation: [-8.61675549, -3.47458649, -3.03806996]
+      Translation: [2.99299812, 4.39135647, -3.20358229]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5943600009211747259
+      Mesh: 9402528107889883903
   - Entity: 5
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: MonkehSmooth(Clone)
     Component::ID:
-      ID: 6903224790356608000
+      ID: 7638605403100829696
     Component::Transform:
-      Translation: [-8.61675549, -2.47458649, -3.03806996]
+      Translation: [5.42081213, 2.74652481, -3.20358253]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 10749047289362499544
+      Mesh: 9402528107889883903
   - Entity: 4
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: MonkehSmooth(Clone)
     Component::ID:
-      ID: 13417868912929159168
+      ID: 9091223918241235968
     Component::Transform:
-      Translation: [-8.61675549, -1.47458649, -3.03806996]
+      Translation: [5.74079943, 0.297164619, -3.20358276]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5943600009211747259
+      Mesh: 9402528107889883903
   - Entity: 3
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: MonkehSmooth(Clone)
     Component::ID:
-      ID: 5738806673409192960
+      ID: 1858223868009177344
     Component::Transform:
-      Translation: [-8.61675549, -0.474586487, -3.03806996]
+      Translation: [5.83119631, -2.07541156, -3.20364404]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
+      Parent: 5568771373940677632
+      Children:
+        []
+    Component::StaticMesh:
       Enabled: true
-      Material: 501681363808066930
+      Material: 5943600009211747259
+      Mesh: 9402528107889883903
   - Entity: 2
     Component::Tag:
-      Tag: Sprite(Clone)
+      Tag: Monkeys
     Component::ID:
-      ID: 1715813375421463552
-    Component::Transform:
-      Translation: [-8.61675549, 0.525413513, -3.03806996]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
-      Enabled: true
-      Material: 501681363808066930
-  - Entity: 1
-    Component::Tag:
-      Tag: Sprite(Clone)
-    Component::ID:
-      ID: 422721157100459776
-    Component::Transform:
-      Translation: [-8.61675549, 1.52541351, -3.03806996]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 61814511244457384
-    Component::Sprite:
-      Enabled: true
-      Material: 501681363808066930
-  - Entity: 0
-    Component::Tag:
-      Tag: OuterBricks
-    Component::ID:
-      ID: 61814511244457384
+      ID: 5773126192449842176
     Component::Transform:
       Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
       Parent: 0
+      Children:
+        - 5568771373940677632
+        - 10761736410644717568
+        - 5568771373940677632
+        - 10761736410644717568
+  - Entity: 1
+    Component::Tag:
+      Tag: MonkeysSmooth
+    Component::ID:
+      ID: 5568771373940677632
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 5773126192449842176
+      Children:
+        - 452941638128440576
+        - 12261631362613526528
+        - 4765371160854234112
+        - 11288886358406443008
+        - 10255646944485969920
+        - 16452294280130144256
+        - 671086872660796672
+        - 8835382815164766208
+        - 1854771380628774400
+        - 13659606360931889152
+        - 3051774028660285440
+        - 7638605403100829696
+        - 9091223918241235968
+        - 1858223868009177344
+  - Entity: 0
+    Component::Tag:
+      Tag: MonkeysFlat
+    Component::ID:
+      ID: 10761736410644717568
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 5773126192449842176
+      Children:
+        - 10444517185952548864
+        - 14954986594404786176
+        - 3688757032457756160
+        - 17315348171491389440
+        - 8741866348423040000
+        - 15697663463926153216
+        - 11910911551581937664
+        - 5783629655256657920
+        - 13308758307847694336
 User Systems:
   - 1446947720767051862
 User Components:

@@ -1,7 +1,9 @@
 #pragma once
 
-#include "Humble2/Utilities/Log.h"
-#include "Humble2/Utilities/ProfilerScope.h"
+#include "Humble2\Utilities\Log.h"
+#include "Humble2\Utilities\ProfilerScope.h"
+
+#include "Core\Timer.h"
 
 #include "Humble2API.h"
 
@@ -50,10 +52,10 @@
 	#define HBL2_CORE_ASSERT(x, ...)
 #endif
 
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <stb_image/stb_image.h>
+#include <glm\glm.hpp>
+#include <glm\gtc\type_ptr.hpp>
+#include <glm\gtc\matrix_transform.hpp>
+#include <stb_image\stb_image.h>
 
 namespace HBL2
 {

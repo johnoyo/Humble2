@@ -321,6 +321,56 @@ namespace HBL2
 						}
 					}
 				});
+				
+				DrawComponent<HBL2::Component::Rigidbody2D>("Rigidbody2D", m_ActiveScene, [this](HBL2::Component::Rigidbody2D& rb2d)
+				{
+					ImGui::Checkbox("Enabled", &rb2d.Enabled);
+
+					std::string selectedType = "Static";
+
+					switch (rb2d.Type)
+					{
+					case HBL2::Component::Rigidbody2D::BodyType::Static: selectedType = "Static"; break;
+					case HBL2::Component::Rigidbody2D::BodyType::Dynamic: selectedType = "Dynamic"; break;
+					case HBL2::Component::Rigidbody2D::BodyType::Kinematic: selectedType = "Kinematic"; break;
+					}
+
+					std::string bodyTypes[3] = { "Static", "Dynamic", "Kinematic"};
+
+					if (ImGui::BeginCombo("Type", selectedType.c_str()))
+					{
+						for (const auto& type : bodyTypes)
+						{
+							bool isSelected = (selectedType == type);
+							if (ImGui::Selectable(type.c_str(), isSelected))
+							{
+								selectedType = type;
+							}
+
+							if (isSelected)
+							{
+								ImGui::SetItemDefaultFocus();
+							}
+						}
+						ImGui::EndCombo();
+					}
+
+					if (selectedType == "Static") rb2d.Type = HBL2::Component::Rigidbody2D::BodyType::Static;
+					else if (selectedType == "Dynamic") rb2d.Type = HBL2::Component::Rigidbody2D::BodyType::Dynamic;
+					else if (selectedType == "Kinematic") rb2d.Type = HBL2::Component::Rigidbody2D::BodyType::Kinematic;
+
+					ImGui::Checkbox("FixedRotation", &rb2d.FixedRotation);
+				});
+
+				DrawComponent<HBL2::Component::BoxCollider2D>("BoxCollider2D", m_ActiveScene, [this](HBL2::Component::BoxCollider2D& bc2d)
+				{
+					ImGui::Checkbox("Enabled", &bc2d.Enabled);
+					ImGui::SliderFloat("Density", &bc2d.Density, 0.0f, 10.0f);
+					ImGui::SliderFloat("Friction", &bc2d.Friction, 0.0f, 1.0f);
+					ImGui::SliderFloat("Restitution", &bc2d.Restitution, 0.0f, 1.0f);
+					ImGui::DragFloat2("Size", glm::value_ptr(bc2d.Size));
+					ImGui::DragFloat2("Offset", glm::value_ptr(bc2d.Offset));
+				});
 
 				using namespace entt::literals;
 
@@ -423,6 +473,24 @@ namespace HBL2
 						if (ImGui::MenuItem("AudioSource"))
 						{
 							m_ActiveScene->AddComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
+					if (!m_ActiveScene->HasComponent<HBL2::Component::Rigidbody2D>(HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::MenuItem("Rigidbody2D"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::Rigidbody2D>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
+					if (!m_ActiveScene->HasComponent<HBL2::Component::BoxCollider2D>(HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::MenuItem("BoxCollider2D"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::BoxCollider2D>(HBL2::Component::EditorVisible::SelectedEntity);
 							ImGui::CloseCurrentPopup();
 						}
 					}

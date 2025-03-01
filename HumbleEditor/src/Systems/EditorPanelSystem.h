@@ -32,11 +32,13 @@ namespace HBL2
 			void DrawViewportPanel();
 			void DrawContentBrowserPanel();
 			void DrawDirectoryRecursive(const std::filesystem::path& path);
+			void DrawContentBrowserContextMenu();
 			void DrawPlayStopPanel();
 			void DrawSystemsPanel();
 			void DrawTrayPanel();
 
 			entt::entity m_EntityToBeDeleted = entt::null;
+			entt::entity m_EntityToBeDuplicated = entt::null;
 
 			glm::vec2 m_ViewportSize = { 0.f, 0.f };
 			std::filesystem::path m_CurrentDirectory;

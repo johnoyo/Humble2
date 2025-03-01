@@ -21,6 +21,7 @@ namespace HBL2
 
 		virtual void OnCreate() {}
 		virtual void OnUpdate(float ts) {}
+		virtual void OnFixedUpdate() {}
 		virtual void OnGuiRender(float ts) {}
 		virtual void OnDestroy() {}
 

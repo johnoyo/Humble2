@@ -8,6 +8,7 @@
 #include "Systems\CameraSystem.h"
 #include "Systems\RenderingSystem.h"
 #include "Systems\SoundSystem.h"
+#include "Systems\Physics2dSystem.h"
 
 namespace HBL2
 {
@@ -451,6 +452,7 @@ namespace HBL2
 		scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
 		scene->RegisterSystem(new RenderingSystem);
 		scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
+		scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 
 		return sceneHandle;
 	}
@@ -641,7 +643,18 @@ namespace HBL2
 		{
 			HBL2_CORE_WARN(" Scene: {0}, at path: {1} is not loaded, loading it now.", asset->DebugName, asset->FilePath.string());
 
-			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscene", 0);
+			const auto& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath);
+
+			try
+			{
+				std::filesystem::create_directories(filePath.parent_path());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_ERROR("Project directory creation failed: {0}", e.what());
+			}
+
+			std::ofstream fout(filePath.string() + ".hblscene", 0);
 
 			YAML::Emitter out;
 			out << YAML::BeginMap;
@@ -670,6 +683,7 @@ namespace HBL2
 			scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
 			scene->RegisterSystem(new RenderingSystem);
 			scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
+			scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 
 			asset->Indentifier = sceneHandle.Pack();
 			asset->Loaded = true;

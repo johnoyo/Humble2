@@ -80,11 +80,8 @@ namespace HBL2
 
 		float m_LastTime = 0.0f;
 		float m_Timer = m_LastTime;
-		float m_DeltaTime = 0.0f;
 		int m_Frames = 0, m_Updates = 0;
 
-		float m_LimitFPS = 1.0f / 60.0f;
-		float m_FixedDeltaTime = 0.0f;
 		int m_FixedUpdates = 0;
 
 		void BeginFrame();

@@ -33,6 +33,8 @@ project "HumbleEditor"
         "../Dependencies/YAML-Cpp/yaml-cpp/include",
         "../Dependencies/PortableFileDialogs",
         "../Dependencies/FMOD/core/include",
+        "../Dependencies/Box2D/box2d/src",
+        "../Dependencies/Box2D/box2d/include",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "%{VULKAN_SDK}/Include"
     }
@@ -41,7 +43,8 @@ project "HumbleEditor"
     {
         "Humble2",
         "ImGui",
-        "YAML-Cpp"
+        "YAML-Cpp",
+        "Box2D",
     }
 
     defines

@@ -60,12 +60,9 @@ namespace HBL2
 	void Application::BeginFrame()
 	{
 		float time = (float)Window::Instance->GetTime();
-		m_DeltaTime = time - m_LastTime;
-		m_FixedDeltaTime += (time - m_LastTime) / m_LimitFPS;
+		Time::DeltaTime = time - m_LastTime;
+		Time::FixedDeltaTime += (time - m_LastTime) / Time::FixedTimeStep;
 		m_LastTime = time;
-
-		Time::DeltaTime = m_DeltaTime;
-		Time::DeltaTime = m_FixedDeltaTime;
 	}
 
 	void Application::EndFrame()
@@ -76,7 +73,7 @@ namespace HBL2
 		{
 			Window::Instance->SetTitle(std::format("{} [{}] FPS", m_Specification.Name, m_Frames));
 
-			HBL2_CORE_TRACE("FPS: {0}, DeltaTime: {1}", m_Frames, m_DeltaTime);
+			HBL2_CORE_TRACE("FPS: {0}, DeltaTime: {1}", m_Frames, Time::DeltaTime);
 
 			m_Timer++;
 			m_Frames = 0;
@@ -106,15 +103,16 @@ namespace HBL2
 			BeginFrame();
 
 			Renderer::Instance->BeginFrame();
-			m_Specification.Context->OnUpdate(m_DeltaTime);
+			m_Specification.Context->OnUpdate(Time::DeltaTime);
+			m_Specification.Context->OnFixedUpdate();
 			Renderer::Instance->EndFrame();
 
 			/*DebugRenderer::Instance->BeginFrame();
-			m_Specification.Context->OnGizmoRender(m_DeltaTime);
+			m_Specification.Context->OnGizmoRender(Time::DeltaTime);
 			DebugRenderer::Instance->EndFrame();*/
 
 			ImGuiRenderer::Instance->BeginFrame();
-			m_Specification.Context->OnGuiRender(m_DeltaTime);
+			m_Specification.Context->OnGuiRender(Time::DeltaTime);
 			ImGuiRenderer::Instance->EndFrame();
 
 			Renderer::Instance->Present();

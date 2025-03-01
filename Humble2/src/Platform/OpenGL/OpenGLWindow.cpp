@@ -9,10 +9,9 @@ namespace HBL2
 
 	void OpenGLWindow::Create()
 	{
-		EventDispatcher::Get().Register("WindowSizeEvent", [](const Event& e)
+		EventDispatcher::Get().Register<WindowSizeEvent>([](const WindowSizeEvent& e)
 		{
-			const WindowSizeEvent& wse = dynamic_cast<const WindowSizeEvent&>(e);
-			glViewport(0, 0, wse.Width, wse.Height);
+			glViewport(0, 0, e.Width, e.Height);
 		});
 
 		if (!glfwInit())

@@ -1,0 +1,141 @@
+Scene: Physics2D
+Entities:
+  - Entity: 5
+    Component::Tag:
+      Tag: Slide
+    Component::ID:
+      ID: 18238754481086838784
+    Component::Transform:
+      Translation: [9.15443897, 6.33369017, 0]
+      Rotation: [0, 0, 30]
+      Scale: [10.5, 1, 1]
+    Component::Sprite:
+      Enabled: true
+      Material: 3944921849210950209
+    Component::Rigidbody2D:
+      Enabled: true
+      Type: 0
+      FixedRotation: true
+    Component::BoxCollider2D:
+      Enabled: true
+      Density: 1
+      Friction: 1
+      Restitution: 0.574999988
+      Size: [0.5, 0.5]
+      Offset: [0, 0]
+  - Entity: 1048576
+    Component::Tag:
+      Tag: BrickGround_3
+    Component::ID:
+      ID: 4185001850063527424
+    Component::Transform:
+      Translation: [-5, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [5, 5, 1]
+    Component::Sprite:
+      Enabled: true
+      Material: 501681363808066930
+    Component::Rigidbody2D:
+      Enabled: true
+      Type: 0
+      FixedRotation: false
+    Component::BoxCollider2D:
+      Enabled: true
+      Density: 1
+      Friction: 0.783999979
+      Restitution: 0.185000002
+      Size: [0.5, 0.5]
+      Offset: [0, 0]
+  - Entity: 1048579
+    Component::Tag:
+      Tag: Sprite
+    Component::ID:
+      ID: 7677432535110978560
+    Component::Transform:
+      Translation: [10.8571367, 15.156126, 6.10351562e-05]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Sprite:
+      Enabled: true
+      Material: 5092745295480585008
+    Component::Rigidbody2D:
+      Enabled: true
+      Type: 1
+      FixedRotation: true
+    Component::BoxCollider2D:
+      Enabled: true
+      Density: 1
+      Friction: 0.300999999
+      Restitution: 0.300999999
+      Size: [0.5, 0.5]
+      Offset: [0, 0]
+  - Entity: 1048577
+    Component::Tag:
+      Tag: BrickGround_2
+    Component::ID:
+      ID: 5493168141040436224
+    Component::Transform:
+      Translation: [5, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [5, 5, 1]
+    Component::Sprite:
+      Enabled: true
+      Material: 501681363808066930
+    Component::Rigidbody2D:
+      Enabled: true
+      Type: 0
+      FixedRotation: false
+    Component::BoxCollider2D:
+      Enabled: true
+      Density: 1
+      Friction: 0.787999988
+      Restitution: 0.147
+      Size: [0.5, 0.5]
+      Offset: [0, 0]
+  - Entity: 1048578
+    Component::Tag:
+      Tag: BrickGround_1
+    Component::ID:
+      ID: 774782022278806400
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [5, 5, 1]
+    Component::Sprite:
+      Enabled: true
+      Material: 501681363808066930
+    Component::Rigidbody2D:
+      Enabled: true
+      Type: 0
+      FixedRotation: false
+    Component::BoxCollider2D:
+      Enabled: true
+      Density: 1
+      Friction: 0.808000028
+      Restitution: 0.147
+      Size: [0.5, 0.5]
+      Offset: [0, 0]
+  - Entity: 1048580
+    Component::Tag:
+      Tag: Camera
+    Component::ID:
+      ID: 1932331655146351360
+    Component::Transform:
+      Translation: [0.25, 6.5, 25]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Camera:
+      Enabled: true
+      Primary: true
+      Far: 1000
+      Near: 0.100000001
+      FOV: 30
+      Aspect Ratio: 2.52407932
+      Zoom Level: 300
+      Type: 0
+User Systems:
+  - 1446947720767051862
+User Components:
+  - 7276202125255088842
+User Helper Scripts:
+  - 14679799005195782872

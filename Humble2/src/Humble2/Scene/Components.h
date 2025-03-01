@@ -6,6 +6,7 @@
 #include "Asset\Asset.h"
 
 #include <entt.hpp>
+#include <box2d\id.h>
 
 namespace HBL2
 {
@@ -40,6 +41,8 @@ namespace HBL2
 		struct HBL2_API Link
 		{
 			UUID Parent = 0;
+			UUID PrevParent = 0;
+			std::vector<UUID> Children;
 		};
 
 		struct HBL2_API Sprite
@@ -122,6 +125,36 @@ namespace HBL2
 		struct HBL2_API AudioSource
 		{
 			Handle<Sound> Sound;
+			bool Enabled = true;
+		};
+
+		struct HBL2_API Rigidbody2D
+		{
+			enum class BodyType
+			{
+				Static = 0,
+				Dynamic,
+				Kinematic,
+			};
+
+			BodyType Type = BodyType::Static;
+			bool FixedRotation = false;
+			b2BodyId BodyId;
+
+			bool Enabled = true;
+		};
+
+		struct HBL2_API BoxCollider2D
+		{
+			glm::vec2 Offset = { 0.0f, 0.0f };
+			glm::vec2 Size = { 0.5f, 0.5f };
+
+			float Density = 1.0f;
+			float Friction = 0.5f;
+			float Restitution = 0.0f;
+
+			b2ShapeId ShapeId;
+
 			bool Enabled = true;
 		};
 	}

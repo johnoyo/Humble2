@@ -8,5 +8,6 @@ namespace HBL2
 	{
 		static float DeltaTime;
 		static float FixedDeltaTime;
+		static float FixedTimeStep;
 	};
 }

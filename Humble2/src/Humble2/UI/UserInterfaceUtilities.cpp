@@ -75,14 +75,14 @@ namespace HBL2
 		return instance;
 	}
 
-	void EditorUtilities::DrawComponent(Scene* cxt, entt::meta_any& componentMeta, const char* typeName, const char* memberName)
+	void EditorUtilities::DrawComponent(Scene* ctx, entt::meta_any& componentMeta, const char* typeName, const char* memberName)
 	{
-		auto data = entt::resolve(cxt->GetMetaContext(), entt::hashed_string(typeName)).data(entt::hashed_string(memberName));
+		auto data = entt::resolve(ctx->GetMetaContext(), entt::hashed_string(typeName)).data(entt::hashed_string(memberName));
 		auto value = data.get(componentMeta);
 
 		if (value)
 		{
-			if (value.type() == entt::resolve<glm::vec4>(cxt->GetMetaContext()))
+			if (value.type() == entt::resolve<glm::vec4>(ctx->GetMetaContext()))
 			{
 				glm::vec4* vec = value.try_cast<glm::vec4>();
 				if (vec)
@@ -93,7 +93,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<glm::vec3>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<glm::vec3>(ctx->GetMetaContext()))
 			{
 				glm::vec3* vec = value.try_cast<glm::vec3>();
 				if (vec)
@@ -104,7 +104,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<glm::vec2>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<glm::vec2>(ctx->GetMetaContext()))
 			{
 				glm::vec2* vec = value.try_cast<glm::vec2>();
 				if (vec)
@@ -115,7 +115,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<float>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<float>(ctx->GetMetaContext()))
 			{
 				float* fpNumber = value.try_cast<float>();
 				if (fpNumber)
@@ -126,7 +126,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<double>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<double>(ctx->GetMetaContext()))
 			{
 				double* dpNumber = value.try_cast<double>();
 				float* fpNumber = ((float*)dpNumber);
@@ -139,7 +139,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<UUID>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<UUID>(ctx->GetMetaContext()))
 			{
 				UUID* scalar = value.try_cast<UUID>();
 				if (scalar)
@@ -150,7 +150,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<int>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<int>(ctx->GetMetaContext()))
 			{
 				int* scalar = value.try_cast<int>();
 				if (scalar)
@@ -161,7 +161,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<bool>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<bool>(ctx->GetMetaContext()))
 			{
 				bool* flag = value.try_cast<bool>();
 				if (flag)
@@ -172,7 +172,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Scene>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Scene>>(ctx->GetMetaContext()))
 			{
 				Handle<Scene>* sceneHandle = value.try_cast<Handle<Scene>>();
 				if (sceneHandle)
@@ -197,7 +197,7 @@ namespace HBL2
 					}					
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Sound>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Sound>>(ctx->GetMetaContext()))
 			{
 				Handle<Sound>* soundHandle = value.try_cast<Handle<Sound>>();
 				if (soundHandle)
@@ -222,7 +222,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Shader>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Shader>>(ctx->GetMetaContext()))
 			{
 				Handle<Shader>* shaderHandle = value.try_cast<Handle<Shader>>();
 				if (shaderHandle)
@@ -247,7 +247,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Material>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Material>>(ctx->GetMetaContext()))
 			{
 				Handle<Material>* materialHandle = value.try_cast<Handle<Material>>();
 				if (materialHandle)
@@ -272,7 +272,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Mesh>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Mesh>>(ctx->GetMetaContext()))
 			{
 				Handle<Mesh>* meshHandle = value.try_cast<Handle<Mesh>>();
 				if (meshHandle)
@@ -297,7 +297,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Texture>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Texture>>(ctx->GetMetaContext()))
 			{
 				Handle<Texture>* textureHandle = value.try_cast<Handle<Texture>>();
 				if (textureHandle)
@@ -322,6 +322,26 @@ namespace HBL2
 					}
 				}
 			}
+			else if (value.type() == entt::resolve<entt::entity>(ctx->GetMetaContext()))
+			{
+				entt::entity* entity = value.try_cast<entt::entity>();
+				if (entity)
+				{
+					ImGui::InputScalar(memberName, ImGuiDataType_U32, entity);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
+						{
+							UUID entityUUID = *((UUID*)payload->Data);
+							entt::entity retrievedEntity = ctx->FindEntityByUUID(entityUUID);
+
+							data.set(componentMeta, retrievedEntity);
+							ImGui::EndDragDropTarget();
+						}
+					}
+				}
+			}
 		}
 		else
 		{
@@ -329,14 +349,14 @@ namespace HBL2
 		}
 	}
 	
-	void EditorUtilities::SerializeComponent(YAML::Emitter& out, Scene* cxt, entt::meta_any& componentMeta, const char* typeName, const char* memberName)
+	void EditorUtilities::SerializeComponent(YAML::Emitter& out, Scene* ctx, entt::meta_any& componentMeta, const char* typeName, const char* memberName)
 	{
-		auto data = entt::resolve(cxt->GetMetaContext(), entt::hashed_string(typeName)).data(entt::hashed_string(memberName));
+		auto data = entt::resolve(ctx->GetMetaContext(), entt::hashed_string(typeName)).data(entt::hashed_string(memberName));
 		auto value = data.get(componentMeta);
 
 		if (value)
 		{
-			if (value.type() == entt::resolve<glm::vec4>(cxt->GetMetaContext()))
+			if (value.type() == entt::resolve<glm::vec4>(ctx->GetMetaContext()))
 			{
 				glm::vec4* vec = value.try_cast<glm::vec4>();
 				if (vec)
@@ -344,7 +364,7 @@ namespace HBL2
 					out << YAML::Key << memberName << YAML::Value << *vec;
 				}
 			}
-			else if (value.type() == entt::resolve<glm::vec3>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<glm::vec3>(ctx->GetMetaContext()))
 			{
 				glm::vec3* vec = value.try_cast<glm::vec3>();
 				if (vec)
@@ -352,7 +372,7 @@ namespace HBL2
 					out << YAML::Key << memberName << YAML::Value << *vec;
 				}
 			}
-			else if (value.type() == entt::resolve<glm::vec2>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<glm::vec2>(ctx->GetMetaContext()))
 			{
 				glm::vec2* vec = value.try_cast<glm::vec2>();
 				if (vec)
@@ -360,7 +380,7 @@ namespace HBL2
 					out << YAML::Key << memberName << YAML::Value << *vec;
 				}
 			}
-			else if (value.type() == entt::resolve<float>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<float>(ctx->GetMetaContext()))
 			{
 				float* fpNumber = value.try_cast<float>();
 				if (fpNumber)
@@ -368,7 +388,7 @@ namespace HBL2
 					out << YAML::Key << memberName << YAML::Value << *fpNumber;
 				}
 			}
-			else if (value.type() == entt::resolve<double>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<double>(ctx->GetMetaContext()))
 			{
 				double* dpNumber = value.try_cast<double>();
 				float* fpNumber = ((float*)dpNumber);
@@ -378,7 +398,7 @@ namespace HBL2
 					out << YAML::Key << memberName << YAML::Value << *dpNumber;
 				}
 			}
-			else if (value.type() == entt::resolve<UUID>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<UUID>(ctx->GetMetaContext()))
 			{
 				UUID* scalar = value.try_cast<UUID>();
 				if (scalar)
@@ -386,7 +406,7 @@ namespace HBL2
 					out << YAML::Key << memberName << YAML::Value << *scalar;
 				}
 			}
-			else if (value.type() == entt::resolve<int>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<int>(ctx->GetMetaContext()))
 			{
 				int* scalar = value.try_cast<int>();
 				if (scalar)
@@ -394,7 +414,7 @@ namespace HBL2
 					out << YAML::Key << memberName << YAML::Value << *scalar;
 				}
 			}
-			else if (value.type() == entt::resolve<bool>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<bool>(ctx->GetMetaContext()))
 			{
 				bool* flag = value.try_cast<bool>();
 				if (flag)
@@ -402,7 +422,7 @@ namespace HBL2
 					out << YAML::Key << memberName << YAML::Value << *flag;
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Scene>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Scene>>(ctx->GetMetaContext()))
 			{
 				Handle<Scene>* sceneHandle = value.try_cast<Handle<Scene>>();
 				if (sceneHandle)
@@ -431,7 +451,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Sound>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Sound>>(ctx->GetMetaContext()))
 			{
 				Handle<Sound>* soundHandle = value.try_cast<Handle<Sound>>();
 				if (soundHandle)
@@ -460,7 +480,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Shader>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Shader>>(ctx->GetMetaContext()))
 			{
 				Handle<Shader>* shaderHandle = value.try_cast<Handle<Shader>>();
 				if (shaderHandle)
@@ -489,7 +509,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Material>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Material>>(ctx->GetMetaContext()))
 			{
 				Handle<Material>* materialHandle = value.try_cast<Handle<Material>>();
 				if (materialHandle)
@@ -518,7 +538,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Mesh>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Mesh>>(ctx->GetMetaContext()))
 			{
 				Handle<Mesh>* meshHandle = value.try_cast<Handle<Mesh>>();
 				if (meshHandle)
@@ -547,7 +567,7 @@ namespace HBL2
 					}
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Texture>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Texture>>(ctx->GetMetaContext()))
 			{
 				Handle<Texture>* textureHandle = value.try_cast<Handle<Texture>>();
 				if (textureHandle)
@@ -576,6 +596,18 @@ namespace HBL2
 					}
 				}
 			}
+			else if (value.type() == entt::resolve<entt::entity>(ctx->GetMetaContext()))
+			{
+				entt::entity* entity = value.try_cast<entt::entity>();
+				if (entity)
+				{
+					auto* id = ctx->TryGetComponent<Component::ID>(*entity);
+					if (id)
+					{
+						out << YAML::Key << memberName << YAML::Value << id->Identifier;
+					}
+				}
+			}
 		}
 		else
 		{
@@ -583,109 +615,122 @@ namespace HBL2
 		}
 	}
 
-	void EditorUtilities::DeserializeComponent(YAML::Node& node, Scene* cxt, entt::meta_any& componentMeta, const char* typeName, const char* memberName)
+	void EditorUtilities::DeserializeComponent(YAML::Node& node, Scene* ctx, entt::meta_any& componentMeta, const char* typeName, const char* memberName)
 	{
-		auto data = entt::resolve(cxt->GetMetaContext(), entt::hashed_string(typeName)).data(entt::hashed_string(memberName));
+		auto data = entt::resolve(ctx->GetMetaContext(), entt::hashed_string(typeName)).data(entt::hashed_string(memberName));
 		auto value = data.get(componentMeta);
+
+		if (!node[memberName].IsDefined())
+		{
+			return;
+		}
 
 		if (value)
 		{
-			if (value.type() == entt::resolve<glm::vec4>(cxt->GetMetaContext()))
+			if (value.type() == entt::resolve<glm::vec4>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<glm::vec4>())
 				{
 					data.set(componentMeta, node[memberName].as<glm::vec4>());
 				}
 			}
-			else if (value.type() == entt::resolve<glm::vec3>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<glm::vec3>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<glm::vec3>())
 				{
 					data.set(componentMeta, node[memberName].as<glm::vec3>());
 				}
 			}
-			else if (value.type() == entt::resolve<glm::vec2>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<glm::vec2>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<glm::vec2>())
 				{
 					data.set(componentMeta, node[memberName].as<glm::vec2>());
 				}
 			}
-			else if (value.type() == entt::resolve<float>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<float>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<float>())
 				{
 					data.set(componentMeta, node[memberName].as<float>());
 				}
 			}
-			else if (value.type() == entt::resolve<double>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<double>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<double>())
 				{
 					data.set(componentMeta, node[memberName].as<double>());
 				}
 			}
-			else if (value.type() == entt::resolve<UUID>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<UUID>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<UUID>())
 				{
 					data.set(componentMeta, node[memberName].as<UUID>());
 				}
 			}
-			else if (value.type() == entt::resolve<int>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<int>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<int>())
 				{
 					data.set(componentMeta, node[memberName].as<int>());
 				}
 			}
-			else if (value.type() == entt::resolve<bool>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<bool>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<bool>())
 				{
 					data.set(componentMeta, node[memberName].as<bool>());
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Scene>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Scene>>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<Handle<Scene>>())
 				{
 					data.set(componentMeta, AssetManager::Instance->GetAsset<Scene>(node[memberName].as<UUID>()));
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Sound>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Sound>>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<Handle<Sound>>())
 				{
 					data.set(componentMeta, AssetManager::Instance->GetAsset<Sound>(node[memberName].as<UUID>()));
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Shader>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Shader>>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<Handle<Shader>>())
 				{
 					data.set(componentMeta, AssetManager::Instance->GetAsset<Shader>(node[memberName].as<UUID>()));
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Material>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Material>>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<Handle<Material>>())
 				{
 					data.set(componentMeta, AssetManager::Instance->GetAsset<Material>(node[memberName].as<UUID>()));
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Mesh>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Mesh>>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<Handle<Mesh>>())
 				{
 					data.set(componentMeta, AssetManager::Instance->GetAsset<Mesh>(node[memberName].as<UUID>()));
 				}
 			}
-			else if (value.type() == entt::resolve<Handle<Texture>>(cxt->GetMetaContext()))
+			else if (value.type() == entt::resolve<Handle<Texture>>(ctx->GetMetaContext()))
 			{
 				if (value.try_cast<Handle<Texture>>())
 				{
 					data.set(componentMeta, AssetManager::Instance->GetAsset<Texture>(node[memberName].as<UUID>()));
+				}
+			}
+			else if (value.type() == entt::resolve<entt::entity>(ctx->GetMetaContext()))
+			{
+				if (value.try_cast<entt::entity>())
+				{
+					entt::entity entity = ctx->FindEntityByUUID(node[memberName].as<UUID>());
+					data.set(componentMeta, entity);
 				}
 			}
 		}

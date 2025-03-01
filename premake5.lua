@@ -21,6 +21,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.architecture}"
 group "Dependencies"
     include "Dependencies/ImGui"
     include "Dependencies/YAML-Cpp"
+    include "Dependencies/Box2D"
 group ""
 
 group "Core"

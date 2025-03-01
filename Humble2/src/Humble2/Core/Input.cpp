@@ -2,122 +2,156 @@
 
 namespace HBL2
 {
-	// Define the static member
-	Input* Input::s_Instance = nullptr;
+    Input* Input::s_Instance = nullptr;
 
-	// Define the singleton method
-	Input& Input::Get() {
-		if (!s_Instance)
-		{
-			s_Instance = new Input;
-		}
-		return *s_Instance;
-	}
+    Input& Input::Get()
+    {
+        if (!s_Instance)
+        {
+            s_Instance = new Input;
+        }
 
-	void Input::Initialize()
-	{
-		HBL2_CORE_ASSERT(s_Instance == nullptr, "Input::s_Instance is not null! Input::Initialize has been called twice.");
-		s_Instance = new Input;
+        return *s_Instance;
+    }
 
-		Get().m_Window = Window::Instance->GetHandle();
-	}
+    void Input::Initialize()
+    {
+        HBL2_CORE_ASSERT(s_Instance == nullptr, "Input::Initialize called twice.");
+        s_Instance = new Input;
+        s_Instance->m_Window = Window::Instance->GetHandle();
+    }
 
-	void Input::ShutDown()
-	{
-		HBL2_CORE_ASSERT(s_Instance != nullptr, "Input::s_Instance is null!");
+    void Input::ShutDown()
+    {
+        HBL2_CORE_ASSERT(s_Instance != nullptr, "Input::ShutDown called without initialization.");
+        delete s_Instance;
+        s_Instance = nullptr;
+    }
 
-		delete s_Instance;
-		s_Instance = nullptr;
-	}
+    bool Input::IsGamepadConnected(int gamepad)
+    {
+        return glfwJoystickPresent(gamepad) == GLFW_TRUE && glfwJoystickIsGamepad(gamepad) == GLFW_TRUE;
+    }
 
-	int Input::IGetKeyDown(int keyCode, int mode)
-	{
-		int result = 0;
+    bool Input::GetGamepadButtonDown(GamepadButton button, int gamepad)
+    {
+        if (!IsGamepadConnected(gamepad))
+        {
+            return false;
+        }
 
-		if (m_Window != nullptr)
-		{
-			if (keyCode >= 0 && keyCode <= 7)
-			{
-				result = (glfwGetMouseButton(m_Window, keyCode) == mode);
-			}
-			else
-			{
-				result = (glfwGetKey(m_Window, keyCode) == mode);
-			}
-		}
-		else
-		{
-			HBL2_CORE_ERROR("Window is null!");
-		}
+        GLFWgamepadstate state;
+        if (glfwGetGamepadState(gamepad, &state))
+        {
+            return state.buttons[(int)button] == GLFW_PRESS;
+        }
 
-		return result;
-	}
+        return false;
+    }
 
-	int Input::IGetKeyPress(int keyCode)
-	{
-		int result = 0;
+    bool Input::GetGamepadButtonPress(GamepadButton button, int gamepad)
+    {
+        if (!IsGamepadConnected(gamepad))
+        {
+            return false;
+        }
 
-		if (CheckState(keyCode) == GLFW_PRESS && m_LastPressedState[keyCode] == GLFW_RELEASE)
-		{
-			result = Get().IGetKeyDown(keyCode, GLFW_PRESS);
-		}
+        GLFWgamepadstate state;
+        if (glfwGetGamepadState(gamepad, &state))
+        {
+            bool pressed = (state.buttons[(int)button] == GLFW_PRESS);
+            bool wasPressed = s_Instance->m_LastGamepadState[gamepad][(int)button];
 
-		m_LastPressedState[keyCode] = CheckState(keyCode);
+            s_Instance->m_LastGamepadState[gamepad][(int)button] = pressed;
+            return pressed && !wasPressed;
+        }
 
-		return result;
-	}
+        return false;
+    }
 
-	int Input::IGetKeyRelease(int keyCode)
-	{
-		int result = 0;
+    float Input::GetGamepadAxis(GamepadAxis axis, int gamepad)
+    {
+        if (!IsGamepadConnected(gamepad))
+        {
+            return 0.0f;
+        }
 
-		if (CheckState(keyCode) == GLFW_RELEASE && m_LastReleasedState[keyCode] == GLFW_PRESS)
-		{
-			result = Get().IGetKeyDown(keyCode, GLFW_RELEASE);
-		}
+        GLFWgamepadstate state;
+        if (glfwGetGamepadState(gamepad, &state))
+        {
+            return state.axes[(int)axis];
+        }
+        return 0.0f;
+    }
 
-		m_LastReleasedState[keyCode] = CheckState(keyCode);
+    bool Input::IGetKeyDown(int keyCode, int mode)
+    {
+        if (!m_Window)
+        {
+            HBL2_CORE_ERROR("Window is null!");
+            return false;
+        }
 
-		return result;
-	}
+        bool result = false;
 
-	glm::vec2& Input::IGetMousePosition()
-	{
-		if (m_Window != nullptr)
-		{
-			double x, y;
-			glfwGetCursorPos(m_Window, &x, &y);
-			m_MousePosition.x = (float)x;
-			m_MousePosition.y = (float)y;
-			return m_MousePosition;
-		}
-		else
-		{
-			HBL2_CORE_ERROR("Window is null!");
-		}
+        if (keyCode >= 0 && keyCode <= 7)
+        {
+            result = (glfwGetMouseButton(m_Window, keyCode) == mode);
+        }
+        else
+        {
+            result = (glfwGetKey(m_Window, keyCode) == mode);
+        }
 
-		return m_MousePosition;
-	}
+        return result;
+    }
 
+    bool Input::IGetKeyPress(int keyCode)
+    {
+        if (CheckState(keyCode) == GLFW_PRESS && m_LastPressedState[keyCode] == GLFW_RELEASE)
+        {
+            return IGetKeyDown(keyCode, GLFW_PRESS);
+        }
 
-	int Input::CheckState(int keyCode)
-	{
-		if (m_Window != nullptr)
-		{
-			if (keyCode >= 0 && keyCode <= 11)
-			{
-				return glfwGetMouseButton(m_Window, keyCode);
-			}
-			else
-			{
-				return glfwGetKey(m_Window, keyCode);
-			}
-		}
-		else
-		{
-			HBL2_CORE_ERROR("Window is null!");
-		}
+        m_LastPressedState[keyCode] = CheckState(keyCode);
+        return false;
+    }
 
-		return 0;
-	}
+    bool Input::IGetKeyRelease(int keyCode)
+    {
+        if (CheckState(keyCode) == GLFW_RELEASE && m_LastReleasedState[keyCode] == GLFW_PRESS)
+        {
+            return IGetKeyDown(keyCode, GLFW_RELEASE);
+        }
+
+        m_LastReleasedState[keyCode] = CheckState(keyCode);
+        return false;
+    }
+
+    const glm::vec2& Input::IGetMousePosition()
+    {
+        if (!m_Window)
+        {
+            HBL2_CORE_ERROR("Window is null!");
+            return m_MousePosition;
+        }
+
+        double x, y;
+        glfwGetCursorPos(m_Window, &x, &y);
+        m_MousePosition.x = (float)x;
+        m_MousePosition.y = (float)y;
+
+        return m_MousePosition;
+    }
+
+    int Input::CheckState(int keyCode)
+    {
+        if (!m_Window)
+        {
+            HBL2_CORE_ERROR("Window is null!");
+            return 0;
+        }
+
+        return glfwGetKey(m_Window, keyCode);
+    }
 }

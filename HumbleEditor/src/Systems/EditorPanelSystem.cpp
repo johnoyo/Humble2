@@ -21,13 +21,11 @@ namespace HBL2
 			m_ActiveScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 			m_EditorScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
 
-			EventDispatcher::Get().Register("SceneChangeEvent", [&](const HBL2::Event& e)
+			EventDispatcher::Get().Register<SceneChangeEvent>([&](const HBL2::SceneChangeEvent& e)
 			{
 				HBL2_CORE_INFO("EditorPanelSystem::SceneChangeEvent");
-				const SceneChangeEvent& sce = dynamic_cast<const SceneChangeEvent&>(e);
-
 				// Delete temporary play mode scene.
-				Scene* currentScene = ResourceManager::Instance->GetScene(sce.OldScene);
+				Scene* currentScene = ResourceManager::Instance->GetScene(e.OldScene);
 				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != std::string::npos)
 				{
 					// Clear entire scene
@@ -37,10 +35,10 @@ namespace HBL2
 					NativeScriptUtilities::Get().UnloadUnityBuild(currentScene);
 
 					// Delete play mode scene.
-					ResourceManager::Instance->DeleteScene(sce.OldScene);
+					ResourceManager::Instance->DeleteScene(e.OldScene);
 				}
 
-				m_ActiveScene = ResourceManager::Instance->GetScene(sce.NewScene);
+				m_ActiveScene = ResourceManager::Instance->GetScene(e.NewScene);
 
 				// Clear selected entity
 				HBL2::Component::EditorVisible::SelectedEntity = entt::null;
@@ -58,6 +56,19 @@ namespace HBL2
 					{
 						system->SetState(SystemState::Idle);
 					}
+				}
+
+				if (m_ActiveScene != nullptr)
+				{
+					m_ActiveScene->GetRegistry()
+						.view<HBL2::Component::Camera>()
+						.each([&](HBL2::Component::Camera& camera)
+						{
+							if (camera.Enabled)
+							{
+								camera.AspectRatio = m_ViewportSize.x / m_ViewportSize.y;
+							}
+						});
 				}
 			});
 

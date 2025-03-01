@@ -2,50 +2,51 @@
 
 #include "Base.h"
 #include "Window.h"
+#include "InputCodes.h"
 
 #include <GLFW/glfw3.h>
 
 namespace HBL2
 {
-	class HBL2_API Input {
-	public:
-		Input(const Input&) = delete;
+    class HBL2_API Input
+    {
+    public:
+        Input(const Input&) = delete;
 
-		static Input& Get();
+        static Input& Get();
 
-		static void Initialize();
-		static void ShutDown();
+        static void Initialize();
+        static void ShutDown();
 
-		static glm::vec2& GetMousePosition() { return Get().IGetMousePosition(); }
+        static const glm::vec2& GetMousePosition() { return Get().IGetMousePosition(); }
 
-		// Returns true i.e. 1, as long as the specified key is released
-		static int GetKeyUp(int keyCode) { return Get().IGetKeyDown(keyCode, GLFW_RELEASE); }
+        static bool GetKeyUp(KeyCode key) { return Get().IGetKeyDown((int)key, GLFW_RELEASE); }
+        static bool GetKeyDown(KeyCode key) { return Get().IGetKeyDown((int)key, GLFW_PRESS); }
+        static bool GetKeyPress(KeyCode key) { return Get().IGetKeyPress((int)key); }
+        static bool GetKeyRelease(KeyCode key) { return Get().IGetKeyRelease((int)key); }
 
-		// Returns true i.e. 1, as long as the specified key is pressed
-		static int GetKeyDown(int keyCode) { return Get().IGetKeyDown(keyCode, GLFW_PRESS); }
+        static bool IsGamepadConnected(int gamepad = 0);
+        static bool GetGamepadButtonDown(GamepadButton button, int gamepad = 0);
+        static bool GetGamepadButtonPress(GamepadButton button, int gamepad = 0);
+        static float GetGamepadAxis(GamepadAxis axis, int gamepad = 0);
 
-		// Returns true i.e. 1, only the momment that the key is pressed
-		static int GetKeyPress(int keyCode) { return Get().IGetKeyPress(keyCode); }
+    private:
+        bool IGetKeyDown(int keyCode, int mode);
+        bool IGetKeyPress(int keyCode);
+        bool IGetKeyRelease(int keyCode);
+        const glm::vec2& IGetMousePosition();
 
-		// Returns true i.e. 1, only the momment that the key is released
-		static int GetKeyRelease(int keyCode) { return Get().IGetKeyRelease(keyCode); }
+        Input() {}
 
-	private:
-		int IGetKeyDown(int keyCode, int mode);
-		int IGetKeyPress(int keyCode);
-		int IGetKeyRelease(int keyCode);
-		glm::vec2& IGetMousePosition();
+        int m_LastReleasedState[512] = { GLFW_RELEASE };
+        int m_LastPressedState[512] = { GLFW_PRESS };
+        bool m_LastGamepadState[16][15] = {};
+        glm::vec2 m_MousePosition = {};
 
-		Input() {}
+        GLFWwindow* m_Window = nullptr;
 
-		int m_LastReleasedState[349] = { GLFW_RELEASE };
-		int m_LastPressedState[349] = { GLFW_PRESS };
-		glm::vec2 m_MousePosition = {};
+        int CheckState(int keyCode);
 
-		GLFWwindow* m_Window = nullptr;
-
-		int CheckState(int keyCode);
-
-		static Input* s_Instance;
-	};
+        static Input* s_Instance;
+    };
 }

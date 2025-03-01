@@ -11,19 +11,17 @@ namespace HBL2
 
 			OpenProject();
 
-			HBL2::EventDispatcher::Get().Register("SceneChangeEvent", [&](const HBL2::Event& e)
+			HBL2::EventDispatcher::Get().Register<SceneChangeEvent>([&](const HBL2::SceneChangeEvent& e)
 			{
-				const HBL2::SceneChangeEvent& sce = dynamic_cast<const HBL2::SceneChangeEvent&>(e);
-				m_ActiveScene = HBL2::ResourceManager::Instance->GetScene(sce.NewScene);
+				m_ActiveScene = HBL2::ResourceManager::Instance->GetScene(e.NewScene);
 			});
 
 			Context::ViewportPosition = { 0, 0 };
 			Context::ViewportSize = Window::Instance->GetExtents();
 
-			HBL2::EventDispatcher::Get().Register("WindowSizeEvent", [&](const HBL2::Event& e)
+			HBL2::EventDispatcher::Get().Register<WindowSizeEvent>([&](const HBL2::WindowSizeEvent& e)
 			{
-				const HBL2::WindowSizeEvent& wse = dynamic_cast<const HBL2::WindowSizeEvent&>(e);
-				Context::ViewportSize = { wse.Width, wse.Height };
+				Context::ViewportSize = { e.Width, e.Height };
 			});
 
 			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
@@ -42,6 +40,29 @@ namespace HBL2
 				{
 					system->OnUpdate(ts);
 				}
+			}
+		}
+
+		void RuntimeContext::OnFixedUpdate()
+		{
+			m_AccumulatedTime += Time::DeltaTime;
+
+			while (m_AccumulatedTime >= Time::FixedTimeStep)
+			{
+				if (m_ActiveScene == nullptr)
+				{
+					return;
+				}
+
+				for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+				{
+					if (system->GetState() == HBL2::SystemState::Play)
+					{
+						system->OnFixedUpdate();
+					}
+				}
+
+				m_AccumulatedTime -= Time::FixedTimeStep;
 			}
 		}
 
