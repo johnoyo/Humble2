@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Base.h"
-
+#include "Renderer\Renderer.h"
 #include "UserInterfaceUtilities.h"
 
 #include <vector>
@@ -100,6 +100,14 @@ namespace HBL2
 			float y;
 		};
 
+		struct HBL2_API Padding
+		{
+			float left;
+			float right;
+			float top;
+			float bottom;
+		};
+
 		struct HBL2_API Layout
 		{
 			LayoutDirection layoutDirection = LayoutDirection::TOP_TO_BOTTOM;
@@ -123,9 +131,9 @@ namespace HBL2
 		class HBL2_API Panel
 		{
 		public:
-			Panel(Config&& config, const std::function<void(Panel*)>& body);
+			Panel(Config&& config, const std::function<void(Panel*)>&& body);
 
-			Panel(const char* panelName, Config&& config, const std::function<void(Panel*)>& body);
+			Panel(const char* panelName, Config&& config, const std::function<void(Panel*)>&& body);
 
 			void AddChild(Panel&& child);
 
@@ -142,6 +150,11 @@ namespace HBL2
 			static inline bool Clicked()
 			{
 				return ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+			}
+
+			static inline bool RightClicked()
+			{
+				return ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right);
 			}
 
 		private:

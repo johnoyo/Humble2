@@ -32,6 +32,60 @@ namespace HBL2
 
 	void LinkSystem::OnGuiRender(float ts)
 	{
+		/*UI::CreatePanel(
+			UI::Config{
+				.id = "SettingsUI",
+				.mode = UI::Rectagle {.color = { 0, 0, 0, 0} },
+				.layout = {
+					.sizing =
+					{
+						.width = UI::Width::Grow(),
+						.height = UI::Height::Grow(),
+					},
+					.padding = { UI::Utils::GetViewportSize().x / 4.f, UI::Utils::GetViewportSize().y / 4.f }
+				}
+			}, [&](UI::Panel* parent) {
+				parent->AddChild(UI::Panel(UI::Config{
+					.id = "OuterContainer",
+					.parent = parent,
+					.mode = UI::Rectagle{
+						.color = { 43, 41, 151, 255 },
+					},
+					.layout = UI::Layout{
+						.layoutDirection = UI::LayoutDirection::LEFT_TO_RIGHT,
+						.sizing = {
+							.width = UI::Width::Grow(),
+							.height = UI::Height::Grow(),
+						},
+						.padding = { 16, 16 },
+						.childGap = 16,
+					}
+				}, [&](UI::Panel* parent) {
+						parent->AddChild(UI::Panel(
+							UI::Config{
+								.id = "Child",
+								.parent = parent,
+								.mode = UI::Rectagle{
+									.color = { 143, 141, 53, 255 },
+								},
+								.layout = UI::Layout{
+									.sizing = {
+										.width = UI::Width::Grow(),
+										.height = UI::Height::Grow(),
+									},
+								}
+							}, [&](UI::Panel* parent) {
+								UI::Text(parent, "Child");
+
+								if (UI::Panel::RightClicked())
+								{
+									UI::Text(parent, "Child1");
+								}
+							})
+						);
+					})
+				);
+			});*/
 #ifdef false
 		UI::Panel(
 			UI::Config{

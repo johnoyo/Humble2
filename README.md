@@ -9,8 +9,8 @@ Features:
     - **WebGPU**  support is planned for the future.
 - Complete UI Editor for creating applications / games.
 - Uses an ECS architecture using the [EnTT](https://github.com/skypjack/entt) library.
-- Planned web support with [Emscripten](https://github.com/emscripten-core/emsdk) using WebGPU to build games for the browser.
 - Fully integrated C++ scripting support.
+- Planned web support with [Emscripten](https://github.com/emscripten-core/emsdk) using WebGPU to build games for the browser.
 - Currently supports only Windows.
 
 Installation:
