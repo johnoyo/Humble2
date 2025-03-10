@@ -452,23 +452,14 @@ class {ScriptName}
 	{
 		const auto& path = GetUnityBuildPath();
 
-		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
-
-		DynamicLibrary unityBuild;
-
-		// Retrieve or open dll.
-		if (m_DynamicLibraries.find(fullDllName) != m_DynamicLibraries.end())
+		// Retrieve if dll is not loaded.
+		if (!m_DynamicLibrary.IsLoaded())
 		{
-			unityBuild = m_DynamicLibraries[fullDllName];
-		}
-		else
-		{
-			unityBuild = DynamicLibrary(path.string());
-			m_DynamicLibraries[fullDllName] = unityBuild;
+			m_DynamicLibrary = DynamicLibrary(path.string());
 		}
 
 		// Retrieve function that creates the system from the dll.
-		RegisterSystemFunc registerSystem = unityBuild.GetFunction<RegisterSystemFunc>("RegisterSystem_" + name);
+		auto registerSystem = m_DynamicLibrary.GetFunction<RegisterSystemFunc>("RegisterSystem_" + name);
 
 		// Create the system
 		registerSystem(ctx);
@@ -478,45 +469,46 @@ class {ScriptName}
 	{
 		const auto& path = GetUnityBuildPath();
 
-		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
-
-		DynamicLibrary unityBuild;
-
-		// Retrieve or open dll.
-		if (m_DynamicLibraries.find(fullDllName) != m_DynamicLibraries.end())
+		// Retrieve if dll is not loaded.
+		if (!m_DynamicLibrary.IsLoaded())
 		{
-			unityBuild = m_DynamicLibraries[fullDllName];
-		}
-		else
-		{
-			unityBuild = DynamicLibrary(path.string());
-			m_DynamicLibraries[fullDllName] = unityBuild;
+			m_DynamicLibrary = DynamicLibrary(path.string());
 		}
 
 		// Retrieve function that registers the component from the dll.
-		RegisterComponentFunc registerComponent = unityBuild.GetFunction<RegisterComponentFunc>("RegisterComponent_" + name);
+		auto registerComponent = m_DynamicLibrary.GetFunction<RegisterComponentFunc>("RegisterComponent_" + name);
 
 		// Register the component.
 		const char* properName = registerComponent(ctx);
 	}
 
-	void NativeScriptUtilities::LoadUnityBuild(Scene* ctx)
+	void NativeScriptUtilities::LoadUnityBuild()
 	{
 		const auto& path = GetUnityBuildPath();
 
-		LoadUnityBuild(ctx, path.string());
+		LoadUnityBuild(path.string());
 	}
 
-	void NativeScriptUtilities::LoadUnityBuild(Scene* ctx, const std::string& path)
+	void NativeScriptUtilities::LoadUnityBuild(const std::string& path)
 	{
 		// Load new unity build dll.
-		DynamicLibrary unityBuild = DynamicLibrary(path);
-		m_DynamicLibraries[ctx->GetName() + "_UnityBuild"] = unityBuild;
+		m_DynamicLibrary = DynamicLibrary(path);
 	}
 
 	void NativeScriptUtilities::UnloadUnityBuild(Scene* ctx)
 	{
-		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
+		// Clear user defined components.
+		for (auto meta_type : entt::resolve(ctx->GetMetaContext()))
+		{
+			const std::string& componentName = meta_type.second.info().name().data();
+
+			const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+			NativeScriptUtilities::Get().ClearComponentStorage(cleanedComponentName, ctx);
+		}
+
+		// Reset reflection system.
+		entt::meta_reset(ctx->GetMetaContext());
+		ctx->GetRegistry().compact();
 
 		std::vector<ISystem*> systemsToBeDeregistered;
 
@@ -534,17 +526,12 @@ class {ScriptName}
 			ctx->DeregisterSystem(system);
 		}
 
-		entt::meta_reset(ctx->GetMetaContext());
-
-		ctx->GetRegistry().compact();
-
 		systemsToBeDeregistered.clear();
 
-		// Free dll and remove from map.
-		if (m_DynamicLibraries.find(fullDllName) != m_DynamicLibraries.end())
+		// Free dll.
+		if (m_DynamicLibrary.IsLoaded())
 		{
-			m_DynamicLibraries[fullDllName].Free();
-			m_DynamicLibraries.erase(fullDllName);
+			m_DynamicLibrary.Free();
 		}
 	}
 
@@ -552,13 +539,8 @@ class {ScriptName}
 	{
 		const auto& path = GetUnityBuildPath();
 
-		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
-
-		// Load new component dll.
-		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
-
 		// Retrieve function that registers the component from the dll.
-		AddComponentFunc addComponent = unityBuild.GetFunction<AddComponentFunc>("AddComponent_" + name);
+		auto addComponent = m_DynamicLibrary.GetFunction<AddComponentFunc>("AddComponent_" + name);
 
 		// Register the component.
 		return addComponent(ctx, entity);
@@ -568,13 +550,8 @@ class {ScriptName}
 	{
 		const auto& path = GetUnityBuildPath();
 
-		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
-
-		// Load new component dll.
-		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
-
 		// Retrieve function that gets the component from the dll.
-		GetComponentFunc getComponent = unityBuild.GetFunction<GetComponentFunc>("GetComponent_" + name);
+		auto getComponent = m_DynamicLibrary.GetFunction<GetComponentFunc>("GetComponent_" + name);
 
 		// Register the component.
 		return getComponent(ctx, entity);
@@ -584,13 +561,8 @@ class {ScriptName}
 	{
 		const auto& path = GetUnityBuildPath();
 
-		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
-
-		// Load new component dll.
-		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
-
 		// Retrieve function that removes the component from the dll.
-		RemoveComponentFunc removeComponent = unityBuild.GetFunction<RemoveComponentFunc>("RemoveComponent_" + name);
+		auto removeComponent = m_DynamicLibrary.GetFunction<RemoveComponentFunc>("RemoveComponent_" + name);
 
 		// Remove the component.
 		removeComponent(ctx, entity);
@@ -600,13 +572,8 @@ class {ScriptName}
 	{
 		const auto& path = GetUnityBuildPath();
 
-		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
-
-		// Load new component dll.
-		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
-
 		// Retrieve function that checks if the entity has the component from the dll.
-		HasComponentFunc hasComponent = unityBuild.GetFunction<HasComponentFunc>("HasComponent_" + name);
+		auto hasComponent = m_DynamicLibrary.GetFunction<HasComponentFunc>("HasComponent_" + name);
 
 		// Register the component.
 		return hasComponent(ctx, entity);
@@ -616,13 +583,8 @@ class {ScriptName}
 	{
 		const auto& path = GetUnityBuildPath();
 
-		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
-
-		// Load new component dll.
-		DynamicLibrary& unityBuild = m_DynamicLibraries[fullDllName];
-
 		// Retrieve function that checks if the entity has the component from the dll.
-		ClearComponentStorageFunc clearComponentStorage = unityBuild.GetFunction<ClearComponentStorageFunc>("ClearComponentStorage_" + name);
+		auto clearComponentStorage = m_DynamicLibrary.GetFunction<ClearComponentStorageFunc>("ClearComponentStorage_" + name);
 
 		// Register the component.
 		clearComponentStorage(ctx);
@@ -632,23 +594,13 @@ class {ScriptName}
 	{
 		const auto& path = GetUnityBuildPath();
 
-		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
-
-		// Load new unityBuild dll.
-		DynamicLibrary unityBuild;
-
-		// Retrieve or open dll.
-		if (m_DynamicLibraries.find(fullDllName) != m_DynamicLibraries.end())
+		// Retrieve if dll is not loaded.
+		if (!m_DynamicLibrary.IsLoaded())
 		{
-			unityBuild = m_DynamicLibraries[fullDllName];
-		}
-		else
-		{
-			unityBuild = DynamicLibrary(path.string());
-			m_DynamicLibraries[fullDllName] = unityBuild;
+			m_DynamicLibrary = DynamicLibrary(path.string());
 		}
 
-		SerializeComponentsFunc serializeComponents = unityBuild.GetFunction<SerializeComponentsFunc>("SerializeComponents_" + name);
+		auto serializeComponents = m_DynamicLibrary.GetFunction<SerializeComponentsFunc>("SerializeComponents_" + name);
 
 		serializeComponents(ctx, data, cleanRegistry);
 	}
@@ -657,23 +609,13 @@ class {ScriptName}
 	{
 		const auto& path = GetUnityBuildPath();
 
-		const std::string& fullDllName = ctx->GetName() + "_UnityBuild";
-
-		// Load new unityBuild dll.
-		DynamicLibrary unityBuild;
-
-		// Retrieve or open dll.
-		if (m_DynamicLibraries.find(fullDllName) != m_DynamicLibraries.end())
+		// Retrieve if dll is not loaded.
+		if (!m_DynamicLibrary.IsLoaded())
 		{
-			unityBuild = m_DynamicLibraries[fullDllName];
-		}
-		else
-		{
-			unityBuild = DynamicLibrary(path.string());
-			m_DynamicLibraries[fullDllName] = unityBuild;
+			m_DynamicLibrary = DynamicLibrary(path.string());
 		}
 
-		DeserializeComponentsFunc deserializeComponents = unityBuild.GetFunction<DeserializeComponentsFunc>("DeserializeComponents_" + name);
+		auto deserializeComponents = m_DynamicLibrary.GetFunction<DeserializeComponentsFunc>("DeserializeComponents_" + name);
 
 		deserializeComponents(ctx, data);
 	}

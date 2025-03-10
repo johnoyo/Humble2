@@ -88,7 +88,7 @@ namespace HBL2
 		}
 
 		// Delete old loaded scene.
-		if (m_CurrentSceneAssetHandle != m_NewSceneAssetHandle)
+		if (m_CurrentSceneAssetHandle != m_NewSceneAssetHandle && m_CurrentSceneAssetHandle != m_BaseSceneAssetHandle)
 		{
 			AssetManager::Instance->DeleteAsset(m_CurrentSceneAssetHandle);
 		}
@@ -142,7 +142,7 @@ namespace HBL2
 		}
 
 		// Delete old loaded scene.
-		if (m_CurrentSceneAssetHandle != m_NewSceneAssetHandle)
+		if (m_CurrentSceneAssetHandle != m_NewSceneAssetHandle && m_CurrentSceneAssetHandle != m_BaseSceneAssetHandle)
 		{
 			AssetManager::Instance->DeleteAsset(m_CurrentSceneAssetHandle);
 		}
@@ -214,7 +214,16 @@ namespace HBL2
 
 		Context::ActiveScene = m_NewSceneHandle;
 		m_CurrentSceneHandle = m_NewSceneHandle;
-		m_CurrentSceneAssetHandle = {};
+
+		if (m_RuntimeSceneChange)
+		{
+			m_BaseSceneAssetHandle = m_CurrentSceneAssetHandle;
+		}
+		else
+		{
+			m_BaseSceneAssetHandle = {};
+		}
+
 		m_NewSceneAssetHandle = {};
 
 		Scene* scene = ResourceManager::Instance->GetScene(m_NewSceneHandle);

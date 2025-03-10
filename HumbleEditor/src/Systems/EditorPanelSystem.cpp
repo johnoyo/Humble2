@@ -31,9 +31,6 @@ namespace HBL2
 					// Clear entire scene
 					currentScene->Clear();
 
-					// Unload unity build dll.
-					NativeScriptUtilities::Get().UnloadUnityBuild(currentScene);
-
 					// Delete play mode scene.
 					ResourceManager::Instance->DeleteScene(e.OldScene);
 				}

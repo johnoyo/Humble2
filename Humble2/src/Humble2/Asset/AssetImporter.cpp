@@ -1366,9 +1366,6 @@ namespace HBL2
 		// Clear entire scene.
 		currentScene->Clear();
 
-		// Unload unity build dll.
-		NativeScriptUtilities::Get().UnloadUnityBuild(currentScene);
-
 		// Delete from pool.
 		ResourceManager::Instance->DeleteScene(sceneHandle);
 
