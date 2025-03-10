@@ -18,13 +18,19 @@ namespace HBL2
 
 						std::string projectName = std::filesystem::path(filepath).filename().stem().string();
 
+						// Clean up registered systems.
 						for (ISystem* system : m_ActiveScene->GetSystems())
 						{
 							system->OnDestroy();
 						}
 
+						// Unload all registered assets.
 						AssetManager::Instance->DeregisterAssets();
 
+						// Free unity build dll.
+						NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
+
+						// Create and open new project
 						HBL2::Project::Create(projectName)->Save(filepath);
 
 						auto assetHandle = AssetManager::Instance->CreateAsset({
@@ -39,7 +45,7 @@ namespace HBL2
 						m_EditorScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
 						m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
 					}
-					if (ImGui::MenuItem("Open Project"))
+					else if (ImGui::MenuItem("Open Project"))
 					{
 						std::string filepath = HBL2::FileDialogs::OpenFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), {"Humble Project Files (*.hblproj)", "*.hblproj"});
 
@@ -48,7 +54,11 @@ namespace HBL2
 							system->OnDestroy();
 						}
 
+						// Unload all registered assets.
 						AssetManager::Instance->DeregisterAssets();
+
+						// Free unity build dll.
+						NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
 
 						if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 						{
@@ -63,7 +73,7 @@ namespace HBL2
 							HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
 						}
 					}
-					if (ImGui::MenuItem("Save Scene"))
+					else if (ImGui::MenuItem("Save Scene"))
 					{
 						if (m_EditorScenePath.empty())
 						{
@@ -81,7 +91,7 @@ namespace HBL2
 							AssetManager::Instance->SaveAsset(std::hash<std::string>()(relativePath.string()));
 						}
 					}
-					if (ImGui::MenuItem("Save Scene As"))
+					else if (ImGui::MenuItem("Save Scene As"))
 					{
 						std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
 						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
@@ -105,7 +115,7 @@ namespace HBL2
 
 						m_EditorScenePath = filepath;
 					}
-					if (ImGui::MenuItem("New Scene"))
+					else if (ImGui::MenuItem("New Scene"))
 					{
 						std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
 						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
@@ -122,7 +132,7 @@ namespace HBL2
 
 						m_EditorScenePath = filepath;
 					}
-					if (ImGui::MenuItem("Open Scene"))
+					else if (ImGui::MenuItem("Open Scene"))
 					{
 						std::string filepath = HBL2::FileDialogs::OpenFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
 
@@ -133,7 +143,7 @@ namespace HBL2
 
 						m_EditorScenePath = filepath;
 					}
-					if (ImGui::MenuItem("Build (Windows - Debug)"))
+					else if (ImGui::MenuItem("Build (Windows - Debug)"))
 					{
 						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
@@ -146,7 +156,7 @@ namespace HBL2
 						// Copy assets folder to build folder.
 						FileUtils::CopyFolder("./assets", "..\\bin\\Debug-x86_64\\HumbleApp\\assets");
 					}
-					if (ImGui::MenuItem("Build (Windows - Release)"))
+					else if (ImGui::MenuItem("Build (Windows - Release)"))
 					{
 						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
@@ -159,7 +169,7 @@ namespace HBL2
 						// Copy assets folder to build folder.
 						FileUtils::CopyFolder("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets");
 					}
-					if (ImGui::MenuItem("Build & Run (Windows - Debug)"))
+					else if (ImGui::MenuItem("Build & Run (Windows - Debug)"))
 					{
 						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
@@ -175,7 +185,7 @@ namespace HBL2
 						// Run.
 						system("cd ..\\bin\\Debug-x86_64\\HumbleApp && HumbleApp.exe");
 					}
-					if (ImGui::MenuItem("Build & Run (Windows - Release)"))
+					else if (ImGui::MenuItem("Build & Run (Windows - Release)"))
 					{
 						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
@@ -191,11 +201,11 @@ namespace HBL2
 						// Run.
 						system("cd ..\\bin\\Release-x86_64\\HumbleApp && HumbleApp.exe");
 					}
-					if (ImGui::MenuItem("Build (Web)"))
+					else if (ImGui::MenuItem("Build (Web)"))
 					{
 						system("..\\Scripts\\emBuildAll.bat");
 					}
-					if (ImGui::MenuItem("Close"))
+					else if (ImGui::MenuItem("Close"))
 					{
 						HBL2::Window::Instance->Close();
 					}

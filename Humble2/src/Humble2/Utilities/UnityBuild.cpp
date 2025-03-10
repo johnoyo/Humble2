@@ -25,12 +25,6 @@ namespace HBL2
 
 	bool UnityBuild::Build()
 	{
-		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
-		return Build(activeScene);
-	}
-
-	bool UnityBuild::Build(Scene* ctx)
-	{
 		// Create directory.
 		try
 		{
@@ -66,7 +60,7 @@ namespace HBL2
 
 		system(command.c_str());
 
-		NativeScriptUtilities::Get().LoadUnityBuild(ctx);
+		NativeScriptUtilities::Get().LoadUnityBuild();
 
 		return true;
 	}

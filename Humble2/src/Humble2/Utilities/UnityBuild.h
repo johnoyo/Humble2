@@ -29,7 +29,6 @@ namespace HBL2
 
 		void Combine();
 		bool Build();
-		bool Build(Scene* ctx);
 		void Recompile();
 
 		bool Exists();

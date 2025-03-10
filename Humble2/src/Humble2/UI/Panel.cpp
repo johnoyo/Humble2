@@ -1,11 +1,16 @@
 #include "Panel.h"
 
+#include <Platform\OpenGL\OpenGLResourceManager.h>
+#include <Platform\Vulkan\VulkanResourceManager.h>
+
+#include <imgui_impl_vulkan.h>
+
 namespace HBL2
 {
 	namespace UI
 	{
-		Panel::Panel(Config&& config, const std::function<void(Panel*)>& body)
-			: m_Configuration(std::move(config)), m_Body(body), m_PanelName("Viewport")
+		Panel::Panel(Config&& config, const std::function<void(Panel*)>&& body)
+			: m_Configuration(config), m_Body(body), m_PanelName("Viewport")
 		{
 			m_OffsetX = Utils::GetViewportPosition().x;
 			m_OffsetY = Utils::GetViewportPosition().y;
@@ -16,8 +21,8 @@ namespace HBL2
 			}
 		}
 
-		Panel::Panel(const char* panelName, Config&& config, const std::function<void(Panel*)>& body)
-			: m_Configuration(std::move(config)), m_Body(body), m_Editor(true), m_PanelName(panelName)
+		Panel::Panel(const char* panelName, Config&& config, const std::function<void(Panel*)>&& body)
+			: m_Configuration(config), m_Body(body), m_Editor(true), m_PanelName(panelName)
 		{
 			m_OffsetX = ImGui::GetCursorScreenPos().x;
 			m_OffsetY = ImGui::GetCursorScreenPos().y;
@@ -236,6 +241,7 @@ namespace HBL2
 
 				ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, m_Configuration.mode.cornerRadius);
 				ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(m_Configuration.mode.color.r, m_Configuration.mode.color.g, m_Configuration.mode.color.b, m_Configuration.mode.color.a));
+				ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(m_Configuration.mode.color.r, m_Configuration.mode.color.g, m_Configuration.mode.color.b, m_Configuration.mode.color.a));
 
 				ImGui::Begin(m_Configuration.id, nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
 			}
@@ -288,7 +294,7 @@ namespace HBL2
 					// Draw text on top
 					ImGui::SetCursorScreenPos(ImVec2(position.x, position.y));
 					ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(color.r, color.g, color.b, color.a));
-					ImGui::Text(m_Configuration.id);
+					ImGui::TextWrapped(m_Configuration.id);
 					ImGui::PopStyleColor();
 					ImGui::SetCursorScreenPos(ImVec2(position.x + size.x, position.y + size.y));
 				}
@@ -304,7 +310,22 @@ namespace HBL2
 
 					// Draw image on top
 					ImGui::SetCursorScreenPos(ImVec2(position.x, position.y));
-					ImGui::Image(nullptr, ImVec2{ m_Configuration.layout.sizing.width.Value, m_Configuration.layout.sizing.height.Value });
+					
+					UUID assetUUID = std::hash<std::string>()(m_Configuration.id);
+					Handle<Texture> textureHandle = AssetManager::Instance->GetAsset<Texture>(assetUUID);					
+#if false
+					if (Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL)
+					{
+						OpenGLTexture* texture = ((OpenGLResourceManager*)ResourceManager::Instance)->GetTexture(textureHandle);
+						ImGui::Image((void*)texture->RendererId, ImVec2{ m_Configuration.layout.sizing.width.Value, m_Configuration.layout.sizing.height.Value });
+					}
+					else if (Renderer::Instance->GetAPI() == GraphicsAPI::VULKAN)
+					{
+						VulkanTexture* texture = ((VulkanResourceManager*)ResourceManager::Instance)->GetTexture(textureHandle);
+						auto textureID = ImGui_ImplVulkan_AddTexture(texture->Sampler, texture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+						ImGui::Image((void*)textureID, ImVec2 { m_Configuration.layout.sizing.width.Value, m_Configuration.layout.sizing.height.Value });
+					}
+#endif
 					ImGui::SetCursorScreenPos(ImVec2(position.x + size.x, position.y + size.y));
 				}
 			}
@@ -315,6 +336,7 @@ namespace HBL2
 			if (m_Configuration.parent == nullptr)
 			{
 				ImGui::End();
+				ImGui::PopStyleColor();
 				ImGui::PopStyleColor();
 				ImGui::PopStyleVar();
 

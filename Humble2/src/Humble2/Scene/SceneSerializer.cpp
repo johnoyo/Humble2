@@ -146,7 +146,7 @@ namespace HBL2
 			HBL2_CORE_TRACE("No user defined scripts dll found for scene: {}, building one now...", m_Scene->GetName());
 
 			UnityBuild::Get().Combine();
-			UnityBuild::Get().Build(m_Scene);
+			UnityBuild::Get().Build();
 		}
 
 		if (components)

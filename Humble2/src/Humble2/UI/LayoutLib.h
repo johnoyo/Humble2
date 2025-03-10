@@ -3,18 +3,14 @@
 #include "Base.h"
 #include "Utilities\Collections\Span.h"
 
+#include "Panel.h"
+#include "Elements.h"
+#include "Editor.h"
+#include "UserInterfaceUtilities.h"
+
 #include "glm\glm.hpp"
 
 #include <initializer_list>
-
-#include "Panel.h"
-
-#include "Text.h"
-#include "Image.h"
-
-#include "Editor.h"
-
-#include "UserInterfaceUtilities.h"
 
 /*
 

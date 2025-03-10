@@ -47,6 +47,8 @@ namespace HBL2
 		Handle<Scene> m_CurrentSceneHandle;
 		Handle<Asset> m_CurrentSceneAssetHandle;
 
+		Handle<Asset> m_BaseSceneAssetHandle;
+
 		enum class SceneChangeSource
 		{
 			None = 0,

@@ -39,7 +39,11 @@ namespace HBL2
 			if (!m_Library)
 			{
 				HBL2_CORE_ERROR("Failed to load library: {}", path);
+				m_Loaded = false;
+				return;
 			}
+
+			m_Loaded = true;
 		}
 
 		void Free()
@@ -52,6 +56,8 @@ namespace HBL2
 				dlclose(m_Library);
 #endif
 			}
+
+			m_Loaded = false;
 		}
 
 		template<typename Func>
@@ -64,8 +70,11 @@ namespace HBL2
 #endif
 		}
 
+		inline const bool IsLoaded() const { return m_Loaded; }
+
 	private:
 		void* m_Library = nullptr;
+		bool m_Loaded = false;
 	};
 
 	class HBL2_API NativeScriptUtilities
@@ -85,8 +94,8 @@ namespace HBL2
 		void RegisterSystem(const std::string& name, Scene* ctx);
 		void RegisterComponent(const std::string& name, Scene* ctx);
 
-		void LoadUnityBuild(Scene* ctx);
-		void LoadUnityBuild(Scene* ctx, const std::string& path);
+		void LoadUnityBuild();
+		void LoadUnityBuild(const std::string& path);
 		void UnloadUnityBuild(Scene* ctx);
 		
 		const std::filesystem::path GetUnityBuildPath() const;
@@ -110,7 +119,7 @@ namespace HBL2
 
 	private:
 		NativeScriptUtilities() = default;
-		std::unordered_map<std::string, DynamicLibrary> m_DynamicLibraries;
+		DynamicLibrary m_DynamicLibrary;
 
 		static NativeScriptUtilities* s_Instance;
 	};
