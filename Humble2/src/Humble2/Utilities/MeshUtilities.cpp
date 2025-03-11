@@ -32,7 +32,7 @@ namespace HBL2
 		s_Instance = nullptr;
 	}
 
-	MeshData* MeshUtilities::Load(const std::filesystem::path& path)
+	const MeshData* MeshUtilities::Load(const std::filesystem::path& path)
     {
 		if (m_LoadedMeshes.find(path.string()) != m_LoadedMeshes.end())
 		{

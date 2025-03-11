@@ -17,7 +17,8 @@ namespace HBL2
 		bool Load(const std::filesystem::path& path, MeshData& meshData);
 
 	private:
-		bool LoadVertexData(const ufbx_node* node, MeshData& meshData);
+		bool LoadMeshData(const ufbx_node* node, uint32_t meshIndex, MeshData& meshData);
+		bool LoadVertexData(const ufbx_node* node, uint32_t meshIndex, uint32_t subMeshIndex, MeshData& meshData);
 
 	private:
 		ufbx_scene* m_Scene;

@@ -403,7 +403,7 @@ namespace HBL2
 						.debugName = "New Scene",
 						.filePath = relativePath,
 						.type = AssetType::Scene,
-						});
+					});
 
 					AssetManager::Instance->SaveAsset(assetHandle);
 
@@ -808,7 +808,7 @@ namespace HBL2
 							.debugName = "material-asset",
 							.filePath = relativePath,
 							.type = AssetType::Material,
-							});
+						});
 
 						if (materialAssetHandle.IsValid())
 						{

@@ -19,13 +19,29 @@ namespace HBL2
 
 	struct MeshData
 	{
+		struct Mesh
+		{
+			struct SubMesh
+			{
+				uint32_t FirstVertex;
+				uint32_t VertexCount;
+				uint32_t FirstIndex;
+				uint32_t IndexCount;
+			};
+
+			struct Extents
+			{
+				glm::vec3 Min;
+				glm::vec3 Max;
+			};
+			
+			std::vector<SubMesh> SubMeshes;
+			Extents MeshExtents;
+		};
+
+		std::vector<Mesh> Meshes;
 		std::vector<Vertex> VertexBuffer;
 		std::vector<uint32_t> IndexBuffer;
-		struct Extents
-		{
-			glm::vec3 Min;
-			glm::vec3 Max;
-		} MeshExtents;
 	};
 
 	class MeshUtilities
@@ -38,7 +54,7 @@ namespace HBL2
 		static void Initialize();
 		static void Shutdown();
 
-		MeshData* Load(const std::filesystem::path& path);
+		const MeshData* Load(const std::filesystem::path& path);
 
 	private:
 		MeshUtilities() = default;

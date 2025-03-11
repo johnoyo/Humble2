@@ -548,7 +548,7 @@ namespace HBL2
 		auto meshProperties = data["Mesh"];
 		if (meshProperties)
 		{
-			MeshData* meshData = MeshUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath));
+			const MeshData* meshData = MeshUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath));
 
 			const std::string& meshName = asset->FilePath.filename().stem().string();
 
@@ -557,7 +557,7 @@ namespace HBL2
 				.usage = BufferUsage::VERTEX,
 				.memoryUsage = MemoryUsage::GPU_ONLY,
 				.byteSize = (uint32_t)(meshData->VertexBuffer.size() * sizeof(Vertex)),
-				.initialData = meshData->VertexBuffer.data(),
+				.initialData = (void*)meshData->VertexBuffer.data(),
 			});
 
 			Handle<Buffer> indexBuffer;
@@ -568,21 +568,21 @@ namespace HBL2
 					.usage = BufferUsage::INDEX,
 					.memoryUsage = MemoryUsage::GPU_ONLY,
 					.byteSize = (uint32_t)(meshData->IndexBuffer.size() * sizeof(uint32_t)),
-					.initialData = meshData->IndexBuffer.data(),
+					.initialData = (void*)meshData->IndexBuffer.data(),
 				});
 			}
 
 			// Create the mesh
 			auto mesh = ResourceManager::Instance->CreateMesh({
 				.debugName = _strdup(std::format("{}-mesh", meshName).c_str()),
-				.indexOffset = 0,
-				.indexCount = (uint32_t)meshData->IndexBuffer.size(),
-				.vertexOffset = 0,
-				.vertexCount = (uint32_t)meshData->VertexBuffer.size(),
+				.indexOffset = meshData->Meshes[0].SubMeshes[0].FirstIndex,
+				.indexCount = meshData->Meshes[0].SubMeshes[0].IndexCount,
+				.vertexOffset = meshData->Meshes[0].SubMeshes[0].FirstVertex,
+				.vertexCount = meshData->Meshes[0].SubMeshes[0].VertexCount,
 				.indexBuffer = indexBuffer,
 				.vertexBuffers = { vertexBuffer },
-				.minVertex = meshData->MeshExtents.Min,
-				.maxVertex = meshData->MeshExtents.Max,
+				.minVertex = meshData->Meshes[0].MeshExtents.Min,
+				.maxVertex = meshData->Meshes[0].MeshExtents.Max,
 			});
 
 			return mesh;

@@ -19,6 +19,8 @@ namespace HBL2
             return false;
         }
 
+        uint32_t meshIndex = 0;
+
         for (size_t i = 0; i < m_Scene->nodes.count; i++)
         {
             ufbx_node* node = m_Scene->nodes.data[i];
@@ -30,7 +32,8 @@ namespace HBL2
             HBL2_CORE_TRACE("Object: {0}\n", node->name.data);
             if (node->mesh)
             {
-                bool result = LoadVertexData(node, meshData);
+                bool result = LoadMeshData(node, meshIndex++, meshData);
+
                 if (result == false)
                 {
                     ufbx_free_scene(m_Scene);
@@ -43,12 +46,34 @@ namespace HBL2
         return true;
 	}
 
-    bool UFbxLoader::LoadVertexData(const ufbx_node* node, MeshData& meshData)
+    bool UFbxLoader::LoadMeshData(const ufbx_node* node, uint32_t meshIndex, MeshData& meshData)
     {
-        int submeshIndex = 0;
-
         ufbx_mesh& fbxMesh = *node->mesh; // mesh for this node, contains submeshes
-        const ufbx_mesh_part& fbxSubmesh = node->mesh->material_parts[submeshIndex];
+
+        MeshData::Mesh& mesh = meshData.Meshes.emplace_back();
+
+        uint32_t numSubMeshes = fbxMesh.material_parts.count;
+        if (numSubMeshes)
+        {
+            mesh.SubMeshes.resize(numSubMeshes);
+            for (uint32_t subMeshIndex = 0; subMeshIndex < numSubMeshes; ++subMeshIndex)
+            {
+                bool result = LoadVertexData(node, meshIndex, subMeshIndex, meshData);
+
+                if (!result)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    bool UFbxLoader::LoadVertexData(const ufbx_node* node, uint32_t meshIndex, uint32_t subMeshIndex, MeshData& meshData)
+    {
+        ufbx_mesh& fbxMesh = *node->mesh; // mesh for this node, contains submeshes
+        const ufbx_mesh_part& fbxSubmesh = node->mesh->material_parts[subMeshIndex];
         size_t numFaces = fbxSubmesh.num_faces;
 
         if (!(fbxSubmesh.num_triangles))
@@ -60,9 +85,15 @@ namespace HBL2
         size_t numVerticesBefore = meshData.VertexBuffer.size();
         size_t numIndicesBefore = meshData.IndexBuffer.size();
 
+        MeshData::Mesh::SubMesh& subMesh = meshData.Meshes[meshIndex].SubMeshes[subMeshIndex];
+        subMesh.FirstVertex = numVerticesBefore;
+        subMesh.FirstIndex = numIndicesBefore;
+        subMesh.VertexCount = 0;
+        subMesh.IndexCount = 0;
+
         glm::vec4 diffuseColor;
         {
-            ufbx_material_map& baseColorMap = node->materials[submeshIndex]->pbr.base_color;
+            ufbx_material_map& baseColorMap = node->materials[subMeshIndex]->pbr.base_color;
             diffuseColor = baseColorMap.has_value ? glm::vec4(baseColorMap.value_vec4.x, baseColorMap.value_vec4.y,
                 baseColorMap.value_vec4.z, baseColorMap.value_vec4.w)
                 : glm::vec4(1.0f);
@@ -156,7 +187,7 @@ namespace HBL2
                 meshData.VertexBuffer.push_back(vertex);
             }
 
-            meshData.MeshExtents = { minVertex, maxVertex };
+            meshData.Meshes[meshIndex].MeshExtents = { minVertex, maxVertex };
         }
 
         // resolve indices
@@ -189,6 +220,8 @@ namespace HBL2
 
             // meshData.VertexBuffer can be downsized now
             meshData.VertexBuffer.resize(numVerticesBefore + numVertices);
+            subMesh.VertexCount = numVertices;
+            subMesh.IndexCount = submeshAllVertices;
         }
 
         return true;
