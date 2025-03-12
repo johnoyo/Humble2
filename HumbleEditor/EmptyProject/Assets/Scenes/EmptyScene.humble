@@ -1,6 +1,6 @@
 Scene: EmptyScene
 Entities:
-  - Entity: 3
+  - Entity: 4
     Component::Tag:
       Tag: Sprite
     Component::ID:
@@ -16,7 +16,7 @@ Entities:
     Component::Sprite:
       Enabled: true
       Material: 5092745295480585008
-  - Entity: 2
+  - Entity: 3
     Component::Tag:
       Tag: New Light
     Component::ID:
@@ -36,7 +36,7 @@ Entities:
       Attenuation: 10
       Color: [1, 1, 1]
       Type: 0
-  - Entity: 1
+  - Entity: 2
     Component::Tag:
       Tag: Camera
     Component::ID:
@@ -55,10 +55,10 @@ Entities:
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 2.52407932
+      Aspect Ratio: 2.04237294
       Zoom Level: 300
       Type: 0
-  - Entity: 0
+  - Entity: 1
     Component::Tag:
       Tag: Monkeh
     Component::ID:
@@ -74,14 +74,32 @@ Entities:
     Component::StaticMesh:
       Enabled: true
       Material: 10749047289362499544
-      Mesh: 17631668153373402826
+      Mesh:
+        UUID: 17631668153373402826
+        MeshIndex: 0
+        SubMeshIndex: 0
     Component::AudioSource:
       Enabled: true
       Sound: 374884297105595585
     NewComponent:
       Value: 1
-      Mario: 2898162071183314432
       SceneHandle: 11559080649116764721
+  - Entity: 0
+    Component::Tag:
+      Tag: Uzi
+    Component::ID:
+      ID: 15681490321927268352
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::StaticMesh:
+      Enabled: true
+      Material: 5943600009211747259
+      Mesh:
+        UUID: 0
+        MeshIndex: 0
+        SubMeshIndex: 0
 User Systems:
   - 1446947720767051862
 User Components:

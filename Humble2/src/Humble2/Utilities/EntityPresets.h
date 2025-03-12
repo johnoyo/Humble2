@@ -91,10 +91,19 @@ namespace HBL2
 			});
 
 			auto planeMesh = ResourceManager::Instance->CreateMesh({
-				.debugName = "plane_mesh",
-				.vertexOffset = 0,
-				.vertexCount = 6,
-				.vertexBuffers = { buffer },
+				.debugName = "plane-mesh",
+				.meshes = {
+					{
+						.debugName = "plane-sub-mesh",
+						.subMeshes = {
+							{
+								.vertexOffset = 0,
+								.vertexCount = 6,
+							}
+						},
+						.vertexBuffers = { buffer },
+					}
+				}
 			});
 
 			staticMesh.Mesh = planeMesh;
@@ -165,28 +174,37 @@ namespace HBL2
 			}
 
 			auto buffer = ResourceManager::Instance->CreateBuffer({
-				.debugName = "plane_vertex_buffer",
+				.debugName = "sphere_vertex_buffer",
 				.byteSize = (uint32_t)sizeof(float) * (uint32_t)vertexBuffer.size(),
 				.initialData = vertexBuffer.data(),
 			});
 
 			auto indexBuffer = ResourceManager::Instance->CreateBuffer({
-				.debugName = "plane_index_buffer",
+				.debugName = "sphere_index_buffer",
 				.byteSize = (uint32_t)sizeof(float) * (uint32_t)vertexBuffer.size(),
 				.initialData = vertexBuffer.data(),
 			});
 
-			auto planeMesh = ResourceManager::Instance->CreateMesh({
-				.debugName = "plane_mesh",
-				.indexOffset = 0,
-				.indexCount = (uint32_t)indices.size(),
-				.vertexOffset = 0,
-				.vertexCount = (uint32_t)vertexBuffer.size() / 8,
-				.indexBuffer = indexBuffer,
-				.vertexBuffers = { buffer },
+			auto sphereMesh = ResourceManager::Instance->CreateMesh({
+				.debugName = "sphere-mesh",
+				.meshes = {
+					{
+						.debugName = "sphere-sub-mesh",
+						.subMeshes = {
+							{
+								.indexOffset = 0,
+								.indexCount = (uint32_t)indices.size(),
+								.vertexOffset = 0,
+								.vertexCount = (uint32_t)vertexBuffer.size() / 8,
+							}
+						},
+						.indexBuffer = indexBuffer,
+						.vertexBuffers = { buffer },
+					}
+				}
 			});
 
-			staticMesh.Mesh = planeMesh;
+			staticMesh.Mesh = sphereMesh;
 
 			return entity;
 		}

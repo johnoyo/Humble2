@@ -542,51 +542,20 @@ namespace HBL2
 		if (!data["Mesh"].IsDefined())
 		{
 			HBL2_CORE_TRACE("Mesh not found: {0}", ss.str());
+			stream.close();
+
 			return Handle<Mesh>();
 		}
 
 		auto meshProperties = data["Mesh"];
 		if (meshProperties)
 		{
-			const MeshData* meshData = MeshUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath));
-
-			const std::string& meshName = asset->FilePath.filename().stem().string();
-
-			auto vertexBuffer = ResourceManager::Instance->CreateBuffer({
-				.debugName = _strdup(std::format("{}-vertex-buffer", meshName).c_str()),
-				.usage = BufferUsage::VERTEX,
-				.memoryUsage = MemoryUsage::GPU_ONLY,
-				.byteSize = (uint32_t)(meshData->VertexBuffer.size() * sizeof(Vertex)),
-				.initialData = (void*)meshData->VertexBuffer.data(),
-			});
-
-			Handle<Buffer> indexBuffer;
-			if (meshData->IndexBuffer.size() > 0)
-			{
-				indexBuffer = ResourceManager::Instance->CreateBuffer({
-					.debugName = _strdup(std::format("{}-index-buffer", meshName).c_str()),
-					.usage = BufferUsage::INDEX,
-					.memoryUsage = MemoryUsage::GPU_ONLY,
-					.byteSize = (uint32_t)(meshData->IndexBuffer.size() * sizeof(uint32_t)),
-					.initialData = (void*)meshData->IndexBuffer.data(),
-				});
-			}
-
-			// Create the mesh
-			auto mesh = ResourceManager::Instance->CreateMesh({
-				.debugName = _strdup(std::format("{}-mesh", meshName).c_str()),
-				.indexOffset = meshData->Meshes[0].SubMeshes[0].FirstIndex,
-				.indexCount = meshData->Meshes[0].SubMeshes[0].IndexCount,
-				.vertexOffset = meshData->Meshes[0].SubMeshes[0].FirstVertex,
-				.vertexCount = meshData->Meshes[0].SubMeshes[0].VertexCount,
-				.indexBuffer = indexBuffer,
-				.vertexBuffers = { vertexBuffer },
-				.minVertex = meshData->Meshes[0].MeshExtents.Min,
-				.maxVertex = meshData->Meshes[0].MeshExtents.Max,
-			});
-
+			Handle<Mesh> mesh = MeshUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath));
+			stream.close();
 			return mesh;
 		}
+
+		stream.close();
 
 		return Handle<Mesh>();
 	}
@@ -1233,11 +1202,14 @@ namespace HBL2
 
 		Mesh* mesh = ResourceManager::Instance->GetMesh(meshAssetHandle);
 
-		ResourceManager::Instance->DeleteBuffer(mesh->IndexBuffer);
-
-		for (const auto vertexBuffer : mesh->VertexBuffers)
+		for (auto& meshPart : mesh->Meshes)
 		{
-			ResourceManager::Instance->DeleteBuffer(vertexBuffer);
+			ResourceManager::Instance->DeleteBuffer(meshPart.IndexBuffer);
+
+			for (const auto vertexBuffer : meshPart.VertexBuffers)
+			{
+				ResourceManager::Instance->DeleteBuffer(vertexBuffer);
+			}
 		}
 
 		ResourceManager::Instance->DeleteMesh(meshAssetHandle);

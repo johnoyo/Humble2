@@ -4,9 +4,9 @@
 
 namespace HBL2
 {
-    bool FastGltfLoader::Load(const std::filesystem::path& path, MeshData& meshData)
+    Handle<Mesh> FastGltfLoader::Load(const std::filesystem::path& path)
     {
         HBL2_FUNC_PROFILE();
-        return false;
+        return Handle<Mesh>();
     }
 }

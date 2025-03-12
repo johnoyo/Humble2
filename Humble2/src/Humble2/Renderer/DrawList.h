@@ -13,9 +13,11 @@ namespace HBL2
 		Handle<Shader> Shader;
 		Handle<BindGroup> BindGroup;
 		Handle<Mesh> Mesh;
+		uint32_t MeshIndex = 0;
+		uint32_t SubMeshIndex = 0;
 		Handle<Material> Material;
-		uint32_t Offset;
-		uint32_t Size;
+		uint32_t Offset = 0;
+		uint32_t Size = 0;
 	};
 
 	struct GlobalDrawStream

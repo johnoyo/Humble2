@@ -47,21 +47,8 @@ namespace HBL2
 
 	void OpenGLRenderer::BeginFrame()
 	{
-		TempUniformRingBuffer->Invalidate();
-
 		m_Stats.Reset();
-	}
-
-	void OpenGLRenderer::Draw(Handle<Mesh> mesh)
-	{
-		Mesh* openGLMesh = m_ResourceManager->GetMesh(mesh);
-		glDrawArrays(GL_TRIANGLES, openGLMesh->VertexOffset, openGLMesh->VertexCount);
-	}
-
-	void OpenGLRenderer::DrawIndexed(Handle<Mesh> mesh)
-	{
-		Mesh* openGLMesh = m_ResourceManager->GetMesh(mesh);
-		glDrawElements(GL_TRIANGLES, (openGLMesh->IndexCount - openGLMesh->IndexOffset), GL_UNSIGNED_INT, nullptr);
+		TempUniformRingBuffer->Invalidate();
 	}
 
 	CommandBuffer* OpenGLRenderer::BeginCommandRecording(CommandBufferType type, RenderPassStage stage)

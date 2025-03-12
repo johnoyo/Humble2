@@ -1,10 +1,10 @@
 #include "UFbxLoader.h"
 
-#include "Utilities\MeshUtilities.h"
+#include <Resources\ResourceManager.h>
 
 namespace HBL2
 {
-	bool UFbxLoader::Load(const std::filesystem::path& path, MeshData& meshData)
+    Handle<Mesh> UFbxLoader::Load(const std::filesystem::path& path)
 	{
         HBL2_FUNC_PROFILE();
 
@@ -16,9 +16,10 @@ namespace HBL2
         {
             HBL2_CORE_ERROR("Failed to load: {0}\n", error.description.data);
             ufbx_free_scene(m_Scene);
-            return false;
+            return Handle<Mesh>();
         }
 
+        std::vector<MeshPartDescriptor> meshes;
         uint32_t meshIndex = 0;
 
         for (size_t i = 0; i < m_Scene->nodes.count; i++)
@@ -32,46 +33,86 @@ namespace HBL2
             HBL2_CORE_TRACE("Object: {0}\n", node->name.data);
             if (node->mesh)
             {
-                bool result = LoadMeshData(node, meshIndex++, meshData);
+                auto result = LoadMeshData(node, meshIndex++);
 
-                if (result == false)
+                if (result.IsOk())
                 {
-                    ufbx_free_scene(m_Scene);
-                    return false;
+                    meshes.push_back(result.Unwrap());
                 }
             }
         }
 
         ufbx_free_scene(m_Scene);
-        return true;
+
+        if (meshes.size() == 0)
+        {
+            return Handle<Mesh>();
+        }
+
+        Handle<Mesh> handle = HBL2::ResourceManager::Instance->CreateMesh({
+            .debugName = _strdup(path.filename().stem().string().c_str()),
+            .meshes = meshes,
+        });
+
+        return handle;
 	}
 
-    bool UFbxLoader::LoadMeshData(const ufbx_node* node, uint32_t meshIndex, MeshData& meshData)
+    Result<MeshPartDescriptor> UFbxLoader::LoadMeshData(const ufbx_node* node, uint32_t meshIndex)
     {
-        ufbx_mesh& fbxMesh = *node->mesh; // mesh for this node, contains submeshes
+        m_Vertices.clear();
+        m_Indeces.clear();
 
-        MeshData::Mesh& mesh = meshData.Meshes.emplace_back();
+        MeshPartDescriptor meshPartDescriptor{};
+
+        ufbx_mesh& fbxMesh = *node->mesh; // mesh for this node, contains submeshes
 
         uint32_t numSubMeshes = fbxMesh.material_parts.count;
         if (numSubMeshes)
         {
-            mesh.SubMeshes.resize(numSubMeshes);
+            meshPartDescriptor.debugName = _strdup(node->name.data);
+            meshPartDescriptor.subMeshes.resize(numSubMeshes);
             for (uint32_t subMeshIndex = 0; subMeshIndex < numSubMeshes; ++subMeshIndex)
             {
-                bool result = LoadVertexData(node, meshIndex, subMeshIndex, meshData);
+                auto result = LoadSubMeshVertexData(node, meshIndex, subMeshIndex);
 
-                if (!result)
+                if (result.IsOk())
                 {
-                    return false;
+                    meshPartDescriptor.subMeshes[subMeshIndex] = std::move(result.Unwrap());
                 }
+            }
+
+            auto vertexBuffer = ResourceManager::Instance->CreateBuffer({
+                .debugName = "fbx-mesh-vertex-buffer",
+                .usage = BufferUsage::VERTEX,
+                .memoryUsage = MemoryUsage::GPU_ONLY,
+                .byteSize = (uint32_t)(m_Vertices.size() * sizeof(Vertex)),
+                .initialData = (void*)m_Vertices.data(),
+            });
+
+            meshPartDescriptor.vertexBuffers = { vertexBuffer };
+
+            if (m_Indeces.size() > 0)
+            {
+                meshPartDescriptor.indexBuffer = ResourceManager::Instance->CreateBuffer({
+                    .debugName = "fbx-mesh-index-buffer",
+                    .usage = BufferUsage::INDEX,
+                    .memoryUsage = MemoryUsage::GPU_ONLY,
+                    .byteSize = (uint32_t)(m_Indeces.size() * sizeof(uint32_t)),
+                    .initialData = (void*)m_Indeces.data(),
+                });
             }
         }
 
-        return true;
+        return Ok(meshPartDescriptor);
     }
 
-    bool UFbxLoader::LoadVertexData(const ufbx_node* node, uint32_t meshIndex, uint32_t subMeshIndex, MeshData& meshData)
+    Result<SubMeshDescriptor> UFbxLoader::LoadSubMeshVertexData(const ufbx_node* node, uint32_t meshIndex, uint32_t subMeshIndex)
     {
+        SubMeshDescriptor subMeshDescriptor{};
+        subMeshDescriptor.debugName = _strdup(node->name.data);
+        subMeshDescriptor.minVertex = { (std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)() };
+        subMeshDescriptor.maxVertex = { (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::min)() };
+
         ufbx_mesh& fbxMesh = *node->mesh; // mesh for this node, contains submeshes
         const ufbx_mesh_part& fbxSubmesh = node->mesh->material_parts[subMeshIndex];
         size_t numFaces = fbxSubmesh.num_faces;
@@ -79,17 +120,16 @@ namespace HBL2
         if (!(fbxSubmesh.num_triangles))
         {
             HBL2_CORE_ERROR("UFbxLoader::LoadVertexData: only triangle meshes are supported");
-            return false;
+            return Error("UFbxLoader::LoadVertexData: only triangle meshes are supported");
         }
 
-        size_t numVerticesBefore = meshData.VertexBuffer.size();
-        size_t numIndicesBefore = meshData.IndexBuffer.size();
+        size_t numVerticesBefore = m_Vertices.size();
+        size_t numIndicesBefore = m_Indeces.size();
 
-        MeshData::Mesh::SubMesh& subMesh = meshData.Meshes[meshIndex].SubMeshes[subMeshIndex];
-        subMesh.FirstVertex = numVerticesBefore;
-        subMesh.FirstIndex = numIndicesBefore;
-        subMesh.VertexCount = 0;
-        subMesh.IndexCount = 0;
+        subMeshDescriptor.vertexOffset = numVerticesBefore;
+        subMeshDescriptor.indexOffset = numIndicesBefore;
+        subMeshDescriptor.vertexCount = 0;
+        subMeshDescriptor.indexCount = 0;
 
         glm::vec4 diffuseColor;
         {
@@ -108,9 +148,6 @@ namespace HBL2
         {
             fbxSkin = fbxMesh.skin_deformers.data[0];
         }
-
-        glm::vec3 minVertex = { (std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)() };
-        glm::vec3 maxVertex = { (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::min)() };
 
         for (size_t fbxFaceIndex = 0; fbxFaceIndex < numFaces; ++fbxFaceIndex)
         {
@@ -133,13 +170,13 @@ namespace HBL2
                     ufbx_vec3& positionFbx = fbxMesh.vertices[fbxVertexIndex];
                     vertex.Position = glm::vec3(positionFbx.x, positionFbx.y, positionFbx.z);
 
-                    minVertex.x = glm::min(vertex.Position.x, minVertex.x);
-                    minVertex.y = glm::min(vertex.Position.y, minVertex.y);
-                    minVertex.z = glm::min(vertex.Position.z, minVertex.z);
+                    subMeshDescriptor.minVertex.x = glm::min(vertex.Position.x, subMeshDescriptor.minVertex.x);
+                    subMeshDescriptor.minVertex.y = glm::min(vertex.Position.y, subMeshDescriptor.minVertex.y);
+                    subMeshDescriptor.minVertex.z = glm::min(vertex.Position.z, subMeshDescriptor.minVertex.z);
 
-                    maxVertex.x = glm::max(vertex.Position.x, maxVertex.x);
-                    maxVertex.y = glm::max(vertex.Position.y, maxVertex.y);
-                    maxVertex.z = glm::max(vertex.Position.z, maxVertex.z);
+                    subMeshDescriptor.maxVertex.x = glm::max(vertex.Position.x, subMeshDescriptor.maxVertex.x);
+                    subMeshDescriptor.maxVertex.y = glm::max(vertex.Position.y, subMeshDescriptor.maxVertex.y);
+                    subMeshDescriptor.maxVertex.z = glm::max(vertex.Position.z, subMeshDescriptor.maxVertex.z);
                 }
 
                 // normals, always defined if `ufbx_load_opts.generate_missing_normals` is used
@@ -184,46 +221,46 @@ namespace HBL2
                 //    vertex.Color = diffuseColor;
                 //}
 
-                meshData.VertexBuffer.push_back(vertex);
+                m_Vertices.push_back(vertex);
             }
-
-            meshData.Meshes[meshIndex].MeshExtents = { minVertex, maxVertex };
         }
 
         // resolve indices
         // A face has four vertices, while above loop generates at least six vertices for per face)
         {
             // get number of all vertices created from above (faces * trianglesPerFace * 3)
-            uint32_t submeshAllVertices = meshData.VertexBuffer.size() - numVerticesBefore;
+            uint32_t submeshAllVertices = m_Vertices.size() - numVerticesBefore;
 
             // create a ufbx vertex stream with data pointing to the first vertex of this submesh
             // (meshData.VertexBuffer is for all submeshes)
             ufbx_vertex_stream streams;
-            streams.data = &meshData.VertexBuffer[numVerticesBefore];
+            streams.data = &m_Vertices[numVerticesBefore];
             streams.vertex_count = submeshAllVertices;
             streams.vertex_size = sizeof(Vertex);
 
             // index buffer: add space for all new vertices from above
-            meshData.IndexBuffer.resize(numIndicesBefore + submeshAllVertices);
+            m_Indeces.resize(numIndicesBefore + submeshAllVertices);
 
             // ufbx_generate_indices() will rearrange meshData.VertexBuffer (via streams.data) and fill meshData.IndexBuffer
             ufbx_error ufbxError;
-            size_t numVertices = ufbx_generate_indices(&streams, 1, &meshData.IndexBuffer[numIndicesBefore], submeshAllVertices, nullptr, &ufbxError);
+            size_t numVertices = ufbx_generate_indices(&streams, 1, &m_Indeces[numIndicesBefore], submeshAllVertices, nullptr, &ufbxError);
 
             // handle error
             if (ufbxError.type != UFBX_ERROR_NONE)
             {
                 char errorBuffer[512];
                 ufbx_format_error(errorBuffer, sizeof(errorBuffer), &ufbxError);
-                HBL2_CORE_FATAL("UFbxLoader: creation of index buffer failed, error: {0},  node: {1}", errorBuffer, node->name.data);
+                const auto& errorMsg = std::format("UFbxLoader: creation of index buffer failed, error: {},  node: {}", errorBuffer, node->name.data);
+                HBL2_CORE_FATAL(errorMsg);
+                return Error(errorMsg);
             }
 
             // meshData.VertexBuffer can be downsized now
-            meshData.VertexBuffer.resize(numVerticesBefore + numVertices);
-            subMesh.VertexCount = numVertices;
-            subMesh.IndexCount = submeshAllVertices;
+            m_Vertices.resize(numVerticesBefore + numVertices);
+            subMeshDescriptor.vertexCount = numVertices;
+            subMeshDescriptor.indexCount = submeshAllVertices;
         }
 
-        return true;
+        return Ok(subMeshDescriptor);
     }
 }
