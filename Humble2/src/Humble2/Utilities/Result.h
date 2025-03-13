@@ -9,12 +9,13 @@ namespace HBL2
     template <typename T>
     class Result
     {
+        static_assert(!std::is_same_v<T, std::string>);
         static_assert(std::is_default_constructible_v<T>);
 
     public:
         Result() = default;
-        explicit Result(T value) : m_IsOk(true), m_Value(std::move(value)) {}
-        explicit Result(T&& value) : m_IsOk(true), m_Value(std::forward<T>(value)) {}
+        Result(const T& value) : m_IsOk(true), m_Value(value) {}
+        Result(T&& value) : m_IsOk(true), m_Value(std::move(value)) {}
         Result(std::string errorValue) : m_IsOk(false), m_ErrorValue(std::move(errorValue)) {}
         Result(Result&& other) : m_IsOk(other.m_IsOk)
         {
@@ -122,7 +123,7 @@ namespace HBL2
     };
 
     template<typename T>
-    static inline Result<T> Ok(const T& value) { return Result<T>(value); }
+    static inline T& Ok(const T& value) { return value; }
 
     static inline std::string Error(const std::string& why) { return why; }
 }

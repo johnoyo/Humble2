@@ -116,7 +116,7 @@ namespace HBL2
             }
         }
 
-        return Ok(meshPartDescriptor);
+        return meshPartDescriptor;
     }
 
     Result<SubMeshDescriptor> UFbxLoader::LoadSubMeshVertexData(const ufbx_node* node, uint32_t meshIndex, uint32_t subMeshIndex)
@@ -271,6 +271,6 @@ namespace HBL2
             subMeshDescriptor.indexCount = submeshAllVertices;
         }
 
-        return Ok(subMeshDescriptor);
+        return subMeshDescriptor;
     }
 }

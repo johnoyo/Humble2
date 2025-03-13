@@ -87,6 +87,11 @@ namespace HBL2
 				{
 					meshPartDescriptor.subMeshes[subMeshIndex] = std::move(result.Unwrap());
 				}
+				else
+				{
+					HBL2_CORE_ERROR(result.GetError());
+					continue;
+				}
 
 				if (auto* trs = std::get_if<fastgltf::TRS>(&node.transform))
 				{
@@ -141,7 +146,7 @@ namespace HBL2
 			});
 		}
 
-		return Ok(meshPartDescriptor);
+		return meshPartDescriptor;
 	}
 
 	Result<SubMeshDescriptor> FastGltfLoader::LoadSubMeshVertexData(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, uint32_t subMeshIndex)
@@ -232,6 +237,6 @@ namespace HBL2
 		subMeshDescriptor.vertexCount = vertexCount;
 		subMeshDescriptor.indexCount = indexCount;
 
-		return Ok(subMeshDescriptor);
+		return subMeshDescriptor;
 	}
 }
