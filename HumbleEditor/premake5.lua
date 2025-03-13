@@ -23,6 +23,7 @@ project "HumbleEditor"
         "../Humble2/src/Vendor",
         "../Humble2/src/Vendor/entt/include",
         "../Humble2/src/Vendor/spdlog-1.x/include",
+        "../Humble2/src/Vendor/fastgltf/include",
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
         "../Dependencies/ImGuizmo",

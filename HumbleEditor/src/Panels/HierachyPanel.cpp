@@ -118,6 +118,23 @@ namespace HBL2
 						return;
 					}
 
+					const std::filesystem::path& metadataPath = HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(assetHandle)->FilePath).string() + ".hblmesh";
+					
+					if (!std::filesystem::exists(metadataPath))
+					{
+						std::ofstream fout(metadataPath, 0);
+
+						YAML::Emitter out;
+						out << YAML::BeginMap;
+						out << YAML::Key << "Mesh" << YAML::Value;
+						out << YAML::BeginMap;
+						out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(assetHandle)->UUID;
+						out << YAML::EndMap;
+						out << YAML::EndMap;
+						fout << out.c_str();
+						fout.close();
+					}
+
 					Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(assetHandle);
 
 					if (!meshHandle.IsValid())

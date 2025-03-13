@@ -22,6 +22,7 @@ project "HumbleApp"
         "../Humble2/src/Vendor",
         "../Humble2/src/Vendor/spdlog-1.x/include",
         "../Humble2/src/Vendor/entt/include",
+        "../Humble2/src/Vendor/fastgltf/include",
         "../Dependencies/GLFW/include",
         "../Dependencies/GLEW/include",
         "../Dependencies/ImGui/imgui",

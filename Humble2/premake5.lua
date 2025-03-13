@@ -33,6 +33,7 @@ project "Humble2"
         "src/Vendor",
         "src/Vendor/spdlog-1.x/include",
         "src/Vendor/entt/include",
+        "src/Vendor/fastgltf/include",
         "../Dependencies/GLFW/include",
         "../Dependencies/GLEW/include",
         "../Dependencies/ImGui/imgui",
