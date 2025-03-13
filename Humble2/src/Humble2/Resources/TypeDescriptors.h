@@ -215,6 +215,13 @@ namespace HBL2
 		std::vector<SubMeshDescriptor> subMeshes;
 		Handle<Buffer> indexBuffer;
 		std::vector<Handle<Buffer>> vertexBuffers;
+
+		struct LocalTransform
+		{
+			glm::vec3 translation;
+			glm::vec3 rotation;
+			glm::vec3 scale;
+		} importedLocalTransform;
 	};
 
 	struct MeshDescriptor

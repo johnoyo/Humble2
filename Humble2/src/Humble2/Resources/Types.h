@@ -82,6 +82,8 @@ namespace HBL2
 				Extents.Max.y = glm::max(subMesh.Extents.Max.y, Extents.Max.y);
 				Extents.Max.z = glm::max(subMesh.Extents.Max.z, Extents.Max.z);
 			}
+
+			ImportedLocalTransform = std::move(*((LocalTransform*)&desc.importedLocalTransform));
 		}
 
 		const char* DebugName = "";
@@ -89,6 +91,13 @@ namespace HBL2
 		Handle<Buffer> IndexBuffer;
 		std::vector<Handle<Buffer>> VertexBuffers;
 		MeshExtents Extents;
+
+		struct LocalTransform
+		{
+			glm::vec3 translation;
+			glm::vec3 rotation;
+			glm::vec3 scale;
+		} ImportedLocalTransform;
 	};
 
 	struct Mesh

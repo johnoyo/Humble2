@@ -94,7 +94,14 @@ namespace HBL2
 				// Draw the mesh accordingly
 				if (meshPart.IndexBuffer.IsValid())
 				{
-					glDrawElements(GL_TRIANGLES, (subMesh.IndexCount - subMesh.IndexOffset), GL_UNSIGNED_INT, nullptr);
+					if (subMesh.IndexOffset == 0)
+					{
+						glDrawElements(GL_TRIANGLES, subMesh.IndexCount, GL_UNSIGNED_INT, nullptr);
+					}
+					else
+					{
+						glDrawElementsBaseVertex(GL_TRIANGLES, subMesh.IndexCount, GL_UNSIGNED_INT, (void*)(subMesh.IndexOffset * sizeof(uint32_t)), subMesh.VertexOffset);
+					}
 				}
 				else
 				{

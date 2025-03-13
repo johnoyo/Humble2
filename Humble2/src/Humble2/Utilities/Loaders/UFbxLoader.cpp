@@ -51,7 +51,7 @@ namespace HBL2
 
         Handle<Mesh> handle = HBL2::ResourceManager::Instance->CreateMesh({
             .debugName = _strdup(path.filename().stem().string().c_str()),
-            .meshes = meshes,
+            .meshes = std::move(meshes),
         });
 
         return handle;
@@ -79,6 +79,15 @@ namespace HBL2
                 {
                     meshPartDescriptor.subMeshes[subMeshIndex] = std::move(result.Unwrap());
                 }
+
+                auto& localTr = node->local_transform.translation;
+                // auto localRot = ufbx_quat_to_euler(node->local_transform.rotation, ufbx_rotation_order::UFBX_ROTATION_ORDER_XYZ);
+                auto& localRot = node->euler_rotation;
+                auto& localScl = node->local_transform.scale;
+
+                meshPartDescriptor.importedLocalTransform.translation = { localTr.x, localTr.y, localTr.z };
+                meshPartDescriptor.importedLocalTransform.rotation = { localRot.x, localRot.y, localRot.z };
+                meshPartDescriptor.importedLocalTransform.scale = { localScl.x, localScl.y, localScl.z };
             }
 
             auto vertexBuffer = ResourceManager::Instance->CreateBuffer({
@@ -109,7 +118,7 @@ namespace HBL2
     Result<SubMeshDescriptor> UFbxLoader::LoadSubMeshVertexData(const ufbx_node* node, uint32_t meshIndex, uint32_t subMeshIndex)
     {
         SubMeshDescriptor subMeshDescriptor{};
-        subMeshDescriptor.debugName = _strdup(node->name.data);
+        subMeshDescriptor.debugName = _strdup(node->materials[subMeshIndex]->name.data);
         subMeshDescriptor.minVertex = { (std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)() };
         subMeshDescriptor.maxVertex = { (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::min)() };
 
@@ -119,8 +128,9 @@ namespace HBL2
 
         if (!(fbxSubmesh.num_triangles))
         {
-            HBL2_CORE_ERROR("UFbxLoader::LoadVertexData: only triangle meshes are supported");
-            return Error("UFbxLoader::LoadVertexData: only triangle meshes are supported");
+            const auto& errorMsg = "UFbxLoader::LoadVertexData: only triangle meshes are supported";
+            HBL2_CORE_ERROR(errorMsg);
+            return Error(errorMsg);
         }
 
         size_t numVerticesBefore = m_Vertices.size();

@@ -103,6 +103,75 @@ namespace HBL2
 			}
 		}
 
+		void EditorPanelSystem::HandleHierachyPanelDragAndDrop()
+		{
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
+				{
+					uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+					Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+					if (!assetHandle.IsValid())
+					{
+						ImGui::EndDragDropTarget();
+						return;
+					}
+
+					Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(assetHandle);
+
+					if (!meshHandle.IsValid())
+					{
+						ImGui::EndDragDropTarget();
+						return;
+					}
+
+					Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
+
+					auto mainMeshEntity = m_ActiveScene->CreateEntity(mesh->DebugName);
+					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(mainMeshEntity);
+					m_ActiveScene->AddComponent<HBL2::Component::Link>(mainMeshEntity);
+
+					uint32_t meshIndex = 0;
+					uint32_t subMeshIndex = 0;
+
+					for (auto& meshPart : mesh->Meshes)
+					{
+						auto meshEntity = m_ActiveScene->CreateEntity(meshPart.DebugName);
+						m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(meshEntity);
+						auto& link = m_ActiveScene->AddComponent<HBL2::Component::Link>(meshEntity);
+
+						link.Parent = m_ActiveScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
+
+						for (auto& subMesh : meshPart.SubMeshes)
+						{
+							auto subMeshEntity = m_ActiveScene->CreateEntity(subMesh.DebugName);
+							m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(subMeshEntity);
+							auto& link = m_ActiveScene->AddComponent<HBL2::Component::Link>(subMeshEntity);
+							link.Parent = m_ActiveScene->GetComponent<HBL2::Component::ID>(meshEntity).Identifier;
+
+							auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(subMeshEntity);
+							transform.Translation = meshPart.ImportedLocalTransform.translation;
+							transform.Rotation = meshPart.ImportedLocalTransform.rotation;
+							transform.Scale = meshPart.ImportedLocalTransform.scale;
+
+							auto& staticMesh = m_ActiveScene->AddComponent<HBL2::Component::StaticMesh>(subMeshEntity);
+							staticMesh.Mesh = meshHandle;
+							staticMesh.MeshIndex = meshIndex;
+							staticMesh.SubMeshIndex = subMeshIndex;
+
+							subMeshIndex++;
+						}
+
+						subMeshIndex = 0;
+						meshIndex++;
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+			}
+		}
+
 		void EditorPanelSystem::DrawHierachyPanel()
 		{
 			if (m_ActiveScene == nullptr)
@@ -170,6 +239,8 @@ namespace HBL2
 
 			if (ImGui::CollapsingHeader("Entity Hierarchy", ImGuiTreeNodeFlags_DefaultOpen))
 			{
+				HandleHierachyPanelDragAndDrop();
+
 				for (const auto entity : entities)
 				{
 					// Only display entities that have no parent (i.e., true root entities)
