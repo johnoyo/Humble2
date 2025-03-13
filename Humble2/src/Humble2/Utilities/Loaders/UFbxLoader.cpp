@@ -79,9 +79,13 @@ namespace HBL2
                 {
                     meshPartDescriptor.subMeshes[subMeshIndex] = std::move(result.Unwrap());
                 }
+                else
+                {
+                    HBL2_CORE_ERROR(result.GetError());
+                    continue;
+                }
 
                 auto& localTr = node->local_transform.translation;
-                // auto localRot = ufbx_quat_to_euler(node->local_transform.rotation, ufbx_rotation_order::UFBX_ROTATION_ORDER_XYZ);
                 auto& localRot = node->euler_rotation;
                 auto& localScl = node->local_transform.scale;
 
@@ -128,9 +132,7 @@ namespace HBL2
 
         if (!(fbxSubmesh.num_triangles))
         {
-            const auto& errorMsg = "UFbxLoader::LoadVertexData: only triangle meshes are supported";
-            HBL2_CORE_ERROR(errorMsg);
-            return Error(errorMsg);
+            return Error("UFbxLoader::LoadSubMeshVertexData: only triangle meshes are supported");
         }
 
         size_t numVerticesBefore = m_Vertices.size();
@@ -192,7 +194,7 @@ namespace HBL2
                 // normals, always defined if `ufbx_load_opts.generate_missing_normals` is used
                 {
                     uint32_t fbxNormalIndex = fbxMesh.vertex_normal.indices[vertexPerFaceIndex];
-                    HBL2_CORE_ASSERT(fbxNormalIndex < fbxMesh.vertex_normal.values.count, "LoadVertexData: memory violation normals");
+                    HBL2_CORE_ASSERT(fbxNormalIndex < fbxMesh.vertex_normal.values.count, "LoadSubMeshVertexData: memory violation normals");
                     ufbx_vec3& normalFbx = fbxMesh.vertex_normal.values.data[fbxNormalIndex];
                     vertex.Normal = glm::vec3(normalFbx.x, normalFbx.y, normalFbx.z);
                 }
@@ -201,7 +203,7 @@ namespace HBL2
                 //if (hasTangents)
                 //{
                 //    uint32_t fbxTangentIndex = fbxMesh.vertex_tangent.indices[vertexPerFaceIndex];
-                //    HBL2_CORE_ASSERT(fbxTangentIndex < fbxMesh.vertex_tangent.values.count, "LoadVertexData: memory violation tangents");
+                //    HBL2_CORE_ASSERT(fbxTangentIndex < fbxMesh.vertex_tangent.values.count, "LoadSubMeshVertexData: memory violation tangents");
                 //    ufbx_vec3& tangentFbx = fbxMesh.vertex_tangent.values.data[fbxTangentIndex];
                 //    vertex.Tangent = glm::vec3(tangentFbx.x, tangentFbx.y, tangentFbx.z);
                 //}
@@ -210,7 +212,7 @@ namespace HBL2
                 if (hasUVs)
                 {
                     uint32_t fbxUVIndex = fbxMesh.vertex_uv.indices[vertexPerFaceIndex];
-                    HBL2_CORE_ASSERT(fbxUVIndex < fbxMesh.vertex_uv.values.count, "LoadVertexData: memory violation uv coordinates");
+                    HBL2_CORE_ASSERT(fbxUVIndex < fbxMesh.vertex_uv.values.count, "LoadSubMeshVertexData: memory violation uv coordinates");
                     ufbx_vec2& uvFbx = fbxMesh.vertex_uv.values.data[fbxUVIndex];
                     vertex.UV = glm::vec2(uvFbx.x, uvFbx.y);
                 }
@@ -260,9 +262,7 @@ namespace HBL2
             {
                 char errorBuffer[512];
                 ufbx_format_error(errorBuffer, sizeof(errorBuffer), &ufbxError);
-                const auto& errorMsg = std::format("UFbxLoader: creation of index buffer failed, error: {},  node: {}", errorBuffer, node->name.data);
-                HBL2_CORE_FATAL(errorMsg);
-                return Error(errorMsg);
+                return Error(std::format("UFbxLoader::LoadSubMeshVertexData: creation of index buffer failed, error: {},  node: {}", errorBuffer, node->name.data));
             }
 
             // meshData.VertexBuffer can be downsized now

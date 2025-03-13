@@ -1,4 +1,5 @@
 #pragma once
+
 #include <iostream>
 #include <string>
 #include <utility>
@@ -6,83 +7,122 @@
 namespace HBL2
 {
     template <typename T>
-    struct OkValue
-    {
-        explicit OkValue(T value) : Value(std::move(value)) {}
-        T Value;
-    };
-
-    template <typename E>
-    struct ErrorValue
-    {
-        explicit ErrorValue(E value) : Value(std::move(value)) {}
-        E Value;
-    };
-
-    template <typename T, typename E = std::string>
     class Result
     {
+        static_assert(std::is_default_constructible_v<T>);
+
     public:
         Result() = default;
-
-        // Constructors for Ok and Err
-        Result(OkValue<T> okay) : isGood(true) { new (&data.value) T(std::move(okay.Value)); }
-        Result(ErrorValue<E> notOkay) : isGood(false) { new (&data.errorValue) E(std::move(notOkay.Value)); }
-
-        // Move constructor
-        Result(Result&& other) : isGood(other.isGood)
+        explicit Result(T value) : m_IsOk(true), m_Value(std::move(value)) {}
+        explicit Result(T&& value) : m_IsOk(true), m_Value(std::forward<T>(value)) {}
+        Result(std::string errorValue) : m_IsOk(false), m_ErrorValue(std::move(errorValue)) {}
+        Result(Result&& other) : m_IsOk(other.m_IsOk)
         {
-            if (isGood)
+            if (m_IsOk)
             {
-                new (&data.value) T(std::move(other.data.value));
+                m_Value = std::move(other.m_Value);
             }
             else
             {
-                new (&data.errorValue) E(std::move(other.data.errorValue));
+                m_ErrorValue = std::move(other.m_ErrorValue);
+            }
+
+            other.m_IsOk = false;
+        }
+
+        Result(const Result<T>& other) = delete;
+
+        ~Result()
+        {
+            if (m_IsOk)
+            {
+                m_Value.~T();
+            }
+            else
+            {
+                using namespace std;
+                m_ErrorValue.~string();
             }
         }
 
-        // Move assignment
+        Result<T>& operator=(const Result<T>& other) = delete;
+
         Result& operator=(Result&& other)
         {
             if (this != &other)
             {
-                this->~Result();
-                isGood = other.isGood;
-                if (isGood)
+                m_IsOk = other.IsOk();
+
+                if (m_IsOk)
                 {
-                    new (&data.value) T(std::move(other.data.value));
+                    m_Value = std::move(other.m_Value);
                 }
                 else
                 {
-                    new (&data.errorValue) E(std::move(other.data.errorValue));
+                    m_ErrorValue = std::move(other.m_ErrorValue);
                 }
+
+                other.m_IsOk = false;
             }
+
             return *this;
         }
 
-        // Check state
-        bool IsOk() const { return isGood; }
+        bool IsOk() const { return m_IsOk; }
 
-        // Get value (only if `good() == true`)
-        T& Unwrap() { return data.value; }
-        const T& Unwrap() const { return data.value; }
+        T& Unwrap()
+        {
+            HBL2_CORE_ASSERT(IsOk(), "Cannot unwrap a result that is an error!");
+            return m_Value;
+        }
+        const T& Unwrap() const
+        {
+            HBL2_CORE_ASSERT(IsOk(), "Cannot unwrap a result that is an error!");
+            return m_Value;
+        }
 
-        // Get error (only if `good() == false`)
-        E& Error() { return data.errorValue; }
-        const E& Error() const { return data.errorValue; }
+        T* UnwrapIfOk()
+        {
+            if (!IsOk())
+            {
+                return nullptr;
+            }
+
+            return &m_Value;
+        }
+        const T* UnwrapIfOk() const
+        {
+            if (!IsOk())
+            {
+                return nullptr;
+            }
+
+            return &m_Value;
+        }
+
+        std::string& GetError()
+        {
+            HBL2_CORE_ASSERT(!IsOk(), "Cannot get the error from an ok result!");
+            return m_ErrorValue;
+        }
+        const std::string& GetError() const
+        {
+            HBL2_CORE_ASSERT(!IsOk(), "Cannot get the error from an ok result!");
+            return m_ErrorValue;
+        }
 
     private:
-        struct
+        union
         {
-            T value;
-            E errorValue;
-        } data;
-        bool isGood;
+            T m_Value;
+            std::string m_ErrorValue;
+        };
+
+        bool m_IsOk = false;
     };
 
-    // Helper functions
-    template <typename T>
-    static inline Result<T> Ok(T value) { return OkValue<T>(value); }
-    static inline ErrorValue<std::string> Error(const std::string& why) { return ErrorValue<std::string>(why); }
+    template<typename T>
+    static inline Result<T> Ok(const T& value) { return Result<T>(value); }
+
+    static inline std::string Error(const std::string& why) { return why; }
 }

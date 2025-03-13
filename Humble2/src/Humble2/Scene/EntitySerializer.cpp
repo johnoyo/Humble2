@@ -152,8 +152,8 @@ namespace HBL2
 			out << YAML::Key << "Mesh" << YAML::Value;
 			out << YAML::BeginMap;
 			out << YAML::Key << "UUID" << YAML::Value << (meshAsset != nullptr ? meshAsset->UUID : (UUID)0);
-			out << YAML::Key << "Mesh Index" << YAML::Value << staticMesh.MeshIndex;
-			out << YAML::Key << "SubMesh Index" << YAML::Value << staticMesh.SubMeshIndex;
+			out << YAML::Key << "MeshIndex" << YAML::Value << staticMesh.MeshIndex;
+			out << YAML::Key << "SubMeshIndex" << YAML::Value << staticMesh.SubMeshIndex;
 			out << YAML::EndMap;
 
 			out << YAML::EndMap;
