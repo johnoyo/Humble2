@@ -199,7 +199,7 @@ namespace HBL2
             }
             else
             {
-                uint32_t leadingZeros = __builtin_clz(size);
+                uint32_t leadingZeros = lzcnt_nonzero(size);
                 uint32_t highestSetBit = 31 - leadingZeros;
 
                 uint32_t mantissaStartBit = highestSetBit - 3;
@@ -216,6 +216,29 @@ namespace HBL2
 
             return (exp << 3) | mantissa;
         }
+    private:
+        inline static uint32_t lzcnt_nonzero(uint32_t v)
+        {
+#ifdef _MSC_VER
+            unsigned long retVal;
+            _BitScanReverse(&retVal, v);
+            return 31 - retVal;
+#else
+            return __builtin_clz(v);
+#endif
+        }
+
+        inline static uint32_t tzcnt_nonzero(uint32_t v)
+        {
+#ifdef _MSC_VER
+            unsigned long retVal;
+            _BitScanForward(&retVal, v);
+            return retVal;
+#else
+            return __builtin_ctz(v);
+#endif
+        }
+
 
     private:
         static constexpr uint32_t NUM_TOP_BINS = 32;
