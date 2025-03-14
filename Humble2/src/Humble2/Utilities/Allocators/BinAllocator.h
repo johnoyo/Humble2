@@ -1,0 +1,233 @@
+#pragma once
+
+#include "BaseAllocator.h"
+#include "Utilities\Log.h"
+
+#include <cstring>
+#include <stdint.h>
+
+namespace HBL2
+{
+    /// <summary>
+   /// A memory allocator that organizes free memory into bins based on size categories using an exponent-mantissa encoding.
+   /// This allows efficient allocation by searching for the smallest available block in the appropriate bin using a first-fit strategy.
+   /// When memory is deallocated, it is returned to the free list within its corresponding bin for reuse.
+   /// 
+   /// To minimize fragmentation, if an allocated block is not fully used, the remaining space is split and stored in a suitable bin.
+   /// This ensures that memory utilization remains efficient while keeping allocation and deallocation operations fast.
+   /// 
+   /// This implementation is inspired by the open-source Offset Allocator by Sebastian Aaltonen:
+   /// https://github.com/sebbbi/OffsetAllocator
+   /// </summary>
+	class BinAllocator final : public BaseAllocator<BinAllocator>
+	{
+    public:
+        /// <summary>
+        /// Initializes the allocator with a given memory pool size.
+        /// </summary>
+        /// <param name="size">The total size of the memory pool in bytes.</param>
+        BinAllocator(uint64_t size)
+            : m_Capacity(size), m_CurrentOffset(0)
+        {
+            m_Data = ::operator new(m_Capacity);
+            std::memset(m_Data, 0, m_Capacity);
+
+            for (uint32_t i = 0; i < NUM_LEAF_BINS; i++)
+            {
+                m_Bins[i].FreeList = nullptr;
+            }
+
+            // Initialize the allocator with a single large free block
+            InsertIntoBin(m_Data, m_Capacity);
+        }
+
+        /// <summary>
+        /// Allocates a block of memory of the specified size.
+        /// If a suitable free block is found in the bins, it is used.
+        /// Otherwise, memory is allocated from the main pool.
+        /// </summary>
+        /// <typeparam name="T">The type of object to allocate.</typeparam>
+        /// <param name="size">The size of the allocation in bytes (default: sizeof(T)).</param>
+        /// <returns>A pointer to the allocated memory, or nullptr if out of memory.</returns>
+        template<typename T>
+        T* Allocate(uint64_t size = sizeof(T))
+        {
+            uint32_t binIndex = FindBinIndex(size);
+
+            for (uint32_t i = binIndex; i < NUM_LEAF_BINS; i++)
+            {
+                if (m_Bins[i].FreeList)
+                {
+                    FreeBlock* block = m_Bins[i].FreeList;
+                    RemoveFromBin(i, block);
+
+                    if (block->Size > size + sizeof(FreeBlock))
+                    {
+                        // Split the block
+                        void* newBlock = reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(block) + size);
+                        InsertIntoBin(newBlock, block->Size - size);
+                    }
+
+                    return reinterpret_cast<T*>(block);
+                }
+            }
+
+            // If no free block found, allocate from the current offset
+            constexpr uint64_t alignment = alignof(T);
+            uint64_t alignedOffset = (m_CurrentOffset + (alignment - 1)) & ~(alignment - 1);
+
+            if (alignedOffset + size > m_Capacity)
+            {
+                HBL2_CORE_ERROR("BinAllocator out of memory!");
+                return nullptr;
+            }
+
+            T* ptr = reinterpret_cast<T*>(static_cast<uint8_t*>(m_Data) + alignedOffset);
+            m_CurrentOffset = alignedOffset + size;
+            return ptr;
+        }
+
+        /// <summary>
+        /// Deallocates memory by placing the block back into the appropriate bin.
+        /// </summary>
+        /// <typeparam name="T">The type of object being deallocated.</typeparam>
+        /// <param name="object">The pointer to the memory block being freed.</param>
+        template<typename T>
+        void Deallocate(T* object)
+        {
+            if (!object)
+            {
+                return;
+            }
+
+            uint64_t blockSize = sizeof(T);
+            InsertIntoBin(object, blockSize);
+        }
+
+        /// <summary>
+        /// Resets the allocator, clearing all allocated memory without deallocating the memory pool itself.
+        /// </summary>
+        virtual void Invalidate() override
+        {
+            std::memset(m_Data, 0, m_Capacity);
+            m_CurrentOffset = 0;
+
+            for (uint32_t i = 0; i < NUM_LEAF_BINS; i++)
+            {
+                m_Bins[i].FreeList = nullptr;
+            }
+
+            // Insert the entire memory block as free space
+            InsertIntoBin(m_Data, m_Capacity);
+        }
+
+        /// <summary>
+        /// Frees all allocated memory and resets the allocator.
+        /// After calling this, the allocator cannot be used until reinitialized.
+        /// </summary>
+        virtual void Free() override
+        {
+            ::operator delete(m_Data);
+            m_Capacity = 0;
+            m_CurrentOffset = 0;
+        }
+
+    private:
+        /// <summary>
+        /// Represents a free memory block in the allocator.
+        /// </summary>
+        struct FreeBlock
+        {
+            FreeBlock* Next;
+            uint64_t Size;
+        };
+
+        /// <summary>
+        /// Represents a bin that holds free memory blocks of similar sizes.
+        /// </summary>
+        struct Bin
+        {
+            FreeBlock* FreeList;
+        };
+
+        /// <summary>
+        /// Inserts a free block into the appropriate bin based on its size.
+        /// </summary>
+        /// <param name="ptr">Pointer to the free block.</param>
+        /// <param name="size">Size of the free block in bytes.</param>
+        void InsertIntoBin(void* ptr, uint64_t size)
+        {
+            uint32_t binIndex = FindBinIndex(size);
+            FreeBlock* block = reinterpret_cast<FreeBlock*>(ptr);
+            block->Size = size;
+            block->Next = m_Bins[binIndex].FreeList;
+            m_Bins[binIndex].FreeList = block;
+        }
+
+        /// <summary>
+        /// Removes a free block from its corresponding bin.
+        /// </summary>
+        /// <param name="binIndex">The index of the bin containing the block.</param>
+        /// <param name="block">The block to be removed.</param>
+        void RemoveFromBin(uint32_t binIndex, FreeBlock* block)
+        {
+            FreeBlock** current = &m_Bins[binIndex].FreeList;
+            while (*current)
+            {
+                if (*current == block)
+                {
+                    *current = block->Next;
+                    return;
+                }
+                current = &((*current)->Next);
+            }
+        }
+
+        /// <summary>
+        /// Finds the bin index that corresponds to the given size.
+        /// </summary>
+        /// <param name="size">Size of the memory block.</param>
+        /// <returns>The bin index for the given size.</returns>
+        uint32_t FindBinIndex(uint64_t size) const
+        {
+            uint32_t exp = 0;
+            uint32_t mantissa = 0;
+
+            if (size < 8)
+            {
+                mantissa = size;
+            }
+            else
+            {
+                uint32_t leadingZeros = __builtin_clz(size);
+                uint32_t highestSetBit = 31 - leadingZeros;
+
+                uint32_t mantissaStartBit = highestSetBit - 3;
+                exp = mantissaStartBit + 1;
+                mantissa = (size >> mantissaStartBit) & 7;
+
+                uint32_t lowBitsMask = (1 << mantissaStartBit) - 1;
+
+                if ((size & lowBitsMask) != 0)
+                {
+                    mantissa++;
+                }
+            }
+
+            return (exp << 3) | mantissa;
+        }
+
+    private:
+        static constexpr uint32_t NUM_TOP_BINS = 32;
+        static constexpr uint32_t BINS_PER_LEAF = 8;
+        static constexpr uint32_t TOP_BINS_INDEX_SHIFT = 3;
+        static constexpr uint32_t LEAF_BINS_INDEX_MASK = 0x7;
+        static constexpr uint32_t NUM_LEAF_BINS = NUM_TOP_BINS * BINS_PER_LEAF;
+
+        void* m_Data;
+        Bin m_Bins[NUM_LEAF_BINS]; // Bin structure
+
+        uint64_t m_Capacity;
+        uint64_t m_CurrentOffset;
+    };
+}

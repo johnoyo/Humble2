@@ -8,9 +8,24 @@
 
 namespace HBL2
 {
+	/// <summary>
+	/// A memory allocator that utilizes a free list for efficient memory reuse.
+	/// When memory is allocated, it searches for a suitable free block in the free list.
+	/// If no suitable block is found, memory is allocated sequentially from a pre-allocated buffer.
+	/// 
+	/// When memory is deallocated, it is placed back into the free list, allowing future allocations
+	/// to reuse previously freed memory, reducing fragmentation.
+	/// 
+	/// This allocator is particularly useful for scenarios with frequent small allocations
+	/// and deallocations, where avoiding system-level memory allocation overhead is beneficial.
+	/// </summary>
 	class FreeListAllocator final : public BaseAllocator<FreeListAllocator>
 	{
 	public:
+		/// <summary>
+		/// Initializes the allocator with a specified memory size.
+		/// </summary>
+		/// <param name="size">The total size of the memory pool in bytes.</param>
 		FreeListAllocator(uint64_t size)
 			: m_Capacity(size), m_CurrentOffset(0), m_FreeList(nullptr)
 		{
@@ -18,6 +33,14 @@ namespace HBL2
 			std::memset(m_Data, 0, m_Capacity);
 		}
 
+		/// <summary>
+		/// Allocates a block of memory of the given size.
+		/// If a suitable free block is available, it is reused.
+		/// Otherwise, a new block is allocated from the memory pool.
+		/// </summary>
+		/// <typeparam name="T">The type of object to allocate.</typeparam>
+		/// <param name="size">The size of the allocation in bytes (default: sizeof(T)).</param>
+		/// <returns>A pointer to the allocated memory, or nullptr if out of memory.</returns>
 		template<typename T>
 		T* Allocate(uint64_t size = sizeof(T))
 		{
@@ -60,6 +83,12 @@ namespace HBL2
 			return ptr;
 		}
 
+		/// <summary>
+		/// Deallocates a previously allocated block by adding it to the free list.
+		/// The block can be reused in future allocations.
+		/// </summary>
+		/// <typeparam name="T">The type of object being deallocated.</typeparam>
+		/// <param name="object">The pointer to the memory block being freed.</param>
 		template<typename T>
 		void Deallocate(T* object)
 		{
@@ -74,6 +103,10 @@ namespace HBL2
 			m_FreeList = block;
 		}
 
+		/// <summary>
+		/// Resets the allocator, clearing all allocated memory.
+		/// This does not free the memory pool but marks all memory as available.
+		/// </summary>
 		virtual void Invalidate() override
 		{
 			std::memset(m_Data, 0, m_Capacity);
@@ -81,6 +114,10 @@ namespace HBL2
 			m_FreeList = nullptr;
 		}
 
+		/// <summary>
+		/// Frees all allocated memory and resets the allocator.
+		/// After calling this, the allocator cannot be used until reinitialized.
+		/// </summary>
 		virtual void Free() override
 		{
 			::operator delete(m_Data);
@@ -91,6 +128,9 @@ namespace HBL2
 		}
 
 	private:
+		/// <summary>
+		/// Represents a free memory block in the free list.
+		/// </summary>
 		struct FreeBlock
 		{
 			FreeBlock* Next;
@@ -100,7 +140,6 @@ namespace HBL2
 	private:
 		void* m_Data;
 		FreeBlock* m_FreeList;
-		uint16_t* m_GenerationalCounter;
 		uint64_t m_Capacity; // In bytes
 		uint64_t m_CurrentOffset; // In bytes
 	};
