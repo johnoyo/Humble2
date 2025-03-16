@@ -133,7 +133,7 @@ namespace HBL2
 			}
 
 			// Use shared pointer for auto clean up.
-			std::shared_ptr<ResourceTask<T>> task = std::make_shared<ResourceTask<T>>();
+			ResourceTask<T>* task = new ResourceTask<T>();
 			task->m_Finished = false;
 
 			// Do not schedule job if the asset is loaded.
@@ -141,7 +141,7 @@ namespace HBL2
 			{
 				task->ResourceHandle = GetAsset<T>(assetHandle);
 				task->m_Finished = true;
-				return task.get();
+				return task;
 			}
 
 			JobContext& ctx = (customCtx == nullptr ? m_ResourceJobCtx : *customCtx);
@@ -154,7 +154,7 @@ namespace HBL2
 				Device::Instance->SetContext(nullptr);
 			});
 
-			return task.get();
+			return task;
 		}
 
 		std::vector<Handle<Asset>>& GetRegisteredAssets() { return m_RegisteredAssets; }

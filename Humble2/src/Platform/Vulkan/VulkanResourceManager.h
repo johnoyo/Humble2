@@ -161,6 +161,28 @@ namespace HBL2
 				}
 			});
 		}
+		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) override
+		{
+			uint64_t hash = 0;
+
+			VulkanBindGroup* bindGroup = GetBindGroup(handle);
+
+			for (const auto& bufferEntry : bindGroup->Buffers)
+			{
+				hash += bufferEntry.buffer.HashKey();
+				hash += bufferEntry.byteOffset;
+				hash += bufferEntry.range;
+			}
+
+			for (const auto texture : bindGroup->Textures)
+			{
+				hash += texture.HashKey();
+			}
+
+			hash += bindGroup->BindGroupLayout.HashKey();
+
+			return hash;
+		}
 		VulkanBindGroup* GetBindGroup(Handle<BindGroup> handle) const
 		{
 			return m_BindGroupPool.Get(handle);

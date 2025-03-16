@@ -38,6 +38,8 @@ namespace HBL2
 			glUnmapBuffer(GL_UNIFORM_BUFFER);
 		}
 
+		Handle<BindGroup> previouslyUsedBindGroup;
+
 		for (auto&& [shaderID, drawList] : draws.GetDraws())
 		{
 			auto& localDraw = drawList[0];
@@ -82,7 +84,12 @@ namespace HBL2
 				if (draw.BindGroup.IsValid())
 				{
 					OpenGLBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
-					drawBindGroup->Set();
+
+					if (draw.BindGroup != previouslyUsedBindGroup)
+					{
+						drawBindGroup->Set();
+						previouslyUsedBindGroup = draw.BindGroup;
+					}
 
 					// Bind dynamic uniform buffer with the current offset and size
 					OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(drawBindGroup->Buffers[0].buffer);

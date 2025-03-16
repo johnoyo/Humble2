@@ -8,18 +8,20 @@
 
 namespace HBL2
 {
-	/// <summary>
-	/// A high-performance memory allocator that follows the bump allocation strategy.
-	/// Allocates memory in a linear fashion without individual deallocation, making it 
-	/// extremely fast. Memory is reset in bulk using <see cref="Invalidate"/>.
-	/// </summary>
+	/**
+	 * @brief A high-performance memory allocator that follows the bump allocation strategy.
+	 *
+	 * Allocates memory in a linear fashion without individual deallocation, making it
+	 * extremely fast. Memory is reset in bulk using @ref Invalidate.
+	 */
 	class BumpAllocator final : public BaseAllocator<BumpAllocator>
 	{
 	public:
-		/// <summary>
-		/// Initializes a bump allocator with a given memory size.
-		/// </summary>
-		/// <param name="size">The total size of the memory pool in bytes.</param>
+		/**
+		 * @brief Initializes a bump allocator with a given memory size.
+		 *
+		 * @param size The total size of the memory pool in bytes.
+		 */
 		BumpAllocator(uint64_t size)
 			: m_Capacity(size), m_CurrentOffset(0)
 		{
@@ -27,12 +29,13 @@ namespace HBL2
 			std::memset(m_Data, 0, m_Capacity);
 		}
 
-		/// <summary>
-		/// Allocates a block of memory of the given size.
-		/// </summary>
-		/// <typeparam name="T">The type of object to allocate.</typeparam>
-		/// <param name="size">The size of the allocation in bytes (default: sizeof(T)).</param>
-		/// <returns>A pointer to the allocated memory, or nullptr if out of memory.</returns>
+		/**
+		 * @brief Allocates a block of memory of the given size.
+		 *
+		 * @tparam T The type of object to allocate.
+		 * @param size The size of the allocation in bytes (default: sizeof(T)).
+		 * @return A pointer to the allocated memory, or nullptr if out of memory.
+		 */
 		template<typename T>
 		T* Allocate(uint64_t size = sizeof(T))
 		{
@@ -53,32 +56,36 @@ namespace HBL2
 			return ptr;
 		}
 
-		/// <summary>
-		/// Deallocation is not supported in bump allocation.
-		/// Memory is only reset in bulk via <see cref="Invalidate"/>.
-		/// </summary>
-		/// <typeparam name="T">The type of object to deallocate.</typeparam>
-		/// <param name="object">The object to "deallocate" (ignored).</param>
+		/**
+		 * @brief Deallocation is not supported in bump allocation.
+		 *
+		 * Memory is only reset in bulk via @ref Invalidate.
+		 *
+		 * @tparam T The type of object to deallocate.
+		 * @param object The object to "deallocate" (ignored).
+		 */
 		template<typename T>
 		void Deallocate(T* object)
 		{
 			// No individual deallocation, it happens at bulk.
 		}
 
-		/// <summary>
-		/// Resets the allocator, clearing all allocated memory.
-		/// Does not free memory, but sets all bytes to zero and resets the offset.
-		/// </summary>
+		/**
+		 * @brief Resets the allocator, clearing all allocated memory.
+		 *
+		 * Does not free memory, but sets all bytes to zero and resets the offset.
+		 */
 		virtual void Invalidate() override
 		{
 			std::memset(m_Data, 0, m_Capacity);
 			m_CurrentOffset = 0;
 		}
 
-		/// <summary>
-		/// Frees all allocated memory and resets the allocator.
-		/// After calling this, the allocator cannot be used until reinitialized.
-		/// </summary>
+		/**
+		 * @brief Frees all allocated memory and resets the allocator.
+		 *
+		 * After calling this, the allocator cannot be used until reinitialized.
+		 */
 		virtual void Free() override
 		{
 			::operator delete(m_Data);

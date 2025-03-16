@@ -49,6 +49,27 @@ namespace HBL2
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) = 0;
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) = 0;
+		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) = 0;
+		uint64_t GetBindGroupHash(const BindGroupDescriptor&& desc)
+		{
+			uint64_t hash = 0;
+
+			for (const auto& bufferEntry : desc.buffers)
+			{
+				hash += bufferEntry.buffer.HashKey();
+				hash += bufferEntry.byteOffset;
+				hash += bufferEntry.range;
+			}
+
+			for (const auto texture : desc.textures)
+			{
+				hash += texture.HashKey();
+			}
+
+			hash += desc.layout.HashKey();
+
+			return hash;
+		}
 
 		// BindGroupLayouts
 		virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) = 0;

@@ -6,20 +6,23 @@
 
 namespace HBL2
 {
-	/// <summary>
-	/// The StandardAllocator class provides functionality to allocate and deallocate memory for objects.
-	/// It is a memory allocator that uses the standard C++ `new` and `delete` operators, with zero-initialization.
-	/// </summary>
+	/**
+	 * @brief The StandardAllocator class provides functionality to allocate and deallocate memory for objects.
+	 *
+	 * This allocator uses the standard C++ `new` and `delete` operators with zero-initialization.
+	 */
 	class StandardAllocator final : public BaseAllocator<StandardAllocator>
 	{
 	public:
-		/// <summary>
-		/// Allocates memory for an object or array of objects of type T.
-		/// The allocated memory is zero-initialized.
-		/// </summary>
-		/// <typeparam name="T">The type of the object to allocate.</typeparam>
-		/// <param name="size">The size of the memory to allocate. Defaults to sizeof(T).</param>
-		/// <returns>A pointer to the allocated memory.</returns>
+		/**
+		 * @brief Allocates memory for an object of type T.
+		 *
+		 * The allocated memory is zero-initialized.
+		 *
+		 * @tparam T The type of object to allocate.
+		 * @param size The size of the memory to allocate (defaults to sizeof(T)).
+		 * @return A pointer to the allocated and zero-initialized memory.
+		 */
 		template<typename T>
 		T* Allocate(uint64_t size = sizeof(T))
 		{
@@ -28,11 +31,12 @@ namespace HBL2
 			return data;
 		}
 
-		/// <summary>
-		/// Deallocates previously allocated memory.
-		/// </summary>
-		/// <typeparam name="T">The type of the object to deallocate.</typeparam>
-		/// <param name="object">A pointer to the object or array to be deallocated.</param>
+		/**
+		 * @brief Deallocates previously allocated memory.
+		 *
+		 * @tparam T The type of object to deallocate.
+		 * @param object A pointer to the object to be deallocated.
+		 */
 		template<typename T>
 		void Deallocate(T* object)
 		{
@@ -46,10 +50,16 @@ namespace HBL2
 			}
 		}
 
+		/**
+		 * @brief No-op for StandardAllocator as it does not maintain state.
+		 */
 		virtual void Invalidate() override
 		{
 		}
 
+		/**
+		 * @brief No-op for StandardAllocator as it does not maintain state.
+		 */
 		virtual void Free() override
 		{
 		}

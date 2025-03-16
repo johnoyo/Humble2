@@ -326,7 +326,7 @@ namespace HBL2
 
 		// Invalid shader
 		{
-			auto invalidShaderCode = Compile("assets/shaders/invalid.shader");
+			const auto& invalidShaderCode = Compile("assets/shaders/invalid.shader");
 
 			auto invalidShaderHandle = ResourceManager::Instance->CreateShader({
 				.debugName = "invalid-shader",
@@ -355,7 +355,7 @@ namespace HBL2
 		
 		// Present shader
 		{
-			auto presentShaderCode = Compile("assets/shaders/present.shader");
+			const auto& presentShaderCode = Compile("assets/shaders/present.shader");
 
 			auto presentShaderHandle = ResourceManager::Instance->CreateShader({
 				.debugName = "present-shader",
@@ -383,7 +383,7 @@ namespace HBL2
 
 		// Unlit shader
 		{
-			auto unlitShaderCode = Compile("assets/shaders/unlit.shader");
+			const auto& unlitShaderCode = Compile("assets/shaders/unlit.shader");
 
 			auto unlitShaderHandle = ResourceManager::Instance->CreateShader({
 				.debugName = "unlit-shader",
@@ -412,7 +412,7 @@ namespace HBL2
 
 		// Blinn-Phnog shader
 		{
-			auto blinnPhongShaderCode = Compile("assets/shaders/blinn-phong.shader");
+			const auto& blinnPhongShaderCode = Compile("assets/shaders/blinn-phong.shader");
 
 			auto blinnPhongShaderHandle = ResourceManager::Instance->CreateShader({
 				.debugName = "blinn-phong-shader",
@@ -442,7 +442,7 @@ namespace HBL2
 
 		// PBR shader
 		{
-			auto pbrShaderCode = Compile("assets/shaders/pbr.shader");
+			const auto& pbrShaderCode = Compile("assets/shaders/pbr.shader");
 
 			auto pbrShaderHandle = ResourceManager::Instance->CreateShader({
 				.debugName = "pbr-shader",

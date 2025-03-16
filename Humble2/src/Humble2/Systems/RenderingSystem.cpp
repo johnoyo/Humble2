@@ -112,17 +112,17 @@ namespace HBL2
 		};
 
 		m_VertexBuffer = m_ResourceManager->CreateBuffer({
-			.debugName = "quad_vertex_buffer",
+			.debugName = "quad-vertex-buffer",
 			.usage = BufferUsage::VERTEX,
 			.byteSize = sizeof(float) * 30,
 			.initialData = vertexBuffer,
 		});
 
 		m_SpriteMesh = m_ResourceManager->CreateMesh({
-			.debugName = "quad_mesh",
+			.debugName = "quad-mesh",
 			.meshes = {
 				{
-					.debugName = "",
+					.debugName = "quad-sub-mesh",
 					.subMeshes = {
 						{
 							.vertexOffset = 0,

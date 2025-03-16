@@ -85,7 +85,7 @@ namespace HBL2
 			};
 
 			auto buffer = ResourceManager::Instance->CreateBuffer({
-				.debugName = "plane_vertex_buffer",
+				.debugName = "plane-vertex-buffer",
 				.byteSize = sizeof(float) * 48,
 				.initialData = vertexBuffer,
 			});

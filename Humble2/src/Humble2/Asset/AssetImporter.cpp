@@ -381,27 +381,89 @@ namespace HBL2
 			Handle<BindGroup> drawBindings;
 			uint32_t dynamicUniformBufferRange = (type == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData));
 
+			// TODO: add a caching mechanish so that materials with the same resources, use the same bind group.
 			if (normalMapHandle.IsValid() && metallicMapHandle.IsValid() && roughnessMapHandle.IsValid())
 			{
-				drawBindings = ResourceManager::Instance->CreateBindGroup({
-					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
+				auto bindGroupHashCode = ResourceManager::Instance->GetBindGroupHash({
 					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
 					.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle },
 					.buffers = {
 						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
 					}
 				});
+
+				Handle<BindGroup> cachedBindGroupHandle;
+
+				for (auto bindGroupHandle : m_BindGroups)
+				{
+					auto registeredBindGroupHashCode = ResourceManager::Instance->GetBindGroupHash(bindGroupHandle);
+
+					if (registeredBindGroupHashCode == bindGroupHashCode)
+					{
+						cachedBindGroupHandle = bindGroupHandle;
+						break;
+					}
+				}
+
+				if (!cachedBindGroupHandle.IsValid())
+				{
+					drawBindings = ResourceManager::Instance->CreateBindGroup({
+						.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
+						.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
+						.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle },
+						.buffers = {
+							{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
+						}
+					});
+
+					m_BindGroups.push_back(drawBindings);
+				}
+				else
+				{
+					drawBindings = cachedBindGroupHandle;
+				}
 			}
 			else
 			{
-				drawBindings = ResourceManager::Instance->CreateBindGroup({
+				auto bindGroupHashCode = ResourceManager::Instance->GetBindGroupHash({
 					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
+					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG),
 					.textures = { albedoMapHandle },
 					.buffers = {
 						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
 					}
 				});
+
+				Handle<BindGroup> cachedBindGroupHandle;
+
+				for (auto bindGroupHandle : m_BindGroups)
+				{
+					auto registeredBindGroupHashCode = ResourceManager::Instance->GetBindGroupHash(bindGroupHandle);
+
+					if (registeredBindGroupHashCode == bindGroupHashCode)
+					{
+						cachedBindGroupHandle = bindGroupHandle;
+						break;
+					}
+				}
+
+				if (!cachedBindGroupHandle.IsValid())
+				{
+					drawBindings = ResourceManager::Instance->CreateBindGroup({
+						.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
+						.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
+						.textures = { albedoMapHandle },
+						.buffers = {
+							{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
+						}
+					});
+
+					m_BindGroups.push_back(drawBindings);
+				}
+				else
+				{
+					drawBindings = cachedBindGroupHandle;
+				}				
 			}
 
 			auto material = ResourceManager::Instance->CreateMaterial({
@@ -1235,6 +1297,13 @@ namespace HBL2
 		}
 
 		Material* material = ResourceManager::Instance->GetMaterial(materialAssetHandle);
+
+		/*auto bindGrroupIterator = std::find(m_BindGroups.begin(), m_BindGroups.end(), material->BindGroup);
+
+		if (bindGrroupIterator != m_BindGroups.end())
+		{
+			m_BindGroups.erase(bindGrroupIterator);
+		}*/
 
 		ResourceManager::Instance->DeleteMaterial(materialAssetHandle);
 

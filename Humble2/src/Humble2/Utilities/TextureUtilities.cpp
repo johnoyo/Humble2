@@ -32,7 +32,20 @@ namespace HBL2
 
 	void TextureUtilities::CreateAssetMetadataFile(Handle<Asset> handle)
 	{
-		std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(handle)->FilePath).string() + ".hbltexture", 0);
+		if (!AssetManager::Instance->IsAssetValid(handle))
+		{
+			return;
+		}
+
+		Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+		const std::filesystem::path& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture";
+
+		if (std::filesystem::exists(filePath))
+		{
+			return;
+		}
+
+		std::ofstream fout(filePath, 0);
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;

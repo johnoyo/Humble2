@@ -59,5 +59,7 @@ namespace HBL2
 		void UnloadSound(Asset* asset);
 
 		AssetImporter() = default;
+
+		std::vector<Handle<BindGroup>> m_BindGroups;
 	};
 }

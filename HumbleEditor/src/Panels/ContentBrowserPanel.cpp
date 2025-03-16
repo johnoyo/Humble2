@@ -561,7 +561,7 @@ namespace HBL2
 						.debugName = "shader-asset",
 						.filePath = relativePath,
 						.type = AssetType::Shader,
-						});
+					});
 
 					std::string shaderSource;
 
@@ -824,38 +824,51 @@ namespace HBL2
 						out << YAML::Key << "Shader" << YAML::Value << AssetManager::Instance->GetAssetMetadata(shaderAssetHandle)->UUID;
 						out << YAML::Key << "AlbedoColor" << YAML::Value << glm::vec4(color[0], color[1], color[2], color[3]);
 						out << YAML::Key << "Glossiness" << YAML::Value << glossiness;
+
 						if (s_AlbedoMapTask && s_AlbedoMapTask->ResourceHandle.IsValid())
 						{
 							out << YAML::Key << "AlbedoMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(albedoMapAssetHandle)->UUID;
+							delete s_AlbedoMapTask;
+							s_AlbedoMapTask = nullptr;
 						}
 						else
 						{
 							out << YAML::Key << "AlbedoMap" << YAML::Value << (UUID)0;
 						}
+
 						if (s_NormalMapTask && s_NormalMapTask->ResourceHandle.IsValid())
 						{
 							out << YAML::Key << "NormalMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(normalMapAssetHandle)->UUID;
+							delete s_NormalMapTask;
+							s_NormalMapTask = nullptr;
 						}
 						else
 						{
 							out << YAML::Key << "NormalMap" << YAML::Value << (UUID)0;
 						}
+
 						if (s_MetallicMapTask && s_MetallicMapTask->ResourceHandle.IsValid())
 						{
 							out << YAML::Key << "MetallicMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(metallicMapAssetHandle)->UUID;
+							delete s_MetallicMapTask;
+							s_MetallicMapTask = nullptr;
 						}
 						else
 						{
 							out << YAML::Key << "MetallicMap" << YAML::Value << (UUID)0;
 						}
+
 						if (s_RoughnessMapTask && s_RoughnessMapTask->ResourceHandle.IsValid())
 						{
 							out << YAML::Key << "RoughnessMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(roughnessMapAssetHandle)->UUID;
+							delete s_RoughnessMapTask;
+							s_RoughnessMapTask = nullptr;
 						}
 						else
 						{
 							out << YAML::Key << "RoughnessMap" << YAML::Value << (UUID)0;
 						}
+
 						out << YAML::EndMap;
 						out << YAML::EndMap;
 						fout << out.c_str();
@@ -870,6 +883,30 @@ namespace HBL2
 				if (ImGui::Button("Cancel"))
 				{
 					m_OpenMaterialSetupPopup = false;
+
+					if (s_AlbedoMapTask)
+					{
+						delete s_AlbedoMapTask;
+						s_AlbedoMapTask = nullptr;
+					}
+
+					if (s_NormalMapTask)
+					{
+						delete s_NormalMapTask;
+						s_NormalMapTask = nullptr;
+					}
+
+					if (s_MetallicMapTask)
+					{
+						delete s_MetallicMapTask;
+						s_MetallicMapTask = nullptr;
+					}
+
+					if (s_RoughnessMapTask)
+					{
+						delete s_RoughnessMapTask;
+						s_RoughnessMapTask = nullptr;
+					}
 				}
 
 				ImGui::End();

@@ -8,25 +8,31 @@
 
 namespace HBL2
 {
-    /// <summary>
-   /// A memory allocator that organizes free memory into bins based on size categories using an exponent-mantissa encoding.
-   /// This allows efficient allocation by searching for the smallest available block in the appropriate bin using a first-fit strategy.
-   /// When memory is deallocated, it is returned to the free list within its corresponding bin for reuse.
-   /// 
-   /// To minimize fragmentation, if an allocated block is not fully used, the remaining space is split and stored in a suitable bin.
-   /// This ensures that memory utilization remains efficient while keeping allocation and deallocation operations fast.
-   /// 
-   /// This implementation is inspired by the open-source Offset Allocator by Sebastian Aaltonen:
-   /// https://github.com/sebbbi/OffsetAllocator
-   /// </summary>
+    /**
+     * @brief A memory allocator that organizes free memory into bins based on size categories
+     *        using an exponent-mantissa encoding.
+     *
+     * This allows efficient allocation by searching for the smallest available block in the
+     * appropriate bin using a first-fit strategy. When memory is deallocated, it is returned
+     * to the free list within its corresponding bin for reuse.
+     *
+     * To minimize fragmentation, if an allocated block is not fully used, the remaining space
+     * is split and stored in a suitable bin. This ensures that memory utilization remains efficient
+     * while keeping allocation and deallocation operations fast.
+     *
+     * @note This implementation is inspired by the open-source Offset Allocator by Sebastian Aaltonen:
+     *       https://github.com/sebbbi/OffsetAllocator
+     */
 	class BinAllocator final : public BaseAllocator<BinAllocator>
 	{
     public:
-        /// <summary>
-        /// Initializes the allocator with a given memory pool size.
-        /// </summary>
-        /// <param name="size">The total size of the memory pool in bytes.</param>
+        /**
+         * @brief Initializes the allocator with a given memory pool size.
+         *
+         * @param size The total size of the memory pool in bytes.
+         */
         BinAllocator(uint64_t size)
+
             : m_Capacity(size), m_CurrentOffset(0)
         {
             m_Data = ::operator new(m_Capacity);
@@ -41,14 +47,16 @@ namespace HBL2
             InsertIntoBin(m_Data, m_Capacity);
         }
 
-        /// <summary>
-        /// Allocates a block of memory of the specified size.
-        /// If a suitable free block is found in the bins, it is used.
-        /// Otherwise, memory is allocated from the main pool.
-        /// </summary>
-        /// <typeparam name="T">The type of object to allocate.</typeparam>
-        /// <param name="size">The size of the allocation in bytes (default: sizeof(T)).</param>
-        /// <returns>A pointer to the allocated memory, or nullptr if out of memory.</returns>
+        /**
+         * @brief Allocates a block of memory of the specified size.
+         *
+         * If a suitable free block is found in the bins, it is used. Otherwise, memory is
+         * allocated from the main pool.
+         *
+         * @tparam T The type of object to allocate.
+         * @param size The size of the allocation in bytes (default: sizeof(T)).
+         * @return A pointer to the allocated memory, or nullptr if out of memory.
+         */
         template<typename T>
         T* Allocate(uint64_t size = sizeof(T))
         {
@@ -87,11 +95,12 @@ namespace HBL2
             return ptr;
         }
 
-        /// <summary>
-        /// Deallocates memory by placing the block back into the appropriate bin.
-        /// </summary>
-        /// <typeparam name="T">The type of object being deallocated.</typeparam>
-        /// <param name="object">The pointer to the memory block being freed.</param>
+        /**
+         * @brief Deallocates memory by placing the block back into the appropriate bin.
+         *
+         * @tparam T The type of object being deallocated.
+         * @param object The pointer to the memory block being freed.
+         */
         template<typename T>
         void Deallocate(T* object)
         {
@@ -104,9 +113,9 @@ namespace HBL2
             InsertIntoBin(object, blockSize);
         }
 
-        /// <summary>
-        /// Resets the allocator, clearing all allocated memory without deallocating the memory pool itself.
-        /// </summary>
+        /**
+         * @brief Resets the allocator, clearing all allocated memory without deallocating the memory pool itself.
+         */
         virtual void Invalidate() override
         {
             std::memset(m_Data, 0, m_Capacity);
@@ -121,10 +130,11 @@ namespace HBL2
             InsertIntoBin(m_Data, m_Capacity);
         }
 
-        /// <summary>
-        /// Frees all allocated memory and resets the allocator.
-        /// After calling this, the allocator cannot be used until reinitialized.
-        /// </summary>
+        /**
+         * @brief Frees all allocated memory and resets the allocator.
+         *
+         * After calling this, the allocator cannot be used until reinitialized.
+         */
         virtual void Free() override
         {
             ::operator delete(m_Data);
@@ -133,28 +143,29 @@ namespace HBL2
         }
 
     private:
-        /// <summary>
-        /// Represents a free memory block in the allocator.
-        /// </summary>
+        /**
+         * @brief Represents a free memory block in the allocator.
+         */
         struct FreeBlock
         {
             FreeBlock* Next;
             uint64_t Size;
         };
 
-        /// <summary>
-        /// Represents a bin that holds free memory blocks of similar sizes.
-        /// </summary>
+        /**
+         * @brief Represents a bin that holds free memory blocks of similar sizes.
+         */
         struct Bin
         {
             FreeBlock* FreeList;
         };
 
-        /// <summary>
-        /// Inserts a free block into the appropriate bin based on its size.
-        /// </summary>
-        /// <param name="ptr">Pointer to the free block.</param>
-        /// <param name="size">Size of the free block in bytes.</param>
+        /**
+         * @brief Inserts a free block into the appropriate bin based on its size.
+         *
+         * @param ptr Pointer to the free block.
+         * @param size Size of the free block in bytes.
+         */
         void InsertIntoBin(void* ptr, uint64_t size)
         {
             uint32_t binIndex = FindBinIndex(size);
@@ -164,11 +175,12 @@ namespace HBL2
             m_Bins[binIndex].FreeList = block;
         }
 
-        /// <summary>
-        /// Removes a free block from its corresponding bin.
-        /// </summary>
-        /// <param name="binIndex">The index of the bin containing the block.</param>
-        /// <param name="block">The block to be removed.</param>
+        /**
+         * @brief Removes a free block from its corresponding bin.
+         *
+         * @param binIndex The index of the bin containing the block.
+         * @param block The block to be removed.
+         */
         void RemoveFromBin(uint32_t binIndex, FreeBlock* block)
         {
             FreeBlock** current = &m_Bins[binIndex].FreeList;
@@ -183,11 +195,12 @@ namespace HBL2
             }
         }
 
-        /// <summary>
-        /// Finds the bin index that corresponds to the given size.
-        /// </summary>
-        /// <param name="size">Size of the memory block.</param>
-        /// <returns>The bin index for the given size.</returns>
+        /**
+         * @brief Finds the bin index that corresponds to the given size.
+         *
+         * @param size Size of the memory block.
+         * @return The bin index for the given size.
+         */
         uint32_t FindBinIndex(uint64_t size) const
         {
             uint32_t exp = 0;
@@ -216,6 +229,7 @@ namespace HBL2
 
             return (exp << 3) | mantissa;
         }
+
     private:
         inline static uint32_t lzcnt_nonzero(uint32_t v)
         {
@@ -238,7 +252,6 @@ namespace HBL2
             return __builtin_ctz(v);
 #endif
         }
-
 
     private:
         static constexpr uint32_t NUM_TOP_BINS = 32;
