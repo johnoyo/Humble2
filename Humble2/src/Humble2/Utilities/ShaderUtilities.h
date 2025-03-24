@@ -25,7 +25,6 @@ namespace HBL2
 		UNLIT,
 		BLINN_PHONG,
 		PBR,
-		TEXTURED_SPRITE,
 	};
 
 	struct HBL2_API ReflectionData
@@ -35,6 +34,19 @@ namespace HBL2
 		uint32_t VertexBindingCount = 0;
 		uint32_t ByteStride = 0;
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding::Attribute> Attributes;
+	};
+
+	struct HBL2_API MaterialDataDescriptor
+	{
+		Handle<Asset> ShaderAssetHandle;
+
+		glm::vec4 AlbedoColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+		float Glossiness = 0.0f;
+
+		Handle<Asset> AlbedoMapAssetHandle;
+		Handle<Asset> NormalMapAssetHandle;
+		Handle<Asset> RoughnessMapAssetHandle;
+		Handle<Asset> MetallicMapAssetHandle;
 	};
 
 	class HBL2_API ShaderUtilities
@@ -138,11 +150,12 @@ namespace HBL2
 
 		void CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType);
 		void CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType);
+		void CreateMaterialAssetFile(Handle<Asset> handle, const MaterialDataDescriptor&& desc);
 
 	private:
 		ShaderUtilities() = default;
 		std::vector<uint32_t> Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage);
-		ReflectionData Reflect(const std::vector<uint32_t>& vertexShaderData, const std::vector<uint32_t>& fragmentShaderData);
+		ReflectionData Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData);
 
 	private:
 		std::unordered_map<std::string, ReflectionData> m_ShaderReflectionData;

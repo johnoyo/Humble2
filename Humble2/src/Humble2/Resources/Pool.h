@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Handle.h"
+#include "Utilities\Collections\Span.h"
 
 #include <stack>
 
@@ -64,6 +65,13 @@ namespace HBL2
 
 			return &m_Data[handle.m_ArrayIndex];
 		}
+
+		const Span<T> GetDataPool()
+		{
+			return { m_Data, m_FreeList.top() };
+		}
+
+		Handle<H> GetHandleFromIndex(uint16_t index) { return { index, m_GenerationalCounter[index] }; }
 
 	private:
 		void ReAllocate()

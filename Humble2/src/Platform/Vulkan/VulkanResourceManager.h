@@ -147,6 +147,23 @@ namespace HBL2
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) override
 		{
+			// Caching mechanism so that materials with the same resources, use the same bind group.
+			uint16_t index = 0;
+
+			for (const auto& bindGroup : m_BindGroupPool.GetDataPool())
+			{
+				uint64_t descriptorHash = ResourceManager::Instance->GetBindGroupHash(desc);
+
+				uint64_t hash = CalculateBindGroupHash(&bindGroup);
+
+				if (descriptorHash == hash)
+				{
+					return m_BindGroupPool.GetHandleFromIndex(index);
+				}
+
+				index++;
+			}
+
 			return m_BindGroupPool.Insert(VulkanBindGroup(std::forward<const BindGroupDescriptor>(desc)));
 		}
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) override
@@ -163,25 +180,7 @@ namespace HBL2
 		}
 		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) override
 		{
-			uint64_t hash = 0;
-
-			VulkanBindGroup* bindGroup = GetBindGroup(handle);
-
-			for (const auto& bufferEntry : bindGroup->Buffers)
-			{
-				hash += bufferEntry.buffer.HashKey();
-				hash += bufferEntry.byteOffset;
-				hash += bufferEntry.range;
-			}
-
-			for (const auto texture : bindGroup->Textures)
-			{
-				hash += texture.HashKey();
-			}
-
-			hash += bindGroup->BindGroupLayout.HashKey();
-
-			return hash;
+			return CalculateBindGroupHash(GetBindGroup(handle));
 		}
 		VulkanBindGroup* GetBindGroup(Handle<BindGroup> handle) const
 		{
@@ -260,5 +259,32 @@ namespace HBL2
 		Pool<VulkanRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
 
 		friend class VulkanRenderer; // This is required for a hack to create the swapchain images in the VulkanRenderer
+
+	private:
+		uint64_t CalculateBindGroupHash(const VulkanBindGroup* bindGroup)
+		{
+			if (bindGroup == nullptr)
+			{
+				return 0;
+			}
+
+			uint64_t hash = 0;
+
+			for (const auto& bufferEntry : bindGroup->Buffers)
+			{
+				hash += bufferEntry.buffer.HashKey();
+				hash += bufferEntry.byteOffset;
+				hash += bufferEntry.range;
+			}
+
+			for (const auto texture : bindGroup->Textures)
+			{
+				hash += texture.HashKey();
+			}
+
+			hash += bindGroup->BindGroupLayout.HashKey();
+
+			return hash;
+		}
 	};
 }

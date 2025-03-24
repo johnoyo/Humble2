@@ -371,6 +371,24 @@ namespace HBL2
 			auto metallicMapHandle = AssetManager::Instance->GetAsset<Texture>(metallicMapUUID);
 			auto roughnessMapHandle = AssetManager::Instance->GetAsset<Texture>(roughnessMapUUID);
 
+			// If shader is not set get the built in shader depending on material type.
+			if (!shaderHandle.IsValid())
+			{
+				if (type == 0)
+				{
+					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::UNLIT);
+				}
+				else if (type == 1)
+				{
+					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::BLINN_PHONG);
+				}
+				else if (type == 2)
+				{
+					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PBR);
+				}
+			}
+
+			// If albedo map is not set use the built in white texture.
 			if (!albedoMapHandle.IsValid())
 			{
 				albedoMapHandle = TextureUtilities::Get().WhiteTexture;
@@ -381,89 +399,27 @@ namespace HBL2
 			Handle<BindGroup> drawBindings;
 			uint32_t dynamicUniformBufferRange = (type == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData));
 
-			// TODO: add a caching mechanish so that materials with the same resources, use the same bind group.
 			if (normalMapHandle.IsValid() && metallicMapHandle.IsValid() && roughnessMapHandle.IsValid())
 			{
-				auto bindGroupHashCode = ResourceManager::Instance->GetBindGroupHash({
+				drawBindings = ResourceManager::Instance->CreateBindGroup({
+					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
 					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
 					.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle },
 					.buffers = {
 						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
 					}
 				});
-
-				Handle<BindGroup> cachedBindGroupHandle;
-
-				for (auto bindGroupHandle : m_BindGroups)
-				{
-					auto registeredBindGroupHashCode = ResourceManager::Instance->GetBindGroupHash(bindGroupHandle);
-
-					if (registeredBindGroupHashCode == bindGroupHashCode)
-					{
-						cachedBindGroupHandle = bindGroupHandle;
-						break;
-					}
-				}
-
-				if (!cachedBindGroupHandle.IsValid())
-				{
-					drawBindings = ResourceManager::Instance->CreateBindGroup({
-						.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-						.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
-						.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle },
-						.buffers = {
-							{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
-						}
-					});
-
-					m_BindGroups.push_back(drawBindings);
-				}
-				else
-				{
-					drawBindings = cachedBindGroupHandle;
-				}
 			}
 			else
 			{
-				auto bindGroupHashCode = ResourceManager::Instance->GetBindGroupHash({
+				drawBindings = ResourceManager::Instance->CreateBindGroup({
 					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG),
+					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
 					.textures = { albedoMapHandle },
 					.buffers = {
 						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
 					}
-				});
-
-				Handle<BindGroup> cachedBindGroupHandle;
-
-				for (auto bindGroupHandle : m_BindGroups)
-				{
-					auto registeredBindGroupHashCode = ResourceManager::Instance->GetBindGroupHash(bindGroupHandle);
-
-					if (registeredBindGroupHashCode == bindGroupHashCode)
-					{
-						cachedBindGroupHandle = bindGroupHandle;
-						break;
-					}
-				}
-
-				if (!cachedBindGroupHandle.IsValid())
-				{
-					drawBindings = ResourceManager::Instance->CreateBindGroup({
-						.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-						.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
-						.textures = { albedoMapHandle },
-						.buffers = {
-							{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
-						}
-					});
-
-					m_BindGroups.push_back(drawBindings);
-				}
-				else
-				{
-					drawBindings = cachedBindGroupHandle;
-				}				
+				});		
 			}
 
 			auto material = ResourceManager::Instance->CreateMaterial({

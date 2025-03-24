@@ -21,6 +21,7 @@ namespace HBL2
 	struct BindGroupLayout;
 	struct RenderPass;
 	struct RenderPassLayout;
+	struct Material;
 
 	struct TextureDescriptor
 	{
@@ -207,6 +208,8 @@ namespace HBL2
 		uint32_t vertexCount;
 		glm::vec3 minVertex;
 		glm::vec3 maxVertex;
+
+		Handle<Material> embededMaterial;
 	};
 
 	struct MeshPartDescriptor

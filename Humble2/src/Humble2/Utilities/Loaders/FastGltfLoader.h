@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Base.h"
+#include "Asset\Asset.h"
 #include "Resources\Types.h"
 #include "Utilities\Result.h"
 
@@ -18,6 +19,9 @@ namespace HBL2
 		Handle<Mesh> Load(const std::filesystem::path& path);
 
 	private:
+        void LoadTextures(const fastgltf::Asset& asset);
+        void LoadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset);
+
 		Result<MeshPartDescriptor> LoadMeshData(const fastgltf::Asset& asset, const fastgltf::Node& node, uint32_t meshIndex);
 		Result<SubMeshDescriptor> LoadSubMeshVertexData(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, uint32_t subMeshIndex);
 
@@ -43,5 +47,7 @@ namespace HBL2
 
 		std::vector<Vertex> m_Vertices;
 		std::vector<uint32_t> m_Indices;
+        std::vector<Handle<Asset>> m_Textures;
+        std::unordered_map<const char*, Handle<Material>> m_MaterialNameToHandle;
 	};
 }

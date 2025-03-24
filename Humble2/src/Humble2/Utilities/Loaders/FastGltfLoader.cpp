@@ -1,6 +1,14 @@
 #include "FastGltfLoader.h"
 
+#include <Project\Project.h>
+
+#include <Asset\AssetManager.h>
 #include <Resources\ResourceManager.h>
+
+#include <Utilities\ShaderUtilities.h>
+#include <Utilities\TextureUtilities.h>
+
+#include <Utilities\FileDialogs.h>
 
 namespace HBL2
 {
@@ -36,6 +44,9 @@ namespace HBL2
 			return Handle<Mesh>();
 		}
 
+		LoadTextures(asset.get());
+		LoadMaterials(path, asset.get());
+
 		std::vector<MeshPartDescriptor> meshes;
 		uint32_t meshIndex = 0;
 
@@ -64,6 +75,158 @@ namespace HBL2
 		});
 
 		return handle;
+	}
+
+	void FastGltfLoader::LoadTextures(const fastgltf::Asset& asset)
+	{
+		m_Textures.clear();
+
+		size_t numTextures = asset.images.size();
+		m_Textures.resize(numTextures);
+
+		for (uint32_t imageIndex = 0; imageIndex < numTextures; ++imageIndex)
+		{
+			const fastgltf::Image& glTFImage = asset.images[imageIndex];
+
+			Handle<Asset> textureAssetHandle;
+
+			if (auto* filePath = std::get_if<fastgltf::sources::URI>(&glTFImage.data))
+			{
+				const auto& texturePath = std::filesystem::path(filePath->uri.string());
+
+				if (std::filesystem::exists(texturePath))
+				{
+					HBL2_CORE_INFO("FastGltfLoader::LoadTexture::AlbedoMap located at: \"{}\".", texturePath);
+
+					const auto& relativeTexturePath = FileUtils::RelativePath(texturePath, Project::GetAssetDirectory());
+
+					UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath);
+					textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
+
+					if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
+					{
+						textureAssetHandle = AssetManager::Instance->CreateAsset({
+							.debugName = "texture-asset",
+							.filePath = relativeTexturePath,
+							.type = AssetType::Texture,
+						});
+					}
+
+					if (textureAssetHandle.IsValid())
+					{
+						TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
+					}
+
+					AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
+				}
+			}
+
+			m_Textures[imageIndex] = textureAssetHandle;
+		}
+	}
+
+	void FastGltfLoader::LoadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset)
+	{
+		m_MaterialNameToHandle.clear();
+
+		size_t numMaterials = asset.materials.size();
+
+		for (uint32_t materialIndex = 0; materialIndex < numMaterials; ++materialIndex)
+		{
+			const fastgltf::Material& glTFMaterial = asset.materials[materialIndex];
+
+			Handle<Asset> materialAssetHandle;
+			Handle<Material> materialHandle;
+
+			const auto& relativePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Materials" / (std::string(glTFMaterial.name) + ".mat");
+
+			if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativePath)))
+			{
+				materialAssetHandle = AssetManager::Instance->CreateAsset({
+					.debugName = "material-asset",
+					.filePath = relativePath,
+					.type = AssetType::Material,
+				});
+
+				if (materialAssetHandle.IsValid())
+				{
+					uint32_t type = UINT32_MAX;
+
+					if (glTFMaterial.unlit)
+					{
+						type = 0;
+					}
+					else if (!glTFMaterial.pbrData.metallicRoughnessTexture.has_value())
+					{
+						type = 1;
+					}
+					else
+					{
+						type = 2;
+					}
+
+
+					ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, type);
+				}
+
+				// diffuse color aka base color factor used as constant color, if no diffuse texture is provided
+				glm::vec4 albedoColor = glm::make_vec4(glTFMaterial.pbrData.baseColorFactor.data());
+				float roughness = glTFMaterial.pbrData.roughnessFactor;
+				float metalicness = glTFMaterial.pbrData.metallicFactor;
+
+				Handle<Asset> albedoMapAssetHandle;
+				Handle<Asset> normalMapAssetHandle;
+				Handle<Asset> metallicRoughnessMapAssetHandle;
+
+				// diffuse map aka basecolor aka albedo
+				if (glTFMaterial.pbrData.baseColorTexture.has_value())
+				{
+					uint32_t diffuseMapIndex = glTFMaterial.pbrData.baseColorTexture.value().textureIndex;
+					uint32_t imageIndex = asset.textures[diffuseMapIndex].imageIndex.value();
+
+					albedoMapAssetHandle = m_Textures[imageIndex];
+				}
+
+				// normal map
+				if (glTFMaterial.normalTexture.has_value())
+				{
+					uint32_t normalMapIndex = glTFMaterial.normalTexture.value().textureIndex;
+					uint32_t imageIndex = asset.textures[normalMapIndex].imageIndex.value();
+
+					normalMapAssetHandle = m_Textures[imageIndex];
+				}
+
+				// texture for roughness and metallicness
+				if (glTFMaterial.pbrData.metallicRoughnessTexture.has_value())
+				{
+					int metallicRoughnessMapIndex = glTFMaterial.pbrData.metallicRoughnessTexture.value().textureIndex;
+					uint32_t imageIndex = asset.textures[metallicRoughnessMapIndex].imageIndex.value();
+
+					metallicRoughnessMapAssetHandle = m_Textures[imageIndex];
+				}
+
+				AssetManager::Instance->WaitForAsyncJobs();
+
+				ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
+					.ShaderAssetHandle = {}, // Use built-in shaders depending on material type.
+					.AlbedoColor = albedoColor,
+					.Glossiness = (float)roughness,
+					.AlbedoMapAssetHandle = albedoMapAssetHandle,
+					.NormalMapAssetHandle = normalMapAssetHandle,
+					.RoughnessMapAssetHandle = metallicRoughnessMapAssetHandle,
+					.MetallicMapAssetHandle = metallicRoughnessMapAssetHandle,
+				});
+
+				materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetHandle);
+			}
+			else
+			{
+				UUID materialAssetUUID = std::hash<std::string>()(relativePath.string());
+				materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetUUID);
+			}
+
+			m_MaterialNameToHandle[glTFMaterial.name.c_str()] = materialHandle;
+		}
 	}
 
 	Result<MeshPartDescriptor> FastGltfLoader::LoadMeshData(const fastgltf::Asset& asset, const fastgltf::Node& node, uint32_t meshIndex)
@@ -155,6 +318,8 @@ namespace HBL2
 		subMeshDescriptor.debugName = _strdup(mesh.name.c_str());
 
 		const fastgltf::Primitive& primitive = mesh.primitives[subMeshIndex];
+
+		subMeshDescriptor.embededMaterial = m_MaterialNameToHandle[asset.materials[mesh.primitives[subMeshIndex].materialIndex.value_or(0)].name.c_str()];
 
 		size_t vertexCount = 0;
 		size_t indexCount = 0;

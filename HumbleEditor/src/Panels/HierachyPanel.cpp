@@ -176,6 +176,7 @@ namespace HBL2
 							staticMesh.Mesh = meshHandle;
 							staticMesh.MeshIndex = meshIndex;
 							staticMesh.SubMeshIndex = subMeshIndex;
+							staticMesh.Material = subMesh.EmbededMaterial;
 
 							subMeshIndex++;
 						}

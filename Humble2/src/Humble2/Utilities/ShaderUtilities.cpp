@@ -1,6 +1,7 @@
 #include "ShaderUtilities.h"
 
 #include <Project\Project.h>
+#include <Utilities\YamlUtilities.h>
 
 namespace HBL2
 {
@@ -506,7 +507,21 @@ namespace HBL2
 
 	void ShaderUtilities::CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType)
 	{
-		std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(handle)->FilePath).string() + ".hblmat", 0);
+		const auto& path = HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(handle)->FilePath);
+
+		if (!std::filesystem::exists(path.parent_path()))
+		{
+			try
+			{
+				std::filesystem::create_directories(path.parent_path());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_ERROR("Project directory creation failed: {0}", e.what());
+			}
+		}
+
+		std::ofstream fout(path.string() + ".hblmat", 0);
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;
@@ -520,14 +535,92 @@ namespace HBL2
 		fout.close();
 	}
 
-	ReflectionData ShaderUtilities::Reflect(const std::vector<uint32_t>& vertexShaderData, const std::vector<uint32_t>& fragmentShaderData)
+	void ShaderUtilities::CreateMaterialAssetFile(Handle<Asset> handle, const MaterialDataDescriptor&& desc)
+	{
+		const auto& path = HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(handle)->FilePath);
+
+		if (!std::filesystem::exists(path.parent_path()))
+		{
+			try
+			{
+				std::filesystem::create_directories(path.parent_path());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_ERROR("Project directory creation failed: {0}", e.what());
+			}
+		}
+
+		std::ofstream fout(path, 0);
+
+		YAML::Emitter out;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Material" << YAML::Value;
+		out << YAML::BeginMap;
+
+		if (desc.ShaderAssetHandle.IsValid())
+		{
+			out << YAML::Key << "Shader" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.ShaderAssetHandle)->UUID;
+		}
+		else
+		{
+			out << YAML::Key << "Shader" << YAML::Value << (UUID)0;
+		}
+
+		out << YAML::Key << "AlbedoColor" << YAML::Value << desc.AlbedoColor;
+		out << YAML::Key << "Glossiness" << YAML::Value << desc.Glossiness;
+
+		if (desc.AlbedoMapAssetHandle.IsValid())
+		{
+			out << YAML::Key << "AlbedoMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.AlbedoMapAssetHandle)->UUID;
+		}
+		else
+		{
+			out << YAML::Key << "AlbedoMap" << YAML::Value << (UUID)0;
+		}
+
+		if (desc.NormalMapAssetHandle.IsValid())
+		{
+			out << YAML::Key << "NormalMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.NormalMapAssetHandle)->UUID;
+		}
+		else
+		{
+			out << YAML::Key << "NormalMap" << YAML::Value << (UUID)0;
+		}
+
+		if (desc.MetallicMapAssetHandle.IsValid())
+		{
+			out << YAML::Key << "MetallicMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.MetallicMapAssetHandle)->UUID;
+		}
+		else
+		{
+			out << YAML::Key << "MetallicMap" << YAML::Value << (UUID)0;
+		}
+
+		if (desc.RoughnessMapAssetHandle.IsValid())
+		{
+			out << YAML::Key << "RoughnessMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.RoughnessMapAssetHandle)->UUID;
+		}
+		else
+		{
+			out << YAML::Key << "RoughnessMap" << YAML::Value << (UUID)0;
+		}
+
+		out << YAML::EndMap;
+		out << YAML::EndMap;
+
+		fout << out.c_str();
+		fout.close();
+	}
+
+	ReflectionData ShaderUtilities::Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData)
 	{
 		ReflectionData reflectionData;
 
 		// Vertex
 		{
-			spirv_cross::Compiler compiler(vertexShaderData);
-			spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+			spirv_cross::Compiler compiler(vertexShaderData.Data(), vertexShaderData.Size());
+			const spirv_cross::ShaderResources& resources = compiler.get_shader_resources();
 
 			HBL2_CORE_TRACE("OpenGLShader::Reflect - {0}", GLShaderStageToString(ShaderStage::VERTEX));
 			HBL2_CORE_TRACE("    {0} uniform buffers", resources.uniform_buffers.size());
@@ -535,7 +628,7 @@ namespace HBL2
 			HBL2_CORE_TRACE("    {0} resources", resources.sampled_images.size());
 
 			// Get all entry points and their execution stages
-			auto entryPoints = compiler.get_entry_points_and_stages();
+			const auto& entryPoints = compiler.get_entry_points_and_stages();
 
 			HBL2_CORE_TRACE("Shader Entry Points:");
 			for (const auto& entryPoint : entryPoints)
@@ -761,15 +854,15 @@ namespace HBL2
 
 		// Fragment
 		{
-			spirv_cross::Compiler compiler(fragmentShaderData);
-			spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+			spirv_cross::Compiler compiler(fragmentShaderData.Data(), fragmentShaderData.Size());
+			const spirv_cross::ShaderResources& resources = compiler.get_shader_resources();
 
 			HBL2_CORE_TRACE("OpenGLShader::Reflect - {0}", GLShaderStageToString(ShaderStage::FRAGMENT));
 			HBL2_CORE_TRACE("    {0} uniform buffers", resources.uniform_buffers.size());
 			HBL2_CORE_TRACE("    {0} resources", resources.sampled_images.size());
 
 			// Get all entry points and their execution stages
-			auto entryPoints = compiler.get_entry_points_and_stages();
+			const auto& entryPoints = compiler.get_entry_points_and_stages();
 
 			HBL2_CORE_TRACE("Shader Entry Points:");
 			for (const auto& entryPoint : entryPoints)

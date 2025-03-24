@@ -46,6 +46,8 @@ namespace HBL2
 			VertexOffset = desc.vertexOffset;
 			VertexCount = desc.vertexCount;
 			Extents = { desc.minVertex, desc.maxVertex };
+
+			EmbededMaterial = desc.embededMaterial;
 		}
 
 		const char* DebugName = "";
@@ -56,6 +58,8 @@ namespace HBL2
 		uint32_t InstanceOffset = 0;
 		uint32_t InstanceCount = 1;
 		MeshExtents Extents;
+
+		Handle<Material> EmbededMaterial;
 	};
 
 	struct MeshPart
