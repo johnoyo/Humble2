@@ -41,6 +41,14 @@ namespace HBL2
 				}
 			});
 		}
+		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) override
+		{
+			VulkanTexture* texture = GetTexture(handle);
+			if (texture != nullptr)
+			{
+				texture->Update(bytes);
+			}
+		}
 		VulkanTexture* GetTexture(Handle<Texture> handle) const
 		{
 			return m_TexturePool.Get(handle);

@@ -72,6 +72,9 @@ namespace HBL2
 		case AssetType::Material:
 			SaveMaterial(asset);
 			break;
+		case AssetType::Texture:
+			SaveTexture(asset);
+			break;
 		case AssetType::Scene:
 			SaveScene(asset);
 			break;
@@ -687,6 +690,56 @@ namespace HBL2
 		Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
 		SceneSerializer serializer(scene);
 		serializer.Serialize(Project::GetAssetFileSystemPath(asset->FilePath));
+	}
+
+	void AssetImporter::SaveTexture(Asset* asset)
+	{
+		Handle<Texture> textureHandle = Handle<Texture>::UnPack(asset->Indentifier);
+
+		if (!textureHandle.IsValid())
+		{
+			HBL2_CORE_ERROR("Could not save asset {0} at path: {1}, because the handle is invalid.", asset->DebugName, asset->FilePath.string());
+			return;
+		}
+
+		// Open texture metadat file.
+		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture");
+
+		if (!stream.is_open())
+		{
+			HBL2_CORE_ERROR("Texture metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture");
+			return;
+		}
+
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Texture"].IsDefined())
+		{
+			HBL2_CORE_ERROR("Texture not found: {0}", asset->DebugName);
+			stream.close();
+			return;
+		}
+
+		auto textureProperties = data["Texture"];
+		if (textureProperties)
+		{
+			// Load the texture to get current pixel data.
+			TextureSettings textureSettings =
+			{
+				.Flip = textureProperties["Flip"].as<bool>(),
+			};
+			stbi_uc* textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
+
+			// Update gpu texture storage.
+			ResourceManager::Instance->UpdateTexture(textureHandle, { (std::byte*)textureData, (size_t)(textureSettings.Width * textureSettings.Height) });
+
+			// Free the cpu side pixel data sice they are copied by the driver.
+			stbi_image_free(textureData);
+		}
+
+		stream.close();
 	}
 
 	void AssetImporter::SaveScript(Asset* asset)

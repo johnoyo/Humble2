@@ -141,6 +141,29 @@ namespace HBL2
 			}
 		}
 
+		void Update(const Span<const std::byte>& bytes)
+		{
+			VulkanDevice* device = (VulkanDevice*)Device::Instance;
+			VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
+
+			VkBuffer stagingBuffer = VK_NULL_HANDLE;
+			VmaAllocation stagingBufferAllocation = VK_NULL_HANDLE;
+
+			CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation);
+
+			VkDeviceSize imageSize = Extent.width * Extent.height * 4;
+
+			// Transfer initiaData to staging buffer
+			void* mappedData;
+			vmaMapMemory(renderer->GetAllocator(), stagingBufferAllocation, &mappedData);
+			memcpy(mappedData, bytes.Data(), (size_t)imageSize);
+			vmaUnmapMemory(renderer->GetAllocator(), stagingBufferAllocation);
+
+			CopyBufferToTexture(renderer, stagingBuffer);
+
+			vmaDestroyBuffer(renderer->GetAllocator(), stagingBuffer, stagingBufferAllocation);
+		}
+
 		void Destroy()
 		{
 			VulkanDevice* device = (VulkanDevice*)Device::Instance;

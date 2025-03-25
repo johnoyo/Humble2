@@ -4,6 +4,7 @@
 #include "Asset\Asset.h"
 #include "Resources\Types.h"
 #include "Utilities\Result.h"
+#include "Utilities\Collections\Span.h"
 
 #include <fastgltf/core.hpp>
 #include <fastgltf/types.hpp>
@@ -19,7 +20,7 @@ namespace HBL2
 		Handle<Mesh> Load(const std::filesystem::path& path);
 
 	private:
-        void LoadTextures(const fastgltf::Asset& asset);
+        void LoadTextures(const std::filesystem::path& path, const fastgltf::Asset& asset);
         void LoadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset);
 
 		Result<MeshPartDescriptor> LoadMeshData(const fastgltf::Asset& asset, const fastgltf::Node& node, uint32_t meshIndex);

@@ -41,6 +41,7 @@ namespace HBL2
 
 		void SaveMaterial(Asset* asset);
 		void SaveScene(Asset* asset);
+		void SaveTexture(Asset* asset);
 		void SaveScript(Asset* asset);
 		void SaveSound(Asset* asset);
 

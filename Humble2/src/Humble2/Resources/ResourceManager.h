@@ -28,6 +28,7 @@ namespace HBL2
 		// Textures
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) = 0;
 		virtual void DeleteTexture(Handle<Texture> handle) = 0;
+		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) = 0;
 
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) = 0;

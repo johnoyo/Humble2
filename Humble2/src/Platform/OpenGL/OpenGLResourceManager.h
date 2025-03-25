@@ -38,6 +38,14 @@ namespace HBL2
 				m_TexturePool.Remove(handle);
 			}
 		}
+		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) override
+		{
+			OpenGLTexture* texture = GetTexture(handle);
+			if (texture != nullptr)
+			{
+				texture->Update(bytes);
+			}
+		}
 		OpenGLTexture* GetTexture(Handle<Texture> handle) const
 		{
 			return m_TexturePool.Get(handle);

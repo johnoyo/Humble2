@@ -44,7 +44,7 @@ namespace HBL2
 			return Handle<Mesh>();
 		}
 
-		LoadTextures(asset.get());
+		LoadTextures(path, asset.get());
 		LoadMaterials(path, asset.get());
 
 		std::vector<MeshPartDescriptor> meshes;
@@ -77,7 +77,7 @@ namespace HBL2
 		return handle;
 	}
 
-	void FastGltfLoader::LoadTextures(const fastgltf::Asset& asset)
+	void FastGltfLoader::LoadTextures(const std::filesystem::path& path, const fastgltf::Asset& asset)
 	{
 		m_Textures.clear();
 
@@ -119,6 +119,78 @@ namespace HBL2
 
 					AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
 				}
+			}
+			else if (auto* byteArray = std::get_if<fastgltf::sources::Array>(&glTFImage.data))
+			{
+				const auto& relativeTexturePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Textures" / (std::string(glTFImage.name) + ".png");
+
+				if (!TextureUtilities::Get().Save(Project::GetAssetFileSystemPath(relativeTexturePath), { byteArray->bytes.data(), byteArray->bytes.size() }, true))
+				{
+					HBL2_CORE_ERROR("Failed to serialize texture file located inside of \"{}\" gltf file.", path);
+					continue;
+				}
+
+				UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath.string());
+				textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
+
+				if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
+				{
+					textureAssetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "texture-asset",
+						.filePath = relativeTexturePath,
+						.type = AssetType::Texture,
+					});
+				}
+
+				if (textureAssetHandle.IsValid())
+				{
+					TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
+				}
+
+				AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
+			}
+			else if (auto* view = std::get_if<fastgltf::sources::BufferView>(&glTFImage.data))
+			{
+				auto& bufferView = asset.bufferViews[view->bufferViewIndex];
+				auto& bufferFromBufferView = asset.buffers[bufferView.bufferIndex];
+
+				std::visit(
+					fastgltf::visitor{
+						[&](auto& arg) // default branch if image data is not supported
+						{
+							HBL2_CORE_FATAL("not supported default branch (image data = BUfferView) {}", glTFImage.name);
+						},
+						[&](fastgltf::sources::Array& vector) // load from memory
+						{
+							const auto& relativeTexturePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Textures" / (std::string(glTFImage.name) + ".png");
+
+							if (!TextureUtilities::Get().Save(Project::GetAssetFileSystemPath(relativeTexturePath), { byteArray->bytes.data(), byteArray->bytes.size() }))
+							{
+								HBL2_CORE_ERROR("Failed to serialize texture file located inside of \"{}\" gltf file.", path);
+								return;
+							}
+
+							UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath.string());
+							textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
+
+							if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
+							{
+								textureAssetHandle = AssetManager::Instance->CreateAsset({
+									.debugName = "texture-asset",
+									.filePath = relativeTexturePath,
+									.type = AssetType::Texture,
+								});
+							}
+
+							if (textureAssetHandle.IsValid())
+							{
+								TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
+							}
+
+							AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
+						} 
+					},
+					bufferFromBufferView.data);
 			}
 
 			m_Textures[imageIndex] = textureAssetHandle;
@@ -164,7 +236,6 @@ namespace HBL2
 					{
 						type = 2;
 					}
-
 
 					ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, type);
 				}

@@ -534,6 +534,13 @@ namespace HBL2
 					switch (asset->Type)
 					{
 					case AssetType::Texture:
+						{
+							static bool flip = false;
+							if (ImGui::Checkbox("Flip", &flip))
+							{
+								TextureUtilities::Get().UpdateAssetMetadataFile(m_SelectedAsset, flip);
+							}
+						}
 						break;
 					case AssetType::Shader:
 						break;
