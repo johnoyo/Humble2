@@ -2,21 +2,53 @@ Scene: EmptyScene
 Entities:
   - Entity: 3
     Component::Tag:
-      Tag: Sprite
+      Tag: Monkeh
     Component::ID:
-      ID: 2898162071183314432
+      ID: 18396450913416425472
     Component::Transform:
-      Translation: [0, 0, 0]
+      Translation: [2, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
       Parent: 0
       Children:
         []
-    Component::Sprite:
+    Component::StaticMesh:
       Enabled: true
-      Material: 5092745295480585008
+      Material: 10749047289362499544
+      Mesh:
+        UUID: 17631668153373402826
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::AudioSource:
+      Enabled: true
+      Sound: 374884297105595585
+    NewComponent:
+      Value: 1
+      SceneHandle: 11559080649116764721
   - Entity: 2
+    Component::Tag:
+      Tag: Camera
+    Component::ID:
+      ID: 11463086572280647680
+    Component::Transform:
+      Translation: [0, 0, 10]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    Component::Camera:
+      Enabled: true
+      Primary: true
+      Far: 1000
+      Near: 0.100000001
+      FOV: 30
+      Aspect Ratio: 2.04237294
+      Zoom Level: 300
+      Type: 0
+  - Entity: 1
     Component::Tag:
       Tag: New Light
     Component::ID:
@@ -36,52 +68,22 @@ Entities:
       Attenuation: 10
       Color: [1, 1, 1]
       Type: 0
-  - Entity: 1
-    Component::Tag:
-      Tag: Camera
-    Component::ID:
-      ID: 11463086572280647680
-    Component::Transform:
-      Translation: [0, 0, 10]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 0
-      Children:
-        []
-    Component::Camera:
-      Enabled: true
-      Primary: true
-      Far: 1000
-      Near: 0.100000001
-      FOV: 30
-      Aspect Ratio: 2.52407932
-      Zoom Level: 300
-      Type: 0
   - Entity: 0
     Component::Tag:
-      Tag: Monkeh
+      Tag: Sprite
     Component::ID:
-      ID: 18396450913416425472
+      ID: 2898162071183314432
     Component::Transform:
-      Translation: [2, 0, 0]
+      Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
       Parent: 0
       Children:
         []
-    Component::StaticMesh:
+    Component::Sprite:
       Enabled: true
-      Material: 10749047289362499544
-      Mesh: 17631668153373402826
-    Component::AudioSource:
-      Enabled: true
-      Sound: 374884297105595585
-    NewComponent:
-      Value: 1
-      Mario: 2898162071183314432
-      SceneHandle: 11559080649116764721
+      Material: 5092745295480585008
 User Systems:
   - 1446947720767051862
 User Components:

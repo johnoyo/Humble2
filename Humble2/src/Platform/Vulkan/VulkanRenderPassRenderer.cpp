@@ -63,18 +63,20 @@ namespace HBL2
 				Material* material = rm->GetMaterial(draw.Material);
 				VulkanShader* shader = rm->GetShader(material->Shader);
 
+				const auto& meshPart = mesh->Meshes[draw.MeshIndex];
+
 				// vkCmdBindIndexBuffer
-				if (mesh->IndexBuffer.IsValid())
+				if (meshPart.IndexBuffer.IsValid())
 				{
-					VulkanBuffer* indexBuffer = rm->GetBuffer(mesh->IndexBuffer);
+					VulkanBuffer* indexBuffer = rm->GetBuffer(meshPart.IndexBuffer);
 					vkCmdBindIndexBuffer(m_CommandBuffer, indexBuffer->Buffer, 0, VK_INDEX_TYPE_UINT32);
 				}
 
 				// vkCmdBindVertexBuffers
 				uint32_t bufferCounter = 0;
-				std::vector<VkBuffer> buffers(mesh->VertexBuffers.size());
-				std::vector<VkDeviceSize> offsets(mesh->VertexBuffers.size());
-				for (const auto vertexBufferHandle : mesh->VertexBuffers)
+				std::vector<VkBuffer> buffers(meshPart.VertexBuffers.size());
+				std::vector<VkDeviceSize> offsets(meshPart.VertexBuffers.size());
+				for (const auto vertexBufferHandle : meshPart.VertexBuffers)
 				{
 					VulkanBuffer* vertexBuffer = rm->GetBuffer(vertexBufferHandle);
 					buffers[bufferCounter] = vertexBuffer->Buffer;
@@ -90,16 +92,18 @@ namespace HBL2
 					vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 1, 1, &drawBindGroup->DescriptorSet, 1, &draw.Offset);
 				}
 
+				const auto& subMesh = meshPart.SubMeshes[draw.SubMeshIndex];
+
 				// Draw the mesh accordingly
-				if (mesh->IndexBuffer.IsValid())
+				if (meshPart.IndexBuffer.IsValid())
 				{
 					// vkCmdDrawIndexed
-					vkCmdDrawIndexed(m_CommandBuffer, mesh->IndexCount, mesh->InstanceCount, mesh->IndexOffset, mesh->VertexOffset, mesh->InstanceOffset);
+					vkCmdDrawIndexed(m_CommandBuffer, subMesh.IndexCount, subMesh.InstanceCount, subMesh.IndexOffset, subMesh.VertexOffset, subMesh.InstanceOffset);
 				}
 				else
 				{
 					// vkCmdDraw
-					vkCmdDraw(m_CommandBuffer, mesh->VertexCount, mesh->InstanceCount, mesh->VertexOffset, mesh->InstanceOffset);
+					vkCmdDraw(m_CommandBuffer, subMesh.VertexCount, subMesh.InstanceCount, subMesh.VertexOffset, subMesh.InstanceOffset);
 				}
 			}
 		}

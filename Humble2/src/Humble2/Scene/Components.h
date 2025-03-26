@@ -54,6 +54,8 @@ namespace HBL2
 		struct HBL2_API StaticMesh
 		{
 			Handle<Mesh> Mesh;
+			uint32_t MeshIndex = 0;
+			uint32_t SubMeshIndex = 0;
 			Handle<Material> Material;
 			bool Enabled = true;
 		};

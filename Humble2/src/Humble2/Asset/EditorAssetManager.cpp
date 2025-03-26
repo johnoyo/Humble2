@@ -23,6 +23,12 @@ namespace HBL2
     void EditorAssetManager::SaveAsset(Handle<Asset> handle)
     {
         Asset* asset = GetAssetMetadata(handle);
+
+        if (asset->Loaded == false)
+        {
+            LoadAsset(handle);
+        }
+
         AssetImporter::Get().SaveAsset(asset);
     }
 

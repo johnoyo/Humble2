@@ -25,6 +25,7 @@ namespace HBL2
 		private:
 			void DrawHierachy(entt::entity entity, const auto& entities);
 			void DrawHierachyPanel();
+			void HandleHierachyPanelDragAndDrop();
 			void DrawPropertiesPanel();
 			void DrawToolBarPanel();
 			void DrawConsolePanel(float ts);

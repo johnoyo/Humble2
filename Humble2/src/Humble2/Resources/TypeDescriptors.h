@@ -21,6 +21,7 @@ namespace HBL2
 	struct BindGroupLayout;
 	struct RenderPass;
 	struct RenderPassLayout;
+	struct Material;
 
 	struct TextureDescriptor
 	{
@@ -198,17 +199,38 @@ namespace HBL2
 		Span<const ColorTarget> colorTargets;
 	};
 
-	struct MeshDescriptor
+	struct SubMeshDescriptor
 	{
 		const char* debugName;
 		uint32_t indexOffset;
 		uint32_t indexCount;
 		uint32_t vertexOffset;
 		uint32_t vertexCount;
-		Handle<Buffer> indexBuffer;
-		std::initializer_list<Handle<Buffer>> vertexBuffers;
 		glm::vec3 minVertex;
 		glm::vec3 maxVertex;
+
+		Handle<Material> embededMaterial;
+	};
+
+	struct MeshPartDescriptor
+	{
+		const char* debugName;
+		std::vector<SubMeshDescriptor> subMeshes;
+		Handle<Buffer> indexBuffer;
+		std::vector<Handle<Buffer>> vertexBuffers;
+
+		struct LocalTransform
+		{
+			glm::vec3 translation;
+			glm::vec3 rotation;
+			glm::vec3 scale;
+		} importedLocalTransform;
+	};
+
+	struct MeshDescriptor
+	{
+		const char* debugName;
+		std::vector<MeshPartDescriptor> meshes;
 	};
 
 	struct MaterialDescriptor

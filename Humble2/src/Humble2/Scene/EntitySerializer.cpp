@@ -105,14 +105,7 @@ namespace HBL2
 				}
 			}
 
-			if (materialAsset != nullptr)
-			{
-				out << YAML::Key << "Material" << YAML::Value << materialAsset->UUID;
-			}
-			else
-			{
-				out << YAML::Key << "Material" << YAML::Value << (UUID)0;
-			}
+			out << YAML::Key << "Material" << YAML::Value << (materialAsset != nullptr ? materialAsset->UUID : (UUID)0);
 
 			out << YAML::EndMap;
 		}
@@ -154,23 +147,14 @@ namespace HBL2
 				}
 			}
 
-			if (materialAsset != nullptr)
-			{
-				out << YAML::Key << "Material" << YAML::Value << materialAsset->UUID;
-			}
-			else
-			{
-				out << YAML::Key << "Material" << YAML::Value << (UUID)0;
-			}
+			out << YAML::Key << "Material" << YAML::Value << (materialAsset != nullptr ? materialAsset->UUID : (UUID)0);
 
-			if (meshAsset != nullptr)
-			{
-				out << YAML::Key << "Mesh" << YAML::Value << meshAsset->UUID;
-			}
-			else
-			{
-				out << YAML::Key << "Mesh" << YAML::Value << (UUID)0;
-			}
+			out << YAML::Key << "Mesh" << YAML::Value;
+			out << YAML::BeginMap;
+			out << YAML::Key << "UUID" << YAML::Value << (meshAsset != nullptr ? meshAsset->UUID : (UUID)0);
+			out << YAML::Key << "MeshIndex" << YAML::Value << staticMesh.MeshIndex;
+			out << YAML::Key << "SubMeshIndex" << YAML::Value << staticMesh.SubMeshIndex;
+			out << YAML::EndMap;
 
 			out << YAML::EndMap;
 		}
@@ -222,14 +206,7 @@ namespace HBL2
 				}
 			}
 
-			if (soundAsset != nullptr)
-			{
-				out << YAML::Key << "Sound" << YAML::Value << soundAsset->UUID;
-			}
-			else
-			{
-				out << YAML::Key << "Sound" << YAML::Value << (UUID)0;
-			}
+			out << YAML::Key << "Sound" << YAML::Value << (soundAsset != nullptr ? soundAsset->UUID : (UUID)0);
 
 			out << YAML::EndMap;
 		}
@@ -377,7 +354,13 @@ namespace HBL2
 			auto& staticMesh = m_Scene->AddComponent<Component::StaticMesh>(m_Entity);
 			staticMesh.Enabled = staticMesh_NewComponent["Enabled"].as<bool>();
 			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
-			staticMesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(staticMesh_NewComponent["Mesh"].as<UUID>());
+
+			if (staticMesh_NewComponent["Mesh"].IsDefined())
+			{
+				staticMesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(staticMesh_NewComponent["Mesh"]["UUID"].as<UUID>());
+				staticMesh.MeshIndex = staticMesh_NewComponent["Mesh"]["MeshIndex"].as<uint32_t>();
+				staticMesh.SubMeshIndex = staticMesh_NewComponent["Mesh"]["SubMeshIndex"].as<uint32_t>();
+			}
 		}
 
 		auto lightComponent = entityNode["Component::Light"];

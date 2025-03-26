@@ -12,6 +12,8 @@
 #include "Scene\SceneSerializer.h"
 #include "Project\Project.h"
 
+#include "Utilities\Collections\Span.h"
+
 #include <yaml-cpp\yaml.h>
 
 namespace HBL2
@@ -39,6 +41,7 @@ namespace HBL2
 
 		void SaveMaterial(Asset* asset);
 		void SaveScene(Asset* asset);
+		void SaveTexture(Asset* asset);
 		void SaveScript(Asset* asset);
 		void SaveSound(Asset* asset);
 

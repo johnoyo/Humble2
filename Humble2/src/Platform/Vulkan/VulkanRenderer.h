@@ -87,9 +87,6 @@ namespace HBL2
 		virtual void* GetDepthAttachment() override { return nullptr; }
 		virtual void* GetColorAttachment() override { return m_ColorAttachmentID; }
 
-		virtual void Draw(Handle<Mesh> mesh) override {}
-		virtual void DrawIndexed(Handle<Mesh> mesh) override {}
-
 		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalBindings2D; }
 		virtual Handle<BindGroup> GetGlobalBindings3D() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalBindings3D; }
 		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalPresentBindings; }

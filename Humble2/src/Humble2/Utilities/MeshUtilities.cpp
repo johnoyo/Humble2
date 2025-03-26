@@ -32,36 +32,34 @@ namespace HBL2
 		s_Instance = nullptr;
 	}
 
-	MeshData* MeshUtilities::Load(const std::filesystem::path& path)
+	Handle<Mesh> MeshUtilities::Load(const std::filesystem::path& path)
     {
 		if (m_LoadedMeshes.find(path.string()) != m_LoadedMeshes.end())
 		{
-			return &m_LoadedMeshes[path.string()];
+			return m_LoadedMeshes[path.string()];
 		}
-
-		MeshData meshData;
 
 		const std::string& extension = path.filename().extension().string();
 
-		bool result = false;
+		Handle<Mesh> handle;
 
 		if (extension == ".obj" || extension == ".fbx" || extension == ".FBX")
 		{
-			result = m_UFbxLoader->Load(path, meshData);
+			handle = m_UFbxLoader->Load(path);
 		}
 		else if (extension == ".gltf" || extension == ".glb")
 		{
-			result = m_FastGltfLoader->Load(path, meshData);
+			handle = m_FastGltfLoader->Load(path);
 		}
 
-		if (!result)
+		if (!handle.IsValid())
 		{
-			return nullptr;
+			return Handle<Mesh>();
 		}
 
-		m_LoadedMeshes[path.string()] = meshData;
+		m_LoadedMeshes[path.string()] = handle;
 
-		return &m_LoadedMeshes[path.string()];
+		return m_LoadedMeshes[path.string()];
     }
 }
 

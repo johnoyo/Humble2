@@ -1,7 +1,18 @@
 #pragma once
 
+#include <cstdint>
+
 namespace HBL2
 {
+	/**
+	 * @brief The interface that all allocators implement.
+	 *
+	 * Uses the Curiously Recurring Template Pattern (CRTP), a C++ idiom where a base class
+	 * uses a derived class as a template parameter. This allows the base class to call methods
+	 * from the derived class without virtual function overhead.
+	 *
+	 * @tparam TAllocator The derived allocator type.
+	 */
 	template<typename TAllocator>
 	class BaseAllocator
 	{

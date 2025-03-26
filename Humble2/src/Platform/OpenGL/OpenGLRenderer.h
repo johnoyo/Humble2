@@ -38,9 +38,6 @@ namespace HBL2
 		virtual void* GetDepthAttachment() override;
 		virtual void* GetColorAttachment() override;
 
-		virtual void Draw(Handle<Mesh> mesh) override;
-		virtual void DrawIndexed(Handle<Mesh> mesh) override;
-
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() override { return m_MainFrameBuffer; }
 		
 		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_GlobalBindings2D; }

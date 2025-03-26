@@ -1,6 +1,10 @@
 #pragma once
 
 #include "Base.h"
+#include "Asset\AssetManager.h"
+#include "Resources\Types.h"
+
+#include "Utilities\Result.h"
 
 #include "ufbx\ufbx.h"
 
@@ -8,18 +12,29 @@
 
 namespace HBL2
 {
-	struct MeshData;
-	struct Vertex;
-
 	class UFbxLoader
 	{
 	public:
-		bool Load(const std::filesystem::path& path, MeshData& meshData);
+		Handle<Mesh> Load(const std::filesystem::path& path);
 
 	private:
-		bool LoadVertexData(const ufbx_node* node, MeshData& meshData);
+		void LoadMaterials(const std::filesystem::path& path);
+		Handle<Asset> LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, void* internalData = nullptr);
+		Handle<Asset> LoadTexture(const ufbx_texture* texture, ResourceTask<Texture>* resourceTask);
+		void CleanUpResourceTasks();
+
+		Result<MeshPartDescriptor> LoadMeshData(const ufbx_node* node, uint32_t meshIndex);
+		Result<SubMeshDescriptor> LoadSubMeshVertexData(const ufbx_node* node, uint32_t meshIndex, uint32_t subMeshIndex);
 
 	private:
 		ufbx_scene* m_Scene;
+		std::vector<Vertex> m_Vertices;
+		std::vector<uint32_t> m_Indeces;
+		std::unordered_map<const char*, Handle<Material>> m_MaterialNameToHandle;
+
+		ResourceTask<Texture>* m_AlbedoMapTask = nullptr;
+		ResourceTask<Texture>* m_NormalMapTask = nullptr;
+		ResourceTask<Texture>* m_RoughnessMapTask = nullptr;
+		ResourceTask<Texture>* m_MetallicMapTask = nullptr;
 	};
 }

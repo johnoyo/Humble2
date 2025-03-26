@@ -72,6 +72,9 @@ namespace HBL2
 		case AssetType::Material:
 			SaveMaterial(asset);
 			break;
+		case AssetType::Texture:
+			SaveTexture(asset);
+			break;
 		case AssetType::Scene:
 			SaveScene(asset);
 			break;
@@ -371,6 +374,24 @@ namespace HBL2
 			auto metallicMapHandle = AssetManager::Instance->GetAsset<Texture>(metallicMapUUID);
 			auto roughnessMapHandle = AssetManager::Instance->GetAsset<Texture>(roughnessMapUUID);
 
+			// If shader is not set get the built in shader depending on material type.
+			if (!shaderHandle.IsValid())
+			{
+				if (type == 0)
+				{
+					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::UNLIT);
+				}
+				else if (type == 1)
+				{
+					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::BLINN_PHONG);
+				}
+				else if (type == 2)
+				{
+					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PBR);
+				}
+			}
+
+			// If albedo map is not set use the built in white texture.
 			if (!albedoMapHandle.IsValid())
 			{
 				albedoMapHandle = TextureUtilities::Get().WhiteTexture;
@@ -401,7 +422,7 @@ namespace HBL2
 					.buffers = {
 						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
 					}
-				});
+				});		
 			}
 
 			auto material = ResourceManager::Instance->CreateMaterial({
@@ -542,51 +563,20 @@ namespace HBL2
 		if (!data["Mesh"].IsDefined())
 		{
 			HBL2_CORE_TRACE("Mesh not found: {0}", ss.str());
+			stream.close();
+
 			return Handle<Mesh>();
 		}
 
 		auto meshProperties = data["Mesh"];
 		if (meshProperties)
 		{
-			MeshData* meshData = MeshUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath));
-
-			const std::string& meshName = asset->FilePath.filename().stem().string();
-
-			auto vertexBuffer = ResourceManager::Instance->CreateBuffer({
-				.debugName = _strdup(std::format("{}-vertex-buffer", meshName).c_str()),
-				.usage = BufferUsage::VERTEX,
-				.memoryUsage = MemoryUsage::GPU_ONLY,
-				.byteSize = (uint32_t)(meshData->VertexBuffer.size() * sizeof(Vertex)),
-				.initialData = meshData->VertexBuffer.data(),
-			});
-
-			Handle<Buffer> indexBuffer;
-			if (meshData->IndexBuffer.size() > 0)
-			{
-				indexBuffer = ResourceManager::Instance->CreateBuffer({
-					.debugName = _strdup(std::format("{}-index-buffer", meshName).c_str()),
-					.usage = BufferUsage::INDEX,
-					.memoryUsage = MemoryUsage::GPU_ONLY,
-					.byteSize = (uint32_t)(meshData->IndexBuffer.size() * sizeof(uint32_t)),
-					.initialData = meshData->IndexBuffer.data(),
-				});
-			}
-
-			// Create the mesh
-			auto mesh = ResourceManager::Instance->CreateMesh({
-				.debugName = _strdup(std::format("{}-mesh", meshName).c_str()),
-				.indexOffset = 0,
-				.indexCount = (uint32_t)meshData->IndexBuffer.size(),
-				.vertexOffset = 0,
-				.vertexCount = (uint32_t)meshData->VertexBuffer.size(),
-				.indexBuffer = indexBuffer,
-				.vertexBuffers = { vertexBuffer },
-				.minVertex = meshData->MeshExtents.Min,
-				.maxVertex = meshData->MeshExtents.Max,
-			});
-
+			Handle<Mesh> mesh = MeshUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath));
+			stream.close();
 			return mesh;
 		}
+
+		stream.close();
 
 		return Handle<Mesh>();
 	}
@@ -700,6 +690,56 @@ namespace HBL2
 		Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
 		SceneSerializer serializer(scene);
 		serializer.Serialize(Project::GetAssetFileSystemPath(asset->FilePath));
+	}
+
+	void AssetImporter::SaveTexture(Asset* asset)
+	{
+		Handle<Texture> textureHandle = Handle<Texture>::UnPack(asset->Indentifier);
+
+		if (!textureHandle.IsValid())
+		{
+			HBL2_CORE_ERROR("Could not save asset {0} at path: {1}, because the handle is invalid.", asset->DebugName, asset->FilePath.string());
+			return;
+		}
+
+		// Open texture metadat file.
+		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture");
+
+		if (!stream.is_open())
+		{
+			HBL2_CORE_ERROR("Texture metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture");
+			return;
+		}
+
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Texture"].IsDefined())
+		{
+			HBL2_CORE_ERROR("Texture not found: {0}", asset->DebugName);
+			stream.close();
+			return;
+		}
+
+		auto textureProperties = data["Texture"];
+		if (textureProperties)
+		{
+			// Load the texture to get current pixel data.
+			TextureSettings textureSettings =
+			{
+				.Flip = textureProperties["Flip"].as<bool>(),
+			};
+			stbi_uc* textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
+
+			// Update gpu texture storage.
+			ResourceManager::Instance->UpdateTexture(textureHandle, { (std::byte*)textureData, (size_t)(textureSettings.Width * textureSettings.Height) });
+
+			// Free the cpu side pixel data sice they are copied by the driver.
+			stbi_image_free(textureData);
+		}
+
+		stream.close();
 	}
 
 	void AssetImporter::SaveScript(Asset* asset)
@@ -1233,11 +1273,14 @@ namespace HBL2
 
 		Mesh* mesh = ResourceManager::Instance->GetMesh(meshAssetHandle);
 
-		ResourceManager::Instance->DeleteBuffer(mesh->IndexBuffer);
-
-		for (const auto vertexBuffer : mesh->VertexBuffers)
+		for (auto& meshPart : mesh->Meshes)
 		{
-			ResourceManager::Instance->DeleteBuffer(vertexBuffer);
+			ResourceManager::Instance->DeleteBuffer(meshPart.IndexBuffer);
+
+			for (const auto vertexBuffer : meshPart.VertexBuffers)
+			{
+				ResourceManager::Instance->DeleteBuffer(vertexBuffer);
+			}
 		}
 
 		ResourceManager::Instance->DeleteMesh(meshAssetHandle);
@@ -1263,6 +1306,13 @@ namespace HBL2
 		}
 
 		Material* material = ResourceManager::Instance->GetMaterial(materialAssetHandle);
+
+		/*auto bindGrroupIterator = std::find(m_BindGroups.begin(), m_BindGroups.end(), material->BindGroup);
+
+		if (bindGrroupIterator != m_BindGroups.end())
+		{
+			m_BindGroups.erase(bindGrroupIterator);
+		}*/
 
 		ResourceManager::Instance->DeleteMaterial(materialAssetHandle);
 

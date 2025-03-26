@@ -38,6 +38,7 @@ namespace HBL2
 		operator std::initializer_list<T>() const { return std::initializer_list<T>(begin(), end()); }
 
 		T* Data() { return m_Data; }
+		const T* Data() const { return m_Data; }
 		const size_t Size() const { return m_Size; }
 
 		T* begin() { return m_Data; }

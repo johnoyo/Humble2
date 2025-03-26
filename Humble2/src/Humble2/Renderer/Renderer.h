@@ -86,9 +86,6 @@ namespace HBL2
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
 
-		virtual void Draw(Handle<Mesh> mesh) = 0;
-		virtual void DrawIndexed(Handle<Mesh> mesh) = 0;
-
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type, RenderPassStage stage) = 0;
 
 		virtual void* GetDepthAttachment() = 0;

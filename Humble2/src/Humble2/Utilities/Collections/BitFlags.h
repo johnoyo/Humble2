@@ -1,158 +1,214 @@
 #pragma once
 
-#include <bitset>
-#include <ostream>
+#include <stdint.h>
 #include <type_traits>
-#include <utility>
+#include <initializer_list>
 
 namespace HBL2
 {
-    // Helper class for bitwise flag-like operations on scoped enums.
-    //
-    // This class provides a way to represent combinations of enum values without
-    // directly overloading operators on the enum type itself. This approach
-    // avoids ambiguity in the type system and allows the enum type to continue
-    // representing a single value, while the BitFlags can hold a combination
-    // of enum values.
-    //
-    // Example usage:
-    //
-    // enum class MyEnum { FlagA = 1 << 0, FlagB = 1 << 1, FlagC = 1 << 2 };
-    //
-    // BitFlags<MyEnum> flags = { MyEnum::FlagA, MyEnum::FlagC };
-    // flags.Unset(MyEnum::FlagA);
-    // if (flags.IsSet(MyEnum::FlagC)) {
-    //   // ...
-    // }
-    //
-    // flags |= MyEnum::FlagB;
-    // BitFlags<MyEnum> new_flags = ~flags;
-    //
-    // Taken from: https://voithos.io/articles/type-safe-enum-class-bit-flags/ under MIT license.
-    //
-
-    template <typename T>
+    /// <summary>
+    /// A utility class for working with bitwise flag operations on scoped enums.
+    /// Provides operations for checking, setting, unsetting, and toggling flags.
+    /// </summary>
+    /// <typeparam name="EnumType">The enum type to use as flags.</typeparam>
+    template<typename EnumType>
     class BitFlags
     {
-        using UnderlyingT = std::underlying_type_t<T>;
+        using UnderlyingType = std::underlying_type_t<EnumType>;
 
     public:
-        constexpr BitFlags() : flags_(static_cast<UnderlyingT>(0)) {}
-        constexpr explicit BitFlags(T v) : flags_(ToUnderlying(v)) {}
-        constexpr BitFlags(std::initializer_list<T> vs) : BitFlags()
+        /// <summary>
+        /// Default constructor. Creates BitFlags with no flags set.
+        /// </summary>
+        BitFlags() = default;
+
+        /// <summary>
+        /// Constructor from a single enum value.
+        /// </summary>
+        /// <param name="flag">The enum value to set.</param>
+        BitFlags(EnumType flag)
+            : m_Flags(static_cast<UnderlyingType>(flag))
         {
-            for (T v : vs)
+        }
+
+        /// <summary>
+        /// Constructor from multiple enum values.
+        /// </summary>
+        /// <param name="flags">The enum values to set.</param>
+        BitFlags(std::initializer_list<EnumType> flags)
+            : m_Flags(0)
+        {
+            for (const auto& flag : flags)
             {
-                flags_ |= ToUnderlying(v);
+                m_Flags |= static_cast<UnderlyingType>(flag);
             }
         }
 
-        // Checks if a specific flag is set.
-        constexpr bool IsSet(T v) const
+        /// <summary>
+        /// Checks if a specific flag is set.
+        /// </summary>
+        /// <param name="flag">The flag to check.</param>
+        /// <returns>True if the flag is set, false otherwise.</returns>
+        bool IsSet(EnumType flag) const
         {
-            return (flags_ & ToUnderlying(v)) == ToUnderlying(v);
-        }
-        // Sets a single flag value.
-        constexpr void Set(T v) { flags_ |= ToUnderlying(v); }
-        // Unsets a single flag value.
-        constexpr void Unset(T v) { flags_ &= ~ToUnderlying(v); }
-        // Clears all flag values.
-        constexpr void Clear() { flags_ = static_cast<UnderlyingT>(0); }
-
-        constexpr operator bool() const
-        {
-            return flags_ != static_cast<UnderlyingT>(0);
+            return (m_Flags & static_cast<UnderlyingType>(flag)) == static_cast<UnderlyingType>(flag);
         }
 
-        friend constexpr BitFlags operator|(BitFlags lhs, T rhs)
+        /// <summary>
+        /// Sets a specific flag.
+        /// </summary>
+        /// <param name="flag">The flag to set.</param>
+        void Set(EnumType flag)
         {
-            return BitFlags(lhs.flags_ | ToUnderlying(rhs));
-        }
-        friend constexpr BitFlags operator|(BitFlags lhs, BitFlags rhs)
-        {
-            return BitFlags(lhs.flags_ | rhs.flags_);
-        }
-        friend constexpr BitFlags operator&(BitFlags lhs, T rhs)
-        {
-            return BitFlags(lhs.flags_ & ToUnderlying(rhs));
-        }
-        friend constexpr BitFlags operator&(BitFlags lhs, BitFlags rhs)
-        {
-            return BitFlags(lhs.flags_ & rhs.flags_);
-        }
-        friend constexpr BitFlags operator^(BitFlags lhs, T rhs)
-        {
-            return BitFlags(lhs.flags_ ^ ToUnderlying(rhs));
-        }
-        friend constexpr BitFlags operator^(BitFlags lhs, BitFlags rhs)
-        {
-            return BitFlags(lhs.flags_ ^ rhs.flags_);
+            m_Flags |= static_cast<UnderlyingType>(flag);
         }
 
-        friend constexpr BitFlags& operator|=(BitFlags& lhs, T rhs)
+        /// <summary>
+        /// Unsets a specific flag.
+        /// </summary>
+        /// <param name="flag">The flag to unset.</param>
+        void Unset(EnumType flag)
         {
-            lhs.flags_ |= ToUnderlying(rhs);
-            return lhs;
-        }
-        friend constexpr BitFlags& operator|=(BitFlags& lhs, BitFlags rhs)
-        {
-            lhs.flags_ |= rhs.flags_;
-            return lhs;
-        }
-        friend constexpr BitFlags& operator&=(BitFlags& lhs, T rhs)
-        {
-            lhs.flags_ &= ToUnderlying(rhs);
-            return lhs;
-        }
-        friend constexpr BitFlags& operator&=(BitFlags& lhs, BitFlags rhs)
-        {
-            lhs.flags_ &= rhs.flags_;
-            return lhs;
-        }
-        friend constexpr BitFlags& operator^=(BitFlags& lhs, T rhs)
-        {
-            lhs.flags_ ^= ToUnderlying(rhs);
-            return lhs;
-        }
-        friend constexpr BitFlags& operator^=(BitFlags& lhs, BitFlags rhs)
-        {
-            lhs.flags_ ^= rhs.flags_;
-            return lhs;
+            m_Flags &= ~static_cast<UnderlyingType>(flag);
         }
 
-        friend constexpr BitFlags operator~(const BitFlags& bf)
+        /// <summary>
+        /// Toggles a specific flag (if the flag is currently set, it becomes unset, and if it's currently unset, it becomes set).
+        /// </summary>
+        /// <param name="flag">The flag to toggle.</param>
+        void Toggle(EnumType flag)
         {
-            return BitFlags(~bf.flags_);
+            m_Flags ^= static_cast<UnderlyingType>(flag);
         }
 
-        friend constexpr bool operator==(const BitFlags& lhs, const BitFlags& rhs)
+        /// <summary>
+        /// Clears all flags.
+        /// </summary>
+        void Clear()
         {
-            return lhs.flags_ == rhs.flags_;
-        }
-        friend constexpr bool operator!=(const BitFlags& lhs, const BitFlags& rhs)
-        {
-            return lhs.flags_ != rhs.flags_;
-        }
-
-        // Stream output operator for debugging.
-        friend std::ostream& operator<<(std::ostream& os, const BitFlags& bf)
-        {
-            // Write out a bitset representation.
-            os << std::bitset<sizeof(UnderlyingT) * 8>(bf.flags_);
-            return os;
+            m_Flags = 0;
         }
 
-        // Construct BitFlags from raw values.
-        static constexpr BitFlags FromRaw(UnderlyingT flags)
+        /// <summary>
+        /// Sets all flags to the given value.
+        /// </summary>
+        /// <param name="flags">The flags value to set.</param>
+        void SetRaw(UnderlyingType flags)
         {
-            return BitFlags(flags);
+            m_Flags = flags;
         }
-        // Retrieve the raw underlying flags.
-        constexpr UnderlyingT ToRaw() const { return flags_; }
+
+        /// <summary>
+        /// Gets the raw underlying value of the flags.
+        /// </summary>
+        /// <returns>The raw value of the flags.</returns>
+        UnderlyingType GetRaw() const
+        {
+            return m_Flags;
+        }
+
+        // Bitwise operators
+
+        BitFlags<EnumType> operator|(EnumType flag) const
+        {
+            BitFlags<EnumType> result = *this;
+            result.m_Flags |= static_cast<UnderlyingType>(flag);
+            return result;
+        }
+
+        BitFlags<EnumType> operator&(EnumType flag) const
+        {
+            BitFlags<EnumType> result = *this;
+            result.m_Flags &= static_cast<UnderlyingType>(flag);
+            return result;
+        }
+
+        BitFlags<EnumType> operator^(EnumType flag) const
+        {
+            BitFlags<EnumType> result = *this;
+            result.m_Flags ^= static_cast<UnderlyingType>(flag);
+            return result;
+        }
+
+        BitFlags<EnumType> operator~() const
+        {
+            BitFlags<EnumType> result;
+            result.m_Flags = ~m_Flags;
+            return result;
+        }
+
+        BitFlags<EnumType>& operator|=(EnumType flag)
+        {
+            m_Flags |= static_cast<UnderlyingType>(flag);
+            return *this;
+        }
+
+        BitFlags<EnumType>& operator&=(EnumType flag)
+        {
+            m_Flags &= static_cast<UnderlyingType>(flag);
+            return *this;
+        }
+
+        BitFlags<EnumType>& operator^=(EnumType flag)
+        {
+            m_Flags ^= static_cast<UnderlyingType>(flag);
+            return *this;
+        }
+
+        // Operators for combining BitFlags with BitFlags
+
+        BitFlags<EnumType> operator|(const BitFlags<EnumType>& other) const
+        {
+            BitFlags<EnumType> result = *this;
+            result.m_Flags |= other.m_Flags;
+            return result;
+        }
+
+        BitFlags<EnumType> operator&(const BitFlags<EnumType>& other) const
+        {
+            BitFlags<EnumType> result = *this;
+            result.m_Flags &= other.m_Flags;
+            return result;
+        }
+
+        BitFlags<EnumType> operator^(const BitFlags<EnumType>& other) const
+        {
+            BitFlags<EnumType> result = *this;
+            result.m_Flags ^= other.m_Flags;
+            return result;
+        }
+
+        BitFlags<EnumType>& operator|=(const BitFlags<EnumType>& other)
+        {
+            m_Flags |= other.m_Flags;
+            return *this;
+        }
+
+        BitFlags<EnumType>& operator&=(const BitFlags<EnumType>& other)
+        {
+            m_Flags &= other.m_Flags;
+            return *this;
+        }
+
+        BitFlags<EnumType>& operator^=(const BitFlags<EnumType>& other)
+        {
+            m_Flags ^= other.m_Flags;
+            return *this;
+        }
+
+        // Comparison operators
+
+        bool operator==(const BitFlags<EnumType>& other) const
+        {
+            return m_Flags == other.m_Flags;
+        }
+
+        bool operator!=(const BitFlags<EnumType>& other) const
+        {
+            return m_Flags != other.m_Flags;
+        }
 
     private:
-        constexpr explicit BitFlags(UnderlyingT flags) : flags_(flags) {}
-        static constexpr UnderlyingT ToUnderlying(T v) { return static_cast<UnderlyingT>(v); }
-        UnderlyingT flags_;
+        UnderlyingType m_Flags = 0;
     };
 }

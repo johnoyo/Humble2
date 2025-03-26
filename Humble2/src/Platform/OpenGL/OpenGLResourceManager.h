@@ -38,6 +38,14 @@ namespace HBL2
 				m_TexturePool.Remove(handle);
 			}
 		}
+		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) override
+		{
+			OpenGLTexture* texture = GetTexture(handle);
+			if (texture != nullptr)
+			{
+				texture->Update(bytes);
+			}
+		}
 		OpenGLTexture* GetTexture(Handle<Texture> handle) const
 		{
 			return m_TexturePool.Get(handle);
@@ -135,6 +143,23 @@ namespace HBL2
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) override
 		{
+			// Caching mechanism so that materials with the same resources, use the same bind group.
+			uint16_t index = 0;
+
+			for (const auto& bindGroup : m_BindGroupPool.GetDataPool())
+			{
+				uint64_t descriptorHash = ResourceManager::Instance->GetBindGroupHash(desc);
+
+				uint64_t hash = CalculateBindGroupHash(&bindGroup);
+
+				if (descriptorHash == hash)
+				{
+					return m_BindGroupPool.GetHandleFromIndex(index);
+				}
+
+				index++;
+			}
+
 			return m_BindGroupPool.Insert(OpenGLBindGroup(std::forward<const BindGroupDescriptor>(desc)));
 		}
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) override
@@ -145,6 +170,10 @@ namespace HBL2
 				bindGroup->Destroy();
 				m_BindGroupPool.Remove(handle);
 			}
+		}
+		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) override
+		{
+			return CalculateBindGroupHash(GetBindGroup(handle));
 		}
 		OpenGLBindGroup* GetBindGroup(Handle<BindGroup> handle) const
 		{
@@ -202,5 +231,32 @@ namespace HBL2
 		Pool<OpenGLBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
 		Pool<OpenGLRenderPass, RenderPass> m_RenderPassPool;
 		Pool<OpenGLRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
+
+	private:
+		uint64_t CalculateBindGroupHash(const OpenGLBindGroup* bindGroup)
+		{
+			if (bindGroup == nullptr)
+			{
+				return 0;
+			}
+
+			uint64_t hash = 0;
+
+			for (const auto& bufferEntry : bindGroup->Buffers)
+			{
+				hash += bufferEntry.buffer.HashKey();
+				hash += bufferEntry.byteOffset;
+				hash += bufferEntry.range;
+			}
+
+			for (const auto texture : bindGroup->Textures)
+			{
+				hash += texture.HashKey();
+			}
+
+			hash += bindGroup->BindGroupLayout.HashKey();
+
+			return hash;
+		}
 	};
 }

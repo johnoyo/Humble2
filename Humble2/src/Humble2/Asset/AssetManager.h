@@ -124,7 +124,7 @@ namespace HBL2
 		}
 
 		template<typename T>
-		ResourceTask<T>* GetAssetAsync(Handle<Asset> assetHandle, JobContext* customCtx = nullptr)
+		ResourceTask<T>* GetAssetAsync(Handle<Asset> assetHandle, JobContext* customJobCtx = nullptr)
 		{
 			// Do not schedule job if the asset handle is invalid.
 			if (!IsAssetValid(assetHandle))
@@ -132,8 +132,7 @@ namespace HBL2
 				return nullptr;
 			}
 
-			// Use shared pointer for auto clean up.
-			std::shared_ptr<ResourceTask<T>> task = std::make_shared<ResourceTask<T>>();
+			ResourceTask<T>* task = new ResourceTask<T>();
 			task->m_Finished = false;
 
 			// Do not schedule job if the asset is loaded.
@@ -141,10 +140,10 @@ namespace HBL2
 			{
 				task->ResourceHandle = GetAsset<T>(assetHandle);
 				task->m_Finished = true;
-				return task.get();
+				return task;
 			}
 
-			JobContext& ctx = (customCtx == nullptr ? m_ResourceJobCtx : *customCtx);
+			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
 
 			JobSystem::Get().Execute(ctx, [this, assetHandle, task]()
 			{
@@ -154,7 +153,13 @@ namespace HBL2
 				Device::Instance->SetContext(nullptr);
 			});
 
-			return task.get();
+			return task;
+		}
+
+		void WaitForAsyncJobs(JobContext* customJobCtx = nullptr)
+		{
+			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
+			JobSystem::Get().Wait(ctx);
 		}
 
 		std::vector<Handle<Asset>>& GetRegisteredAssets() { return m_RegisteredAssets; }

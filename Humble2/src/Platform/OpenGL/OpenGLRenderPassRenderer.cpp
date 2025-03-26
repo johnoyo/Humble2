@@ -38,6 +38,8 @@ namespace HBL2
 			glUnmapBuffer(GL_UNIFORM_BUFFER);
 		}
 
+		Handle<BindGroup> previouslyUsedBindGroup;
+
 		for (auto&& [shaderID, drawList] : draws.GetDraws())
 		{
 			auto& localDraw = drawList[0];
@@ -62,17 +64,19 @@ namespace HBL2
 				Mesh* mesh = rm->GetMesh(draw.Mesh);
 				Material* material = rm->GetMaterial(draw.Material);
 
+				const auto& meshPart = mesh->Meshes[draw.MeshIndex];
+
 				// Bind Index buffer if applicable
-				if (mesh->IndexBuffer.IsValid())
+				if (meshPart.IndexBuffer.IsValid())
 				{
-					OpenGLBuffer* indexBuffer = rm->GetBuffer(mesh->IndexBuffer);
+					OpenGLBuffer* indexBuffer = rm->GetBuffer(meshPart.IndexBuffer);
 					indexBuffer->Bind();
 				}
 
 				// Bind vertex buffers
-				for (int i = 0; i < mesh->VertexBuffers.size(); i++)
+				for (int i = 0; i < meshPart.VertexBuffers.size(); i++)
 				{
-					OpenGLBuffer* vertexBuffer = rm->GetBuffer(mesh->VertexBuffers[i]);
+					OpenGLBuffer* vertexBuffer = rm->GetBuffer(meshPart.VertexBuffers[i]);
 					vertexBuffer->Bind(draw.Material, i);
 				}
 
@@ -80,21 +84,35 @@ namespace HBL2
 				if (draw.BindGroup.IsValid())
 				{
 					OpenGLBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
-					drawBindGroup->Set();
+
+					if (draw.BindGroup != previouslyUsedBindGroup)
+					{
+						drawBindGroup->Set();
+						previouslyUsedBindGroup = draw.BindGroup;
+					}
 
 					// Bind dynamic uniform buffer with the current offset and size
 					OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(drawBindGroup->Buffers[0].buffer);
 					dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);
 				}
 
+				const auto& subMesh = meshPart.SubMeshes[draw.SubMeshIndex];
+
 				// Draw the mesh accordingly
-				if (mesh->IndexBuffer.IsValid())
+				if (meshPart.IndexBuffer.IsValid())
 				{
-					Renderer::Instance->DrawIndexed(draw.Mesh);
+					if (subMesh.IndexOffset == 0)
+					{
+						glDrawElements(GL_TRIANGLES, subMesh.IndexCount, GL_UNSIGNED_INT, nullptr);
+					}
+					else
+					{
+						glDrawElementsBaseVertex(GL_TRIANGLES, subMesh.IndexCount, GL_UNSIGNED_INT, (void*)(subMesh.IndexOffset * sizeof(uint32_t)), subMesh.VertexOffset);
+					}
 				}
 				else
 				{
-					Renderer::Instance->Draw(draw.Mesh);
+					glDrawArrays(GL_TRIANGLES, subMesh.VertexOffset, subMesh.VertexCount);
 				}
 			}
 		}

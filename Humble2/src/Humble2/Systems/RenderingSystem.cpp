@@ -112,17 +112,26 @@ namespace HBL2
 		};
 
 		m_VertexBuffer = m_ResourceManager->CreateBuffer({
-			.debugName = "quad_vertex_buffer",
+			.debugName = "quad-vertex-buffer",
 			.usage = BufferUsage::VERTEX,
 			.byteSize = sizeof(float) * 30,
 			.initialData = vertexBuffer,
 		});
 
 		m_SpriteMesh = m_ResourceManager->CreateMesh({
-			.debugName = "quad_mesh",
-			.vertexOffset = 0,
-			.vertexCount = 6,
-			.vertexBuffers = { m_VertexBuffer },
+			.debugName = "quad-mesh",
+			.meshes = {
+				{
+					.debugName = "quad-sub-mesh",
+					.subMeshes = {
+						{
+							.vertexOffset = 0,
+							.vertexCount = 6,
+						}
+					},
+					.vertexBuffers = { m_VertexBuffer },
+				}
+			}
 		});
 
 		m_SpriteRenderPass = m_ResourceManager->CreateRenderPass({
@@ -205,10 +214,19 @@ namespace HBL2
 		});
 
 		m_QuadMesh = m_ResourceManager->CreateMesh({
-			.debugName = "fullscreen-quad-mesh",
-			.vertexOffset = 0,
-			.vertexCount = 6,
-			.vertexBuffers = { m_QuadVertexBuffer },
+			.debugName = "quad_mesh",
+			.meshes = {
+				{
+					.debugName = "",
+					.subMeshes = {
+						{
+							.vertexOffset = 0,
+							.vertexCount = 6,
+						}
+					},
+					.vertexBuffers = { m_QuadVertexBuffer },
+				}
+			}
 		});
 
 		m_QuadMaterial = m_ResourceManager->CreateMaterial({
@@ -347,6 +365,8 @@ namespace HBL2
 						.Shader = material->Shader,
 						.BindGroup = material->BindGroup,
 						.Mesh = staticMesh.Mesh,
+						.MeshIndex = staticMesh.MeshIndex,
+						.SubMeshIndex = staticMesh.SubMeshIndex,
 						.Material = staticMesh.Material,
 						.Offset = alloc.Offset,
 						.Size = sizeof(PerDrawData),
