@@ -23,6 +23,7 @@ namespace HBL2
 	{
 		VkSemaphore ImageAvailableSemaphore; // Signal from swapchain.
 
+		VkSemaphore PrePassRenderFinishedSemaphore; // Signal that shadow rendering is done.
 		VkSemaphore ShadowRenderFinishedSemaphore; // Signal that shadow rendering is done.
 		VkSemaphore OpaqueRenderFinishedSemaphore; // Signal that opaque rendering is done.
 		VkSemaphore SkyboxRenderFinishedSemaphore; // Signal that skybox rendering is done.
@@ -40,6 +41,7 @@ namespace HBL2
 		VkCommandPool CommandPool;
 		VkCommandBuffer ImGuiCommandBuffer;
 
+		VkCommandBuffer PrePassCommandBuffer;
 		VkCommandBuffer ShadowCommandBuffer;
 		VkCommandBuffer OpaqueCommandBuffer;
 		VkCommandBuffer SkyboxCommandBuffer;
@@ -117,10 +119,10 @@ namespace HBL2
 		void CreateAllocator();
 		void CreateSwapchain();
 		void CreateImageViews();
+		void CreateSyncStructures();
 		void CreateCommands();
 		void CreateRenderPass();
 		void CreateFrameBuffers();
-		void CreateSyncStructures();
 		void CreateDescriptorPool();
 		void CreateDescriptorSets();
 
@@ -138,6 +140,7 @@ namespace HBL2
 
 		FrameData m_Frames[FRAME_OVERLAP];
 
+		VulkanCommandBuffer m_PrePassCommandBuffers[FRAME_OVERLAP];
 		VulkanCommandBuffer m_ShadowCommandBuffers[FRAME_OVERLAP];
 		VulkanCommandBuffer m_OpaqueCommandBuffers[FRAME_OVERLAP];
 		VulkanCommandBuffer m_SkyboxCommandBuffers[FRAME_OVERLAP];

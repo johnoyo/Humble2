@@ -29,6 +29,12 @@ namespace HBL2
 		const char* DebugName = "";
 		VkRenderPass RenderPass = VK_NULL_HANDLE;
 		std::vector<bool> ColorClearValues;
+		glm::vec4 ClearColor = {};
+
 		bool DepthClearValue = false;
+		float ClearDepth = 1.0f;
+
+		bool StencilClearValue = false;
+		uint32_t ClearStencil = 0;
 	};
 }

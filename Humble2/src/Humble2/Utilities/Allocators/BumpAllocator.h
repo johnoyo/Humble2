@@ -73,11 +73,10 @@ namespace HBL2
 		/**
 		 * @brief Resets the allocator, clearing all allocated memory.
 		 *
-		 * Does not free memory, but sets all bytes to zero and resets the offset.
+		 * Does not free memory, but resets the offset.
 		 */
 		virtual void Invalidate() override
 		{
-			std::memset(m_Data, 0, m_Capacity);
 			m_CurrentOffset = 0;
 		}
 

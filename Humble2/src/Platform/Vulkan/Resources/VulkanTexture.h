@@ -22,6 +22,7 @@ namespace HBL2
 
 			Extent = { desc.dimensions.x, desc.dimensions.y, desc.dimensions.z };
 
+			// TODO: Use BitFlags here!
 			VkImageUsageFlags usage = VkUtils::TextureUsageToVkImageUsageFlags(desc.usage);
 
 			if ((desc.initialData == nullptr && Extent.width == 1 && Extent.height == 1) || desc.initialData != nullptr)
@@ -34,6 +35,10 @@ namespace HBL2
 				{
 					usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 				}
+				/*else
+				{
+					usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+				}*/
 			}
 
 			// Allocate Image
@@ -162,6 +167,39 @@ namespace HBL2
 			CopyBufferToTexture(renderer, stagingBuffer);
 
 			vmaDestroyBuffer(renderer->GetAllocator(), stagingBuffer, stagingBufferAllocation);
+		}
+
+		void TrasitionLayout(TextureLayout currentLayout, TextureLayout newLayout)
+		{
+			VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
+
+			renderer->ImmediateSubmit([&](VkCommandBuffer cmd)
+			{
+				VkImageMemoryBarrier depthToShaderBarrier{};
+				depthToShaderBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+				depthToShaderBarrier.oldLayout = VkUtils::TextureLayoutToVkImageLayout(currentLayout);
+				depthToShaderBarrier.newLayout = VkUtils::TextureLayoutToVkImageLayout(newLayout);
+				depthToShaderBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				depthToShaderBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				depthToShaderBarrier.image = Image;
+				depthToShaderBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+				depthToShaderBarrier.subresourceRange.baseMipLevel = 0;
+				depthToShaderBarrier.subresourceRange.levelCount = 1;
+				depthToShaderBarrier.subresourceRange.baseArrayLayer = 0;
+				depthToShaderBarrier.subresourceRange.layerCount = 1;
+				depthToShaderBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+				depthToShaderBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+				vkCmdPipelineBarrier(
+					cmd,
+					VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+					VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					0,
+					0, nullptr,
+					0, nullptr,
+					1, &depthToShaderBarrier
+				);
+			});
 		}
 
 		void Destroy()

@@ -257,12 +257,12 @@ namespace HBL2
 		auto drawBindGroupLayout0 = ResourceManager::Instance->CreateBindGroupLayout({
 			.debugName = "built-in-simple-lit-bind-group-layout",
 			.textureBindings = {
+				/*
+				* Here we start the texture binds from zero despite having already buffers bound there.
+				* Thats because in a set each type (buffer, image, etc) has unique binding points.
+				* This also comes in handy in openGL when binding textures.
+				*/
 				{
-					/*
-					* Here we start the texture binds from zero despite having already buffers bound there.
-					* Thats because in a set each type (buffer, image, etc) has unique binding points.
-					* This also comes in handy in openGL when binding textures.
-					*/
 					.slot = 0,
 					.visibility = ShaderStage::FRAGMENT,
 				},
@@ -316,6 +316,7 @@ namespace HBL2
 					* We use binding 4 since despite being a different type of resource,
 					* each binding within a descriptor set must be unique, so since we have 0, 1, 2, 3
 					* used by textures, the next empty is 4.
+					* 
 					*/
 					.slot = 4,
 					.visibility = ShaderStage::VERTEX,
@@ -338,6 +339,10 @@ namespace HBL2
 					drawBindGroupLayout0,								// Material bind group (1)
 				},
 				.renderPipeline {
+					.depthTest = {
+						.writeEnabled = false,
+						.depthTest = Compare::LESS_OR_EQUAL,
+					},
 					.vertexBufferBindings = {
 						{
 							.byteStride = 20,
@@ -348,7 +353,7 @@ namespace HBL2
 						}
 					}
 				},
-				.renderPass = Renderer::Instance->GetMainRenderPass(),
+				.renderPass = Renderer::Instance->GetRenderingRenderPass(),
 			});
 
 			m_Shaders[BuiltInShader::INVALID] = invalidShaderHandle;
@@ -366,6 +371,11 @@ namespace HBL2
 					Renderer::Instance->GetGlobalPresentBindingsLayout(),	// Global bind group (0)
 				},
 				.renderPipeline {
+					.depthTest = {
+						.enabled = true,
+						.writeEnabled = true,
+						.depthTest = Compare::LESS,
+					},
 					.vertexBufferBindings = {
 						{
 							.byteStride = 16,
@@ -395,6 +405,10 @@ namespace HBL2
 					drawBindGroupLayout0,								// Material bind group (1)
 				},
 				.renderPipeline {
+					.depthTest = {
+						.writeEnabled = false,
+						.depthTest = Compare::LESS_OR_EQUAL,
+					},
 					.vertexBufferBindings = {
 						{
 							.byteStride = 20,
@@ -405,7 +419,7 @@ namespace HBL2
 						}
 					}
 				},
-				.renderPass = Renderer::Instance->GetMainRenderPass(),
+				.renderPass = Renderer::Instance->GetRenderingRenderPass(),
 			});
 
 			m_Shaders[BuiltInShader::UNLIT] = unlitShaderHandle;
@@ -424,6 +438,10 @@ namespace HBL2
 					drawBindGroupLayout0,								// Material bind group (1)
 				},
 				.renderPipeline {
+					.depthTest = {
+						.writeEnabled = false,
+						.depthTest = Compare::LESS_OR_EQUAL,
+					},
 					.vertexBufferBindings = {
 						{
 							.byteStride = 32,
@@ -435,7 +453,7 @@ namespace HBL2
 						}
 					}
 				},
-				.renderPass = Renderer::Instance->GetMainRenderPass(),
+				.renderPass = Renderer::Instance->GetRenderingRenderPass(),
 			});
 
 			m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderHandle;
@@ -454,6 +472,10 @@ namespace HBL2
 					drawBindGroupLayout1,								// Material bind group (1)
 				},
 				.renderPipeline {
+					.depthTest = {
+						.writeEnabled = false,
+						.depthTest = Compare::LESS_OR_EQUAL,
+					},
 					.vertexBufferBindings = {
 						{
 							.byteStride = 32,
@@ -465,7 +487,7 @@ namespace HBL2
 						}
 					}
 				},
-				.renderPass = Renderer::Instance->GetMainRenderPass(),
+				.renderPass = Renderer::Instance->GetRenderingRenderPass(),
 			});
 
 			m_Shaders[BuiltInShader::PBR] = pbrShaderHandle;

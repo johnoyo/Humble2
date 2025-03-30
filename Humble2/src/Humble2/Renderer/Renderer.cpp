@@ -34,7 +34,12 @@ namespace HBL2
 			.internalFormat = Format::D32_FLOAT,
 			.usage = TextureUsage::DEPTH_STENCIL,
 			.aspect = TextureAspect::DEPTH,
-			.createSampler = false,
+			.createSampler = true,
+			.sampler =
+			{
+				.filter = Filter::NEAREST,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
 		});
 
 		PostInitialize();

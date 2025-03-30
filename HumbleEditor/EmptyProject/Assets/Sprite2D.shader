@@ -67,7 +67,6 @@ layout(location = 1) in vec2 v_TextureCoord;
 layout (set = 1, binding = 0) uniform sampler2D u_AlbedoMap;
 
 
-
 void main()
 
 {

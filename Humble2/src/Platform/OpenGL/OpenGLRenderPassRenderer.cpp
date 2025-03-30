@@ -38,6 +38,8 @@ namespace HBL2
 			glUnmapBuffer(GL_UNIFORM_BUFFER);
 		}
 
+		Handle<Buffer> prevIndexBuffer;
+		StaticArray<Handle<Buffer>, 3> prevVertexBuffers;
 		Handle<BindGroup> previouslyUsedBindGroup;
 
 		for (auto&& [shaderID, drawList] : draws.GetDraws())
@@ -67,17 +69,28 @@ namespace HBL2
 				const auto& meshPart = mesh->Meshes[draw.MeshIndex];
 
 				// Bind Index buffer if applicable
-				if (meshPart.IndexBuffer.IsValid())
+				if (prevIndexBuffer != meshPart.IndexBuffer)
 				{
-					OpenGLBuffer* indexBuffer = rm->GetBuffer(meshPart.IndexBuffer);
-					indexBuffer->Bind();
+					if (meshPart.IndexBuffer.IsValid())
+					{
+						OpenGLBuffer* indexBuffer = rm->GetBuffer(meshPart.IndexBuffer);
+						indexBuffer->Bind();
+
+						prevIndexBuffer = meshPart.IndexBuffer;
+					}
 				}
 
 				// Bind vertex buffers
+				HBL2_CORE_ASSERT(meshPart.VertexBuffers.size() <= 3, "Maximum number of vertex buffers is 3.");
 				for (int i = 0; i < meshPart.VertexBuffers.size(); i++)
 				{
-					OpenGLBuffer* vertexBuffer = rm->GetBuffer(meshPart.VertexBuffers[i]);
-					vertexBuffer->Bind(draw.Material, i);
+					if (prevVertexBuffers[i] != meshPart.VertexBuffers[i])
+					{
+						OpenGLBuffer* vertexBuffer = rm->GetBuffer(meshPart.VertexBuffers[i]);
+						vertexBuffer->Bind(draw.Material, i);
+
+						prevVertexBuffers[i] = meshPart.VertexBuffers[i];
+					}
 				}
 
 				// Set bind group

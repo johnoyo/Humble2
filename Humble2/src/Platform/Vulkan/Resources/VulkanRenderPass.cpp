@@ -11,6 +11,8 @@ namespace HBL2
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
 		DebugName = desc.debugName;
+		StencilClearValue = desc.depthTarget.stencilLoadOp == LoadOperation::CLEAR;
+		ClearStencil = desc.depthTarget.clearStencil;
 
 		VulkanRenderPassLayout* layout = rm->GetRenderPassLayout(desc.layout);
 
@@ -23,6 +25,7 @@ namespace HBL2
 
 		for (const auto& colorTarget : desc.colorTargets)
 		{
+			ClearColor = colorTarget.clearColor;
 			ColorClearValues.push_back(colorTarget.loadOp == LoadOperation::CLEAR);
 
 			attachments.push_back(VkAttachmentDescription
@@ -51,6 +54,7 @@ namespace HBL2
 			if (subpass.depthTarget)
 			{
 				DepthClearValue = desc.depthTarget.loadOp == LoadOperation::CLEAR;
+				ClearDepth = desc.depthTarget.clearZ;
 
 				attachments.push_back(VkAttachmentDescription
 				{
@@ -77,7 +81,7 @@ namespace HBL2
 		VkSubpassDescription subpass =
 		{
 			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-			.colorAttachmentCount = 1,
+			.colorAttachmentCount = (uint32_t)colorAttachmentRefs.size(),
 			.pColorAttachments = colorAttachmentRefs.data(),
 			.pDepthStencilAttachment = &depthAttachmentRef,
 		};
@@ -107,7 +111,7 @@ namespace HBL2
 		VkRenderPassCreateInfo renderPassInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-			.attachmentCount = 2,
+			.attachmentCount = (uint32_t)attachments.size(),
 			.pAttachments = attachments.data(),
 			.subpassCount = 1,
 			.pSubpasses = &subpass,

@@ -23,7 +23,7 @@ namespace HBL2
 			if (clearValue)
 			{
 				VkClearValue clearValue;
-				clearValue.color = { { 0.25f, 0.25f, 0.25f, 1.0f } };
+				clearValue.color = { { vkRenderPass->ClearColor.r, vkRenderPass->ClearColor.g, vkRenderPass->ClearColor.b, vkRenderPass->ClearColor.a } };
 				clearValues.push_back(clearValue);
 			}
 		}
@@ -31,7 +31,7 @@ namespace HBL2
 		if (vkRenderPass->DepthClearValue)
 		{
 			VkClearValue depthClear;
-			depthClear.depthStencil.depth = 1.0f;
+			depthClear.depthStencil.depth = vkRenderPass->ClearDepth;
 			clearValues.push_back(depthClear);
 		}
 
@@ -57,7 +57,7 @@ namespace HBL2
 		{
 			.x = 0,
 			.y = 0,
-			.width = (float)vkFrameBuffer->Width + 50,
+			.width = (float)vkFrameBuffer->Width,
 			.height = (float)vkFrameBuffer->Height,
 			.minDepth = 0.0f,
 			.maxDepth = 1.0f,
@@ -69,7 +69,7 @@ namespace HBL2
 		VkRect2D scissor =
 		{
 			.offset = { 0, 0 },
-			.extent = { vkFrameBuffer->Width + 50, vkFrameBuffer->Height },
+			.extent = { vkFrameBuffer->Width, vkFrameBuffer->Height },
 		};
 
 		vkCmdSetScissor(CommandBuffer, 0, 1, &scissor);

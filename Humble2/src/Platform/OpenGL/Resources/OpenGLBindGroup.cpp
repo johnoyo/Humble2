@@ -23,6 +23,7 @@ namespace HBL2
 			{
 			case BufferBindingType::UNIFORM:
 				glBindBufferBase(GL_UNIFORM_BUFFER, bindGroupLayout->BufferBindings[i].slot, buffer->RendererId);
+				break;
 			case BufferBindingType::UNIFORM_DYNAMIC_OFFSET:
 				glBindBufferBase(GL_UNIFORM_BUFFER, bindGroupLayout->BufferBindings[i].slot, buffer->RendererId);
 				break;

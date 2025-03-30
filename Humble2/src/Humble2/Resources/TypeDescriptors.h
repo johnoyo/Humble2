@@ -133,6 +133,7 @@ namespace HBL2
 				BlendOperation alphaOp = BlendOperation::ADD;
 				BlendFactor srcAlphaFactor = BlendFactor::ONE;
 				BlendFactor dstAlphaFactor = BlendFactor::ZERO;
+				bool colorOutput = true;
 				bool enabled = true;
 			};
 
@@ -178,7 +179,7 @@ namespace HBL2
 			StoreOperation storeOp = StoreOperation::STORE;
 			TextureLayout prevUsage = TextureLayout::UNDEFINED;
 			TextureLayout nextUsage = TextureLayout::UNDEFINED;
-			glm::vec4 clearColor = glm::vec4(0.0f);
+			glm::vec4 clearColor = glm::vec4(0.25f, 0.25f, 0.25f, 1.0f);
 		};
 
 		struct DepthTarget
@@ -189,7 +190,7 @@ namespace HBL2
 			StoreOperation stencilStoreOp = StoreOperation::STORE;
 			TextureLayout prevUsage = TextureLayout::UNDEFINED;
 			TextureLayout nextUsage = TextureLayout::UNDEFINED;
-			float clearZ = 0.0f;
+			float clearZ = 1.0f;
 			uint32_t clearStencil = 0;
 		};
 

@@ -249,6 +249,13 @@ namespace HBL2
 
 	VkPipelineColorBlendAttachmentState VulkanShader::CreateColorBlendAttachmentState(const ShaderDescriptor::RenderPipeline::BlendState& blend)
 	{
+		uint32_t colorWriteMask = 0;
+
+		if (blend.colorOutput)
+		{
+			colorWriteMask = VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_A_BIT;
+		}
+
 		if (blend.enabled)
 		{
 			VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
@@ -260,7 +267,7 @@ namespace HBL2
 				.srcAlphaBlendFactor = VkUtils::BlendFactorToVkBlendFactor(blend.srcAlphaFactor),
 				.dstAlphaBlendFactor = VkUtils::BlendFactorToVkBlendFactor(blend.dstAlphaFactor),
 				.alphaBlendOp = VkUtils::BlendOperationToVkBlendOp(blend.alphaOp),
-				.colorWriteMask = VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_A_BIT,
+				.colorWriteMask = colorWriteMask,
 			};
 
 			return colorBlendAttachmentState;
@@ -269,7 +276,7 @@ namespace HBL2
 		VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
 		{
 			.blendEnable = VK_FALSE,
-			.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+			.colorWriteMask = colorWriteMask,
 		};
 
 		return colorBlendAttachmentState;

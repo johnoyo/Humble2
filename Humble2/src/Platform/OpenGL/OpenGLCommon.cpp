@@ -9,27 +9,18 @@ namespace HBL2
 			switch (vertexFormat)
 			{
 			case VertexFormat::FLOAT32:
-				return GL_FLOAT;
 			case VertexFormat::FLOAT32x2:
-				return GL_FLOAT;
 			case VertexFormat::FLOAT32x3:
-				return GL_FLOAT;
 			case VertexFormat::FLOAT32x4:
 				return GL_FLOAT;
 			case VertexFormat::UINT32:
-				return GL_UNSIGNED_INT;
 			case VertexFormat::UINT32x2:
-				return GL_UNSIGNED_INT;
 			case VertexFormat::UINT32x3:
-				return GL_UNSIGNED_INT;
 			case VertexFormat::UINT32x4:
 				return GL_UNSIGNED_INT;
 			case VertexFormat::INT32:
-				return GL_INT;
 			case VertexFormat::INT32x2:
-				return GL_INT;
 			case VertexFormat::INT32x3:
-				return GL_INT;
 			case VertexFormat::INT32x4:
 				return GL_INT;
 			}
@@ -91,6 +82,31 @@ namespace HBL2
 				return GL_CLAMP_TO_BORDER;
 			case HBL2::Wrap::MIRROR_CLAMP_TO_EDGE:
 				return GL_CLAMP_TO_EDGE;
+			}
+
+			return -1;
+		}
+
+		GLenum CompareToGLenum(Compare compare)
+		{
+			switch (compare)
+			{
+			case HBL2::Compare::LESS:
+				return GL_LESS;
+			case HBL2::Compare::LESS_OR_EQUAL:
+				return GL_LEQUAL;
+			case HBL2::Compare::GREATER:
+				return GL_GREATER;
+			case HBL2::Compare::GREATER_OR_EQUAL:
+				return GL_GEQUAL;
+			case HBL2::Compare::EQUAL:
+				return GL_EQUAL;
+			case HBL2::Compare::NOT_EQUAL:
+				return GL_NOTEQUAL;
+			case HBL2::Compare::ALAWAYS:
+				return GL_ALWAYS;
+			case HBL2::Compare::NEVER:
+				return GL_NEVER;
 			}
 
 			return -1;

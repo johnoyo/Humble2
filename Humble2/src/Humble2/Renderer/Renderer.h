@@ -94,6 +94,7 @@ namespace HBL2
 		const uint32_t GetFrameNumber() const { return m_FrameNumber; }
 		RendererStats& GetRendererStats() { return m_Stats; }
 
+		const Handle<RenderPass> GetRenderingRenderPass() const { return m_RenderingRenderPass; }
 		const Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() = 0;
 
@@ -133,6 +134,7 @@ namespace HBL2
 		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
 		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
 		Handle<RenderPass> m_RenderPass;
+		Handle<RenderPass> m_RenderingRenderPass;
 
 		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 	};

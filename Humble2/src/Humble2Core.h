@@ -16,7 +16,8 @@
 
 #include "Utilities\Allocators\BaseAllocator.h"
 #include "Utilities\Allocators\StandardAllocator.h"
-#include "Utilities\Allocators\ArenaAllocator.h"
+#include "Utilities\Allocators\BumpAllocator.h"
+#include "Utilities\Allocators\BinAllocator.h"
 #include "Utilities\Allocators\FreeListAllocator.h"
 
 #include "Utilities\Collections\StaticArray.h"

@@ -18,9 +18,7 @@ namespace HBL2
 		glCullFace(GL_BACK);
 		glFrontFace(GL_CCW);
 
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LESS);
-
+		m_PrePassCommandBuffer = new OpenGLCommandBuffer();
 		m_OpaqueCommandBuffer = new OpenGLCommandBuffer();
 		m_OpaqueSpriteCommandBuffer = new OpenGLCommandBuffer();
 		m_PresentCommandBuffer = new OpenGLCommandBuffer();
@@ -58,6 +56,8 @@ namespace HBL2
 		case HBL2::CommandBufferType::MAIN:
 			switch (stage)
 			{
+			case HBL2::RenderPassStage::PrePass:
+				return m_PrePassCommandBuffer;
 			case HBL2::RenderPassStage::Shadow:
 				break;
 			case HBL2::RenderPassStage::Opaque:
@@ -73,6 +73,7 @@ namespace HBL2
 			case HBL2::RenderPassStage::Present:
 				return m_PresentCommandBuffer;
 			}
+			break;
 		case HBL2::CommandBufferType::CUSTOM:
 			HBL2_CORE_ASSERT(false, "Custom Command buffers not implemented yet!");
 			break;
@@ -133,7 +134,12 @@ namespace HBL2
 			.internalFormat = Format::D32_FLOAT,
 			.usage = TextureUsage::DEPTH_STENCIL,
 			.aspect = TextureAspect::DEPTH,
-			.createSampler = false,
+			.createSampler = true,
+			.sampler =
+			{
+				.filter = Filter::NEAREST,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
 		});
 
 		// Update descriptor sets (for the quad shader)
@@ -171,6 +177,7 @@ namespace HBL2
 		m_ResourceManager->DeleteBindGroup(m_GlobalPresentBindings);
 
 		m_ResourceManager->DeleteRenderPass(m_RenderPass);
+		m_ResourceManager->DeleteRenderPass(m_RenderingRenderPass);
 		m_ResourceManager->DeleteFrameBuffer(m_MainFrameBuffer);
 	}
 
@@ -302,6 +309,27 @@ namespace HBL2
 				.stencilLoadOp = LoadOperation::DONT_CARE,
 				.stencilStoreOp = StoreOperation::DONT_CARE,
 				.prevUsage = TextureLayout::UNDEFINED,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
+			},
+			.colorTargets = {
+				{
+					.loadOp = LoadOperation::CLEAR,
+					.storeOp = StoreOperation::STORE,
+					.prevUsage = TextureLayout::UNDEFINED,
+					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
+				},
+			},
+		});
+
+		m_RenderingRenderPass = ResourceManager::Instance->CreateRenderPass({
+			.debugName = "main-rendering-renderpass",
+			.layout = renderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::LOAD,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::DEPTH_STENCIL,
 				.nextUsage = TextureLayout::DEPTH_STENCIL,
 			},
 			.colorTargets = {

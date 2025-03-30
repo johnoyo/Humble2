@@ -26,6 +26,7 @@ namespace HBL2
 		OpenGLShader(const ShaderDescriptor&& desc)
 		{
 			DebugName = desc.debugName;
+			DepthTest = desc.renderPipeline.depthTest;
 
 			Program = glCreateProgram();
 			GLuint vs = Compile(GL_VERTEX_SHADER, desc.VS.entryPoint, desc.VS.code);
@@ -78,6 +79,25 @@ namespace HBL2
 
 		void Bind()
 		{
+			if (DepthTest.enabled)
+			{
+				glEnable(GL_DEPTH_TEST);
+				glDepthFunc(OpenGLUtils::CompareToGLenum(DepthTest.depthTest));
+			}
+			else
+			{
+				glDisable(GL_DEPTH_TEST);
+			}
+
+			if (DepthTest.writeEnabled)
+			{
+				glDepthMask(GL_TRUE);
+			}
+			else
+			{
+				glDepthMask(GL_FALSE);
+			}
+
 			glUseProgram(Program);
 		}
 
@@ -96,5 +116,6 @@ namespace HBL2
 		GLuint Program = 0;
 		GLuint RenderPipeline = 0;
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding> VertexBufferBindings;
+		ShaderDescriptor::RenderPipeline::DepthTest DepthTest;
 	};
 }

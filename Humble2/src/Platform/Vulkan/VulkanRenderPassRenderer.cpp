@@ -41,6 +41,9 @@ namespace HBL2
 			vmaUnmapMemory(renderer->GetAllocator(), dynamicUniformBuffer->Allocation);
 		}
 
+		Handle<Buffer> prevIndexBuffer;
+		StaticArray<Handle<Buffer>, 3> prevVertexBuffers;
+
 		for (auto&& [shaderID, drawList] : draws.GetDraws())
 		{
 			auto& localDraw = drawList[0];
@@ -66,24 +69,41 @@ namespace HBL2
 				const auto& meshPart = mesh->Meshes[draw.MeshIndex];
 
 				// vkCmdBindIndexBuffer
-				if (meshPart.IndexBuffer.IsValid())
+				if (prevIndexBuffer != meshPart.IndexBuffer)
 				{
-					VulkanBuffer* indexBuffer = rm->GetBuffer(meshPart.IndexBuffer);
-					vkCmdBindIndexBuffer(m_CommandBuffer, indexBuffer->Buffer, 0, VK_INDEX_TYPE_UINT32);
+					if (meshPart.IndexBuffer.IsValid())
+					{
+						VulkanBuffer* indexBuffer = rm->GetBuffer(meshPart.IndexBuffer);
+						vkCmdBindIndexBuffer(m_CommandBuffer, indexBuffer->Buffer, 0, VK_INDEX_TYPE_UINT32);
+
+						prevIndexBuffer = meshPart.IndexBuffer;
+					}
 				}
 
 				// vkCmdBindVertexBuffers
+				bool rebindVertexBuffers = false;
 				uint32_t bufferCounter = 0;
 				std::vector<VkBuffer> buffers(meshPart.VertexBuffers.size());
 				std::vector<VkDeviceSize> offsets(meshPart.VertexBuffers.size());
+				HBL2_CORE_ASSERT(meshPart.VertexBuffers.size() <= 3, "Maximum number of vertex buffers is 3.");
 				for (const auto vertexBufferHandle : meshPart.VertexBuffers)
 				{
+					if (prevVertexBuffers[bufferCounter] != vertexBufferHandle)
+					{
+						rebindVertexBuffers = true;
+						prevVertexBuffers[bufferCounter] = vertexBufferHandle;
+					}
+
 					VulkanBuffer* vertexBuffer = rm->GetBuffer(vertexBufferHandle);
 					buffers[bufferCounter] = vertexBuffer->Buffer;
 					offsets[bufferCounter] = 0;
 					bufferCounter++;
 				}
-				vkCmdBindVertexBuffers(m_CommandBuffer, 0, bufferCounter, buffers.data(), offsets.data());
+
+				if (rebindVertexBuffers)
+				{
+					vkCmdBindVertexBuffers(m_CommandBuffer, 0, bufferCounter, buffers.data(), offsets.data());
+				}
 
 				// vkCmdBindDescriptorSets
 				if (draw.BindGroup.IsValid())

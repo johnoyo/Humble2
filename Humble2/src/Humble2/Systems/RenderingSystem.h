@@ -36,12 +36,16 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
+		void DepthOnlyRenderingSetup();
 		void MeshRenderingSetup();
 		void SpriteRenderingSetup();
 		void FullScreenQuadSetup();
 
 		bool IsInFrustum(const Component::Transform& transform);
 		bool IsInFrustum(Handle<Mesh> meshHandle, const Component::Transform& transform);
+
+		void GatherDraws();
+		void DepthPrePass();
 		void StaticMeshPass();
 		void SpritePass();
 		void PostProcessPass();
@@ -55,9 +59,20 @@ namespace HBL2
 		Scene* m_EditorScene = nullptr;
 		LightData m_LightData{};
 		CameraData m_CameraData{};
-		Component::Camera::CameraFrustum m_CameraFrustum;
+		Component::Camera::CameraFrustum m_CameraFrustum{};
 
 		Handle<RenderPassLayout> m_RenderPassLayout;
+
+		Handle<RenderPassLayout> m_DepthOnlyRenderPassLayout;
+		Handle<RenderPass> m_DepthOnlyRenderPass;
+		Handle<FrameBuffer> m_DepthOnlyFrameBuffer;
+		Handle<Material> m_DepthOnlyMaterial;
+		Handle<Material> m_DepthOnlySpriteMaterial;
+		Handle<BindGroup> m_DepthOnlyBindGroup;
+		Handle<BindGroup> m_DepthOnlySpriteBindGroup;
+		Handle<BindGroupLayout> m_DepthOnlyBindGroupLayout;
+		Handle<Shader> m_DepthOnlyShader;
+		Handle<Shader> m_DepthOnlySpriteShader;
 
 		Handle<RenderPass> m_MeshRenderPass;
 		Handle<FrameBuffer> m_MeshFrameBuffer;
@@ -70,5 +85,15 @@ namespace HBL2
 		Handle<Buffer> m_QuadVertexBuffer;
 		Handle<Mesh> m_QuadMesh;
 		Handle<Material> m_QuadMaterial;
+
+		uint32_t m_UBOStaticMeshOffset = 0.0f;
+		uint32_t m_UBOStaticMeshSize = 0.0f;
+		DrawList m_StaticMeshDraws;
+		DrawList m_PrePassStaticMeshDraws;
+
+		uint32_t m_UBOSpriteOffset = 0.0f;
+		uint32_t m_UBOSpriteSize = 0.0f;
+		DrawList m_SpriteDraws;
+		DrawList m_PrePassSpriteDraws;
 	};
 }

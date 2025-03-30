@@ -81,14 +81,16 @@ namespace HBL2
 
 			struct FrustumPlane
 			{
-				glm::vec3 normal;
-				float distance;
+				glm::vec3 normal{};
+				float distance = 0.0f;
 			};
 
 			struct CameraFrustum
 			{
-				FrustumPlane Planes[6];
-			} Frustum;
+				FrustumPlane Planes[6]{};
+			};
+			
+			CameraFrustum Frustum{};
 
 			bool Primary = true;
 			bool Enabled = false;

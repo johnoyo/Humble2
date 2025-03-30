@@ -15,7 +15,7 @@ namespace HBL2
 	{
 	public:
 		T& operator[](uint32_t i) { return m_Data[i]; }
-		const T& operator[](uint32_t i) { return m_Data[i]; }
+		const T& operator[](uint32_t i) const { return m_Data[i]; }
 
 		/// <summary>
 		/// Returns the number of elements in the array.

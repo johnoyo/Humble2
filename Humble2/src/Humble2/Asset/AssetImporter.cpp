@@ -286,8 +286,8 @@ namespace HBL2
 					.enabled = true,
 				},
 				.depthTest = {
-					.enabled = true,
-					.depthTest = Compare::LESS,
+					.writeEnabled = false,
+					.depthTest = Compare::LESS_OR_EQUAL,
 				},
 				.vertexBufferBindings = {
 					{
@@ -296,7 +296,7 @@ namespace HBL2
 					},
 				},
 			},
-			.renderPass = Renderer::Instance->GetMainRenderPass(),
+			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
 		});
 
 		stream.close();
