@@ -22,6 +22,7 @@ layout(location = 1) out vec3 v_Position;
 layout(location = 2) out vec3 v_Normal;
 layout(location = 3) out vec2 v_TextureCoord;
 layout(location = 4) out float v_Glossiness;
+layout(location = 5) out mat4 v_InverseViewProj;
 
 void main()
 {
@@ -29,7 +30,8 @@ void main()
     v_Color = u_Object.Color;
     v_Glossiness = u_Object.Glossiness;
     v_TextureCoord = a_TextureCoord;
-    v_Normal = (u_Object.InverseModel * vec4(a_Normal, 0.0)).xyz;
+    v_Normal = normalize((u_Object.InverseModel * vec4(a_Normal, 0.0)).xyz);
+    v_InverseViewProj = inverse(u_Camera.ViewProjection);
     gl_Position = u_Camera.ViewProjection * u_Object.Model * vec4(a_Position, 1.0);
 }
 
@@ -42,6 +44,7 @@ layout(location = 1) in vec3 v_Position;
 layout(location = 2) in vec3 v_Normal;
 layout(location = 3) in vec2 v_TextureCoord;
 layout(location = 4) in float v_Glossiness;
+layout(location = 5) in mat4 v_InverseViewProj;
 
 layout (set = 1, binding = 0) uniform sampler2D u_AlbedoMap;
 
