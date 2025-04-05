@@ -185,7 +185,7 @@ namespace HBL2
 			auto texture = ResourceManager::Instance->CreateTexture({
 				.debugName = _strdup(std::format("{}-texture", textureName).c_str()),
 				.dimensions = { textureSettings.Width, textureSettings.Height, 1 },
-				.usage = TextureUsage::SAMPLED,
+				.usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },
 				.aspect = TextureAspect::COLOR,
 				.initialData = textureData,
 			});
@@ -296,7 +296,7 @@ namespace HBL2
 					},
 				},
 			},
-			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
+			.renderPass = Renderer::Instance->GetMainRenderPass(),
 		});
 
 		stream.close();
@@ -359,6 +359,13 @@ namespace HBL2
 		if (materialProperties)
 		{
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
+
+			Material::BlendMode blendMode = Material::BlendMode::Opaque;
+			if (materialProperties["BlendMode"].IsDefined())
+			{
+				int blendModeValue = materialProperties["BlendMode"].as<int>();
+				blendMode = (blendModeValue == 0 ? Material::BlendMode::Opaque : Material::BlendMode::Transparent);
+			}
 
 			UUID albedoMapUUID = materialProperties["AlbedoMap"].as<UUID>();
 			UUID normalMapUUID = materialProperties["NormalMap"].as<UUID>();
@@ -434,6 +441,7 @@ namespace HBL2
 			Material* mat = ResourceManager::Instance->GetMaterial(material);
 			mat->AlbedoColor = albedoColor;
 			mat->Glossiness = glossiness;
+			mat->BlendMethod = blendMode;
 
 			stream.close();
 			return material;
@@ -609,7 +617,7 @@ namespace HBL2
 		YAML::Node data = YAML::Load(ss.str());
 		if (!data["Material"].IsDefined())
 		{
-			HBL2_CORE_TRACE("Material not found: {0}", ss.str());
+			HBL2_CORE_TRACE("Material file: {0}, is not in correct format!", ss.str());
 			ioStream.close();
 			return;
 		}
@@ -619,6 +627,7 @@ namespace HBL2
 		{
 			materialProperties["AlbedoColor"] = mat->AlbedoColor;
 			materialProperties["Glossiness"] = mat->Glossiness;
+			materialProperties["BlendMode"] = (int)mat->BlendMethod;
 		}
 
 		ioStream.seekg(0, std::ios::beg);
@@ -1306,13 +1315,6 @@ namespace HBL2
 		}
 
 		Material* material = ResourceManager::Instance->GetMaterial(materialAssetHandle);
-
-		/*auto bindGrroupIterator = std::find(m_BindGroups.begin(), m_BindGroups.end(), material->BindGroup);
-
-		if (bindGrroupIterator != m_BindGroups.end())
-		{
-			m_BindGroups.erase(bindGrroupIterator);
-		}*/
 
 		ResourceManager::Instance->DeleteMaterial(materialAssetHandle);
 

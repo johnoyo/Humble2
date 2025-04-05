@@ -135,4 +135,10 @@ namespace HBL2
         uint32_t m_CurrentSize; // Not in bytes
         TAllocator* m_Allocator = nullptr;
     };
+
+    template<typename T, typename TAllocator>
+    auto MakeStack(TAllocator* allocator, uint32_t initialCapacity = 8)
+    {
+        return Stack<T, TAllocator>(allocator, initialCapacity);
+    }
 }

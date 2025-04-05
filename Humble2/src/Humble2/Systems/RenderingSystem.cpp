@@ -19,10 +19,12 @@ namespace HBL2
 			},
 		});
 
-		DepthOnlyRenderingSetup();
-		MeshRenderingSetup();
+		DepthPrePassSetup();
+		OpaquePassSetup();
+		TransparentPassSetup();
 		SpriteRenderingSetup();
-		FullScreenQuadSetup();
+		PostProcessPassSetup();
+		PresentPassSetup();
 	}
 
 	void RenderingSystem::OnUpdate(float ts)
@@ -30,12 +32,13 @@ namespace HBL2
 		GetViewProjection();
 
 		GatherDraws();
+		GatherLights();
 
 		DepthPrePass();
-		StaticMeshPass();
-		SpritePass();
+		OpaquePass();
+		TransparentPass();
 		PostProcessPass();
-		CompositePass();
+		PresentPass();
 	}
 
 	void RenderingSystem::OnDestroy()
@@ -57,22 +60,23 @@ namespace HBL2
 		m_ResourceManager->DeleteFrameBuffer(m_DepthOnlyFrameBuffer);
 		Renderer::Instance->RemoveOnResizeCallback("Depth-Only-Resize-FrameBuffer");
 
-		m_ResourceManager->DeleteRenderPass(m_MeshRenderPass);
-		m_ResourceManager->DeleteFrameBuffer(m_MeshFrameBuffer);
-		Renderer::Instance->RemoveOnResizeCallback("Mesh-Resize-FrameBuffer");
+		m_ResourceManager->DeleteRenderPass(m_OpaqueRenderPass);
+		m_ResourceManager->DeleteFrameBuffer(m_OpaqueFrameBuffer);
+		Renderer::Instance->RemoveOnResizeCallback("Resize-Opaque-FrameBuffer");
+
+		m_ResourceManager->DeleteRenderPass(m_TransparentRenderPass);
+		m_ResourceManager->DeleteFrameBuffer(m_TransparentFrameBuffer);
+		Renderer::Instance->RemoveOnResizeCallback("Resize-Transparent-FrameBuffer");
 
 		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
 		m_ResourceManager->DeleteMesh(m_SpriteMesh);
-		m_ResourceManager->DeleteRenderPass(m_SpriteRenderPass);
-		m_ResourceManager->DeleteFrameBuffer(m_SpriteFrameBuffer);
-		Renderer::Instance->RemoveOnResizeCallback("Sprite-Resize-FrameBuffer");
 
 		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
 		m_ResourceManager->DeleteMesh(m_QuadMesh);
 		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
 	}
 
-	void RenderingSystem::DepthOnlyRenderingSetup()
+	void RenderingSystem::DepthPrePassSetup()
 	{
 		// Create pre-pass renderpass and framebuffer.
 		m_DepthOnlyRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
@@ -217,13 +221,14 @@ namespace HBL2
 		});
 	}
 
-	void RenderingSystem::MeshRenderingSetup()
+	void RenderingSystem::OpaquePassSetup()
 	{
-		m_MeshRenderPass = m_ResourceManager->CreateRenderPass({
-			.debugName = "mesh-renderpass",
+		// Renderpass and framebuffer for opaques.
+		m_OpaqueRenderPass = m_ResourceManager->CreateRenderPass({
+			.debugName = "opaques-renderpass",
 			.layout = m_RenderPassLayout,
 			.depthTarget = {
-				.loadOp = LoadOperation::LOAD, // Should be LOAD!
+				.loadOp = LoadOperation::LOAD,
 				.storeOp = StoreOperation::STORE,
 				.stencilLoadOp = LoadOperation::DONT_CARE,
 				.stencilStoreOp = StoreOperation::DONT_CARE,
@@ -240,24 +245,74 @@ namespace HBL2
 			},
 		});
 
-		m_MeshFrameBuffer = m_ResourceManager->CreateFrameBuffer({
-			.debugName = "viewport-fb",
+		m_OpaqueFrameBuffer = m_ResourceManager->CreateFrameBuffer({
+			.debugName = "opaques-viewport-fb",
 			.width = Window::Instance->GetExtents().x,
 			.height = Window::Instance->GetExtents().y,
-			.renderPass = m_MeshRenderPass,
+			.renderPass = m_OpaqueRenderPass,
+			.depthTarget = Renderer::Instance->MainDepthTexture,
+			.colorTargets = { Renderer::Instance->MainColorTexture },
+		});
+		
+		// Resize opaque framebuffer callback.
+		Renderer::Instance->AddCallbackOnResize("Resize-Opaque-FrameBuffer", [this](uint32_t width, uint32_t height)
+		{
+			ResourceManager::Instance->DeleteFrameBuffer(m_OpaqueFrameBuffer);
+
+			m_OpaqueFrameBuffer = ResourceManager::Instance->CreateFrameBuffer({
+				.debugName = "opaques-viewport-fb",
+				.width = width,
+				.height = height,
+				.renderPass = m_OpaqueRenderPass,
+				.depthTarget = Renderer::Instance->MainDepthTexture,
+				.colorTargets = { Renderer::Instance->MainColorTexture },
+			});
+		});
+	}
+
+	void RenderingSystem::TransparentPassSetup()
+	{
+		// Renderpass and framebuffer for transparents.
+		m_TransparentRenderPass = m_ResourceManager->CreateRenderPass({
+			.debugName = "transparents-renderpass",
+			.layout = m_RenderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::LOAD,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::DEPTH_STENCIL,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
+			},
+			.colorTargets = {
+				{
+					.loadOp = LoadOperation::LOAD,
+					.storeOp = StoreOperation::STORE,
+					.prevUsage = TextureLayout::RENDER_ATTACHMENT,
+					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
+				},
+			},
+		});
+
+		m_TransparentFrameBuffer = m_ResourceManager->CreateFrameBuffer({
+			.debugName = "transparents-viewport-fb",
+			.width = Window::Instance->GetExtents().x,
+			.height = Window::Instance->GetExtents().y,
+			.renderPass = m_TransparentRenderPass,
 			.depthTarget = Renderer::Instance->MainDepthTexture,
 			.colorTargets = { Renderer::Instance->MainColorTexture },
 		});
 
-		Renderer::Instance->AddCallbackOnResize("Mesh-Resize-FrameBuffer", [this](uint32_t width, uint32_t height)
+		// Resize transparent framebuffer callback.
+		Renderer::Instance->AddCallbackOnResize("Resize-Transparent-FrameBuffer", [this](uint32_t width, uint32_t height)
 		{
-			ResourceManager::Instance->DeleteFrameBuffer(m_MeshFrameBuffer);
+			ResourceManager::Instance->DeleteFrameBuffer(m_TransparentFrameBuffer);
 
-			m_MeshFrameBuffer = ResourceManager::Instance->CreateFrameBuffer({
-				.debugName = "viewport-fb",
+			m_TransparentFrameBuffer = ResourceManager::Instance->CreateFrameBuffer({
+				.debugName = "transparents-viewport-fb",
 				.width = width,
 				.height = height,
-				.renderPass = m_MeshRenderPass,
+				.renderPass = m_TransparentRenderPass,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 				.colorTargets = { Renderer::Instance->MainColorTexture },
 			});
@@ -297,53 +352,13 @@ namespace HBL2
 				}
 			}
 		});
-
-		m_SpriteRenderPass = m_ResourceManager->CreateRenderPass({
-			.debugName = "sprite-renderpass",
-			.layout = m_RenderPassLayout,
-			.depthTarget = {
-				.loadOp = LoadOperation::LOAD,
-				.storeOp = StoreOperation::STORE,
-				.stencilLoadOp = LoadOperation::DONT_CARE,
-				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::DEPTH_STENCIL,
-				.nextUsage = TextureLayout::DEPTH_STENCIL,
-			},
-			.colorTargets = {
-				{
-					.loadOp = LoadOperation::LOAD,
-					.storeOp = StoreOperation::STORE,
-					.prevUsage = TextureLayout::RENDER_ATTACHMENT,
-					.nextUsage = TextureLayout::SHADER_READ_ONLY,
-				},
-			},
-		});
-
-		m_SpriteFrameBuffer = m_ResourceManager->CreateFrameBuffer({
-			.debugName = "viewport-fb",
-			.width = Window::Instance->GetExtents().x,
-			.height = Window::Instance->GetExtents().y,
-			.renderPass = m_SpriteRenderPass,
-			.depthTarget = Renderer::Instance->MainDepthTexture,
-			.colorTargets = { Renderer::Instance->MainColorTexture },
-		});
-
-		Renderer::Instance->AddCallbackOnResize("Sprite-Resize-FrameBuffer", [this](uint32_t width, uint32_t height)
-		{
-			ResourceManager::Instance->DeleteFrameBuffer(m_SpriteFrameBuffer);
-
-			m_SpriteFrameBuffer = ResourceManager::Instance->CreateFrameBuffer({
-				.debugName = "viewport-fb",
-				.width = width,
-				.height = height,
-				.renderPass = m_SpriteRenderPass,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->MainColorTexture },
-			});
-		});
 	}
 
-	void RenderingSystem::FullScreenQuadSetup()
+	void RenderingSystem::PostProcessPassSetup()
+	{
+	}
+
+	void RenderingSystem::PresentPassSetup()
 	{
 		float* vertexBuffer = nullptr;
 
@@ -472,7 +487,8 @@ namespace HBL2
 			// Store the offset that the static meshes start from in the dynamic uniform buffer.
 			m_UBOStaticMeshOffset = m_UniformRingBuffer->GetCurrentOffset();
 
-			m_StaticMeshDraws.Reset();
+			m_StaticMeshOpaqueDraws.Reset();
+			m_StaticMeshTransparentDraws.Reset();
 			m_PrePassStaticMeshDraws.Reset();
 
 			m_Context->GetRegistry()
@@ -504,34 +520,50 @@ namespace HBL2
 						alloc.Data->Color = material->AlbedoColor;
 						alloc.Data->Glossiness = material->Glossiness;
 
-						// TODO: Sort transparent objects to be after opaque ones.
-						m_StaticMeshDraws.Insert({
-							.Shader = material->Shader,
-							.BindGroup = material->BindGroup,
-							.Mesh = staticMesh.Mesh,
-							.MeshIndex = staticMesh.MeshIndex,
-							.SubMeshIndex = staticMesh.SubMeshIndex,
-							.Material = staticMesh.Material,
-							.Offset = alloc.Offset,
-							.Size = sizeof(PerDrawData),
-						});
+						if (material->BlendMethod == Material::BlendMode::Opaque)
+						{
+							m_StaticMeshOpaqueDraws.Insert({
+								.Shader = material->Shader,
+								.BindGroup = material->BindGroup,
+								.Mesh = staticMesh.Mesh,
+								.MeshIndex = staticMesh.MeshIndex,
+								.SubMeshIndex = staticMesh.SubMeshIndex,
+								.Material = staticMesh.Material,
+								.Offset = alloc.Offset,
+								.Size = sizeof(PerDrawData),
+							});
 
-						// TODO: exclude transparent objects.
-						m_PrePassStaticMeshDraws.Insert({
-							.Shader = m_DepthOnlyShader,
-							.BindGroup = m_DepthOnlyBindGroup,
-							.Mesh = staticMesh.Mesh,
-							.MeshIndex = staticMesh.MeshIndex,
-							.SubMeshIndex = staticMesh.SubMeshIndex,
-							.Material = m_DepthOnlyMaterial,
-							.Offset = alloc.Offset,
-							.Size = sizeof(PerDrawData),
-						});
+							// Include only opaque objects in depth pre-pass.
+							m_PrePassStaticMeshDraws.Insert({
+								.Shader = m_DepthOnlyShader,
+								.BindGroup = m_DepthOnlyBindGroup,
+								.Mesh = staticMesh.Mesh,
+								.MeshIndex = staticMesh.MeshIndex,
+								.SubMeshIndex = staticMesh.SubMeshIndex,
+								.Material = m_DepthOnlyMaterial,
+								.Offset = alloc.Offset,
+								.Size = sizeof(PerDrawData),
+							});
+						}
+						else
+						{
+							m_StaticMeshTransparentDraws.Insert({
+								.Shader = material->Shader,
+								.BindGroup = material->BindGroup,
+								.Mesh = staticMesh.Mesh,
+								.MeshIndex = staticMesh.MeshIndex,
+								.SubMeshIndex = staticMesh.SubMeshIndex,
+								.Material = staticMesh.Material,
+								.Offset = alloc.Offset,
+								.Size = sizeof(PerDrawData),
+							});
+						}
 					}
 				});
 
 			// Store the total size of the static mesh draw data in the dynamic uniform data.
-			m_UBOStaticMeshSize = m_StaticMeshDraws.GetCount() * m_UniformRingBuffer->GetAlignedSize(sizeof(PerDrawData));
+			uint32_t totalDraws = m_StaticMeshOpaqueDraws.GetCount() + m_StaticMeshTransparentDraws.GetCount();
+			m_UBOStaticMeshSize = totalDraws * m_UniformRingBuffer->GetAlignedSize(sizeof(PerDrawData));
 		}
 
 		// Sprites
@@ -539,7 +571,8 @@ namespace HBL2
 			// Store the offset that the sprites start from in the dynamic uniform buffer.
 			m_UBOSpriteOffset = m_UniformRingBuffer->GetCurrentOffset();
 
-			m_SpriteDraws.Reset();
+			m_SpriteOpaqueDraws.Reset();
+			m_SpriteTransparentDraws.Reset();
 			m_PrePassSpriteDraws.Reset();
 
 			m_Context->GetRegistry()
@@ -569,62 +602,50 @@ namespace HBL2
 							alloc.Data->Model = transform.WorldMatrix;
 							alloc.Data->Color = material->AlbedoColor;
 
-							// TODO: Sort transparent objects to be after opaque ones.
-							m_SpriteDraws.Insert({
-								.Shader = material->Shader,
-								.BindGroup = material->BindGroup,
-								.Mesh = m_SpriteMesh,
-								.Material = sprite.Material,
-								.Offset = alloc.Offset,
-								.Size = sizeof(PerDrawDataSprite),
-							});
+							if (material->BlendMethod == Material::BlendMode::Opaque)
+							{
+								m_SpriteOpaqueDraws.Insert({
+									.Shader = material->Shader,
+									.BindGroup = material->BindGroup,
+									.Mesh = m_SpriteMesh,
+									.Material = sprite.Material,
+									.Offset = alloc.Offset,
+									.Size = sizeof(PerDrawDataSprite),
+								});
 
-							// TODO: exclude transparent objects.
-							m_PrePassSpriteDraws.Insert({
-								.Shader = m_DepthOnlySpriteShader,
-								.BindGroup = m_DepthOnlySpriteBindGroup,
-								.Mesh = m_SpriteMesh,
-								.Material = m_DepthOnlySpriteMaterial,
-								.Offset = alloc.Offset,
-								.Size = sizeof(PerDrawDataSprite),
-							});
+								// Include only opaque objects in depth pre-pass.
+								m_PrePassSpriteDraws.Insert({
+									.Shader = m_DepthOnlySpriteShader,
+									.BindGroup = m_DepthOnlySpriteBindGroup,
+									.Mesh = m_SpriteMesh,
+									.Material = m_DepthOnlySpriteMaterial,
+									.Offset = alloc.Offset,
+									.Size = sizeof(PerDrawDataSprite),
+								});
+							}
+							else
+							{
+								m_SpriteTransparentDraws.Insert({
+									.Shader = material->Shader,
+									.BindGroup = material->BindGroup,
+									.Mesh = m_SpriteMesh,
+									.Material = sprite.Material,
+									.Offset = alloc.Offset,
+									.Size = sizeof(PerDrawDataSprite),
+								});
+							}
 						}
 					});
 
 			// Store the total size of the sprite draw data in the dynamic uniform data.
-			m_UBOSpriteSize = m_SpriteDraws.GetCount() * m_UniformRingBuffer->GetAlignedSize(sizeof(PerDrawDataSprite));
+			uint32_t totalDraws = m_SpriteOpaqueDraws.GetCount() + m_SpriteTransparentDraws.GetCount();
+			m_UBOSpriteSize = totalDraws * m_UniformRingBuffer->GetAlignedSize(sizeof(PerDrawDataSprite));
 		}
 	}
 
-	void RenderingSystem::DepthPrePass()
+	void RenderingSystem::GatherLights()
 	{
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::PrePass);
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DepthOnlyRenderPass, m_DepthOnlyFrameBuffer);
-
-		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
-
-		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData.ViewProjection);
-		GlobalDrawStream globalStaticMeshDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOStaticMeshOffset, .DynamicUniformBufferSize = m_UBOStaticMeshSize };
-		passRenderer->DrawSubPass(globalStaticMeshDrawStream, m_PrePassStaticMeshDraws);
-
-		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData.ViewProjection);
-		GlobalDrawStream globalSpriteDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOSpriteOffset, .DynamicUniformBufferSize = m_UBOSpriteSize };
-		passRenderer->DrawSubPass(globalSpriteDrawStream, m_PrePassSpriteDraws);
-
-		commandBuffer->EndRenderPass(*passRenderer);
-		commandBuffer->Submit();
-	}
-
-	void RenderingSystem::StaticMeshPass()
-	{
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Opaque);
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_MeshRenderPass, m_MeshFrameBuffer);
-
-		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
-		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData);
-
 		m_LightData.LightCount = 0;
-
 		m_Context->GetRegistry()
 			.group<Component::Light>(entt::get<Component::Transform>)
 			.each([&](Component::Light& light, Component::Transform& transform)
@@ -637,28 +658,81 @@ namespace HBL2
 					m_LightData.LightCount++;
 				}
 			});
+	}
 
-		ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&m_LightData);
-		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOStaticMeshOffset, .DynamicUniformBufferSize = m_UBOStaticMeshSize };
-		passRenderer->DrawSubPass(globalDrawStream, m_StaticMeshDraws);
+	void RenderingSystem::DepthPrePass()
+	{
+		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::PrePass);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DepthOnlyRenderPass, m_DepthOnlyFrameBuffer);
+
+		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
+
+		// Depth only pre pass for opaque static meshes.
+		{
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData.ViewProjection);
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOStaticMeshOffset, .DynamicUniformBufferSize = m_UBOStaticMeshSize };
+			passRenderer->DrawSubPass(globalDrawStream, m_PrePassStaticMeshDraws);
+		}
+
+		// Depth only pre pass for opaque sprites.
+		{
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData.ViewProjection);
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOSpriteOffset, .DynamicUniformBufferSize = m_UBOSpriteSize };
+			passRenderer->DrawSubPass(globalDrawStream, m_PrePassSpriteDraws);
+		}
 
 		commandBuffer->EndRenderPass(*passRenderer);
 		commandBuffer->Submit();
 	}
 
-	void RenderingSystem::SpritePass()
+	void RenderingSystem::OpaquePass()
 	{
-		const glm::mat4& vp = m_CameraData.ViewProjection;
+		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Opaque);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_OpaqueRenderPass, m_OpaqueFrameBuffer);
 
-		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
+		// Render opaque meshes.
+		{
+			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData);
+			ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&m_LightData);
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOStaticMeshOffset, .DynamicUniformBufferSize = m_UBOStaticMeshSize };
+			passRenderer->DrawSubPass(globalDrawStream, m_StaticMeshOpaqueDraws);
+		}
 
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::OpaqueSprite);
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_SpriteRenderPass, m_SpriteFrameBuffer);
+		// Render opaque sprites.
+		{
+			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData.ViewProjection);
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOSpriteOffset, .DynamicUniformBufferSize = m_UBOSpriteSize };
+			passRenderer->DrawSubPass(globalDrawStream, m_SpriteOpaqueDraws);
+		}
 
-		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&vp);
+		commandBuffer->EndRenderPass(*passRenderer);
+		commandBuffer->Submit();
+	}
 
-		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOSpriteOffset, .DynamicUniformBufferSize = m_UBOSpriteSize };
-		passRenderer->DrawSubPass(globalDrawStream, m_SpriteDraws);
+	void RenderingSystem::TransparentPass()
+	{
+		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Transparent);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass, m_TransparentFrameBuffer);
+
+		// Render transparent meshes.
+		{
+			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData);
+			ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&m_LightData);
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOStaticMeshOffset, .DynamicUniformBufferSize = m_UBOStaticMeshSize };
+			passRenderer->DrawSubPass(globalDrawStream, m_StaticMeshTransparentDraws);
+		}
+
+		// Render transparent sprites.
+		{
+			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData.ViewProjection);
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOSpriteOffset, .DynamicUniformBufferSize = m_UBOSpriteSize };
+			passRenderer->DrawSubPass(globalDrawStream, m_SpriteTransparentDraws);
+		}
+
 		commandBuffer->EndRenderPass(*passRenderer);
 		commandBuffer->Submit();
 	}
@@ -673,8 +747,16 @@ namespace HBL2
 		commandBuffer->Submit();*/
 	}
 
-	void RenderingSystem::CompositePass()
+	void RenderingSystem::PresentPass()
 	{
+		// Transition the layout of the texture that the scene is rendered to.
+		ResourceManager::Instance->TransitionTextureLayout(
+			Renderer::Instance->MainColorTexture,
+			TextureLayout::RENDER_ATTACHMENT,
+			TextureLayout::SHADER_READ_ONLY,
+			PipelineStage::COLOR_ATTACHMENT_OUTPUT,
+			PipelineStage::FRAGMENT_SHADER);
+
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Present);
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
 
@@ -687,6 +769,7 @@ namespace HBL2
 
 		GlobalDrawStream globalDrawStream = { .BindGroup = Renderer::Instance->GetGlobalPresentBindings() };
 		passRenderer->DrawSubPass(globalDrawStream, draws);
+
 		commandBuffer->EndRenderPass(*passRenderer);
 		commandBuffer->Submit();
 	}

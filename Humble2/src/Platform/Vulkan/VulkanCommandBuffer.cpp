@@ -13,7 +13,18 @@ namespace HBL2
 
         m_CurrentRenderPassRenderer.m_CommandBuffer = CommandBuffer;
 
+		if (!renderPass.IsValid())
+		{
+			return &m_CurrentRenderPassRenderer;
+		}
+
 		VulkanRenderPass* vkRenderPass = rm->GetRenderPass(renderPass);
+
+		if (!frameBuffer.IsValid())
+		{
+			return &m_CurrentRenderPassRenderer;
+		}
+
 		VulkanFrameBuffer* vkFrameBuffer = rm->GetFrameBuffer(frameBuffer);
 
 		std::vector<VkClearValue> clearValues;

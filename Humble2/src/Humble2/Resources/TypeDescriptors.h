@@ -4,6 +4,7 @@
 #include "Handle.h"
 
 #include "Utilities\Collections\Span.h"
+#include "Utilities\Collections\BitFlags.h"
 
 #include <glm\glm.hpp>
 
@@ -30,7 +31,7 @@ namespace HBL2
 		uint32_t mips = 1;
 		Format format = Format::RGBA8_RGB;
 		Format internalFormat = Format::RGBA8_RGB;
-		TextureUsage usage = TextureUsage::TEXTURE_BINDING;
+		BitFlags<TextureUsage> usage = TextureUsage::TEXTURE_BINDING;
 		TextureType type = TextureType::D2;
 		TextureAspect aspect = TextureAspect::COLOR;
 

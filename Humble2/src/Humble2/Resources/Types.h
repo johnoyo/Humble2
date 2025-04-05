@@ -25,7 +25,6 @@ namespace HBL2
 		glm::vec3 Position;
 		glm::vec3 Normal;
 		glm::vec2 UV;
-		//glm::vec4 Color;
 		//glm::vec3 Tangent;
 	};
 
@@ -143,9 +142,16 @@ namespace HBL2
 			BindGroup = desc.bindGroup;
 		}
 
+		enum class BlendMode
+		{
+			Opaque = 0,
+			Transparent = 1,
+		};
+
 		const char* DebugName = "";
 		Handle<Shader> Shader;
 		Handle<BindGroup> BindGroup;
+		BlendMode BlendMethod = BlendMode::Opaque;
 
 		glm::vec4 AlbedoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		float Glossiness = 3.0f;

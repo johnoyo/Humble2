@@ -484,4 +484,16 @@ namespace HBL2
 
         TAllocator* m_Allocator;
     };
+
+    template<typename TAllocator>
+    auto MakeString(TAllocator* allocator)
+    {
+        return String<TAllocator>(allocator);
+    }
+
+    template<typename TAllocator>
+    auto MakeString(TAllocator* allocator, const char* str)
+    {
+        return String<TAllocator>(allocator, str);
+    }
 }

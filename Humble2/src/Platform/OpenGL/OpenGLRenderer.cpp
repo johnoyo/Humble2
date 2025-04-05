@@ -18,9 +18,12 @@ namespace HBL2
 		glCullFace(GL_BACK);
 		glFrontFace(GL_CCW);
 
+		// m_ShadowCommandBuffer = new OpenGLCommandBuffer();
 		m_PrePassCommandBuffer = new OpenGLCommandBuffer();
 		m_OpaqueCommandBuffer = new OpenGLCommandBuffer();
-		m_OpaqueSpriteCommandBuffer = new OpenGLCommandBuffer();
+		// m_SkyboxCommandBuffer = new OpenGLCommandBuffer();
+		m_TransparentCommandBuffer = new OpenGLCommandBuffer();
+		// m_PostProcessCommandBuffer = new OpenGLCommandBuffer();
 		m_PresentCommandBuffer = new OpenGLCommandBuffer();
 		m_UserInterfaceCommandBuffer = new OpenGLCommandBuffer();
 
@@ -56,20 +59,18 @@ namespace HBL2
 		case HBL2::CommandBufferType::MAIN:
 			switch (stage)
 			{
+			case HBL2::RenderPassStage::Shadow:
+				return m_ShadowCommandBuffer;
 			case HBL2::RenderPassStage::PrePass:
 				return m_PrePassCommandBuffer;
-			case HBL2::RenderPassStage::Shadow:
-				break;
 			case HBL2::RenderPassStage::Opaque:
 				return m_OpaqueCommandBuffer;
 			case HBL2::RenderPassStage::Skybox:
-				break;
+				return m_SkyboxCommandBuffer;
 			case HBL2::RenderPassStage::Transparent:
-				break;
-			case HBL2::RenderPassStage::OpaqueSprite:
-				return m_OpaqueSpriteCommandBuffer;
+				return m_TransparentCommandBuffer;
 			case HBL2::RenderPassStage::PostProcess:
-				break;
+				return m_PostProcessCommandBuffer;
 			case HBL2::RenderPassStage::Present:
 				return m_PresentCommandBuffer;
 			}
@@ -118,7 +119,7 @@ namespace HBL2
 			.dimensions = { width, height, 1 },
 			.format = Format::BGRA8_UNORM,
 			.internalFormat = Format::BGRA8_UNORM,
-			.usage = TextureUsage::RENDER_ATTACHMENT,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
 			.aspect = TextureAspect::COLOR,
 			.sampler =
 			{
@@ -177,7 +178,6 @@ namespace HBL2
 		m_ResourceManager->DeleteBindGroup(m_GlobalPresentBindings);
 
 		m_ResourceManager->DeleteRenderPass(m_RenderPass);
-		m_ResourceManager->DeleteRenderPass(m_RenderingRenderPass);
 		m_ResourceManager->DeleteFrameBuffer(m_MainFrameBuffer);
 	}
 
@@ -309,27 +309,6 @@ namespace HBL2
 				.stencilLoadOp = LoadOperation::DONT_CARE,
 				.stencilStoreOp = StoreOperation::DONT_CARE,
 				.prevUsage = TextureLayout::UNDEFINED,
-				.nextUsage = TextureLayout::DEPTH_STENCIL,
-			},
-			.colorTargets = {
-				{
-					.loadOp = LoadOperation::CLEAR,
-					.storeOp = StoreOperation::STORE,
-					.prevUsage = TextureLayout::UNDEFINED,
-					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
-				},
-			},
-		});
-
-		m_RenderingRenderPass = ResourceManager::Instance->CreateRenderPass({
-			.debugName = "main-rendering-renderpass",
-			.layout = renderPassLayout,
-			.depthTarget = {
-				.loadOp = LoadOperation::LOAD,
-				.storeOp = StoreOperation::STORE,
-				.stencilLoadOp = LoadOperation::DONT_CARE,
-				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::DEPTH_STENCIL,
 				.nextUsage = TextureLayout::DEPTH_STENCIL,
 			},
 			.colorTargets = {

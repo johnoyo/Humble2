@@ -40,6 +40,7 @@ namespace HBL2
 	{
 		Handle<Asset> ShaderAssetHandle;
 
+		Material::BlendMode BlendMode;
 		glm::vec4 AlbedoColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 		float Glossiness = 0.0f;
 

@@ -21,25 +21,9 @@ namespace HBL2
 			DebugName = desc.debugName;
 
 			Extent = { desc.dimensions.x, desc.dimensions.y, desc.dimensions.z };
+			Aspect = VkUtils::TextureAspectToVkImageAspectFlags(desc.aspect);
 
-			// TODO: Use BitFlags here!
-			VkImageUsageFlags usage = VkUtils::TextureUsageToVkImageUsageFlags(desc.usage);
-
-			if ((desc.initialData == nullptr && Extent.width == 1 && Extent.height == 1) || desc.initialData != nullptr)
-			{
-				usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-			}
-			else
-			{
-				if (desc.usage != TextureUsage::DEPTH_STENCIL)
-				{
-					usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-				}
-				/*else
-				{
-					usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-				}*/
-			}
+			VkImageUsageFlags usage = VkUtils::TextureUsageFlagToVkImageUsageFlags(desc.usage);
 
 			// Allocate Image
 			VkImageCreateInfo imageCreateInfo =
@@ -169,35 +153,53 @@ namespace HBL2
 			vmaDestroyBuffer(renderer->GetAllocator(), stagingBuffer, stagingBufferAllocation);
 		}
 
-		void TrasitionLayout(TextureLayout currentLayout, TextureLayout newLayout)
+		void TrasitionLayout(TextureLayout currentLayout, TextureLayout newLayout, PipelineStage srcStage, PipelineStage dstStage)
 		{
 			VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 
 			renderer->ImmediateSubmit([&](VkCommandBuffer cmd)
 			{
-				VkImageMemoryBarrier depthToShaderBarrier{};
-				depthToShaderBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-				depthToShaderBarrier.oldLayout = VkUtils::TextureLayoutToVkImageLayout(currentLayout);
-				depthToShaderBarrier.newLayout = VkUtils::TextureLayoutToVkImageLayout(newLayout);
-				depthToShaderBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				depthToShaderBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				depthToShaderBarrier.image = Image;
-				depthToShaderBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-				depthToShaderBarrier.subresourceRange.baseMipLevel = 0;
-				depthToShaderBarrier.subresourceRange.levelCount = 1;
-				depthToShaderBarrier.subresourceRange.baseArrayLayer = 0;
-				depthToShaderBarrier.subresourceRange.layerCount = 1;
-				depthToShaderBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-				depthToShaderBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				VkAccessFlags srcAccessFlags = 0;
+				VkAccessFlags dstAccessFlags = 0;
+
+				switch (Aspect)
+				{
+				case VK_IMAGE_ASPECT_COLOR_BIT:
+					srcAccessFlags = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+					break;
+				case VK_IMAGE_ASPECT_DEPTH_BIT:
+					srcAccessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+					break;
+				}
+
+				if (dstStage != PipelineStage::BOTTOM_OF_PIPE)
+				{
+					dstAccessFlags = VK_ACCESS_SHADER_READ_BIT;
+				}
+				
+				VkImageMemoryBarrier barrier{};
+				barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+				barrier.oldLayout = VkUtils::TextureLayoutToVkImageLayout(currentLayout);
+				barrier.newLayout = VkUtils::TextureLayoutToVkImageLayout(newLayout);
+				barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				barrier.image = Image;
+				barrier.subresourceRange.aspectMask = Aspect;
+				barrier.subresourceRange.baseMipLevel = 0;
+				barrier.subresourceRange.levelCount = 1;
+				barrier.subresourceRange.baseArrayLayer = 0;
+				barrier.subresourceRange.layerCount = 1;
+				barrier.srcAccessMask = srcAccessFlags;
+				barrier.dstAccessMask = dstAccessFlags;
 
 				vkCmdPipelineBarrier(
 					cmd,
-					VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-					VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					VkUtils::PipelineStageToVkPipelineStageFlags(srcStage), // VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+					VkUtils::PipelineStageToVkPipelineStageFlags(dstStage), // VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 					0,
 					0, nullptr,
 					0, nullptr,
-					1, &depthToShaderBarrier
+					1, &barrier
 				);
 			});
 		}
@@ -222,6 +224,8 @@ namespace HBL2
 		VmaAllocation Allocation = VK_NULL_HANDLE;
 		VkSampler Sampler = VK_NULL_HANDLE;
 		VkExtent3D Extent{};
+
+		VkImageAspectFlags Aspect = 0;
 
 	private:
 		void CreateStagingBuffer(VulkanRenderer* renderer, VkBuffer* stagingBuffer, VmaAllocation* stagingBufferAllocation)

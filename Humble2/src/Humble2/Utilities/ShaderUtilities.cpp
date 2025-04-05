@@ -353,7 +353,7 @@ namespace HBL2
 						}
 					}
 				},
-				.renderPass = Renderer::Instance->GetRenderingRenderPass(),
+				.renderPass = Renderer::Instance->GetMainRenderPass(),
 			});
 
 			m_Shaders[BuiltInShader::INVALID] = invalidShaderHandle;
@@ -419,7 +419,7 @@ namespace HBL2
 						}
 					}
 				},
-				.renderPass = Renderer::Instance->GetRenderingRenderPass(),
+				.renderPass = Renderer::Instance->GetMainRenderPass(),
 			});
 
 			m_Shaders[BuiltInShader::UNLIT] = unlitShaderHandle;
@@ -453,7 +453,7 @@ namespace HBL2
 						}
 					}
 				},
-				.renderPass = Renderer::Instance->GetRenderingRenderPass(),
+				.renderPass = Renderer::Instance->GetMainRenderPass(),
 			});
 
 			m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderHandle;
@@ -487,7 +487,7 @@ namespace HBL2
 						}
 					}
 				},
-				.renderPass = Renderer::Instance->GetRenderingRenderPass(),
+				.renderPass = Renderer::Instance->GetMainRenderPass(),
 			});
 
 			m_Shaders[BuiltInShader::PBR] = pbrShaderHandle;
@@ -580,21 +580,25 @@ namespace HBL2
 		out << YAML::Key << "Material" << YAML::Value;
 		out << YAML::BeginMap;
 
+
 		if (desc.ShaderAssetHandle.IsValid())
 		{
-			out << YAML::Key << "Shader" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.ShaderAssetHandle)->UUID;
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.ShaderAssetHandle);
+			out << YAML::Key << "Shader" << YAML::Value << asset->UUID;
 		}
 		else
 		{
 			out << YAML::Key << "Shader" << YAML::Value << (UUID)0;
 		}
 
+		out << YAML::Key << "BlendMode" << YAML::Value << (desc.BlendMode == Material::BlendMode::Opaque ? 0 : 1);
 		out << YAML::Key << "AlbedoColor" << YAML::Value << desc.AlbedoColor;
 		out << YAML::Key << "Glossiness" << YAML::Value << desc.Glossiness;
 
 		if (desc.AlbedoMapAssetHandle.IsValid())
 		{
-			out << YAML::Key << "AlbedoMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.AlbedoMapAssetHandle)->UUID;
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.AlbedoMapAssetHandle);
+			out << YAML::Key << "AlbedoMap" << YAML::Value << asset->UUID;
 		}
 		else
 		{
@@ -603,7 +607,8 @@ namespace HBL2
 
 		if (desc.NormalMapAssetHandle.IsValid())
 		{
-			out << YAML::Key << "NormalMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.NormalMapAssetHandle)->UUID;
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.NormalMapAssetHandle);
+			out << YAML::Key << "NormalMap" << YAML::Value << asset->UUID;
 		}
 		else
 		{
@@ -612,7 +617,8 @@ namespace HBL2
 
 		if (desc.MetallicMapAssetHandle.IsValid())
 		{
-			out << YAML::Key << "MetallicMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.MetallicMapAssetHandle)->UUID;
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.MetallicMapAssetHandle);
+			out << YAML::Key << "MetallicMap" << YAML::Value << asset->UUID;
 		}
 		else
 		{
@@ -621,7 +627,8 @@ namespace HBL2
 
 		if (desc.RoughnessMapAssetHandle.IsValid())
 		{
-			out << YAML::Key << "RoughnessMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.RoughnessMapAssetHandle)->UUID;
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.RoughnessMapAssetHandle);
+			out << YAML::Key << "RoughnessMap" << YAML::Value << asset->UUID;
 		}
 		else
 		{

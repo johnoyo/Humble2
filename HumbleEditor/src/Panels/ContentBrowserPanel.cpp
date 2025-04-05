@@ -628,6 +628,15 @@ namespace HBL2
 
 				ImGui::NewLine();
 
+				const char* options[] = { "Opaque", "Transparent" };
+				static int currentItem = static_cast<int>(Material::BlendMode::Opaque);
+				static Material::BlendMode blendMode = Material::BlendMode::Opaque;
+
+				if (ImGui::Combo("Blend Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+				{
+					blendMode = static_cast<Material::BlendMode>(currentItem);
+				}
+
 				static float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 				ImGui::ColorEdit4("AlbedoColor", color);
 
@@ -813,6 +822,7 @@ namespace HBL2
 
 						ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
 							.ShaderAssetHandle = shaderAssetHandle,
+							.BlendMode = blendMode,
 							.AlbedoColor = { color[0], color[1], color[2], color[3] },
 							.Glossiness = glossiness,
 							.AlbedoMapAssetHandle = albedoMapAssetHandle,

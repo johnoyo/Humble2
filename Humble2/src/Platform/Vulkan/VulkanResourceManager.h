@@ -49,12 +49,12 @@ namespace HBL2
 				texture->Update(bytes);
 			}
 		}
-		virtual void TransitionTextureLayout(Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout) override
+		virtual void TransitionTextureLayout(Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, PipelineStage srcStage, PipelineStage dstStage) override
 		{
 			VulkanTexture* texture = GetTexture(handle);
 			if (texture != nullptr)
 			{
-				texture->TrasitionLayout(currentLayout, newLayout);
+				texture->TrasitionLayout(currentLayout, newLayout, srcStage, dstStage);
 			}
 		}
 		VulkanTexture* GetTexture(Handle<Texture> handle) const

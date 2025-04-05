@@ -36,20 +36,23 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
-		void DepthOnlyRenderingSetup();
-		void MeshRenderingSetup();
+		void DepthPrePassSetup();
+		void OpaquePassSetup();
+		void TransparentPassSetup();
 		void SpriteRenderingSetup();
-		void FullScreenQuadSetup();
+		void PostProcessPassSetup();
+		void PresentPassSetup();
 
 		bool IsInFrustum(const Component::Transform& transform);
 		bool IsInFrustum(Handle<Mesh> meshHandle, const Component::Transform& transform);
 
 		void GatherDraws();
+		void GatherLights();
 		void DepthPrePass();
-		void StaticMeshPass();
-		void SpritePass();
+		void OpaquePass();
+		void TransparentPass();
 		void PostProcessPass();
-		void CompositePass();
+		void PresentPass();
 
 		void GetViewProjection();
 
@@ -74,13 +77,13 @@ namespace HBL2
 		Handle<Shader> m_DepthOnlyShader;
 		Handle<Shader> m_DepthOnlySpriteShader;
 
-		Handle<RenderPass> m_MeshRenderPass;
-		Handle<FrameBuffer> m_MeshFrameBuffer;
+		Handle<RenderPass> m_OpaqueRenderPass;
+		Handle<RenderPass> m_TransparentRenderPass;
+		Handle<FrameBuffer> m_OpaqueFrameBuffer;
+		Handle<FrameBuffer> m_TransparentFrameBuffer;
 
 		Handle<Mesh> m_SpriteMesh;
 		Handle<Buffer> m_VertexBuffer;
-		Handle<RenderPass> m_SpriteRenderPass;
-		Handle<FrameBuffer> m_SpriteFrameBuffer;
 
 		Handle<Buffer> m_QuadVertexBuffer;
 		Handle<Mesh> m_QuadMesh;
@@ -88,12 +91,14 @@ namespace HBL2
 
 		uint32_t m_UBOStaticMeshOffset = 0.0f;
 		uint32_t m_UBOStaticMeshSize = 0.0f;
-		DrawList m_StaticMeshDraws;
+		DrawList m_StaticMeshOpaqueDraws;
+		DrawList m_StaticMeshTransparentDraws;
 		DrawList m_PrePassStaticMeshDraws;
 
 		uint32_t m_UBOSpriteOffset = 0.0f;
 		uint32_t m_UBOSpriteSize = 0.0f;
-		DrawList m_SpriteDraws;
+		DrawList m_SpriteOpaqueDraws;
+		DrawList m_SpriteTransparentDraws;
 		DrawList m_PrePassSpriteDraws;
 	};
 }

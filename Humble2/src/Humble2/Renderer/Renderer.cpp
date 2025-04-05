@@ -18,7 +18,7 @@ namespace HBL2
 			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
 			.format = Format::BGRA8_UNORM,
 			.internalFormat = Format::BGRA8_UNORM,
-			.usage = TextureUsage::RENDER_ATTACHMENT,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
 			.aspect = TextureAspect::COLOR,
 			.sampler =
 			{

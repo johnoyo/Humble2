@@ -21,6 +21,11 @@ namespace HBL2
 			glViewport(0, 0, openGLFrameBuffer->Width, openGLFrameBuffer->Height);
 		}
 
+		if (!renderPass.IsValid())
+		{
+			return &m_CurrentRenderPassRenderer;
+		}
+
 		// Get clear values from render pass
 		OpenGLRenderPass* openGLRenderPass = rm->GetRenderPass(renderPass);		
 

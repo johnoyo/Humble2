@@ -128,9 +128,6 @@ namespace HBL2
 		VkRenderPass renderPass = m_ResourceManager->GetRenderPass(m_RenderPass)->RenderPass;
 		vkDestroyRenderPass(m_Device->Get(), renderPass, nullptr);
 
-		VkRenderPass renderingRenderPass = m_ResourceManager->GetRenderPass(m_RenderingRenderPass)->RenderPass;
-		vkDestroyRenderPass(m_Device->Get(), renderingRenderPass, nullptr);
-
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
@@ -180,7 +177,7 @@ namespace HBL2
 		}
 
 		{
-			CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::OpaqueSprite);
+			CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Transparent);
 			RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(GetMainRenderPass(), GetMainFrameBuffer());
 			commandBuffer->EndRenderPass(*passRenderer);
 			commandBuffer->Submit();
@@ -232,13 +229,13 @@ namespace HBL2
 		case HBL2::CommandBufferType::MAIN:
 			switch (stage)
 			{
-			case HBL2::RenderPassStage::PrePass:
-				cmd = GetCurrentFrame().PrePassCommandBuffer;
-				vkCmdObj = &m_PrePassCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
-				break;
 			case HBL2::RenderPassStage::Shadow:
 				cmd = GetCurrentFrame().ShadowCommandBuffer;
 				vkCmdObj = &m_ShadowCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
+				break;
+			case HBL2::RenderPassStage::PrePass:
+				cmd = GetCurrentFrame().PrePassCommandBuffer;
+				vkCmdObj = &m_PrePassCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
 				break;
 			case HBL2::RenderPassStage::Opaque:
 				cmd = GetCurrentFrame().OpaqueCommandBuffer;
@@ -251,10 +248,6 @@ namespace HBL2
 			case HBL2::RenderPassStage::Transparent:
 				cmd = GetCurrentFrame().TransparentCommandBuffer;
 				vkCmdObj = &m_TransparentCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
-				break;
-			case HBL2::RenderPassStage::OpaqueSprite:
-				cmd = GetCurrentFrame().OpaqueSpriteCommandBuffer;
-				vkCmdObj = &m_OpaqueSpriteCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
 				break;
 			case HBL2::RenderPassStage::PostProcess:
 				cmd = GetCurrentFrame().PostProcessCommandBuffer;
@@ -387,7 +380,7 @@ namespace HBL2
 			.dimensions = { width, height, 1 },
 			.format = Format::BGRA8_UNORM,
 			.internalFormat = Format::BGRA8_UNORM,
-			.usage = TextureUsage::RENDER_ATTACHMENT,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
 			.aspect = TextureAspect::COLOR,
 			.sampler =
 			{
@@ -545,6 +538,7 @@ namespace HBL2
 			swapchainImage.Image = m_SwapChainImages[i];
 			swapchainImage.ImageView = m_SwapChainImageViews[i];
 			swapchainImage.Extent = { m_SwapChainExtent.width, m_SwapChainExtent.height, 1 };
+			swapchainImage.Aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 			m_SwapChainColorTextures.push_back(m_ResourceManager->m_TexturePool.Insert(swapchainImage));
 		}
 	}
@@ -579,12 +573,11 @@ namespace HBL2
 			});
 
 			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].ImageAvailableSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].PrePassRenderFinishedSemaphore), "vkCreateSemaphore");
 			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].ShadowRenderFinishedSemaphore), "vkCreateSemaphore");
+			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].PrePassRenderFinishedSemaphore), "vkCreateSemaphore");
 			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].OpaqueRenderFinishedSemaphore), "vkCreateSemaphore");
 			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].SkyboxRenderFinishedSemaphore), "vkCreateSemaphore");
 			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].TransparentRenderFinishedSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].OpaqueSpriteRenderFinishedSemaphore), "vkCreateSemaphore");
 			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].PostProcessRenderFinishedSemaphore), "vkCreateSemaphore");
 			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].PresentRenderFinishedSemaphore), "vkCreateSemaphore");
 			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].ImGuiRenderFinishedSemaphore), "vkCreateSemaphore");
@@ -593,12 +586,11 @@ namespace HBL2
 			m_MainDeletionQueue.PushFunction([=]()
 			{
 				vkDestroySemaphore(m_Device->Get(), m_Frames[i].ImageAvailableSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].PrePassRenderFinishedSemaphore, nullptr);
 				vkDestroySemaphore(m_Device->Get(), m_Frames[i].ShadowRenderFinishedSemaphore, nullptr);
+				vkDestroySemaphore(m_Device->Get(), m_Frames[i].PrePassRenderFinishedSemaphore, nullptr);
 				vkDestroySemaphore(m_Device->Get(), m_Frames[i].OpaqueRenderFinishedSemaphore, nullptr);
 				vkDestroySemaphore(m_Device->Get(), m_Frames[i].SkyboxRenderFinishedSemaphore, nullptr);
 				vkDestroySemaphore(m_Device->Get(), m_Frames[i].TransparentRenderFinishedSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].OpaqueSpriteRenderFinishedSemaphore, nullptr);
 				vkDestroySemaphore(m_Device->Get(), m_Frames[i].PostProcessRenderFinishedSemaphore, nullptr);
 				vkDestroySemaphore(m_Device->Get(), m_Frames[i].PresentRenderFinishedSemaphore, nullptr);
 				vkDestroySemaphore(m_Device->Get(), m_Frames[i].ImGuiRenderFinishedSemaphore, nullptr);
@@ -658,12 +650,11 @@ namespace HBL2
 
 			VK_VALIDATE(vkAllocateCommandBuffers(m_Device->Get(), &cmdAllocInfo, commandBuffers), "vkAllocateCommandBuffers");
 
-			m_Frames[i].PrePassCommandBuffer = commandBuffers[0];
 			//m_Frames[i].ShadowCommandBuffer = commandBuffers[0];
+			m_Frames[i].PrePassCommandBuffer = commandBuffers[0];
 			m_Frames[i].OpaqueCommandBuffer = commandBuffers[1];
 			//m_Frames[i].SkyboxCommandBuffer = commandBuffers[2];
-			//m_Frames[i].TransparentCommandBuffer = commandBuffers[3];
-			m_Frames[i].OpaqueSpriteCommandBuffer = commandBuffers[2];
+			m_Frames[i].TransparentCommandBuffer = commandBuffers[2];
 			//m_Frames[i].PostProcessCommandBuffer = commandBuffers[2];
 			m_Frames[i].PresentCommandBuffer = commandBuffers[3];
 			m_Frames[i].ImGuiCommandBuffer = commandBuffers[4];
@@ -673,21 +664,22 @@ namespace HBL2
 				vkDestroyCommandPool(m_Device->Get(), m_Frames[i].CommandPool, nullptr);
 			});
 
-			m_PrePassCommandBuffers[i] = VulkanCommandBuffer({
-				.type = CommandBufferType::MAIN,
-				.commandBuffer = m_Frames[i].PrePassCommandBuffer,
-				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].ImageAvailableSemaphore,
-				.signalSemaphore = m_Frames[i].PrePassRenderFinishedSemaphore,
-			});
-
 			/*m_ShadowCommandBuffers[i] = VulkanCommandBuffer({
 				.type = CommandBufferType::MAIN,
 				.commandBuffer = m_Frames[i].ShadowCommandBuffer,
 				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].PrePassRenderFinishedSemaphore,
+				.waitSemaphore = m_Frames[i].ImageAvailableSemaphore,
 				.signalSemaphore = m_Frames[i].ShadowRenderFinishedSemaphore,
 			});*/
+
+			m_PrePassCommandBuffers[i] = VulkanCommandBuffer({
+				.type = CommandBufferType::MAIN,
+				.commandBuffer = m_Frames[i].PrePassCommandBuffer,
+				.blockFence = VK_NULL_HANDLE,
+				.waitSemaphore = m_Frames[i].ImageAvailableSemaphore, // m_Frames[i].ShadowRenderFinishedSemaphore, // TODO: Correct this
+				.signalSemaphore = m_Frames[i].PrePassRenderFinishedSemaphore,
+			});
+
 
 			m_OpaqueCommandBuffers[i] = VulkanCommandBuffer({
 				.type = CommandBufferType::MAIN,
@@ -704,21 +696,14 @@ namespace HBL2
 				.waitSemaphore = m_Frames[i].OpaqueRenderFinishedSemaphore,
 				.signalSemaphore = m_Frames[i].SkyboxRenderFinishedSemaphore,
 			});
+			*/
 
 			m_TransparentCommandBuffers[i] = VulkanCommandBuffer({
 				.type = CommandBufferType::MAIN,
 				.commandBuffer = m_Frames[i].TransparentCommandBuffer,
 				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].SkyboxRenderFinishedSemaphore,
+				.waitSemaphore = m_Frames[i].OpaqueRenderFinishedSemaphore, // m_Frames[i].SkyboxRenderFinishedSemaphore,
 				.signalSemaphore = m_Frames[i].TransparentRenderFinishedSemaphore,
-			});*/
-
-			m_OpaqueSpriteCommandBuffers[i] = VulkanCommandBuffer({
-				.type = CommandBufferType::MAIN,
-				.commandBuffer = m_Frames[i].OpaqueSpriteCommandBuffer,
-				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].OpaqueRenderFinishedSemaphore, // m_Frames[i].TransparentRenderFinishedSemaphore, // TODO: correct this
-				.signalSemaphore = m_Frames[i].OpaqueSpriteRenderFinishedSemaphore,
 			});
 
 			/*m_PostProcessCommandBuffers[i] = VulkanCommandBuffer({
@@ -733,7 +718,7 @@ namespace HBL2
 				.type = CommandBufferType::MAIN,
 				.commandBuffer = m_Frames[i].PresentCommandBuffer,
 				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].OpaqueSpriteRenderFinishedSemaphore,
+				.waitSemaphore = m_Frames[i].TransparentRenderFinishedSemaphore,
 				.signalSemaphore = m_Frames[i].PresentRenderFinishedSemaphore,
 			});
 
@@ -801,27 +786,6 @@ namespace HBL2
 				.stencilLoadOp = LoadOperation::DONT_CARE,
 				.stencilStoreOp = StoreOperation::DONT_CARE,
 				.prevUsage = TextureLayout::UNDEFINED,
-				.nextUsage = TextureLayout::DEPTH_STENCIL,
-			},
-			.colorTargets = {
-				{
-					.loadOp = LoadOperation::CLEAR,
-					.storeOp = StoreOperation::STORE,
-					.prevUsage = TextureLayout::UNDEFINED,
-					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
-				},
-			},
-		});
-
-		m_RenderingRenderPass = ResourceManager::Instance->CreateRenderPass({
-			.debugName = "main-rendering-renderpass",
-			.layout = renderPassLayout,
-			.depthTarget = {
-				.loadOp = LoadOperation::LOAD,
-				.storeOp = StoreOperation::STORE,
-				.stencilLoadOp = LoadOperation::DONT_CARE,
-				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::DEPTH_STENCIL,
 				.nextUsage = TextureLayout::DEPTH_STENCIL,
 			},
 			.colorTargets = {

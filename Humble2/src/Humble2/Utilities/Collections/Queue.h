@@ -144,4 +144,10 @@ namespace HBL2
         uint32_t m_Back;
         TAllocator* m_Allocator = nullptr;
     };
+
+    template<typename T, typename TAllocator>
+    auto MakeQueue(TAllocator* allocator, uint32_t initialCapacity = 8)
+    {
+        return Queue<T, TAllocator>(allocator, initialCapacity);
+    }
 }

@@ -176,6 +176,9 @@ namespace HBL2
 
             T& operator*() { return m_Data[m_Index]; }
             ReverseIterator& operator++() { m_Index = (m_Index - 1 + m_Capacity) % m_Capacity; return *this; }
+            ReverseIterator operator++(int) { ReverseIterator temp = *this; ++(*this); return temp; }
+            ReverseIterator& operator--() { m_Index = (m_Index + 1) % m_Capacity; return *this; }
+            ReverseIterator operator--(int) { ReverseIterator temp = *this;--(*this); return temp; }
             bool operator!=(const ReverseIterator& other) const { return m_Index != other.m_Index; }
 
         private:
@@ -234,4 +237,10 @@ namespace HBL2
         uint32_t m_Back;
         TAllocator* m_Allocator;
     };
+
+    template<typename T, typename TAllocator>
+    auto MakeDeque(TAllocator* allocator, uint32_t initialCapacity = 8)
+    {
+        return Deque<T, TAllocator>(allocator, initialCapacity);
+    }
 }

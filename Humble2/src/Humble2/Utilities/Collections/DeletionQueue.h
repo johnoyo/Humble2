@@ -1,6 +1,6 @@
 #pragma once
 
-#include <deque>
+#include "Deque.h"
 #include <functional>
 
 namespace HBL2
@@ -10,7 +10,7 @@ namespace HBL2
 	public:
 		void PushFunction(std::function<void()>&& function)
 		{
-			m_Deletors.push_back(function);
+			m_Deletors.PushBack(function);
 		}
 
 		void Flush()
@@ -20,10 +20,10 @@ namespace HBL2
 				(*it)();
 			}
 
-			m_Deletors.clear();
+			m_Deletors.Clear();
 		}
 
 	private:
-		std::deque<std::function<void()>> m_Deletors;
+		Deque<std::function<void()>> m_Deletors;
 	};
 }

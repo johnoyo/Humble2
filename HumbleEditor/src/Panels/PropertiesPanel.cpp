@@ -556,6 +556,14 @@ namespace HBL2
 
 							ImGui::Text(std::format("Name: {}", mat->DebugName).c_str());
 
+							const char* options[] = { "Opaque", "Transparent" };
+							int currentItem = static_cast<int>(mat->BlendMethod);
+
+							if (ImGui::Combo("Blend Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+							{
+								mat->BlendMethod = static_cast<Material::BlendMode>(currentItem);
+							}
+
 							ImGui::ColorEdit4("AlbedoColor", glm::value_ptr(mat->AlbedoColor));
 							ImGui::InputFloat("Glossiness", &mat->Glossiness, 0.05f);
 						}

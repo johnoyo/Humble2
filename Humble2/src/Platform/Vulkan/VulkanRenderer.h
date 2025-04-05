@@ -28,9 +28,6 @@ namespace HBL2
 		VkSemaphore OpaqueRenderFinishedSemaphore; // Signal that opaque rendering is done.
 		VkSemaphore SkyboxRenderFinishedSemaphore; // Signal that skybox rendering is done.
 		VkSemaphore TransparentRenderFinishedSemaphore; // Signal that transparent rendering is done.
-
-		VkSemaphore OpaqueSpriteRenderFinishedSemaphore; // Signal that opaque rendering is done.
-
 		VkSemaphore PostProcessRenderFinishedSemaphore; // Signal that post process rendering is done.
 		VkSemaphore PresentRenderFinishedSemaphore; // Signal that rendering onto the full screen quad is done.
 
@@ -46,9 +43,6 @@ namespace HBL2
 		VkCommandBuffer OpaqueCommandBuffer;
 		VkCommandBuffer SkyboxCommandBuffer;
 		VkCommandBuffer TransparentCommandBuffer;
-
-		VkCommandBuffer OpaqueSpriteCommandBuffer;
-
 		VkCommandBuffer PostProcessCommandBuffer;
 		VkCommandBuffer PresentCommandBuffer;
 
@@ -57,9 +51,6 @@ namespace HBL2
 		std::vector<VkCommandBuffer> SecondaryOpaqueCommandBuffers;
 		std::vector<VkCommandBuffer> SecondarySkyboxCommandBuffers;
 		std::vector<VkCommandBuffer> SecondaryTransparentCommandBuffers;
-
-		std::vector<VkCommandBuffer> SecondaryOpaqueSpriteCommandBuffers;
-
 		std::vector<VkCommandBuffer> SecondaryPostProcessCommandBuffers;
 
 		Handle<BindGroup> GlobalBindings2D;
@@ -145,9 +136,6 @@ namespace HBL2
 		VulkanCommandBuffer m_OpaqueCommandBuffers[FRAME_OVERLAP];
 		VulkanCommandBuffer m_SkyboxCommandBuffers[FRAME_OVERLAP];
 		VulkanCommandBuffer m_TransparentCommandBuffers[FRAME_OVERLAP];
-
-		VulkanCommandBuffer m_OpaqueSpriteCommandBuffers[FRAME_OVERLAP];
-
 		VulkanCommandBuffer m_PostProcessCommandBuffers[FRAME_OVERLAP];
 		VulkanCommandBuffer m_PresentCommandBuffers[FRAME_OVERLAP];
 		
