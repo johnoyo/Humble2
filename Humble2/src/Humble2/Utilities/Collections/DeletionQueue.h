@@ -10,6 +10,7 @@ namespace HBL2
 	public:
 		void PushFunction(std::function<void()>&& function)
 		{
+			std::scoped_lock lock(m_Lock);
 			m_Deletors.PushBack(function);
 		}
 
@@ -25,5 +26,6 @@ namespace HBL2
 
 	private:
 		Deque<std::function<void()>> m_Deletors;
+		std::mutex m_Lock;
 	};
 }

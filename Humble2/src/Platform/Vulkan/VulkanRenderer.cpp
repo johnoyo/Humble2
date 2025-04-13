@@ -9,6 +9,8 @@
 
 namespace HBL2
 {
+	thread_local UploadContext VulkanRenderer::s_UploadContext;
+
 	void VulkanRenderer::PreInitialize()
 	{
 		m_GraphicsAPI = GraphicsAPI::VULKAN;
@@ -291,7 +293,12 @@ namespace HBL2
 
 	void VulkanRenderer::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function)
 	{
-		VkCommandBuffer cmd = m_UploadContext.CommandBuffer;
+		if (s_UploadContext.CommandBuffer == VK_NULL_HANDLE)
+		{
+			CreateUploadContextCommands();
+		}
+
+		VkCommandBuffer cmd = s_UploadContext.CommandBuffer;
 
 		// begin the command buffer recording. We will use this command buffer exactly once before resetting, so we tell vulkan that.
 		VkCommandBufferBeginInfo cmdBeginInfo =
@@ -324,13 +331,13 @@ namespace HBL2
 
 		// Submit command buffer to the queue and execute it.
 		// UploadFence will now block until the graphic commands finish execution
-		VK_VALIDATE(vkQueueSubmit(m_GraphicsQueue, 1, &submit, m_UploadContext.UploadFence), "vkQueueSubmit");
+		VK_VALIDATE(vkQueueSubmit(m_GraphicsQueue, 1, &submit, s_UploadContext.UploadFence), "vkQueueSubmit");
 
-		vkWaitForFences(m_Device->Get(), 1, &m_UploadContext.UploadFence, true, 9999999999);
-		vkResetFences(m_Device->Get(), 1, &m_UploadContext.UploadFence);
+		vkWaitForFences(m_Device->Get(), 1, &s_UploadContext.UploadFence, true, 9999999999);
+		vkResetFences(m_Device->Get(), 1, &s_UploadContext.UploadFence);
 
 		// Reset the command buffers inside the command pool
-		vkResetCommandPool(m_Device->Get(), m_UploadContext.CommandPool, 0);
+		vkResetCommandPool(m_Device->Get(), s_UploadContext.CommandPool, 0);
 	}
 
 	void VulkanRenderer::Resize(uint32_t width, uint32_t height)
@@ -598,19 +605,6 @@ namespace HBL2
 				vkDestroySemaphore(m_Device->Get(), m_Frames[i].ImGuiRenderFinishedSemaphore, nullptr);
 			});
 		}
-
-		VkFenceCreateInfo uploadFenceCreateInfo =
-		{
-			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-			.pNext = nullptr,
-		};
-
-		VK_VALIDATE(vkCreateFence(m_Device->Get(), &uploadFenceCreateInfo, nullptr, &m_UploadContext.UploadFence), "vkCreateFence");
-
-		m_MainDeletionQueue.PushFunction([=]()
-		{
-			vkDestroyFence(m_Device->Get(), m_UploadContext.UploadFence, nullptr);
-		});
 	}
 
 	void VulkanRenderer::CreateCommands()
@@ -741,6 +735,23 @@ namespace HBL2
 			});
 		}
 
+		CreateUploadContextCommands();
+	}
+
+	void VulkanRenderer::CreateUploadContextCommands()
+	{
+		// Create the upload fence.
+		VkFenceCreateInfo uploadFenceCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+			.pNext = nullptr,
+		};
+
+		VK_VALIDATE(vkCreateFence(m_Device->Get(), &uploadFenceCreateInfo, nullptr, &s_UploadContext.UploadFence), "vkCreateFence");
+		
+		const QueueFamilyIndices& indices = m_Device->GetQueueFamilyIndices();
+		
+		// Create command buffer pool.
 		VkCommandPoolCreateInfo uploadCommandPoolInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -749,24 +760,30 @@ namespace HBL2
 			.queueFamilyIndex = indices.graphicsFamily.value(),
 		};		
 
-		VK_VALIDATE(vkCreateCommandPool(m_Device->Get(), &uploadCommandPoolInfo, nullptr, &m_UploadContext.CommandPool), "vkCreateCommandPool");
+		VK_VALIDATE(vkCreateCommandPool(m_Device->Get(), &uploadCommandPoolInfo, nullptr, &s_UploadContext.CommandPool), "vkCreateCommandPool");
 
-		m_MainDeletionQueue.PushFunction([=]()
-		{
-			vkDestroyCommandPool(m_Device->Get(), m_UploadContext.CommandPool, nullptr);
-		});
 
 		// Allocate the default command buffer that we will use for the instant commands
 		VkCommandBufferAllocateInfo cmdAllocInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 			.pNext = nullptr,
-			.commandPool = m_UploadContext.CommandPool,
+			.commandPool = s_UploadContext.CommandPool,
 			.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 			.commandBufferCount = 1,
 		};		
 
-		VK_VALIDATE(vkAllocateCommandBuffers(m_Device->Get(), &cmdAllocInfo, &m_UploadContext.CommandBuffer), "vkAllocateCommandBuffers");
+		VK_VALIDATE(vkAllocateCommandBuffers(m_Device->Get(), &cmdAllocInfo, &s_UploadContext.CommandBuffer), "vkAllocateCommandBuffers");
+		
+		// Copy upload context to correctly capture it by value in the lambda.
+		auto ctx = s_UploadContext;
+		
+		// Queue resources for deletion.
+		m_MainDeletionQueue.PushFunction([this, ctx]()
+		{
+			vkDestroyCommandPool(m_Device->Get(), ctx.CommandPool, nullptr);
+			vkDestroyFence(m_Device->Get(), ctx.UploadFence, nullptr);
+		});
 	}
 
 	void VulkanRenderer::CreateRenderPass()

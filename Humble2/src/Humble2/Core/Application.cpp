@@ -140,6 +140,7 @@ namespace HBL2
 		delete ImGuiRenderer::Instance;
 		ImGuiRenderer::Instance = nullptr;
 
+		AssetManager::Instance->WaitForAsyncJobs();
 		AssetManager::Instance->DeregisterAssets();
 		delete AssetManager::Instance;
 		AssetManager::Instance = nullptr;

@@ -157,7 +157,7 @@ namespace HBL2
 		{
 			VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 
-			renderer->ImmediateSubmit([&](VkCommandBuffer cmd)
+			renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
 			{
 				VkAccessFlags srcAccessFlags = 0;
 				VkAccessFlags dstAccessFlags = 0;
@@ -254,7 +254,7 @@ namespace HBL2
 		void CopyBufferToTexture(VulkanRenderer* renderer, VkBuffer stagingBuffer)
 		{
 			// Copy the data of the staging buffer to the GPU memory of Image
-			renderer->ImmediateSubmit([&](VkCommandBuffer cmd)
+			renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
 			{
 				VkImageSubresourceRange range =
 				{

@@ -60,9 +60,9 @@ namespace HBL2
 
 	struct UploadContext
 	{
-		VkFence UploadFence;
-		VkCommandPool CommandPool;
-		VkCommandBuffer CommandBuffer;
+		VkFence UploadFence = VK_NULL_HANDLE;
+		VkCommandPool CommandPool = VK_NULL_HANDLE;
+		VkCommandBuffer CommandBuffer = VK_NULL_HANDLE;
 	};
 
 	class VulkanRenderer final : public Renderer
@@ -112,6 +112,7 @@ namespace HBL2
 		void CreateImageViews();
 		void CreateSyncStructures();
 		void CreateCommands();
+		void CreateUploadContextCommands();
 		void CreateRenderPass();
 		void CreateFrameBuffers();
 		void CreateDescriptorPool();
@@ -140,7 +141,7 @@ namespace HBL2
 		VulkanCommandBuffer m_PresentCommandBuffers[FRAME_OVERLAP];
 		
 		VulkanCommandBuffer m_ImGuiCommandBuffers[FRAME_OVERLAP];
-		UploadContext m_UploadContext;
+		static thread_local UploadContext s_UploadContext;
 
 		std::vector<VulkanCommandBuffer> m_SecondaryShadowCommandBuffers[FRAME_OVERLAP];
 		std::vector<VulkanCommandBuffer> m_SecondaryOpaqueCommandBuffers[FRAME_OVERLAP];
