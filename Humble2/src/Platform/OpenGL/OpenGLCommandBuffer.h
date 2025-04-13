@@ -10,6 +10,10 @@ namespace HBL2
 	public:
 		virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer) override;
 		virtual void EndRenderPass(const RenderPassRenderer& renderPassRenderer) override;
+
+		virtual ComputePassRenderer* BeginComputePass(Span<const Handle<Texture>> texturesWrite, Span<const Handle<Buffer>> buffersWrite) override;
+		virtual void EndComputePass(const ComputePassRenderer& computePassRenderer) override;
+
 		virtual void Submit() override;
 
 	private:

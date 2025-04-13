@@ -556,13 +556,39 @@ namespace HBL2
 
 							ImGui::Text(std::format("Name: {}", mat->DebugName).c_str());
 
-							const char* options[] = { "Opaque", "Transparent" };
-							int currentItem = static_cast<int>(mat->BlendMethod);
-
-							if (ImGui::Combo("Blend Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+							// Blend mode.
 							{
-								mat->BlendMethod = static_cast<Material::BlendMode>(currentItem);
+								const char* options[] = { "Opaque", "Transparent" };
+								int currentItem = mat->VariantDescriptor.blend.enabled ? 1 : 0;
+
+								if (ImGui::Combo("Blend Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+								{
+									mat->VariantDescriptor.blend.enabled = currentItem == 0 ? false : true;
+								}
 							}
+
+							// Color output.
+							ImGui::Checkbox("Color Output", &mat->VariantDescriptor.blend.colorOutput);
+							
+							// Depth enabled.
+							ImGui::Checkbox("Depth", &mat->VariantDescriptor.depthTest.enabled);
+							
+							// Depth test mode.
+							{
+								const char* options[] = { "Less", "Less Equal", "Greater", "Greater Equal", "Equal", "Not Equal", "Always", "Never" };
+								int currentItem = (int)mat->VariantDescriptor.depthTest.depthTest;
+
+								if (ImGui::Combo("Depth Test", &currentItem, options, IM_ARRAYSIZE(options)))
+								{
+									mat->VariantDescriptor.depthTest.depthTest = (Compare)currentItem;
+								}
+							}
+
+							// Depth write mode.
+							ImGui::Checkbox("Depth Write", &mat->VariantDescriptor.depthTest.writeEnabled);
+
+							// Stencil enabled.
+							ImGui::Checkbox("Stencil", &mat->VariantDescriptor.depthTest.stencilEnabled);
 
 							ImGui::ColorEdit4("AlbedoColor", glm::value_ptr(mat->AlbedoColor));
 							ImGui::InputFloat("Glossiness", &mat->Glossiness, 0.05f);

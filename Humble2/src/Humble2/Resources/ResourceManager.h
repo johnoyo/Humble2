@@ -7,7 +7,10 @@
 #include "Scene\Script.h"
 #include "TypeDescriptors.h"
 #include "ResourceDeletionQueue.h"
-#include <Sound\Sound.h>
+#include "Sound\Sound.h"
+
+#include <cstring>
+#include <stdint.h>
 
 namespace HBL2
 {
@@ -47,6 +50,11 @@ namespace HBL2
 		// Shaders
 		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) = 0;
 		virtual void DeleteShader(Handle<Shader> handle) = 0;
+		virtual void AddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::Variant& variantDesc) = 0;
+		uint32_t GetShaderVariantHash(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
+		{
+			return handle.HashKey() + std::hash<ShaderDescriptor::RenderPipeline::Variant>()(variantDesc);
+		}
 
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) = 0;

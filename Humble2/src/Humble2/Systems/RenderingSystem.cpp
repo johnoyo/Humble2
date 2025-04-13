@@ -520,7 +520,7 @@ namespace HBL2
 						alloc.Data->Color = material->AlbedoColor;
 						alloc.Data->Glossiness = material->Glossiness;
 
-						if (material->BlendMethod == Material::BlendMode::Opaque)
+						if (!material->VariantDescriptor.blend.enabled)
 						{
 							m_StaticMeshOpaqueDraws.Insert({
 								.Shader = material->Shader,
@@ -602,7 +602,7 @@ namespace HBL2
 							alloc.Data->Model = transform.WorldMatrix;
 							alloc.Data->Color = material->AlbedoColor;
 
-							if (material->BlendMethod == Material::BlendMode::Opaque)
+							if (!material->VariantDescriptor.blend.enabled)
 							{
 								m_SpriteOpaqueDraws.Insert({
 									.Shader = material->Shader,

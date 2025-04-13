@@ -24,10 +24,9 @@ namespace HBL2
         /// </summary>
         /// <param name="initialCapacity">The starting capacity of the stack.</param>
         Stack(uint32_t initialCapacity = 8)
-            : m_Capacity(initialCapacity), m_CurrentSize(0)
+            : m_Capacity(initialCapacity), m_CurrentSize(0), m_Allocator(nullptr)
         {
-            m_Allocator = new TAllocator;
-            m_Data = m_Allocator->Allocate<T>(sizeof(T) * m_Capacity);
+            m_Data = Allocate(sizeof(T) * m_Capacity);
         }
 
         /// <summary>
@@ -38,7 +37,7 @@ namespace HBL2
         Stack(TAllocator* allocator, uint32_t initialCapacity = 8)
             : m_Capacity(initialCapacity), m_CurrentSize(0), m_Allocator(allocator)
         {
-            m_Data = m_Allocator->Allocate<T>(sizeof(T) * m_Capacity);
+            m_Data = Allocate(sizeof(T) * m_Capacity);
         }
 
         /// <summary>
@@ -46,7 +45,7 @@ namespace HBL2
         /// </summary>
         ~Stack()
         {
-            m_Allocator->Deallocate<T>(m_Data);
+            Deallocate(m_Data);
         }
 
         /// <summary>
@@ -59,11 +58,11 @@ namespace HBL2
             {
                 m_Capacity *= 2;
 
-                T* newData = m_Allocator->Allocate<T>(sizeof(T) * m_Capacity);
+                T* newData = Allocate(sizeof(T) * m_Capacity);
                 HBL2_CORE_ASSERT(newData, "Memory allocation failed!");
 
                 memcpy(newData, m_Data, m_CurrentSize * sizeof(T));
-                m_Allocator->Deallocate<T>(m_Data);
+                Deallocate(m_Data);
                 m_Data = newData;
             }
 
@@ -129,11 +128,48 @@ namespace HBL2
         const T* begin() const { return m_Data; }
         const T* end() const { return m_Data + m_CurrentSize; }
 
+		T* rbegin() { return m_Data + m_CurrentSize - 1; }
+        T* rend() { return m_Data - 1; }
+        const T* rbegin() const { return m_Data + m_CurrentSize - 1; }
+        const T* rend() const { return m_Data - 1; }
+
+    private:
+		T* Allocate(uint64_t size)
+		{
+			if (m_Allocator == nullptr)
+			{
+				T* data = (T*)operator new(size);
+				memset(data, 0, size);				
+				return data;
+			}
+
+			return m_Allocator->Allocate<T>(size);
+		}
+
+		void Deallocate(T* ptr)
+		{
+			if (m_Allocator == nullptr)
+			{
+				if constexpr (std::is_array_v<T>)
+				{
+					delete[] ptr;
+				}
+				else
+				{
+					delete ptr;
+				}
+
+				return;
+			}
+
+			m_Allocator->Deallocate<T>(ptr);
+		}
+
     private:
         T* m_Data;
         uint32_t m_Capacity; // Not in bytes
         uint32_t m_CurrentSize; // Not in bytes
-        TAllocator* m_Allocator = nullptr;
+        TAllocator* m_Allocator = nullptr; // Does not own the pointer
     };
 
     template<typename T, typename TAllocator>

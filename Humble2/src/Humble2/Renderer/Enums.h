@@ -111,8 +111,8 @@ namespace HBL2
 	enum class CullMode
 	{
 		NONE = 0,
-		FRONT_BIT = 0x00000001,
-		BACK_BIT = 0x00000002,
+		FRONT = 0x00000001,
+		BACK = 0x00000002,
 		FRONT_AND_BACK = 0x00000003,
 	};
 
@@ -215,6 +215,12 @@ namespace HBL2
 		ONE_MINUS_SRC_ALPHA = 1,
 		ONE = 2,
 		ZERO = 3,
+	};
+
+	enum class BlendMode
+	{
+		OPAQUE_MODE = 0,
+		ALPHA_MODE = 1,
 	};
 
 	enum class StoreOperation

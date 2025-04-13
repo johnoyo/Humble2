@@ -40,7 +40,7 @@ namespace HBL2
 	{
 		Handle<Asset> ShaderAssetHandle;
 
-		Material::BlendMode BlendMode;
+		ShaderDescriptor::RenderPipeline::Variant VariantDescriptor{};
 		glm::vec4 AlbedoColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 		float Glossiness = 0.0f;
 
@@ -150,6 +150,8 @@ namespace HBL2
 		Handle<BindGroupLayout> GetBuiltInShaderLayout(BuiltInShader shader) { return m_ShaderLayouts[shader]; }
 
 		void CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType);
+		void UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::Variant& newVariant);
+
 		void CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType);
 		void CreateMaterialAssetFile(Handle<Asset> handle, const MaterialDataDescriptor&& desc);
 

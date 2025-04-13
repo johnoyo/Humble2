@@ -106,7 +106,7 @@ namespace HBL2
 		const char* debugName;
 		struct ShaderStage
 		{
-			std::vector<uint32_t> code;
+			Span<const uint32_t> code;
 			const char* entryPoint;
 		};
 		ShaderStage VS;
@@ -146,13 +146,48 @@ namespace HBL2
 				Compare depthTest = Compare::LESS;
 			};
 
+			struct Variant
+			{
+				BlendState blend{};
+				DepthTest depthTest{};
+				Topology topology = Topology::TRIANGLE_LIST;
+				PolygonMode polygonMode = PolygonMode::FILL;
+				CullMode cullMode = CullMode::NONE;
+				FrontFace frontFace = FrontFace::CLOCKWISE;
+
+				inline bool operator==(const Variant& other) const
+				{
+					return blend.colorOp == other.blend.colorOp &&
+						blend.srcColorFactor == other.blend.srcColorFactor &&
+						blend.dstColorFactor == other.blend.dstColorFactor &&
+						blend.alphaOp == other.blend.alphaOp &&
+						blend.srcAlphaFactor == other.blend.srcAlphaFactor &&
+						blend.dstAlphaFactor == other.blend.dstAlphaFactor &&
+						blend.colorOutput == other.blend.colorOutput &&
+						blend.enabled == other.blend.enabled &&
+
+						depthTest.enabled == other.depthTest.enabled &&
+						depthTest.writeEnabled == other.depthTest.writeEnabled &&
+						depthTest.stencilEnabled == other.depthTest.stencilEnabled &&
+						depthTest.depthTest == other.depthTest.depthTest &&
+
+						topology == other.topology &&
+						polygonMode == other.polygonMode &&
+						cullMode == other.cullMode &&
+						frontFace == other.frontFace;
+				}
+			};
+
 			BlendState blend;
 			DepthTest depthTest;
 			Topology topology = Topology::TRIANGLE_LIST;
 			PolygonMode polygonMode = PolygonMode::FILL;
 			CullMode cullMode = CullMode::NONE;
 			FrontFace frontFace = FrontFace::CLOCKWISE;
+
 			std::initializer_list<VertexBufferBinding> vertexBufferBindings;
+
+			Span<const Variant> variants;
 		};
 		RenderPipeline renderPipeline;
 		Handle<RenderPass> renderPass;
@@ -240,5 +275,50 @@ namespace HBL2
 		const char* debugName;
 		Handle<Shader> shader;
 		Handle<BindGroup> bindGroup;
+	};
+}
+
+namespace std
+{
+	template<>
+	struct hash<HBL2::ShaderDescriptor::RenderPipeline::Variant>
+	{
+		size_t operator()(const HBL2::ShaderDescriptor::RenderPipeline::Variant& variantDesc) const
+		{
+			size_t h = 0;
+
+			// Helper to combine hashes (standard approach)
+			auto hash_combine = [](size_t& seed, size_t hash)
+			{
+				seed ^= hash + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			};
+
+			// Hash Variant
+			const auto& v = variantDesc;
+
+			// BlendState
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.colorOp)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.srcColorFactor)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.dstColorFactor)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.alphaOp)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.srcAlphaFactor)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.dstAlphaFactor)));
+			hash_combine(h, std::hash<bool>()(v.blend.colorOutput));
+			hash_combine(h, std::hash<bool>()(v.blend.enabled));
+
+			// DepthTest
+			hash_combine(h, std::hash<bool>()(v.depthTest.enabled));
+			hash_combine(h, std::hash<bool>()(v.depthTest.writeEnabled));
+			hash_combine(h, std::hash<bool>()(v.depthTest.stencilEnabled));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.depthTest.depthTest)));
+
+			// Other Variant fields
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.topology)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.polygonMode)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.cullMode)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.frontFace)));
+
+			return h;
+		}
 	};
 }

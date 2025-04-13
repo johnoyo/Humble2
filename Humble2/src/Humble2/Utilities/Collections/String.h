@@ -25,7 +25,7 @@ namespace HBL2
         /// <summary>
         /// Default constructor. Creates an empty string.
         /// </summary>
-        String() : m_Size(0), m_Capacity(SSO_SIZE), m_HeapData(nullptr), m_Allocator(new TAllocator)
+        String() : m_Size(0), m_Capacity(SSO_SIZE), m_HeapData(nullptr), m_Allocator(nullptr)
         {
             m_SSOBuffer[0] = '\0';
             m_IsUsingSSO = true;
@@ -45,7 +45,7 @@ namespace HBL2
         /// Constructor from a C-style string.
         /// </summary>
         /// <param name="str">The C-style string to copy.</param>
-        String(const char* str) : m_Allocator(new TAllocator)
+        String(const char* str) : m_Allocator(nullptr)
         {
             size_t len = std::strlen(str);
             if (len < SSO_SIZE)
@@ -153,6 +153,7 @@ namespace HBL2
                 m_Size = other.m_Size;
                 m_Capacity = other.m_Capacity;
                 m_IsUsingSSO = other.m_IsUsingSSO;
+				m_Allocator = other.m_Allocator;
 
                 if (m_IsUsingSSO)
                 {
@@ -168,6 +169,7 @@ namespace HBL2
                 other.m_Capacity = SSO_SIZE;
                 other.m_IsUsingSSO = true;
                 other.m_SSOBuffer[0] = '\0';
+				other.m_Allocator = nullptr
             }
             return *this;
         }
@@ -263,13 +265,13 @@ namespace HBL2
             size_t maxLength = (start + length > m_Size) ? m_Size - start : length;
 
             // Create a temporary buffer for the substring
-            char* temp = new char[maxLength + 1];
+            char* temp = Allocate(maxLength + 1);
             std::memcpy(temp, Data() + start, maxLength);
             temp[maxLength] = '\0';
 
             // Create a new string from the temporary buffer
             String<TAllocator> result(m_Allocator, temp);
-            delete[] temp;
+            Deallocate(temp);
 
             return result;
         }
@@ -293,8 +295,10 @@ namespace HBL2
         String& Append(const char* str)
         {
             size_t strLen = std::strlen(str);
-            if (strLen == 0)
-                return *this;
+			if (strLen == 0)
+			{
+				return *this;
+			}
 
             size_t newSize = m_Size + strLen;
             if (newSize > m_Capacity)
@@ -352,87 +356,17 @@ namespace HBL2
                 return;
             }
 
-            char* newBuffer = m_Allocator->Allocate<char>(capacity + 1);
+            char* newBuffer = Allocate(capacity + 1);
             std::memcpy(newBuffer, Data(), m_Size + 1);
 
             if (!m_IsUsingSSO)
             {
-                m_Allocator->Deallocate<char>(m_HeapData);
+                Deallocate(m_HeapData);
             }
 
             m_HeapData = newBuffer;
             m_Capacity = capacity;
             m_IsUsingSSO = false;
-        }
-
-        /// <summary>
-        /// Return a new formatted String.
-        /// </summary>
-        /// <returns>A new formatted String.</returns>
-        static String Format(const char* fmt, ...)
-        {
-            // First, try with a reasonable buffer size
-            char buffer[256];
-            va_list args;
-            va_start(args, fmt);
-            int result = vsnprintf(buffer, sizeof(buffer), fmt, args);
-            va_end(args);
-
-            if (result < 0)
-            {
-                return String("");  // Error in formatting
-            }
-
-            if (result < sizeof(buffer))
-            {
-                return String(buffer);  // The buffer was large enough
-            }
-
-            // If the buffer wasn't large enough, allocate a bigger one
-            char* bigBuffer = new char[result + 1];
-            va_start(args, fmt);
-            vsnprintf(bigBuffer, result + 1, fmt, args);
-            va_end(args);
-
-            String formattedString(bigBuffer);
-            delete[] bigBuffer;
-
-            return formattedString;
-        }
-
-        /// <summary>
-        /// Return a new formatted String.
-        /// </summary>
-        /// <returns>A new formatted String.</returns>
-        static String<TAllocator> Format(TAllocator* allocator, const char* fmt, ...)
-        {
-            // First, try with a reasonable buffer size
-            char buffer[256];
-            va_list args;
-            va_start(args, fmt);
-            int result = vsnprintf(buffer, sizeof(buffer), fmt, args);
-            va_end(args);
-
-            if (result < 0)
-            {
-                return String<TAllocator>(allocator, "");  // Error in formatting
-            }
-
-            if (result < sizeof(buffer))
-            {
-                return String<TAllocator>(allocator, buffer);  // The buffer was large enough
-            }
-
-            // If the buffer wasn't large enough, allocate a bigger one
-            char* bigBuffer = new char[result + 1];
-            va_start(args, fmt);
-            vsnprintf(bigBuffer, result + 1, fmt, args);
-            va_end(args);
-
-            String<TAllocator> formattedString(allocator, bigBuffer);
-            delete[] bigBuffer;
-
-            return formattedString;
         }
 
         /// <summary>
@@ -442,7 +376,7 @@ namespace HBL2
         {
             if (!m_IsUsingSSO && m_HeapData != nullptr)
             {
-                m_Allocator->Deallocate<char>(m_HeapData);
+                Deallocate(m_HeapData);
                 m_HeapData = nullptr;
             }
 
@@ -461,7 +395,7 @@ namespace HBL2
 
             if (!other.m_IsUsingSSO)
             {
-                m_HeapData = m_Allocator->Allocate<char>(m_Size + 1);
+                m_HeapData = Allocate(m_Size + 1);
                 std::memcpy(m_HeapData, other.m_HeapData, m_Size + 1);
                 m_IsUsingSSO = false;
             }
@@ -473,8 +407,32 @@ namespace HBL2
         }
 
     private:
-        uint32_t m_Size;
-        uint32_t m_Capacity;
+		char* Allocate(uint64_t size)
+		{
+			if (m_Allocator == nullptr)
+			{
+				char* data = (char*)operator new(size);
+				memset(data, 0, size);				
+				return data;
+			}
+
+			return m_Allocator->Allocate<char>(size);
+		}
+
+		void Deallocate(char* ptr)
+		{
+			if (m_Allocator == nullptr)
+			{
+				delete ptr;
+				return;
+			}
+
+			m_Allocator->Deallocate<char>(ptr);
+		}
+
+    private:
+        uint32_t m_Size; // Not in bytes
+        uint32_t m_Capacity; // Not in bytes
         union
         {
             char m_SSOBuffer[SSO_SIZE + 1];
@@ -482,7 +440,7 @@ namespace HBL2
         };
         bool m_IsUsingSSO = true;
 
-        TAllocator* m_Allocator;
+        TAllocator* m_Allocator = nullptr; // Does not own the pointer
     };
 
     template<typename TAllocator>

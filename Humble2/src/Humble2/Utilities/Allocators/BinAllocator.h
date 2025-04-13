@@ -26,25 +26,16 @@ namespace HBL2
 	class BinAllocator final : public BaseAllocator<BinAllocator>
 	{
     public:
+        BinAllocator() = default;
+
         /**
          * @brief Initializes the allocator with a given memory pool size.
          *
          * @param size The total size of the memory pool in bytes.
          */
         BinAllocator(uint64_t size)
-
-            : m_Capacity(size), m_CurrentOffset(0)
         {
-            m_Data = ::operator new(m_Capacity);
-            std::memset(m_Data, 0, m_Capacity);
-
-            for (uint32_t i = 0; i < NUM_LEAF_BINS; i++)
-            {
-                m_Bins[i].FreeList = nullptr;
-            }
-
-            // Initialize the allocator with a single large free block
-            InsertIntoBin(m_Data, m_Capacity);
+            Initialize(size);
         }
 
         /**
@@ -114,11 +105,33 @@ namespace HBL2
         }
 
         /**
+         * @brief Initializes the allocator with a specified memory size.
+         *
+         * @param sizeInBytes The total size of the memory pool in bytes.
+         */
+        virtual void Initialize(size_t sizeInBytes) override
+        {
+            m_Capacity = sizeInBytes;
+            m_CurrentOffset = 0;
+
+            m_Data = ::operator new(m_Capacity);
+            std::memset(m_Data, 0, m_Capacity);
+
+            for (uint32_t i = 0; i < NUM_LEAF_BINS; i++)
+            {
+                m_Bins[i].FreeList = nullptr;
+            }
+
+            // Initialize the allocator with a single large free block
+            InsertIntoBin(m_Data, m_Capacity);
+        }
+
+        /**
          * @brief Resets the allocator, clearing all allocated memory without deallocating the memory pool itself.
          */
         virtual void Invalidate() override
         {
-            std::memset(m_Data, 0, m_Capacity);
+            std::memset(m_Data, 0, m_CurrentOffset);
             m_CurrentOffset = 0;
 
             for (uint32_t i = 0; i < NUM_LEAF_BINS; i++)
@@ -168,6 +181,11 @@ namespace HBL2
          */
         void InsertIntoBin(void* ptr, uint64_t size)
         {
+            if (ptr == nullptr)
+            {
+                return;
+            }
+
             uint32_t binIndex = FindBinIndex(size);
             FreeBlock* block = reinterpret_cast<FreeBlock*>(ptr);
             block->Size = size;
@@ -260,10 +278,10 @@ namespace HBL2
         static constexpr uint32_t LEAF_BINS_INDEX_MASK = 0x7;
         static constexpr uint32_t NUM_LEAF_BINS = NUM_TOP_BINS * BINS_PER_LEAF;
 
-        void* m_Data;
+        void* m_Data = nullptr;
         Bin m_Bins[NUM_LEAF_BINS]; // Bin structure
 
-        uint64_t m_Capacity;
-        uint64_t m_CurrentOffset;
+        uint64_t m_Capacity = 0;
+        uint64_t m_CurrentOffset = 0;
     };
 }

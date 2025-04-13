@@ -48,7 +48,11 @@ namespace HBL2
 
 			if (localDraw.Shader.IsValid())
 			{
+				Material* mat = rm->GetMaterial(localDraw.Material);
 				OpenGLShader* shader = rm->GetShader(localDraw.Shader);
+
+				// Set blend, depth state.
+				shader->SetVariantProperties(mat->VariantDescriptor);
 
 				// Bind Vertex Array
 				shader->BindPipeline();

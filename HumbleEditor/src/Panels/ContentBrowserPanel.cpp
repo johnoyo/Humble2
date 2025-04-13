@@ -628,14 +628,46 @@ namespace HBL2
 
 				ImGui::NewLine();
 
-				const char* options[] = { "Opaque", "Transparent" };
-				static int currentItem = static_cast<int>(Material::BlendMode::Opaque);
-				static Material::BlendMode blendMode = Material::BlendMode::Opaque;
+				static bool blendEnabled = true;
+				static bool colorOutput = true;
+				static bool depthEnabled = true;
+				static bool depthWriteEnabled = true;
+				static int depthTest = 0;
+				static bool stencilEnabled = true;
 
-				if (ImGui::Combo("Blend Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+				// Blend mode.
 				{
-					blendMode = static_cast<Material::BlendMode>(currentItem);
+					const char* options[] = { "Opaque", "Transparent" };
+					int currentItem = blendEnabled ? 1 : 0;
+
+					if (ImGui::Combo("Blend Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						blendEnabled = currentItem == 0 ? false : true;
+					}
 				}
+
+				// Color output.
+				ImGui::Checkbox("Color Output", &colorOutput);
+							
+				// Depth enabled.
+				ImGui::Checkbox("Depth", &depthEnabled);
+							
+				// Depth test mode.
+				{
+					const char* options[] = { "Less", "Less Equal", "Greater", "Greater Equal", "Equal", "Not Equal", "Always", "Never" };
+					int currentItem = depthTest;
+
+					if (ImGui::Combo("Depth Test", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						depthTest = currentItem;
+					}
+				}
+
+				// Depth write mode.
+				ImGui::Checkbox("Depth Write", &depthWriteEnabled);
+
+				// Stencil enabled.
+				ImGui::Checkbox("Stencil", &stencilEnabled);
 
 				static float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 				ImGui::ColorEdit4("AlbedoColor", color);
@@ -822,7 +854,18 @@ namespace HBL2
 
 						ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
 							.ShaderAssetHandle = shaderAssetHandle,
-							.BlendMode = blendMode,
+							.VariantDescriptor = {
+								.blend = {
+									.colorOutput = colorOutput,
+									.enabled = blendEnabled,
+								},
+								.depthTest = {
+									.enabled = depthEnabled,
+									.writeEnabled = depthWriteEnabled,
+									.stencilEnabled = stencilEnabled,
+									.depthTest = (Compare)depthTest,
+								},
+							},
 							.AlbedoColor = { color[0], color[1], color[2], color[3] },
 							.Glossiness = glossiness,
 							.AlbedoMapAssetHandle = albedoMapAssetHandle,

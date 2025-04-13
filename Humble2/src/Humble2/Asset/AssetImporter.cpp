@@ -226,7 +226,9 @@ namespace HBL2
 		Handle<BindGroupLayout> globalBindGroupLayout;
 		Handle<BindGroupLayout> drawBindGroupLayout;
 
-		auto shaderProperties = data["Shader"];
+		auto shaderVariants = MakeDynamicArray<ShaderDescriptor::RenderPipeline::Variant>(&Allocator::Frame);
+
+		const auto& shaderProperties = data["Shader"];
 		if (shaderProperties)
 		{
 			uint32_t type = shaderProperties["Type"].as<uint32_t>();
@@ -250,11 +252,49 @@ namespace HBL2
 				stream.close();
 				return Handle<Shader>();
 			}
+
+			// Retrieve shader variants.
+			const auto& shaderVariantsProperty = shaderProperties["Variants"];
+
+			if (shaderVariantsProperty)
+			{
+				for (const YAML::Node& variantNode : shaderVariantsProperty)
+				{
+					ShaderDescriptor::RenderPipeline::Variant variant = {};
+						
+					// Retrieve blend state.
+					const auto& blendStateProp = variantNode["BlendState"];
+
+					if (blendStateProp)
+					{
+						variant.blend = {
+							.colorOutput = blendStateProp["ColorOutputEnabled"].as<bool>(),
+							.enabled = blendStateProp["Enabled"].as<bool>(),
+						};
+					}
+
+					// Retrieve depth state.
+					const auto& depthStateProp = variantNode["DepthState"];
+
+					if (depthStateProp)
+					{
+						variant.depthTest =
+						{
+							.enabled = depthStateProp["Enabled"].as<bool>(),
+							.writeEnabled = depthStateProp["WriteEnabled"].as<bool>(),
+							.stencilEnabled = depthStateProp["StencilEnabled"].as<bool>(),
+							.depthTest = (Compare)depthStateProp["DepthTest"].as<int>(),
+						};
+					}
+
+					shaderVariants.Add(variant);
+				}
+			}
 		}
 
 		// Compile Shader.
-		std::filesystem::path shaderPath = Project::GetAssetFileSystemPath(asset->FilePath);
-		auto shaderCode = ShaderUtilities::Get().Compile(shaderPath.string());
+		const std::filesystem::path& shaderPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& shaderCode = ShaderUtilities::Get().Compile(shaderPath.string());
 
 		if (shaderCode.empty())
 		{
@@ -295,6 +335,7 @@ namespace HBL2
 						.attributes = reflectionData.Attributes,
 					},
 				},
+				.variants = { shaderVariants.Data(), shaderVariants.Size() },
 			},
 			.renderPass = Renderer::Instance->GetMainRenderPass(),
 		});
@@ -360,11 +401,20 @@ namespace HBL2
 		{
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
 
-			Material::BlendMode blendMode = Material::BlendMode::Opaque;
-			if (materialProperties["BlendMode"].IsDefined())
+			ShaderDescriptor::RenderPipeline::Variant variantDesc = {};
+
+			if (materialProperties["BlendState"].IsDefined())
 			{
-				int blendModeValue = materialProperties["BlendMode"].as<int>();
-				blendMode = (blendModeValue == 0 ? Material::BlendMode::Opaque : Material::BlendMode::Transparent);
+				variantDesc.blend.enabled = materialProperties["BlendState"]["Enabled"].as<bool>();
+				variantDesc.blend.colorOutput = materialProperties["BlendState"]["ColorOutputEnabled"].as<bool>();
+			}
+
+			if (materialProperties["DepthState"].IsDefined())
+			{
+				variantDesc.depthTest.enabled = materialProperties["DepthState"]["Enabled"].as<bool>();
+				variantDesc.depthTest.writeEnabled = materialProperties["DepthState"]["WriteEnabled"].as<bool>();
+				variantDesc.depthTest.stencilEnabled = materialProperties["DepthState"]["StencilEnabled"].as<bool>();
+				variantDesc.depthTest.depthTest = (Compare)materialProperties["DepthState"]["DepthTest"].as<int>();
 			}
 
 			UUID albedoMapUUID = materialProperties["AlbedoMap"].as<UUID>();
@@ -381,7 +431,7 @@ namespace HBL2
 			auto metallicMapHandle = AssetManager::Instance->GetAsset<Texture>(metallicMapUUID);
 			auto roughnessMapHandle = AssetManager::Instance->GetAsset<Texture>(roughnessMapUUID);
 
-			// If shader is not set get the built in shader depending on material type.
+			// If shader is not set, get the built in shader depending on material type.
 			if (!shaderHandle.IsValid())
 			{
 				if (type == 0)
@@ -396,6 +446,11 @@ namespace HBL2
 				{
 					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PBR);
 				}
+			}
+			else
+			{
+				ResourceManager::Instance->AddShaderVariant(shaderHandle, variantDesc);	
+				ShaderUtilities::Get().UpdateShaderVariantMetadataFile(shaderUUID, variantDesc);
 			}
 
 			// If albedo map is not set use the built in white texture.
@@ -441,7 +496,7 @@ namespace HBL2
 			Material* mat = ResourceManager::Instance->GetMaterial(material);
 			mat->AlbedoColor = albedoColor;
 			mat->Glossiness = glossiness;
-			mat->BlendMethod = blendMode;
+			mat->VariantDescriptor = variantDesc;
 
 			stream.close();
 			return material;
@@ -627,7 +682,20 @@ namespace HBL2
 		{
 			materialProperties["AlbedoColor"] = mat->AlbedoColor;
 			materialProperties["Glossiness"] = mat->Glossiness;
-			materialProperties["BlendMode"] = (int)mat->BlendMethod;
+
+			materialProperties["BlendState"]["Enabled"] = mat->VariantDescriptor.blend.enabled;
+			materialProperties["BlendState"]["ColorOutputEnabled"] = mat->VariantDescriptor.blend.colorOutput;
+
+			materialProperties["DepthState"]["Enabled"] = mat->VariantDescriptor.depthTest.enabled;
+			materialProperties["DepthState"]["WriteEnabled"] = mat->VariantDescriptor.depthTest.writeEnabled;
+			materialProperties["DepthState"]["StencilEnabled"] = mat->VariantDescriptor.depthTest.stencilEnabled;
+			materialProperties["DepthState"]["DepthTest"] = (int)mat->VariantDescriptor.depthTest.depthTest;
+
+			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
+			Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
+
+			ResourceManager::Instance->AddShaderVariant(shaderHandle, mat->VariantDescriptor);	
+			ShaderUtilities::Get().UpdateShaderVariantMetadataFile(shaderUUID, mat->VariantDescriptor);
 		}
 
 		ioStream.seekg(0, std::ios::beg);

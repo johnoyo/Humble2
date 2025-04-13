@@ -17,16 +17,16 @@ namespace HBL2
 	class BumpAllocator final : public BaseAllocator<BumpAllocator>
 	{
 	public:
+		BumpAllocator() = default;
+
 		/**
 		 * @brief Initializes a bump allocator with a given memory size.
 		 *
 		 * @param size The total size of the memory pool in bytes.
 		 */
 		BumpAllocator(uint64_t size)
-			: m_Capacity(size), m_CurrentOffset(0)
 		{
-			m_Data = ::operator new(m_Capacity);
-			std::memset(m_Data, 0, m_Capacity);
+			Initialize(size);
 		}
 
 		/**
@@ -71,12 +71,26 @@ namespace HBL2
 		}
 
 		/**
+		 * @brief Initializes the allocator with a specified memory size.
+		 *
+		 * @param sizeInBytes The total size of the memory pool in bytes.
+		 */
+		virtual void Initialize(size_t sizeInBytes) override
+		{
+			m_Capacity = sizeInBytes;
+			m_CurrentOffset = 0;
+			m_Data = ::operator new(m_Capacity);
+			std::memset(m_Data, 0, m_Capacity);
+		}
+
+		/**
 		 * @brief Resets the allocator, clearing all allocated memory.
 		 *
 		 * Does not free memory, but resets the offset.
 		 */
 		virtual void Invalidate() override
 		{
+            std::memset(m_Data, 0, m_CurrentOffset);
 			m_CurrentOffset = 0;
 		}
 
@@ -93,8 +107,8 @@ namespace HBL2
 		}
 
 	private:
-		void* m_Data;
-		uint64_t m_Capacity; // In bytes
-		uint64_t m_CurrentOffset; // In bytes
+		void* m_Data = nullptr;
+		uint64_t m_Capacity = 0; // In bytes
+		uint64_t m_CurrentOffset = 0; // In bytes
 	};
 }

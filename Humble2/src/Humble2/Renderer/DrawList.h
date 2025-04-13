@@ -2,6 +2,12 @@
 
 #include "Resources\Types.h"
 #include "Resources\Handle.h"
+#include "Resources\ResourceManager.h"
+
+#include "Core/Allocators.h"
+
+#include "Utilities/Collections/HashMap.h"
+#include "Utilities/Allocators/BumpAllocator.h"
 
 #include <functional>
 #include <unordered_map>
@@ -39,5 +45,39 @@ namespace HBL2
 	private:
 		uint32_t m_Count = 0;
 		std::unordered_map<uint32_t, std::vector<LocalDrawStream>> m_Draws;
+	};
+
+	class DrawListAlt
+	{
+		using DrawCallMap = HashMap<uint32_t, DynamicArray<LocalDrawStream, BumpAllocator>, BumpAllocator>;
+
+	public:
+		void Insert(const LocalDrawStream&& draw)
+		{
+			Material* mat = ResourceManager::Instance->GetMaterial(draw.Material);
+			uint32_t hash = ResourceManager::Instance->GetShaderVariantHash(draw.Shader, mat->VariantDescriptor);
+
+			if (!m_Draws.ContainsKey(hash))
+			{
+				m_Draws.Insert(hash, DynamicArray<LocalDrawStream, BumpAllocator>(&Allocator::Frame));
+			}
+
+			m_Draws[hash].Add(draw);
+
+			m_Count++;
+		}
+
+		void Reset()
+		{
+			m_Count = 0;
+			m_Draws.Clear();
+		}
+
+		const uint32_t GetCount() const { return m_Count; }
+		const DrawCallMap& GetDraws() const { return m_Draws; }
+
+	private:
+		uint32_t m_Count = 0;
+		DrawCallMap m_Draws = DrawCallMap(&Allocator::Frame);
 	};
 }

@@ -82,12 +82,21 @@ namespace HBL2
 
 		if (SceneManager::Get().SceneChangeRequested)
 		{
+			// Reset scene allocator.
+			Allocator::Scene.Invalidate();
+
 			SceneManager::Get().LoadSceneDeffered();
 		}
+
+		// Reset frame allocator.
+		Allocator::Frame.Invalidate();
 	}
 
 	void Application::Start()
 	{
+		Allocator::Frame.Initialize(32_MB);
+		Allocator::Scene.Initialize(256_MB);
+
 		Window::Instance->Create();
 		
 		Input::Initialize();
@@ -157,5 +166,8 @@ namespace HBL2
 		MeshUtilities::Shutdown();
 		EventDispatcher::Shutdown();
 		JobSystem::Shutdown();
+
+		Allocator::Frame.Free();
+		Allocator::Scene.Free();
 	}
 }

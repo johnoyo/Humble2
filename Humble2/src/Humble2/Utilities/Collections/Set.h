@@ -24,9 +24,8 @@ namespace HBL2
         /// </summary>
         /// <param name="initialCapacity">The starting capacity of the set.</param>
         Set(uint32_t initialCapacity = 16)
-            : m_Capacity(initialCapacity), m_CurrentSize(0)
+            : m_Capacity(initialCapacity), m_CurrentSize(0), m_Allocator(nullptr)
         {
-            m_Allocator = new StandardAllocator;
             AllocateMemory(m_Capacity);
         }
 
@@ -46,8 +45,8 @@ namespace HBL2
         /// </summary>
         ~Set()
         {
-            m_Allocator->Deallocate<T>(m_Data);
-            m_Allocator->Deallocate<bool>(m_Used);
+            Deallocate<T>(m_Data);
+            Deallocate<bool>(m_Used);
         }
 
         /// <summary>
@@ -143,10 +142,44 @@ namespace HBL2
         }
 
     private:
+		template<typename U>
+		U* Allocate(uint64_t size)
+		{
+			if (m_Allocator == nullptr)
+			{
+				U* data = (U*)operator new(size);
+				memset(data, 0, size);				
+				return data;
+			}
+
+			return m_Allocator->Allocate<U>(size);
+		}
+
+		template<typename U>
+		void Deallocate(U* ptr)
+		{
+			if (m_Allocator == nullptr)
+			{
+				if constexpr (std::is_array_v<U>)
+				{
+					delete[] ptr;
+				}
+				else
+				{
+					delete ptr;
+				}
+
+				return;
+			}
+
+			m_Allocator->Deallocate<U>(ptr);
+		}
+
+    private:
         void AllocateMemory(uint32_t capacity)
         {
-            m_Data = m_Allocator->Allocate<T>(sizeof(T) * capacity);
-            m_Used = m_Allocator->Allocate<bool>(sizeof(bool) * capacity);
+            m_Data = Allocate<T>(sizeof(T) * capacity);
+            m_Used = Allocate<bool>(sizeof(bool) * capacity);
             memset(m_Used, 0, sizeof(bool) * capacity);
         }
 
@@ -168,8 +201,8 @@ namespace HBL2
                 }
             }
 
-            m_Allocator->Deallocate<T>(oldData);
-            m_Allocator->Deallocate<bool>(oldUsed);
+            Deallocate<T>(oldData);
+            Deallocate<bool>(oldUsed);
         }
 
         uint32_t Hash(const T& value) const
@@ -181,7 +214,7 @@ namespace HBL2
         bool* m_Used = nullptr;
         uint32_t m_Capacity;  // Not in bytes
         uint32_t m_CurrentSize; // Not in bytes
-        TAllocator* m_Allocator;
+		TAllocator* m_Allocator = nullptr; // Does not own the pointer
     };
 
     template<typename T, typename TAllocator>

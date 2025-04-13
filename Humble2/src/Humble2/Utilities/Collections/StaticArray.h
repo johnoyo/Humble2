@@ -34,6 +34,11 @@ namespace HBL2
 		const T* begin() const { return m_Data; }
 		const T* end() const { return m_Data + N; }
 
+		T* rbegin() { return m_Data + N - 1; }
+        T* rend() { return m_Data - 1; }
+        const T* rbegin() const { return m_Data + N - 1; }
+        const T* rend() const { return m_Data - 1; }
+
 	private:
 		T m_Data[N];
 	};

@@ -173,9 +173,9 @@ namespace HBL2
 			{
 			case HBL2::CullMode::NONE:
 				return VK_CULL_MODE_NONE;
-			case HBL2::CullMode::FRONT_BIT:
+			case HBL2::CullMode::FRONT:
 				return VK_CULL_MODE_FRONT_BIT;
-			case HBL2::CullMode::BACK_BIT:
+			case HBL2::CullMode::BACK:
 				return VK_CULL_MODE_BACK_BIT;
 			case HBL2::CullMode::FRONT_AND_BACK:
 				return VK_CULL_MODE_FRONT_AND_BACK;

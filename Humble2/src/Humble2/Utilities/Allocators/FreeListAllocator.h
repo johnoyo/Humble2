@@ -23,16 +23,16 @@ namespace HBL2
 	class FreeListAllocator final : public BaseAllocator<FreeListAllocator>
 	{
 	public:
+		FreeListAllocator() = default;
+
 		/**
 		 * @brief Initializes the allocator with a specified memory size.
 		 *
 		 * @param size The total size of the memory pool in bytes.
 		 */
 		FreeListAllocator(uint64_t size)
-			: m_Capacity(size), m_CurrentOffset(0), m_FreeList(nullptr)
 		{
-			m_Data = ::operator new(m_Capacity);
-			std::memset(m_Data, 0, m_Capacity);
+			Initialize(size);
 		}
 
 		/**
@@ -110,13 +110,27 @@ namespace HBL2
 		}
 
 		/**
+		 * @brief Initializes the allocator with a specified memory size.
+		 *
+		 * @param sizeInBytes The total size of the memory pool in bytes.
+		 */
+		virtual void Initialize(size_t sizeInBytes) override
+		{
+			m_Capacity = sizeInBytes;
+			m_CurrentOffset = 0;
+			m_FreeList = nullptr;
+			m_Data = ::operator new(m_Capacity);
+			std::memset(m_Data, 0, m_Capacity);
+		}
+
+		/**
 		 * @brief Resets the allocator, clearing all allocated memory.
 		 *
 		 * This does not free the memory pool but marks all memory as available.
 		 */
 		virtual void Invalidate() override
 		{
-			std::memset(m_Data, 0, m_Capacity);
+			std::memset(m_Data, 0, m_CurrentOffset);
 			m_CurrentOffset = 0;
 			m_FreeList = nullptr;
 		}
@@ -146,9 +160,9 @@ namespace HBL2
 		};
 
 	private:
-		void* m_Data;
-		FreeBlock* m_FreeList;
-		uint64_t m_Capacity; // In bytes
-		uint64_t m_CurrentOffset; // In bytes
+		void* m_Data = nullptr;
+		FreeBlock* m_FreeList = nullptr;
+		uint64_t m_Capacity = 0; // In bytes
+		uint64_t m_CurrentOffset = 0; // In bytes
 	};
 }

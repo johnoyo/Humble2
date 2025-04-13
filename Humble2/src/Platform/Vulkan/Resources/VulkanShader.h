@@ -7,6 +7,7 @@
 #include "Platform\Vulkan\VulkanRenderer.h"
 
 #include "Platform\Vulkan\VulkanCommon.h"
+#include "Platform\Vulkan\Resources\PipelineCache.h"
 
 namespace HBL2
 {
@@ -14,26 +15,37 @@ namespace HBL2
 	{
 		VulkanShader() = default;
 		VulkanShader(const ShaderDescriptor&& desc);
-		
+
+		void AddVariant(const ShaderDescriptor::RenderPipeline::Variant& variantDesc);
+		VkPipeline GetVariantPipeline(const ShaderDescriptor::RenderPipeline::Variant& variantDesc);
+
 		void Destroy()
 		{
 			VulkanDevice* device = (VulkanDevice*)Device::Instance;
+
+			vkDestroyShaderModule(device->Get(), VertexShaderModule, nullptr);
+			vkDestroyShaderModule(device->Get(), FragmentShaderModule, nullptr);
 
 			vkDestroyPipelineLayout(device->Get(), PipelineLayout, nullptr);
 			vkDestroyPipeline(device->Get(), Pipeline, nullptr);
 		}
 
+		static PipelineCache& GetPipelineCache()
+		{
+			return s_PipelineCache;
+		}
+
 		const char* DebugName = "";
 		VkPipeline Pipeline = VK_NULL_HANDLE;
 		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
+		VkRenderPass RenderPass = VK_NULL_HANDLE;
 		VkShaderModule VertexShaderModule = VK_NULL_HANDLE;
 		VkShaderModule FragmentShaderModule = VK_NULL_HANDLE;
-
-		VulkanDevice* Device = nullptr;
-		VulkanRenderer* Renderer = nullptr;
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding> VertexBufferBindings;
 
 	private:
+		static inline PipelineCache s_PipelineCache{};
+
 		VkPipelineShaderStageCreateInfo CreateShaderStageInfo(VkShaderStageFlagBits shaderStage, VkShaderModule& shaderModule, const ShaderDescriptor::ShaderStage& stage);
 
 		void GetVertexDescription(std::vector<VkVertexInputBindingDescription>& vertexInputBindingDescriptions, std::vector<VkVertexInputAttributeDescription>& vertexInputAttributeDescriptions);

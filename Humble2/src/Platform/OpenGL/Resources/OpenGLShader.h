@@ -26,7 +26,6 @@ namespace HBL2
 		OpenGLShader(const ShaderDescriptor&& desc)
 		{
 			DebugName = desc.debugName;
-			DepthTest = desc.renderPipeline.depthTest;
 
 			Program = glCreateProgram();
 			GLuint vs = Compile(GL_VERTEX_SHADER, desc.VS.entryPoint, desc.VS.code);
@@ -57,10 +56,10 @@ namespace HBL2
 			VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
 		}
 
-		GLuint Compile(GLuint type, const char* entryPoint, const std::vector<uint32_t>& binaryCode)
+		GLuint Compile(GLuint type, const char* entryPoint, const Span<const uint32_t>& binaryCode)
 		{
 			GLuint shaderID = glCreateShader(type);
-			glShaderBinary(1, &shaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, binaryCode.data(), (GLuint)binaryCode.size() * sizeof(uint32_t));
+			glShaderBinary(1, &shaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, binaryCode.Data(), (GLuint)binaryCode.Size() * sizeof(uint32_t));
 			glSpecializeShader(shaderID, entryPoint, 0, nullptr, nullptr);
 
 			GLint compileStatus;
@@ -77,19 +76,32 @@ namespace HBL2
 			return shaderID;
 		}
 
-		void Bind()
+		void SetVariantProperties(const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
 		{
-			if (DepthTest.enabled)
+			// Blend state.
+			if (variantDesc.blend.enabled)
+			{
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+				glBlendEquation(GL_FUNC_ADD);
+			}
+			else
+			{
+				glDisable(GL_BLEND);
+			}
+
+			// Depth test state.
+			if (variantDesc.depthTest.enabled)
 			{
 				glEnable(GL_DEPTH_TEST);
-				glDepthFunc(OpenGLUtils::CompareToGLenum(DepthTest.depthTest));
+				glDepthFunc(OpenGLUtils::CompareToGLenum(variantDesc.depthTest.depthTest));
 			}
 			else
 			{
 				glDisable(GL_DEPTH_TEST);
 			}
 
-			if (DepthTest.writeEnabled)
+			if (variantDesc.depthTest.writeEnabled)
 			{
 				glDepthMask(GL_TRUE);
 			}
@@ -97,7 +109,10 @@ namespace HBL2
 			{
 				glDepthMask(GL_FALSE);
 			}
+		}
 
+		void Bind()
+		{
 			glUseProgram(Program);
 		}
 
@@ -116,6 +131,5 @@ namespace HBL2
 		GLuint Program = 0;
 		GLuint RenderPipeline = 0;
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding> VertexBufferBindings;
-		ShaderDescriptor::RenderPipeline::DepthTest DepthTest;
 	};
 }

@@ -77,6 +77,16 @@ namespace HBL2
 		}
     }
 
+	ComputePassRenderer* OpenGLCommandBuffer::BeginComputePass(Span<const Handle<Texture>> texturesWrite, Span<const Handle<Buffer>> buffersWrite)
+	{
+		return nullptr;
+	}
+
+	void OpenGLCommandBuffer::EndComputePass(const ComputePassRenderer& computePassRenderer)
+	{
+		return;
+	}
+
     void OpenGLCommandBuffer::Submit()
     {
     }

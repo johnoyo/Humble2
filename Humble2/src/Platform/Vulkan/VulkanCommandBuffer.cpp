@@ -94,6 +94,16 @@ namespace HBL2
 		VK_VALIDATE(vkEndCommandBuffer(CommandBuffer), "vkEndCommandBuffer");
     }
 
+	ComputePassRenderer* VulkanCommandBuffer::BeginComputePass(Span<const Handle<Texture>> texturesWrite, Span<const Handle<Buffer>> buffersWrite)
+	{
+		return nullptr;
+	}
+
+	void VulkanCommandBuffer::EndComputePass(const ComputePassRenderer& computePassRenderer)
+	{
+		return;
+	}
+
     void VulkanCommandBuffer::Submit()
     {
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;

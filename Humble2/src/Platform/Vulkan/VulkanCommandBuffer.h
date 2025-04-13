@@ -19,12 +19,14 @@ namespace HBL2
 	public:
 		VulkanCommandBuffer() = default;
 		VulkanCommandBuffer(const CommandBufferCreateInfo&& commandBufferCreateInfo) 
-			: m_Type(commandBufferCreateInfo.type), CommandBuffer(commandBufferCreateInfo.commandBuffer), m_BlockFence(commandBufferCreateInfo.blockFence), m_WaitSemaphore(commandBufferCreateInfo.waitSemaphore), m_SignalSemaphore(commandBufferCreateInfo.signalSemaphore)
-		{
-		}
+			: m_Type(commandBufferCreateInfo.type), CommandBuffer(commandBufferCreateInfo.commandBuffer), m_BlockFence(commandBufferCreateInfo.blockFence), m_WaitSemaphore(commandBufferCreateInfo.waitSemaphore), m_SignalSemaphore(commandBufferCreateInfo.signalSemaphore) {}
 
 		virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer) override;
 		virtual void EndRenderPass(const RenderPassRenderer& renderPassRenderer) override;
+
+		virtual ComputePassRenderer* BeginComputePass(Span<const Handle<Texture>> texturesWrite, Span<const Handle<Buffer>> buffersWrite) override;
+		virtual void EndComputePass(const ComputePassRenderer& computePassRenderer) override;
+
 		virtual void Submit() override;
 
 		VkCommandBuffer CommandBuffer;

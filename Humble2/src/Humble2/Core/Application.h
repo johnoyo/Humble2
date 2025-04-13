@@ -6,6 +6,7 @@
 #include "Base.h"
 #include "Input.h"
 #include "Time.h"
+#include "Allocators.h"
 #include "Context.h"
 #include "EventDispatcher.h"
 
@@ -31,6 +32,9 @@
 #include "Utilities\MeshUtilities.h"
 #include "Utilities\NativeScriptUtilities.h"
 #include "Utilities\UnityBuild.h"
+
+#include "Utilities/Allocators/BumpAllocator.h"
+#include "Utilities/Allocators/BinAllocator.h"
 
 #include <string>
 #include <sstream>

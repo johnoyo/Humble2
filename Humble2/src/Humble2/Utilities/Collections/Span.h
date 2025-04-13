@@ -20,9 +20,14 @@ namespace HBL2
 		Span() = default;
 		Span(std::initializer_list<T> initializer_list) : m_Data(initializer_list.begin()), m_Size(initializer_list.size()) {}
 		Span(T* data, size_t size) : m_Data(data), m_Size(size) {}
-		Span(std::vector<T>& list) : m_Data(list.data()), m_Size(list.size()) {}
-		Span(DynamicArray<T>& list) : m_Data(list.Data()), m_Size(list.Size()) {}
 
+		Span(std::vector<T>& list) : m_Data(list.data()), m_Size(list.size()) {}
+		template<typename U, typename = std::enable_if_t<std::is_convertible<U*, T*>::value>>
+		Span(const std::vector<U>& list) : m_Data(list.data()), m_Size(list.size()) {}
+		
+		Span(DynamicArray<T>& list) : m_Data(list.Data()), m_Size(list.Size()) {}
+		template<typename U, typename = std::enable_if_t<std::is_convertible<U*, T*>::value>>
+		Span(const DynamicArray<U>& list) : m_Data(list.Data()), m_Size(list.Size()) {}
 		template<typename TAllocator>
 		Span(DynamicArray<T, TAllocator>& list) : m_Data(list.Data()), m_Size(list.Size()) {}
 
@@ -37,6 +42,9 @@ namespace HBL2
 
 		operator std::initializer_list<T>() const { return std::initializer_list<T>(begin(), end()); }
 
+		T& operator[](uint32_t i) { return m_Data[i]; }
+		const T& operator[](uint32_t i) const { return m_Data[i]; }
+
 		T* Data() { return m_Data; }
 		const T* Data() const { return m_Data; }
 		const size_t Size() const { return m_Size; }
@@ -45,6 +53,11 @@ namespace HBL2
 		T* end() { return m_Data + m_Size; }
 		const T* begin() const { return m_Data; }
 		const T* end() const { return m_Data + m_Size; }
+
+		T* rbegin() { return m_Data + m_Size - 1; }
+        T* rend() { return m_Data - 1; }
+        const T* rbegin() const { return m_Data + m_Size - 1; }
+        const T* rend() const { return m_Data - 1; }
 
 	private:
 		T* m_Data = nullptr;

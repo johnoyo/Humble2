@@ -5,6 +5,35 @@
 
 namespace HBL2
 {
+	static bool VariantExists(const YAML::Node& existingVariants, uint32_t newVariantHash)
+	{
+		for (const auto& variant : existingVariants)
+		{
+			if (variant["Variant"].as<uint32_t>() == newVariantHash)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	static YAML::Node VariantToYAMLNode(uint32_t newVariantHash, const ShaderDescriptor::RenderPipeline::Variant& variant)
+	{
+		YAML::Node baseVariant;
+
+		baseVariant["Variant"] = newVariantHash;
+		baseVariant["BlendState"]["Enabled"] = variant.blend.enabled;
+		baseVariant["BlendState"]["ColorOutputEnabled"] = variant.blend.colorOutput;
+
+		baseVariant["DepthState"]["Enabled"] = variant.depthTest.enabled;
+		baseVariant["DepthState"]["WriteEnabled"] = variant.depthTest.writeEnabled;
+		baseVariant["DepthState"]["StencilEnabled"] = variant.depthTest.stencilEnabled;
+		baseVariant["DepthState"]["DepthTest"] = (int)variant.depthTest.depthTest;
+
+		return baseVariant;
+	}
+
 	ShaderUtilities& ShaderUtilities::Get()
 	{
 		static ShaderUtilities instance;
@@ -515,16 +544,75 @@ namespace HBL2
 	{
 		std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(handle)->FilePath).string() + ".hblshader", 0);
 
+		Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(handle);
+		uint32_t variantHash = ResourceManager::Instance->GetShaderVariantHash(shaderHandle, {});
+
 		YAML::Emitter out;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Shader" << YAML::Value;
 		out << YAML::BeginMap;
 		out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(handle)->UUID;
 		out << YAML::Key << "Type" << YAML::Value << shaderType;
+
+		out << YAML::Key << "Variants" << YAML::BeginSeq;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Variant" << YAML::Value << variantHash;
+
+		out << YAML::Key << "BlendState";
+		out << YAML::BeginMap;
+		out << YAML::Key << "Enabled" << YAML::Value << true;
+		out << YAML::Key << "ColorOutputEnabled" << YAML::Value << true;
+		out << YAML::EndMap;
+
+		out << YAML::Key << "DepthState";
+		out << YAML::BeginMap;
+		out << YAML::Key << "Enabled" << YAML::Value << true;
+		out << YAML::Key << "WriteEnabled" << YAML::Value << true;
+		out << YAML::Key << "StencilEnabled" << YAML::Value << true;
+		out << YAML::Key << "DepthTest" << YAML::Value << (int)Compare::LESS;
+		out << YAML::EndMap;
+
+		out << YAML::EndMap;
+		out << YAML::EndSeq;
+
 		out << YAML::EndMap;
 		out << YAML::EndMap;
+
 		fout << out.c_str();
 		fout.close();
+	}
+
+	void ShaderUtilities::UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::Variant& newVariant)
+	{
+		Handle<Asset> shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
+		Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+		if (shaderAsset == nullptr)
+		{
+			return;
+		}
+
+		Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderAssetHandle);
+
+		const auto& filePath = Project::GetAssetFileSystemPath(shaderAsset->FilePath).string() + ".hblshader";
+
+		YAML::Node root = YAML::LoadFile(filePath);
+		YAML::Node variants = root["Shader"]["Variants"];
+
+		uint32_t newVariantHash = ResourceManager::Instance->GetShaderVariantHash(shaderHandle, newVariant);
+
+		if (!VariantExists(variants, newVariantHash))
+		{
+			HBL2_CORE_INFO("New variant added.");
+			variants.push_back(VariantToYAMLNode(newVariantHash, newVariant));
+			std::ofstream fout(filePath);
+			fout << root;
+			fout.close();
+		} 
+		else
+		{
+			HBL2_CORE_INFO("Variant already exists.");
+		}
 	}
 
 	void ShaderUtilities::CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType)
@@ -580,7 +668,6 @@ namespace HBL2
 		out << YAML::Key << "Material" << YAML::Value;
 		out << YAML::BeginMap;
 
-
 		if (desc.ShaderAssetHandle.IsValid())
 		{
 			Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.ShaderAssetHandle);
@@ -591,9 +678,22 @@ namespace HBL2
 			out << YAML::Key << "Shader" << YAML::Value << (UUID)0;
 		}
 
-		out << YAML::Key << "BlendMode" << YAML::Value << (desc.BlendMode == Material::BlendMode::Opaque ? 0 : 1);
 		out << YAML::Key << "AlbedoColor" << YAML::Value << desc.AlbedoColor;
 		out << YAML::Key << "Glossiness" << YAML::Value << desc.Glossiness;
+
+		out << YAML::Key << "BlendState";
+		out << YAML::BeginMap;
+		out << YAML::Key << "Enabled" << YAML::Value << desc.VariantDescriptor.blend.enabled;
+		out << YAML::Key << "ColorOutputEnabled" << YAML::Value << desc.VariantDescriptor.blend.colorOutput;
+		out << YAML::EndMap;
+
+		out << YAML::Key << "DepthState";
+		out << YAML::BeginMap;
+		out << YAML::Key << "Enabled" << YAML::Value << desc.VariantDescriptor.depthTest.enabled;
+		out << YAML::Key << "WriteEnabled" << YAML::Value << desc.VariantDescriptor.depthTest.writeEnabled;
+		out << YAML::Key << "StencilEnabled" << YAML::Value << desc.VariantDescriptor.depthTest.stencilEnabled;
+		out << YAML::Key << "DepthTest" << YAML::Value << (int)desc.VariantDescriptor.depthTest.depthTest;
+		out << YAML::EndMap;
 
 		if (desc.AlbedoMapAssetHandle.IsValid())
 		{

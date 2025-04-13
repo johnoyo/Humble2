@@ -136,6 +136,7 @@ namespace HBL2
 				m_ShaderPool.Remove(handle);
 			}
 		}
+		virtual void AddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::Variant& variantDesc) override {}
 		OpenGLShader* GetShader(Handle<Shader> handle) const
 		{
 			return m_ShaderPool.Get(handle);

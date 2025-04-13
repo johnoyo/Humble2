@@ -51,6 +51,13 @@ namespace HBL2
 		}
 
 		/**
+		 * @brief No-op for StandardAllocator as it does not pre allocate memory.
+		 */
+		virtual void Initialize(size_t sizeInBytes) override
+		{
+		}
+
+		/**
 		 * @brief No-op for StandardAllocator as it does not maintain state.
 		 */
 		virtual void Invalidate() override

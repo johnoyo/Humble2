@@ -24,10 +24,9 @@ namespace HBL2
         /// </summary>
         /// <param name="initialCapacity">The starting capacity of the array.</param>
         DynamicArray(size_t initialCapacity = 8)
-            : m_Capacity(initialCapacity), m_CurrentSize(0)
+            : m_Capacity(initialCapacity), m_CurrentSize(0), m_Allocator(nullptr)
         {
-            m_Allocator = new TAllocator;
-            m_Data = m_Allocator->Allocate<T>(sizeof(T) * m_Capacity);
+            m_Data = Allocate(sizeof(T) * m_Capacity);
         }
 
         /// <summary>
@@ -38,16 +37,87 @@ namespace HBL2
         DynamicArray(TAllocator* allocator, uint32_t initialCapacity = 8)
             : m_Capacity(initialCapacity), m_CurrentSize(0), m_Allocator(allocator)
         {
-            m_Data = m_Allocator->Allocate<T>(sizeof(T) * m_Capacity);
+            m_Data = Allocate(sizeof(T) * m_Capacity);
         }
+
+        /// <summary>
+        /// Copy constructor which performs deep copy of the array.
+        /// </summary>
+        DynamicArray(const DynamicArray& other)
+            : m_Capacity(other.m_Capacity), m_CurrentSize(other.m_CurrentSize), m_Allocator(other.m_Allocator)
+        {
+            m_Data = Allocate(sizeof(T) * m_Capacity);
+            std::memcpy(m_Data, other.m_Data, sizeof(T) * m_CurrentSize);
+        }
+
+		/// <summary>
+		/// Move constructor which transfers ownership of internal data.
+		/// </summary>
+		DynamicArray(DynamicArray&& other) noexcept
+			: m_Data(other.m_Data), m_Capacity(other.m_Capacity), m_CurrentSize(other.m_CurrentSize), m_Allocator(other.m_Allocator)
+		{
+			other.m_Data = nullptr;
+			other.m_Capacity = 0;
+			other.m_CurrentSize = 0;
+			other.m_Allocator = nullptr;
+		}
 
         /// <summary>
         /// Destructor to release allocated memory.
         /// </summary>
         ~DynamicArray()
         {
-            m_Allocator->Deallocate<T>(m_Data);
+            Deallocate(m_Data);
         }
+
+		/// <summary>
+		/// Copy assignment operator.
+		/// </summary>
+		DynamicArray& operator=(const DynamicArray& other)
+		{
+			if (this == &other)
+			{
+				return *this;
+			}
+
+			// Clean up current data
+			Deallocate(m_Data);
+
+			m_Capacity = other.m_Capacity;
+			m_CurrentSize = other.m_CurrentSize;
+			m_Allocator = other.m_Allocator;
+
+			m_Data = Allocate(sizeof(T) * m_Capacity);
+			std::memcpy(m_Data, other.m_Data, sizeof(T) * m_CurrentSize);
+
+			return *this;
+		}
+
+		/// <summary>
+		/// Move assignment operator.
+		/// </summary>
+		DynamicArray& operator=(DynamicArray&& other) noexcept
+		{
+			if (this == &other)
+			{
+				return *this;
+			}
+
+			// Clean up current data
+			Deallocate(m_Data);
+
+			m_Data = other.m_Data;
+			m_Capacity = other.m_Capacity;
+			m_CurrentSize = other.m_CurrentSize;
+			m_Allocator = other.m_Allocator;
+
+			other.m_Data = nullptr;
+			other.m_Capacity = 0;
+			other.m_CurrentSize = 0;
+			other.m_Allocator = nullptr;
+
+			return *this;
+		}
 
         T& operator[](size_t i) { return m_Data[i]; }
         const T& operator[](size_t i) const { return m_Data[i]; }
@@ -72,17 +142,26 @@ namespace HBL2
         {
             if (m_CurrentSize == m_Capacity)
             {
-                m_Capacity *= 2;
-
-                T* newData = m_Allocator->Allocate<T>(sizeof(T) * m_Capacity);
-                HBL2_CORE_ASSERT(newData, "Memory allocation failed!");
-
-                std::memcpy(newData, m_Data, m_CurrentSize * sizeof(T));
-                m_Allocator->Deallocate<T>(m_Data);
-                m_Data = newData;
+				Reserve(m_Capacity * 2);
             }
 
             m_Data[m_CurrentSize++] = value;
+        }
+
+        /// <summary>
+        /// Constructs a new element at the end using perfect forwarding (avoids copy).
+        /// </summary>
+        /// <typeparam name="...Args">Arguments for T constructor.</typeparam>
+        template<typename... Args>
+        void Emplace(Args&&... args)
+        {
+            if (m_CurrentSize == m_Capacity)
+            {
+                Reserve(m_Capacity * 2);
+            }
+
+            // Placement new operator to prevent extra copy.
+            new (&m_Data[m_CurrentSize++]) T(std::forward<Args>(args)...);
         }
 
         /// <summary>
@@ -111,6 +190,21 @@ namespace HBL2
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Returns index of first occurrence of value, or UINT32_MAX if not found.
+        /// </summary>
+        uint32_t FindIndex(const T& value) const
+        {
+            for (uint32_t i = 0; i < m_CurrentSize; ++i)
+            {
+                if (m_Data[i] == value)
+                {
+                    return i;
+                }
+            }
+            return UINT32_MAX;
         }
 
         /// <summary>
@@ -162,16 +256,98 @@ namespace HBL2
             m_CurrentSize = 0;
         }
 
+		/// <summary>
+        /// Ensures the array can hold at least the given capacity without reallocating.
+        /// </summary>
+        /// <param name="newCapacity">The minimum capacity to ensure.</param>
+        void Reserve(uint32_t newCapacity)
+        {
+			if (newCapacity <= m_Capacity)
+			{
+				return;
+			}
+
+            T* newData = Allocate(sizeof(T) * newCapacity);
+            HBL2_CORE_ASSERT(newData, "DynamicArray::Reserve(), memory allocation failed!");
+
+            std::memcpy(newData, m_Data, m_CurrentSize * sizeof(T));
+            Deallocate(m_Data);
+            m_Data = newData;
+
+            m_Capacity = newCapacity;
+        }
+
+        /// <summary>
+        /// Resizes the array to the new size.
+        /// If the new size is larger, new elements are default-initialized.
+        /// </summary>
+        /// <param name="newSize">The new size of the array.</param>
+        /// <param name="defaultValue">The default value to assign to new elements (if any).</param>
+        void Resize(uint32_t newSize, const T& defaultValue = T{})
+        {
+            if (newSize > m_Capacity)
+            {
+                Reserve(newSize);
+            }
+
+            if (newSize > m_CurrentSize)
+            {
+                for (uint32_t i = m_CurrentSize; i < newSize; ++i)
+                {
+                    m_Data[i] = defaultValue;
+                }
+            }
+
+            m_CurrentSize = newSize;
+        }
+
         T* begin() { return m_Data; }
         T* end() { return m_Data + m_CurrentSize; }
         const T* begin() const { return m_Data; }
         const T* end() const { return m_Data + m_CurrentSize; }
 
+        T* rbegin() { return m_Data + m_CurrentSize - 1; }
+        T* rend() { return m_Data - 1; }
+        const T* rbegin() const { return m_Data + m_CurrentSize - 1; }
+        const T* rend() const { return m_Data - 1; }
+
+	private:
+		T* Allocate(uint64_t size)
+		{
+			if (m_Allocator == nullptr)
+			{
+				T* data = (T*)operator new(size);
+				memset(data, 0, size);				
+				return data;
+			}
+
+			return m_Allocator->Allocate<T>(size);
+		}
+
+		void Deallocate(T* ptr)
+		{
+			if (m_Allocator == nullptr)
+			{
+				if constexpr (std::is_array_v<T>)
+				{
+					delete[] ptr;
+				}
+				else
+				{
+					delete ptr;
+				}
+
+				return;
+			}
+
+			m_Allocator->Deallocate<T>(ptr);
+		}
+
     private:
         T* m_Data = nullptr;
-        uint32_t m_Capacity; // Not in bytes
-        uint32_t m_CurrentSize; // Not in bytes
-        TAllocator* m_Allocator = nullptr;
+        uint32_t m_Capacity = 0; // Not in bytes
+        uint32_t m_CurrentSize = 0; // Not in bytes
+        TAllocator* m_Allocator = nullptr; // Does not own the pointer
     };
 
     template<typename T, typename TAllocator>

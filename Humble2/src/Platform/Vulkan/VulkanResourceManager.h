@@ -155,6 +155,14 @@ namespace HBL2
 				}
 			});
 		}
+		virtual void AddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::Variant& variantDesc) override
+		{
+			VulkanShader* shader = GetShader(handle);
+			if (shader != nullptr)
+			{
+				shader->AddVariant(variantDesc);
+			}
+		}
 		VulkanShader* GetShader(Handle<Shader> handle) const
 		{
 			return m_ShaderPool.Get(handle);

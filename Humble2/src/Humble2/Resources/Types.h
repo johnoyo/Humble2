@@ -142,16 +142,11 @@ namespace HBL2
 			BindGroup = desc.bindGroup;
 		}
 
-		enum class BlendMode
-		{
-			Opaque = 0,
-			Transparent = 1,
-		};
-
 		const char* DebugName = "";
 		Handle<Shader> Shader;
 		Handle<BindGroup> BindGroup;
-		BlendMode BlendMethod = BlendMode::Opaque;
+
+		ShaderDescriptor::RenderPipeline::Variant VariantDescriptor;
 
 		glm::vec4 AlbedoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		float Glossiness = 3.0f;
