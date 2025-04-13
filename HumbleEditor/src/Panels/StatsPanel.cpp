@@ -18,6 +18,13 @@ namespace HBL2
 			ImGui::Text("Scene");
 			ImGui::NewLine();
 			ImGui::Text("Entities: %d", m_ActiveScene != nullptr ? m_ActiveScene->GetEntityCount() : 0);
+
+			ImGui::Separator();
+
+			ImGui::Text("Arena Allocators");
+			ImGui::Text("Frame: %f %%", Allocator::Frame.GetFullPercentage());
+			ImGui::Text("Scene: %f %%", Allocator::Scene.GetFullPercentage());
+			ImGui::Text("App: %f %%", Allocator::App.GetFullPercentage());
 		}
 	}
 }

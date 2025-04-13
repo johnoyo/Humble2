@@ -705,6 +705,12 @@ namespace HBL2
 							TextureUtilities::Get().CreateAssetMetadataFile(albedoMapAssetHandle);
 						}
 
+						if (g_AlbedoMapTask)
+						{
+							Allocator::Scene.Deallocate(g_AlbedoMapTask);
+							g_AlbedoMapTask = nullptr;
+						}
+
 						g_AlbedoMapTask = AssetManager::Instance->GetAssetAsync<Texture>(albedoMapAssetHandle);
 
 						ImGui::EndDragDropTarget();
@@ -747,6 +753,12 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(normalMapAssetHandle);
 							}
 
+							if (g_NormalMapTask)
+							{
+								Allocator::Scene.Deallocate(g_NormalMapTask);
+								g_NormalMapTask = nullptr;
+							}
+
 							g_NormalMapTask = AssetManager::Instance->GetAssetAsync<Texture>(normalMapAssetHandle);
 
 							ImGui::EndDragDropTarget();
@@ -783,6 +795,12 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(metallicMapAssetHandle);
 							}
 
+							if (g_MetallicMapTask)
+							{
+								Allocator::Scene.Deallocate(g_MetallicMapTask);
+								g_MetallicMapTask = nullptr;
+							}
+
 							g_MetallicMapTask = AssetManager::Instance->GetAssetAsync<Texture>(metallicMapAssetHandle);
 
 							ImGui::EndDragDropTarget();
@@ -817,6 +835,12 @@ namespace HBL2
 							if (roughnessMapAssetHandle.IsValid())
 							{
 								TextureUtilities::Get().CreateAssetMetadataFile(roughnessMapAssetHandle);
+							}
+
+							if (g_RoughnessMapTask)
+							{
+								Allocator::Scene.Deallocate(g_RoughnessMapTask);
+								g_RoughnessMapTask = nullptr;
 							}
 
 							g_RoughnessMapTask = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapAssetHandle);

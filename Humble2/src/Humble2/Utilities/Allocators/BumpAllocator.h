@@ -106,6 +106,11 @@ namespace HBL2
 			m_Capacity = 0;
 		}
 
+		float GetFullPercentage()
+		{
+			return ((float)m_CurrentOffset / (float)m_Capacity) * 100.f;
+		}
+
 	private:
 		void* m_Data = nullptr;
 		uint64_t m_Capacity = 0; // In bytes

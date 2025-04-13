@@ -51,6 +51,8 @@ namespace HBL2
         template<typename T>
         T* Allocate(uint64_t size = sizeof(T))
         {
+            m_AllocatedBytes += size;
+
             uint32_t binIndex = FindBinIndex(size);
 
             for (uint32_t i = binIndex; i < NUM_LEAF_BINS; i++)
@@ -102,6 +104,7 @@ namespace HBL2
 
             uint64_t blockSize = sizeof(T);
             InsertIntoBin(object, blockSize);
+            m_AllocatedBytes -= blockSize;
         }
 
         /**
@@ -133,6 +136,7 @@ namespace HBL2
         {
             std::memset(m_Data, 0, m_CurrentOffset);
             m_CurrentOffset = 0;
+			m_AllocatedBytes = 0;
 
             for (uint32_t i = 0; i < NUM_LEAF_BINS; i++)
             {
@@ -153,7 +157,13 @@ namespace HBL2
             ::operator delete(m_Data);
             m_Capacity = 0;
             m_CurrentOffset = 0;
+			m_AllocatedBytes = 0;
         }
+
+		float GetFullPercentage()
+		{
+			return ((float)m_AllocatedBytes / (float)m_Capacity) * 100.f;
+		}
 
     private:
         /**
@@ -283,5 +293,6 @@ namespace HBL2
 
         uint64_t m_Capacity = 0;
         uint64_t m_CurrentOffset = 0;
+        uint64_t m_AllocatedBytes = 0;
     };
 }
