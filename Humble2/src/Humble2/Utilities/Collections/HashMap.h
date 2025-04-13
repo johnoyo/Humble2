@@ -205,10 +205,10 @@ namespace HBL2
         }
 
         /// <summary>
-        /// Remove a key-value pair by key.
+        /// Erase a key-value pair by key.
         /// </summary>
         /// <param name="key">The key to remove.</param>
-        void Remove(const TKey& key)
+        void Erase(const TKey& key)
         {
             size_t index = ProbeForKey(key);
             if (index != s_InvalidIndex)

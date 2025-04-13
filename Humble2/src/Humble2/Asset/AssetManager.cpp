@@ -98,12 +98,14 @@ namespace HBL2
 
 	void AssetManager::DeregisterAssets()
 	{
+		WaitForAsyncJobs();
+		
 		for (auto handle : m_RegisteredAssets)
 		{
-			AssetManager::Instance->DeleteAsset(handle);
+			DeleteAsset(handle);
 		}
 
-		m_RegisteredAssets.clear();
-		m_RegisteredAssetMap.clear();
+		m_RegisteredAssets.Clear();
+		m_RegisteredAssetMap.Clear();
 	}
 }

@@ -7,10 +7,10 @@ namespace HBL2
 {
 	namespace Editor
 	{
-		static ResourceTask<Texture>* s_AlbedoMapTask = nullptr;	
-		static ResourceTask<Texture>* s_NormalMapTask = nullptr;	
-		static ResourceTask<Texture>* s_MetallicMapTask = nullptr;	
-		static ResourceTask<Texture>* s_RoughnessMapTask = nullptr;
+		static ResourceTask<Texture>* g_AlbedoMapTask = nullptr;	
+		static ResourceTask<Texture>* g_NormalMapTask = nullptr;	
+		static ResourceTask<Texture>* g_MetallicMapTask = nullptr;	
+		static ResourceTask<Texture>* g_RoughnessMapTask = nullptr;
 
 		void EditorPanelSystem::DrawContentBrowserPanel()
 		{
@@ -677,16 +677,16 @@ namespace HBL2
 
 				static uint32_t albedoMapHandlePacked = 0;
 
-				if (s_AlbedoMapTask && s_AlbedoMapTask->Finished())
+				if (g_AlbedoMapTask && g_AlbedoMapTask->Finished())
 				{
 					ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
 				}
-				else if (s_AlbedoMapTask && !s_AlbedoMapTask->Finished())
+				else if (g_AlbedoMapTask && !g_AlbedoMapTask->Finished())
 				{
 					ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 				}
 				ImGui::InputScalar("AlbedoMap", ImGuiDataType_U32, (void*)(intptr_t*)&albedoMapHandlePacked);
-				if (s_AlbedoMapTask)
+				if (g_AlbedoMapTask)
 				{
 					ImGui::PopStyleColor();
 				}
@@ -705,7 +705,7 @@ namespace HBL2
 							TextureUtilities::Get().CreateAssetMetadataFile(albedoMapAssetHandle);
 						}
 
-						s_AlbedoMapTask = AssetManager::Instance->GetAssetAsync<Texture>(albedoMapAssetHandle);
+						g_AlbedoMapTask = AssetManager::Instance->GetAssetAsync<Texture>(albedoMapAssetHandle);
 
 						ImGui::EndDragDropTarget();
 					}
@@ -719,16 +719,16 @@ namespace HBL2
 				{
 					// Normal map
 					static uint32_t normalMapHandlePacked = 0;
-					if (s_NormalMapTask && s_NormalMapTask->Finished())
+					if (g_NormalMapTask && g_NormalMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
 					}
-					else if (s_NormalMapTask && !s_NormalMapTask->Finished())
+					else if (g_NormalMapTask && !g_NormalMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 					}
 					ImGui::InputScalar("NormalMap", ImGuiDataType_U32, (void*)(intptr_t*)&normalMapHandlePacked);
-					if (s_NormalMapTask)
+					if (g_NormalMapTask)
 					{
 						ImGui::PopStyleColor();
 					}
@@ -747,7 +747,7 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(normalMapAssetHandle);
 							}
 
-							s_NormalMapTask = AssetManager::Instance->GetAssetAsync<Texture>(normalMapAssetHandle);
+							g_NormalMapTask = AssetManager::Instance->GetAssetAsync<Texture>(normalMapAssetHandle);
 
 							ImGui::EndDragDropTarget();
 						}
@@ -755,16 +755,16 @@ namespace HBL2
 
 					// Metalicness map
 					static uint32_t metallicMapHandlePacked = 0;
-					if (s_MetallicMapTask && s_MetallicMapTask->Finished())
+					if (g_MetallicMapTask && g_MetallicMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
 					}
-					else if (s_MetallicMapTask && !s_MetallicMapTask->Finished())
+					else if (g_MetallicMapTask && !g_MetallicMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 					}
 					ImGui::InputScalar("MetallicMap", ImGuiDataType_U32, (void*)(intptr_t*)&metallicMapHandlePacked);
-					if (s_MetallicMapTask)
+					if (g_MetallicMapTask)
 					{
 						ImGui::PopStyleColor();
 					}
@@ -783,7 +783,7 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(metallicMapAssetHandle);
 							}
 
-							s_MetallicMapTask = AssetManager::Instance->GetAssetAsync<Texture>(metallicMapAssetHandle);
+							g_MetallicMapTask = AssetManager::Instance->GetAssetAsync<Texture>(metallicMapAssetHandle);
 
 							ImGui::EndDragDropTarget();
 						}
@@ -791,16 +791,16 @@ namespace HBL2
 
 					// Roughness map
 					static uint32_t roughnessMapHandlePacked = 0;
-					if (s_RoughnessMapTask && s_RoughnessMapTask->Finished())
+					if (g_RoughnessMapTask && g_RoughnessMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
 					}
-					else if (s_RoughnessMapTask && !s_RoughnessMapTask->Finished())
+					else if (g_RoughnessMapTask && !g_RoughnessMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 					}
 					ImGui::InputScalar("RoughnessMap", ImGuiDataType_U32, (void*)(intptr_t*)&roughnessMapHandlePacked);
-					if (s_RoughnessMapTask)
+					if (g_RoughnessMapTask)
 					{
 						ImGui::PopStyleColor();
 					}
@@ -819,7 +819,7 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(roughnessMapAssetHandle);
 							}
 
-							s_RoughnessMapTask = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapAssetHandle);
+							g_RoughnessMapTask = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapAssetHandle);
 
 							ImGui::EndDragDropTarget();
 						}
@@ -830,10 +830,10 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
-					if ((s_AlbedoMapTask != nullptr && !s_AlbedoMapTask->Finished()) ||
-						(s_NormalMapTask != nullptr && !s_NormalMapTask->Finished()) ||
-						(s_MetallicMapTask != nullptr && !s_MetallicMapTask->Finished()) ||
-						(s_RoughnessMapTask != nullptr && !s_RoughnessMapTask->Finished()))
+					if ((g_AlbedoMapTask != nullptr && !g_AlbedoMapTask->Finished()) ||
+						(g_NormalMapTask != nullptr && !g_NormalMapTask->Finished()) ||
+						(g_MetallicMapTask != nullptr && !g_MetallicMapTask->Finished()) ||
+						(g_RoughnessMapTask != nullptr && !g_RoughnessMapTask->Finished()))
 					{
 						HBL2_CORE_WARN("Please wait until the textures have finished loading.");
 					}
@@ -874,28 +874,28 @@ namespace HBL2
 							.MetallicMapAssetHandle = metallicMapAssetHandle,
 						});
 
-						if (s_AlbedoMapTask)
+						if (g_AlbedoMapTask)
 						{
-							delete s_AlbedoMapTask;
-							s_AlbedoMapTask = nullptr;
+							Allocator::Scene.Deallocate(g_AlbedoMapTask);
+							g_AlbedoMapTask = nullptr;
 						}
 
-						if (s_NormalMapTask)
+						if (g_NormalMapTask)
 						{
-							delete s_NormalMapTask;
-							s_NormalMapTask = nullptr;
+							Allocator::Scene.Deallocate(g_NormalMapTask);
+							g_NormalMapTask = nullptr;
 						}
 
-						if (s_MetallicMapTask)
+						if (g_MetallicMapTask)
 						{
-							delete s_MetallicMapTask;
-							s_MetallicMapTask = nullptr;
+							Allocator::Scene.Deallocate(g_MetallicMapTask);
+							g_MetallicMapTask = nullptr;
 						}
 
-						if (s_RoughnessMapTask)
+						if (g_RoughnessMapTask)
 						{
-							delete s_RoughnessMapTask;
-							s_RoughnessMapTask = nullptr;
+							Allocator::Scene.Deallocate(g_RoughnessMapTask);
+							g_RoughnessMapTask = nullptr;
 						}
 
 						m_OpenMaterialSetupPopup = false;
@@ -908,28 +908,28 @@ namespace HBL2
 				{
 					m_OpenMaterialSetupPopup = false;
 
-					if (s_AlbedoMapTask)
+					if (g_AlbedoMapTask)
 					{
-						delete s_AlbedoMapTask;
-						s_AlbedoMapTask = nullptr;
+						Allocator::Scene.Deallocate(g_AlbedoMapTask);
+						g_AlbedoMapTask = nullptr;
 					}
 
-					if (s_NormalMapTask)
+					if (g_NormalMapTask)
 					{
-						delete s_NormalMapTask;
-						s_NormalMapTask = nullptr;
+						Allocator::Scene.Deallocate(g_NormalMapTask);
+						g_NormalMapTask = nullptr;
 					}
 
-					if (s_MetallicMapTask)
+					if (g_MetallicMapTask)
 					{
-						delete s_MetallicMapTask;
-						s_MetallicMapTask = nullptr;
+						Allocator::Scene.Deallocate(g_MetallicMapTask);
+						g_MetallicMapTask = nullptr;
 					}
 
-					if (s_RoughnessMapTask)
+					if (g_RoughnessMapTask)
 					{
-						delete s_RoughnessMapTask;
-						s_RoughnessMapTask = nullptr;
+						Allocator::Scene.Deallocate(g_RoughnessMapTask);
+						g_RoughnessMapTask = nullptr;
 					}
 				}
 

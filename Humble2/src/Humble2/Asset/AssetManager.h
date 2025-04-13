@@ -6,10 +6,13 @@
 
 #include "Renderer\Device.h"
 
-#include "Utilities\JobSystem.h"
+#include "Core/Allocators.h"
 
-#include <exception>
-#include <future>
+#include "Utilities\JobSystem.h"
+#include "Utilities/Collections/DynamicArray.h"
+#include "Utilities/Collections/HashMap.h"
+
+#include "Utilities\Allocators\BinAllocator.h"
 
 namespace HBL2
 {
@@ -45,7 +48,7 @@ namespace HBL2
 			}
 
 			handle = m_AssetPool.Insert(Asset(std::forward<const AssetDescriptor>(desc)));
-			m_RegisteredAssets.push_back(handle);
+			m_RegisteredAssets.Add(handle);
 
 			Asset* asset = GetAssetMetadata(handle);
 			m_RegisteredAssetMap[asset->UUID] = handle;
@@ -61,14 +64,14 @@ namespace HBL2
 					Asset* asset = GetAssetMetadata(handle);
 					if (asset != nullptr)
 					{
-						m_RegisteredAssetMap.erase(asset->UUID);
+						m_RegisteredAssetMap.Erase(asset->UUID);
 					}
 
 					auto assetIterator = std::find(m_RegisteredAssets.begin(), m_RegisteredAssets.end(), handle);
 				
 					if (assetIterator != m_RegisteredAssets.end())
 					{
-						m_RegisteredAssets.erase(assetIterator);
+						m_RegisteredAssets.Erase(*assetIterator);
 					}
 
 					m_AssetPool.Remove(handle);
@@ -132,7 +135,7 @@ namespace HBL2
 				return nullptr;
 			}
 
-			ResourceTask<T>* task = new ResourceTask<T>();
+			ResourceTask<T>* task = Allocator::Scene.Allocate<ResourceTask<T>>();
 			task->m_Finished = false;
 
 			// Do not schedule job if the asset is loaded.
@@ -148,8 +151,13 @@ namespace HBL2
 			JobSystem::Get().Execute(ctx, [this, assetHandle, task]()
 			{
 				Device::Instance->SetContext(Window::Instance->GetWorkerHandle());
-				task->ResourceHandle = GetAsset<T>(assetHandle);
-				task->m_Finished = true;
+
+				// NOTE: Keep an eye here, it may cause problems if we still load an asset while we change scenes!
+				if (task != nullptr)
+				{
+					task->ResourceHandle = GetAsset<T>(assetHandle);
+					task->m_Finished = true;
+				}
 				Device::Instance->SetContext(nullptr);
 			});
 
@@ -162,13 +170,13 @@ namespace HBL2
 			JobSystem::Get().Wait(ctx);
 		}
 
-		std::vector<Handle<Asset>>& GetRegisteredAssets() { return m_RegisteredAssets; }
+		Span<const Handle<Asset>> GetRegisteredAssets() { return { m_RegisteredAssets.Data(), m_RegisteredAssets.Size() }; }
 
 		Handle<Asset> GetHandleFromUUID(UUID assetUUID)
 		{
 			Handle<Asset> assetHandle;
 
-			if (m_RegisteredAssetMap.find(assetUUID) != m_RegisteredAssetMap.end())
+			if (m_RegisteredAssetMap.ContainsKey(assetUUID))
 			{
 				assetHandle = m_RegisteredAssetMap[assetUUID];
 			}
@@ -194,7 +202,7 @@ namespace HBL2
 	private:
 		JobContext m_ResourceJobCtx;
 		Pool<Asset, Asset> m_AssetPool;
-		std::unordered_map<UUID, Handle<Asset>> m_RegisteredAssetMap;
-		std::vector<Handle<Asset>> m_RegisteredAssets;
+		HashMap<UUID, Handle<Asset>, BinAllocator> m_RegisteredAssetMap = MakeHashMap<UUID, Handle<Asset>>(&Allocator::App);
+		DynamicArray<Handle<Asset>, BinAllocator> m_RegisteredAssets = MakeDynamicArray<Handle<Asset>>(&Allocator::App);
 	};
 }

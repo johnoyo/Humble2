@@ -96,6 +96,7 @@ namespace HBL2
 	{
 		Allocator::Frame.Initialize(32_MB);
 		Allocator::Scene.Initialize(256_MB);
+		Allocator::App.Initialize(256_MB);
 
 		Window::Instance->Create();
 		
@@ -140,7 +141,6 @@ namespace HBL2
 		delete ImGuiRenderer::Instance;
 		ImGuiRenderer::Instance = nullptr;
 
-		AssetManager::Instance->WaitForAsyncJobs();
 		AssetManager::Instance->DeregisterAssets();
 		delete AssetManager::Instance;
 		AssetManager::Instance = nullptr;
@@ -170,5 +170,6 @@ namespace HBL2
 
 		Allocator::Frame.Free();
 		Allocator::Scene.Free();
+		Allocator::App.Free();
 	}
 }

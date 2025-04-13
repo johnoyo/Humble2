@@ -84,7 +84,7 @@ namespace HBL2
 
 			out << YAML::Key << "Enabled" << YAML::Value << sprite.Enabled;
 
-			const std::vector<Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
 
 			Asset* materialAsset = nullptr;
 
@@ -119,7 +119,7 @@ namespace HBL2
 
 			out << YAML::Key << "Enabled" << YAML::Value << staticMesh.Enabled;
 
-			const std::vector<Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
 
 			Asset* materialAsset = nullptr;
 			Asset* meshAsset = nullptr;
@@ -186,7 +186,7 @@ namespace HBL2
 
 			out << YAML::Key << "Enabled" << YAML::Value << soundSource.Enabled;
 
-			const std::vector<Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
 
 			Asset* soundAsset = nullptr;
 			bool soundFound = false;

@@ -40,7 +40,7 @@ namespace HBL2
 		std::vector<UUID> helperScriptUUIDs;
 		std::vector<UUID> systemUUIDs;
 
-		const std::vector<Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+		const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
 
 		for (auto handle : assetHandles)
 		{
