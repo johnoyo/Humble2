@@ -29,31 +29,31 @@ namespace HBL2
 		{
 		case AssetType::Texture:
 			asset->Indentifier = ImportTexture(asset).Pack();
-			asset->Loaded = true;
+			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
 		case AssetType::Shader:
 			asset->Indentifier = ImportShader(asset).Pack();
-			asset->Loaded = true;
+			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
 		case AssetType::Material:
 			asset->Indentifier = ImportMaterial(asset).Pack();
-			asset->Loaded = true;
+			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
 		case AssetType::Mesh:
 			asset->Indentifier = ImportMesh(asset).Pack();
-			asset->Loaded = true;
+			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
 		case AssetType::Scene:
 			asset->Indentifier = ImportScene(asset).Pack();
-			asset->Loaded = true;
+			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
 		case AssetType::Script:
 			asset->Indentifier = ImportScript(asset).Pack();
-			asset->Loaded = true;
+			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
 		case AssetType::Sound:
 			asset->Indentifier = ImportSound(asset).Pack();
-			asset->Loaded = true;
+			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
 		}
 
