@@ -10,6 +10,10 @@ namespace HBL2
 
 		s_Instance = this;
 
+		Allocator::Frame.Initialize(32_MB);
+		Allocator::Scene.Initialize(256_MB);
+		Allocator::App.Initialize(256_MB);
+
 		Log::Initialize();
 		Random::Initialize();
 		EventDispatcher::Initialize();
@@ -55,6 +59,15 @@ namespace HBL2
 
 		m_Specification.Context->EmptyScene = ResourceManager::Instance->CreateScene({ .name = "Empty Scene" });
 		m_Specification.Context->EditorScene = ResourceManager::Instance->CreateScene({ .name = "Editor Scene" });
+		
+		ShaderUtilities::Initialize();
+	}
+
+	Application::~Application()
+	{
+		Allocator::Frame.Free();
+		Allocator::Scene.Free();
+		Allocator::App.Free();
 	}
 
 	void Application::BeginFrame()
@@ -94,10 +107,6 @@ namespace HBL2
 
 	void Application::Start()
 	{
-		Allocator::Frame.Initialize(32_MB);
-		Allocator::Scene.Initialize(256_MB);
-		Allocator::App.Initialize(256_MB);
-
 		Window::Instance->Create();
 		
 		Input::Initialize();
@@ -137,6 +146,7 @@ namespace HBL2
 
 	void Application::Shutdown()
 	{
+
 		ImGuiRenderer::Instance->Clean();
 		delete ImGuiRenderer::Instance;
 		ImGuiRenderer::Instance = nullptr;
@@ -164,12 +174,9 @@ namespace HBL2
 		Input::ShutDown();
 		UnityBuild::Shutdown();
 		NativeScriptUtilities::Shutdown();
+		ShaderUtilities::Shutdown();
 		MeshUtilities::Shutdown();
 		EventDispatcher::Shutdown();
 		JobSystem::Shutdown();
-
-		Allocator::Frame.Free();
-		Allocator::Scene.Free();
-		Allocator::App.Free();
 	}
 }

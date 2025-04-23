@@ -91,6 +91,35 @@ namespace HBL2
         }
 
         /// <summary>
+        /// Constructor from a C-style string and length with a provided allocator.
+        /// </summary>
+        /// <param name="allocator">The allocator to use.</param>
+        /// <param name="str">The C-style string to copy.</param>
+        /// <param name="len">The string length.</param>
+        String(TAllocator* allocator, const char* str, size_t len)
+            : m_Allocator(allocator)
+        {
+            if (len < SSO_SIZE)
+            {
+                std::memcpy(m_SSOBuffer, str, len);
+                m_SSOBuffer[len] = '\0';
+                m_Size = static_cast<uint32_t>(len);
+                m_Capacity = SSO_SIZE;
+                m_IsUsingSSO = true;
+            }
+            else
+            {
+                m_Capacity = static_cast<uint32_t>(len * 2);
+                m_HeapData = Allocate(m_Capacity + 1);
+                std::memcpy(m_HeapData, str, len);
+                m_HeapData[len] = '\0';
+                m_Size = static_cast<uint32_t>(len);
+                m_IsUsingSSO = false;
+            }
+        }
+
+
+        /// <summary>
         /// Copy constructor.
         /// </summary>
         /// <param name="other">The string to copy from.</param>

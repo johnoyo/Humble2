@@ -146,7 +146,7 @@ namespace HBL2
 		Handle<Shader> Shader;
 		Handle<BindGroup> BindGroup;
 
-		ShaderDescriptor::RenderPipeline::Variant VariantDescriptor;
+		ShaderDescriptor::RenderPipeline::Variant VariantDescriptor = {};
 
 		glm::vec4 AlbedoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		float Glossiness = 3.0f;

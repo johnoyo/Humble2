@@ -53,10 +53,11 @@ namespace HBL2
 			Material* localMaterial0 = rm->GetMaterial(localDraw.Material);
 			VulkanShader* localShader0 = rm->GetShader(localMaterial0->Shader);
 
-			// VkPipeline pipeline = localShader0->GetVariantPipeline(localMaterial0->VariantDescriptor);
+			// Get pipeline from cache or create it. 
+			VkPipeline pipeline = localShader0->GetOrCreateVariant(localMaterial0->VariantDescriptor);
 
 			// Bind pipeline
-			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, localShader0->Pipeline);
+			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 			// Bind global descriptor set for per frame data.
 			if (globalBindGroup != nullptr)
@@ -87,8 +88,8 @@ namespace HBL2
 				// Bind the vertex buffers if needed.
 				bool rebindVertexBuffers = false;
 				uint32_t bufferCounter = 0;
-				StaticArray<VkBuffer, 3> buffers;
-				StaticArray<VkDeviceSize, 3> offsets;
+				StaticArray<VkBuffer, 3> buffers = {};
+				StaticArray<VkDeviceSize, 3> offsets = {};
 				HBL2_CORE_ASSERT(meshPart.VertexBuffers.size() <= 3, "Maximum number of vertex buffers is 3.");
 				for (const auto vertexBufferHandle : meshPart.VertexBuffers)
 				{

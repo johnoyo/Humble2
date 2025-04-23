@@ -57,17 +57,40 @@ namespace HBL2
 
 		static ShaderUtilities& Get();
 
+		static void Initialize();
+		static void Shutdown();
+
+		std::string ReadFile(const std::string& filepath);
+		std::vector<std::vector<uint32_t>> Compile(const std::string& shaderFilePath);
+		const ReflectionData& GetReflectionData(const std::string& shaderFilePath) { return m_ShaderReflectionData[shaderFilePath]; }
+
+		void LoadBuiltInShaders();
+		void DeleteBuiltInShaders();
+
+		Handle<Shader> GetBuiltInShader(BuiltInShader shader) { return m_Shaders[shader]; }
+		Handle<BindGroupLayout> GetBuiltInShaderLayout(BuiltInShader shader) { return m_ShaderLayouts[shader]; }
+		const Span<const Handle<Asset>> GetBuiltInShaderAssets() const { return { m_ShaderAssets.Data(), m_ShaderAssets.Size() }; }
+
+		void CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType);
+		void UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::Variant& newVariant);
+
+		void CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType);
+		void CreateMaterialAssetFile(Handle<Asset> handle, const MaterialDataDescriptor&& desc);
+
+	private:
+		ShaderUtilities() = default;
+
 		const char* GetCacheDirectory(GraphicsAPI target)
 		{
 			switch (target)
 			{
-			case GraphicsAPI::OPENGL:
-				return "assets/cache/shader/opengl";
-			case GraphicsAPI::VULKAN:
-				return "assets/cache/shader/vulkan";
-			default:
-				HBL2_CORE_ASSERT(false, "Stage not supported");
-				return "";
+				case GraphicsAPI::OPENGL:
+					return "assets/cache/shader/opengl";
+				case GraphicsAPI::VULKAN:
+					return "assets/cache/shader/vulkan";
+				default:
+					HBL2_CORE_ASSERT(false, "Stage not supported");
+					return "";
 			}
 		}
 
@@ -85,13 +108,13 @@ namespace HBL2
 		{
 			switch (stage)
 			{
-			case ShaderStage::VERTEX:
-				return ".cached_vulkan.vert";
-			case ShaderStage::FRAGMENT:
-				return ".cached_vulkan.frag";
-			default:
-				HBL2_CORE_ASSERT(false, "Stage not supported");
-				return "";
+				case ShaderStage::VERTEX:
+					return ".cached_vulkan.vert";
+				case ShaderStage::FRAGMENT:
+					return ".cached_vulkan.frag";
+				default:
+					HBL2_CORE_ASSERT(false, "Stage not supported");
+					return "";
 			}
 		}
 
@@ -99,13 +122,13 @@ namespace HBL2
 		{
 			switch (stage)
 			{
-			case ShaderStage::VERTEX:
-				return ".cached_opengl.vert";
-			case ShaderStage::FRAGMENT:
-				return ".cached_opengl.frag";
-			default:
-				HBL2_CORE_ASSERT(false, "Stage not supported");
-				return "";
+				case ShaderStage::VERTEX:
+					return ".cached_opengl.vert";
+				case ShaderStage::FRAGMENT:
+					return ".cached_opengl.frag";
+				default:
+					HBL2_CORE_ASSERT(false, "Stage not supported");
+					return "";
 			}
 		}
 
@@ -127,36 +150,16 @@ namespace HBL2
 		{
 			switch (stage)
 			{
-			case ShaderStage::VERTEX:
-				return "ShaderStage::VERTEX";
-			case ShaderStage::FRAGMENT:
-				return "ShaderStage::FRAGMENT";
-			default:
-				HBL2_CORE_ASSERT(false, "Stage not supported");
-				return "";
+				case ShaderStage::VERTEX:
+					return "ShaderStage::VERTEX";
+				case ShaderStage::FRAGMENT:
+					return "ShaderStage::FRAGMENT";
+				default:
+					HBL2_CORE_ASSERT(false, "Stage not supported");
+					return "";
 			}
 		}
 
-		std::string ReadFile(const std::string& filepath);
-
-		std::vector<std::vector<uint32_t>> Compile(const std::string& shaderFilePath);
-
-		const ReflectionData& GetReflectionData(const std::string& shaderFilePath) { return m_ShaderReflectionData[shaderFilePath]; }
-
-		void LoadBuiltInShaders();
-		void DeleteBuiltInShaders();
-
-		Handle<Shader> GetBuiltInShader(BuiltInShader shader) { return m_Shaders[shader]; }
-		Handle<BindGroupLayout> GetBuiltInShaderLayout(BuiltInShader shader) { return m_ShaderLayouts[shader]; }
-
-		void CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType);
-		void UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::Variant& newVariant);
-
-		void CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType);
-		void CreateMaterialAssetFile(Handle<Asset> handle, const MaterialDataDescriptor&& desc);
-
-	private:
-		ShaderUtilities() = default;
 		std::vector<uint32_t> Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage);
 		ReflectionData Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData);
 
@@ -164,5 +167,9 @@ namespace HBL2
 		std::unordered_map<std::string, ReflectionData> m_ShaderReflectionData;
 		std::unordered_map<BuiltInShader, Handle<Shader>> m_Shaders;
 		std::unordered_map<BuiltInShader, Handle<BindGroupLayout>> m_ShaderLayouts;
+
+		DynamicArray<Handle<Asset>, BinAllocator> m_ShaderAssets = MakeDynamicArray<Handle<Asset>>(&Allocator::App);
+
+		static ShaderUtilities* s_Instance;
 	};
 }

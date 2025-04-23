@@ -25,7 +25,7 @@ namespace HBL2
 	{
 	public:
 		VkPipeline GetOrCreatePipeline(const PipelineConfig& config);
-		VkPipeline GetPipeline(const ShaderDescriptor::RenderPipeline::Variant& variantDesc);
+		bool ContainsPipeline(const ShaderDescriptor::RenderPipeline::Variant& variantDesc);
 		void Destroy();
 
 	private:

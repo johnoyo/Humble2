@@ -155,6 +155,7 @@ namespace HBL2
         virtual void Free() override
         {
             ::operator delete(m_Data);
+			m_Data = nullptr;
             m_Capacity = 0;
             m_CurrentOffset = 0;
 			m_AllocatedBytes = 0;

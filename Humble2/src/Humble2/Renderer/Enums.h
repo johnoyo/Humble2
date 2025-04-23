@@ -71,14 +71,14 @@ namespace HBL2
 
 	enum class Compare
 	{
-		LESS = 1,
-		LESS_OR_EQUAL = 2,
-		GREATER = 3,
-		GREATER_OR_EQUAL = 4,
-		EQUAL = 5,
-		NOT_EQUAL = 6,
-		ALAWAYS = 7,
-		NEVER = 8,
+		LESS = 0,
+		LESS_OR_EQUAL,
+		GREATER,
+		GREATER_OR_EQUAL,
+		EQUAL,
+		NOT_EQUAL,
+		ALAWAYS,
+		NEVER,
 	};
 
 	enum class Wrap

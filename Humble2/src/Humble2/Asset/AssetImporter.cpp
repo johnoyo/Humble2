@@ -202,7 +202,10 @@ namespace HBL2
 
 	Handle<Shader> AssetImporter::ImportShader(Asset* asset)
     {
-		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblshader");
+		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+
+		std::ifstream stream(shaderPath.string() + ".hblshader");
 
 		if (!stream.is_open())
 		{
@@ -246,6 +249,10 @@ namespace HBL2
 			case 2:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
 				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR);
+				break;
+			case 3:
+				globalBindGroupLayout = Renderer::Instance->GetGlobalPresentBindingsLayout();
+				drawBindGroupLayout = {};
 				break;
 			default:
 				HBL2_CORE_ERROR("Unknown Shader type: {0}", asset->DebugName);
@@ -293,7 +300,6 @@ namespace HBL2
 		}
 
 		// Compile Shader.
-		const std::filesystem::path& shaderPath = Project::GetAssetFileSystemPath(asset->FilePath);
 		const auto& shaderCode = ShaderUtilities::Get().Compile(shaderPath.string());
 
 		if (shaderCode.empty())
@@ -446,12 +452,26 @@ namespace HBL2
 				{
 					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PBR);
 				}
+
+				const auto& builtInShaderAssets = ShaderUtilities::Get().GetBuiltInShaderAssets();
+
+				for (const auto shaderAssetHandle : builtInShaderAssets)
+				{
+					Asset* asset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+					
+					if (shaderHandle.Pack() == asset->Indentifier)
+					{
+						shaderUUID = asset->UUID;
+						break;
+					}
+				}
 			}
-			else
-			{
-				ResourceManager::Instance->AddShaderVariant(shaderHandle, variantDesc);	
-				ShaderUtilities::Get().UpdateShaderVariantMetadataFile(shaderUUID, variantDesc);
-			}
+
+			HBL2_CORE_ASSERT(shaderHandle.IsValid(), "Error while trying to load shader of material!");
+			HBL2_CORE_ASSERT(shaderUUID != 0, "Error while trying to load shader of material!");
+
+			ResourceManager::Instance->AddShaderVariant(shaderHandle, variantDesc);	
+			ShaderUtilities::Get().UpdateShaderVariantMetadataFile(shaderUUID, variantDesc);
 
 			// If albedo map is not set use the built in white texture.
 			if (!albedoMapHandle.IsValid())

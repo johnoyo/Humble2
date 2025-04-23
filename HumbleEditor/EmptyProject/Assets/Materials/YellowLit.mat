@@ -11,6 +11,6 @@ Material:
     ColorOutputEnabled: true
   DepthState:
     Enabled: true
-    WriteEnabled: true
+    WriteEnabled: false
     StencilEnabled: true
     DepthTest: 1

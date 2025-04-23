@@ -22,9 +22,9 @@ namespace HBL2
 		return outPipeline;
 	}
 
-	VkPipeline PipelineCache::GetPipeline(const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
+	bool PipelineCache::ContainsPipeline(const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
 	{
-		return m_PipelineCache[variantDesc];
+		return m_PipelineCache.ContainsKey(variantDesc);
 	}
 
 	void PipelineCache::Destroy()

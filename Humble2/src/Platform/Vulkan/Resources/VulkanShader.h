@@ -16,8 +16,7 @@ namespace HBL2
 		VulkanShader() = default;
 		VulkanShader(const ShaderDescriptor&& desc);
 
-		void AddVariant(const ShaderDescriptor::RenderPipeline::Variant& variantDesc);
-		VkPipeline GetVariantPipeline(const ShaderDescriptor::RenderPipeline::Variant& variantDesc);
+		VkPipeline GetOrCreateVariant(const ShaderDescriptor::RenderPipeline::Variant& variantDesc);
 
 		void Destroy()
 		{

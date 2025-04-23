@@ -30,6 +30,7 @@
 #include "Utilities\JobSystem.h"
 #include "Utilities\Random.h"
 #include "Utilities\MeshUtilities.h"
+#include "Utilities\ShaderUtilities.h"
 #include "Utilities\NativeScriptUtilities.h"
 #include "Utilities\UnityBuild.h"
 
@@ -66,7 +67,7 @@ namespace HBL2
 	{
 	public:
 		Application(ApplicationSpec& specification);
-		~Application() = default;
+		~Application();
 
 		void Start();
 

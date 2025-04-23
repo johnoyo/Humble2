@@ -14,69 +14,70 @@ namespace HBL2
 		DebugName = desc.debugName;
 		VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
 		RenderPass = rm->GetRenderPass(desc.renderPass)->RenderPass;
-
-#if 0
+#if 1
+		// Vertex shader module.
 		{
-			// Vertex shader module.
+			VkShaderModuleCreateInfo createInfo =
 			{
-				VkShaderModuleCreateInfo createInfo =
-				{
-					.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-					.pNext = nullptr,
-					.codeSize = 4 * desc.VS.code.Size(),
-					.pCode = reinterpret_cast<const uint32_t *>(desc.VS.code.Data()),
-				};
-				VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &VertexShaderModule), "vkCreateShaderModule");
-			}
+				.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+				.pNext = nullptr,
+				.codeSize = 4 * desc.VS.code.Size(),
+				.pCode = reinterpret_cast<const uint32_t *>(desc.VS.code.Data()),
+			};
+			VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &VertexShaderModule), "vkCreateShaderModule");
+		}
 
-			// Fragment shader module.
+		// Fragment shader module.
+		{
+			VkShaderModuleCreateInfo createInfo =
 			{
-				VkShaderModuleCreateInfo createInfo =
-				{
-					.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-					.pNext = nullptr,
-					.codeSize = 4 * desc.FS.code.Size(),
-					.pCode = reinterpret_cast<const uint32_t *>(desc.FS.code.Data()),
-				};
-				VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &FragmentShaderModule), "vkCreateShaderModule");
-			}
+				.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+				.pNext = nullptr,
+				.codeSize = 4 * desc.FS.code.Size(),
+				.pCode = reinterpret_cast<const uint32_t *>(desc.FS.code.Data()),
+			};
+			VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &FragmentShaderModule), "vkCreateShaderModule");
+		}
 
-			// Pipeline layout.
-			std::vector<VkDescriptorSetLayout> setLayouts;
+		// Pipeline layout.
+		std::vector<VkDescriptorSetLayout> setLayouts;
 
-			for (const auto& bindGroup : desc.bindGroups)
+		for (const auto& bindGroup : desc.bindGroups)
+		{
+			if (bindGroup.IsValid())
 			{
 				VulkanBindGroupLayout* vkBindGroupLayout = rm->GetBindGroupLayout(bindGroup);
 				setLayouts.push_back(vkBindGroupLayout->DescriptorSetLayout);
 			}
-
-			VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
-			{
-				.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-				.pNext = nullptr,
-				.flags = 0,
-				.setLayoutCount = (uint32_t)setLayouts.size(),
-				.pSetLayouts = setLayouts.data(),
-				.pushConstantRangeCount = 0,
-				.pPushConstantRanges = nullptr,
-			};
-
-			VK_VALIDATE(vkCreatePipelineLayout(device->Get(), &pipelineLayoutCreateInfo, nullptr, &PipelineLayout), "vkCreatePipelineLayout");
-
-			// Create shader variants.
-			for (const auto&& variant : desc.renderPipeline.variants)
-			{
-				s_PipelineCache.GetOrCreatePipeline( {
-					.shaderModules = { VertexShaderModule, FragmentShaderModule },
-					.shaderModuleCount = 2,
-					.variantDesc = variant,
-					.pipelineLayout = PipelineLayout,
-					.renderPass = RenderPass,
-					.vertexBufferBindings = VertexBufferBindings,
-				});
-			}
 		}
-#endif
+
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.setLayoutCount = (uint32_t)setLayouts.size(),
+			.pSetLayouts = setLayouts.data(),
+			.pushConstantRangeCount = 0,
+			.pPushConstantRanges = nullptr,
+		};
+
+		VK_VALIDATE(vkCreatePipelineLayout(device->Get(), &pipelineLayoutCreateInfo, nullptr, &PipelineLayout), "vkCreatePipelineLayout");
+
+		// Create shader variants.
+		for (const auto& variant : desc.renderPipeline.variants)
+		{
+			s_PipelineCache.GetOrCreatePipeline( {
+				.shaderModules = { VertexShaderModule, FragmentShaderModule },
+				.entryPoints = { desc.VS.entryPoint, desc.FS.entryPoint },
+				.shaderModuleCount = 2,
+				.variantDesc = variant,
+				.pipelineLayout = PipelineLayout,
+				.renderPass = RenderPass,
+				.vertexBufferBindings = VertexBufferBindings,
+			});
+		}
+#else
 
 		VkPipelineShaderStageCreateInfo shaderStages[2]{};
 		shaderStages[0] = CreateShaderStageInfo(VK_SHADER_STAGE_VERTEX_BIT, VertexShaderModule, desc.VS);
@@ -129,8 +130,11 @@ namespace HBL2
 
 		for (const auto& bindGroup : desc.bindGroups)
 		{
-			VulkanBindGroupLayout* vkBindGroupLayout = rm->GetBindGroupLayout(bindGroup);
-			setLayouts.push_back(vkBindGroupLayout->DescriptorSetLayout);
+			if (bindGroup.IsValid())
+			{
+				VulkanBindGroupLayout* vkBindGroupLayout = rm->GetBindGroupLayout(bindGroup);
+				setLayouts.push_back(vkBindGroupLayout->DescriptorSetLayout);
+			}
 		}
 
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
@@ -170,11 +174,17 @@ namespace HBL2
 		{
 			HBL2_CORE_ERROR("Failed to create pipeline of shader: {}.", DebugName);
 		}
+#endif
 	}
 
-	void VulkanShader::AddVariant(const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
+	VkPipeline VulkanShader::GetOrCreateVariant(const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
 	{
-		s_PipelineCache.GetOrCreatePipeline({
+		if (!s_PipelineCache.ContainsPipeline(variantDesc))
+		{
+			HBL2_CORE_WARN("Vulkan Pipeline Cache does not contain key! Loading from scratch which might cause stutters!");
+		}
+
+		return s_PipelineCache.GetOrCreatePipeline({
 			.shaderModules = { VertexShaderModule, FragmentShaderModule },
 			.entryPoints = { "main", "main" },
 			.shaderModuleCount = 2,
@@ -183,11 +193,6 @@ namespace HBL2
 			.renderPass = RenderPass,
 			.vertexBufferBindings = VertexBufferBindings,
 		});
-	}
-
-	VkPipeline VulkanShader::GetVariantPipeline(const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
-	{
-		return s_PipelineCache.GetPipeline(variantDesc);
 	}
 
 	VkPipelineShaderStageCreateInfo VulkanShader::CreateShaderStageInfo(VkShaderStageFlagBits shaderStage, VkShaderModule& shaderModule, const ShaderDescriptor::ShaderStage& stage)

@@ -14,9 +14,9 @@ namespace HBL2
 				{
 					if (ImGui::MenuItem("New Project"))
 					{
-						std::string filepath = HBL2::FileDialogs::SaveFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), { "Humble Project Files (*.hblproj)", "*.hblproj" });
+						const std::string& filepath = HBL2::FileDialogs::SaveFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), { "Humble Project Files (*.hblproj)", "*.hblproj" });
 
-						std::string projectName = std::filesystem::path(filepath).filename().stem().string();
+						const std::string& projectName = std::filesystem::path(filepath).filename().stem().string();
 
 						// Clean up registered systems.
 						for (ISystem* system : m_ActiveScene->GetSystems())
@@ -47,7 +47,7 @@ namespace HBL2
 					}
 					else if (ImGui::MenuItem("Open Project"))
 					{
-						std::string filepath = HBL2::FileDialogs::OpenFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), {"Humble Project Files (*.hblproj)", "*.hblproj"});
+						const std::string& filepath = HBL2::FileDialogs::OpenFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), {"Humble Project Files (*.hblproj)", "*.hblproj"});
 
 						for (ISystem* system : m_ActiveScene->GetSystems())
 						{

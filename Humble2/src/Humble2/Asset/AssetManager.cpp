@@ -1,6 +1,7 @@
 #include "AssetManager.h"
 
 #include "Project\Project.h"
+#include "Utilities/ShaderUtilities.h"
 
 namespace HBL2
 {
@@ -100,12 +101,41 @@ namespace HBL2
 	{
 		WaitForAsyncJobs();
 		
-		for (auto handle : m_RegisteredAssets)
+		const auto& builtInShaderAssets = ShaderUtilities::Get().GetBuiltInShaderAssets();
+
+		for (const auto handle : m_RegisteredAssets)
 		{
+			// Skip if is a built in shader asset.
+			bool isBuiltInShaderAsset = false;
+
+			for (const auto shaderAssetHandle : builtInShaderAssets)
+			{
+				if (handle == shaderAssetHandle)
+				{
+					isBuiltInShaderAsset = true;
+					break;
+				}
+			}
+
+			if (isBuiltInShaderAsset)
+			{
+				continue;
+			}
+
+			// Delete assets.
 			DeleteAsset(handle);
 		}
 
+		// Clear asset handle caches.
 		m_RegisteredAssets.Clear();
 		m_RegisteredAssetMap.Clear();
+
+		// Reregister built in shader assets.
+		for (const auto shaderAssetHandle : builtInShaderAssets)
+		{
+			m_RegisteredAssets.Add(shaderAssetHandle);
+			Asset* asset = GetAssetMetadata(shaderAssetHandle);
+			m_RegisteredAssetMap[asset->UUID] = shaderAssetHandle;
+		}
 	}
 }

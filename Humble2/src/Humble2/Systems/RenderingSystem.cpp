@@ -149,8 +149,12 @@ namespace HBL2
 			}
 		});
 
-		// Create pre-pass shader.
+		// Create pre-pass shaders.
 		const auto& prePassShaderCode = ShaderUtilities::Get().Compile("assets/shaders/pre-pass-mesh.shader");
+
+		ShaderDescriptor::RenderPipeline::Variant variant = {};
+		variant.blend.colorOutput = false;
+		variant.blend.enabled = false;
 
 		m_DepthOnlyShader = ResourceManager::Instance->CreateShader({
 			.debugName = "mesh-pre-pass-shader",
@@ -174,10 +178,13 @@ namespace HBL2
 							{ .byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
-				}
+				},
+				.variants = { variant },
 			},
 			.renderPass = m_DepthOnlyRenderPass,
 		});
+
+		ResourceManager::Instance->AddShaderVariant(m_DepthOnlyShader, variant);
 
 		const auto& prePassSpriteShaderCode = ShaderUtilities::Get().Compile("assets/shaders/pre-pass-sprite.shader");
 
@@ -202,23 +209,32 @@ namespace HBL2
 							{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
-				}
+				},
+				.variants = { variant },
 			},
 			.renderPass = m_DepthOnlyRenderPass,
 		});
 
-		// Create pre-pass material.
+		ResourceManager::Instance->AddShaderVariant(m_DepthOnlySpriteShader, variant);
+
+		// Create pre-pass materials.
 		m_DepthOnlyMaterial = ResourceManager::Instance->CreateMaterial({
 			.debugName = "depth-only-mesh-material",
 			.shader = m_DepthOnlyShader,
 			.bindGroup = m_DepthOnlyBindGroup,
 		});
 
+		Material* mat0 = ResourceManager::Instance->GetMaterial(m_DepthOnlyMaterial);
+		mat0->VariantDescriptor = variant;
+
 		m_DepthOnlySpriteMaterial = ResourceManager::Instance->CreateMaterial({
 			.debugName = "depth-only-sprite-material",
 			.shader = m_DepthOnlySpriteShader,
 			.bindGroup = m_DepthOnlySpriteBindGroup,
 		});
+
+		Material* mat1 = ResourceManager::Instance->GetMaterial(m_DepthOnlySpriteMaterial);
+		mat1->VariantDescriptor = variant;
 	}
 
 	void RenderingSystem::OpaquePassSetup()

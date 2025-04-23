@@ -160,7 +160,7 @@ namespace HBL2
 			VulkanShader* shader = GetShader(handle);
 			if (shader != nullptr)
 			{
-				shader->AddVariant(variantDesc);
+				shader->GetOrCreateVariant(variantDesc);
 			}
 		}
 		VulkanShader* GetShader(Handle<Shader> handle) const
