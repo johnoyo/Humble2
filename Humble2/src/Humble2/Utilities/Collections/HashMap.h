@@ -446,7 +446,7 @@ namespace HBL2
 		{
 			if (m_Allocator == nullptr)
 			{
-				Entry* data = (Entry*)operator new(size);
+				Entry* data = (Entry*)std::malloc(size);
 				memset(data, 0, size);				
 				return data;
 			}
@@ -458,7 +458,11 @@ namespace HBL2
 		{
 			if (m_Allocator == nullptr)
 			{
-				operator delete(ptr);
+                if (ptr != nullptr)
+                {
+				    std::free(ptr);
+                }
+
 				return;
 			}
 

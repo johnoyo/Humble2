@@ -148,6 +148,7 @@ namespace HBL2
 
 			struct Variant
 			{
+				UUID shaderHashKey = 0;
 				BlendState blend{};
 				DepthTest depthTest{};
 				Topology topology = Topology::TRIANGLE_LIST;
@@ -174,16 +175,11 @@ namespace HBL2
 						topology == other.topology &&
 						polygonMode == other.polygonMode &&
 						cullMode == other.cullMode &&
-						frontFace == other.frontFace;
+						frontFace == other.frontFace &&
+
+						shaderHashKey == other.shaderHashKey;
 				}
 			};
-
-			BlendState blend;
-			DepthTest depthTest;
-			Topology topology = Topology::TRIANGLE_LIST;
-			PolygonMode polygonMode = PolygonMode::FILL;
-			CullMode cullMode = CullMode::NONE;
-			FrontFace frontFace = FrontFace::CLOCKWISE;
 
 			std::initializer_list<VertexBufferBinding> vertexBufferBindings;
 
@@ -317,6 +313,9 @@ namespace std
 			hash_combine(h, std::hash<int>()(static_cast<int>(v.polygonMode)));
 			hash_combine(h, std::hash<int>()(static_cast<int>(v.cullMode)));
 			hash_combine(h, std::hash<int>()(static_cast<int>(v.frontFace)));
+
+			// Shader hash key
+			hash_combine(h, std::hash<HBL2::UUID>()(static_cast<HBL2::UUID>(v.shaderHashKey)));
 
 			return h;
 		}

@@ -9,7 +9,7 @@ namespace HBL2
 		m_Draws[draw.Shader.HashKey()].push_back(draw);
 #else
 		Material* mat = ResourceManager::Instance->GetMaterial(draw.Material);
-		uint32_t hash = ResourceManager::Instance->GetShaderVariantHash(draw.Shader, mat->VariantDescriptor);
+		uint64_t hash = ResourceManager::Instance->GetShaderVariantHash(mat->VariantDescriptor);
 
 		m_Draws[hash].push_back(draw);
 

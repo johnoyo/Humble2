@@ -268,6 +268,9 @@ namespace HBL2
 				for (const YAML::Node& variantNode : shaderVariantsProperty)
 				{
 					ShaderDescriptor::RenderPipeline::Variant variant = {};
+
+					// Set shader hash key from asset UUID.
+					variant.shaderHashKey = asset->UUID;
 						
 					// Retrieve blend state.
 					const auto& blendStateProp = variantNode["BlendState"];
@@ -322,19 +325,6 @@ namespace HBL2
 				drawBindGroupLayout,	// Material bind group (1)
 			},
 			.renderPipeline {
-				.blend = {
-					.colorOp = BlendOperation::ADD,
-					.srcColorFactor = BlendFactor::SRC_ALPHA,
-					.dstColorFactor = BlendFactor::ONE_MINUS_SRC_ALPHA, // TODO: get them from the shader file.
-					.alphaOp = BlendOperation::ADD,
-					.srcAlphaFactor = BlendFactor::ONE,
-					.dstAlphaFactor = BlendFactor::ZERO,
-					.enabled = true,
-				},
-				.depthTest = {
-					.writeEnabled = false,
-					.depthTest = Compare::LESS_OR_EQUAL,
-				},
 				.vertexBufferBindings = {
 					{
 						.byteStride = reflectionData.ByteStride,
@@ -470,7 +460,9 @@ namespace HBL2
 			HBL2_CORE_ASSERT(shaderHandle.IsValid(), "Error while trying to load shader of material!");
 			HBL2_CORE_ASSERT(shaderUUID != 0, "Error while trying to load shader of material!");
 
-			ResourceManager::Instance->AddShaderVariant(shaderHandle, variantDesc);	
+			variantDesc.shaderHashKey = shaderUUID;
+
+			ResourceManager::Instance->AddShaderVariant(shaderHandle, variantDesc);
 			ShaderUtilities::Get().UpdateShaderVariantMetadataFile(shaderUUID, variantDesc);
 
 			// If albedo map is not set use the built in white texture.

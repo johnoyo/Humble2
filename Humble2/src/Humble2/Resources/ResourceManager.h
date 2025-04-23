@@ -51,9 +51,9 @@ namespace HBL2
 		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) = 0;
 		virtual void DeleteShader(Handle<Shader> handle) = 0;
 		virtual void AddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::Variant& variantDesc) = 0;
-		uint32_t GetShaderVariantHash(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
+		uint64_t GetShaderVariantHash(const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
 		{
-			return handle.HashKey() + std::hash<ShaderDescriptor::RenderPipeline::Variant>()(variantDesc);
+			return std::hash<ShaderDescriptor::RenderPipeline::Variant>()(variantDesc);
 		}
 
 		// BindGroups

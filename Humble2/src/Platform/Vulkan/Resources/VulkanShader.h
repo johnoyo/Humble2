@@ -26,7 +26,6 @@ namespace HBL2
 			vkDestroyShaderModule(device->Get(), FragmentShaderModule, nullptr);
 
 			vkDestroyPipelineLayout(device->Get(), PipelineLayout, nullptr);
-			vkDestroyPipeline(device->Get(), Pipeline, nullptr);
 		}
 
 		static PipelineCache& GetPipelineCache()
@@ -35,7 +34,6 @@ namespace HBL2
 		}
 
 		const char* DebugName = "";
-		VkPipeline Pipeline = VK_NULL_HANDLE;
 		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
 		VkRenderPass RenderPass = VK_NULL_HANDLE;
 		VkShaderModule VertexShaderModule = VK_NULL_HANDLE;

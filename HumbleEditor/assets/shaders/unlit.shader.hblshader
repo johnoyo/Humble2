@@ -2,12 +2,12 @@ Shader:
   UUID: 14674454425146480053
   Type: 0
   Variants:
-    - Variant: 2348041300
+    - Variant: 13587506063032033252
       BlendState:
         Enabled: true
         ColorOutputEnabled: true
       DepthState:
         Enabled: true
-        WriteEnabled: false
+        WriteEnabled: true
         StencilEnabled: true
-        DepthTest: 1
+        DepthTest: 0

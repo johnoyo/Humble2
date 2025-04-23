@@ -155,6 +155,7 @@ namespace HBL2
 		ShaderDescriptor::RenderPipeline::Variant variant = {};
 		variant.blend.colorOutput = false;
 		variant.blend.enabled = false;
+		variant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
 
 		m_DepthOnlyShader = ResourceManager::Instance->CreateShader({
 			.debugName = "mesh-pre-pass-shader",
@@ -165,10 +166,6 @@ namespace HBL2
 				m_DepthOnlyBindGroupLayout,							// (1)
 			},
 			.renderPipeline {
-				.blend = {
-					.colorOutput = false,
-					.enabled = false,
-				},
 				.vertexBufferBindings = {
 					{
 						.byteStride = 32,
@@ -197,10 +194,6 @@ namespace HBL2
 				m_DepthOnlyBindGroupLayout,							// (1)
 			},
 			.renderPipeline {
-				.blend = {
-					.colorOutput = false,
-					.enabled = false,
-				},
 				.vertexBufferBindings = {
 					{
 						.byteStride = 20,

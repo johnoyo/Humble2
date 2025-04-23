@@ -55,7 +55,7 @@ namespace HBL2
 		void Insert(const LocalDrawStream&& draw)
 		{
 			Material* mat = ResourceManager::Instance->GetMaterial(draw.Material);
-			uint32_t hash = ResourceManager::Instance->GetShaderVariantHash(draw.Shader, mat->VariantDescriptor);
+			uint64_t hash = ResourceManager::Instance->GetShaderVariantHash(mat->VariantDescriptor);
 
 			if (!m_Draws.ContainsKey(hash))
 			{

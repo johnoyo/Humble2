@@ -7,11 +7,11 @@ namespace HBL2
 {
 	ShaderUtilities* ShaderUtilities::s_Instance = nullptr;
 
-	static bool VariantExists(const YAML::Node& existingVariants, uint32_t newVariantHash)
+	static bool VariantExists(const YAML::Node& existingVariants, uint64_t newVariantHash)
 	{
 		for (const auto& variant : existingVariants)
 		{
-			if (variant["Variant"].as<uint32_t>() == newVariantHash)
+			if (variant["Variant"].as<uint64_t>() == newVariantHash)
 			{
 				return true;
 			}
@@ -20,7 +20,7 @@ namespace HBL2
 		return false;
 	}
 
-	static YAML::Node VariantToYAMLNode(uint32_t newVariantHash, const ShaderDescriptor::RenderPipeline::Variant& variant)
+	static YAML::Node VariantToYAMLNode(uint64_t newVariantHash, const ShaderDescriptor::RenderPipeline::Variant& variant)
 	{
 		YAML::Node baseVariant;
 
@@ -490,7 +490,7 @@ namespace HBL2
 		std::ofstream fout(path.string() + ".hblshader", 0);
 
 		Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(handle);
-		uint32_t variantHash = ResourceManager::Instance->GetShaderVariantHash(shaderHandle, {});
+		uint64_t variantHash = ResourceManager::Instance->GetShaderVariantHash({});
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;
@@ -545,7 +545,7 @@ namespace HBL2
 		YAML::Node root = YAML::LoadFile(filePath.string() + ".hblshader");
 		YAML::Node variants = root["Shader"]["Variants"];
 
-		uint32_t newVariantHash = ResourceManager::Instance->GetShaderVariantHash(shaderHandle, newVariant);
+		uint64_t newVariantHash = ResourceManager::Instance->GetShaderVariantHash(newVariant);
 
 		if (!VariantExists(variants, newVariantHash))
 		{

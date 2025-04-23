@@ -44,7 +44,7 @@ namespace HBL2
 		}
 
 		Handle<Buffer> prevIndexBuffer;
-		StaticArray<Handle<Buffer>, 3> prevVertexBuffers;
+		StaticArray<Handle<Buffer>, 3> prevVertexBuffers = {};
 
 		for (auto&& [shaderID, drawList] : draws.GetDraws())
 		{
