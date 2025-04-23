@@ -22,6 +22,8 @@ namespace HBL2
 	{
 		HBL2_CORE_ASSERT(s_Instance != nullptr, "MeshUtilities::s_Instance is null!");
 
+		s_Instance->m_LoadedMeshes.clear();
+
 		delete s_Instance->m_UFbxLoader;
 		s_Instance->m_UFbxLoader = nullptr;
 
@@ -61,5 +63,10 @@ namespace HBL2
 
 		return m_LoadedMeshes[path.string()];
     }
+
+	void MeshUtilities::ClearCachedHandles()
+	{
+		m_LoadedMeshes.clear();
+	}
 }
 

@@ -10,7 +10,7 @@
 
 namespace HBL2
 {
-	class MeshUtilities
+	class HBL2_API MeshUtilities
 	{
 	public:
 		MeshUtilities(const MeshUtilities&) = delete;
@@ -21,6 +21,7 @@ namespace HBL2
 		static void Shutdown();
 
 		Handle<Mesh> Load(const std::filesystem::path& path);
+		void ClearCachedHandles();
 
 	private:
 		MeshUtilities() = default;
