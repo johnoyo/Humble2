@@ -323,19 +323,11 @@ namespace HBL2
 		template<typename U>
 		static void Deallocate(TAllocator* allocator, U* ptr)
 		{
-			if (allocator == nullptr)
-			{
-				if constexpr (std::is_array_v<U>)
-				{
-					delete[] ptr;
-				}
-				else
-				{
-					delete ptr;
-				}
-
-				return;
-			}
+            if (allocator == nullptr)
+            {
+                operator delete ptr;
+                return;
+            }
 
 			allocator->Deallocate<U>(ptr);
 		}

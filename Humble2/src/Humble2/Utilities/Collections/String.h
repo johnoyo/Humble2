@@ -7,44 +7,47 @@
 
 namespace HBL2
 {
-    /// <summary>
-    /// A string class that uses Small String Optimization (SSO) for small strings
-    /// and dynamically allocates memory for larger strings.
-    /// </summary>
-    /// <typeparam name="TAllocator">The allocator type to use for memory management.</typeparam>
+    /**
+     * @brief A string class that uses Small String Optimization (SSO) for small strings and dynamically allocates memory for larger strings.
+     *
+     * @tparam TAllocator The allocator type to use for memory management.
+     */
     template<typename TAllocator = StandardAllocator>
     class String
     {
     public:
-        /// <summary>
-        /// The size threshold for Small String Optimization.
-        /// Strings smaller than this size will be stored inline.
-        /// </summary>
+        /**
+         * @brief The size threshold for Small String Optimization.
+         *
+         * Strings smaller than this size will be stored inline.
+         */
         static constexpr size_t SSO_SIZE = 16;
 
-        /// <summary>
-        /// Default constructor. Creates an empty string.
-        /// </summary>
+        /**
+         * @brief Default constructor. Creates an empty string.
+         */
         String() : m_Size(0), m_Capacity(SSO_SIZE), m_HeapData(nullptr), m_Allocator(nullptr)
         {
             m_SSOBuffer[0] = '\0';
             m_IsUsingSSO = true;
         }
 
-        /// <summary>
-        /// Constructor with a provided allocator.
-        /// </summary>
-        /// <param name="allocator">The allocator to use.</param>
+        /**
+         * @brief Constructor with a provided allocator.
+         *
+         * @param allocator The allocator to use.
+         */
         String(TAllocator* allocator) : m_Size(0), m_Capacity(SSO_SIZE), m_HeapData(nullptr), m_Allocator(allocator)
         {
             m_SSOBuffer[0] = '\0';
             m_IsUsingSSO = true;
         }
 
-        /// <summary>
-        /// Constructor from a C-style string.
-        /// </summary>
-        /// <param name="str">The C-style string to copy.</param>
+        /**
+         * @brief Constructor from a C-style string.
+         *
+         * @param str The C-style string to copy.
+         */
         String(const char* str) : m_Allocator(nullptr)
         {
             size_t len = std::strlen(str);
@@ -57,19 +60,20 @@ namespace HBL2
             }
             else
             {
-                m_Capacity = m_Size * 2;
-                m_HeapData = m_Allocator->Allocate<char>(len + 1);
-                std::memcpy(m_HeapData, str, len + 1);
                 m_Size = len;
+                m_Capacity = m_Size * 2;
+                m_HeapData = Allocate(len + 1);
+                std::memcpy(m_HeapData, str, len + 1);
                 m_IsUsingSSO = false;
             }
         }
 
-        /// <summary>
-        /// Constructor from a C-style string with a provided allocator.
-        /// </summary>
-        /// <param name="allocator">The allocator to use.</param>
-        /// <param name="str">The C-style string to copy.</param>
+        /**
+         * @brief Constructor from a C-style string with a provided allocator.
+         *
+         * @param allocator The allocator to use.
+         * @param str The C-style string to copy.
+         */
         String(TAllocator* allocator, const char* str) : m_Allocator(allocator)
         {
             size_t len = std::strlen(str);
@@ -82,20 +86,21 @@ namespace HBL2
             }
             else
             {
-                m_Capacity = m_Size * 2;
-                m_HeapData = m_Allocator->Allocate<char>(len + 1);
-                std::memcpy(m_HeapData, str, len + 1);
                 m_Size = len;
+                m_Capacity = m_Size * 2;
+                m_HeapData = Allocate(len + 1);
+                std::memcpy(m_HeapData, str, len + 1);
                 m_IsUsingSSO = false;
             }
         }
 
-        /// <summary>
-        /// Constructor from a C-style string and length with a provided allocator.
-        /// </summary>
-        /// <param name="allocator">The allocator to use.</param>
-        /// <param name="str">The C-style string to copy.</param>
-        /// <param name="len">The string length.</param>
+        /**
+         * @brief Constructor from a C-style string and length with a provided allocator.
+         *
+         * @param allocator The allocator to use.
+         * @param str The C-style string to copy.
+         * @param len The string length.
+         */
         String(TAllocator* allocator, const char* str, size_t len)
             : m_Allocator(allocator)
         {
@@ -118,17 +123,18 @@ namespace HBL2
             }
         }
 
-
-        /// <summary>
-        /// Copy constructor.
-        /// </summary>
-        /// <param name="other">The string to copy from.</param>
+        /**
+         * @brief Copy constructor.
+         *
+         * @param other The string to copy from.
+         */
         String(const String& other) : m_Allocator(other.m_Allocator) { CopyFrom(other); }
 
-        /// <summary>
-        /// Move constructor.
-        /// </summary>
-        /// <param name="other">The string to move from.</param>
+        /**
+         * @brief Move constructor.
+         *
+         * @param other The string to move from.
+         */
         String(String&& other) noexcept
             : m_Size(other.m_Size), m_Capacity(other.m_Capacity), m_IsUsingSSO(other.m_IsUsingSSO), m_Allocator(other.m_Allocator)
         {
@@ -148,16 +154,17 @@ namespace HBL2
             other.m_SSOBuffer[0] = '\0';
         }
 
-        /// <summary>
-        /// Destructor.
-        /// </summary>
+        /**
+         * @brief Destructor.
+         */
         ~String() { Clear(); }
 
-        /// <summary>
-        /// Copy assignment operator.
-        /// </summary>
-        /// <param name="other">The string to copy from.</param>
-        /// <returns>Reference to this string.</returns>
+        /**
+         * @brief Copy assignment operator.
+         *
+         * @param other The string to copy from.
+         * @return Reference to this string.
+         */
         String& operator=(const String& other)
         {
             if (this != &other)
@@ -168,11 +175,12 @@ namespace HBL2
             return *this;
         }
 
-        /// <summary>
-        /// Move assignment operator.
-        /// </summary>
-        /// <param name="other">The string to move from.</param>
-        /// <returns>Reference to this string.</returns>
+        /**
+         * @brief Move assignment operator.
+         *
+         * @param other The string to move from.
+         * @return Reference to this string.
+         */
         String& operator=(String&& other) noexcept
         {
             if (this != &other)
@@ -198,40 +206,45 @@ namespace HBL2
                 other.m_Capacity = SSO_SIZE;
                 other.m_IsUsingSSO = true;
                 other.m_SSOBuffer[0] = '\0';
-				other.m_Allocator = nullptr
+                other.m_Allocator = nullptr;
             }
             return *this;
         }
 
-        /// <summary>
-        /// Returns the underlining c style char pointer.
-        /// </summary>
-        /// <returns>The underlining c style char pointer.</returns>
+        /**
+         * @brief Returns the underlying C-style char pointer.
+         *
+         * @return The underlying C-style char pointer.
+         */
         const char* Data() const { return m_IsUsingSSO ? m_SSOBuffer : m_HeapData; }
 
-        /// <summary>
-        /// Returns the number of characters in the string.
-        /// </summary>
-        /// <returns>The number of characters in the string.</returns>
+        /**
+         * @brief Returns the number of characters in the string.
+         *
+         * @return The number of characters in the string.
+         */
         size_t Length() const { return m_Size; }
 
-        /// <summary>
-        /// Returns the current capacity of the string.
-        /// </summary>
-        /// <returns>The current capacity of the string.</returns>
+        /**
+         * @brief Returns the current capacity of the string.
+         *
+         * @return The current capacity of the string.
+         */
         size_t Capacity() const { return m_Capacity; }
 
-        /// <summary>
-        /// Returns true if the string is empty, false otherwise.
-        /// </summary>
-        /// <returns>True if the string is empty, false otherwise.</returns>
+        /**
+         * @brief Returns true if the string is empty, false otherwise.
+         *
+         * @return True if the string is empty, false otherwise.
+         */
         bool Empty() const { return m_Size == 0; }
 
-        /// <summary>
-        /// Compares two strings for equality.
-        /// </summary>
-        /// <param name="other">The string to compare with.</param>
-        /// <returns>True if the strings are equal, false otherwise.</returns>
+        /**
+         * @brief Compares two strings for equality.
+         *
+         * @param other The string to compare with.
+         * @return True if the strings are equal, false otherwise.
+         */
         bool operator==(const String& other) const
         {
             if (m_Size != other.m_Size)
@@ -242,31 +255,34 @@ namespace HBL2
             return std::strcmp(Data(), other.Data()) == 0;
         }
 
-        /// <summary>
-        /// Compares two strings for inequality.
-        /// </summary>
-        /// <param name="other">The string to compare with.</param>
-        /// <returns>True if the strings are not equal, false otherwise.</returns>
+        /**
+         * @brief Compares two strings for inequality.
+         *
+         * @param other The string to compare with.
+         * @return True if the strings are not equal, false otherwise.
+         */
         bool operator!=(const String& other) const
         {
             return !(*this == other);
         }
 
-        /// <summary>
-        /// Access character at specified index.
-        /// </summary>
-        /// <param name="index">The index of the character to access.</param>
-        /// <returns>Reference to the character at the specified index.</returns>
+        /**
+         * @brief Access character at specified index.
+         *
+         * @param index The index of the character to access.
+         * @return Reference to the character at the specified index.
+         */
         char& operator[](size_t index)
         {
             return const_cast<char&>(static_cast<const String&>(*this)[index]);
         }
 
-        /// <summary>
-        /// Access character at specified index (const version).
-        /// </summary>
-        /// <param name="index">The index of the character to access.</param>
-        /// <returns>Reference to the character at the specified index.</returns>
+        /**
+         * @brief Access character at specified index (const version).
+         *
+         * @param index The index of the character to access.
+         * @return Reference to the character at the specified index.
+         */
         const char& operator[](size_t index) const
         {
             if (index >= m_Size)
@@ -278,12 +294,13 @@ namespace HBL2
             return Data()[index];
         }
 
-        /// <summary>
-        /// Create a new sub string.
-        /// </summary>
-        /// <param name="start">The start index in the string.</param>
-        /// <param name="length">The end index in the string.</param>
-        /// <returns>A new sub string.</returns>
+        /**
+         * @brief Create a new substring.
+         *
+         * @param start The start index in the string.
+         * @param length The length of the substring.
+         * @return A new substring.
+         */
         String<TAllocator> SubString(uint32_t start, uint32_t length) const
         {
             if (start >= m_Size)
@@ -305,22 +322,24 @@ namespace HBL2
             return result;
         }
 
-        /// <summary>
-        /// Find a substring
-        /// </summary>
-        /// <param name="substr">The substring to find.</param>
-        /// <returns>True if the substring exists in the string, false otherwise.</returns>
+        /**
+         * @brief Find a substring.
+         *
+         * @param substr The substring to find.
+         * @return True if the substring exists in the string, false otherwise.
+         */
         bool Find(const char* substr) const
         {
             const char* found = std::strstr(Data(), substr);
             return found;
         }
 
-        /// <summary>
-        /// Append a C-style string to this string.
-        /// </summary>
-        /// <param name="str">The C-style string to append.</param>
-        /// <returns>Reference to this string.</returns>
+        /**
+         * @brief Append a C-style string to this string.
+         *
+         * @param str The C-style string to append.
+         * @return Reference to this string.
+         */
         String& Append(const char* str)
         {
             size_t strLen = std::strlen(str);
@@ -342,21 +361,39 @@ namespace HBL2
             return *this;
         }
 
-        /// <summary>
-        /// Append another string to this string.
-        /// </summary>
-        /// <param name="other">The string to append.</param>
-        /// <returns>Reference to this string.</returns>
+        /**
+         * @brief Append another string to this string.
+         *
+         * @param other The string to append.
+         * @return Reference to this string.
+         */
         String& Append(const String& other)
         {
-            return Append(other.Data());
+            size_t strLen = other.m_Size;
+            if (strLen == 0)
+            {
+                return *this;
+            }
+
+            size_t newSize = m_Size + strLen;
+            if (newSize > m_Capacity)
+            {
+                Reserve(newSize * 2);
+            }
+
+            char* dest = const_cast<char*>(Data()) + m_Size;
+            std::memcpy(dest, other.Data(), strLen + 1);
+            m_Size = newSize;
+
+            return *this;
         }
 
-        /// <summary>
-        /// Concatenate two strings.
-        /// </summary>
-        /// <param name="other">The string to concatenate.</param>
-        /// <returns>A new string containing the concatenation.</returns>
+        /**
+         * @brief Concatenate two strings.
+         *
+         * @param other The string to concatenate.
+         * @return A new string containing the concatenation.
+         */
         String operator+(const String& other) const
         {
             String result(*this);
@@ -364,20 +401,22 @@ namespace HBL2
             return result;
         }
 
-        /// <summary>
-        /// Append a string to this string.
-        /// </summary>
-        /// <param name="other">The string to append.</param>
-        /// <returns>Reference to this string.</returns>
+        /**
+         * @brief Append a string to this string.
+         *
+         * @param other The string to append.
+         * @return Reference to this string.
+         */
         String& operator+=(const String& other)
         {
             return Append(other);
         }
 
-        /// <summary>
-        /// Reserve memory for the string.
-        /// </summary>
-        /// <param name="capacity">The new capacity to reserve.</param>
+        /**
+         * @brief Reserve memory for the string.
+         *
+         * @param capacity The new capacity to reserve.
+         */
         void Reserve(size_t capacity)
         {
             if (capacity <= m_Capacity)
@@ -398,9 +437,9 @@ namespace HBL2
             m_IsUsingSSO = false;
         }
 
-        /// <summary>
-        /// Clear the string.
-        /// </summary>
+        /**
+         * @brief Clear the string.
+         */
         void Clear()
         {
             if (!m_IsUsingSSO && m_HeapData != nullptr)

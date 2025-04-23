@@ -9,13 +9,15 @@
 
 namespace HBL2
 {
-    /// <summary>
-    /// A key-value data structure that offers O(1) average-time complexity for insertions, deletions, and lookups.
-    /// Uses hashing for fast access and collision resolution techniques like linear probing.
-    /// </summary>
-    /// <typeparam name="TKey">The type of the key.</typeparam>
-    /// <typeparam name="TAllocator">The type of the allocator to use.</typeparam>
-    /// <typeparam name="TValue">The type of the key.</typeparam>
+    /**
+     * @brief A key-value data structure that offers O(1) average-time complexity for insertions, deletions, and lookups.
+     *
+     * Uses hashing for fast access and collision resolution techniques like linear probing.
+     *
+     * @tparam TKey The type of the key.
+     * @tparam TValue The type of the value.
+     * @tparam TAllocator The allocator type to use.
+     */
     template<typename TKey, typename TValue, typename TAllocator = StandardAllocator>
     class HashMap
     {
@@ -51,30 +53,34 @@ namespace HBL2
         };
 
     public:
-        /// <summary>
-        /// Constructs a HashMap with an optional initial capacity.
-        /// </summary>
-        /// <param name="initialCapacity">The starting capacity of the map.</param>
+        /**
+         * @brief Constructs a HashMap with an optional initial capacity.
+         *
+         * @param initialCapacity The starting capacity of the map (default 16).
+         */
         HashMap(uint32_t initialCapacity = 16)
 			: m_Capacity(NextPowerOfTwo(initialCapacity)), m_CurrentSize(0), m_Allocator(nullptr)
         {
             m_Data = Allocate(sizeof(Entry) * m_Capacity);
         }
 
-        /// <summary>
-        /// Constructs a HashMap with an optional initial capacity and a custom allocator.
-        /// </summary>
-        /// <param name="allocator">The allocator to use for memory allocation.</param>
-        /// <param name="initialCapacity">The starting capacity of the map.</param>
+        /**
+         * @brief Constructs a HashMap with an optional initial capacity and a custom allocator.
+         *
+         * @param allocator The allocator to use for memory allocation.
+         * @param initialCapacity The starting capacity of the map (default 16).
+         */
         HashMap(TAllocator* allocator, uint32_t initialCapacity = 16)
 			: m_Capacity(NextPowerOfTwo(initialCapacity)), m_CurrentSize(0), m_Allocator(allocator)
         {
             m_Data = Allocate(sizeof(Entry) * m_Capacity);
         }
 
-		/// <summary>
-        /// Copy constructor which performs deep copy of the hash map.
-        /// </summary>
+        /**
+         * @brief Copy constructor which performs deep copy of the hash map.
+         *
+         * @param other The HashMap to copy from.
+         */
         HashMap(const HashMap& other)
 			: m_Capacity(other.m_Capacity), m_CurrentSize(other.m_CurrentSize), m_Allocator(other.m_Allocator)
         {
@@ -88,9 +94,11 @@ namespace HBL2
             }
         }
 
-        /// <summary>
-		/// Move constructor which transfers ownership of internal data.
-		/// </summary>
+        /**
+         * @brief Move constructor which transfers ownership of internal data.
+         *
+         * @param other The HashMap to move from.
+         */
         HashMap(HashMap&& other) noexcept
             : m_Data(other.m_Data), m_Capacity(other.m_Capacity), m_CurrentSize(other.m_CurrentSize), m_Allocator(other.m_Allocator)
         {
@@ -99,7 +107,12 @@ namespace HBL2
             other.m_Capacity = 0;
         }
 
-        // Copy Assignment
+        /**
+         * @brief Copy assignment operator.
+         *
+         * @param other The HashMap to copy from.
+         * @return Reference to this HashMap.
+         */
         HashMap& operator=(const HashMap& other)
         {
             if (this != &other)
@@ -123,7 +136,12 @@ namespace HBL2
             return *this;
         }
 
-        // Move Assignment
+        /**
+         * @brief Move assignment operator.
+         *
+         * @param other The HashMap to move from.
+         * @return Reference to this HashMap.
+         */
         HashMap& operator=(HashMap&& other) noexcept
         {
             if (this != &other)
@@ -143,20 +161,21 @@ namespace HBL2
             return *this;
         } 
 
-        /// <summary>
-        /// Destructor to release allocated memory.
-        /// </summary>
+        /**
+         * @brief Destructor to release allocated memory.
+         */
         ~HashMap()
         {
 			Clear();
             Deallocate(m_Data);
         }
                 
-        /// <summary>
-        /// Insert a key-value pair into the hash map.
-        /// </summary>
-        /// <param name="key">The key to insert the value to.</param>
-        /// <param name="value">The value to insert to the key.</param>
+        /**
+         * @brief Insert a key-value pair into the hash map.
+         *
+         * @param key The key to insert the value to.
+         * @param value The value to insert for the key.
+         */
         void Insert(const TKey& key, const TValue& value)
         {
 			if ((m_CurrentSize + 1) > m_Capacity * s_LoadFactor || m_DeletedCount > m_Capacity * 0.2f)
@@ -176,12 +195,13 @@ namespace HBL2
             }
         }
                 
-        /// <summary>
-        /// Find a value by key.
-        /// </summary>
-        /// <param name="key">The key to find.</param>
-        /// <param name="outValue">The value to emplace the found value.</param>
-        /// <returns>True if the key was found, false if not found.</returns>
+        /**
+         * @brief Find a value by key.
+         *
+         * @param key The key to find.
+         * @param outValue Reference to store the found value.
+         * @return True if the key was found, false otherwise.
+         */
         bool Find(const TKey& key, TValue& outValue) const
         {
             size_t index = ProbeForKey(key);
@@ -194,20 +214,22 @@ namespace HBL2
             return false;
         }
 
-        /// <summary>
-        /// Find if a key exists in the map.
-        /// </summary>
-        /// <param name="key">The key to find.</param>
-        /// <returns>True if the key was found, false if not found.</returns>
+        /**
+         * @brief Check if a key exists in the map.
+         *
+         * @param key The key to find.
+         * @return True if the key exists, false otherwise.
+         */
         bool ContainsKey(const TKey& key) const
         {
             return ProbeForKey(key) != s_InvalidIndex;
         }
 
-        /// <summary>
-        /// Erase a key-value pair by key.
-        /// </summary>
-        /// <param name="key">The key to remove.</param>
+        /**
+         * @brief Erase a key-value pair by key.
+         *
+         * @param key The key to remove.
+         */
         void Erase(const TKey& key)
         {
             size_t index = ProbeForKey(key);
@@ -219,21 +241,23 @@ namespace HBL2
             }
         }
 
-        /// <summary>
-        /// Get the current size of the hash map.
-        /// </summary>
-        /// <returns>The current size of the hash map.</returns>
+        /**
+         * @brief Get the current size of the hash map.
+         *
+         * @return The number of key-value pairs stored.
+         */
         size_t Size() const { return m_CurrentSize; }
 
-        /// <summary>
-        /// Get the capacity of the hash map.
-        /// </summary>
-        /// <returns>The capacity of the hash map.</returns>
+        /**
+         * @brief Get the capacity of the hash map.
+         *
+         * @return The total capacity of the hash map.
+         */
         size_t Capacity() const { return m_Capacity; }
 
-        /// <summary>
-        /// Clears the entire hash map.
-        /// </summary>
+        /**
+         * @brief Clears the entire hash map, destructing all entries.
+         */
         void Clear()
         {
 			for (uint32_t i = 0; i < m_Capacity; ++i)
@@ -248,11 +272,12 @@ namespace HBL2
             m_CurrentSize = 0;
         }
 
-        /// <summary>
-        /// Gets or inserts a value in the given key.
-        /// </summary>
-        /// <param name="key">The key to get or set.</param>
-        /// <returns>The value of the key or default.</returns>
+        /**
+         * @brief Gets or inserts a value for the given key.
+         *
+         * @param key The key to get or set.
+         * @return Reference to the value associated with the key.
+         */
         TValue& operator[](const TKey& key)
         {
 			if ((m_CurrentSize + 1) > m_Capacity * s_LoadFactor || m_DeletedCount > m_Capacity * 0.2f)

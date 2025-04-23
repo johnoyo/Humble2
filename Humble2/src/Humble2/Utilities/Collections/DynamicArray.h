@@ -9,40 +9,46 @@
 
 namespace HBL2
 {
-    /// <summary>
-    /// A resizable array that automatically grows when needed.
-    /// It supports fast random access and amortized O(1) insertions at the end, making it suitable for dynamic collections.
-    /// </summary>
-    /// <typeparam name="T">The type of the element to store in the array.</typeparam>
-    /// <typeparam name="TAllocator">The allocator type to use.</typeparam>
+    /**
+     * @brief A resizable array that automatically grows when needed.
+     *
+     * It supports fast random access and amortized O(1) insertions at the end, making it suitable for dynamic collections.
+     *
+     * @tparam T The type of the element to store in the array.
+     * @tparam TAllocator The allocator type to use.
+     */
     template<typename T, typename TAllocator = StandardAllocator>
     class DynamicArray
     {
     public:
-        /// <summary>
-        /// Constructs a DynamicArray with an optional initial capacity.
-        /// </summary>
-        /// <param name="initialCapacity">The starting capacity of the array.</param>
+        /**
+         * @brief Constructs a DynamicArray with an optional initial capacity.
+         *
+         * @param initialCapacity The starting capacity of the array (default 8).
+         */
         DynamicArray(size_t initialCapacity = 8)
             : m_Capacity(initialCapacity), m_CurrentSize(0), m_Allocator(nullptr)
         {
             m_Data = Allocate(sizeof(T) * m_Capacity);
         }
 
-        /// <summary>
-        /// Constructs a DynamicArray with an optional initial capacity and a custom allocator.
-        /// </summary>
-        /// <param name="allocator">The allocator to use for memory allocation.</param>
-        /// <param name="initialCapacity">The starting capacity of the array.</param>
+        /**
+         * @brief Constructs a DynamicArray with an optional initial capacity and a custom allocator.
+         *
+         * @param allocator The allocator to use for memory allocation.
+         * @param initialCapacity The starting capacity of the array (default 8).
+         */
         DynamicArray(TAllocator* allocator, uint32_t initialCapacity = 8)
             : m_Capacity(initialCapacity), m_CurrentSize(0), m_Allocator(allocator)
         {
             m_Data = Allocate(sizeof(T) * m_Capacity);
         }
 
-        /// <summary>
-        /// Copy constructor which performs deep copy of the array.
-        /// </summary>
+        /**
+         * @brief Copy constructor which performs deep copy of the array.
+         *
+         * @param other The DynamicArray to copy from.
+         */
         DynamicArray(const DynamicArray& other)
             : m_Capacity(other.m_Capacity), m_CurrentSize(other.m_CurrentSize), m_Allocator(other.m_Allocator)
         {
@@ -50,9 +56,11 @@ namespace HBL2
             std::memcpy(m_Data, other.m_Data, sizeof(T) * m_CurrentSize);
         }
 
-		/// <summary>
-		/// Move constructor which transfers ownership of internal data.
-		/// </summary>
+        /**
+         * @brief Move constructor which transfers ownership of internal data.
+         *
+         * @param other The DynamicArray to move from.
+         */
 		DynamicArray(DynamicArray&& other) noexcept
 			: m_Data(other.m_Data), m_Capacity(other.m_Capacity), m_CurrentSize(other.m_CurrentSize), m_Allocator(other.m_Allocator)
 		{
@@ -62,17 +70,20 @@ namespace HBL2
 			other.m_Allocator = nullptr;
 		}
 
-        /// <summary>
-        /// Destructor to release allocated memory.
-        /// </summary>
+        /**
+         * @brief Destructor to release allocated memory.
+         */
         ~DynamicArray()
         {
             Deallocate(m_Data);
         }
 
-		/// <summary>
-		/// Copy assignment operator.
-		/// </summary>
+        /**
+         * @brief Copy assignment operator.
+         *
+         * @param other The DynamicArray to copy from.
+         * @return Reference to this DynamicArray.
+         */
 		DynamicArray& operator=(const DynamicArray& other)
 		{
 			if (this == &other)
@@ -93,9 +104,12 @@ namespace HBL2
 			return *this;
 		}
 
-		/// <summary>
-		/// Move assignment operator.
-		/// </summary>
+        /**
+         * @brief Move assignment operator.
+         *
+         * @param other The DynamicArray to move from.
+         * @return Reference to this DynamicArray.
+         */
 		DynamicArray& operator=(DynamicArray&& other) noexcept
 		{
 			if (this == &other)
@@ -119,25 +133,41 @@ namespace HBL2
 			return *this;
 		}
 
+        /**
+         * @brief Access element at specified index.
+         *
+         * @param i Index of the element.
+         * @return Reference to the element at index i.
+         */
         T& operator[](size_t i) { return m_Data[i]; }
+
+        /**
+         * @brief Access element at specified index (const version).
+         *
+         * @param i Index of the element.
+         * @return Const reference to the element at index i.
+         */
         const T& operator[](size_t i) const { return m_Data[i]; }
 
-        /// <summary>
-        /// Returns the number of elements in the array.
-        /// </summary>
-        /// <returns>The number of elements in the array.</returns>
+        /**
+         * @brief Returns the number of elements in the array.
+         *
+         * @return The number of elements currently stored.
+         */
         const uint32_t Size() const { return m_CurrentSize; }
 
-        /// <summary>
-        /// Returns the raw pointer to the underlying data.
-        /// </summary>
-        /// <returns>The raw pointer to the underlying data.</returns>
+        /**
+         * @brief Returns the raw pointer to the underlying data.
+         *
+         * @return Pointer to the array data.
+         */
         const T* Data() const { return m_Data; }
 
-        /// <summary>
-        /// Pushes back a new element in the array.
-        /// </summary>
-        /// <param name="value">The element to add.</param>
+        /**
+         * @brief Pushes back a new element in the array.
+         *
+         * @param value The element to add.
+         */
         void Add(const T& value)
         {
             if (m_CurrentSize == m_Capacity)
@@ -148,10 +178,12 @@ namespace HBL2
             m_Data[m_CurrentSize++] = value;
         }
 
-        /// <summary>
-        /// Constructs a new element at the end using perfect forwarding (avoids copy).
-        /// </summary>
-        /// <typeparam name="...Args">Arguments for T constructor.</typeparam>
+        /**
+         * @brief Constructs a new element at the end using perfect forwarding.
+         *
+         * @tparam Args Types of constructor arguments.
+         * @param args Arguments forwarded to the constructor of T.
+         */
         template<typename... Args>
         void Emplace(Args&&... args)
         {
@@ -164,9 +196,9 @@ namespace HBL2
             new (&m_Data[m_CurrentSize++]) T(std::forward<Args>(args)...);
         }
 
-        /// <summary>
-        /// Removes the last element from the array.
-        /// </summary>
+        /**
+         * @brief Removes the last element from the array.
+         */
         void Pop()
         {
             if (m_CurrentSize > 0)
@@ -175,11 +207,12 @@ namespace HBL2
             }
         }
 
-        /// <summary>
-        /// Check if an element exists in the array.
-        /// </summary>
-        /// <param name="value">The element to search.</param>
-        /// <returns>True if the array contains the element, false if not found.</returns>
+        /**
+         * @brief Check if an element exists in the array.
+         *
+         * @param value The element to search for.
+         * @return True if the element is found, false otherwise.
+         */
         bool Contains(const T& value) const
         {
             for (uint32_t i = 0; i < m_CurrentSize; ++i)
@@ -192,9 +225,12 @@ namespace HBL2
             return false;
         }
 
-        /// <summary>
-        /// Returns index of first occurrence of value, or UINT32_MAX if not found.
-        /// </summary>
+        /**
+         * @brief Returns index of first occurrence of value, or UINT32_MAX if not found.
+         *
+         * @param value The element to find.
+         * @return Index of the element or UINT32_MAX if not found.
+         */
         uint32_t FindIndex(const T& value) const
         {
             for (uint32_t i = 0; i < m_CurrentSize; ++i)
@@ -207,10 +243,11 @@ namespace HBL2
             return UINT32_MAX;
         }
 
-        /// <summary>
-        /// Erases the provided element from the array.
-        /// </summary>
-        /// <param name="value">The element to erase.</param>
+        /**
+         * @brief Erases the provided element from the array.
+         *
+         * @param value The element to erase.
+         */
         void Erase(const T& value)
         {
             uint32_t index = UINT32_MAX;
@@ -227,10 +264,11 @@ namespace HBL2
             EraseAt(index);
         }
 
-        /// <summary>
-        /// Erases an element at the provided index from the array.
-        /// </summary>
-        /// <param name="index">The index of the element to erase.</param>
+        /**
+         * @brief Erases an element at the provided index from the array.
+         *
+         * @param index The index of the element to erase.
+         */
         void EraseAt(uint32_t index)
         {
             if (index >= m_CurrentSize)
@@ -247,19 +285,20 @@ namespace HBL2
             --m_CurrentSize;
         }
 
-        /// <summary>
-        /// Clears the entire array.
-        /// </summary>
+        /**
+         * @brief Clears the entire array.
+         */
         void Clear()
         {
             std::memset(m_Data, 0, m_CurrentSize * sizeof(T));
             m_CurrentSize = 0;
         }
 
-		/// <summary>
-        /// Ensures the array can hold at least the given capacity without reallocating.
-        /// </summary>
-        /// <param name="newCapacity">The minimum capacity to ensure.</param>
+        /**
+         * @brief Ensures the array can hold at least the given capacity without reallocating.
+         *
+         * @param newCapacity The minimum capacity to ensure.
+         */
         void Reserve(uint32_t newCapacity)
         {
 			if (newCapacity <= m_Capacity)
@@ -277,12 +316,14 @@ namespace HBL2
             m_Capacity = newCapacity;
         }
 
-        /// <summary>
-        /// Resizes the array to the new size.
-        /// If the new size is larger, new elements are default-initialized.
-        /// </summary>
-        /// <param name="newSize">The new size of the array.</param>
-        /// <param name="defaultValue">The default value to assign to new elements (if any).</param>
+        /**
+         * @brief Resizes the array to the new size.
+         *
+         * If the new size is larger, new elements are default-initialized or set to the provided default value.
+         *
+         * @param newSize The new size of the array.
+         * @param defaultValue The default value to assign to new elements (if any).
+         */
         void Resize(uint32_t newSize, const T& defaultValue = T{})
         {
             if (newSize > m_Capacity)
@@ -326,19 +367,11 @@ namespace HBL2
 
 		void Deallocate(T* ptr)
 		{
-			if (m_Allocator == nullptr)
-			{
-				if constexpr (std::is_array_v<T>)
-				{
-					delete[] ptr;
-				}
-				else
-				{
-					delete ptr;
-				}
-
-				return;
-			}
+            if (m_Allocator == nullptr)
+            {
+                operator delete ptr;
+                return;
+            }
 
 			m_Allocator->Deallocate<T>(ptr);
 		}

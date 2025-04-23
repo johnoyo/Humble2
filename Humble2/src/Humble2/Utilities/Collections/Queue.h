@@ -19,39 +19,144 @@ namespace HBL2
     class Queue
     {
     public:
-        /// <summary>
-        /// Constructs a Queue with an optional initial capacity.
-        /// </summary>
-        /// <param name="initialCapacity">The starting capacity of the queue.</param>
+        /**
+         * @brief Constructs a Queue with an optional initial capacity.
+         *
+         * @param initialCapacity The starting capacity of the queue (default 8).
+         */
         Queue(uint32_t initialCapacity = 8)
             : m_CurrentSize(0), m_Capacity(initialCapacity), m_Front(0), m_Back(0), m_Allocator(nullptr)
         {
             m_Data = Allocate(sizeof(T) * m_Capacity);
         }
 
-        /// <summary>
-        /// Constructs a Queue with an optional initial capacity and a custom allocator.
-        /// </summary>
-        /// <param name="allocator">The allocator to use for memory allocation.</param>
-        /// <param name="initialCapacity">The starting capacity of the queue.</param>
+        /**
+         * @brief Constructs a Queue with an optional initial capacity and a custom allocator.
+         *
+         * @param allocator The allocator to use for memory allocation.
+         * @param initialCapacity The starting capacity of the queue (default 8).
+         */
         Queue(TAllocator* allocator, uint32_t initialCapacity = 8)
             : m_CurrentSize(0), m_Capacity(initialCapacity), m_Front(0), m_Back(0), m_Allocator(allocator)
         {
             m_Data = Allocate(sizeof(T) * m_Capacity);
         }
 
-        /// <summary>
-        /// Destructor to release allocated memory.
-        /// </summary>
+        /**
+         * @brief Copy constructor which performs deep copy of the queue.
+         *
+         * @param other The Queue to copy from.
+         */
+        Queue(const Queue& other)
+            : m_CurrentSize(other.m_CurrentSize),
+            m_Capacity(other.m_Capacity),
+            m_Front(other.m_Front),
+            m_Back(other.m_Back),
+            m_Allocator(other.m_Allocator)
+        {
+            m_Data = Allocate(sizeof(T) * m_Capacity);
+            for (uint32_t i = 0; i < m_Capacity; ++i)
+            {
+                m_Data[i] = other.m_Data[i];
+            }
+        }
+
+        /**
+         * @brief Move constructor which transfers ownership of internal data.
+         *
+         * @param other The Queue to move from.
+         */
+        Queue(Queue&& other) noexcept
+            : m_Data(other.m_Data),
+            m_CurrentSize(other.m_CurrentSize),
+            m_Capacity(other.m_Capacity),
+            m_Front(other.m_Front),
+            m_Back(other.m_Back),
+            m_Allocator(other.m_Allocator)
+        {
+            other.m_Data = nullptr;
+            other.m_CurrentSize = 0;
+            other.m_Capacity = 0;
+            other.m_Front = 0;
+            other.m_Back = 0;
+            other.m_Allocator = nullptr;
+        }
+
+        /**
+         * @brief Destructor to release allocated memory.
+         */
         ~Queue()
         {
             Deallocate(m_Data);
         }
 
-        /// <summary>
-        /// Adds a new element at the back of the queue.
-        /// </summary>
-        /// <param name="value">The element to add.</param>
+        /**
+         * @brief Copy assignment operator.
+         *
+         * @param other The Queue to copy from.
+         * @return Reference to this Queue.
+         */
+        Queue& operator=(const Queue& other)
+        {
+            if (this == &other)
+            {
+                return *this;
+            }
+
+            Deallocate(m_Data);
+
+            m_CurrentSize = other.m_CurrentSize;
+            m_Capacity = other.m_Capacity;
+            m_Front = other.m_Front;
+            m_Back = other.m_Back;
+            m_Allocator = other.m_Allocator;
+
+            m_Data = Allocate(sizeof(T) * m_Capacity);
+            for (uint32_t i = 0; i < m_Capacity; ++i)
+            {
+                m_Data[i] = other.m_Data[i];
+            }
+
+            return *this;
+        }
+
+        /**
+         * @brief Move assignment operator.
+         *
+         * @param other The Queue to move from.
+         * @return Reference to this Queue.
+         */
+        Queue& operator=(Queue&& other) noexcept
+        {
+            if (this == &other)
+            {
+                return *this;
+            }
+
+            Deallocate(m_Data);
+
+            m_Data = other.m_Data;
+            m_CurrentSize = other.m_CurrentSize;
+            m_Capacity = other.m_Capacity;
+            m_Front = other.m_Front;
+            m_Back = other.m_Back;
+            m_Allocator = other.m_Allocator;
+
+            other.m_Data = nullptr;
+            other.m_CurrentSize = 0;
+            other.m_Capacity = 0;
+            other.m_Front = 0;
+            other.m_Back = 0;
+            other.m_Allocator = nullptr;
+
+            return *this;
+        }
+
+        /**
+         * @brief Adds a new element at the back of the queue.
+         *
+         * @param value The element to add.
+         */
         void Enqueue(const T& value)
         {
             if (m_CurrentSize >= m_Capacity)
@@ -76,9 +181,9 @@ namespace HBL2
             ++m_CurrentSize;
         }
 
-        /// <summary>
-        /// Removes the first element in the queue.
-        /// </summary>
+        /**
+         * @brief Removes the first element in the queue.
+         */
         void Dequeue()
         {
             HBL2_CORE_ASSERT(m_CurrentSize > 0, "Queue underflow!");
@@ -87,41 +192,45 @@ namespace HBL2
             --m_CurrentSize;
         }
 
-        /// <summary>
-        /// Returns the first element in the queue.
-        /// </summary>
-        /// <returns>The first element in the queue.</returns>
+        /**
+         * @brief Returns the first element in the queue.
+         *
+         * @return Reference to the first element.
+         */
         T& Front()
         {
             HBL2_CORE_ASSERT(m_CurrentSize > 0, "Queue is empty!");
             return m_Data[m_Front];
         }
 
-        /// <summary>
-        /// Returns the first element in the queue.
-        /// </summary>
-        /// <returns>The first element in the queue.</returns>
+        /**
+         * @brief Returns the first element in the queue (const version).
+         *
+         * @return Const reference to the first element.
+         */
         const T& Front() const
         {
             HBL2_CORE_ASSERT(m_CurrentSize > 0, "Queue is empty!");
             return m_Data[m_Front];
         }
 
-        /// <summary>
-        /// Returns the number of elements in the queue.
-        /// </summary>
-        /// <returns>The number of elements in the queue.</returns>
+        /**
+         * @brief Returns the number of elements in the queue.
+         *
+         * @return The number of elements currently stored.
+         */
         uint32_t Size() const { return m_CurrentSize; }
 
-        /// <summary>
-        /// Check if the queue is empty.
-        /// </summary>
-        /// <returns>True if the queue is empty, false otherwise.</returns>
+        /**
+         * @brief Checks if the queue is empty.
+         *
+         * @return True if the queue is empty, false otherwise.
+         */
         bool IsEmpty() const { return m_CurrentSize == 0; }
 
-        /// <summary>
-        /// Clears the entire queue.
-        /// </summary>
+        /**
+         * @brief Clears the entire queue.
+         */
         void Clear()
         {
             std::memset(m_Data, 0, m_CurrentSize * sizeof(T));
@@ -132,6 +241,7 @@ namespace HBL2
 
         T* begin() { return &m_Data[m_Front]; }
         T* end() { return &m_Data[m_Back]; }
+
         const T* begin() const { return &m_Data[m_Front]; }
         const T* end() const { return &m_Data[m_Back]; }
 
@@ -150,19 +260,11 @@ namespace HBL2
 
 		void Deallocate(T* ptr)
 		{
-			if (m_Allocator == nullptr)
-			{
-				if constexpr (std::is_array_v<T>)
-				{
-					delete[] ptr;
-				}
-				else
-				{
-					delete ptr;
-				}
-
-				return;
-			}
+            if (m_Allocator == nullptr)
+            {
+                operator delete ptr;
+                return;
+            }
 
 			m_Allocator->Deallocate<T>(ptr);
 		}

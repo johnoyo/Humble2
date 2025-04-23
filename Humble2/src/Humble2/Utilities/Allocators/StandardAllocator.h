@@ -27,7 +27,7 @@ namespace HBL2
 		T* Allocate(uint64_t size = sizeof(T))
 		{
 			T* data = (T*)operator new(size);
-			memset(data, 0, size);
+			std::memset(data, 0, size);
 			return data;
 		}
 
@@ -40,14 +40,7 @@ namespace HBL2
 		template<typename T>
 		void Deallocate(T* object)
 		{
-			if constexpr (std::is_array_v<T>)
-			{
-				delete[] object;
-			}
-			else
-			{
-				delete object;
-			}
+			operator delete object;
 		}
 
 		/**

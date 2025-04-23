@@ -6,35 +6,40 @@
 
 namespace HBL2
 {
-    /// <summary>
-    /// A utility class for working with bitwise flag operations on scoped enums.
-    /// Provides operations for checking, setting, unsetting, and toggling flags.
-    /// </summary>
-    /// <typeparam name="EnumType">The enum type to use as flags.</typeparam>
+    /**
+     * @brief Utility class for managing bitwise flags on strongly-typed enums.
+     *
+     * Supports setting, unsetting, toggling, and checking individual or multiple enum flags
+     * using bitwise operations. Useful for efficient state representation.
+     *
+     * @tparam EnumType Scoped enumeration type used as flags.
+     */
     template<typename EnumType>
     class BitFlags
     {
         using UnderlyingType = std::underlying_type_t<EnumType>;
 
     public:
-        /// <summary>
-        /// Default constructor. Creates BitFlags with no flags set.
-        /// </summary>
+        /**
+         * @brief Constructs an empty BitFlags instance with no flags set.
+         */
         BitFlags() = default;
 
-        /// <summary>
-        /// Constructor from a single enum value.
-        /// </summary>
-        /// <param name="flag">The enum value to set.</param>
+        /**
+         * @brief Constructs BitFlags from a single enum flag.
+         *
+         * @param flag Enum flag to initialize with.
+         */
         BitFlags(EnumType flag)
             : m_Flags(static_cast<UnderlyingType>(flag))
         {
         }
 
-        /// <summary>
-        /// Constructor from multiple enum values.
-        /// </summary>
-        /// <param name="flags">The enum values to set.</param>
+        /**
+         * @brief Constructs BitFlags from multiple enum flags.
+         *
+         * @param flags Initializer list of flags to set.
+         */
         BitFlags(std::initializer_list<EnumType> flags)
             : m_Flags(0)
         {
@@ -44,71 +49,85 @@ namespace HBL2
             }
         }
 
-        /// <summary>
-        /// Checks if a specific flag is set.
-        /// </summary>
-        /// <param name="flag">The flag to check.</param>
-        /// <returns>True if the flag is set, false otherwise.</returns>
+        /**
+         * @brief Checks if a specific flag is set.
+         *
+         * @param flag The flag to test.
+         * @return true if the flag is set, false otherwise.
+         */
         bool IsSet(EnumType flag) const
         {
             return (m_Flags & static_cast<UnderlyingType>(flag)) == static_cast<UnderlyingType>(flag);
         }
 
-        /// <summary>
-        /// Sets a specific flag.
-        /// </summary>
-        /// <param name="flag">The flag to set.</param>
+        /**
+         * @brief Sets a specific flag.
+         *
+         * @param flag The flag to set.
+         */
         void Set(EnumType flag)
         {
             m_Flags |= static_cast<UnderlyingType>(flag);
         }
 
-        /// <summary>
-        /// Unsets a specific flag.
-        /// </summary>
-        /// <param name="flag">The flag to unset.</param>
+        /**
+         * @brief Clears (unsets) a specific flag.
+         *
+         * @param flag The flag to clear.
+         */
         void Unset(EnumType flag)
         {
             m_Flags &= ~static_cast<UnderlyingType>(flag);
         }
 
-        /// <summary>
-        /// Toggles a specific flag (if the flag is currently set, it becomes unset, and if it's currently unset, it becomes set).
-        /// </summary>
-        /// <param name="flag">The flag to toggle.</param>
+        /**
+         * @brief Toggles a specific flag.
+         *
+         * If the flag is set, it becomes cleared. If it is not set, it becomes set.
+         *
+         * @param flag The flag to toggle.
+         */
         void Toggle(EnumType flag)
         {
             m_Flags ^= static_cast<UnderlyingType>(flag);
         }
 
-        /// <summary>
-        /// Clears all flags.
-        /// </summary>
+        /**
+         * @brief Clears all flags.
+         *
+         * Resets internal value to zero.
+         */
         void Clear()
         {
             m_Flags = 0;
         }
 
-        /// <summary>
-        /// Sets all flags to the given value.
-        /// </summary>
-        /// <param name="flags">The flags value to set.</param>
+        /**
+         * @brief Sets all flags using a raw underlying value.
+         *
+         * @param flags Raw integer value representing the new flags.
+         */
         void SetRaw(UnderlyingType flags)
         {
             m_Flags = flags;
         }
 
-        /// <summary>
-        /// Gets the raw underlying value of the flags.
-        /// </summary>
-        /// <returns>The raw value of the flags.</returns>
+        /**
+         * @brief Retrieves the raw underlying value of all set flags.
+         *
+         * @return The integer representation of all current flags.
+         */
         UnderlyingType GetRaw() const
         {
             return m_Flags;
         }
 
-        // Bitwise operators
-
+        /**
+         * @brief Returns a new BitFlags with the result of a bitwise OR with a flag.
+         *
+         * @param flag The flag to OR with.
+         * @return Resulting BitFlags instance.
+         */
         BitFlags<EnumType> operator|(EnumType flag) const
         {
             BitFlags<EnumType> result = *this;
@@ -116,6 +135,12 @@ namespace HBL2
             return result;
         }
 
+        /**
+         * @brief Returns a new BitFlags with the result of a bitwise AND with a flag.
+         *
+         * @param flag The flag to OR with.
+         * @return Resulting BitFlags instance.
+         */
         BitFlags<EnumType> operator&(EnumType flag) const
         {
             BitFlags<EnumType> result = *this;
@@ -123,6 +148,12 @@ namespace HBL2
             return result;
         }
 
+        /**
+         * @brief Returns a new BitFlags with the result of a bitwise OR with a flag.
+         *
+         * @param flag The flag to OR with.
+         * @return Resulting BitFlags instance.
+         */
         BitFlags<EnumType> operator^(EnumType flag) const
         {
             BitFlags<EnumType> result = *this;
@@ -130,6 +161,12 @@ namespace HBL2
             return result;
         }
 
+        /**
+         * @brief Returns a new BitFlags with the result of a bitwise OR with a flag.
+         *
+         * @param flag The flag to OR with.
+         * @return Resulting BitFlags instance.
+         */
         BitFlags<EnumType> operator~() const
         {
             BitFlags<EnumType> result;
@@ -137,26 +174,48 @@ namespace HBL2
             return result;
         }
 
+        /**
+         * @brief Returns a new BitFlags with the result of a bitwise OR with a flag.
+         *
+         * @param flag The flag to OR with.
+         * @return Resulting BitFlags instance.
+         */
         BitFlags<EnumType>& operator|=(EnumType flag)
         {
             m_Flags |= static_cast<UnderlyingType>(flag);
             return *this;
         }
 
+        /**
+         * @brief Returns a new BitFlags with the result of a bitwise AND with a flag.
+         *
+         * @param flag The flag to OR with.
+         * @return Resulting BitFlags instance.
+         */
         BitFlags<EnumType>& operator&=(EnumType flag)
         {
             m_Flags &= static_cast<UnderlyingType>(flag);
             return *this;
         }
 
+        /**
+         * @brief Returns a new BitFlags with the result of a bitwise OR with a flag.
+         *
+         * @param flag The flag to OR with.
+         * @return Resulting BitFlags instance.
+         */
         BitFlags<EnumType>& operator^=(EnumType flag)
         {
             m_Flags ^= static_cast<UnderlyingType>(flag);
             return *this;
         }
 
-        // Operators for combining BitFlags with BitFlags
-
+        /**
+         * @brief Combines two BitFlags using bitwise OR.
+         *
+         * @param other Another BitFlags instance.
+         * @return Combined BitFlags result.
+         */
         BitFlags<EnumType> operator|(const BitFlags<EnumType>& other) const
         {
             BitFlags<EnumType> result = *this;
@@ -164,6 +223,12 @@ namespace HBL2
             return result;
         }
 
+        /**
+         * @brief Combines two BitFlags using bitwise AND.
+         *
+         * @param other Another BitFlags instance.
+         * @return Combined BitFlags result.
+         */
         BitFlags<EnumType> operator&(const BitFlags<EnumType>& other) const
         {
             BitFlags<EnumType> result = *this;
@@ -171,6 +236,12 @@ namespace HBL2
             return result;
         }
 
+        /**
+         * @brief Combines two BitFlags using bitwise OR.
+         *
+         * @param other Another BitFlags instance.
+         * @return Combined BitFlags result.
+         */
         BitFlags<EnumType> operator^(const BitFlags<EnumType>& other) const
         {
             BitFlags<EnumType> result = *this;
@@ -178,31 +249,59 @@ namespace HBL2
             return result;
         }
 
+        /**
+         * @brief Combines two BitFlags using bitwise OR.
+         *
+         * @param other Another BitFlags instance.
+         * @return Combined BitFlags result.
+         */
         BitFlags<EnumType>& operator|=(const BitFlags<EnumType>& other)
         {
             m_Flags |= other.m_Flags;
             return *this;
         }
 
+        /**
+         * @brief Combines two BitFlags using bitwise AND.
+         *
+         * @param other Another BitFlags instance.
+         * @return Combined BitFlags result.
+         */
         BitFlags<EnumType>& operator&=(const BitFlags<EnumType>& other)
         {
             m_Flags &= other.m_Flags;
             return *this;
         }
 
+        /**
+         * @brief Combines two BitFlags using bitwise OR.
+         *
+         * @param other Another BitFlags instance.
+         * @return Combined BitFlags result.
+         */
         BitFlags<EnumType>& operator^=(const BitFlags<EnumType>& other)
         {
             m_Flags ^= other.m_Flags;
             return *this;
         }
 
-        // Comparison operators
-
+        /**
+         * @brief Compares two BitFlags instances for equality.
+         *
+         * @param other The BitFlags instance to compare against.
+         * @return true if both have identical flags, false otherwise.
+         */
         bool operator==(const BitFlags<EnumType>& other) const
         {
             return m_Flags == other.m_Flags;
         }
 
+        /**
+         * @brief Compares two BitFlags instances for inequality.
+         *
+         * @param other The BitFlags instance to compare against.
+         * @return true if both do not have identical flags, false otherwise.
+         */
         bool operator!=(const BitFlags<EnumType>& other) const
         {
             return m_Flags != other.m_Flags;

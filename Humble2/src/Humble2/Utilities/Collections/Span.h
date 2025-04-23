@@ -8,11 +8,14 @@
 
 namespace HBL2
 {
-	/// <summary>
-	/// A lightweight, non-owning view of a contiguous sequence of elements, such as an array or a portion of a vector.
-	/// It provides bounds-checked access without copying data, making it useful for efficient data manipulation and function parameter passing.
-	/// </summary>
-	/// <typeparam name="T">The type of the element to store in the array.</typeparam>
+	/**
+	 * @brief A lightweight, non-owning view of a contiguous sequence of elements.
+	 *
+	 * Span provides bounds-checked access to a range of elements without copying data.
+	 * It is ideal for efficient data manipulation and function parameter passing.
+	 *
+	 * @tparam T The type of element in the span.
+	 */
 	template<typename T>
 	class Span
 	{
