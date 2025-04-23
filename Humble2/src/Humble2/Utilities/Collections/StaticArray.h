@@ -4,29 +4,47 @@
 
 namespace HBL2
 {
-	/// <summary>
-	/// A fixed-size array that provides direct access to elements via indexing.
-	/// It does not support dynamic resizing and is useful when the number of elements is known at compile time.
-	/// </summary>
-	/// <typeparam name="T">The type of the element to store in the array.</typeparam>
-	/// <typeparam name="N">The size of the array.</typeparam>
+	/**
+	 * @brief A fixed-size stack array with direct element access.
+	 *
+	 * This array does not support dynamic resizing and is best used when the size
+	 * is known at compile time.
+	 *
+	 * @tparam T The type of elements stored in the array.
+	 * @tparam N The number of elements in the array.
+	 */
 	template<typename T, uint32_t N>
 	class StaticArray
 	{
 	public:
+		/**
+		 * @brief Accesses the element at the specified index.
+		 *
+		 * @param i Index of the element.
+		 * @return Reference to the element at the specified index.
+		 */
 		T& operator[](uint32_t i) { return m_Data[i]; }
+
+		/**
+		 * @brief Accesses the element at the specified index.
+		 *
+		 * @param i Index of the element.
+		 * @return Reference to the element at the specified index.
+		 */
 		const T& operator[](uint32_t i) const { return m_Data[i]; }
 
-		/// <summary>
-		/// Returns the number of elements in the array.
-		/// </summary>
-		/// <returns>The number of elements in the array.</returns>
+		/**
+		 * @brief Returns the number of elements in the array.
+		 *
+		 * @return The fixed size of the array.
+		 */
 		uint32_t Size() { return N; }
 
-		/// <summary>
-		/// Returns the raw pointer to the underlying data.
-		/// </summary>
-		/// <returns>The raw pointer to the underlying data.</returns>
+		/**
+		 * @brief Returns a pointer to the underlying data.
+		 *
+		 * @return Pointer to the internal array.
+		 */
 		T* Data() { return m_Data; }
 
 		T* begin() { return m_Data; }
