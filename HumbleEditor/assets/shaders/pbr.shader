@@ -139,11 +139,48 @@ void main()
     {
         float intensity = u_Light.Metadata[i].x;
 
-        // calculate per-light radiance
-        vec3 L = normalize(u_Light.Positions[i].xyz - v_Position);
+        vec3 L;
+        float attenuation = 1.0;
+
+        if (u_Light.Positions[i].w == 0.0)
+        {
+            // Directional Light
+            L = normalize(-u_Light.Directions[i].xyz);
+        }
+        else if (u_Light.Positions[i].w == 1.0)
+        {
+            // Point light
+            vec3 lightPos = u_Light.Positions[i].xyz - v_Position;
+            L = normalize(lightPos);
+            float distance = length(lightPos);
+
+            float constant = u_Light.Metadata[i].y;
+            float linear = u_Light.Metadata[i].z;
+            float quadratic = u_Light.Metadata[i].w;
+            attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
+        }
+        else if (u_Light.Positions[i].w == 2.0)
+        {
+            // Spot Light
+            vec3 lightPos = u_Light.Positions[i].xyz - v_Position;
+            L = normalize(lightPos);
+            float distance = length(lightPos);
+
+            float constant = 1.0;
+            float linear = 0.09;
+            float quadratic = 0.032;
+            attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
+
+            float innerCutoff = u_Light.Metadata[i].y;
+            float outerCutoff = u_Light.Metadata[i].z;
+            float theta = dot(L, normalize(-u_Light.Directions[i].xyz));
+            float epsilon = innerCutoff - outerCutoff;
+            float intensity = clamp((theta - outerCutoff) / epsilon, 0.0, 1.0);
+            attenuation *= intensity;
+        }
+
+        // Calculate per-light radiance
         vec3 H = normalize(V + L);
-        float distance = length(u_Light.Positions[i].xyz - v_Position);
-        float attenuation = 1.0 / (distance * distance);
         vec3 radiance = u_Light.Colors[i].xyz * attenuation * intensity;
 
         // Cook-Torrance BRDF
@@ -174,7 +211,7 @@ void main()
     }   
     
     // ambient lighting (note that the next IBL tutorial will replace this ambient lighting with environment lighting).
-    vec3 ambient = vec3(0.05) * albedo;
+    vec3 ambient = vec3(0.02) * albedo;
     
     vec3 color = ambient + Lo;
 

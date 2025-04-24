@@ -170,9 +170,11 @@ namespace HBL2
 			out << YAML::Key << "Enabled" << YAML::Value << light.Enabled;
 			out << YAML::Key << "CastsShadows" << YAML::Value << light.CastsShadows;
 			out << YAML::Key << "Intensity" << YAML::Value << light.Intensity;
-			out << YAML::Key << "Attenuation" << YAML::Value << light.Attenuation;
 			out << YAML::Key << "Color" << YAML::Value << light.Color;
 			out << YAML::Key << "Type" << YAML::Value << (int)light.Type;
+			out << YAML::Key << "Distance" << YAML::Value << light.Distance;
+			out << YAML::Key << "InnerCutOff" << YAML::Value << light.InnerCutOff;
+			out << YAML::Key << "OuterCutOff" << YAML::Value << light.OuterCutOff;
 
 			out << YAML::EndMap;
 		}
@@ -370,7 +372,9 @@ namespace HBL2
 			light.Enabled = lightComponent["Enabled"].as<bool>();
 			light.CastsShadows = lightComponent["CastsShadows"].as<bool>();
 			light.Intensity = lightComponent["Intensity"].as<float>();
-			light.Attenuation = lightComponent["Attenuation"].as<float>();
+			light.Distance = lightComponent["Distance"].as<float>();
+			light.InnerCutOff = lightComponent["InnerCutOff"].as<float>();
+			light.OuterCutOff = lightComponent["OuterCutOff"].as<float>();
 			light.Color = lightComponent["Color"].as<glm::vec3>();
 			if (lightComponent["Type"])
 			{
@@ -381,6 +385,9 @@ namespace HBL2
 					break;
 				case 2:
 					light.Type = Component::Light::Type::Point;
+					break;
+				case 3:
+					light.Type = Component::Light::Type::Spot;
 					break;
 				default:
 					break;

@@ -7,6 +7,49 @@
 
 namespace HBL2
 {
+	struct Attenuation
+	{
+		float distance;
+		float constant;
+		float linear;
+		float quadratic;
+	};
+
+	static const std::vector<Attenuation> g_AttenuationTable =
+	{
+		{7,     1.0f, 0.7f,   1.8f},
+		{13,    1.0f, 0.35f,  0.44f},
+		{20,    1.0f, 0.22f,  0.20f},
+		{32,    1.0f, 0.14f,  0.07f},
+		{50,    1.0f, 0.09f,  0.032f},
+		{65,    1.0f, 0.07f,  0.017f},
+		{100,   1.0f, 0.045f, 0.0075f},
+		{160,   1.0f, 0.027f, 0.0028f},
+		{200,   1.0f, 0.022f, 0.0019f},
+		{325,   1.0f, 0.014f, 0.0007f},
+		{600,   1.0f, 0.007f, 0.0002f},
+		{3250,  1.0f, 0.0014f, 0.000007f}
+	};
+
+	static Attenuation GetClosestAttenuation(float inputDistance)
+	{
+		const Attenuation* closest = &g_AttenuationTable[0];
+		float minDiff = std::abs(inputDistance - closest->distance);
+
+		for (const auto& a : g_AttenuationTable)
+		{
+			float diff = glm::abs(inputDistance - a.distance);
+			if (diff < minDiff)
+			{
+				closest = &a;
+				minDiff = diff;
+			}
+		}
+
+		return *closest;
+	}
+
+
 	void RenderingSystem::OnCreate()
 	{
 		m_ResourceManager = ResourceManager::Instance;
@@ -665,6 +708,8 @@ namespace HBL2
 				{
 					float lightType = 0.0f;
 
+					const Attenuation& attenuation = GetClosestAttenuation(light.Distance);
+
 					switch (light.Type)
 					{
 					case Component::Light::Type::Directional:
@@ -672,14 +717,14 @@ namespace HBL2
 						break;
 					case Component::Light::Type::Point:
 						lightType = 1.0f;
-						m_LightData.LightMetadata[(int)m_LightData.LightCount].y = 1.0f;   // Constant
-						m_LightData.LightMetadata[(int)m_LightData.LightCount].z = 0.09f;  // Linear
-						m_LightData.LightMetadata[(int)m_LightData.LightCount].w = 0.032f; // Quadratic
+						m_LightData.LightMetadata[(int)m_LightData.LightCount].y = attenuation.constant;
+						m_LightData.LightMetadata[(int)m_LightData.LightCount].z = attenuation.linear;
+						m_LightData.LightMetadata[(int)m_LightData.LightCount].w = attenuation.quadratic;
 						break;
 					case Component::Light::Type::Spot:
 						lightType = 2.0f;
-						m_LightData.LightMetadata[(int)m_LightData.LightCount].y = glm::cos(glm::radians(12.5f)); // inner cutOff
-						m_LightData.LightMetadata[(int)m_LightData.LightCount].z = glm::cos(glm::radians(17.5f)); // outer cutOff
+						m_LightData.LightMetadata[(int)m_LightData.LightCount].y = glm::cos(glm::radians(light.InnerCutOff));
+						m_LightData.LightMetadata[(int)m_LightData.LightCount].z = glm::cos(glm::radians(light.OuterCutOff));
 						break;
 					}
 

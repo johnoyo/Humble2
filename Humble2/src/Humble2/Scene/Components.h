@@ -115,7 +115,11 @@ namespace HBL2
 
 			float Intensity = 1.0f;
 			glm::vec3 Color = { 1.0f, 1.0f, 1.0f };
-			float Attenuation = 10.0f;
+
+			float InnerCutOff = 12.5f;
+			float OuterCutOff = 17.5f;
+			float Distance = 50.0f;
+			
 			Type Type = Type::Directional;
 			bool CastsShadows = false;
 			bool Enabled = true;

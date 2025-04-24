@@ -250,9 +250,10 @@ namespace HBL2
 
 				DrawComponent<HBL2::Component::Light>("Light", m_ActiveScene, [this](HBL2::Component::Light& light)
 				{
-					ImGui::Checkbox("Enabled", &light.Enabled);
-					std::string selectedType = (light.Type == HBL2::Component::Light::Type::Directional ? "Directional" : (light.Type == HBL2::Component::Light::Type::Point ? "Point" : "Spot"));
+					ImGui::Checkbox("Enabled", &light.Enabled);					
+					
 					std::string lightTypes[3] = { "Directional", "Point", "Spot" };
+					std::string selectedType = lightTypes[(int)light.Type];
 
 					if (ImGui::BeginCombo("Type", selectedType.c_str()))
 					{
@@ -272,14 +273,27 @@ namespace HBL2
 						ImGui::EndCombo();
 					}
 					ImGui::Checkbox("CastsShadows", &light.CastsShadows);
-					ImGui::SliderFloat("Intensity", &light.Intensity, 0, 20);
-					if (light.Type == HBL2::Component::Light::Type::Point)
-					{
-						ImGui::SliderFloat("Attenuation", &light.Attenuation, 0, 100);
-					}
+					ImGui::SliderFloat("Intensity", &light.Intensity, 0, 30);
+
 					ImGui::ColorEdit3("Color", glm::value_ptr(light.Color));
 
-					light.Type = selectedType == "Directional" ? HBL2::Component::Light::Type::Directional : (selectedType == "Point" ? HBL2::Component::Light::Type::Point : HBL2::Component::Light::Type::Spot);
+					// Set type back.
+					if (selectedType == "Directional")
+					{
+						light.Type = HBL2::Component::Light::Type::Directional;
+					}
+					else if (selectedType == "Point")
+					{
+						light.Type = HBL2::Component::Light::Type::Point;
+						ImGui::SliderFloat("Distance", &light.Distance, 0, 150);
+					}
+					else
+					{
+						light.Type = HBL2::Component::Light::Type::Spot;
+						ImGui::SliderFloat("Distance", &light.Distance, 0, 150);
+						ImGui::SliderFloat("InnerCutOff", &light.InnerCutOff, 0, 50);
+						ImGui::SliderFloat("OuterCutOff", &light.OuterCutOff, 0, 50);
+					}
 				});
 
 				DrawComponent<HBL2::Component::AudioSource>("AudioSource", m_ActiveScene, [this](HBL2::Component::AudioSource& audioSource)

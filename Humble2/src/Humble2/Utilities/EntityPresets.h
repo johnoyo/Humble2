@@ -237,12 +237,12 @@ namespace HBL2
 			std::vector<float> vertexBuffer;
 			std::vector<uint32_t> indices;
 
-			uint32_t xSegments = 8;
-			uint32_t ySegments = 8;
+			uint32_t xSegments = 32;
+			uint32_t ySegments = 16;
 
-			for (uint32_t x = 0; x <= xSegments; x++)
+			for (uint32_t y = 0; y <= ySegments; ++y)
 			{
-				for (uint32_t y = 0; y <= ySegments; y++)
+				for (uint32_t x = 0; x <= xSegments; ++x)
 				{
 					float xSeg = (float)x / (float)xSegments;
 					float ySeg = (float)y / (float)ySegments;
@@ -251,30 +251,44 @@ namespace HBL2
 					float yPos = glm::cos(ySeg * glm::pi<float>());
 					float zPos = glm::sin(xSeg * 2.0f * glm::pi<float>()) * glm::sin(ySeg * glm::pi<float>());
 
-					vertexBuffer.insert(vertexBuffer.end(), { xPos, yPos, zPos, xSeg, ySeg, xPos, yPos, zPos });
+					vertexBuffer.insert(vertexBuffer.end(), {
+						xPos, yPos, zPos,    // position
+						xPos, yPos, zPos,    // normal (same as pos for unit sphere)
+						xSeg, ySeg,          // UV
+					});
 				}
 			}
 
-			bool oddRow = false;
-
-			for (uint32_t y = 0; y < ySegments; y++)
+			for (uint32_t y = 0; y < ySegments; ++y)
 			{
-				if (!oddRow)
+				for (uint32_t x = 0; x < xSegments; ++x)
 				{
-					for (uint32_t x = 0; x <= xSegments; x++)
-					{
-						indices.push_back(y * (xSegments + 1) + x);
-						indices.push_back((y + 1) * (xSegments + 1) + x);
-					}
+					uint32_t i0 = y * (xSegments + 1) + x;
+					uint32_t i1 = (y + 1) * (xSegments + 1) + x;
+					uint32_t i2 = (y + 1) * (xSegments + 1) + (x + 1);
+					uint32_t i3 = y * (xSegments + 1) + (x + 1);
+
+					// Triangle 1
+					indices.push_back(i0);
+					indices.push_back(i2);
+					indices.push_back(i1);
+
+					// Triangle 2
+					indices.push_back(i0);
+					indices.push_back(i3);
+					indices.push_back(i2);
 				}
-				else
-				{
-					for (uint32_t x = xSegments; x >= 0; x--)
-					{
-						indices.push_back((y + 1) * (xSegments + 1) + x);
-						indices.push_back(y * (xSegments + 1) + x);
-					}
-				}
+			}
+
+			// Compute AABB
+			glm::vec3 minVertex = glm::vec3(std::numeric_limits<float>::max());
+			glm::vec3 maxVertex = glm::vec3(std::numeric_limits<float>::lowest());
+
+			for (size_t i = 0; i < vertexBuffer.size(); i += 8)
+			{
+				glm::vec3 pos = { vertexBuffer[i], vertexBuffer[i + 1], vertexBuffer[i + 2] };
+				minVertex = glm::min(minVertex, pos);
+				maxVertex = glm::max(maxVertex, pos);
 			}
 
 			auto buffer = ResourceManager::Instance->CreateBuffer({
@@ -288,7 +302,7 @@ namespace HBL2
 				.debugName = "sphere_index_buffer",
 				.usage = BufferUsage::INDEX,
 				.byteSize = (uint32_t)sizeof(uint32_t) * (uint32_t)indices.size(),
-				.initialData = vertexBuffer.data(),
+				.initialData = indices.data(),
 			});
 
 			auto sphereMesh = ResourceManager::Instance->CreateMesh({
@@ -302,6 +316,8 @@ namespace HBL2
 								.indexCount = (uint32_t)indices.size(),
 								.vertexOffset = 0,
 								.vertexCount = (uint32_t)vertexBuffer.size() / 8,
+								.minVertex = minVertex,
+								.maxVertex = maxVertex,
 							}
 						},
 						.indexBuffer = indexBuffer,

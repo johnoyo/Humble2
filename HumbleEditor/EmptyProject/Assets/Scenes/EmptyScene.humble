@@ -45,7 +45,7 @@ Entities:
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 2.04237294
+      Aspect Ratio: 2.6242938
       Zoom Level: 300
       Type: 0
   - Entity: 1
@@ -54,9 +54,9 @@ Entities:
     Component::ID:
       ID: 5092772676877043712
     Component::Transform:
-      Translation: [0, 2.62240148, 1.66328478]
+      Translation: [0, 2, 0]
       Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
+      Scale: [0.99999994, 0.99999994, 1]
     Component::Link:
       Parent: 0
       Children:
@@ -64,10 +64,12 @@ Entities:
     Component::Light:
       Enabled: true
       CastsShadows: false
-      Intensity: 1
-      Attenuation: 10
+      Intensity: 1.09300005
+      Distance: 50
+      InnerCutOff: 12.5
+      OuterCutOff: 17.5
       Color: [1, 1, 1]
-      Type: 0
+      Type: 1
   - Entity: 0
     Component::Tag:
       Tag: Sprite
@@ -75,7 +77,7 @@ Entities:
       ID: 2898162071183314432
     Component::Transform:
       Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
+      Rotation: [1, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
       Parent: 0
