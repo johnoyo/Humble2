@@ -12,7 +12,8 @@ namespace HBL2
     /**
      * @brief A resizable array that automatically grows when needed.
      *
-     * It supports fast random access and amortized O(1) insertions at the end, making it suitable for dynamic collections.
+     * It supports fast random access and amortized O(1) insertions at the end,
+     * making it suitable for dynamic collections.
      *
      * @tparam T The type of the element to store in the array.
      * @tparam TAllocator The allocator type to use.
@@ -369,7 +370,7 @@ namespace HBL2
 		{
             if (m_Allocator == nullptr)
             {
-                operator delete ptr;
+                operator delete(ptr);
                 return;
             }
 

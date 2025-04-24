@@ -52,8 +52,9 @@ layout(std140, set = 0, binding = 1) uniform Light
 {
     vec4 ViewPosition;
     vec4 Positions[16];
+    vec4 Directions[16];
     vec4 Colors[16];
-    float Intensities[16];
+    vec4 Metadata[16];
     float Count;
 } u_Light;
 
@@ -70,19 +71,101 @@ void main()
     
     for (int i = 0; i < int(u_Light.Count); i++)
     {
-        // diffuse
-        vec3 lightDir = normalize(u_Light.Positions[i].xyz - v_Position);
-        float diff = max(dot(lightDir, normal), 0.0);
-        vec3 D = diff * u_Light.Colors[i].xyz * u_Light.Intensities[i];
+        float lightIntensity = u_Light.Metadata[i].x;
 
-        // specular
-        vec3 halfwayDir = normalize(lightDir + camDir);  
-        float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0) * v_Glossiness;
-        vec3 S = u_Light.Colors[i].xyz * spec * u_Light.Intensities[i];
+        if (u_Light.Positions[i].w == 0.0)
+        {
+            // Directional light: direction is normalized and points *towards* the surface
+            vec3 lightDir = normalize(-u_Light.Directions[i].xyz);
 
-        diffuse += D;
-        specular += S;
-        ambient += u_Light.Colors[i].xyz * u_Light.Intensities[i];
+            // Diffuse
+            float diff = max(dot(lightDir, normal), 0.0);
+            vec3 D = diff * u_Light.Colors[i].xyz * lightIntensity;
+
+            // Specular
+            vec3 halfwayDir = normalize(lightDir + camDir);  
+            float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0) * v_Glossiness;
+            vec3 S = u_Light.Colors[i].xyz * spec * lightIntensity; 
+
+            // Ambient
+            ambient += u_Light.Colors[i].xyz * lightIntensity;
+
+            // Accumulate
+            diffuse += D;
+            specular += S;
+        }
+        else if (u_Light.Positions[i].w == 1.0)
+        {
+            // Point light: direction from fragment to light position
+            vec3 lightDir = normalize(u_Light.Positions[i].xyz - v_Position);
+
+            float lightConstant = u_Light.Metadata[i].y;
+            float lightLinear = u_Light.Metadata[i].z;
+            float lightQuadratic = u_Light.Metadata[i].w;
+
+            float distance = length(u_Light.Positions[i].xyz - v_Position);
+            float attenuation = 1.0 / (lightConstant + lightLinear * distance + lightQuadratic * (distance * distance));
+
+            // Diffuse
+            float diff = max(dot(lightDir, normal), 0.0);
+            vec3 D = diff * u_Light.Colors[i].xyz * lightIntensity;
+
+            // Specular
+            vec3 halfwayDir = normalize(lightDir + camDir);  
+            float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0) * v_Glossiness;
+            vec3 S = u_Light.Colors[i].xyz * spec * lightIntensity; 
+
+            // Ambient
+            ambient += u_Light.Colors[i].xyz * lightIntensity;
+
+            // Accumulate
+            diffuse += D;
+            specular += S;
+
+            // Apply attenuation
+            diffuse *= attenuation;
+            specular *= attenuation;
+            ambient *= attenuation;
+        }
+        else if (u_Light.Positions[i].w == 2.0)
+        {
+            // Spot light:
+            vec3 lightDir = normalize(u_Light.Positions[i].xyz - v_Position);
+
+            float innerCutOff = u_Light.Metadata[i].y;
+            float outerCutOff = u_Light.Metadata[i].z;
+
+            float theta = dot(lightDir, normalize(-u_Light.Directions[i].xyz));
+            float epsilon = (innerCutOff - outerCutOff);
+            float intensity = clamp((theta - outerCutOff) / epsilon, 0.0, 1.0);
+
+            float lightConstant = 1.0;
+            float lightLinear = 0.09;
+            float lightQuadratic = 0.032;
+            float distance = length(u_Light.Positions[i].xyz - v_Position);
+            float attenuation = 1.0 / (lightConstant + lightLinear * distance + lightQuadratic * (distance * distance));
+
+            // Diffuse
+            float diff = max(dot(lightDir, normal), 0.0);
+            vec3 D = diff * u_Light.Colors[i].xyz * lightIntensity;
+
+            // Specular
+            vec3 halfwayDir = normalize(lightDir + camDir);  
+            float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0) * v_Glossiness;
+            vec3 S = u_Light.Colors[i].xyz * spec * lightIntensity; 
+
+            // Ambient
+            ambient += u_Light.Colors[i].xyz * lightIntensity;
+
+            // Accumulate
+            diffuse += D;
+            specular += S;
+
+            // Apply attenuation and intensity
+            diffuse *= (intensity * attenuation);
+            specular *= (intensity * attenuation);
+            ambient *= attenuation;
+        }
     }
     
     ambient = ambientCoefficient * ambient;

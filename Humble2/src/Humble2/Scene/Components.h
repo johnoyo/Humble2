@@ -110,6 +110,7 @@ namespace HBL2
 			{
 				Directional = 0,
 				Point,
+				Spot,
 			};
 
 			float Intensity = 1.0f;

@@ -76,16 +76,20 @@ namespace HBL2
 
 			float vertexBuffer[] =
 			{
-				-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-				 0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-				 0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-				 0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-			    -0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-			    -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+				// position         // normal         // texcoord
+				-0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f,
+				 0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  1.0f, 1.0f,
+				 0.5f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  1.0f, 0.0f,
+
+				 0.5f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  1.0f, 0.0f,
+				-0.5f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
+				-0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f,
 			};
+
 
 			auto buffer = ResourceManager::Instance->CreateBuffer({
 				.debugName = "plane-vertex-buffer",
+				.usage = BufferUsage::VERTEX,
 				.byteSize = sizeof(float) * 48,
 				.initialData = vertexBuffer,
 			});
@@ -99,6 +103,8 @@ namespace HBL2
 							{
 								.vertexOffset = 0,
 								.vertexCount = 6,
+								.minVertex = { -0.5f, -0.5f, 0.0f },
+								.maxVertex = {  0.5f,  0.5f, 0.0f },
 							}
 						},
 						.vertexBuffers = { buffer },
@@ -113,7 +119,105 @@ namespace HBL2
 
 		static entt::entity CreateCube()
 		{
-			return entt::null;
+			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+			if (scene == nullptr)
+			{
+				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a cube entity.");
+				return entt::null;
+			}
+
+			auto entity = scene->CreateEntity("Cube");
+			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
+			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
+
+			float vertexBuffer[] =
+			{
+				// positions          // normals           // texture coords
+
+				// Back face
+				-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+				 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+				 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+
+				 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+				-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+				-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+
+				// Front face
+				-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+				 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+				 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+
+				 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+				-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+				-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+
+				// Left face
+				-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+				-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+				-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+
+				-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+				-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+				-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+
+				// Right face
+				 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+				 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+				 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+
+				 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+				 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+				 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+
+				// Bottom face
+				-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+				 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+				 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+
+				 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+				-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+				-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+
+				// Top face
+				-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+				 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+				 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+
+				 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+				-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+				-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+			};
+
+			auto buffer = ResourceManager::Instance->CreateBuffer({
+				.debugName = "cube-vertex-buffer",
+				.usage = BufferUsage::VERTEX,
+				.byteSize = sizeof(float) * 288,
+				.initialData = vertexBuffer,
+			});
+
+			auto cubeMesh = ResourceManager::Instance->CreateMesh({
+				.debugName = "cube-mesh",
+				.meshes = {
+					{
+						.debugName = "cube-sub-mesh",
+						.subMeshes = {
+							{
+								.vertexOffset = 0,
+								.vertexCount = 36,
+								.minVertex = { -0.5f, -0.5f, -0.5f },
+								.maxVertex = {  0.5f,  0.5f,  0.5f },
+							}
+						},
+						.vertexBuffers = { buffer },
+					}
+				}
+			});
+
+			staticMesh.Mesh = cubeMesh;
+
+			return entity;
 		}
 
 		static entt::entity CreateSphere()
@@ -175,13 +279,15 @@ namespace HBL2
 
 			auto buffer = ResourceManager::Instance->CreateBuffer({
 				.debugName = "sphere_vertex_buffer",
+				.usage = BufferUsage::VERTEX,
 				.byteSize = (uint32_t)sizeof(float) * (uint32_t)vertexBuffer.size(),
 				.initialData = vertexBuffer.data(),
 			});
 
 			auto indexBuffer = ResourceManager::Instance->CreateBuffer({
 				.debugName = "sphere_index_buffer",
-				.byteSize = (uint32_t)sizeof(float) * (uint32_t)vertexBuffer.size(),
+				.usage = BufferUsage::INDEX,
+				.byteSize = (uint32_t)sizeof(uint32_t) * (uint32_t)indices.size(),
 				.initialData = vertexBuffer.data(),
 			});
 

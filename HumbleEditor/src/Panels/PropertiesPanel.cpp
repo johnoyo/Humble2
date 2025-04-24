@@ -251,8 +251,8 @@ namespace HBL2
 				DrawComponent<HBL2::Component::Light>("Light", m_ActiveScene, [this](HBL2::Component::Light& light)
 				{
 					ImGui::Checkbox("Enabled", &light.Enabled);
-					std::string selectedType = light.Type == HBL2::Component::Light::Type::Directional ? "Directional" : "Point";
-					std::string lightTypes[2] = { "Directional", "Point" };
+					std::string selectedType = (light.Type == HBL2::Component::Light::Type::Directional ? "Directional" : (light.Type == HBL2::Component::Light::Type::Point ? "Point" : "Spot"));
+					std::string lightTypes[3] = { "Directional", "Point", "Spot" };
 
 					if (ImGui::BeginCombo("Type", selectedType.c_str()))
 					{
@@ -279,7 +279,7 @@ namespace HBL2
 					}
 					ImGui::ColorEdit3("Color", glm::value_ptr(light.Color));
 
-					light.Type = selectedType == "Directional" ? HBL2::Component::Light::Type::Directional : HBL2::Component::Light::Type::Point;
+					light.Type = selectedType == "Directional" ? HBL2::Component::Light::Type::Directional : (selectedType == "Point" ? HBL2::Component::Light::Type::Point : HBL2::Component::Light::Type::Spot);
 				});
 
 				DrawComponent<HBL2::Component::AudioSource>("AudioSource", m_ActiveScene, [this](HBL2::Component::AudioSource& audioSource)

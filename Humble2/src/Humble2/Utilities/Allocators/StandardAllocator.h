@@ -40,7 +40,7 @@ namespace HBL2
 		template<typename T>
 		void Deallocate(T* object)
 		{
-			operator delete object;
+			operator delete(object);
 		}
 
 		/**

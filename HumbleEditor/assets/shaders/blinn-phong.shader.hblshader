@@ -20,3 +20,12 @@ Shader:
         WriteEnabled: true
         StencilEnabled: true
         DepthTest: 0
+    - Variant: 5353196815613160613
+      BlendState:
+        Enabled: false
+        ColorOutputEnabled: true
+      DepthState:
+        Enabled: true
+        WriteEnabled: true
+        StencilEnabled: true
+        DepthTest: 1

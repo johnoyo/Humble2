@@ -232,6 +232,14 @@ namespace HBL2
 					HBL2::Component::EditorVisible::Selected = true;
 				}
 
+				if (ImGui::MenuItem("Create Cube"))
+				{
+					auto entity = HBL2::EntityPreset::CreateCube();
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
+				}
+
 				if (ImGui::MenuItem("Create Sphere"))
 				{
 					auto entity = HBL2::EntityPreset::CreateSphere();

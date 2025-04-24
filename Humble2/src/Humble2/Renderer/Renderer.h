@@ -16,8 +16,9 @@ namespace HBL2
 	{
 		glm::vec4 ViewPosition;
 		glm::vec4 LightPositions[16];
+		glm::vec4 LightDirections[16];
 		glm::vec4 LightColors[16];
-		glm::vec4 LightIntensities[16];
+		glm::vec4 LightMetadata[16];
 		float LightCount;
 		float _padding[3];
 	};

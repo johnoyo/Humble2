@@ -3,6 +3,8 @@
 #include "Core\Window.h"
 #include "Utilities\ShaderUtilities.h"
 
+#include <glm/gtx/euler_angles.hpp>
+
 namespace HBL2
 {
 	void RenderingSystem::OnCreate()
@@ -661,8 +663,48 @@ namespace HBL2
 			{
 				if (light.Enabled)
 				{
+					float lightType = 0.0f;
+
+					switch (light.Type)
+					{
+					case Component::Light::Type::Directional:
+						lightType = 0.0f;
+						break;
+					case Component::Light::Type::Point:
+						lightType = 1.0f;
+						m_LightData.LightMetadata[(int)m_LightData.LightCount].y = 1.0f;   // Constant
+						m_LightData.LightMetadata[(int)m_LightData.LightCount].z = 0.09f;  // Linear
+						m_LightData.LightMetadata[(int)m_LightData.LightCount].w = 0.032f; // Quadratic
+						break;
+					case Component::Light::Type::Spot:
+						lightType = 2.0f;
+						m_LightData.LightMetadata[(int)m_LightData.LightCount].y = glm::cos(glm::radians(12.5f)); // inner cutOff
+						m_LightData.LightMetadata[(int)m_LightData.LightCount].z = glm::cos(glm::radians(17.5f)); // outer cutOff
+						break;
+					}
+
+					// Convert rotation from degrees to radians
+					glm::vec3 rotationRadians = glm::radians(transform.Rotation);
+
+					// Create local rotation matrix from Euler angles (YXZ order is common, but adjust as needed)
+					glm::mat4 localRotation = glm::eulerAngleYXZ(rotationRadians.y, rotationRadians.x, rotationRadians.z);
+
+					// Define the local forward direction
+					glm::vec3 localForward = glm::vec3(0.0f, -1.0f, 0.0f);
+
+					// Transform local forward by the local rotation matrix
+					glm::vec4 rotatedDirection = localRotation * glm::vec4(localForward, 0.0f); // w = 0 to avoid translation
+
+					// Extract rotation part of world matrix (3x3)
+					glm::mat3 worldRotation = glm::mat3(transform.WorldMatrix);
+
+					// Apply world rotation
+					glm::vec3 worldDirection = glm::normalize(worldRotation * glm::vec3(rotatedDirection));
+
 					m_LightData.LightPositions[(int)m_LightData.LightCount] = transform.WorldMatrix * glm::vec4(transform.Translation, 1.0f);
-					m_LightData.LightIntensities[(int)m_LightData.LightCount].x = light.Intensity;
+					m_LightData.LightPositions[(int)m_LightData.LightCount].w = lightType;
+					m_LightData.LightDirections[(int)m_LightData.LightCount] = glm::vec4(worldDirection, 0.0f);
+					m_LightData.LightMetadata[(int)m_LightData.LightCount].x = light.Intensity;
 					m_LightData.LightColors[(int)m_LightData.LightCount] = glm::vec4(light.Color, 1.0f);
 					m_LightData.LightCount++;
 				}

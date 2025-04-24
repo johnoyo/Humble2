@@ -50,8 +50,9 @@ layout(std140, set = 0, binding = 1) uniform Light
 {
     vec4 ViewPosition;
     vec4 Positions[16];
+    vec4 Directions[16];
     vec4 Colors[16];
-    float Intensities[16];
+    vec4 Metadata[16];
     float Count;
 } u_Light;
 
@@ -136,12 +137,14 @@ void main()
     vec3 Lo = vec3(0.0);
     for(int i = 0; i < int(u_Light.Count); ++i) 
     {
+        float intensity = u_Light.Metadata[i].x;
+
         // calculate per-light radiance
         vec3 L = normalize(u_Light.Positions[i].xyz - v_Position);
         vec3 H = normalize(V + L);
         float distance = length(u_Light.Positions[i].xyz - v_Position);
         float attenuation = 1.0 / (distance * distance);
-        vec3 radiance = u_Light.Colors[i].xyz * attenuation * u_Light.Intensities[i];
+        vec3 radiance = u_Light.Colors[i].xyz * attenuation * intensity;
 
         // Cook-Torrance BRDF
         float NDF = DistributionGGX(N, H, roughness);   
@@ -177,6 +180,7 @@ void main()
 
     // HDR tonemapping
     color = color / (color + vec3(1.0));
+
     // gamma correct
     color = pow(color, vec3(1.0 / 2.2)); 
 

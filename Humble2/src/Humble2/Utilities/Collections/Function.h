@@ -50,9 +50,7 @@ namespace HBL2
          * @param allocator Optional allocator for heap-based callables.
          */
         Function(TAllocator* allocator = nullptr)
-            : m_Allocator(allocator)
-        {
-        }
+            : m_Allocator(allocator) {}
 
         /**
 		 * @brief Constructs a Function from any callable (lambda, functor, etc.)

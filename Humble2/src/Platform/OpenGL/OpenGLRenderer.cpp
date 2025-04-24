@@ -266,7 +266,7 @@ namespace HBL2
 			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::GPU_CPU,
 			.byteSize = sizeof(LightData),
-			.initialData = nullptr
+			.initialData = nullptr,
 		});
 
 		m_GlobalBindings3D = m_ResourceManager->CreateBindGroup({
