@@ -46,12 +46,12 @@ namespace HBL2
 		VkCommandBuffer PostProcessCommandBuffer;
 		VkCommandBuffer PresentCommandBuffer;
 
-		VkCommandPool SecondaryCommandPool;
+		/*VkCommandPool SecondaryCommandPool;
 		std::vector<VkCommandBuffer> SecondaryShadowCommandBuffers;
 		std::vector<VkCommandBuffer> SecondaryOpaqueCommandBuffers;
 		std::vector<VkCommandBuffer> SecondarySkyboxCommandBuffers;
 		std::vector<VkCommandBuffer> SecondaryTransparentCommandBuffers;
-		std::vector<VkCommandBuffer> SecondaryPostProcessCommandBuffers;
+		std::vector<VkCommandBuffer> SecondaryPostProcessCommandBuffers;*/
 
 		Handle<BindGroup> GlobalBindings2D;
 		Handle<BindGroup> GlobalBindings3D;

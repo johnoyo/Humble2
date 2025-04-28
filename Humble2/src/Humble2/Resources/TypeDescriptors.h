@@ -207,6 +207,7 @@ namespace HBL2
 	{
 		struct ColorTarget
 		{
+			Format format = Format::BGRA8_UNORM;
 			LoadOperation loadOp = LoadOperation::CLEAR;
 			StoreOperation storeOp = StoreOperation::STORE;
 			TextureLayout prevUsage = TextureLayout::UNDEFINED;

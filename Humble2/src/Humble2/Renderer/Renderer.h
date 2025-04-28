@@ -12,6 +12,13 @@ namespace HBL2
 		glm::mat4 ViewProjection;
 	};
 
+	struct alignas(16) CameraSettings
+	{
+		float Exposure;
+		float Gamma;
+		float _padding[2];
+	};
+
 	struct LightData
 	{
 		glm::vec4 ViewPosition;
@@ -95,6 +102,7 @@ namespace HBL2
 		RendererStats& GetRendererStats() { return m_Stats; }
 
 		const Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
+		const Handle<RenderPass> GetRenderingRenderPass() const { return m_RenderingRenderPass; }
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() = 0;
 
 		virtual Handle<BindGroup> GetGlobalBindings2D() = 0;
@@ -108,6 +116,7 @@ namespace HBL2
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
 
 		UniformRingBuffer* TempUniformRingBuffer;
+		Handle<Texture> IntermediateColorTexture;
 		Handle<Texture> MainColorTexture;
 		Handle<Texture> MainDepthTexture;
 
@@ -133,6 +142,7 @@ namespace HBL2
 		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
 		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
 		Handle<RenderPass> m_RenderPass;
+		Handle<RenderPass> m_RenderingRenderPass;
 
 		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 	};

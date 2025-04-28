@@ -145,6 +145,8 @@ namespace HBL2
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) override
 		{
+			// FIXME: When shared between multiple bindgroups and we delete it once, the other references become invalid!
+#if 0
 			// Caching mechanism so that materials with the same resources, use the same bind group.
 			uint16_t index = 0;
 
@@ -161,7 +163,7 @@ namespace HBL2
 
 				index++;
 			}
-
+#endif
 			return m_BindGroupPool.Insert(OpenGLBindGroup(std::forward<const BindGroupDescriptor>(desc)));
 		}
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) override

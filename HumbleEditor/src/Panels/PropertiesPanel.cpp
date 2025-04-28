@@ -143,10 +143,12 @@ namespace HBL2
 					{
 						ImGui::Checkbox("Enabled", &camera.Enabled);
 						ImGui::Checkbox("Primary", &camera.Primary);
-						ImGui::SliderFloat("Far", &camera.Far, 0, 100);
-						ImGui::SliderFloat("Near", &camera.Near, 100, 1500);
+						ImGui::SliderFloat("Near", &camera.Near, 0, 100);
+						ImGui::SliderFloat("Far", &camera.Far, 100, 1500);
 						ImGui::SliderFloat("FOV", &camera.Fov, 0, 120);
-						ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 2);
+						ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 3);
+						ImGui::SliderFloat("Exposure", &camera.Exposure, 0, 50);
+						ImGui::SliderFloat("Gamma", &camera.Gamma, 0, 4);
 						ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
 
 						std::string selectedProjection = camera.Type == HBL2::Component::Camera::Type::Perspective ? "Perspective" : "Orthographic";

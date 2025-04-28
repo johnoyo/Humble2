@@ -133,6 +133,7 @@ namespace HBL2
 		BGRA8_UNORM,
 		RG16_FLOAT,
 		RGBA8_RGB,
+		R10G10B10A2_UNORM,
 	};
 
 	enum class MemoryUsage

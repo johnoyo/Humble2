@@ -102,9 +102,6 @@ namespace HBL2
 
 		bool RuntimeContext::OpenProject()
 		{
-			HBL2::TextureUtilities::Get().LoadWhiteTexture();
-			HBL2::ShaderUtilities::Get().LoadBuiltInShaders();
-
 			std::filesystem::path filepath;
 
 			for (const auto& entry : std::filesystem::recursive_directory_iterator(std::filesystem::current_path()))
@@ -123,6 +120,9 @@ namespace HBL2
 
 			if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 			{
+				HBL2::TextureUtilities::Get().LoadWhiteTexture();
+				HBL2::ShaderUtilities::Get().LoadBuiltInShaders();
+
 				HBL2::Project::OpenStartingScene(true);
 				return true;
 			}

@@ -122,6 +122,7 @@ namespace HBL2
 
 		m_MainDeletionQueue.Flush();
 
+		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
 
@@ -182,6 +183,13 @@ namespace HBL2
 
 		{
 			CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Transparent);
+			RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(GetMainRenderPass(), GetMainFrameBuffer());
+			commandBuffer->EndRenderPass(*passRenderer);
+			commandBuffer->Submit();
+		}
+
+		{
+			CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::PostProcess);
 			RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(GetMainRenderPass(), GetMainFrameBuffer());
 			commandBuffer->EndRenderPass(*passRenderer);
 			commandBuffer->Submit();
@@ -373,6 +381,7 @@ namespace HBL2
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 
 		// Destroy old offscreen textures.
+		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
 
@@ -384,6 +393,20 @@ namespace HBL2
 		CreateFrameBuffers();
 
 		// Recreate the offscreen texture (render target).
+		IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "intermediate-color-target",
+			.dimensions = { width, height, 1 },
+			.format = Format::RGBA16_FLOAT,
+			.internalFormat = Format::RGBA16_FLOAT,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::COLOR,
+			.sampler =
+			{
+				.filter = Filter::LINEAR,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
 		MainColorTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "viewport-color-target",
 			.dimensions = { width, height, 1 },
@@ -634,14 +657,14 @@ namespace HBL2
 			VK_VALIDATE(vkCreateCommandPool(m_Device->Get(), &commandPoolInfo, nullptr, &m_Frames[i].CommandPool), "vkCreateCommandPool");
 
 			// Allocate the default and ImGui command buffers that we will use for regular and imgui rendering.
-			VkCommandBuffer commandBuffers[5];
+			VkCommandBuffer commandBuffers[6];
 			VkCommandBufferAllocateInfo cmdAllocInfo =
 			{
 				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 				.pNext = nullptr,
 				.commandPool = m_Frames[i].CommandPool,
 				.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-				.commandBufferCount = 5,
+				.commandBufferCount = 6,
 			};			
 
 			VK_VALIDATE(vkAllocateCommandBuffers(m_Device->Get(), &cmdAllocInfo, commandBuffers), "vkAllocateCommandBuffers");
@@ -651,9 +674,9 @@ namespace HBL2
 			m_Frames[i].OpaqueCommandBuffer = commandBuffers[1];
 			//m_Frames[i].SkyboxCommandBuffer = commandBuffers[2];
 			m_Frames[i].TransparentCommandBuffer = commandBuffers[2];
-			//m_Frames[i].PostProcessCommandBuffer = commandBuffers[2];
-			m_Frames[i].PresentCommandBuffer = commandBuffers[3];
-			m_Frames[i].ImGuiCommandBuffer = commandBuffers[4];
+			m_Frames[i].PostProcessCommandBuffer = commandBuffers[3];
+			m_Frames[i].PresentCommandBuffer = commandBuffers[4];
+			m_Frames[i].ImGuiCommandBuffer = commandBuffers[5];
 
 			m_MainDeletionQueue.PushFunction([=]()
 			{
@@ -702,19 +725,19 @@ namespace HBL2
 				.signalSemaphore = m_Frames[i].TransparentRenderFinishedSemaphore,
 			});
 
-			/*m_PostProcessCommandBuffers[i] = VulkanCommandBuffer({
+			m_PostProcessCommandBuffers[i] = VulkanCommandBuffer({
 				.type = CommandBufferType::MAIN,
 				.commandBuffer = m_Frames[i].PostProcessCommandBuffer,
 				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].OpaqueSpriteRenderFinishedSemaphore,
+				.waitSemaphore = m_Frames[i].TransparentRenderFinishedSemaphore,
 				.signalSemaphore = m_Frames[i].PostProcessRenderFinishedSemaphore,
-			});*/
+			});
 
 			m_PresentCommandBuffers[i] = VulkanCommandBuffer({
 				.type = CommandBufferType::MAIN,
 				.commandBuffer = m_Frames[i].PresentCommandBuffer,
 				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].TransparentRenderFinishedSemaphore,
+				.waitSemaphore = m_Frames[i].PostProcessRenderFinishedSemaphore,
 				.signalSemaphore = m_Frames[i].PresentRenderFinishedSemaphore,
 			});
 
@@ -726,13 +749,13 @@ namespace HBL2
 				.signalSemaphore = m_Frames[i].ImGuiRenderFinishedSemaphore,
 			});
 
-			// Secondary
-			VK_VALIDATE(vkCreateCommandPool(m_Device->Get(), &secondaryCommandPoolInfo, nullptr, &m_Frames[i].SecondaryCommandPool), "vkCreateCommandPool");
+			//// Secondary
+			//VK_VALIDATE(vkCreateCommandPool(m_Device->Get(), &secondaryCommandPoolInfo, nullptr, &m_Frames[i].SecondaryCommandPool), "vkCreateCommandPool");
 
-			m_MainDeletionQueue.PushFunction([=]()
-			{
-				vkDestroyCommandPool(m_Device->Get(), m_Frames[i].SecondaryCommandPool, nullptr);
-			});
+			//m_MainDeletionQueue.PushFunction([=]()
+			//{
+			//	vkDestroyCommandPool(m_Device->Get(), m_Frames[i].SecondaryCommandPool, nullptr);
+			//});
 		}
 
 		CreateUploadContextCommands();
@@ -809,6 +832,28 @@ namespace HBL2
 			},
 			.colorTargets = {
 				{
+					.loadOp = LoadOperation::CLEAR,
+					.storeOp = StoreOperation::STORE,
+					.prevUsage = TextureLayout::UNDEFINED,
+					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
+				},
+			},
+		});
+
+		m_RenderingRenderPass = ResourceManager::Instance->CreateRenderPass({
+			.debugName = "main-renderpass",
+			.layout = renderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::CLEAR,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::UNDEFINED,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
+			},
+			.colorTargets = {
+				{
+					.format = Format::RGBA16_FLOAT,
 					.loadOp = LoadOperation::CLEAR,
 					.storeOp = StoreOperation::STORE,
 					.prevUsage = TextureLayout::UNDEFINED,
@@ -1004,6 +1049,7 @@ namespace HBL2
 		{
 			// Chose VK_FORMAT_B8G8R8A8_UNORM over VK_FORMAT_B8G8R8A8_SRGB since ingui was rendered with washed out colors with SRGB, since it uses UNORM internally.
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			// if (availableFormat.format == VK_FORMAT_A2B10G10R10_UNORM_PACK32 && availableFormat.colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
 			{
 				return availableFormat;
 			}

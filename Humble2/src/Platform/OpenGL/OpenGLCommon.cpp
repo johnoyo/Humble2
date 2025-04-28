@@ -128,6 +128,14 @@ namespace HBL2
 				return GL_RGBA8;
 			case Format::BGRA8_UNORM:
 				return GL_RGBA8;
+			case Format::RGBA16_FLOAT:
+				return GL_RGBA16F;
+			case Format::RGB32_FLOAT:
+				return GL_RGB32F;
+			case Format::RG16_FLOAT:
+				return GL_RG16F;
+			case Format::R10G10B10A2_UNORM:
+				return GL_RGB10_A2;
 			}
 
 			return -1;

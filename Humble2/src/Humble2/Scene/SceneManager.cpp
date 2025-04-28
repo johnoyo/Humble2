@@ -217,7 +217,7 @@ namespace HBL2
 			return;
 		}
 
-		// Transmot scene change event.
+		// Transmit scene change event.
 		EventDispatcher::Get().Post(SceneChangeEvent(m_CurrentSceneHandle, m_NewSceneHandle));
 
 		if (m_RuntimeSceneChange)
@@ -241,7 +241,7 @@ namespace HBL2
 		{
 			// Find the current scene asset handle.
 			// NOTE: This is needed since if in playmode we change the scene, and then when we exit play mode and cahnge scenes,
-			//		 the scene that was changed in play mode will be present, so the wring scene will be unloaded.
+			//		 the scene that was changed in play mode will be present, so the wrong scene will be unloaded.
 			m_CurrentSceneAssetHandle = {};
 
 			for (auto handle : AssetManager::Instance->GetRegisteredAssets())

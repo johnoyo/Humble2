@@ -2,7 +2,7 @@
 
 namespace HBL2
 {
-	void OpenGLComputePassRenderer::Dispatch(Span<const HBL2::Dispatch> dispatches)
+	void OpenGLComputePassRenderer::Dispatch(const Span<const HBL2::Dispatch>& dispatches)
 	{
 
 	}

@@ -7,6 +7,6 @@ namespace HBL2
 	class VulkanComputePassRenderer final : public ComputePassRenderer
 	{
 	public:
-		virtual void Dispatch(Span<const HBL2::Dispatch> dispatches) override;
+		virtual void Dispatch(const Span<const HBL2::Dispatch>& dispatches) override;
 	};
 }

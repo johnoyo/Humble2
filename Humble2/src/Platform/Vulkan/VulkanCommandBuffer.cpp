@@ -66,8 +66,8 @@ namespace HBL2
 		// Set viewport
 		VkViewport viewport =
 		{
-			.x = 0,
-			.y = 0,
+			.x = 0.0f,
+			.y = 0.0f,
 			.width = (float)vkFrameBuffer->Width,
 			.height = (float)vkFrameBuffer->Height,
 			.minDepth = 0.0f,

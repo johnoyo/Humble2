@@ -69,6 +69,8 @@ namespace HBL2
 			out << YAML::Key << "Near" << YAML::Value << camera.Near;
 			out << YAML::Key << "FOV" << YAML::Value << camera.Fov;
 			out << YAML::Key << "Aspect Ratio" << YAML::Value << camera.AspectRatio;
+			out << YAML::Key << "Exposure" << YAML::Value << camera.Exposure;
+			out << YAML::Key << "Gamma" << YAML::Value << camera.Gamma;
 			out << YAML::Key << "Zoom Level" << YAML::Value << camera.ZoomLevel;
 			out << YAML::Key << "Type" << YAML::Value << (int)camera.Type;
 
@@ -325,6 +327,8 @@ namespace HBL2
 			camera.Near = cameraComponent["Near"].as<float>();
 			camera.Fov = cameraComponent["FOV"].as<float>();
 			camera.AspectRatio = cameraComponent["Aspect Ratio"].as<float>();
+			camera.Exposure = cameraComponent["Exposure"].as<float>();
+			camera.Gamma = cameraComponent["Gamma"].as<float>();
 			camera.ZoomLevel = cameraComponent["Zoom Level"].as<float>();
 			if (cameraComponent["Type"])
 			{

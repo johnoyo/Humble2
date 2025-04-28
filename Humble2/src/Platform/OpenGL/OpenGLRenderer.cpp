@@ -10,9 +10,8 @@ namespace HBL2
 #ifdef DEBUG
 		GLDebug::EnableGLDebugging();
 #endif
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glBlendEquation(GL_FUNC_ADD);
+		// Origin at upper-left, depth range [0..1] (same as Vulkan)
+		glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
 
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
@@ -23,7 +22,7 @@ namespace HBL2
 		m_OpaqueCommandBuffer = new OpenGLCommandBuffer();
 		// m_SkyboxCommandBuffer = new OpenGLCommandBuffer();
 		m_TransparentCommandBuffer = new OpenGLCommandBuffer();
-		// m_PostProcessCommandBuffer = new OpenGLCommandBuffer();
+		m_PostProcessCommandBuffer = new OpenGLCommandBuffer();
 		m_PresentCommandBuffer = new OpenGLCommandBuffer();
 		m_UserInterfaceCommandBuffer = new OpenGLCommandBuffer();
 
@@ -48,6 +47,8 @@ namespace HBL2
 
 	void OpenGLRenderer::BeginFrame()
 	{
+		glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
+
 		m_Stats.Reset();
 		TempUniformRingBuffer->Invalidate();
 	}
@@ -110,10 +111,25 @@ namespace HBL2
 		}
 
 		// Destroy old offscreen textures
+		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
 
 		// Recreate the offscreen texture (render target)
+		IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "intermediate-color-target",
+			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+			.format = Format::RGBA16_FLOAT,
+			.internalFormat = Format::RGBA16_FLOAT,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::COLOR,
+			.sampler =
+			{
+				.filter = Filter::LINEAR,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
 		MainColorTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "viewport-color-target",
 			.dimensions = { width, height, 1 },
@@ -164,6 +180,7 @@ namespace HBL2
 
 	void OpenGLRenderer::Clean()
 	{
+		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
 
@@ -313,6 +330,28 @@ namespace HBL2
 			},
 			.colorTargets = {
 				{
+					.loadOp = LoadOperation::CLEAR,
+					.storeOp = StoreOperation::STORE,
+					.prevUsage = TextureLayout::UNDEFINED,
+					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
+				},
+			},
+		});
+
+		m_RenderingRenderPass = ResourceManager::Instance->CreateRenderPass({
+			.debugName = "main-renderpass",
+			.layout = renderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::CLEAR,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::UNDEFINED,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
+			},
+			.colorTargets = {
+				{
+					.format = Format::RGBA16_FLOAT,
 					.loadOp = LoadOperation::CLEAR,
 					.storeOp = StoreOperation::STORE,
 					.prevUsage = TextureLayout::UNDEFINED,

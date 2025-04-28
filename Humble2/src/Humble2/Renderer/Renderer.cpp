@@ -13,6 +13,20 @@ namespace HBL2
 
 		TempUniformRingBuffer = new UniformRingBuffer(32_MB, Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
 
+		IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "intermediate-color-target",
+			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+			.format = Format::RGBA16_FLOAT,
+			.internalFormat = Format::RGBA16_FLOAT,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::COLOR,
+			.sampler =
+			{
+				.filter = Filter::LINEAR,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
 		MainColorTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "viewport-color-target",
 			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },

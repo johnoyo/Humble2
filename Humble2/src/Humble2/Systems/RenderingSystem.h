@@ -62,6 +62,7 @@ namespace HBL2
 		Scene* m_EditorScene = nullptr;
 		LightData m_LightData{};
 		CameraData m_CameraData{};
+		CameraSettings m_CameraSettings{};
 		Component::Camera::CameraFrustum m_CameraFrustum{};
 
 		Handle<RenderPassLayout> m_RenderPassLayout;
@@ -79,8 +80,16 @@ namespace HBL2
 
 		Handle<RenderPass> m_OpaqueRenderPass;
 		Handle<RenderPass> m_TransparentRenderPass;
+		Handle<RenderPass> m_PostProcessRenderPass;
 		Handle<FrameBuffer> m_OpaqueFrameBuffer;
 		Handle<FrameBuffer> m_TransparentFrameBuffer;
+		Handle<FrameBuffer> m_PostProcessFrameBuffer;
+
+		Handle<Buffer> m_PostProcessBuffer;
+		Handle<BindGroup> m_PostProcessBindGroup;
+		Handle<BindGroupLayout> m_PostProcessBindGroupLayout;
+		Handle<Shader> m_PostProcessShader;
+		Handle<Material> m_PostProcessMaterial;
 
 		Handle<Mesh> m_SpriteMesh;
 		Handle<Buffer> m_VertexBuffer;

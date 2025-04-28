@@ -18,14 +18,32 @@ namespace HBL2
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, WrapMode);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, WrapMode);
 
+		switch (desc.format)
+		{
+		case Format::D16_FLOAT:
+		case Format::D24_FLOAT:
+		case Format::D32_FLOAT:
+		case Format::RGBA16_FLOAT:
+		case Format::RGB32_FLOAT:
+		case Format::RG16_FLOAT:
+			Type = GL_FLOAT;
+			break;
+		case Format::RGBA8_RGB:
+		case Format::RGBA8_UNORM:
+		case Format::BGRA8_UNORM:
+			Type = GL_UNSIGNED_BYTE;
+			break;
+		case Format::R10G10B10A2_UNORM:
+			Type = GL_UNSIGNED_INT_2_10_10_10_REV;
+			break;
+		}
+
 		switch (desc.aspect)
 		{
 		case TextureAspect::COLOR:
-			Type = GL_UNSIGNED_BYTE;
 			InternalFormat = GL_RGBA;
 			break;
 		case TextureAspect::DEPTH:
-			Type = GL_FLOAT;
 			InternalFormat = GL_DEPTH_COMPONENT;
 			break;
 		}

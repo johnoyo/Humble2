@@ -68,6 +68,8 @@ namespace HBL2
 				Orthographic = 1,
 			};
 
+			float Exposure = 1.0f;
+			float Gamma = 2.2f;
 			float ZoomLevel = 300.f;
 			float Fov = 30.f;
 			float Near = 0.1f;

@@ -30,7 +30,7 @@ namespace HBL2
 
 			attachments.push_back(VkAttachmentDescription
 			{
-				.format = renderer->GetSwapchainImageFormat(),
+				.format = VkUtils::FormatToVkFormat(colorTarget.format),
 				.samples = VK_SAMPLE_COUNT_1_BIT,
 				.loadOp = VkUtils::LoadOperationToVkAttachmentLoadOp(colorTarget.loadOp),
 				.storeOp = VkUtils::StoreOperationVkAttachmentStoreOp(colorTarget.storeOp),

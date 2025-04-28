@@ -172,7 +172,6 @@ void main()
 
     vec3 BlinnPhong = ambient + diffuse + specular; 
     vec3 final = textureColor.rgb * BlinnPhong;
-    final = pow(final, vec3(1.0 / 1.2));
 
     FragColor = vec4(final * v_Color.xyz, 1.0);
 }

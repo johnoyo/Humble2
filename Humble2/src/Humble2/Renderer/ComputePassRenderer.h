@@ -18,6 +18,6 @@ namespace HBL2
 	class HBL2_API ComputePassRenderer
 	{
 	public:
-		virtual void Dispatch(Span<const HBL2::Dispatch> dispatches) = 0;
+		virtual void Dispatch(const Span<const HBL2::Dispatch>& dispatches) = 0;
 	};
 }

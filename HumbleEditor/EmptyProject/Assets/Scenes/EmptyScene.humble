@@ -46,6 +46,8 @@ Entities:
       Near: 0.100000001
       FOV: 30
       Aspect Ratio: 2.6242938
+      Exposure: 1.0
+      Gamma: 2.2
       Zoom Level: 300
       Type: 0
   - Entity: 1

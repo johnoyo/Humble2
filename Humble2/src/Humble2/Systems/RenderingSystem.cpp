@@ -113,6 +113,15 @@ namespace HBL2
 		m_ResourceManager->DeleteFrameBuffer(m_TransparentFrameBuffer);
 		Renderer::Instance->RemoveOnResizeCallback("Resize-Transparent-FrameBuffer");
 
+		m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
+		m_ResourceManager->DeleteShader(m_PostProcessShader);
+		m_ResourceManager->DeleteBindGroupLayout(m_PostProcessBindGroupLayout);
+		m_ResourceManager->DeleteBindGroup(m_PostProcessBindGroup);
+		m_ResourceManager->DeleteMaterial(m_PostProcessMaterial);
+		m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
+		m_ResourceManager->DeleteFrameBuffer(m_PostProcessFrameBuffer);
+		Renderer::Instance->RemoveOnResizeCallback("Post-Process-Resize-FrameBuffer");
+
 		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
 		m_ResourceManager->DeleteMesh(m_SpriteMesh);
 
@@ -291,6 +300,7 @@ namespace HBL2
 			},
 			.colorTargets = {
 				{
+					.format = Format::RGBA16_FLOAT,
 					.loadOp = LoadOperation::CLEAR,
 					.storeOp = StoreOperation::STORE,
 					.prevUsage = TextureLayout::UNDEFINED,
@@ -305,7 +315,7 @@ namespace HBL2
 			.height = Window::Instance->GetExtents().y,
 			.renderPass = m_OpaqueRenderPass,
 			.depthTarget = Renderer::Instance->MainDepthTexture,
-			.colorTargets = { Renderer::Instance->MainColorTexture },
+			.colorTargets = { Renderer::Instance->IntermediateColorTexture },
 		});
 		
 		// Resize opaque framebuffer callback.
@@ -319,7 +329,7 @@ namespace HBL2
 				.height = height,
 				.renderPass = m_OpaqueRenderPass,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->MainColorTexture },
+				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
 			});
 		});
 	}
@@ -340,6 +350,7 @@ namespace HBL2
 			},
 			.colorTargets = {
 				{
+					.format = Format::RGBA16_FLOAT,
 					.loadOp = LoadOperation::LOAD,
 					.storeOp = StoreOperation::STORE,
 					.prevUsage = TextureLayout::RENDER_ATTACHMENT,
@@ -354,7 +365,7 @@ namespace HBL2
 			.height = Window::Instance->GetExtents().y,
 			.renderPass = m_TransparentRenderPass,
 			.depthTarget = Renderer::Instance->MainDepthTexture,
-			.colorTargets = { Renderer::Instance->MainColorTexture },
+			.colorTargets = { Renderer::Instance->IntermediateColorTexture },
 		});
 
 		// Resize transparent framebuffer callback.
@@ -368,7 +379,7 @@ namespace HBL2
 				.height = height,
 				.renderPass = m_TransparentRenderPass,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->MainColorTexture },
+				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
 			});
 		});
 	}
@@ -410,13 +421,155 @@ namespace HBL2
 
 	void RenderingSystem::PostProcessPassSetup()
 	{
+		// Create camera settings buffer.
+		m_PostProcessBuffer = m_ResourceManager->CreateBuffer({
+			.debugName = "camera-settings-buffer",
+			.usage = BufferUsage::UNIFORM,
+			.usageHint = BufferUsageHint::DYNAMIC,
+			.byteSize = sizeof(CameraSettings),
+		});
+
+		// Create post-process bind group.
+		m_PostProcessBindGroupLayout = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "post-process-bind-group-layout",
+			.textureBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::FRAGMENT,
+				},
+			},
+			.bufferBindings = {
+				{
+					.slot = 1,
+					.visibility = ShaderStage::FRAGMENT,
+					.type = BufferBindingType::UNIFORM,
+				},
+			},
+		});
+
+		m_PostProcessBindGroup = ResourceManager::Instance->CreateBindGroup({
+			.debugName = "post-process-bind-group",
+			.layout = m_PostProcessBindGroupLayout,
+			.textures = {
+				Renderer::Instance->IntermediateColorTexture
+			},
+			.buffers = {
+				{.buffer = m_PostProcessBuffer },
+			}
+		});
+
+		// Create post-process renderpass and framebuffer.
+		m_PostProcessRenderPass = m_ResourceManager->CreateRenderPass({
+			.debugName = "post-process-renderpass",
+			.layout = m_RenderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::LOAD,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::DEPTH_STENCIL,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
+			},
+			.colorTargets = {
+				{
+					.loadOp = LoadOperation::CLEAR,
+					.storeOp = StoreOperation::STORE,
+					.prevUsage = TextureLayout::UNDEFINED,
+					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
+				},
+			},
+		});
+
+		m_PostProcessFrameBuffer = m_ResourceManager->CreateFrameBuffer({
+			.debugName = "post-process-fb",
+			.width = Window::Instance->GetExtents().x,
+			.height = Window::Instance->GetExtents().y,
+			.renderPass = m_PostProcessRenderPass,
+			.depthTarget = Renderer::Instance->MainDepthTexture,
+			.colorTargets = { Renderer::Instance->MainColorTexture },
+		});
+
+		Renderer::Instance->AddCallbackOnResize("Post-Process-Resize-FrameBuffer", [this](uint32_t width, uint32_t height)
+		{
+			ResourceManager::Instance->DeleteFrameBuffer(m_PostProcessFrameBuffer);
+
+			m_PostProcessFrameBuffer = m_ResourceManager->CreateFrameBuffer({
+				.debugName = "post-process-fb",
+				.width = width,
+				.height = height,
+				.renderPass = m_PostProcessRenderPass,
+				.depthTarget = Renderer::Instance->MainDepthTexture,
+				.colorTargets = { Renderer::Instance->MainColorTexture },
+			});
+
+			ResourceManager::Instance->DeleteBindGroup(m_PostProcessBindGroup);
+
+			m_PostProcessBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "camera-settings-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.usageHint = BufferUsageHint::DYNAMIC,
+				.byteSize = sizeof(CameraSettings),
+			});
+
+			m_PostProcessBindGroup = ResourceManager::Instance->CreateBindGroup({
+				.debugName = "post-process-bind-group",
+				.layout = m_PostProcessBindGroupLayout,
+				.textures = {
+					Renderer::Instance->IntermediateColorTexture
+				},
+				.buffers = {
+					{ .buffer = m_PostProcessBuffer },
+				}
+			});
+		});
+
+		// Create pre-pass shaders.
+		const auto& postProcessShaderCode = ShaderUtilities::Get().Compile("assets/shaders/post-process-tone-mapping.shader");
+
+		ShaderDescriptor::RenderPipeline::Variant variant = {};
+		variant.blend.enabled = false;
+		variant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
+
+		m_PostProcessShader = ResourceManager::Instance->CreateShader({
+			.debugName = "post-process-shader",
+			.VS {.code = postProcessShaderCode[0], .entryPoint = "main" },
+			.FS {.code = postProcessShaderCode[1], .entryPoint = "main" },
+			.bindGroups {
+				m_PostProcessBindGroupLayout,	// Global bind group (0)
+			},
+			.renderPipeline {
+				.vertexBufferBindings = {
+					{
+						.byteStride = 16,
+						.attributes = {
+							{.byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+							{.byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
+						},
+					}
+				},
+				.variants = { variant },
+			},
+			.renderPass = m_PostProcessRenderPass,
+		});
+
+		ResourceManager::Instance->AddShaderVariant(m_PostProcessShader, variant);
+
+		// Create post-process material.
+		m_PostProcessMaterial = ResourceManager::Instance->CreateMaterial({
+			.debugName = "post-process-material",
+			.shader = m_PostProcessShader,
+			.bindGroup = m_PostProcessBindGroup,
+		});
+
+		Material* mat = ResourceManager::Instance->GetMaterial(m_PostProcessMaterial);
+		mat->VariantDescriptor = variant;
 	}
 
 	void RenderingSystem::PresentPassSetup()
 	{
 		float* vertexBuffer = nullptr;
 
-		if (Renderer::Instance->GetAPI() == GraphicsAPI::VULKAN)
+		// if (Renderer::Instance->GetAPI() == GraphicsAPI::VULKAN)
 		{
 			vertexBuffer = new float[24] {
 				-1.0, -1.0, 0.0, 1.0, // 0 - Bottom left
@@ -427,17 +580,17 @@ namespace HBL2
 				-1.0, -1.0, 0.0, 1.0, // 0 - Bottom left
 			};
 		}
-		else if (Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL)
-		{
-			vertexBuffer = new float[24] {
-				-1.0, -1.0, 0.0, 0.0, // 0 - Bottom left
-				 1.0, -1.0, 1.0, 0.0, // 1 - Bottom right
-				 1.0,  1.0, 1.0, 1.0, // 2 - Top right
-				 1.0,  1.0, 1.0, 1.0, // 2 - Top right
-				-1.0,  1.0, 0.0, 1.0, // 3 - Top left
-				-1.0, -1.0, 0.0, 0.0, // 0 - Bottom left
-			};
-		}
+		//else if (Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL)
+		//{
+		//	vertexBuffer = new float[24] {
+		//		-1.0, -1.0, 0.0, 0.0, // 0 - Bottom left
+		//		 1.0, -1.0, 1.0, 0.0, // 1 - Bottom right
+		//		 1.0,  1.0, 1.0, 1.0, // 2 - Top right
+		//		 1.0,  1.0, 1.0, 1.0, // 2 - Top right
+		//		-1.0,  1.0, 0.0, 1.0, // 3 - Top left
+		//		-1.0, -1.0, 0.0, 0.0, // 0 - Bottom left
+		//	};
+		//}
 
 		m_QuadVertexBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "quad-vertex-buffer",
@@ -835,12 +988,31 @@ namespace HBL2
 
 	void RenderingSystem::PostProcessPass()
 	{
+		// Transition the layout of the texture that the scene is rendered to.
+		ResourceManager::Instance->TransitionTextureLayout(
+			Renderer::Instance->IntermediateColorTexture,
+			TextureLayout::RENDER_ATTACHMENT,
+			TextureLayout::SHADER_READ_ONLY,
+			PipelineStage::COLOR_ATTACHMENT_OUTPUT,
+			PipelineStage::FRAGMENT_SHADER);
+
 		// Post Process Pass
-		/*CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::PostProcess);
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_RenderPass, m_FrameBuffer);
+		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::PostProcess);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass, m_PostProcessFrameBuffer);
+
+		DrawList draws;
+		draws.Insert({
+			.Shader = m_PostProcessShader,
+			.Mesh = m_QuadMesh,
+			.Material = m_PostProcessMaterial,
+		});
+
+		ResourceManager::Instance->SetBufferData(m_PostProcessBindGroup, 0, (void*)&m_CameraSettings);
+		GlobalDrawStream globalDrawStream = { .BindGroup = m_PostProcessBindGroup };
+		passRenderer->DrawSubPass(globalDrawStream, draws);
 
 		commandBuffer->EndRenderPass(*passRenderer);
-		commandBuffer->Submit();*/
+		commandBuffer->Submit();
 	}
 
 	void RenderingSystem::PresentPass()
@@ -877,6 +1049,8 @@ namespace HBL2
 			if (m_Context->MainCamera != entt::null)
 			{
 				Component::Camera& camera = m_Context->GetComponent<Component::Camera>(m_Context->MainCamera);
+				m_CameraSettings.Exposure = camera.Exposure;
+				m_CameraSettings.Gamma = camera.Gamma;
 				m_CameraData.ViewProjection = camera.ViewProjectionMatrix;
 				m_CameraFrustum = camera.Frustum;
 				Component::Transform& tr = m_Context->GetComponent<Component::Transform>(m_Context->MainCamera);
@@ -893,6 +1067,8 @@ namespace HBL2
 			if (m_EditorScene->MainCamera != entt::null)
 			{
 				Component::Camera& camera = m_EditorScene->GetComponent<Component::Camera>(m_EditorScene->MainCamera);
+				m_CameraSettings.Exposure = camera.Exposure;
+				m_CameraSettings.Gamma = camera.Gamma;
 				m_CameraData.ViewProjection = camera.ViewProjectionMatrix;
 				m_CameraFrustum = camera.Frustum;
 				Component::Transform& tr = m_EditorScene->GetComponent<Component::Transform>(m_EditorScene->MainCamera);
@@ -911,6 +1087,8 @@ namespace HBL2
 
 		m_CameraData.ViewProjection = glm::mat4(1.0f);
 		m_LightData.ViewPosition = glm::vec4(0.0f);
+		m_CameraSettings.Exposure = 1.0f;
+		m_CameraSettings.Gamma = 2.2f;
 		m_CameraFrustum = {};
 	}
 }

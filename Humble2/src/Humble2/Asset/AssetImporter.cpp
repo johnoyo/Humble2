@@ -228,6 +228,7 @@ namespace HBL2
 
 		Handle<BindGroupLayout> globalBindGroupLayout;
 		Handle<BindGroupLayout> drawBindGroupLayout;
+		Handle<RenderPass> renderPass;
 
 		auto shaderVariants = MakeDynamicArray<ShaderDescriptor::RenderPipeline::Variant>(&Allocator::Frame);
 
@@ -236,22 +237,27 @@ namespace HBL2
 		{
 			uint32_t type = shaderProperties["Type"].as<uint32_t>();
 
+
 			switch (type)
 			{
 			case 0:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout2D();
 				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::UNLIT);
+				renderPass = Renderer::Instance->GetRenderingRenderPass();
 				break;
 			case 1:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
 				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG);
+				renderPass = Renderer::Instance->GetRenderingRenderPass();
 				break;
 			case 2:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
 				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR);
+				renderPass = Renderer::Instance->GetRenderingRenderPass();
 				break;
 			case 3:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalPresentBindingsLayout();
+				renderPass = Renderer::Instance->GetMainRenderPass();
 				drawBindGroupLayout = {};
 				break;
 			default:
@@ -333,7 +339,7 @@ namespace HBL2
 				},
 				.variants = { shaderVariants.Data(), shaderVariants.Size() },
 			},
-			.renderPass = Renderer::Instance->GetMainRenderPass(),
+			.renderPass = renderPass,
 		});
 
 		stream.close();
