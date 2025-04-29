@@ -17,13 +17,7 @@ namespace HBL2
 		glCullFace(GL_BACK);
 		glFrontFace(GL_CCW);
 
-		// m_ShadowCommandBuffer = new OpenGLCommandBuffer();
-		m_PrePassCommandBuffer = new OpenGLCommandBuffer();
-		m_OpaqueCommandBuffer = new OpenGLCommandBuffer();
-		// m_SkyboxCommandBuffer = new OpenGLCommandBuffer();
-		m_TransparentCommandBuffer = new OpenGLCommandBuffer();
-		m_PostProcessCommandBuffer = new OpenGLCommandBuffer();
-		m_PresentCommandBuffer = new OpenGLCommandBuffer();
+		m_MainCommandBuffer = new OpenGLCommandBuffer();
 		m_UserInterfaceCommandBuffer = new OpenGLCommandBuffer();
 
 		CreateBindings();
@@ -53,29 +47,12 @@ namespace HBL2
 		TempUniformRingBuffer->Invalidate();
 	}
 
-	CommandBuffer* OpenGLRenderer::BeginCommandRecording(CommandBufferType type, RenderPassStage stage)
+	CommandBuffer* OpenGLRenderer::BeginCommandRecording(CommandBufferType type)
 	{
 		switch (type)
 		{
 		case HBL2::CommandBufferType::MAIN:
-			switch (stage)
-			{
-			case HBL2::RenderPassStage::Shadow:
-				return m_ShadowCommandBuffer;
-			case HBL2::RenderPassStage::PrePass:
-				return m_PrePassCommandBuffer;
-			case HBL2::RenderPassStage::Opaque:
-				return m_OpaqueCommandBuffer;
-			case HBL2::RenderPassStage::Skybox:
-				return m_SkyboxCommandBuffer;
-			case HBL2::RenderPassStage::Transparent:
-				return m_TransparentCommandBuffer;
-			case HBL2::RenderPassStage::PostProcess:
-				return m_PostProcessCommandBuffer;
-			case HBL2::RenderPassStage::Present:
-				return m_PresentCommandBuffer;
-			}
-			break;
+			return m_MainCommandBuffer;
 		case HBL2::CommandBufferType::CUSTOM:
 			HBL2_CORE_ASSERT(false, "Custom Command buffers not implemented yet!");
 			break;

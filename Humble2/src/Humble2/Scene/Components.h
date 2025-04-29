@@ -13,6 +13,7 @@ namespace HBL2
 	struct Mesh;
 	struct Material;
 	struct Sound;
+	struct Texture;
 
 	namespace Component
 	{
@@ -130,6 +131,8 @@ namespace HBL2
 		struct HBL2_API SkyLight
 		{
 			float Intensity = 1.0f;
+			Handle<Texture> EquirectangularMap;
+			bool Converted = false;
 			bool Enabled = true;
 		};
 

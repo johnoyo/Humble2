@@ -3,17 +3,20 @@
 #include "Handle.h"
 #include "Pool.h"
 #include "Types.h"
-#include "Scene\Scene.h"
-#include "Scene\Script.h"
 #include "TypeDescriptors.h"
 #include "ResourceDeletionQueue.h"
+
+#include "Scene\Scene.h"
 #include "Sound\Sound.h"
+#include "Scene\Script.h"
 
 #include <cstring>
 #include <stdint.h>
 
 namespace HBL2
 {
+	class CommandBuffer;
+
 	class HBL2_API ResourceManager
 	{
 	public:
@@ -32,7 +35,7 @@ namespace HBL2
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) = 0;
 		virtual void DeleteTexture(Handle<Texture> handle) = 0;
 		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) = 0;
-		virtual void TransitionTextureLayout(Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, PipelineStage srcStage, PipelineStage dstStage) = 0;
+		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle) = 0;
 
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) = 0;

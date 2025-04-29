@@ -9,7 +9,8 @@ namespace HBL2
 
 		DebugName = desc.debugName;
 
-		Type = desc.type;
+		ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // NOTE: Is this a correct default value? should it be Undefined?
+		ImageType = desc.type;
 		Extent = { desc.dimensions.x, desc.dimensions.y, desc.dimensions.z };
 		Aspect = VkUtils::TextureAspectToVkImageAspectFlags(desc.aspect);
 
@@ -132,7 +133,7 @@ namespace HBL2
 		CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation);
 
 		VkDeviceSize faceSize = Extent.width * Extent.height * 4;
-		VkDeviceSize imageSize = faceSize * (Type == TextureType::CUBE ? 6 : 1);
+		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : 1);
 
 		// Transfer initiaData to staging buffer
 		void* mappedData;
@@ -145,55 +146,49 @@ namespace HBL2
 		vmaDestroyBuffer(renderer->GetAllocator(), stagingBuffer, stagingBufferAllocation);
 	}
 
-	void VulkanTexture::TrasitionLayout(TextureLayout currentLayout, TextureLayout newLayout, PipelineStage srcStage, PipelineStage dstStage)
+	void VulkanTexture::TrasitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout, VulkanBindGroup* bindGroup)
 	{
-		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
+		// NOTE: Vulkan validation layers do not automatically track the layout state across command buffers unless you properly synchronize them.
+		//		 That's way we do not use here the helper function ImmediateSubmit of the renderer class here.
 
-		renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
+		VkCommandBuffer cmd = commandBuffer->CommandBuffer;
+
+		VkImageMemoryBarrier barrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.oldLayout = VkUtils::TextureLayoutToVkImageLayout(currentLayout);
+		barrier.newLayout = VkUtils::TextureLayoutToVkImageLayout(newLayout);
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = Image;
+		barrier.subresourceRange.aspectMask = Aspect;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+		barrier.srcAccessMask = VkUtils::CurrentTextureLayoutToVkAccessFlags(currentLayout);
+		barrier.dstAccessMask = VkUtils::CurrentTextureLayoutToVkAccessFlags(newLayout);
+
+		vkCmdPipelineBarrier(
+			cmd,
+			VkUtils::CurrentTextureLayoutToVkPipelineStageFlags(currentLayout),
+			VkUtils::NewTextureLayoutToVkPipelineStageFlags(newLayout),
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &barrier
+		);
+
+		// Wait for device to idle in case the descriptors are still in use.
+		VulkanDevice* device = (VulkanDevice*)Device::Instance;
+		vkDeviceWaitIdle(device->Get());
+
+		// Update bind group with new image layout.
+		ImageLayout = VkUtils::TextureLayoutToVkImageLayout(newLayout);
+
+		if (bindGroup != nullptr)
 		{
-			VkAccessFlags srcAccessFlags = 0;
-			VkAccessFlags dstAccessFlags = 0;
-
-			switch (Aspect)
-			{
-			case VK_IMAGE_ASPECT_COLOR_BIT:
-				srcAccessFlags = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-				break;
-			case VK_IMAGE_ASPECT_DEPTH_BIT:
-				srcAccessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-				break;
-			}
-
-			if (dstStage != PipelineStage::BOTTOM_OF_PIPE)
-			{
-				dstAccessFlags = VK_ACCESS_SHADER_READ_BIT;
-			}
-
-			VkImageMemoryBarrier barrier{};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.oldLayout = VkUtils::TextureLayoutToVkImageLayout(currentLayout);
-			barrier.newLayout = VkUtils::TextureLayoutToVkImageLayout(newLayout);
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = Image;
-			barrier.subresourceRange.aspectMask = Aspect;
-			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
-			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = 1;
-			barrier.srcAccessMask = srcAccessFlags;
-			barrier.dstAccessMask = dstAccessFlags;
-
-			vkCmdPipelineBarrier(
-				cmd,
-				VkUtils::PipelineStageToVkPipelineStageFlags(srcStage), // VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-				VkUtils::PipelineStageToVkPipelineStageFlags(dstStage), // VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				0,
-				0, nullptr,
-				0, nullptr,
-				1, &barrier
-			);
-		});
+			bindGroup->Update();
+		}
 	}
 
 	void VulkanTexture::Destroy()
@@ -214,7 +209,7 @@ namespace HBL2
 	{
 		// Allocate staging buffer
 		VkDeviceSize faceSize = Extent.width * Extent.height * 4;
-		VkDeviceSize imageSize = faceSize * (Type == TextureType::CUBE ? 6 : 1);
+		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : 1);
 
 		VkBufferCreateInfo stagingBufferCreateInfo =
 		{
@@ -239,7 +234,7 @@ namespace HBL2
 		// Copy the data of the staging buffer to the GPU memory of Image
 		renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
 		{
-			uint32_t faceCount = (Type == TextureType::CUBE ? 6 : 1);
+			uint32_t faceCount = (ImageType == TextureType::CUBE ? 6 : 1);
 
 			VkImageSubresourceRange range =
 			{

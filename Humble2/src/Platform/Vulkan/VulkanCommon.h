@@ -66,5 +66,13 @@ namespace HBL2
 		VkBufferUsageFlags BufferUsageToVkBufferUsageFlags(BufferUsage bufferUsage);
 
 		VkPipelineStageFlags PipelineStageToVkPipelineStageFlags(PipelineStage pipelineStage);
+
+		VkPipelineStageFlags CurrentTextureLayoutToVkPipelineStageFlags(TextureLayout currentLayout);
+
+		VkPipelineStageFlags NewTextureLayoutToVkPipelineStageFlags(TextureLayout newLayout);
+
+		VkAccessFlags CurrentTextureLayoutToVkAccessFlags(TextureLayout currentLayout);
+
+		VkAccessFlags NewTextureLayoutToVkAccessFlags(TextureLayout newLayout);
 	}
 }

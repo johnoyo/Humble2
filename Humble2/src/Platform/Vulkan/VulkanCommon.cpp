@@ -479,5 +479,97 @@ namespace HBL2
 
 			return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
 		}
+
+		VkPipelineStageFlags CurrentTextureLayoutToVkPipelineStageFlags(TextureLayout currentLayout)
+		{
+			switch (currentLayout)
+			{
+			case HBL2::TextureLayout::UNDEFINED:
+				return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			case HBL2::TextureLayout::COPY_SRC:
+				return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::COPY_DST:
+				return VK_PIPELINE_STAGE_TRANSFER_BIT;
+			case HBL2::TextureLayout::RENDER_ATTACHMENT:
+				return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			case HBL2::TextureLayout::SHADER_READ_ONLY:
+				return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			case HBL2::TextureLayout::DEPTH_STENCIL:
+				return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::PRESENT:
+				return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM; // FIXME
+			}
+
+			return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+		}
+
+		VkPipelineStageFlags NewTextureLayoutToVkPipelineStageFlags(TextureLayout newLayout)
+		{
+			switch (newLayout)
+			{
+			case HBL2::TextureLayout::UNDEFINED:
+				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::COPY_SRC:
+				return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::COPY_DST:
+				return VK_PIPELINE_STAGE_TRANSFER_BIT;
+			case HBL2::TextureLayout::RENDER_ATTACHMENT:
+				return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			case HBL2::TextureLayout::SHADER_READ_ONLY:
+				return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			case HBL2::TextureLayout::DEPTH_STENCIL:
+				return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::PRESENT:
+				return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+			}
+
+			return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+		}
+
+		VkAccessFlags CurrentTextureLayoutToVkAccessFlags(TextureLayout currentLayout)
+		{
+			switch (currentLayout)
+			{
+			case HBL2::TextureLayout::UNDEFINED:
+				return 0;
+			case HBL2::TextureLayout::COPY_SRC:
+				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::COPY_DST:
+				return VK_ACCESS_TRANSFER_WRITE_BIT;
+			case HBL2::TextureLayout::RENDER_ATTACHMENT:
+				return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			case HBL2::TextureLayout::SHADER_READ_ONLY:
+				return VK_ACCESS_SHADER_READ_BIT;
+			case HBL2::TextureLayout::DEPTH_STENCIL:
+				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::PRESENT:
+				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
+			}
+
+			return VK_ACCESS_FLAG_BITS_MAX_ENUM;
+		}
+
+		VkAccessFlags NewTextureLayoutToVkAccessFlags(TextureLayout newLayout)
+		{
+			switch (newLayout)
+			{
+			case HBL2::TextureLayout::UNDEFINED:
+				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::COPY_SRC:
+				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::COPY_DST:
+				return VK_ACCESS_TRANSFER_WRITE_BIT;
+			case HBL2::TextureLayout::RENDER_ATTACHMENT:
+				return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			case HBL2::TextureLayout::SHADER_READ_ONLY:
+				return VK_ACCESS_SHADER_READ_BIT;
+			case HBL2::TextureLayout::DEPTH_STENCIL:
+				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::PRESENT:
+				return 0;
+			}
+
+			return VK_ACCESS_FLAG_BITS_MAX_ENUM;
+		}
 	}
 }

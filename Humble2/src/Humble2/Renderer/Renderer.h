@@ -51,8 +51,6 @@ namespace HBL2
 		AfterRenderingSkybox,
 		BeforeRenderingTransparents,
 		AfterRenderingTransparents,
-		BeforeRenderingOpaqueSprites,
-		AfterRenderingOpaqueSprites,
 		BeforeRenderingPostProcess,
 		AfterRenderingPostProcess,
 		AfterRendering,
@@ -93,7 +91,7 @@ namespace HBL2
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
 
-		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type, RenderPassStage stage) = 0;
+		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) = 0;
 
 		virtual void* GetDepthAttachment() = 0;
 		virtual void* GetColorAttachment() = 0;

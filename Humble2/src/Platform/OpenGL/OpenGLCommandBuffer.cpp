@@ -87,7 +87,13 @@ namespace HBL2
 		return;
 	}
 
-    void OpenGLCommandBuffer::Submit()
+	void OpenGLCommandBuffer::EndCommandRecording()
+	{
+		return;
+	}
+
+	void OpenGLCommandBuffer::Submit()
     {
+		return;
     }
 }

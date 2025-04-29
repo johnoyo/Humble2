@@ -59,7 +59,7 @@ namespace HBL2
 			// Bind pipeline
 			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-			// Bind global descriptor set for per frame data.
+			// Bind global descriptor set for per frame data (i.e.: Camera and lighting data).
 			if (globalBindGroup != nullptr)
 			{
 				vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, localShader0->PipelineLayout, 0, 1, &globalBindGroup->DescriptorSet, 0, nullptr);

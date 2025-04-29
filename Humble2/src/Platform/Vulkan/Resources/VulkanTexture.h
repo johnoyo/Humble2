@@ -3,6 +3,8 @@
 #include "Base.h"
 #include "Resources\TypeDescriptors.h"
 
+#include "VulkanBindGroup.h"
+
 #include "Platform\Vulkan\VulkanDevice.h"
 #include "Platform\Vulkan\VulkanRenderer.h"
 
@@ -17,7 +19,7 @@ namespace HBL2
 
 		void Update(const Span<const std::byte>& bytes);
 
-		void TrasitionLayout(TextureLayout currentLayout, TextureLayout newLayout, PipelineStage srcStage, PipelineStage dstStage);
+		void TrasitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout, VulkanBindGroup* bindGroup);
 
 		void Destroy();
 
@@ -27,7 +29,8 @@ namespace HBL2
 		VmaAllocation Allocation = VK_NULL_HANDLE;
 		VkSampler Sampler = VK_NULL_HANDLE;
 		VkExtent3D Extent{};
-		TextureType Type = TextureType::D2;
+		VkImageLayout ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		TextureType ImageType = TextureType::D2;
 
 		VkImageAspectFlags Aspect = 0;
 

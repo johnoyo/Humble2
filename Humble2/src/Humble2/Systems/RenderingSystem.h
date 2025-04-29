@@ -40,6 +40,7 @@ namespace HBL2
 		void OpaquePassSetup();
 		void TransparentPassSetup();
 		void SpriteRenderingSetup();
+		void SkyboxPassSetup();
 		void PostProcessPassSetup();
 		void PresentPassSetup();
 
@@ -48,11 +49,13 @@ namespace HBL2
 
 		void GatherDraws();
 		void GatherLights();
-		void DepthPrePass();
-		void OpaquePass();
-		void TransparentPass();
-		void PostProcessPass();
-		void PresentPass();
+		void ShadowPass(CommandBuffer* commandBuffer);
+		void DepthPrePass(CommandBuffer* commandBuffer);
+		void OpaquePass(CommandBuffer* commandBuffer);
+		void TransparentPass(CommandBuffer* commandBuffer);
+		void SkyboxPass(CommandBuffer* commandBuffer);
+		void PostProcessPass(CommandBuffer* commandBuffer);
+		void PresentPass(CommandBuffer* commandBuffer);
 
 		void GetViewProjection();
 

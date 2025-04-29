@@ -92,7 +92,7 @@ namespace HBL2
 			{
 				.sampler = texture->Sampler,
 				.imageView = texture->ImageView,
-				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				.imageLayout = texture->ImageLayout,
 			};
 
 			writeDescriptorSet[Buffers.size() + i] =

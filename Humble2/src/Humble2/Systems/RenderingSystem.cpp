@@ -49,7 +49,6 @@ namespace HBL2
 		return *closest;
 	}
 
-
 	void RenderingSystem::OnCreate()
 	{
 		m_ResourceManager = ResourceManager::Instance;
@@ -79,11 +78,56 @@ namespace HBL2
 		GatherDraws();
 		GatherLights();
 
-		DepthPrePass();
-		OpaquePass();
-		TransparentPass();
-		PostProcessPass();
-		PresentPass();
+		// auto& renderPasses = Renderer::Instance->GetRenderPassess();
+
+		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
+
+		ResourceManager::Instance->TransitionTextureLayout(
+			commandBuffer,
+			Renderer::Instance->IntermediateColorTexture,
+			TextureLayout::UNDEFINED,
+			TextureLayout::RENDER_ATTACHMENT,
+			{});
+
+		ResourceManager::Instance->TransitionTextureLayout(
+			commandBuffer,
+			Renderer::Instance->MainColorTexture,
+			TextureLayout::UNDEFINED,
+			TextureLayout::RENDER_ATTACHMENT,
+			{});
+
+		// renderPasses.Execute(RenderPassEvent::BeforeRendering);
+
+		//renderPasses.Execute(RenderPassEvent::BeforeRenderingShadows);
+		ShadowPass(commandBuffer);
+		//renderPasses.Execute(RenderPassEvent::AfterRenderingShadows);
+
+		//renderPasses.Execute(RenderPassEvent::BeforeRenderingPrePasses);
+		DepthPrePass(commandBuffer);
+		//renderPasses.Execute(RenderPassEvent::AfterRenderingPrePasses);
+
+		//renderPasses.Execute(RenderPassEvent::BeforeRenderingOpaques);
+		OpaquePass(commandBuffer);
+		//renderPasses.Execute(RenderPassEvent::AfterRenderingOpaques);
+
+		//renderPasses.Execute(RenderPassEvent::BeforeRenderingSkybox);
+		SkyboxPass(commandBuffer);
+		//renderPasses.Execute(RenderPassEvent::AfterRenderingSkybox);
+
+		//renderPasses.Execute(RenderPassEvent::BeforeRenderingTransparents);
+		TransparentPass(commandBuffer);
+		//renderPasses.Execute(RenderPassEvent::AfterRenderingTransparents);
+
+		//renderPasses.Execute(RenderPassEvent::BeforeRenderingPostProcess);
+		PostProcessPass(commandBuffer);
+		//renderPasses.Execute(RenderPassEvent::AfterRenderingPostProcess);
+
+		PresentPass(commandBuffer);
+
+		//renderPasses.Execute(RenderPassEvent::AfterRendering);
+
+		commandBuffer->EndCommandRecording();
+		commandBuffer->Submit();
 	}
 
 	void RenderingSystem::OnDestroy()
@@ -417,6 +461,10 @@ namespace HBL2
 				}
 			}
 		});
+	}
+
+	void RenderingSystem::SkyboxPassSetup()
+	{
 	}
 
 	void RenderingSystem::PostProcessPassSetup()
@@ -909,9 +957,12 @@ namespace HBL2
 			});
 	}
 
-	void RenderingSystem::DepthPrePass()
+	void RenderingSystem::ShadowPass(CommandBuffer* commandBuffer)
 	{
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::PrePass);
+	}
+
+	void RenderingSystem::DepthPrePass(CommandBuffer* commandBuffer)
+	{
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DepthOnlyRenderPass, m_DepthOnlyFrameBuffer);
 
 		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
@@ -931,12 +982,10 @@ namespace HBL2
 		}
 
 		commandBuffer->EndRenderPass(*passRenderer);
-		commandBuffer->Submit();
 	}
 
-	void RenderingSystem::OpaquePass()
+	void RenderingSystem::OpaquePass(CommandBuffer* commandBuffer)
 	{
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Opaque);
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_OpaqueRenderPass, m_OpaqueFrameBuffer);
 
 		// Render opaque meshes.
@@ -957,12 +1006,10 @@ namespace HBL2
 		}
 
 		commandBuffer->EndRenderPass(*passRenderer);
-		commandBuffer->Submit();
 	}
 
-	void RenderingSystem::TransparentPass()
+	void RenderingSystem::TransparentPass(CommandBuffer* commandBuffer)
 	{
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Transparent);
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass, m_TransparentFrameBuffer);
 
 		// Render transparent meshes.
@@ -983,21 +1030,64 @@ namespace HBL2
 		}
 
 		commandBuffer->EndRenderPass(*passRenderer);
-		commandBuffer->Submit();
 	}
 
-	void RenderingSystem::PostProcessPass()
+	void RenderingSystem::SkyboxPass(CommandBuffer* commandBuffer)
 	{
-		// Transition the layout of the texture that the scene is rendered to.
+		/*m_Context->GetRegistry()
+			.group<Component::SkyLight>(entt::get<Component::Transform>)
+			.each([&](Component::SkyLight& skyLight, Component::Transform& transform)
+			{
+				if (skyLight.Enabled)
+				{
+					if (!skyLight.Converted)
+					{
+						glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+						glm::mat4 captureViews[] =
+						{
+							glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+							glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+							glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+							glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+							glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+							glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+						};
+
+						CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::CUSTOM, RenderPassStage::Skybox);
+						RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass, m_PostProcessFrameBuffer);
+
+						DrawList draws;
+
+						for (uint32_t i = 0; i < 6; ++i)
+						{
+							draws.Insert({
+								.Shader = m_PostProcessShader,
+								.Mesh = m_QuadMesh,
+								.Material = m_PostProcessMaterial,
+							});
+						}
+
+						ResourceManager::Instance->SetBufferData(m_PostProcessBindGroup, 0, (void*)&m_CameraSettings);
+						GlobalDrawStream globalDrawStream = { .BindGroup = m_PostProcessBindGroup };
+						passRenderer->DrawSubPass(globalDrawStream, draws);
+
+						commandBuffer->EndRenderPass(*passRenderer);
+						commandBuffer->Submit();
+					}
+				}
+			});*/
+	}
+
+	void RenderingSystem::PostProcessPass(CommandBuffer* commandBuffer)
+	{
+		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
+			commandBuffer,
 			Renderer::Instance->IntermediateColorTexture,
 			TextureLayout::RENDER_ATTACHMENT,
 			TextureLayout::SHADER_READ_ONLY,
-			PipelineStage::COLOR_ATTACHMENT_OUTPUT,
-			PipelineStage::FRAGMENT_SHADER);
+			m_PostProcessBindGroup);
 
-		// Post Process Pass
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::PostProcess);
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass, m_PostProcessFrameBuffer);
 
 		DrawList draws;
@@ -1012,20 +1102,18 @@ namespace HBL2
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 
 		commandBuffer->EndRenderPass(*passRenderer);
-		commandBuffer->Submit();
 	}
 
-	void RenderingSystem::PresentPass()
+	void RenderingSystem::PresentPass(CommandBuffer* commandBuffer)
 	{
-		// Transition the layout of the texture that the scene is rendered to.
+		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
+			commandBuffer,
 			Renderer::Instance->MainColorTexture,
 			TextureLayout::RENDER_ATTACHMENT,
 			TextureLayout::SHADER_READ_ONLY,
-			PipelineStage::COLOR_ATTACHMENT_OUTPUT,
-			PipelineStage::FRAGMENT_SHADER);
+			Renderer::Instance->GetGlobalPresentBindings());
 
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Present);
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
 
 		DrawList draws;
@@ -1039,7 +1127,6 @@ namespace HBL2
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 
 		commandBuffer->EndRenderPass(*passRenderer);
-		commandBuffer->Submit();
 	}
 
 	void RenderingSystem::GetViewProjection()
@@ -1105,7 +1192,7 @@ ShadowPass();
 renderPasses.Execute(RenderPassEvent::AfterRenderingShadows);
 
 renderPasses.Execute(RenderPassEvent::BeforeRenderingOpaques);
-OpaqueGeometryPass();
+OpaquePass();
 renderPasses.Execute(RenderPassEvent::AfterRenderingOpaques);
 
 renderPasses.Execute(RenderPassEvent::BeforeRenderingSkybox);
@@ -1113,7 +1200,7 @@ SkyboxPass();
 renderPasses.Execute(RenderPassEvent::AfterRenderingSkybox);
 
 renderPasses.Execute(RenderPassEvent::BeforeRenderingTransparents);
-TransparentGeometryPass();
+TransparentPass();
 renderPasses.Execute(RenderPassEvent::AfterRenderingTransparents);
 
 renderPasses.Execute(RenderPassEvent::BeforeRenderingPostProcess);

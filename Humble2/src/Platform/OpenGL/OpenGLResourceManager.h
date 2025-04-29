@@ -46,7 +46,7 @@ namespace HBL2
 				texture->Update(bytes);
 			}
 		}
-		virtual void TransitionTextureLayout(Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, PipelineStage srcStage, PipelineStage dstStage) override {}
+		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle) override {}
 		OpenGLTexture* GetTexture(Handle<Texture> handle) const
 		{
 			return m_TexturePool.Get(handle);

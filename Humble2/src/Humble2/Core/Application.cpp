@@ -4,6 +4,8 @@ namespace HBL2
 {
 	Application* Application::s_Instance = nullptr;
 
+	static const char* g_GfxAPI;
+
 	Application::Application(ApplicationSpec& specification) : m_Specification(specification)
 	{
 		HBL2_CORE_ASSERT(!s_Instance, "Application already exists!");
@@ -27,6 +29,7 @@ namespace HBL2
 		{
 		case GraphicsAPI::OPENGL:
 			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
+			g_GfxAPI = "OpenGL";
 			Device::Instance = new OpenGLDevice;
 			Window::Instance = new OpenGLWindow;
 			ResourceManager::Instance = new OpenGLResourceManager;
@@ -34,6 +37,7 @@ namespace HBL2
 			ImGuiRenderer::Instance = new OpenGLImGuiRenderer;
 			break;
 		case GraphicsAPI::VULKAN:
+			g_GfxAPI = "Vulkan";
 			HBL2_CORE_INFO("Vulkan is selected as the renderer API.");
 			Device::Instance = new VulkanDevice;
 			Window::Instance = new VulkanWindow;
@@ -84,9 +88,9 @@ namespace HBL2
 
 		if (Window::Instance->GetTime() - m_Timer > 1.0)
 		{
-			Window::Instance->SetTitle(std::format("{} [{}] FPS", m_Specification.Name, m_Frames));
+			Window::Instance->SetTitle(std::format("{} [{}] FPS ({})", m_Specification.Name, m_Frames, g_GfxAPI));
 
-			HBL2_CORE_TRACE("FPS: {0}, DeltaTime: {1}", m_Frames, Time::DeltaTime);
+			HBL2_CORE_TRACE("FPS: {0}, DeltaTime: {1} ({2})", m_Frames, Time::DeltaTime, g_GfxAPI);
 
 			m_Timer++;
 			m_Frames = 0;

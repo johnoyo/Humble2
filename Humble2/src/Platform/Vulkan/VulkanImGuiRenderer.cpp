@@ -109,7 +109,7 @@ namespace HBL2
 	{
 		ImGui::Render();
 
-		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI, RenderPassStage::UserInterface);
+		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI);
 		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_ImGuiRenderPass, m_Renderer->GetMainFrameBuffer());
 
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);
@@ -124,6 +124,8 @@ namespace HBL2
 		}
 
 		commandBuffer->EndRenderPass(*renderPassRenderer);
+
+		commandBuffer->EndCommandRecording();
 		commandBuffer->Submit();
 	}
 

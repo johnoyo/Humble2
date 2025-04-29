@@ -14,6 +14,7 @@ namespace HBL2
 		virtual ComputePassRenderer* BeginComputePass(Span<const Handle<Texture>> texturesWrite, Span<const Handle<Buffer>> buffersWrite) override;
 		virtual void EndComputePass(const ComputePassRenderer& computePassRenderer) override;
 
+		virtual void EndCommandRecording() override;
 		virtual void Submit() override;
 
 	private:
