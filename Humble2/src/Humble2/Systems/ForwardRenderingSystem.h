@@ -26,10 +26,10 @@ namespace HBL2
 		glm::vec4 Color = { 0.0f, 0.0f, 0.0f, 0.0f };
 	};
 
-	class RenderingSystem final : public ISystem
+	class ForwardRenderingSystem final : public ISystem
 	{
 	public:
-		RenderingSystem() { Name = "RenderingSystem"; }
+		ForwardRenderingSystem() { Name = "ForwardRenderingSystem"; }
 
 		virtual void OnCreate() override;
 		virtual void OnUpdate(float ts) override;

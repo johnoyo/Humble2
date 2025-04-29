@@ -2,6 +2,36 @@
 
 namespace HBL2
 {
+	enum class RenderPassEvent
+	{
+		BeforeRendering = 0,
+		BeforeRenderingShadows,
+		AfterRenderingShadows,
+		BeforeRenderingPrePasses,
+		AfterRenderingPrePasses,
+		BeforeRenderingOpaques,
+		AfterRenderingOpaques,
+		BeforeRenderingSkybox,
+		AfterRenderingSkybox,
+		BeforeRenderingTransparents,
+		AfterRenderingTransparents,
+		BeforeRenderingPostProcess,
+		AfterRenderingPostProcess,
+		AfterRendering,
+	};
+
+	enum class RenderPassStage
+	{
+		Shadow,
+		PrePass,
+		Opaque,
+		Skybox,
+		Transparent,
+		PostProcess,
+		Present,
+		UserInterface,
+	};
+
 	enum class CommandBufferType
 	{
 		MAIN = 0,

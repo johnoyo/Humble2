@@ -38,36 +38,6 @@ namespace HBL2
 		WEBGPU,
 	};
 
-	enum class HBL2_API RenderPassEvent
-	{
-		BeforeRendering = 0,
-		BeforeRenderingShadows,
-		AfterRenderingShadows,
-		BeforeRenderingPrePasses,
-		AfterRenderingPrePasses,
-		BeforeRenderingOpaques,
-		AfterRenderingOpaques,
-		BeforeRenderingSkybox,
-		AfterRenderingSkybox,
-		BeforeRenderingTransparents,
-		AfterRenderingTransparents,
-		BeforeRenderingPostProcess,
-		AfterRenderingPostProcess,
-		AfterRendering,
-	};
-
-	enum class HBL2_API RenderPassStage
-	{
-		Shadow,
-		PrePass,
-		Opaque,
-		Skybox,
-		Transparent,
-		PostProcess,
-		Present,
-		UserInterface,
-	};
-
 	struct RendererStats
 	{
 		uint32_t DrawCalls = 0;

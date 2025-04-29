@@ -1,4 +1,4 @@
-#include "RenderingSystem.h"
+#include "ForwardRenderingSystem.h"
 
 #include "Core\Window.h"
 #include "Utilities\ShaderUtilities.h"
@@ -49,7 +49,7 @@ namespace HBL2
 		return *closest;
 	}
 
-	void RenderingSystem::OnCreate()
+	void ForwardRenderingSystem::OnCreate()
 	{
 		m_ResourceManager = ResourceManager::Instance;
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
@@ -71,7 +71,7 @@ namespace HBL2
 		PresentPassSetup();
 	}
 
-	void RenderingSystem::OnUpdate(float ts)
+	void ForwardRenderingSystem::OnUpdate(float ts)
 	{
 		GetViewProjection();
 
@@ -130,7 +130,7 @@ namespace HBL2
 		commandBuffer->Submit();
 	}
 
-	void RenderingSystem::OnDestroy()
+	void ForwardRenderingSystem::OnDestroy()
 	{
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
 
@@ -174,7 +174,7 @@ namespace HBL2
 		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
 	}
 
-	void RenderingSystem::DepthPrePassSetup()
+	void ForwardRenderingSystem::DepthPrePassSetup()
 	{
 		// Create pre-pass renderpass and framebuffer.
 		m_DepthOnlyRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
@@ -328,7 +328,7 @@ namespace HBL2
 		mat1->VariantDescriptor = variant;
 	}
 
-	void RenderingSystem::OpaquePassSetup()
+	void ForwardRenderingSystem::OpaquePassSetup()
 	{
 		// Renderpass and framebuffer for opaques.
 		m_OpaqueRenderPass = m_ResourceManager->CreateRenderPass({
@@ -378,7 +378,7 @@ namespace HBL2
 		});
 	}
 
-	void RenderingSystem::TransparentPassSetup()
+	void ForwardRenderingSystem::TransparentPassSetup()
 	{
 		// Renderpass and framebuffer for transparents.
 		m_TransparentRenderPass = m_ResourceManager->CreateRenderPass({
@@ -428,7 +428,7 @@ namespace HBL2
 		});
 	}
 
-	void RenderingSystem::SpriteRenderingSetup()
+	void ForwardRenderingSystem::SpriteRenderingSetup()
 	{
 		float* vertexBuffer = new float[30] {
 			-0.5, -0.5, 0.0, 0.0, 1.0, // 0 - Bottom left
@@ -463,11 +463,11 @@ namespace HBL2
 		});
 	}
 
-	void RenderingSystem::SkyboxPassSetup()
+	void ForwardRenderingSystem::SkyboxPassSetup()
 	{
 	}
 
-	void RenderingSystem::PostProcessPassSetup()
+	void ForwardRenderingSystem::PostProcessPassSetup()
 	{
 		// Create camera settings buffer.
 		m_PostProcessBuffer = m_ResourceManager->CreateBuffer({
@@ -613,7 +613,7 @@ namespace HBL2
 		mat->VariantDescriptor = variant;
 	}
 
-	void RenderingSystem::PresentPassSetup()
+	void ForwardRenderingSystem::PresentPassSetup()
 	{
 		float* vertexBuffer = nullptr;
 
@@ -669,7 +669,7 @@ namespace HBL2
 		});
 	}
 
-	bool RenderingSystem::IsInFrustum(const Component::Transform& transform)
+	bool ForwardRenderingSystem::IsInFrustum(const Component::Transform& transform)
 	{
 		glm::vec3 worldPosition = glm::normalize(glm::vec3(transform.LocalMatrix * glm::vec4(transform.Translation, 1.0f)));
 		float radius = glm::length(transform.Scale) * 0.5f;
@@ -688,7 +688,7 @@ namespace HBL2
 		return true; // Inside or intersecting
 	}
 
-	bool RenderingSystem::IsInFrustum(Handle<Mesh> meshHandle, const Component::Transform& transform)
+	bool ForwardRenderingSystem::IsInFrustum(Handle<Mesh> meshHandle, const Component::Transform& transform)
 	{
 		Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
 
@@ -735,7 +735,7 @@ namespace HBL2
 		return true;  // If we pass all planes, the object is inside the frustum
 	}
 
-	void RenderingSystem::GatherDraws()
+	void ForwardRenderingSystem::GatherDraws()
 	{
 		// Static meshes
 		{
@@ -898,7 +898,7 @@ namespace HBL2
 		}
 	}
 
-	void RenderingSystem::GatherLights()
+	void ForwardRenderingSystem::GatherLights()
 	{
 		m_LightData.LightCount = 0;
 		m_Context->GetRegistry()
@@ -957,11 +957,11 @@ namespace HBL2
 			});
 	}
 
-	void RenderingSystem::ShadowPass(CommandBuffer* commandBuffer)
+	void ForwardRenderingSystem::ShadowPass(CommandBuffer* commandBuffer)
 	{
 	}
 
-	void RenderingSystem::DepthPrePass(CommandBuffer* commandBuffer)
+	void ForwardRenderingSystem::DepthPrePass(CommandBuffer* commandBuffer)
 	{
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DepthOnlyRenderPass, m_DepthOnlyFrameBuffer);
 
@@ -984,7 +984,7 @@ namespace HBL2
 		commandBuffer->EndRenderPass(*passRenderer);
 	}
 
-	void RenderingSystem::OpaquePass(CommandBuffer* commandBuffer)
+	void ForwardRenderingSystem::OpaquePass(CommandBuffer* commandBuffer)
 	{
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_OpaqueRenderPass, m_OpaqueFrameBuffer);
 
@@ -1008,7 +1008,7 @@ namespace HBL2
 		commandBuffer->EndRenderPass(*passRenderer);
 	}
 
-	void RenderingSystem::TransparentPass(CommandBuffer* commandBuffer)
+	void ForwardRenderingSystem::TransparentPass(CommandBuffer* commandBuffer)
 	{
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass, m_TransparentFrameBuffer);
 
@@ -1032,7 +1032,7 @@ namespace HBL2
 		commandBuffer->EndRenderPass(*passRenderer);
 	}
 
-	void RenderingSystem::SkyboxPass(CommandBuffer* commandBuffer)
+	void ForwardRenderingSystem::SkyboxPass(CommandBuffer* commandBuffer)
 	{
 		/*m_Context->GetRegistry()
 			.group<Component::SkyLight>(entt::get<Component::Transform>)
@@ -1078,7 +1078,7 @@ namespace HBL2
 			});*/
 	}
 
-	void RenderingSystem::PostProcessPass(CommandBuffer* commandBuffer)
+	void ForwardRenderingSystem::PostProcessPass(CommandBuffer* commandBuffer)
 	{
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
@@ -1104,7 +1104,7 @@ namespace HBL2
 		commandBuffer->EndRenderPass(*passRenderer);
 	}
 
-	void RenderingSystem::PresentPass(CommandBuffer* commandBuffer)
+	void ForwardRenderingSystem::PresentPass(CommandBuffer* commandBuffer)
 	{
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
@@ -1129,7 +1129,7 @@ namespace HBL2
 		commandBuffer->EndRenderPass(*passRenderer);
 	}
 
-	void RenderingSystem::GetViewProjection()
+	void ForwardRenderingSystem::GetViewProjection()
 	{
 		if (Context::Mode == Mode::Runtime)
 		{
@@ -1179,93 +1179,3 @@ namespace HBL2
 		m_CameraFrustum = {};
 	}
 }
-
-/*
-DrawList& draws = GetDrawList3D();
-
-auto& renderPasses = Renderer::Instance->GetRenderPassess3D();
-
-renderPasses.Execute(RenderPassEvent::BeforeRendering);
-
-renderPasses.Execute(RenderPassEvent::BeforeRenderingShadows);
-ShadowPass();
-renderPasses.Execute(RenderPassEvent::AfterRenderingShadows);
-
-renderPasses.Execute(RenderPassEvent::BeforeRenderingOpaques);
-OpaquePass();
-renderPasses.Execute(RenderPassEvent::AfterRenderingOpaques);
-
-renderPasses.Execute(RenderPassEvent::BeforeRenderingSkybox);
-SkyboxPass();
-renderPasses.Execute(RenderPassEvent::AfterRenderingSkybox);
-
-renderPasses.Execute(RenderPassEvent::BeforeRenderingTransparents);
-TransparentPass();
-renderPasses.Execute(RenderPassEvent::AfterRenderingTransparents);
-
-renderPasses.Execute(RenderPassEvent::BeforeRenderingPostProcess);
-PostProcessPass();
-renderPasses.Execute(RenderPassEvent::AfterRenderingPostProcess);
-
-renderPasses.Execute(RenderPassEvent::AfterRendering);
-
-class RenderPassPool
-{
-public:
-	void AddRenderPass(ScriptableRenderPass* renderPass);
-	void SetUp(RenderPassEvent event);
-	void Execute(RenderPassEvent event)
-	{
-		for (const auto& renderPass : renderPasses)
-		{
-			if (renderPass->GetInjectionPoint() == event)
-			{
-				renderPass->Excecute();
-			}
-		}
-	}
-	void CleanUp(RenderPassEvent event);
-
-private:
-	std::vector<ScriptableRenderPass*> m_RenderPasses;
-};
-
-class ScriptableRenderPass
-{
-public:
-	virtual void SetUp() = 0;
-	virtual void Execute() = 0;
-	virtual void CleanUp() = 0;
-
-	const RenderPassEvent& GetInjectionPoint() const { return m_InjectionPoint; }
-
-protected:
-	RenderPassEvent m_InjectionPoint;
-	const char* m_PassName;
-};
-
-class DitherRenderPass : public ScriptableRenderPass
-{
-public:
-	virtual void SetUp() override
-	{
-		m_PassName = "DitherRenderPass";
-		m_InjectionPoint = RenderPassEvent::AfterRenderingPostProcess;
-	}
-
-	virtual void Execute() override
-	{
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::CUSTOM, RenderPassStage::PostProcess);
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
-
-		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
-		passRenderer->DrawSubPass(globalDrawStream, draws);
-		commandBuffer->EndRenderPass(*passRenderer);
-		commandBuffer->Submit();
-	}
-
-	virtual void CleanUp() override
-	{
-	}
-};
-*/
