@@ -78,8 +78,6 @@ namespace HBL2
 		GatherDraws();
 		GatherLights();
 
-		// auto& renderPasses = Renderer::Instance->GetRenderPassess();
-
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
 		ResourceManager::Instance->TransitionTextureLayout(
@@ -87,44 +85,48 @@ namespace HBL2
 			Renderer::Instance->IntermediateColorTexture,
 			TextureLayout::UNDEFINED,
 			TextureLayout::RENDER_ATTACHMENT,
-			{});
+			{}
+		);
 
 		ResourceManager::Instance->TransitionTextureLayout(
 			commandBuffer,
 			Renderer::Instance->MainColorTexture,
 			TextureLayout::UNDEFINED,
 			TextureLayout::RENDER_ATTACHMENT,
-			{});
+			{}
+		);
 
-		// renderPasses.Execute(RenderPassEvent::BeforeRendering);
+		auto& renderPassPool = Renderer::Instance->GetRenderPassPool();
 
-		//renderPasses.Execute(RenderPassEvent::BeforeRenderingShadows);
+		renderPassPool.Execute(RenderPassEvent::BeforeRendering);
+
+		renderPassPool.Execute(RenderPassEvent::BeforeRenderingShadows);
 		ShadowPass(commandBuffer);
-		//renderPasses.Execute(RenderPassEvent::AfterRenderingShadows);
+		renderPassPool.Execute(RenderPassEvent::AfterRenderingShadows);
 
-		//renderPasses.Execute(RenderPassEvent::BeforeRenderingPrePasses);
+		renderPassPool.Execute(RenderPassEvent::BeforeRenderingPrePasses);
 		DepthPrePass(commandBuffer);
-		//renderPasses.Execute(RenderPassEvent::AfterRenderingPrePasses);
+		renderPassPool.Execute(RenderPassEvent::AfterRenderingPrePasses);
 
-		//renderPasses.Execute(RenderPassEvent::BeforeRenderingOpaques);
+		renderPassPool.Execute(RenderPassEvent::BeforeRenderingOpaques);
 		OpaquePass(commandBuffer);
-		//renderPasses.Execute(RenderPassEvent::AfterRenderingOpaques);
+		renderPassPool.Execute(RenderPassEvent::AfterRenderingOpaques);
 
-		//renderPasses.Execute(RenderPassEvent::BeforeRenderingSkybox);
+		renderPassPool.Execute(RenderPassEvent::BeforeRenderingSkybox);
 		SkyboxPass(commandBuffer);
-		//renderPasses.Execute(RenderPassEvent::AfterRenderingSkybox);
+		renderPassPool.Execute(RenderPassEvent::AfterRenderingSkybox);
 
-		//renderPasses.Execute(RenderPassEvent::BeforeRenderingTransparents);
+		renderPassPool.Execute(RenderPassEvent::BeforeRenderingTransparents);
 		TransparentPass(commandBuffer);
-		//renderPasses.Execute(RenderPassEvent::AfterRenderingTransparents);
+		renderPassPool.Execute(RenderPassEvent::AfterRenderingTransparents);
 
-		//renderPasses.Execute(RenderPassEvent::BeforeRenderingPostProcess);
+		renderPassPool.Execute(RenderPassEvent::BeforeRenderingPostProcess);
 		PostProcessPass(commandBuffer);
-		//renderPasses.Execute(RenderPassEvent::AfterRenderingPostProcess);
+		renderPassPool.Execute(RenderPassEvent::AfterRenderingPostProcess);
 
 		PresentPass(commandBuffer);
 
-		//renderPasses.Execute(RenderPassEvent::AfterRendering);
+		renderPassPool.Execute(RenderPassEvent::AfterRendering);
 
 		commandBuffer->EndCommandRecording();
 		commandBuffer->Submit();

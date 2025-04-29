@@ -4,6 +4,7 @@
 #include "Resources\Handle.h"
 #include "CommandBuffer.h"
 #include "UniformRingBuffer.h"
+#include "RenderPassPool.h"
 
 namespace HBL2
 {
@@ -66,6 +67,8 @@ namespace HBL2
 		virtual void* GetDepthAttachment() = 0;
 		virtual void* GetColorAttachment() = 0;
 
+		RenderPassPool& GetRenderPassPool() { return m_RenderPassPool; }
+
 		const uint32_t GetFrameNumber() const { return m_FrameNumber; }
 		RendererStats& GetRendererStats() { return m_Stats; }
 
@@ -106,6 +109,8 @@ namespace HBL2
 		uint32_t m_FrameNumber = 0;
 		GraphicsAPI m_GraphicsAPI;
 		RendererStats m_Stats;
+		RenderPassPool m_RenderPassPool;
+
 		Handle<BindGroupLayout> m_GlobalBindingsLayout2D;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
 		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
