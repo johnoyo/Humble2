@@ -34,6 +34,8 @@ namespace HBL2
 		uint32_t VertexBindingCount = 0;
 		uint32_t ByteStride = 0;
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding::Attribute> Attributes;
+		Handle<BindGroupLayout> BindGroupLayout;
+		Handle<BindGroup> BindGroup;
 	};
 
 	struct HBL2_API MaterialDataDescriptor

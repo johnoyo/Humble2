@@ -1,10 +1,22 @@
 #pragma once
 
+#include "Humble2API.h"
+
 #include "Enums.h"
+#include "Resources\Types.h"
+#include "Resources\Handle.h"
+#include "DrawList.h"
 
 namespace HBL2
 {
-	class ScriptableRenderPass
+	struct HBL2_API RenderPassContext
+	{
+		Handle<Shader> Shader;
+		Handle<Material> Material;
+		Handle<BindGroup> GlobalBindGroup;
+	};
+
+	class HBL2_API ScriptableRenderPass
 	{
 	public:
 		virtual void Initialize() = 0;
@@ -14,27 +26,32 @@ namespace HBL2
 		const RenderPassEvent& GetInjectionPoint() const { return m_InjectionPoint; }
 
 	protected:
+		DrawList GetDraws();
+		RenderPassContext CreateContext(const char* shaderPath, Handle<RenderPass> renderPass);
+
+	protected:
+		RenderPassContext m_RenderPassContext;
 		RenderPassEvent m_InjectionPoint;
 		const char* m_PassName;
 	};
 
 	/*
-	* 
-	class DitherRenderPass : public ScriptableRenderPass
+
+	class DitherRenderPass final : public ScriptableRenderPass
 	{
 	public:
 		virtual void Initialize() override
 		{
 			m_PassName = "DitherRenderPass";
 			m_InjectionPoint = RenderPassEvent::AfterRenderingPostProcess;
+			m_RenderPassContext = CreateContext("assets/shaders/post-process-tone-mapping.shader", m_RenderPass);
 		}
 
 		virtual void Execute() override
 		{
 			RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_RenderPass, m_FrameBuffer);
-
-			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
-			passRenderer->DrawSubPass(globalDrawStream, draws);
+			GlobalDrawStream globalDrawStream = { .BindGroup = m_RenderPassContext.GlobalBindGroup };
+			passRenderer->DrawSubPass(globalDrawStream, GetDraws());
 			commandBuffer->EndRenderPass(*passRenderer);
 		}
 
