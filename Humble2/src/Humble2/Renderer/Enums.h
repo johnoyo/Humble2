@@ -169,6 +169,7 @@ namespace HBL2
 		D1 = 0,
 		D2 = 1,
 		D3 = 2,
+		CUBE = 3,
 	};
 
 	enum class TextureAspect

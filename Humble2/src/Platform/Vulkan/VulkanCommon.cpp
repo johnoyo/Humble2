@@ -207,8 +207,8 @@ namespace HBL2
 				return VK_IMAGE_TYPE_2D;
 			case HBL2::TextureType::D3:
 				return VK_IMAGE_TYPE_3D;
-			default:
-				break;
+			case HBL2::TextureType::CUBE:
+				return VK_IMAGE_TYPE_2D;
 			}
 
 			return VK_IMAGE_TYPE_MAX_ENUM;
@@ -224,8 +224,8 @@ namespace HBL2
 				return VK_IMAGE_VIEW_TYPE_2D;
 			case HBL2::TextureType::D3:
 				return VK_IMAGE_VIEW_TYPE_3D;
-			default:
-				break;
+			case HBL2::TextureType::CUBE:
+				return VK_IMAGE_VIEW_TYPE_CUBE;
 			}
 
 			return VK_IMAGE_VIEW_TYPE_MAX_ENUM;

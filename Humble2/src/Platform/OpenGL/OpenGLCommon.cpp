@@ -112,6 +112,23 @@ namespace HBL2
 			return -1;
 		}
 
+		GLenum TextureTypeToGLenum(TextureType textureType)
+		{
+			switch (textureType)
+			{
+			case HBL2::TextureType::D1:
+				return GL_TEXTURE_2D;
+			case HBL2::TextureType::D2:
+				return GL_TEXTURE_2D;
+			case HBL2::TextureType::D3:
+				return GL_TEXTURE_3D;
+			case HBL2::TextureType::CUBE:
+				return GL_TEXTURE_CUBE_MAP;
+			}
+
+			return -1;
+		}
+
 		GLenum FormatToGLenum(Format format)
 		{
 			switch (format)

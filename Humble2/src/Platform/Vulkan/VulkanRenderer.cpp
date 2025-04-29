@@ -131,6 +131,9 @@ namespace HBL2
 		VkRenderPass renderPass = m_ResourceManager->GetRenderPass(m_RenderPass)->RenderPass;
 		vkDestroyRenderPass(m_Device->Get(), renderPass, nullptr);
 
+		VkRenderPass renderingRenderPass = m_ResourceManager->GetRenderPass(m_RenderingRenderPass)->RenderPass;
+		vkDestroyRenderPass(m_Device->Get(), renderingRenderPass, nullptr);
+
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);

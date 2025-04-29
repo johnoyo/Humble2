@@ -6,17 +6,18 @@ namespace HBL2
 	{
 		DebugName = desc.debugName;
 		Dimensions = desc.dimensions;
+		TextureType = OpenGLUtils::TextureTypeToGLenum(desc.type);
 		Format = OpenGLUtils::FormatToGLenum(desc.format);
 		MinFilter = OpenGLUtils::FilterToGLenum(desc.sampler.filter);
 		MagFilter = OpenGLUtils::FilterToGLenum(desc.sampler.filter);
 		WrapMode = OpenGLUtils::WrapToGLenum(desc.sampler.wrap);
 
 		glGenTextures(1, &RendererId);
-		glBindTexture(GL_TEXTURE_2D, RendererId);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, MinFilter);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, MagFilter);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, WrapMode);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, WrapMode);
+		glBindTexture(TextureType, RendererId);
+		glTexParameteri(TextureType, GL_TEXTURE_MIN_FILTER, MinFilter);
+		glTexParameteri(TextureType, GL_TEXTURE_MAG_FILTER, MagFilter);
+		glTexParameteri(TextureType, GL_TEXTURE_WRAP_S, WrapMode);
+		glTexParameteri(TextureType, GL_TEXTURE_WRAP_T, WrapMode);
 
 		switch (desc.format)
 		{
@@ -51,15 +52,26 @@ namespace HBL2
 		if (desc.initialData == nullptr && Dimensions.x == 1 && Dimensions.y == 1)
 		{
 			uint32_t whiteTexture = 0xffffffff;
-			glTexImage2D(GL_TEXTURE_2D, 0, Format, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, InternalFormat, Type, &whiteTexture);
+			glTexImage2D(TextureType, 0, Format, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, InternalFormat, Type, &whiteTexture);
 		}
 		else
 		{
-			glTexImage2D(GL_TEXTURE_2D, 0, Format, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, InternalFormat, Type, desc.initialData);
+			if (TextureType == GL_TEXTURE_CUBE_MAP)
+			{
+				for (unsigned int i = 0; i < 6; ++i)
+				{
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, Format, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, GL_RGB, Type, nullptr);
+				}
+			}
+			else
+			{
+				glTexImage2D(TextureType, 0, Format, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, InternalFormat, Type, desc.initialData);
+			}
+
 			stbi_image_free(desc.initialData);
 		}
 
-		glBindTexture(GL_TEXTURE_2D, 0);
+		glBindTexture(TextureType, 0);
 	}
 
 	void OpenGLTexture::Update(const Span<const std::byte>& bytes)
@@ -67,15 +79,25 @@ namespace HBL2
 		Destroy();
 
 		glGenTextures(1, &RendererId);
-		glBindTexture(GL_TEXTURE_2D, RendererId);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, MinFilter);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, MagFilter);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, WrapMode);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, WrapMode);
+		glBindTexture(TextureType, RendererId);
+		glTexParameteri(TextureType, GL_TEXTURE_MIN_FILTER, MinFilter);
+		glTexParameteri(TextureType, GL_TEXTURE_MAG_FILTER, MagFilter);
+		glTexParameteri(TextureType, GL_TEXTURE_WRAP_S, WrapMode);
+		glTexParameteri(TextureType, GL_TEXTURE_WRAP_T, WrapMode);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, Format, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, InternalFormat, Type, bytes.Data());
+		if (TextureType == GL_TEXTURE_CUBE_MAP)
+		{
+			for (unsigned int i = 0; i < 6; ++i)
+			{
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, Format, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, GL_RGB, Type, bytes.Data());
+			}
+		}
+		else
+		{
+			glTexImage2D(TextureType, 0, Format, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, InternalFormat, Type, bytes.Data());
+		}
 
-		glBindTexture(GL_TEXTURE_2D, 0);
+		glBindTexture(TextureType, 0);
 	}
 
 	void OpenGLTexture::Destroy()

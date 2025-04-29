@@ -21,6 +21,7 @@ namespace HBL2
 		const char* DebugName = "";
 		GLuint RendererId = 0;
 		glm::vec3 Dimensions = glm::vec3(0.0f);
+		GLenum TextureType = UINT32_MAX;
 		GLenum Type = UINT32_MAX;
 		GLenum Format = UINT32_MAX;
 		GLenum InternalFormat = UINT32_MAX;

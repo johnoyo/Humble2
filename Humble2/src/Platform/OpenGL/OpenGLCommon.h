@@ -23,5 +23,6 @@ namespace HBL2
 		GLenum FilterToGLenum(Filter filter);
 		GLenum WrapToGLenum(Wrap wrap);
 		GLenum CompareToGLenum(Compare compare);
+		GLenum TextureTypeToGLenum(TextureType textureType);
 	}
 }
