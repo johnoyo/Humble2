@@ -14,6 +14,8 @@ namespace HBL2
 		OpenGLTexture() = default;
 		OpenGLTexture(const TextureDescriptor&& desc);
 
+		void Bind(uint32_t slot);
+
 		void Update(const Span<const std::byte>& bytes);
 
 		void Destroy();

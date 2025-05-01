@@ -79,11 +79,29 @@ namespace HBL2
 
 	ComputePassRenderer* OpenGLCommandBuffer::BeginComputePass(Span<const Handle<Texture>> texturesWrite, Span<const Handle<Buffer>> buffersWrite)
 	{
-		return nullptr;
+		OpenGLResourceManager* rm = (OpenGLResourceManager*)ResourceManager::Instance;
+		OpenGLRenderer* renderer = (OpenGLRenderer*)Renderer::Instance;
+
+		uint32_t slot = 0;
+
+		for (const auto& textureHandle : texturesWrite)
+		{
+			OpenGLTexture* texture = rm->GetTexture(textureHandle);
+			texture->Bind(slot++);
+		}
+
+		for (const auto& bufferHandle : buffersWrite)
+		{
+			OpenGLBuffer* buffer = rm->GetBuffer(bufferHandle);
+			glBindBufferBase(GL_UNIFORM_BUFFER, slot++, buffer->RendererId);
+		}
+
+		return &m_CurrentComputePassRenderer;
 	}
 
 	void OpenGLCommandBuffer::EndComputePass(const ComputePassRenderer& computePassRenderer)
 	{
+		glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
 		return;
 	}
 

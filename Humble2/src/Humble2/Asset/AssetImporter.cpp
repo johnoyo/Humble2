@@ -177,7 +177,7 @@ namespace HBL2
 			{
 				.Flip = textureProperties["Flip"].as<bool>(),
 			};
-			stbi_uc* textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
+			void* textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
 
 			const std::string& textureName = asset->FilePath.filename().stem().string();
 
@@ -185,6 +185,7 @@ namespace HBL2
 			auto texture = ResourceManager::Instance->CreateTexture({
 				.debugName = _strdup(std::format("{}-texture", textureName).c_str()),
 				.dimensions = { textureSettings.Width, textureSettings.Height, 1 },
+				.format = textureSettings.PixelFormat,
 				.usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },
 				.aspect = TextureAspect::COLOR,
 				.initialData = textureData,
@@ -825,7 +826,7 @@ namespace HBL2
 			{
 				.Flip = textureProperties["Flip"].as<bool>(),
 			};
-			stbi_uc* textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
+			void* textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
 
 			// Update gpu texture storage.
 			ResourceManager::Instance->UpdateTexture(textureHandle, { (std::byte*)textureData, (size_t)(textureSettings.Width * textureSettings.Height) });

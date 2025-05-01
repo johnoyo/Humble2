@@ -37,7 +37,7 @@ namespace HBL2
 
 		Handle<Asset> assetHandle;
 
-		if (extension == ".png" || extension == ".jpg" || extension == ".tga")
+		if (extension == ".png" || extension == ".jpg" || extension == ".tga" || extension == ".hdr")
 		{
 			assetHandle = AssetManager::Instance->CreateAsset({
 				.debugName = "texture-asset",

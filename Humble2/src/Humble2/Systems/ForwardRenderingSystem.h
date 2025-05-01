@@ -67,6 +67,7 @@ namespace HBL2
 		CameraData m_CameraData{};
 		CameraSettings m_CameraSettings{};
 		Component::Camera::CameraFrustum m_CameraFrustum{};
+		glm::mat4 m_OnlyRotationInViewProjection = glm::mat4(1.0f);
 
 		Handle<RenderPassLayout> m_RenderPassLayout;
 
@@ -83,16 +84,28 @@ namespace HBL2
 
 		Handle<RenderPass> m_OpaqueRenderPass;
 		Handle<RenderPass> m_TransparentRenderPass;
-		Handle<RenderPass> m_PostProcessRenderPass;
 		Handle<FrameBuffer> m_OpaqueFrameBuffer;
 		Handle<FrameBuffer> m_TransparentFrameBuffer;
-		Handle<FrameBuffer> m_PostProcessFrameBuffer;
 
+		Handle<BindGroupLayout> m_EquirectToSkyboxBindGroupLayout;
+		Handle<Buffer> m_CaptureMatricesBuffer;
+		Handle<Shader> m_EquirectToSkyboxShader;
+		Handle<BindGroupLayout> m_SkyboxGlobalBindGroupLayout;
+		Handle<BindGroup> m_SkyboxGlobalBindGroup;
+		Handle<Shader> m_SkyboxShader;
+		Handle<Material> m_SkyboxMaterial;
+		Handle<BindGroupLayout> m_SkyboxBindGroupLayout;
+		Handle<BindGroup> m_SkyboxBindGroup;
+		ShaderDescriptor::RenderPipeline::Variant m_SkyboxVariant{};
+
+		Handle<RenderPass> m_PostProcessRenderPass;
+		Handle<FrameBuffer> m_PostProcessFrameBuffer;
 		Handle<Buffer> m_PostProcessBuffer;
 		Handle<BindGroup> m_PostProcessBindGroup;
 		Handle<BindGroupLayout> m_PostProcessBindGroupLayout;
 		Handle<Shader> m_PostProcessShader;
 		Handle<Material> m_PostProcessMaterial;
+		Handle<Mesh> m_CubeMesh;
 
 		Handle<Mesh> m_SpriteMesh;
 		Handle<Buffer> m_VertexBuffer;

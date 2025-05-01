@@ -213,14 +213,10 @@ namespace HBL2
 
 		std::fstream newFile;
 
-		enum class ShaderType
-		{
-			NONE = -1, VERTEX = 0, FRAGMENT = 1
-		};
-
 		std::string line;
-		std::stringstream ss[2];
-		ShaderType type = ShaderType::NONE;
+		std::stringstream ss[3];
+
+		ShaderStage type = ShaderStage::NONE;
 
 		newFile.open(shaderFilePath, std::ios::in);
 
@@ -231,9 +227,11 @@ namespace HBL2
 				if (line.find("#shader") != std::string::npos)
 				{
 					if (line.find("vertex") != std::string::npos)
-						type = ShaderType::VERTEX;
+						type = ShaderStage::VERTEX;
 					else if (line.find("fragment") != std::string::npos)
-						type = ShaderType::FRAGMENT;
+						type = ShaderStage::FRAGMENT;
+					else if (line.find("compute") != std::string::npos)
+						type = ShaderStage::COMPUTE;
 				}
 				else
 				{
@@ -251,50 +249,81 @@ namespace HBL2
 		}
 
 		std::vector<std::vector<uint32_t>> shaderBinaries;
-
-		shaderBinaries.push_back(Compile(shaderFilePath, ss[0].str(), ShaderStage::VERTEX));
-		shaderBinaries.push_back(Compile(shaderFilePath, ss[1].str(), ShaderStage::FRAGMENT));
-
-		if (shaderBinaries[0].empty() || shaderBinaries[1].empty())
-		{
-			return {};
-		}
-
 		GraphicsAPI api = Renderer::Instance->GetAPI();
 		std::filesystem::path shaderPath = shaderFilePath;
 		std::filesystem::path cacheDirectory = GetCacheDirectory(api);
-		const char* vertexCachedVulkanFileExtension = GLShaderStageCachedVulkanFileExtension(ShaderStage::VERTEX);
-		const char* fragmentCachedVulkanFileExtension = GLShaderStageCachedVulkanFileExtension(ShaderStage::FRAGMENT);
-		std::filesystem::path vertexShaderPath = cacheDirectory / (shaderPath.filename().string() + vertexCachedVulkanFileExtension);
-		std::filesystem::path fragmentShaderPath = cacheDirectory / (shaderPath.filename().string() + fragmentCachedVulkanFileExtension);
 
-		std::vector<uint32_t> vertexShaderData;
-		std::ifstream inV(vertexShaderPath, std::ios::in | std::ios::binary);
-		if (inV.is_open())
+		if (type != ShaderStage::COMPUTE)
 		{
-			inV.seekg(0, std::ios::end);
-			auto size = inV.tellg();
-			inV.seekg(0, std::ios::beg);
+			shaderBinaries.push_back(Compile(shaderFilePath, ss[0].str(), ShaderStage::VERTEX));
+			shaderBinaries.push_back(Compile(shaderFilePath, ss[1].str(), ShaderStage::FRAGMENT));
 
-			vertexShaderData.resize(size / sizeof(uint32_t));
-			inV.read((char*)vertexShaderData.data(), size);
+			if (shaderBinaries[0].empty() || shaderBinaries[1].empty())
+			{
+				return {};
+			}
+
+			const char* vertexCachedVulkanFileExtension = GLShaderStageCachedVulkanFileExtension(ShaderStage::VERTEX);
+			const char* fragmentCachedVulkanFileExtension = GLShaderStageCachedVulkanFileExtension(ShaderStage::FRAGMENT);
+			std::filesystem::path vertexShaderPath = cacheDirectory / (shaderPath.filename().string() + vertexCachedVulkanFileExtension);
+			std::filesystem::path fragmentShaderPath = cacheDirectory / (shaderPath.filename().string() + fragmentCachedVulkanFileExtension);
+
+			std::vector<uint32_t> vertexShaderData;
+			std::ifstream inV(vertexShaderPath, std::ios::in | std::ios::binary);
+			if (inV.is_open())
+			{
+				inV.seekg(0, std::ios::end);
+				auto size = inV.tellg();
+				inV.seekg(0, std::ios::beg);
+
+				vertexShaderData.resize(size / sizeof(uint32_t));
+				inV.read((char*)vertexShaderData.data(), size);
+			}
+
+			std::vector<uint32_t> fragmentShaderData;
+			std::ifstream inF(fragmentShaderPath, std::ios::in | std::ios::binary);
+			if (inF.is_open())
+			{
+				inF.seekg(0, std::ios::end);
+				auto size = inF.tellg();
+				inF.seekg(0, std::ios::beg);
+
+				fragmentShaderData.resize(size / sizeof(uint32_t));
+				inF.read((char*)fragmentShaderData.data(), size);
+			}
+
+			HBL2_CORE_TRACE("Reflecting Shader: {0}", shaderFilePath);
+
+			m_ShaderReflectionData[shaderFilePath] = Reflect(vertexShaderData, fragmentShaderData, {});
 		}
-
-		std::vector<uint32_t> fragmentShaderData;
-		std::ifstream inF(fragmentShaderPath, std::ios::in | std::ios::binary);
-		if (inF.is_open())
+		else
 		{
-			inF.seekg(0, std::ios::end);
-			auto size = inF.tellg();
-			inF.seekg(0, std::ios::beg);
+			shaderBinaries.push_back(Compile(shaderFilePath, ss[2].str(), ShaderStage::COMPUTE));
 
-			fragmentShaderData.resize(size / sizeof(uint32_t));
-			inF.read((char*)fragmentShaderData.data(), size);
+			if (shaderBinaries[0].empty())
+			{
+				return {};
+			}
+
+			const char* computeCachedVulkanFileExtension = GLShaderStageCachedVulkanFileExtension(ShaderStage::COMPUTE);
+			std::filesystem::path computeShaderPath = cacheDirectory / (shaderPath.filename().string() + computeCachedVulkanFileExtension);
+
+			std::vector<uint32_t> computeShaderData;
+			std::ifstream inV(computeShaderPath, std::ios::in | std::ios::binary);
+			if (inV.is_open())
+			{
+				inV.seekg(0, std::ios::end);
+				auto size = inV.tellg();
+				inV.seekg(0, std::ios::beg);
+
+				computeShaderData.resize(size / sizeof(uint32_t));
+				inV.read((char*)computeShaderData.data(), size);
+			}
+
+			HBL2_CORE_TRACE("Reflecting Shader: {0}", shaderFilePath);
+
+			m_ShaderReflectionData[shaderFilePath] = Reflect({}, {}, computeShaderData);
 		}
-
-		HBL2_CORE_TRACE("Reflecting Shader: {0}", shaderFilePath);
-
-		m_ShaderReflectionData[shaderFilePath] = Reflect(vertexShaderData, fragmentShaderData);
 
 		return shaderBinaries;
 	}
@@ -690,11 +719,12 @@ namespace HBL2
 		fout.close();
 	}
 
-	ReflectionData ShaderUtilities::Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData)
+	ReflectionData ShaderUtilities::Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData, const Span<uint32_t>& computeShaderData)
 	{
 		ReflectionData reflectionData;
 
 		// Vertex
+		if (vertexShaderData.Size() != 0)
 		{
 			spirv_cross::Compiler compiler(vertexShaderData.Data(), vertexShaderData.Size());
 			const spirv_cross::ShaderResources& resources = compiler.get_shader_resources();
@@ -930,6 +960,7 @@ namespace HBL2
 		}
 
 		// Fragment
+		if (fragmentShaderData.Size() != 0)
 		{
 			spirv_cross::Compiler compiler(fragmentShaderData.Data(), fragmentShaderData.Size());
 			const spirv_cross::ShaderResources& resources = compiler.get_shader_resources();
@@ -966,6 +997,78 @@ namespace HBL2
 				uint32_t binding = compiler.get_decoration(ubo.id, spv::DecorationBinding);
 				uint32_t set = compiler.get_decoration(ubo.id, spv::DecorationDescriptorSet);
 				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}, Size: {}", ubo.name, set, binding, bufferSize);
+			}
+
+			// Print sampled images (textures)
+			HBL2_CORE_TRACE("Sampled Images (Textures):");
+			for (const auto& sampler : resources.sampled_images)
+			{
+				uint32_t binding = compiler.get_decoration(sampler.id, spv::DecorationBinding);
+				uint32_t set = compiler.get_decoration(sampler.id, spv::DecorationDescriptorSet);
+				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}", sampler.name, set, binding);
+			}
+		}
+
+		// Compute
+		if (computeShaderData.Size() != 0)
+		{
+			spirv_cross::Compiler compiler(computeShaderData.Data(), computeShaderData.Size());
+			const spirv_cross::ShaderResources& resources = compiler.get_shader_resources();
+
+			HBL2_CORE_TRACE("OpenGLShader::Reflect - {0}", GLShaderStageToString(ShaderStage::COMPUTE));
+			HBL2_CORE_TRACE("    {0} uniform buffers", resources.uniform_buffers.size());
+			HBL2_CORE_TRACE("    {0} storage buffers", resources.storage_buffers.size());
+			HBL2_CORE_TRACE("    {0} storage images", resources.storage_images.size());
+			HBL2_CORE_TRACE("    {0} resources", resources.sampled_images.size());
+
+			// Get all entry points and their execution stages
+			const auto& entryPoints = compiler.get_entry_points_and_stages();
+
+			HBL2_CORE_TRACE("Shader Entry Point:");
+			for (const auto& entryPoint : entryPoints)
+			{
+				HBL2_CORE_TRACE("  Name: {}", entryPoint.name);
+
+				// Print the shader stage
+				HBL2_CORE_TRACE("  Stage: ");
+				switch (entryPoint.execution_model)
+				{
+				case spv::ExecutionModelGLCompute:
+					HBL2_CORE_TRACE("Compute Shader");
+					reflectionData.ComputeEntryPoint = entryPoint.name;
+					break;
+				}
+			}
+
+			// Print uniform buffers
+			HBL2_CORE_TRACE("Uniform Buffers:");
+			for (const auto& ubo : resources.uniform_buffers)
+			{
+				const auto& bufferType = compiler.get_type(ubo.base_type_id);
+				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
+				uint32_t binding = compiler.get_decoration(ubo.id, spv::DecorationBinding);
+				uint32_t set = compiler.get_decoration(ubo.id, spv::DecorationDescriptorSet);
+				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}, Size: {}", ubo.name, set, binding, bufferSize);
+			}
+
+			// Print storage buffers
+			HBL2_CORE_TRACE("Storage Buffers:");
+			for (const auto& ssbo : resources.storage_buffers)
+			{
+				const auto& bufferType = compiler.get_type(ssbo.base_type_id);
+				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
+				uint32_t binding = compiler.get_decoration(ssbo.id, spv::DecorationBinding);
+				uint32_t set = compiler.get_decoration(ssbo.id, spv::DecorationDescriptorSet);
+				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}, Size: {}", ssbo.name, set, binding, bufferSize);
+			}
+
+			// Print storage buffers
+			HBL2_CORE_TRACE("Storage Images:");
+			for (const auto& image : resources.storage_images)
+			{
+				uint32_t binding = compiler.get_decoration(image.id, spv::DecorationBinding);
+				uint32_t set = compiler.get_decoration(image.id, spv::DecorationDescriptorSet);
+				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}", image.name, set, binding);
 			}
 
 			// Print sampled images (textures)

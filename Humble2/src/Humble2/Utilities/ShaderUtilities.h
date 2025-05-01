@@ -31,6 +31,7 @@ namespace HBL2
 	{
 		std::string VertexEntryPoint;
 		std::string FragmentEntryPoint;
+		std::string ComputeEntryPoint;
 		uint32_t VertexBindingCount = 0;
 		uint32_t ByteStride = 0;
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding::Attribute> Attributes;
@@ -114,6 +115,8 @@ namespace HBL2
 					return ".cached_vulkan.vert";
 				case ShaderStage::FRAGMENT:
 					return ".cached_vulkan.frag";
+				case ShaderStage::COMPUTE:
+					return ".cached_vulkan.comp";
 				default:
 					HBL2_CORE_ASSERT(false, "Stage not supported");
 					return "";
@@ -128,6 +131,8 @@ namespace HBL2
 					return ".cached_opengl.vert";
 				case ShaderStage::FRAGMENT:
 					return ".cached_opengl.frag";
+				case ShaderStage::COMPUTE:
+					return ".cached_opengl.comp";
 				default:
 					HBL2_CORE_ASSERT(false, "Stage not supported");
 					return "";
@@ -142,6 +147,8 @@ namespace HBL2
 					return shaderc_glsl_vertex_shader;
 				case ShaderStage::FRAGMENT:
 					return shaderc_glsl_fragment_shader;
+				case ShaderStage::COMPUTE:
+					return shaderc_glsl_compute_shader;
 				default:
 					HBL2_CORE_ASSERT(false, "Stage not supported");
 					return (shaderc_shader_kind)0;
@@ -156,6 +163,8 @@ namespace HBL2
 					return "ShaderStage::VERTEX";
 				case ShaderStage::FRAGMENT:
 					return "ShaderStage::FRAGMENT";
+				case ShaderStage::COMPUTE:
+					return "ShaderStage::COMPUTE";
 				default:
 					HBL2_CORE_ASSERT(false, "Stage not supported");
 					return "";
@@ -163,7 +172,7 @@ namespace HBL2
 		}
 
 		std::vector<uint32_t> Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage);
-		ReflectionData Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData);
+		ReflectionData Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData, const Span<uint32_t>& computeShaderData);
 
 	private:
 		std::unordered_map<std::string, ReflectionData> m_ShaderReflectionData;

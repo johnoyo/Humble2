@@ -45,7 +45,7 @@ namespace HBL2
 
 		bool createSampler = true;
 		Sampler sampler;
-		stbi_uc* initialData = nullptr;
+		void* initialData = nullptr;
 	};
 
 	struct BufferDescriptor
@@ -104,6 +104,7 @@ namespace HBL2
 	struct ShaderDescriptor
 	{
 		const char* debugName;
+		ShaderType type = ShaderType::RASTERIZATION;
 		struct ShaderStage
 		{
 			Span<const uint32_t> code;
@@ -111,6 +112,7 @@ namespace HBL2
 		};
 		ShaderStage VS;
 		ShaderStage FS;
+		ShaderStage CS;
 		std::initializer_list<Handle<BindGroupLayout>> bindGroups;
 		struct RenderPipeline
 		{
@@ -153,8 +155,8 @@ namespace HBL2
 				DepthTest depthTest{};
 				Topology topology = Topology::TRIANGLE_LIST;
 				PolygonMode polygonMode = PolygonMode::FILL;
-				CullMode cullMode = CullMode::NONE;
-				FrontFace frontFace = FrontFace::CLOCKWISE;
+				CullMode cullMode = CullMode::BACK;
+				FrontFace frontFace = FrontFace::COUNTER_CLOCKWISE;
 
 				inline bool operator==(const Variant& other) const
 				{

@@ -12,7 +12,7 @@ namespace HBL2
 	{
 		Handle<Shader> Shader;
 		Handle<BindGroup> BindGroup;
-		glm::vec3 ThreadGroupCount{};
+		glm::uvec3 ThreadGroupCount{};
 	};
 
 	class HBL2_API ComputePassRenderer

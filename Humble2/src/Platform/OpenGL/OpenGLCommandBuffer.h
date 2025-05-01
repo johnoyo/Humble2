@@ -2,6 +2,7 @@
 
 #include "Renderer\CommandBuffer.h"
 #include "OpenGLRenderPassRenderer.h"
+#include "OpenGLComputePassRenderer.h"
 
 namespace HBL2
 {
@@ -19,6 +20,7 @@ namespace HBL2
 
 	private:
 		OpenGLRenderPasRenderer m_CurrentRenderPassRenderer;
+		OpenGLComputePassRenderer m_CurrentComputePassRenderer;
 		Handle<FrameBuffer> m_FrameBuffer;
 	};
 }

@@ -298,6 +298,38 @@ namespace HBL2
 					}
 				});
 
+				DrawComponent<HBL2::Component::SkyLight>("SkyLight", m_ActiveScene, [this](HBL2::Component::SkyLight& skyLight)
+				{
+					ImGui::Checkbox("Enabled", &skyLight.Enabled);
+
+					uint32_t textureHandle = skyLight.EquirectangularMap.Pack();
+					
+					ImGui::InputScalar("Equirectangular Map", ImGuiDataType_U32, (void*)(intptr_t*)&textureHandle);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							if (assetHandle.IsValid())
+							{
+								Asset* textureAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+								if (!std::filesystem::exists(HBL2::Project::GetAssetFileSystemPath(textureAsset->FilePath).string() + ".hbltexture"))
+								{
+									TextureUtilities::Get().CreateAssetMetadataFile(assetHandle);
+								}
+							}
+
+							skyLight.EquirectangularMap = AssetManager::Instance->GetAsset<Texture>(assetHandle);
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+				});
+
 				DrawComponent<HBL2::Component::AudioSource>("AudioSource", m_ActiveScene, [this](HBL2::Component::AudioSource& audioSource)
 				{
 					uint32_t soundHandle = audioSource.Sound.Pack();
@@ -316,19 +348,22 @@ namespace HBL2
 							{
 								Asset* soundAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 
-								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound", 0);
+								if (!std::filesystem::exists(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound"))
+								{
+									std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound", 0);
 
-								YAML::Emitter out;
-								out << YAML::BeginMap;
-								out << YAML::Key << "Sound" << YAML::Value;
-								out << YAML::BeginMap;
-								out << YAML::Key << "UUID" << YAML::Value << soundAsset->UUID;
-								out << YAML::Key << "Loop" << YAML::Value << false;
-								out << YAML::Key << "StartPaused" << YAML::Value << false;
-								out << YAML::EndMap;
-								out << YAML::EndMap;
-								fout << out.c_str();
-								fout.close();
+									YAML::Emitter out;
+									out << YAML::BeginMap;
+									out << YAML::Key << "Sound" << YAML::Value;
+									out << YAML::BeginMap;
+									out << YAML::Key << "UUID" << YAML::Value << soundAsset->UUID;
+									out << YAML::Key << "Loop" << YAML::Value << false;
+									out << YAML::Key << "StartPaused" << YAML::Value << false;
+									out << YAML::EndMap;
+									out << YAML::EndMap;
+									fout << out.c_str();
+									fout.close();	
+								}
 							}
 
 							audioSource.Sound = AssetManager::Instance->GetAsset<Sound>(assetHandle);
@@ -480,6 +515,15 @@ namespace HBL2
 						if (ImGui::MenuItem("Light"))
 						{
 							m_ActiveScene->AddComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
+					if (!m_ActiveScene->HasComponent<HBL2::Component::SkyLight>(HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::MenuItem("SkyLight"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::SkyLight>(HBL2::Component::EditorVisible::SelectedEntity);
 							ImGui::CloseCurrentPopup();
 						}
 					}

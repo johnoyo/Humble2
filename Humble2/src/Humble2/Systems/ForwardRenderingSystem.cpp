@@ -1,4 +1,4 @@
-#include "ForwardRenderingSystem.h"
+﻿#include "ForwardRenderingSystem.h"
 
 #include "Core\Window.h"
 #include "Utilities\ShaderUtilities.h"
@@ -28,7 +28,7 @@ namespace HBL2
 		{200,   1.0f, 0.022f, 0.0019f},
 		{325,   1.0f, 0.014f, 0.0007f},
 		{600,   1.0f, 0.007f, 0.0002f},
-		{3250,  1.0f, 0.0014f, 0.000007f}
+		{3250,  1.0f, 0.0014f,0.000007f}
 	};
 
 	static Attenuation GetClosestAttenuation(float inputDistance)
@@ -49,6 +49,13 @@ namespace HBL2
 		return *closest;
 	}
 
+	struct CaptureMatrices
+	{
+		glm::mat4 View[6];
+		float FaceSize = 1024.f;
+		float _padding[3];
+	};
+
 	void ForwardRenderingSystem::OnCreate()
 	{
 		m_ResourceManager = ResourceManager::Instance;
@@ -68,6 +75,7 @@ namespace HBL2
 		TransparentPassSetup();
 		SpriteRenderingSetup();
 		PostProcessPassSetup();
+		SkyboxPassSetup();
 		PresentPassSetup();
 	}
 
@@ -158,6 +166,16 @@ namespace HBL2
 		m_ResourceManager->DeleteRenderPass(m_TransparentRenderPass);
 		m_ResourceManager->DeleteFrameBuffer(m_TransparentFrameBuffer);
 		Renderer::Instance->RemoveOnResizeCallback("Resize-Transparent-FrameBuffer");
+
+		m_ResourceManager->DeleteBindGroupLayout(m_EquirectToSkyboxBindGroupLayout);
+		m_ResourceManager->DeleteShader(m_EquirectToSkyboxShader);
+		m_ResourceManager->DeleteBuffer(m_CaptureMatricesBuffer);
+		m_ResourceManager->DeleteBindGroupLayout(m_SkyboxGlobalBindGroupLayout);
+		m_ResourceManager->DeleteBindGroup(m_SkyboxGlobalBindGroup);
+		m_ResourceManager->DeleteShader(m_SkyboxShader);
+		m_ResourceManager->DeleteMaterial(m_SkyboxMaterial);
+		m_ResourceManager->DeleteBindGroupLayout(m_SkyboxBindGroupLayout);
+		m_ResourceManager->DeleteBindGroup(m_SkyboxBindGroup);
 
 		m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
 		m_ResourceManager->DeleteShader(m_PostProcessShader);
@@ -467,6 +485,216 @@ namespace HBL2
 
 	void ForwardRenderingSystem::SkyboxPassSetup()
 	{
+		CaptureMatrices captureMatrices{};
+		captureMatrices.View[0] = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f));
+		captureMatrices.View[1] = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f));
+		captureMatrices.View[2] = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f));
+		captureMatrices.View[3] = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f));
+		captureMatrices.View[4] = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f));
+		captureMatrices.View[5] = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f));
+
+		m_CaptureMatricesBuffer = m_ResourceManager->CreateBuffer({
+			.debugName = "capture-matrices-buffer",
+			.byteSize = sizeof(CaptureMatrices),
+			.initialData = &captureMatrices,
+		});
+
+		// Compile compute shaders.
+		const auto& computeShaderCode = ShaderUtilities::Get().Compile("assets/shaders/equirectangular-to-skybox.shader");
+
+		// Reflect shader.
+		const auto& reflectionData = ShaderUtilities::Get().GetReflectionData("assets/shaders/equirectangular-to-skybox.shader");
+
+		// Create compute bind group layout.
+		m_EquirectToSkyboxBindGroupLayout = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "compute-bind-group-layout",
+			.textureBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::COMPUTE,
+				},
+				{
+					.slot = 1,
+					.visibility = ShaderStage::COMPUTE,
+				},
+			},
+			.bufferBindings = {
+				{
+					.slot = 2,
+					.visibility = ShaderStage::COMPUTE,
+					.type = BufferBindingType::UNIFORM,
+				},
+			},
+		});
+
+		m_EquirectToSkyboxShader = ResourceManager::Instance->CreateShader({
+			.debugName = "compute-shader",
+			.type = ShaderType::COMPUTE,
+			.CS { .code = computeShaderCode[0], .entryPoint = "main" },
+			.bindGroups {
+				m_EquirectToSkyboxBindGroupLayout,							// (0)
+			},
+			.renderPipeline {
+				.variants = { { .shaderHashKey = Random::UInt64() } },
+			},
+			.renderPass = m_PostProcessRenderPass,
+		});
+
+		// Skybox bind group.
+		m_SkyboxBindGroupLayout = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "skybox-global-layout",
+			.textureBindings = {
+				{
+					.slot = 1,
+					.visibility = ShaderStage::FRAGMENT,
+				},
+			},
+		});
+
+		// Global bind group
+		m_SkyboxGlobalBindGroupLayout = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "skybox-global-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM,
+				},
+			},
+		});
+
+		auto cameraBuffer = m_ResourceManager->CreateBuffer({
+			.debugName = "skybox-camera-uniform-buffer",
+			.usage = BufferUsage::UNIFORM,
+			.usageHint = BufferUsageHint::DYNAMIC,
+			.memoryUsage = MemoryUsage::GPU_CPU,
+			.byteSize = 64,
+			.initialData = nullptr,
+		});
+
+		m_SkyboxGlobalBindGroup = m_ResourceManager->CreateBindGroup({
+			.debugName = "skybox-global-bind-group",
+			.layout = m_SkyboxGlobalBindGroupLayout,
+			.buffers = {
+				{ .buffer = cameraBuffer },
+			}
+		});
+
+		// Create skybox shader.
+		const auto& skyboxShaderCode = ShaderUtilities::Get().Compile("assets/shaders/skybox.shader");
+
+		m_SkyboxVariant.blend.enabled = false;
+		m_SkyboxVariant.depthTest.writeEnabled = false;
+		m_SkyboxVariant.depthTest.depthTest = Compare::LESS_OR_EQUAL;
+		m_SkyboxVariant.cullMode = CullMode::FRONT;
+		m_SkyboxVariant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
+
+		m_SkyboxShader = ResourceManager::Instance->CreateShader({
+			.debugName = "skybox-shader",
+			.VS {.code = skyboxShaderCode[0], .entryPoint = "main" },
+			.FS {.code = skyboxShaderCode[1], .entryPoint = "main" },
+			.bindGroups {
+				m_SkyboxGlobalBindGroupLayout,	// Global bind group (0)
+				m_SkyboxBindGroupLayout,		// (1)
+			},
+			.renderPipeline {
+				.vertexBufferBindings = {
+					{
+						.byteStride = 12,
+						.attributes = {
+							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
+						},
+					}
+				},
+				.variants = { m_SkyboxVariant },
+			},
+			.renderPass = m_TransparentRenderPass,
+		});
+
+		ResourceManager::Instance->AddShaderVariant(m_SkyboxShader, m_SkyboxVariant);
+
+		// Cube mesh
+		float vertexBuffer[] =
+		{
+			// Back face
+			-1.0f, -1.0f, -1.0f,
+			 1.0f,  1.0f, -1.0f,
+			 1.0f, -1.0f, -1.0f,
+
+			 1.0f,  1.0f, -1.0f,
+			-1.0f, -1.0f, -1.0f,
+			-1.0f,  1.0f, -1.0f,
+
+			// Front face
+			-1.0f, -1.0f,  1.0f,
+			 1.0f, -1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+
+			 1.0f,  1.0f,  1.0f,
+			-1.0f,  1.0f,  1.0f,
+			-1.0f, -1.0f,  1.0f,
+
+			// Left face
+			-1.0f,  1.0f,  1.0f,
+			-1.0f,  1.0f, -1.0f,
+			-1.0f, -1.0f, -1.0f,
+
+			-1.0f, -1.0f, -1.0f,
+			-1.0f, -1.0f,  1.0f,
+			-1.0f,  1.0f,  1.0f,
+
+			// Right face
+			 1.0f,  1.0f,  1.0f,
+			 1.0f, -1.0f, -1.0f,
+			 1.0f,  1.0f, -1.0f,
+
+			 1.0f, -1.0f, -1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f, -1.0f,  1.0f,
+
+			 // Bottom face
+			 -1.0f, -1.0f, -1.0f,
+			  1.0f, -1.0f, -1.0f,
+			  1.0f, -1.0f,  1.0f,
+
+			  1.0f, -1.0f,  1.0f,
+			 -1.0f, -1.0f,  1.0f,
+			 -1.0f, -1.0f, -1.0f,
+
+			 // Top face
+			 -1.0f,  1.0f, -1.0f,
+			  1.0f,  1.0f,  1.0f,
+			  1.0f,  1.0f, -1.0f,
+
+			  1.0f,  1.0f,  1.0f,
+			 -1.0f,  1.0f, -1.0f,
+			 -1.0f,  1.0f,  1.0f,
+		};
+
+		auto buffer = ResourceManager::Instance->CreateBuffer({
+			.debugName = "cube-vertex-buffer",
+			.usage = BufferUsage::VERTEX,
+			.byteSize = sizeof(float) * 108,
+			.initialData = vertexBuffer,
+		});
+
+		m_CubeMesh = ResourceManager::Instance->CreateMesh({
+			.debugName = "cube-mesh",
+			.meshes = {
+				{
+					.debugName = "cube-sub-mesh",
+					.subMeshes = {
+						{
+							.vertexOffset = 0,
+							.vertexCount = 36,
+							.minVertex = { -1.0f, -1.0f, -1.0f },
+							.maxVertex = {  1.0f,  1.0f,  1.0f },
+						}
+					},
+					.vertexBuffers = { buffer },
+				}
+			}
+		});
 	}
 
 	void ForwardRenderingSystem::PostProcessPassSetup()
@@ -1036,48 +1264,87 @@ namespace HBL2
 
 	void ForwardRenderingSystem::SkyboxPass(CommandBuffer* commandBuffer)
 	{
-		/*m_Context->GetRegistry()
-			.group<Component::SkyLight>(entt::get<Component::Transform>)
-			.each([&](Component::SkyLight& skyLight, Component::Transform& transform)
+		DrawList draws;
+
+		m_Context->GetRegistry()
+			.view<Component::SkyLight>()
+			.each([&](Component::SkyLight& skyLight)
 			{
 				if (skyLight.Enabled)
 				{
 					if (!skyLight.Converted)
 					{
-						glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-						glm::mat4 captureViews[] =
-						{
-							glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-							glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-							glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-							glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-							glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-							glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-						};
+						skyLight.CubeMap = m_ResourceManager->CreateTexture({
+							.debugName = "",
+							.dimensions = { 1024, 1024, 1 },
+							.format = Format::RGBA16_FLOAT,
+							.type = TextureType::CUBE,
+							.aspect = TextureAspect::COLOR,
+							.sampler = {
+								.filter = Filter::LINEAR,
+								.wrap = Wrap::CLAMP_TO_EDGE,
+							}
+						});
 
-						CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::CUSTOM, RenderPassStage::Skybox);
-						RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass, m_PostProcessFrameBuffer);
+						auto bindGroup = m_ResourceManager->CreateBindGroup({
+							.debugName = "compute-bind-group",
+							.layout = m_EquirectToSkyboxBindGroupLayout,
+							.textures = {
+								skyLight.EquirectangularMap,
+								skyLight.CubeMap,
+							},
+							.buffers = {
+								{
+									.buffer = m_CaptureMatricesBuffer,
+								}
+							}
+						});
 
-						DrawList draws;
+						Dispatch dispatch = {};
+						dispatch.Shader = m_EquirectToSkyboxShader;
+						dispatch.BindGroup = bindGroup;
+						dispatch.ThreadGroupCount = { 1024 / 16, 1024 / 16, 6 };
 
-						for (uint32_t i = 0; i < 6; ++i)
-						{
-							draws.Insert({
-								.Shader = m_PostProcessShader,
-								.Mesh = m_QuadMesh,
-								.Material = m_PostProcessMaterial,
-							});
-						}
+						ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.EquirectangularMap, skyLight.CubeMap }, { m_CaptureMatricesBuffer });
+						computePassRenderer->Dispatch({ dispatch });
+						commandBuffer->EndComputePass(*computePassRenderer);
 
-						ResourceManager::Instance->SetBufferData(m_PostProcessBindGroup, 0, (void*)&m_CameraSettings);
-						GlobalDrawStream globalDrawStream = { .BindGroup = m_PostProcessBindGroup };
-						passRenderer->DrawSubPass(globalDrawStream, draws);
+						m_SkyboxBindGroup = m_ResourceManager->CreateBindGroup({
+							.debugName = "skybox-bind-group",
+							.layout = m_SkyboxBindGroupLayout,
+							.textures = {
+								skyLight.CubeMap,
+							}
+						});
 
-						commandBuffer->EndRenderPass(*passRenderer);
-						commandBuffer->Submit();
+						// Create skybox material.
+						m_SkyboxMaterial = ResourceManager::Instance->CreateMaterial({
+							.debugName = "skybox-material",
+							.shader = m_SkyboxShader,
+							.bindGroup = m_SkyboxBindGroup,
+						});
+
+						Material* mat = ResourceManager::Instance->GetMaterial(m_SkyboxMaterial);
+						mat->VariantDescriptor = m_SkyboxVariant;
+
+						skyLight.Converted = true;
 					}
+
+					draws.Insert({
+						.Shader = m_SkyboxShader,
+						.BindGroup = m_SkyboxBindGroup,
+						.Mesh = m_CubeMesh,
+						.Material = m_SkyboxMaterial,
+					});
 				}
-			});*/
+			});
+
+		// Render Skybox
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass, m_TransparentFrameBuffer);
+		ResourceManager::Instance->SetBufferData(m_SkyboxGlobalBindGroup, 0, (void*)&m_OnlyRotationInViewProjection);
+		GlobalDrawStream globalDrawStream = { .BindGroup = m_SkyboxGlobalBindGroup };
+		passRenderer->DrawSubPass(globalDrawStream, draws);
+		commandBuffer->EndRenderPass(*passRenderer);
 	}
 
 	void ForwardRenderingSystem::PostProcessPass(CommandBuffer* commandBuffer)
@@ -1144,6 +1411,7 @@ namespace HBL2
 				m_CameraFrustum = camera.Frustum;
 				Component::Transform& tr = m_Context->GetComponent<Component::Transform>(m_Context->MainCamera);
 				m_LightData.ViewPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
+				m_OnlyRotationInViewProjection = camera.Projection * glm::mat4(glm::mat3(camera.View));
 				return;
 			}
 			else
@@ -1162,6 +1430,7 @@ namespace HBL2
 				m_CameraFrustum = camera.Frustum;
 				Component::Transform& tr = m_EditorScene->GetComponent<Component::Transform>(m_EditorScene->MainCamera);
 				m_LightData.ViewPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
+				m_OnlyRotationInViewProjection = camera.Projection * glm::mat4(glm::mat3(camera.View));
 				return;
 			}
 			else
@@ -1174,6 +1443,7 @@ namespace HBL2
 			HBL2_CORE_WARN("No mode set for current context.");
 		}
 
+		m_OnlyRotationInViewProjection = glm::mat4(1.0f);
 		m_CameraData.ViewProjection = glm::mat4(1.0f);
 		m_LightData.ViewPosition = glm::vec4(0.0f);
 		m_CameraSettings.Exposure = 1.0f;

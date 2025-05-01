@@ -68,7 +68,8 @@ namespace HBL2
 
 			CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation);
 
-			VkDeviceSize imageSize = Extent.width * Extent.height * 4;
+			VkDeviceSize faceSize = Extent.width * Extent.height * 4;
+			VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : 1);
 
 			// Transfer initiaData to staging buffer
 			void* mappedData;

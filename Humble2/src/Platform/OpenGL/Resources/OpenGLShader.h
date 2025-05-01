@@ -3,15 +3,8 @@
 #include "Base.h"
 #include "Resources\TypeDescriptors.h"
 
-#ifdef EMSCRIPTEN
-	#define GLFW_INCLUDE_ES3
-	#include <GLFW/glfw3.h>
-#else
-	#define GLFW_INCLUDE_NONE
-	#include <GL/glew.h>
-#endif
-
 #include "Utilities\Collections\Span.h"
+#include "Platform\OpenGL\OpenGLCommon.h"
 
 #include <string>
 #include <fstream>
@@ -28,13 +21,35 @@ namespace HBL2
 			DebugName = desc.debugName;
 
 			Program = glCreateProgram();
-			GLuint vs = Compile(GL_VERTEX_SHADER, desc.VS.entryPoint, desc.VS.code);
-			GLuint fs = Compile(GL_FRAGMENT_SHADER, desc.FS.entryPoint, desc.FS.code);
 
-			glAttachShader(Program, vs);
-			glAttachShader(Program, fs);
-			glLinkProgram(Program);
-			glValidateProgram(Program);
+			switch (desc.type)
+			{
+			case ShaderType::RASTERIZATION:
+				{
+					GLuint vs = Compile(GL_VERTEX_SHADER, desc.VS.entryPoint, desc.VS.code);
+					GLuint fs = Compile(GL_FRAGMENT_SHADER, desc.FS.entryPoint, desc.FS.code);
+					glAttachShader(Program, vs);
+					glAttachShader(Program, fs);
+					glLinkProgram(Program);
+					glValidateProgram(Program);
+					glDeleteShader(vs);
+					glDeleteShader(fs);
+
+					glGenVertexArrays(1, &RenderPipeline);
+					glBindVertexArray(RenderPipeline);
+					VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
+				}
+				break;
+			case ShaderType::COMPUTE:
+				{
+					GLuint cs = Compile(GL_COMPUTE_SHADER, desc.CS.entryPoint, desc.CS.code);
+					glAttachShader(Program, cs);
+					glLinkProgram(Program);
+					glValidateProgram(Program);
+					glDeleteShader(cs);
+				}
+				break;
+			}
 
 			GLint linkStatus;
 			glGetProgramiv(Program, GL_LINK_STATUS, &linkStatus);
@@ -46,18 +61,15 @@ namespace HBL2
 				glGetProgramInfoLog(Program, logLength, &logLength, log.data());
 				HBL2_CORE_ERROR("Shader Program linking failed!");
 			}
-
-			glDeleteShader(vs);
-			glDeleteShader(fs);
-
-			glGenVertexArrays(1, &RenderPipeline);
-			glBindVertexArray(RenderPipeline);
-
-			VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
 		}
 
 		GLuint Compile(GLuint type, const char* entryPoint, const Span<const uint32_t>& binaryCode)
 		{
+			if (binaryCode.Size() == 0)
+			{
+				return 0;
+			}
+
 			GLuint shaderID = glCreateShader(type);
 			glShaderBinary(1, &shaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, binaryCode.Data(), (GLuint)binaryCode.Size() * sizeof(uint32_t));
 			glSpecializeShader(shaderID, entryPoint, 0, nullptr, nullptr);
@@ -108,6 +120,38 @@ namespace HBL2
 			else
 			{
 				glDepthMask(GL_FALSE);
+			}
+
+			// Cull mode.
+			switch (variantDesc.cullMode)
+			{
+			case CullMode::NONE:
+				break;
+			case CullMode::BACK:
+				glEnable(GL_CULL_FACE);
+				glCullFace(GL_BACK);
+				break;
+			case CullMode::FRONT:
+				glEnable(GL_CULL_FACE);
+				glCullFace(GL_FRONT);
+				break;
+			case CullMode::FRONT_AND_BACK:
+				glEnable(GL_CULL_FACE);
+				glCullFace(GL_FRONT_AND_BACK);
+				break;
+			}
+
+			if (variantDesc.cullMode != CullMode::NONE)
+			{
+				switch (variantDesc.frontFace)
+				{
+				case FrontFace::COUNTER_CLOCKWISE:
+					glFrontFace(GL_CCW);
+					break;
+				case FrontFace::CLOCKWISE:
+					glFrontFace(GL_CW);
+					break;
+				}
 			}
 		}
 

@@ -109,8 +109,11 @@ namespace HBL2
 					}
 
 					// Bind dynamic uniform buffer with the current offset and size
-					OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(drawBindGroup->Buffers[0].buffer);
-					dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);
+					if (globalDraw.DynamicUniformBufferSize != 0)
+					{
+						OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(drawBindGroup->Buffers[0].buffer);
+						dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);
+					}
 				}
 
 				const auto& subMesh = meshPart.SubMeshes[draw.SubMeshIndex];

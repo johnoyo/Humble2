@@ -13,10 +13,6 @@ namespace HBL2
 		// Origin at upper-left, depth range [0..1] (same as Vulkan)
 		glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
 
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
-		glFrontFace(GL_CCW);
-
 		m_MainCommandBuffer = new OpenGLCommandBuffer();
 		m_UserInterfaceCommandBuffer = new OpenGLCommandBuffer();
 

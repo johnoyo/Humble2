@@ -42,7 +42,14 @@ namespace HBL2
 		switch (desc.aspect)
 		{
 		case TextureAspect::COLOR:
-			InternalFormat = GL_RGBA;
+			if (Type == GL_FLOAT)
+			{
+				InternalFormat = GL_RGB;
+			}
+			else
+			{
+				InternalFormat = GL_RGBA;
+			}
 			break;
 		case TextureAspect::DEPTH:
 			InternalFormat = GL_DEPTH_COMPONENT;
@@ -65,13 +72,27 @@ namespace HBL2
 			}
 			else
 			{
-				glTexImage2D(TextureType, 0, Format, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, InternalFormat, Type, desc.initialData);
+				glTexImage2D(TextureType, 0, Format, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, InternalFormat, Type, (const void*)(float*)desc.initialData);
 			}
 
 			stbi_image_free(desc.initialData);
 		}
 
 		glBindTexture(TextureType, 0);
+	}
+
+	void OpenGLTexture::Bind(uint32_t slot)
+	{
+		switch (TextureType)
+		{
+		case GL_TEXTURE_2D:
+			glActiveTexture(slot + GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, RendererId);
+			break;
+		case GL_TEXTURE_CUBE_MAP:
+			glBindImageTexture(slot, RendererId, 0, GL_TRUE, 0, GL_WRITE_ONLY, Format);
+			break;
+		}
 	}
 
 	void OpenGLTexture::Update(const Span<const std::byte>& bytes)

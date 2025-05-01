@@ -181,6 +181,41 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::SkyLight>(m_Entity))
+		{
+			auto& light = m_Scene->GetComponent<Component::SkyLight>(m_Entity);
+
+			out << YAML::Key << "Component::SkyLight";
+
+			out << YAML::BeginMap;
+
+			out << YAML::Key << "Enabled" << YAML::Value << light.Enabled;
+
+			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+			Asset* textureAsset = nullptr;
+			bool textureFound = false;
+
+			for (auto handle : assetHandles)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+				if (asset->Type == AssetType::Texture && asset->Indentifier != 0 && asset->Indentifier == light.EquirectangularMap.Pack() && !textureFound)
+				{
+					textureFound = true;
+					textureAsset = asset;
+				}
+
+				if (textureFound)
+				{
+					break;
+				}
+			}
+
+			out << YAML::Key << "EquirectangularMap" << YAML::Value << (textureAsset != nullptr ? textureAsset->UUID : (UUID)0);
+
+			out << YAML::EndMap;
+		}
+
 		if (m_Scene->HasComponent<Component::AudioSource>(m_Entity))
 		{
 			out << YAML::Key << "Component::AudioSource";
@@ -369,20 +404,20 @@ namespace HBL2
 			}
 		}
 
-		auto lightComponent = entityNode["Component::Light"];
-		if (lightComponent)
+		auto light_NewComponent = entityNode["Component::Light"];
+		if (light_NewComponent)
 		{
 			auto& light = m_Scene->AddComponent<Component::Light>(m_Entity);
-			light.Enabled = lightComponent["Enabled"].as<bool>();
-			light.CastsShadows = lightComponent["CastsShadows"].as<bool>();
-			light.Intensity = lightComponent["Intensity"].as<float>();
-			light.Distance = lightComponent["Distance"].as<float>();
-			light.InnerCutOff = lightComponent["InnerCutOff"].as<float>();
-			light.OuterCutOff = lightComponent["OuterCutOff"].as<float>();
-			light.Color = lightComponent["Color"].as<glm::vec3>();
-			if (lightComponent["Type"])
+			light.Enabled = light_NewComponent["Enabled"].as<bool>();
+			light.CastsShadows = light_NewComponent["CastsShadows"].as<bool>();
+			light.Intensity = light_NewComponent["Intensity"].as<float>();
+			light.Distance = light_NewComponent["Distance"].as<float>();
+			light.InnerCutOff = light_NewComponent["InnerCutOff"].as<float>();
+			light.OuterCutOff = light_NewComponent["OuterCutOff"].as<float>();
+			light.Color = light_NewComponent["Color"].as<glm::vec3>();
+			if (light_NewComponent["Type"])
 			{
-				switch (lightComponent["Type"].as<int>())
+				switch (light_NewComponent["Type"].as<int>())
 				{
 				case 1:
 					light.Type = Component::Light::Type::Directional;
@@ -397,6 +432,14 @@ namespace HBL2
 					break;
 				}
 			}
+		}
+
+		auto skyLight_NewComponent = entityNode["Component::SkyLight"];
+		if (skyLight_NewComponent)
+		{
+			auto& skyLight = m_Scene->AddComponent<Component::SkyLight>(m_Entity);
+			skyLight.Enabled = skyLight_NewComponent["Enabled"].as<bool>();
+			skyLight.EquirectangularMap = AssetManager::Instance->GetAsset<Texture>(skyLight_NewComponent["EquirectangularMap"].as<UUID>());
 		}
 
 		auto soundSource_NewComponent = entityNode["Component::AudioSource"];

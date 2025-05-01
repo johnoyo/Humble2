@@ -42,10 +42,24 @@ namespace HBL2
 	struct RendererStats
 	{
 		uint32_t DrawCalls = 0;
+		float ShadowPassTime = 0.f;
+		float PrePassTime = 0.f;
+		float OpaquePassTime = 0.f;
+		float SkyboxPassTime = 0.f;
+		float TransparentPassTime = 0.f;
+		float PostProcessPassTime = 0.f;
+		float PresentPassTime = 0.f;
 
 		void Reset()
 		{
 			DrawCalls = 0;
+			ShadowPassTime = 0.f;
+			PrePassTime = 0.f;
+			OpaquePassTime = 0.f;
+			SkyboxPassTime = 0.f;
+			TransparentPassTime = 0.f;
+			PostProcessPassTime = 0.f;
+			PresentPassTime = 0.f;
 		}
 	};
 

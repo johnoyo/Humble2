@@ -61,11 +61,18 @@ namespace HBL2
 		NONE = 0,
 	};
 
+	enum class ShaderType
+	{
+		RASTERIZATION = 0,
+		COMPUTE = 1,
+	};
+
 	enum class ShaderStage
 	{
-		VERTEX = 0x1,
-		FRAGMENT = 0x2,
-		COMPUTE = 0x4,
+		NONE = -1,
+		VERTEX = 0,
+		FRAGMENT = 1,
+		COMPUTE = 2,
 	};
 
 	enum class BufferBindingType

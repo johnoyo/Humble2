@@ -130,7 +130,7 @@ namespace HBL2
 
 		struct HBL2_API SkyLight
 		{
-			float Intensity = 1.0f;
+			Handle<Texture> CubeMap;
 			Handle<Texture> EquirectangularMap;
 			bool Converted = false;
 			bool Enabled = true;
