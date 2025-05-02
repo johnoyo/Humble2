@@ -131,6 +131,7 @@ namespace HBL2
 		struct HBL2_API SkyLight
 		{
 			Handle<Texture> CubeMap;
+			Handle<Material> CubeMapMaterial;
 			Handle<Texture> EquirectangularMap;
 			bool Converted = false;
 			bool Enabled = true;

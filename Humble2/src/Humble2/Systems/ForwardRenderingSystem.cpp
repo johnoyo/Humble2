@@ -17,18 +17,18 @@ namespace HBL2
 
 	static const std::vector<Attenuation> g_AttenuationTable =
 	{
-		{7,     1.0f, 0.7f,   1.8f},
-		{13,    1.0f, 0.35f,  0.44f},
-		{20,    1.0f, 0.22f,  0.20f},
-		{32,    1.0f, 0.14f,  0.07f},
-		{50,    1.0f, 0.09f,  0.032f},
-		{65,    1.0f, 0.07f,  0.017f},
-		{100,   1.0f, 0.045f, 0.0075f},
-		{160,   1.0f, 0.027f, 0.0028f},
-		{200,   1.0f, 0.022f, 0.0019f},
-		{325,   1.0f, 0.014f, 0.0007f},
-		{600,   1.0f, 0.007f, 0.0002f},
-		{3250,  1.0f, 0.0014f,0.000007f}
+		{7,    1.0f, 0.7f,    1.8f},
+		{13,   1.0f, 0.35f,   0.44f},
+		{20,   1.0f, 0.22f,   0.20f},
+		{32,   1.0f, 0.14f,   0.07f},
+		{50,   1.0f, 0.09f,   0.032f},
+		{65,   1.0f, 0.07f,   0.017f},
+		{100,  1.0f, 0.045f,  0.0075f},
+		{160,  1.0f, 0.027f,  0.0028f},
+		{200,  1.0f, 0.022f,  0.0019f},
+		{325,  1.0f, 0.014f,  0.0007f},
+		{600,  1.0f, 0.007f,  0.0002f},
+		{3250, 1.0f, 0.0014f, 0.000007f}
 	};
 
 	static Attenuation GetClosestAttenuation(float inputDistance)
@@ -173,9 +173,7 @@ namespace HBL2
 		m_ResourceManager->DeleteBindGroupLayout(m_SkyboxGlobalBindGroupLayout);
 		m_ResourceManager->DeleteBindGroup(m_SkyboxGlobalBindGroup);
 		m_ResourceManager->DeleteShader(m_SkyboxShader);
-		m_ResourceManager->DeleteMaterial(m_SkyboxMaterial);
 		m_ResourceManager->DeleteBindGroupLayout(m_SkyboxBindGroupLayout);
-		m_ResourceManager->DeleteBindGroup(m_SkyboxBindGroup);
 
 		m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
 		m_ResourceManager->DeleteShader(m_PostProcessShader);
@@ -617,58 +615,23 @@ namespace HBL2
 		float vertexBuffer[] =
 		{
 			// Back face
-			-1.0f, -1.0f, -1.0f,
-			 1.0f,  1.0f, -1.0f,
-			 1.0f, -1.0f, -1.0f,
-
-			 1.0f,  1.0f, -1.0f,
-			-1.0f, -1.0f, -1.0f,
-			-1.0f,  1.0f, -1.0f,
-
+			-1.0f,-1.0f,-1.0f, 1.0f, 1.0f,-1.0f, 1.0f,-1.0f,-1.0f,
+			 1.0f, 1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f, 1.0f,-1.0f,
 			// Front face
-			-1.0f, -1.0f,  1.0f,
-			 1.0f, -1.0f,  1.0f,
-			 1.0f,  1.0f,  1.0f,
-
-			 1.0f,  1.0f,  1.0f,
-			-1.0f,  1.0f,  1.0f,
-			-1.0f, -1.0f,  1.0f,
-
+			-1.0f,-1.0f, 1.0f, 1.0f,-1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+			 1.0f, 1.0f, 1.0f,-1.0f, 1.0f, 1.0f,-1.0f,-1.0f, 1.0f,
 			// Left face
-			-1.0f,  1.0f,  1.0f,
-			-1.0f,  1.0f, -1.0f,
-			-1.0f, -1.0f, -1.0f,
-
-			-1.0f, -1.0f, -1.0f,
-			-1.0f, -1.0f,  1.0f,
-			-1.0f,  1.0f,  1.0f,
-
+			-1.0f, 1.0f, 1.0f,-1.0f, 1.0f,-1.0f,-1.0f,-1.0f,-1.0f,
+			-1.0f,-1.0f,-1.0f,-1.0f,-1.0f, 1.0f,-1.0f, 1.0f, 1.0f,
 			// Right face
-			 1.0f,  1.0f,  1.0f,
-			 1.0f, -1.0f, -1.0f,
-			 1.0f,  1.0f, -1.0f,
-
-			 1.0f, -1.0f, -1.0f,
-			 1.0f,  1.0f,  1.0f,
-			 1.0f, -1.0f,  1.0f,
-
+			 1.0f, 1.0f, 1.0f, 1.0f,-1.0f,-1.0f, 1.0f, 1.0f,-1.0f,
+			 1.0f,-1.0f,-1.0f, 1.0f, 1.0f, 1.0f, 1.0f,-1.0f, 1.0f,
 			 // Bottom face
-			 -1.0f, -1.0f, -1.0f,
-			  1.0f, -1.0f, -1.0f,
-			  1.0f, -1.0f,  1.0f,
-
-			  1.0f, -1.0f,  1.0f,
-			 -1.0f, -1.0f,  1.0f,
-			 -1.0f, -1.0f, -1.0f,
-
+			-1.0f,-1.0f,-1.0f, 1.0f,-1.0f,-1.0f, 1.0f,-1.0f, 1.0f,
+			 1.0f,-1.0f, 1.0f,-1.0f,-1.0f, 1.0f,-1.0f,-1.0f,-1.0f,
 			 // Top face
-			 -1.0f,  1.0f, -1.0f,
-			  1.0f,  1.0f,  1.0f,
-			  1.0f,  1.0f, -1.0f,
-
-			  1.0f,  1.0f,  1.0f,
-			 -1.0f,  1.0f, -1.0f,
-			 -1.0f,  1.0f,  1.0f,
+			-1.0f, 1.0f,-1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,-1.0f,
+			 1.0f, 1.0f, 1.0f,-1.0f, 1.0f,-1.0f,-1.0f, 1.0f, 1.0f,
 		};
 
 		auto buffer = ResourceManager::Instance->CreateBuffer({
@@ -1272,78 +1235,82 @@ namespace HBL2
 			{
 				if (skyLight.Enabled)
 				{
+					if (!skyLight.EquirectangularMap.IsValid())
+					{
+						return;
+					}
+
 					if (!skyLight.Converted)
 					{
 						skyLight.CubeMap = m_ResourceManager->CreateTexture({
-							.debugName = "",
+							.debugName = "skybox-texture",
 							.dimensions = { 1024, 1024, 1 },
 							.format = Format::RGBA16_FLOAT,
 							.type = TextureType::CUBE,
 							.aspect = TextureAspect::COLOR,
-							.sampler = {
-								.filter = Filter::LINEAR,
-								.wrap = Wrap::CLAMP_TO_EDGE,
-							}
+							.sampler = { .filter = Filter::LINEAR, .wrap = Wrap::CLAMP_TO_EDGE, }
 						});
 
 						auto bindGroup = m_ResourceManager->CreateBindGroup({
 							.debugName = "compute-bind-group",
 							.layout = m_EquirectToSkyboxBindGroupLayout,
-							.textures = {
-								skyLight.EquirectangularMap,
-								skyLight.CubeMap,
-							},
-							.buffers = {
-								{
-									.buffer = m_CaptureMatricesBuffer,
-								}
-							}
+							.textures = { skyLight.EquirectangularMap, skyLight.CubeMap },
+							.buffers = { { .buffer = m_CaptureMatricesBuffer, } }
 						});
 
-						Dispatch dispatch = {};
-						dispatch.Shader = m_EquirectToSkyboxShader;
-						dispatch.BindGroup = bindGroup;
-						dispatch.ThreadGroupCount = { 1024 / 16, 1024 / 16, 6 };
+						Dispatch dispatch = 
+						{
+							.Shader = m_EquirectToSkyboxShader,
+							.BindGroup = bindGroup,
+							.ThreadGroupCount = { 1024 / 16, 1024 / 16, 6 }
+						};
 
 						ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.EquirectangularMap, skyLight.CubeMap }, { m_CaptureMatricesBuffer });
 						computePassRenderer->Dispatch({ dispatch });
 						commandBuffer->EndComputePass(*computePassRenderer);
 
-						m_SkyboxBindGroup = m_ResourceManager->CreateBindGroup({
+						auto skyboxBindGroup = m_ResourceManager->CreateBindGroup({
 							.debugName = "skybox-bind-group",
 							.layout = m_SkyboxBindGroupLayout,
-							.textures = {
-								skyLight.CubeMap,
-							}
+							.textures = { skyLight.CubeMap }
 						});
 
 						// Create skybox material.
-						m_SkyboxMaterial = ResourceManager::Instance->CreateMaterial({
+						skyLight.CubeMapMaterial = ResourceManager::Instance->CreateMaterial({
 							.debugName = "skybox-material",
 							.shader = m_SkyboxShader,
-							.bindGroup = m_SkyboxBindGroup,
+							.bindGroup = skyboxBindGroup,
 						});
 
-						Material* mat = ResourceManager::Instance->GetMaterial(m_SkyboxMaterial);
+						Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
 						mat->VariantDescriptor = m_SkyboxVariant;
 
 						skyLight.Converted = true;
 					}
 
+					if (!skyLight.CubeMapMaterial.IsValid())
+					{
+						return;
+					}
+
+					Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);					
+
 					draws.Insert({
 						.Shader = m_SkyboxShader,
-						.BindGroup = m_SkyboxBindGroup,
+						.BindGroup = mat->BindGroup,
 						.Mesh = m_CubeMesh,
-						.Material = m_SkyboxMaterial,
+						.Material = skyLight.CubeMapMaterial,
 					});
 				}
 			});
 
 		// Render Skybox
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass, m_TransparentFrameBuffer);
+
 		ResourceManager::Instance->SetBufferData(m_SkyboxGlobalBindGroup, 0, (void*)&m_OnlyRotationInViewProjection);
 		GlobalDrawStream globalDrawStream = { .BindGroup = m_SkyboxGlobalBindGroup };
 		passRenderer->DrawSubPass(globalDrawStream, draws);
+
 		commandBuffer->EndRenderPass(*passRenderer);
 	}
 

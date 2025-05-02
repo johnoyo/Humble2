@@ -49,4 +49,17 @@ namespace HBL2
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
+
+	void OpenGLFrameBuffer::Resize(uint32_t width, uint32_t height)
+	{
+		Width = width;
+		Height = height;
+
+		Create();
+	}
+
+	void OpenGLFrameBuffer::Destroy()
+	{
+		glDeleteFramebuffers(1, &RendererId);
+	}
 }

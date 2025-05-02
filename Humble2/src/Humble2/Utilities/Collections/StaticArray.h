@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <stdint.h>
 
 namespace HBL2
@@ -17,6 +18,49 @@ namespace HBL2
 	class StaticArray
 	{
 	public:
+		/**
+		 * @brief Default construct elements (requires T to be default-constructible).
+		 */
+		StaticArray() = default;
+
+		/**
+		 * @brief Constructs from a C-style array.
+		 * @param arr Reference to a C-style array of size N.
+		 */
+		StaticArray(const T(&arr)[N])
+		{
+			for (uint32_t i = 0; i < N; ++i)
+			{
+				m_Data[i] = arr[i];
+			}
+		}
+
+		/**
+		 * @brief Constructs from std::array.
+		 * @param arr std::array of size N.
+		 */
+		StaticArray(const std::array<T, N>& arr)
+		{
+			for (uint32_t i = 0; i < N; ++i)
+			{
+				m_Data[i] = arr[i];
+			}
+		}
+
+		/**
+		 * @brief Constructs from initializer list. Size must match N.
+		 * @param list Initializer list.
+		 */
+		StaticArray(std::initializer_list<T> list)
+		{
+			assert(list.size() == N && "Initializer list size must match StaticArray size");
+			uint32_t i = 0;
+			for (const auto& v : list)
+			{
+				m_Data[i++] = v;
+			}
+		}
+
 		/**
 		 * @brief Accesses the element at the specified index.
 		 *

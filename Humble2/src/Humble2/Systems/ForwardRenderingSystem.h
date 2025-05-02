@@ -93,9 +93,7 @@ namespace HBL2
 		Handle<BindGroupLayout> m_SkyboxGlobalBindGroupLayout;
 		Handle<BindGroup> m_SkyboxGlobalBindGroup;
 		Handle<Shader> m_SkyboxShader;
-		Handle<Material> m_SkyboxMaterial;
 		Handle<BindGroupLayout> m_SkyboxBindGroupLayout;
-		Handle<BindGroup> m_SkyboxBindGroup;
 		ShaderDescriptor::RenderPipeline::Variant m_SkyboxVariant{};
 
 		Handle<RenderPass> m_PostProcessRenderPass;
