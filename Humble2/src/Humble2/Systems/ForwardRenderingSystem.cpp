@@ -56,6 +56,18 @@ namespace HBL2
 		float _padding[3];
 	};
 
+	static CaptureMatrices g_CaptureMatrices =
+	{
+		.View = {
+			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		}
+	};
+
 	void ForwardRenderingSystem::OnCreate()
 	{
 		m_ResourceManager = ResourceManager::Instance;
@@ -499,18 +511,10 @@ namespace HBL2
 
 	void ForwardRenderingSystem::SkyboxPassSetup()
 	{
-		CaptureMatrices captureMatrices{};
-		captureMatrices.View[0] = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f));
-		captureMatrices.View[1] = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f));
-		captureMatrices.View[2] = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f));
-		captureMatrices.View[3] = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f));
-		captureMatrices.View[4] = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f));
-		captureMatrices.View[5] = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f));
-
 		m_CaptureMatricesBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "capture-matrices-buffer",
 			.byteSize = sizeof(CaptureMatrices),
-			.initialData = &captureMatrices,
+			.initialData = &g_CaptureMatrices,
 		});
 
 		// Compile compute shaders.
@@ -1295,6 +1299,24 @@ namespace HBL2
 
 					if (!skyLight.Converted)
 					{
+						if (skyLight.CubeMapMaterial.IsValid())
+						{
+							m_ResourceManager->DeleteTexture(skyLight.CubeMap);
+
+							Material* mat = m_ResourceManager->GetMaterial(skyLight.CubeMapMaterial);
+							m_ResourceManager->DeleteBindGroup(mat->BindGroup);
+
+							m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
+
+							m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
+
+							m_CaptureMatricesBuffer = m_ResourceManager->CreateBuffer({
+								.debugName = "capture-matrices-buffer",
+								.byteSize = sizeof(CaptureMatrices),
+								.initialData = &g_CaptureMatrices,
+							});
+						}
+
 						skyLight.CubeMap = m_ResourceManager->CreateTexture({
 							.debugName = "skybox-texture",
 							.dimensions = { 1024, 1024, 1 },
@@ -1315,7 +1337,7 @@ namespace HBL2
 							{}
 						);
 
-						auto bindGroup = m_ResourceManager->CreateBindGroup({
+						m_ComputeBindGroup = m_ResourceManager->CreateBindGroup({
 							.debugName = "compute-bind-group",
 							.layout = m_EquirectToSkyboxBindGroupLayout,
 							.textures = { skyLight.EquirectangularMap, skyLight.CubeMap },
@@ -1325,7 +1347,7 @@ namespace HBL2
 						Dispatch dispatch = 
 						{
 							.Shader = m_EquirectToSkyboxShader,
-							.BindGroup = bindGroup,
+							.BindGroup = m_ComputeBindGroup,
 							.ThreadGroupCount = { 1024 / 16, 1024 / 16, 6 },
 							.Variant = m_ComputeVariant,
 						};
@@ -1333,6 +1355,8 @@ namespace HBL2
 						ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.CubeMap }, {});
 						computePassRenderer->Dispatch({ dispatch });
 						commandBuffer->EndComputePass(*computePassRenderer);
+
+						m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
 
 						auto skyboxBindGroup = m_ResourceManager->CreateBindGroup({
 							.debugName = "skybox-bind-group",
@@ -1349,8 +1373,6 @@ namespace HBL2
 
 						Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
 						mat->VariantDescriptor = m_SkyboxVariant;
-
-						m_ResourceManager->DeleteBindGroup(bindGroup);
 
 						skyLight.Converted = true;
 					}

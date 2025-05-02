@@ -328,6 +328,11 @@ namespace HBL2
 							ImGui::EndDragDropTarget();
 						}
 					}
+
+					if (ImGui::Button("Update"))
+					{
+						skyLight.Converted = false;
+					}
 				});
 
 				DrawComponent<HBL2::Component::AudioSource>("AudioSource", m_ActiveScene, [this](HBL2::Component::AudioSource& audioSource)
