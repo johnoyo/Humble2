@@ -256,6 +256,14 @@ namespace HBL2
 					HBL2::Component::EditorVisible::Selected = true;
 				}
 
+				if (ImGui::MenuItem("Create SkyLight"))
+				{
+					auto entity = HBL2::EntityPreset::CreateSkyLight();
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
+				}
+
 				ImGui::EndPopup();
 			}
 

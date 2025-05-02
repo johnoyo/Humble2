@@ -203,6 +203,14 @@ namespace HBL2
 				}
 			});
 		}
+		virtual void UpdateBindGroup(Handle<BindGroup> handle)
+		{
+			VulkanBindGroup* bindGroup = GetBindGroup(handle);
+			if (bindGroup != nullptr)
+			{
+				bindGroup->Update();
+			}
+		}
 		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) override
 		{
 			return CalculateBindGroupHash(GetBindGroup(handle));

@@ -175,6 +175,7 @@ namespace HBL2
 				m_BindGroupPool.Remove(handle);
 			}
 		}
+		virtual void UpdateBindGroup(Handle<BindGroup> handle) {}
 		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) override
 		{
 			return CalculateBindGroupHash(GetBindGroup(handle));

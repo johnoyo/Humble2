@@ -62,6 +62,7 @@ namespace HBL2
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) = 0;
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) = 0;
+		virtual void UpdateBindGroup(Handle<BindGroup> handle) = 0;
 		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) = 0;
 		uint64_t GetBindGroupHash(const BindGroupDescriptor& desc)
 		{

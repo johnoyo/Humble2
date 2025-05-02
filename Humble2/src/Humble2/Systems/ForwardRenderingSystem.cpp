@@ -1330,11 +1330,9 @@ namespace HBL2
 							.Variant = m_ComputeVariant,
 						};
 
-						ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.EquirectangularMap, skyLight.CubeMap }, { m_CaptureMatricesBuffer });
+						ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.CubeMap }, {});
 						computePassRenderer->Dispatch({ dispatch });
 						commandBuffer->EndComputePass(*computePassRenderer);
-
-						m_ResourceManager->DeleteBindGroup(bindGroup);
 
 						auto skyboxBindGroup = m_ResourceManager->CreateBindGroup({
 							.debugName = "skybox-bind-group",
@@ -1352,13 +1350,7 @@ namespace HBL2
 						Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
 						mat->VariantDescriptor = m_SkyboxVariant;
 
-						ResourceManager::Instance->TransitionTextureLayout(
-							commandBuffer,
-							skyLight.CubeMap,
-							TextureLayout::GENERAL,
-							TextureLayout::SHADER_READ_ONLY,
-							skyboxBindGroup
-						);
+						m_ResourceManager->DeleteBindGroup(bindGroup);
 
 						skyLight.Converted = true;
 					}

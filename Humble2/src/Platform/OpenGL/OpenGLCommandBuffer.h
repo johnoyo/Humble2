@@ -20,7 +20,10 @@ namespace HBL2
 
 	private:
 		OpenGLRenderPasRenderer m_CurrentRenderPassRenderer;
-		OpenGLComputePassRenderer m_CurrentComputePassRenderer;
 		Handle<FrameBuffer> m_FrameBuffer;
+
+		OpenGLComputePassRenderer m_CurrentComputePassRenderer;
+		Span<const Handle<Texture>> m_TexturesWrite;
+		Span<const Handle<Buffer>> m_BuffersWrite;
 	};
 }

@@ -103,30 +103,63 @@ namespace HBL2
 
 	void VulkanCommandBuffer::EndComputePass(const ComputePassRenderer& computePassRenderer)
 	{
-		//VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
+		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
-		//VkImageMemoryBarrier barrier{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
-		//barrier.pNext = nullptr;
-		//barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		//barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		//barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		//barrier.subresourceRange.baseMipLevel = 0;
-		//barrier.subresourceRange.levelCount = 1;
-		//barrier.subresourceRange.baseArrayLayer = 0;
-		//barrier.subresourceRange.layerCount = 1;
-		//barrier.image = rm->GetTexture(m_TexturesWrite[1])->Image; // TODO: Fix!
-		//barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-		//barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		//barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-		//barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		std::vector<VkImageMemoryBarrier> imageBarriers(m_TexturesWrite.Size());
+		std::vector<VkBufferMemoryBarrier> bufferBarriers(m_BuffersWrite.Size());
 
-		//vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+		uint32_t index = 0;
 
-		//// Wait for device to idle in case the descriptors are still in use.
-		//VulkanDevice* device = (VulkanDevice*)Device::Instance;
-		//vkDeviceWaitIdle(device->Get());
+		for (auto& texture : m_TexturesWrite)
+		{
+			VulkanTexture* vkTexture = rm->GetTexture(texture);
 
-		//// Update descriptors
+			VkImageMemoryBarrier barrier = {};
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barrier.oldLayout = vkTexture->ImageLayout;
+			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // Fix
+			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+			barrier.image = vkTexture->Image;
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			barrier.subresourceRange.baseMipLevel = 0;
+			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.baseArrayLayer = 0;
+			barrier.subresourceRange.layerCount = (vkTexture->ImageType == TextureType::CUBE ? 6 : 1);
+
+			imageBarriers[index++] = barrier;
+
+			vkTexture->ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		}
+
+		index = 0;
+
+		for (auto& buffer : m_BuffersWrite)
+		{
+			VulkanBuffer* vkBuffer = rm->GetBuffer(buffer);
+
+			VkBufferMemoryBarrier barrier = {};
+			barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT; // Fix
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT; // Fix
+			barrier.buffer = vkBuffer->Buffer;
+			barrier.offset = vkBuffer->ByteOffset;
+			barrier.size = vkBuffer->ByteSize;
+
+			bufferBarriers[index++] = barrier;
+		}
+
+		if (!imageBarriers.empty() || !bufferBarriers.empty())
+		{
+			vkCmdPipelineBarrier(
+				CommandBuffer,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				0,
+				0, nullptr,
+				static_cast<uint32_t>(bufferBarriers.size()), bufferBarriers.data(),
+				static_cast<uint32_t>(imageBarriers.size()), imageBarriers.data());
+		}
 
 		return;
 	}

@@ -60,6 +60,23 @@ namespace HBL2
 			return entity;
 		}
 
+		static entt::entity CreateSkyLight()
+		{
+			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+			if (scene == nullptr)
+			{
+				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a sky light entity.");
+				return entt::null;
+			}
+
+			auto entity = scene->CreateEntity("New SkyLight");
+			scene->AddComponent<HBL2::Component::SkyLight>(entity);
+			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
+
+			return entity;
+		}
+
 		static entt::entity CreatePlane()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
