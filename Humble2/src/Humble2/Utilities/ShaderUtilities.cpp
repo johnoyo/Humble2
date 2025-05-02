@@ -263,6 +263,7 @@ namespace HBL2
 				return {};
 			}
 
+			// NOTE: We need the vulkan spv code to do the reflection, thats why we load again the files.
 			const char* vertexCachedVulkanFileExtension = GLShaderStageCachedVulkanFileExtension(ShaderStage::VERTEX);
 			const char* fragmentCachedVulkanFileExtension = GLShaderStageCachedVulkanFileExtension(ShaderStage::FRAGMENT);
 			std::filesystem::path vertexShaderPath = cacheDirectory / (shaderPath.filename().string() + vertexCachedVulkanFileExtension);
@@ -305,6 +306,7 @@ namespace HBL2
 				return {};
 			}
 
+			// NOTE: We need the vulkan spv code to do the reflection, thats why we load again the files.
 			const char* computeCachedVulkanFileExtension = GLShaderStageCachedVulkanFileExtension(ShaderStage::COMPUTE);
 			std::filesystem::path computeShaderPath = cacheDirectory / (shaderPath.filename().string() + computeCachedVulkanFileExtension);
 
@@ -414,20 +416,6 @@ namespace HBL2
 			auto invalidShaderHandle = AssetManager::Instance->GetAsset<Shader>(invalidShaderAssetHandle);
 			m_Shaders[BuiltInShader::INVALID] = invalidShaderHandle;
 			m_ShaderAssets.Add(invalidShaderAssetHandle);
-		}
-		
-		// Present shader
-		{
-			auto presentShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "present-shader-asset",
-				.filePath = "assets/shaders/present.shader",
-				.type = AssetType::Shader,
-			});
-
-			CreateShaderMetadataFile(presentShaderAssetHandle, 3);
-			auto presentShaderHandle = AssetManager::Instance->GetAsset<Shader>(presentShaderAssetHandle);
-			m_Shaders[BuiltInShader::PRESENT] = presentShaderHandle;
-			m_ShaderAssets.Add(presentShaderAssetHandle);
 		}
 
 		// Unlit shader

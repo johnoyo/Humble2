@@ -186,6 +186,7 @@ namespace HBL2
 				.debugName = _strdup(std::format("{}-texture", textureName).c_str()),
 				.dimensions = { textureSettings.Width, textureSettings.Height, 1 },
 				.format = textureSettings.PixelFormat,
+				.internalFormat = textureSettings.PixelFormat,
 				.usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },
 				.aspect = TextureAspect::COLOR,
 				.initialData = textureData,
@@ -229,7 +230,6 @@ namespace HBL2
 
 		Handle<BindGroupLayout> globalBindGroupLayout;
 		Handle<BindGroupLayout> drawBindGroupLayout;
-		Handle<RenderPass> renderPass;
 
 		auto shaderVariants = MakeDynamicArray<ShaderDescriptor::RenderPipeline::Variant>(&Allocator::Frame);
 
@@ -238,28 +238,19 @@ namespace HBL2
 		{
 			uint32_t type = shaderProperties["Type"].as<uint32_t>();
 
-
 			switch (type)
 			{
 			case 0:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout2D();
 				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::UNLIT);
-				renderPass = Renderer::Instance->GetRenderingRenderPass();
 				break;
 			case 1:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
 				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG);
-				renderPass = Renderer::Instance->GetRenderingRenderPass();
 				break;
 			case 2:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
 				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR);
-				renderPass = Renderer::Instance->GetRenderingRenderPass();
-				break;
-			case 3:
-				globalBindGroupLayout = Renderer::Instance->GetGlobalPresentBindingsLayout();
-				renderPass = Renderer::Instance->GetMainRenderPass();
-				drawBindGroupLayout = {};
 				break;
 			default:
 				HBL2_CORE_ERROR("Unknown Shader type: {0}", asset->DebugName);
@@ -340,7 +331,7 @@ namespace HBL2
 				},
 				.variants = { shaderVariants.Data(), shaderVariants.Size() },
 			},
-			.renderPass = renderPass,
+			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
 		});
 
 		stream.close();

@@ -189,6 +189,7 @@ namespace HBL2
 
 		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
 		m_ResourceManager->DeleteMesh(m_QuadMesh);
+		m_ResourceManager->DeleteShader(m_PresentShader);
 		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
 	}
 
@@ -510,10 +511,12 @@ namespace HBL2
 				{
 					.slot = 0,
 					.visibility = ShaderStage::COMPUTE,
+					.type = TextureBindingType::IMAGE_SAMPLER,
 				},
 				{
 					.slot = 1,
 					.visibility = ShaderStage::COMPUTE,
+					.type = TextureBindingType::STORAGE_IMAGE,
 				},
 			},
 			.bufferBindings = {
@@ -525,6 +528,8 @@ namespace HBL2
 			},
 		});
 
+		m_ComputeVariant.shaderHashKey = Random::UInt64();
+
 		m_EquirectToSkyboxShader = ResourceManager::Instance->CreateShader({
 			.debugName = "compute-shader",
 			.type = ShaderType::COMPUTE,
@@ -533,7 +538,7 @@ namespace HBL2
 				m_EquirectToSkyboxBindGroupLayout,							// (0)
 			},
 			.renderPipeline {
-				.variants = { { .shaderHashKey = Random::UInt64() } },
+				.variants = { m_ComputeVariant },
 			},
 			.renderPass = m_PostProcessRenderPass,
 		});
@@ -545,6 +550,7 @@ namespace HBL2
 				{
 					.slot = 1,
 					.visibility = ShaderStage::FRAGMENT,
+					.type = TextureBindingType::IMAGE_SAMPLER,
 				},
 			},
 		});
@@ -856,10 +862,42 @@ namespace HBL2
 			}
 		});
 
+		ShaderDescriptor::RenderPipeline::Variant variant = {};
+		variant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
+
+		// Compile present shaders.
+		const auto& presentShaderCode = ShaderUtilities::Get().Compile("assets/shaders/present.shader");
+
+		// Create present bind group layout.
+		m_PresentShader = ResourceManager::Instance->CreateShader({
+			.debugName = "present-shader",
+			.VS { .code = presentShaderCode[0], .entryPoint = "main" },
+			.FS { .code = presentShaderCode[1], .entryPoint = "main" },
+			.bindGroups {
+				Renderer::Instance->GetGlobalPresentBindingsLayout(),	// Global bind group (0)
+			},
+			.renderPipeline {
+				.vertexBufferBindings = {
+					{
+						.byteStride = 16,
+						.attributes = {
+							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+							{ .byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
+						},
+					}
+				},
+				.variants = { variant },
+			},
+			.renderPass = Renderer::Instance->GetMainRenderPass(),
+		});
+
 		m_QuadMaterial = m_ResourceManager->CreateMaterial({
 			.debugName = "fullscreen-quad-material",
-			.shader = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PRESENT),
+			.shader = m_PresentShader,
 		});
+
+		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
+		mat->VariantDescriptor = variant;
 	}
 
 	bool ForwardRenderingSystem::IsInFrustum(const Component::Transform& transform)
@@ -1246,10 +1284,21 @@ namespace HBL2
 							.debugName = "skybox-texture",
 							.dimensions = { 1024, 1024, 1 },
 							.format = Format::RGBA16_FLOAT,
+							.internalFormat = Format::RGBA16_FLOAT,
+							.usage = { TextureUsage::TEXTURE_BINDING, TextureUsage::SAMPLED, TextureUsage::STORAGE_BINDING },
 							.type = TextureType::CUBE,
 							.aspect = TextureAspect::COLOR,
-							.sampler = { .filter = Filter::LINEAR, .wrap = Wrap::CLAMP_TO_EDGE, }
+							.sampler = { .filter = Filter::LINEAR, .wrap = Wrap::CLAMP_TO_EDGE, },
+							.initialLayout = TextureLayout::GENERAL,
 						});
+
+						ResourceManager::Instance->TransitionTextureLayout(
+							commandBuffer,
+							skyLight.CubeMap,
+							TextureLayout::UNDEFINED,
+							TextureLayout::GENERAL,
+							{}
+						);
 
 						auto bindGroup = m_ResourceManager->CreateBindGroup({
 							.debugName = "compute-bind-group",
@@ -1262,7 +1311,8 @@ namespace HBL2
 						{
 							.Shader = m_EquirectToSkyboxShader,
 							.BindGroup = bindGroup,
-							.ThreadGroupCount = { 1024 / 16, 1024 / 16, 6 }
+							.ThreadGroupCount = { 1024 / 16, 1024 / 16, 6 },
+							.Variant = m_ComputeVariant,
 						};
 
 						ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.EquirectangularMap, skyLight.CubeMap }, { m_CaptureMatricesBuffer });
@@ -1285,6 +1335,14 @@ namespace HBL2
 						Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
 						mat->VariantDescriptor = m_SkyboxVariant;
 
+						ResourceManager::Instance->TransitionTextureLayout(
+							commandBuffer,
+							skyLight.CubeMap,
+							TextureLayout::GENERAL,
+							TextureLayout::SHADER_READ_ONLY,
+							skyboxBindGroup
+						);
+
 						skyLight.Converted = true;
 					}
 
@@ -1303,6 +1361,11 @@ namespace HBL2
 					});
 				}
 			});
+
+		if (draws.GetCount() == 0)
+		{
+			return;
+		}
 
 		// Render Skybox
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass, m_TransparentFrameBuffer);
@@ -1354,7 +1417,7 @@ namespace HBL2
 
 		DrawList draws;
 		draws.Insert({
-			.Shader = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PRESENT),
+			.Shader = m_PresentShader,
 			.Mesh = m_QuadMesh,
 			.Material = m_QuadMaterial,
 		});

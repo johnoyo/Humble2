@@ -19,6 +19,22 @@ namespace HBL2
 
 		outPipeline = CreatePipeline(config);
 		m_PipelineCache[config.variantDesc] = outPipeline;
+
+		return outPipeline;
+	}
+
+	VkPipeline PipelineCache::GetOrCreateComputePipeline(const PipelineConfig& config)
+	{
+		VkPipeline outPipeline = VK_NULL_HANDLE;
+
+		if (m_PipelineCache.Find(config.variantDesc, outPipeline))
+		{
+			return outPipeline;
+		}
+
+		outPipeline = CreateComputePipeline(config);
+		m_PipelineCache[config.variantDesc] = outPipeline;
+
 		return outPipeline;
 	}
 
@@ -44,7 +60,7 @@ namespace HBL2
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
 		// Shader stages.
-		VkPipelineShaderStageCreateInfo shaderStages[2] = 
+		VkPipelineShaderStageCreateInfo shaderStages[2] =
 		{
 			{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -268,5 +284,36 @@ namespace HBL2
 		}
 
 		return pipeline;
+	}
+
+	VkPipeline PipelineCache::CreateComputePipeline(const PipelineConfig& config)
+	{
+		VulkanDevice* device = (VulkanDevice*)Device::Instance;
+
+		VkPipelineShaderStageCreateInfo stageInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			.pNext = nullptr,
+			.stage = VK_SHADER_STAGE_COMPUTE_BIT,
+			.module = config.shaderModules[0],
+			.pName = "main",
+		};
+
+		VkComputePipelineCreateInfo pipelineInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+			.pNext = nullptr,
+			.stage = stageInfo,
+			.layout = config.pipelineLayout
+		};
+
+		VkPipeline computePipeline = VK_NULL_HANDLE;
+
+		if (vkCreateComputePipelines(device->Get(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &computePipeline) != VK_SUCCESS)
+		{
+			HBL2_CORE_ERROR("Failed to create pipeline of compute shader!");
+		}
+
+		return computePipeline;
 	}
 }

@@ -45,6 +45,7 @@ namespace HBL2
 
 		bool createSampler = true;
 		Sampler sampler;
+		TextureLayout initialLayout = TextureLayout::SHADER_READ_ONLY;
 		void* initialData = nullptr;
 	};
 
@@ -75,6 +76,7 @@ namespace HBL2
 		{
 			uint32_t slot = 0;
 			ShaderStage visibility = ShaderStage::VERTEX;
+			TextureBindingType type = TextureBindingType::IMAGE_SAMPLER;
 		};
 		std::initializer_list<TextureBinding> textureBindings;
 
@@ -156,7 +158,7 @@ namespace HBL2
 				Topology topology = Topology::TRIANGLE_LIST;
 				PolygonMode polygonMode = PolygonMode::FILL;
 				CullMode cullMode = CullMode::BACK;
-				FrontFace frontFace = FrontFace::COUNTER_CLOCKWISE;
+				FrontFace frontFace = FrontFace::CLOCKWISE;
 
 				inline bool operator==(const Variant& other) const
 				{

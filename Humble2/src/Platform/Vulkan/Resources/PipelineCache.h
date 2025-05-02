@@ -12,8 +12,8 @@ namespace HBL2
 {
 	struct PipelineConfig
 	{
-		VkShaderModule shaderModules[2];
-		const char* entryPoints[2];
+		StaticArray<VkShaderModule, 2> shaderModules;
+		StaticArray<const char*, 2> entryPoints;
 		uint32_t shaderModuleCount = 2;
 		ShaderDescriptor::RenderPipeline::Variant variantDesc{};
 		VkPipelineLayout pipelineLayout;
@@ -25,11 +25,13 @@ namespace HBL2
 	{
 	public:
 		VkPipeline GetOrCreatePipeline(const PipelineConfig& config);
+		VkPipeline GetOrCreateComputePipeline(const PipelineConfig& config);
 		bool ContainsPipeline(const ShaderDescriptor::RenderPipeline::Variant& variantDesc);
 		void Destroy();
 
 	private:
 		VkPipeline CreatePipeline(const PipelineConfig& config);
+		VkPipeline CreateComputePipeline(const PipelineConfig& config);
 
 		HashMap<ShaderDescriptor::RenderPipeline::Variant, VkPipeline> m_PipelineCache;
 	};

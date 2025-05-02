@@ -95,6 +95,7 @@ namespace HBL2
 		Handle<Shader> m_SkyboxShader;
 		Handle<BindGroupLayout> m_SkyboxBindGroupLayout;
 		ShaderDescriptor::RenderPipeline::Variant m_SkyboxVariant{};
+		ShaderDescriptor::RenderPipeline::Variant m_ComputeVariant{};
 
 		Handle<RenderPass> m_PostProcessRenderPass;
 		Handle<FrameBuffer> m_PostProcessFrameBuffer;
@@ -111,6 +112,7 @@ namespace HBL2
 		Handle<Buffer> m_QuadVertexBuffer;
 		Handle<Mesh> m_QuadMesh;
 		Handle<Material> m_QuadMaterial;
+		Handle<Shader> m_PresentShader;
 
 		uint32_t m_UBOStaticMeshOffset = 0.0f;
 		uint32_t m_UBOStaticMeshSize = 0.0f;

@@ -77,7 +77,7 @@ namespace HBL2
 		}
     }
 
-	ComputePassRenderer* OpenGLCommandBuffer::BeginComputePass(Span<const Handle<Texture>> texturesWrite, Span<const Handle<Buffer>> buffersWrite)
+	ComputePassRenderer* OpenGLCommandBuffer::BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite)
 	{
 		OpenGLResourceManager* rm = (OpenGLResourceManager*)ResourceManager::Instance;
 		OpenGLRenderer* renderer = (OpenGLRenderer*)Renderer::Instance;

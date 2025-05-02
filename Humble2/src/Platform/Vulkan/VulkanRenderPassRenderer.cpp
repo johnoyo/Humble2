@@ -6,7 +6,7 @@
 
 namespace HBL2
 {
-	void VulkanRenderPasRenderer::DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws)
+	void VulkanRenderPassRenderer::DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws)
 	{
 		Renderer::Instance->GetRendererStats().DrawCalls += draws.GetCount();
 
@@ -113,8 +113,10 @@ namespace HBL2
 				// Bind the dynamic uniform buffer in the appropriate offset.
 				if (draw.BindGroup.IsValid())
 				{
+					uint32_t dynamicOffsetCount = (globalDraw.DynamicUniformBufferSize == 0 ? 0 : 1);
+
 					VulkanBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
-					vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 1, 1, &drawBindGroup->DescriptorSet, 1, &draw.Offset);
+					vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 1, 1, &drawBindGroup->DescriptorSet, dynamicOffsetCount, &draw.Offset);
 				}
 
 				const auto& subMesh = meshPart.SubMeshes[draw.SubMeshIndex];

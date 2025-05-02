@@ -732,16 +732,17 @@ namespace HBL2
 	{
 		VkDescriptorPoolSize poolSizes[] =
 		{
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 256 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 256 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 256 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 256 },
 		};
 
 		VkDescriptorPoolCreateInfo tDescriptorPoolInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 			.flags = 0,
-			.maxSets = 100,
+			.maxSets = 256,
 			.poolSizeCount = std::size(poolSizes),
 			.pPoolSizes = poolSizes,
 		};

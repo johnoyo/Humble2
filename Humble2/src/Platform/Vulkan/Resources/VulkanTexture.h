@@ -18,9 +18,7 @@ namespace HBL2
 		VulkanTexture(const TextureDescriptor&& desc);
 
 		void Update(const Span<const std::byte>& bytes);
-
 		void TrasitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout, VulkanBindGroup* bindGroup);
-
 		void Destroy();
 
 		const char* DebugName = "";
@@ -36,7 +34,9 @@ namespace HBL2
 
 	private:
 		void CreateStagingBuffer(VulkanRenderer* renderer, VkBuffer* stagingBuffer, VmaAllocation* stagingBufferAllocation);
-
 		void CopyBufferToTexture(VulkanRenderer* renderer, VkBuffer stagingBuffer);
+
+	private:
+		uint32_t m_PixelByteSize = 0;
 	};
 }

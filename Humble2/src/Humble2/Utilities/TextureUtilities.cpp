@@ -34,8 +34,8 @@ namespace HBL2
 
 			if (pathAsPath.extension() == ".hdr")
 			{
-				pixels = stbi_loadf(path.c_str(), &settings.Width, &settings.Height, &bits, STBI_default);
-				settings.PixelFormat = Format::RGBA16_FLOAT;
+				pixels = stbi_loadf(path.c_str(), &settings.Width, &settings.Height, &bits, STBI_rgb_alpha);
+				settings.PixelFormat = Format::RGBA32_FLOAT;
 			}
 			else
 			{

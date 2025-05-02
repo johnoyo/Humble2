@@ -26,6 +26,7 @@ namespace HBL2
 		case Format::D32_FLOAT:
 		case Format::RGBA16_FLOAT:
 		case Format::RGB32_FLOAT:
+		case Format::RGBA32_FLOAT:
 		case Format::RG16_FLOAT:
 			Type = GL_FLOAT;
 			break;
@@ -42,14 +43,7 @@ namespace HBL2
 		switch (desc.aspect)
 		{
 		case TextureAspect::COLOR:
-			if (Type == GL_FLOAT)
-			{
-				InternalFormat = GL_RGB;
-			}
-			else
-			{
-				InternalFormat = GL_RGBA;
-			}
+			InternalFormat = GL_RGBA;
 			break;
 		case TextureAspect::DEPTH:
 			InternalFormat = GL_DEPTH_COMPONENT;
@@ -67,7 +61,7 @@ namespace HBL2
 			{
 				for (unsigned int i = 0; i < 6; ++i)
 				{
-					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, Format, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, GL_RGB, Type, nullptr);
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, Format, (GLsizei)Dimensions.x, (GLsizei)Dimensions.y, 0, InternalFormat, Type, nullptr);
 				}
 			}
 			else

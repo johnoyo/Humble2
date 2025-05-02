@@ -6,7 +6,7 @@
 
 namespace HBL2
 {
-	class VulkanRenderPasRenderer final : public RenderPassRenderer
+	class VulkanRenderPassRenderer final : public RenderPassRenderer
 	{
 	public:
 		virtual void DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws) override;

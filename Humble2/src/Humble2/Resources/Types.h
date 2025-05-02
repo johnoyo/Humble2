@@ -12,7 +12,7 @@
 namespace HBL2
 {
 	struct Texture {};
-	struct Buffer;
+	struct Buffer {};
 	struct Shader {};
 	struct FrameBuffer;
 	struct BindGroup;

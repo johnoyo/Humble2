@@ -9,10 +9,29 @@ namespace HBL2
 
 		DebugName = desc.debugName;
 
-		ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // NOTE: Is this a correct default value? should it be Undefined?
+		ImageLayout = VkUtils::TextureLayoutToVkImageLayout(desc.initialLayout);
 		ImageType = desc.type;
 		Extent = { desc.dimensions.x, desc.dimensions.y, desc.dimensions.z };
 		Aspect = VkUtils::TextureAspectToVkImageAspectFlags(desc.aspect);
+
+		switch (desc.format)
+		{
+		case Format::D32_FLOAT:
+		case Format::RGBA8_RGB:
+		case Format::RGBA8_UNORM:
+		case Format::BGRA8_UNORM:
+		case Format::RG16_FLOAT:
+			m_PixelByteSize = 4;
+			break;
+		case Format::RGBA32_FLOAT:
+			m_PixelByteSize = 16;
+			break;
+		case Format::RGBA16_FLOAT:
+		case Format::RGB32_FLOAT:
+		case Format::R10G10B10A2_UNORM:
+			m_PixelByteSize = 8;
+			break;
+		}
 
 		VkImageUsageFlags usage = VkUtils::TextureUsageFlagToVkImageUsageFlags(desc.usage);
 
@@ -30,6 +49,7 @@ namespace HBL2
 			.samples = VK_SAMPLE_COUNT_1_BIT,
 			.tiling = VK_IMAGE_TILING_OPTIMAL,
 			.usage = usage,
+			//.initialLayout = ImageLayout,
 		};
 
 		VmaAllocationCreateInfo allocationCreateInfo =
@@ -47,7 +67,7 @@ namespace HBL2
 
 			CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation);
 
-			VkDeviceSize imageSize = Extent.width * Extent.height * 4;
+			VkDeviceSize imageSize = Extent.width * Extent.height * m_PixelByteSize;
 
 			uint32_t whiteTexture = 0xffffffff;
 
@@ -68,7 +88,7 @@ namespace HBL2
 
 			CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation);
 
-			VkDeviceSize faceSize = Extent.width * Extent.height * 4;
+			VkDeviceSize faceSize = Extent.width * Extent.height * m_PixelByteSize;
 			VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : 1);
 
 			// Transfer initiaData to staging buffer
@@ -133,7 +153,7 @@ namespace HBL2
 
 		CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation);
 
-		VkDeviceSize faceSize = Extent.width * Extent.height * 4;
+		VkDeviceSize faceSize = Extent.width * Extent.height * m_PixelByteSize;
 		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : 1);
 
 		// Transfer initiaData to staging buffer
@@ -165,9 +185,9 @@ namespace HBL2
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+		barrier.subresourceRange.layerCount = (ImageType == TextureType::CUBE ? 6 : 1);
 		barrier.srcAccessMask = VkUtils::CurrentTextureLayoutToVkAccessFlags(currentLayout);
-		barrier.dstAccessMask = VkUtils::CurrentTextureLayoutToVkAccessFlags(newLayout);
+		barrier.dstAccessMask = VkUtils::NewTextureLayoutToVkAccessFlags(newLayout);
 
 		vkCmdPipelineBarrier(
 			cmd,
@@ -209,7 +229,7 @@ namespace HBL2
 	void VulkanTexture::CreateStagingBuffer(VulkanRenderer* renderer, VkBuffer* stagingBuffer, VmaAllocation* stagingBufferAllocation)
 	{
 		// Allocate staging buffer
-		VkDeviceSize faceSize = Extent.width * Extent.height * 4;
+		VkDeviceSize faceSize = Extent.width * Extent.height * m_PixelByteSize;
 		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : 1);
 
 		VkBufferCreateInfo stagingBufferCreateInfo =
@@ -259,7 +279,7 @@ namespace HBL2
 
 			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrierToTransfer);
 
-			VkDeviceSize faceSize = Extent.width * Extent.height * 4;
+			VkDeviceSize faceSize = Extent.width * Extent.height * m_PixelByteSize;
 			StaticArray<VkBufferImageCopy, 6> copyRegions{};
 
 			for (uint32_t face = 0; face < faceCount; ++face)

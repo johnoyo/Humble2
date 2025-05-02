@@ -93,13 +93,41 @@ namespace HBL2
 		vkCmdEndRenderPass(CommandBuffer);
     }
 
-	ComputePassRenderer* VulkanCommandBuffer::BeginComputePass(Span<const Handle<Texture>> texturesWrite, Span<const Handle<Buffer>> buffersWrite)
+	ComputePassRenderer* VulkanCommandBuffer::BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite)
 	{
-		return nullptr;
+		m_CurrentComputePassRenderer.m_CommandBuffer = CommandBuffer;
+		m_TexturesWrite = texturesWrite;
+		m_BuffersWrite = buffersWrite;
+		return &m_CurrentComputePassRenderer;
 	}
 
 	void VulkanCommandBuffer::EndComputePass(const ComputePassRenderer& computePassRenderer)
 	{
+		//VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
+
+		//VkImageMemoryBarrier barrier{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+		//barrier.pNext = nullptr;
+		//barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		//barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		//barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		//barrier.subresourceRange.baseMipLevel = 0;
+		//barrier.subresourceRange.levelCount = 1;
+		//barrier.subresourceRange.baseArrayLayer = 0;
+		//barrier.subresourceRange.layerCount = 1;
+		//barrier.image = rm->GetTexture(m_TexturesWrite[1])->Image; // TODO: Fix!
+		//barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+		//barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		//barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+		//barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		//vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+		//// Wait for device to idle in case the descriptors are still in use.
+		//VulkanDevice* device = (VulkanDevice*)Device::Instance;
+		//vkDeviceWaitIdle(device->Get());
+
+		//// Update descriptors
+
 		return;
 	}
 

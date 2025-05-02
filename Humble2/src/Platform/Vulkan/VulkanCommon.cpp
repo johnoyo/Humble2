@@ -249,6 +249,8 @@ namespace HBL2
 				return VK_FORMAT_R16G16B16A16_SFLOAT;
 			case Format::RGB32_FLOAT:
 				return VK_FORMAT_R32G32B32_SFLOAT;
+			case Format::RGBA32_FLOAT:
+				return VK_FORMAT_R32G32B32A32_SFLOAT;
 			case Format::R10G10B10A2_UNORM:
 				return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
 			}
@@ -356,6 +358,10 @@ namespace HBL2
 				return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 			case HBL2::TextureLayout::PRESENT:
 				return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+			case HBL2::TextureLayout::SHARED_PRESENT:
+				return VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR;
+			case HBL2::TextureLayout::GENERAL:
+				return VK_IMAGE_LAYOUT_GENERAL;
 			}
 
 			return VK_IMAGE_LAYOUT_MAX_ENUM;
@@ -498,6 +504,10 @@ namespace HBL2
 				return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM; // FIXME
 			case HBL2::TextureLayout::PRESENT:
 				return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::SHARED_PRESENT:
+				return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::GENERAL:
+				return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 			}
 
 			return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
@@ -521,6 +531,10 @@ namespace HBL2
 				return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM; // FIXME
 			case HBL2::TextureLayout::PRESENT:
 				return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+			case HBL2::TextureLayout::SHARED_PRESENT:
+				return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+			case HBL2::TextureLayout::GENERAL:
+				return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 			}
 
 			return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
@@ -544,6 +558,10 @@ namespace HBL2
 				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
 			case HBL2::TextureLayout::PRESENT:
 				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::SHARED_PRESENT:
+				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
+			case HBL2::TextureLayout::GENERAL:
+				return VK_ACCESS_SHADER_WRITE_BIT;
 			}
 
 			return VK_ACCESS_FLAG_BITS_MAX_ENUM;
@@ -567,6 +585,8 @@ namespace HBL2
 				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
 			case HBL2::TextureLayout::PRESENT:
 				return 0;
+			case HBL2::TextureLayout::GENERAL:
+				return VK_ACCESS_SHADER_WRITE_BIT;
 			}
 
 			return VK_ACCESS_FLAG_BITS_MAX_ENUM;

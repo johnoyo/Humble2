@@ -81,6 +81,13 @@ namespace HBL2
 		UNIFORM_DYNAMIC_OFFSET = 1,
 		STORAGE = 2,
 		READ_ONLY_STORAGE = 3,
+		STORAGE_IMAGE = 4,
+	};
+
+	enum class TextureBindingType
+	{
+		IMAGE_SAMPLER = 0,
+		STORAGE_IMAGE = 1,
 	};
 
 	enum class VertexFormat
@@ -162,6 +169,7 @@ namespace HBL2
 	enum class Format
 	{
 		RGB32_FLOAT = 1,
+		RGBA32_FLOAT,
 		D16_FLOAT,
 		D24_FLOAT,
 		D32_FLOAT,
@@ -237,6 +245,8 @@ namespace HBL2
 		SHADER_READ_ONLY = 8,
 		DEPTH_STENCIL = 16,
 		PRESENT = 32,
+		SHARED_PRESENT = 64,
+		GENERAL = 128,
 	};
 
 	enum class BlendOperation
