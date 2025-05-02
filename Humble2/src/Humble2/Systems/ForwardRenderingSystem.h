@@ -104,6 +104,7 @@ namespace HBL2
 		Handle<BindGroupLayout> m_PostProcessBindGroupLayout;
 		Handle<Shader> m_PostProcessShader;
 		Handle<Material> m_PostProcessMaterial;
+		Handle<Buffer> m_CubeMeshBuffer;
 		Handle<Mesh> m_CubeMesh;
 
 		Handle<Mesh> m_SpriteMesh;

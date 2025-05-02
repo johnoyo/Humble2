@@ -174,6 +174,21 @@ namespace HBL2
 		m_ResourceManager->DeleteBindGroup(m_SkyboxGlobalBindGroup);
 		m_ResourceManager->DeleteShader(m_SkyboxShader);
 		m_ResourceManager->DeleteBindGroupLayout(m_SkyboxBindGroupLayout);
+		m_ResourceManager->DeleteBuffer(m_CubeMeshBuffer);
+		m_ResourceManager->DeleteMesh(m_CubeMesh);
+
+		m_Context->GetRegistry()
+			.view<Component::SkyLight>()
+			.each([&](Component::SkyLight& skyLight)
+			{
+				m_ResourceManager->DeleteTexture(skyLight.EquirectangularMap);
+				m_ResourceManager->DeleteTexture(skyLight.CubeMap);
+
+				Material* mat = m_ResourceManager->GetMaterial(skyLight.CubeMapMaterial);
+				m_ResourceManager->DeleteBindGroup(mat->BindGroup);
+
+				m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
+			});
 
 		m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
 		m_ResourceManager->DeleteShader(m_PostProcessShader);
@@ -640,7 +655,7 @@ namespace HBL2
 			 1.0f, 1.0f, 1.0f,-1.0f, 1.0f,-1.0f,-1.0f, 1.0f, 1.0f,
 		};
 
-		auto buffer = ResourceManager::Instance->CreateBuffer({
+		m_CubeMeshBuffer = ResourceManager::Instance->CreateBuffer({
 			.debugName = "cube-vertex-buffer",
 			.usage = BufferUsage::VERTEX,
 			.byteSize = sizeof(float) * 108,
@@ -660,7 +675,7 @@ namespace HBL2
 							.maxVertex = {  1.0f,  1.0f,  1.0f },
 						}
 					},
-					.vertexBuffers = { buffer },
+					.vertexBuffers = { m_CubeMeshBuffer },
 				}
 			}
 		});
@@ -1318,6 +1333,8 @@ namespace HBL2
 						ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.EquirectangularMap, skyLight.CubeMap }, { m_CaptureMatricesBuffer });
 						computePassRenderer->Dispatch({ dispatch });
 						commandBuffer->EndComputePass(*computePassRenderer);
+
+						m_ResourceManager->DeleteBindGroup(bindGroup);
 
 						auto skyboxBindGroup = m_ResourceManager->CreateBindGroup({
 							.debugName = "skybox-bind-group",
