@@ -47,6 +47,7 @@ layout(location = 4) in float v_Glossiness;
 layout(location = 5) in mat4 v_InverseViewProj;
 
 layout (set = 1, binding = 0) uniform sampler2D u_AlbedoMap;
+// layout (set = 1, binding = 3) uniform sampler2D u_ShadowAltasMap;
 
 layout(std140, set = 0, binding = 1) uniform Light
 {
@@ -55,123 +56,97 @@ layout(std140, set = 0, binding = 1) uniform Light
     vec4 Directions[16];
     vec4 Colors[16];
     vec4 Metadata[16];
+    vec4 ShadowData[16];
+    mat4 LightSpaceMatrices[16];
+    vec4 TileUVRange[16];
     float Count;
 } u_Light;
 
 void main()
 {
     vec3 textureColor = texture(u_AlbedoMap, v_TextureCoord).rgb;
+    vec3 normal       = normalize(v_Normal);
+    vec3 camDir       = normalize(u_Light.ViewPosition.xyz - v_Position);
 
-    float ambientCoefficient = 0.1;
-    vec3 normal = normalize(v_Normal);
-    vec3 camDir = normalize(u_Light.ViewPosition.xyz - v_Position);
-    vec3 diffuse = vec3(0.0);
-    vec3 specular = vec3(0.0);
-    vec3 ambient = vec3(0.0);
-    
-    for (int i = 0; i < int(u_Light.Count); i++)
+    // Global ambient (only once)
+    vec3 ambient = 0.1 * textureColor;
+
+    // Accumulators for diffuse & specular
+    vec3 diffuseAcc  = vec3(0.0);
+    vec3 specularAcc = vec3(0.0);
+
+    // Loop over all lights
+    for (int i = 0; i < int(u_Light.Count); ++i)
     {
-        float lightIntensity = u_Light.Metadata[i].x;
+        float intensity = u_Light.Metadata[i].x;
+        vec3  lightCol  = u_Light.Colors[i].xyz;
 
         if (u_Light.Positions[i].w == 0.0)
         {
-            // Directional light: direction is normalized and points *towards* the surface
-            vec3 lightDir = normalize(-u_Light.Directions[i].xyz);
+            // Directional Light
+            vec3 L = normalize(-u_Light.Directions[i].xyz);
 
             // Diffuse
-            float diff = max(dot(lightDir, normal), 0.0);
-            vec3 D = diff * u_Light.Colors[i].xyz * lightIntensity;
+            float diff = max(dot(normal, L), 0.0);
+            vec3 D = diff * lightCol * intensity;
 
             // Specular
-            vec3 halfwayDir = normalize(lightDir + camDir);  
-            float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0) * v_Glossiness;
-            vec3 S = u_Light.Colors[i].xyz * spec * lightIntensity; 
-
-            // Ambient
-            ambient += u_Light.Colors[i].xyz * lightIntensity;
+            vec3 H = normalize(L + camDir);
+            float spec = pow(max(dot(normal, H), 0.0), 32.0) * v_Glossiness;
+            vec3 S = lightCol * spec * intensity;
 
             // Accumulate
-            diffuse += D;
-            specular += S;
+            diffuseAcc  += D;
+            specularAcc += S;
         }
         else if (u_Light.Positions[i].w == 1.0)
         {
-            // Point light: direction from fragment to light position
-            vec3 lightDir = normalize(u_Light.Positions[i].xyz - v_Position);
-
-            float lightConstant = u_Light.Metadata[i].y;
-            float lightLinear = u_Light.Metadata[i].z;
-            float lightQuadratic = u_Light.Metadata[i].w;
-
-            float distance = length(u_Light.Positions[i].xyz - v_Position);
-            float attenuation = 1.0 / (lightConstant + lightLinear * distance + lightQuadratic * (distance * distance));
+            // Point Light
+            vec3  L      = normalize(u_Light.Positions[i].xyz - v_Position);
+            float dist   = length(u_Light.Positions[i].xyz - v_Position);
+            float att    = 1.0 / (u_Light.Metadata[i].y + u_Light.Metadata[i].z * dist + u_Light.Metadata[i].w * dist * dist);
 
             // Diffuse
-            float diff = max(dot(lightDir, normal), 0.0);
-            vec3 D = diff * u_Light.Colors[i].xyz * lightIntensity;
+            float diff = max(dot(normal, L), 0.0);
+            vec3 D = diff * lightCol * intensity * att;
 
             // Specular
-            vec3 halfwayDir = normalize(lightDir + camDir);  
-            float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0) * v_Glossiness;
-            vec3 S = u_Light.Colors[i].xyz * spec * lightIntensity; 
-
-            // Ambient
-            ambient += u_Light.Colors[i].xyz * lightIntensity;
+            vec3 H = normalize(L + camDir);
+            float spec = pow(max(dot(normal, H), 0.0), 32.0) * v_Glossiness;
+            vec3 S = lightCol * spec * intensity * att;
 
             // Accumulate
-            diffuse += D;
-            specular += S;
-
-            // Apply attenuation
-            diffuse *= attenuation;
-            specular *= attenuation;
-            ambient *= attenuation;
+            diffuseAcc  += D;
+            specularAcc += S;
         }
         else if (u_Light.Positions[i].w == 2.0)
         {
-            // Spot light:
-            vec3 lightDir = normalize(u_Light.Positions[i].xyz - v_Position);
+            // Spot Light
+            vec3 L         = normalize(u_Light.Positions[i].xyz - v_Position);
+            float inner    = u_Light.Metadata[i].y;
+            float outer    = u_Light.Metadata[i].z;
+            float theta    = dot(L, normalize(-u_Light.Directions[i].xyz));
+            float spotFrac = clamp((theta - outer) / (inner - outer), 0.0, 1.0);
 
-            float innerCutOff = u_Light.Metadata[i].y;
-            float outerCutOff = u_Light.Metadata[i].z;
-
-            float theta = dot(lightDir, normalize(-u_Light.Directions[i].xyz));
-            float epsilon = (innerCutOff - outerCutOff);
-            float intensity = clamp((theta - outerCutOff) / epsilon, 0.0, 1.0);
-
-            float lightConstant = 1.0;
-            float lightLinear = 0.09;
-            float lightQuadratic = 0.032;
-            float distance = length(u_Light.Positions[i].xyz - v_Position);
-            float attenuation = 1.0 / (lightConstant + lightLinear * distance + lightQuadratic * (distance * distance));
+            float dist = length(u_Light.Positions[i].xyz - v_Position);
+            float att  = 1.0 / (1.0 + 0.09  * dist + 0.032 * dist * dist);
 
             // Diffuse
-            float diff = max(dot(lightDir, normal), 0.0);
-            vec3 D = diff * u_Light.Colors[i].xyz * lightIntensity;
+            float diff = max(dot(normal, L), 0.0);
+            vec3 D = diff * lightCol * intensity * att * spotFrac;
 
             // Specular
-            vec3 halfwayDir = normalize(lightDir + camDir);  
-            float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0) * v_Glossiness;
-            vec3 S = u_Light.Colors[i].xyz * spec * lightIntensity; 
-
-            // Ambient
-            ambient += u_Light.Colors[i].xyz * lightIntensity;
+            vec3 H = normalize(L + camDir);
+            float spec = pow(max(dot(normal, H), 0.0), 32.0) * v_Glossiness;
+            vec3 S = lightCol * spec * intensity * att * spotFrac;
 
             // Accumulate
-            diffuse += D;
-            specular += S;
-
-            // Apply attenuation and intensity
-            diffuse *= (intensity * attenuation);
-            specular *= (intensity * attenuation);
-            ambient *= attenuation;
-        }
+            diffuseAcc  += D;
+            specularAcc += S;
+        }        
     }
-    
-    ambient = ambientCoefficient * ambient;
 
-    vec3 BlinnPhong = ambient + diffuse + specular; 
-    vec3 final = textureColor.rgb * BlinnPhong;
-
-    FragColor = vec4(final * v_Color.xyz, 1.0);
+    // Final color
+    vec3 result = ambient + textureColor * diffuseAcc + specularAcc;
+    FragColor = vec4(result * v_Color.rgb, 1.0);
 }

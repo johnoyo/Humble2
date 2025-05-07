@@ -132,10 +132,10 @@ namespace HBL2
 			switch (variantDesc.frontFace)
 			{
 			case FrontFace::COUNTER_CLOCKWISE:
-				glFrontFace(GL_CW);
+				glFrontFace(GL_CCW);
 				break;
 			case FrontFace::CLOCKWISE:
-				glFrontFace(GL_CCW);
+				glFrontFace(GL_CW);
 				break;
 			}
 		}

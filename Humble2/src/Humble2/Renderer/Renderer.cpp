@@ -56,6 +56,23 @@ namespace HBL2
 			}
 		});
 
+		// Create shadow depth texture (Huge Shadow Atlas containing all the shadow textures).
+		ShadowAtlasTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "shadow-depth-target",
+			.dimensions = { g_ShadowAtlasSize, g_ShadowAtlasSize, 1 },
+			.format = Format::D32_FLOAT,
+			.internalFormat = Format::D32_FLOAT,
+			.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::DEPTH,
+			.createSampler = true,
+			.sampler =
+			{
+				.filter = Filter::NEAREST,
+				.wrap = Wrap::REPEAT,
+			},
+			.initialLayout = TextureLayout::DEPTH_STENCIL,
+		});
+
 		PostInitialize();
 	}
 }

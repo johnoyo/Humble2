@@ -37,6 +37,7 @@ namespace HBL2
 			void DrawPlayStopPanel();
 			void DrawSystemsPanel();
 			void DrawTrayPanel();
+			void DrawEditorSettingsPanel();
 
 			entt::entity m_EntityToBeDeleted = entt::null;
 			entt::entity m_EntityToBeDuplicated = entt::null;

@@ -69,6 +69,7 @@ namespace HBL2
         copy_component(Component::Sprite{});
         copy_component(Component::StaticMesh{});
         copy_component(Component::Light{});
+        copy_component(Component::SkyLight{});
         copy_component(Component::AudioSource{});
         copy_component(Component::Rigidbody2D{});
         copy_component(Component::BoxCollider2D{});
@@ -251,6 +252,7 @@ namespace HBL2
         copy_component(Component::Sprite{});
         copy_component(Component::StaticMesh{});
         copy_component(Component::Light{});
+        copy_component(Component::SkyLight{});
         copy_component(Component::AudioSource{});
         copy_component(Component::Rigidbody2D{});
         copy_component(Component::BoxCollider2D{});

@@ -122,6 +122,10 @@ namespace HBL2
 			float InnerCutOff = 12.5f;
 			float OuterCutOff = 17.5f;
 			float Distance = 50.0f;
+
+			float ConstantBias = 0.002f;
+			float SlopeBias = 0.0f;
+			float FieldOfView = 60.0f;
 			
 			Type Type = Type::Directional;
 			bool CastsShadows = false;

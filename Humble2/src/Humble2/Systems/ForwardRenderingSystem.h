@@ -36,6 +36,7 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
+		void ShadowPassSetup();
 		void DepthPrePassSetup();
 		void OpaquePassSetup();
 		void TransparentPassSetup();
@@ -62,21 +63,30 @@ namespace HBL2
 	private:
 		ResourceManager* m_ResourceManager = nullptr;
 		UniformRingBuffer* m_UniformRingBuffer = nullptr;
+
 		Scene* m_EditorScene = nullptr;
 		LightData m_LightData{};
 		CameraData m_CameraData{};
 		CameraSettings m_CameraSettings{};
 		Component::Camera::CameraFrustum m_CameraFrustum{};
 		glm::mat4 m_OnlyRotationInViewProjection = glm::mat4(1.0f);
+		glm::mat4 m_CameraProjection = glm::mat4(1.0f);
 
 		Handle<RenderPassLayout> m_RenderPassLayout;
+
+		Handle<Texture> m_ShadowDepthTexture;
+		Handle<FrameBuffer> m_ShadowFrameBufferClear;
+		Handle<FrameBuffer> m_ShadowFrameBufferLoad;
+		Handle<RenderPass> m_DepthOnlyRenderPassLoad;
+		Handle<Shader> m_ShadowPrePassShader;
+		Handle<Material> m_ShadowPrePassMaterial;
 
 		Handle<RenderPassLayout> m_DepthOnlyRenderPassLayout;
 		Handle<RenderPass> m_DepthOnlyRenderPass;
 		Handle<FrameBuffer> m_DepthOnlyFrameBuffer;
 		Handle<Material> m_DepthOnlyMaterial;
 		Handle<Material> m_DepthOnlySpriteMaterial;
-		Handle<BindGroup> m_DepthOnlyBindGroup;
+		Handle<BindGroup> m_DepthOnlyMeshBindGroup;
 		Handle<BindGroup> m_DepthOnlySpriteBindGroup;
 		Handle<BindGroupLayout> m_DepthOnlyBindGroupLayout;
 		Handle<Shader> m_DepthOnlyShader;
@@ -121,11 +131,13 @@ namespace HBL2
 		DrawList m_StaticMeshOpaqueDraws;
 		DrawList m_StaticMeshTransparentDraws;
 		DrawList m_PrePassStaticMeshDraws;
+		DrawList m_ShadowPassStaticMeshDraws;
 
 		uint32_t m_UBOSpriteOffset = 0.0f;
 		uint32_t m_UBOSpriteSize = 0.0f;
 		DrawList m_SpriteOpaqueDraws;
 		DrawList m_SpriteTransparentDraws;
 		DrawList m_PrePassSpriteDraws;
+		DrawList m_ShadowPassSpriteDraws;
 	};
 }

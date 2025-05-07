@@ -5,6 +5,7 @@
 #include "CommandBuffer.h"
 #include "UniformRingBuffer.h"
 #include "RenderPassPool.h"
+#include "Renderer\ShadowAtlasAllocator.h"
 
 namespace HBL2
 {
@@ -27,6 +28,9 @@ namespace HBL2
 		glm::vec4 LightDirections[16];
 		glm::vec4 LightColors[16];
 		glm::vec4 LightMetadata[16];
+		glm::vec4 LightShadowData[16];
+		glm::mat4 LightSpaceMatrices[16];
+		glm::vec4 TileUVRange[16];
 		float LightCount;
 		float _padding[3];
 	};
@@ -101,9 +105,12 @@ namespace HBL2
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
 
 		UniformRingBuffer* TempUniformRingBuffer;
+		ShadowAtlasAllocator ShadowAtlasAllocator;
+
 		Handle<Texture> IntermediateColorTexture;
 		Handle<Texture> MainColorTexture;
 		Handle<Texture> MainDepthTexture;
+		Handle<Texture> ShadowAtlasTexture;
 
 		void AddCallbackOnResize(const std::string& callbackName, std::function<void(uint32_t, uint32_t)>&& callback)
 		{

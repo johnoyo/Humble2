@@ -124,6 +124,8 @@ namespace HBL2
 				return GL_TEXTURE_3D;
 			case HBL2::TextureType::CUBE:
 				return GL_TEXTURE_CUBE_MAP;
+			case HBL2::TextureType::D2_ARRAY:
+				return GL_TEXTURE_2D_ARRAY;
 			}
 
 			return -1;

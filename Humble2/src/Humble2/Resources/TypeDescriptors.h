@@ -158,7 +158,7 @@ namespace HBL2
 				Topology topology = Topology::TRIANGLE_LIST;
 				PolygonMode polygonMode = PolygonMode::FILL;
 				CullMode cullMode = CullMode::BACK;
-				FrontFace frontFace = FrontFace::CLOCKWISE;
+				FrontFace frontFace = FrontFace::COUNTER_CLOCKWISE;
 
 				inline bool operator==(const Variant& other) const
 				{

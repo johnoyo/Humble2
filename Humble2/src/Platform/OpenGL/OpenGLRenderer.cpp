@@ -11,8 +11,8 @@ namespace HBL2
 		GLDebug::EnableGLDebugging();
 #endif
 		// Origin at upper-left, depth range [0..1] (same as Vulkan)
-		glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
-		glDepthRangef(0.0f, 1.0f);
+		//glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
+		//glDepthRangef(0.0f, 1.0f);
 
 		m_MainCommandBuffer = new OpenGLCommandBuffer();
 		m_UserInterfaceCommandBuffer = new OpenGLCommandBuffer();
@@ -25,8 +25,8 @@ namespace HBL2
 	{
 		m_GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
 			.debugName = "global-present-bind-group",
-			.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
-			.textures = { Renderer::Instance->MainColorTexture },
+			.layout = GetGlobalPresentBindingsLayout(),
+			.textures = { MainColorTexture },
 		});
 
 		EventDispatcher::Get().Register<FramebufferSizeEvent>([&](const FramebufferSizeEvent& e)
@@ -38,8 +38,6 @@ namespace HBL2
 
 	void OpenGLRenderer::BeginFrame()
 	{
-		glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
-
 		m_Stats.Reset();
 		TempUniformRingBuffer->Invalidate();
 	}
@@ -157,6 +155,7 @@ namespace HBL2
 		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
+		m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
 
 		TempUniformRingBuffer->Free();
 

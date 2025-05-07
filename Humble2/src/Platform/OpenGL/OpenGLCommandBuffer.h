@@ -9,7 +9,7 @@ namespace HBL2
 	class OpenGLCommandBuffer final : public CommandBuffer
 	{
 	public:
-		virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer) override;
+		virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer, Viewport&& drawArea = {}) override;
 		virtual void EndRenderPass(const RenderPassRenderer& renderPassRenderer) override;
 
 		virtual ComputePassRenderer* BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite) override;

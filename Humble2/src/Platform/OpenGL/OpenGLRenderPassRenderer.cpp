@@ -86,6 +86,8 @@ namespace HBL2
 
 				// Bind vertex buffers
 				HBL2_CORE_ASSERT(meshPart.VertexBuffers.size() <= 3, "Maximum number of vertex buffers is 3.");
+				HBL2_CORE_ASSERT(meshPart.VertexBuffers.size() == 1, "One packed vertex buffer is supported for now.");
+
 				for (int i = 0; i < meshPart.VertexBuffers.size(); i++)
 				{
 					if (prevVertexBuffers[i] != meshPart.VertexBuffers[i])

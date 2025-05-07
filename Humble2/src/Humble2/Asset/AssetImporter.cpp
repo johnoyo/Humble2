@@ -305,7 +305,7 @@ namespace HBL2
 
 		if (shaderCode.empty())
 		{
-			HBL2_CORE_ERROR("Shader asset: {0}, at path: {1}, could be compiled. Returning invalid shader.", asset->DebugName, shaderPath.string());
+			HBL2_CORE_ERROR("Shader asset: {0}, at path: {1}, could not be compiled. Returning invalid shader.", asset->DebugName, shaderPath.string());
 			stream.close();
 			return ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::INVALID);
 		}
@@ -490,7 +490,7 @@ namespace HBL2
 				drawBindings = ResourceManager::Instance->CreateBindGroup({
 					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
 					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
-					.textures = { albedoMapHandle },
+					.textures = { albedoMapHandle, Renderer::Instance->ShadowAtlasTexture },
 					.buffers = {
 						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
 					}

@@ -125,6 +125,7 @@ namespace HBL2
 		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
+		m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
 
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 

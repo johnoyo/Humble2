@@ -344,6 +344,10 @@ namespace HBL2
 					.slot = 0,
 					.visibility = ShaderStage::FRAGMENT,
 				},
+				{
+					.slot = 3,
+					.visibility = ShaderStage::FRAGMENT,
+				},
 			},
 			.bufferBindings = {
 				{
@@ -432,11 +436,11 @@ namespace HBL2
 			m_ShaderAssets.Add(unlitShaderAssetHandle);
 		}
 
-		// Blinn-Phnog shader
+		// Blinn-Phong shader
 		{
 			auto blinnPhongShaderAssetHandle = AssetManager::Instance->CreateAsset({
 				.debugName = "blinn-phong-shader-asset",
-				.filePath = "assets/shaders/blinn-phong.shader",
+				.filePath = "assets/shaders/shadow-mapping.shader",
 				.type = AssetType::Shader,
 			});
 

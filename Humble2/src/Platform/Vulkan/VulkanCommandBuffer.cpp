@@ -6,7 +6,7 @@
 
 namespace HBL2
 {
-    RenderPassRenderer* VulkanCommandBuffer::BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer)
+    RenderPassRenderer* VulkanCommandBuffer::BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer, Viewport&& drawArea)
     {
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
@@ -26,6 +26,14 @@ namespace HBL2
 		}
 
 		VulkanFrameBuffer* vkFrameBuffer = rm->GetFrameBuffer(frameBuffer);
+
+		if (!drawArea.IsValid())
+		{
+			drawArea =
+			{
+				0, 0, vkFrameBuffer->Width, vkFrameBuffer->Height
+			};
+		}
 
 		std::vector<VkClearValue> clearValues;
 
@@ -54,8 +62,8 @@ namespace HBL2
 			.framebuffer = vkFrameBuffer->FrameBuffer,
 			.renderArea = 
 			{
-				.offset = { 0, 0 },
-				.extent = { vkFrameBuffer->Width, vkFrameBuffer->Height },
+				.offset = { (int32_t)drawArea.x, (int32_t)drawArea.y },
+				.extent = { drawArea.width, drawArea.height },
 			},
 			.clearValueCount = (uint32_t)clearValues.size(),
 			.pClearValues = clearValues.data(),
@@ -66,10 +74,10 @@ namespace HBL2
 		// Set viewport
 		VkViewport viewport =
 		{
-			.x = 0.0f,
-			.y = 0.0f,
-			.width = (float)vkFrameBuffer->Width,
-			.height = (float)vkFrameBuffer->Height,
+			.x = (float)drawArea.x,
+			.y = (float)drawArea.y,
+			.width = (float)drawArea.width,
+			.height = (float)drawArea.height,
 			.minDepth = 0.0f,
 			.maxDepth = 1.0f,
 		};
@@ -79,8 +87,8 @@ namespace HBL2
 		// Set scissor
 		VkRect2D scissor =
 		{
-			.offset = { 0, 0 },
-			.extent = { vkFrameBuffer->Width, vkFrameBuffer->Height },
+			.offset = {(int32_t)drawArea.x, (int32_t)drawArea.y },
+			.extent = { drawArea.width, drawArea.height },
 		};
 
 		vkCmdSetScissor(CommandBuffer, 0, 1, &scissor);

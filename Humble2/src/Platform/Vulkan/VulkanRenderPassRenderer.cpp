@@ -90,7 +90,10 @@ namespace HBL2
 				uint32_t bufferCounter = 0;
 				StaticArray<VkBuffer, 3> buffers = {};
 				StaticArray<VkDeviceSize, 3> offsets = {};
+
 				HBL2_CORE_ASSERT(meshPart.VertexBuffers.size() <= 3, "Maximum number of vertex buffers is 3.");
+				HBL2_CORE_ASSERT(meshPart.VertexBuffers.size() == 1, "One packed vertex buffer is supported for now.");
+
 				for (const auto vertexBufferHandle : meshPart.VertexBuffers)
 				{
 					if (prevVertexBuffers[bufferCounter] != vertexBufferHandle)

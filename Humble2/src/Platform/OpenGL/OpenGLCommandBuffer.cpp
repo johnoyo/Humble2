@@ -5,7 +5,7 @@
 
 namespace HBL2
 {
-    RenderPassRenderer* OpenGLCommandBuffer::BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer)
+    RenderPassRenderer* OpenGLCommandBuffer::BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer, Viewport&& drawArea)
     {
         OpenGLResourceManager* rm = (OpenGLResourceManager*)ResourceManager::Instance;
         OpenGLRenderer* renderer = (OpenGLRenderer*)Renderer::Instance;
@@ -17,8 +17,16 @@ namespace HBL2
 		{
 			OpenGLFrameBuffer* openGLFrameBuffer = rm->GetFrameBuffer(frameBuffer);
 
+			if (!drawArea.IsValid())
+			{
+				drawArea =
+				{
+					0, 0, openGLFrameBuffer->Width, openGLFrameBuffer->Height
+				};
+			}
+
 			glBindFramebuffer(GL_FRAMEBUFFER, openGLFrameBuffer->RendererId);
-			glViewport(0, 0, openGLFrameBuffer->Width, openGLFrameBuffer->Height);
+			glViewport(drawArea.x, drawArea.y, drawArea.width, drawArea.height);
 		}
 
 		if (!renderPass.IsValid())

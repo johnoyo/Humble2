@@ -150,5 +150,6 @@ namespace HBL2
 
 		glm::vec4 AlbedoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		float Glossiness = 3.0f;
+		bool ReceiveShadows = true;
 	};
 }

@@ -21,7 +21,8 @@ namespace HBL2
 					}
 					else
 					{
-						camera.Projection = glm::ortho(-camera.AspectRatio * camera.ZoomLevel, camera.AspectRatio * camera.ZoomLevel, -camera.ZoomLevel, camera.ZoomLevel, -1.f, 1.f);
+						float extent = camera.AspectRatio * camera.ZoomLevel;
+						camera.Projection = glm::ortho(-extent, extent, -extent, extent, -1.f, 1.f);
 					}
 
 					/*if (Renderer::Instance->GetAPI() != GraphicsAPI::OPENGL)
@@ -57,7 +58,8 @@ namespace HBL2
 						}
 						else
 						{
-							camera.Projection = glm::ortho(-camera.AspectRatio * camera.ZoomLevel, camera.AspectRatio * camera.ZoomLevel, -camera.ZoomLevel, camera.ZoomLevel, -1.f, 1.f);
+							float extent = camera.AspectRatio * camera.ZoomLevel;
+							camera.Projection = glm::ortho(-extent, extent, -extent, extent, -1.f, 1.f);
 						}
 
 						/*if (Renderer::Instance->GetAPI() != GraphicsAPI::OPENGL)

@@ -1,4 +1,4 @@
-#shader vertex
+﻿#shader vertex
 #version 450 core
 layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec3 a_Normal;
@@ -47,7 +47,7 @@ layout(location = 4) in float v_Glossiness;
 layout(location = 5) in mat4 v_InverseViewProj;
 
 layout (set = 1, binding = 0) uniform sampler2D u_AlbedoMap;
-// layout (set = 1, binding = 3) uniform sampler2D u_ShadowAltasMap;
+layout (set = 1, binding = 3) uniform sampler2D u_ShadowAltasMap;
 
 layout(std140, set = 0, binding = 1) uniform Light
 {
@@ -62,6 +62,54 @@ layout(std140, set = 0, binding = 1) uniform Light
     float Count;
 } u_Light;
 
+float ShadowCalculation(vec4 fragPosLightSpace, vec4 tileUVRange, int index)
+{
+    // Perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // Transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+
+    // Check if fragment is outside the light's projection
+    if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
+    {
+        return 0.0;
+    }
+
+    // Apply atlas tile offset and scale
+    vec2 tileOffset = tileUVRange.xy;
+    vec2 tileScale  = tileUVRange.zw;
+    vec2 atlasUV = tileOffset + projCoords.xy * tileScale;
+
+    // Get texel size within the tile
+    vec2 texelSize = tileScale / vec2(textureSize(u_ShadowAltasMap, 0));
+
+    // Calculate bias (based on depth map resolution and slope)
+    vec3 normal = normalize(v_Normal);
+    vec3 lightDir = normalize(u_Light.Positions[index].xyz - v_Position);
+    
+    float constantBias = u_Light.ShadowData[index].y;
+    float slopeBias    = u_Light.ShadowData[index].z;
+    float bias = constantBias + slopeBias * (1.0 - (max(dot(normal, lightDir), 0.0)));
+
+    // PCF sampling
+    float shadow = 0.0;
+    float currentDepth = projCoords.z;
+
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            vec2 offset = vec2(x, y) * texelSize;
+            float pcfDepth = texture(u_ShadowAltasMap, atlasUV + offset).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+
+    shadow /= 9.0;
+
+    return shadow;
+}
+
 void main()
 {
     vec3 textureColor = texture(u_AlbedoMap, v_TextureCoord).rgb;
@@ -74,6 +122,7 @@ void main()
     // Accumulators for diffuse & specular
     vec3 diffuseAcc  = vec3(0.0);
     vec3 specularAcc = vec3(0.0);
+    float totalShadow = 0.0;
 
     // Loop over all lights
     for (int i = 0; i < int(u_Light.Count); ++i)
@@ -98,6 +147,14 @@ void main()
             // Accumulate
             diffuseAcc  += D;
             specularAcc += S;
+
+            if (u_Light.ShadowData[i].x == 1.0)
+            {
+                mat4 lightSpaceMatrix = u_Light.LightSpaceMatrices[i];
+                vec4 fragPosLightSpace = lightSpaceMatrix * vec4(v_Position, 1.0);
+
+                totalShadow += ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
+            }
         }
         else if (u_Light.Positions[i].w == 1.0)
         {
@@ -118,6 +175,14 @@ void main()
             // Accumulate
             diffuseAcc  += D;
             specularAcc += S;
+
+            if (u_Light.ShadowData[i].x == 1.0 && att >= 0.0)
+            {
+                mat4 lightSpaceMatrix = u_Light.LightSpaceMatrices[i];
+                vec4 fragPosLightSpace = lightSpaceMatrix * vec4(v_Position, 1.0);
+
+                totalShadow += ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
+            }
         }
         else if (u_Light.Positions[i].w == 2.0)
         {
@@ -143,10 +208,22 @@ void main()
             // Accumulate
             diffuseAcc  += D;
             specularAcc += S;
+
+            bool lit = (spotFrac > 0.0) && (diff > 0.0) && (att > 0.0);
+
+            if (u_Light.ShadowData[i].x == 1.0 && lit)
+            {
+                mat4 lightSpaceMatrix = u_Light.LightSpaceMatrices[i];
+                vec4 fragPosLightSpace = lightSpaceMatrix * vec4(v_Position, 1.0);
+
+                totalShadow += ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
+            }
         }        
     }
 
+    totalShadow = clamp(totalShadow / float(u_Light.Count), 0.0, 1.0);
+
     // Final color
-    vec3 result = ambient + textureColor * diffuseAcc + specularAcc;
+    vec3 result = ambient + (1.0 - totalShadow) * textureColor * diffuseAcc + specularAcc;
     FragColor = vec4(result * v_Color.rgb, 1.0);
 }

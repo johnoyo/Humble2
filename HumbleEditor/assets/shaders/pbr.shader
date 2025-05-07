@@ -53,6 +53,9 @@ layout(std140, set = 0, binding = 1) uniform Light
     vec4 Directions[16];
     vec4 Colors[16];
     vec4 Metadata[16];
+    vec4 ShadowData[16];
+    mat4 LightSpaceMatrices[16];
+    vec4 TileUVRange[16];
     float Count;
 } u_Light;
 

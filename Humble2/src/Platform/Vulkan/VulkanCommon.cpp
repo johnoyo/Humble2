@@ -209,6 +209,8 @@ namespace HBL2
 				return VK_IMAGE_TYPE_3D;
 			case HBL2::TextureType::CUBE:
 				return VK_IMAGE_TYPE_2D;
+			case HBL2::TextureType::D2_ARRAY:
+				return VK_IMAGE_TYPE_3D;
 			}
 
 			return VK_IMAGE_TYPE_MAX_ENUM;
@@ -226,6 +228,8 @@ namespace HBL2
 				return VK_IMAGE_VIEW_TYPE_3D;
 			case HBL2::TextureType::CUBE:
 				return VK_IMAGE_VIEW_TYPE_CUBE;
+			case HBL2::TextureType::D2_ARRAY:
+				return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
 			}
 
 			return VK_IMAGE_VIEW_TYPE_MAX_ENUM;
@@ -355,7 +359,7 @@ namespace HBL2
 			case HBL2::TextureLayout::SHADER_READ_ONLY:
 				return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			case HBL2::TextureLayout::DEPTH_STENCIL:
-				return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+				return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 			case HBL2::TextureLayout::PRESENT:
 				return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 			case HBL2::TextureLayout::SHARED_PRESENT:
@@ -528,7 +532,7 @@ namespace HBL2
 			case HBL2::TextureLayout::SHADER_READ_ONLY:
 				return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 			case HBL2::TextureLayout::DEPTH_STENCIL:
-				return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM; // FIXME
+				return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 			case HBL2::TextureLayout::PRESENT:
 				return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 			case HBL2::TextureLayout::SHARED_PRESENT:
@@ -582,7 +586,7 @@ namespace HBL2
 			case HBL2::TextureLayout::SHADER_READ_ONLY:
 				return VK_ACCESS_SHADER_READ_BIT;
 			case HBL2::TextureLayout::DEPTH_STENCIL:
-				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
+				return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 			case HBL2::TextureLayout::PRESENT:
 				return 0;
 			case HBL2::TextureLayout::GENERAL:

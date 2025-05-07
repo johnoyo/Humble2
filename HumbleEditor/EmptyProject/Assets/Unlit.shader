@@ -32,6 +32,7 @@ layout(location = 0) in vec4 v_Color;
 layout(location = 1) in vec2 v_TextureCoord;
 
 layout (set = 1, binding = 0) uniform sampler2D u_AlbedoMap;
+layout (set = 1, binding = 3) uniform sampler2D u_ShadowAltasMap;
 
 void main()
 {
