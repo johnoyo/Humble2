@@ -1,31 +1,58 @@
 Scene: EmptyScene
 Entities:
-  - Entity: 3
+  - Entity: 5
     Component::Tag:
-      Tag: Monkeh
+      Tag: Sky
     Component::ID:
-      ID: 18396450913416425472
+      ID: 12432322249913909248
     Component::Transform:
-      Translation: [2, 0, 0]
+      Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Component::SkyLight:
+      Enabled: true
+      EquirectangularMap: 8406239916870616777
+  - Entity: 4
+    Component::Tag:
+      Tag: Sprite
+    Component::ID:
+      ID: 2898162071183314432
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [1, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
       Parent: 0
       Children:
         []
-    Component::StaticMesh:
+    Component::Sprite:
       Enabled: true
-      Material: 10749047289362499544
-      Mesh:
-        UUID: 17631668153373402826
-        MeshIndex: 0
-        SubMeshIndex: 0
-    Component::AudioSource:
+      Material: 5092745295480585008
+  - Entity: 3
+    Component::Tag:
+      Tag: Light
+    Component::ID:
+      ID: 5092772676877043712
+    Component::Transform:
+      Translation: [0, 3.5, 4.5]
+      Rotation: [10.5096416, 0, 0]
+      Scale: [0.99999994, 0.99999994, 0.99999994]
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    Component::Light:
       Enabled: true
-      Sound: 374884297105595585
-    NewComponent:
-      Value: 1
-      SceneHandle: 11559080649116764721
+      CastsShadows: true
+      Intensity: 1
+      Color: [1, 1, 1]
+      Type: 0
+      Distance: 50
+      InnerCutOff: 12.5
+      OuterCutOff: 17.5
+      ConstantBias: 0.00100000005
+      SlopeBias: 0
+      FieldOfView: 60
   - Entity: 2
     Component::Tag:
       Tag: Camera
@@ -45,49 +72,53 @@ Entities:
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 2.6242938
-      Exposure: 1.0
-      Gamma: 2.2
+      Aspect Ratio: 1.87315011
+      Exposure: 1
+      Gamma: 2.20000005
       Zoom Level: 300
       Type: 0
   - Entity: 1
     Component::Tag:
-      Tag: New Light
+      Tag: Monkeh
     Component::ID:
-      ID: 5092772676877043712
+      ID: 18396450913416425472
     Component::Transform:
-      Translation: [0, 2, 0]
+      Translation: [2, 0.172293186, 0]
       Rotation: [0, 0, 0]
-      Scale: [0.99999994, 0.99999994, 1]
-    Component::Link:
-      Parent: 0
-      Children:
-        []
-    Component::Light:
-      Enabled: true
-      CastsShadows: false
-      Intensity: 1.09300005
-      Distance: 50
-      InnerCutOff: 12.5
-      OuterCutOff: 17.5
-      Color: [1, 1, 1]
-      Type: 1
-  - Entity: 0
-    Component::Tag:
-      Tag: Sprite
-    Component::ID:
-      ID: 2898162071183314432
-    Component::Transform:
-      Translation: [0, 0, 0]
-      Rotation: [1, 0, 0]
       Scale: [1, 1, 1]
     Component::Link:
       Parent: 0
       Children:
         []
-    Component::Sprite:
+    Component::StaticMesh:
       Enabled: true
-      Material: 5092745295480585008
+      Material: 10749047289362499544
+      Mesh:
+        UUID: 17631668153373402826
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::AudioSource:
+      Enabled: true
+      Sound: 374884297105595585
+    NewComponent:
+      Value: 1
+      SceneHandle: 11559080649116764721
+  - Entity: 0
+    Component::Tag:
+      Tag: Ground
+    Component::ID:
+      ID: 15074627630896146432
+    Component::Transform:
+      Translation: [0, -2.19295812, 0]
+      Rotation: [0, 0, 0]
+      Scale: [13.9300184, 1, 13.4024048]
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6805961995243789723
+      Mesh:
+        UUID: 3874716278577888434
+        MeshIndex: 0
+        SubMeshIndex: 0
 User Systems:
   - 1446947720767051862
 User Components:
