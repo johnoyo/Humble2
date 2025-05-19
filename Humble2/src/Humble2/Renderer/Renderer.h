@@ -94,6 +94,7 @@ namespace HBL2
 		const Handle<RenderPass> GetRenderingRenderPass() const { return m_RenderingRenderPass; }
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() = 0;
 
+		virtual Handle<BindGroup> GetShadowBindings() = 0;
 		virtual Handle<BindGroup> GetGlobalBindings2D() = 0;
 		virtual Handle<BindGroup> GetGlobalBindings3D() = 0;
 		virtual Handle<BindGroup> GetGlobalPresentBindings() = 0;

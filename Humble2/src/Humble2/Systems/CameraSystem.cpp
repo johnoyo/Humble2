@@ -17,18 +17,13 @@ namespace HBL2
 				{
 					if (camera.Type == Component::Camera::Type::Perspective)
 					{
-						camera.Projection = glm::perspective(glm::radians(camera.Fov), camera.AspectRatio, camera.Near, camera.Far);
+						camera.Projection = glm::perspectiveRH_ZO(glm::radians(camera.Fov), camera.AspectRatio, camera.Near, camera.Far);
 					}
 					else
 					{
 						float extent = camera.AspectRatio * camera.ZoomLevel;
-						camera.Projection = glm::ortho(-extent, extent, -extent, extent, -1.f, 1.f);
+						camera.Projection = glm::orthoRH_ZO(-extent, extent, -extent, extent, 0.f, 1.f);
 					}
-
-					/*if (Renderer::Instance->GetAPI() != GraphicsAPI::OPENGL)
-					{
-						camera.Projection[1][1] *= -1;
-					}*/
 
 					camera.View = glm::inverse(transform.WorldMatrix);
 					camera.ViewProjectionMatrix = camera.Projection * camera.View;
@@ -54,18 +49,13 @@ namespace HBL2
 					{
 						if (camera.Type == Component::Camera::Type::Perspective)
 						{
-							camera.Projection = glm::perspective(glm::radians(camera.Fov), camera.AspectRatio, camera.Near, camera.Far);
+							camera.Projection = glm::perspectiveRH_ZO(glm::radians(camera.Fov), camera.AspectRatio, camera.Near, camera.Far);
 						}
 						else
 						{
 							float extent = camera.AspectRatio * camera.ZoomLevel;
-							camera.Projection = glm::ortho(-extent, extent, -extent, extent, -1.f, 1.f);
+							camera.Projection = glm::orthoRH_ZO(-extent, extent, -extent, extent, 0.f, 1.f);
 						}
-
-						/*if (Renderer::Instance->GetAPI() != GraphicsAPI::OPENGL)
-						{
-							camera.Projection[1][1] *= -1;
-						}*/
 
 						camera.View = glm::inverse(transform.WorldMatrix);
 						camera.ViewProjectionMatrix = camera.Projection * camera.View;

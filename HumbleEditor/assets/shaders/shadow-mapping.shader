@@ -64,10 +64,16 @@ layout(std140, set = 0, binding = 1) uniform Light
 
 float ShadowCalculation(vec4 fragPosLightSpace, vec4 tileUVRange, int index)
 {
-    // Perspective divide
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    // Transform to [0,1] range
-    projCoords = projCoords * 0.5 + 0.5;
+    vec4 lightClip = fragPosLightSpace;
+    vec3 ndc = lightClip.xyz / lightClip.w;
+
+    // X still maps [-1..1]→[0..1]
+    float u = ndc.x * 0.5 + 0.5;
+    // Y needs flipping under GL_UPPER_LEFT
+    float v = 1.0 - (ndc.y * 0.5 + 0.5);
+    float depth = ndc.z;
+
+    vec3 projCoords = vec3(u, v, depth);
 
     // Check if fragment is outside the light's projection
     if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)

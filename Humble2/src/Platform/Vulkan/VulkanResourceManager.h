@@ -92,7 +92,7 @@ namespace HBL2
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override
 		{
 			VulkanBuffer* vulkanBuffer = GetBuffer(buffer);
-			vulkanBuffer->Data = newData;
+			vulkanBuffer->Data = (void*)((char*)newData + offset);
 		}
 		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override
 		{

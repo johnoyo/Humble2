@@ -968,30 +968,14 @@ namespace HBL2
 
 	void ForwardRenderingSystem::PresentPassSetup()
 	{
-		float* vertexBuffer = nullptr;
-
-		 if (Renderer::Instance->GetAPI() == GraphicsAPI::VULKAN)
-		{
-			vertexBuffer = new float[24] {
-				-1.0, -1.0, 0.0, 1.0, // 0 - Bottom left
-				 1.0, -1.0, 1.0, 1.0, // 1 - Bottom right
-				 1.0,  1.0, 1.0, 0.0, // 2 - Top right
-				 1.0,  1.0, 1.0, 0.0, // 2 - Top right
-				-1.0,  1.0, 0.0, 0.0, // 3 - Top left
-				-1.0, -1.0, 0.0, 1.0, // 0 - Bottom left
-			};
-		}
-		else if (Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL)
-		{
-			vertexBuffer = new float[24] {
-				-1.0, -1.0, 0.0, 0.0, // 0 - Bottom left
-				 1.0, -1.0, 1.0, 0.0, // 1 - Bottom right
-				 1.0,  1.0, 1.0, 1.0, // 2 - Top right
-				 1.0,  1.0, 1.0, 1.0, // 2 - Top right
-				-1.0,  1.0, 0.0, 1.0, // 3 - Top left
-				-1.0, -1.0, 0.0, 0.0, // 0 - Bottom left
-			};
-		}
+		float* vertexBuffer = new float[24] {
+			-1.0, -1.0, 0.0, 0.0, // 0 - Bottom left
+				1.0, -1.0, 1.0, 0.0, // 1 - Bottom right
+				1.0,  1.0, 1.0, 1.0, // 2 - Top right
+				1.0,  1.0, 1.0, 1.0, // 2 - Top right
+			-1.0,  1.0, 0.0, 1.0, // 3 - Top left
+			-1.0, -1.0, 0.0, 0.0, // 0 - Bottom left
+		};
 
 		m_QuadVertexBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "quad-vertex-buffer",
@@ -1349,25 +1333,22 @@ namespace HBL2
 
 					float near_plane = 0.1f, far_plane = 1000.0f;
 					//glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-					glm::mat4 lightProjection = glm::perspective(light.FieldOfView, 1.0f, near_plane, far_plane);
+					glm::mat4 lightProjection = glm::perspectiveRH_ZO(light.FieldOfView, 1.0f, near_plane, far_plane);
 
 					glm::vec3 lightPos = glm::vec3(transform.WorldMatrix * glm::vec4(0.0, 0.0, 0.0, 1.0));
-					glm::vec3 lightDir = normalize(worldDirection);       // from your existing code
-					glm::vec3 lightTarget = lightPos + lightDir;             // look _towards_ this point
+					glm::vec3 lightDir = normalize(worldDirection);
+					glm::vec3 lightTarget = lightPos + lightDir; // look _towards_ this point
+					
 					// Choose an up vector that’s not colinear with your direction:
-					glm::vec3 lightUp = glm::abs(glm::dot(lightDir, glm::vec3(0, 1, 0))) > 0.99f
-						? glm::vec3(1, 0, 0)
-						: glm::vec3(0, 1, 0);
+					glm::vec3 lightUp = glm::abs(glm::dot(lightDir, glm::vec3(0, 1, 0))) > 0.99f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
 
 					// If your light direction is nearly parallel to up, pick a different up vector:
 					if (fabs(glm::dot(lightDir, lightUp)) > 0.99f)
+					{
 						lightUp = glm::vec3(1.0f, 0.0f, 0.0f);
+					}
 
-					glm::mat4 lightView = glm::lookAt(
-						lightPos,
-						lightTarget,
-						lightUp
-					);
+					glm::mat4 lightView = glm::lookAt(lightPos, lightTarget, lightUp);
 
 					m_LightData.LightPositions[(int)m_LightData.LightCount] = transform.WorldMatrix * glm::vec4(transform.Translation, 1.0f);
 					m_LightData.LightPositions[(int)m_LightData.LightCount].w = lightType;
@@ -1387,49 +1368,49 @@ namespace HBL2
 		m_Context->GetRegistry()
 			.group<Component::Light>(entt::get<Component::Transform>)
 			.each([&](Component::Light& light, Component::Transform& transform)
+			{
+				if (light.Enabled)
 				{
-					if (light.Enabled)
+					if (light.CastsShadows)
 					{
-						if (light.CastsShadows)
+						Handle<FrameBuffer> shadowFrameBuffer;
+						Handle<RenderPass> shadowRenderPass;
+
+						if (index == 0)
 						{
-							Handle<FrameBuffer> shadowFrameBuffer;
-							Handle<RenderPass> shadowRenderPass;
-
-							if (index == 0)
-							{
-								shadowFrameBuffer = m_ShadowFrameBufferClear;
-								shadowRenderPass = m_DepthOnlyRenderPass;
-							}
-							else
-							{
-								shadowFrameBuffer = m_ShadowFrameBufferLoad;
-								shadowRenderPass = m_DepthOnlyRenderPassLoad;
-							}
-
-							ShadowTile tile = Renderer::Instance->ShadowAtlasAllocator.AllocateTile();
-
-							if (tile == ShadowTile::Invalid)
-							{
-								return; // NOTE: Exceeded max number of shadow casting lights!
-							}
-
-							m_LightData.TileUVRange[index] = tile.GetUVRange();
-
-							uint32_t tileX = tile.x * g_TileSize;
-							uint32_t tileY = tile.y * g_TileSize;
-
-							RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(shadowRenderPass, shadowFrameBuffer, { tileX, tileY, g_TileSize, g_TileSize });
-
-							Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
-							ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_LightData.LightSpaceMatrices[index]);
-							GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOStaticMeshOffset, .DynamicUniformBufferSize = m_UBOStaticMeshSize };
-							passRenderer->DrawSubPass(globalDrawStream, m_ShadowPassStaticMeshDraws);
-
-							commandBuffer->EndRenderPass(*passRenderer);
+							shadowFrameBuffer = m_ShadowFrameBufferClear;
+							shadowRenderPass = m_DepthOnlyRenderPass;
+						}
+						else
+						{
+							shadowFrameBuffer = m_ShadowFrameBufferLoad;
+							shadowRenderPass = m_DepthOnlyRenderPassLoad;
 						}
 
-						index++;
+						ShadowTile tile = Renderer::Instance->ShadowAtlasAllocator.AllocateTile();
+
+						if (tile == ShadowTile::Invalid)
+						{
+							return; // NOTE: Exceeded max number of shadow casting lights!
+						}
+
+						m_LightData.TileUVRange[index] = tile.GetUVRange();
+
+						uint32_t tileX = tile.x * g_TileSize;
+						uint32_t tileY = tile.y * g_TileSize;
+
+						RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(shadowRenderPass, shadowFrameBuffer, { tileX, tileY, g_TileSize, g_TileSize });
+
+						Handle<BindGroup> globalBindings = Renderer::Instance->GetShadowBindings();
+						ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_LightData.LightSpaceMatrices[index]);
+						GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOStaticMeshOffset, .DynamicUniformBufferSize = m_UBOStaticMeshSize };
+						passRenderer->DrawSubPass(globalDrawStream, m_ShadowPassStaticMeshDraws);
+
+						commandBuffer->EndRenderPass(*passRenderer);
 					}
+
+					index++;
+				}
 			});
 
 		Renderer::Instance->ShadowAtlasAllocator.Clear();

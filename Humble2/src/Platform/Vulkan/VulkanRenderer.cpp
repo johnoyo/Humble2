@@ -39,8 +39,8 @@ namespace HBL2
 		{
 			m_Frames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "global-present-bind-group",
-				.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
-				.textures = { Renderer::Instance->MainColorTexture },
+				.layout = GetGlobalPresentBindingsLayout(),
+				.textures = { MainColorTexture },
 			});
 		}
 
@@ -141,6 +141,7 @@ namespace HBL2
 
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
+			m_ResourceManager->DeleteBindGroup(m_Frames[i].ShadowBindings);
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalBindings2D);
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalBindings3D);
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalPresentBindings);
@@ -786,6 +787,27 @@ namespace HBL2
 				.layout = m_GlobalBindingsLayout2D,
 				.buffers = {
 					{ .buffer = cameraBuffer2D },
+				}
+			});
+		}
+
+		// Bindings for shadow rendering.
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "light-space-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.usageHint = BufferUsageHint::DYNAMIC,
+				.memoryUsage = MemoryUsage::GPU_CPU,
+				.byteSize = 64,
+				.initialData = nullptr
+			});
+
+			m_Frames[i].ShadowBindings = m_ResourceManager->CreateBindGroup({
+				.debugName = "shadow-bind-group",
+				.layout = m_GlobalBindingsLayout2D,
+				.buffers = {
+					{ .buffer = lightSpaceBuffer },
 				}
 			});
 		}

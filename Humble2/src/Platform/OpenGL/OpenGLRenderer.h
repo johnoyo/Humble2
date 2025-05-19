@@ -40,6 +40,7 @@ namespace HBL2
 
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() override { return m_MainFrameBuffer; }
 		
+		virtual Handle<BindGroup> GetShadowBindings() override { return m_ShadowBindings; }
 		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_GlobalBindings2D; }
 		virtual Handle<BindGroup> GetGlobalBindings3D() override { return m_GlobalBindings3D; }
 		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_GlobalPresentBindings; }
@@ -58,16 +59,9 @@ namespace HBL2
 
 		CommandBuffer* m_MainCommandBuffer = nullptr;
 
-		//CommandBuffer* m_ShadowCommandBuffer = nullptr;
-		//CommandBuffer* m_PrePassCommandBuffer = nullptr;
-		//CommandBuffer* m_OpaqueCommandBuffer = nullptr;
-		//CommandBuffer* m_SkyboxCommandBuffer = nullptr;
-		//CommandBuffer* m_TransparentCommandBuffer = nullptr;
-		//CommandBuffer* m_PostProcessCommandBuffer = nullptr;
-		//CommandBuffer* m_PresentCommandBuffer = nullptr;
-
 		CommandBuffer* m_UserInterfaceCommandBuffer = nullptr;
 
+		Handle<BindGroup> m_ShadowBindings;
 		Handle<BindGroup> m_GlobalBindings2D;
 		Handle<BindGroup> m_GlobalBindings3D;
 		Handle<BindGroup> m_GlobalPresentBindings;

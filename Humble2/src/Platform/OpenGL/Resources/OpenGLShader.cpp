@@ -11,30 +11,30 @@ namespace HBL2
 		switch (desc.type)
 		{
 		case ShaderType::RASTERIZATION:
-		{
-			GLuint vs = Compile(GL_VERTEX_SHADER, desc.VS.entryPoint, desc.VS.code);
-			GLuint fs = Compile(GL_FRAGMENT_SHADER, desc.FS.entryPoint, desc.FS.code);
-			glAttachShader(Program, vs);
-			glAttachShader(Program, fs);
-			glLinkProgram(Program);
-			glValidateProgram(Program);
-			glDeleteShader(vs);
-			glDeleteShader(fs);
+			{
+				GLuint vs = Compile(GL_VERTEX_SHADER, desc.VS.entryPoint, desc.VS.code);
+				GLuint fs = Compile(GL_FRAGMENT_SHADER, desc.FS.entryPoint, desc.FS.code);
+				glAttachShader(Program, vs);
+				glAttachShader(Program, fs);
+				glLinkProgram(Program);
+				glValidateProgram(Program);
+				glDeleteShader(vs);
+				glDeleteShader(fs);
 
-			glGenVertexArrays(1, &RenderPipeline);
-			glBindVertexArray(RenderPipeline);
-			VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
-		}
-		break;
+				glGenVertexArrays(1, &RenderPipeline);
+				glBindVertexArray(RenderPipeline);
+				VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
+			}
+			break;
 		case ShaderType::COMPUTE:
-		{
-			GLuint cs = Compile(GL_COMPUTE_SHADER, desc.CS.entryPoint, desc.CS.code);
-			glAttachShader(Program, cs);
-			glLinkProgram(Program);
-			glValidateProgram(Program);
-			glDeleteShader(cs);
-		}
-		break;
+			{
+				GLuint cs = Compile(GL_COMPUTE_SHADER, desc.CS.entryPoint, desc.CS.code);
+				glAttachShader(Program, cs);
+				glLinkProgram(Program);
+				glValidateProgram(Program);
+				glDeleteShader(cs);
+			}
+			break;
 		}
 
 		GLint linkStatus;
@@ -132,10 +132,10 @@ namespace HBL2
 			switch (variantDesc.frontFace)
 			{
 			case FrontFace::COUNTER_CLOCKWISE:
-				glFrontFace(GL_CCW);
+				glFrontFace(GL_CW); // NOTE: Flipped to match vulkan set up!
 				break;
 			case FrontFace::CLOCKWISE:
-				glFrontFace(GL_CW);
+				glFrontFace(GL_CCW);
 				break;
 			}
 		}

@@ -4,7 +4,7 @@ layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec3 a_Normal;
 layout(location = 2) in vec2 a_TextureCoord;
 
-layout (std140, set = 0, binding = 0) uniform LightData
+layout(std140, set = 0, binding = 0) uniform LightData
 {
     mat4 LightSpaceMatrix;
 } u_LightData;

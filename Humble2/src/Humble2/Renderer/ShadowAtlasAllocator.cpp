@@ -1,4 +1,5 @@
 #include "ShadowAtlasAllocator.h"
+#include "Renderer.h"
 
 namespace HBL2
 {
@@ -6,15 +7,29 @@ namespace HBL2
 
     glm::vec4 ShadowTile::GetUVRange()
     {
-        return
-        {
-            (float)(x * g_TileSize) / g_ShadowAtlasSize,               // offset X
-            (float)(y * g_TileSize) / g_ShadowAtlasSize,               // offset Y
-            (float)(g_TileSize) / g_ShadowAtlasSize,                   // scale X
-            (float)(g_TileSize) / g_ShadowAtlasSize                    // scale Y
-        };
-    }
+        float scaleY = (float)(g_TileSize) / g_ShadowAtlasSize;
+        float offsetY = (float)(y * g_TileSize) / g_ShadowAtlasSize;
 
+        switch (Renderer::Instance->GetAPI())
+        {
+        case GraphicsAPI::OPENGL:
+            return
+            {
+                (float)(x * g_TileSize) / g_ShadowAtlasSize,    // offset X
+                offsetY,                                        // offset Y
+                (float)(g_TileSize) / g_ShadowAtlasSize,        // scale X
+                scaleY                                          // scale Y
+            };
+        case GraphicsAPI::VULKAN:
+            return
+            {
+                (float)(x * g_TileSize) / g_ShadowAtlasSize,    // offset X
+                offsetY + scaleY,                               // offset Y
+                (float)(g_TileSize) / g_ShadowAtlasSize,        // scale X
+                -scaleY                                         // scale Y
+            };
+        }
+    }
 
     ShadowAtlasAllocator::ShadowAtlasAllocator()
     {

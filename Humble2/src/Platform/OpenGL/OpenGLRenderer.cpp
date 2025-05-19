@@ -11,8 +11,8 @@ namespace HBL2
 		GLDebug::EnableGLDebugging();
 #endif
 		// Origin at upper-left, depth range [0..1] (same as Vulkan)
-		//glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
-		//glDepthRangef(0.0f, 1.0f);
+		glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
+		glDepthRangef(0.0f, 1.0f);
 
 		m_MainCommandBuffer = new OpenGLCommandBuffer();
 		m_UserInterfaceCommandBuffer = new OpenGLCommandBuffer();
@@ -163,6 +163,7 @@ namespace HBL2
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
 
+		m_ResourceManager->DeleteBindGroup(m_ShadowBindings);
 		m_ResourceManager->DeleteBindGroup(m_GlobalBindings2D);
 		m_ResourceManager->DeleteBindGroup(m_GlobalBindings3D);
 		m_ResourceManager->DeleteBindGroup(m_GlobalPresentBindings);
@@ -221,6 +222,23 @@ namespace HBL2
 			.layout = m_GlobalBindingsLayout2D,
 			.buffers = {
 				{ .buffer = cameraBuffer2D },
+			}
+		});
+
+		auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
+			.debugName = "light-space-buffer",
+			.usage = BufferUsage::UNIFORM,
+			.usageHint = BufferUsageHint::DYNAMIC,
+			.memoryUsage = MemoryUsage::GPU_CPU,
+			.byteSize = 64,
+			.initialData = nullptr
+		});
+
+		m_ShadowBindings = m_ResourceManager->CreateBindGroup({
+			.debugName = "shadow-bind-group",
+			.layout = m_GlobalBindingsLayout2D,
+			.buffers = {
+				{.buffer = lightSpaceBuffer },
 			}
 		});
 
