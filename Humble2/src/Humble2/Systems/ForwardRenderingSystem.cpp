@@ -287,6 +287,8 @@ namespace HBL2
 		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
 		m_ResourceManager->DeleteMesh(m_SpriteMesh);
 
+		m_ResourceManager->DeleteBuffer(m_PostProcessQuadVertexBuffer);
+		m_ResourceManager->DeleteMesh(m_PostProcessQuadMesh);
 		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
 		m_ResourceManager->DeleteMesh(m_QuadMesh);
 		m_ResourceManager->DeleteShader(m_PresentShader);
@@ -821,6 +823,38 @@ namespace HBL2
 
 	void ForwardRenderingSystem::PostProcessPassSetup()
 	{
+		float* vertexBuffer = new float[24] {
+			-1.0, -1.0, 0.0, 0.0, // Bottom left
+			 1.0, -1.0, 1.0, 0.0, // Bottom right
+			 1.0,  1.0, 1.0, 1.0, // Top right
+			 1.0,  1.0, 1.0, 1.0, // Top right
+			-1.0,  1.0, 0.0, 1.0, // Top left
+			-1.0, -1.0, 0.0, 0.0  // Bottom left
+		};
+
+		m_PostProcessQuadVertexBuffer = m_ResourceManager->CreateBuffer({
+			.debugName = "quad-vertex-buffer",
+			.usage = BufferUsage::VERTEX,
+			.byteSize = sizeof(float) * 24,
+			.initialData = vertexBuffer,
+		});
+
+		m_PostProcessQuadMesh = m_ResourceManager->CreateMesh({
+			.debugName = "quad-mesh",
+			.meshes = {
+				{
+					.debugName = "quad-mesh-part",
+					.subMeshes = {
+						{
+							.vertexOffset = 0,
+							.vertexCount = 6,
+						}
+					},
+					.vertexBuffers = { m_PostProcessQuadVertexBuffer },
+				}
+			}
+		});
+
 		// Create camera settings buffer.
 		m_PostProcessBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "camera-settings-buffer",
@@ -930,6 +964,7 @@ namespace HBL2
 		variant.blend.enabled = false;
 		variant.depthTest.writeEnabled = false;
 		variant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
+		variant.frontFace = FrontFace::CLOCKWISE;
 
 		m_PostProcessShader = ResourceManager::Instance->CreateShader({
 			.debugName = "post-process-shader",
@@ -969,12 +1004,12 @@ namespace HBL2
 	void ForwardRenderingSystem::PresentPassSetup()
 	{
 		float* vertexBuffer = new float[24] {
-			-1.0, -1.0, 0.0, 0.0, // 0 - Bottom left
-				1.0, -1.0, 1.0, 0.0, // 1 - Bottom right
-				1.0,  1.0, 1.0, 1.0, // 2 - Top right
-				1.0,  1.0, 1.0, 1.0, // 2 - Top right
-			-1.0,  1.0, 0.0, 1.0, // 3 - Top left
-			-1.0, -1.0, 0.0, 0.0, // 0 - Bottom left
+			-1.0, -1.0, 0.0, 1.0, // Bottom left
+			 1.0, -1.0, 1.0, 1.0, // Bottom right
+			 1.0,  1.0, 1.0, 0.0, // Top right
+			 1.0,  1.0, 1.0, 0.0, // Top right
+			-1.0,  1.0, 0.0, 0.0, // Top left
+			-1.0, -1.0, 0.0, 1.0  // Bottom left
 		};
 
 		m_QuadVertexBuffer = m_ResourceManager->CreateBuffer({
@@ -1001,6 +1036,9 @@ namespace HBL2
 		});
 
 		ShaderDescriptor::RenderPipeline::Variant variant = {};
+		variant.blend.enabled = false;
+		variant.depthTest.enabled = false;
+		variant.frontFace = FrontFace::CLOCKWISE;
 		variant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
 
 		// Compile present shaders.
@@ -1628,7 +1666,7 @@ namespace HBL2
 		DrawList draws;
 		draws.Insert({
 			.Shader = m_PostProcessShader,
-			.Mesh = m_QuadMesh,
+			.Mesh = m_PostProcessQuadMesh,
 			.Material = m_PostProcessMaterial,
 		});
 

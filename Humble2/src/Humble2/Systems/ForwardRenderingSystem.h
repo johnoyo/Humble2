@@ -121,6 +121,9 @@ namespace HBL2
 		Handle<Mesh> m_SpriteMesh;
 		Handle<Buffer> m_VertexBuffer;
 
+		Handle<Buffer> m_PostProcessQuadVertexBuffer;
+		Handle<Mesh> m_PostProcessQuadMesh;
+
 		Handle<Buffer> m_QuadVertexBuffer;
 		Handle<Mesh> m_QuadMesh;
 		Handle<Material> m_QuadMaterial;
