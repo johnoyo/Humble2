@@ -68,5 +68,13 @@ namespace HBL2
 	{
 		m_LoadedMeshes.clear();
 	}
+
+	void MeshUtilities::LoadBuiltInMeshes()
+	{
+	}
+
+	void MeshUtilities::DeleteBuiltInMeshes()
+	{
+	}
 }
 

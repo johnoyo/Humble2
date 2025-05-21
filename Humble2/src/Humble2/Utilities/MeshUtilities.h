@@ -23,6 +23,9 @@ namespace HBL2
 		Handle<Mesh> Load(const std::filesystem::path& path);
 		void ClearCachedHandles();
 
+		void LoadBuiltInMeshes();
+		void DeleteBuiltInMeshes();
+
 	private:
 		MeshUtilities() = default;
 		UFbxLoader* m_UFbxLoader = nullptr;

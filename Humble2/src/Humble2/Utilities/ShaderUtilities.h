@@ -70,6 +70,9 @@ namespace HBL2
 		void LoadBuiltInShaders();
 		void DeleteBuiltInShaders();
 
+		void LoadBuiltInMaterials();
+		void DeleteBuiltInMaterials();
+
 		Handle<Shader> GetBuiltInShader(BuiltInShader shader) { return m_Shaders[shader]; }
 		Handle<BindGroupLayout> GetBuiltInShaderLayout(BuiltInShader shader) { return m_ShaderLayouts[shader]; }
 		const Span<const Handle<Asset>> GetBuiltInShaderAssets() const { return { m_ShaderAssets.Data(), m_ShaderAssets.Size() }; }
@@ -79,6 +82,8 @@ namespace HBL2
 
 		void CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType);
 		void CreateMaterialAssetFile(Handle<Asset> handle, const MaterialDataDescriptor&& desc);
+
+		Handle<Asset> LitMaterialAsset;
 
 	private:
 		ShaderUtilities() = default;

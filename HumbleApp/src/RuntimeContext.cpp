@@ -98,6 +98,8 @@ namespace HBL2
 
 			TextureUtilities::Get().DeleteWhiteTexture();
 			ShaderUtilities::Get().DeleteBuiltInShaders();
+			ShaderUtilities::Get().DeleteBuiltInMaterials();
+			MeshUtilities::Get().DeleteBuiltInMeshes();
 		}
 
 		bool RuntimeContext::OpenProject()
@@ -120,8 +122,10 @@ namespace HBL2
 
 			if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 			{
-				HBL2::TextureUtilities::Get().LoadWhiteTexture();
-				HBL2::ShaderUtilities::Get().LoadBuiltInShaders();
+				TextureUtilities::Get().LoadWhiteTexture();
+				ShaderUtilities::Get().LoadBuiltInShaders();
+				ShaderUtilities::Get().LoadBuiltInMaterials();
+				MeshUtilities::Get().LoadBuiltInMeshes();
 
 				HBL2::Project::OpenStartingScene(true);
 				return true;

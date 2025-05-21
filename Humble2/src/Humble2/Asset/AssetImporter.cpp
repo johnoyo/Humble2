@@ -341,7 +341,10 @@ namespace HBL2
 	Handle<Material> AssetImporter::ImportMaterial(Asset* asset)
 	{
 		// Open metadata file.
-		std::ifstream metaDataStream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmat");
+		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const std::filesystem::path& materialPath = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+
+		std::ifstream metaDataStream(materialPath.string() + ".hblmat");
 
 		if (!metaDataStream.is_open())
 		{
@@ -371,11 +374,11 @@ namespace HBL2
 		metaDataStream.close();
 
 		// Open regular material file.
-		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath));
+		std::ifstream stream(materialPath);
 
 		if (!stream.is_open())
 		{
-			HBL2_CORE_ERROR("Material file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath));
+			HBL2_CORE_ERROR("Material file not found: {0}", materialPath);
 			return Handle<Material>();
 		}
 

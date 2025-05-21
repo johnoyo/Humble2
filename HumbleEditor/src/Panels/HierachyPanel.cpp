@@ -232,6 +232,14 @@ namespace HBL2
 					HBL2::Component::EditorVisible::Selected = true;
 				}
 
+				if (ImGui::MenuItem("Create Tessellated Plane"))
+				{
+					auto entity = HBL2::EntityPreset::CreateTessellatedPlane();
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
+				}
+
 				if (ImGui::MenuItem("Create Cube"))
 				{
 					auto entity = HBL2::EntityPreset::CreateCube();
@@ -243,6 +251,30 @@ namespace HBL2
 				if (ImGui::MenuItem("Create Sphere"))
 				{
 					auto entity = HBL2::EntityPreset::CreateSphere();
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
+				}
+
+				if (ImGui::MenuItem("Create Capsule"))
+				{
+					auto entity = HBL2::EntityPreset::CreateCapsule();
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
+				}
+
+				if (ImGui::MenuItem("Create Cylinder"))
+				{
+					auto entity = HBL2::EntityPreset::CreateCylinder();
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
+				}
+
+				if (ImGui::MenuItem("Create Torus"))
+				{
+					auto entity = HBL2::EntityPreset::CreateTorus();
 
 					HBL2::Component::EditorVisible::SelectedEntity = entity;
 					HBL2::Component::EditorVisible::Selected = true;

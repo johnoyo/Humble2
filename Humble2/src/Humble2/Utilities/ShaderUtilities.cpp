@@ -484,6 +484,24 @@ namespace HBL2
 		m_ShaderAssets.Clear();
 	}
 
+	void ShaderUtilities::LoadBuiltInMaterials()
+	{
+		LitMaterialAsset = AssetManager::Instance->CreateAsset({
+			.debugName = "lit-material-asset",
+			.filePath = "assets/materials/lit.mat",
+			.type = AssetType::Material,
+		});
+
+		CreateMaterialMetadataFile(LitMaterialAsset, 1);
+
+		AssetManager::Instance->GetAsset<Material>(LitMaterialAsset);
+	}
+
+	void ShaderUtilities::DeleteBuiltInMaterials()
+	{
+		AssetManager::Instance->DeleteAsset(LitMaterialAsset);
+	}
+
 	void ShaderUtilities::CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType)
 	{
 		Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
@@ -586,7 +604,13 @@ namespace HBL2
 	{
 		Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
 
-		const auto& path = HBL2::Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+
+		if (std::filesystem::exists(path.string() + ".hblmat"))
+		{
+			return;
+		}
 
 		if (!std::filesystem::exists(path.parent_path()))
 		{
