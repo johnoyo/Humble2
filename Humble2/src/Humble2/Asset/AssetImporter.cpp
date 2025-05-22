@@ -341,8 +341,8 @@ namespace HBL2
 	Handle<Material> AssetImporter::ImportMaterial(Asset* asset)
 	{
 		// Open metadata file.
-		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-		const std::filesystem::path& materialPath = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
 
 		std::ifstream metaDataStream(materialPath.string() + ".hblmat");
 
@@ -631,7 +631,10 @@ namespace HBL2
 
 	Handle<Mesh> AssetImporter::ImportMesh(Asset* asset)
 	{
-		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmesh");
+		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const std::filesystem::path& meshPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+
+		std::ifstream stream(meshPath.string() + ".hblmesh");
 		std::stringstream ss;
 		ss << stream.rdbuf();
 
@@ -647,7 +650,7 @@ namespace HBL2
 		auto meshProperties = data["Mesh"];
 		if (meshProperties)
 		{
-			Handle<Mesh> mesh = MeshUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath));
+			Handle<Mesh> mesh = MeshUtilities::Get().Load(meshPath);
 			stream.close();
 			return mesh;
 		}

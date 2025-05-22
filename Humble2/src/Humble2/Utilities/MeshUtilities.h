@@ -23,8 +23,21 @@ namespace HBL2
 		Handle<Mesh> Load(const std::filesystem::path& path);
 		void ClearCachedHandles();
 
+		Handle<Mesh> GetLoadedMeshHandle(const std::string& path)
+		{
+			if (m_LoadedMeshes.find(path) == m_LoadedMeshes.end())
+			{
+				return {};
+			}
+
+			return m_LoadedMeshes[path];
+		}
+
 		void LoadBuiltInMeshes();
 		void DeleteBuiltInMeshes();
+
+	private:
+		void CreateMeshMetadataFile(Handle<Asset> handle);
 
 	private:
 		MeshUtilities() = default;
