@@ -160,32 +160,39 @@ namespace HBL2
 							asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 						}
 
-						switch (asset->Type)
+						if (asset == nullptr)
 						{
-						case AssetType::Shader:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Shader", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Texture:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Texture", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Sound:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Sound", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Material:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Material", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Mesh:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Mesh", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Scene:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Scene", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Script:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Script", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						default:
-							ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
+							HBL2_CORE_ERROR("Asset at path: {0} is not a valid asset that supports drag and drop, aborting.", entry.path().string());
+						}
+						else
+						{
+							switch (asset->Type)
+							{
+							case AssetType::Shader:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Shader", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							case AssetType::Texture:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Texture", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							case AssetType::Sound:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Sound", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							case AssetType::Material:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Material", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							case AssetType::Mesh:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Mesh", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							case AssetType::Scene:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Scene", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							case AssetType::Script:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Script", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							default:
+								ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							}
 						}
 
 						ImGui::EndDragDropSource();
