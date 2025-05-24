@@ -53,7 +53,7 @@ namespace HBL2
 		 */
 		StaticArray(std::initializer_list<T> list)
 		{
-			assert(list.size() == N && "Initializer list size must match StaticArray size");
+			HBL2_CORE_ASSERT(list.size() == N, "Initializer list size must match StaticArray size");
 			uint32_t i = 0;
 			for (const auto& v : list)
 			{

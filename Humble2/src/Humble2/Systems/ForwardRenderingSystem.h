@@ -60,6 +60,8 @@ namespace HBL2
 
 		void GetViewProjection();
 
+		void CreateAlignedMatrixArray(const glm::mat4* matrices, size_t count, uint32_t alignedSize);
+
 	private:
 		ResourceManager* m_ResourceManager = nullptr;
 		UniformRingBuffer* m_UniformRingBuffer = nullptr;
@@ -75,9 +77,8 @@ namespace HBL2
 		Handle<RenderPassLayout> m_RenderPassLayout;
 
 		Handle<Texture> m_ShadowDepthTexture;
-		Handle<FrameBuffer> m_ShadowFrameBufferClear;
-		Handle<FrameBuffer> m_ShadowFrameBufferLoad;
-		Handle<RenderPass> m_DepthOnlyRenderPassLoad;
+		Handle<FrameBuffer> m_ShadowFrameBuffer;
+		Handle<RenderPass> m_ShadowRenderPass;
 		Handle<Shader> m_ShadowPrePassShader;
 		Handle<Material> m_ShadowPrePassMaterial;
 
@@ -142,5 +143,7 @@ namespace HBL2
 		DrawList m_SpriteTransparentDraws;
 		DrawList m_PrePassSpriteDraws;
 		DrawList m_ShadowPassSpriteDraws;
+
+		std::vector<uint8_t> m_LightSpaceMatricesData;
 	};
 }

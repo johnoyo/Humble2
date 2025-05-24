@@ -399,9 +399,9 @@ namespace HBL2
 			.bufferBindings = {
 				{
 					/*
-					* We use binding 4 since despite being a different type of resource,
-					* each binding within a descriptor set must be unique, so since we have 0, 1, 2, 3
-					* used by textures, the next empty is 4.
+					* We use binding 5 since despite being a different type of resource,
+					* each binding within a descriptor set must be unique, so since we have 0, 1, 2, 3, 4
+					* used by textures, the next empty is 5.
 					* 
 					*/
 					.slot = 5,

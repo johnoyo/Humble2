@@ -217,9 +217,8 @@ namespace HBL2
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
 
 		m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
-		m_ResourceManager->DeleteFrameBuffer(m_ShadowFrameBufferClear);
-		m_ResourceManager->DeleteFrameBuffer(m_ShadowFrameBufferLoad);
-		m_ResourceManager->DeleteRenderPass(m_DepthOnlyRenderPassLoad);
+		m_ResourceManager->DeleteFrameBuffer(m_ShadowFrameBuffer);
+		m_ResourceManager->DeleteRenderPass(m_ShadowRenderPass);
 		m_ResourceManager->DeleteShader(m_ShadowPrePassShader);
 		m_ResourceManager->DeleteMaterial(m_ShadowPrePassMaterial);
 
@@ -298,19 +297,11 @@ namespace HBL2
 	void ForwardRenderingSystem::ShadowPassSetup()
 	{
 		// Create shadow framebuffer.
-		m_ShadowFrameBufferClear = m_ResourceManager->CreateFrameBuffer({
-			.debugName = "shadow-fb-clear",
-			.width = g_ShadowAtlasSize,
-			.height = g_ShadowAtlasSize,
-			.renderPass = m_DepthOnlyRenderPass,
-			.depthTarget = Renderer::Instance->ShadowAtlasTexture,
-		});
-
-		m_DepthOnlyRenderPassLoad = m_ResourceManager->CreateRenderPass({
+		m_ShadowRenderPass = m_ResourceManager->CreateRenderPass({
 			.debugName = "shadow-load-renderpass",
 			.layout = m_DepthOnlyRenderPassLayout,
 			.depthTarget = {
-				.loadOp = LoadOperation::LOAD,
+				.loadOp = LoadOperation::CLEAR,
 				.storeOp = StoreOperation::STORE,
 				.stencilLoadOp = LoadOperation::DONT_CARE,
 				.stencilStoreOp = StoreOperation::DONT_CARE,
@@ -319,33 +310,23 @@ namespace HBL2
 			},
 		});
 
-		m_ShadowFrameBufferLoad = m_ResourceManager->CreateFrameBuffer({
+		m_ShadowFrameBuffer = m_ResourceManager->CreateFrameBuffer({
 			.debugName = "shadow-fb-load",
 			.width = g_ShadowAtlasSize,
 			.height = g_ShadowAtlasSize,
-			.renderPass = m_DepthOnlyRenderPassLoad,
+			.renderPass = m_ShadowRenderPass,
 			.depthTarget = Renderer::Instance->ShadowAtlasTexture,
 		});
 
 		Renderer::Instance->AddCallbackOnResize("Shadow-Resize-FrameBuffer", [this](uint32_t width, uint32_t height)
 		{
-			m_ResourceManager->DeleteFrameBuffer(m_ShadowFrameBufferClear);
+			m_ResourceManager->DeleteFrameBuffer(m_ShadowFrameBuffer);
 
-			m_ShadowFrameBufferClear = m_ResourceManager->CreateFrameBuffer({
+			m_ShadowFrameBuffer = m_ResourceManager->CreateFrameBuffer({
 				.debugName = "shadow-fb",
 				.width = g_ShadowAtlasSize,
 				.height = g_ShadowAtlasSize,
-				.renderPass = m_DepthOnlyRenderPass,
-				.depthTarget = Renderer::Instance->ShadowAtlasTexture,
-			});
-
-			m_ResourceManager->DeleteFrameBuffer(m_ShadowFrameBufferLoad);
-
-			m_ShadowFrameBufferLoad = m_ResourceManager->CreateFrameBuffer({
-				.debugName = "shadow-fb",
-				.width = g_ShadowAtlasSize,
-				.height = g_ShadowAtlasSize,
-				.renderPass = m_DepthOnlyRenderPassLoad,
+				.renderPass = m_ShadowRenderPass,
 				.depthTarget = Renderer::Instance->ShadowAtlasTexture,
 			});
 		});
@@ -364,7 +345,7 @@ namespace HBL2
 			.VS { .code = shadowPrePassShaderCode[0], .entryPoint = "main" },
 			.FS { .code = shadowPrePassShaderCode[1], .entryPoint = "main" },
 			.bindGroups {
-				Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
+				Renderer::Instance->GetShadowBindingsLayout(),	// Global bind group (0)
 				m_DepthOnlyBindGroupLayout,							// (1)
 			},
 			.renderPipeline {
@@ -380,7 +361,7 @@ namespace HBL2
 				},
 				.variants = { variant },
 			},
-			.renderPass = m_DepthOnlyRenderPass,
+			.renderPass = m_ShadowRenderPass,
 		});
 
 		ResourceManager::Instance->AddShaderVariant(m_DepthOnlyShader, variant);
@@ -1255,64 +1236,64 @@ namespace HBL2
 			m_Context->GetRegistry()
 				.group<Component::Sprite>(entt::get<Component::Transform>)
 				.each([&](Component::Sprite& sprite, Component::Transform& transform)
+				{
+					if (sprite.Enabled)
 					{
-						if (sprite.Enabled)
+						if (!IsInFrustum(transform))
 						{
-							if (!IsInFrustum(transform))
-							{
-								return;
-							}
-
-							if (!sprite.Material.IsValid())
-							{
-								return;
-							}
-
-							Material* material = ResourceManager::Instance->GetMaterial(sprite.Material);
-
-							if (material == nullptr)
-							{
-								return;
-							}
-
-							auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawDataSprite>();
-							alloc.Data->Model = transform.WorldMatrix;
-							alloc.Data->Color = material->AlbedoColor;
-
-							if (!material->VariantDescriptor.blend.enabled)
-							{
-								m_SpriteOpaqueDraws.Insert({
-									.Shader = material->Shader,
-									.BindGroup = material->BindGroup,
-									.Mesh = m_SpriteMesh,
-									.Material = sprite.Material,
-									.Offset = alloc.Offset,
-									.Size = sizeof(PerDrawDataSprite),
-								});
-
-								// Include only opaque objects in depth pre-pass.
-								m_PrePassSpriteDraws.Insert({
-									.Shader = m_DepthOnlySpriteShader,
-									.BindGroup = m_DepthOnlySpriteBindGroup,
-									.Mesh = m_SpriteMesh,
-									.Material = m_DepthOnlySpriteMaterial,
-									.Offset = alloc.Offset,
-									.Size = sizeof(PerDrawDataSprite),
-								});
-							}
-							else
-							{
-								m_SpriteTransparentDraws.Insert({
-									.Shader = material->Shader,
-									.BindGroup = material->BindGroup,
-									.Mesh = m_SpriteMesh,
-									.Material = sprite.Material,
-									.Offset = alloc.Offset,
-									.Size = sizeof(PerDrawDataSprite),
-								});
-							}
+							return;
 						}
-					});
+
+						if (!sprite.Material.IsValid())
+						{
+							return;
+						}
+
+						Material* material = ResourceManager::Instance->GetMaterial(sprite.Material);
+
+						if (material == nullptr)
+						{
+							return;
+						}
+
+						auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawDataSprite>();
+						alloc.Data->Model = transform.WorldMatrix;
+						alloc.Data->Color = material->AlbedoColor;
+
+						if (!material->VariantDescriptor.blend.enabled)
+						{
+							m_SpriteOpaqueDraws.Insert({
+								.Shader = material->Shader,
+								.BindGroup = material->BindGroup,
+								.Mesh = m_SpriteMesh,
+								.Material = sprite.Material,
+								.Offset = alloc.Offset,
+								.Size = sizeof(PerDrawDataSprite),
+							});
+
+							// Include only opaque objects in depth pre-pass.
+							m_PrePassSpriteDraws.Insert({
+								.Shader = m_DepthOnlySpriteShader,
+								.BindGroup = m_DepthOnlySpriteBindGroup,
+								.Mesh = m_SpriteMesh,
+								.Material = m_DepthOnlySpriteMaterial,
+								.Offset = alloc.Offset,
+								.Size = sizeof(PerDrawDataSprite),
+							});
+						}
+						else
+						{
+							m_SpriteTransparentDraws.Insert({
+								.Shader = material->Shader,
+								.BindGroup = material->BindGroup,
+								.Mesh = m_SpriteMesh,
+								.Material = sprite.Material,
+								.Offset = alloc.Offset,
+								.Size = sizeof(PerDrawDataSprite),
+							});
+						}
+					}
+				});
 
 			// Store the total size of the sprite draw data in the dynamic uniform data.
 			uint32_t totalDraws = m_SpriteOpaqueDraws.GetCount() + m_SpriteTransparentDraws.GetCount();
@@ -1403,6 +1384,14 @@ namespace HBL2
 	{
 		uint32_t index = 0;
 
+		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
+		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), uniformOffset);
+
+		CreateAlignedMatrixArray(m_LightData.LightSpaceMatrices, 16, alignedSize);
+
+		Handle<BindGroup> globalBindings = Renderer::Instance->GetShadowBindings();
+		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)m_LightSpaceMatricesData.data());
+
 		m_Context->GetRegistry()
 			.group<Component::Light>(entt::get<Component::Transform>)
 			.each([&](Component::Light& light, Component::Transform& transform)
@@ -1411,20 +1400,6 @@ namespace HBL2
 				{
 					if (light.CastsShadows)
 					{
-						Handle<FrameBuffer> shadowFrameBuffer;
-						Handle<RenderPass> shadowRenderPass;
-
-						if (index == 0)
-						{
-							shadowFrameBuffer = m_ShadowFrameBufferClear;
-							shadowRenderPass = m_DepthOnlyRenderPass;
-						}
-						else
-						{
-							shadowFrameBuffer = m_ShadowFrameBufferLoad;
-							shadowRenderPass = m_DepthOnlyRenderPassLoad;
-						}
-
 						ShadowTile tile = Renderer::Instance->ShadowAtlasAllocator.AllocateTile();
 
 						if (tile == ShadowTile::Invalid)
@@ -1437,11 +1412,16 @@ namespace HBL2
 						uint32_t tileX = tile.x * g_TileSize;
 						uint32_t tileY = tile.y * g_TileSize;
 
-						RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(shadowRenderPass, shadowFrameBuffer, { tileX, tileY, g_TileSize, g_TileSize });
+						RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_ShadowRenderPass, m_ShadowFrameBuffer, { tileX, tileY, g_TileSize, g_TileSize });
 
-						Handle<BindGroup> globalBindings = Renderer::Instance->GetShadowBindings();
-						ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_LightData.LightSpaceMatrices[index]);
-						GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOStaticMeshOffset, .DynamicUniformBufferSize = m_UBOStaticMeshSize };
+						GlobalDrawStream globalDrawStream =
+						{
+							.BindGroup = globalBindings,
+							.GlobalBufferSize = alignedSize,
+							.GlobalBufferOffset = index * alignedSize,
+							.DynamicUniformBufferOffset = m_UBOStaticMeshOffset,
+							.DynamicUniformBufferSize = m_UBOStaticMeshSize,
+						};
 						passRenderer->DrawSubPass(globalDrawStream, m_ShadowPassStaticMeshDraws);
 
 						commandBuffer->EndRenderPass(*passRenderer);
@@ -1756,5 +1736,18 @@ namespace HBL2
 		m_CameraSettings.Exposure = 1.0f;
 		m_CameraSettings.Gamma = 2.2f;
 		m_CameraFrustum = {};
+	}
+	
+	void ForwardRenderingSystem::CreateAlignedMatrixArray(const glm::mat4* matrices, size_t count, uint32_t alignedSize)
+	{
+		// Calculate total size
+		size_t totalSize = alignedSize * count;
+		m_LightSpaceMatricesData.resize(totalSize, 0);
+
+		for (size_t i = 0; i < count; ++i)
+		{
+			size_t offset = i * alignedSize;
+			std::memcpy(m_LightSpaceMatricesData.data() + offset, &matrices[i], sizeof(glm::mat4));
+		}
 	}
 }

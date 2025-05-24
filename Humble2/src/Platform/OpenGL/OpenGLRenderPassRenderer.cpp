@@ -19,8 +19,21 @@ namespace HBL2
 			for (const auto& bufferEntry : globalBindGroup->Buffers)
 			{
 				OpenGLBuffer* buffer = rm->GetBuffer(bufferEntry.buffer);
-				glBindBufferBase(GL_UNIFORM_BUFFER, globalBindGroupLayout->BufferBindings[index++].slot, buffer->RendererId);
-				buffer->Write();
+
+				glBindBuffer(GL_UNIFORM_BUFFER, buffer->RendererId);
+
+				void* ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+				memcpy(ptr, (void*)buffer->Data, buffer->ByteSize);
+				glUnmapBuffer(GL_UNIFORM_BUFFER);
+
+				if (globalDraw.GlobalBufferOffset != UINT32_MAX)
+				{
+					glBindBufferRange(GL_UNIFORM_BUFFER, globalBindGroupLayout->BufferBindings[index++].slot, buffer->RendererId, globalDraw.GlobalBufferOffset, globalDraw.GlobalBufferSize);
+				}
+				else
+				{
+					glBindBufferBase(GL_UNIFORM_BUFFER, globalBindGroupLayout->BufferBindings[index++].slot, buffer->RendererId);
+				}
 			}
 
 			// Set global bind group

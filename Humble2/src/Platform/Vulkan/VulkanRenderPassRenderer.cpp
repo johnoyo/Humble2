@@ -62,7 +62,8 @@ namespace HBL2
 			// Bind global descriptor set for per frame data (i.e.: Camera and lighting data).
 			if (globalBindGroup != nullptr)
 			{
-				vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, localShader0->PipelineLayout, 0, 1, &globalBindGroup->DescriptorSet, 0, nullptr);
+				uint32_t offsetCount = (globalDraw.GlobalBufferOffset == UINT32_MAX ? 0 : 1);
+				vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, localShader0->PipelineLayout, 0, 1, &globalBindGroup->DescriptorSet, offsetCount, &globalDraw.GlobalBufferOffset);
 			}
 
 			for (auto& draw : drawList)

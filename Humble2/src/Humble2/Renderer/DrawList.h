@@ -29,6 +29,10 @@ namespace HBL2
 	struct GlobalDrawStream
 	{
 		Handle<BindGroup> BindGroup;
+
+		uint32_t GlobalBufferSize = UINT32_MAX;
+		uint32_t GlobalBufferOffset = UINT32_MAX;
+
 		uint32_t DynamicUniformBufferOffset;
 		uint32_t DynamicUniformBufferSize;
 	};

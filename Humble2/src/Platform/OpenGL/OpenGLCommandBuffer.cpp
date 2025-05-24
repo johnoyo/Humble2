@@ -68,10 +68,21 @@ namespace HBL2
 		// Clear screen if needed.
 		if (clearValues != 0)
 		{
+			if (drawArea.IsValid())
+			{
+				glEnable(GL_SCISSOR_TEST);
+				glScissor(drawArea.x, drawArea.y, drawArea.width, drawArea.height);
+			}
+
 			glClearColor(openGLRenderPass->ClearColor.r, openGLRenderPass->ClearColor.g, openGLRenderPass->ClearColor.b, openGLRenderPass->ClearColor.a);
 			glClearDepth(openGLRenderPass->ClearDepth);
 			glClearStencil(openGLRenderPass->ClearStencil);
 			glClear(clearValues);
+
+			if (drawArea.IsValid())
+			{
+				glDisable(GL_SCISSOR_TEST);
+			}
 		}
 
         return &m_CurrentRenderPassRenderer;

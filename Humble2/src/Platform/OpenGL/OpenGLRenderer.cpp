@@ -225,20 +225,35 @@ namespace HBL2
 			}
 		});
 
+		// Bindings for shadow rendering.
+		m_ShadowBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "shadow-bindings-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+			},
+		});
+
+		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
+		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(64, uniformOffset);
+
 		auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "light-space-buffer",
 			.usage = BufferUsage::UNIFORM,
 			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::GPU_CPU,
-			.byteSize = 64,
+			.byteSize = 16 * alignedSize,
 			.initialData = nullptr
 		});
 
 		m_ShadowBindings = m_ResourceManager->CreateBindGroup({
 			.debugName = "shadow-bind-group",
-			.layout = m_GlobalBindingsLayout2D,
+			.layout = m_ShadowBindingsLayout,
 			.buffers = {
-				{.buffer = lightSpaceBuffer },
+				{ .buffer = lightSpaceBuffer },
 			}
 		});
 

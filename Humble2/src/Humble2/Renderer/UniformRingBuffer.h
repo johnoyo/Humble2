@@ -41,10 +41,10 @@ namespace HBL2
 
 		void Free();
 
+		static uint32_t CeilToNextMultiple(uint32_t value, uint32_t step);
+
 	private:
 		void ReAllocate();
-
-		uint32_t CeilToNextMultiple(uint32_t value, uint32_t step);
 
 	private:
 		Handle<Buffer> m_Buffer;

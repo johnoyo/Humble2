@@ -99,6 +99,7 @@ namespace HBL2
 		virtual Handle<BindGroup> GetGlobalBindings3D() = 0;
 		virtual Handle<BindGroup> GetGlobalPresentBindings() = 0;
 
+		const Handle<BindGroupLayout> GetShadowBindingsLayout() const { return m_ShadowBindingsLayout; }
 		const Handle<BindGroupLayout> GetGlobalBindingsLayout2D() const { return m_GlobalBindingsLayout2D; }
 		const Handle<BindGroupLayout> GetGlobalBindingsLayout3D() const { return m_GlobalBindingsLayout3D; }
 		const Handle<BindGroupLayout> GetGlobalPresentBindingsLayout() const { return m_GlobalPresentBindingsLayout; }
@@ -133,6 +134,7 @@ namespace HBL2
 		RendererStats m_Stats;
 		RenderPassPool m_RenderPassPool;
 
+		Handle<BindGroupLayout> m_ShadowBindingsLayout;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout2D;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
 		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;

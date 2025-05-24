@@ -135,12 +135,20 @@ namespace HBL2
 		VkRenderPass renderingRenderPass = m_ResourceManager->GetRenderPass(m_RenderingRenderPass)->RenderPass;
 		vkDestroyRenderPass(m_Device->Get(), renderingRenderPass, nullptr);
 
+		m_ResourceManager->DeleteBindGroupLayout(m_ShadowBindingsLayout);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
 
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
+			VulkanBindGroup* shadowBindGroup = m_ResourceManager->GetBindGroup(m_Frames[i].ShadowBindings);
+
+			for (auto& bufferEntry : shadowBindGroup->Buffers)
+			{
+				m_ResourceManager->DeleteBuffer(bufferEntry.buffer);
+			}
+
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].ShadowBindings);
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalBindings2D);
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalBindings3D);
@@ -792,6 +800,20 @@ namespace HBL2
 		}
 
 		// Bindings for shadow rendering.
+		m_ShadowBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "shadow-bindings-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+			},
+		});
+
+		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
+		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), uniformOffset);
+
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
 			auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
@@ -799,15 +821,15 @@ namespace HBL2
 				.usage = BufferUsage::UNIFORM,
 				.usageHint = BufferUsageHint::DYNAMIC,
 				.memoryUsage = MemoryUsage::GPU_CPU,
-				.byteSize = 64,
+				.byteSize = 16 * alignedSize,
 				.initialData = nullptr
 			});
 
 			m_Frames[i].ShadowBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "shadow-bind-group",
-				.layout = m_GlobalBindingsLayout2D,
+				.layout = m_ShadowBindingsLayout,
 				.buffers = {
-					{ .buffer = lightSpaceBuffer },
+					{ .buffer = lightSpaceBuffer, .range = 64 }, // TODO: Investigate if '.range' should be alignedSize! 
 				}
 			});
 		}
