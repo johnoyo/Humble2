@@ -488,7 +488,7 @@ namespace HBL2
 				drawBindings = ResourceManager::Instance->CreateBindGroup({
 					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
 					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
-					.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle },
+					.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle, Renderer::Instance->ShadowAtlasTexture },
 					.buffers = {
 						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
 					}

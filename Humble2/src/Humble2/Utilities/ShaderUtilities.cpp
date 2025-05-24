@@ -391,6 +391,10 @@ namespace HBL2
 					.slot = 3,
 					.visibility = ShaderStage::FRAGMENT,
 				},
+				{
+					.slot = 4,
+					.visibility = ShaderStage::FRAGMENT,
+				},
 			},
 			.bufferBindings = {
 				{
@@ -400,7 +404,7 @@ namespace HBL2
 					* used by textures, the next empty is 4.
 					* 
 					*/
-					.slot = 4,
+					.slot = 5,
 					.visibility = ShaderStage::VERTEX,
 					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
 				},

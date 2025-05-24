@@ -585,14 +585,14 @@ namespace HBL2
 						break;
 					}
 
+					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), 0);
+					fout << shaderSource;
+					fout.close();
+
 					if (shaderAssetHandle.IsValid())
 					{
 						ShaderUtilities::Get().CreateShaderMetadataFile(shaderAssetHandle, m_SelectedShaderType);
 					}
-
-					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), 0);
-					fout << shaderSource;
-					fout.close();
 
 					m_OpenShaderSetupPopup = false;
 				}
@@ -878,11 +878,6 @@ namespace HBL2
 							.type = AssetType::Material,
 						});
 
-						if (materialAssetHandle.IsValid())
-						{
-							ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, m_SelectedMaterialType);
-						}
-
 						ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
 							.ShaderAssetHandle = shaderAssetHandle,
 							.VariantDescriptor = {
@@ -904,6 +899,11 @@ namespace HBL2
 							.RoughnessMapAssetHandle = roughnessMapAssetHandle,
 							.MetallicMapAssetHandle = metallicMapAssetHandle,
 						});
+
+						if (materialAssetHandle.IsValid())
+						{
+							ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, m_SelectedMaterialType);
+						}
 
 						if (g_AlbedoMapTask)
 						{

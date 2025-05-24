@@ -1,4 +1,4 @@
-#shader vertex
+﻿#shader vertex
 #version 450 core
 layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec3 a_Normal;
@@ -9,7 +9,7 @@ layout(std140, set = 0, binding = 0) uniform Camera
     mat4 ViewProjection;
 } u_Camera;
 
-layout(std140, set = 1, binding = 4) uniform Object
+layout(std140, set = 1, binding = 5) uniform Object
 {
     mat4 Model;
     mat4 InverseModel;
@@ -45,6 +45,7 @@ layout (set = 1, binding = 0) uniform sampler2D u_AlbedoMap;
 layout (set = 1, binding = 1) uniform sampler2D u_NormalMap;
 layout (set = 1, binding = 2) uniform sampler2D u_MetallicMap;
 layout (set = 1, binding = 3) uniform sampler2D u_RoughnessMap;
+layout (set = 1, binding = 4) uniform sampler2D u_ShadowAltasMap;
 
 layout(std140, set = 0, binding = 1) uniform Light
 {
@@ -58,6 +59,60 @@ layout(std140, set = 0, binding = 1) uniform Light
     vec4 TileUVRange[16];
     float Count;
 } u_Light;
+
+float ShadowCalculation(vec4 fragPosLightSpace, vec4 tileUVRange, int index)
+{
+    vec4 lightClip = fragPosLightSpace;
+    vec3 ndc = lightClip.xyz / lightClip.w;
+
+    // X still maps [-1..1]->[0..1]
+    float u = ndc.x * 0.5 + 0.5;
+    // Y needs flipping under GL_UPPER_LEFT
+    float v = 1.0 - (ndc.y * 0.5 + 0.5);
+    float depth = ndc.z;
+
+    vec3 projCoords = vec3(u, v, depth);
+
+    // Check if fragment is outside the light's projection
+    if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
+    {
+        return 0.0;
+    }
+
+    // Apply atlas tile offset and scale
+    vec2 tileOffset = tileUVRange.xy;
+    vec2 tileScale  = tileUVRange.zw;
+    vec2 atlasUV = tileOffset + projCoords.xy * tileScale;
+
+    // Get texel size within the tile
+    vec2 texelSize = tileScale / vec2(textureSize(u_ShadowAltasMap, 0));
+
+    // Calculate bias (based on depth map resolution and slope)
+    vec3 normal = normalize(v_Normal);
+    vec3 lightDir = normalize(u_Light.Positions[index].xyz - v_Position);
+    
+    float constantBias = u_Light.ShadowData[index].y;
+    float slopeBias    = u_Light.ShadowData[index].z;
+    float bias = constantBias + slopeBias * (1.0 - (max(dot(normal, lightDir), 0.0)));
+
+    // PCF sampling
+    float shadow = 0.0;
+    float currentDepth = projCoords.z;
+
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            vec2 offset = vec2(x, y) * texelSize;
+            float pcfDepth = texture(u_ShadowAltasMap, atlasUV + offset).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+
+    shadow /= 9.0;
+
+    return shadow;
+}
 
 const float PI = 3.14159265359;
 
@@ -136,6 +191,8 @@ void main()
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, albedo, metallic);
 
+    float totalShadow = 0.0;
+
     // reflectance equation
     vec3 Lo = vec3(0.0);
     for(int i = 0; i < int(u_Light.Count); ++i) 
@@ -149,6 +206,15 @@ void main()
         {
             // Directional Light
             L = normalize(-u_Light.Directions[i].xyz);
+
+            // If it is a shadow casting light.
+            if (u_Light.ShadowData[i].x == 1.0)
+            {
+                mat4 lightSpaceMatrix = u_Light.LightSpaceMatrices[i];
+                vec4 fragPosLightSpace = lightSpaceMatrix * vec4(v_Position, 1.0);
+
+                totalShadow += ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
+            }
         }
         else if (u_Light.Positions[i].w == 1.0)
         {
@@ -161,6 +227,14 @@ void main()
             float linear = u_Light.Metadata[i].z;
             float quadratic = u_Light.Metadata[i].w;
             attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
+
+            if (u_Light.ShadowData[i].x == 1.0 && attenuation > 0.0)
+            {
+                mat4 lightSpaceMatrix = u_Light.LightSpaceMatrices[i];
+                vec4 fragPosLightSpace = lightSpaceMatrix * vec4(v_Position, 1.0);
+
+                totalShadow += ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
+            }
         }
         else if (u_Light.Positions[i].w == 2.0)
         {
@@ -180,6 +254,16 @@ void main()
             float epsilon = innerCutoff - outerCutoff;
             float intensity = clamp((theta - outerCutoff) / epsilon, 0.0, 1.0);
             attenuation *= intensity;
+
+            bool lit = intensity > 0.0;
+
+            if (u_Light.ShadowData[i].x == 1.0 && lit)
+            {
+                mat4 lightSpaceMatrix = u_Light.LightSpaceMatrices[i];
+                vec4 fragPosLightSpace = lightSpaceMatrix * vec4(v_Position, 1.0);
+
+                totalShadow += ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
+            }
         }
 
         // Calculate per-light radiance
@@ -211,12 +295,14 @@ void main()
 
         // add to outgoing radiance Lo
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
-    }   
+    }
+
+    totalShadow = clamp(totalShadow / float(u_Light.Count), 0.0, 1.0);
     
     // ambient lighting (note that the next IBL tutorial will replace this ambient lighting with environment lighting).
-    vec3 ambient = vec3(0.02) * albedo;
+    vec3 ambient = vec3(0.015) * albedo;
     
-    vec3 color = ambient + Lo;
+    vec3 color = ambient + (1.0 - totalShadow) * Lo;
 
     // HDR tonemapping
     color = color / (color + vec3(1.0));
