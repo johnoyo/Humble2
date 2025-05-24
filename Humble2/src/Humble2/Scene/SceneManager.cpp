@@ -149,7 +149,7 @@ namespace HBL2
 		// Delete old loaded scene, if its not the same as the new one.
 		if (m_CurrentSceneAssetHandle != m_NewSceneAssetHandle && m_NewSceneAssetHandle.IsValid())
 		{
-			// If we are in play mode and we changes scenes, dot not delete the scene that was played.
+			// If we are in play mode and we changes scenes, do not delete the scene that was played.
 			if (m_CurrentSceneAssetHandle != m_BaseSceneAssetHandle)
 			{
 				AssetManager::Instance->DeleteAsset(m_CurrentSceneAssetHandle);

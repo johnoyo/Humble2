@@ -27,7 +27,9 @@ namespace HBL2
 		Span(std::vector<T>& list) : m_Data(list.data()), m_Size(list.size()) {}
 		template<typename U, typename = std::enable_if_t<std::is_convertible<U*, T*>::value>>
 		Span(const std::vector<U>& list) : m_Data(list.data()), m_Size(list.size()) {}
-		
+		template<size_t N>
+		Span(std::array<T, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
+
 		Span(DynamicArray<T>& list) : m_Data(list.Data()), m_Size(list.Size()) {}
 		template<typename U, typename = std::enable_if_t<std::is_convertible<U*, T*>::value>>
 		Span(const DynamicArray<U>& list) : m_Data(list.Data()), m_Size(list.Size()) {}
@@ -38,7 +40,7 @@ namespace HBL2
 		Span(T(&array)[N]) : m_Data(array), m_Size(sizeof(array) / sizeof(T)) {}
 
 		template<size_t N>
-		Span(StaticArray<T, N> array) : m_Data(array.Data()), m_Size(array.Size()) {}
+		Span(StaticArray<T, N>& array) : m_Data(array.Data()), m_Size(array.Size()) {}
 
 		explicit Span(T* data) : m_Data(data), m_Size(1) {}
 		explicit Span(T& data) : m_Data(&data), m_Size(1) {}

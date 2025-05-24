@@ -258,7 +258,7 @@ namespace HBL2
 		{
 			if (m_Allocator == nullptr)
 			{
-                operator delete ptr;
+                operator delete(ptr);
 				return;
 			}
 

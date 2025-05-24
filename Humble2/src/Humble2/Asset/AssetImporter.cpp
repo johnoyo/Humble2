@@ -207,6 +207,9 @@ namespace HBL2
 		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
 		const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
 
+		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
+		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
+
 		std::ifstream stream(shaderPath.string() + ".hblshader");
 
 		if (!stream.is_open())
@@ -343,6 +346,9 @@ namespace HBL2
 		// Open metadata file.
 		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
 		const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+
+		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
+		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
 
 		std::ifstream metaDataStream(materialPath.string() + ".hblmat");
 
@@ -633,6 +639,9 @@ namespace HBL2
 	{
 		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
 		const std::filesystem::path& meshPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+
+		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
+		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
 
 		std::ifstream stream(meshPath.string() + ".hblmesh");
 		std::stringstream ss;

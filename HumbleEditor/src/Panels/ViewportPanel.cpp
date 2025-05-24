@@ -97,6 +97,11 @@ namespace HBL2
 					{
 						m_GizmoOperation = ImGuizmo::OPERATION::BOUNDS;
 					}
+
+					if (Input::GetKeyPress(KeyCode::M))
+					{
+						m_GizmoMode = (m_GizmoMode == ImGuizmo::MODE::LOCAL ? ImGuizmo::MODE::WORLD : ImGuizmo::MODE::LOCAL);
+					}
 				}
 
 				auto& camera = m_Context->GetComponent<HBL2::Component::Camera>(m_Context->MainCamera);
@@ -130,8 +135,8 @@ namespace HBL2
 						glm::value_ptr(camera.View),
 						glm::value_ptr(camera.Projection),
 						m_GizmoOperation,
-						ImGuizmo::MODE::LOCAL,
-						glm::value_ptr(transform.LocalMatrix),
+						m_GizmoMode,
+						m_GizmoMode == ImGuizmo::MODE::LOCAL ? glm::value_ptr(transform.LocalMatrix) : glm::value_ptr(transform.WorldMatrix),
 						nullptr,
 						snapValuesFinal
 					);
@@ -143,7 +148,8 @@ namespace HBL2
 							glm::vec3 newTranslation;
 							glm::vec3 newRotation;
 							glm::vec3 newScale;
-							ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(transform.LocalMatrix), glm::value_ptr(newTranslation), glm::value_ptr(newRotation), glm::value_ptr(newScale));
+							const glm::mat4& matrix = (m_GizmoMode == ImGuizmo::MODE::LOCAL ? transform.LocalMatrix : transform.WorldMatrix);
+							ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(matrix), glm::value_ptr(newTranslation), glm::value_ptr(newRotation), glm::value_ptr(newScale));
 							transform.Translation = glm::vec3(newTranslation.x, newTranslation.y, newTranslation.z);
 							transform.Rotation += glm::vec3(newRotation.x - transform.Rotation.x, newRotation.y - transform.Rotation.y, newRotation.z - transform.Rotation.z);
 							transform.Scale = glm::vec3(newScale.x, newScale.y, newScale.z);

@@ -65,6 +65,7 @@ namespace HBL2
 			bool m_ProjectChanged = false;
 
 			ImGuizmo::OPERATION m_GizmoOperation = ImGuizmo::OPERATION::BOUNDS;
+			ImGuizmo::MODE m_GizmoMode = ImGuizmo::MODE::LOCAL;
 			float m_CameraPivotDistance = 5.0f;
 
 			std::string m_SearchQuery;
