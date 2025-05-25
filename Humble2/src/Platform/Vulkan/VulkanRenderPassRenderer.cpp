@@ -32,17 +32,6 @@ namespace HBL2
 			}
 		}
 
-		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
-		if (globalDraw.DynamicUniformBufferSize != 0)
-		{
-			VulkanBuffer* dynamicUniformBuffer = rm->GetBuffer(Renderer::Instance->TempUniformRingBuffer->GetBuffer());
-
-			void* data;
-			vmaMapMemory(renderer->GetAllocator(), dynamicUniformBuffer->Allocation, &data);
-			memcpy((void*)((char*)data + globalDraw.DynamicUniformBufferOffset), (void*)((char*)dynamicUniformBuffer->Data + globalDraw.DynamicUniformBufferOffset), globalDraw.DynamicUniformBufferSize);
-			vmaUnmapMemory(renderer->GetAllocator(), dynamicUniformBuffer->Allocation);
-		}
-
 		Handle<Buffer> prevIndexBuffer;
 		StaticArray<Handle<Buffer>, 3> prevVertexBuffers = {};
 
@@ -117,7 +106,7 @@ namespace HBL2
 				// Bind the dynamic uniform buffer in the appropriate offset.
 				if (draw.BindGroup.IsValid())
 				{
-					uint32_t dynamicOffsetCount = (globalDraw.DynamicUniformBufferSize == 0 ? 0 : 1);
+					uint32_t dynamicOffsetCount = (globalDraw.UsesDynamicOffset ? 0 : 1);
 
 					VulkanBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
 					vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 1, 1, &drawBindGroup->DescriptorSet, dynamicOffsetCount, &draw.Offset);

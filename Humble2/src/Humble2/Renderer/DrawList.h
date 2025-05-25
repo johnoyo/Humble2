@@ -33,8 +33,7 @@ namespace HBL2
 		uint32_t GlobalBufferSize = UINT32_MAX;
 		uint32_t GlobalBufferOffset = UINT32_MAX;
 
-		uint32_t DynamicUniformBufferOffset;
-		uint32_t DynamicUniformBufferSize;
+		bool UsesDynamicOffset = false;
 	};
 
 	class DrawList

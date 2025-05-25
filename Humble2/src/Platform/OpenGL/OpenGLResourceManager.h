@@ -88,6 +88,23 @@ namespace HBL2
 				SetBufferData(openGLBindGroup->Buffers[bufferIndex].buffer, openGLBindGroup->Buffers[bufferIndex].byteOffset, newData);
 			}
 		}
+		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) override
+		{
+			OpenGLBuffer* openGLBuffer = GetBuffer(buffer);
+
+			if (openGLBuffer == nullptr)
+			{
+				return;
+			}
+
+			glBindBuffer(GL_UNIFORM_BUFFER, openGLBuffer->RendererId);
+
+			void* ptr = glMapBufferRange(GL_UNIFORM_BUFFER, offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+			memcpy(ptr, (void*)((char*)openGLBuffer->Data + offset), size);
+			glUnmapBuffer(GL_UNIFORM_BUFFER);
+
+			glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		}
 		OpenGLBuffer* GetBuffer(Handle<Buffer> handle) const
 		{
 			return m_BufferPool.Get(handle);

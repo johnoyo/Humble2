@@ -102,6 +102,22 @@ namespace HBL2
 				SetBufferData(vulkanBindGroup->Buffers[bufferIndex].buffer, vulkanBindGroup->Buffers[bufferIndex].byteOffset, newData);
 			}
 		}
+		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) override
+		{
+			VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
+
+			VulkanBuffer* vulkanBuffer = GetBuffer(buffer);
+
+			if (vulkanBuffer == nullptr)
+			{
+				return;
+			}
+
+			void* data;
+			vmaMapMemory(renderer->GetAllocator(), vulkanBuffer->Allocation, &data);
+			memcpy((void*)((char*)data + offset), (void*)((char*)vulkanBuffer->Data + offset), size);
+			vmaUnmapMemory(renderer->GetAllocator(), vulkanBuffer->Allocation);
+		}
 		VulkanBuffer* GetBuffer(Handle<Buffer> handle) const
 		{
 			return m_BufferPool.Get(handle);

@@ -40,17 +40,6 @@ namespace HBL2
 			globalBindGroup->Set();
 		}
 
-		if (globalDraw.DynamicUniformBufferSize != 0)
-		{
-			OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(Renderer::Instance->TempUniformRingBuffer->GetBuffer());
-
-			glBindBuffer(GL_UNIFORM_BUFFER, dynamicUniformBuffer->RendererId);
-
-			void* ptr = glMapBufferRange(GL_UNIFORM_BUFFER, globalDraw.DynamicUniformBufferOffset, globalDraw.DynamicUniformBufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
-			memcpy(ptr, (void*)((char*)dynamicUniformBuffer->Data + globalDraw.DynamicUniformBufferOffset), globalDraw.DynamicUniformBufferSize);
-			glUnmapBuffer(GL_UNIFORM_BUFFER);
-		}
-
 		Handle<Buffer> prevIndexBuffer;
 		StaticArray<Handle<Buffer>, 3> prevVertexBuffers{};
 		Handle<BindGroup> previouslyUsedBindGroup;
@@ -124,7 +113,7 @@ namespace HBL2
 					}
 
 					// Bind dynamic uniform buffer with the current offset and size
-					if (globalDraw.DynamicUniformBufferSize != 0)
+					if (globalDraw.UsesDynamicOffset)
 					{
 						OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(drawBindGroup->Buffers[0].buffer);
 						dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);

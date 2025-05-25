@@ -1133,11 +1133,11 @@ namespace HBL2
 
 	void ForwardRenderingSystem::GatherDraws()
 	{
+		// Store the offset that the objects start from in the dynamic uniform buffer.
+		m_UBOStartingOffset = m_UniformRingBuffer->GetCurrentOffset();
+
 		// Static meshes
 		{
-			// Store the offset that the static meshes start from in the dynamic uniform buffer.
-			m_UBOStaticMeshOffset = m_UniformRingBuffer->GetCurrentOffset();
-
 			m_StaticMeshOpaqueDraws.Reset();
 			m_StaticMeshTransparentDraws.Reset();
 			m_PrePassStaticMeshDraws.Reset();
@@ -1226,17 +1226,10 @@ namespace HBL2
 						}
 					}
 				});
-
-			// Store the total size of the static mesh draw data in the dynamic uniform data.
-			uint32_t totalDraws = m_StaticMeshOpaqueDraws.GetCount() + m_StaticMeshTransparentDraws.GetCount();
-			m_UBOStaticMeshSize = totalDraws * m_UniformRingBuffer->GetAlignedSize(sizeof(PerDrawData));
 		}
 
 		// Sprites
 		{
-			// Store the offset that the sprites start from in the dynamic uniform buffer.
-			m_UBOSpriteOffset = m_UniformRingBuffer->GetCurrentOffset();
-
 			m_SpriteOpaqueDraws.Reset();
 			m_SpriteTransparentDraws.Reset();
 			m_PrePassSpriteDraws.Reset();
@@ -1302,11 +1295,10 @@ namespace HBL2
 						}
 					}
 				});
-
-			// Store the total size of the sprite draw data in the dynamic uniform data.
-			uint32_t totalDraws = m_SpriteOpaqueDraws.GetCount() + m_SpriteTransparentDraws.GetCount();
-			m_UBOSpriteSize = totalDraws * m_UniformRingBuffer->GetAlignedSize(sizeof(PerDrawDataSprite));
 		}
+
+		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
+		m_ResourceManager->MapBufferData(m_UniformRingBuffer->GetBuffer(), m_UBOStartingOffset, m_UniformRingBuffer->GetCurrentOffset() - m_UBOStartingOffset);
 	}
 
 	void ForwardRenderingSystem::GatherLights()
@@ -1429,8 +1421,7 @@ namespace HBL2
 							.BindGroup = globalBindings,
 							.GlobalBufferSize = alignedSize,
 							.GlobalBufferOffset = index * alignedSize,
-							.DynamicUniformBufferOffset = m_UBOStaticMeshOffset,
-							.DynamicUniformBufferSize = m_UBOStaticMeshSize,
+							.UsesDynamicOffset = true,
 						};
 						passRenderer->DrawSubPass(globalDrawStream, m_ShadowPassStaticMeshDraws);
 
@@ -1457,14 +1448,14 @@ namespace HBL2
 		// Depth only pre pass for opaque static meshes.
 		{
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData.ViewProjection);
-			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOStaticMeshOffset, .DynamicUniformBufferSize = m_UBOStaticMeshSize };
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, m_PrePassStaticMeshDraws);
 		}
 
 		// Depth only pre pass for opaque sprites.
 		{
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData.ViewProjection);
-			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOSpriteOffset, .DynamicUniformBufferSize = m_UBOSpriteSize };
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, m_PrePassSpriteDraws);
 		}
 
@@ -1484,7 +1475,7 @@ namespace HBL2
 			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData);
 			ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&m_LightData);
-			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOStaticMeshOffset, .DynamicUniformBufferSize = m_UBOStaticMeshSize };
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, m_StaticMeshOpaqueDraws);
 		}
 
@@ -1492,7 +1483,7 @@ namespace HBL2
 		{
 			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData.ViewProjection);
-			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOSpriteOffset, .DynamicUniformBufferSize = m_UBOSpriteSize };
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, m_SpriteOpaqueDraws);
 		}
 
@@ -1512,7 +1503,7 @@ namespace HBL2
 			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData);
 			ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&m_LightData);
-			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOStaticMeshOffset, .DynamicUniformBufferSize = m_UBOStaticMeshSize };
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, m_StaticMeshTransparentDraws);
 		}
 
@@ -1520,7 +1511,7 @@ namespace HBL2
 		{
 			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&m_CameraData.ViewProjection);
-			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .DynamicUniformBufferOffset = m_UBOSpriteOffset, .DynamicUniformBufferSize = m_UBOSpriteSize };
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, m_SpriteTransparentDraws);
 		}
 

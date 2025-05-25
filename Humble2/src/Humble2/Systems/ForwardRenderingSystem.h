@@ -130,15 +130,12 @@ namespace HBL2
 		Handle<Material> m_QuadMaterial;
 		Handle<Shader> m_PresentShader;
 
-		uint32_t m_UBOStaticMeshOffset = 0.0f;
-		uint32_t m_UBOStaticMeshSize = 0.0f;
+		uint32_t m_UBOStartingOffset = 0.0f;
 		DrawList m_StaticMeshOpaqueDraws;
 		DrawList m_StaticMeshTransparentDraws;
 		DrawList m_PrePassStaticMeshDraws;
 		DrawList m_ShadowPassStaticMeshDraws;
 
-		uint32_t m_UBOSpriteOffset = 0.0f;
-		uint32_t m_UBOSpriteSize = 0.0f;
 		DrawList m_SpriteOpaqueDraws;
 		DrawList m_SpriteTransparentDraws;
 		DrawList m_PrePassSpriteDraws;
