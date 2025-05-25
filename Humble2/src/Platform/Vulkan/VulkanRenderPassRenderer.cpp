@@ -8,7 +8,7 @@ namespace HBL2
 {
 	void VulkanRenderPassRenderer::DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws)
 	{
-		Renderer::Instance->GetRendererStats().DrawCalls += draws.GetCount();
+		Renderer::Instance->GetStats().DrawCalls += draws.GetCount();
 
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;

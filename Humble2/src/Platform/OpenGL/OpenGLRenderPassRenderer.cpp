@@ -4,7 +4,7 @@ namespace HBL2
 {
 	void OpenGLRenderPasRenderer::DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws)
 	{
-		Renderer::Instance->GetRendererStats().DrawCalls += draws.GetCount();
+		Renderer::Instance->GetStats().DrawCalls += draws.GetCount();
 
 		OpenGLResourceManager* rm = (OpenGLResourceManager*)ResourceManager::Instance;
 

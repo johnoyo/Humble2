@@ -90,7 +90,7 @@ namespace HBL2
 		{
 			Window::Instance->SetTitle(std::format("{} [{}] FPS ({})", m_Specification.Name, m_Frames, g_GfxAPI));
 
-			HBL2_CORE_TRACE("FPS: {0}, DeltaTime: {1} ({2})", m_Frames, Time::DeltaTime, g_GfxAPI);
+			HBL2_CORE_TRACE("FPS: {0}, DeltaTime: {1} ({2})", m_Frames, Time::DeltaTime * 1000.0f, g_GfxAPI);
 
 			m_Timer++;
 			m_Frames = 0;

@@ -19,6 +19,12 @@ namespace HBL2
 		glTexParameteri(TextureType, GL_TEXTURE_WRAP_S, WrapMode);
 		glTexParameteri(TextureType, GL_TEXTURE_WRAP_T, WrapMode);
 
+		if (WrapMode == GL_CLAMP_TO_BORDER)
+		{
+			float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+			glTexParameterfv(TextureType, GL_TEXTURE_BORDER_COLOR, borderColor);
+		}
+
 		switch (desc.format)
 		{
 		case Format::D16_FLOAT:
@@ -99,6 +105,12 @@ namespace HBL2
 		glTexParameteri(TextureType, GL_TEXTURE_MAG_FILTER, MagFilter);
 		glTexParameteri(TextureType, GL_TEXTURE_WRAP_S, WrapMode);
 		glTexParameteri(TextureType, GL_TEXTURE_WRAP_T, WrapMode);
+
+		if (WrapMode == GL_CLAMP_TO_BORDER)
+		{
+			float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+			glTexParameterfv(TextureType, GL_TEXTURE_BORDER_COLOR, borderColor);
+		}
 
 		if (TextureType == GL_TEXTURE_CUBE_MAP)
 		{

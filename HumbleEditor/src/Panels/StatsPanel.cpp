@@ -6,11 +6,11 @@ namespace HBL2
 	{
 		void EditorPanelSystem::DrawStatsPanel(float ts)
 		{
-			const auto& stats = Renderer::Instance->GetRendererStats();
+			const auto& stats = Renderer::Instance->GetStats();
 
 			ImGui::Text("Renderer");
 			ImGui::NewLine();
-			ImGui::Text("Frame Time: %f ms", ts);
+			ImGui::Text("Frame Time: %f ms", ts * 1000.0f);
 			ImGui::Text("Draw calls: %d", stats.DrawCalls);
 			ImGui::Text("ShadowPass: %f ms", stats.ShadowPassTime);
 			ImGui::Text("PrePass: %f ms", stats.PrePassTime);

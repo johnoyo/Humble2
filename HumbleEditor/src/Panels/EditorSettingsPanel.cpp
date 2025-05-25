@@ -30,7 +30,17 @@ namespace HBL2
 					ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 3);
 					ImGui::SliderFloat("Exposure", &camera.Exposure, 0, 50);
 					ImGui::SliderFloat("Gamma", &camera.Gamma, 0, 4);
-					ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);					
+					ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
+
+					ImGui::Separator();
+
+					ImGui::Text("Camera Controls:");
+
+					ImGui::SliderFloat("MovementSpeed", &editorCamera.MovementSpeed, 0, 50);
+					ImGui::SliderFloat("MouseSensitivity", &editorCamera.MouseSensitivity, 0, 100);
+					ImGui::SliderFloat("PanSpeed", &editorCamera.PanSpeed, 0, 200);
+					ImGui::SliderFloat("ZoomSpeed", &editorCamera.ZoomSpeed, 0, 15);
+					ImGui::SliderFloat("ScrollZoomSpeed", &editorCamera.ScrollZoomSpeed, 0, 200);
 				});
 		}
 	}

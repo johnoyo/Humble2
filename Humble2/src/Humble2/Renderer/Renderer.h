@@ -88,7 +88,7 @@ namespace HBL2
 		RenderPassPool& GetRenderPassPool() { return m_RenderPassPool; }
 
 		const uint32_t GetFrameNumber() const { return m_FrameNumber; }
-		RendererStats& GetRendererStats() { return m_Stats; }
+		RendererStats& GetStats() { return m_Stats; }
 
 		const Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
 		const Handle<RenderPass> GetRenderingRenderPass() const { return m_RenderingRenderPass; }
@@ -131,7 +131,7 @@ namespace HBL2
 	protected:
 		uint32_t m_FrameNumber = 0;
 		GraphicsAPI m_GraphicsAPI;
-		RendererStats m_Stats;
+		RendererStats m_Stats{};
 		RenderPassPool m_RenderPassPool;
 
 		Handle<BindGroupLayout> m_ShadowBindingsLayout;

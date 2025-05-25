@@ -7,6 +7,14 @@
 
 namespace HBL2
 {
+#ifdef DIST
+	#define BEGIN_PROFILE_PASS()
+	#define END_PROFILE_PASS(time)
+#else
+	#define BEGIN_PROFILE_PASS() Timer profilePass
+	#define END_PROFILE_PASS(time) time = profilePass.ElapsedMillis()
+#endif
+
 	struct Attenuation
 	{
 		float distance;
@@ -1382,6 +1390,8 @@ namespace HBL2
 
 	void ForwardRenderingSystem::ShadowPass(CommandBuffer* commandBuffer)
 	{
+		BEGIN_PROFILE_PASS();
+
 		uint32_t index = 0;
 
 		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
@@ -1432,10 +1442,14 @@ namespace HBL2
 			});
 
 		Renderer::Instance->ShadowAtlasAllocator.Clear();
+
+		END_PROFILE_PASS(Renderer::Instance->GetStats().ShadowPassTime);
 	}
 
 	void ForwardRenderingSystem::DepthPrePass(CommandBuffer* commandBuffer)
 	{
+		BEGIN_PROFILE_PASS();
+
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DepthOnlyRenderPass, m_DepthOnlyFrameBuffer);
 
 		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
@@ -1455,10 +1469,14 @@ namespace HBL2
 		}
 
 		commandBuffer->EndRenderPass(*passRenderer);
+
+		END_PROFILE_PASS(Renderer::Instance->GetStats().PrePassTime);
 	}
 
 	void ForwardRenderingSystem::OpaquePass(CommandBuffer* commandBuffer)
 	{
+		BEGIN_PROFILE_PASS();
+
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_OpaqueRenderPass, m_OpaqueFrameBuffer);
 
 		// Render opaque meshes.
@@ -1479,10 +1497,14 @@ namespace HBL2
 		}
 
 		commandBuffer->EndRenderPass(*passRenderer);
+
+		END_PROFILE_PASS(Renderer::Instance->GetStats().OpaquePassTime);
 	}
 
 	void ForwardRenderingSystem::TransparentPass(CommandBuffer* commandBuffer)
 	{
+		BEGIN_PROFILE_PASS();
+
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass, m_TransparentFrameBuffer);
 
 		// Render transparent meshes.
@@ -1503,10 +1525,14 @@ namespace HBL2
 		}
 
 		commandBuffer->EndRenderPass(*passRenderer);
+
+		END_PROFILE_PASS(Renderer::Instance->GetStats().TransparentPassTime);
 	}
 
 	void ForwardRenderingSystem::SkyboxPass(CommandBuffer* commandBuffer)
 	{
+		BEGIN_PROFILE_PASS();
+
 		DrawList draws;
 
 		m_Context->GetRegistry()
@@ -1629,10 +1655,14 @@ namespace HBL2
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 
 		commandBuffer->EndRenderPass(*passRenderer);
+
+		END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxPassTime);
 	}
 
 	void ForwardRenderingSystem::PostProcessPass(CommandBuffer* commandBuffer)
 	{
+		BEGIN_PROFILE_PASS();
+
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
 			commandBuffer,
@@ -1655,10 +1685,14 @@ namespace HBL2
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 
 		commandBuffer->EndRenderPass(*passRenderer);
+
+		END_PROFILE_PASS(Renderer::Instance->GetStats().PostProcessPassTime);
 	}
 
 	void ForwardRenderingSystem::PresentPass(CommandBuffer* commandBuffer)
 	{
+		BEGIN_PROFILE_PASS();
+
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
 			commandBuffer,
@@ -1680,6 +1714,8 @@ namespace HBL2
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 
 		commandBuffer->EndRenderPass(*passRenderer);
+
+		END_PROFILE_PASS(Renderer::Instance->GetStats().PresentPassTime);
 	}
 
 	void ForwardRenderingSystem::GetViewProjection()

@@ -68,7 +68,7 @@ namespace HBL2
 			.sampler =
 			{
 				.filter = Filter::NEAREST,
-				.wrap = Wrap::REPEAT,
+				.wrap = Wrap::CLAMP_TO_BORDER,
 			},
 			.initialLayout = TextureLayout::DEPTH_STENCIL,
 		});

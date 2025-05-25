@@ -139,6 +139,11 @@ namespace HBL2
 				.compareOp = desc.sampler.compareEnable ? VkUtils::CompareToVkCompareOp(desc.sampler.compare) : VK_COMPARE_OP_NEVER,
 			};
 
+			if (desc.sampler.wrap == Wrap::CLAMP_TO_BORDER)
+			{
+				samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+			}
+
 			VK_VALIDATE(vkCreateSampler(device->Get(), &samplerInfo, nullptr, &Sampler), "vkCreateSampler");
 		}
 	}
