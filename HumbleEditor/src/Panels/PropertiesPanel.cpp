@@ -279,8 +279,9 @@ namespace HBL2
 
 					ImGui::ColorEdit3("Color", glm::value_ptr(light.Color));
 
-					ImGui::SliderFloat("ConstantBias", &light.ConstantBias, 0.0f, 0.1f, "%.5f");
-					ImGui::SliderFloat("SlopeBias", &light.SlopeBias, 0.0f, 0.2f, "%.5f");
+					ImGui::SliderFloat("ConstantBias", &light.ConstantBias, 0.0f, 2.5f, "%.3f");
+					ImGui::SliderFloat("SlopeBias", &light.SlopeBias, 0.0f, 2.5f, "%.3f");
+					ImGui::SliderFloat("NormalOffsetScale", &light.NormalOffsetScale, 0.0f, 0.5f, "%.3f");
 					ImGui::SliderFloat("FieldOfView", &light.FieldOfView, 0.0f, 120.0f);
 
 					// Set type back.

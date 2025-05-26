@@ -179,6 +179,7 @@ namespace HBL2
 			out << YAML::Key << "OuterCutOff" << YAML::Value << light.OuterCutOff;
 			out << YAML::Key << "ConstantBias" << YAML::Value << light.ConstantBias;
 			out << YAML::Key << "SlopeBias" << YAML::Value << light.SlopeBias;
+			out << YAML::Key << "NormalOffsetScale" << YAML::Value << light.NormalOffsetScale;
 			out << YAML::Key << "FieldOfView" << YAML::Value << light.FieldOfView;
 
 			out << YAML::EndMap;
@@ -419,6 +420,7 @@ namespace HBL2
 			light.OuterCutOff = light_NewComponent["OuterCutOff"].as<float>();
 			light.ConstantBias = light_NewComponent["ConstantBias"].as<float>();
 			light.SlopeBias = light_NewComponent["SlopeBias"].as<float>();
+			light.NormalOffsetScale = light_NewComponent["NormalOffsetScale"].as<float>();
 			light.FieldOfView = light_NewComponent["FieldOfView"].as<float>();
 			light.Color = light_NewComponent["Color"].as<glm::vec3>();
 			if (light_NewComponent["Type"])

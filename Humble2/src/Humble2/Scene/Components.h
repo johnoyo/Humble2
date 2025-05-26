@@ -125,6 +125,7 @@ namespace HBL2
 
 			float ConstantBias = 0.002f;
 			float SlopeBias = 0.0f;
+			float NormalOffsetScale = 0.0f;
 			float FieldOfView = 60.0f;
 			
 			Type Type = Type::Directional;

@@ -1149,11 +1149,12 @@ namespace HBL2
 				{
 					if (staticMesh.Enabled)
 					{
+#if 0
 						if (!IsInFrustum(staticMesh.Mesh, transform))
 						{
 							return;
 						}
-
+#endif
 						if (!staticMesh.Material.IsValid() || !staticMesh.Mesh.IsValid())
 						{
 							return;
@@ -1240,11 +1241,12 @@ namespace HBL2
 				{
 					if (sprite.Enabled)
 					{
+#if 0
 						if (!IsInFrustum(transform))
 						{
 							return;
 						}
-
+#endif
 						if (!sprite.Material.IsValid())
 						{
 							return;
@@ -1322,6 +1324,7 @@ namespace HBL2
 						lightType = 0.0f;
 						m_LightData.LightShadowData[(int)m_LightData.LightCount].y = light.ConstantBias;
 						m_LightData.LightShadowData[(int)m_LightData.LightCount].z = light.SlopeBias;
+						m_LightData.LightShadowData[(int)m_LightData.LightCount].w = light.NormalOffsetScale;
 						break;
 					case Component::Light::Type::Point:
 						lightType = 1.0f;
@@ -1331,6 +1334,7 @@ namespace HBL2
 
 						m_LightData.LightShadowData[(int)m_LightData.LightCount].y = light.ConstantBias;
 						m_LightData.LightShadowData[(int)m_LightData.LightCount].z = light.SlopeBias;
+						m_LightData.LightShadowData[(int)m_LightData.LightCount].w = light.NormalOffsetScale;
 						break;
 					case Component::Light::Type::Spot:
 						lightType = 2.0f;
@@ -1339,6 +1343,7 @@ namespace HBL2
 
 						m_LightData.LightShadowData[(int)m_LightData.LightCount].y = light.ConstantBias;
 						m_LightData.LightShadowData[(int)m_LightData.LightCount].z = light.SlopeBias;
+						m_LightData.LightShadowData[(int)m_LightData.LightCount].w = light.NormalOffsetScale;
 						break;
 					}
 
