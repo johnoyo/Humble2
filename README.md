@@ -22,6 +22,8 @@ Installation:
     - There are two default batch files, one for Visual Studio 2019 and one for 2022.
 - Open the generated Visual Studio solution.
 
+- NOTE: You need to have installed the [VulkanSDK](https://vulkan.lunarg.com/sdk/home) with the optional debug libraries.
+
 Screenshots:
 ------------
 ![alt text](Resources/Screenshots/editor-1.png)
