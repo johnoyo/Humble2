@@ -77,7 +77,7 @@ float CalculateAdaptiveNormalOffset(vec3 normal, vec3 lightDir, float baseOffset
     float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
     
     // Reduce offset at grazing angles to prevent outlines
-    float angleAttenuation = smoothstep(0.0, 0.25, NdotL);
+    float angleAttenuation = smoothstep(0.0, 0.3, NdotL);
     
     // Reduce offset with distance to prevent over-offsetting
     float distanceAttenuation = clamp(1.0 - lightDistance * 0.01, 0.1, 1.0);
@@ -121,10 +121,11 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec4 tileUVRange, int index)
     vec4 lightClip = fragPosLightSpace;
     vec3 ndc = lightClip.xyz / lightClip.w;
 
-    // X still maps [-1..1]→[0..1]
+    // Remap X from [-1, -1] to [0, 1]
     float u = ndc.x * 0.5 + 0.5;
-    // Y needs flipping under GL_UPPER_LEFT
+    // Flip and remap Y
     float v = 1.0 - (ndc.y * 0.5 + 0.5);
+    // Z already in [0, 1]
     float depth = ndc.z;
 
     vec3 projCoords = vec3(u, v, depth);
@@ -151,12 +152,15 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec4 tileUVRange, int index)
     
     // Calculate how much to blend between normal offset and depth bias
     float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
-    float offsetWeight = smoothstep(0.2, 0.6, NdotL); // Use more depth bias at grazing angles
+    float offsetWeight = smoothstep(0.2, 0.6, NdotL);
     
-    // Apply atlas tile offset and scale
+    // Apply atlas tile offset and scale using UV range system
     vec2 tileOffset = tileUVRange.xy;
     vec2 tileScale = tileUVRange.zw;
-    vec2 texelSize = tileScale / vec2(textureSize(u_ShadowAltasMap, 0));
+    
+    // Calculate texel size - handle negative scale for Vulkan
+    vec2 atlasSize = vec2(textureSize(u_ShadowAltasMap, 0));
+    vec2 texelSize = abs(tileScale) / atlasSize;
     float avgTexelSize = (texelSize.x + texelSize.y) * 0.5;
     
     vec2 atlasUV;
@@ -172,9 +176,11 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec4 tileUVRange, int index)
         vec4 offsetLightSpace = u_Light.LightSpaceMatrices[index] * vec4(offsetWorldPos, 1.0);
         vec3 offsetNDC = offsetLightSpace.xyz / offsetLightSpace.w;
         
+        // Convert to [0, 1] range
         float offsetU = offsetNDC.x * 0.5 + 0.5;
         float offsetV = 1.0 - (offsetNDC.y * 0.5 + 0.5);
         
+        // Apply UV range transformation
         atlasUV = tileOffset + vec2(offsetU, offsetV) * tileScale;
         
         // Use minimal depth bias with normal offset
@@ -183,15 +189,38 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec4 tileUVRange, int index)
     else
     {
         // Use traditional depth bias for grazing angles
+        // Apply UV range transformation
         atlasUV = tileOffset + projCoords.xy * tileScale;
         
         // Use larger depth bias for grazing angles
         finalBias = CalculateHybridBias(normal, lightDir, avgTexelSize, constantBias, slopeBias);
     }
     
-    // Clamp UV coordinates to stay within the tile
-    vec2 tileMin = tileOffset + texelSize * 0.5;
-    vec2 tileMax = tileOffset + tileScale - texelSize * 0.5;
+    // Clamp UV coordinates to stay within the tile bounds
+    // Handle both positive and negative scales
+    vec2 tileMin, tileMax;
+    if (tileScale.x > 0.0)
+    {
+        tileMin.x = tileOffset.x + texelSize.x * 0.5;
+        tileMax.x = tileOffset.x + tileScale.x - texelSize.x * 0.5;
+    }
+    else
+    {
+        tileMin.x = tileOffset.x + tileScale.x + texelSize.x * 0.5;
+        tileMax.x = tileOffset.x - texelSize.x * 0.5;
+    }
+    
+    if (tileScale.y > 0.0)
+    {
+        tileMin.y = tileOffset.y + texelSize.y * 0.5;
+        tileMax.y = tileOffset.y + tileScale.y - texelSize.y * 0.5;
+    }
+    else
+    {
+        tileMin.y = tileOffset.y + tileScale.y + texelSize.y * 0.5;
+        tileMax.y = tileOffset.y - texelSize.y * 0.5;
+    }
+    
     atlasUV = clamp(atlasUV, tileMin, tileMax);
     
     // Use original depth for comparison
