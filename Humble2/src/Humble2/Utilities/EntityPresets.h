@@ -60,6 +60,23 @@ namespace HBL2
 			return entity;
 		}
 
+		static entt::entity CreateSkyLight()
+		{
+			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+			if (scene == nullptr)
+			{
+				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a sky light entity.");
+				return entt::null;
+			}
+
+			auto entity = scene->CreateEntity("New SkyLight");
+			scene->AddComponent<HBL2::Component::SkyLight>(entity);
+			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
+
+			return entity;
+		}
+
 		static entt::entity CreatePlane()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
@@ -74,46 +91,50 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			float vertexBuffer[] =
+			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/plane.obj");
+			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
+
+			return entity;
+		}
+
+		static entt::entity CreateTessellatedPlane()
+		{
+			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+			if (scene == nullptr)
 			{
-				-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-				 0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-				 0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-				 0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-			    -0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-			    -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-			};
+				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a tessellated plane entity.");
+				return entt::null;
+			}
 
-			auto buffer = ResourceManager::Instance->CreateBuffer({
-				.debugName = "plane-vertex-buffer",
-				.byteSize = sizeof(float) * 48,
-				.initialData = vertexBuffer,
-			});
+			auto entity = scene->CreateEntity("TessellatedPlane");
+			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
+			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			auto planeMesh = ResourceManager::Instance->CreateMesh({
-				.debugName = "plane-mesh",
-				.meshes = {
-					{
-						.debugName = "plane-sub-mesh",
-						.subMeshes = {
-							{
-								.vertexOffset = 0,
-								.vertexCount = 6,
-							}
-						},
-						.vertexBuffers = { buffer },
-					}
-				}
-			});
-
-			staticMesh.Mesh = planeMesh;
+			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/tessellated_plane.obj");
+			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
 
 			return entity;
 		}
 
 		static entt::entity CreateCube()
 		{
-			return entt::null;
+			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+			if (scene == nullptr)
+			{
+				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a cube entity.");
+				return entt::null;
+			}
+
+			auto entity = scene->CreateEntity("Cube");
+			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
+			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
+
+			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/cube.obj");
+			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
+
+			return entity;
 		}
 
 		static entt::entity CreateSphere()
@@ -130,81 +151,68 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			std::vector<float> vertexBuffer;
-			std::vector<uint32_t> indices;
+			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/sphere.obj");
+			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
 
-			uint32_t xSegments = 8;
-			uint32_t ySegments = 8;
+			return entity;
+		}
 
-			for (uint32_t x = 0; x <= xSegments; x++)
+		static entt::entity CreateCapsule()
+		{
+			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+			if (scene == nullptr)
 			{
-				for (uint32_t y = 0; y <= ySegments; y++)
-				{
-					float xSeg = (float)x / (float)xSegments;
-					float ySeg = (float)y / (float)ySegments;
-
-					float xPos = glm::cos(xSeg * 2.0f * glm::pi<float>()) * glm::sin(ySeg * glm::pi<float>());
-					float yPos = glm::cos(ySeg * glm::pi<float>());
-					float zPos = glm::sin(xSeg * 2.0f * glm::pi<float>()) * glm::sin(ySeg * glm::pi<float>());
-
-					vertexBuffer.insert(vertexBuffer.end(), { xPos, yPos, zPos, xSeg, ySeg, xPos, yPos, zPos });
-				}
+				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a capsule entity.");
+				return entt::null;
 			}
 
-			bool oddRow = false;
+			auto entity = scene->CreateEntity("Capsule");
+			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
+			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			for (uint32_t y = 0; y < ySegments; y++)
+			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/capsule.obj");
+			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
+
+			return entity;
+		}
+
+		static entt::entity CreateCylinder()
+		{
+			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+			if (scene == nullptr)
 			{
-				if (!oddRow)
-				{
-					for (uint32_t x = 0; x <= xSegments; x++)
-					{
-						indices.push_back(y * (xSegments + 1) + x);
-						indices.push_back((y + 1) * (xSegments + 1) + x);
-					}
-				}
-				else
-				{
-					for (uint32_t x = xSegments; x >= 0; x--)
-					{
-						indices.push_back((y + 1) * (xSegments + 1) + x);
-						indices.push_back(y * (xSegments + 1) + x);
-					}
-				}
+				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a cylinder entity.");
+				return entt::null;
 			}
 
-			auto buffer = ResourceManager::Instance->CreateBuffer({
-				.debugName = "sphere_vertex_buffer",
-				.byteSize = (uint32_t)sizeof(float) * (uint32_t)vertexBuffer.size(),
-				.initialData = vertexBuffer.data(),
-			});
+			auto entity = scene->CreateEntity("Cylinder");
+			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
+			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			auto indexBuffer = ResourceManager::Instance->CreateBuffer({
-				.debugName = "sphere_index_buffer",
-				.byteSize = (uint32_t)sizeof(float) * (uint32_t)vertexBuffer.size(),
-				.initialData = vertexBuffer.data(),
-			});
+			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/cylinder.obj");
+			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
 
-			auto sphereMesh = ResourceManager::Instance->CreateMesh({
-				.debugName = "sphere-mesh",
-				.meshes = {
-					{
-						.debugName = "sphere-sub-mesh",
-						.subMeshes = {
-							{
-								.indexOffset = 0,
-								.indexCount = (uint32_t)indices.size(),
-								.vertexOffset = 0,
-								.vertexCount = (uint32_t)vertexBuffer.size() / 8,
-							}
-						},
-						.indexBuffer = indexBuffer,
-						.vertexBuffers = { buffer },
-					}
-				}
-			});
+			return entity;
+		}
 
-			staticMesh.Mesh = sphereMesh;
+		static entt::entity CreateTorus()
+		{
+			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+			if (scene == nullptr)
+			{
+				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a torus entity.");
+				return entt::null;
+			}
+
+			auto entity = scene->CreateEntity("Torus");
+			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
+			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
+
+			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/torus.obj");
+			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
 
 			return entity;
 		}

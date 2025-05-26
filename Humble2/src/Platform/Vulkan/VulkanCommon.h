@@ -3,6 +3,8 @@
 #include <Base.h>
 #include <Renderer\Enums.h>
 
+#include <Utilities/Collections/BitFlags.h>
+
 #include "vulkan\vulkan.h"
 #include "vma\vk_mem_alloc.h"
 
@@ -51,6 +53,8 @@ namespace HBL2
 
 		VkImageUsageFlags TextureUsageToVkImageUsageFlags(TextureUsage textureUsage);
 
+		VkImageUsageFlags TextureUsageFlagToVkImageUsageFlags(BitFlags<TextureUsage> textureUsageFlags);
+
 		VkImageLayout TextureLayoutToVkImageLayout(TextureLayout textureLayout);
 
 		VkAttachmentLoadOp LoadOperationToVkAttachmentLoadOp(LoadOperation loadOperation);
@@ -60,5 +64,15 @@ namespace HBL2
 		VmaMemoryUsage MemoryUsageToVmaMemoryUsage(MemoryUsage memoryUsage);
 
 		VkBufferUsageFlags BufferUsageToVkBufferUsageFlags(BufferUsage bufferUsage);
+
+		VkPipelineStageFlags PipelineStageToVkPipelineStageFlags(PipelineStage pipelineStage);
+
+		VkPipelineStageFlags CurrentTextureLayoutToVkPipelineStageFlags(TextureLayout currentLayout);
+
+		VkPipelineStageFlags NewTextureLayoutToVkPipelineStageFlags(TextureLayout newLayout);
+
+		VkAccessFlags CurrentTextureLayoutToVkAccessFlags(TextureLayout currentLayout);
+
+		VkAccessFlags NewTextureLayoutToVkAccessFlags(TextureLayout newLayout);
 	}
 }

@@ -47,13 +47,16 @@ namespace HBL2
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 		//io.ConfigViewportsNoAutoMerge = true;
 		//io.ConfigViewportsNoTaskBarIcon = true;
 
+		const auto& boldFontPath = std::filesystem::path("assets") / "fonts" / "OpenSans-Bold.ttf";
+		const auto& regularFontPath = std::filesystem::path("assets") / "fonts" / "OpenSans-Regular.ttf";
+
 		float fontSize = 18.0f;
-		io.Fonts->AddFontFromFileTTF("assets/fonts/OpenSans-Bold.ttf", fontSize);
-		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/OpenSans-Regular.ttf", fontSize);
+		io.Fonts->AddFontFromFileTTF(boldFontPath.string().c_str(), fontSize);
+		io.FontDefault = io.Fonts->AddFontFromFileTTF(regularFontPath.string().c_str(), fontSize);
 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
@@ -106,7 +109,7 @@ namespace HBL2
 	{
 		ImGui::Render();
 
-		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI, RenderPassStage::UserInterface);
+		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI);
 		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_ImGuiRenderPass, m_Renderer->GetMainFrameBuffer());
 
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);
@@ -121,6 +124,8 @@ namespace HBL2
 		}
 
 		commandBuffer->EndRenderPass(*renderPassRenderer);
+
+		commandBuffer->EndCommandRecording();
 		commandBuffer->Submit();
 	}
 

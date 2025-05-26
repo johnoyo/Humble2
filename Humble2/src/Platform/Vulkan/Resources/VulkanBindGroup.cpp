@@ -88,11 +88,23 @@ namespace HBL2
 		{
 			VulkanTexture* texture = rm->GetTexture(Textures[i]);
 
+			VkDescriptorType type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
+
+			switch (bindGroupLayout->TextureBindings[i].type)
+			{
+			case TextureBindingType::IMAGE_SAMPLER:
+				type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				break;
+			case TextureBindingType::STORAGE_IMAGE:
+				type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+				break;
+			}
+
 			descriptorImageInfo[i] =
 			{
 				.sampler = texture->Sampler,
 				.imageView = texture->ImageView,
-				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				.imageLayout = texture->ImageLayout,
 			};
 
 			writeDescriptorSet[Buffers.size() + i] =
@@ -102,7 +114,7 @@ namespace HBL2
 				.dstSet = DescriptorSet,
 				.dstBinding = bindGroupLayout->TextureBindings[i].slot,
 				.descriptorCount = 1,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.descriptorType = type,
 				.pImageInfo = &descriptorImageInfo[i],
 			};
 		}

@@ -174,6 +174,16 @@ namespace HBL2
 				panel.Render = [this](float ts) { DrawTrayPanel(); };
 			}
 
+			{
+				// Editor settings panel.
+				auto editorSettingsPanel = m_Context->CreateEntity();
+				m_Context->GetComponent<HBL2::Component::Tag>(editorSettingsPanel).Name = "Hidden";
+				auto& panel = m_Context->AddComponent<Component::EditorPanel>(editorSettingsPanel);
+				panel.Name = "Editor Settings";
+				panel.Type = Component::EditorPanel::Panel::EditorSettings;
+				panel.Render = [this](float ts) { DrawEditorSettingsPanel(); };
+			}
+
 			// TODO: Remove from here!
 
 			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Link, LinkEditor>();

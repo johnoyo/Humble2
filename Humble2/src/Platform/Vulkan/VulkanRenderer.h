@@ -22,44 +22,16 @@ namespace HBL2
 	struct FrameData
 	{
 		VkSemaphore ImageAvailableSemaphore; // Signal from swapchain.
-
-		VkSemaphore ShadowRenderFinishedSemaphore; // Signal that shadow rendering is done.
-		VkSemaphore OpaqueRenderFinishedSemaphore; // Signal that opaque rendering is done.
-		VkSemaphore SkyboxRenderFinishedSemaphore; // Signal that skybox rendering is done.
-		VkSemaphore TransparentRenderFinishedSemaphore; // Signal that transparent rendering is done.
-
-		VkSemaphore OpaqueSpriteRenderFinishedSemaphore; // Signal that opaque rendering is done.
-
-		VkSemaphore PostProcessRenderFinishedSemaphore; // Signal that post process rendering is done.
-		VkSemaphore PresentRenderFinishedSemaphore; // Signal that rendering onto the full screen quad is done.
-
+		VkSemaphore MainRenderFinishedSemaphore; // Signal that main render is done.
 		VkSemaphore ImGuiRenderFinishedSemaphore; // Signal that UI render is done.
 
 		VkFence InFlightFence;
 
 		VkCommandPool CommandPool;
+		VkCommandBuffer MainCommandBuffer;
 		VkCommandBuffer ImGuiCommandBuffer;
 
-		VkCommandBuffer ShadowCommandBuffer;
-		VkCommandBuffer OpaqueCommandBuffer;
-		VkCommandBuffer SkyboxCommandBuffer;
-		VkCommandBuffer TransparentCommandBuffer;
-
-		VkCommandBuffer OpaqueSpriteCommandBuffer;
-
-		VkCommandBuffer PostProcessCommandBuffer;
-		VkCommandBuffer PresentCommandBuffer;
-
-		VkCommandPool SecondaryCommandPool;
-		std::vector<VkCommandBuffer> SecondaryShadowCommandBuffers;
-		std::vector<VkCommandBuffer> SecondaryOpaqueCommandBuffers;
-		std::vector<VkCommandBuffer> SecondarySkyboxCommandBuffers;
-		std::vector<VkCommandBuffer> SecondaryTransparentCommandBuffers;
-
-		std::vector<VkCommandBuffer> SecondaryOpaqueSpriteCommandBuffers;
-
-		std::vector<VkCommandBuffer> SecondaryPostProcessCommandBuffers;
-
+		Handle<BindGroup> ShadowBindings;
 		Handle<BindGroup> GlobalBindings2D;
 		Handle<BindGroup> GlobalBindings3D;
 		Handle<BindGroup> GlobalPresentBindings;
@@ -67,9 +39,9 @@ namespace HBL2
 
 	struct UploadContext
 	{
-		VkFence UploadFence;
-		VkCommandPool CommandPool;
-		VkCommandBuffer CommandBuffer;
+		VkFence UploadFence = VK_NULL_HANDLE;
+		VkCommandPool CommandPool = VK_NULL_HANDLE;
+		VkCommandBuffer CommandBuffer = VK_NULL_HANDLE;
 	};
 
 	class VulkanRenderer final : public Renderer
@@ -82,11 +54,12 @@ namespace HBL2
 		virtual void Present() override;
 		virtual void Clean() override;
 
-		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type, RenderPassStage stage) override;
+		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
 
 		virtual void* GetDepthAttachment() override { return nullptr; }
 		virtual void* GetColorAttachment() override { return m_ColorAttachmentID; }
 
+		virtual Handle<BindGroup> GetShadowBindings() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].ShadowBindings; }
 		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalBindings2D; }
 		virtual Handle<BindGroup> GetGlobalBindings3D() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalBindings3D; }
 		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalPresentBindings; }
@@ -117,10 +90,11 @@ namespace HBL2
 		void CreateAllocator();
 		void CreateSwapchain();
 		void CreateImageViews();
+		void CreateSyncStructures();
 		void CreateCommands();
+		void CreateUploadContextCommands();
 		void CreateRenderPass();
 		void CreateFrameBuffers();
-		void CreateSyncStructures();
 		void CreateDescriptorPool();
 		void CreateDescriptorSets();
 
@@ -137,25 +111,10 @@ namespace HBL2
 		DeletionQueue m_MainDeletionQueue;
 
 		FrameData m_Frames[FRAME_OVERLAP];
-
-		VulkanCommandBuffer m_ShadowCommandBuffers[FRAME_OVERLAP];
-		VulkanCommandBuffer m_OpaqueCommandBuffers[FRAME_OVERLAP];
-		VulkanCommandBuffer m_SkyboxCommandBuffers[FRAME_OVERLAP];
-		VulkanCommandBuffer m_TransparentCommandBuffers[FRAME_OVERLAP];
-
-		VulkanCommandBuffer m_OpaqueSpriteCommandBuffers[FRAME_OVERLAP];
-
-		VulkanCommandBuffer m_PostProcessCommandBuffers[FRAME_OVERLAP];
-		VulkanCommandBuffer m_PresentCommandBuffers[FRAME_OVERLAP];
 		
+		VulkanCommandBuffer m_MainCommandBuffers[FRAME_OVERLAP];
 		VulkanCommandBuffer m_ImGuiCommandBuffers[FRAME_OVERLAP];
-		UploadContext m_UploadContext;
-
-		std::vector<VulkanCommandBuffer> m_SecondaryShadowCommandBuffers[FRAME_OVERLAP];
-		std::vector<VulkanCommandBuffer> m_SecondaryOpaqueCommandBuffers[FRAME_OVERLAP];
-		std::vector<VulkanCommandBuffer> m_SecondarySkyBoxCommandBuffers[FRAME_OVERLAP];
-		std::vector<VulkanCommandBuffer> m_SecondaryTransparentCommandBuffers[FRAME_OVERLAP];
-		std::vector<VulkanCommandBuffer> m_SecondaryPostProcessCommandBuffers[FRAME_OVERLAP];
+		static thread_local UploadContext s_UploadContext;
 
 		uint32_t m_SwapchainImageIndex = 0;
 

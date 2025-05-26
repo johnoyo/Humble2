@@ -1,6 +1,7 @@
 #include "AssetManager.h"
 
 #include "Project\Project.h"
+#include "Utilities/ShaderUtilities.h"
 
 namespace HBL2
 {
@@ -36,7 +37,7 @@ namespace HBL2
 
 		Handle<Asset> assetHandle;
 
-		if (extension == ".png" || extension == ".jpg" || extension == ".tga")
+		if (extension == ".png" || extension == ".jpg" || extension == ".tga" || extension == ".hdr")
 		{
 			assetHandle = AssetManager::Instance->CreateAsset({
 				.debugName = "texture-asset",
@@ -98,12 +99,43 @@ namespace HBL2
 
 	void AssetManager::DeregisterAssets()
 	{
-		for (auto handle : m_RegisteredAssets)
+		WaitForAsyncJobs();
+		
+		const auto& builtInShaderAssets = ShaderUtilities::Get().GetBuiltInShaderAssets();
+
+		for (const auto handle : m_RegisteredAssets)
 		{
-			AssetManager::Instance->DeleteAsset(handle);
+			// Skip if is a built in shader asset.
+			bool isBuiltInShaderAsset = false;
+
+			for (const auto shaderAssetHandle : builtInShaderAssets)
+			{
+				if (handle == shaderAssetHandle)
+				{
+					isBuiltInShaderAsset = true;
+					break;
+				}
+			}
+
+			if (isBuiltInShaderAsset)
+			{
+				continue;
+			}
+
+			// Delete assets.
+			DeleteAsset(handle);
 		}
 
-		m_RegisteredAssets.clear();
-		m_RegisteredAssetMap.clear();
+		// Clear asset handle caches.
+		m_RegisteredAssets.Clear();
+		m_RegisteredAssetMap.Clear();
+
+		// Reregister built in shader assets.
+		for (const auto shaderAssetHandle : builtInShaderAssets)
+		{
+			m_RegisteredAssets.Add(shaderAssetHandle);
+			Asset* asset = GetAssetMetadata(shaderAssetHandle);
+			m_RegisteredAssetMap[asset->UUID] = shaderAssetHandle;
+		}
 	}
 }

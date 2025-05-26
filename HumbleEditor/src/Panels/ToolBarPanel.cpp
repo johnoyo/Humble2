@@ -14,63 +14,75 @@ namespace HBL2
 				{
 					if (ImGui::MenuItem("New Project"))
 					{
-						std::string filepath = HBL2::FileDialogs::SaveFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), { "Humble Project Files (*.hblproj)", "*.hblproj" });
+						const std::string& filepath = HBL2::FileDialogs::SaveFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), { "Humble Project Files (*.hblproj)", "*.hblproj" });
 
-						std::string projectName = std::filesystem::path(filepath).filename().stem().string();
-
-						// Clean up registered systems.
-						for (ISystem* system : m_ActiveScene->GetSystems())
+						if (!filepath.empty())
 						{
-							system->OnDestroy();
-						}
+							const std::string& projectName = std::filesystem::path(filepath).filename().stem().string();
 
-						// Unload all registered assets.
-						AssetManager::Instance->DeregisterAssets();
+							// Clean up registered systems.
+							for (ISystem* system : m_ActiveScene->GetSystems())
+							{
+								system->OnDestroy();
+							}
 
-						// Free unity build dll.
-						NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
+							// Unload all registered assets.
+							AssetManager::Instance->DeregisterAssets();
 
-						// Create and open new project
-						HBL2::Project::Create(projectName)->Save(filepath);
+							// Free unity build dll.
+							NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
 
-						auto assetHandle = AssetManager::Instance->CreateAsset({
-							.debugName = "Empty Scene",
-							.filePath = HBL2::Project::GetActive()->GetSpecification().StartingScene,
-							.type = AssetType::Scene,
-						});
+							// Clear the invalid cached mesh handles, since we deregistered all the assets.
+							MeshUtilities::Get().ClearCachedHandles();
 
-						HBL2::Project::OpenStartingScene();
+							// Create and open new project
+							HBL2::Project::Create(projectName)->Save(filepath);
 
-						m_ProjectChanged = true;
-						m_EditorScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
-						m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
-					}
-					else if (ImGui::MenuItem("Open Project"))
-					{
-						std::string filepath = HBL2::FileDialogs::OpenFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), {"Humble Project Files (*.hblproj)", "*.hblproj"});
+							auto assetHandle = AssetManager::Instance->CreateAsset({
+								.debugName = "Empty Scene",
+								.filePath = HBL2::Project::GetActive()->GetSpecification().StartingScene,
+								.type = AssetType::Scene,
+								});
 
-						for (ISystem* system : m_ActiveScene->GetSystems())
-						{
-							system->OnDestroy();
-						}
-
-						// Unload all registered assets.
-						AssetManager::Instance->DeregisterAssets();
-
-						// Free unity build dll.
-						NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
-
-						if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
-						{
 							HBL2::Project::OpenStartingScene();
 
 							m_ProjectChanged = true;
 							m_EditorScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
 							m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
 						}
-						else
+					}
+					else if (ImGui::MenuItem("Open Project"))
+					{
+						const std::string& filepath = HBL2::FileDialogs::OpenFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), {"Humble Project Files (*.hblproj)", "*.hblproj"});
+
+						if (!filepath.empty())
 						{
-							HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
+							for (ISystem* system : m_ActiveScene->GetSystems())
+							{
+								system->OnDestroy();
+							}
+
+							// Unload all registered assets.
+							AssetManager::Instance->DeregisterAssets();
+
+							// Free unity build dll.
+							NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
+
+							// Clear the invalid cached mesh handles, since we deregistered all the assets.
+							MeshUtilities::Get().ClearCachedHandles();
+
+							if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
+							{
+								HBL2::Project::OpenStartingScene();
+
+								m_ProjectChanged = true;
+								m_EditorScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
+								m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
+							}
+							else
+							{
+								HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
+							}
 						}
 					}
 					else if (ImGui::MenuItem("Save Scene"))

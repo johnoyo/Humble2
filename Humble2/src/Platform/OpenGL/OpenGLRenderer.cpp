@@ -10,20 +10,11 @@ namespace HBL2
 #ifdef DEBUG
 		GLDebug::EnableGLDebugging();
 #endif
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glBlendEquation(GL_FUNC_ADD);
+		// Origin at upper-left, depth range [0..1] (same as Vulkan)
+		glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
+		glDepthRangef(0.0f, 1.0f);
 
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
-		glFrontFace(GL_CCW);
-
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LESS);
-
-		m_OpaqueCommandBuffer = new OpenGLCommandBuffer();
-		m_OpaqueSpriteCommandBuffer = new OpenGLCommandBuffer();
-		m_PresentCommandBuffer = new OpenGLCommandBuffer();
+		m_MainCommandBuffer = new OpenGLCommandBuffer();
 		m_UserInterfaceCommandBuffer = new OpenGLCommandBuffer();
 
 		CreateBindings();
@@ -34,8 +25,8 @@ namespace HBL2
 	{
 		m_GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
 			.debugName = "global-present-bind-group",
-			.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
-			.textures = { Renderer::Instance->MainColorTexture },
+			.layout = GetGlobalPresentBindingsLayout(),
+			.textures = { MainColorTexture },
 		});
 
 		EventDispatcher::Get().Register<FramebufferSizeEvent>([&](const FramebufferSizeEvent& e)
@@ -51,28 +42,12 @@ namespace HBL2
 		TempUniformRingBuffer->Invalidate();
 	}
 
-	CommandBuffer* OpenGLRenderer::BeginCommandRecording(CommandBufferType type, RenderPassStage stage)
+	CommandBuffer* OpenGLRenderer::BeginCommandRecording(CommandBufferType type)
 	{
 		switch (type)
 		{
 		case HBL2::CommandBufferType::MAIN:
-			switch (stage)
-			{
-			case HBL2::RenderPassStage::Shadow:
-				break;
-			case HBL2::RenderPassStage::Opaque:
-				return m_OpaqueCommandBuffer;
-			case HBL2::RenderPassStage::Skybox:
-				break;
-			case HBL2::RenderPassStage::Transparent:
-				break;
-			case HBL2::RenderPassStage::OpaqueSprite:
-				return m_OpaqueSpriteCommandBuffer;
-			case HBL2::RenderPassStage::PostProcess:
-				break;
-			case HBL2::RenderPassStage::Present:
-				return m_PresentCommandBuffer;
-			}
+			return m_MainCommandBuffer;
 		case HBL2::CommandBufferType::CUSTOM:
 			HBL2_CORE_ASSERT(false, "Custom Command buffers not implemented yet!");
 			break;
@@ -108,16 +83,31 @@ namespace HBL2
 		}
 
 		// Destroy old offscreen textures
+		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
 
 		// Recreate the offscreen texture (render target)
+		IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "intermediate-color-target",
+			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+			.format = Format::RGBA16_FLOAT,
+			.internalFormat = Format::RGBA16_FLOAT,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::COLOR,
+			.sampler =
+			{
+				.filter = Filter::LINEAR,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
 		MainColorTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "viewport-color-target",
 			.dimensions = { width, height, 1 },
 			.format = Format::BGRA8_UNORM,
 			.internalFormat = Format::BGRA8_UNORM,
-			.usage = TextureUsage::RENDER_ATTACHMENT,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
 			.aspect = TextureAspect::COLOR,
 			.sampler =
 			{
@@ -133,7 +123,12 @@ namespace HBL2
 			.internalFormat = Format::D32_FLOAT,
 			.usage = TextureUsage::DEPTH_STENCIL,
 			.aspect = TextureAspect::DEPTH,
-			.createSampler = false,
+			.createSampler = true,
+			.sampler =
+			{
+				.filter = Filter::NEAREST,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
 		});
 
 		// Update descriptor sets (for the quad shader)
@@ -157,8 +152,10 @@ namespace HBL2
 
 	void OpenGLRenderer::Clean()
 	{
+		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
+		m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
 
 		TempUniformRingBuffer->Free();
 
@@ -166,6 +163,7 @@ namespace HBL2
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
 
+		m_ResourceManager->DeleteBindGroup(m_ShadowBindings);
 		m_ResourceManager->DeleteBindGroup(m_GlobalBindings2D);
 		m_ResourceManager->DeleteBindGroup(m_GlobalBindings3D);
 		m_ResourceManager->DeleteBindGroup(m_GlobalPresentBindings);
@@ -227,6 +225,38 @@ namespace HBL2
 			}
 		});
 
+		// Bindings for shadow rendering.
+		m_ShadowBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "shadow-bindings-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+			},
+		});
+
+		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
+		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(64, uniformOffset);
+
+		auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
+			.debugName = "light-space-buffer",
+			.usage = BufferUsage::UNIFORM,
+			.usageHint = BufferUsageHint::DYNAMIC,
+			.memoryUsage = MemoryUsage::GPU_CPU,
+			.byteSize = 16 * alignedSize,
+			.initialData = nullptr
+		});
+
+		m_ShadowBindings = m_ResourceManager->CreateBindGroup({
+			.debugName = "shadow-bind-group",
+			.layout = m_ShadowBindingsLayout,
+			.buffers = {
+				{ .buffer = lightSpaceBuffer },
+			}
+		});
+
 		// Global bindings for the 3D rendering.
 		m_GlobalBindingsLayout3D = m_ResourceManager->CreateBindGroupLayout({
 			.debugName = "global-bind-group-layout",
@@ -259,7 +289,7 @@ namespace HBL2
 			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::GPU_CPU,
 			.byteSize = sizeof(LightData),
-			.initialData = nullptr
+			.initialData = nullptr,
 		});
 
 		m_GlobalBindings3D = m_ResourceManager->CreateBindGroup({
@@ -306,6 +336,28 @@ namespace HBL2
 			},
 			.colorTargets = {
 				{
+					.loadOp = LoadOperation::CLEAR,
+					.storeOp = StoreOperation::STORE,
+					.prevUsage = TextureLayout::UNDEFINED,
+					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
+				},
+			},
+		});
+
+		m_RenderingRenderPass = ResourceManager::Instance->CreateRenderPass({
+			.debugName = "main-renderpass",
+			.layout = renderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::CLEAR,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::UNDEFINED,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
+			},
+			.colorTargets = {
+				{
+					.format = Format::RGBA16_FLOAT,
 					.loadOp = LoadOperation::CLEAR,
 					.storeOp = StoreOperation::STORE,
 					.prevUsage = TextureLayout::UNDEFINED,

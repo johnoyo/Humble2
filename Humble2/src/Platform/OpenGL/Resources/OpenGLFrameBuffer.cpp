@@ -34,6 +34,13 @@ namespace HBL2
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture->RendererId, 0);
 		}
 
+		if (ColorTargets.size() == 0)
+		{
+			// No color buffer needed
+			glDrawBuffer(GL_NONE);
+			glReadBuffer(GL_NONE);
+		}
+
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 		if (status != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -41,5 +48,18 @@ namespace HBL2
 		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+
+	void OpenGLFrameBuffer::Resize(uint32_t width, uint32_t height)
+	{
+		Width = width;
+		Height = height;
+
+		Create();
+	}
+
+	void OpenGLFrameBuffer::Destroy()
+	{
+		glDeleteFramebuffers(1, &RendererId);
 	}
 }

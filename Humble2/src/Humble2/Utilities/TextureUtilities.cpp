@@ -12,12 +12,12 @@ namespace HBL2
 		return instance;
 	}
 
-	stbi_uc* TextureUtilities::Load(const std::string& path, TextureSettings& settings)
+	void* TextureUtilities::Load(const std::string& path, TextureSettings& settings)
 	{
 		HBL2_FUNC_PROFILE();
 
 		int bits = 0;
-		stbi_uc* pixels = nullptr;
+		void* pixels = nullptr;
 
 		if (!path.empty())
 		{
@@ -29,8 +29,21 @@ namespace HBL2
 			{
 				stbi_set_flip_vertically_on_load(0);
 			}
-			pixels = stbi_load(path.c_str(), &settings.Width, &settings.Height, &bits, STBI_rgb_alpha);
-			assert(pixels);
+
+			const auto& pathAsPath = std::filesystem::path(path);
+
+			if (pathAsPath.extension() == ".hdr")
+			{
+				pixels = stbi_loadf(path.c_str(), &settings.Width, &settings.Height, &bits, STBI_rgb_alpha);
+				settings.PixelFormat = Format::RGBA32_FLOAT;
+			}
+			else
+			{
+				pixels = stbi_load(path.c_str(), &settings.Width, &settings.Height, &bits, STBI_rgb_alpha);
+				settings.PixelFormat = Format::RGBA8_RGB;
+			}
+
+			HBL2_CORE_ASSERT(pixels, "Failed to load pixels!");
 		}
 
 		return pixels;
@@ -130,7 +143,7 @@ namespace HBL2
 		WhiteTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "white-texture",
 			.dimensions = { 1.0f, 1.0f, 1.0f },
-			.usage = TextureUsage::SAMPLED,
+			.usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },
 			.aspect = TextureAspect::COLOR,
 			.initialData = nullptr,
 		});

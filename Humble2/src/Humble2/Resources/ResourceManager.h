@@ -3,14 +3,20 @@
 #include "Handle.h"
 #include "Pool.h"
 #include "Types.h"
-#include "Scene\Scene.h"
-#include "Scene\Script.h"
 #include "TypeDescriptors.h"
 #include "ResourceDeletionQueue.h"
-#include <Sound\Sound.h>
+
+#include "Scene\Scene.h"
+#include "Sound\Sound.h"
+#include "Scene\Script.h"
+
+#include <cstring>
+#include <stdint.h>
 
 namespace HBL2
 {
+	class CommandBuffer;
+
 	class HBL2_API ResourceManager
 	{
 	public:
@@ -29,6 +35,7 @@ namespace HBL2
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) = 0;
 		virtual void DeleteTexture(Handle<Texture> handle) = 0;
 		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) = 0;
+		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle) = 0;
 
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) = 0;
@@ -37,6 +44,7 @@ namespace HBL2
 		virtual void* GetBufferData(Handle<Buffer> handle) = 0;
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) = 0;
 		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) = 0;
+		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) = 0;
 
 		// FrameBuffers
 		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) = 0;
@@ -46,10 +54,16 @@ namespace HBL2
 		// Shaders
 		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) = 0;
 		virtual void DeleteShader(Handle<Shader> handle) = 0;
+		virtual void AddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::Variant& variantDesc) = 0;
+		uint64_t GetShaderVariantHash(const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
+		{
+			return std::hash<ShaderDescriptor::RenderPipeline::Variant>()(variantDesc);
+		}
 
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) = 0;
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) = 0;
+		virtual void UpdateBindGroup(Handle<BindGroup> handle) = 0;
 		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) = 0;
 		uint64_t GetBindGroupHash(const BindGroupDescriptor& desc)
 		{

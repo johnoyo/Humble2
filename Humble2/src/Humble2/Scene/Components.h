@@ -13,6 +13,7 @@ namespace HBL2
 	struct Mesh;
 	struct Material;
 	struct Sound;
+	struct Texture;
 
 	namespace Component
 	{
@@ -68,6 +69,8 @@ namespace HBL2
 				Orthographic = 1,
 			};
 
+			float Exposure = 1.0f;
+			float Gamma = 2.2f;
 			float ZoomLevel = 300.f;
 			float Fov = 30.f;
 			float Near = 0.1f;
@@ -81,14 +84,16 @@ namespace HBL2
 
 			struct FrustumPlane
 			{
-				glm::vec3 normal;
-				float distance;
+				glm::vec3 normal{};
+				float distance = 0.0f;
 			};
 
 			struct CameraFrustum
 			{
-				FrustumPlane Planes[6];
-			} Frustum;
+				FrustumPlane Planes[6]{};
+			};
+			
+			CameraFrustum Frustum{};
 
 			bool Primary = true;
 			bool Enabled = false;
@@ -108,11 +113,21 @@ namespace HBL2
 			{
 				Directional = 0,
 				Point,
+				Spot,
 			};
 
 			float Intensity = 1.0f;
 			glm::vec3 Color = { 1.0f, 1.0f, 1.0f };
-			float Attenuation = 10.0f;
+
+			float InnerCutOff = 12.5f;
+			float OuterCutOff = 17.5f;
+			float Distance = 50.0f;
+
+			float ConstantBias = 0.002f;
+			float SlopeBias = 0.0f;
+			float NormalOffsetScale = 0.0f;
+			float FieldOfView = 60.0f;
+			
 			Type Type = Type::Directional;
 			bool CastsShadows = false;
 			bool Enabled = true;
@@ -120,7 +135,10 @@ namespace HBL2
 
 		struct HBL2_API SkyLight
 		{
-			float Intensity = 1.0f;
+			Handle<Texture> CubeMap;
+			Handle<Material> CubeMapMaterial;
+			Handle<Texture> EquirectangularMap;
+			bool Converted = false;
 			bool Enabled = true;
 		};
 

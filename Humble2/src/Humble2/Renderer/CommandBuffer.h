@@ -1,106 +1,38 @@
 #pragma once
 
 #include "RenderPassRenderer.h"
+#include "ComputePassRenderer.h"
+
+#include "Utilities/Collections/Span.h"
 
 namespace HBL2
 {
+	struct Viewport
+	{
+		uint32_t x = std::numeric_limits<uint32_t>::max();
+		uint32_t y = std::numeric_limits<uint32_t>::max();
+		uint32_t width = std::numeric_limits<uint32_t>::max();
+		uint32_t height = std::numeric_limits<uint32_t>::max();
+
+		bool IsValid() const
+		{
+			return x != std::numeric_limits<uint32_t>::max() &&
+				   y != std::numeric_limits<uint32_t>::max() &&
+				   width != std::numeric_limits<uint32_t>::max() &&
+				   height != std::numeric_limits<uint32_t>::max();
+		}
+	};
+
 	class HBL2_API CommandBuffer
 	{
 	public:
-		virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer) = 0;
+		virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer, Viewport&& drawArea = {}) = 0;
 		virtual void EndRenderPass(const RenderPassRenderer& renderPassRenderer) = 0;
+
+		virtual ComputePassRenderer* BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite) = 0;
+		virtual void EndComputePass(const ComputePassRenderer& computePassRenderer) = 0;
+
+		virtual void EndCommandRecording() = 0;
 		virtual void Submit() = 0;
 	};
 }
-
-/*
-
-class Renderer
-{
-	void Initialize();
-	void ShutDown();
-
-	void BeginFrame();
-	CommandBuffer* BeginCommandRecording(CommandBufferType type);
-	void EndFrame();
-	void Present();
-}
-
-
-CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(COMMAND_BUFFER_TYPE::OFFSCREEN);
-
-
-CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(COMMAND_BUFFER_TYPE::MAIN);
-RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_renderPass, m_framebuffer); // m_framebuffer and m_renderPass is local to each render pass
-
-// collect draws
-
-passRenderer->drawSubpass(drawArea, draws);
-commandBuffer->endRenderPass(passRenderer);
-commandBuffer->submit();
-
-CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(COMMAND_BUFFER_TYPE::UI);
-
----
-
-class VulkanCommandBuffer : CommandBuffer
-{
-public:
-	RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer);
-	virtual void EndRenderPass(const RenderPassRenderer& renderPassRenderer) override;
-	virtual void Submit() override;
-
-private:
-	VkCommandPool m_CommandPool;
-	VkCommandBuffer m_CommandBuffer;
-	Handle<RenderPass> m_RenderPass;
-	Handle<FrameBuffer> m_FrameBuffer;
-}
-
-class VulkanRenderPassRenderer : RenderPassRenderer
-{
-public:
-	virtual void DrawSubPass() override;
-
-private:
-	VkCommandBuffer m_CommandBuffer;
-}
-
-*/
-
-/*
-
-while()
-{
-	BeginFrame();
-
-	Renderer::Instance->BeginFrame();
-	m_Specification.Context->OnUpdate(m_DeltaTime);
-	Renderer::Instance->EndFrame();
-
-	ImGuiRenderer::Instance->BeginFrame();
-	m_Specification.Context->OnGuiRender(m_DeltaTime);
-	ImGuiRenderer::Instance->EndFrame();
-
-	EndFrame();
-}
-	
-*/
-
-/*
-
-class RenderPass
-{
-	void Bake();
-}
-
-void OnUpdate()
-{
-	auto& renderables = m_Context->GetRegistry().group<Component::StaticMesh>(entt::get<Component::Transform>)
-
-	RenderPass::Shadow->Bake();
-	RenderPass::Main->Bake();
-	RenderPass::UI->Bake();
-}
-
-*/

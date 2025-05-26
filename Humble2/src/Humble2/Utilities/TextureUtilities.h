@@ -9,9 +9,10 @@ namespace HBL2
 {
 	struct HBL2_API TextureSettings
 	{
-		int Width;
-		int Height;
+		int Width = 0;
+		int Height = 0;
 		bool Flip = false;
+		Format PixelFormat = Format::RGBA8_RGB;
 	};
 
 	class HBL2_API TextureUtilities
@@ -21,7 +22,7 @@ namespace HBL2
 
 		static TextureUtilities& Get();
 
-		stbi_uc* Load(const std::string& path, TextureSettings& settings);
+		void* Load(const std::string& path, TextureSettings& settings);
 		bool Save(const std::filesystem::path& path, const Span<const std::byte>& bytes, bool flip = false);
 
 		void CreateAssetMetadataFile(Handle<Asset> handle);

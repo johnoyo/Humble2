@@ -9,52 +9,136 @@
 
 namespace HBL2
 {
-    /// <summary>
-    /// An unordered collection of unique elements that provides O(1) average-time complexity for insertions, deletions, and lookups.
-    /// Useful for fast membership testing and duplicate elimination.
-    /// </summary>
-    /// <typeparam name="T">The type of the element to store in the array.</typeparam>
-    /// <typeparam name="TAllocator">The allocator type to use.</typeparam>
+    /**
+     * @brief An unordered collection of unique elements that provides O(1) average-time complexity for insertions, deletions, and lookups.
+     *
+     * Useful for fast membership testing and duplicate elimination.
+     *
+     * @tparam T The type of the element to store in the set.
+     * @tparam TAllocator The allocator type to use.
+     */
     template<typename T, typename TAllocator = StandardAllocator>
     class Set
     {
     public:
-        /// <summary>
-        /// Constructs a Set with an optional initial capacity.
-        /// </summary>
-        /// <param name="initialCapacity">The starting capacity of the set.</param>
+        /**
+         * @brief Constructs a Set with an optional initial capacity.
+         *
+         * @param initialCapacity The starting capacity of the set (default is 16).
+         */
         Set(uint32_t initialCapacity = 16)
-            : m_Capacity(initialCapacity), m_CurrentSize(0)
+            : m_Capacity(initialCapacity), m_CurrentSize(0), m_Allocator(nullptr)
         {
-            m_Allocator = new StandardAllocator;
             AllocateMemory(m_Capacity);
         }
 
-        /// <summary>
-        /// Constructs a Set with an optional initial capacity and a custom allocator.
-        /// </summary>
-        /// <param name="allocator">The allocator to use for memory allocation.</param>
-        /// <param name="initialCapacity">The starting capacity of the set.</param>
+        /**
+         * @brief Constructs a Set with an optional initial capacity and a custom allocator.
+         *
+         * @param allocator The allocator to use for memory allocation.
+         * @param initialCapacity The starting capacity of the set (default is 16).
+         */
         Set(TAllocator* allocator, uint32_t initialCapacity = 16)
             : m_Capacity(initialCapacity), m_CurrentSize(0), m_Allocator(allocator)
         {
             AllocateMemory(m_Capacity);
         }
 
-        /// <summary>
-        /// Destructor to release allocated memory.
-        /// </summary>
-        ~Set()
+        /**
+         * @brief Copy constructor.
+         *
+         * @param other The Set to copy from.
+         */
+        Set(const Set& other)
+            : m_Capacity(other.m_Capacity), m_CurrentSize(other.m_CurrentSize), m_Allocator(other.m_Allocator)
         {
-            m_Allocator->Deallocate<T>(m_Data);
-            m_Allocator->Deallocate<bool>(m_Used);
+            AllocateMemory(m_Capacity);
+            std::memcpy(m_Data, other.m_Data, sizeof(T) * m_Capacity);
+            std::memcpy(m_Used, other.m_Used, sizeof(bool) * m_Capacity);
         }
 
-        /// <summary>
-        /// Inserts an element in the set.
-        /// </summary>
-        /// <param name="value">The element to insert.</param>
-        /// <returns>True if inserted, false if already exists.</returns>
+        /**
+         * @brief Move constructor.
+         *
+         * @param other The Set to move from.
+         */
+        Set(Set&& other) noexcept
+            : m_Data(other.m_Data), m_Used(other.m_Used), m_Capacity(other.m_Capacity), m_CurrentSize(other.m_CurrentSize), m_Allocator(other.m_Allocator)
+        {
+            other.m_Data = nullptr;
+            other.m_Used = nullptr;
+            other.m_Capacity = 0;
+            other.m_CurrentSize = 0;
+            other.m_Allocator = nullptr;
+        }
+
+        /**
+         * @brief Destructor to release allocated memory.
+         */
+        ~Set()
+        {
+            Deallocate<T>(m_Data);
+            Deallocate<bool>(m_Used);
+        }
+
+        /**
+         * @brief Copy assignment operator.
+         *
+         * @param other The Set to copy from.
+         * @return Reference to this Set.
+         */
+        Set& operator=(const Set& other)
+        {
+            if (this != &other)
+            {
+                Deallocate<T>(m_Data);
+                Deallocate<bool>(m_Used);
+
+                m_Capacity = other.m_Capacity;
+                m_CurrentSize = other.m_CurrentSize;
+                m_Allocator = other.m_Allocator;
+
+                AllocateMemory(m_Capacity);
+                std::memcpy(m_Data, other.m_Data, sizeof(T) * m_Capacity);
+                std::memcpy(m_Used, other.m_Used, sizeof(bool) * m_Capacity);
+            }
+            return *this;
+        }
+
+        /**
+         * @brief Move assignment operator.
+         *
+         * @param other The Set to move from.
+         * @return Reference to this Set.
+         */
+        Set& operator=(Set&& other) noexcept
+        {
+            if (this != &other)
+            {
+                Deallocate<T>(m_Data);
+                Deallocate<bool>(m_Used);
+
+                m_Data = other.m_Data;
+                m_Used = other.m_Used;
+                m_Capacity = other.m_Capacity;
+                m_CurrentSize = other.m_CurrentSize;
+                m_Allocator = other.m_Allocator;
+
+                other.m_Data = nullptr;
+                other.m_Used = nullptr;
+                other.m_Capacity = 0;
+                other.m_CurrentSize = 0;
+                other.m_Allocator = nullptr;
+            }
+            return *this;
+        }
+
+        /**
+         * @brief Inserts an element in the set.
+         *
+         * @param value The element to insert.
+         * @return True if inserted, false if the element already exists.
+         */
         bool Insert(const T& value)
         {
             if (m_CurrentSize >= m_Capacity * 0.75f)
@@ -80,11 +164,12 @@ namespace HBL2
             return true;
         }
 
-        /// <summary>
-        /// Removes an element from the set.
-        /// </summary>
-        /// <param name="value">The element to remove</param>
-        /// <returns>True if removed, false if not found.</returns>
+        /**
+         * @brief Removes an element from the set.
+         *
+         * @param value The element to remove.
+         * @return True if removed, false if the element was not found.
+         */
         bool Erase(const T& value)
         {
             uint32_t index = Hash(value);
@@ -104,11 +189,12 @@ namespace HBL2
             return false; // Not found
         }
 
-        /// <summary>
-        /// Check if an element exists in the set.
-        /// </summary>
-        /// <param name="value">The element to search.</param>
-        /// <returns>True if the set contains the element, false if not found.</returns>
+        /**
+         * @brief Checks if an element exists in the set.
+         *
+         * @param value The element to search for.
+         * @return True if the set contains the element, false otherwise.
+         */
         bool Contains(const T& value) const
         {
             uint32_t index = Hash(value);
@@ -126,15 +212,16 @@ namespace HBL2
             return false;
         }
 
-        /// <summary>
-        /// Returns the number of elements in the set.
-        /// </summary>
-        /// <returns>The number of elements in the set.</returns>
+        /**
+         * @brief Returns the number of elements in the set.
+         *
+         * @return The number of elements currently stored in the set.
+         */
         uint32_t Size() const { return m_CurrentSize; }
 
-        /// <summary>
-        /// Clears the entire set.
-        /// </summary>
+        /**
+         * @brief Clears the entire set, removing all elements.
+         */
         void Clear()
         {
             std::memset(m_Used, 0, m_CurrentSize * sizeof(bool));
@@ -143,10 +230,36 @@ namespace HBL2
         }
 
     private:
+		template<typename U>
+		U* Allocate(uint64_t size)
+		{
+			if (m_Allocator == nullptr)
+			{
+				U* data = (U*)operator new(size);
+				memset(data, 0, size);				
+				return data;
+			}
+
+			return m_Allocator->Allocate<U>(size);
+		}
+
+		template<typename U>
+		void Deallocate(U* ptr)
+		{
+            if (m_Allocator == nullptr)
+            {
+                operator delete(ptr);
+                return;
+            }
+
+			m_Allocator->Deallocate<U>(ptr);
+		}
+
+    private:
         void AllocateMemory(uint32_t capacity)
         {
-            m_Data = m_Allocator->Allocate<T>(sizeof(T) * capacity);
-            m_Used = m_Allocator->Allocate<bool>(sizeof(bool) * capacity);
+            m_Data = Allocate<T>(sizeof(T) * capacity);
+            m_Used = Allocate<bool>(sizeof(bool) * capacity);
             memset(m_Used, 0, sizeof(bool) * capacity);
         }
 
@@ -168,8 +281,8 @@ namespace HBL2
                 }
             }
 
-            m_Allocator->Deallocate<T>(oldData);
-            m_Allocator->Deallocate<bool>(oldUsed);
+            Deallocate<T>(oldData);
+            Deallocate<bool>(oldUsed);
         }
 
         uint32_t Hash(const T& value) const
@@ -181,6 +294,12 @@ namespace HBL2
         bool* m_Used = nullptr;
         uint32_t m_Capacity;  // Not in bytes
         uint32_t m_CurrentSize; // Not in bytes
-        TAllocator* m_Allocator;
+		TAllocator* m_Allocator = nullptr; // Does not own the pointer
     };
+
+    template<typename T, typename TAllocator>
+    auto MakeSet(TAllocator* allocator, uint32_t initialCapacity = 8)
+    {
+        return Set<T, TAllocator>(allocator, initialCapacity);
+    }
 }

@@ -4,6 +4,7 @@
 #include "Handle.h"
 
 #include "Utilities\Collections\Span.h"
+#include "Utilities\Collections\BitFlags.h"
 
 #include <glm\glm.hpp>
 
@@ -30,7 +31,7 @@ namespace HBL2
 		uint32_t mips = 1;
 		Format format = Format::RGBA8_RGB;
 		Format internalFormat = Format::RGBA8_RGB;
-		TextureUsage usage = TextureUsage::TEXTURE_BINDING;
+		BitFlags<TextureUsage> usage = TextureUsage::TEXTURE_BINDING;
 		TextureType type = TextureType::D2;
 		TextureAspect aspect = TextureAspect::COLOR;
 
@@ -44,7 +45,8 @@ namespace HBL2
 
 		bool createSampler = true;
 		Sampler sampler;
-		stbi_uc* initialData = nullptr;
+		TextureLayout initialLayout = TextureLayout::SHADER_READ_ONLY;
+		void* initialData = nullptr;
 	};
 
 	struct BufferDescriptor
@@ -74,6 +76,7 @@ namespace HBL2
 		{
 			uint32_t slot = 0;
 			ShaderStage visibility = ShaderStage::VERTEX;
+			TextureBindingType type = TextureBindingType::IMAGE_SAMPLER;
 		};
 		std::initializer_list<TextureBinding> textureBindings;
 
@@ -103,13 +106,15 @@ namespace HBL2
 	struct ShaderDescriptor
 	{
 		const char* debugName;
+		ShaderType type = ShaderType::RASTERIZATION;
 		struct ShaderStage
 		{
-			std::vector<uint32_t> code;
+			Span<const uint32_t> code;
 			const char* entryPoint;
 		};
 		ShaderStage VS;
 		ShaderStage FS;
+		ShaderStage CS;
 		std::initializer_list<Handle<BindGroupLayout>> bindGroups;
 		struct RenderPipeline
 		{
@@ -133,6 +138,7 @@ namespace HBL2
 				BlendOperation alphaOp = BlendOperation::ADD;
 				BlendFactor srcAlphaFactor = BlendFactor::ONE;
 				BlendFactor dstAlphaFactor = BlendFactor::ZERO;
+				bool colorOutput = true;
 				bool enabled = true;
 			};
 
@@ -144,13 +150,44 @@ namespace HBL2
 				Compare depthTest = Compare::LESS;
 			};
 
-			BlendState blend;
-			DepthTest depthTest;
-			Topology topology = Topology::TRIANGLE_LIST;
-			PolygonMode polygonMode = PolygonMode::FILL;
-			CullMode cullMode = CullMode::NONE;
-			FrontFace frontFace = FrontFace::CLOCKWISE;
+			struct Variant
+			{
+				UUID shaderHashKey = 0;
+				BlendState blend{};
+				DepthTest depthTest{};
+				Topology topology = Topology::TRIANGLE_LIST;
+				PolygonMode polygonMode = PolygonMode::FILL;
+				CullMode cullMode = CullMode::BACK;
+				FrontFace frontFace = FrontFace::CLOCKWISE;
+
+				inline bool operator==(const Variant& other) const
+				{
+					return blend.colorOp == other.blend.colorOp &&
+						blend.srcColorFactor == other.blend.srcColorFactor &&
+						blend.dstColorFactor == other.blend.dstColorFactor &&
+						blend.alphaOp == other.blend.alphaOp &&
+						blend.srcAlphaFactor == other.blend.srcAlphaFactor &&
+						blend.dstAlphaFactor == other.blend.dstAlphaFactor &&
+						blend.colorOutput == other.blend.colorOutput &&
+						blend.enabled == other.blend.enabled &&
+
+						depthTest.enabled == other.depthTest.enabled &&
+						depthTest.writeEnabled == other.depthTest.writeEnabled &&
+						depthTest.stencilEnabled == other.depthTest.stencilEnabled &&
+						depthTest.depthTest == other.depthTest.depthTest &&
+
+						topology == other.topology &&
+						polygonMode == other.polygonMode &&
+						cullMode == other.cullMode &&
+						frontFace == other.frontFace &&
+
+						shaderHashKey == other.shaderHashKey;
+				}
+			};
+
 			std::initializer_list<VertexBufferBinding> vertexBufferBindings;
+
+			Span<const Variant> variants;
 		};
 		RenderPipeline renderPipeline;
 		Handle<RenderPass> renderPass;
@@ -174,11 +211,12 @@ namespace HBL2
 	{
 		struct ColorTarget
 		{
+			Format format = Format::BGRA8_UNORM;
 			LoadOperation loadOp = LoadOperation::CLEAR;
 			StoreOperation storeOp = StoreOperation::STORE;
 			TextureLayout prevUsage = TextureLayout::UNDEFINED;
 			TextureLayout nextUsage = TextureLayout::UNDEFINED;
-			glm::vec4 clearColor = glm::vec4(0.0f);
+			glm::vec4 clearColor = glm::vec4(0.25f, 0.25f, 0.25f, 1.0f);
 		};
 
 		struct DepthTarget
@@ -189,7 +227,7 @@ namespace HBL2
 			StoreOperation stencilStoreOp = StoreOperation::STORE;
 			TextureLayout prevUsage = TextureLayout::UNDEFINED;
 			TextureLayout nextUsage = TextureLayout::UNDEFINED;
-			float clearZ = 0.0f;
+			float clearZ = 1.0f;
 			uint32_t clearStencil = 0;
 		};
 
@@ -238,5 +276,53 @@ namespace HBL2
 		const char* debugName;
 		Handle<Shader> shader;
 		Handle<BindGroup> bindGroup;
+	};
+}
+
+namespace std
+{
+	template<>
+	struct hash<HBL2::ShaderDescriptor::RenderPipeline::Variant>
+	{
+		size_t operator()(const HBL2::ShaderDescriptor::RenderPipeline::Variant& variantDesc) const
+		{
+			size_t h = 0;
+
+			// Helper to combine hashes (standard approach)
+			auto hash_combine = [](size_t& seed, size_t hash)
+			{
+				seed ^= hash + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			};
+
+			// Hash Variant
+			const auto& v = variantDesc;
+
+			// BlendState
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.colorOp)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.srcColorFactor)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.dstColorFactor)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.alphaOp)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.srcAlphaFactor)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.dstAlphaFactor)));
+			hash_combine(h, std::hash<bool>()(v.blend.colorOutput));
+			hash_combine(h, std::hash<bool>()(v.blend.enabled));
+
+			// DepthTest
+			hash_combine(h, std::hash<bool>()(v.depthTest.enabled));
+			hash_combine(h, std::hash<bool>()(v.depthTest.writeEnabled));
+			hash_combine(h, std::hash<bool>()(v.depthTest.stencilEnabled));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.depthTest.depthTest)));
+
+			// Other Variant fields
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.topology)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.polygonMode)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.cullMode)));
+			hash_combine(h, std::hash<int>()(static_cast<int>(v.frontFace)));
+
+			// Shader hash key
+			hash_combine(h, std::hash<HBL2::UUID>()(static_cast<HBL2::UUID>(v.shaderHashKey)));
+
+			return h;
+		}
 	};
 }

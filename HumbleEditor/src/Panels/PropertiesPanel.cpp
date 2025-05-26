@@ -143,10 +143,12 @@ namespace HBL2
 					{
 						ImGui::Checkbox("Enabled", &camera.Enabled);
 						ImGui::Checkbox("Primary", &camera.Primary);
-						ImGui::SliderFloat("Far", &camera.Far, 0, 100);
-						ImGui::SliderFloat("Near", &camera.Near, 100, 1500);
+						ImGui::SliderFloat("Near", &camera.Near, 0, 100);
+						ImGui::SliderFloat("Far", &camera.Far, 100, 1500);
 						ImGui::SliderFloat("FOV", &camera.Fov, 0, 120);
-						ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 2);
+						ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 3);
+						ImGui::SliderFloat("Exposure", &camera.Exposure, 0, 50);
+						ImGui::SliderFloat("Gamma", &camera.Gamma, 0, 4);
 						ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
 
 						std::string selectedProjection = camera.Type == HBL2::Component::Camera::Type::Perspective ? "Perspective" : "Orthographic";
@@ -250,9 +252,10 @@ namespace HBL2
 
 				DrawComponent<HBL2::Component::Light>("Light", m_ActiveScene, [this](HBL2::Component::Light& light)
 				{
-					ImGui::Checkbox("Enabled", &light.Enabled);
-					std::string selectedType = light.Type == HBL2::Component::Light::Type::Directional ? "Directional" : "Point";
-					std::string lightTypes[2] = { "Directional", "Point" };
+					ImGui::Checkbox("Enabled", &light.Enabled);					
+					
+					std::string lightTypes[3] = { "Directional", "Point", "Spot" };
+					std::string selectedType = lightTypes[(int)light.Type];
 
 					if (ImGui::BeginCombo("Type", selectedType.c_str()))
 					{
@@ -272,14 +275,69 @@ namespace HBL2
 						ImGui::EndCombo();
 					}
 					ImGui::Checkbox("CastsShadows", &light.CastsShadows);
-					ImGui::SliderFloat("Intensity", &light.Intensity, 0, 20);
-					if (light.Type == HBL2::Component::Light::Type::Point)
-					{
-						ImGui::SliderFloat("Attenuation", &light.Attenuation, 0, 100);
-					}
+					ImGui::SliderFloat("Intensity", &light.Intensity, 0, 30);
+
 					ImGui::ColorEdit3("Color", glm::value_ptr(light.Color));
 
-					light.Type = selectedType == "Directional" ? HBL2::Component::Light::Type::Directional : HBL2::Component::Light::Type::Point;
+					ImGui::SliderFloat("ConstantBias", &light.ConstantBias, 0.0f, 2.5f, "%.3f");
+					ImGui::SliderFloat("SlopeBias", &light.SlopeBias, 0.0f, 2.5f, "%.3f");
+					ImGui::SliderFloat("NormalOffsetScale", &light.NormalOffsetScale, 0.0f, 0.5f, "%.3f");
+					ImGui::SliderFloat("FieldOfView", &light.FieldOfView, 0.0f, 120.0f);
+
+					// Set type back.
+					if (selectedType == "Directional")
+					{
+						light.Type = HBL2::Component::Light::Type::Directional;
+					}
+					else if (selectedType == "Point")
+					{
+						light.Type = HBL2::Component::Light::Type::Point;
+						ImGui::SliderFloat("Distance", &light.Distance, 0, 150);
+					}
+					else
+					{
+						light.Type = HBL2::Component::Light::Type::Spot;
+						ImGui::SliderFloat("Distance", &light.Distance, 0, 150);
+						ImGui::SliderFloat("InnerCutOff", &light.InnerCutOff, 0, 50);
+						ImGui::SliderFloat("OuterCutOff", &light.OuterCutOff, 0, 50);
+					}
+				});
+
+				DrawComponent<HBL2::Component::SkyLight>("SkyLight", m_ActiveScene, [this](HBL2::Component::SkyLight& skyLight)
+				{
+					ImGui::Checkbox("Enabled", &skyLight.Enabled);
+
+					uint32_t textureHandle = skyLight.EquirectangularMap.Pack();
+					
+					ImGui::InputScalar("Equirectangular Map", ImGuiDataType_U32, (void*)(intptr_t*)&textureHandle);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							if (assetHandle.IsValid())
+							{
+								Asset* textureAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+								if (!std::filesystem::exists(HBL2::Project::GetAssetFileSystemPath(textureAsset->FilePath).string() + ".hbltexture"))
+								{
+									TextureUtilities::Get().CreateAssetMetadataFile(assetHandle);
+								}
+							}
+
+							skyLight.EquirectangularMap = AssetManager::Instance->GetAsset<Texture>(assetHandle);
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+
+					if (ImGui::Button("Update"))
+					{
+						skyLight.Converted = false;
+					}
 				});
 
 				DrawComponent<HBL2::Component::AudioSource>("AudioSource", m_ActiveScene, [this](HBL2::Component::AudioSource& audioSource)
@@ -300,19 +358,22 @@ namespace HBL2
 							{
 								Asset* soundAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 
-								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound", 0);
+								if (!std::filesystem::exists(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound"))
+								{
+									std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound", 0);
 
-								YAML::Emitter out;
-								out << YAML::BeginMap;
-								out << YAML::Key << "Sound" << YAML::Value;
-								out << YAML::BeginMap;
-								out << YAML::Key << "UUID" << YAML::Value << soundAsset->UUID;
-								out << YAML::Key << "Loop" << YAML::Value << false;
-								out << YAML::Key << "StartPaused" << YAML::Value << false;
-								out << YAML::EndMap;
-								out << YAML::EndMap;
-								fout << out.c_str();
-								fout.close();
+									YAML::Emitter out;
+									out << YAML::BeginMap;
+									out << YAML::Key << "Sound" << YAML::Value;
+									out << YAML::BeginMap;
+									out << YAML::Key << "UUID" << YAML::Value << soundAsset->UUID;
+									out << YAML::Key << "Loop" << YAML::Value << false;
+									out << YAML::Key << "StartPaused" << YAML::Value << false;
+									out << YAML::EndMap;
+									out << YAML::EndMap;
+									fout << out.c_str();
+									fout.close();	
+								}
 							}
 
 							audioSource.Sound = AssetManager::Instance->GetAsset<Sound>(assetHandle);
@@ -468,6 +529,15 @@ namespace HBL2
 						}
 					}
 
+					if (!m_ActiveScene->HasComponent<HBL2::Component::SkyLight>(HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::MenuItem("SkyLight"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::SkyLight>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
 					if (!m_ActiveScene->HasComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity))
 					{
 						if (ImGui::MenuItem("AudioSource"))
@@ -555,6 +625,40 @@ namespace HBL2
 							}
 
 							ImGui::Text(std::format("Name: {}", mat->DebugName).c_str());
+
+							// Blend mode.
+							{
+								const char* options[] = { "Opaque", "Transparent" };
+								int currentItem = mat->VariantDescriptor.blend.enabled ? 1 : 0;
+
+								if (ImGui::Combo("Blend Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+								{
+									mat->VariantDescriptor.blend.enabled = currentItem == 0 ? false : true;
+								}
+							}
+
+							// Color output.
+							ImGui::Checkbox("Color Output", &mat->VariantDescriptor.blend.colorOutput);
+							
+							// Depth enabled.
+							ImGui::Checkbox("Depth", &mat->VariantDescriptor.depthTest.enabled);
+							
+							// Depth test mode.
+							{
+								const char* options[] = { "Less", "Less Equal", "Greater", "Greater Equal", "Equal", "Not Equal", "Always", "Never" };
+								int currentItem = (int)mat->VariantDescriptor.depthTest.depthTest;
+
+								if (ImGui::Combo("Depth Test", &currentItem, options, IM_ARRAYSIZE(options)))
+								{
+									mat->VariantDescriptor.depthTest.depthTest = (Compare)currentItem;
+								}
+							}
+
+							// Depth write mode.
+							ImGui::Checkbox("Depth Write", &mat->VariantDescriptor.depthTest.writeEnabled);
+
+							// Stencil enabled.
+							ImGui::Checkbox("Stencil", &mat->VariantDescriptor.depthTest.stencilEnabled);
 
 							ImGui::ColorEdit4("AlbedoColor", glm::value_ptr(mat->AlbedoColor));
 							ImGui::InputFloat("Glossiness", &mat->Glossiness, 0.05f);

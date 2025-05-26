@@ -46,6 +46,7 @@ namespace HBL2
 				texture->Update(bytes);
 			}
 		}
+		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle) override {}
 		OpenGLTexture* GetTexture(Handle<Texture> handle) const
 		{
 			return m_TexturePool.Get(handle);
@@ -86,6 +87,23 @@ namespace HBL2
 			{
 				SetBufferData(openGLBindGroup->Buffers[bufferIndex].buffer, openGLBindGroup->Buffers[bufferIndex].byteOffset, newData);
 			}
+		}
+		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) override
+		{
+			OpenGLBuffer* openGLBuffer = GetBuffer(buffer);
+
+			if (openGLBuffer == nullptr)
+			{
+				return;
+			}
+
+			glBindBuffer(GL_UNIFORM_BUFFER, openGLBuffer->RendererId);
+
+			void* ptr = glMapBufferRange(GL_UNIFORM_BUFFER, offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+			memcpy(ptr, (void*)((char*)openGLBuffer->Data + offset), size);
+			glUnmapBuffer(GL_UNIFORM_BUFFER);
+
+			glBindBuffer(GL_UNIFORM_BUFFER, 0);
 		}
 		OpenGLBuffer* GetBuffer(Handle<Buffer> handle) const
 		{
@@ -135,6 +153,7 @@ namespace HBL2
 				m_ShaderPool.Remove(handle);
 			}
 		}
+		virtual void AddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::Variant& variantDesc) override {}
 		OpenGLShader* GetShader(Handle<Shader> handle) const
 		{
 			return m_ShaderPool.Get(handle);
@@ -143,6 +162,8 @@ namespace HBL2
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) override
 		{
+			// FIXME: When shared between multiple bindgroups and we delete it once, the other references become invalid!
+#if 0
 			// Caching mechanism so that materials with the same resources, use the same bind group.
 			uint16_t index = 0;
 
@@ -159,7 +180,7 @@ namespace HBL2
 
 				index++;
 			}
-
+#endif
 			return m_BindGroupPool.Insert(OpenGLBindGroup(std::forward<const BindGroupDescriptor>(desc)));
 		}
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) override
@@ -171,6 +192,7 @@ namespace HBL2
 				m_BindGroupPool.Remove(handle);
 			}
 		}
+		virtual void UpdateBindGroup(Handle<BindGroup> handle) {}
 		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) override
 		{
 			return CalculateBindGroupHash(GetBindGroup(handle));

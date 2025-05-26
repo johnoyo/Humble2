@@ -33,13 +33,14 @@ namespace HBL2
 		virtual void Present() override;
 		virtual void Clean() override;
 
-		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type, RenderPassStage stage) override;
+		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
 
 		virtual void* GetDepthAttachment() override;
 		virtual void* GetColorAttachment() override;
 
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() override { return m_MainFrameBuffer; }
 		
+		virtual Handle<BindGroup> GetShadowBindings() override { return m_ShadowBindings; }
 		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_GlobalBindings2D; }
 		virtual Handle<BindGroup> GetGlobalBindings3D() override { return m_GlobalBindings3D; }
 		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_GlobalPresentBindings; }
@@ -55,11 +56,12 @@ namespace HBL2
 
 	private:
 		OpenGLResourceManager* m_ResourceManager = nullptr;
-		CommandBuffer* m_OpaqueCommandBuffer = nullptr;
-		CommandBuffer* m_OpaqueSpriteCommandBuffer = nullptr;
-		CommandBuffer* m_PresentCommandBuffer = nullptr;
+
+		CommandBuffer* m_MainCommandBuffer = nullptr;
+
 		CommandBuffer* m_UserInterfaceCommandBuffer = nullptr;
 
+		Handle<BindGroup> m_ShadowBindings;
 		Handle<BindGroup> m_GlobalBindings2D;
 		Handle<BindGroup> m_GlobalBindings3D;
 		Handle<BindGroup> m_GlobalPresentBindings;

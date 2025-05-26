@@ -6,3 +6,11 @@ Material:
   NormalMap: 0
   MetallicMap: 0
   RoughnessMap: 0
+  BlendState:
+    Enabled: true
+    ColorOutputEnabled: true
+  DepthState:
+    Enabled: true
+    WriteEnabled: false
+    StencilEnabled: true
+    DepthTest: 1

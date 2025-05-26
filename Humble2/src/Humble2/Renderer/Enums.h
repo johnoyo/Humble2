@@ -2,6 +2,36 @@
 
 namespace HBL2
 {
+	enum class RenderPassEvent
+	{
+		BeforeRendering = 0,
+		BeforeRenderingShadows,
+		AfterRenderingShadows,
+		BeforeRenderingPrePasses,
+		AfterRenderingPrePasses,
+		BeforeRenderingOpaques,
+		AfterRenderingOpaques,
+		BeforeRenderingSkybox,
+		AfterRenderingSkybox,
+		BeforeRenderingTransparents,
+		AfterRenderingTransparents,
+		BeforeRenderingPostProcess,
+		AfterRenderingPostProcess,
+		AfterRendering,
+	};
+
+	enum class RenderPassStage
+	{
+		Shadow,
+		PrePass,
+		Opaque,
+		Skybox,
+		Transparent,
+		PostProcess,
+		Present,
+		UserInterface,
+	};
+
 	enum class CommandBufferType
 	{
 		MAIN = 0,
@@ -9,11 +39,40 @@ namespace HBL2
 		UI = 2,
 	};
 
+	enum class PipelineStage
+	{
+		TOP_OF_PIPE = 0x00000001,
+		DRAW_INDIRECT = 0x00000002,
+		VERTEX_INPUT = 0x00000004,
+		VERTEX_SHADER = 0x00000008,
+		TESSELLATION_CONTROL_SHADER = 0x00000010,
+		TESSELLATION_EVALUATION_SHADER = 0x00000020,
+		GEOMETRY_SHADER = 0x00000040,
+		FRAGMENT_SHADER = 0x00000080,
+		EARLY_FRAGMENT_TESTS = 0x00000100,
+		LATE_FRAGMENT_TESTS = 0x00000200,
+		COLOR_ATTACHMENT_OUTPUT = 0x00000400,
+		COMPUTE_SHADER = 0x00000800,
+		TRANSFER = 0x00001000,
+		BOTTOM_OF_PIPE = 0x00002000,
+		HOST = 0x00004000,
+		ALL_GRAPHICS = 0x00008000,
+		ALL_COMMANDS = 0x00010000,
+		NONE = 0,
+	};
+
+	enum class ShaderType
+	{
+		RASTERIZATION = 0,
+		COMPUTE = 1,
+	};
+
 	enum class ShaderStage
 	{
-		VERTEX = 0x1,
-		FRAGMENT = 0x2,
-		COMPUTE = 0x4,
+		NONE = -1,
+		VERTEX = 0,
+		FRAGMENT = 1,
+		COMPUTE = 2,
 	};
 
 	enum class BufferBindingType
@@ -22,6 +81,13 @@ namespace HBL2
 		UNIFORM_DYNAMIC_OFFSET = 1,
 		STORAGE = 2,
 		READ_ONLY_STORAGE = 3,
+		STORAGE_IMAGE = 4,
+	};
+
+	enum class TextureBindingType
+	{
+		IMAGE_SAMPLER = 0,
+		STORAGE_IMAGE = 1,
 	};
 
 	enum class VertexFormat
@@ -49,14 +115,14 @@ namespace HBL2
 
 	enum class Compare
 	{
-		LESS = 1,
-		LESS_OR_EQUAL = 2,
-		GREATER = 3,
-		GREATER_OR_EQUAL = 4,
-		EQUAL = 5,
-		NOT_EQUAL = 6,
-		ALAWAYS = 7,
-		NEVER = 8,
+		LESS = 0,
+		LESS_OR_EQUAL,
+		GREATER,
+		GREATER_OR_EQUAL,
+		EQUAL,
+		NOT_EQUAL,
+		ALAWAYS,
+		NEVER,
 	};
 
 	enum class Wrap
@@ -89,8 +155,8 @@ namespace HBL2
 	enum class CullMode
 	{
 		NONE = 0,
-		FRONT_BIT = 0x00000001,
-		BACK_BIT = 0x00000002,
+		FRONT = 0x00000001,
+		BACK = 0x00000002,
 		FRONT_AND_BACK = 0x00000003,
 	};
 
@@ -103,6 +169,7 @@ namespace HBL2
 	enum class Format
 	{
 		RGB32_FLOAT = 1,
+		RGBA32_FLOAT,
 		D16_FLOAT,
 		D24_FLOAT,
 		D32_FLOAT,
@@ -111,6 +178,7 @@ namespace HBL2
 		BGRA8_UNORM,
 		RG16_FLOAT,
 		RGBA8_RGB,
+		R10G10B10A2_UNORM,
 	};
 
 	enum class MemoryUsage
@@ -146,6 +214,8 @@ namespace HBL2
 		D1 = 0,
 		D2 = 1,
 		D3 = 2,
+		CUBE = 3,
+		D2_ARRAY = 4,
 	};
 
 	enum class TextureAspect
@@ -176,6 +246,8 @@ namespace HBL2
 		SHADER_READ_ONLY = 8,
 		DEPTH_STENCIL = 16,
 		PRESENT = 32,
+		SHARED_PRESENT = 64,
+		GENERAL = 128,
 	};
 
 	enum class BlendOperation
@@ -193,6 +265,12 @@ namespace HBL2
 		ONE_MINUS_SRC_ALPHA = 1,
 		ONE = 2,
 		ZERO = 3,
+	};
+
+	enum class BlendMode
+	{
+		OPAQUE_MODE = 0,
+		ALPHA_MODE = 1,
 	};
 
 	enum class StoreOperation

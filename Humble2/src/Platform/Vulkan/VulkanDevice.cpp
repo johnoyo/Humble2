@@ -306,6 +306,11 @@ namespace HBL2
 			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		}
 
+		for (const auto& instanceExtension : m_InstanceExtensions)
+		{
+			extensions.push_back(instanceExtension);
+		}
+
 		if (!CheckInstanceExtensionSupport(extensions))
 		{
 			HBL2_CORE_ASSERT(false, "Device does not support required extensions!");

@@ -177,6 +177,8 @@ namespace HBL2
 
 			TextureUtilities::Get().DeleteWhiteTexture();
 			ShaderUtilities::Get().DeleteBuiltInShaders();
+			ShaderUtilities::Get().DeleteBuiltInMaterials();
+			MeshUtilities::Get().DeleteBuiltInMeshes();
 		}
 
 		bool EditorContext::OpenEmptyProject()
@@ -202,6 +204,8 @@ namespace HBL2
 		{
 			TextureUtilities::Get().LoadWhiteTexture();
 			ShaderUtilities::Get().LoadBuiltInShaders();
+			ShaderUtilities::Get().LoadBuiltInMaterials();
+			MeshUtilities::Get().LoadBuiltInMeshes();
 		}
 
 		bool EditorContext::IsActiveSceneValid()

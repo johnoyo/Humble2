@@ -4,6 +4,8 @@
 #include "Resources\Handle.h"
 #include "CommandBuffer.h"
 #include "UniformRingBuffer.h"
+#include "RenderPassPool.h"
+#include "Renderer\ShadowAtlasAllocator.h"
 
 namespace HBL2
 {
@@ -12,12 +14,23 @@ namespace HBL2
 		glm::mat4 ViewProjection;
 	};
 
+	struct alignas(16) CameraSettings
+	{
+		float Exposure;
+		float Gamma;
+		float _padding[2];
+	};
+
 	struct LightData
 	{
 		glm::vec4 ViewPosition;
 		glm::vec4 LightPositions[16];
+		glm::vec4 LightDirections[16];
 		glm::vec4 LightColors[16];
-		glm::vec4 LightIntensities[16];
+		glm::vec4 LightMetadata[16];
+		glm::vec4 LightShadowData[16];
+		glm::mat4 LightSpaceMatrices[16];
+		glm::vec4 TileUVRange[16];
 		float LightCount;
 		float _padding[3];
 	};
@@ -30,46 +43,27 @@ namespace HBL2
 		WEBGPU,
 	};
 
-	enum class HBL2_API RenderPassEvent
-	{
-		BeforeRendering = 0,
-		BeforeRenderingShadows,
-		AfterRenderingShadows,
-		BeforeRenderingPrePasses,
-		AfterRenderingPrePasses,
-		BeforeRenderingOpaques,
-		AfterRenderingOpaques,
-		BeforeRenderingSkybox,
-		AfterRenderingSkybox,
-		BeforeRenderingTransparents,
-		AfterRenderingTransparents,
-		BeforeRenderingOpaqueSprites,
-		AfterRenderingOpaqueSprites,
-		BeforeRenderingPostProcess,
-		AfterRenderingPostProcess,
-		AfterRendering,
-	};
-
-	enum class HBL2_API RenderPassStage
-	{
-		Shadow,
-		PrePass,
-		Opaque,
-		Skybox,
-		Transparent,
-		OpaqueSprite,
-		PostProcess,
-		Present,
-		UserInterface,
-	};
-
 	struct RendererStats
 	{
 		uint32_t DrawCalls = 0;
+		float ShadowPassTime = 0.f;
+		float PrePassTime = 0.f;
+		float OpaquePassTime = 0.f;
+		float SkyboxPassTime = 0.f;
+		float TransparentPassTime = 0.f;
+		float PostProcessPassTime = 0.f;
+		float PresentPassTime = 0.f;
 
 		void Reset()
 		{
 			DrawCalls = 0;
+			ShadowPassTime = 0.f;
+			PrePassTime = 0.f;
+			OpaquePassTime = 0.f;
+			SkyboxPassTime = 0.f;
+			TransparentPassTime = 0.f;
+			PostProcessPassTime = 0.f;
+			PresentPassTime = 0.f;
 		}
 	};
 
@@ -86,21 +80,26 @@ namespace HBL2
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
 
-		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type, RenderPassStage stage) = 0;
+		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) = 0;
 
 		virtual void* GetDepthAttachment() = 0;
 		virtual void* GetColorAttachment() = 0;
 
+		RenderPassPool& GetRenderPassPool() { return m_RenderPassPool; }
+
 		const uint32_t GetFrameNumber() const { return m_FrameNumber; }
-		RendererStats& GetRendererStats() { return m_Stats; }
+		RendererStats& GetStats() { return m_Stats; }
 
 		const Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
+		const Handle<RenderPass> GetRenderingRenderPass() const { return m_RenderingRenderPass; }
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() = 0;
 
+		virtual Handle<BindGroup> GetShadowBindings() = 0;
 		virtual Handle<BindGroup> GetGlobalBindings2D() = 0;
 		virtual Handle<BindGroup> GetGlobalBindings3D() = 0;
 		virtual Handle<BindGroup> GetGlobalPresentBindings() = 0;
 
+		const Handle<BindGroupLayout> GetShadowBindingsLayout() const { return m_ShadowBindingsLayout; }
 		const Handle<BindGroupLayout> GetGlobalBindingsLayout2D() const { return m_GlobalBindingsLayout2D; }
 		const Handle<BindGroupLayout> GetGlobalBindingsLayout3D() const { return m_GlobalBindingsLayout3D; }
 		const Handle<BindGroupLayout> GetGlobalPresentBindingsLayout() const { return m_GlobalPresentBindingsLayout; }
@@ -108,8 +107,12 @@ namespace HBL2
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
 
 		UniformRingBuffer* TempUniformRingBuffer;
+		ShadowAtlasAllocator ShadowAtlasAllocator;
+
+		Handle<Texture> IntermediateColorTexture;
 		Handle<Texture> MainColorTexture;
 		Handle<Texture> MainDepthTexture;
+		Handle<Texture> ShadowAtlasTexture;
 
 		void AddCallbackOnResize(const std::string& callbackName, std::function<void(uint32_t, uint32_t)>&& callback)
 		{
@@ -128,11 +131,15 @@ namespace HBL2
 	protected:
 		uint32_t m_FrameNumber = 0;
 		GraphicsAPI m_GraphicsAPI;
-		RendererStats m_Stats;
+		RendererStats m_Stats{};
+		RenderPassPool m_RenderPassPool;
+
+		Handle<BindGroupLayout> m_ShadowBindingsLayout;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout2D;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
 		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
 		Handle<RenderPass> m_RenderPass;
+		Handle<RenderPass> m_RenderingRenderPass;
 
 		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 	};

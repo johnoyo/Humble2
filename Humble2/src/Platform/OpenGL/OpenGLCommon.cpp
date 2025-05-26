@@ -9,27 +9,18 @@ namespace HBL2
 			switch (vertexFormat)
 			{
 			case VertexFormat::FLOAT32:
-				return GL_FLOAT;
 			case VertexFormat::FLOAT32x2:
-				return GL_FLOAT;
 			case VertexFormat::FLOAT32x3:
-				return GL_FLOAT;
 			case VertexFormat::FLOAT32x4:
 				return GL_FLOAT;
 			case VertexFormat::UINT32:
-				return GL_UNSIGNED_INT;
 			case VertexFormat::UINT32x2:
-				return GL_UNSIGNED_INT;
 			case VertexFormat::UINT32x3:
-				return GL_UNSIGNED_INT;
 			case VertexFormat::UINT32x4:
 				return GL_UNSIGNED_INT;
 			case VertexFormat::INT32:
-				return GL_INT;
 			case VertexFormat::INT32x2:
-				return GL_INT;
 			case VertexFormat::INT32x3:
-				return GL_INT;
 			case VertexFormat::INT32x4:
 				return GL_INT;
 			}
@@ -96,6 +87,50 @@ namespace HBL2
 			return -1;
 		}
 
+		GLenum CompareToGLenum(Compare compare)
+		{
+			switch (compare)
+			{
+			case HBL2::Compare::LESS:
+				return GL_LESS;
+			case HBL2::Compare::LESS_OR_EQUAL:
+				return GL_LEQUAL;
+			case HBL2::Compare::GREATER:
+				return GL_GREATER;
+			case HBL2::Compare::GREATER_OR_EQUAL:
+				return GL_GEQUAL;
+			case HBL2::Compare::EQUAL:
+				return GL_EQUAL;
+			case HBL2::Compare::NOT_EQUAL:
+				return GL_NOTEQUAL;
+			case HBL2::Compare::ALAWAYS:
+				return GL_ALWAYS;
+			case HBL2::Compare::NEVER:
+				return GL_NEVER;
+			}
+
+			return -1;
+		}
+
+		GLenum TextureTypeToGLenum(TextureType textureType)
+		{
+			switch (textureType)
+			{
+			case HBL2::TextureType::D1:
+				return GL_TEXTURE_2D;
+			case HBL2::TextureType::D2:
+				return GL_TEXTURE_2D;
+			case HBL2::TextureType::D3:
+				return GL_TEXTURE_3D;
+			case HBL2::TextureType::CUBE:
+				return GL_TEXTURE_CUBE_MAP;
+			case HBL2::TextureType::D2_ARRAY:
+				return GL_TEXTURE_2D_ARRAY;
+			}
+
+			return -1;
+		}
+
 		GLenum FormatToGLenum(Format format)
 		{
 			switch (format)
@@ -112,6 +147,16 @@ namespace HBL2
 				return GL_RGBA8;
 			case Format::BGRA8_UNORM:
 				return GL_RGBA8;
+			case Format::RGBA16_FLOAT:
+				return GL_RGBA16F;
+			case Format::RGB32_FLOAT:
+				return GL_RGB32F;
+			case Format::RGBA32_FLOAT:
+				return GL_RGBA32F;
+			case Format::RG16_FLOAT:
+				return GL_RG16F;
+			case Format::R10G10B10A2_UNORM:
+				return GL_RGB10_A2;
 			}
 
 			return -1;

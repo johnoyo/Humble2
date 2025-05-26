@@ -11,6 +11,8 @@ namespace HBL2
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
 		DebugName = desc.debugName;
+		StencilClearValue = desc.depthTarget.stencilLoadOp == LoadOperation::CLEAR;
+		ClearStencil = desc.depthTarget.clearStencil;
 
 		VulkanRenderPassLayout* layout = rm->GetRenderPassLayout(desc.layout);
 
@@ -23,11 +25,12 @@ namespace HBL2
 
 		for (const auto& colorTarget : desc.colorTargets)
 		{
+			ClearColor = colorTarget.clearColor;
 			ColorClearValues.push_back(colorTarget.loadOp == LoadOperation::CLEAR);
 
 			attachments.push_back(VkAttachmentDescription
 			{
-				.format = renderer->GetSwapchainImageFormat(),
+				.format = VkUtils::FormatToVkFormat(colorTarget.format),
 				.samples = VK_SAMPLE_COUNT_1_BIT,
 				.loadOp = VkUtils::LoadOperationToVkAttachmentLoadOp(colorTarget.loadOp),
 				.storeOp = VkUtils::StoreOperationVkAttachmentStoreOp(colorTarget.storeOp),
@@ -44,6 +47,23 @@ namespace HBL2
 			});
 		}
 
+		std::vector<VkSubpassDependency> dependencies;
+
+		if (desc.colorTargets.Size() != 0)
+		{
+			VkSubpassDependency colorDependency =
+			{
+				.srcSubpass = VK_SUBPASS_EXTERNAL,
+				.dstSubpass = 0,
+				.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				.srcAccessMask = 0,
+				.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			};
+
+			dependencies.push_back(colorDependency);
+		}
+
 		VkAttachmentReference depthAttachmentRef;
 
 		for (const auto& subpass : layout->SubPasses)
@@ -51,6 +71,7 @@ namespace HBL2
 			if (subpass.depthTarget)
 			{
 				DepthClearValue = desc.depthTarget.loadOp == LoadOperation::CLEAR;
+				ClearDepth = desc.depthTarget.clearZ;
 
 				attachments.push_back(VkAttachmentDescription
 				{
@@ -70,6 +91,18 @@ namespace HBL2
 					.attachment = index++,
 					.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 				};
+
+				VkSubpassDependency depthDependency =
+				{
+					.srcSubpass = VK_SUBPASS_EXTERNAL,
+					.dstSubpass = 0,
+					.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+					.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+					.srcAccessMask = 0,
+					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+				};
+
+				dependencies.push_back(depthDependency);
 			}
 		}
 
@@ -77,42 +110,20 @@ namespace HBL2
 		VkSubpassDescription subpass =
 		{
 			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-			.colorAttachmentCount = 1,
+			.colorAttachmentCount = (uint32_t)colorAttachmentRefs.size(),
 			.pColorAttachments = colorAttachmentRefs.data(),
 			.pDepthStencilAttachment = &depthAttachmentRef,
 		};
 
-		VkSubpassDependency dependency =
-		{
-			.srcSubpass = VK_SUBPASS_EXTERNAL,
-			.dstSubpass = 0,
-			.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-			.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-			.srcAccessMask = 0,
-			.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-		};
-
-		VkSubpassDependency depthDependency =
-		{
-			.srcSubpass = VK_SUBPASS_EXTERNAL,
-			.dstSubpass = 0,
-			.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-			.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-			.srcAccessMask = 0,
-			.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-		};
-
-		VkSubpassDependency dependencies[2] = { dependency, depthDependency };
-
 		VkRenderPassCreateInfo renderPassInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-			.attachmentCount = 2,
+			.attachmentCount = (uint32_t)attachments.size(),
 			.pAttachments = attachments.data(),
 			.subpassCount = 1,
 			.pSubpasses = &subpass,
-			.dependencyCount = 2,
-			.pDependencies = &dependencies[0],
+			.dependencyCount = (uint32_t)dependencies.size(),
+			.pDependencies = dependencies.data(),
 		};		
 
 		VK_VALIDATE(vkCreateRenderPass(device->Get(), &renderPassInfo, nullptr, &RenderPass), "vkCreateRenderPass");

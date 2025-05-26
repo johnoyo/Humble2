@@ -12,7 +12,7 @@
 namespace HBL2
 {
 	struct Texture {};
-	struct Buffer;
+	struct Buffer {};
 	struct Shader {};
 	struct FrameBuffer;
 	struct BindGroup;
@@ -25,7 +25,6 @@ namespace HBL2
 		glm::vec3 Position;
 		glm::vec3 Normal;
 		glm::vec2 UV;
-		//glm::vec4 Color;
 		//glm::vec3 Tangent;
 	};
 
@@ -147,7 +146,10 @@ namespace HBL2
 		Handle<Shader> Shader;
 		Handle<BindGroup> BindGroup;
 
+		ShaderDescriptor::RenderPipeline::Variant VariantDescriptor = {};
+
 		glm::vec4 AlbedoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		float Glossiness = 3.0f;
+		bool ReceiveShadows = true;
 	};
 }

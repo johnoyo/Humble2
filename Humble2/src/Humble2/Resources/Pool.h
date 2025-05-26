@@ -47,6 +47,11 @@ namespace HBL2
 
 		void Remove(Handle<H> handle)
 		{
+			if (!handle.IsValid())
+			{
+				return;
+			}
+
 			m_GenerationalCounter[handle.m_ArrayIndex]++;
 			m_FreeList.push(handle.m_ArrayIndex);
 		}
@@ -66,7 +71,7 @@ namespace HBL2
 			return &m_Data[handle.m_ArrayIndex];
 		}
 
-		const Span<T> GetDataPool()
+		const Span<T>& GetDataPool()
 		{
 			return { m_Data, m_FreeList.top() };
 		}

@@ -4,11 +4,17 @@ namespace HBL2
 {
 	Application* Application::s_Instance = nullptr;
 
+	static const char* g_GfxAPI;
+
 	Application::Application(ApplicationSpec& specification) : m_Specification(specification)
 	{
 		HBL2_CORE_ASSERT(!s_Instance, "Application already exists!");
 
 		s_Instance = this;
+
+		Allocator::Frame.Initialize(32_MB);
+		Allocator::Scene.Initialize(256_MB);
+		Allocator::App.Initialize(256_MB);
 
 		Log::Initialize();
 		Random::Initialize();
@@ -23,6 +29,7 @@ namespace HBL2
 		{
 		case GraphicsAPI::OPENGL:
 			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
+			g_GfxAPI = "OpenGL";
 			Device::Instance = new OpenGLDevice;
 			Window::Instance = new OpenGLWindow;
 			ResourceManager::Instance = new OpenGLResourceManager;
@@ -30,6 +37,7 @@ namespace HBL2
 			ImGuiRenderer::Instance = new OpenGLImGuiRenderer;
 			break;
 		case GraphicsAPI::VULKAN:
+			g_GfxAPI = "Vulkan";
 			HBL2_CORE_INFO("Vulkan is selected as the renderer API.");
 			Device::Instance = new VulkanDevice;
 			Window::Instance = new VulkanWindow;
@@ -55,6 +63,15 @@ namespace HBL2
 
 		m_Specification.Context->EmptyScene = ResourceManager::Instance->CreateScene({ .name = "Empty Scene" });
 		m_Specification.Context->EditorScene = ResourceManager::Instance->CreateScene({ .name = "Editor Scene" });
+		
+		ShaderUtilities::Initialize();
+	}
+
+	Application::~Application()
+	{
+		Allocator::Frame.Free();
+		Allocator::Scene.Free();
+		Allocator::App.Free();
 	}
 
 	void Application::BeginFrame()
@@ -71,9 +88,9 @@ namespace HBL2
 
 		if (Window::Instance->GetTime() - m_Timer > 1.0)
 		{
-			Window::Instance->SetTitle(std::format("{} [{}] FPS", m_Specification.Name, m_Frames));
+			Window::Instance->SetTitle(std::format("{} [{}] FPS ({})", m_Specification.Name, m_Frames, g_GfxAPI));
 
-			HBL2_CORE_TRACE("FPS: {0}, DeltaTime: {1}", m_Frames, Time::DeltaTime);
+			HBL2_CORE_TRACE("FPS: {0}, DeltaTime: {1} ({2})", m_Frames, Time::DeltaTime * 1000.0f, g_GfxAPI);
 
 			m_Timer++;
 			m_Frames = 0;
@@ -82,8 +99,14 @@ namespace HBL2
 
 		if (SceneManager::Get().SceneChangeRequested)
 		{
+			// Reset scene allocator.
+			Allocator::Scene.Invalidate();
+
 			SceneManager::Get().LoadSceneDeffered();
 		}
+
+		// Reset frame allocator.
+		Allocator::Frame.Invalidate();
 	}
 
 	void Application::Start()
@@ -127,6 +150,7 @@ namespace HBL2
 
 	void Application::Shutdown()
 	{
+
 		ImGuiRenderer::Instance->Clean();
 		delete ImGuiRenderer::Instance;
 		ImGuiRenderer::Instance = nullptr;
@@ -154,6 +178,7 @@ namespace HBL2
 		Input::ShutDown();
 		UnityBuild::Shutdown();
 		NativeScriptUtilities::Shutdown();
+		ShaderUtilities::Shutdown();
 		MeshUtilities::Shutdown();
 		EventDispatcher::Shutdown();
 		JobSystem::Shutdown();

@@ -49,6 +49,15 @@ namespace HBL2
 				texture->Update(bytes);
 			}
 		}
+		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle) override
+		{
+			VulkanTexture* texture = GetTexture(handle);
+			if (texture != nullptr)
+			{
+				VulkanBindGroup* bindGroup = GetBindGroup(bindGroupHandle);
+				texture->TrasitionLayout((VulkanCommandBuffer*)commandBuffer, currentLayout, newLayout, bindGroup);
+			}
+		}
 		VulkanTexture* GetTexture(Handle<Texture> handle) const
 		{
 			return m_TexturePool.Get(handle);
@@ -83,7 +92,7 @@ namespace HBL2
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override
 		{
 			VulkanBuffer* vulkanBuffer = GetBuffer(buffer);
-			vulkanBuffer->Data = newData;
+			vulkanBuffer->Data = (void*)((char*)newData + offset);
 		}
 		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override
 		{
@@ -92,6 +101,22 @@ namespace HBL2
 			{
 				SetBufferData(vulkanBindGroup->Buffers[bufferIndex].buffer, vulkanBindGroup->Buffers[bufferIndex].byteOffset, newData);
 			}
+		}
+		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) override
+		{
+			VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
+
+			VulkanBuffer* vulkanBuffer = GetBuffer(buffer);
+
+			if (vulkanBuffer == nullptr)
+			{
+				return;
+			}
+
+			void* data;
+			vmaMapMemory(renderer->GetAllocator(), vulkanBuffer->Allocation, &data);
+			memcpy((void*)((char*)data + offset), (void*)((char*)vulkanBuffer->Data + offset), size);
+			vmaUnmapMemory(renderer->GetAllocator(), vulkanBuffer->Allocation);
 		}
 		VulkanBuffer* GetBuffer(Handle<Buffer> handle) const
 		{
@@ -147,6 +172,14 @@ namespace HBL2
 				}
 			});
 		}
+		virtual void AddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::Variant& variantDesc) override
+		{
+			VulkanShader* shader = GetShader(handle);
+			if (shader != nullptr)
+			{
+				shader->GetOrCreateVariant(variantDesc);
+			}
+		}
 		VulkanShader* GetShader(Handle<Shader> handle) const
 		{
 			return m_ShaderPool.Get(handle);
@@ -185,6 +218,14 @@ namespace HBL2
 					m_BindGroupPool.Remove(handle);
 				}
 			});
+		}
+		virtual void UpdateBindGroup(Handle<BindGroup> handle)
+		{
+			VulkanBindGroup* bindGroup = GetBindGroup(handle);
+			if (bindGroup != nullptr)
+			{
+				bindGroup->Update();
+			}
 		}
 		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) override
 		{

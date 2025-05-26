@@ -5,10 +5,57 @@
 
 namespace HBL2
 {
+	ShaderUtilities* ShaderUtilities::s_Instance = nullptr;
+
+	static bool VariantExists(const YAML::Node& existingVariants, uint64_t newVariantHash)
+	{
+		for (const auto& variant : existingVariants)
+		{
+			if (variant["Variant"].as<uint64_t>() == newVariantHash)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	static YAML::Node VariantToYAMLNode(uint64_t newVariantHash, const ShaderDescriptor::RenderPipeline::Variant& variant)
+	{
+		YAML::Node baseVariant;
+
+		baseVariant["Variant"] = newVariantHash;
+		baseVariant["BlendState"]["Enabled"] = variant.blend.enabled;
+		baseVariant["BlendState"]["ColorOutputEnabled"] = variant.blend.colorOutput;
+
+		baseVariant["DepthState"]["Enabled"] = variant.depthTest.enabled;
+		baseVariant["DepthState"]["WriteEnabled"] = variant.depthTest.writeEnabled;
+		baseVariant["DepthState"]["StencilEnabled"] = variant.depthTest.stencilEnabled;
+		baseVariant["DepthState"]["DepthTest"] = (int)variant.depthTest.depthTest;
+
+		return baseVariant;
+	}
+
 	ShaderUtilities& ShaderUtilities::Get()
 	{
-		static ShaderUtilities instance;
-		return instance;
+		HBL2_CORE_ASSERT(s_Instance != nullptr, "ShaderUtilities::s_Instance is null! Call ShaderUtilities::Initialize before use.");
+		return *s_Instance;
+	}
+
+	void ShaderUtilities::Initialize()
+	{
+		HBL2_CORE_ASSERT(s_Instance == nullptr, "ShaderUtilities::s_Instance is not null! ShaderUtilities::Initialize has been called twice.");
+		//s_Instance = Allocator::App.Allocate<ShaderUtilities>();
+		s_Instance = new ShaderUtilities;
+	}
+
+	void ShaderUtilities::Shutdown()
+	{
+		HBL2_CORE_ASSERT(s_Instance != nullptr, "ShaderUtilities::s_Instance is null!");
+
+		//Allocator::App.Deallocate(s_Instance);
+		delete s_Instance;
+		s_Instance = nullptr;
 	}
 
 	std::string ShaderUtilities::ReadFile(const std::string& filepath)
@@ -166,14 +213,10 @@ namespace HBL2
 
 		std::fstream newFile;
 
-		enum class ShaderType
-		{
-			NONE = -1, VERTEX = 0, FRAGMENT = 1
-		};
-
 		std::string line;
-		std::stringstream ss[2];
-		ShaderType type = ShaderType::NONE;
+		std::stringstream ss[3];
+
+		ShaderStage type = ShaderStage::NONE;
 
 		newFile.open(shaderFilePath, std::ios::in);
 
@@ -184,9 +227,11 @@ namespace HBL2
 				if (line.find("#shader") != std::string::npos)
 				{
 					if (line.find("vertex") != std::string::npos)
-						type = ShaderType::VERTEX;
+						type = ShaderStage::VERTEX;
 					else if (line.find("fragment") != std::string::npos)
-						type = ShaderType::FRAGMENT;
+						type = ShaderStage::FRAGMENT;
+					else if (line.find("compute") != std::string::npos)
+						type = ShaderStage::COMPUTE;
 				}
 				else
 				{
@@ -204,50 +249,83 @@ namespace HBL2
 		}
 
 		std::vector<std::vector<uint32_t>> shaderBinaries;
-
-		shaderBinaries.push_back(Compile(shaderFilePath, ss[0].str(), ShaderStage::VERTEX));
-		shaderBinaries.push_back(Compile(shaderFilePath, ss[1].str(), ShaderStage::FRAGMENT));
-
-		if (shaderBinaries[0].empty() || shaderBinaries[1].empty())
-		{
-			return {};
-		}
-
 		GraphicsAPI api = Renderer::Instance->GetAPI();
 		std::filesystem::path shaderPath = shaderFilePath;
 		std::filesystem::path cacheDirectory = GetCacheDirectory(api);
-		const char* vertexCachedVulkanFileExtension = GLShaderStageCachedVulkanFileExtension(ShaderStage::VERTEX);
-		const char* fragmentCachedVulkanFileExtension = GLShaderStageCachedVulkanFileExtension(ShaderStage::FRAGMENT);
-		std::filesystem::path vertexShaderPath = cacheDirectory / (shaderPath.filename().string() + vertexCachedVulkanFileExtension);
-		std::filesystem::path fragmentShaderPath = cacheDirectory / (shaderPath.filename().string() + fragmentCachedVulkanFileExtension);
 
-		std::vector<uint32_t> vertexShaderData;
-		std::ifstream inV(vertexShaderPath, std::ios::in | std::ios::binary);
-		if (inV.is_open())
+		if (type != ShaderStage::COMPUTE)
 		{
-			inV.seekg(0, std::ios::end);
-			auto size = inV.tellg();
-			inV.seekg(0, std::ios::beg);
+			shaderBinaries.push_back(Compile(shaderFilePath, ss[0].str(), ShaderStage::VERTEX));
+			shaderBinaries.push_back(Compile(shaderFilePath, ss[1].str(), ShaderStage::FRAGMENT));
 
-			vertexShaderData.resize(size / sizeof(uint32_t));
-			inV.read((char*)vertexShaderData.data(), size);
+			if (shaderBinaries[0].empty() || shaderBinaries[1].empty())
+			{
+				return {};
+			}
+
+			// NOTE: We need the vulkan spv code to do the reflection, thats why we load again the files.
+			const char* vertexCachedVulkanFileExtension = GLShaderStageCachedVulkanFileExtension(ShaderStage::VERTEX);
+			const char* fragmentCachedVulkanFileExtension = GLShaderStageCachedVulkanFileExtension(ShaderStage::FRAGMENT);
+			std::filesystem::path vertexShaderPath = cacheDirectory / (shaderPath.filename().string() + vertexCachedVulkanFileExtension);
+			std::filesystem::path fragmentShaderPath = cacheDirectory / (shaderPath.filename().string() + fragmentCachedVulkanFileExtension);
+
+			std::vector<uint32_t> vertexShaderData;
+			std::ifstream inV(vertexShaderPath, std::ios::in | std::ios::binary);
+			if (inV.is_open())
+			{
+				inV.seekg(0, std::ios::end);
+				auto size = inV.tellg();
+				inV.seekg(0, std::ios::beg);
+
+				vertexShaderData.resize(size / sizeof(uint32_t));
+				inV.read((char*)vertexShaderData.data(), size);
+			}
+
+			std::vector<uint32_t> fragmentShaderData;
+			std::ifstream inF(fragmentShaderPath, std::ios::in | std::ios::binary);
+			if (inF.is_open())
+			{
+				inF.seekg(0, std::ios::end);
+				auto size = inF.tellg();
+				inF.seekg(0, std::ios::beg);
+
+				fragmentShaderData.resize(size / sizeof(uint32_t));
+				inF.read((char*)fragmentShaderData.data(), size);
+			}
+
+			HBL2_CORE_TRACE("Reflecting Shader: {0}", shaderFilePath);
+
+			m_ShaderReflectionData[shaderFilePath] = Reflect(vertexShaderData, fragmentShaderData, {});
 		}
-
-		std::vector<uint32_t> fragmentShaderData;
-		std::ifstream inF(fragmentShaderPath, std::ios::in | std::ios::binary);
-		if (inF.is_open())
+		else
 		{
-			inF.seekg(0, std::ios::end);
-			auto size = inF.tellg();
-			inF.seekg(0, std::ios::beg);
+			shaderBinaries.push_back(Compile(shaderFilePath, ss[2].str(), ShaderStage::COMPUTE));
 
-			fragmentShaderData.resize(size / sizeof(uint32_t));
-			inF.read((char*)fragmentShaderData.data(), size);
+			if (shaderBinaries[0].empty())
+			{
+				return {};
+			}
+
+			// NOTE: We need the vulkan spv code to do the reflection, thats why we load again the files.
+			const char* computeCachedVulkanFileExtension = GLShaderStageCachedVulkanFileExtension(ShaderStage::COMPUTE);
+			std::filesystem::path computeShaderPath = cacheDirectory / (shaderPath.filename().string() + computeCachedVulkanFileExtension);
+
+			std::vector<uint32_t> computeShaderData;
+			std::ifstream inV(computeShaderPath, std::ios::in | std::ios::binary);
+			if (inV.is_open())
+			{
+				inV.seekg(0, std::ios::end);
+				auto size = inV.tellg();
+				inV.seekg(0, std::ios::beg);
+
+				computeShaderData.resize(size / sizeof(uint32_t));
+				inV.read((char*)computeShaderData.data(), size);
+			}
+
+			HBL2_CORE_TRACE("Reflecting Shader: {0}", shaderFilePath);
+
+			m_ShaderReflectionData[shaderFilePath] = Reflect({}, {}, computeShaderData);
 		}
-
-		HBL2_CORE_TRACE("Reflecting Shader: {0}", shaderFilePath);
-
-		m_ShaderReflectionData[shaderFilePath] = Reflect(vertexShaderData, fragmentShaderData);
 
 		return shaderBinaries;
 	}
@@ -257,13 +335,17 @@ namespace HBL2
 		auto drawBindGroupLayout0 = ResourceManager::Instance->CreateBindGroupLayout({
 			.debugName = "built-in-simple-lit-bind-group-layout",
 			.textureBindings = {
+				/*
+				* Here we start the texture binds from zero despite having already buffers bound there.
+				* Thats because in a set each type (buffer, image, etc) has unique binding points.
+				* This also comes in handy in openGL when binding textures.
+				*/
 				{
-					/*
-					* Here we start the texture binds from zero despite having already buffers bound there.
-					* Thats because in a set each type (buffer, image, etc) has unique binding points.
-					* This also comes in handy in openGL when binding textures.
-					*/
 					.slot = 0,
+					.visibility = ShaderStage::FRAGMENT,
+				},
+				{
+					.slot = 3,
 					.visibility = ShaderStage::FRAGMENT,
 				},
 			},
@@ -309,15 +391,20 @@ namespace HBL2
 					.slot = 3,
 					.visibility = ShaderStage::FRAGMENT,
 				},
+				{
+					.slot = 4,
+					.visibility = ShaderStage::FRAGMENT,
+				},
 			},
 			.bufferBindings = {
 				{
 					/*
-					* We use binding 4 since despite being a different type of resource,
-					* each binding within a descriptor set must be unique, so since we have 0, 1, 2, 3
-					* used by textures, the next empty is 4.
+					* We use binding 5 since despite being a different type of resource,
+					* each binding within a descriptor set must be unique, so since we have 0, 1, 2, 3, 4
+					* used by textures, the next empty is 5.
+					* 
 					*/
-					.slot = 4,
+					.slot = 5,
 					.visibility = ShaderStage::VERTEX,
 					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
 				},
@@ -327,148 +414,58 @@ namespace HBL2
 
 		// Invalid shader
 		{
-			const auto& invalidShaderCode = Compile("assets/shaders/invalid.shader");
-
-			auto invalidShaderHandle = ResourceManager::Instance->CreateShader({
-				.debugName = "invalid-shader",
-				.VS { .code = invalidShaderCode[0], .entryPoint = "main" },
-				.FS { .code = invalidShaderCode[1], .entryPoint = "main" },
-				.bindGroups {
-					Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
-					drawBindGroupLayout0,								// Material bind group (1)
-				},
-				.renderPipeline {
-					.vertexBufferBindings = {
-						{
-							.byteStride = 20,
-							.attributes = {
-								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-								{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
-							},
-						}
-					}
-				},
-				.renderPass = Renderer::Instance->GetMainRenderPass(),
+			auto invalidShaderAssetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "invalid-shader-asset",
+				.filePath = "assets/shaders/invalid.shader",
+				.type = AssetType::Shader,
 			});
 
+			CreateShaderMetadataFile(invalidShaderAssetHandle, 0);
+			auto invalidShaderHandle = AssetManager::Instance->GetAsset<Shader>(invalidShaderAssetHandle);
 			m_Shaders[BuiltInShader::INVALID] = invalidShaderHandle;
-		}
-		
-		// Present shader
-		{
-			const auto& presentShaderCode = Compile("assets/shaders/present.shader");
-
-			auto presentShaderHandle = ResourceManager::Instance->CreateShader({
-				.debugName = "present-shader",
-				.VS { .code = presentShaderCode[0], .entryPoint = "main" },
-				.FS { .code = presentShaderCode[1], .entryPoint = "main" },
-				.bindGroups {
-					Renderer::Instance->GetGlobalPresentBindingsLayout(),	// Global bind group (0)
-				},
-				.renderPipeline {
-					.vertexBufferBindings = {
-						{
-							.byteStride = 16,
-							.attributes = {
-								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
-								{ .byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
-							},
-						}
-					}
-				},
-				.renderPass = Renderer::Instance->GetMainRenderPass(),
-			});
-
-			m_Shaders[BuiltInShader::PRESENT] = presentShaderHandle;
+			m_ShaderAssets.Add(invalidShaderAssetHandle);
 		}
 
 		// Unlit shader
 		{
-			const auto& unlitShaderCode = Compile("assets/shaders/unlit.shader");
-
-			auto unlitShaderHandle = ResourceManager::Instance->CreateShader({
-				.debugName = "unlit-shader",
-				.VS { .code = unlitShaderCode[0], .entryPoint = "main" },
-				.FS { .code = unlitShaderCode[1], .entryPoint = "main" },
-				.bindGroups {
-					Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
-					drawBindGroupLayout0,								// Material bind group (1)
-				},
-				.renderPipeline {
-					.vertexBufferBindings = {
-						{
-							.byteStride = 20,
-							.attributes = {
-								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-								{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
-							},
-						}
-					}
-				},
-				.renderPass = Renderer::Instance->GetMainRenderPass(),
+			auto unlitShaderAssetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "unlit-shader-asset",
+				.filePath = "assets/shaders/unlit.shader",
+				.type = AssetType::Shader,
 			});
 
+			CreateShaderMetadataFile(unlitShaderAssetHandle, 0);
+			auto unlitShaderHandle = AssetManager::Instance->GetAsset<Shader>(unlitShaderAssetHandle);
 			m_Shaders[BuiltInShader::UNLIT] = unlitShaderHandle;
+			m_ShaderAssets.Add(unlitShaderAssetHandle);
 		}
 
-		// Blinn-Phnog shader
+		// Blinn-Phong shader
 		{
-			const auto& blinnPhongShaderCode = Compile("assets/shaders/blinn-phong.shader");
-
-			auto blinnPhongShaderHandle = ResourceManager::Instance->CreateShader({
-				.debugName = "blinn-phong-shader",
-				.VS { .code = blinnPhongShaderCode[0], .entryPoint = "main" },
-				.FS { .code = blinnPhongShaderCode[1], .entryPoint = "main" },
-				.bindGroups {
-					Renderer::Instance->GetGlobalBindingsLayout3D(),	// Global bind group (0)
-					drawBindGroupLayout0,								// Material bind group (1)
-				},
-				.renderPipeline {
-					.vertexBufferBindings = {
-						{
-							.byteStride = 32,
-							.attributes = {
-								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-								{ .byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
-								{ .byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
-							},
-						}
-					}
-				},
-				.renderPass = Renderer::Instance->GetMainRenderPass(),
+			auto blinnPhongShaderAssetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "blinn-phong-shader-asset",
+				.filePath = "assets/shaders/shadow-mapping.shader",
+				.type = AssetType::Shader,
 			});
 
+			CreateShaderMetadataFile(blinnPhongShaderAssetHandle, 1);
+			auto blinnPhongShaderHandle = AssetManager::Instance->GetAsset<Shader>(blinnPhongShaderAssetHandle);
 			m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderHandle;
+			m_ShaderAssets.Add(blinnPhongShaderAssetHandle);
 		}
 
 		// PBR shader
 		{
-			const auto& pbrShaderCode = Compile("assets/shaders/pbr.shader");
-
-			auto pbrShaderHandle = ResourceManager::Instance->CreateShader({
-				.debugName = "pbr-shader",
-				.VS { .code = pbrShaderCode[0], .entryPoint = "main" },
-				.FS { .code = pbrShaderCode[1], .entryPoint = "main" },
-				.bindGroups {
-					Renderer::Instance->GetGlobalBindingsLayout3D(),	// Global bind group (0)
-					drawBindGroupLayout1,								// Material bind group (1)
-				},
-				.renderPipeline {
-					.vertexBufferBindings = {
-						{
-							.byteStride = 32,
-							.attributes = {
-								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-								{ .byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
-								{ .byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
-							},
-						}
-					}
-				},
-				.renderPass = Renderer::Instance->GetMainRenderPass(),
+			auto pbrShaderAssetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "pbr-shader-asset",
+				.filePath = "assets/shaders/pbr.shader",
+				.type = AssetType::Shader,
 			});
 
+			CreateShaderMetadataFile(pbrShaderAssetHandle, 2);
+			auto pbrShaderHandle = AssetManager::Instance->GetAsset<Shader>(pbrShaderAssetHandle);
 			m_Shaders[BuiltInShader::PBR] = pbrShaderHandle;
+			m_ShaderAssets.Add(pbrShaderAssetHandle);
 		}
 	}
 
@@ -487,27 +484,137 @@ namespace HBL2
 		}
 
 		m_Shaders.clear();
+
+		m_ShaderAssets.Clear();
+	}
+
+	void ShaderUtilities::LoadBuiltInMaterials()
+	{
+		LitMaterialAsset = AssetManager::Instance->CreateAsset({
+			.debugName = "lit-material-asset",
+			.filePath = "assets/materials/lit.mat",
+			.type = AssetType::Material,
+		});
+
+		CreateMaterialMetadataFile(LitMaterialAsset, 1);
+
+		AssetManager::Instance->GetAsset<Material>(LitMaterialAsset);
+	}
+
+	void ShaderUtilities::DeleteBuiltInMaterials()
+	{
+		AssetManager::Instance->DeleteAsset(LitMaterialAsset);
 	}
 
 	void ShaderUtilities::CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType)
 	{
-		std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(handle)->FilePath).string() + ".hblshader", 0);
+		Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+
+		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+
+		if (std::filesystem::exists(path.string() + ".hblshader"))
+		{
+			return;
+		}
+
+		if (!std::filesystem::exists(path.parent_path()))
+		{
+			try
+			{
+				std::filesystem::create_directories(path.parent_path());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_ERROR("Project directory creation failed: {0}", e.what());
+			}
+		}
+
+		std::ofstream fout(path.string() + ".hblshader", 0);
+
+		Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(handle);
+		uint64_t variantHash = ResourceManager::Instance->GetShaderVariantHash({});
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Shader" << YAML::Value;
 		out << YAML::BeginMap;
-		out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(handle)->UUID;
+		out << YAML::Key << "UUID" << YAML::Value << asset->UUID;
 		out << YAML::Key << "Type" << YAML::Value << shaderType;
+
+		out << YAML::Key << "Variants" << YAML::BeginSeq;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Variant" << YAML::Value << variantHash;
+
+		out << YAML::Key << "BlendState";
+		out << YAML::BeginMap;
+		out << YAML::Key << "Enabled" << YAML::Value << true;
+		out << YAML::Key << "ColorOutputEnabled" << YAML::Value << true;
+		out << YAML::EndMap;
+
+		out << YAML::Key << "DepthState";
+		out << YAML::BeginMap;
+		out << YAML::Key << "Enabled" << YAML::Value << true;
+		out << YAML::Key << "WriteEnabled" << YAML::Value << true;
+		out << YAML::Key << "StencilEnabled" << YAML::Value << true;
+		out << YAML::Key << "DepthTest" << YAML::Value << (int)Compare::LESS;
+		out << YAML::EndMap;
+
+		out << YAML::EndMap;
+		out << YAML::EndSeq;
+
 		out << YAML::EndMap;
 		out << YAML::EndMap;
+
 		fout << out.c_str();
 		fout.close();
 	}
 
+	void ShaderUtilities::UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::Variant& newVariant)
+	{
+		Handle<Asset> shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
+		Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+		if (shaderAsset == nullptr)
+		{
+			return;
+		}
+
+		Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderAssetHandle);
+
+		const auto& filesystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+		const auto& filePath = std::filesystem::exists(filesystemPath) ? filesystemPath : shaderAsset->FilePath;
+
+		YAML::Node root = YAML::LoadFile(filePath.string() + ".hblshader");
+		YAML::Node variants = root["Shader"]["Variants"];
+
+		uint64_t newVariantHash = ResourceManager::Instance->GetShaderVariantHash(newVariant);
+
+		if (!VariantExists(variants, newVariantHash))
+		{
+			HBL2_CORE_INFO("New variant added.");
+			variants.push_back(VariantToYAMLNode(newVariantHash, newVariant));
+			std::ofstream fout(filePath.string() + ".hblshader");
+			fout << root;
+			fout.close();
+		} 
+		else
+		{
+			HBL2_CORE_INFO("Variant already exists.");
+		}
+	}
+
 	void ShaderUtilities::CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType)
 	{
-		const auto& path = HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(handle)->FilePath);
+		Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+
+		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+
+		if (std::filesystem::exists(path.string() + ".hblmat"))
+		{
+			return;
+		}
 
 		if (!std::filesystem::exists(path.parent_path()))
 		{
@@ -527,7 +634,7 @@ namespace HBL2
 		out << YAML::BeginMap;
 		out << YAML::Key << "Material" << YAML::Value;
 		out << YAML::BeginMap;
-		out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(handle)->UUID;
+		out << YAML::Key << "UUID" << YAML::Value << asset->UUID;
 		out << YAML::Key << "Type" << YAML::Value << materialType;
 		out << YAML::EndMap;
 		out << YAML::EndMap;
@@ -560,7 +667,8 @@ namespace HBL2
 
 		if (desc.ShaderAssetHandle.IsValid())
 		{
-			out << YAML::Key << "Shader" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.ShaderAssetHandle)->UUID;
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.ShaderAssetHandle);
+			out << YAML::Key << "Shader" << YAML::Value << asset->UUID;
 		}
 		else
 		{
@@ -570,9 +678,24 @@ namespace HBL2
 		out << YAML::Key << "AlbedoColor" << YAML::Value << desc.AlbedoColor;
 		out << YAML::Key << "Glossiness" << YAML::Value << desc.Glossiness;
 
+		out << YAML::Key << "BlendState";
+		out << YAML::BeginMap;
+		out << YAML::Key << "Enabled" << YAML::Value << desc.VariantDescriptor.blend.enabled;
+		out << YAML::Key << "ColorOutputEnabled" << YAML::Value << desc.VariantDescriptor.blend.colorOutput;
+		out << YAML::EndMap;
+
+		out << YAML::Key << "DepthState";
+		out << YAML::BeginMap;
+		out << YAML::Key << "Enabled" << YAML::Value << desc.VariantDescriptor.depthTest.enabled;
+		out << YAML::Key << "WriteEnabled" << YAML::Value << desc.VariantDescriptor.depthTest.writeEnabled;
+		out << YAML::Key << "StencilEnabled" << YAML::Value << desc.VariantDescriptor.depthTest.stencilEnabled;
+		out << YAML::Key << "DepthTest" << YAML::Value << (int)desc.VariantDescriptor.depthTest.depthTest;
+		out << YAML::EndMap;
+
 		if (desc.AlbedoMapAssetHandle.IsValid())
 		{
-			out << YAML::Key << "AlbedoMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.AlbedoMapAssetHandle)->UUID;
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.AlbedoMapAssetHandle);
+			out << YAML::Key << "AlbedoMap" << YAML::Value << asset->UUID;
 		}
 		else
 		{
@@ -581,7 +704,8 @@ namespace HBL2
 
 		if (desc.NormalMapAssetHandle.IsValid())
 		{
-			out << YAML::Key << "NormalMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.NormalMapAssetHandle)->UUID;
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.NormalMapAssetHandle);
+			out << YAML::Key << "NormalMap" << YAML::Value << asset->UUID;
 		}
 		else
 		{
@@ -590,7 +714,8 @@ namespace HBL2
 
 		if (desc.MetallicMapAssetHandle.IsValid())
 		{
-			out << YAML::Key << "MetallicMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.MetallicMapAssetHandle)->UUID;
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.MetallicMapAssetHandle);
+			out << YAML::Key << "MetallicMap" << YAML::Value << asset->UUID;
 		}
 		else
 		{
@@ -599,7 +724,8 @@ namespace HBL2
 
 		if (desc.RoughnessMapAssetHandle.IsValid())
 		{
-			out << YAML::Key << "RoughnessMap" << YAML::Value << AssetManager::Instance->GetAssetMetadata(desc.RoughnessMapAssetHandle)->UUID;
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.RoughnessMapAssetHandle);
+			out << YAML::Key << "RoughnessMap" << YAML::Value << asset->UUID;
 		}
 		else
 		{
@@ -613,11 +739,12 @@ namespace HBL2
 		fout.close();
 	}
 
-	ReflectionData ShaderUtilities::Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData)
+	ReflectionData ShaderUtilities::Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData, const Span<uint32_t>& computeShaderData)
 	{
 		ReflectionData reflectionData;
 
 		// Vertex
+		if (vertexShaderData.Size() != 0)
 		{
 			spirv_cross::Compiler compiler(vertexShaderData.Data(), vertexShaderData.Size());
 			const spirv_cross::ShaderResources& resources = compiler.get_shader_resources();
@@ -853,6 +980,7 @@ namespace HBL2
 		}
 
 		// Fragment
+		if (fragmentShaderData.Size() != 0)
 		{
 			spirv_cross::Compiler compiler(fragmentShaderData.Data(), fragmentShaderData.Size());
 			const spirv_cross::ShaderResources& resources = compiler.get_shader_resources();
@@ -889,6 +1017,78 @@ namespace HBL2
 				uint32_t binding = compiler.get_decoration(ubo.id, spv::DecorationBinding);
 				uint32_t set = compiler.get_decoration(ubo.id, spv::DecorationDescriptorSet);
 				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}, Size: {}", ubo.name, set, binding, bufferSize);
+			}
+
+			// Print sampled images (textures)
+			HBL2_CORE_TRACE("Sampled Images (Textures):");
+			for (const auto& sampler : resources.sampled_images)
+			{
+				uint32_t binding = compiler.get_decoration(sampler.id, spv::DecorationBinding);
+				uint32_t set = compiler.get_decoration(sampler.id, spv::DecorationDescriptorSet);
+				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}", sampler.name, set, binding);
+			}
+		}
+
+		// Compute
+		if (computeShaderData.Size() != 0)
+		{
+			spirv_cross::Compiler compiler(computeShaderData.Data(), computeShaderData.Size());
+			const spirv_cross::ShaderResources& resources = compiler.get_shader_resources();
+
+			HBL2_CORE_TRACE("OpenGLShader::Reflect - {0}", GLShaderStageToString(ShaderStage::COMPUTE));
+			HBL2_CORE_TRACE("    {0} uniform buffers", resources.uniform_buffers.size());
+			HBL2_CORE_TRACE("    {0} storage buffers", resources.storage_buffers.size());
+			HBL2_CORE_TRACE("    {0} storage images", resources.storage_images.size());
+			HBL2_CORE_TRACE("    {0} resources", resources.sampled_images.size());
+
+			// Get all entry points and their execution stages
+			const auto& entryPoints = compiler.get_entry_points_and_stages();
+
+			HBL2_CORE_TRACE("Shader Entry Point:");
+			for (const auto& entryPoint : entryPoints)
+			{
+				HBL2_CORE_TRACE("  Name: {}", entryPoint.name);
+
+				// Print the shader stage
+				HBL2_CORE_TRACE("  Stage: ");
+				switch (entryPoint.execution_model)
+				{
+				case spv::ExecutionModelGLCompute:
+					HBL2_CORE_TRACE("Compute Shader");
+					reflectionData.ComputeEntryPoint = entryPoint.name;
+					break;
+				}
+			}
+
+			// Print uniform buffers
+			HBL2_CORE_TRACE("Uniform Buffers:");
+			for (const auto& ubo : resources.uniform_buffers)
+			{
+				const auto& bufferType = compiler.get_type(ubo.base_type_id);
+				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
+				uint32_t binding = compiler.get_decoration(ubo.id, spv::DecorationBinding);
+				uint32_t set = compiler.get_decoration(ubo.id, spv::DecorationDescriptorSet);
+				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}, Size: {}", ubo.name, set, binding, bufferSize);
+			}
+
+			// Print storage buffers
+			HBL2_CORE_TRACE("Storage Buffers:");
+			for (const auto& ssbo : resources.storage_buffers)
+			{
+				const auto& bufferType = compiler.get_type(ssbo.base_type_id);
+				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
+				uint32_t binding = compiler.get_decoration(ssbo.id, spv::DecorationBinding);
+				uint32_t set = compiler.get_decoration(ssbo.id, spv::DecorationDescriptorSet);
+				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}, Size: {}", ssbo.name, set, binding, bufferSize);
+			}
+
+			// Print storage buffers
+			HBL2_CORE_TRACE("Storage Images:");
+			for (const auto& image : resources.storage_images)
+			{
+				uint32_t binding = compiler.get_decoration(image.id, spv::DecorationBinding);
+				uint32_t set = compiler.get_decoration(image.id, spv::DecorationDescriptorSet);
+				HBL2_CORE_TRACE("  Name: {}, Set: {}, Binding: {}", image.name, set, binding);
 			}
 
 			// Print sampled images (textures)

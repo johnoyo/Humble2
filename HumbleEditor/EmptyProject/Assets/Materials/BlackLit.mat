@@ -1,0 +1,16 @@
+Material:
+  Shader: 0
+  AlbedoColor: [0.112211227, 0.105174877, 0.105174877, 1]
+  Glossiness: 1
+  BlendState:
+    Enabled: false
+    ColorOutputEnabled: true
+  DepthState:
+    Enabled: true
+    WriteEnabled: false
+    StencilEnabled: true
+    DepthTest: 1
+  AlbedoMap: 0
+  NormalMap: 0
+  MetallicMap: 0
+  RoughnessMap: 0

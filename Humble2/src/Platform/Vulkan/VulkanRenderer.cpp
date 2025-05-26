@@ -9,6 +9,8 @@
 
 namespace HBL2
 {
+	thread_local UploadContext VulkanRenderer::s_UploadContext;
+
 	void VulkanRenderer::PreInitialize()
 	{
 		m_GraphicsAPI = GraphicsAPI::VULKAN;
@@ -37,8 +39,8 @@ namespace HBL2
 		{
 			m_Frames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "global-present-bind-group",
-				.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
-				.textures = { Renderer::Instance->MainColorTexture },
+				.layout = GetGlobalPresentBindingsLayout(),
+				.textures = { MainColorTexture },
 			});
 		}
 
@@ -120,20 +122,34 @@ namespace HBL2
 
 		m_MainDeletionQueue.Flush();
 
+		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
+		m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
 
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 
 		VkRenderPass renderPass = m_ResourceManager->GetRenderPass(m_RenderPass)->RenderPass;
 		vkDestroyRenderPass(m_Device->Get(), renderPass, nullptr);
 
+		VkRenderPass renderingRenderPass = m_ResourceManager->GetRenderPass(m_RenderingRenderPass)->RenderPass;
+		vkDestroyRenderPass(m_Device->Get(), renderingRenderPass, nullptr);
+
+		m_ResourceManager->DeleteBindGroupLayout(m_ShadowBindingsLayout);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
 
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
+			VulkanBindGroup* shadowBindGroup = m_ResourceManager->GetBindGroup(m_Frames[i].ShadowBindings);
+
+			for (auto& bufferEntry : shadowBindGroup->Buffers)
+			{
+				m_ResourceManager->DeleteBuffer(bufferEntry.buffer);
+			}
+
+			m_ResourceManager->DeleteBindGroup(m_Frames[i].ShadowBindings);
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalBindings2D);
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalBindings3D);
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalPresentBindings);
@@ -153,6 +169,8 @@ namespace HBL2
 
 		m_ResourceManager->DeleteTexture(m_DepthImage);
 
+		VulkanShader::GetPipelineCache().Destroy();
+
 		TempUniformRingBuffer->Free();
 
 		m_ResourceManager->Flush(UINT32_MAX);
@@ -162,96 +180,25 @@ namespace HBL2
 
 	void VulkanRenderer::StubRenderPass()
 	{
-		{
-			CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Opaque);
-			RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(GetMainRenderPass(), GetMainFrameBuffer());
-			commandBuffer->EndRenderPass(*passRenderer);
-			commandBuffer->Submit();
-		}
+		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
-		{
-			CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::OpaqueSprite);
-			RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(GetMainRenderPass(), GetMainFrameBuffer());
-			commandBuffer->EndRenderPass(*passRenderer);
-			commandBuffer->Submit();
-		}
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(GetMainRenderPass(), GetMainFrameBuffer());
+		commandBuffer->EndRenderPass(*passRenderer);
 
-		{
-			CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN, RenderPassStage::Present);
-			RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(GetMainRenderPass(), GetMainFrameBuffer());
-			commandBuffer->EndRenderPass(*passRenderer);
-			commandBuffer->Submit();
-		}
+		commandBuffer->EndCommandRecording();
+		commandBuffer->Submit();
 	}
 
-	CommandBuffer* VulkanRenderer::BeginCommandRecording(CommandBufferType type, RenderPassStage stage)
+	CommandBuffer* VulkanRenderer::BeginCommandRecording(CommandBufferType type)
 	{
-		// call vkAcquireNextImageKHR here???
-
-		/*for (int i = 0; i < FRAME_OVERLAP; i++)
-		{
-			m_Frames[i].SecondaryCommandBuffers.clear();
-		}
-
-		for (int i = 0; i < FRAME_OVERLAP; i++)
-		{
-			VkCommandBufferAllocateInfo cmdAllocInfo =
-			{
-				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-				.pNext = nullptr,
-				.commandPool = m_Frames[i].SecondaryCommandPool,
-				.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-				.commandBufferCount = 1,
-			};
-
-			uint32_t index = m_Frames[i].SecondaryCommandBuffers.size();
-			m_Frames[i].SecondaryCommandBuffers.push_back(VK_NULL_HANDLE);
-
-			VK_VALIDATE(vkAllocateCommandBuffers(m_Device->Get(), &cmdAllocInfo, &m_Frames[i].SecondaryCommandBuffers[index]), "vkAllocateCommandBuffers");
-
-			m_SecondaryCommandBuffers[i].push_back(VulkanCommandBuffer(CommandBufferType::MAIN, m_Frames[i].MainCommandBuffer));
-		}
-
-		return nullptr;*/
-
 		VkCommandBuffer cmd = VK_NULL_HANDLE;
 		VulkanCommandBuffer* vkCmdObj = nullptr;
 
 		switch (type)
 		{
 		case HBL2::CommandBufferType::MAIN:
-			switch (stage)
-			{
-			case HBL2::RenderPassStage::Shadow:
-				cmd = GetCurrentFrame().ShadowCommandBuffer;
-				vkCmdObj = &m_ShadowCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
-				break;
-			case HBL2::RenderPassStage::Opaque:
-				cmd = GetCurrentFrame().OpaqueCommandBuffer;
-				vkCmdObj = &m_OpaqueCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
-				break;
-			case HBL2::RenderPassStage::Skybox:
-				cmd = GetCurrentFrame().SkyboxCommandBuffer;
-				vkCmdObj = &m_SkyboxCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
-				break;
-			case HBL2::RenderPassStage::Transparent:
-				cmd = GetCurrentFrame().TransparentCommandBuffer;
-				vkCmdObj = &m_TransparentCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
-				break;
-			case HBL2::RenderPassStage::OpaqueSprite:
-				cmd = GetCurrentFrame().OpaqueSpriteCommandBuffer;
-				vkCmdObj = &m_OpaqueSpriteCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
-				break;
-			case HBL2::RenderPassStage::PostProcess:
-				cmd = GetCurrentFrame().PostProcessCommandBuffer;
-				vkCmdObj = &m_PostProcessCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
-				break;
-			case HBL2::RenderPassStage::Present:
-				cmd = GetCurrentFrame().PresentCommandBuffer;
-				vkCmdObj = &m_PresentCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
-				break;
-			}
-
+			cmd = GetCurrentFrame().MainCommandBuffer;
+			vkCmdObj = &m_MainCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
 			break;
 		case HBL2::CommandBufferType::CUSTOM:
 			HBL2_CORE_ASSERT(false, "Custom Command buffers not implemented yet!");
@@ -283,7 +230,12 @@ namespace HBL2
 
 	void VulkanRenderer::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function)
 	{
-		VkCommandBuffer cmd = m_UploadContext.CommandBuffer;
+		if (s_UploadContext.CommandBuffer == VK_NULL_HANDLE)
+		{
+			CreateUploadContextCommands();
+		}
+
+		VkCommandBuffer cmd = s_UploadContext.CommandBuffer;
 
 		// begin the command buffer recording. We will use this command buffer exactly once before resetting, so we tell vulkan that.
 		VkCommandBufferBeginInfo cmdBeginInfo =
@@ -316,13 +268,13 @@ namespace HBL2
 
 		// Submit command buffer to the queue and execute it.
 		// UploadFence will now block until the graphic commands finish execution
-		VK_VALIDATE(vkQueueSubmit(m_GraphicsQueue, 1, &submit, m_UploadContext.UploadFence), "vkQueueSubmit");
+		VK_VALIDATE(vkQueueSubmit(m_GraphicsQueue, 1, &submit, s_UploadContext.UploadFence), "vkQueueSubmit");
 
-		vkWaitForFences(m_Device->Get(), 1, &m_UploadContext.UploadFence, true, 9999999999);
-		vkResetFences(m_Device->Get(), 1, &m_UploadContext.UploadFence);
+		vkWaitForFences(m_Device->Get(), 1, &s_UploadContext.UploadFence, true, 9999999999);
+		vkResetFences(m_Device->Get(), 1, &s_UploadContext.UploadFence);
 
 		// Reset the command buffers inside the command pool
-		vkResetCommandPool(m_Device->Get(), m_UploadContext.CommandPool, 0);
+		vkResetCommandPool(m_Device->Get(), s_UploadContext.CommandPool, 0);
 	}
 
 	void VulkanRenderer::Resize(uint32_t width, uint32_t height)
@@ -358,6 +310,7 @@ namespace HBL2
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 
 		// Destroy old offscreen textures.
+		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
 
@@ -369,12 +322,26 @@ namespace HBL2
 		CreateFrameBuffers();
 
 		// Recreate the offscreen texture (render target).
+		IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "intermediate-color-target",
+			.dimensions = { width, height, 1 },
+			.format = Format::RGBA16_FLOAT,
+			.internalFormat = Format::RGBA16_FLOAT,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::COLOR,
+			.sampler =
+			{
+				.filter = Filter::LINEAR,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
 		MainColorTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "viewport-color-target",
 			.dimensions = { width, height, 1 },
 			.format = Format::BGRA8_UNORM,
 			.internalFormat = Format::BGRA8_UNORM,
-			.usage = TextureUsage::RENDER_ATTACHMENT,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
 			.aspect = TextureAspect::COLOR,
 			.sampler =
 			{
@@ -390,7 +357,12 @@ namespace HBL2
 			.internalFormat = Format::D32_FLOAT,
 			.usage = TextureUsage::DEPTH_STENCIL,
 			.aspect = TextureAspect::DEPTH,
-			.createSampler = false,
+			.createSampler = true,
+			.sampler =
+			{
+				.filter = Filter::NEAREST,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
 		});
 
 		// Update descriptor sets (for the quad shader).
@@ -527,7 +499,51 @@ namespace HBL2
 			swapchainImage.Image = m_SwapChainImages[i];
 			swapchainImage.ImageView = m_SwapChainImageViews[i];
 			swapchainImage.Extent = { m_SwapChainExtent.width, m_SwapChainExtent.height, 1 };
+			swapchainImage.Aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 			m_SwapChainColorTextures.push_back(m_ResourceManager->m_TexturePool.Insert(swapchainImage));
+		}
+	}
+
+	void VulkanRenderer::CreateSyncStructures()
+	{
+		// Create synchronization structures.
+		VkFenceCreateInfo fenceCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = VK_FENCE_CREATE_SIGNALED_BIT,
+		};
+
+
+		// For the semaphores we don't need any flags.
+		VkSemaphoreCreateInfo semaphoreCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+		};
+
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			VK_VALIDATE(vkCreateFence(m_Device->Get(), &fenceCreateInfo, nullptr, &m_Frames[i].InFlightFence), "vkCreateFence");
+
+			//enqueue the destruction of the fence
+			m_MainDeletionQueue.PushFunction([=]()
+			{
+				vkDestroyFence(m_Device->Get(), m_Frames[i].InFlightFence, nullptr);
+			});
+
+			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].ImageAvailableSemaphore), "vkCreateSemaphore");
+			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].MainRenderFinishedSemaphore), "vkCreateSemaphore");
+			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].ImGuiRenderFinishedSemaphore), "vkCreateSemaphore");
+
+			//enqueue the destruction of semaphores
+			m_MainDeletionQueue.PushFunction([=]()
+			{
+				vkDestroySemaphore(m_Device->Get(), m_Frames[i].ImageAvailableSemaphore, nullptr);
+				vkDestroySemaphore(m_Device->Get(), m_Frames[i].MainRenderFinishedSemaphore, nullptr);
+				vkDestroySemaphore(m_Device->Get(), m_Frames[i].ImGuiRenderFinishedSemaphore, nullptr);
+			});
 		}
 	}
 
@@ -557,106 +573,61 @@ namespace HBL2
 			// Primary
 			VK_VALIDATE(vkCreateCommandPool(m_Device->Get(), &commandPoolInfo, nullptr, &m_Frames[i].CommandPool), "vkCreateCommandPool");
 
-			// Allocate the default and ImGui command buffer that we will use for regular and imgui rendering.
-			VkCommandBuffer commandBuffers[4];
+			// Allocate the default and ImGui command buffers that we will use for regular and imgui rendering.
+			VkCommandBuffer commandBuffers[2];
 			VkCommandBufferAllocateInfo cmdAllocInfo =
 			{
 				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 				.pNext = nullptr,
 				.commandPool = m_Frames[i].CommandPool,
 				.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-				.commandBufferCount = 4,
+				.commandBufferCount = 2,
 			};			
 
 			VK_VALIDATE(vkAllocateCommandBuffers(m_Device->Get(), &cmdAllocInfo, commandBuffers), "vkAllocateCommandBuffers");
 
-			//m_Frames[i].ShadowCommandBuffer = commandBuffers[0];
-			m_Frames[i].OpaqueCommandBuffer = commandBuffers[0];
-			//m_Frames[i].SkyboxCommandBuffer = commandBuffers[2];
-			//m_Frames[i].TransparentCommandBuffer = commandBuffers[3];
-			m_Frames[i].OpaqueSpriteCommandBuffer = commandBuffers[1];
-			//m_Frames[i].PostProcessCommandBuffer = commandBuffers[2];
-			m_Frames[i].PresentCommandBuffer = commandBuffers[2];
-			m_Frames[i].ImGuiCommandBuffer = commandBuffers[3];
+			m_Frames[i].MainCommandBuffer = commandBuffers[0];
+			m_Frames[i].ImGuiCommandBuffer = commandBuffers[1];
 
 			m_MainDeletionQueue.PushFunction([=]()
 			{
 				vkDestroyCommandPool(m_Device->Get(), m_Frames[i].CommandPool, nullptr);
 			});
 
-			/*m_ShadowCommandBuffers[i] = VulkanCommandBuffer({
+			m_MainCommandBuffers[i] = VulkanCommandBuffer({
 				.type = CommandBufferType::MAIN,
-				.commandBuffer = m_Frames[i].ShadowCommandBuffer,
+				.commandBuffer = m_Frames[i].MainCommandBuffer,
 				.blockFence = VK_NULL_HANDLE,
 				.waitSemaphore = m_Frames[i].ImageAvailableSemaphore,
-				.signalSemaphore = m_Frames[i].ShadowRenderFinishedSemaphore,
-			});*/
-
-			m_OpaqueCommandBuffers[i] = VulkanCommandBuffer({
-				.type = CommandBufferType::MAIN,
-				.commandBuffer = m_Frames[i].OpaqueCommandBuffer,
-				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].ImageAvailableSemaphore, // m_Frames[i].ShadowRenderFinishedSemaphore, // TODO: correct this
-				.signalSemaphore = m_Frames[i].OpaqueRenderFinishedSemaphore,
-			});
-
-			/*m_SkyboxCommandBuffers[i] = VulkanCommandBuffer({
-				.type = CommandBufferType::MAIN,
-				.commandBuffer = m_Frames[i].SkyboxCommandBuffer,
-				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].OpaqueRenderFinishedSemaphore,
-				.signalSemaphore = m_Frames[i].SkyboxRenderFinishedSemaphore,
-			});
-
-			m_TransparentCommandBuffers[i] = VulkanCommandBuffer({
-				.type = CommandBufferType::MAIN,
-				.commandBuffer = m_Frames[i].TransparentCommandBuffer,
-				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].SkyboxRenderFinishedSemaphore,
-				.signalSemaphore = m_Frames[i].TransparentRenderFinishedSemaphore,
-			});*/
-
-			m_OpaqueSpriteCommandBuffers[i] = VulkanCommandBuffer({
-				.type = CommandBufferType::MAIN,
-				.commandBuffer = m_Frames[i].OpaqueSpriteCommandBuffer,
-				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].OpaqueRenderFinishedSemaphore, // m_Frames[i].TransparentRenderFinishedSemaphore, // TODO: correct this
-				.signalSemaphore = m_Frames[i].OpaqueSpriteRenderFinishedSemaphore,
-			});
-
-			/*m_PostProcessCommandBuffers[i] = VulkanCommandBuffer({
-				.type = CommandBufferType::MAIN,
-				.commandBuffer = m_Frames[i].PostProcessCommandBuffer,
-				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].OpaqueSpriteRenderFinishedSemaphore,
-				.signalSemaphore = m_Frames[i].PostProcessRenderFinishedSemaphore,
-			});*/
-
-			m_PresentCommandBuffers[i] = VulkanCommandBuffer({
-				.type = CommandBufferType::MAIN,
-				.commandBuffer = m_Frames[i].PresentCommandBuffer,
-				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].OpaqueSpriteRenderFinishedSemaphore,
-				.signalSemaphore = m_Frames[i].PresentRenderFinishedSemaphore,
+				.signalSemaphore = m_Frames[i].MainRenderFinishedSemaphore,
 			});
 
 			m_ImGuiCommandBuffers[i] = VulkanCommandBuffer({
 				.type = CommandBufferType::UI,
 				.commandBuffer = m_Frames[i].ImGuiCommandBuffer,
 				.blockFence = m_Frames[i].InFlightFence,
-				.waitSemaphore = m_Frames[i].PresentRenderFinishedSemaphore,
+				.waitSemaphore = m_Frames[i].MainRenderFinishedSemaphore,
 				.signalSemaphore = m_Frames[i].ImGuiRenderFinishedSemaphore,
-			});
-
-			// Secondary
-			VK_VALIDATE(vkCreateCommandPool(m_Device->Get(), &secondaryCommandPoolInfo, nullptr, &m_Frames[i].SecondaryCommandPool), "vkCreateCommandPool");
-
-			m_MainDeletionQueue.PushFunction([=]()
-			{
-				vkDestroyCommandPool(m_Device->Get(), m_Frames[i].SecondaryCommandPool, nullptr);
 			});
 		}
 
+		CreateUploadContextCommands();
+	}
+
+	void VulkanRenderer::CreateUploadContextCommands()
+	{
+		// Create the upload fence.
+		VkFenceCreateInfo uploadFenceCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+			.pNext = nullptr,
+		};
+
+		VK_VALIDATE(vkCreateFence(m_Device->Get(), &uploadFenceCreateInfo, nullptr, &s_UploadContext.UploadFence), "vkCreateFence");
+		
+		const QueueFamilyIndices& indices = m_Device->GetQueueFamilyIndices();
+		
+		// Create command buffer pool.
 		VkCommandPoolCreateInfo uploadCommandPoolInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -665,24 +636,30 @@ namespace HBL2
 			.queueFamilyIndex = indices.graphicsFamily.value(),
 		};		
 
-		VK_VALIDATE(vkCreateCommandPool(m_Device->Get(), &uploadCommandPoolInfo, nullptr, &m_UploadContext.CommandPool), "vkCreateCommandPool");
+		VK_VALIDATE(vkCreateCommandPool(m_Device->Get(), &uploadCommandPoolInfo, nullptr, &s_UploadContext.CommandPool), "vkCreateCommandPool");
 
-		m_MainDeletionQueue.PushFunction([=]()
-		{
-			vkDestroyCommandPool(m_Device->Get(), m_UploadContext.CommandPool, nullptr);
-		});
 
 		// Allocate the default command buffer that we will use for the instant commands
 		VkCommandBufferAllocateInfo cmdAllocInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 			.pNext = nullptr,
-			.commandPool = m_UploadContext.CommandPool,
+			.commandPool = s_UploadContext.CommandPool,
 			.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 			.commandBufferCount = 1,
 		};		
 
-		VK_VALIDATE(vkAllocateCommandBuffers(m_Device->Get(), &cmdAllocInfo, &m_UploadContext.CommandBuffer), "vkAllocateCommandBuffers");
+		VK_VALIDATE(vkAllocateCommandBuffers(m_Device->Get(), &cmdAllocInfo, &s_UploadContext.CommandBuffer), "vkAllocateCommandBuffers");
+		
+		// Copy upload context to correctly capture it by value in the lambda.
+		auto ctx = s_UploadContext;
+		
+		// Queue resources for deletion.
+		m_MainDeletionQueue.PushFunction([this, ctx]()
+		{
+			vkDestroyCommandPool(m_Device->Get(), ctx.CommandPool, nullptr);
+			vkDestroyFence(m_Device->Get(), ctx.UploadFence, nullptr);
+		});
 	}
 
 	void VulkanRenderer::CreateRenderPass()
@@ -715,6 +692,28 @@ namespace HBL2
 				},
 			},
 		});
+
+		m_RenderingRenderPass = ResourceManager::Instance->CreateRenderPass({
+			.debugName = "main-renderpass",
+			.layout = renderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::CLEAR,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::UNDEFINED,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
+			},
+			.colorTargets = {
+				{
+					.format = Format::RGBA16_FLOAT,
+					.loadOp = LoadOperation::CLEAR,
+					.storeOp = StoreOperation::STORE,
+					.prevUsage = TextureLayout::UNDEFINED,
+					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
+				},
+			},
+		});
 	}
 
 	void VulkanRenderer::CreateFrameBuffers()
@@ -739,88 +738,21 @@ namespace HBL2
 		}
 	}
 
-	void VulkanRenderer::CreateSyncStructures()
-	{
-		// Create synchronization structures.
-		VkFenceCreateInfo fenceCreateInfo =
-		{
-			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-			.pNext = nullptr,
-			.flags = VK_FENCE_CREATE_SIGNALED_BIT,
-		};
-		
-
-		// For the semaphores we don't need any flags.
-		VkSemaphoreCreateInfo semaphoreCreateInfo =
-		{
-			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-			.pNext = nullptr,
-			.flags = 0,
-		};
-
-		for (int i = 0; i < FRAME_OVERLAP; i++)
-		{
-			VK_VALIDATE(vkCreateFence(m_Device->Get(), &fenceCreateInfo, nullptr, &m_Frames[i].InFlightFence), "vkCreateFence");
-
-			//enqueue the destruction of the fence
-			m_MainDeletionQueue.PushFunction([=]()
-			{
-				vkDestroyFence(m_Device->Get(), m_Frames[i].InFlightFence, nullptr);
-			});
-
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].ImageAvailableSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].ShadowRenderFinishedSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].OpaqueRenderFinishedSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].SkyboxRenderFinishedSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].TransparentRenderFinishedSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].OpaqueSpriteRenderFinishedSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].PostProcessRenderFinishedSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].PresentRenderFinishedSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].ImGuiRenderFinishedSemaphore), "vkCreateSemaphore");
-
-			//enqueue the destruction of semaphores
-			m_MainDeletionQueue.PushFunction([=]()
-			{
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].ImageAvailableSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].ShadowRenderFinishedSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].OpaqueRenderFinishedSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].SkyboxRenderFinishedSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].TransparentRenderFinishedSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].OpaqueSpriteRenderFinishedSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].PostProcessRenderFinishedSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].PresentRenderFinishedSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].ImGuiRenderFinishedSemaphore, nullptr);
-			});
-		}
-
-		VkFenceCreateInfo uploadFenceCreateInfo =
-		{
-			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-			.pNext = nullptr,
-		};
-
-		VK_VALIDATE(vkCreateFence(m_Device->Get(), &uploadFenceCreateInfo, nullptr, &m_UploadContext.UploadFence), "vkCreateFence");
-
-		m_MainDeletionQueue.PushFunction([=]()
-		{
-			vkDestroyFence(m_Device->Get(), m_UploadContext.UploadFence, nullptr);
-		});
-	}
-
 	void VulkanRenderer::CreateDescriptorPool()
 	{
 		VkDescriptorPoolSize poolSizes[] =
 		{
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 256 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 256 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 256 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 256 },
 		};
 
 		VkDescriptorPoolCreateInfo tDescriptorPoolInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 			.flags = 0,
-			.maxSets = 100,
+			.maxSets = 256,
 			.poolSizeCount = std::size(poolSizes),
 			.pPoolSizes = poolSizes,
 		};
@@ -863,6 +795,41 @@ namespace HBL2
 				.layout = m_GlobalBindingsLayout2D,
 				.buffers = {
 					{ .buffer = cameraBuffer2D },
+				}
+			});
+		}
+
+		// Bindings for shadow rendering.
+		m_ShadowBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "shadow-bindings-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+			},
+		});
+
+		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
+		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), uniformOffset);
+
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "light-space-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.usageHint = BufferUsageHint::DYNAMIC,
+				.memoryUsage = MemoryUsage::GPU_CPU,
+				.byteSize = 16 * alignedSize,
+				.initialData = nullptr
+			});
+
+			m_Frames[i].ShadowBindings = m_ResourceManager->CreateBindGroup({
+				.debugName = "shadow-bind-group",
+				.layout = m_ShadowBindingsLayout,
+				.buffers = {
+					{ .buffer = lightSpaceBuffer, .range = 64 }, // TODO: Investigate if '.range' should be alignedSize! 
 				}
 			});
 		}
@@ -971,6 +938,7 @@ namespace HBL2
 		{
 			// Chose VK_FORMAT_B8G8R8A8_UNORM over VK_FORMAT_B8G8R8A8_SRGB since ingui was rendered with washed out colors with SRGB, since it uses UNORM internally.
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			// if (availableFormat.format == VK_FORMAT_A2B10G10R10_UNORM_PACK32 && availableFormat.colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
 			{
 				return availableFormat;
 			}

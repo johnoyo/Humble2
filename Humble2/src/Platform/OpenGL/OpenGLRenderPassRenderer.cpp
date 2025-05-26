@@ -4,7 +4,7 @@ namespace HBL2
 {
 	void OpenGLRenderPasRenderer::DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws)
 	{
-		Renderer::Instance->GetRendererStats().DrawCalls += draws.GetCount();
+		Renderer::Instance->GetStats().DrawCalls += draws.GetCount();
 
 		OpenGLResourceManager* rm = (OpenGLResourceManager*)ResourceManager::Instance;
 
@@ -19,25 +19,30 @@ namespace HBL2
 			for (const auto& bufferEntry : globalBindGroup->Buffers)
 			{
 				OpenGLBuffer* buffer = rm->GetBuffer(bufferEntry.buffer);
-				glBindBufferBase(GL_UNIFORM_BUFFER, globalBindGroupLayout->BufferBindings[index++].slot, buffer->RendererId);
-				buffer->Write();
+
+				if (globalDraw.GlobalBufferOffset != UINT32_MAX)
+				{
+					glBindBuffer(GL_UNIFORM_BUFFER, buffer->RendererId);
+
+					void* ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+					memcpy(ptr, (void*)buffer->Data, buffer->ByteSize);
+					glUnmapBuffer(GL_UNIFORM_BUFFER);
+
+					glBindBufferRange(GL_UNIFORM_BUFFER, globalBindGroupLayout->BufferBindings[index++].slot, buffer->RendererId, globalDraw.GlobalBufferOffset, globalDraw.GlobalBufferSize);
+				}
+				else
+				{
+					glBindBufferBase(GL_UNIFORM_BUFFER, globalBindGroupLayout->BufferBindings[index++].slot, buffer->RendererId);
+					buffer->Write();
+				}
 			}
 
 			// Set global bind group
 			globalBindGroup->Set();
 		}
 
-		if (globalDraw.DynamicUniformBufferSize != 0)
-		{
-			OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(Renderer::Instance->TempUniformRingBuffer->GetBuffer());
-
-			glBindBuffer(GL_UNIFORM_BUFFER, dynamicUniformBuffer->RendererId);
-
-			void* ptr = glMapBufferRange(GL_UNIFORM_BUFFER, globalDraw.DynamicUniformBufferOffset, globalDraw.DynamicUniformBufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
-			memcpy(ptr, (void*)((char*)dynamicUniformBuffer->Data + globalDraw.DynamicUniformBufferOffset), globalDraw.DynamicUniformBufferSize);
-			glUnmapBuffer(GL_UNIFORM_BUFFER);
-		}
-
+		Handle<Buffer> prevIndexBuffer;
+		StaticArray<Handle<Buffer>, 3> prevVertexBuffers{};
 		Handle<BindGroup> previouslyUsedBindGroup;
 
 		for (auto&& [shaderID, drawList] : draws.GetDraws())
@@ -46,7 +51,11 @@ namespace HBL2
 
 			if (localDraw.Shader.IsValid())
 			{
+				Material* mat = rm->GetMaterial(localDraw.Material);
 				OpenGLShader* shader = rm->GetShader(localDraw.Shader);
+
+				// Set blend, depth state.
+				shader->SetVariantProperties(mat->VariantDescriptor);
 
 				// Bind Vertex Array
 				shader->BindPipeline();
@@ -67,17 +76,30 @@ namespace HBL2
 				const auto& meshPart = mesh->Meshes[draw.MeshIndex];
 
 				// Bind Index buffer if applicable
-				if (meshPart.IndexBuffer.IsValid())
+				if (prevIndexBuffer != meshPart.IndexBuffer)
 				{
-					OpenGLBuffer* indexBuffer = rm->GetBuffer(meshPart.IndexBuffer);
-					indexBuffer->Bind();
+					if (meshPart.IndexBuffer.IsValid())
+					{
+						OpenGLBuffer* indexBuffer = rm->GetBuffer(meshPart.IndexBuffer);
+						indexBuffer->Bind();
+
+						prevIndexBuffer = meshPart.IndexBuffer;
+					}
 				}
 
 				// Bind vertex buffers
+				HBL2_CORE_ASSERT(meshPart.VertexBuffers.size() <= 3, "Maximum number of vertex buffers is 3.");
+				HBL2_CORE_ASSERT(meshPart.VertexBuffers.size() == 1, "One packed vertex buffer is supported for now.");
+
 				for (int i = 0; i < meshPart.VertexBuffers.size(); i++)
 				{
-					OpenGLBuffer* vertexBuffer = rm->GetBuffer(meshPart.VertexBuffers[i]);
-					vertexBuffer->Bind(draw.Material, i);
+					if (prevVertexBuffers[i] != meshPart.VertexBuffers[i])
+					{
+						OpenGLBuffer* vertexBuffer = rm->GetBuffer(meshPart.VertexBuffers[i]);
+						vertexBuffer->Bind(draw.Material, i);
+
+						prevVertexBuffers[i] = meshPart.VertexBuffers[i];
+					}
 				}
 
 				// Set bind group
@@ -92,8 +114,11 @@ namespace HBL2
 					}
 
 					// Bind dynamic uniform buffer with the current offset and size
-					OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(drawBindGroup->Buffers[0].buffer);
-					dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);
+					if (globalDraw.UsesDynamicOffset)
+					{
+						OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(drawBindGroup->Buffers[0].buffer);
+						dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);
+					}
 				}
 
 				const auto& subMesh = meshPart.SubMeshes[draw.SubMeshIndex];

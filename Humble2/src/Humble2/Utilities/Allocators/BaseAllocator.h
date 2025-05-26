@@ -29,6 +29,7 @@ namespace HBL2
 			return static_cast<TAllocator*>(this)->Deallocate<T>(object);
 		}
 
+		virtual void Initialize(size_t sizeInBytes) = 0;
 		virtual void Free() = 0;
 		virtual void Invalidate() = 0;
 	};

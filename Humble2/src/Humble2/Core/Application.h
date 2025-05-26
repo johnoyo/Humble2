@@ -6,6 +6,7 @@
 #include "Base.h"
 #include "Input.h"
 #include "Time.h"
+#include "Allocators.h"
 #include "Context.h"
 #include "EventDispatcher.h"
 
@@ -29,8 +30,12 @@
 #include "Utilities\JobSystem.h"
 #include "Utilities\Random.h"
 #include "Utilities\MeshUtilities.h"
+#include "Utilities\ShaderUtilities.h"
 #include "Utilities\NativeScriptUtilities.h"
 #include "Utilities\UnityBuild.h"
+
+#include "Utilities/Allocators/BumpAllocator.h"
+#include "Utilities/Allocators/BinAllocator.h"
 
 #include <string>
 #include <sstream>
@@ -62,7 +67,7 @@ namespace HBL2
 	{
 	public:
 		Application(ApplicationSpec& specification);
-		~Application() = default;
+		~Application();
 
 		void Start();
 

@@ -23,5 +23,5 @@ layout (set = 0, binding = 0) uniform sampler2D u_FullScreenTexture;
 void main()
 {
     vec3 color = texture(u_FullScreenTexture, v_TextureCoord).xyz;
-    FragColor = vec4(color, 1.0f);
+    FragColor = vec4(color, 1.0);
 }

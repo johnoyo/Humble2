@@ -7,10 +7,10 @@ namespace HBL2
 {
 	namespace Editor
 	{
-		static ResourceTask<Texture>* s_AlbedoMapTask = nullptr;	
-		static ResourceTask<Texture>* s_NormalMapTask = nullptr;	
-		static ResourceTask<Texture>* s_MetallicMapTask = nullptr;	
-		static ResourceTask<Texture>* s_RoughnessMapTask = nullptr;
+		static ResourceTask<Texture>* g_AlbedoMapTask = nullptr;	
+		static ResourceTask<Texture>* g_NormalMapTask = nullptr;	
+		static ResourceTask<Texture>* g_MetallicMapTask = nullptr;	
+		static ResourceTask<Texture>* g_RoughnessMapTask = nullptr;
 
 		void EditorPanelSystem::DrawContentBrowserPanel()
 		{
@@ -160,32 +160,39 @@ namespace HBL2
 							asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 						}
 
-						switch (asset->Type)
+						if (asset == nullptr)
 						{
-						case AssetType::Shader:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Shader", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Texture:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Texture", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Sound:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Sound", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Material:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Material", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Mesh:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Mesh", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Scene:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Scene", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						case AssetType::Script:
-							ImGui::SetDragDropPayload("Content_Browser_Item_Script", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
-						default:
-							ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
-							break;
+							HBL2_CORE_ERROR("Asset at path: {0} is not a valid asset that supports drag and drop, aborting.", entry.path().string());
+						}
+						else
+						{
+							switch (asset->Type)
+							{
+							case AssetType::Shader:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Shader", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							case AssetType::Texture:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Texture", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							case AssetType::Sound:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Sound", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							case AssetType::Material:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Material", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							case AssetType::Mesh:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Mesh", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							case AssetType::Scene:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Scene", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							case AssetType::Script:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Script", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							default:
+								ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
+							}
 						}
 
 						ImGui::EndDragDropSource();
@@ -578,14 +585,14 @@ namespace HBL2
 						break;
 					}
 
+					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), 0);
+					fout << shaderSource;
+					fout.close();
+
 					if (shaderAssetHandle.IsValid())
 					{
 						ShaderUtilities::Get().CreateShaderMetadataFile(shaderAssetHandle, m_SelectedShaderType);
 					}
-
-					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), 0);
-					fout << shaderSource;
-					fout.close();
 
 					m_OpenShaderSetupPopup = false;
 				}
@@ -628,6 +635,47 @@ namespace HBL2
 
 				ImGui::NewLine();
 
+				static bool blendEnabled = true;
+				static bool colorOutput = true;
+				static bool depthEnabled = true;
+				static bool depthWriteEnabled = true;
+				static int depthTest = 0;
+				static bool stencilEnabled = true;
+
+				// Blend mode.
+				{
+					const char* options[] = { "Opaque", "Transparent" };
+					int currentItem = blendEnabled ? 1 : 0;
+
+					if (ImGui::Combo("Blend Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						blendEnabled = currentItem == 0 ? false : true;
+					}
+				}
+
+				// Color output.
+				ImGui::Checkbox("Color Output", &colorOutput);
+							
+				// Depth enabled.
+				ImGui::Checkbox("Depth", &depthEnabled);
+							
+				// Depth test mode.
+				{
+					const char* options[] = { "Less", "Less Equal", "Greater", "Greater Equal", "Equal", "Not Equal", "Always", "Never" };
+					int currentItem = depthTest;
+
+					if (ImGui::Combo("Depth Test", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						depthTest = currentItem;
+					}
+				}
+
+				// Depth write mode.
+				ImGui::Checkbox("Depth Write", &depthWriteEnabled);
+
+				// Stencil enabled.
+				ImGui::Checkbox("Stencil", &stencilEnabled);
+
 				static float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 				ImGui::ColorEdit4("AlbedoColor", color);
 
@@ -636,16 +684,16 @@ namespace HBL2
 
 				static uint32_t albedoMapHandlePacked = 0;
 
-				if (s_AlbedoMapTask && s_AlbedoMapTask->Finished())
+				if (g_AlbedoMapTask && g_AlbedoMapTask->Finished())
 				{
 					ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
 				}
-				else if (s_AlbedoMapTask && !s_AlbedoMapTask->Finished())
+				else if (g_AlbedoMapTask && !g_AlbedoMapTask->Finished())
 				{
 					ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 				}
 				ImGui::InputScalar("AlbedoMap", ImGuiDataType_U32, (void*)(intptr_t*)&albedoMapHandlePacked);
-				if (s_AlbedoMapTask)
+				if (g_AlbedoMapTask)
 				{
 					ImGui::PopStyleColor();
 				}
@@ -664,7 +712,13 @@ namespace HBL2
 							TextureUtilities::Get().CreateAssetMetadataFile(albedoMapAssetHandle);
 						}
 
-						s_AlbedoMapTask = AssetManager::Instance->GetAssetAsync<Texture>(albedoMapAssetHandle);
+						if (g_AlbedoMapTask)
+						{
+							Allocator::Scene.Deallocate(g_AlbedoMapTask);
+							g_AlbedoMapTask = nullptr;
+						}
+
+						g_AlbedoMapTask = AssetManager::Instance->GetAssetAsync<Texture>(albedoMapAssetHandle);
 
 						ImGui::EndDragDropTarget();
 					}
@@ -678,16 +732,16 @@ namespace HBL2
 				{
 					// Normal map
 					static uint32_t normalMapHandlePacked = 0;
-					if (s_NormalMapTask && s_NormalMapTask->Finished())
+					if (g_NormalMapTask && g_NormalMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
 					}
-					else if (s_NormalMapTask && !s_NormalMapTask->Finished())
+					else if (g_NormalMapTask && !g_NormalMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 					}
 					ImGui::InputScalar("NormalMap", ImGuiDataType_U32, (void*)(intptr_t*)&normalMapHandlePacked);
-					if (s_NormalMapTask)
+					if (g_NormalMapTask)
 					{
 						ImGui::PopStyleColor();
 					}
@@ -706,7 +760,13 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(normalMapAssetHandle);
 							}
 
-							s_NormalMapTask = AssetManager::Instance->GetAssetAsync<Texture>(normalMapAssetHandle);
+							if (g_NormalMapTask)
+							{
+								Allocator::Scene.Deallocate(g_NormalMapTask);
+								g_NormalMapTask = nullptr;
+							}
+
+							g_NormalMapTask = AssetManager::Instance->GetAssetAsync<Texture>(normalMapAssetHandle);
 
 							ImGui::EndDragDropTarget();
 						}
@@ -714,16 +774,16 @@ namespace HBL2
 
 					// Metalicness map
 					static uint32_t metallicMapHandlePacked = 0;
-					if (s_MetallicMapTask && s_MetallicMapTask->Finished())
+					if (g_MetallicMapTask && g_MetallicMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
 					}
-					else if (s_MetallicMapTask && !s_MetallicMapTask->Finished())
+					else if (g_MetallicMapTask && !g_MetallicMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 					}
 					ImGui::InputScalar("MetallicMap", ImGuiDataType_U32, (void*)(intptr_t*)&metallicMapHandlePacked);
-					if (s_MetallicMapTask)
+					if (g_MetallicMapTask)
 					{
 						ImGui::PopStyleColor();
 					}
@@ -742,7 +802,13 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(metallicMapAssetHandle);
 							}
 
-							s_MetallicMapTask = AssetManager::Instance->GetAssetAsync<Texture>(metallicMapAssetHandle);
+							if (g_MetallicMapTask)
+							{
+								Allocator::Scene.Deallocate(g_MetallicMapTask);
+								g_MetallicMapTask = nullptr;
+							}
+
+							g_MetallicMapTask = AssetManager::Instance->GetAssetAsync<Texture>(metallicMapAssetHandle);
 
 							ImGui::EndDragDropTarget();
 						}
@@ -750,16 +816,16 @@ namespace HBL2
 
 					// Roughness map
 					static uint32_t roughnessMapHandlePacked = 0;
-					if (s_RoughnessMapTask && s_RoughnessMapTask->Finished())
+					if (g_RoughnessMapTask && g_RoughnessMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
 					}
-					else if (s_RoughnessMapTask && !s_RoughnessMapTask->Finished())
+					else if (g_RoughnessMapTask && !g_RoughnessMapTask->Finished())
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 					}
 					ImGui::InputScalar("RoughnessMap", ImGuiDataType_U32, (void*)(intptr_t*)&roughnessMapHandlePacked);
-					if (s_RoughnessMapTask)
+					if (g_RoughnessMapTask)
 					{
 						ImGui::PopStyleColor();
 					}
@@ -778,7 +844,13 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(roughnessMapAssetHandle);
 							}
 
-							s_RoughnessMapTask = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapAssetHandle);
+							if (g_RoughnessMapTask)
+							{
+								Allocator::Scene.Deallocate(g_RoughnessMapTask);
+								g_RoughnessMapTask = nullptr;
+							}
+
+							g_RoughnessMapTask = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapAssetHandle);
 
 							ImGui::EndDragDropTarget();
 						}
@@ -789,10 +861,10 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
-					if ((s_AlbedoMapTask != nullptr && !s_AlbedoMapTask->Finished()) ||
-						(s_NormalMapTask != nullptr && !s_NormalMapTask->Finished()) ||
-						(s_MetallicMapTask != nullptr && !s_MetallicMapTask->Finished()) ||
-						(s_RoughnessMapTask != nullptr && !s_RoughnessMapTask->Finished()))
+					if ((g_AlbedoMapTask != nullptr && !g_AlbedoMapTask->Finished()) ||
+						(g_NormalMapTask != nullptr && !g_NormalMapTask->Finished()) ||
+						(g_MetallicMapTask != nullptr && !g_MetallicMapTask->Finished()) ||
+						(g_RoughnessMapTask != nullptr && !g_RoughnessMapTask->Finished()))
 					{
 						HBL2_CORE_WARN("Please wait until the textures have finished loading.");
 					}
@@ -806,13 +878,20 @@ namespace HBL2
 							.type = AssetType::Material,
 						});
 
-						if (materialAssetHandle.IsValid())
-						{
-							ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, m_SelectedMaterialType);
-						}
-
 						ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
 							.ShaderAssetHandle = shaderAssetHandle,
+							.VariantDescriptor = {
+								.blend = {
+									.colorOutput = colorOutput,
+									.enabled = blendEnabled,
+								},
+								.depthTest = {
+									.enabled = depthEnabled,
+									.writeEnabled = depthWriteEnabled,
+									.stencilEnabled = stencilEnabled,
+									.depthTest = (Compare)depthTest,
+								},
+							},
 							.AlbedoColor = { color[0], color[1], color[2], color[3] },
 							.Glossiness = glossiness,
 							.AlbedoMapAssetHandle = albedoMapAssetHandle,
@@ -821,28 +900,33 @@ namespace HBL2
 							.MetallicMapAssetHandle = metallicMapAssetHandle,
 						});
 
-						if (s_AlbedoMapTask)
+						if (materialAssetHandle.IsValid())
 						{
-							delete s_AlbedoMapTask;
-							s_AlbedoMapTask = nullptr;
+							ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, m_SelectedMaterialType);
 						}
 
-						if (s_NormalMapTask)
+						if (g_AlbedoMapTask)
 						{
-							delete s_NormalMapTask;
-							s_NormalMapTask = nullptr;
+							Allocator::Scene.Deallocate(g_AlbedoMapTask);
+							g_AlbedoMapTask = nullptr;
 						}
 
-						if (s_MetallicMapTask)
+						if (g_NormalMapTask)
 						{
-							delete s_MetallicMapTask;
-							s_MetallicMapTask = nullptr;
+							Allocator::Scene.Deallocate(g_NormalMapTask);
+							g_NormalMapTask = nullptr;
 						}
 
-						if (s_RoughnessMapTask)
+						if (g_MetallicMapTask)
 						{
-							delete s_RoughnessMapTask;
-							s_RoughnessMapTask = nullptr;
+							Allocator::Scene.Deallocate(g_MetallicMapTask);
+							g_MetallicMapTask = nullptr;
+						}
+
+						if (g_RoughnessMapTask)
+						{
+							Allocator::Scene.Deallocate(g_RoughnessMapTask);
+							g_RoughnessMapTask = nullptr;
 						}
 
 						m_OpenMaterialSetupPopup = false;
@@ -855,28 +939,28 @@ namespace HBL2
 				{
 					m_OpenMaterialSetupPopup = false;
 
-					if (s_AlbedoMapTask)
+					if (g_AlbedoMapTask)
 					{
-						delete s_AlbedoMapTask;
-						s_AlbedoMapTask = nullptr;
+						Allocator::Scene.Deallocate(g_AlbedoMapTask);
+						g_AlbedoMapTask = nullptr;
 					}
 
-					if (s_NormalMapTask)
+					if (g_NormalMapTask)
 					{
-						delete s_NormalMapTask;
-						s_NormalMapTask = nullptr;
+						Allocator::Scene.Deallocate(g_NormalMapTask);
+						g_NormalMapTask = nullptr;
 					}
 
-					if (s_MetallicMapTask)
+					if (g_MetallicMapTask)
 					{
-						delete s_MetallicMapTask;
-						s_MetallicMapTask = nullptr;
+						Allocator::Scene.Deallocate(g_MetallicMapTask);
+						g_MetallicMapTask = nullptr;
 					}
 
-					if (s_RoughnessMapTask)
+					if (g_RoughnessMapTask)
 					{
-						delete s_RoughnessMapTask;
-						s_RoughnessMapTask = nullptr;
+						Allocator::Scene.Deallocate(g_RoughnessMapTask);
+						g_RoughnessMapTask = nullptr;
 					}
 				}
 

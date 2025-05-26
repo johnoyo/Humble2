@@ -402,7 +402,7 @@ namespace HBL2
     Result<SubMeshDescriptor> UFbxLoader::LoadSubMeshVertexData(const ufbx_node* node, uint32_t meshIndex, uint32_t subMeshIndex)
     {
         SubMeshDescriptor subMeshDescriptor{};
-        subMeshDescriptor.debugName = _strdup(node->materials[subMeshIndex]->name.data);
+        subMeshDescriptor.debugName = node->materials.count > 0 ? _strdup(node->materials[subMeshIndex]->name.data) : _strdup(node->name.data);
         subMeshDescriptor.minVertex = { (std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)() };
         subMeshDescriptor.maxVertex = { (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::min)() };
 
@@ -410,7 +410,10 @@ namespace HBL2
         const ufbx_mesh_part& fbxSubmesh = node->mesh->material_parts[subMeshIndex];
         size_t numFaces = fbxSubmesh.num_faces;
 
-        subMeshDescriptor.embededMaterial = m_MaterialNameToHandle[node->mesh->materials.data[subMeshIndex]->name.data];
+        if (node->mesh->materials.count > 0)
+        {
+            subMeshDescriptor.embededMaterial = m_MaterialNameToHandle[node->mesh->materials.data[subMeshIndex]->name.data];
+        }
 
         if (!(fbxSubmesh.num_triangles))
         {
@@ -427,7 +430,13 @@ namespace HBL2
 
         glm::vec4 diffuseColor;
         {
-            ufbx_material_map& baseColorMap = node->materials[subMeshIndex]->pbr.base_color;
+            ufbx_material_map baseColorMap{ .has_value = false };
+
+            if (node->materials.count > 0)
+            {
+                baseColorMap = node->materials[subMeshIndex]->pbr.base_color;
+            }
+
             diffuseColor = baseColorMap.has_value ? glm::vec4(baseColorMap.value_vec4.x, baseColorMap.value_vec4.y,
                 baseColorMap.value_vec4.z, baseColorMap.value_vec4.w)
                 : glm::vec4(1.0f);

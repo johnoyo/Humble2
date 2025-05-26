@@ -72,9 +72,15 @@ namespace HBL2
 		QueueFamilyIndices m_QueueFamilyIndices{};
 		SwapChainSupportDetails m_SwapChainSupportDetails{};
 
+		const std::vector<const char*> m_InstanceExtensions =
+		{
+			VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME,
+		};
+
 		const std::vector<const char*> m_DeviceExtensions =
 		{
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+			VK_EXT_HDR_METADATA_EXTENSION_NAME,
 		};
 
 		const std::vector<const char*> m_ValidationLayers =

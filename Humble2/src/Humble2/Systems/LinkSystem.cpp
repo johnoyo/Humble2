@@ -11,6 +11,12 @@ namespace HBL2
 			.each([&](entt::entity entity, Component::Link& link, Component::Transform& transform)
 			{
 				link.Children.clear();
+			});
+
+		m_Context->GetRegistry()
+			.group<Component::Link>(entt::get<Component::Transform>)
+			.each([&](entt::entity entity, Component::Link& link, Component::Transform& transform)
+			{
 				transform.WorldMatrix = GetWorldSpaceTransform(entity, link);
 				AddChildren(entity, link);
 			});

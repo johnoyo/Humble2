@@ -23,6 +23,7 @@ namespace HBL2
 			{
 			case BufferBindingType::UNIFORM:
 				glBindBufferBase(GL_UNIFORM_BUFFER, bindGroupLayout->BufferBindings[i].slot, buffer->RendererId);
+				break;
 			case BufferBindingType::UNIFORM_DYNAMIC_OFFSET:
 				glBindBufferBase(GL_UNIFORM_BUFFER, bindGroupLayout->BufferBindings[i].slot, buffer->RendererId);
 				break;
@@ -54,7 +55,7 @@ namespace HBL2
 			OpenGLTexture* openGLTexture = rm->GetTexture(Textures[i]);
 
 			glActiveTexture(openGLBindGroupLayout->TextureBindings[i].slot + GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, openGLTexture->RendererId);
+			glBindTexture(openGLTexture->TextureType, openGLTexture->RendererId);
 		}
 	}
 
