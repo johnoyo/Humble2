@@ -255,7 +255,7 @@ void main()
     for (int i = 0; i < int(u_Light.Count); ++i)
     {
         float intensity = u_Light.Metadata[i].x;
-        vec3 lightCo = u_Light.Colors[i].xyz;
+        vec3 lightCol = u_Light.Colors[i].xyz;
 
         if (u_Light.Positions[i].w == 0.0)
         {
