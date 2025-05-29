@@ -220,26 +220,6 @@ namespace HBL2
 					.type = AssetType::Material,
 				});
 
-				if (materialAssetHandle.IsValid())
-				{
-					uint32_t type = UINT32_MAX;
-
-					if (glTFMaterial.unlit)
-					{
-						type = 0;
-					}
-					else if (!glTFMaterial.pbrData.metallicRoughnessTexture.has_value())
-					{
-						type = 1;
-					}
-					else
-					{
-						type = 2;
-					}
-
-					ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, type);
-				}
-
 				// diffuse color aka base color factor used as constant color, if no diffuse texture is provided
 				glm::vec4 albedoColor = glm::make_vec4(glTFMaterial.pbrData.baseColorFactor.data());
 				float roughness = glTFMaterial.pbrData.roughnessFactor;
@@ -287,6 +267,26 @@ namespace HBL2
 					.RoughnessMapAssetHandle = metallicRoughnessMapAssetHandle,
 					.MetallicMapAssetHandle = metallicRoughnessMapAssetHandle,
 				});
+
+				if (materialAssetHandle.IsValid())
+				{
+					uint32_t type = UINT32_MAX;
+
+					if (glTFMaterial.unlit)
+					{
+						type = 0;
+					}
+					else if (!glTFMaterial.pbrData.metallicRoughnessTexture.has_value())
+					{
+						type = 1;
+					}
+					else
+					{
+						type = 2;
+					}
+
+					ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, type);
+				}
 
 				materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetHandle);
 			}

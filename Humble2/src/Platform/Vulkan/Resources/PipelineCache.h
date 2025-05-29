@@ -24,8 +24,10 @@ namespace HBL2
 	class PipelineCache
 	{
 	public:
+		VkPipeline GetPipeline(uint64_t variantHash);
 		VkPipeline GetOrCreatePipeline(const PipelineConfig& config);
 		VkPipeline GetOrCreateComputePipeline(const PipelineConfig& config);
+		bool ContainsPipeline(uint64_t variantHash);
 		bool ContainsPipeline(const ShaderDescriptor::RenderPipeline::Variant& variantDesc);
 		void Destroy();
 
@@ -33,6 +35,6 @@ namespace HBL2
 		VkPipeline CreatePipeline(const PipelineConfig& config);
 		VkPipeline CreateComputePipeline(const PipelineConfig& config);
 
-		HashMap<ShaderDescriptor::RenderPipeline::Variant, VkPipeline> m_PipelineCache;
+		HashMap<uint64_t, VkPipeline> m_PipelineCache;
 	};
 }

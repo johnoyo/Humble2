@@ -2,19 +2,21 @@
 
 namespace HBL2
 {
-	void DrawList::Insert(const LocalDrawStream&& draw)
+	void DrawList::Insert(LocalDrawStream&& draw)
 	{
-		Material* mat = ResourceManager::Instance->GetMaterial(draw.Material);
-		uint64_t hash = ResourceManager::Instance->GetShaderVariantHash(mat->VariantDescriptor);
+		m_Draws.Emplace(std::move(draw));
+	}
 
-		m_Draws[hash].push_back(draw);
-
-		m_Count++;
+	void DrawList::Sort()
+	{
+		std::sort(m_Draws.begin(), m_Draws.end(), [](const LocalDrawStream& a, const LocalDrawStream& b)
+		{
+			return a.VariantHash < b.VariantHash;
+		});
 	}
 
 	void DrawList::Reset()
 	{
-		m_Count = 0;
-		m_Draws.clear();
+		m_Draws.Clear();
 	}
 }

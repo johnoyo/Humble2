@@ -97,24 +97,7 @@ namespace HBL2
                     .debugName = "material-asset",
                     .filePath = relativePath,
                     .type = AssetType::Material,
-                });
-
-                if (materialAssetHandle.IsValid())
-                {
-                    uint32_t type = UINT32_MAX;
-
-                    // TODO: Handle PBR models!
-                    switch (fbxMaterial->shader_type)
-                    {
-                    case UFBX_SHADER_WAVEFRONT_MTL:
-                    case UFBX_SHADER_FBX_LAMBERT:
-                    case UFBX_SHADER_FBX_PHONG:
-                        type = 1;
-                        break;
-                    }
-
-                    ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, type);
-                }
+                });                
 
                 glm::vec4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
                 Handle<Asset> albedoMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_BASE_COLOR, &albedoColor);
@@ -138,6 +121,23 @@ namespace HBL2
                     .RoughnessMapAssetHandle = roughnessMapAssetHandle,
                     .MetallicMapAssetHandle = metallicMapAssetHandle,
                 });
+
+                if (materialAssetHandle.IsValid())
+                {
+                    uint32_t type = UINT32_MAX;
+
+                    // TODO: Handle PBR models!
+                    switch (fbxMaterial->shader_type)
+                    {
+                    case UFBX_SHADER_WAVEFRONT_MTL:
+                    case UFBX_SHADER_FBX_LAMBERT:
+                    case UFBX_SHADER_FBX_PHONG:
+                        type = 1;
+                        break;
+                    }
+
+                    ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, type);
+                }
 
                 materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetHandle);
             }

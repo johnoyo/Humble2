@@ -46,6 +46,8 @@ namespace HBL2
 	struct RendererStats
 	{
 		uint32_t DrawCalls = 0;
+		float GatherTime = 0.f;
+		float SortingTime = 0.f;
 		float ShadowPassTime = 0.f;
 		float PrePassTime = 0.f;
 		float OpaquePassTime = 0.f;
@@ -57,6 +59,8 @@ namespace HBL2
 		void Reset()
 		{
 			DrawCalls = 0;
+			GatherTime = 0.f;
+			SortingTime = 0.f;
 			ShadowPassTime = 0.f;
 			PrePassTime = 0.f;
 			OpaquePassTime = 0.f;

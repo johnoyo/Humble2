@@ -12,6 +12,8 @@ namespace HBL2
 			ImGui::NewLine();
 			ImGui::Text("Frame Time: %f ms", ts * 1000.0f);
 			ImGui::Text("Draw calls: %d", stats.DrawCalls);
+			ImGui::Text("GatherTime: %f ms", stats.GatherTime);
+			ImGui::Text("SortingTime: %f ms", stats.SortingTime);
 			ImGui::Text("ShadowPass: %f ms", stats.ShadowPassTime);
 			ImGui::Text("PrePass: %f ms", stats.PrePassTime);
 			ImGui::Text("OpaquePass: %f ms", stats.OpaquePassTime);

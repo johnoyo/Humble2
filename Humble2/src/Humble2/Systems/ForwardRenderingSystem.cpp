@@ -354,7 +354,7 @@ namespace HBL2
 			.FS { .code = shadowPrePassShaderCode[1], .entryPoint = "main" },
 			.bindGroups {
 				Renderer::Instance->GetShadowBindingsLayout(),	// Global bind group (0)
-				m_DepthOnlyBindGroupLayout,							// (1)
+				m_DepthOnlyBindGroupLayout,						// (1)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = {
@@ -383,6 +383,8 @@ namespace HBL2
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_ShadowPrePassMaterial);
 		mat->VariantDescriptor = variant;
+
+		m_ShadowPrePassMaterialHash = ResourceManager::Instance->GetShaderVariantHash(variant);
 	}
 
 	void ForwardRenderingSystem::DepthPrePassSetup()
@@ -488,6 +490,9 @@ namespace HBL2
 
 		Material* mat1 = ResourceManager::Instance->GetMaterial(m_DepthOnlySpriteMaterial);
 		mat1->VariantDescriptor = variant;
+
+		m_DepthOnlyMaterialHash = ResourceManager::Instance->GetShaderVariantHash(variant);
+		m_DepthOnlySpriteMaterialHash = m_DepthOnlyMaterialHash;
 	}
 
 	void ForwardRenderingSystem::OpaquePassSetup()
@@ -1133,6 +1138,8 @@ namespace HBL2
 
 	void ForwardRenderingSystem::GatherDraws()
 	{
+		BEGIN_PROFILE_PASS();
+
 		// Store the offset that the objects start from in the dynamic uniform buffer.
 		m_UBOStartingOffset = m_UniformRingBuffer->GetCurrentOffset();
 
@@ -1149,18 +1156,15 @@ namespace HBL2
 				{
 					if (staticMesh.Enabled)
 					{
-#if 0
-						if (!IsInFrustum(staticMesh.Mesh, transform))
-						{
-							return;
-						}
-#endif
 						if (!staticMesh.Material.IsValid() || !staticMesh.Mesh.IsValid())
 						{
 							return;
 						}
 
 						Material* material = ResourceManager::Instance->GetMaterial(staticMesh.Material);
+						Mesh* mesh = ResourceManager::Instance->GetMesh(staticMesh.Mesh);
+						const auto& meshPart = mesh->Meshes[staticMesh.MeshIndex];
+						const auto& subMesh = meshPart.SubMeshes[staticMesh.SubMeshIndex];
 
 						if (material == nullptr)
 						{
@@ -1177,38 +1181,56 @@ namespace HBL2
 						{
 							m_StaticMeshOpaqueDraws.Insert({
 								.Shader = material->Shader,
-								.BindGroup = material->BindGroup,
-								.Mesh = staticMesh.Mesh,
-								.MeshIndex = staticMesh.MeshIndex,
-								.SubMeshIndex = staticMesh.SubMeshIndex,
 								.Material = staticMesh.Material,
+								.VariantHash = ResourceManager::Instance->GetShaderVariantHash(material->VariantDescriptor),
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = meshPart.VertexBuffers[0],
+								.BindGroup = material->BindGroup,
 								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawData),
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
 							});
 
 							// Include only opaque objects in depth pre-pass.
 							m_PrePassStaticMeshDraws.Insert({
 								.Shader = m_DepthOnlyShader,
-								.BindGroup = m_DepthOnlyMeshBindGroup,
-								.Mesh = staticMesh.Mesh,
-								.MeshIndex = staticMesh.MeshIndex,
-								.SubMeshIndex = staticMesh.SubMeshIndex,
 								.Material = m_DepthOnlyMaterial,
+								.VariantHash = m_DepthOnlyMaterialHash,
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = meshPart.VertexBuffers[0],
+								.BindGroup = m_DepthOnlyMeshBindGroup,
 								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawData),
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
 							});
 						}
 						else
 						{
 							m_StaticMeshTransparentDraws.Insert({
 								.Shader = material->Shader,
-								.BindGroup = material->BindGroup,
-								.Mesh = staticMesh.Mesh,
-								.MeshIndex = staticMesh.MeshIndex,
-								.SubMeshIndex = staticMesh.SubMeshIndex,
 								.Material = staticMesh.Material,
+								.VariantHash = ResourceManager::Instance->GetShaderVariantHash(material->VariantDescriptor),
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = meshPart.VertexBuffers[0],
+								.BindGroup = material->BindGroup,
 								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawData),
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
 							});
 						}
 
@@ -1216,13 +1238,19 @@ namespace HBL2
 						{
 							m_ShadowPassStaticMeshDraws.Insert({
 								.Shader = m_ShadowPrePassShader,
-								.BindGroup = m_DepthOnlyMeshBindGroup,
-								.Mesh = staticMesh.Mesh,
-								.MeshIndex = staticMesh.MeshIndex,
-								.SubMeshIndex = staticMesh.SubMeshIndex,
 								.Material = m_ShadowPrePassMaterial,
+								.VariantHash = m_ShadowPrePassMaterialHash,
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = meshPart.VertexBuffers[0],
+								.BindGroup = m_DepthOnlyMeshBindGroup,
 								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawData),
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
 							});
 						}
 					}
@@ -1241,12 +1269,6 @@ namespace HBL2
 				{
 					if (sprite.Enabled)
 					{
-#if 0
-						if (!IsInFrustum(transform))
-						{
-							return;
-						}
-#endif
 						if (!sprite.Material.IsValid())
 						{
 							return;
@@ -1267,32 +1289,38 @@ namespace HBL2
 						{
 							m_SpriteOpaqueDraws.Insert({
 								.Shader = material->Shader,
-								.BindGroup = material->BindGroup,
-								.Mesh = m_SpriteMesh,
 								.Material = sprite.Material,
+								.VariantHash = ResourceManager::Instance->GetShaderVariantHash(material->VariantDescriptor),
+								.VertexBuffer = m_VertexBuffer,
+								.BindGroup = material->BindGroup,
 								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawDataSprite),
+								.VertexCount = 6,
 							});
 
 							// Include only opaque objects in depth pre-pass.
 							m_PrePassSpriteDraws.Insert({
 								.Shader = m_DepthOnlySpriteShader,
-								.BindGroup = m_DepthOnlySpriteBindGroup,
-								.Mesh = m_SpriteMesh,
 								.Material = m_DepthOnlySpriteMaterial,
+								.VariantHash = m_DepthOnlySpriteMaterialHash,
+								.VertexBuffer = m_VertexBuffer,
+								.BindGroup = m_DepthOnlySpriteBindGroup,
 								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawDataSprite),
+								.VertexCount = 6,
 							});
 						}
 						else
 						{
 							m_SpriteTransparentDraws.Insert({
 								.Shader = material->Shader,
-								.BindGroup = material->BindGroup,
-								.Mesh = m_SpriteMesh,
 								.Material = sprite.Material,
+								.VariantHash = ResourceManager::Instance->GetShaderVariantHash(material->VariantDescriptor),
+								.VertexBuffer = m_VertexBuffer,
+								.BindGroup = material->BindGroup,
 								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawDataSprite),
+								.VertexCount = 6,
 							});
 						}
 					}
@@ -1301,6 +1329,22 @@ namespace HBL2
 
 		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
 		m_ResourceManager->MapBufferData(m_UniformRingBuffer->GetBuffer(), m_UBOStartingOffset, m_UniformRingBuffer->GetCurrentOffset() - m_UBOStartingOffset);
+
+		END_PROFILE_PASS(Renderer::Instance->GetStats().GatherTime);
+
+		{
+			BEGIN_PROFILE_PASS();
+
+			m_StaticMeshOpaqueDraws.Sort();
+			m_PrePassStaticMeshDraws.Sort();
+			m_StaticMeshTransparentDraws.Sort();
+			m_ShadowPassStaticMeshDraws.Sort();
+			m_SpriteOpaqueDraws.Sort();
+			m_PrePassSpriteDraws.Sort();
+			m_SpriteTransparentDraws.Sort();
+
+			END_PROFILE_PASS(Renderer::Instance->GetStats().SortingTime);
+		}
 	}
 
 	void ForwardRenderingSystem::GatherLights()
@@ -1631,9 +1675,11 @@ namespace HBL2
 
 					draws.Insert({
 						.Shader = m_SkyboxShader,
-						.BindGroup = mat->BindGroup,
-						.Mesh = m_CubeMesh,
 						.Material = skyLight.CubeMapMaterial,
+						.VariantHash = ResourceManager::Instance->GetShaderVariantHash(mat->VariantDescriptor),
+						.VertexBuffer = m_CubeMeshBuffer,
+						.BindGroup = mat->BindGroup,
+						.VertexCount = 36,
 					});
 				}
 			});
@@ -1667,13 +1713,17 @@ namespace HBL2
 			TextureLayout::SHADER_READ_ONLY,
 			m_PostProcessBindGroup);
 
+		Material* mat = ResourceManager::Instance->GetMaterial(m_PostProcessMaterial);
+
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass, m_PostProcessFrameBuffer);
 
 		DrawList draws;
 		draws.Insert({
 			.Shader = m_PostProcessShader,
-			.Mesh = m_PostProcessQuadMesh,
 			.Material = m_PostProcessMaterial,
+			.VariantHash = ResourceManager::Instance->GetShaderVariantHash(mat->VariantDescriptor),
+			.VertexBuffer = m_PostProcessQuadVertexBuffer,
+			.VertexCount = 6,
 		});
 
 		ResourceManager::Instance->SetBufferData(m_PostProcessBindGroup, 0, (void*)&m_CameraSettings);
@@ -1697,13 +1747,17 @@ namespace HBL2
 			TextureLayout::SHADER_READ_ONLY,
 			Renderer::Instance->GetGlobalPresentBindings());
 
+		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
+
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
 
 		DrawList draws;
 		draws.Insert({
 			.Shader = m_PresentShader,
-			.Mesh = m_QuadMesh,
 			.Material = m_QuadMaterial,
+			.VariantHash = ResourceManager::Instance->GetShaderVariantHash(mat->VariantDescriptor),
+			.VertexBuffer = m_QuadVertexBuffer,
+			.VertexCount = 6,
 		});
 
 		GlobalDrawStream globalDrawStream = { .BindGroup = Renderer::Instance->GetGlobalPresentBindings() };

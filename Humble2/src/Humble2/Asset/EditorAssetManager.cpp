@@ -211,7 +211,7 @@ namespace HBL2
 				.usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },
 				.aspect = TextureAspect::COLOR,
 				.initialData = textureData,
-				});
+			});
 
 			stream.close();
 			return texture;
@@ -356,7 +356,7 @@ namespace HBL2
 				.variants = { shaderVariants.Data(), shaderVariants.Size() },
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
-			});
+		});
 
 		stream.close();
 		return shader;
@@ -511,9 +511,9 @@ namespace HBL2
 					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
 					.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle, Renderer::Instance->ShadowAtlasTexture },
 					.buffers = {
-						{.buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
+						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
 					}
-					});
+				});
 			}
 			else
 			{
@@ -522,16 +522,16 @@ namespace HBL2
 					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
 					.textures = { albedoMapHandle, Renderer::Instance->ShadowAtlasTexture },
 					.buffers = {
-						{.buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
+						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
 					}
-					});
+				});
 			}
 
 			auto material = ResourceManager::Instance->CreateMaterial({
 				.debugName = _strdup(std::format("{}-material", materialName).c_str()),
 				.shader = shaderHandle,
 				.bindGroup = drawBindings,
-				});
+			});
 
 			Material* mat = ResourceManager::Instance->GetMaterial(material);
 			mat->AlbedoColor = albedoColor;
@@ -558,7 +558,7 @@ namespace HBL2
 
 		auto sceneHandle = ResourceManager::Instance->CreateScene({
 			.name = asset->FilePath.filename().stem().string()
-			});
+		});
 
 		Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
 
@@ -604,7 +604,7 @@ namespace HBL2
 				.debugName = scriptName.c_str(),
 				.type = (ScriptType)type,
 				.path = asset->FilePath,
-				});
+			});
 
 			return script;
 		}
@@ -644,7 +644,7 @@ namespace HBL2
 				.path = asset->FilePath,
 				.loop = soundProperties["Loop"].as<bool>(),
 				.startPaused = soundProperties["StartPaused"].as<bool>(),
-				});
+			});
 
 			stream.close();
 			return sound;
@@ -781,7 +781,7 @@ namespace HBL2
 
 			auto sceneHandle = ResourceManager::Instance->CreateScene({
 				.name = asset->FilePath.filename().stem().string()
-				});
+			});
 
 			Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
 

@@ -42,103 +42,85 @@ namespace HBL2
 		}
 
 		Handle<Buffer> prevIndexBuffer;
-		StaticArray<Handle<Buffer>, 3> prevVertexBuffers{};
+		Handle<Buffer> prevVertexBuffer;
 		Handle<BindGroup> previouslyUsedBindGroup;
+		uint64_t prevVariantHash = 0;
 
-		for (auto&& [shaderID, drawList] : draws.GetDraws())
+		for (const auto& draw : draws.GetDraws())
 		{
-			auto& localDraw = drawList[0];
+			Material* material = rm->GetMaterial(draw.Material);
 
-			if (localDraw.Shader.IsValid())
+			if (prevVariantHash != draw.VariantHash)
 			{
-				Material* mat = rm->GetMaterial(localDraw.Material);
-				OpenGLShader* shader = rm->GetShader(localDraw.Shader);
+				OpenGLShader* shader = rm->GetShader(draw.Shader);
 
 				// Set blend, depth state.
-				shader->SetVariantProperties(mat->VariantDescriptor);
+				shader->SetVariantProperties(material->VariantDescriptor);
 
 				// Bind Vertex Array
 				shader->BindPipeline();
 
 				// Bind shader
 				shader->Bind();
-			}
-			else
-			{
-				continue;
+
+				prevVariantHash = draw.VariantHash;
 			}
 
-			for (auto& draw : drawList)
+			// Bind Index buffer if applicable
+			if (prevIndexBuffer != draw.IndexBuffer)
 			{
-				Mesh* mesh = rm->GetMesh(draw.Mesh);
-				Material* material = rm->GetMaterial(draw.Material);
-
-				const auto& meshPart = mesh->Meshes[draw.MeshIndex];
-
-				// Bind Index buffer if applicable
-				if (prevIndexBuffer != meshPart.IndexBuffer)
+				if (draw.IndexBuffer.IsValid())
 				{
-					if (meshPart.IndexBuffer.IsValid())
-					{
-						OpenGLBuffer* indexBuffer = rm->GetBuffer(meshPart.IndexBuffer);
-						indexBuffer->Bind();
+					OpenGLBuffer* indexBuffer = rm->GetBuffer(draw.IndexBuffer);
+					indexBuffer->Bind();
 
-						prevIndexBuffer = meshPart.IndexBuffer;
-					}
+					prevIndexBuffer = draw.IndexBuffer;
+				}
+			}
+
+			// Bind the vertex buffer if needed.
+			if (prevVertexBuffer != draw.VertexBuffer)
+			{
+				OpenGLBuffer* vertexBuffer = rm->GetBuffer(draw.VertexBuffer);
+				vertexBuffer->Bind(draw.Material, 0);
+
+				prevVertexBuffer = draw.VertexBuffer;
+			}
+
+			// Set bind group
+			if (draw.BindGroup.IsValid())
+			{
+				OpenGLBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
+
+				if (draw.BindGroup != previouslyUsedBindGroup)
+				{
+					drawBindGroup->Set();
+					previouslyUsedBindGroup = draw.BindGroup;
 				}
 
-				// Bind vertex buffers
-				HBL2_CORE_ASSERT(meshPart.VertexBuffers.size() <= 3, "Maximum number of vertex buffers is 3.");
-				HBL2_CORE_ASSERT(meshPart.VertexBuffers.size() == 1, "One packed vertex buffer is supported for now.");
-
-				for (int i = 0; i < meshPart.VertexBuffers.size(); i++)
+				// Bind dynamic uniform buffer with the current offset and size
+				if (globalDraw.UsesDynamicOffset)
 				{
-					if (prevVertexBuffers[i] != meshPart.VertexBuffers[i])
-					{
-						OpenGLBuffer* vertexBuffer = rm->GetBuffer(meshPart.VertexBuffers[i]);
-						vertexBuffer->Bind(draw.Material, i);
-
-						prevVertexBuffers[i] = meshPart.VertexBuffers[i];
-					}
+					OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(drawBindGroup->Buffers[0].buffer);
+					dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);
 				}
+			}
 
-				// Set bind group
-				if (draw.BindGroup.IsValid())
+			// Draw the mesh accordingly
+			if (draw.IndexBuffer.IsValid())
+			{
+				if (draw.IndexOffset == 0)
 				{
-					OpenGLBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
-
-					if (draw.BindGroup != previouslyUsedBindGroup)
-					{
-						drawBindGroup->Set();
-						previouslyUsedBindGroup = draw.BindGroup;
-					}
-
-					// Bind dynamic uniform buffer with the current offset and size
-					if (globalDraw.UsesDynamicOffset)
-					{
-						OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(drawBindGroup->Buffers[0].buffer);
-						dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);
-					}
-				}
-
-				const auto& subMesh = meshPart.SubMeshes[draw.SubMeshIndex];
-
-				// Draw the mesh accordingly
-				if (meshPart.IndexBuffer.IsValid())
-				{
-					if (subMesh.IndexOffset == 0)
-					{
-						glDrawElements(GL_TRIANGLES, subMesh.IndexCount, GL_UNSIGNED_INT, nullptr);
-					}
-					else
-					{
-						glDrawElementsBaseVertex(GL_TRIANGLES, subMesh.IndexCount, GL_UNSIGNED_INT, (void*)(subMesh.IndexOffset * sizeof(uint32_t)), subMesh.VertexOffset);
-					}
+					glDrawElements(GL_TRIANGLES, draw.IndexCount, GL_UNSIGNED_INT, nullptr);
 				}
 				else
 				{
-					glDrawArrays(GL_TRIANGLES, subMesh.VertexOffset, subMesh.VertexCount);
+					glDrawElementsBaseVertex(GL_TRIANGLES, draw.IndexCount, GL_UNSIGNED_INT, (void*)(draw.IndexOffset * sizeof(uint32_t)), draw.VertexOffset);
 				}
+			}
+			else
+			{
+				glDrawArrays(GL_TRIANGLES, draw.VertexOffset, draw.VertexCount);
 			}
 		}
 	}

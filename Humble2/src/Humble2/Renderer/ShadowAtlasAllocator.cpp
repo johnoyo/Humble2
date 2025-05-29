@@ -33,43 +33,43 @@ namespace HBL2
 
     ShadowAtlasAllocator::ShadowAtlasAllocator()
     {
-        freeTiles.reserve(g_MaxTiles);
+        m_FreeTiles.Reserve(g_MaxTiles);
 
         for (uint16_t i = 0; i < g_TilesPerRow; ++i)
         {
             for (uint16_t j = 0; j < g_TilesPerRow; ++j)
             {
-                freeTiles.push_back({ i, j });
+                m_FreeTiles.Add({ i, j });
             }
         }
     }
 
     ShadowTile ShadowAtlasAllocator::AllocateTile()
     {
-        if (freeTiles.empty())
+        if (m_FreeTiles.Empty())
         {
             return ShadowTile::Invalid;
         }
 
-        ShadowTile tile = freeTiles.back();
-        freeTiles.pop_back();
+        ShadowTile tile = m_FreeTiles.Back();
+        m_FreeTiles.Pop();
         return tile;
     }
 
     void ShadowAtlasAllocator::FreeTile(ShadowTile tile)
     {
-        freeTiles.push_back(tile);
+        m_FreeTiles.Add(tile);
     }
 
     void ShadowAtlasAllocator::Clear()
     {
-        freeTiles.clear();
+        m_FreeTiles.Clear();
 
         for (uint16_t i = 0; i < g_TilesPerRow; ++i)
         {
             for (uint16_t j = 0; j < g_TilesPerRow; ++j)
             {
-                freeTiles.push_back({ i, j });
+                m_FreeTiles.Add({ i, j });
             }
         }
     }

@@ -2,7 +2,10 @@
 
 // Inspired by the technique used in doom: https://www.adriancourreges.com/blog/2016/09/09/doom-2016-graphics-study/
 
-#include <vector>
+#include "Core\Allocators.h"
+#include "Utilities\Collections\DynamicArray.h"
+#include "Utilities\Allocators\BinAllocator.h"
+
 #include <glm\glm.hpp>
 
 namespace HBL2
@@ -37,6 +40,6 @@ namespace HBL2
         void Clear();
 
     private:
-        std::vector<ShadowTile> freeTiles;
+        DynamicArray<ShadowTile, BinAllocator> m_FreeTiles = MakeDynamicArray<ShadowTile>(&Allocator::App);
     };
 }

@@ -5,7 +5,8 @@
 
 namespace HBL2
 {
-	UniformRingBuffer::UniformRingBuffer(uint32_t size, uint32_t uniformOffset) : m_BufferSize(size), m_UniformOffset(uniformOffset), m_CurrentOffset(0)
+	UniformRingBuffer::UniformRingBuffer(uint32_t size, uint32_t uniformOffset)
+		: m_BufferSize(size), m_UniformOffset(uniformOffset), m_CurrentOffset(0)
 	{
 		m_Buffer = ResourceManager::Instance->CreateBuffer({
 			.debugName = "dynamic-uniform-buffer",

@@ -41,9 +41,16 @@ namespace HBL2
 		{
 			constexpr uint64_t alignment = alignof(T);
 
-			uint64_t alignedOffset = (m_CurrentOffset + (alignment ? alignment - 1 : 0)) & ~(alignment ? alignment - 1 : 0);
+			// Ensure alignment is at least 1
+			static_assert(alignment > 0, "Alignment must be greater than 0");
 
-			if (alignedOffset + size > m_Capacity)
+			// Calculate aligned offset
+			uint64_t alignedOffset = (m_CurrentOffset + alignment - 1) & ~(alignment - 1);
+
+			// Calculate aligned size to maintain alignment for subsequent allocations
+			uint64_t alignedSize = (size + alignment - 1) & ~(alignment - 1);
+
+			if (alignedOffset + alignedSize > m_Capacity)
 			{
 				HBL2_CORE_ERROR("BumpAllocator out of memory!");
 				return nullptr;
@@ -51,7 +58,8 @@ namespace HBL2
 
 			T* ptr = (T*)((char*)m_Data + alignedOffset);
 
-			m_CurrentOffset = alignedOffset + size;
+			// Update current offset to maintain alignment
+			m_CurrentOffset = alignedOffset + alignedSize;
 
 			return ptr;
 		}
