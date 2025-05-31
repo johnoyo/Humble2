@@ -8,17 +8,31 @@
 
 namespace HBL2
 {
+	VkPipeline PipelineCache::GetPipeline(uint64_t variantHash)
+	{
+		VkPipeline outPipeline = VK_NULL_HANDLE;
+
+		if (m_PipelineCache.Find(variantHash, outPipeline))
+		{
+			return outPipeline;
+		}
+
+		return VK_NULL_HANDLE;
+	}
+
 	VkPipeline PipelineCache::GetOrCreatePipeline(const PipelineConfig& config)
 	{
 		VkPipeline outPipeline = VK_NULL_HANDLE;
 
-		if (m_PipelineCache.Find(config.variantDesc, outPipeline))
+		uint64_t hash = std::hash<ShaderDescriptor::RenderPipeline::Variant>()(config.variantDesc);
+
+		if (m_PipelineCache.Find(hash, outPipeline))
 		{
 			return outPipeline;
 		}
 
 		outPipeline = CreatePipeline(config);
-		m_PipelineCache[config.variantDesc] = outPipeline;
+		m_PipelineCache[hash] = outPipeline;
 
 		return outPipeline;
 	}
@@ -27,20 +41,28 @@ namespace HBL2
 	{
 		VkPipeline outPipeline = VK_NULL_HANDLE;
 
-		if (m_PipelineCache.Find(config.variantDesc, outPipeline))
+		uint64_t hash = std::hash<ShaderDescriptor::RenderPipeline::Variant>()(config.variantDesc);
+
+		if (m_PipelineCache.Find(hash, outPipeline))
 		{
 			return outPipeline;
 		}
 
 		outPipeline = CreateComputePipeline(config);
-		m_PipelineCache[config.variantDesc] = outPipeline;
+		m_PipelineCache[hash] = outPipeline;
 
 		return outPipeline;
 	}
 
+	bool PipelineCache::ContainsPipeline(uint64_t variantHash)
+	{
+		return m_PipelineCache.ContainsKey(variantHash);
+	}
+
 	bool PipelineCache::ContainsPipeline(const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
 	{
-		return m_PipelineCache.ContainsKey(variantDesc);
+		uint64_t hash = std::hash<ShaderDescriptor::RenderPipeline::Variant>()(variantDesc);
+		return m_PipelineCache.ContainsKey(hash);
 	}
 
 	void PipelineCache::Destroy()

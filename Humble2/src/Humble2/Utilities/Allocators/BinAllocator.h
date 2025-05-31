@@ -5,6 +5,7 @@
 
 #include <cstring>
 #include <stdint.h>
+#include <type_traits>
 
 namespace HBL2
 {
@@ -23,26 +24,37 @@ namespace HBL2
      * @note This implementation is inspired by the open-source Offset Allocator by Sebastian Aaltonen:
      *       https://github.com/sebbbi/OffsetAllocator
      */
-	class BinAllocator final : public BaseAllocator<BinAllocator>
-	{
+    class BinAllocator final : public BaseAllocator<BinAllocator>
+    {
+    public:
+        struct AllocationInfo
+        {
+            static constexpr uint32_t INVALID = 0xFFFFFFFF;
+            uint32_t nodeIndex = INVALID;
+        };
+
+        struct StorageReport
+        {
+            uint64_t totalFreeSpace;
+            uint64_t largestFreeRegion;
+        };
+
     public:
         BinAllocator() = default;
 
         /**
-         * @brief Initializes the allocator with a given memory pool size.
+         * @brief Initializes an offset allocator with a given memory size.
          *
          * @param size The total size of the memory pool in bytes.
+         * @param maxAllocs Maximum number of concurrent allocations (default: 128k).
          */
-        BinAllocator(uint64_t size)
+        BinAllocator(uint64_t size, uint32_t maxAllocs = 128 * 1024)
         {
-            Initialize(size);
+            Initialize(size, maxAllocs);
         }
 
         /**
-         * @brief Allocates a block of memory of the specified size.
-         *
-         * If a suitable free block is found in the bins, it is used. Otherwise, memory is
-         * allocated from the main pool.
+         * @brief Allocates a block of memory of the given size.
          *
          * @tparam T The type of object to allocate.
          * @param size The size of the allocation in bytes (default: sizeof(T)).
@@ -51,216 +63,412 @@ namespace HBL2
         template<typename T>
         T* Allocate(uint64_t size = sizeof(T))
         {
-            m_AllocatedBytes += size;
-
-            uint32_t binIndex = FindBinIndex(size);
-
-            for (uint32_t i = binIndex; i < NUM_LEAF_BINS; i++)
+            if (m_FreeOffset == 0)
             {
-                if (m_Bins[i].FreeList)
-                {
-                    FreeBlock* block = m_Bins[i].FreeList;
-                    RemoveFromBin(i, block);
-
-                    if (block->Size > size + sizeof(FreeBlock))
-                    {
-                        // Split the block
-                        void* newBlock = reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(block) + size);
-                        InsertIntoBin(newBlock, block->Size - size);
-                    }
-
-                    return reinterpret_cast<T*>(block);
-                }
-            }
-
-            // If no free block found, allocate from the current offset
-            constexpr uint64_t alignment = alignof(T);
-            uint64_t alignedOffset = (m_CurrentOffset + (alignment - 1)) & ~(alignment - 1);
-
-            if (alignedOffset + size > m_Capacity)
-            {
-                HBL2_CORE_ERROR("BinAllocator out of memory!");
+                HBL2_CORE_ERROR("BinAllocator out of allocations!");
                 return nullptr;
             }
 
-            T* ptr = reinterpret_cast<T*>(static_cast<uint8_t*>(m_Data) + alignedOffset);
-            m_CurrentOffset = alignedOffset + size;
-            return ptr;
+            // Ensure minimum alignment for type T
+            constexpr uint64_t alignment = alignof(T);
+            uint64_t alignedSize = (size + alignment - 1) & ~(alignment - 1);
+
+            uint32_t minBinIndex = UintToFloatRoundUp((uint32_t)alignedSize);
+
+            uint32_t minTopBinIndex = minBinIndex >> TOP_BINS_INDEX_SHIFT;
+            uint32_t minLeafBinIndex = minBinIndex & LEAF_BINS_INDEX_MASK;
+
+            uint32_t topBinIndex = minTopBinIndex;
+            uint32_t leafBinIndex = AllocationInfo::INVALID;
+
+            if (m_UsedBinsTop & (1 << topBinIndex))
+            {
+                leafBinIndex = FindLowestSetBitAfter(m_UsedBins[topBinIndex], minLeafBinIndex);
+            }
+
+            if (leafBinIndex == AllocationInfo::INVALID)
+            {
+                topBinIndex = FindLowestSetBitAfter(m_UsedBinsTop, minTopBinIndex + 1);
+
+                if (topBinIndex == AllocationInfo::INVALID)
+                {
+                    HBL2_CORE_ERROR("BinAllocator out of memory!");
+                    return nullptr;
+                }
+
+                leafBinIndex = tzcnt_nonzero(m_UsedBins[topBinIndex]);
+            }
+
+            uint32_t binIndex = (topBinIndex << TOP_BINS_INDEX_SHIFT) | leafBinIndex;
+
+            uint32_t nodeIndex = m_BinIndices[binIndex];
+            Node& node = m_Nodes[nodeIndex];
+            uint64_t nodeTotalSize = node.dataSize;
+            node.dataSize = alignedSize;
+            node.used = true;
+            m_BinIndices[binIndex] = node.binListNext;
+
+            if (node.binListNext != Node::UNUSED)
+            {
+                m_Nodes[node.binListNext].binListPrev = Node::UNUSED;
+            }
+
+            m_FreeStorage -= nodeTotalSize;
+
+            if (m_BinIndices[binIndex] == Node::UNUSED)
+            {
+                m_UsedBins[topBinIndex] &= ~(1 << leafBinIndex);
+
+                if (m_UsedBins[topBinIndex] == 0)
+                {
+                    m_UsedBinsTop &= ~(1 << topBinIndex);
+                }
+            }
+
+            uint64_t reminderSize = nodeTotalSize - alignedSize;
+            if (reminderSize > 0)
+            {
+                void* reminderPtr = (char*)node.dataPtr + alignedSize;
+                uint32_t newNodeIndex = InsertNodeIntoBin(reminderSize, reminderPtr);
+
+                if (node.neighborNext != Node::UNUSED)
+                {
+                    m_Nodes[node.neighborNext].neighborPrev = newNodeIndex;
+                }
+
+                m_Nodes[newNodeIndex].neighborPrev = nodeIndex;
+                m_Nodes[newNodeIndex].neighborNext = node.neighborNext;
+                node.neighborNext = newNodeIndex;
+            }
+
+            // Apply alignment to the returned pointer
+            void* alignedPtr = node.dataPtr;
+            if (alignment > 1)
+            {
+                uintptr_t addr = reinterpret_cast<uintptr_t>(node.dataPtr);
+                uintptr_t alignedAddr = (addr + alignment - 1) & ~(alignment - 1);
+                alignedPtr = reinterpret_cast<void*>(alignedAddr);
+            }
+
+            return static_cast<T*>(alignedPtr);
         }
 
         /**
-         * @brief Deallocates memory by placing the block back into the appropriate bin.
+         * @brief Deallocates a previously allocated block of memory.
          *
-         * @tparam T The type of object being deallocated.
-         * @param object The pointer to the memory block being freed.
+         * @tparam T The type of object to deallocate.
+         * @param ptr The pointer to deallocate.
+         * @param allocationInfo The allocation info returned during allocation.
          */
         template<typename T>
-        void Deallocate(T* object)
+        void Deallocate(T* ptr)
         {
-            if (!object)
+            if (!ptr || !m_Nodes) return;
+
+            // Find the node that contains this pointer
+            uint32_t nodeIndex = FindNodeContainingPointer(ptr);
+            if (nodeIndex == Node::UNUSED)
             {
+                HBL2_CORE_ERROR("OffsetAllocator: Invalid pointer for deallocation!");
                 return;
             }
 
-            uint64_t blockSize = sizeof(T);
-            InsertIntoBin(object, blockSize);
-            m_AllocatedBytes -= blockSize;
+            Node& node = m_Nodes[nodeIndex];
+
+            if (!node.used)
+            {
+                HBL2_CORE_ERROR("OffsetAllocator: Double free detected!");
+                return;
+            }
+
+            void* dataPtr = node.dataPtr;
+            uint64_t size = node.dataSize;
+
+            if ((node.neighborPrev != Node::UNUSED) && (m_Nodes[node.neighborPrev].used == false))
+            {
+                Node& prevNode = m_Nodes[node.neighborPrev];
+                dataPtr = prevNode.dataPtr;
+                size += prevNode.dataSize;
+
+                RemoveNodeFromBin(node.neighborPrev);
+
+                node.neighborPrev = prevNode.neighborPrev;
+            }
+
+            if ((node.neighborNext != Node::UNUSED) && (m_Nodes[node.neighborNext].used == false))
+            {
+                Node& nextNode = m_Nodes[node.neighborNext];
+                size += nextNode.dataSize;
+
+                RemoveNodeFromBin(node.neighborNext);
+
+                node.neighborNext = nextNode.neighborNext;
+            }
+
+            uint32_t neighborNext = node.neighborNext;
+            uint32_t neighborPrev = node.neighborPrev;
+
+            m_FreeNodes[++m_FreeOffset] = nodeIndex;
+
+            uint32_t combinedNodeIndex = InsertNodeIntoBin(size, dataPtr);
+
+            if (neighborNext != Node::UNUSED)
+            {
+                m_Nodes[combinedNodeIndex].neighborNext = neighborNext;
+                m_Nodes[neighborNext].neighborPrev = combinedNodeIndex;
+            }
+
+            if (neighborPrev != Node::UNUSED)
+            {
+                m_Nodes[combinedNodeIndex].neighborPrev = neighborPrev;
+                m_Nodes[neighborPrev].neighborNext = combinedNodeIndex;
+            }
         }
 
         /**
          * @brief Initializes the allocator with a specified memory size.
          *
          * @param sizeInBytes The total size of the memory pool in bytes.
+         * @param maxAllocs Maximum number of concurrent allocations.
          */
         virtual void Initialize(size_t sizeInBytes) override
         {
-            m_Capacity = sizeInBytes;
-            m_CurrentOffset = 0;
+            Initialize(sizeInBytes, 1024 * 1024);
+        }
 
-            m_Data = ::operator new(m_Capacity);
-            std::memset(m_Data, 0, m_Capacity);
+        void Initialize(size_t sizeInBytes, uint32_t maxAllocs)
+        {
+            m_Size = sizeInBytes;
+            m_MaxAllocs = maxAllocs;
+            m_FreeStorage = 0;
+            m_UsedBinsTop = 0;
+            m_FreeOffset = m_MaxAllocs - 1;
+
+            for (uint32_t i = 0; i < NUM_TOP_BINS; i++)
+            {
+                m_UsedBins[i] = 0;
+            }
 
             for (uint32_t i = 0; i < NUM_LEAF_BINS; i++)
             {
-                m_Bins[i].FreeList = nullptr;
+                m_BinIndices[i] = Node::UNUSED;
             }
 
-            // Initialize the allocator with a single large free block
-            InsertIntoBin(m_Data, m_Capacity);
+            if (m_Nodes) delete[] m_Nodes;
+            if (m_FreeNodes) delete[] m_FreeNodes;
+            if (m_Data) ::operator delete(m_Data);
+
+            m_Data = ::operator new(m_Size);
+            std::memset(m_Data, 0, m_Size);
+
+            m_Nodes = new Node[m_MaxAllocs];
+            m_FreeNodes = new NodeIndex[m_MaxAllocs];
+
+            for (uint32_t i = 0; i < m_MaxAllocs; i++)
+            {
+                m_FreeNodes[i] = m_MaxAllocs - i - 1;
+            }
+
+            InsertNodeIntoBin(m_Size, m_Data);
         }
 
         /**
-         * @brief Resets the allocator, clearing all allocated memory without deallocating the memory pool itself.
+         * @brief Resets the allocator, clearing all allocated memory.
          */
         virtual void Invalidate() override
         {
-            std::memset(m_Data, 0, m_CurrentOffset);
-            m_CurrentOffset = 0;
-			m_AllocatedBytes = 0;
-
-            for (uint32_t i = 0; i < NUM_LEAF_BINS; i++)
+            if (m_Data)
             {
-                m_Bins[i].FreeList = nullptr;
-            }
+                std::memset(m_Data, 0, m_Size);
 
-            // Insert the entire memory block as free space
-            InsertIntoBin(m_Data, m_Capacity);
+                m_FreeStorage = 0;
+                m_UsedBinsTop = 0;
+                m_FreeOffset = m_MaxAllocs - 1;
+
+                for (uint32_t i = 0; i < NUM_TOP_BINS; i++)
+                {
+                    m_UsedBins[i] = 0;
+                }
+
+                for (uint32_t i = 0; i < NUM_LEAF_BINS; i++)
+                {
+                    m_BinIndices[i] = Node::UNUSED;
+                }
+
+                for (uint32_t i = 0; i < m_MaxAllocs; i++)
+                {
+                    m_FreeNodes[i] = m_MaxAllocs - i - 1;
+                }
+
+                InsertNodeIntoBin(m_Size, m_Data);
+            }
         }
 
         /**
          * @brief Frees all allocated memory and resets the allocator.
-         *
-         * After calling this, the allocator cannot be used until reinitialized.
          */
         virtual void Free() override
         {
-            ::operator delete(m_Data);
-			m_Data = nullptr;
-            m_Capacity = 0;
-            m_CurrentOffset = 0;
-			m_AllocatedBytes = 0;
+            if (m_Nodes) delete[] m_Nodes;
+            if (m_FreeNodes) delete[] m_FreeNodes;
+            if (m_Data) ::operator delete(m_Data);
+
+            m_Nodes = nullptr;
+            m_FreeNodes = nullptr;
+            m_Data = nullptr;
+            m_FreeOffset = 0;
+            m_MaxAllocs = 0;
+            m_UsedBinsTop = 0;
+            m_Size = 0;
+            m_FreeStorage = 0;
         }
 
-		float GetFullPercentage()
-		{
-			return ((float)m_AllocatedBytes / (float)m_Capacity) * 100.f;
-		}
+        /**
+         * @brief Gets storage statistics.
+         */
+        StorageReport GetStorageReport()
+        {
+            uint64_t largestFreeRegion = 0;
+            uint64_t freeStorage = 0;
+
+            if (m_FreeOffset > 0)
+            {
+                freeStorage = m_FreeStorage;
+                if (m_UsedBinsTop)
+                {
+                    uint32_t topBinIndex = 31 - lzcnt_nonzero(m_UsedBinsTop);
+                    uint32_t leafBinIndex = 31 - lzcnt_nonzero(m_UsedBins[topBinIndex]);
+                    largestFreeRegion = FloatToUint((topBinIndex << TOP_BINS_INDEX_SHIFT) | leafBinIndex);
+                }
+            }
+
+            return { .totalFreeSpace = freeStorage, .largestFreeRegion = largestFreeRegion };
+        }
+
+        float GetFullPercentage() const
+        {
+            return ((float)(m_Size - m_FreeStorage) / (float)m_Size) * 100.0f;
+        }
 
     private:
-        /**
-         * @brief Represents a free memory block in the allocator.
-         */
-        struct FreeBlock
+        uint32_t InsertNodeIntoBin(uint64_t size, void* dataPtr)
         {
-            FreeBlock* Next;
-            uint64_t Size;
-        };
+            uint32_t binIndex = UintToFloatRoundDown((uint32_t)size);
 
-        /**
-         * @brief Represents a bin that holds free memory blocks of similar sizes.
-         */
-        struct Bin
-        {
-            FreeBlock* FreeList;
-        };
+            uint32_t topBinIndex = binIndex >> TOP_BINS_INDEX_SHIFT;
+            uint32_t leafBinIndex = binIndex & LEAF_BINS_INDEX_MASK;
 
-        /**
-         * @brief Inserts a free block into the appropriate bin based on its size.
-         *
-         * @param ptr Pointer to the free block.
-         * @param size Size of the free block in bytes.
-         */
-        void InsertIntoBin(void* ptr, uint64_t size)
-        {
-            if (ptr == nullptr)
+            if (m_BinIndices[binIndex] == Node::UNUSED)
             {
-                return;
+                m_UsedBins[topBinIndex] |= 1 << leafBinIndex;
+                m_UsedBinsTop |= 1 << topBinIndex;
             }
 
-            uint32_t binIndex = FindBinIndex(size);
-            FreeBlock* block = reinterpret_cast<FreeBlock*>(ptr);
-            block->Size = size;
-            block->Next = m_Bins[binIndex].FreeList;
-            m_Bins[binIndex].FreeList = block;
+            uint32_t topNodeIndex = m_BinIndices[binIndex];
+            uint32_t nodeIndex = m_FreeNodes[m_FreeOffset--];
+
+            m_Nodes[nodeIndex] = {
+                .dataPtr = dataPtr,
+                .dataSize = size,
+                .binListNext = topNodeIndex
+            };
+
+            if (topNodeIndex != Node::UNUSED)
+            {
+                m_Nodes[topNodeIndex].binListPrev = nodeIndex;
+            }
+
+            m_BinIndices[binIndex] = nodeIndex;
+
+            m_FreeStorage += size;
+
+            return nodeIndex;
         }
 
-        /**
-         * @brief Removes a free block from its corresponding bin.
-         *
-         * @param binIndex The index of the bin containing the block.
-         * @param block The block to be removed.
-         */
-        void RemoveFromBin(uint32_t binIndex, FreeBlock* block)
+        void RemoveNodeFromBin(uint32_t nodeIndex)
         {
-            FreeBlock** current = &m_Bins[binIndex].FreeList;
-            while (*current)
+            Node& node = m_Nodes[nodeIndex];
+
+            if (node.binListPrev != Node::UNUSED)
             {
-                if (*current == block)
+                m_Nodes[node.binListPrev].binListNext = node.binListNext;
+
+                if (node.binListNext != Node::UNUSED)
                 {
-                    *current = block->Next;
-                    return;
+                    m_Nodes[node.binListNext].binListPrev = node.binListPrev;
                 }
-                current = &((*current)->Next);
-            }
-        }
-
-        /**
-         * @brief Finds the bin index that corresponds to the given size.
-         *
-         * @param size Size of the memory block.
-         * @return The bin index for the given size.
-         */
-        uint32_t FindBinIndex(uint64_t size) const
-        {
-            uint32_t exp = 0;
-            uint32_t mantissa = 0;
-
-            if (size < 8)
-            {
-                mantissa = size;
             }
             else
             {
-                uint32_t leadingZeros = lzcnt_nonzero(size);
-                uint32_t highestSetBit = 31 - leadingZeros;
+                uint32_t binIndex = UintToFloatRoundDown((uint32_t)node.dataSize);
 
-                uint32_t mantissaStartBit = highestSetBit - 3;
-                exp = mantissaStartBit + 1;
-                mantissa = (size >> mantissaStartBit) & 7;
+                uint32_t topBinIndex = binIndex >> TOP_BINS_INDEX_SHIFT;
+                uint32_t leafBinIndex = binIndex & LEAF_BINS_INDEX_MASK;
 
-                uint32_t lowBitsMask = (1 << mantissaStartBit) - 1;
-
-                if ((size & lowBitsMask) != 0)
+                m_BinIndices[binIndex] = node.binListNext;
+                if (node.binListNext != Node::UNUSED)
                 {
-                    mantissa++;
+                    m_Nodes[node.binListNext].binListPrev = Node::UNUSED;
+                }
+
+                if (m_BinIndices[binIndex] == Node::UNUSED)
+                {
+                    m_UsedBins[topBinIndex] &= ~(1 << leafBinIndex);
+
+                    if (m_UsedBins[topBinIndex] == 0)
+                    {
+                        m_UsedBinsTop &= ~(1 << topBinIndex);
+                    }
                 }
             }
 
-            return (exp << 3) | mantissa;
+            m_FreeNodes[++m_FreeOffset] = nodeIndex;
+            m_FreeStorage -= node.dataSize;
+        }
+
+        uint32_t FindNodeContainingPointer(void* ptr)
+        {
+            char* searchPtr = static_cast<char*>(ptr);
+            char* basePtr = static_cast<char*>(m_Data);
+
+            if (searchPtr < basePtr || searchPtr >= basePtr + m_Size)
+            {
+                return Node::UNUSED;
+            }
+
+            // Linear search through used nodes (could be optimized with spatial data structure)
+            for (uint32_t i = 0; i < m_MaxAllocs; i++)
+            {
+                if (m_Nodes[i].used && m_Nodes[i].dataPtr)
+                {
+                    char* nodeStart = static_cast<char*>(m_Nodes[i].dataPtr);
+                    char* nodeEnd = nodeStart + m_Nodes[i].dataSize;
+
+                    if (searchPtr >= nodeStart && searchPtr < nodeEnd)
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            return Node::UNUSED;
         }
 
     private:
-        inline static uint32_t lzcnt_nonzero(uint32_t v)
+        using NodeIndex = uint32_t;
+
+        static constexpr uint32_t NUM_TOP_BINS = 32;
+        static constexpr uint32_t BINS_PER_LEAF = 8;
+        static constexpr uint32_t TOP_BINS_INDEX_SHIFT = 3;
+        static constexpr uint32_t LEAF_BINS_INDEX_MASK = 0x7;
+        static constexpr uint32_t NUM_LEAF_BINS = NUM_TOP_BINS * BINS_PER_LEAF;
+
+        // Small float representation for size classes
+        static constexpr uint32_t MANTISSA_BITS = 3;
+        static constexpr uint32_t MANTISSA_VALUE = 1 << MANTISSA_BITS;
+        static constexpr uint32_t MANTISSA_MASK = MANTISSA_VALUE - 1;
+
+        inline uint32_t lzcnt_nonzero(uint32_t v)
         {
 #ifdef _MSC_VER
             unsigned long retVal;
@@ -271,7 +479,7 @@ namespace HBL2
 #endif
         }
 
-        inline static uint32_t tzcnt_nonzero(uint32_t v)
+        inline uint32_t tzcnt_nonzero(uint32_t v)
         {
 #ifdef _MSC_VER
             unsigned long retVal;
@@ -282,18 +490,105 @@ namespace HBL2
 #endif
         }
 
+        uint32_t UintToFloatRoundUp(uint32_t size)
+        {
+            uint32_t exp = 0;
+            uint32_t mantissa = 0;
+
+            if (size < MANTISSA_VALUE)
+            {
+                mantissa = size;
+            }
+            else
+            {
+                uint32_t leadingZeros = lzcnt_nonzero(size);
+                uint32_t highestSetBit = 31 - leadingZeros;
+
+                uint32_t mantissaStartBit = highestSetBit - MANTISSA_BITS;
+                exp = mantissaStartBit + 1;
+                mantissa = (size >> mantissaStartBit) & MANTISSA_MASK;
+
+                uint32_t lowBitsMask = (1 << mantissaStartBit) - 1;
+
+                if ((size & lowBitsMask) != 0)
+                {
+                    mantissa++;
+                }
+            }
+
+            return (exp << MANTISSA_BITS) + mantissa;
+        }
+
+        uint32_t UintToFloatRoundDown(uint32_t size)
+        {
+            uint32_t exp = 0;
+            uint32_t mantissa = 0;
+
+            if (size < MANTISSA_VALUE)
+            {
+                mantissa = size;
+            }
+            else
+            {
+                uint32_t leadingZeros = lzcnt_nonzero(size);
+                uint32_t highestSetBit = 31 - leadingZeros;
+
+                uint32_t mantissaStartBit = highestSetBit - MANTISSA_BITS;
+                exp = mantissaStartBit + 1;
+                mantissa = (size >> mantissaStartBit) & MANTISSA_MASK;
+            }
+
+            return (exp << MANTISSA_BITS) | mantissa;
+        }
+
+        uint32_t FloatToUint(uint32_t floatValue)
+        {
+            uint32_t exponent = floatValue >> MANTISSA_BITS;
+            uint32_t mantissa = floatValue & MANTISSA_MASK;
+            if (exponent == 0)
+            {
+                return mantissa;
+            }
+            else
+            {
+                return (mantissa | MANTISSA_VALUE) << (exponent - 1);
+            }
+        }
+
+        struct Node
+        {
+            static constexpr NodeIndex UNUSED = 0xFFFFFFFF;
+
+            void* dataPtr = nullptr;
+            uint64_t dataSize = 0;
+            NodeIndex binListPrev = UNUSED;
+            NodeIndex binListNext = UNUSED;
+            NodeIndex neighborPrev = UNUSED;
+            NodeIndex neighborNext = UNUSED;
+            bool used = false;
+        };
+
+        uint32_t FindLowestSetBitAfter(uint32_t bitMask, uint32_t startBitIndex)
+        {
+            uint32_t maskBeforeStartIndex = (1 << startBitIndex) - 1;
+            uint32_t maskAfterStartIndex = ~maskBeforeStartIndex;
+            uint32_t bitsAfter = bitMask & maskAfterStartIndex;
+            if (bitsAfter == 0) return AllocationInfo::INVALID;
+            return tzcnt_nonzero(bitsAfter);
+        }
+
     private:
-        static constexpr uint32_t NUM_TOP_BINS = 32;
-        static constexpr uint32_t BINS_PER_LEAF = 8;
-        static constexpr uint32_t TOP_BINS_INDEX_SHIFT = 3;
-        static constexpr uint32_t LEAF_BINS_INDEX_MASK = 0x7;
-        static constexpr uint32_t NUM_LEAF_BINS = NUM_TOP_BINS * BINS_PER_LEAF;
-
         void* m_Data = nullptr;
-        Bin m_Bins[NUM_LEAF_BINS]; // Bin structure
+        uint64_t m_Size = 0;
+        uint32_t m_MaxAllocs = 0;
+        uint64_t m_FreeStorage = 0;
 
-        uint64_t m_Capacity = 0;
-        uint64_t m_CurrentOffset = 0;
-        uint64_t m_AllocatedBytes = 0;
+        uint32_t m_UsedBinsTop = 0;
+        uint8_t m_UsedBins[NUM_TOP_BINS];
+        NodeIndex m_BinIndices[NUM_LEAF_BINS];
+
+        Node* m_Nodes = nullptr;
+        NodeIndex* m_FreeNodes = nullptr;
+        uint32_t m_FreeOffset = 0;
     };
 }

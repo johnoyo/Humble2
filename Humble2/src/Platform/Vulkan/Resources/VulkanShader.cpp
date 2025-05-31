@@ -119,6 +119,19 @@ namespace HBL2
 		}
 	}
 
+	VkPipeline VulkanShader::GetOrCreateVariant(uint64_t variantHash, Handle<Material> materialHandle)
+	{
+		VkPipeline pipeline = s_PipelineCache.GetPipeline(variantHash);
+
+		if (pipeline != VK_NULL_HANDLE)
+		{
+			return pipeline;
+		}
+
+		Material* mat = ResourceManager::Instance->GetMaterial(materialHandle);
+		return GetOrCreateVariant(mat->VariantDescriptor);
+	}
+
 	VkPipeline VulkanShader::GetOrCreateVariant(const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
 	{
 		if (!s_PipelineCache.ContainsPipeline(variantDesc))

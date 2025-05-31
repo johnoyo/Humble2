@@ -184,7 +184,7 @@ namespace HBL2
 		std::unordered_map<BuiltInShader, Handle<Shader>> m_Shaders;
 		std::unordered_map<BuiltInShader, Handle<BindGroupLayout>> m_ShaderLayouts;
 
-		DynamicArray<Handle<Asset>, BinAllocator> m_ShaderAssets = MakeDynamicArray<Handle<Asset>>(&Allocator::App);
+		DynamicArray<Handle<Asset>, BinAllocator> m_ShaderAssets = MakeDynamicArray<Handle<Asset>>(&Allocator::Persistent);
 
 		static ShaderUtilities* s_Instance;
 	};

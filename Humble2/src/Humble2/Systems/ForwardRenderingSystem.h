@@ -81,12 +81,15 @@ namespace HBL2
 		Handle<RenderPass> m_ShadowRenderPass;
 		Handle<Shader> m_ShadowPrePassShader;
 		Handle<Material> m_ShadowPrePassMaterial;
+		uint64_t m_ShadowPrePassMaterialHash;
 
 		Handle<RenderPassLayout> m_DepthOnlyRenderPassLayout;
 		Handle<RenderPass> m_DepthOnlyRenderPass;
 		Handle<FrameBuffer> m_DepthOnlyFrameBuffer;
 		Handle<Material> m_DepthOnlyMaterial;
+		uint64_t m_DepthOnlyMaterialHash;
 		Handle<Material> m_DepthOnlySpriteMaterial;
+		uint64_t m_DepthOnlySpriteMaterialHash;
 		Handle<BindGroup> m_DepthOnlyMeshBindGroup;
 		Handle<BindGroup> m_DepthOnlySpriteBindGroup;
 		Handle<BindGroupLayout> m_DepthOnlyBindGroupLayout;

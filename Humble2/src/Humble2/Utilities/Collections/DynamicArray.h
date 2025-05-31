@@ -6,6 +6,8 @@
 
 #include <cstring>
 #include <stdint.h>
+#include <type_traits>
+#include <utility>
 
 namespace HBL2
 {
@@ -54,7 +56,7 @@ namespace HBL2
             : m_Capacity(other.m_Capacity), m_CurrentSize(other.m_CurrentSize), m_Allocator(other.m_Allocator)
         {
             m_Data = Allocate(sizeof(T) * m_Capacity);
-            std::memcpy(m_Data, other.m_Data, sizeof(T) * m_CurrentSize);
+            CopyElements(m_Data, other.m_Data, m_CurrentSize);
         }
 
         /**
@@ -62,20 +64,21 @@ namespace HBL2
          *
          * @param other The DynamicArray to move from.
          */
-		DynamicArray(DynamicArray&& other) noexcept
-			: m_Data(other.m_Data), m_Capacity(other.m_Capacity), m_CurrentSize(other.m_CurrentSize), m_Allocator(other.m_Allocator)
-		{
-			other.m_Data = nullptr;
-			other.m_Capacity = 0;
-			other.m_CurrentSize = 0;
-			other.m_Allocator = nullptr;
-		}
+        DynamicArray(DynamicArray&& other) noexcept
+            : m_Data(other.m_Data), m_Capacity(other.m_Capacity), m_CurrentSize(other.m_CurrentSize), m_Allocator(other.m_Allocator)
+        {
+            other.m_Data = nullptr;
+            other.m_Capacity = 0;
+            other.m_CurrentSize = 0;
+            other.m_Allocator = nullptr;
+        }
 
         /**
          * @brief Destructor to release allocated memory.
          */
         ~DynamicArray()
         {
+            DestroyElements(m_Data, m_CurrentSize);
             Deallocate(m_Data);
         }
 
@@ -85,25 +88,26 @@ namespace HBL2
          * @param other The DynamicArray to copy from.
          * @return Reference to this DynamicArray.
          */
-		DynamicArray& operator=(const DynamicArray& other)
-		{
-			if (this == &other)
-			{
-				return *this;
-			}
+        DynamicArray& operator=(const DynamicArray& other)
+        {
+            if (this == &other)
+            {
+                return *this;
+            }
 
-			// Clean up current data
-			Deallocate(m_Data);
+            // Clean up current data
+            DestroyElements(m_Data, m_CurrentSize);
+            Deallocate(m_Data);
 
-			m_Capacity = other.m_Capacity;
-			m_CurrentSize = other.m_CurrentSize;
-			m_Allocator = other.m_Allocator;
+            m_Capacity = other.m_Capacity;
+            m_CurrentSize = other.m_CurrentSize;
+            m_Allocator = other.m_Allocator;
 
-			m_Data = Allocate(sizeof(T) * m_Capacity);
-			std::memcpy(m_Data, other.m_Data, sizeof(T) * m_CurrentSize);
+            m_Data = Allocate(sizeof(T) * m_Capacity);
+            CopyElements(m_Data, other.m_Data, m_CurrentSize);
 
-			return *this;
-		}
+            return *this;
+        }
 
         /**
          * @brief Move assignment operator.
@@ -111,28 +115,29 @@ namespace HBL2
          * @param other The DynamicArray to move from.
          * @return Reference to this DynamicArray.
          */
-		DynamicArray& operator=(DynamicArray&& other) noexcept
-		{
-			if (this == &other)
-			{
-				return *this;
-			}
+        DynamicArray& operator=(DynamicArray&& other) noexcept
+        {
+            if (this == &other)
+            {
+                return *this;
+            }
 
-			// Clean up current data
-			Deallocate(m_Data);
+            // Clean up current data
+            DestroyElements(m_Data, m_CurrentSize);
+            Deallocate(m_Data);
 
-			m_Data = other.m_Data;
-			m_Capacity = other.m_Capacity;
-			m_CurrentSize = other.m_CurrentSize;
-			m_Allocator = other.m_Allocator;
+            m_Data = other.m_Data;
+            m_Capacity = other.m_Capacity;
+            m_CurrentSize = other.m_CurrentSize;
+            m_Allocator = other.m_Allocator;
 
-			other.m_Data = nullptr;
-			other.m_Capacity = 0;
-			other.m_CurrentSize = 0;
-			other.m_Allocator = nullptr;
+            other.m_Data = nullptr;
+            other.m_Capacity = 0;
+            other.m_CurrentSize = 0;
+            other.m_Allocator = nullptr;
 
-			return *this;
-		}
+            return *this;
+        }
 
         /**
          * @brief Access element at specified index.
@@ -158,9 +163,23 @@ namespace HBL2
         const uint32_t Size() const { return m_CurrentSize; }
 
         /**
+         * @brief Returns the current capacity of the array.
+         *
+         * @return The current capacity.
+         */
+        const uint32_t Capacity() const { return m_Capacity; }
+
+        /**
          * @brief Returns the raw pointer to the underlying data.
          *
          * @return Pointer to the array data.
+         */
+        T* Data() { return m_Data; }
+
+        /**
+         * @brief Returns the raw pointer to the underlying data (const version).
+         *
+         * @return Const pointer to the array data.
          */
         const T* Data() const { return m_Data; }
 
@@ -173,10 +192,39 @@ namespace HBL2
         {
             if (m_CurrentSize == m_Capacity)
             {
-				Reserve(m_Capacity * 2);
+                Reserve(m_Capacity * 2);
             }
 
-            m_Data[m_CurrentSize++] = value;
+            if constexpr (std::is_trivially_copyable_v<T>)
+            {
+                m_Data[m_CurrentSize++] = value;
+            }
+            else
+            {
+                new (&m_Data[m_CurrentSize++]) T(value);
+            }
+        }
+
+        /**
+         * @brief Pushes back a new element in the array (move version).
+         *
+         * @param value The element to move into the array.
+         */
+        void Add(T&& value)
+        {
+            if (m_CurrentSize == m_Capacity)
+            {
+                Reserve(m_Capacity * 2);
+            }
+
+            if constexpr (std::is_trivially_copyable_v<T>)
+            {
+                m_Data[m_CurrentSize++] = std::move(value);
+            }
+            else
+            {
+                new (&m_Data[m_CurrentSize++]) T(std::move(value));
+            }
         }
 
         /**
@@ -193,7 +241,7 @@ namespace HBL2
                 Reserve(m_Capacity * 2);
             }
 
-            // Placement new operator to prevent extra copy.
+            // Always use placement new for emplace to support perfect forwarding
             new (&m_Data[m_CurrentSize++]) T(std::forward<Args>(args)...);
         }
 
@@ -205,6 +253,10 @@ namespace HBL2
             if (m_CurrentSize > 0)
             {
                 --m_CurrentSize;
+                if constexpr (!std::is_trivially_destructible_v<T>)
+                {
+                    m_Data[m_CurrentSize].~T();
+                }
             }
         }
 
@@ -251,18 +303,11 @@ namespace HBL2
          */
         void Erase(const T& value)
         {
-            uint32_t index = UINT32_MAX;
-
-            for (uint32_t i = 0; i < m_CurrentSize; ++i)
+            uint32_t index = FindIndex(value);
+            if (index != UINT32_MAX)
             {
-                if (m_Data[i] == value)
-                {
-                    index = i;
-                    break;
-                }
+                EraseAt(index);
             }
-
-            EraseAt(index);
         }
 
         /**
@@ -278,12 +323,63 @@ namespace HBL2
                 return;
             }
 
-            // Shift elements left
-            for (uint32_t i = index; i < m_CurrentSize - 1; ++i)
+            if constexpr (std::is_trivially_destructible_v<T> && std::is_trivially_move_assignable_v<T>)
             {
-                m_Data[i] = m_Data[i + 1];
+                // Fast path for trivial types
+                std::memmove(&m_Data[index], &m_Data[index + 1], (m_CurrentSize - index - 1) * sizeof(T));
             }
+            else
+            {
+                // Destroy the element being removed
+                if constexpr (!std::is_trivially_destructible_v<T>)
+                {
+                    m_Data[index].~T();
+                }
+
+                // Move elements left
+                for (uint32_t i = index; i < m_CurrentSize - 1; ++i)
+                {
+                    if constexpr (std::is_trivially_move_assignable_v<T>)
+                    {
+                        m_Data[i] = std::move(m_Data[i + 1]);
+                    }
+                    else
+                    {
+                        new (&m_Data[i]) T(std::move(m_Data[i + 1]));
+                        m_Data[i + 1].~T();
+                    }
+                }
+
+                // Destroy the last element if we didn't already
+                if constexpr (!std::is_trivially_destructible_v<T> && std::is_trivially_move_assignable_v<T>)
+                {
+                    m_Data[m_CurrentSize - 1].~T();
+                }
+            }
+
             --m_CurrentSize;
+        }
+
+        inline bool Empty() const { return m_CurrentSize == 0; }
+
+        T& Front()
+        {
+            return *m_Data;
+        }
+
+        const T& Front() const
+        {
+            return *m_Data;
+        }
+
+        T& Back()
+        {
+            return *(m_Data + m_CurrentSize);
+        }
+
+        const T& Back() const
+        {
+            return *(m_Data + m_CurrentSize);
         }
 
         /**
@@ -291,7 +387,18 @@ namespace HBL2
          */
         void Clear()
         {
-            std::memset(m_Data, 0, m_CurrentSize * sizeof(T));
+            if constexpr (std::is_trivially_destructible_v<T>)
+            {
+                // Fast path for POD types - just reset size
+            }
+            else
+            {
+                // Call destructors for non-POD types
+                for (uint32_t i = 0; i < m_CurrentSize; ++i)
+                {
+                    m_Data[i].~T();
+                }
+            }
             m_CurrentSize = 0;
         }
 
@@ -302,18 +409,22 @@ namespace HBL2
          */
         void Reserve(uint32_t newCapacity)
         {
-			if (newCapacity <= m_Capacity)
-			{
-				return;
-			}
+            if (newCapacity <= m_Capacity)
+            {
+                return;
+            }
 
             T* newData = Allocate(sizeof(T) * newCapacity);
             HBL2_CORE_ASSERT(newData, "DynamicArray::Reserve(), memory allocation failed!");
 
-            std::memcpy(newData, m_Data, m_CurrentSize * sizeof(T));
-            Deallocate(m_Data);
-            m_Data = newData;
+            // Move/copy elements to new location
+            MoveElements(newData, m_Data, m_CurrentSize);
 
+            // Destroy old elements and deallocate
+            DestroyElements(m_Data, m_CurrentSize);
+            Deallocate(m_Data);
+
+            m_Data = newData;
             m_Capacity = newCapacity;
         }
 
@@ -334,15 +445,35 @@ namespace HBL2
 
             if (newSize > m_CurrentSize)
             {
+                // Construct new elements
                 for (uint32_t i = m_CurrentSize; i < newSize; ++i)
                 {
-                    m_Data[i] = defaultValue;
+                    if constexpr (std::is_trivially_copyable_v<T>)
+                    {
+                        m_Data[i] = defaultValue;
+                    }
+                    else
+                    {
+                        new (&m_Data[i]) T(defaultValue);
+                    }
+                }
+            }
+            else if (newSize < m_CurrentSize)
+            {
+                // Destroy excess elements
+                if constexpr (!std::is_trivially_destructible_v<T>)
+                {
+                    for (uint32_t i = newSize; i < m_CurrentSize; ++i)
+                    {
+                        m_Data[i].~T();
+                    }
                 }
             }
 
             m_CurrentSize = newSize;
         }
 
+        // Iterator support
         T* begin() { return m_Data; }
         T* end() { return m_Data + m_CurrentSize; }
         const T* begin() const { return m_Data; }
@@ -353,29 +484,108 @@ namespace HBL2
         const T* rbegin() const { return m_Data + m_CurrentSize - 1; }
         const T* rend() const { return m_Data - 1; }
 
-	private:
-		T* Allocate(uint64_t size)
-		{
-			if (m_Allocator == nullptr)
-			{
-				T* data = (T*)operator new(size);
-				memset(data, 0, size);				
-				return data;
-			}
+    private:
+        /**
+         * @brief Allocates memory for the given size.
+         *
+         * @param size Size in bytes to allocate.
+         * @return Pointer to allocated memory.
+         */
+        T* Allocate(uint64_t size)
+        {
+            if (m_Allocator == nullptr)
+            {
+                T* data = static_cast<T*>(operator new(size));
+                return data;
+            }
 
-			return m_Allocator->Allocate<T>(size);
-		}
+            return m_Allocator->Allocate<T>(size);
+        }
 
-		void Deallocate(T* ptr)
-		{
+        /**
+         * @brief Deallocates the given pointer.
+         *
+         * @param ptr Pointer to deallocate.
+         */
+        void Deallocate(T* ptr)
+        {
+            if (ptr == nullptr) return;
+
             if (m_Allocator == nullptr)
             {
                 operator delete(ptr);
                 return;
             }
 
-			m_Allocator->Deallocate<T>(ptr);
-		}
+            m_Allocator->Deallocate<T>(ptr);
+        }
+
+        /**
+         * @brief Copies elements from source to destination using the most efficient method.
+         *
+         * @param dest Destination array.
+         * @param src Source array.
+         * @param count Number of elements to copy.
+         */
+        void CopyElements(T* dest, const T* src, uint32_t count)
+        {
+            if constexpr (std::is_trivially_copyable_v<T>)
+            {
+                // Fast path for POD types
+                std::memcpy(dest, src, count * sizeof(T));
+            }
+            else
+            {
+                // Use copy constructor for non-POD types
+                for (uint32_t i = 0; i < count; ++i)
+                {
+                    new (&dest[i]) T(src[i]);
+                }
+            }
+        }
+
+        /**
+         * @brief Moves elements from source to destination using the most efficient method.
+         *
+         * @param dest Destination array.
+         * @param src Source array.
+         * @param count Number of elements to move.
+         */
+        void MoveElements(T* dest, T* src, uint32_t count)
+        {
+            if constexpr (std::is_trivially_copyable_v<T>)
+            {
+                // Fast path for POD types - just copy the memory
+                std::memcpy(dest, src, count * sizeof(T));
+            }
+            else
+            {
+                // Use move constructor for non-POD types
+                for (uint32_t i = 0; i < count; ++i)
+                {
+                    new (&dest[i]) T(std::move(src[i]));
+                }
+            }
+        }
+
+        /**
+         * @brief Destroys elements using the most efficient method.
+         *
+         * @param ptr Pointer to elements to destroy.
+         * @param count Number of elements to destroy.
+         */
+        void DestroyElements(T* ptr, uint32_t count)
+        {
+            if constexpr (!std::is_trivially_destructible_v<T>)
+            {
+                // Only call destructors for non-trivial types
+                for (uint32_t i = 0; i < count; ++i)
+                {
+                    ptr[i].~T();
+                }
+            }
+            // For trivially destructible types, do nothing
+        }
 
     private:
         T* m_Data = nullptr;
@@ -384,6 +594,15 @@ namespace HBL2
         TAllocator* m_Allocator = nullptr; // Does not own the pointer
     };
 
+    /**
+     * @brief Helper function to create a DynamicArray with a custom allocator.
+     *
+     * @tparam T The element type.
+     * @tparam TAllocator The allocator type.
+     * @param allocator Pointer to the allocator.
+     * @param initialCapacity Initial capacity of the array.
+     * @return A new DynamicArray instance.
+     */
     template<typename T, typename TAllocator>
     auto MakeDynamicArray(TAllocator* allocator, uint32_t initialCapacity = 8)
     {

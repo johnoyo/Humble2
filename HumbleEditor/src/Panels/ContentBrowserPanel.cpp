@@ -714,7 +714,7 @@ namespace HBL2
 
 						if (g_AlbedoMapTask)
 						{
-							Allocator::Scene.Deallocate(g_AlbedoMapTask);
+							Allocator::Persistent.Deallocate(g_AlbedoMapTask);
 							g_AlbedoMapTask = nullptr;
 						}
 
@@ -762,7 +762,7 @@ namespace HBL2
 
 							if (g_NormalMapTask)
 							{
-								Allocator::Scene.Deallocate(g_NormalMapTask);
+								Allocator::Persistent.Deallocate(g_NormalMapTask);
 								g_NormalMapTask = nullptr;
 							}
 
@@ -804,7 +804,7 @@ namespace HBL2
 
 							if (g_MetallicMapTask)
 							{
-								Allocator::Scene.Deallocate(g_MetallicMapTask);
+								Allocator::Persistent.Deallocate(g_MetallicMapTask);
 								g_MetallicMapTask = nullptr;
 							}
 
@@ -846,7 +846,7 @@ namespace HBL2
 
 							if (g_RoughnessMapTask)
 							{
-								Allocator::Scene.Deallocate(g_RoughnessMapTask);
+								Allocator::Persistent.Deallocate(g_RoughnessMapTask);
 								g_RoughnessMapTask = nullptr;
 							}
 
@@ -907,25 +907,25 @@ namespace HBL2
 
 						if (g_AlbedoMapTask)
 						{
-							Allocator::Scene.Deallocate(g_AlbedoMapTask);
+							Allocator::Persistent.Deallocate(g_AlbedoMapTask);
 							g_AlbedoMapTask = nullptr;
 						}
 
 						if (g_NormalMapTask)
 						{
-							Allocator::Scene.Deallocate(g_NormalMapTask);
+							Allocator::Persistent.Deallocate(g_NormalMapTask);
 							g_NormalMapTask = nullptr;
 						}
 
 						if (g_MetallicMapTask)
 						{
-							Allocator::Scene.Deallocate(g_MetallicMapTask);
+							Allocator::Persistent.Deallocate(g_MetallicMapTask);
 							g_MetallicMapTask = nullptr;
 						}
 
 						if (g_RoughnessMapTask)
 						{
-							Allocator::Scene.Deallocate(g_RoughnessMapTask);
+							Allocator::Persistent.Deallocate(g_RoughnessMapTask);
 							g_RoughnessMapTask = nullptr;
 						}
 
@@ -941,25 +941,25 @@ namespace HBL2
 
 					if (g_AlbedoMapTask)
 					{
-						Allocator::Scene.Deallocate(g_AlbedoMapTask);
+						Allocator::Persistent.Deallocate(g_AlbedoMapTask);
 						g_AlbedoMapTask = nullptr;
 					}
 
 					if (g_NormalMapTask)
 					{
-						Allocator::Scene.Deallocate(g_NormalMapTask);
+						Allocator::Persistent.Deallocate(g_NormalMapTask);
 						g_NormalMapTask = nullptr;
 					}
 
 					if (g_MetallicMapTask)
 					{
-						Allocator::Scene.Deallocate(g_MetallicMapTask);
+						Allocator::Persistent.Deallocate(g_MetallicMapTask);
 						g_MetallicMapTask = nullptr;
 					}
 
 					if (g_RoughnessMapTask)
 					{
-						Allocator::Scene.Deallocate(g_RoughnessMapTask);
+						Allocator::Persistent.Deallocate(g_RoughnessMapTask);
 						g_RoughnessMapTask = nullptr;
 					}
 				}

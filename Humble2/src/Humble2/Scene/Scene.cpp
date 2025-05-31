@@ -361,11 +361,18 @@ namespace HBL2
     void Scene::operator=(const HBL2::Scene& other)
     {
         m_Name = other.m_Name;
+
+        // NOTE: Here ^ we copy only the name of the scene.
+        //       Its only used by the Pool class where the scene is empty
+        //       and we only want to pass the name through.
+
+        /*
         m_Systems = other.m_Systems;
         m_CoreSystems = other.m_CoreSystems;
         m_RuntimeSystems = other.m_RuntimeSystems;
         m_EntityMap = other.m_EntityMap;
         m_MetaContext = other.m_MetaContext;
         MainCamera = other.MainCamera;
+        */
     }
 }

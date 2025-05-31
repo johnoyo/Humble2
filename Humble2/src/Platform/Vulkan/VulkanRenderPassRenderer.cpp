@@ -33,96 +33,69 @@ namespace HBL2
 		}
 
 		Handle<Buffer> prevIndexBuffer;
-		StaticArray<Handle<Buffer>, 3> prevVertexBuffers = {};
+		Handle<Buffer> prevVertexBuffer;
+		uint64_t prevVariantHash = 0;
 
-		for (auto&& [shaderID, drawList] : draws.GetDraws())
+		for (const auto& draw : draws.GetDraws())
 		{
-			auto& localDraw = drawList[0];
+			VulkanShader* shader = rm->GetShader(draw.Shader);
 
-			Material* localMaterial0 = rm->GetMaterial(localDraw.Material);
-			VulkanShader* localShader0 = rm->GetShader(localMaterial0->Shader);
-
-			// Get pipeline from cache or create it. 
-			VkPipeline pipeline = localShader0->GetOrCreateVariant(localMaterial0->VariantDescriptor);
-
-			// Bind pipeline
-			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-			// Bind global descriptor set for per frame data (i.e.: Camera and lighting data).
-			if (globalBindGroup != nullptr)
+			if (prevVariantHash != draw.VariantHash)
 			{
-				uint32_t offsetCount = (globalDraw.GlobalBufferOffset == UINT32_MAX ? 0 : 1);
-				vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, localShader0->PipelineLayout, 0, 1, &globalBindGroup->DescriptorSet, offsetCount, &globalDraw.GlobalBufferOffset);
+				// Get pipeline from cache or create it. 
+				VkPipeline pipeline = shader->GetOrCreateVariant(draw.VariantHash, draw.Material);
+
+				// Bind pipeline
+				vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+				// Bind global descriptor set for per frame data (i.e.: Camera and lighting data).
+				if (globalBindGroup != nullptr)
+				{
+					uint32_t offsetCount = (globalDraw.GlobalBufferOffset == UINT32_MAX ? 0 : 1);
+					vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 0, 1, &globalBindGroup->DescriptorSet, offsetCount, &globalDraw.GlobalBufferOffset);
+				}
+
+				prevVariantHash = draw.VariantHash;
 			}
 
-			for (auto& draw : drawList)
+			// Bind the index buffer if needed.
+			if (prevIndexBuffer != draw.IndexBuffer)
 			{
-				Mesh* mesh = rm->GetMesh(draw.Mesh);
-				Material* material = rm->GetMaterial(draw.Material);
-				VulkanShader* shader = rm->GetShader(material->Shader);
-
-				const auto& meshPart = mesh->Meshes[draw.MeshIndex];
-
-				// Bind the index buffer if needed.
-				if (prevIndexBuffer != meshPart.IndexBuffer)
+				if (draw.IndexBuffer.IsValid())
 				{
-					if (meshPart.IndexBuffer.IsValid())
-					{
-						VulkanBuffer* indexBuffer = rm->GetBuffer(meshPart.IndexBuffer);
-						vkCmdBindIndexBuffer(m_CommandBuffer, indexBuffer->Buffer, 0, VK_INDEX_TYPE_UINT32);
+					VulkanBuffer* indexBuffer = rm->GetBuffer(draw.IndexBuffer);
+					vkCmdBindIndexBuffer(m_CommandBuffer, indexBuffer->Buffer, 0, VK_INDEX_TYPE_UINT32);
 
-						prevIndexBuffer = meshPart.IndexBuffer;
-					}
+					prevIndexBuffer = draw.IndexBuffer;
 				}
+			}
 
-				// Bind the vertex buffers if needed.
-				bool rebindVertexBuffers = false;
-				uint32_t bufferCounter = 0;
-				StaticArray<VkBuffer, 3> buffers = {};
-				StaticArray<VkDeviceSize, 3> offsets = {};
+			// Bind the vertex buffer if needed.
+			if (prevVertexBuffer != draw.VertexBuffer)
+			{
+				VulkanBuffer* vertexBuffer = rm->GetBuffer(draw.VertexBuffer);
+				VkDeviceSize offsets[] = { 0 };
+				vkCmdBindVertexBuffers(m_CommandBuffer, 0, 1, &vertexBuffer->Buffer, offsets);
+				prevVertexBuffer = draw.VertexBuffer;
+			}
 
-				HBL2_CORE_ASSERT(meshPart.VertexBuffers.size() <= 3, "Maximum number of vertex buffers is 3.");
-				HBL2_CORE_ASSERT(meshPart.VertexBuffers.size() == 1, "One packed vertex buffer is supported for now.");
+			// Bind the dynamic uniform buffer in the appropriate offset.
+			if (draw.BindGroup.IsValid())
+			{
+				uint32_t dynamicOffsetCount = (globalDraw.UsesDynamicOffset ? 1 : 0);
 
-				for (const auto vertexBufferHandle : meshPart.VertexBuffers)
-				{
-					if (prevVertexBuffers[bufferCounter] != vertexBufferHandle)
-					{
-						rebindVertexBuffers = true;
-						prevVertexBuffers[bufferCounter] = vertexBufferHandle;
-					}
+				VulkanBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
+				vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 1, 1, &drawBindGroup->DescriptorSet, dynamicOffsetCount, &draw.Offset);
+			}
 
-					VulkanBuffer* vertexBuffer = rm->GetBuffer(vertexBufferHandle);
-					buffers[bufferCounter] = vertexBuffer->Buffer;
-					offsets[bufferCounter] = 0;
-					bufferCounter++;
-				}
-
-				if (rebindVertexBuffers)
-				{
-					vkCmdBindVertexBuffers(m_CommandBuffer, 0, bufferCounter, buffers.Data(), offsets.Data());
-				}
-
-				// Bind the dynamic uniform buffer in the appropriate offset.
-				if (draw.BindGroup.IsValid())
-				{
-					uint32_t dynamicOffsetCount = (globalDraw.UsesDynamicOffset ? 0 : 1);
-
-					VulkanBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
-					vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 1, 1, &drawBindGroup->DescriptorSet, dynamicOffsetCount, &draw.Offset);
-				}
-
-				const auto& subMesh = meshPart.SubMeshes[draw.SubMeshIndex];
-
-				// Draw the mesh accordingly
-				if (meshPart.IndexBuffer.IsValid())
-				{
-					vkCmdDrawIndexed(m_CommandBuffer, subMesh.IndexCount, subMesh.InstanceCount, subMesh.IndexOffset, subMesh.VertexOffset, subMesh.InstanceOffset);
-				}
-				else
-				{
-					vkCmdDraw(m_CommandBuffer, subMesh.VertexCount, subMesh.InstanceCount, subMesh.VertexOffset, subMesh.InstanceOffset);
-				}
+			// Draw the mesh accordingly
+			if (draw.IndexBuffer.IsValid())
+			{
+				vkCmdDrawIndexed(m_CommandBuffer, draw.IndexCount, draw.InstanceCount, draw.IndexOffset, draw.VertexOffset, draw.InstanceOffset);
+			}
+			else
+			{
+				vkCmdDraw(m_CommandBuffer, draw.VertexCount, draw.InstanceCount, draw.VertexOffset, draw.InstanceOffset);
 			}
 		}
 	}
