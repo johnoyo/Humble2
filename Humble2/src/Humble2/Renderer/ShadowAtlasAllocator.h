@@ -40,6 +40,6 @@ namespace HBL2
         void Clear();
 
     private:
-        DynamicArray<ShadowTile, BinAllocator> m_FreeTiles = MakeDynamicArray<ShadowTile>(&Allocator::App);
+        DynamicArray<ShadowTile, BinAllocator> m_FreeTiles = MakeDynamicArray<ShadowTile>(&Allocator::Persistent);
     };
 }

@@ -15,13 +15,8 @@ namespace HBL2
 		static BumpAllocator Frame;
 
 		/**
-		* @brief Arena allocator for the duration of a scene.
-		*/
-		static BinAllocator Scene;
-
-		/**
 		* @brief Arena allocator for the duration of the app.
 		*/
-		static BinAllocator App;
+		static BinAllocator Persistent;
 	};
 }

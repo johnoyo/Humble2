@@ -13,8 +13,7 @@ namespace HBL2
 		s_Instance = this;
 
 		Allocator::Frame.Initialize(32_MB);
-		Allocator::Scene.Initialize(256_MB);
-		Allocator::App.Initialize(256_MB);
+		Allocator::Persistent.Initialize(256_MB);
 
 		Log::Initialize();
 		Random::Initialize();
@@ -70,8 +69,7 @@ namespace HBL2
 	Application::~Application()
 	{
 		Allocator::Frame.Free();
-		Allocator::Scene.Free();
-		Allocator::App.Free();
+		Allocator::Persistent.Free();
 	}
 
 	void Application::BeginFrame()
@@ -99,9 +97,6 @@ namespace HBL2
 
 		if (SceneManager::Get().SceneChangeRequested)
 		{
-			// Reset scene allocator.
-			Allocator::Scene.Invalidate();
-
 			SceneManager::Get().LoadSceneDeffered();
 		}
 

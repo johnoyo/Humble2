@@ -56,6 +56,6 @@ namespace HBL2
 		const Span<const LocalDrawStream> GetDraws() const { return { m_Draws.Data(), m_Draws.Size() }; }
 
 	private:
-		DynamicArray<LocalDrawStream, BinAllocator> m_Draws = MakeDynamicArray<LocalDrawStream>(&Allocator::App);
+		DynamicArray<LocalDrawStream, BinAllocator> m_Draws = MakeDynamicArray<LocalDrawStream>(&Allocator::Persistent);
 	};
 }

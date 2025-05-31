@@ -135,7 +135,7 @@ namespace HBL2
 				return nullptr;
 			}
 
-			ResourceTask<T>* task = Allocator::Scene.Allocate<ResourceTask<T>>();
+			ResourceTask<T>* task = Allocator::Persistent.Allocate<ResourceTask<T>>();
 			task->m_Finished = false;
 
 			// Do not schedule job if the asset is loaded.
@@ -202,7 +202,7 @@ namespace HBL2
 	private:
 		JobContext m_ResourceJobCtx;
 		Pool<Asset, Asset> m_AssetPool;
-		HashMap<UUID, Handle<Asset>, BinAllocator> m_RegisteredAssetMap = MakeHashMap<UUID, Handle<Asset>>(&Allocator::App);
-		DynamicArray<Handle<Asset>, BinAllocator> m_RegisteredAssets = MakeDynamicArray<Handle<Asset>>(&Allocator::App);
+		HashMap<UUID, Handle<Asset>, BinAllocator> m_RegisteredAssetMap = MakeHashMap<UUID, Handle<Asset>>(&Allocator::Persistent);
+		DynamicArray<Handle<Asset>, BinAllocator> m_RegisteredAssets = MakeDynamicArray<Handle<Asset>>(&Allocator::Persistent);
 	};
 }

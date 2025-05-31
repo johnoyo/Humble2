@@ -26,4 +26,4 @@ Installation:
 
 Screenshots:
 ------------
-![alt text](Resources/Screenshots/editor-1.png)
+![alt text](Resources/Screenshots/editor-0.png)

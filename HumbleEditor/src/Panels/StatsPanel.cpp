@@ -32,8 +32,7 @@ namespace HBL2
 
 			ImGui::Text("Arena Allocators");
 			ImGui::Text("Frame: %f %%", Allocator::Frame.GetFullPercentage());
-			ImGui::Text("Scene: %f %%", Allocator::Scene.GetFullPercentage());
-			ImGui::Text("App: %f %%", Allocator::App.GetFullPercentage());
+			ImGui::Text("Persistent: %f %%", Allocator::Persistent.GetFullPercentage());
 		}
 	}
 }

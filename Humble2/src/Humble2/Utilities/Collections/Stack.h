@@ -6,6 +6,8 @@
 
 #include <cstring>
 #include <stdint.h>
+#include <type_traits>
+#include <new>
 
 namespace HBL2
 {
@@ -57,7 +59,18 @@ namespace HBL2
             : m_Capacity(other.m_Capacity), m_CurrentSize(other.m_CurrentSize), m_Allocator(other.m_Allocator)
         {
             m_Data = Allocate(sizeof(T) * m_Capacity);
-            std::memcpy(m_Data, other.m_Data, m_CurrentSize * sizeof(T));
+
+            if constexpr (std::is_trivially_copyable_v<T>)
+            {
+                std::memcpy(m_Data, other.m_Data, m_CurrentSize * sizeof(T));
+            }
+            else
+            {
+                for (uint32_t i = 0; i < m_CurrentSize; ++i)
+                {
+                    new (m_Data + i) T(other.m_Data[i]);
+                }
+            }
         }
 
         /**
@@ -81,6 +94,7 @@ namespace HBL2
          */
         ~Stack()
         {
+            Clear();
             Deallocate(m_Data);
         }
 
@@ -95,17 +109,36 @@ namespace HBL2
         {
             if (m_CurrentSize >= m_Capacity)
             {
-                m_Capacity *= 2;
-
-                T* newData = Allocate(sizeof(T) * m_Capacity);
-                HBL2_CORE_ASSERT(newData, "Memory allocation failed!");
-
-                memcpy(newData, m_Data, m_CurrentSize * sizeof(T));
-                Deallocate(m_Data);
-                m_Data = newData;
+                Resize(m_Capacity * 2);
             }
 
-            m_Data[m_CurrentSize++] = value;
+            // Use placement new for proper construction
+            new (m_Data + m_CurrentSize) T(value);
+            ++m_CurrentSize;
+        }
+
+        void Push(T&& value)
+        {
+            if (m_CurrentSize >= m_Capacity)
+            {
+                Resize(m_Capacity * 2);
+            }
+
+            // Use placement new for proper move construction
+            new (m_Data + m_CurrentSize) T(std::move(value));
+            ++m_CurrentSize;
+        }
+
+        template<typename... Args>
+        void Emplace(Args&&... args)
+        {
+            if (m_CurrentSize >= m_Capacity)
+            {
+                Resize(m_Capacity * 2);
+            }
+
+            new (m_Data + m_CurrentSize) T(std::forward<Args>(args)...);
+            ++m_CurrentSize;
         }
 
         /**
@@ -121,6 +154,12 @@ namespace HBL2
             }
 
             --m_CurrentSize;
+
+            // Call destructor for non-trivial types
+            if constexpr (!std::is_trivially_destructible_v<T>)
+            {
+                m_Data[m_CurrentSize].~T();
+            }
         }
 
         /**
@@ -159,7 +198,7 @@ namespace HBL2
          *
          * @return True if the stack is empty, false otherwise.
          */
-        bool IsEmpty() const { return m_CurrentSize == 0; }
+        bool Empty() const { return m_CurrentSize == 0; }
 
         /**
          * @brief Clears all elements from the stack.
@@ -168,8 +207,21 @@ namespace HBL2
          */
         void Clear()
         {
-            std::memset(m_Data, 0, m_CurrentSize * sizeof(T));
-            m_CurrentSize = 0;
+            if constexpr (std::is_trivially_destructible_v<T>)
+            {
+                // For trivial types, just reset size
+                m_CurrentSize = 0;
+            }
+            else
+            {
+                // For non-trivial types, call destructors
+                for (uint32_t i = 0; i < m_CurrentSize; ++i)
+                {
+                    m_Data[i].~T();
+                }
+
+                m_CurrentSize = 0;
+            }
         }
 
         /**
@@ -188,6 +240,7 @@ namespace HBL2
                 return *this;
             }
 
+            Clear();
             Deallocate(m_Data);
 
             m_Capacity = other.m_Capacity;
@@ -195,7 +248,18 @@ namespace HBL2
             m_Allocator = other.m_Allocator;
 
             m_Data = Allocate(sizeof(T) * m_Capacity);
-            std::memcpy(m_Data, other.m_Data, m_CurrentSize * sizeof(T));
+
+            if constexpr (std::is_trivially_copyable_v<T>)
+            {
+                std::memcpy(m_Data, other.m_Data, m_CurrentSize * sizeof(T));
+            }
+            else
+            {
+                for (uint32_t i = 0; i < m_CurrentSize; ++i)
+                {
+                    new (m_Data + i) T(other.m_Data[i]);
+                }
+            }
 
             return *this;
         }
@@ -216,6 +280,7 @@ namespace HBL2
                 return *this;
             }
 
+            Clear();
             Deallocate(m_Data);
 
             m_Data = other.m_Data;
@@ -236,34 +301,70 @@ namespace HBL2
         const T* begin() const { return m_Data; }
         const T* end() const { return m_Data + m_CurrentSize; }
 
-		T* rbegin() { return m_Data + m_CurrentSize - 1; }
+        T* rbegin() { return m_Data + m_CurrentSize - 1; }
         T* rend() { return m_Data - 1; }
         const T* rbegin() const { return m_Data + m_CurrentSize - 1; }
         const T* rend() const { return m_Data - 1; }
 
     private:
-		T* Allocate(uint64_t size)
-		{
-			if (m_Allocator == nullptr)
-			{
-				T* data = (T*)operator new(size);
-				memset(data, 0, size);				
-				return data;
-			}
+        void Resize(uint32_t newCapacity)
+        {
+            T* newData = Allocate(sizeof(T) * newCapacity);
+            HBL2_CORE_ASSERT(newData, "Memory allocation failed!");
 
-			return m_Allocator->Allocate<T>(size);
-		}
+            if constexpr (std::is_trivially_copyable_v<T>)
+            {
+                std::memcpy(newData, m_Data, m_CurrentSize * sizeof(T));
+            }
+            else
+            {
+                // Move or copy construct elements
+                for (uint32_t i = 0; i < m_CurrentSize; ++i) {
+                    if constexpr (std::is_move_constructible_v<T>)
+                    {
+                        new (newData + i) T(std::move(m_Data[i]));
+                    }
+                    else
+                    {
+                        new (newData + i) T(m_Data[i]);
+                    }
+                }
 
-		void Deallocate(T* ptr)
-		{
-			if (m_Allocator == nullptr)
-			{
+                // Destroy old elements
+                if constexpr (!std::is_trivially_destructible_v<T>)
+                {
+                    for (uint32_t i = 0; i < m_CurrentSize; ++i)
+                    {
+                        m_Data[i].~T();
+                    }
+                }
+            }
+
+            Deallocate(m_Data);
+            m_Data = newData;
+            m_Capacity = newCapacity;
+        }
+
+        T* Allocate(uint64_t size)
+        {
+            if (m_Allocator == nullptr)
+            {
+                return static_cast<T*>(operator new(size));
+            }
+
+            return m_Allocator->Allocate<T>(size);
+        }
+
+        void Deallocate(T* ptr)
+        {
+            if (m_Allocator == nullptr)
+            {
                 operator delete(ptr);
-				return;
-			}
+                return;
+            }
 
-			m_Allocator->Deallocate<T>(ptr);
-		}
+            m_Allocator->Deallocate<T>(ptr);
+        }
 
     private:
         T* m_Data;
