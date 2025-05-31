@@ -20,3 +20,6 @@
 [submodule "Dependencies/Box2D/box2d"]
 	path = Dependencies/Box2D/box2d
 	url = https://github.com/erincatto/box2d.git
+[submodule "Dependencies/Jolt/jolt"]
+	path = Dependencies/Jolt/jolt
+	url = https://github.com/jrouwe/JoltPhysics.git

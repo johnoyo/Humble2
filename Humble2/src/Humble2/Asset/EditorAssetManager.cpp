@@ -8,6 +8,7 @@
 #include "Systems\ForwardRenderingSystem.h"
 #include "Systems\SoundSystem.h"
 #include "Systems\Physics2dSystem.h"
+#include "Systems\Physics3dSystem.h"
 
 namespace HBL2
 {
@@ -577,6 +578,7 @@ namespace HBL2
 		scene->RegisterSystem(new ForwardRenderingSystem);
 		scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
 		scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
+		scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
 
 		return sceneHandle;
 	}
@@ -797,6 +799,7 @@ namespace HBL2
 			scene->RegisterSystem(new ForwardRenderingSystem);
 			scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
 			scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
+			scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
 
 			asset->Indentifier = sceneHandle.Pack();
 			asset->Loaded = true;

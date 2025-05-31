@@ -36,8 +36,8 @@ namespace HBL2
 			ImGuiRenderer::Instance = new OpenGLImGuiRenderer;
 			break;
 		case GraphicsAPI::VULKAN:
-			g_GfxAPI = "Vulkan";
 			HBL2_CORE_INFO("Vulkan is selected as the renderer API.");
+			g_GfxAPI = "Vulkan";
 			Device::Instance = new VulkanDevice;
 			Window::Instance = new VulkanWindow;
 			ResourceManager::Instance = new VulkanResourceManager;

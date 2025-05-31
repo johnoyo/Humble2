@@ -22,7 +22,9 @@ project "Humble2"
 		"_CRT_SECURE_NO_WARNINGS",
         "YAML_CPP_STATIC_DEFINE",
 
-        "HBL2_BUILD_DLL"
+        "HBL2_BUILD_DLL",
+
+        table.unpack(JoltDefines)
 	}
     
     -- Include directories.
@@ -45,6 +47,7 @@ project "Humble2"
         "../Dependencies/FMOD/core/include",
         "../Dependencies/Box2D/box2d/src",
         "../Dependencies/Box2D/box2d/include",
+        "../Dependencies/Jolt/jolt",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "%{VULKAN_SDK}/Include"
     }
@@ -68,8 +71,11 @@ project "Humble2"
         "ImGui",
         "YAML-Cpp",
         "Box2D",
+        "Jolt",
     }
     
+    defines (JoltDefines)
+
     filter "system:windows"
         systemversion "latest"    
         defines { "HBL2_PLATFORM_WINDOWS" }

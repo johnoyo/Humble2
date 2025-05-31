@@ -11,6 +11,7 @@
 #include "Systems\ForwardRenderingSystem.h"
 #include "Systems\SoundSystem.h"
 #include "Systems\Physics2dSystem.h"
+#include "Systems\Physics3dSystem.h"
 
 namespace HBL2
 {
@@ -81,6 +82,7 @@ namespace HBL2
         dst->RegisterSystem(new ForwardRenderingSystem);
         dst->RegisterSystem(new SoundSystem, SystemType::Runtime);
         dst->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
+        dst->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
 
         // Register any user systems to new scene.
         for (ISystem* system : src->m_RuntimeSystems)
