@@ -74,6 +74,9 @@ namespace HBL2
         copy_component(Component::AudioSource{});
         copy_component(Component::Rigidbody2D{});
         copy_component(Component::BoxCollider2D{});
+        copy_component(Component::Rigidbody{});
+        copy_component(Component::BoxCollider{});
+        copy_component(Component::SphereCollider{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
@@ -181,6 +184,18 @@ namespace HBL2
         m_Registry.storage<Component::BoxCollider2D>().clear();
         m_Registry.compact<Component::BoxCollider2D>();
 
+        m_Registry.clear<Component::Rigidbody>();
+        m_Registry.storage<Component::Rigidbody>().clear();
+        m_Registry.compact<Component::Rigidbody>();
+
+        m_Registry.clear<Component::BoxCollider>();
+        m_Registry.storage<Component::BoxCollider>().clear();
+        m_Registry.compact<Component::BoxCollider>();
+
+        m_Registry.clear<Component::SphereCollider>();
+        m_Registry.storage<Component::SphereCollider>().clear();
+        m_Registry.compact<Component::SphereCollider>();
+
         // Destroy all entities.
         for (auto& [uuid, entity] : m_EntityMap)
         {
@@ -258,6 +273,9 @@ namespace HBL2
         copy_component(Component::AudioSource{});
         copy_component(Component::Rigidbody2D{});
         copy_component(Component::BoxCollider2D{});
+        copy_component(Component::Rigidbody{});
+        copy_component(Component::BoxCollider{});
+        copy_component(Component::SphereCollider{});
 
         // Copy user defined components.
         std::vector<std::string> userComponentNames;

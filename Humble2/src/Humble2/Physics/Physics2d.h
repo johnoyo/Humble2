@@ -37,11 +37,11 @@ namespace HBL2
 			b2ContactHitEvent* payload;
 		};
 
-		HBL2_API bool Equals(b2BodyId bodyA, b2BodyId bodyB);
-		HBL2_API bool Equals(b2ShapeId shapeA, b2ShapeId shapeB);
+		HBL2_API bool BodiesAreEqual(Physics::ID bodyA, Physics::ID bodyB);
+		HBL2_API bool ShapesAreEqual(Physics::ID shapeA, Physics::ID shapeB);
 
-		HBL2_API entt::entity GetEntityFromBodyId(b2BodyId body);
-		HBL2_API entt::entity GetEntityFromShapeId(b2ShapeId shape);
+		HBL2_API entt::entity GetEntityFromBodyId(Physics::ID body);
+		HBL2_API entt::entity GetEntityFromShapeId(Physics::ID shape);
 
 		HBL2_API void ApplyForce(Component::Rigidbody2D& rb2d, const glm::vec2& force, bool wake);
 		HBL2_API void ApplyForce(Component::Rigidbody2D& rb2d, const glm::vec2& force, const glm::vec2& worldPosition, bool wake);

@@ -1,17 +1,17 @@
 #include "Physics2dSystem.h"
 
 #include "Core\Time.h"
-#include "Utilities\Physics2d.h"
+#include "Physics\Physics2d.h"
 
 namespace HBL2
 {
-	static b2BodyType BodyTypeTob2BodyType(Component::Rigidbody2D::BodyType bodyType)
+	static b2BodyType BodyTypeTob2BodyType(Physics::BodyType bodyType)
 	{
 		switch (bodyType)
 		{
-		case HBL2::Component::Rigidbody2D::BodyType::Static:    return b2BodyType::b2_staticBody;
-		case HBL2::Component::Rigidbody2D::BodyType::Dynamic:   return b2BodyType::b2_dynamicBody;
-		case HBL2::Component::Rigidbody2D::BodyType::Kinematic: return b2BodyType::b2_kinematicBody;
+		case Physics::BodyType::Static:    return b2BodyType::b2_staticBody;
+		case Physics::BodyType::Kinematic: return b2BodyType::b2_kinematicBody;
+		case Physics::BodyType::Dynamic:   return b2BodyType::b2_dynamicBody;
 		}
 
 		HBL2_CORE_ASSERT(false, "Unknown Rigidbody2D type.");
@@ -37,7 +37,8 @@ namespace HBL2
 				bodyDef.fixedRotation = rb2d.FixedRotation;
 				bodyDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>(entity));
 
-				rb2d.BodyId = b2CreateBody(m_PhysicsWorld, &bodyDef);
+				b2BodyId bodyId = b2CreateBody(m_PhysicsWorld, &bodyDef);
+				rb2d.BodyId = b2StoreBodyId(bodyId);
 
 				if (m_Context->HasComponent<Component::BoxCollider2D>(entity))
 				{
@@ -52,7 +53,8 @@ namespace HBL2
 
 					const b2Polygon polygon = b2MakeBox(bc2d.Size.x * transform.Scale.x, bc2d.Size.y * transform.Scale.y);
 
-					bc2d.ShapeId = b2CreatePolygonShape(rb2d.BodyId, &shapeDef, &polygon);					
+					 b2ShapeId shapeId = b2CreatePolygonShape(b2LoadBodyId(rb2d.BodyId), &shapeDef, &polygon);
+					 bc2d.ShapeId = b2StoreShapeId(shapeId);
 				}
 			});
 	}
@@ -67,11 +69,13 @@ namespace HBL2
 			.group<Component::Rigidbody2D>(entt::get<Component::Transform>)
 			.each([this](entt::entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
 			{
-				const auto& position = b2Body_GetPosition(rb2d.BodyId);
+				b2BodyId bodyId = b2LoadBodyId(rb2d.BodyId);
+
+				const auto& position = b2Body_GetPosition(bodyId);
 				transform.Translation.x = position.x;
 				transform.Translation.y = position.y;
 
-				const auto& rotation = b2Body_GetRotation(rb2d.BodyId);
+				const auto& rotation = b2Body_GetRotation(bodyId);
 				transform.Rotation.z = glm::degrees(b2Rot_GetAngle(rotation));
 			});
 

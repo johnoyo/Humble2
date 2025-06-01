@@ -5,8 +5,9 @@
 #include "Resources\Handle.h"
 #include "Asset\Asset.h"
 
+#include "Physics\Physics.h"
+
 #include <entt.hpp>
-#include <box2d\id.h>
 
 namespace HBL2
 {
@@ -150,16 +151,9 @@ namespace HBL2
 
 		struct HBL2_API Rigidbody2D
 		{
-			enum class BodyType
-			{
-				Static = 0,
-				Dynamic,
-				Kinematic,
-			};
-
-			BodyType Type = BodyType::Static;
+			Physics::BodyType Type = Physics::BodyType::Static;
 			bool FixedRotation = false;
-			b2BodyId BodyId;
+			Physics::ID BodyId;
 
 			bool Enabled = true;
 		};
@@ -173,8 +167,26 @@ namespace HBL2
 			float Friction = 0.5f;
 			float Restitution = 0.0f;
 
-			b2ShapeId ShapeId;
+			Physics::ID ShapeId;
 
+			bool Enabled = true;
+		};
+
+		struct HBL2_API Rigidbody
+		{
+			Physics::ID BodyID;
+			Physics::BodyType Type = Physics::BodyType::Static;
+			bool Enabled = true;
+		};
+
+		struct HBL2_API BoxCollider
+		{
+			glm::vec3 Size = { 1.0f, 1.0f, 1.0f };
+			bool Enabled = true;
+		};
+
+		struct HBL2_API SphereCollider
+		{
 			bool Enabled = true;
 		};
 	}

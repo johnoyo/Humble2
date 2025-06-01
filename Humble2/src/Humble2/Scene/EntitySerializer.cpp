@@ -285,6 +285,32 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::Rigidbody>(m_Entity))
+		{
+			out << YAML::Key << "Component::Rigidbody";
+			out << YAML::BeginMap;
+
+			auto& rb = m_Scene->GetComponent<Component::Rigidbody>(m_Entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << rb.Enabled;
+			out << YAML::Key << "Type" << YAML::Value << (int)rb.Type;
+
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::BoxCollider>(m_Entity))
+		{
+			out << YAML::Key << "Component::BoxCollider";
+			out << YAML::BeginMap;
+
+			auto& bc = m_Scene->GetComponent<Component::BoxCollider>(m_Entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << bc.Enabled;
+			out << YAML::Key << "Size" << YAML::Value << bc.Size;
+
+			out << YAML::EndMap;
+		}
+
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
 			const std::string& componentName = meta_type.second.info().name().data();
@@ -463,24 +489,7 @@ namespace HBL2
 		{
 			auto& rb2d = m_Scene->AddComponent<Component::Rigidbody2D>(m_Entity);
 			rb2d.Enabled = rb2d_NewComponent["Enabled"].as<bool>();
-			if (rb2d_NewComponent["Type"])
-			{
-				switch (rb2d_NewComponent["Type"].as<int>())
-				{
-				case 0:
-					rb2d.Type = Component::Rigidbody2D::BodyType::Static;
-					break;
-				case 1:
-					rb2d.Type = Component::Rigidbody2D::BodyType::Dynamic;
-					break;
-				case 2:
-					rb2d.Type = Component::Rigidbody2D::BodyType::Kinematic;
-					break;
-				default:
-					rb2d.Type = Component::Rigidbody2D::BodyType::Static;
-					break;
-				}
-			}
+			rb2d.Type = (Physics::BodyType)rb2d_NewComponent["Type"].as<int>();
 			rb2d.FixedRotation = rb2d_NewComponent["FixedRotation"].as<bool>();
 		}
 
@@ -494,6 +503,22 @@ namespace HBL2
 			bc2d.Restitution = bc2d_NewComponent["Restitution"].as<float>();
 			bc2d.Size = bc2d_NewComponent["Size"].as<glm::vec2>();
 			bc2d.Offset = bc2d_NewComponent["Offset"].as<glm::vec2>();
+		}
+
+		auto rb_NewComponent = entityNode["Component::Rigidbody"];
+		if (rb_NewComponent)
+		{
+			auto& rb = m_Scene->AddComponent<Component::Rigidbody>(m_Entity);
+			rb.Enabled = rb_NewComponent["Enabled"].as<bool>();
+			rb.Type = (Physics::BodyType)rb_NewComponent["Type"].as<int>();
+		}
+
+		auto bc_NewComponent = entityNode["Component::BoxCollider"];
+		if (bc_NewComponent)
+		{
+			auto& bc = m_Scene->AddComponent<Component::BoxCollider>(m_Entity);
+			bc.Enabled = bc_NewComponent["Enabled"].as<bool>();
+			bc.Size = bc_NewComponent["Size"].as<glm::vec3>();
 		}
 
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
