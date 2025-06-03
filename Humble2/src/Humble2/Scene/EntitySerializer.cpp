@@ -311,6 +311,19 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::SphereCollider>(m_Entity))
+		{
+			out << YAML::Key << "Component::SphereCollider";
+			out << YAML::BeginMap;
+
+			auto& sc = m_Scene->GetComponent<Component::SphereCollider>(m_Entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << sc.Enabled;
+			out << YAML::Key << "Radius" << YAML::Value << sc.Radius;
+
+			out << YAML::EndMap;
+		}
+
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
 			const std::string& componentName = meta_type.second.info().name().data();
@@ -519,6 +532,14 @@ namespace HBL2
 			auto& bc = m_Scene->AddComponent<Component::BoxCollider>(m_Entity);
 			bc.Enabled = bc_NewComponent["Enabled"].as<bool>();
 			bc.Size = bc_NewComponent["Size"].as<glm::vec3>();
+		}
+
+		auto sc_NewComponent = entityNode["Component::SphereCollider"];
+		if (sc_NewComponent)
+		{
+			auto& sc = m_Scene->AddComponent<Component::SphereCollider>(m_Entity);
+			sc.Enabled = sc_NewComponent["Enabled"].as<bool>();
+			sc.Radius = sc_NewComponent["Radius"].as<float>();
 		}
 
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))

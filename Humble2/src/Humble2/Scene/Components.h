@@ -174,8 +174,13 @@ namespace HBL2
 
 		struct HBL2_API Rigidbody
 		{
-			Physics::ID BodyID;
+			Physics::ID BodyID = Physics::InvalidID;
+			float Friction = 0.2f;
+			float Restitution = 0.1f;
 			Physics::BodyType Type = Physics::BodyType::Static;
+			float LinearDamping = 0.05f;
+			float AngularDamping = 0.05f;
+			float Mass = 1.0f;
 			bool Enabled = true;
 		};
 
@@ -187,6 +192,13 @@ namespace HBL2
 
 		struct HBL2_API SphereCollider
 		{
+			float Radius = 1.0f;
+			bool Enabled = true;
+		};
+
+		struct HBL2_API MeshCollider
+		{
+			Handle<Mesh> MeshHandle;
 			bool Enabled = true;
 		};
 	}

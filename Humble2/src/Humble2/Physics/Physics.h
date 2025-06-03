@@ -12,5 +12,7 @@ namespace HBL2
 		};
 
 		using ID = uint64_t;
+
+		static constexpr uint64_t InvalidID = UINT64_MAX;
 	}
 }

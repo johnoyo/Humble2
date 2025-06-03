@@ -14,6 +14,7 @@
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 
@@ -23,9 +24,10 @@
 // but only if you do collision testing).
 namespace Layers
 {
-	static constexpr JPH::ObjectLayer NON_MOVING = 0;
-	static constexpr JPH::ObjectLayer MOVING = 1;
-	static constexpr JPH::ObjectLayer NUM_LAYERS = 2;
+	static constexpr JPH::ObjectLayer GHOST = 0;
+	static constexpr JPH::ObjectLayer NON_MOVING = 1;
+	static constexpr JPH::ObjectLayer MOVING = 2;
+	static constexpr JPH::ObjectLayer NUM_LAYERS = 3;
 };
 
 // Each broadphase layer results in a separate bounding volume tree in the broad phase. You at least want to have
@@ -35,8 +37,8 @@ namespace Layers
 // your broadphase layers define JPH_TRACK_BROADPHASE_STATS and look at the stats reported on the TTY.
 namespace BroadPhaseLayers
 {
-	static constexpr JPH::BroadPhaseLayer NON_MOVING(0);
-	static constexpr JPH::BroadPhaseLayer MOVING(1);
+	static constexpr JPH::BroadPhaseLayer STATIC(0);
+	static constexpr JPH::BroadPhaseLayer DYNAMIC(1);
 	static constexpr uint32_t NUM_LAYERS(2);
 };
 
@@ -50,10 +52,12 @@ namespace HBL2
 		{
 			switch (inObject1)
 			{
+			case Layers::GHOST:
+				return false; // Ghosts collide with nothing
 			case Layers::NON_MOVING:
 				return inObject2 == Layers::MOVING; // Non moving only collides with moving
 			case Layers::MOVING:
-				return true; // Moving collides with everything
+				return inObject2 == Layers::MOVING || inObject2 == Layers::NON_MOVING; // Moving collides with everything except ghosts
 			default:
 				JPH_ASSERT(false);
 				return false;
@@ -66,12 +70,7 @@ namespace HBL2
 	class BPLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface
 	{
 	public:
-		BPLayerInterfaceImpl()
-		{
-			// Create a mapping table from object to broad phase layer
-			mObjectToBroadPhase[Layers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
-			mObjectToBroadPhase[Layers::MOVING] = BroadPhaseLayers::MOVING;
-		}
+		BPLayerInterfaceImpl() = default;
 
 		virtual uint32_t GetNumBroadPhaseLayers() const override
 		{
@@ -80,24 +79,8 @@ namespace HBL2
 
 		virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override
 		{
-			JPH_ASSERT(inLayer < Layers::NUM_LAYERS);
-			return mObjectToBroadPhase[inLayer];
+			return inLayer == Layers::MOVING ? BroadPhaseLayers::DYNAMIC : BroadPhaseLayers::STATIC;
 		}
-
-#if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
-		virtual const char* GetBroadPhaseLayerName(BroadPhaseLayer inLayer) const override
-		{
-			switch ((BroadPhaseLayer::Type)inLayer)
-			{
-			case (BroadPhaseLayer::Type)BroadPhaseLayers::NON_MOVING:	return "NON_MOVING";
-			case (BroadPhaseLayer::Type)BroadPhaseLayers::MOVING:		return "MOVING";
-			default:													JPH_ASSERT(false); return "INVALID";
-			}
-		}
-#endif // JPH_EXTERNAL_PROFILE || JPH_PROFILE_ENABLED
-
-	private:
-		JPH::BroadPhaseLayer mObjectToBroadPhase[Layers::NUM_LAYERS];
 	};
 
 	/// Class that determines if an object layer can collide with a broadphase layer
@@ -108,10 +91,12 @@ namespace HBL2
 		{
 			switch (inLayer1)
 			{
+			case Layers::GHOST:
+				return false;
 			case Layers::NON_MOVING:
-				return inLayer2 == BroadPhaseLayers::MOVING;
+				return inLayer2 == BroadPhaseLayers::DYNAMIC;
 			case Layers::MOVING:
-				return true;
+				return inLayer2 == BroadPhaseLayers::DYNAMIC || inLayer2 == BroadPhaseLayers::STATIC;
 			default:
 				JPH_ASSERT(false);
 				return false;

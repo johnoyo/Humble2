@@ -477,6 +477,12 @@ namespace HBL2
 					ImGui::DragFloat3("Size", glm::value_ptr(bc.Size));
 				});
 
+				DrawComponent<HBL2::Component::SphereCollider>("SphereCollider", m_ActiveScene, [this](HBL2::Component::SphereCollider& sc)
+				{
+					ImGui::Checkbox("Enabled", &sc.Enabled);
+					ImGui::DragFloat("Radius", &sc.Radius);
+				});
+
 				using namespace entt::literals;
 
 				// Iterate over all registered meta types
@@ -623,6 +629,15 @@ namespace HBL2
 						if (ImGui::MenuItem("BoxCollider"))
 						{
 							m_ActiveScene->AddComponent<HBL2::Component::BoxCollider>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
+					if (!m_ActiveScene->HasComponent<HBL2::Component::SphereCollider>(HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::MenuItem("SphereCollider"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::SphereCollider>(HBL2::Component::EditorVisible::SelectedEntity);
 							ImGui::CloseCurrentPopup();
 						}
 					}
