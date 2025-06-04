@@ -115,11 +115,16 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
+		void AddRigidBody(entt::entity entity, Component::Rigidbody& rb, Component::Transform& transform, JPH::BodyInterface& bodyInterface);
+		bool HasAnyCollider(entt::entity entity);
+
+	private:
 		JPH::TempAllocatorImpl* m_TempAllocator = nullptr;
 		JPH::JobSystemThreadPool m_JobSystem;
-		JPH::PhysicsSystem m_PhysicsSystem;
+		JPH::PhysicsSystem* m_PhysicsSystem = nullptr;
 		BPLayerInterfaceImpl m_BroadPhaseLayerInterface;
 		ObjectVsBroadPhaseLayerFilterImpl m_ObjectVsBroadPhaseLayerFilter;
 		ObjectLayerPairFilterImpl m_ObjectVsObjectLayerFilter;
+		bool m_Initialized = false;
 	};
 }

@@ -95,7 +95,9 @@ namespace HBL2
 		const uint32_t cMaxBodyPairs = 65536;
 		const uint32_t cMaxContactConstraints = 10240;
 
-		m_PhysicsSystem.Init(cMaxBodies,
+		m_PhysicsSystem = new JPH::PhysicsSystem;
+
+		m_PhysicsSystem->Init(cMaxBodies,
 							cNumBodyMutexes,
 							cMaxBodyPairs,
 							cMaxContactConstraints,
@@ -104,10 +106,10 @@ namespace HBL2
 							m_ObjectVsObjectLayerFilter);
 
 		// Maybe also take in a lamda to handle contacts?
-		m_PhysicsSystem.SetContactListener(new HumbleContactListener(&m_PhysicsSystem));
+		m_PhysicsSystem->SetContactListener(new HumbleContactListener(m_PhysicsSystem));
 
 		// The main way to interact with the bodies in the physics system is through the body interface.
-		JPH::BodyInterface& bodyInterface = m_PhysicsSystem.GetBodyInterface();
+		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
 
 		DynamicArray<JPH::BodyID, BumpAllocator> bulkAddBuffer = MakeDynamicArray<JPH::BodyID>(&Allocator::Frame);
 
@@ -115,90 +117,14 @@ namespace HBL2
 			.group<Component::Rigidbody>(entt::get<Component::Transform>)
 			.each([this, &bodyInterface, &bulkAddBuffer](entt::entity entity, Component::Rigidbody& rb, Component::Transform& transform)
 			{
-				JPH::ShapeRefC shapeRef;
-				JPH::ObjectLayer bodyLayer;
-				JPH::EMotionType type = BodyTypeToEMotionType(rb.Type);
-
-				if (m_Context->HasComponent<Component::BoxCollider>(entity))
-				{
-					auto& bc = m_Context->GetComponent<Component::BoxCollider>(entity);
-
-					JPH::BoxShapeSettings shapeSettings(JPH::Vec3(bc.Size.x * transform.Scale.x, bc.Size.x * transform.Scale.y, bc.Size.x * transform.Scale.z));
-					shapeSettings.SetEmbedded();
-
-					// Create the shape
-					JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
-					shapeRef = shapeResult.Get();
-					bodyLayer = (type == JPH::EMotionType::Static ? Layers::NON_MOVING : Layers::MOVING);
-				}
-				else if (m_Context->HasComponent<Component::SphereCollider>(entity))
-				{
-					auto& sc = m_Context->GetComponent<Component::SphereCollider>(entity);
-
-					JPH::SphereShapeSettings shapeSettings(sc.Radius * transform.Scale.x);
-					shapeSettings.SetEmbedded();
-
-					// Create the shape
-					JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
-					shapeRef = shapeResult.Get();
-					bodyLayer = (type == JPH::EMotionType::Static ? Layers::NON_MOVING : Layers::MOVING);
-				}
-				else if (m_Context->HasComponent<Component::MeshCollider>(entity))
-				{
-					auto& mc = m_Context->GetComponent<Component::MeshCollider>(entity);
-
-					Mesh* mesh = nullptr;
-
-					if (mc.MeshHandle.IsValid())
-					{
-						mesh = ResourceManager::Instance->GetMesh(mc.MeshHandle);
-					}
-					else
-					{
-						auto& meshComponent = m_Context->GetComponent<Component::StaticMesh>(entity);
-						mesh = ResourceManager::Instance->GetMesh(meshComponent.Mesh);
-					}
-
-					// TODO
-					// ...
-
-					bodyLayer = (type == JPH::EMotionType::Static ? Layers::NON_MOVING : Layers::MOVING);
-				}
-				else
-				{
-					// Create unit sphere for ghost rigidbodies
-					JPH::SphereShapeSettings shapeSettings(1.0f);
-					shapeSettings.SetEmbedded();
-
-					// Create the shape
-					JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
-					shapeRef = shapeResult.Get();
-
-					bodyLayer = Layers::GHOST;
-				}
-
-				JPH::RVec3 bodyPosition = JPH::RVec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
-				JPH::Quat bodyRotation = JPH::Quat(transform.QRotation.x, transform.QRotation.y, transform.QRotation.z, transform.QRotation.w);
-
-				// Create the settings for the body itself.
-				JPH::BodyCreationSettings bodySettings(shapeRef, bodyPosition, bodyRotation, type, bodyLayer);
-				bodySettings.mFriction = rb.Friction;
-				bodySettings.mRestitution = rb.Restitution;
-				bodySettings.mLinearDamping = rb.LinearDamping;
-				bodySettings.mAngularDamping = rb.AngularDamping;
-
-				// Create the actual rigid body. Note that if we run out of bodies this can return nullptr.
-				JPH::Body* body = bodyInterface.CreateBody(bodySettings);
-
-				// Maybe use the entity ID here?
-				body->SetUserData((JPH::uint64)entity);
-				rb.BodyID = GetPhysicsIDFromBodyID(body->GetID());
-
+				AddRigidBody(entity, rb, transform, bodyInterface);
 				bulkAddBuffer.Add(GetBodyIDFromPhysicsID(rb.BodyID));
 			});
 
 		JPH::BodyInterface::AddState addState =  bodyInterface.AddBodiesPrepare(bulkAddBuffer.Data(), bulkAddBuffer.Size());
 		bodyInterface.AddBodiesFinalize(bulkAddBuffer.Data(), bulkAddBuffer.Size(), addState, JPH::EActivation::Activate);
+
+		m_Initialized = true;
 	}
 
 	void Physics3dSystem::OnUpdate(float ts)
@@ -212,25 +138,62 @@ namespace HBL2
 			.group<Component::Rigidbody>(entt::get<Component::Transform>)
 			.each([this](entt::entity entity, Component::Rigidbody& rb, Component::Transform& transform)
 			{
-				JPH::BodyInterface& bodyInterface = m_PhysicsSystem.GetBodyInterfaceNoLock();
+				JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
 				if (rb.BodyID == Physics::InvalidID)
 				{
-
+					AddRigidBody(entity, rb, transform, bodyInterface);
+					bodyInterface.AddBody(GetBodyIDFromPhysicsID(rb.BodyID), JPH::EActivation::DontActivate);
 					return;
 				}
 
-				JPH::BodyID bodyID = GetBodyIDFromPhysicsID(rb.BodyID);
+				bool hasCollider = HasAnyCollider(entity);
 
-				bodyInterface.SetFriction(bodyID, rb.Friction);
-				bodyInterface.SetRestitution(bodyID, rb.Restitution);
+				JPH::BodyID bodyID = GetBodyIDFromPhysicsID(rb.BodyID);
+				JPH::ObjectLayer objectLayer = bodyInterface.GetObjectLayer(bodyID);
+				JPH::EMotionType newType = BodyTypeToEMotionType(rb.Type);
+
+				if (hasCollider)
+				{
+					if (objectLayer == Layers::GHOST)
+					{
+						// NOTE: There is a bug when adding collider after rigidbody at runtime, the collider settings wont apply.
+						bodyInterface.RemoveBody(bodyID);
+						bodyInterface.DestroyBody(bodyID);
+						AddRigidBody(entity, rb, transform, bodyInterface);
+						bodyInterface.AddBody(GetBodyIDFromPhysicsID(rb.BodyID), JPH::EActivation::DontActivate);
+					}
+				}
+				else
+				{
+					bodyInterface.SetObjectLayer(bodyID, Layers::GHOST);
+				}
+
+				if (bodyInterface.GetFriction(bodyID) != rb.Friction)
+				{
+					bodyInterface.SetFriction(bodyID, rb.Friction);
+				}
+
+				if (bodyInterface.GetRestitution(bodyID) != rb.Restitution)
+				{
+					bodyInterface.SetRestitution(bodyID, rb.Restitution);
+				}
+
+				if (bodyInterface.GetMotionType(bodyID) != newType)
+				{
+					bodyInterface.SetMotionType(bodyID, newType, JPH::EActivation::Activate);
+					if (objectLayer != Layers::GHOST)
+					{
+						bodyInterface.SetObjectLayer(bodyID, newType == JPH::EMotionType::Static ? Layers::NON_MOVING : Layers::MOVING);
+					}
+				}
 			});
 
 		// Update internal simulation step.
-		JPH::BodyInterface& bodyInterface = m_PhysicsSystem.GetBodyInterface();
+		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
 		const float cDeltaTime = Time::FixedTimeStep;
 		const int cCollisionSteps = 1;
 
-		m_PhysicsSystem.Update(cDeltaTime, cCollisionSteps, m_TempAllocator, &m_JobSystem);
+		m_PhysicsSystem->Update(cDeltaTime, cCollisionSteps, m_TempAllocator, &m_JobSystem);
 
 		// Apply physics changes to transforms.
 		m_Context->GetRegistry()
@@ -258,6 +221,11 @@ namespace HBL2
 
 	void Physics3dSystem::OnDestroy()
 	{
+		if (!m_Initialized)
+		{
+			return;
+		}
+
 		// Unregisters all types with the factory and cleans up the default material
 		JPH::UnregisterTypes();
 
@@ -268,5 +236,77 @@ namespace HBL2
 		// Destroy the factory
 		delete JPH::Factory::sInstance;
 		JPH::Factory::sInstance = nullptr;
+
+		// Delete physics system
+		delete m_PhysicsSystem;
+
+		m_Initialized = false;
+	}
+
+	void Physics3dSystem::AddRigidBody(entt::entity entity, Component::Rigidbody& rb, Component::Transform& transform, JPH::BodyInterface& bodyInterface)
+	{
+		JPH::ShapeRefC shapeRef;
+		JPH::ObjectLayer bodyLayer;
+		JPH::EMotionType type = BodyTypeToEMotionType(rb.Type);
+
+		if (m_Context->HasComponent<Component::BoxCollider>(entity))
+		{
+			auto& bc = m_Context->GetComponent<Component::BoxCollider>(entity);
+
+			JPH::BoxShapeSettings shapeSettings(JPH::Vec3(bc.Size.x * transform.Scale.x, bc.Size.x * transform.Scale.y, bc.Size.x * transform.Scale.z));
+			shapeSettings.SetEmbedded();
+
+			// Create the shape
+			JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
+			shapeRef = shapeResult.Get();
+			bodyLayer = (type == JPH::EMotionType::Static ? Layers::NON_MOVING : Layers::MOVING);
+		}
+		else if (m_Context->HasComponent<Component::SphereCollider>(entity))
+		{
+			auto& sc = m_Context->GetComponent<Component::SphereCollider>(entity);
+
+			JPH::SphereShapeSettings shapeSettings(sc.Radius * transform.Scale.x);
+			shapeSettings.SetEmbedded();
+
+			// Create the shape
+			JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
+			shapeRef = shapeResult.Get();
+			bodyLayer = (type == JPH::EMotionType::Static ? Layers::NON_MOVING : Layers::MOVING);
+		}
+		else
+		{
+			// Create unit sphere for ghost rigidbodies
+			JPH::SphereShapeSettings shapeSettings(0.01f);
+			shapeSettings.SetEmbedded();
+
+			// Create the shape
+			JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
+			shapeRef = shapeResult.Get();
+
+			bodyLayer = Layers::GHOST;
+		}
+
+		JPH::RVec3 bodyPosition = JPH::RVec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
+		JPH::Quat bodyRotation = JPH::Quat(transform.QRotation.x, transform.QRotation.y, transform.QRotation.z, transform.QRotation.w);
+
+		// Create the settings for the body itself.
+		JPH::BodyCreationSettings bodySettings(shapeRef, bodyPosition, bodyRotation, type, bodyLayer);
+		bodySettings.mFriction = rb.Friction;
+		bodySettings.mRestitution = rb.Restitution;
+		bodySettings.mLinearDamping = rb.LinearDamping;
+		bodySettings.mAngularDamping = rb.AngularDamping;
+		bodySettings.mAllowDynamicOrKinematic = true;
+
+		// Create the actual rigid body. Note that if we run out of bodies this can return nullptr.
+		JPH::Body* body = bodyInterface.CreateBody(bodySettings);
+
+		// Maybe use the entity ID here?
+		body->SetUserData((JPH::uint64)entity);
+		rb.BodyID = GetPhysicsIDFromBodyID(body->GetID());
+	}
+
+	bool Physics3dSystem::HasAnyCollider(entt::entity entity)
+	{
+		return m_Context->HasComponent<Component::BoxCollider>(entity) || m_Context->HasComponent<Component::SphereCollider>(entity);
 	}
 }

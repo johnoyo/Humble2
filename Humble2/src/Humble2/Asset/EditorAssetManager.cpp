@@ -116,6 +116,9 @@ namespace HBL2
 		case AssetType::Sound:
 			return DestroySound(asset);
 		}
+
+		HBL2_CORE_ASSERT(false, "Unsupported asset type!");
+		return false;
     }
 
     void EditorAssetManager::SaveAsset(Handle<Asset> handle)

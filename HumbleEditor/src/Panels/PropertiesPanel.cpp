@@ -406,6 +406,7 @@ namespace HBL2
 							if (ImGui::Selectable(type.c_str(), isSelected))
 							{
 								selectedType = type;
+								rb2d.Dirty = true;
 							}
 
 							if (isSelected)
@@ -426,11 +427,20 @@ namespace HBL2
 				DrawComponent<HBL2::Component::BoxCollider2D>("BoxCollider2D", m_ActiveScene, [this](HBL2::Component::BoxCollider2D& bc2d)
 				{
 					ImGui::Checkbox("Enabled", &bc2d.Enabled);
+					ImGui::Checkbox("Trigger", &bc2d.Trigger);
 					ImGui::SliderFloat("Density", &bc2d.Density, 0.0f, 10.0f);
 					ImGui::SliderFloat("Friction", &bc2d.Friction, 0.0f, 1.0f);
 					ImGui::SliderFloat("Restitution", &bc2d.Restitution, 0.0f, 1.0f);
-					ImGui::DragFloat2("Size", glm::value_ptr(bc2d.Size));
-					ImGui::DragFloat2("Offset", glm::value_ptr(bc2d.Offset));
+
+					if (ImGui::DragFloat2("Size", glm::value_ptr(bc2d.Size)))
+					{
+						bc2d.Dirty = true;
+					}
+
+					if (ImGui::DragFloat2("Offset", glm::value_ptr(bc2d.Offset)))
+					{
+						bc2d.Dirty = true;
+					}
 				});
 
 				DrawComponent<HBL2::Component::Rigidbody>("Rigidbody", m_ActiveScene, [this](HBL2::Component::Rigidbody& rb)

@@ -153,8 +153,9 @@ namespace HBL2
 		{
 			Physics::BodyType Type = Physics::BodyType::Static;
 			bool FixedRotation = false;
-			Physics::ID BodyId;
+			Physics::ID BodyId = Physics::InvalidID;
 
+			bool Dirty = false;
 			bool Enabled = true;
 		};
 
@@ -167,8 +168,10 @@ namespace HBL2
 			float Friction = 0.5f;
 			float Restitution = 0.0f;
 
-			Physics::ID ShapeId;
+			Physics::ID ShapeId = Physics::InvalidID;
 
+			bool Trigger = false;
+			bool Dirty = false;
 			bool Enabled = true;
 		};
 
@@ -193,12 +196,6 @@ namespace HBL2
 		struct HBL2_API SphereCollider
 		{
 			float Radius = 1.0f;
-			bool Enabled = true;
-		};
-
-		struct HBL2_API MeshCollider
-		{
-			Handle<Mesh> MeshHandle;
 			bool Enabled = true;
 		};
 	}

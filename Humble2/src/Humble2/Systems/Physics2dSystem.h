@@ -19,6 +19,10 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
+		Physics::ID CreateRigidbody(entt::entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform);
+		Physics::ID CreateBoxCollider(entt::entity entity, Component::BoxCollider2D& bc2d, Component::Rigidbody2D& rb2d, Component::Transform& transform);
+
+	private:
 		b2WorldId m_PhysicsWorld = {};
 		int m_SubStepCount = 4;
 		float m_GravityForce = -9.81f;

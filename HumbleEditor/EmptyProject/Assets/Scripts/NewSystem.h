@@ -48,7 +48,7 @@ public:
 			.view<Component::Rigidbody2D>()
 			.each([this](entt::entity entity, Component::Rigidbody2D& rb2d)
 			{
-				if (rb2d.Type == Component::Rigidbody2D::BodyType::Dynamic)
+				if (rb2d.Type == Physics::BodyType::Dynamic)
 				{
 					if (Input::GetKeyPress(KeyCode::W) && m_Grounded)
 					{

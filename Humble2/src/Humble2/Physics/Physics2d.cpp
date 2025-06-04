@@ -6,6 +6,9 @@ namespace HBL2
 	static std::vector<std::function<void(Physics2D::ContactEndTouchEvent*)>> s_EndEventFunc;
 	static std::vector<std::function<void(Physics2D::ContactHitEvent*)>> s_HitEventFunc;
 
+	static std::vector<std::function<void(Physics2D::SensorBeginTouchEvent*)>> s_BeginSensorEventFunc;
+	static std::vector<std::function<void(Physics2D::SensorEndTouchEvent*)>> s_EndSensorEventFunc;
+
 	bool Physics2D::BodiesAreEqual(Physics::ID bodyA, Physics::ID bodyB)
 	{
 		b2BodyId b2BodyIdA = b2LoadBodyId(bodyA);
@@ -84,6 +87,18 @@ namespace HBL2
 		s_HitEventFunc.emplace_back(hitEventFunc);
 	}
 
+	void Physics2D::OnBeginSensorEvent(std::function<void(SensorBeginTouchEvent*)>&& beginEventFunc)
+	{
+		// TODO: This is not thread safe, add lock when system scheduling is added.
+		s_BeginSensorEventFunc.emplace_back(beginEventFunc);
+	}
+
+	void Physics2D::OnEndSensorEvent(std::function<void(SensorEndTouchEvent*)>&& endEventFunc)
+	{
+		// TODO: This is not thread safe, add lock when system scheduling is added.
+		s_EndSensorEventFunc.emplace_back(endEventFunc);
+	}
+
 	void Physics2D::DispatchContactEvent(ContactEventType contactEventType, void* contactEventData)
 	{
 		switch (contactEventType)
@@ -133,10 +148,51 @@ namespace HBL2
 		}
 	}
 
+	HBL2_API void Physics2D::DispatchSensorEvent(ContactEventType sensorEventType, void* sensorEventData)
+	{
+		switch (sensorEventType)
+		{
+		case HBL2::Physics2D::ContactEventType::BeginTouch:
+			if (!s_BeginSensorEventFunc.empty())
+			{
+				SensorBeginTouchEvent sensorBeginTouchEvent{};
+				sensorBeginTouchEvent.payload = (b2SensorBeginTouchEvent*)sensorEventData;
+				sensorBeginTouchEvent.entityA = GetEntityFromShapeId(b2StoreShapeId(sensorBeginTouchEvent.payload->sensorShapeId));
+				sensorBeginTouchEvent.entityB = GetEntityFromShapeId(b2StoreShapeId(sensorBeginTouchEvent.payload->visitorShapeId));
+
+				for (const auto& callback : s_BeginSensorEventFunc)
+				{
+					callback(&sensorBeginTouchEvent);
+				}
+			}
+			break;
+		case HBL2::Physics2D::ContactEventType::EndTouch:
+			if (!s_EndSensorEventFunc.empty())
+			{
+				SensorEndTouchEvent sensorEndTouchEvent{};
+				sensorEndTouchEvent.payload = (b2SensorEndTouchEvent*)sensorEventData;
+				sensorEndTouchEvent.entityA = GetEntityFromShapeId(b2StoreShapeId(sensorEndTouchEvent.payload->sensorShapeId));
+				sensorEndTouchEvent.entityB = GetEntityFromShapeId(b2StoreShapeId(sensorEndTouchEvent.payload->visitorShapeId));
+
+				for (const auto& callback : s_EndSensorEventFunc)
+				{
+					callback(&sensorEndTouchEvent);
+				}
+			}
+			break;
+		}
+	}
+
 	HBL2_API void Physics2D::ClearContactEvents()
 	{
 		s_BeginEventFunc.clear();
 		s_EndEventFunc.clear();
 		s_HitEventFunc.clear();
+	}
+
+	HBL2_API void Physics2D::ClearSensorEvents()
+	{
+		s_BeginSensorEventFunc.clear();
+		s_EndSensorEventFunc.clear();
 	}
 }
