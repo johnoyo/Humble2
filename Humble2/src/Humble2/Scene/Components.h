@@ -184,6 +184,8 @@ namespace HBL2
 			float LinearDamping = 0.05f;
 			float AngularDamping = 0.05f;
 			float Mass = 1.0f;
+			bool Trigger = false;
+			bool Dirty = false;
 			bool Enabled = true;
 		};
 

@@ -92,7 +92,7 @@ namespace HBL2
 		// Progress the simulation.
 		b2World_Step(m_PhysicsWorld, Time::FixedTimeStep, m_SubStepCount);
 
-		// Update the transform of rigidbodies
+		// Update the transform of rigidbodies. Consider using b2World_GetBodyEvents.
 		m_Context->GetRegistry()
 			.group<Component::Rigidbody2D>(entt::get<Component::Transform>)
 			.each([this](entt::entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)

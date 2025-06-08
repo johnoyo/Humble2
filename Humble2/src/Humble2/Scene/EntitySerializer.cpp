@@ -276,6 +276,7 @@ namespace HBL2
 			auto& bc2d = m_Scene->GetComponent<Component::BoxCollider2D>(m_Entity);
 
 			out << YAML::Key << "Enabled" << YAML::Value << bc2d.Enabled;
+			out << YAML::Key << "Trigger" << YAML::Value << bc2d.Trigger;
 			out << YAML::Key << "Density" << YAML::Value << bc2d.Density;
 			out << YAML::Key << "Friction" << YAML::Value << bc2d.Friction;
 			out << YAML::Key << "Restitution" << YAML::Value << bc2d.Restitution;
@@ -293,7 +294,13 @@ namespace HBL2
 			auto& rb = m_Scene->GetComponent<Component::Rigidbody>(m_Entity);
 
 			out << YAML::Key << "Enabled" << YAML::Value << rb.Enabled;
+			out << YAML::Key << "Trigger" << YAML::Value << rb.Trigger;
 			out << YAML::Key << "Type" << YAML::Value << (int)rb.Type;
+			out << YAML::Key << "Mass" << YAML::Value << (int)rb.Mass;
+			out << YAML::Key << "Friction" << YAML::Value << rb.Friction;
+			out << YAML::Key << "Restitution" << YAML::Value << rb.Restitution;
+			out << YAML::Key << "LinearDamping" << YAML::Value << rb.LinearDamping;
+			out << YAML::Key << "AngularDamping" << YAML::Value << rb.AngularDamping;
 
 			out << YAML::EndMap;
 		}
@@ -511,6 +518,7 @@ namespace HBL2
 		{
 			auto& bc2d = m_Scene->AddComponent<Component::BoxCollider2D>(m_Entity);
 			bc2d.Enabled = bc2d_NewComponent["Enabled"].as<bool>();
+			bc2d.Trigger = bc2d_NewComponent["Trigger"].as<bool>();
 			bc2d.Density = bc2d_NewComponent["Density"].as<float>();
 			bc2d.Friction = bc2d_NewComponent["Friction"].as<float>();
 			bc2d.Restitution = bc2d_NewComponent["Restitution"].as<float>();
@@ -523,7 +531,13 @@ namespace HBL2
 		{
 			auto& rb = m_Scene->AddComponent<Component::Rigidbody>(m_Entity);
 			rb.Enabled = rb_NewComponent["Enabled"].as<bool>();
+			rb.Trigger = rb_NewComponent["Trigger"].as<bool>();
 			rb.Type = (Physics::BodyType)rb_NewComponent["Type"].as<int>();
+			rb.Mass = rb_NewComponent["Mass"].as<float>();
+			rb.Friction = rb_NewComponent["Friction"].as<float>();
+			rb.Restitution = rb_NewComponent["Restitution"].as<float>();
+			rb.LinearDamping = rb_NewComponent["LinearDamping"].as<float>();
+			rb.AngularDamping = rb_NewComponent["AngularDamping"].as<float>();
 		}
 
 		auto bc_NewComponent = entityNode["Component::BoxCollider"];

@@ -446,6 +446,10 @@ namespace HBL2
 				DrawComponent<HBL2::Component::Rigidbody>("Rigidbody", m_ActiveScene, [this](HBL2::Component::Rigidbody& rb)
 				{
 					ImGui::Checkbox("Enabled", &rb.Enabled);
+					if (ImGui::Checkbox("Trigger", &rb.Trigger))
+					{
+						rb.Dirty = true;
+					}
 
 					std::string selectedType = "Static";
 

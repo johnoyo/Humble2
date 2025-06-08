@@ -18,6 +18,22 @@ public:
 
 			m_Grounded = true;
 		});
+
+		Physics3D::OnCollisionEnterEvent([this](Physics3D::CollisionEnterEvent* collisionEnterEvent)
+		{
+			auto& tagA = m_Context->GetComponent<Component::Tag>(collisionEnterEvent->entityA).Name;
+			auto& tagB = m_Context->GetComponent<Component::Tag>(collisionEnterEvent->entityB).Name;
+
+			HBL2_INFO("[COLLISION] {} -> {}\n", tagA, tagB);
+		});
+
+		Physics3D::OnTriggerEnterEvent([this](Physics3D::TriggerEnterEvent* triggerEnterEvent)
+		{
+			auto& tagA = m_Context->GetComponent<Component::Tag>(triggerEnterEvent->entityA).Name;
+			auto& tagB = m_Context->GetComponent<Component::Tag>(triggerEnterEvent->entityB).Name;
+
+			HBL2_INFO("[TRIGGER] {} -> {}\n", tagA, tagB);
+		});
 	}
 
 	virtual void OnUpdate(float ts) override

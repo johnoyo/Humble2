@@ -24,7 +24,7 @@
 // but only if you do collision testing).
 namespace Layers
 {
-	static constexpr JPH::ObjectLayer GHOST = 0;
+	static constexpr JPH::ObjectLayer TRIGGER = 0;
 	static constexpr JPH::ObjectLayer NON_MOVING = 1;
 	static constexpr JPH::ObjectLayer MOVING = 2;
 	static constexpr JPH::ObjectLayer NUM_LAYERS = 3;
@@ -37,9 +37,10 @@ namespace Layers
 // your broadphase layers define JPH_TRACK_BROADPHASE_STATS and look at the stats reported on the TTY.
 namespace BroadPhaseLayers
 {
-	static constexpr JPH::BroadPhaseLayer STATIC(0);
-	static constexpr JPH::BroadPhaseLayer DYNAMIC(1);
-	static constexpr uint32_t NUM_LAYERS(2);
+	static constexpr JPH::BroadPhaseLayer TRIGGER(0);
+	static constexpr JPH::BroadPhaseLayer STATIC(1);
+	static constexpr JPH::BroadPhaseLayer DYNAMIC(2);
+	static constexpr uint32_t NUM_LAYERS(3);
 };
 
 namespace HBL2
@@ -52,12 +53,12 @@ namespace HBL2
 		{
 			switch (inObject1)
 			{
-			case Layers::GHOST:
-				return false; // Ghosts collide with nothing
+			case Layers::TRIGGER:
+				return true; // Trigger collides with everything
 			case Layers::NON_MOVING:
-				return inObject2 == Layers::MOVING; // Non moving only collides with moving
+				return inObject2 == Layers::MOVING || inObject2 == Layers::TRIGGER; // Non moving only collides with moving and trigger
 			case Layers::MOVING:
-				return inObject2 == Layers::MOVING || inObject2 == Layers::NON_MOVING; // Moving collides with everything except ghosts
+				return true; // Moving collides with everything
 			default:
 				JPH_ASSERT(false);
 				return false;
@@ -79,7 +80,18 @@ namespace HBL2
 
 		virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override
 		{
-			return inLayer == Layers::MOVING ? BroadPhaseLayers::DYNAMIC : BroadPhaseLayers::STATIC;
+			switch (inLayer)
+			{
+			case Layers::TRIGGER:
+				return BroadPhaseLayers::TRIGGER;
+			case Layers::NON_MOVING:
+				return BroadPhaseLayers::STATIC;
+			case Layers::MOVING:
+				return BroadPhaseLayers::DYNAMIC;
+			}
+
+			JPH_ASSERT(false);
+			return BroadPhaseLayers::STATIC;
 		}
 	};
 
@@ -91,8 +103,8 @@ namespace HBL2
 		{
 			switch (inLayer1)
 			{
-			case Layers::GHOST:
-				return false;
+			case Layers::TRIGGER:
+				return true;
 			case Layers::NON_MOVING:
 				return inLayer2 == BroadPhaseLayers::DYNAMIC;
 			case Layers::MOVING:
