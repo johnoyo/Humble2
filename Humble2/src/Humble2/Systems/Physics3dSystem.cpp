@@ -34,6 +34,11 @@ namespace HBL2
 
 		virtual void OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override
 		{
+			if (m_Context->WereBodiesInContact(inBody1.GetID(), inBody2.GetID()))
+			{
+				return; // not the first contact between bodies
+			}
+
 			if (ioSettings.mIsSensor)
 			{
 				Physics3D::TriggerEnterEvent triggerEnterEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
@@ -64,6 +69,12 @@ namespace HBL2
 		{
 			const auto body1ID = inSubShapePair.GetBody1ID();
 			const auto body2ID = inSubShapePair.GetBody2ID();
+
+			if (m_Context->WereBodiesInContact(body1ID, body2ID))
+			{
+				return; // not the last contact between bodies
+			}
+
 			auto& bodyIterface = m_Context->GetBodyInterfaceNoLock();
 
 			if (bodyIterface.GetObjectLayer(body1ID) == Layers::TRIGGER || bodyIterface.GetObjectLayer(body2ID) == Layers::TRIGGER)
