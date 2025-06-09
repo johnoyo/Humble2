@@ -16,35 +16,35 @@ namespace HBL2
 			Hit,
 		};
 
-		struct HBL2_API SensorBeginTouchEvent
+		struct HBL2_API TriggerEnterEvent
 		{
 			entt::entity entityA;
 			entt::entity entityB;
 			b2SensorBeginTouchEvent* payload;
 		};
 
-		struct HBL2_API SensorEndTouchEvent
+		struct HBL2_API TriggerExitEvent
 		{
 			entt::entity entityA;
 			entt::entity entityB;
 			b2SensorEndTouchEvent* payload;
 		};
 
-		struct HBL2_API ContactBeginTouchEvent
+		struct HBL2_API CollisionEnterEvent
 		{
 			entt::entity entityA;
 			entt::entity entityB;
 			b2ContactBeginTouchEvent* payload;
 		};
 
-		struct HBL2_API ContactEndTouchEvent
+		struct HBL2_API CollisionExitEvent
 		{
 			entt::entity entityA;
 			entt::entity entityB;
 			b2ContactEndTouchEvent* payload;
 		};
 
-		struct HBL2_API ContactHitEvent
+		struct HBL2_API CollisionHitEvent
 		{
 			entt::entity entityA;
 			entt::entity entityB;
@@ -68,16 +68,16 @@ namespace HBL2
 		HBL2_API glm::vec2 GetLinearVelocity(Component::Rigidbody2D& rb2d);
 		HBL2_API float GetAngularVelocity(Component::Rigidbody2D& rb2d);
 
-		HBL2_API void OnBeginTouchEvent(std::function<void(ContactBeginTouchEvent*)>&& beginEventFunc);
-		HBL2_API void OnEndTouchEvent(std::function<void(ContactEndTouchEvent*)>&& endEventFunc);
-		HBL2_API void OnHitEvent(std::function<void(ContactHitEvent*)>&& hitEventFunc);
+		HBL2_API void OnCollisionEnterEvent(std::function<void(CollisionEnterEvent*)>&& beginEventFunc);
+		HBL2_API void OnCollisionExitEvent(std::function<void(CollisionExitEvent*)>&& endEventFunc);
+		HBL2_API void OnCollisionHitEvent(std::function<void(CollisionHitEvent*)>&& hitEventFunc);
 
-		HBL2_API void OnBeginSensorEvent(std::function<void(SensorBeginTouchEvent*)>&& beginEventFunc);
-		HBL2_API void OnEndSensorEvent(std::function<void(SensorEndTouchEvent*)>&& endEventFunc);
+		HBL2_API void OnTriggerEnterEvent(std::function<void(TriggerEnterEvent*)>&& beginEventFunc);
+		HBL2_API void OnTriggerExitEvent(std::function<void(TriggerExitEvent*)>&& endEventFunc);
 
-		HBL2_API void DispatchContactEvent(ContactEventType contactEventType, void* contactEventData);
-		HBL2_API void DispatchSensorEvent(ContactEventType sensorEventType, void* sensorEventData);
-		HBL2_API void ClearContactEvents();
-		HBL2_API void ClearSensorEvents();
+		HBL2_API void DispatchCollisionEvent(ContactEventType contactEventType, void* collisionEventData);
+		HBL2_API void DispatchTriggerEvent(ContactEventType sensorEventType, void* triggerEventData);
+		HBL2_API void ClearCollisionEvents();
+		HBL2_API void ClearTriggerEvents();
 	}
 }

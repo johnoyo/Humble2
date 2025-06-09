@@ -2,12 +2,12 @@
 
 namespace HBL2
 {
-	static std::vector<std::function<void(Physics2D::ContactBeginTouchEvent*)>> s_BeginEventFunc;
-	static std::vector<std::function<void(Physics2D::ContactEndTouchEvent*)>> s_EndEventFunc;
-	static std::vector<std::function<void(Physics2D::ContactHitEvent*)>> s_HitEventFunc;
+	static std::vector<std::function<void(Physics2D::CollisionEnterEvent*)>> g_CollisionEnterEvents;
+	static std::vector<std::function<void(Physics2D::CollisionExitEvent*)>> g_CollisionExitEvents;
+	static std::vector<std::function<void(Physics2D::CollisionHitEvent*)>> g_CollisionHitEvents;
 
-	static std::vector<std::function<void(Physics2D::SensorBeginTouchEvent*)>> s_BeginSensorEventFunc;
-	static std::vector<std::function<void(Physics2D::SensorEndTouchEvent*)>> s_EndSensorEventFunc;
+	static std::vector<std::function<void(Physics2D::TriggerEnterEvent*)>> g_TriggerEnterEvents;
+	static std::vector<std::function<void(Physics2D::TriggerExitEvent*)>> g_TriggerExitEvents;
 
 	bool Physics2D::BodiesAreEqual(Physics::ID bodyA, Physics::ID bodyB)
 	{
@@ -69,77 +69,77 @@ namespace HBL2
 		return b2Body_GetAngularVelocity(b2LoadBodyId(rb2d.BodyId));
 	}
 
-	void Physics2D::OnBeginTouchEvent(std::function<void(ContactBeginTouchEvent*)>&& beginEventFunc)
+	void Physics2D::OnCollisionEnterEvent(std::function<void(CollisionEnterEvent*)>&& beginEventFunc)
 	{
 		// TODO: This is not thread safe, add lock when system scheduling is added.
-		s_BeginEventFunc.emplace_back(beginEventFunc);
+		g_CollisionEnterEvents.emplace_back(beginEventFunc);
 	}
 
-	void Physics2D::OnEndTouchEvent(std::function<void(ContactEndTouchEvent*)>&& endEventFunc)
+	void Physics2D::OnCollisionExitEvent(std::function<void(CollisionExitEvent*)>&& endEventFunc)
 	{
 		// TODO: This is not thread safe, add lock when system scheduling is added.
-		s_EndEventFunc.emplace_back(endEventFunc);
+		g_CollisionExitEvents.emplace_back(endEventFunc);
 	}
 
-	void Physics2D::OnHitEvent(std::function<void(ContactHitEvent*)>&& hitEventFunc)
+	void Physics2D::OnCollisionHitEvent(std::function<void(CollisionHitEvent*)>&& hitEventFunc)
 	{
 		// TODO: This is not thread safe, add lock when system scheduling is added.
-		s_HitEventFunc.emplace_back(hitEventFunc);
+		g_CollisionHitEvents.emplace_back(hitEventFunc);
 	}
 
-	void Physics2D::OnBeginSensorEvent(std::function<void(SensorBeginTouchEvent*)>&& beginEventFunc)
+	void Physics2D::OnTriggerEnterEvent(std::function<void(TriggerEnterEvent*)>&& beginEventFunc)
 	{
 		// TODO: This is not thread safe, add lock when system scheduling is added.
-		s_BeginSensorEventFunc.emplace_back(beginEventFunc);
+		g_TriggerEnterEvents.emplace_back(beginEventFunc);
 	}
 
-	void Physics2D::OnEndSensorEvent(std::function<void(SensorEndTouchEvent*)>&& endEventFunc)
+	void Physics2D::OnTriggerExitEvent(std::function<void(TriggerExitEvent*)>&& endEventFunc)
 	{
 		// TODO: This is not thread safe, add lock when system scheduling is added.
-		s_EndSensorEventFunc.emplace_back(endEventFunc);
+		g_TriggerExitEvents.emplace_back(endEventFunc);
 	}
 
-	void Physics2D::DispatchContactEvent(ContactEventType contactEventType, void* contactEventData)
+	void Physics2D::DispatchCollisionEvent(ContactEventType contactEventType, void* collisionEventData)
 	{
 		switch (contactEventType)
 		{
 		case HBL2::Physics2D::ContactEventType::BeginTouch:
-			if (!s_BeginEventFunc.empty())
+			if (!g_CollisionEnterEvents.empty())
 			{
-				ContactBeginTouchEvent contactBeginTouchEvent{};
-				contactBeginTouchEvent.payload = (b2ContactBeginTouchEvent*)contactEventData;
+				CollisionEnterEvent contactBeginTouchEvent{};
+				contactBeginTouchEvent.payload = (b2ContactBeginTouchEvent*)collisionEventData;
 				contactBeginTouchEvent.entityA = GetEntityFromShapeId(b2StoreShapeId(contactBeginTouchEvent.payload->shapeIdA));
 				contactBeginTouchEvent.entityB = GetEntityFromShapeId(b2StoreShapeId(contactBeginTouchEvent.payload->shapeIdB));
 
-				for (const auto& callback : s_BeginEventFunc)
+				for (const auto& callback : g_CollisionEnterEvents)
 				{
 					callback(&contactBeginTouchEvent);
 				}
 			}
 			break;
 		case HBL2::Physics2D::ContactEventType::EndTouch:
-			if (!s_EndEventFunc.empty())
+			if (!g_CollisionExitEvents.empty())
 			{
-				ContactEndTouchEvent contactEndTouchEvent{};
-				contactEndTouchEvent.payload = (b2ContactEndTouchEvent*)contactEventData;
+				CollisionExitEvent contactEndTouchEvent{};
+				contactEndTouchEvent.payload = (b2ContactEndTouchEvent*)collisionEventData;
 				contactEndTouchEvent.entityA = GetEntityFromShapeId(b2StoreShapeId(contactEndTouchEvent.payload->shapeIdA));
 				contactEndTouchEvent.entityB = GetEntityFromShapeId(b2StoreShapeId(contactEndTouchEvent.payload->shapeIdB));
 				
-				for (const auto& callback : s_EndEventFunc)
+				for (const auto& callback : g_CollisionExitEvents)
 				{
 					callback(&contactEndTouchEvent);
 				}
 			}
 			break;
 		case HBL2::Physics2D::ContactEventType::Hit:
-			if (!s_HitEventFunc.empty())
+			if (!g_CollisionHitEvents.empty())
 			{
-				ContactHitEvent contactHitEvent{};
-				contactHitEvent.payload = (b2ContactHitEvent*)contactEventData;
+				CollisionHitEvent contactHitEvent{};
+				contactHitEvent.payload = (b2ContactHitEvent*)collisionEventData;
 				contactHitEvent.entityA = GetEntityFromShapeId(b2StoreShapeId(contactHitEvent.payload->shapeIdA));
 				contactHitEvent.entityB = GetEntityFromShapeId(b2StoreShapeId(contactHitEvent.payload->shapeIdB));
 				
-				for (const auto& callback : s_HitEventFunc)
+				for (const auto& callback : g_CollisionHitEvents)
 				{
 					callback(&contactHitEvent);
 				}
@@ -148,33 +148,33 @@ namespace HBL2
 		}
 	}
 
-	HBL2_API void Physics2D::DispatchSensorEvent(ContactEventType sensorEventType, void* sensorEventData)
+	void Physics2D::DispatchTriggerEvent(ContactEventType sensorEventType, void* triggerEventData)
 	{
 		switch (sensorEventType)
 		{
 		case HBL2::Physics2D::ContactEventType::BeginTouch:
-			if (!s_BeginSensorEventFunc.empty())
+			if (!g_TriggerEnterEvents.empty())
 			{
-				SensorBeginTouchEvent sensorBeginTouchEvent{};
-				sensorBeginTouchEvent.payload = (b2SensorBeginTouchEvent*)sensorEventData;
+				TriggerEnterEvent sensorBeginTouchEvent{};
+				sensorBeginTouchEvent.payload = (b2SensorBeginTouchEvent*)triggerEventData;
 				sensorBeginTouchEvent.entityA = GetEntityFromShapeId(b2StoreShapeId(sensorBeginTouchEvent.payload->sensorShapeId));
 				sensorBeginTouchEvent.entityB = GetEntityFromShapeId(b2StoreShapeId(sensorBeginTouchEvent.payload->visitorShapeId));
 
-				for (const auto& callback : s_BeginSensorEventFunc)
+				for (const auto& callback : g_TriggerEnterEvents)
 				{
 					callback(&sensorBeginTouchEvent);
 				}
 			}
 			break;
 		case HBL2::Physics2D::ContactEventType::EndTouch:
-			if (!s_EndSensorEventFunc.empty())
+			if (!g_TriggerExitEvents.empty())
 			{
-				SensorEndTouchEvent sensorEndTouchEvent{};
-				sensorEndTouchEvent.payload = (b2SensorEndTouchEvent*)sensorEventData;
+				TriggerExitEvent sensorEndTouchEvent{};
+				sensorEndTouchEvent.payload = (b2SensorEndTouchEvent*)triggerEventData;
 				sensorEndTouchEvent.entityA = GetEntityFromShapeId(b2StoreShapeId(sensorEndTouchEvent.payload->sensorShapeId));
 				sensorEndTouchEvent.entityB = GetEntityFromShapeId(b2StoreShapeId(sensorEndTouchEvent.payload->visitorShapeId));
 
-				for (const auto& callback : s_EndSensorEventFunc)
+				for (const auto& callback : g_TriggerExitEvents)
 				{
 					callback(&sensorEndTouchEvent);
 				}
@@ -183,16 +183,16 @@ namespace HBL2
 		}
 	}
 
-	HBL2_API void Physics2D::ClearContactEvents()
+	void Physics2D::ClearCollisionEvents()
 	{
-		s_BeginEventFunc.clear();
-		s_EndEventFunc.clear();
-		s_HitEventFunc.clear();
+		g_CollisionEnterEvents.clear();
+		g_CollisionExitEvents.clear();
+		g_CollisionHitEvents.clear();
 	}
 
-	HBL2_API void Physics2D::ClearSensorEvents()
+	void Physics2D::ClearTriggerEvents()
 	{
-		s_BeginSensorEventFunc.clear();
-		s_EndSensorEventFunc.clear();
+		g_TriggerEnterEvents.clear();
+		g_TriggerExitEvents.clear();
 	}
 }

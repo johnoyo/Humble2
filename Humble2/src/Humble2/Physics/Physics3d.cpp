@@ -12,85 +12,86 @@ namespace HBL2
 		static std::vector<std::function<void(TriggerStayEvent*)>> g_TriggerStayEvents;
 		static std::vector<std::function<void(TriggerExitEvent*)>> g_TriggerExitEvents;
 
-		HBL2_API void AddLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity)
+		void AddLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity)
+		{
+			// PhysicsEngine2D::Instance->
+		}
+
+		void SetLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity)
 		{
 		}
 
-		HBL2_API void SetLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity)
-		{
-		}
-
-		HBL2_API glm::vec3 GetLinearVelocity(Component::Rigidbody& rb)
-		{
-			return glm::vec3();
-		}
-
-		HBL2_API void AddAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity)
-		{
-		}
-
-		HBL2_API void SetAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity)
-		{
-		}
-
-		HBL2_API glm::vec3 GetAngularVelocity(Component::Rigidbody& rb)
+		glm::vec3 GetLinearVelocity(Component::Rigidbody& rb)
 		{
 			return glm::vec3();
 		}
 
-		HBL2_API void ApplyForce(Component::Rigidbody& rb, const glm::vec3& force)
+		void AddAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity)
 		{
 		}
 
-		HBL2_API void ApplyTorque(Component::Rigidbody& rb, const glm::vec3& torque)
+		void SetAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity)
 		{
 		}
 
-		HBL2_API void ApplyImpulse(Component::Rigidbody& rb, const glm::vec3& impluse)
+		glm::vec3 GetAngularVelocity(Component::Rigidbody& rb)
+		{
+			return glm::vec3();
+		}
+
+		void ApplyForce(Component::Rigidbody& rb, const glm::vec3& force)
 		{
 		}
 
-		HBL2_API void ApplyAngularImpulse(Component::Rigidbody& rb, const glm::vec3& angularImpulse)
+		void ApplyTorque(Component::Rigidbody& rb, const glm::vec3& torque)
 		{
 		}
 
-		HBL2_API void OnCollisionEnterEvent(std::function<void(CollisionEnterEvent*)>&& enterEventFunc)
+		void ApplyImpulse(Component::Rigidbody& rb, const glm::vec3& impluse)
+		{
+		}
+
+		void ApplyAngularImpulse(Component::Rigidbody& rb, const glm::vec3& angularImpulse)
+		{
+		}
+
+		void OnCollisionEnterEvent(std::function<void(CollisionEnterEvent*)>&& enterEventFunc)
 		{
 			// TODO: This is not thread safe, add lock when system scheduling is added.
 			g_CollisionEnterEvents.emplace_back(enterEventFunc);
 		}
 
-		HBL2_API void OnCollisionStayEvent(std::function<void(CollisionStayEvent*)>&& stayEventFunc)
+		void OnCollisionStayEvent(std::function<void(CollisionStayEvent*)>&& stayEventFunc)
 		{
 			// TODO: This is not thread safe, add lock when system scheduling is added.
 			g_CollisionStayEvents.emplace_back(stayEventFunc);
 		}
 
-		HBL2_API void OnCollisionExitEvent(std::function<void(CollisionExitEvent*)>&& exitEventFunc)
+		void OnCollisionExitEvent(std::function<void(CollisionExitEvent*)>&& exitEventFunc)
 		{
 			// TODO: This is not thread safe, add lock when system scheduling is added.
 			g_CollisionExitEvents.emplace_back(exitEventFunc);
 		}
 
-		HBL2_API void OnTriggerEnterEvent(std::function<void(TriggerEnterEvent*)>&& enterEventFunc)
+		void OnTriggerEnterEvent(std::function<void(TriggerEnterEvent*)>&& enterEventFunc)
 		{
 			// TODO: This is not thread safe, add lock when system scheduling is added.
 			g_TriggerEnterEvents.emplace_back(enterEventFunc);
 		}
 
-		HBL2_API void OnTriggerStayEvent(std::function<void(TriggerStayEvent*)>&& stayEventFunc)
+		void OnTriggerStayEvent(std::function<void(TriggerStayEvent*)>&& stayEventFunc)
 		{
 			// TODO: This is not thread safe, add lock when system scheduling is added.
 			g_TriggerStayEvents.emplace_back(stayEventFunc);
 		}
 
-		HBL2_API void OnTriggerExitEvent(std::function<void(TriggerExitEvent*)>&& exitEventFunc)
+		void OnTriggerExitEvent(std::function<void(TriggerExitEvent*)>&& exitEventFunc)
 		{
 			// TODO: This is not thread safe, add lock when system scheduling is added.
 			g_TriggerExitEvents.emplace_back(exitEventFunc);
 		}
 
-		HBL2_API void DispatchCollisionEvents(CollisionEventType collisionEventType, void* collisionEventData)
+		void DispatchCollisionEvents(CollisionEventType collisionEventType, void* collisionEventData)
 		{
 			switch (collisionEventType)
 			{
@@ -130,7 +131,7 @@ namespace HBL2
 			}
 		}
 
-		HBL2_API void DispatchTriggerEvents(CollisionEventType collisionEventType, void* triggerEventData)
+		void DispatchTriggerEvents(CollisionEventType collisionEventType, void* triggerEventData)
 		{
 			switch (collisionEventType)
 			{
@@ -170,14 +171,14 @@ namespace HBL2
 			}
 		}
 
-		HBL2_API void ClearCollisionEvents()
+		void ClearCollisionEvents()
 		{
 			g_CollisionEnterEvents.clear();
 			g_CollisionStayEvents.clear();
 			g_CollisionExitEvents.clear();
 		}
 
-		HBL2_API void ClearTriggerEvents()
+		void ClearTriggerEvents()
 		{
 			g_TriggerEnterEvents.clear();
 			g_TriggerStayEvents.clear();

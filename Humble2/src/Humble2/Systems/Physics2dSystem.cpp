@@ -113,19 +113,19 @@ namespace HBL2
 		for (int i = 0; i < contactEvents.beginCount; ++i)
 		{
 			b2ContactBeginTouchEvent* beginEvent = contactEvents.beginEvents + i;
-			Physics2D::DispatchContactEvent(Physics2D::ContactEventType::BeginTouch, beginEvent);
+			Physics2D::DispatchCollisionEvent(Physics2D::ContactEventType::BeginTouch, beginEvent);
 		}
 
 		for (int i = 0; i < contactEvents.endCount; ++i)
 		{
 			b2ContactEndTouchEvent* endEvent = contactEvents.endEvents + i;
-			Physics2D::DispatchContactEvent(Physics2D::ContactEventType::EndTouch, endEvent);
+			Physics2D::DispatchCollisionEvent(Physics2D::ContactEventType::EndTouch, endEvent);
 		}
 
 		for (int i = 0; i < contactEvents.hitCount; ++i)
 		{
 			b2ContactHitEvent* hitEvent = contactEvents.hitEvents + i;
-			Physics2D::DispatchContactEvent(Physics2D::ContactEventType::Hit, hitEvent);
+			Physics2D::DispatchCollisionEvent(Physics2D::ContactEventType::Hit, hitEvent);
 		}
 
 		// Dispatch any sensor events that occured during this simulation step.
@@ -134,20 +134,20 @@ namespace HBL2
 		for (int i = 0; i < contactEvents.beginCount; ++i)
 		{
 			b2SensorBeginTouchEvent* beginEvent = sensorEvents.beginEvents + i;
-			Physics2D::DispatchSensorEvent(Physics2D::ContactEventType::BeginTouch, beginEvent);
+			Physics2D::DispatchTriggerEvent(Physics2D::ContactEventType::BeginTouch, beginEvent);
 		}
 
 		for (int i = 0; i < sensorEvents.endCount; ++i)
 		{
 			b2SensorEndTouchEvent* endEvent = sensorEvents.endEvents + i;
-			Physics2D::DispatchSensorEvent(Physics2D::ContactEventType::EndTouch, endEvent);
+			Physics2D::DispatchTriggerEvent(Physics2D::ContactEventType::EndTouch, endEvent);
 		}
 	}
 
 	void Physics2dSystem::OnDestroy()
 	{
-		Physics2D::ClearContactEvents();		
-		Physics2D::ClearSensorEvents();		
+		Physics2D::ClearCollisionEvents();		
+		Physics2D::ClearTriggerEvents();		
 
 		if (b2World_IsValid(m_PhysicsWorld))
 		{

@@ -333,7 +333,14 @@ namespace HBL2
 
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
-			const std::string& componentName = meta_type.second.info().name().data();
+			const auto& alias = meta_type.second.info().name();
+
+			if (alias.size() == 0 || alias.size() >= UINT32_MAX || alias.data() == nullptr)
+			{
+				continue;
+			}
+
+			const std::string& componentName = alias.data();
 
 			const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
 
@@ -558,7 +565,14 @@ namespace HBL2
 
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
-			const std::string& componentName = meta_type.second.info().name().data();
+			const auto& alias = meta_type.second.info().name();
+
+			if (alias.size() == 0)
+			{
+				continue;
+			}
+
+			const std::string& componentName = alias.data();
 			const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
 
 			auto userComponent = entityNode[cleanedComponentName];

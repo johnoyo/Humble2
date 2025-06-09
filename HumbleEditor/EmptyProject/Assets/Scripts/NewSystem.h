@@ -9,7 +9,7 @@ class NewSystem final : public HBL2::ISystem
 public:
 	virtual void OnCreate() override
 	{
-		Physics2D::OnBeginTouchEvent([this](Physics2D::ContactBeginTouchEvent* beginTouchEvent)
+		Physics2D::OnCollisionEnterEvent([this](Physics2D::CollisionEnterEvent* beginTouchEvent)
 		{
 			auto& tagA = m_Context->GetComponent<Component::Tag>(beginTouchEvent->entityA).Name;
 			auto& tagB = m_Context->GetComponent<Component::Tag>(beginTouchEvent->entityB).Name;
@@ -24,7 +24,11 @@ public:
 			auto& tagA = m_Context->GetComponent<Component::Tag>(collisionEnterEvent->entityA).Name;
 			auto& tagB = m_Context->GetComponent<Component::Tag>(collisionEnterEvent->entityB).Name;
 
-			HBL2_INFO("[COLLISION] {} -> {}\n", tagA, tagB);
+			HBL2_INFO("[COLLISION] Entered {} -> {}\n", tagA, tagB);
+
+			auto& mesh = m_Context->GetComponent<Component::StaticMesh>(collisionEnterEvent->entityB);
+			Material* mat = ResourceManager::Instance->GetMaterial(mesh.Material);
+			mat->AlbedoColor = { 1.0f, 0.55f, 0.95f, 1.0f };
 		});
 
 		Physics3D::OnTriggerEnterEvent([this](Physics3D::TriggerEnterEvent* triggerEnterEvent)
@@ -32,7 +36,23 @@ public:
 			auto& tagA = m_Context->GetComponent<Component::Tag>(triggerEnterEvent->entityA).Name;
 			auto& tagB = m_Context->GetComponent<Component::Tag>(triggerEnterEvent->entityB).Name;
 
-			HBL2_INFO("[TRIGGER] {} -> {}\n", tagA, tagB);
+			HBL2_INFO("[TRIGGER] Entered {} -> {}\n", tagA, tagB);
+		});
+
+		Physics3D::OnCollisionExitEvent([this](Physics3D::CollisionExitEvent* collisionExitEvent)
+		{
+			auto& tagA = m_Context->GetComponent<Component::Tag>(collisionExitEvent->entityA).Name;
+			auto& tagB = m_Context->GetComponent<Component::Tag>(collisionExitEvent->entityB).Name;
+
+			HBL2_INFO("[COLLISION] Exited {} -> {}\n", tagA, tagB);
+		});
+
+		Physics3D::OnTriggerExitEvent([this](Physics3D::TriggerExitEvent* triggerExitEvent)
+		{
+			auto& tagA = m_Context->GetComponent<Component::Tag>(triggerExitEvent->entityA).Name;
+			auto& tagB = m_Context->GetComponent<Component::Tag>(triggerExitEvent->entityB).Name;
+
+			HBL2_INFO("[TRIGGER] Exited {} -> {}\n", tagA, tagB);
 		});
 	}
 

@@ -31,7 +31,7 @@ namespace HBL2
 			.meshes = {
 				{
 					.debugName = "srp-quad-mesh-part",
-					.subMeshes = { {.vertexOffset = 0, .vertexCount = 6, } },
+					.subMeshes = { { .vertexOffset = 0, .vertexCount = 6, } },
 					.vertexBuffers = { buffer },
 				}
 			}
