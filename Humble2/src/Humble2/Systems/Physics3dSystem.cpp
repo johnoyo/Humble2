@@ -307,6 +307,8 @@ namespace HBL2
 		// Create the actual rigid body. Note that if we run out of bodies this can return nullptr.
 		JPH::Body* body = bodyInterface.CreateBody(bodySettings);
 
+		// FIXME: This^ will crash if no collider is attached!
+
 		if (body == nullptr)
 		{
 			HBL2_CORE_ERROR("Exceeded maximum number of supported rigudbodies");

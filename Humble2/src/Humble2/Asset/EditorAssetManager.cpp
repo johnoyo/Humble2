@@ -572,9 +572,6 @@ namespace HBL2
 			return sceneHandle;
 		}
 
-		SceneSerializer sceneSerializer(scene);
-		sceneSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
-
 		scene->RegisterSystem(new TransformSystem);
 		scene->RegisterSystem(new LinkSystem);
 		scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
@@ -582,6 +579,9 @@ namespace HBL2
 		scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
 		scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 		scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
+
+		SceneSerializer sceneSerializer(scene);
+		sceneSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
 
 		return sceneHandle;
 	}
