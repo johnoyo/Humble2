@@ -3,7 +3,6 @@
 #include "Core/Time.h"
 #include "Core/Allocators.h"
 
-#include "Physics/Physics3d.h"
 #include "Resources/ResourceManager.h"
 
 #include "Utilities/Collections/DynamicArray.h"
@@ -24,7 +23,7 @@ namespace HBL2
 	class HumbleContactListener : public JPH::ContactListener
 	{
 	public:
-		HumbleContactListener(JPH::PhysicsSystem* ctx) : m_Context(ctx) {}
+		HumbleContactListener(JoltPhysicsEngine* engine) : m_Context(engine->Get()), m_Engine(engine) {}
 
 		virtual JPH::ValidateResult	OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult) override
 		{
@@ -41,13 +40,13 @@ namespace HBL2
 
 			if (ioSettings.mIsSensor)
 			{
-				Physics3D::TriggerEnterEvent triggerEnterEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
-				Physics3D::DispatchTriggerEvents(Physics3D::CollisionEventType::Enter, &triggerEnterEvent);
+				Physics::TriggerEnterEvent triggerEnterEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
+				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Enter, &triggerEnterEvent);
 			}
 			else
 			{
-				Physics3D::CollisionEnterEvent collisionEnterEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
-				Physics3D::DispatchCollisionEvents(Physics3D::CollisionEventType::Enter, &collisionEnterEvent);
+				Physics::CollisionEnterEvent collisionEnterEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
+				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Enter, &collisionEnterEvent);
 			}
 		}
 
@@ -55,13 +54,13 @@ namespace HBL2
 		{
 			if (ioSettings.mIsSensor)
 			{
-				Physics3D::TriggerStayEvent triggerStayEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
-				Physics3D::DispatchTriggerEvents(Physics3D::CollisionEventType::Stay, &triggerStayEvent);
+				Physics::TriggerStayEvent triggerStayEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
+				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Stay, &triggerStayEvent);
 			}
 			else
 			{
-				Physics3D::CollisionEnterEvent collisionEnterEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
-				Physics3D::DispatchCollisionEvents(Physics3D::CollisionEventType::Enter, &collisionEnterEvent);
+				Physics::CollisionEnterEvent collisionEnterEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
+				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Enter, &collisionEnterEvent);
 			}
 		}
 
@@ -79,17 +78,18 @@ namespace HBL2
 
 			if (bodyIterface.GetObjectLayer(body1ID) == Layers::TRIGGER || bodyIterface.GetObjectLayer(body2ID) == Layers::TRIGGER)
 			{
-				Physics3D::TriggerExitEvent triggerExitEvent = { (entt::entity)bodyIterface.GetUserData(body1ID), (entt::entity)bodyIterface.GetUserData(body2ID) };
-				Physics3D::DispatchTriggerEvents(Physics3D::CollisionEventType::Exit, &triggerExitEvent);
+				Physics::TriggerExitEvent triggerExitEvent = { (entt::entity)bodyIterface.GetUserData(body1ID), (entt::entity)bodyIterface.GetUserData(body2ID) };
+				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Exit, &triggerExitEvent);
 			}
 			else
 			{
-				Physics3D::CollisionExitEvent collisionExitEvent = { (entt::entity)bodyIterface.GetUserData(body1ID), (entt::entity)bodyIterface.GetUserData(body2ID) };
-				Physics3D::DispatchCollisionEvents(Physics3D::CollisionEventType::Exit, &collisionExitEvent);
+				Physics::CollisionExitEvent collisionExitEvent = { (entt::entity)bodyIterface.GetUserData(body1ID), (entt::entity)bodyIterface.GetUserData(body2ID) };
+				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Exit, &collisionExitEvent);
 			}
 		}
 
 	private:
+		JoltPhysicsEngine* m_Engine = nullptr;
 		JPH::PhysicsSystem* m_Context = nullptr;
 	};
 
@@ -106,49 +106,19 @@ namespace HBL2
 		return JPH::EMotionType::Static;
 	}
 
-	static void TraceImpl(const char* inFMT, ...)
-	{
-		// Format the message
-		va_list list;
-		va_start(list, inFMT);
-		char buffer[1024];
-		vsnprintf(buffer, sizeof(buffer), inFMT, list);
-		va_end(list);
-
-		// Print to the TTY
-		HBL2_CORE_TRACE(buffer);
-	}
-
 	void Physics3dSystem::OnCreate()
 	{
-		JPH::RegisterDefaultAllocator();
-		JPH::Trace = TraceImpl;
-		JPH::Factory::sInstance = new JPH::Factory();
-		JPH::RegisterTypes();
+		PhysicsEngine3D::Instance = new JoltPhysicsEngine;
+		m_PhysicsEngine = (JoltPhysicsEngine*)PhysicsEngine3D::Instance;
 
-		m_TempAllocator = new JPH::TempAllocatorImpl(50_MB);
-		m_JobSystem.Init(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, -1);
+		m_PhysicsEngine->Initialize();
+		m_PhysicsSystem = m_PhysicsEngine->Get();
 
-		const uint32_t cMaxBodies = 65536;
-		const uint32_t cNumBodyMutexes = 0;
-		const uint32_t cMaxBodyPairs = 65536;
-		const uint32_t cMaxContactConstraints = 10240;
-
-		m_PhysicsSystem = new JPH::PhysicsSystem;
-
-		m_PhysicsSystem->Init(cMaxBodies,
-							cNumBodyMutexes,
-							cMaxBodyPairs,
-							cMaxContactConstraints,
-							m_BroadPhaseLayerInterface,
-							m_ObjectVsBroadPhaseLayerFilter,
-							m_ObjectVsObjectLayerFilter);
-
-		// Maybe also take in a lamda to handle contacts?
-		m_PhysicsSystem->SetContactListener(new HumbleContactListener(m_PhysicsSystem));
+		// Register collision listener to dispatch events.
+		m_PhysicsSystem->SetContactListener(new HumbleContactListener(m_PhysicsEngine));
 
 		// The main way to interact with the bodies in the physics system is through the body interface.
-		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+		JPH::BodyInterface& bodyInterface = m_PhysicsEngine->Get()->GetBodyInterfaceNoLock();
 
 		DynamicArray<JPH::BodyID, BumpAllocator> bulkAddBuffer = MakeDynamicArray<JPH::BodyID>(&Allocator::Frame);
 
@@ -244,7 +214,7 @@ namespace HBL2
 		const float cDeltaTime = Time::FixedTimeStep;
 		const int cCollisionSteps = 1;
 
-		m_PhysicsSystem->Update(cDeltaTime, cCollisionSteps, m_TempAllocator, &m_JobSystem);
+		m_PhysicsEngine->Step(cDeltaTime, cCollisionSteps);
 
 		// Apply physics changes to transforms.
 		m_Context->GetRegistry()
@@ -277,22 +247,7 @@ namespace HBL2
 			return;
 		}
 
-		Physics3D::ClearCollisionEvents();
-		Physics3D::ClearTriggerEvents();
-
-		// Unregisters all types with the factory and cleans up the default material
-		JPH::UnregisterTypes();
-
-		// Destroy temp allocator
-		delete m_TempAllocator;
-		m_TempAllocator = nullptr;
-
-		// Destroy the factory
-		delete JPH::Factory::sInstance;
-		JPH::Factory::sInstance = nullptr;
-
-		// Delete physics system
-		delete m_PhysicsSystem;
+		m_PhysicsEngine->ShutDown();
 
 		m_Initialized = false;
 	}

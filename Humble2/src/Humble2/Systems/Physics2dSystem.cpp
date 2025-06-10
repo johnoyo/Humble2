@@ -1,10 +1,19 @@
 #include "Physics2dSystem.h"
 
 #include "Core\Time.h"
-#include "Physics\Physics2d.h"
 
 namespace HBL2
 {
+	static entt::entity GetEntityFromBodyId(Physics::ID body)
+	{
+		return static_cast<entt::entity>(reinterpret_cast<intptr_t>(b2Body_GetUserData(b2LoadBodyId(body))));
+	}
+
+	static entt::entity GetEntityFromShapeId(Physics::ID shape)
+	{
+		return static_cast<entt::entity>(reinterpret_cast<intptr_t>(b2Shape_GetUserData(b2LoadShapeId(shape))));
+	}
+
 	static b2BodyType BodyTypeTob2BodyType(Physics::BodyType bodyType)
 	{
 		switch (bodyType)
@@ -20,11 +29,10 @@ namespace HBL2
 
 	void Physics2dSystem::OnCreate()
 	{
-		b2WorldDef worldDef = b2DefaultWorldDef();
-		worldDef.gravity = { 0, m_GravityForce };
-		worldDef.restitutionThreshold = 0.5f;
-
-		m_PhysicsWorld = b2CreateWorld(&worldDef);
+		PhysicsEngine2D::Instance = new Box2DPhysicsEngine;
+		m_PhysicsEngine = (Box2DPhysicsEngine*)PhysicsEngine2D::Instance;
+		m_PhysicsEngine->Initialize();
+		m_PhysicsWorld = m_PhysicsEngine->Get();
 
 		m_Context->GetRegistry()
 			.group<Component::Rigidbody2D>(entt::get<Component::Transform>)
@@ -38,6 +46,8 @@ namespace HBL2
 					bc2d.ShapeId = CreateBoxCollider(entity, bc2d, rb2d, transform);
 				}
 			});
+
+		m_Initialized = true;
 	}
 
 	void Physics2dSystem::OnFixedUpdate()
@@ -90,7 +100,7 @@ namespace HBL2
 			});
 
 		// Progress the simulation.
-		b2World_Step(m_PhysicsWorld, Time::FixedTimeStep, m_SubStepCount);
+		m_PhysicsEngine->Step(Time::FixedTimeStep);
 
 		// Update the transform of rigidbodies. Consider using b2World_GetBodyEvents.
 		m_Context->GetRegistry()
@@ -113,46 +123,72 @@ namespace HBL2
 		for (int i = 0; i < contactEvents.beginCount; ++i)
 		{
 			b2ContactBeginTouchEvent* beginEvent = contactEvents.beginEvents + i;
-			Physics2D::DispatchCollisionEvent(Physics2D::ContactEventType::BeginTouch, beginEvent);
+
+			Physics::CollisionEnterEvent collisionEnterEvent{};
+			collisionEnterEvent.entityA = GetEntityFromShapeId(b2StoreShapeId(beginEvent->shapeIdA));
+			collisionEnterEvent.entityB = GetEntityFromShapeId(b2StoreShapeId(beginEvent->shapeIdB));
+
+			m_PhysicsEngine->DispatchCollisionEvent(Physics::CollisionEventType::Enter, &collisionEnterEvent);
 		}
 
 		for (int i = 0; i < contactEvents.endCount; ++i)
 		{
 			b2ContactEndTouchEvent* endEvent = contactEvents.endEvents + i;
-			Physics2D::DispatchCollisionEvent(Physics2D::ContactEventType::EndTouch, endEvent);
+
+			Physics::CollisionEnterEvent collisionExitEvent{};
+			collisionExitEvent.entityA = GetEntityFromShapeId(b2StoreShapeId(endEvent->shapeIdA));
+			collisionExitEvent.entityB = GetEntityFromShapeId(b2StoreShapeId(endEvent->shapeIdB));
+
+			m_PhysicsEngine->DispatchCollisionEvent(Physics::CollisionEventType::Exit, &collisionExitEvent);
 		}
 
 		for (int i = 0; i < contactEvents.hitCount; ++i)
 		{
 			b2ContactHitEvent* hitEvent = contactEvents.hitEvents + i;
-			Physics2D::DispatchCollisionEvent(Physics2D::ContactEventType::Hit, hitEvent);
+
+			Physics::CollisionHitEvent collisionHitEvent{};
+			collisionHitEvent.entityA = GetEntityFromShapeId(b2StoreShapeId(hitEvent->shapeIdA));
+			collisionHitEvent.entityB = GetEntityFromShapeId(b2StoreShapeId(hitEvent->shapeIdB));
+
+			m_PhysicsEngine->DispatchCollisionEvent(Physics::CollisionEventType::Hit, &collisionHitEvent);
 		}
 
 		// Dispatch any sensor events that occured during this simulation step.
 		b2SensorEvents sensorEvents = b2World_GetSensorEvents(m_PhysicsWorld);
 
-		for (int i = 0; i < contactEvents.beginCount; ++i)
+		for (int i = 0; i < sensorEvents.beginCount; ++i)
 		{
 			b2SensorBeginTouchEvent* beginEvent = sensorEvents.beginEvents + i;
-			Physics2D::DispatchTriggerEvent(Physics2D::ContactEventType::BeginTouch, beginEvent);
+
+			Physics::TriggerEnterEvent triggerEnterEvent{};
+			triggerEnterEvent.entityA = GetEntityFromShapeId(b2StoreShapeId(beginEvent->sensorShapeId));
+			triggerEnterEvent.entityB = GetEntityFromShapeId(b2StoreShapeId(beginEvent->visitorShapeId));
+
+			m_PhysicsEngine->DispatchTriggerEvent(Physics::CollisionEventType::Enter, &triggerEnterEvent);
 		}
 
 		for (int i = 0; i < sensorEvents.endCount; ++i)
 		{
 			b2SensorEndTouchEvent* endEvent = sensorEvents.endEvents + i;
-			Physics2D::DispatchTriggerEvent(Physics2D::ContactEventType::EndTouch, endEvent);
+
+			Physics::TriggerExitEvent triggerExitEvent{};
+			triggerExitEvent.entityA = GetEntityFromShapeId(b2StoreShapeId(endEvent->sensorShapeId));
+			triggerExitEvent.entityB = GetEntityFromShapeId(b2StoreShapeId(endEvent->visitorShapeId));
+
+			m_PhysicsEngine->DispatchTriggerEvent(Physics::CollisionEventType::Exit, &triggerExitEvent);
 		}
 	}
 
 	void Physics2dSystem::OnDestroy()
 	{
-		Physics2D::ClearCollisionEvents();		
-		Physics2D::ClearTriggerEvents();		
-
-		if (b2World_IsValid(m_PhysicsWorld))
+		if (!m_Initialized)
 		{
-			b2DestroyWorld(m_PhysicsWorld);
+			return;
 		}
+
+		m_PhysicsEngine->Shutdown();
+
+		m_Initialized = false;
 	}
 
 	Physics::ID Physics2dSystem::CreateRigidbody(entt::entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)

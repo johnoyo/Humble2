@@ -13,8 +13,8 @@
 #include "Resources\ResourceManager.h"
 
 #include "Physics\Physics.h"
-#include "Physics\Physics2d.h"
-#include "Physics\Physics3d.h"
+#include "Physics\PhysicsEngine2D.h"
+#include "Physics\PhysicsEngine3D.h"
 
 #include "Utilities\Allocators\BaseAllocator.h"
 #include "Utilities\Allocators\StandardAllocator.h"
