@@ -21,17 +21,17 @@ namespace HBL2
 		virtual void OnTriggerStayEvent(std::function<void(Physics::TriggerStayEvent*)>&& stayEventFunc) = 0;
 		virtual void OnTriggerExitEvent(std::function<void(Physics::TriggerExitEvent*)>&& exitEventFunc) = 0;
 
-		virtual void AddLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity) {};
-		virtual void SetLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity) {};
-		virtual glm::vec3 GetLinearVelocity(Component::Rigidbody& rb) { return {}; };
+		virtual void AddLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity) {}
+		virtual void SetLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity) {}
+		virtual glm::vec3 GetLinearVelocity(Component::Rigidbody& rb) { return {}; }
 
-		virtual void AddAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity) {};
-		virtual void SetAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity) {};
-		virtual glm::vec3 GetAngularVelocity(Component::Rigidbody& rb) { return {}; };
+		virtual void AddAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity) {}
+		virtual void SetAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity) {}
+		virtual glm::vec3 GetAngularVelocity(Component::Rigidbody& rb) { return {}; }
 
-		virtual void ApplyForce(Component::Rigidbody& rb, const glm::vec3& force) {};
-		virtual void ApplyTorque(Component::Rigidbody& rb, const glm::vec3& torque) {};
-		virtual void ApplyImpulse(Component::Rigidbody& rb, const glm::vec3& impluse) {};
-		virtual void ApplyAngularImpulse(Component::Rigidbody& rb, const glm::vec3& angularImpulse) {};
+		virtual void ApplyForce(Component::Rigidbody& rb, const glm::vec3& force) {}
+		virtual void ApplyTorque(Component::Rigidbody& rb, const glm::vec3& torque) {}
+		virtual void ApplyImpulse(Component::Rigidbody& rb, const glm::vec3& impluse) {}
+		virtual void ApplyAngularImpulse(Component::Rigidbody& rb, const glm::vec3& angularImpulse) {}
 	};
 }

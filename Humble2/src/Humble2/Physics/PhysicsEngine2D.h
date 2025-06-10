@@ -22,12 +22,14 @@ namespace HBL2
 		virtual void OnTriggerStayEvent(std::function<void(Physics::TriggerStayEvent*)>&& stayEventFunc) = 0;
 		virtual void OnTriggerExitEvent(std::function<void(Physics::TriggerExitEvent*)>&& exitEventFunc) = 0;
 
-		virtual void ApplyForce(Component::Rigidbody2D& rb2d, const glm::vec2& force, bool wake) {};
-		virtual void ApplyForce(Component::Rigidbody2D& rb2d, const glm::vec2& force, const glm::vec2& worldPosition, bool wake) {};
-		virtual void ApplyLinearImpulse(Component::Rigidbody2D& rb2d, const glm::vec2& velocity, bool wake) {};
-		virtual void ApplyLinearImpulse(Component::Rigidbody2D& rb2d, const glm::vec2& velocity, const glm::vec2& worldPosition, bool wake) {};
-		virtual void ApplyAngularImpulse(Component::Rigidbody2D& rb2d, float impulse, bool wake) {};
-		virtual glm::vec2 GetLinearVelocity(Component::Rigidbody2D& rb2d) { return {}; };
-		virtual float GetAngularVelocity(Component::Rigidbody2D& rb2d) { return 0.0f; };
+		virtual void ApplyForce(Component::Rigidbody2D& rb2d, const glm::vec2& force, bool wake) {}
+		virtual void ApplyForce(Component::Rigidbody2D& rb2d, const glm::vec2& force, const glm::vec2& worldPosition, bool wake) {}
+		virtual void ApplyLinearImpulse(Component::Rigidbody2D& rb2d, const glm::vec2& velocity, bool wake) {}
+		virtual void ApplyLinearImpulse(Component::Rigidbody2D& rb2d, const glm::vec2& velocity, const glm::vec2& worldPosition, bool wake) {}
+		virtual void ApplyAngularImpulse(Component::Rigidbody2D& rb2d, float impulse, bool wake) {}
+		virtual void SetLinearVelocity(Component::Rigidbody2D& rb2d, const glm::vec2& velocity) {}
+		virtual glm::vec2 GetLinearVelocity(Component::Rigidbody2D& rb2d) { return {}; }
+		virtual void SetAngularVelocity(Component::Rigidbody2D& rb2d, float velocity) {}
+		virtual float GetAngularVelocity(Component::Rigidbody2D& rb2d) { return 0.0f; }
 	};
 }

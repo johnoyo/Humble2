@@ -31,7 +31,9 @@ namespace HBL2
 		virtual void ApplyLinearImpulse(Component::Rigidbody2D& rb2d, const glm::vec2& velocity, bool wake) override;
 		virtual void ApplyLinearImpulse(Component::Rigidbody2D& rb2d, const glm::vec2& velocity, const glm::vec2& worldPosition, bool wake) override;
 		virtual void ApplyAngularImpulse(Component::Rigidbody2D& rb2d, float impulse, bool wake) override;
+		virtual void SetLinearVelocity(Component::Rigidbody2D& rb2d, const glm::vec2& velocity) override;
 		virtual glm::vec2 GetLinearVelocity(Component::Rigidbody2D& rb2d) override;
+		virtual void SetAngularVelocity(Component::Rigidbody2D& rb2d, float velocity) override;
 		virtual float GetAngularVelocity(Component::Rigidbody2D& rb2d) override;
 
 	private:

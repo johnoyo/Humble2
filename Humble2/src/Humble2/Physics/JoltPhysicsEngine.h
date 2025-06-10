@@ -135,6 +135,19 @@ namespace HBL2
 		virtual void OnTriggerStayEvent(std::function<void(Physics::TriggerStayEvent*)>&& stayEventFunc) override;
 		virtual void OnTriggerExitEvent(std::function<void(Physics::TriggerExitEvent*)>&& exitEventFunc) override;
 
+		virtual void AddLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity) override;
+		virtual void SetLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity) override;
+		virtual glm::vec3 GetLinearVelocity(Component::Rigidbody& rb) override;
+
+		virtual void AddAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity) override;
+		virtual void SetAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity) override;
+		virtual glm::vec3 GetAngularVelocity(Component::Rigidbody& rb) override;
+
+		virtual void ApplyForce(Component::Rigidbody& rb, const glm::vec3& force) override;
+		virtual void ApplyTorque(Component::Rigidbody& rb, const glm::vec3& torque) override;
+		virtual void ApplyImpulse(Component::Rigidbody& rb, const glm::vec3& impluse) override;
+		virtual void ApplyAngularImpulse(Component::Rigidbody& rb, const glm::vec3& angularImpulse) override;
+
 	private:
 		JPH::TempAllocatorImpl* m_TempAllocator = nullptr;
 		JPH::JobSystemThreadPool m_JobSystem;

@@ -2,6 +2,16 @@
 
 namespace HBL2
 {
+	static inline const JPH::BodyID& GetBodyIDFromPhysicsID(Physics::ID id)
+	{
+		return *((JPH::BodyID*)id);
+	}
+
+	static inline Physics::ID GetPhysicsIDFromBodyID(const JPH::BodyID& bodyId)
+	{
+		return (Physics::ID)&bodyId;
+	}
+
 	static void TraceImpl(const char* inFMT, ...)
 	{
 		// Format the message
@@ -181,6 +191,68 @@ namespace HBL2
 	void JoltPhysicsEngine::OnTriggerExitEvent(std::function<void(Physics::TriggerExitEvent*)>&& exitEventFunc)
 	{
 		m_TriggerExitEvents.emplace_back(exitEventFunc);
+	}
+	
+	void JoltPhysicsEngine::AddLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity)
+	{
+		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+		bodyInterface.AddLinearVelocity(GetBodyIDFromPhysicsID(rb.BodyID), { linearVelocity.x, linearVelocity.y, linearVelocity.z });
+	}
+
+	void JoltPhysicsEngine::SetLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity)
+	{
+		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+		bodyInterface.SetLinearVelocity(GetBodyIDFromPhysicsID(rb.BodyID), { linearVelocity.x, linearVelocity.y, linearVelocity.z });
+	}
+
+	glm::vec3 JoltPhysicsEngine::GetLinearVelocity(Component::Rigidbody& rb)
+	{
+		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+		const auto& v = bodyInterface.GetLinearVelocity(GetBodyIDFromPhysicsID(rb.BodyID));
+		return { v.GetX(), v.GetY(), v.GetZ() };
+	}
+
+	void JoltPhysicsEngine::AddAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity)
+	{
+		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+		bodyInterface.AddLinearVelocity(GetBodyIDFromPhysicsID(rb.BodyID), { angularVelocity.x, angularVelocity.y, angularVelocity.z });
+	}
+
+	void JoltPhysicsEngine::SetAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity)
+	{
+		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+		bodyInterface.SetAngularVelocity(GetBodyIDFromPhysicsID(rb.BodyID), { angularVelocity.x, angularVelocity.y, angularVelocity.z });
+	}
+
+	glm::vec3 JoltPhysicsEngine::GetAngularVelocity(Component::Rigidbody& rb)
+	{
+		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+		const auto& v = bodyInterface.GetAngularVelocity(GetBodyIDFromPhysicsID(rb.BodyID));
+		return { v.GetX(), v.GetY(), v.GetZ() };
+	}
+
+	void JoltPhysicsEngine::ApplyForce(Component::Rigidbody& rb, const glm::vec3& force)
+	{
+		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+		bodyInterface.AddForce(GetBodyIDFromPhysicsID(rb.BodyID), { force.x, force.y, force.z });
+	}
+
+	void JoltPhysicsEngine::ApplyTorque(Component::Rigidbody& rb, const glm::vec3& torque)
+	{
+		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+		bodyInterface.AddTorque(GetBodyIDFromPhysicsID(rb.BodyID), { torque.x, torque.y, torque.z });
+	}
+
+	void JoltPhysicsEngine::ApplyImpulse(Component::Rigidbody& rb, const glm::vec3& impluse)
+	{
+		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+		bodyInterface.AddImpulse(GetBodyIDFromPhysicsID(rb.BodyID), { impluse.x, impluse.y, impluse.z });
+	}
+
+	void JoltPhysicsEngine::ApplyAngularImpulse(Component::Rigidbody& rb, const glm::vec3& angularImpulse)
+	{
+		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+		bodyInterface.AddAngularImpulse(GetBodyIDFromPhysicsID(rb.BodyID), { angularImpulse.x, angularImpulse.y, angularImpulse.z });
 	}
 }
 

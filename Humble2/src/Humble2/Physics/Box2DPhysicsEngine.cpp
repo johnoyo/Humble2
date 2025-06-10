@@ -162,10 +162,20 @@ namespace HBL2
 		b2Body_ApplyAngularImpulse(b2LoadBodyId(rb2d.BodyId), impulse, wake);
 	}
 
+	void Box2DPhysicsEngine::SetLinearVelocity(Component::Rigidbody2D& rb2d, const glm::vec2& velocity)
+	{
+		b2Body_SetLinearVelocity(b2LoadBodyId(rb2d.BodyId), { velocity.x, velocity.y });
+	}
+
 	glm::vec2 Box2DPhysicsEngine::GetLinearVelocity(Component::Rigidbody2D& rb2d)
 	{
 		const auto& linearVelocity = b2Body_GetLinearVelocity(b2LoadBodyId(rb2d.BodyId));
 		return { linearVelocity.x, linearVelocity.y };
+	}
+
+	void Box2DPhysicsEngine::SetAngularVelocity(Component::Rigidbody2D& rb2d, float velocity)
+	{
+		b2Body_SetAngularVelocity(b2LoadBodyId(rb2d.BodyId), velocity);
 	}
 
 	float Box2DPhysicsEngine::GetAngularVelocity(Component::Rigidbody2D& rb2d)
