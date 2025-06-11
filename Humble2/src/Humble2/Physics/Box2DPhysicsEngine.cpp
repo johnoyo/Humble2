@@ -137,6 +137,11 @@ namespace HBL2
 		m_TriggerExitEvents.emplace_back(exitEventFunc);
 	}
 
+	void Box2DPhysicsEngine::Teleport(Component::Rigidbody2D& rb2d, const glm::vec2& position, glm::vec2& rotation)
+	{
+		b2Body_SetTransform(b2LoadBodyId(rb2d.BodyId), { position.x, position.y }, { rotation.x, rotation.y });
+	}
+
 	void Box2DPhysicsEngine::ApplyForce(Component::Rigidbody2D& rb2d, const glm::vec2& force, bool wake)
 	{
 		b2Body_ApplyForceToCenter(b2LoadBodyId(rb2d.BodyId), { force.x, force.y }, wake);

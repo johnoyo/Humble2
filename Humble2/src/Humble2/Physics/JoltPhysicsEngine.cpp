@@ -192,6 +192,19 @@ namespace HBL2
 	{
 		m_TriggerExitEvents.emplace_back(exitEventFunc);
 	}
+
+	void JoltPhysicsEngine::SetPosition(Component::Rigidbody& rb, const glm::vec3& position)
+	{
+		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+		bodyInterface.SetPosition(GetBodyIDFromPhysicsID(rb.BodyID), { position.x, position.y, position.z }, JPH::EActivation::Activate);
+	}
+
+	void JoltPhysicsEngine::SetRotation(Component::Rigidbody& rb, const glm::vec3& rotation)
+	{
+		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+		glm::quat qRot = glm::quat({ glm::radians(rotation.x), glm::radians(rotation.y), glm::radians(rotation.z) });
+		bodyInterface.SetRotation(GetBodyIDFromPhysicsID(rb.BodyID), { qRot.x, qRot.y, qRot.z, qRot.w }, JPH::EActivation::Activate);
+	}
 	
 	void JoltPhysicsEngine::AddLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity)
 	{

@@ -135,6 +135,9 @@ namespace HBL2
 		virtual void OnTriggerStayEvent(std::function<void(Physics::TriggerStayEvent*)>&& stayEventFunc) override;
 		virtual void OnTriggerExitEvent(std::function<void(Physics::TriggerExitEvent*)>&& exitEventFunc) override;
 
+		virtual void SetPosition(Component::Rigidbody& rb, const glm::vec3& position) override;
+		virtual void SetRotation(Component::Rigidbody& rb, const glm::vec3& rotation) override;
+
 		virtual void AddLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity) override;
 		virtual void SetLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity) override;
 		virtual glm::vec3 GetLinearVelocity(Component::Rigidbody& rb) override;
