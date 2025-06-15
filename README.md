@@ -10,6 +10,7 @@ Features:
 - Complete UI Editor for creating applications / games.
 - Uses an ECS architecture using the [EnTT](https://github.com/skypjack/entt) library.
 - Fully integrated C++ scripting support.
+- Powerfull physics support for 2D (using [Box2D](https://github.com/erincatto/box2d)) and 3D (using [Jolt](https://github.com/jrouwe/JoltPhysics)) games.
 - Planned web support with [Emscripten](https://github.com/emscripten-core/emsdk) using WebGPU to build games for the browser.
 - Currently supports only Windows.
 
