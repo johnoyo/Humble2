@@ -279,6 +279,17 @@ namespace HBL2
 			JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
 			shapeRef = shapeResult.Get();
 		}
+		else if (m_Context->HasComponent<Component::CapsuleCollider>(entity))
+		{
+			auto& cc = m_Context->GetComponent<Component::CapsuleCollider>(entity);
+
+			JPH::CapsuleShapeSettings shapeSettings(cc.Height / 2.0f, cc.Radius);
+			shapeSettings.SetEmbedded();
+
+			// Create the shape
+			JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
+			shapeRef = shapeResult.Get();
+		}
 
 		JPH::ObjectLayer bodyLayer;
 
@@ -322,6 +333,8 @@ namespace HBL2
 
 	bool Physics3dSystem::HasAnyCollider(entt::entity entity)
 	{
-		return m_Context->HasComponent<Component::BoxCollider>(entity) || m_Context->HasComponent<Component::SphereCollider>(entity);
+		return m_Context->HasComponent<Component::BoxCollider>(entity) ||
+			m_Context->HasComponent<Component::SphereCollider>(entity) ||
+			m_Context->HasComponent<Component::CapsuleCollider>(entity);
 	}
 }

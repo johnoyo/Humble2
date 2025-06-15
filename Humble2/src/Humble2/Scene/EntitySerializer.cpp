@@ -331,6 +331,20 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::CapsuleCollider>(m_Entity))
+		{
+			out << YAML::Key << "Component::CapsuleCollider";
+			out << YAML::BeginMap;
+
+			auto& cc = m_Scene->GetComponent<Component::CapsuleCollider>(m_Entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << cc.Enabled;
+			out << YAML::Key << "Height" << YAML::Value << cc.Height;
+			out << YAML::Key << "Radius" << YAML::Value << cc.Radius;
+
+			out << YAML::EndMap;
+		}
+
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
 			const auto& alias = meta_type.second.info().name();
@@ -561,6 +575,15 @@ namespace HBL2
 			auto& sc = m_Scene->AddComponent<Component::SphereCollider>(m_Entity);
 			sc.Enabled = sc_NewComponent["Enabled"].as<bool>();
 			sc.Radius = sc_NewComponent["Radius"].as<float>();
+		}
+
+		auto cc_NewComponent = entityNode["Component::CapsuleCollider"];
+		if (cc_NewComponent)
+		{
+			auto& cc = m_Scene->AddComponent<Component::CapsuleCollider>(m_Entity);
+			cc.Enabled = cc_NewComponent["Enabled"].as<bool>();
+			cc.Height = cc_NewComponent["Height"].as<float>();
+			cc.Radius = cc_NewComponent["Radius"].as<float>();
 		}
 
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))

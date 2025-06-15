@@ -200,5 +200,12 @@ namespace HBL2
 			float Radius = 1.0f;
 			bool Enabled = true;
 		};
+
+		struct HBL2_API CapsuleCollider
+		{
+			float Height = 1.0f;
+			float Radius = 1.0f;
+			bool Enabled = true;
+		};
 	}
 }

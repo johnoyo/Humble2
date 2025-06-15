@@ -77,6 +77,7 @@ namespace HBL2
         copy_component(Component::Rigidbody{});
         copy_component(Component::BoxCollider{});
         copy_component(Component::SphereCollider{});
+        copy_component(Component::CapsuleCollider{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
@@ -203,6 +204,10 @@ namespace HBL2
         m_Registry.storage<Component::SphereCollider>().clear();
         m_Registry.compact<Component::SphereCollider>();
 
+        m_Registry.clear<Component::CapsuleCollider>();
+        m_Registry.storage<Component::CapsuleCollider>().clear();
+        m_Registry.compact<Component::CapsuleCollider>();
+
         // Destroy all entities.
         for (auto& [uuid, entity] : m_EntityMap)
         {
@@ -283,6 +288,7 @@ namespace HBL2
         copy_component(Component::Rigidbody{});
         copy_component(Component::BoxCollider{});
         copy_component(Component::SphereCollider{});
+        copy_component(Component::CapsuleCollider{});
 
         // Copy user defined components.
         std::vector<std::string> userComponentNames;
