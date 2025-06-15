@@ -1,0 +1,340 @@
+#include "Physics3dSystem.h"
+
+#include "Core/Time.h"
+#include "Core/Allocators.h"
+
+#include "Resources/ResourceManager.h"
+
+#include "Utilities/Collections/DynamicArray.h"
+#include "Utilities/Allocators/BumpAllocator.h"
+
+namespace HBL2
+{
+	static inline const JPH::BodyID& GetBodyIDFromPhysicsID(Physics::ID id)
+	{
+		return *((JPH::BodyID*)id);
+	}
+
+	static inline Physics::ID GetPhysicsIDFromBodyID(const JPH::BodyID& bodyId)
+	{
+		return (Physics::ID)&bodyId;
+	}
+
+	class HumbleContactListener : public JPH::ContactListener
+	{
+	public:
+		HumbleContactListener(JoltPhysicsEngine* engine) : m_Context(engine->Get()), m_Engine(engine) {}
+
+		virtual JPH::ValidateResult	OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult) override
+		{
+			// Allows you to ignore a contact before it is created (using layers to not make objects collide is cheaper!)
+			return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
+		}
+
+		virtual void OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override
+		{
+			if (m_Context->WereBodiesInContact(inBody1.GetID(), inBody2.GetID()))
+			{
+				return; // not the first contact between bodies
+			}
+
+			if (ioSettings.mIsSensor)
+			{
+				Physics::TriggerEnterEvent triggerEnterEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
+				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Enter, &triggerEnterEvent);
+			}
+			else
+			{
+				Physics::CollisionEnterEvent collisionEnterEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
+				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Enter, &collisionEnterEvent);
+			}
+		}
+
+		virtual void OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override
+		{
+			if (ioSettings.mIsSensor)
+			{
+				Physics::TriggerStayEvent triggerStayEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
+				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Stay, &triggerStayEvent);
+			}
+			else
+			{
+				Physics::CollisionEnterEvent collisionEnterEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
+				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Enter, &collisionEnterEvent);
+			}
+		}
+
+		virtual void OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) override
+		{
+			const auto body1ID = inSubShapePair.GetBody1ID();
+			const auto body2ID = inSubShapePair.GetBody2ID();
+
+			if (m_Context->WereBodiesInContact(body1ID, body2ID))
+			{
+				return; // not the last contact between bodies
+			}
+
+			auto& bodyIterface = m_Context->GetBodyInterfaceNoLock();
+
+			if (bodyIterface.GetObjectLayer(body1ID) == Layers::TRIGGER || bodyIterface.GetObjectLayer(body2ID) == Layers::TRIGGER)
+			{
+				Physics::TriggerExitEvent triggerExitEvent = { (entt::entity)bodyIterface.GetUserData(body1ID), (entt::entity)bodyIterface.GetUserData(body2ID) };
+				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Exit, &triggerExitEvent);
+			}
+			else
+			{
+				Physics::CollisionExitEvent collisionExitEvent = { (entt::entity)bodyIterface.GetUserData(body1ID), (entt::entity)bodyIterface.GetUserData(body2ID) };
+				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Exit, &collisionExitEvent);
+			}
+		}
+
+	private:
+		JoltPhysicsEngine* m_Engine = nullptr;
+		JPH::PhysicsSystem* m_Context = nullptr;
+	};
+
+	static JPH::EMotionType BodyTypeToEMotionType(Physics::BodyType bodyType)
+	{
+		switch (bodyType)
+		{
+		case Physics::BodyType::Static:    return JPH::EMotionType::Static;
+		case Physics::BodyType::Kinematic: return JPH::EMotionType::Kinematic;
+		case Physics::BodyType::Dynamic:   return JPH::EMotionType::Dynamic;
+		}
+
+		HBL2_CORE_ASSERT(false, "Unknown Rigidbody type.");
+		return JPH::EMotionType::Static;
+	}
+
+	void Physics3dSystem::OnCreate()
+	{
+		PhysicsEngine3D::Instance = new JoltPhysicsEngine;
+		m_PhysicsEngine = (JoltPhysicsEngine*)PhysicsEngine3D::Instance;
+
+		m_PhysicsEngine->Initialize();
+		m_PhysicsSystem = m_PhysicsEngine->Get();
+
+		// Register collision listener to dispatch events.
+		m_PhysicsSystem->SetContactListener(new HumbleContactListener(m_PhysicsEngine));
+
+		// The main way to interact with the bodies in the physics system is through the body interface.
+		JPH::BodyInterface& bodyInterface = m_PhysicsEngine->Get()->GetBodyInterfaceNoLock();
+
+		DynamicArray<JPH::BodyID, BumpAllocator> bulkAddBuffer = MakeDynamicArray<JPH::BodyID>(&Allocator::Frame);
+
+		m_Context->GetRegistry()
+			.group<Component::Rigidbody>(entt::get<Component::Transform>)
+			.each([this, &bodyInterface, &bulkAddBuffer](entt::entity entity, Component::Rigidbody& rb, Component::Transform& transform)
+			{
+				AddRigidBody(entity, rb, transform, bodyInterface);
+				bulkAddBuffer.Add(GetBodyIDFromPhysicsID(rb.BodyID));
+			});
+
+		JPH::BodyInterface::AddState addState =  bodyInterface.AddBodiesPrepare(bulkAddBuffer.Data(), bulkAddBuffer.Size());
+		bodyInterface.AddBodiesFinalize(bulkAddBuffer.Data(), bulkAddBuffer.Size(), addState, JPH::EActivation::Activate);
+
+		m_Initialized = true;
+	}
+
+	void Physics3dSystem::OnUpdate(float ts)
+	{
+	}
+
+	void Physics3dSystem::OnFixedUpdate()
+	{
+		// Handle runtime creations and properties update.
+		m_Context->GetRegistry()
+			.group<Component::Rigidbody>(entt::get<Component::Transform>)
+			.each([this](entt::entity entity, Component::Rigidbody& rb, Component::Transform& transform)
+			{
+				JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
+				if (rb.BodyID == Physics::InvalidID)
+				{
+					AddRigidBody(entity, rb, transform, bodyInterface);
+					bodyInterface.AddBody(GetBodyIDFromPhysicsID(rb.BodyID), JPH::EActivation::DontActivate);
+					return;
+				}
+
+				bool hasCollider = HasAnyCollider(entity);
+
+				JPH::BodyID bodyID = GetBodyIDFromPhysicsID(rb.BodyID);
+				JPH::ObjectLayer objectLayer = bodyInterface.GetObjectLayer(bodyID);
+				JPH::EMotionType newType = BodyTypeToEMotionType(rb.Type);
+
+				if (rb.Dirty)
+				{
+					if (rb.Trigger)
+					{
+						const JPH::BodyLockInterface& lockingBodyInterface = m_PhysicsSystem->GetBodyLockInterface();
+
+						JPH::BodyLockWrite lock(lockingBodyInterface, bodyID);
+						if (lock.Succeeded())
+						{
+							JPH::Body& body = lock.GetBody();
+							body.SetIsSensor(true);
+						}
+
+						bodyInterface.SetObjectLayer(bodyID, Layers::TRIGGER);
+					}
+					else
+					{
+						// NOTE: There is a bug when adding collider after rigidbody at runtime, the collider settings wont apply.
+						bodyInterface.RemoveBody(bodyID);
+						bodyInterface.DestroyBody(bodyID);
+						AddRigidBody(entity, rb, transform, bodyInterface);
+						bodyInterface.AddBody(GetBodyIDFromPhysicsID(rb.BodyID), JPH::EActivation::Activate);
+					}
+
+					rb.Dirty = false;
+				}
+
+				if (bodyInterface.GetFriction(bodyID) != rb.Friction)
+				{
+					bodyInterface.SetFriction(bodyID, rb.Friction);
+				}
+
+				if (bodyInterface.GetRestitution(bodyID) != rb.Restitution)
+				{
+					bodyInterface.SetRestitution(bodyID, rb.Restitution);
+				}
+
+				if (bodyInterface.GetMotionType(bodyID) != newType)
+				{
+					bodyInterface.SetMotionType(bodyID, newType, JPH::EActivation::Activate);
+
+					if (!rb.Trigger)
+					{
+						bodyInterface.SetObjectLayer(bodyID, newType == JPH::EMotionType::Static ? Layers::NON_MOVING : Layers::MOVING);
+					}
+				}
+			});
+
+		// Update internal simulation step.
+		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
+		const float cDeltaTime = Time::FixedTimeStep;
+		const int cCollisionSteps = 1;
+
+		m_PhysicsEngine->Step(cDeltaTime, cCollisionSteps);
+
+		// Apply physics changes to transforms.
+		m_Context->GetRegistry()
+			.group<Component::Rigidbody>(entt::get<Component::Transform>)
+			.each([this, &bodyInterface](entt::entity entity, Component::Rigidbody& rb, Component::Transform& transform)
+			{
+				glm::vec3 originalScale = transform.Scale;
+
+				JPH::Vec3 outPosition;
+				JPH::Quat outRotation;
+
+				bodyInterface.GetPositionAndRotation(GetBodyIDFromPhysicsID(rb.BodyID), outPosition, outRotation);
+				transform.Translation.x = outPosition.GetX();
+				transform.Translation.y = outPosition.GetY();
+				transform.Translation.z = outPosition.GetZ();
+
+				const auto& rotation = outRotation.GetEulerAngles();
+				transform.Rotation.x = glm::degrees(rotation.GetX());
+				transform.Rotation.y = glm::degrees(rotation.GetY());
+				transform.Rotation.z = glm::degrees(rotation.GetZ());
+
+				transform.Scale = originalScale;
+			});
+	}
+
+	void Physics3dSystem::OnDestroy()
+	{
+		if (!m_Initialized)
+		{
+			return;
+		}
+
+		m_PhysicsEngine->ShutDown();
+
+		m_Initialized = false;
+	}
+
+	void Physics3dSystem::AddRigidBody(entt::entity entity, Component::Rigidbody& rb, Component::Transform& transform, JPH::BodyInterface& bodyInterface)
+	{
+		JPH::ShapeRefC shapeRef;
+		JPH::EMotionType type = BodyTypeToEMotionType(rb.Type);
+
+		if (m_Context->HasComponent<Component::BoxCollider>(entity))
+		{
+			auto& bc = m_Context->GetComponent<Component::BoxCollider>(entity);
+
+			JPH::BoxShapeSettings shapeSettings(JPH::Vec3(bc.Size.x * transform.Scale.x, bc.Size.x * transform.Scale.y, bc.Size.x * transform.Scale.z));
+			shapeSettings.SetEmbedded();
+
+			// Create the shape
+			JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
+			shapeRef = shapeResult.Get();
+		}
+		else if (m_Context->HasComponent<Component::SphereCollider>(entity))
+		{
+			auto& sc = m_Context->GetComponent<Component::SphereCollider>(entity);
+
+			JPH::SphereShapeSettings shapeSettings(sc.Radius * transform.Scale.x);
+			shapeSettings.SetEmbedded();
+
+			// Create the shape
+			JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
+			shapeRef = shapeResult.Get();
+		}
+		else if (m_Context->HasComponent<Component::CapsuleCollider>(entity))
+		{
+			auto& cc = m_Context->GetComponent<Component::CapsuleCollider>(entity);
+
+			JPH::CapsuleShapeSettings shapeSettings(cc.Height / 2.0f, cc.Radius);
+			shapeSettings.SetEmbedded();
+
+			// Create the shape
+			JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
+			shapeRef = shapeResult.Get();
+		}
+
+		JPH::ObjectLayer bodyLayer;
+
+		if (rb.Trigger)
+		{
+			bodyLayer = Layers::TRIGGER;
+		}
+		else
+		{
+			bodyLayer = (type == JPH::EMotionType::Static ? Layers::NON_MOVING : Layers::MOVING);
+		}
+
+		JPH::RVec3 bodyPosition = JPH::RVec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
+		JPH::Quat bodyRotation = JPH::Quat(transform.QRotation.x, transform.QRotation.y, transform.QRotation.z, transform.QRotation.w);
+
+		// Create the settings for the body itself.
+		JPH::BodyCreationSettings bodySettings(shapeRef, bodyPosition, bodyRotation, type, bodyLayer);
+		bodySettings.mFriction = rb.Friction;
+		bodySettings.mRestitution = rb.Restitution;
+		bodySettings.mLinearDamping = rb.LinearDamping;
+		bodySettings.mAngularDamping = rb.AngularDamping;
+		bodySettings.mAllowDynamicOrKinematic = true;
+		bodySettings.mIsSensor = rb.Trigger;
+		bodySettings.mCollideKinematicVsNonDynamic = rb.Trigger;
+
+		// Create the actual rigid body. Note that if we run out of bodies this can return nullptr.
+		JPH::Body* body = bodyInterface.CreateBody(bodySettings);
+
+		// FIXME: This^ will crash if no collider is attached!
+
+		if (body == nullptr)
+		{
+			HBL2_CORE_ERROR("Exceeded maximum number of supported rigudbodies");
+			return;
+		}
+
+		// Maybe use the entity ID here?
+		body->SetUserData((JPH::uint64)entity);
+		rb.BodyID = GetPhysicsIDFromBodyID(body->GetID());
+	}
+
+	bool Physics3dSystem::HasAnyCollider(entt::entity entity)
+	{
+		return m_Context->HasComponent<Component::BoxCollider>(entity) ||
+			m_Context->HasComponent<Component::SphereCollider>(entity) ||
+			m_Context->HasComponent<Component::CapsuleCollider>(entity);
+	}
+}

@@ -22,6 +22,21 @@ namespace HBL2
 			HBL2::EventDispatcher::Get().Register<WindowSizeEvent>([&](const HBL2::WindowSizeEvent& e)
 			{
 				Context::ViewportSize = { e.Width, e.Height };
+
+				if (e.Width == 0 || e.Height == 0)
+				{
+					return;
+				}
+
+				m_ActiveScene->GetRegistry()
+					.view<HBL2::Component::Camera>()
+					.each([&](HBL2::Component::Camera& camera)
+					{
+						if (camera.Enabled)
+						{
+							camera.AspectRatio = Context::ViewportSize.x / Context::ViewportSize.y;
+						}
+					});
 			});
 
 			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());

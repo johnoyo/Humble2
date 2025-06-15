@@ -391,12 +391,76 @@ namespace HBL2
 
 					switch (rb2d.Type)
 					{
-					case HBL2::Component::Rigidbody2D::BodyType::Static: selectedType = "Static"; break;
-					case HBL2::Component::Rigidbody2D::BodyType::Dynamic: selectedType = "Dynamic"; break;
-					case HBL2::Component::Rigidbody2D::BodyType::Kinematic: selectedType = "Kinematic"; break;
+					case Physics::BodyType::Static: selectedType = "Static"; break;
+					case Physics::BodyType::Dynamic: selectedType = "Dynamic"; break;
+					case Physics::BodyType::Kinematic: selectedType = "Kinematic"; break;
 					}
 
 					std::string bodyTypes[3] = { "Static", "Dynamic", "Kinematic"};
+
+					if (ImGui::BeginCombo("Type", selectedType.c_str()))
+					{
+						for (const auto& type : bodyTypes)
+						{
+							bool isSelected = (selectedType == type);
+							if (ImGui::Selectable(type.c_str(), isSelected))
+							{
+								selectedType = type;
+								rb2d.Dirty = true;
+							}
+
+							if (isSelected)
+							{
+								ImGui::SetItemDefaultFocus();
+							}
+						}
+						ImGui::EndCombo();
+					}
+
+					if (selectedType == "Static") rb2d.Type = Physics::BodyType::Static;
+					else if (selectedType == "Dynamic") rb2d.Type = Physics::BodyType::Dynamic;
+					else if (selectedType == "Kinematic") rb2d.Type = Physics::BodyType::Kinematic;
+
+					ImGui::Checkbox("FixedRotation", &rb2d.FixedRotation);
+				});
+
+				DrawComponent<HBL2::Component::BoxCollider2D>("BoxCollider2D", m_ActiveScene, [this](HBL2::Component::BoxCollider2D& bc2d)
+				{
+					ImGui::Checkbox("Enabled", &bc2d.Enabled);
+					ImGui::Checkbox("Trigger", &bc2d.Trigger);
+					ImGui::SliderFloat("Density", &bc2d.Density, 0.0f, 10.0f);
+					ImGui::SliderFloat("Friction", &bc2d.Friction, 0.0f, 1.0f);
+					ImGui::SliderFloat("Restitution", &bc2d.Restitution, 0.0f, 1.0f);
+
+					if (ImGui::DragFloat2("Size", glm::value_ptr(bc2d.Size)))
+					{
+						bc2d.Dirty = true;
+					}
+
+					if (ImGui::DragFloat2("Offset", glm::value_ptr(bc2d.Offset)))
+					{
+						bc2d.Dirty = true;
+					}
+				});
+
+				DrawComponent<HBL2::Component::Rigidbody>("Rigidbody", m_ActiveScene, [this](HBL2::Component::Rigidbody& rb)
+				{
+					ImGui::Checkbox("Enabled", &rb.Enabled);
+					if (ImGui::Checkbox("Trigger", &rb.Trigger))
+					{
+						rb.Dirty = true;
+					}
+
+					std::string selectedType = "Static";
+
+					switch (rb.Type)
+					{
+					case Physics::BodyType::Static: selectedType = "Static"; break;
+					case Physics::BodyType::Dynamic: selectedType = "Dynamic"; break;
+					case Physics::BodyType::Kinematic: selectedType = "Kinematic"; break;
+					}
+
+					std::string bodyTypes[3] = { "Static", "Dynamic", "Kinematic" };
 
 					if (ImGui::BeginCombo("Type", selectedType.c_str()))
 					{
@@ -416,21 +480,28 @@ namespace HBL2
 						ImGui::EndCombo();
 					}
 
-					if (selectedType == "Static") rb2d.Type = HBL2::Component::Rigidbody2D::BodyType::Static;
-					else if (selectedType == "Dynamic") rb2d.Type = HBL2::Component::Rigidbody2D::BodyType::Dynamic;
-					else if (selectedType == "Kinematic") rb2d.Type = HBL2::Component::Rigidbody2D::BodyType::Kinematic;
-
-					ImGui::Checkbox("FixedRotation", &rb2d.FixedRotation);
+					if (selectedType == "Static") rb.Type = Physics::BodyType::Static;
+					else if (selectedType == "Dynamic") rb.Type = Physics::BodyType::Dynamic;
+					else if (selectedType == "Kinematic") rb.Type = Physics::BodyType::Kinematic;
 				});
 
-				DrawComponent<HBL2::Component::BoxCollider2D>("BoxCollider2D", m_ActiveScene, [this](HBL2::Component::BoxCollider2D& bc2d)
+				DrawComponent<HBL2::Component::BoxCollider>("BoxCollider", m_ActiveScene, [this](HBL2::Component::BoxCollider& bc)
 				{
-					ImGui::Checkbox("Enabled", &bc2d.Enabled);
-					ImGui::SliderFloat("Density", &bc2d.Density, 0.0f, 10.0f);
-					ImGui::SliderFloat("Friction", &bc2d.Friction, 0.0f, 1.0f);
-					ImGui::SliderFloat("Restitution", &bc2d.Restitution, 0.0f, 1.0f);
-					ImGui::DragFloat2("Size", glm::value_ptr(bc2d.Size));
-					ImGui::DragFloat2("Offset", glm::value_ptr(bc2d.Offset));
+					ImGui::Checkbox("Enabled", &bc.Enabled);
+					ImGui::DragFloat3("Size", glm::value_ptr(bc.Size));
+				});
+
+				DrawComponent<HBL2::Component::SphereCollider>("SphereCollider", m_ActiveScene, [this](HBL2::Component::SphereCollider& sc)
+				{
+					ImGui::Checkbox("Enabled", &sc.Enabled);
+					ImGui::DragFloat("Radius", &sc.Radius);
+				});
+
+				DrawComponent<HBL2::Component::CapsuleCollider>("CapsuleCollider", m_ActiveScene, [this](HBL2::Component::CapsuleCollider& cc)
+				{
+					ImGui::Checkbox("Enabled", &cc.Enabled);
+					ImGui::DragFloat("Height", &cc.Height);
+					ImGui::DragFloat("Radius", &cc.Radius);
 				});
 
 				using namespace entt::literals;
@@ -561,6 +632,42 @@ namespace HBL2
 						if (ImGui::MenuItem("BoxCollider2D"))
 						{
 							m_ActiveScene->AddComponent<HBL2::Component::BoxCollider2D>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
+					if (!m_ActiveScene->HasComponent<HBL2::Component::Rigidbody>(HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::MenuItem("Rigidbody"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::Rigidbody>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
+					if (!m_ActiveScene->HasComponent<HBL2::Component::BoxCollider>(HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::MenuItem("BoxCollider"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::BoxCollider>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
+					if (!m_ActiveScene->HasComponent<HBL2::Component::SphereCollider>(HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::MenuItem("SphereCollider"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::SphereCollider>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
+					if (!m_ActiveScene->HasComponent<HBL2::Component::CapsuleCollider>(HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::MenuItem("CapsuleCollider"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::CapsuleCollider>(HBL2::Component::EditorVisible::SelectedEntity);
 							ImGui::CloseCurrentPopup();
 						}
 					}

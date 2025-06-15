@@ -36,6 +36,7 @@ project "HumbleEditor"
         "../Dependencies/FMOD/core/include",
         "../Dependencies/Box2D/box2d/src",
         "../Dependencies/Box2D/box2d/include",
+        "../Dependencies/Jolt/jolt",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "%{VULKAN_SDK}/Include"
     }
@@ -46,11 +47,13 @@ project "HumbleEditor"
         "ImGui",
         "YAML-Cpp",
         "Box2D",
+        "Jolt",
     }
 
     defines
     {
         "YAML_CPP_STATIC_DEFINE",
+        table.unpack(JoltDefines)
     }
 
     filter "system:windows"

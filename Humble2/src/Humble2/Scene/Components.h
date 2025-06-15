@@ -5,8 +5,9 @@
 #include "Resources\Handle.h"
 #include "Asset\Asset.h"
 
+#include "Physics\Physics.h"
+
 #include <entt.hpp>
-#include <box2d\id.h>
 
 namespace HBL2
 {
@@ -150,17 +151,11 @@ namespace HBL2
 
 		struct HBL2_API Rigidbody2D
 		{
-			enum class BodyType
-			{
-				Static = 0,
-				Dynamic,
-				Kinematic,
-			};
-
-			BodyType Type = BodyType::Static;
+			Physics::BodyType Type = Physics::BodyType::Static;
 			bool FixedRotation = false;
-			b2BodyId BodyId;
+			Physics::ID BodyId = Physics::InvalidID;
 
+			bool Dirty = false;
 			bool Enabled = true;
 		};
 
@@ -173,8 +168,43 @@ namespace HBL2
 			float Friction = 0.5f;
 			float Restitution = 0.0f;
 
-			b2ShapeId ShapeId;
+			Physics::ID ShapeId = Physics::InvalidID;
 
+			bool Trigger = false;
+			bool Dirty = false;
+			bool Enabled = true;
+		};
+
+		struct HBL2_API Rigidbody
+		{
+			Physics::ID BodyID = Physics::InvalidID;
+			float Friction = 0.2f;
+			float Restitution = 0.1f;
+			Physics::BodyType Type = Physics::BodyType::Static;
+			float LinearDamping = 0.05f;
+			float AngularDamping = 0.05f;
+			float Mass = 1.0f;
+			bool Trigger = false;
+			bool Dirty = false;
+			bool Enabled = true;
+		};
+
+		struct HBL2_API BoxCollider
+		{
+			glm::vec3 Size = { 1.0f, 1.0f, 1.0f };
+			bool Enabled = true;
+		};
+
+		struct HBL2_API SphereCollider
+		{
+			float Radius = 1.0f;
+			bool Enabled = true;
+		};
+
+		struct HBL2_API CapsuleCollider
+		{
+			float Height = 0.1f;
+			float Radius = 1.0f;
 			bool Enabled = true;
 		};
 	}

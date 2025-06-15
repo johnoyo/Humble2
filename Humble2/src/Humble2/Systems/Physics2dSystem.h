@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Physics\Box2DPhysicsEngine.h"
+
 #include "Scene\Scene.h"
 #include "Scene\ISystem.h"
 #include "Scene\Components.h"
@@ -19,8 +21,12 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
+		Physics::ID CreateRigidbody(entt::entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform);
+		Physics::ID CreateBoxCollider(entt::entity entity, Component::BoxCollider2D& bc2d, Component::Rigidbody2D& rb2d, Component::Transform& transform);
+
+	private:
+		Box2DPhysicsEngine* m_PhysicsEngine = nullptr;
 		b2WorldId m_PhysicsWorld = {};
-		int m_SubStepCount = 4;
-		float m_GravityForce = -9.81f;
+		bool m_Initialized = false;
 	};
 }

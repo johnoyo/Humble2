@@ -9,7 +9,7 @@ class NewSystem final : public HBL2::ISystem
 public:
 	virtual void OnCreate() override
 	{
-		Physics2D::OnBeginTouchEvent([this](Physics2D::ContactBeginTouchEvent* beginTouchEvent)
+		PhysicsEngine2D::Instance->OnCollisionEnterEvent([this](Physics::CollisionEnterEvent* beginTouchEvent)
 		{
 			auto& tagA = m_Context->GetComponent<Component::Tag>(beginTouchEvent->entityA).Name;
 			auto& tagB = m_Context->GetComponent<Component::Tag>(beginTouchEvent->entityB).Name;
@@ -17,6 +17,42 @@ public:
 			HBL2_INFO("{} -> {}\n", tagA, tagB);
 
 			m_Grounded = true;
+		});
+
+		PhysicsEngine3D::Instance->OnCollisionEnterEvent([this](Physics::CollisionEnterEvent* collisionEnterEvent)
+		{
+			auto& tagA = m_Context->GetComponent<Component::Tag>(collisionEnterEvent->entityA).Name;
+			auto& tagB = m_Context->GetComponent<Component::Tag>(collisionEnterEvent->entityB).Name;
+
+			HBL2_INFO("[COLLISION] Entered {} -> {}\n", tagA, tagB);
+
+			auto& mesh = m_Context->GetComponent<Component::StaticMesh>(collisionEnterEvent->entityB);
+			Material* mat = ResourceManager::Instance->GetMaterial(mesh.Material);
+			mat->AlbedoColor = { 1.0f, 0.55f, 0.95f, 1.0f };
+		});
+
+		PhysicsEngine3D::Instance->OnTriggerEnterEvent([this](Physics::TriggerEnterEvent* triggerEnterEvent)
+		{
+			auto& tagA = m_Context->GetComponent<Component::Tag>(triggerEnterEvent->entityA).Name;
+			auto& tagB = m_Context->GetComponent<Component::Tag>(triggerEnterEvent->entityB).Name;
+
+			HBL2_INFO("[TRIGGER] Entered {} -> {}\n", tagA, tagB);
+		});
+
+		PhysicsEngine3D::Instance->OnCollisionExitEvent([this](Physics::CollisionExitEvent* collisionExitEvent)
+		{
+			auto& tagA = m_Context->GetComponent<Component::Tag>(collisionExitEvent->entityA).Name;
+			auto& tagB = m_Context->GetComponent<Component::Tag>(collisionExitEvent->entityB).Name;
+
+			HBL2_INFO("[COLLISION] Exited {} -> {}\n", tagA, tagB);
+		});
+
+		PhysicsEngine3D::Instance->OnTriggerExitEvent([this](Physics::TriggerExitEvent* triggerExitEvent)
+		{
+			auto& tagA = m_Context->GetComponent<Component::Tag>(triggerExitEvent->entityA).Name;
+			auto& tagB = m_Context->GetComponent<Component::Tag>(triggerExitEvent->entityB).Name;
+
+			HBL2_INFO("[TRIGGER] Exited {} -> {}\n", tagA, tagB);
 		});
 	}
 
@@ -48,20 +84,20 @@ public:
 			.view<Component::Rigidbody2D>()
 			.each([this](entt::entity entity, Component::Rigidbody2D& rb2d)
 			{
-				if (rb2d.Type == Component::Rigidbody2D::BodyType::Dynamic)
+				if (rb2d.Type == Physics::BodyType::Dynamic)
 				{
 					if (Input::GetKeyPress(KeyCode::W) && m_Grounded)
 					{
 						m_Grounded = false;
-						Physics2D::ApplyLinearImpulse(rb2d, { 0.0f, 10.0f }, true);
+						PhysicsEngine2D::Instance->ApplyLinearImpulse(rb2d, { 0.0f, 10.0f }, true);
 					}
 					if (Input::GetKeyDown(KeyCode::D))
 					{
-						Physics2D::ApplyForce(rb2d, { 10.0f, 0.0f }, true);
+						PhysicsEngine2D::Instance->ApplyForce(rb2d, { 12.0f, 0.0f }, true);
 					}
 					if (Input::GetKeyDown(KeyCode::A))
 					{
-						Physics2D::ApplyForce(rb2d, { -10.0f, 0.0f }, true);
+						PhysicsEngine2D::Instance->ApplyForce(rb2d, { -12.0f, 0.0f }, true);
 					}
 				}
 			});

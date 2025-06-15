@@ -276,6 +276,7 @@ namespace HBL2
 			auto& bc2d = m_Scene->GetComponent<Component::BoxCollider2D>(m_Entity);
 
 			out << YAML::Key << "Enabled" << YAML::Value << bc2d.Enabled;
+			out << YAML::Key << "Trigger" << YAML::Value << bc2d.Trigger;
 			out << YAML::Key << "Density" << YAML::Value << bc2d.Density;
 			out << YAML::Key << "Friction" << YAML::Value << bc2d.Friction;
 			out << YAML::Key << "Restitution" << YAML::Value << bc2d.Restitution;
@@ -285,9 +286,75 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::Rigidbody>(m_Entity))
+		{
+			out << YAML::Key << "Component::Rigidbody";
+			out << YAML::BeginMap;
+
+			auto& rb = m_Scene->GetComponent<Component::Rigidbody>(m_Entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << rb.Enabled;
+			out << YAML::Key << "Trigger" << YAML::Value << rb.Trigger;
+			out << YAML::Key << "Type" << YAML::Value << (int)rb.Type;
+			out << YAML::Key << "Mass" << YAML::Value << (int)rb.Mass;
+			out << YAML::Key << "Friction" << YAML::Value << rb.Friction;
+			out << YAML::Key << "Restitution" << YAML::Value << rb.Restitution;
+			out << YAML::Key << "LinearDamping" << YAML::Value << rb.LinearDamping;
+			out << YAML::Key << "AngularDamping" << YAML::Value << rb.AngularDamping;
+
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::BoxCollider>(m_Entity))
+		{
+			out << YAML::Key << "Component::BoxCollider";
+			out << YAML::BeginMap;
+
+			auto& bc = m_Scene->GetComponent<Component::BoxCollider>(m_Entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << bc.Enabled;
+			out << YAML::Key << "Size" << YAML::Value << bc.Size;
+
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::SphereCollider>(m_Entity))
+		{
+			out << YAML::Key << "Component::SphereCollider";
+			out << YAML::BeginMap;
+
+			auto& sc = m_Scene->GetComponent<Component::SphereCollider>(m_Entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << sc.Enabled;
+			out << YAML::Key << "Radius" << YAML::Value << sc.Radius;
+
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::CapsuleCollider>(m_Entity))
+		{
+			out << YAML::Key << "Component::CapsuleCollider";
+			out << YAML::BeginMap;
+
+			auto& cc = m_Scene->GetComponent<Component::CapsuleCollider>(m_Entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << cc.Enabled;
+			out << YAML::Key << "Height" << YAML::Value << cc.Height;
+			out << YAML::Key << "Radius" << YAML::Value << cc.Radius;
+
+			out << YAML::EndMap;
+		}
+
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
-			const std::string& componentName = meta_type.second.info().name().data();
+			const auto& alias = meta_type.second.info().name();
+
+			if (alias.size() == 0 || alias.size() >= UINT32_MAX || alias.data() == nullptr)
+			{
+				continue;
+			}
+
+			const std::string& componentName = alias.data();
 
 			const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
 
@@ -463,24 +530,7 @@ namespace HBL2
 		{
 			auto& rb2d = m_Scene->AddComponent<Component::Rigidbody2D>(m_Entity);
 			rb2d.Enabled = rb2d_NewComponent["Enabled"].as<bool>();
-			if (rb2d_NewComponent["Type"])
-			{
-				switch (rb2d_NewComponent["Type"].as<int>())
-				{
-				case 0:
-					rb2d.Type = Component::Rigidbody2D::BodyType::Static;
-					break;
-				case 1:
-					rb2d.Type = Component::Rigidbody2D::BodyType::Dynamic;
-					break;
-				case 2:
-					rb2d.Type = Component::Rigidbody2D::BodyType::Kinematic;
-					break;
-				default:
-					rb2d.Type = Component::Rigidbody2D::BodyType::Static;
-					break;
-				}
-			}
+			rb2d.Type = (Physics::BodyType)rb2d_NewComponent["Type"].as<int>();
 			rb2d.FixedRotation = rb2d_NewComponent["FixedRotation"].as<bool>();
 		}
 
@@ -489,6 +539,7 @@ namespace HBL2
 		{
 			auto& bc2d = m_Scene->AddComponent<Component::BoxCollider2D>(m_Entity);
 			bc2d.Enabled = bc2d_NewComponent["Enabled"].as<bool>();
+			bc2d.Trigger = bc2d_NewComponent["Trigger"].as<bool>();
 			bc2d.Density = bc2d_NewComponent["Density"].as<float>();
 			bc2d.Friction = bc2d_NewComponent["Friction"].as<float>();
 			bc2d.Restitution = bc2d_NewComponent["Restitution"].as<float>();
@@ -496,9 +547,55 @@ namespace HBL2
 			bc2d.Offset = bc2d_NewComponent["Offset"].as<glm::vec2>();
 		}
 
+		auto rb_NewComponent = entityNode["Component::Rigidbody"];
+		if (rb_NewComponent)
+		{
+			auto& rb = m_Scene->AddComponent<Component::Rigidbody>(m_Entity);
+			rb.Enabled = rb_NewComponent["Enabled"].as<bool>();
+			rb.Trigger = rb_NewComponent["Trigger"].as<bool>();
+			rb.Type = (Physics::BodyType)rb_NewComponent["Type"].as<int>();
+			rb.Mass = rb_NewComponent["Mass"].as<float>();
+			rb.Friction = rb_NewComponent["Friction"].as<float>();
+			rb.Restitution = rb_NewComponent["Restitution"].as<float>();
+			rb.LinearDamping = rb_NewComponent["LinearDamping"].as<float>();
+			rb.AngularDamping = rb_NewComponent["AngularDamping"].as<float>();
+		}
+
+		auto bc_NewComponent = entityNode["Component::BoxCollider"];
+		if (bc_NewComponent)
+		{
+			auto& bc = m_Scene->AddComponent<Component::BoxCollider>(m_Entity);
+			bc.Enabled = bc_NewComponent["Enabled"].as<bool>();
+			bc.Size = bc_NewComponent["Size"].as<glm::vec3>();
+		}
+
+		auto sc_NewComponent = entityNode["Component::SphereCollider"];
+		if (sc_NewComponent)
+		{
+			auto& sc = m_Scene->AddComponent<Component::SphereCollider>(m_Entity);
+			sc.Enabled = sc_NewComponent["Enabled"].as<bool>();
+			sc.Radius = sc_NewComponent["Radius"].as<float>();
+		}
+
+		auto cc_NewComponent = entityNode["Component::CapsuleCollider"];
+		if (cc_NewComponent)
+		{
+			auto& cc = m_Scene->AddComponent<Component::CapsuleCollider>(m_Entity);
+			cc.Enabled = cc_NewComponent["Enabled"].as<bool>();
+			cc.Height = cc_NewComponent["Height"].as<float>();
+			cc.Radius = cc_NewComponent["Radius"].as<float>();
+		}
+
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
-			const std::string& componentName = meta_type.second.info().name().data();
+			const auto& alias = meta_type.second.info().name();
+
+			if (alias.size() == 0)
+			{
+				continue;
+			}
+
+			const std::string& componentName = alias.data();
 			const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
 
 			auto userComponent = entityNode[cleanedComponentName];

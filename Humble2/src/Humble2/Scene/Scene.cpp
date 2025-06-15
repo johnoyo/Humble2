@@ -11,6 +11,7 @@
 #include "Systems\ForwardRenderingSystem.h"
 #include "Systems\SoundSystem.h"
 #include "Systems\Physics2dSystem.h"
+#include "Systems\Physics3dSystem.h"
 
 namespace HBL2
 {
@@ -73,6 +74,10 @@ namespace HBL2
         copy_component(Component::AudioSource{});
         copy_component(Component::Rigidbody2D{});
         copy_component(Component::BoxCollider2D{});
+        copy_component(Component::Rigidbody{});
+        copy_component(Component::BoxCollider{});
+        copy_component(Component::SphereCollider{});
+        copy_component(Component::CapsuleCollider{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
@@ -81,6 +86,7 @@ namespace HBL2
         dst->RegisterSystem(new ForwardRenderingSystem);
         dst->RegisterSystem(new SoundSystem, SystemType::Runtime);
         dst->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
+        dst->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
 
         // Register any user systems to new scene.
         for (ISystem* system : src->m_RuntimeSystems)
@@ -121,7 +127,14 @@ namespace HBL2
         // Clear user defined components.
         for (auto meta_type : entt::resolve(m_MetaContext))
         {
-            const std::string& componentName = meta_type.second.info().name().data();
+            const auto& alias = meta_type.second.info().name();
+
+            if (alias.size() == 0 || alias.size() >= UINT32_MAX || alias.data() == nullptr)
+            {
+                continue;
+            }
+
+            const std::string& componentName = alias.data();
 
             const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
             NativeScriptUtilities::Get().ClearComponentStorage(cleanedComponentName, this);
@@ -178,6 +191,22 @@ namespace HBL2
         m_Registry.clear<Component::BoxCollider2D>();
         m_Registry.storage<Component::BoxCollider2D>().clear();
         m_Registry.compact<Component::BoxCollider2D>();
+
+        m_Registry.clear<Component::Rigidbody>();
+        m_Registry.storage<Component::Rigidbody>().clear();
+        m_Registry.compact<Component::Rigidbody>();
+
+        m_Registry.clear<Component::BoxCollider>();
+        m_Registry.storage<Component::BoxCollider>().clear();
+        m_Registry.compact<Component::BoxCollider>();
+
+        m_Registry.clear<Component::SphereCollider>();
+        m_Registry.storage<Component::SphereCollider>().clear();
+        m_Registry.compact<Component::SphereCollider>();
+
+        m_Registry.clear<Component::CapsuleCollider>();
+        m_Registry.storage<Component::CapsuleCollider>().clear();
+        m_Registry.compact<Component::CapsuleCollider>();
 
         // Destroy all entities.
         for (auto& [uuid, entity] : m_EntityMap)
@@ -256,6 +285,10 @@ namespace HBL2
         copy_component(Component::AudioSource{});
         copy_component(Component::Rigidbody2D{});
         copy_component(Component::BoxCollider2D{});
+        copy_component(Component::Rigidbody{});
+        copy_component(Component::BoxCollider{});
+        copy_component(Component::SphereCollider{});
+        copy_component(Component::CapsuleCollider{});
 
         // Copy user defined components.
         std::vector<std::string> userComponentNames;
