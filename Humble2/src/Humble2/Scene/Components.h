@@ -203,7 +203,7 @@ namespace HBL2
 
 		struct HBL2_API CapsuleCollider
 		{
-			float Height = 1.0f;
+			float Height = 0.1f;
 			float Radius = 1.0f;
 			bool Enabled = true;
 		};

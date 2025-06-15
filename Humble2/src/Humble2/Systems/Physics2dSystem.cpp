@@ -197,7 +197,7 @@ namespace HBL2
 		bodyDef.type = BodyTypeTob2BodyType(rb2d.Type);
 		bodyDef.position = { transform.Translation.x, transform.Translation.y };
 		bodyDef.rotation = b2MakeRot(glm::radians(transform.Rotation.z));
-		bodyDef.fixedRotation = rb2d.FixedRotation;
+		bodyDef.motionLocks.angularZ = rb2d.FixedRotation;
 		bodyDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>(entity));
 
 		b2BodyId bodyId = b2CreateBody(m_PhysicsWorld, &bodyDef);
