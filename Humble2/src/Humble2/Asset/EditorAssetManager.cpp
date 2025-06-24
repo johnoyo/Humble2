@@ -5,7 +5,7 @@
 #include "Systems\TransformSystem.h"
 #include "Systems\LinkSystem.h"
 #include "Systems\CameraSystem.h"
-#include "Systems\ForwardRenderingSystem.h"
+#include "Systems\RenderingSystem.h"
 #include "Systems\SoundSystem.h"
 #include "Systems\Physics2dSystem.h"
 #include "Systems\Physics3dSystem.h"
@@ -575,7 +575,7 @@ namespace HBL2
 		scene->RegisterSystem(new TransformSystem);
 		scene->RegisterSystem(new LinkSystem);
 		scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
-		scene->RegisterSystem(new ForwardRenderingSystem);
+		scene->RegisterSystem(new RenderingSystem);
 		scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
 		scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 		scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
@@ -799,7 +799,7 @@ namespace HBL2
 			scene->RegisterSystem(new TransformSystem);
 			scene->RegisterSystem(new LinkSystem);
 			scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
-			scene->RegisterSystem(new ForwardRenderingSystem);
+			scene->RegisterSystem(new RenderingSystem);
 			scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
 			scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 			scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);

@@ -8,7 +8,7 @@
 #include "Systems\TransformSystem.h"
 #include "Systems\LinkSystem.h"
 #include "Systems\CameraSystem.h"
-#include "Systems\ForwardRenderingSystem.h"
+#include "Systems\RenderingSystem.h"
 #include "Systems\SoundSystem.h"
 #include "Systems\Physics2dSystem.h"
 #include "Systems\Physics3dSystem.h"
@@ -83,7 +83,7 @@ namespace HBL2
         dst->RegisterSystem(new TransformSystem);
         dst->RegisterSystem(new LinkSystem);
         dst->RegisterSystem(new CameraSystem, SystemType::Runtime);
-        dst->RegisterSystem(new ForwardRenderingSystem);
+        dst->RegisterSystem(new RenderingSystem);
         dst->RegisterSystem(new SoundSystem, SystemType::Runtime);
         dst->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
         dst->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
