@@ -4,6 +4,8 @@ project "Box2D"
 	cdialect "C11"
 	staticruntime "Off"
 
+    flags { "MultiProcessorCompile" }
+
 	targetdir ("box2d/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("box2d/bin-int/" .. outputdir .. "/%{prj.name}")
 

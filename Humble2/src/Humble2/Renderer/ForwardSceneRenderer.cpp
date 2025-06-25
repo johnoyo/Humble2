@@ -1,7 +1,9 @@
-﻿#include "ForwardRenderingSystem.h"
+#include "ForwardSceneRenderer.h"
 
-#include "Core\Window.h"
-#include "Utilities\ShaderUtilities.h"
+#include "Core/Window.h"
+#include "Core/Context.h"
+#include "Renderer/Device.h"
+#include "Utilities/ShaderUtilities.h"
 
 #include <glm/gtx/euler_angles.hpp>
 
@@ -76,8 +78,10 @@ namespace HBL2
 		}
 	};
 
-	void ForwardRenderingSystem::OnCreate()
+	void ForwardSceneRenderer::Initialize(Scene* scene)
 	{
+		m_Scene = scene;
+
 		m_ResourceManager = ResourceManager::Instance;
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
@@ -87,7 +91,7 @@ namespace HBL2
 			.debugName = "main-renderpass-layout",
 			.depthTargetFormat = Format::D32_FLOAT,
 			.subPasses = {
-				{ .depthTarget = true, .colorTargets = 1, },
+				{.depthTarget = true, .colorTargets = 1, },
 			},
 		});
 
@@ -96,7 +100,7 @@ namespace HBL2
 			.debugName = "pre-pass-renderpass-layout",
 			.depthTargetFormat = Format::D32_FLOAT,
 			.subPasses = {
-				{ .depthTarget = true },
+				{.depthTarget = true },
 			},
 		});
 
@@ -141,6 +145,7 @@ namespace HBL2
 			}
 		});
 
+		// Setup render passes.
 		ShadowPassSetup();
 		DepthPrePassSetup();
 		OpaquePassSetup();
@@ -151,9 +156,9 @@ namespace HBL2
 		PresentPassSetup();
 	}
 
-	void ForwardRenderingSystem::OnUpdate(float ts)
+	void ForwardSceneRenderer::Render(entt::entity mainCamera)
 	{
-		GetViewProjection();
+		GetViewProjection(mainCamera);
 
 		GatherDraws();
 		GatherLights();
@@ -213,14 +218,13 @@ namespace HBL2
 		renderPassPool.Execute(RenderPassEvent::AfterRenderingPostProcess);
 
 		PresentPass(commandBuffer);
-
 		renderPassPool.Execute(RenderPassEvent::AfterRendering);
 
 		commandBuffer->EndCommandRecording();
 		commandBuffer->Submit();
 	}
 
-	void ForwardRenderingSystem::OnDestroy()
+	void ForwardSceneRenderer::CleanUp()
 	{
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
 
@@ -263,7 +267,7 @@ namespace HBL2
 		m_ResourceManager->DeleteBuffer(m_CubeMeshBuffer);
 		m_ResourceManager->DeleteMesh(m_CubeMesh);
 
-		m_Context->GetRegistry()
+		m_Scene->GetRegistry()
 			.view<Component::SkyLight>()
 			.each([&](Component::SkyLight& skyLight)
 			{
@@ -278,7 +282,7 @@ namespace HBL2
 
 				m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
 				skyLight.CubeMapMaterial = {};
-				
+
 				skyLight.Converted = false;
 			});
 
@@ -302,7 +306,7 @@ namespace HBL2
 		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
 	}
 
-	void ForwardRenderingSystem::ShadowPassSetup()
+	void ForwardSceneRenderer::ShadowPassSetup()
 	{
 		// Create shadow framebuffer.
 		m_ShadowRenderPass = m_ResourceManager->CreateRenderPass({
@@ -350,8 +354,8 @@ namespace HBL2
 
 		m_ShadowPrePassShader = ResourceManager::Instance->CreateShader({
 			.debugName = "shadow-pre-pass-shader",
-			.VS { .code = shadowPrePassShaderCode[0], .entryPoint = "main" },
-			.FS { .code = shadowPrePassShaderCode[1], .entryPoint = "main" },
+			.VS {.code = shadowPrePassShaderCode[0], .entryPoint = "main" },
+			.FS {.code = shadowPrePassShaderCode[1], .entryPoint = "main" },
 			.bindGroups {
 				Renderer::Instance->GetShadowBindingsLayout(),	// Global bind group (0)
 				m_DepthOnlyBindGroupLayout,						// (1)
@@ -361,9 +365,9 @@ namespace HBL2
 					{
 						.byteStride = 32,
 						.attributes = {
-							{ .byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
-							{ .byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
-							{ .byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
+							{.byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
+							{.byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
+							{.byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},
@@ -387,7 +391,7 @@ namespace HBL2
 		m_ShadowPrePassMaterialHash = ResourceManager::Instance->GetShaderVariantHash(variant);
 	}
 
-	void ForwardRenderingSystem::DepthPrePassSetup()
+	void ForwardSceneRenderer::DepthPrePassSetup()
 	{
 		// Create pre-pass framebuffer.	
 		m_DepthOnlyFrameBuffer = m_ResourceManager->CreateFrameBuffer({
@@ -396,20 +400,20 @@ namespace HBL2
 			.height = Window::Instance->GetExtents().y,
 			.renderPass = m_DepthOnlyRenderPass,
 			.depthTarget = Renderer::Instance->MainDepthTexture,
-		});
+			});
 
 		Renderer::Instance->AddCallbackOnResize("Depth-Only-Resize-FrameBuffer", [this](uint32_t width, uint32_t height)
-		{
-			ResourceManager::Instance->DeleteFrameBuffer(m_DepthOnlyFrameBuffer);
+			{
+				ResourceManager::Instance->DeleteFrameBuffer(m_DepthOnlyFrameBuffer);
 
-			m_DepthOnlyFrameBuffer = ResourceManager::Instance->CreateFrameBuffer({
-				.debugName = "viewport-fb",
-				.width = width,
-				.height = height,
-				.renderPass = m_DepthOnlyRenderPass,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
+				m_DepthOnlyFrameBuffer = ResourceManager::Instance->CreateFrameBuffer({
+					.debugName = "viewport-fb",
+					.width = width,
+					.height = height,
+					.renderPass = m_DepthOnlyRenderPass,
+					.depthTarget = Renderer::Instance->MainDepthTexture,
+					});
 			});
-		});
 
 		// Create pre-pass shaders.
 		const auto& prePassShaderCode = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-mesh.shader");
@@ -421,8 +425,8 @@ namespace HBL2
 
 		m_DepthOnlyShader = ResourceManager::Instance->CreateShader({
 			.debugName = "mesh-pre-pass-shader",
-			.VS { .code = prePassShaderCode[0], .entryPoint = "main" },
-			.FS { .code = prePassShaderCode[1], .entryPoint = "main" },
+			.VS {.code = prePassShaderCode[0], .entryPoint = "main" },
+			.FS {.code = prePassShaderCode[1], .entryPoint = "main" },
 			.bindGroups {
 				Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
 				m_DepthOnlyBindGroupLayout,							// (1)
@@ -432,16 +436,16 @@ namespace HBL2
 					{
 						.byteStride = 32,
 						.attributes = {
-							{ .byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
-							{ .byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
-							{ .byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
+							{.byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
+							{.byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
+							{.byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},
 				.variants = { variant },
 			},
 			.renderPass = m_DepthOnlyRenderPass,
-		});
+			});
 
 		ResourceManager::Instance->AddShaderVariant(m_DepthOnlyShader, variant);
 
@@ -449,8 +453,8 @@ namespace HBL2
 
 		m_DepthOnlySpriteShader = ResourceManager::Instance->CreateShader({
 			.debugName = "sprite-pre-pass-shader",
-			.VS { .code = prePassSpriteShaderCode[0], .entryPoint = "main" },
-			.FS { .code = prePassSpriteShaderCode[1], .entryPoint = "main" },
+			.VS {.code = prePassSpriteShaderCode[0], .entryPoint = "main" },
+			.FS {.code = prePassSpriteShaderCode[1], .entryPoint = "main" },
 			.bindGroups {
 				Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
 				m_DepthOnlyBindGroupLayout,							// (1)
@@ -460,15 +464,15 @@ namespace HBL2
 					{
 						.byteStride = 20,
 						.attributes = {
-							{ .byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
-							{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
+							{.byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
+							{.byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},
 				.variants = { variant },
 			},
 			.renderPass = m_DepthOnlyRenderPass,
-		});
+			});
 
 		ResourceManager::Instance->AddShaderVariant(m_DepthOnlySpriteShader, variant);
 
@@ -477,7 +481,7 @@ namespace HBL2
 			.debugName = "depth-only-mesh-material",
 			.shader = m_DepthOnlyShader,
 			.bindGroup = m_DepthOnlyMeshBindGroup,
-		});
+			});
 
 		Material* mat0 = ResourceManager::Instance->GetMaterial(m_DepthOnlyMaterial);
 		mat0->VariantDescriptor = variant;
@@ -486,7 +490,7 @@ namespace HBL2
 			.debugName = "depth-only-sprite-material",
 			.shader = m_DepthOnlySpriteShader,
 			.bindGroup = m_DepthOnlySpriteBindGroup,
-		});
+			});
 
 		Material* mat1 = ResourceManager::Instance->GetMaterial(m_DepthOnlySpriteMaterial);
 		mat1->VariantDescriptor = variant;
@@ -495,7 +499,7 @@ namespace HBL2
 		m_DepthOnlySpriteMaterialHash = m_DepthOnlyMaterialHash;
 	}
 
-	void ForwardRenderingSystem::OpaquePassSetup()
+	void ForwardSceneRenderer::OpaquePassSetup()
 	{
 		// Renderpass and framebuffer for opaques.
 		m_OpaqueRenderPass = m_ResourceManager->CreateRenderPass({
@@ -528,7 +532,7 @@ namespace HBL2
 			.depthTarget = Renderer::Instance->MainDepthTexture,
 			.colorTargets = { Renderer::Instance->IntermediateColorTexture },
 		});
-		
+
 		// Resize opaque framebuffer callback.
 		Renderer::Instance->AddCallbackOnResize("Resize-Opaque-FrameBuffer", [this](uint32_t width, uint32_t height)
 		{
@@ -541,11 +545,11 @@ namespace HBL2
 				.renderPass = m_OpaqueRenderPass,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
-			});
+				});
 		});
 	}
 
-	void ForwardRenderingSystem::TransparentPassSetup()
+	void ForwardSceneRenderer::TransparentPassSetup()
 	{
 		// Renderpass and framebuffer for transparents.
 		m_TransparentRenderPass = m_ResourceManager->CreateRenderPass({
@@ -591,11 +595,11 @@ namespace HBL2
 				.renderPass = m_TransparentRenderPass,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
-			});
+				});
 		});
 	}
 
-	void ForwardRenderingSystem::SpriteRenderingSetup()
+	void ForwardSceneRenderer::SpriteRenderingSetup()
 	{
 		float* vertexBuffer = new float[30] {
 			-0.5, -0.5, 0.0, 0.0, 1.0, // 0 - Bottom left
@@ -630,7 +634,7 @@ namespace HBL2
 		});
 	}
 
-	void ForwardRenderingSystem::SkyboxPassSetup()
+	void ForwardSceneRenderer::SkyboxPassSetup()
 	{
 		m_CaptureMatricesBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "capture-matrices-buffer",
@@ -673,7 +677,7 @@ namespace HBL2
 		m_EquirectToSkyboxShader = ResourceManager::Instance->CreateShader({
 			.debugName = "compute-shader",
 			.type = ShaderType::COMPUTE,
-			.CS { .code = computeShaderCode[0], .entryPoint = "main" },
+			.CS {.code = computeShaderCode[0], .entryPoint = "main" },
 			.bindGroups {
 				m_EquirectToSkyboxBindGroupLayout,							// (0)
 			},
@@ -720,7 +724,7 @@ namespace HBL2
 			.debugName = "skybox-global-bind-group",
 			.layout = m_SkyboxGlobalBindGroupLayout,
 			.buffers = {
-				{ .buffer = cameraBuffer },
+				{.buffer = cameraBuffer },
 			}
 		});
 
@@ -746,7 +750,7 @@ namespace HBL2
 					{
 						.byteStride = 12,
 						.attributes = {
-							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
+							{.byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
 						},
 					}
 				},
@@ -766,18 +770,18 @@ namespace HBL2
 			// Front face
 			-1.0f,-1.0f, 1.0f, 1.0f,-1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
 			 1.0f, 1.0f, 1.0f,-1.0f, 1.0f, 1.0f,-1.0f,-1.0f, 1.0f,
-			// Left face
-			-1.0f, 1.0f, 1.0f,-1.0f, 1.0f,-1.0f,-1.0f,-1.0f,-1.0f,
-			-1.0f,-1.0f,-1.0f,-1.0f,-1.0f, 1.0f,-1.0f, 1.0f, 1.0f,
-			// Right face
-			 1.0f, 1.0f, 1.0f, 1.0f,-1.0f,-1.0f, 1.0f, 1.0f,-1.0f,
-			 1.0f,-1.0f,-1.0f, 1.0f, 1.0f, 1.0f, 1.0f,-1.0f, 1.0f,
-			 // Bottom face
-			-1.0f,-1.0f,-1.0f, 1.0f,-1.0f,-1.0f, 1.0f,-1.0f, 1.0f,
-			 1.0f,-1.0f, 1.0f,-1.0f,-1.0f, 1.0f,-1.0f,-1.0f,-1.0f,
-			 // Top face
-			-1.0f, 1.0f,-1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,-1.0f,
-			 1.0f, 1.0f, 1.0f,-1.0f, 1.0f,-1.0f,-1.0f, 1.0f, 1.0f,
+		    // Left face
+		    -1.0f, 1.0f, 1.0f,-1.0f, 1.0f,-1.0f,-1.0f,-1.0f,-1.0f,
+		    -1.0f,-1.0f,-1.0f,-1.0f,-1.0f, 1.0f,-1.0f, 1.0f, 1.0f,
+		    // Right face
+		     1.0f, 1.0f, 1.0f, 1.0f,-1.0f,-1.0f, 1.0f, 1.0f,-1.0f,
+		     1.0f,-1.0f,-1.0f, 1.0f, 1.0f, 1.0f, 1.0f,-1.0f, 1.0f,
+		     // Bottom face
+		    -1.0f,-1.0f,-1.0f, 1.0f,-1.0f,-1.0f, 1.0f,-1.0f, 1.0f,
+		     1.0f,-1.0f, 1.0f,-1.0f,-1.0f, 1.0f,-1.0f,-1.0f,-1.0f,
+		     // Top face
+		    -1.0f, 1.0f,-1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,-1.0f,
+		     1.0f, 1.0f, 1.0f,-1.0f, 1.0f,-1.0f,-1.0f, 1.0f, 1.0f,
 		};
 
 		m_CubeMeshBuffer = ResourceManager::Instance->CreateBuffer({
@@ -805,7 +809,7 @@ namespace HBL2
 			}
 		});
 
-		m_Context->GetRegistry()
+		m_Scene->GetRegistry()
 			.view<Component::SkyLight>()
 			.each([&](Component::SkyLight& skyLight)
 			{
@@ -815,7 +819,7 @@ namespace HBL2
 			});
 	}
 
-	void ForwardRenderingSystem::PostProcessPassSetup()
+	void ForwardSceneRenderer::PostProcessPassSetup()
 	{
 		float* vertexBuffer = new float[24] {
 			-1.0, -1.0, 0.0, 0.0, // Bottom left
@@ -882,7 +886,7 @@ namespace HBL2
 				Renderer::Instance->IntermediateColorTexture
 			},
 			.buffers = {
-				{ .buffer = m_PostProcessBuffer },
+				{.buffer = m_PostProcessBuffer },
 			}
 		});
 
@@ -928,7 +932,7 @@ namespace HBL2
 				.renderPass = m_PostProcessRenderPass,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 				.colorTargets = { Renderer::Instance->MainColorTexture },
-			});
+				});
 
 			ResourceManager::Instance->DeleteBindGroup(m_PostProcessBindGroup);
 
@@ -937,7 +941,7 @@ namespace HBL2
 				.usage = BufferUsage::UNIFORM,
 				.usageHint = BufferUsageHint::DYNAMIC,
 				.byteSize = sizeof(CameraSettings),
-			});
+				});
 
 			m_PostProcessBindGroup = ResourceManager::Instance->CreateBindGroup({
 				.debugName = "post-process-bind-group",
@@ -946,9 +950,9 @@ namespace HBL2
 					Renderer::Instance->IntermediateColorTexture
 				},
 				.buffers = {
-					{ .buffer = m_PostProcessBuffer },
+					{.buffer = m_PostProcessBuffer },
 				}
-			});
+				});
 		});
 
 		// Create pre-pass shaders.
@@ -995,7 +999,7 @@ namespace HBL2
 		mat->VariantDescriptor = variant;
 	}
 
-	void ForwardRenderingSystem::PresentPassSetup()
+	void ForwardSceneRenderer::PresentPassSetup()
 	{
 		float* vertexBuffer = new float[24] {
 			-1.0, -1.0, 0.0, 1.0, // Bottom left
@@ -1041,8 +1045,8 @@ namespace HBL2
 		// Create present bind group layout.
 		m_PresentShader = ResourceManager::Instance->CreateShader({
 			.debugName = "present-shader",
-			.VS { .code = presentShaderCode[0], .entryPoint = "main" },
-			.FS { .code = presentShaderCode[1], .entryPoint = "main" },
+			.VS {.code = presentShaderCode[0], .entryPoint = "main" },
+			.FS {.code = presentShaderCode[1], .entryPoint = "main" },
 			.bindGroups {
 				Renderer::Instance->GetGlobalPresentBindingsLayout(),	// Global bind group (0)
 			},
@@ -1051,8 +1055,8 @@ namespace HBL2
 					{
 						.byteStride = 16,
 						.attributes = {
-							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
-							{ .byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
+							{.byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+							{.byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},
@@ -1070,73 +1074,7 @@ namespace HBL2
 		mat->VariantDescriptor = variant;
 	}
 
-	bool ForwardRenderingSystem::IsInFrustum(const Component::Transform& transform)
-	{
-		glm::vec3 worldPosition = glm::normalize(glm::vec3(transform.LocalMatrix * glm::vec4(transform.Translation, 1.0f)));
-		float radius = glm::length(transform.Scale) * 0.5f;
-
-		for (const auto& plane : m_CameraFrustum.Planes)
-		{
-			float distance = glm::dot(plane.normal, worldPosition) + plane.distance;
-
-			// If the sphere is completely outside the frustum, reject it
-			if (distance < -radius)
-			{
-				return false; // Outside
-			}
-		}
-
-		return true; // Inside or intersecting
-	}
-
-	bool ForwardRenderingSystem::IsInFrustum(Handle<Mesh> meshHandle, const Component::Transform& transform)
-	{
-		Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
-
-		if (mesh == nullptr)
-		{
-			return false;
-		}
-
-		// Transform AABB min/max to world space
-		glm::vec3 worldMin = glm::vec3(transform.WorldMatrix * glm::vec4(mesh->Extents.Min.x, mesh->Extents.Min.y, mesh->Extents.Min.z, 1.0f));
-		glm::vec3 worldMax = glm::vec3(transform.WorldMatrix * glm::vec4(mesh->Extents.Max.x, mesh->Extents.Max.y, mesh->Extents.Max.z, 1.0f));
-
-		// Generate 8 corners of AABB
-		std::array<glm::vec3, 8> corners = {
-			glm::vec3(worldMin.x, worldMin.y, worldMin.z),
-			glm::vec3(worldMax.x, worldMin.y, worldMin.z),
-			glm::vec3(worldMin.x, worldMax.y, worldMin.z),
-			glm::vec3(worldMax.x, worldMax.y, worldMin.z),
-			glm::vec3(worldMin.x, worldMin.y, worldMax.z),
-			glm::vec3(worldMax.x, worldMin.y, worldMax.z),
-			glm::vec3(worldMin.x, worldMax.y, worldMax.z),
-			glm::vec3(worldMax.x, worldMax.y, worldMax.z),
-		};
-
-		// Check if any of the 8 corners are inside the frustum
-		for (const auto& plane : m_CameraFrustum.Planes)
-		{
-			bool inside = false;
-			for (const glm::vec3& corner : corners)
-			{
-				if (glm::dot(plane.normal, corner) + plane.distance >= 0)
-				{
-					inside = true;
-					break;  // If at least one point is inside, we continue
-				}
-			}
-
-			if (!inside)
-			{
-				return false;  // If all points are outside any plane, it's not in frustum
-			}
-		}
-
-		return true;  // If we pass all planes, the object is inside the frustum
-	}
-
-	void ForwardRenderingSystem::GatherDraws()
+	void ForwardSceneRenderer::GatherDraws()
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1150,7 +1088,7 @@ namespace HBL2
 			m_PrePassStaticMeshDraws.Reset();
 			m_ShadowPassStaticMeshDraws.Reset();
 
-			m_Context->GetRegistry()
+			m_Scene->GetRegistry()
 				.group<Component::StaticMesh>(entt::get<Component::Transform>)
 				.each([&](Component::StaticMesh& staticMesh, Component::Transform& transform)
 				{
@@ -1194,7 +1132,7 @@ namespace HBL2
 								.VertexOffset = subMesh.VertexOffset,
 								.InstanceCount = subMesh.InstanceCount,
 								.InstanceOffset = subMesh.InstanceOffset,
-							});
+								});
 
 							// Include only opaque objects in depth pre-pass.
 							m_PrePassStaticMeshDraws.Insert({
@@ -1212,7 +1150,7 @@ namespace HBL2
 								.VertexOffset = subMesh.VertexOffset,
 								.InstanceCount = subMesh.InstanceCount,
 								.InstanceOffset = subMesh.InstanceOffset,
-							});
+								});
 						}
 						else
 						{
@@ -1231,7 +1169,7 @@ namespace HBL2
 								.VertexOffset = subMesh.VertexOffset,
 								.InstanceCount = subMesh.InstanceCount,
 								.InstanceOffset = subMesh.InstanceOffset,
-							});
+								});
 						}
 
 						if (material->ReceiveShadows)
@@ -1251,7 +1189,7 @@ namespace HBL2
 								.VertexOffset = subMesh.VertexOffset,
 								.InstanceCount = subMesh.InstanceCount,
 								.InstanceOffset = subMesh.InstanceOffset,
-							});
+								});
 						}
 					}
 				});
@@ -1263,7 +1201,7 @@ namespace HBL2
 			m_SpriteTransparentDraws.Reset();
 			m_PrePassSpriteDraws.Reset();
 
-			m_Context->GetRegistry()
+			m_Scene->GetRegistry()
 				.group<Component::Sprite>(entt::get<Component::Transform>)
 				.each([&](Component::Sprite& sprite, Component::Transform& transform)
 				{
@@ -1296,7 +1234,7 @@ namespace HBL2
 								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawDataSprite),
 								.VertexCount = 6,
-							});
+								});
 
 							// Include only opaque objects in depth pre-pass.
 							m_PrePassSpriteDraws.Insert({
@@ -1308,7 +1246,7 @@ namespace HBL2
 								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawDataSprite),
 								.VertexCount = 6,
-							});
+								});
 						}
 						else
 						{
@@ -1321,7 +1259,7 @@ namespace HBL2
 								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawDataSprite),
 								.VertexCount = 6,
-							});
+								});
 						}
 					}
 				});
@@ -1347,10 +1285,10 @@ namespace HBL2
 		}
 	}
 
-	void ForwardRenderingSystem::GatherLights()
+	void ForwardSceneRenderer::GatherLights()
 	{
 		m_LightData.LightCount = 0;
-		m_Context->GetRegistry()
+		m_Scene->GetRegistry()
 			.group<Component::Light>(entt::get<Component::Transform>)
 			.each([&](Component::Light& light, Component::Transform& transform)
 			{
@@ -1406,8 +1344,8 @@ namespace HBL2
 					glm::vec3 lightPos = glm::vec3(transform.WorldMatrix * glm::vec4(0.0, 0.0, 0.0, 1.0));
 					glm::vec3 lightDir = normalize(worldDirection);
 					glm::vec3 lightTarget = lightPos + lightDir; // look _towards_ this point
-					
-					// Choose an up vector that’s not colinear with your direction:
+
+					// Choose an up vector that�s not colinear with your direction:
 					glm::vec3 lightUp = glm::abs(glm::dot(lightDir, glm::vec3(0, 1, 0))) > 0.99f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
 
 					// If your light direction is nearly parallel to up, pick a different up vector:
@@ -1429,7 +1367,7 @@ namespace HBL2
 			});
 	}
 
-	void ForwardRenderingSystem::ShadowPass(CommandBuffer* commandBuffer)
+	void ForwardSceneRenderer::ShadowPass(CommandBuffer* commandBuffer)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1443,7 +1381,7 @@ namespace HBL2
 		Handle<BindGroup> globalBindings = Renderer::Instance->GetShadowBindings();
 		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)m_LightSpaceMatricesData.data());
 
-		m_Context->GetRegistry()
+		m_Scene->GetRegistry()
 			.group<Component::Light>(entt::get<Component::Transform>)
 			.each([&](Component::Light& light, Component::Transform& transform)
 			{
@@ -1486,7 +1424,7 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().ShadowPassTime);
 	}
 
-	void ForwardRenderingSystem::DepthPrePass(CommandBuffer* commandBuffer)
+	void ForwardSceneRenderer::DepthPrePass(CommandBuffer* commandBuffer)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1513,7 +1451,7 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PrePassTime);
 	}
 
-	void ForwardRenderingSystem::OpaquePass(CommandBuffer* commandBuffer)
+	void ForwardSceneRenderer::OpaquePass(CommandBuffer* commandBuffer)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1541,7 +1479,7 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().OpaquePassTime);
 	}
 
-	void ForwardRenderingSystem::TransparentPass(CommandBuffer* commandBuffer)
+	void ForwardSceneRenderer::TransparentPass(CommandBuffer* commandBuffer)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1569,13 +1507,13 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().TransparentPassTime);
 	}
 
-	void ForwardRenderingSystem::SkyboxPass(CommandBuffer* commandBuffer)
+	void ForwardSceneRenderer::SkyboxPass(CommandBuffer* commandBuffer)
 	{
 		BEGIN_PROFILE_PASS();
 
 		DrawList draws;
 
-		m_Context->GetRegistry()
+		m_Scene->GetRegistry()
 			.view<Component::SkyLight>()
 			.each([&](Component::SkyLight& skyLight)
 			{
@@ -1614,7 +1552,7 @@ namespace HBL2
 							.usage = { TextureUsage::TEXTURE_BINDING, TextureUsage::SAMPLED, TextureUsage::STORAGE_BINDING },
 							.type = TextureType::CUBE,
 							.aspect = TextureAspect::COLOR,
-							.sampler = { .filter = Filter::LINEAR, .wrap = Wrap::CLAMP_TO_EDGE, },
+							.sampler = {.filter = Filter::LINEAR, .wrap = Wrap::CLAMP_TO_EDGE, },
 							.initialLayout = TextureLayout::GENERAL,
 						});
 
@@ -1630,10 +1568,10 @@ namespace HBL2
 							.debugName = "compute-bind-group",
 							.layout = m_EquirectToSkyboxBindGroupLayout,
 							.textures = { skyLight.EquirectangularMap, skyLight.CubeMap },
-							.buffers = { { .buffer = m_CaptureMatricesBuffer, } }
+							.buffers = { {.buffer = m_CaptureMatricesBuffer, } }
 						});
 
-						Dispatch dispatch = 
+						Dispatch dispatch =
 						{
 							.Shader = m_EquirectToSkyboxShader,
 							.BindGroup = m_ComputeBindGroup,
@@ -1671,7 +1609,7 @@ namespace HBL2
 						return;
 					}
 
-					Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);					
+					Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
 
 					draws.Insert({
 						.Shader = m_SkyboxShader,
@@ -1680,7 +1618,7 @@ namespace HBL2
 						.VertexBuffer = m_CubeMeshBuffer,
 						.BindGroup = mat->BindGroup,
 						.VertexCount = 36,
-					});
+						});
 				}
 			});
 
@@ -1701,7 +1639,7 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxPassTime);
 	}
 
-	void ForwardRenderingSystem::PostProcessPass(CommandBuffer* commandBuffer)
+	void ForwardSceneRenderer::PostProcessPass(CommandBuffer* commandBuffer)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1735,7 +1673,7 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PostProcessPassTime);
 	}
 
-	void ForwardRenderingSystem::PresentPass(CommandBuffer* commandBuffer)
+	void ForwardSceneRenderer::PresentPass(CommandBuffer* commandBuffer)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1768,63 +1706,35 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PresentPassTime);
 	}
 
-	void ForwardRenderingSystem::GetViewProjection()
+	void ForwardSceneRenderer::GetViewProjection(entt::entity mainCamera)
 	{
-		if (Context::Mode == Mode::Runtime)
+		Scene* scene = (Context::Mode == Mode::Editor ? m_EditorScene : m_Scene);
+
+		if (scene == nullptr || mainCamera == entt::null)
 		{
-			if (m_Context->MainCamera != entt::null)
-			{
-				Component::Camera& camera = m_Context->GetComponent<Component::Camera>(m_Context->MainCamera);
-				m_CameraSettings.Exposure = camera.Exposure;
-				m_CameraSettings.Gamma = camera.Gamma;
-				m_CameraData.ViewProjection = camera.ViewProjectionMatrix;
-				m_CameraFrustum = camera.Frustum;
-				Component::Transform& tr = m_Context->GetComponent<Component::Transform>(m_Context->MainCamera);
-				m_LightData.ViewPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
-				m_OnlyRotationInViewProjection = camera.Projection * glm::mat4(glm::mat3(camera.View));
-				m_CameraProjection = camera.Projection;
-				return;
-			}
-			else
-			{
-				HBL2_CORE_WARN("No main camera set for runtime context.");
-			}
-		}
-		else if (Context::Mode == Mode::Editor)
-		{
-			if (m_EditorScene->MainCamera != entt::null)
-			{
-				Component::Camera& camera = m_EditorScene->GetComponent<Component::Camera>(m_EditorScene->MainCamera);
-				m_CameraSettings.Exposure = camera.Exposure;
-				m_CameraSettings.Gamma = camera.Gamma;
-				m_CameraData.ViewProjection = camera.ViewProjectionMatrix;
-				m_CameraFrustum = camera.Frustum;
-				Component::Transform& tr = m_EditorScene->GetComponent<Component::Transform>(m_EditorScene->MainCamera);
-				m_LightData.ViewPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
-				m_OnlyRotationInViewProjection = camera.Projection * glm::mat4(glm::mat3(camera.View));
-				m_CameraProjection = camera.Projection;
-				return;
-			}
-			else
-			{
-				HBL2_CORE_WARN("No main camera set for editor context.");
-			}
-		}
-		else
-		{
-			HBL2_CORE_WARN("No mode set for current context.");
+			m_OnlyRotationInViewProjection = glm::mat4(1.0f);
+			m_CameraData.ViewProjection = glm::mat4(1.0f);
+			m_LightData.ViewPosition = glm::vec4(0.0f);
+			m_CameraProjection = glm::mat4(1.0f);
+			m_CameraSettings.Exposure = 1.0f;
+			m_CameraSettings.Gamma = 2.2f;
+			m_CameraFrustum = {};
+
+			return;
 		}
 
-		m_OnlyRotationInViewProjection = glm::mat4(1.0f);
-		m_CameraData.ViewProjection = glm::mat4(1.0f);
-		m_LightData.ViewPosition = glm::vec4(0.0f);
-		m_CameraProjection = glm::mat4(1.0f);
-		m_CameraSettings.Exposure = 1.0f;
-		m_CameraSettings.Gamma = 2.2f;
-		m_CameraFrustum = {};
+		Component::Camera& camera = scene->GetComponent<Component::Camera>(mainCamera);
+		m_CameraSettings.Exposure = camera.Exposure;
+		m_CameraSettings.Gamma = camera.Gamma;
+		m_CameraData.ViewProjection = camera.ViewProjectionMatrix;
+		m_CameraFrustum = camera.Frustum;
+		Component::Transform& tr = scene->GetComponent<Component::Transform>(mainCamera);
+		m_LightData.ViewPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
+		m_OnlyRotationInViewProjection = camera.Projection * glm::mat4(glm::mat3(camera.View));
+		m_CameraProjection = camera.Projection;		
 	}
-	
-	void ForwardRenderingSystem::CreateAlignedMatrixArray(const glm::mat4* matrices, size_t count, uint32_t alignedSize)
+
+	void ForwardSceneRenderer::CreateAlignedMatrixArray(const glm::mat4* matrices, size_t count, uint32_t alignedSize)
 	{
 		// Calculate total size
 		size_t totalSize = alignedSize * count;

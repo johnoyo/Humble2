@@ -1,14 +1,13 @@
 #pragma once
 
-#include "Core\Context.h"
+#include "SceneRenderer.h"
 
-#include "Scene\ISystem.h"
-#include "Scene\Components.h"
+#include "DrawList.h"
+#include "UniformRingBuffer.h"
 
-#include "Resources\ResourceManager.h"
-
-#include "Renderer\Renderer.h"
-#include "Renderer\UniformRingBuffer.h"
+#include <Scene/Scene.h>
+#include "Renderer/Renderer.h"
+#include <Resources/ResourceManager.h>
 
 namespace HBL2
 {
@@ -26,14 +25,12 @@ namespace HBL2
 		glm::vec4 Color = { 0.0f, 0.0f, 0.0f, 0.0f };
 	};
 
-	class ForwardRenderingSystem final : public ISystem
+	class HBL2_API ForwardSceneRenderer final : public SceneRenderer
 	{
 	public:
-		ForwardRenderingSystem() { Name = "ForwardRenderingSystem"; }
-
-		virtual void OnCreate() override;
-		virtual void OnUpdate(float ts) override;
-		virtual void OnDestroy() override;
+		virtual void Initialize(Scene* scene) override;
+		virtual void Render(entt::entity mainCamera) override;
+		virtual void CleanUp() override;
 
 	private:
 		void ShadowPassSetup();
@@ -45,11 +42,9 @@ namespace HBL2
 		void PostProcessPassSetup();
 		void PresentPassSetup();
 
-		bool IsInFrustum(const Component::Transform& transform);
-		bool IsInFrustum(Handle<Mesh> meshHandle, const Component::Transform& transform);
-
 		void GatherDraws();
 		void GatherLights();
+
 		void ShadowPass(CommandBuffer* commandBuffer);
 		void DepthPrePass(CommandBuffer* commandBuffer);
 		void OpaquePass(CommandBuffer* commandBuffer);
@@ -58,7 +53,7 @@ namespace HBL2
 		void PostProcessPass(CommandBuffer* commandBuffer);
 		void PresentPass(CommandBuffer* commandBuffer);
 
-		void GetViewProjection();
+		void GetViewProjection(entt::entity mainCamera);
 
 		void CreateAlignedMatrixArray(const glm::mat4* matrices, size_t count, uint32_t alignedSize);
 

@@ -5,6 +5,8 @@ project "Jolt"
     staticruntime "Off"                  -- Use the DLL runtime by default
     systemversion "latest"               -- Target the latest Windows SDK (VS2022)
 
+    flags { "MultiProcessorCompile" }
+
     targetdir ("jolt/bin/" .. outputdir .. "/%{prj.name}")
     objdir    ("jolt/bin-int/" .. outputdir .. "/%{prj.name}")
 
