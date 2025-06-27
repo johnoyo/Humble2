@@ -345,6 +345,18 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::Prefab>(m_Entity))
+		{
+			out << YAML::Key << "Component::Prefab";
+			out << YAML::BeginMap;
+
+			auto& p = m_Scene->GetComponent<Component::Prefab>(m_Entity);
+
+			out << YAML::Key << "Id" << YAML::Value << p.Id;
+
+			out << YAML::EndMap;
+		}
+
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
 			const auto& alias = meta_type.second.info().name();
@@ -584,6 +596,13 @@ namespace HBL2
 			cc.Enabled = cc_NewComponent["Enabled"].as<bool>();
 			cc.Height = cc_NewComponent["Height"].as<float>();
 			cc.Radius = cc_NewComponent["Radius"].as<float>();
+		}
+
+		auto p_NewComponent = entityNode["Component::Prefab"];
+		if (p_NewComponent)
+		{
+			auto& p = m_Scene->AddComponent<Component::Prefab>(m_Entity);
+			p.Id = p_NewComponent["Id"].as<UUID>();
 		}
 
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))

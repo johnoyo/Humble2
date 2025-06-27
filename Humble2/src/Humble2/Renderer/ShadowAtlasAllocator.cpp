@@ -29,6 +29,9 @@ namespace HBL2
                 -scaleY                                         // scale Y
             };
         }
+
+        HBL2_CORE_ASSERT(false, "Unsupported graphics API!");
+        return glm::vec4();
     }
 
     ShadowAtlasAllocator::ShadowAtlasAllocator()

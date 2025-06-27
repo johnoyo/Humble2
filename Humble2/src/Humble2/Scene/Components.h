@@ -207,5 +207,10 @@ namespace HBL2
 			float Radius = 1.0f;
 			bool Enabled = true;
 		};
+
+		struct HBL2_API Prefab
+		{
+			UUID Id = 0;
+		};
 	}
 }

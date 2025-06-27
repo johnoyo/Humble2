@@ -14,6 +14,8 @@ namespace HBL2
 
 		void EditorPanelSystem::DrawContentBrowserPanel()
 		{
+			HandleContentBrowserDragAndDrop();
+
 			// Path bar
 			ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
 
@@ -243,6 +245,45 @@ namespace HBL2
 				}
 
 				ImGui::End();
+			}
+		}
+
+		void EditorPanelSystem::HandleContentBrowserDragAndDrop()
+		{
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
+				{
+					UUID entityUUID = *((UUID*)payload->Data);
+					entt::entity entity = m_ActiveScene->FindEntityByUUID(entityUUID);
+
+					if (entity == entt::null)
+					{
+						HBL2_CORE_ERROR("Unable to create prefab asset, entity is invalid!");
+						ImGui::EndDragDropTarget();
+						return;
+					}
+
+					auto& tag = m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name;
+
+					const auto& prefabPath = m_CurrentDirectory / (tag + ".prefab");
+					const auto& relativePath = FileUtils::RelativePath(prefabPath, HBL2::Project::GetAssetDirectory());
+
+					// Create and register asset.
+					Handle<Asset> prefabAssetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "prefab-asset",
+						.filePath = relativePath,
+						.type = AssetType::Prefab,
+					});
+
+					// Create asset metadata file.
+					Prefab::CreateMetadataFile(prefabAssetHandle, entityUUID);
+
+					// Save asset.
+					AssetManager::Instance->SaveAsset(prefabAssetHandle);
+
+					ImGui::EndDragDropTarget();
+				}
 			}
 		}
 
