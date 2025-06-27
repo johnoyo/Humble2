@@ -93,6 +93,14 @@ namespace HBL2
 				.type = AssetType::Script,
 			});
 		}
+		else if (extension == ".prefab")
+		{
+			assetHandle = AssetManager::Instance->CreateAsset({
+				.debugName = "prefab-asset",
+				.filePath = relativePath,
+				.type = AssetType::Prefab,
+			});
+		}
 
 		return assetHandle;
 	}

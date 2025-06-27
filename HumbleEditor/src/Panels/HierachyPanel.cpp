@@ -1,4 +1,5 @@
 #include "Systems\EditorPanelSystem.h"
+#include <Prefab/PrefabSerializer.h>
 
 namespace HBL2
 {
@@ -9,10 +10,22 @@ namespace HBL2
 			const auto& tag = m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity);
 
 			bool selectedEntityCondition = HBL2::Component::EditorVisible::Selected && HBL2::Component::EditorVisible::SelectedEntity == entity;
+			bool isPrefab = m_ActiveScene->HasComponent<HBL2::Component::Prefab>(entity);
 
 			ImGuiTreeNodeFlags flags = (selectedEntityCondition ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
 			flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
+
+			if (isPrefab)
+			{
+				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(IM_COL32(0, 255, 239, 255)));
+			}
+
 			bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.Name.c_str());
+
+			if (isPrefab)
+			{
+				ImGui::PopStyleColor();
+			}
 
 			if (ImGui::BeginDragDropSource())
 			{
@@ -183,6 +196,29 @@ namespace HBL2
 
 						subMeshIndex = 0;
 						meshIndex++;
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+				else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Prefab"))
+				{
+					uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+					Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+					if (!assetHandle.IsValid())
+					{
+						ImGui::EndDragDropTarget();
+						return;
+					}
+
+					Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+					Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(assetHandle);
+
+					if (!prefabHandle.IsValid())
+					{
+						ImGui::EndDragDropTarget();
+						return;
 					}
 
 					ImGui::EndDragDropTarget();

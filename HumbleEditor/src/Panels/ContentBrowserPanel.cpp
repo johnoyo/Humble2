@@ -191,6 +191,9 @@ namespace HBL2
 							case AssetType::Script:
 								ImGui::SetDragDropPayload("Content_Browser_Item_Script", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
 								break;
+							case AssetType::Prefab:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Prefab", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
 							default:
 								ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
 								break;
