@@ -1,0 +1,49 @@
+Prefab:
+  - Entities:
+      - Entity: 12
+        Component::Tag:
+          Tag: Saturn
+        Component::ID:
+          ID: 4859901580508108800
+        Component::Transform:
+          Translation: [0, 0, 0]
+          Rotation: [0, 0, 0]
+          Scale: [1, 1, 1]
+        Component::Link:
+          Parent: 0
+          Children:
+            - 5815389139435339776
+        Component::StaticMesh:
+          Enabled: true
+          Material: 7648240370554952727
+          Mesh:
+            UUID: 17024591911543769407
+            MeshIndex: 0
+            SubMeshIndex: 0
+        Component::Prefab:
+          Id: 1315481153566395777
+      - Entity: 13
+        Component::Tag:
+          Tag: Ring
+        Component::ID:
+          ID: 5815389139435339776
+        Component::Transform:
+          Translation: [0, 0, 0]
+          Rotation: [0, 0, 0]
+          Scale: [1, 1, 1]
+        Component::Link:
+          Parent: 4859901580508108800
+          Children:
+            []
+        Component::StaticMesh:
+          Enabled: true
+          Material: 7648240370554952727
+          Mesh:
+            UUID: 6460534838780001801
+            MeshIndex: 0
+            SubMeshIndex: 0
+  - References:
+      - Scenes:
+          - 5188170662770700796
+      - Prefabs:
+          []
