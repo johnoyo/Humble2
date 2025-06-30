@@ -8,6 +8,12 @@
 
 namespace HBL2
 {
+	struct PrefabInfo
+	{
+		Component::Transform transform;
+		Component::Prefab prefab;
+	};
+
 	SceneSerializer::SceneSerializer(Scene* scene) 
 		: m_Scene(scene)
 	{
@@ -204,6 +210,7 @@ namespace HBL2
 			}
 		}
 
+		// Deserialize all the entities into the scene.
 		const auto& entityNodes = data["Entities"];
 		if (entityNodes)
 		{
@@ -212,6 +219,49 @@ namespace HBL2
 				entt::entity deserializedEntity = entt::null;
 				EntitySerializer entitySerializer(m_Scene, deserializedEntity);
 				entitySerializer.Deserialize(entityNode);
+			}
+		}
+
+		// Gather all prefab entities and their info.
+		std::vector<entt::entity> prefabs;
+		std::vector<PrefabInfo> prefabsInfo;
+		m_Scene->GetRegistry()
+			.view<Component::Prefab>()
+			.each([&](entt::entity entity, Component::Prefab& prefab)
+			{
+				prefabs.push_back(entity);
+
+				auto& tr = m_Scene->GetComponent<Component::Transform>(entity);
+				prefabsInfo.push_back({ tr, prefab });
+			});
+
+		// Destroy prefab entities (they will be instatiated from scratch to ensure they are up to date with prefab asset).
+		for (auto prefabEntity : prefabs)
+		{
+			// entt::entity prefabInstance = m_Scene->DuplicateEntity(prefabEntity);
+			m_Scene->DestroyEntity(prefabEntity);
+		}
+
+		// Instantiate all the prefabs into the scene.
+		for (auto& prefabInfo : prefabsInfo)
+		{
+			// Instantiate the prefab.
+			Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabInfo.prefab.Id);
+			Prefab::Instantiate(prefabAssetHandle, m_Scene);
+
+			// Set the prefabs' transform.
+			Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
+			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+			if (prefab != nullptr)
+			{
+				entt::entity baseEntity = m_Scene->FindEntityByUUID(prefab->GetBaseEntityUUID());
+
+				auto& tr = m_Scene->GetComponent<Component::Transform>(baseEntity);
+				tr.Translation = prefabInfo.transform.Translation;
+				tr.Rotation = prefabInfo.transform.Rotation;
+				tr.Scale = prefabInfo.transform.Scale;
+				tr.Static = prefabInfo.transform.Static;
 			}
 		}
 

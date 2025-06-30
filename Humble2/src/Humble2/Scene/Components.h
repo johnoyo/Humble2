@@ -211,6 +211,7 @@ namespace HBL2
 		struct HBL2_API Prefab
 		{
 			UUID Id = 0;
+			uint32_t Version = 0;
 		};
 	}
 }

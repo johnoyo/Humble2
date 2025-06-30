@@ -350,6 +350,16 @@ namespace HBL2
         delete system;
     }
 
+    void Scene::RemoveUUIDFromEntityMap(UUID uuid)
+    {
+        m_EntityMap.erase(uuid);
+    }
+
+    void Scene::SetUUIDInEntityMap(UUID uuid, entt::entity entity)
+    {
+        m_EntityMap[uuid] = entity;
+    }
+
     void Scene::InternalDestroyEntity(entt::entity entity, bool isRootCall)
     {
         auto* link = TryGetComponent<Component::Link>(entity);

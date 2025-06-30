@@ -183,6 +183,9 @@ namespace HBL2
 			return m_Name;
 		}
 
+		void RemoveUUIDFromEntityMap(UUID uuid);
+		void SetUUIDInEntityMap(UUID uuid, entt::entity entity);
+
 		template <typename T>
 		static std::vector<std::byte> Serialize(const T& component)
 		{

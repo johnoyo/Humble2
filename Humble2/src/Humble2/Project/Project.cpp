@@ -3,6 +3,8 @@
 #include "ProjectSerializer.h"
 #include <Core\Context.h>
 
+#include <yaml-cpp/yaml.h>
+
 namespace HBL2
 {
 	Project* Project::s_ActiveProject = nullptr;

@@ -41,6 +41,19 @@ namespace HBL2
 			out << YAML::Key << "Translation" << YAML::Value << transform.Translation;
 			out << YAML::Key << "Rotation" << YAML::Value << transform.Rotation;
 			out << YAML::Key << "Scale" << YAML::Value << transform.Scale;
+			out << YAML::Key << "Static" << YAML::Value << transform.Static;
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::Prefab>(m_Entity))
+		{
+			out << YAML::Key << "Component::Prefab";
+			out << YAML::BeginMap;
+
+			auto& p = m_Scene->GetComponent<Component::Prefab>(m_Entity);
+
+			out << YAML::Key << "Id" << YAML::Value << p.Id;
+
 			out << YAML::EndMap;
 		}
 
@@ -345,18 +358,6 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
-		if (m_Scene->HasComponent<Component::Prefab>(m_Entity))
-		{
-			out << YAML::Key << "Component::Prefab";
-			out << YAML::BeginMap;
-
-			auto& p = m_Scene->GetComponent<Component::Prefab>(m_Entity);
-
-			out << YAML::Key << "Id" << YAML::Value << p.Id;
-
-			out << YAML::EndMap;
-		}
-
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
 			const auto& alias = meta_type.second.info().name();
@@ -384,7 +385,7 @@ namespace HBL2
 		out << YAML::EndMap;
 	}
 
-	bool EntitySerializer::Deserialize(const YAML::Node& entityNode)
+	bool EntitySerializer::Deserialize(const YAML::Node& entityNode, bool isPrefab)
 	{
 		if (!entityNode["Entity"].IsDefined())
 		{
@@ -420,6 +421,14 @@ namespace HBL2
 			transform.Translation = transformComponent["Translation"].as<glm::vec3>();
 			transform.Rotation = transformComponent["Rotation"].as<glm::vec3>();
 			transform.Scale = transformComponent["Scale"].as<glm::vec3>();
+			// transform.Static = transformComponent["Static"].as<bool>(); // TODO: Enable this in the future.
+		}
+
+		auto p_NewComponent = entityNode["Component::Prefab"];
+		if (p_NewComponent)
+		{
+			auto& p = m_Scene->AddComponent<Component::Prefab>(m_Entity);
+			p.Id = p_NewComponent["Id"].as<UUID>();
 		}
 
 		auto linkComponent = entityNode["Component::Link"];
@@ -596,13 +605,6 @@ namespace HBL2
 			cc.Enabled = cc_NewComponent["Enabled"].as<bool>();
 			cc.Height = cc_NewComponent["Height"].as<float>();
 			cc.Radius = cc_NewComponent["Radius"].as<float>();
-		}
-
-		auto p_NewComponent = entityNode["Component::Prefab"];
-		if (p_NewComponent)
-		{
-			auto& p = m_Scene->AddComponent<Component::Prefab>(m_Entity);
-			p.Id = p_NewComponent["Id"].as<UUID>();
 		}
 
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))

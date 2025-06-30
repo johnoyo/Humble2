@@ -13,7 +13,7 @@ namespace HBL2
 		EntitySerializer(Scene* scene, entt::entity entity);
 
 		void Serialize(YAML::Emitter& out);
-		bool Deserialize(const YAML::Node& entityNode);
+		bool Deserialize(const YAML::Node& entityNode, bool isPrefab = false);
 
 	private:
 		Scene* m_Scene;

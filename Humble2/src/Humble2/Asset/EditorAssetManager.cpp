@@ -695,6 +695,7 @@ namespace HBL2
 
 			auto prefabHandle = ResourceManager::Instance->CreatePrefab({
 				.debugName = prefabName.c_str(),
+				.uuid = asset->UUID,
 				.baseEntityUUID = baseEntityUUID,
 			});
 
@@ -702,12 +703,14 @@ namespace HBL2
 
 			if (prefab == nullptr)
 			{
-				HBL2_CORE_ERROR("Scene asset \"{0}\" is invalid, aborting prefab load.", asset->FilePath.filename().stem().string());
+				HBL2_CORE_ERROR("Prefab asset \"{0}\" is invalid, aborting prefab load.", asset->FilePath.filename().stem().string());
 				return prefabHandle;
 			}
 
-			PrefabSerializer prefabSerializer(prefab);
-			prefabSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
+			// NOTE: Do not deserialize here!
+
+			// PrefabSerializer prefabSerializer(prefab);
+			// prefabSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
 
 			return prefabHandle;
 		}

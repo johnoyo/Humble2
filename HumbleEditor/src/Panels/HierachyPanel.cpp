@@ -1,5 +1,4 @@
 #include "Systems\EditorPanelSystem.h"
-#include <Prefab/PrefabSerializer.h>
 
 namespace HBL2
 {
@@ -120,6 +119,7 @@ namespace HBL2
 		{
 			if (ImGui::BeginDragDropTarget())
 			{
+				// Drag and drop target for instantiating a mesh into the scene.
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
 				{
 					uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
@@ -200,6 +200,8 @@ namespace HBL2
 
 					ImGui::EndDragDropTarget();
 				}
+				
+				// Drag and drop target for instantiating a prefab into the scene.
 				else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Prefab"))
 				{
 					uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
@@ -211,15 +213,7 @@ namespace HBL2
 						return;
 					}
 
-					Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
-
-					Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(assetHandle);
-
-					if (!prefabHandle.IsValid())
-					{
-						ImGui::EndDragDropTarget();
-						return;
-					}
+					Prefab::Instantiate(assetHandle);
 
 					ImGui::EndDragDropTarget();
 				}
