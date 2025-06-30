@@ -26,6 +26,8 @@ namespace HBL2
 		static entt::entity Instantiate(Handle<Asset> assetHandle);
 		static entt::entity Instantiate(Handle<Asset> assetHandle, const glm::vec3& position);
 
+		static void Unpack(entt::entity instantiatedPrefabEntity);
+
 		static void CreateMetadataFile(Handle<Asset> assetHandle, UUID baseEntityUUID);
 		static void CreateMetadataFile(Asset* prefabAsset, UUID baseEntityUUID);
 

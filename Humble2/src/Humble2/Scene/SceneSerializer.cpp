@@ -237,7 +237,7 @@ namespace HBL2
 
 		HBL2_CORE_ASSERT(prefabs.size() == prefabsInfo.size(), "Expected prefabs and prefabsInfo arrays to be the same size!");
 
-		// Instantiate all the prefabs into the scene.
+		// Iterate over all the prefabs into the scene.
 		for (int i = 0; i < prefabs.size(); i++)
 		{
 			auto& prefabEntity = prefabs[i];
@@ -253,7 +253,7 @@ namespace HBL2
 				continue;
 			}
 
-			// If there was an change in the 
+			// If there was an change in the source prefab.
 			if (prefab->m_Version != prefabInfo.prefab.Version)
 			{
 				m_Scene->DestroyEntity(prefabEntity);

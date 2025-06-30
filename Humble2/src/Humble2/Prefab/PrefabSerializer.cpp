@@ -12,7 +12,6 @@ namespace HBL2
 	PrefabSerializer::PrefabSerializer(Prefab* prefab)
 		: m_Context(prefab)
 	{
-		m_Context->m_Version++;
 	}
 
 	PrefabSerializer::PrefabSerializer(Prefab* prefab, Scene* scene)
@@ -36,7 +35,6 @@ namespace HBL2
 		out << YAML::Key << "Prefab" << YAML::BeginSeq;
 
 		out << YAML::BeginMap;
-		out << YAML::Key << "Version" << YAML::Value << m_Context->m_Version;
 		out << YAML::Key << "Entities" << YAML::BeginSeq;
 
 		Scene* activeScene = GetScene();
@@ -141,6 +139,47 @@ namespace HBL2
 
 		fOut << out.c_str();
 		fOut.close();
+
+		m_Context->m_Version++;
+	}
+
+	void PrefabSerializer::SerializeReferences(const std::filesystem::path& path)
+	{
+		YAML::Node root = YAML::LoadFile(path.string());
+		YAML::Node prefabEntry = root["Prefab"][1];
+
+		YAML::Node refsSeq(YAML::NodeType::Sequence);
+
+		// Reconstruct the scene refs node.
+		YAML::Node scenesMap(YAML::NodeType::Map);
+		scenesMap["Scenes"] = YAML::Node(YAML::NodeType::Sequence);
+		for (UUID sceneUUID : m_Context->m_SceneRefs)
+		{
+			scenesMap["Scenes"].push_back(sceneUUID);
+		}
+		refsSeq.push_back(scenesMap);
+
+		// Reconstruct the prefab refs node.
+		YAML::Node prefabsMap(YAML::NodeType::Map);
+		prefabsMap["Prefabs"] = YAML::Node(YAML::NodeType::Sequence);
+		for (UUID prefabUUID : m_Context->m_PrefabRefs)
+		{
+			prefabsMap["Prefabs"].push_back(prefabUUID);
+		}
+		refsSeq.push_back(prefabsMap);
+
+		// Reconstruct the refs node.
+		prefabEntry["References"] = refsSeq;
+
+		std::ofstream fout(path.string());
+		if (!fout.is_open())
+		{
+			HBL2_CORE_ERROR("Failed to open prefab for writing: {0}", path.string());
+			return;
+		}
+
+		fout << root;
+		fout.close();
 	}
 
 	bool PrefabSerializer::Deserialize(const std::filesystem::path& path)
@@ -224,6 +263,50 @@ namespace HBL2
 		}
 
 		stream.close();
+		return true;
+	}
+
+	bool PrefabSerializer::DeserializeReferences(const std::filesystem::path& path)
+	{
+		std::ifstream stream(path);
+
+		if (!stream.is_open())
+		{
+			HBL2_CORE_ERROR("File not found: {0}", path.string());
+			return false;
+		}
+
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Prefab"].IsDefined())
+		{
+			HBL2_CORE_TRACE("Prefab not found: {0}", ss.str());
+			stream.close();
+			return false;
+		}
+
+		// Get the prefab node.
+		const auto& prefabNode = data["Prefab"];
+
+		// Set the prefab scene references.
+		const auto& refs = prefabNode[1]["References"];
+		if (refs)
+		{
+			const auto& sceneRefs = refs[0]["Scenes"];
+
+			for (const auto& sceneRef : sceneRefs)
+			{
+				if (std::find(m_Context->m_SceneRefs.begin(), m_Context->m_SceneRefs.end(), sceneRef.as<UUID>()) != m_Context->m_SceneRefs.end())
+				{
+					continue;
+				}
+
+				m_Context->m_SceneRefs.push_back(sceneRef.as<UUID>());
+			}
+		}
+
 		return true;
 	}
 

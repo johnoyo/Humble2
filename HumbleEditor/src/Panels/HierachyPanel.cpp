@@ -92,6 +92,17 @@ namespace HBL2
 					m_EntityToBeDuplicated = entity;
 				}
 
+				if (m_ActiveScene->HasComponent<HBL2::Component::Prefab>(entity))
+				{
+					if (ImGui::MenuItem("Unpack prefab"))
+					{
+						Prefab::Unpack(entity);
+					}
+					else if (ImGui::MenuItem("Save prefab"))
+					{
+					}
+				}
+
 				ImGui::EndPopup();
 			}
 

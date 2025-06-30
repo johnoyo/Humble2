@@ -10,6 +10,13 @@ namespace HBL2
 		m_UUID = desc.uuid;
 		m_BaseEntityUUID = desc.baseEntityUUID;
 		m_Version = desc.version;
+
+		Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(m_UUID);
+		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
+
+		// Load the scene refs into this prefab instance.
+		PrefabSerializer serializer(this);
+		serializer.DeserializeReferences(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 	}
 
 	entt::entity Prefab::Instantiate(Handle<Asset> assetHandle)
@@ -42,6 +49,7 @@ namespace HBL2
 		// Deserialize the source prefab into the scene.
 		PrefabSerializer prefabSerializer(prefab);
 		prefabSerializer.Deserialize(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
+		prefabSerializer.SerializeReferences(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 
 		return CloneSourcePrefab(prefab);
 	}
@@ -78,6 +86,94 @@ namespace HBL2
 		prefabTransform.Translation = position;
 	}
 
+	void Prefab::Unpack(entt::entity instantiatedPrefabEntity)
+	{
+		// Retrieve active scene.
+		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+		if (activeScene == nullptr)
+		{
+			HBL2_CORE_ERROR("Cannot retrieve active scene, aborting prefab unpacking process.");
+			return;
+		}
+
+		// get the prefab component in order to retrieve the prefab source asset from it.
+		auto& prefabComponent = activeScene->GetComponent<HBL2::Component::Prefab>(instantiatedPrefabEntity);
+
+		Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabComponent.Id);
+		Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
+		Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+		if (prefab == nullptr)
+		{
+			HBL2_CORE_ERROR("Error while trying to unpack prefab, cannot retrieve source prefab asset!");
+			return;
+		}
+
+		// Remove the prefab component from the entity.
+		activeScene->RemoveComponent<HBL2::Component::Prefab>(instantiatedPrefabEntity);
+
+		// Check if the prefab has any other references in the active scene.
+		bool hasAnyOtherPrefabs = false;
+
+		activeScene->GetRegistry()
+			.view<Component::Prefab>()
+			.each([&](entt::entity entity, Component::Prefab& prefab)
+			{
+				hasAnyOtherPrefabs = true;
+			});
+
+		// If it does not have any references, remove the scene uuid from its references.
+		if (!hasAnyOtherPrefabs)
+		{
+			// Find scene asset uuid to remove it from the scene refs of the prefab.
+			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+			for (auto handle : assetHandles)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+
+				if (asset->Type == AssetType::Scene)
+				{
+					Handle<Scene> sceneHandle = Handle<Scene>::UnPack(asset->Indentifier);
+					Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
+
+					if (activeScene == scene)
+					{
+						uint32_t indexToRemove = UINT32_MAX;
+
+						for (int i = 0; i < prefab->m_SceneRefs.size(); i++)
+						{
+							if (asset->UUID == prefab->m_SceneRefs[i])
+							{
+								indexToRemove = i;
+								break;
+							}
+						}
+
+						if (indexToRemove == UINT32_MAX)
+						{
+							return;
+						}
+
+						uint32_t last = prefab->m_SceneRefs.size() - 1;
+
+						// Swap the scene uuid that we want to remove with the last one.
+						std::swap(prefab->m_SceneRefs[indexToRemove], prefab->m_SceneRefs[last]);
+
+						// Remove the last element.
+						prefab->m_SceneRefs.pop_back();
+					}
+				}
+			}
+
+			// Deserialize the source prefab into the scene.
+			Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
+
+			PrefabSerializer prefabSerializer(prefab);
+			prefabSerializer.SerializeReferences(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
+		}
+	}
+
 	entt::entity Prefab::Instantiate(Handle<Asset> assetHandle, Scene* scene)
 	{
 		if (!AssetManager::Instance->IsAssetValid(assetHandle))
@@ -108,6 +204,7 @@ namespace HBL2
 		// Deserialize the source prefab into the scene.
 		PrefabSerializer prefabSerializer(prefab, scene);
 		prefabSerializer.Deserialize(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
+		prefabSerializer.SerializeReferences(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 
 		return CloneSourcePrefab(prefab);
 	}
