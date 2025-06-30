@@ -9,33 +9,31 @@
 
 namespace HBL2
 {
-	struct HBL2_API PrefabDescriptor
+	struct PrefabDescriptor
 	{
 		const char* debugName;
 		UUID uuid;
 		UUID baseEntityUUID;
+		uint32_t version;
 	};
 
 	class HBL2_API Prefab
 	{
 	public:
 		Prefab() = default;
-		Prefab(const PrefabDescriptor&& desc)
-		{
-			m_UUID = desc.uuid;
-			m_BaseEntityUUID = desc.baseEntityUUID;
-		}
+		Prefab(const PrefabDescriptor&& desc);
 
-		inline const UUID GetBaseEntityUUID() const { return m_BaseEntityUUID; }
-
-		static void Instantiate(Handle<Asset> assetHandle);
-		static void Instantiate(Handle<Asset> assetHandle, const glm::vec3& position);
+		static entt::entity Instantiate(Handle<Asset> assetHandle);
+		static entt::entity Instantiate(Handle<Asset> assetHandle, const glm::vec3& position);
 
 		static void CreateMetadataFile(Handle<Asset> assetHandle, UUID baseEntityUUID);
 		static void CreateMetadataFile(Asset* prefabAsset, UUID baseEntityUUID);
 
 	private:
-		static void Instantiate(Handle<Asset> assetHandle, Scene* scene);
+		static entt::entity Instantiate(Handle<Asset> assetHandle, Scene* scene);
+		static entt::entity CloneSourcePrefab(Prefab* prefab);
+
+		inline const UUID GetBaseEntityUUID() const { return m_BaseEntityUUID; }
 
 	private:
 		UUID m_UUID = 0;

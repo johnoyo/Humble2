@@ -1,16 +1,17 @@
 Scene: EmptyScene
 Entities:
-  - Entity: 13
+  - Entity: 15
     Component::Tag:
-      Tag: Ring
+      Tag: Ring(Clone)
     Component::ID:
-      ID: 5815389139435339776
+      ID: 4135632608724874752
     Component::Transform:
       Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+      Static: false
     Component::Link:
-      Parent: 4859901580508108800
+      Parent: 10358827412681986048
       Children:
         []
     Component::StaticMesh:
@@ -20,21 +21,23 @@ Entities:
         UUID: 6460534838780001801
         MeshIndex: 0
         SubMeshIndex: 0
-  - Entity: 1048576
+  - Entity: 14
     Component::Tag:
-      Tag: Saturn
+      Tag: Saturn(Clone)
     Component::ID:
-      ID: 4859901580508108800
+      ID: 10358827412681986048
     Component::Transform:
       Translation: [-2, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+      Static: false
     Component::Prefab:
       Id: 1315481153566395777
+      Version: 1
     Component::Link:
       Parent: 0
       Children:
-        - 5815389139435339776
+        - 4135632608724874752
     Component::StaticMesh:
       Enabled: true
       Material: 7648240370554952727
@@ -44,6 +47,68 @@ Entities:
         SubMeshIndex: 0
   - Entity: 11
     Component::Tag:
+      Tag: Sphere
+    Component::ID:
+      ID: 13908889810415534080
+    Component::Transform:
+      Translation: [-0.649999976, 5.25, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::StaticMesh:
+      Enabled: true
+      Material: 7648240370554952727
+      Mesh:
+        UUID: 17024591911543769407
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: true
+      Type: 2
+      Mass: 1
+      Friction: 0.200000003
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::SphereCollider:
+      Enabled: true
+      Radius: 0.5
+  - Entity: 10
+    Component::Tag:
+      Tag: Sphere(Clone)
+    Component::ID:
+      ID: 3097292460992333312
+    Component::Transform:
+      Translation: [-1.83523846, 6.92076159, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 7648240370554952727
+      Mesh:
+        UUID: 17024591911543769407
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 2
+      Mass: 1
+      Friction: 0.200000003
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::SphereCollider:
+      Enabled: true
+      Radius: 0.5
+  - Entity: 9
+    Component::Tag:
       Tag: Sprite
     Component::ID:
       ID: 2898162071183314432
@@ -51,6 +116,7 @@ Entities:
       Translation: [0, 0, 0]
       Rotation: [1, 0, 0]
       Scale: [1, 1, 1]
+      Static: false
     Component::Link:
       Parent: 0
       Children:
@@ -58,7 +124,7 @@ Entities:
     Component::Sprite:
       Enabled: true
       Material: 5092745295480585008
-  - Entity: 10
+  - Entity: 8
     Component::Tag:
       Tag: Light
     Component::ID:
@@ -67,6 +133,7 @@ Entities:
       Translation: [0, 3.5, 4.5]
       Rotation: [10.5096416, 0, 0]
       Scale: [0.99999994, 0.99999994, 0.99999994]
+      Static: false
     Component::Link:
       Parent: 0
       Children:
@@ -84,7 +151,7 @@ Entities:
       SlopeBias: 1
       NormalOffsetScale: 0.00200000009
       FieldOfView: 117
-  - Entity: 9
+  - Entity: 7
     Component::Tag:
       Tag: Camera
     Component::ID:
@@ -93,6 +160,7 @@ Entities:
       Translation: [0, 7.5, 17.5]
       Rotation: [-20, 0, 0]
       Scale: [1, 1, 1]
+      Static: false
     Component::Link:
       Parent: 0
       Children:
@@ -103,12 +171,12 @@ Entities:
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 2.25659466
+      Aspect Ratio: 2.97196269
       Exposure: 1
       Gamma: 2.20000005
       Zoom Level: 300
       Type: 0
-  - Entity: 8
+  - Entity: 6
     Component::Tag:
       Tag: Monkeh
     Component::ID:
@@ -117,6 +185,7 @@ Entities:
       Translation: [2, 0.172293186, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+      Static: false
     Component::Link:
       Parent: 0
       Children:
@@ -134,7 +203,7 @@ Entities:
     NewComponent:
       Value: 1
       SceneHandle: 11559080649116764721
-  - Entity: 7
+  - Entity: 5
     Component::Tag:
       Tag: Ground
     Component::ID:
@@ -143,6 +212,7 @@ Entities:
       Translation: [0, -2.19295812, 0]
       Rotation: [0, 0, 0]
       Scale: [13.9300184, 1, 13.4024048]
+      Static: false
     Component::StaticMesh:
       Enabled: true
       Material: 6805961995243789723
@@ -162,7 +232,7 @@ Entities:
     Component::BoxCollider:
       Enabled: true
       Size: [1, 1, 1]
-  - Entity: 6
+  - Entity: 4
     Component::Tag:
       Tag: Sky
     Component::ID:
@@ -171,10 +241,11 @@ Entities:
       Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+      Static: false
     Component::SkyLight:
       Enabled: true
-      EquirectangularMap: 15759064936957256613
-  - Entity: 5
+      EquirectangularMap: 8406239916870616777
+  - Entity: 3
     Component::Tag:
       Tag: Cube
     Component::ID:
@@ -183,6 +254,7 @@ Entities:
       Translation: [-2, 3, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+      Static: false
     Component::StaticMesh:
       Enabled: true
       Material: 7648240370554952727
@@ -202,7 +274,7 @@ Entities:
     Component::BoxCollider:
       Enabled: true
       Size: [1, 1, 1]
-  - Entity: 4
+  - Entity: 2
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
@@ -211,70 +283,7 @@ Entities:
       Translation: [-1.82497072, 5.25, -0.966380119]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 0
-      Children:
-        []
-    Component::StaticMesh:
-      Enabled: true
-      Material: 7648240370554952727
-      Mesh:
-        UUID: 17024591911543769407
-        MeshIndex: 0
-        SubMeshIndex: 0
-    Component::Rigidbody:
-      Enabled: true
-      Trigger: false
-      Type: 2
-      Mass: 1
-      Friction: 0.200000003
-      Restitution: 0.100000001
-      LinearDamping: 0.0500000007
-      AngularDamping: 0.0500000007
-    Component::SphereCollider:
-      Enabled: true
-      Radius: 0.5
-  - Entity: 3
-    Component::Tag:
-      Tag: Sphere(Clone)
-    Component::ID:
-      ID: 9458335311944124416
-    Component::Transform:
-      Translation: [-1.80006909, 5.25, 0.736385345]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Component::Link:
-      Parent: 0
-      Children:
-        []
-    Component::StaticMesh:
-      Enabled: true
-      Material: 7648240370554952727
-      Mesh:
-        UUID: 17024591911543769407
-        MeshIndex: 0
-        SubMeshIndex: 0
-    Component::Rigidbody:
-      Enabled: true
-      Trigger: false
-      Type: 2
-      Mass: 1
-      Friction: 0.200000003
-      Restitution: 0.100000001
-      LinearDamping: 0.0500000007
-      AngularDamping: 0.0500000007
-    Component::SphereCollider:
-      Enabled: true
-      Radius: 0.5
-  - Entity: 2
-    Component::Tag:
-      Tag: Sphere(Clone)
-    Component::ID:
-      ID: 13139471264927180800
-    Component::Transform:
-      Translation: [-2.94861412, 5.25, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
+      Static: false
     Component::Link:
       Parent: 0
       Children:
@@ -302,11 +311,12 @@ Entities:
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
-      ID: 3097292460992333312
+      ID: 9458335311944124416
     Component::Transform:
-      Translation: [-1.83523846, 6.92076159, 0]
+      Translation: [-1.80006909, 5.25, 0.736385345]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+      Static: false
     Component::Link:
       Parent: 0
       Children:
@@ -330,15 +340,20 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 12
+  - Entity: 0
     Component::Tag:
-      Tag: Sphere
+      Tag: Sphere(Clone)
     Component::ID:
-      ID: 13908889810415534080
+      ID: 13139471264927180800
     Component::Transform:
-      Translation: [-0.649999976, 5.25, 0]
+      Translation: [-2.94861412, 5.25, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
     Component::StaticMesh:
       Enabled: true
       Material: 7648240370554952727
@@ -348,7 +363,7 @@ Entities:
         SubMeshIndex: 0
     Component::Rigidbody:
       Enabled: true
-      Trigger: true
+      Trigger: false
       Type: 2
       Mass: 1
       Friction: 0.200000003

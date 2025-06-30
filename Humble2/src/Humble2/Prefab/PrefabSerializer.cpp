@@ -12,6 +12,7 @@ namespace HBL2
 	PrefabSerializer::PrefabSerializer(Prefab* prefab)
 		: m_Context(prefab)
 	{
+		m_Context->m_Version++;
 	}
 
 	PrefabSerializer::PrefabSerializer(Prefab* prefab, Scene* scene)
@@ -21,15 +22,29 @@ namespace HBL2
 
 	void PrefabSerializer::Serialize(const std::filesystem::path& path)
 	{
+		/*		
+		- Instantiatiation: (Spawn into the scene)
+			- Instantiate the prefab into the scene from the file.
+			- Duplicate the instantiated entity so it has unique ID.
+			- Delete initial instantiated entity.
+		- Update: (the prefab is already instantiated and we want to update it since the source prefab changed.)
+			- ...
+		*/
+
 		YAML::Emitter out;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Prefab" << YAML::BeginSeq;
 
 		out << YAML::BeginMap;
+		out << YAML::Key << "Version" << YAML::Value << m_Context->m_Version;
 		out << YAML::Key << "Entities" << YAML::BeginSeq;
 
 		Scene* activeScene = GetScene();
 		entt::entity baseEntity = activeScene->FindEntityByUUID(m_Context->GetBaseEntityUUID());
+		if (baseEntity == entt::null)
+		{
+			baseEntity = activeScene->CreateEntityWithUUID(m_Context->GetBaseEntityUUID());
+		}
 
 		// Find scene asset uuid to store it in the scene refs of the prefab.
 		const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
@@ -61,6 +76,7 @@ namespace HBL2
 		{
 			auto& prefab = activeScene->AddComponent<Component::Prefab>(baseEntity);
 			prefab.Id = m_Context->m_UUID;
+			prefab.Version = m_Context->m_Version;
 		}
 
 		// Check if the entity has any children through the link component.
@@ -151,7 +167,6 @@ namespace HBL2
 		HBL2_CORE_TRACE("Deserializing Prefab at path: {0}", path);
 
 		Scene* activeScene = GetScene();
-		entt::entity baseEntity = activeScene->FindEntityByUUID(m_Context->GetBaseEntityUUID());
 
 		// Find scene asset uuid to store it in the scene refs of the prefab.
 		const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
@@ -186,49 +201,10 @@ namespace HBL2
 		{
 			for (const auto& entityNode : entityNodes)
 			{
-				EntitySerializer entitySerializer(activeScene, baseEntity);
+				EntitySerializer entitySerializer(activeScene, entt::null);
 				entitySerializer.Deserialize(entityNode);
 			}
 		}
-
-		//// Update ID and Link components of all entities of the prefab, so they are unique for each instance.
-		//activeScene->GetRegistry()
-		//	.view<Component::Prefab, Component::ID, Component::Link>()
-		//	.each([&](entt::entity entity, Component::Prefab& prefab, Component::ID& id, Component::Link& link)
-		//	{
-		//		id.Identifier = Random::UInt64();
-		//		activeScene->SetUUIDInEntityMap(id.Identifier, entity);
-
-		//		std::vector<UUID> childrenUUIDs;
-
-		//		for (auto child : link.Children)
-		//		{
-		//			entt::entity childEntity = activeScene->FindEntityByUUID(child);
-		//			auto& childId = activeScene->GetComponent<Component::ID>(childEntity);
-		//			childId.Identifier = Random::UInt64();
-		//			activeScene->SetUUIDInEntityMap(childId.Identifier, childEntity);
-
-		//			childrenUUIDs.push_back(childId.Identifier);
-
-		//			auto& childLink = activeScene->GetComponent<Component::Link>(childEntity);
-		//			childLink.Parent = id.Identifier;
-
-		//			activeScene->RemoveUUIDFromEntityMap(child);
-
-		//			// TODO: refactor this so it recursively updates the children of the children.
-		//		}
-
-		//		HBL2_CORE_ASSERT(link.Children.size() == childrenUUIDs.size(), "The size of children in link component does not match the children gathered!");
-
-		//		uint32_t index = 0;
-
-		//		for (auto childUUID : childrenUUIDs)
-		//		{
-		//			link.Children[index++] = childUUID;
-		//		}
-		//	});
-
-
 
 		// Update the prefab scene references.
 		const auto& refs = prefabNode[1]["References"];

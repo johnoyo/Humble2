@@ -22,6 +22,7 @@ Prefab:
             SubMeshIndex: 0
         Component::Prefab:
           Id: 1315481153566395777
+          Version: 1
       - Entity: 13
         Component::Tag:
           Tag: Ring

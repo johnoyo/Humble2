@@ -78,6 +78,7 @@ namespace HBL2
         copy_component(Component::BoxCollider{});
         copy_component(Component::SphereCollider{});
         copy_component(Component::CapsuleCollider{});
+        copy_component(Component::Prefab{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
@@ -208,6 +209,10 @@ namespace HBL2
         m_Registry.storage<Component::CapsuleCollider>().clear();
         m_Registry.compact<Component::CapsuleCollider>();
 
+        m_Registry.clear<Component::Prefab>();
+        m_Registry.storage<Component::Prefab>().clear();
+        m_Registry.compact<Component::Prefab>();
+
         // Destroy all entities.
         for (auto& [uuid, entity] : m_EntityMap)
         {
@@ -289,6 +294,7 @@ namespace HBL2
         copy_component(Component::BoxCollider{});
         copy_component(Component::SphereCollider{});
         copy_component(Component::CapsuleCollider{});
+        copy_component(Component::Prefab{});
 
         // Copy user defined components.
         std::vector<std::string> userComponentNames;
@@ -348,16 +354,6 @@ namespace HBL2
         }
 
         delete system;
-    }
-
-    void Scene::RemoveUUIDFromEntityMap(UUID uuid)
-    {
-        m_EntityMap.erase(uuid);
-    }
-
-    void Scene::SetUUIDInEntityMap(UUID uuid, entt::entity entity)
-    {
-        m_EntityMap[uuid] = entity;
     }
 
     void Scene::InternalDestroyEntity(entt::entity entity, bool isRootCall)

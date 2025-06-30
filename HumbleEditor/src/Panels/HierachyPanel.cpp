@@ -53,7 +53,7 @@ namespace HBL2
 						m_ActiveScene->AddComponent<HBL2::Component::Link>(childEntity);
 					}
 
-					// Add Link component to this entity(parent of child entity) if it does not have one.
+					// Add Link component to this entity (parent of child entity) if it does not have one.
 					if (!m_ActiveScene->HasComponent<HBL2::Component::Link>(entity))
 					{
 						m_ActiveScene->AddComponent<HBL2::Component::Link>(entity);

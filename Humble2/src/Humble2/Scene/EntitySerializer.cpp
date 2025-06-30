@@ -53,6 +53,7 @@ namespace HBL2
 			auto& p = m_Scene->GetComponent<Component::Prefab>(m_Entity);
 
 			out << YAML::Key << "Id" << YAML::Value << p.Id;
+			out << YAML::Key << "Version" << YAML::Value << p.Version;
 
 			out << YAML::EndMap;
 		}
@@ -420,8 +421,11 @@ namespace HBL2
 			auto& transform = m_Scene->GetComponent<Component::Transform>(m_Entity);
 			transform.Translation = transformComponent["Translation"].as<glm::vec3>();
 			transform.Rotation = transformComponent["Rotation"].as<glm::vec3>();
-			transform.Scale = transformComponent["Scale"].as<glm::vec3>();
-			// transform.Static = transformComponent["Static"].as<bool>(); // TODO: Enable this in the future.
+			transform.Scale = transformComponent["Scale"].as<glm::vec3>();				
+			if (transformComponent["Static"].IsDefined()) // TODO: Remove this in the future.
+			{
+				transform.Static = transformComponent["Static"].as<bool>();
+			}
 		}
 
 		auto p_NewComponent = entityNode["Component::Prefab"];
@@ -429,6 +433,7 @@ namespace HBL2
 		{
 			auto& p = m_Scene->AddComponent<Component::Prefab>(m_Entity);
 			p.Id = p_NewComponent["Id"].as<UUID>();
+			p.Version = p_NewComponent["Version"].as<uint32_t>();
 		}
 
 		auto linkComponent = entityNode["Component::Link"];

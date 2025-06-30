@@ -692,11 +692,13 @@ namespace HBL2
 		{
 			const std::string& prefabName = asset->FilePath.filename().stem().string();
 			UUID baseEntityUUID = prefabProperties["BaseEntityUUID"].as<UUID>();
+			uint32_t version = prefabProperties["Version"].as<uint32_t>();
 
 			auto prefabHandle = ResourceManager::Instance->CreatePrefab({
 				.debugName = prefabName.c_str(),
 				.uuid = asset->UUID,
 				.baseEntityUUID = baseEntityUUID,
+				.version = version,
 			});
 
 			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
@@ -707,10 +709,7 @@ namespace HBL2
 				return prefabHandle;
 			}
 
-			// NOTE: Do not deserialize here!
-
-			// PrefabSerializer prefabSerializer(prefab);
-			// prefabSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
+			// NOTE: We do not deserialize here!
 
 			return prefabHandle;
 		}
@@ -1067,6 +1066,7 @@ namespace HBL2
 		}
 
 		Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
 		PrefabSerializer serializer(prefab);
 		serializer.Serialize(Project::GetAssetFileSystemPath(asset->FilePath));
 	}

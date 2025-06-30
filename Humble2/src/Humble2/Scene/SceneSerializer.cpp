@@ -235,33 +235,38 @@ namespace HBL2
 				prefabsInfo.push_back({ tr, prefab });
 			});
 
-		// Destroy prefab entities (they will be instatiated from scratch to ensure they are up to date with prefab asset).
-		for (auto prefabEntity : prefabs)
-		{
-			// entt::entity prefabInstance = m_Scene->DuplicateEntity(prefabEntity);
-			m_Scene->DestroyEntity(prefabEntity);
-		}
+		HBL2_CORE_ASSERT(prefabs.size() == prefabsInfo.size(), "Expected prefabs and prefabsInfo arrays to be the same size!");
 
 		// Instantiate all the prefabs into the scene.
-		for (auto& prefabInfo : prefabsInfo)
+		for (int i = 0; i < prefabs.size(); i++)
 		{
-			// Instantiate the prefab.
-			Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabInfo.prefab.Id);
-			Prefab::Instantiate(prefabAssetHandle, m_Scene);
+			auto& prefabEntity = prefabs[i];
+			auto& prefabInfo = prefabsInfo[i];
 
-			// Set the prefabs' transform.
+			Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabInfo.prefab.Id);
 			Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
 			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
 
-			if (prefab != nullptr)
+			if (prefab == nullptr)
 			{
-				entt::entity baseEntity = m_Scene->FindEntityByUUID(prefab->GetBaseEntityUUID());
+				HBL2_CORE_ERROR("Error while trying to update prefab while loading the scene!");
+				continue;
+			}
 
-				auto& tr = m_Scene->GetComponent<Component::Transform>(baseEntity);
-				tr.Translation = prefabInfo.transform.Translation;
-				tr.Rotation = prefabInfo.transform.Rotation;
-				tr.Scale = prefabInfo.transform.Scale;
-				tr.Static = prefabInfo.transform.Static;
+			// If there was an change in the 
+			if (prefab->m_Version != prefabInfo.prefab.Version)
+			{
+				m_Scene->DestroyEntity(prefabEntity);
+				entt::entity clone = Prefab::Instantiate(prefabAssetHandle, m_Scene);
+
+				if (clone != entt::null)
+				{
+					auto& tr = m_Scene->GetComponent<Component::Transform>(clone);
+					tr.Translation = prefabInfo.transform.Translation;
+					tr.Rotation = prefabInfo.transform.Rotation;
+					tr.Scale = prefabInfo.transform.Scale;
+					tr.Static = prefabInfo.transform.Static;
+				}
 			}
 		}
 
