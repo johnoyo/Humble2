@@ -28,6 +28,7 @@ namespace HBL2
 
 		static void Unpack(entt::entity instantiatedPrefabEntity);
 		static void Save(entt::entity instantiatedPrefabEntity);
+		static void Destroy(entt::entity instantiatedPrefabEntity);
 
 		static void CreateMetadataFile(Handle<Asset> assetHandle, UUID baseEntityUUID, uint32_t version = 1);
 		static void CreateMetadataFile(Asset* prefabAsset, UUID baseEntityUUID, uint32_t version = 1);
@@ -35,6 +36,7 @@ namespace HBL2
 	private:
 		static entt::entity Instantiate(Handle<Asset> assetHandle, Scene* scene);
 		static entt::entity CloneSourcePrefab(Prefab* prefab, Scene* activeScene);
+		static void UpdatePrefabSceneRefs(Handle<Asset> prefabAssetHandle, Prefab* prefab, Scene* activeScene);
 
 		inline const UUID GetBaseEntityUUID() const { return m_BaseEntityUUID; }
 
@@ -47,5 +49,6 @@ namespace HBL2
 
 		friend class PrefabSerializer;
 		friend class SceneSerializer;
+		friend class EditorAssetManager;
 	};
 }

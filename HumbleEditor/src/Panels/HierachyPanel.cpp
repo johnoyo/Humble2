@@ -100,6 +100,7 @@ namespace HBL2
 					}
 					else if (ImGui::MenuItem("Save prefab"))
 					{
+						// Clear currently selected entity.
 						HBL2::Component::EditorVisible::Selected = false;
 						HBL2::Component::EditorVisible::SelectedEntity = entt::null;
 
@@ -374,7 +375,15 @@ namespace HBL2
 			if (m_EntityToBeDeleted != entt::null)
 			{
 				// Destroy entity and clear entityToBeDeleted value.
-				m_ActiveScene->DestroyEntity(m_EntityToBeDeleted);
+				if (m_ActiveScene->HasComponent<HBL2::Component::PrefabInstance>(m_EntityToBeDeleted))
+				{
+					Prefab::Destroy(m_EntityToBeDeleted);
+				}
+				else
+				{
+					m_ActiveScene->DestroyEntity(m_EntityToBeDeleted);
+				}
+
 				m_EntityToBeDeleted = entt::null;
 
 				// Clear currently selected entity.

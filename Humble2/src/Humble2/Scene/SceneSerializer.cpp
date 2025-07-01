@@ -223,9 +223,19 @@ namespace HBL2
 			}
 		}
 
+		// --- PREFABS HANDLING BELOW ---
+		// 
+		//	1. Gather all prefabs in the scene.
+		//	2. If the prefab is out of date.
+		//		2.1 Destroy the prefab.
+		//		2.2 Re-instantiate it and set its transform and tag.
+		//		2.3 Update its version.
+		//	3. If the prefab is not out of date do nothing.
+
 		// Gather all prefab entities and their info.
 		std::vector<entt::entity> prefabs;
 		std::vector<PrefabInfo> prefabsInfo;
+
 		m_Scene->GetRegistry()
 			.view<Component::PrefabInstance>()
 			.each([&](entt::entity entity, Component::PrefabInstance& prefab)

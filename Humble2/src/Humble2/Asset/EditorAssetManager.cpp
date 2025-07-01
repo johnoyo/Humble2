@@ -596,6 +596,48 @@ namespace HBL2
 		SceneSerializer sceneSerializer(scene);
 		sceneSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
 
+		// NOTE: In the code below we want to find out if the scene that was loaded has prefabs in it, but
+		//		 the scenes' UUID is not present in the prefab scene refs.
+		// 
+		//		 This could happen if the prefabs were destroyed in the scene without saving.
+		//		 This would update the prefab asset and would remove the scene ref from it, if there were no more prefabs in it.
+		//		 But if we do not save the scene, when loading again the prefab will not have this scene as a ref.
+		//
+		//		 Consider fixing it properly in the future!
+
+		// Gather all prefab entities and their info.
+		std::set<UUID> prefabUUIDs;
+		scene->GetRegistry()
+			.view<Component::PrefabInstance>()
+			.each([&](entt::entity entity, Component::PrefabInstance& prefab)
+			{
+				prefabUUIDs.insert(prefab.Id);
+			});
+
+		for (auto prefabUUID : prefabUUIDs)
+		{
+			Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabUUID);
+			Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
+
+			Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
+			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+			if (prefab == nullptr)
+			{
+				HBL2_CORE_ERROR("Error while trying to update prefab while loading the scene!");
+				continue;
+			}
+
+			// If the prefab has no scene refs, but we found prefabs in the scene, add the scene to the refs.
+			if (prefab->m_SceneRefs.size() == 0)
+			{
+				prefab->m_SceneRefs.push_back(asset->UUID);
+
+				PrefabSerializer serializer(prefab);
+				serializer.SerializeReferences(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
+			}
+		}
+
 		return sceneHandle;
 	}
 
