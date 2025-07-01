@@ -4,6 +4,8 @@
 
 #include <stb_image\stb_image_write.h>
 
+#include <yaml-cpp/yaml.h>
+
 namespace HBL2
 {
 	TextureUtilities& TextureUtilities::Get()

@@ -14,6 +14,8 @@ namespace HBL2
 
 		void EditorPanelSystem::DrawContentBrowserPanel()
 		{
+			HandleContentBrowserDragAndDrop();
+
 			// Path bar
 			ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
 
@@ -189,6 +191,9 @@ namespace HBL2
 							case AssetType::Script:
 								ImGui::SetDragDropPayload("Content_Browser_Item_Script", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
 								break;
+							case AssetType::Prefab:
+								ImGui::SetDragDropPayload("Content_Browser_Item_Prefab", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
+								break;
 							default:
 								ImGui::SetDragDropPayload("Content_Browser_Item", (void*)(uint32_t*)&packedHandle, sizeof(uint32_t));
 								break;
@@ -243,6 +248,51 @@ namespace HBL2
 				}
 
 				ImGui::End();
+			}
+		}
+
+		void EditorPanelSystem::HandleContentBrowserDragAndDrop()
+		{
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
+				{
+					UUID entityUUID = *((UUID*)payload->Data);
+					entt::entity entity = m_ActiveScene->FindEntityByUUID(entityUUID);
+
+					if (entity == entt::null)
+					{
+						HBL2_CORE_ERROR("Unable to create prefab asset, entity is invalid!");
+						ImGui::EndDragDropTarget();
+						return;
+					}
+
+					auto& tag = m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name;
+
+					const auto& prefabPath = m_CurrentDirectory / (tag + ".prefab");
+					const auto& relativePath = FileUtils::RelativePath(prefabPath, HBL2::Project::GetAssetDirectory());
+
+					// Create and register asset.
+					Handle<Asset> prefabAssetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "prefab-asset",
+						.filePath = relativePath,
+						.type = AssetType::Prefab,
+					});
+
+					// Create asset metadata file.
+					Prefab::CreateMetadataFile(prefabAssetHandle, entityUUID);
+
+					// Save asset.
+					AssetManager::Instance->SaveAsset(prefabAssetHandle);
+
+					// Delete the created prefab entity since we want the asset prefab entity be unique.
+					m_ActiveScene->DestroyEntity(entity);
+
+					// Instantiate the prefab entity again to get new UUIDs.
+					HBL2::Component::EditorVisible::SelectedEntity = Prefab::Instantiate(prefabAssetHandle);
+
+					ImGui::EndDragDropTarget();
+				}
 			}
 		}
 

@@ -9,6 +9,7 @@
 #include "Systems\SoundSystem.h"
 #include "Systems\Physics2dSystem.h"
 #include "Systems\Physics3dSystem.h"
+#include <Prefab/PrefabSerializer.h>
 
 namespace HBL2
 {
@@ -50,6 +51,10 @@ namespace HBL2
 			asset->Indentifier = ImportSound(asset).Pack();
 			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
+		case AssetType::Prefab:
+			asset->Indentifier = ImportPrefab(asset).Pack();
+			asset->Loaded = (asset->Indentifier != 0);
+			return asset->Indentifier;
 		}
 
 		return 0;
@@ -87,6 +92,9 @@ namespace HBL2
 		case AssetType::Sound:
 			UnloadSound(asset);
 			break;
+		case AssetType::Prefab:
+			UnloadPrefab(asset);
+			break;
 		}
     }
 
@@ -115,6 +123,8 @@ namespace HBL2
 			return DestroyScene(asset);
 		case AssetType::Sound:
 			return DestroySound(asset);
+		case AssetType::Prefab:
+			return DestroyPrefab(asset);
 		}
 
 		HBL2_CORE_ASSERT(false, "Unsupported asset type!");
@@ -151,6 +161,9 @@ namespace HBL2
 			break;
 		case AssetType::Sound:
 			SaveSound(asset);
+			break;
+		case AssetType::Prefab:
+			SavePrefab(asset);
 			break;
 		}
     }
@@ -661,6 +674,49 @@ namespace HBL2
 		return Handle<Sound>();
 	}
 
+	Handle<Prefab> EditorAssetManager::ImportPrefab(Asset* asset)
+	{
+		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblprefab");
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Prefab"].IsDefined())
+		{
+			HBL2_CORE_TRACE("Prefab meta data file not valid: {0}", ss.str());
+			return Handle<Prefab>();
+		}
+
+		const auto& prefabProperties = data["Prefab"];
+		if (prefabProperties)
+		{
+			const std::string& prefabName = asset->FilePath.filename().stem().string();
+			UUID baseEntityUUID = prefabProperties["BaseEntityUUID"].as<UUID>();
+			uint32_t version = prefabProperties["Version"].as<uint32_t>();
+
+			auto prefabHandle = ResourceManager::Instance->CreatePrefab({
+				.debugName = prefabName.c_str(),
+				.uuid = asset->UUID,
+				.baseEntityUUID = baseEntityUUID,
+				.version = version,
+			});
+
+			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+			if (prefab == nullptr)
+			{
+				HBL2_CORE_ERROR("Prefab asset \"{0}\" is invalid, aborting prefab load.", asset->FilePath.filename().stem().string());
+				return prefabHandle;
+			}
+
+			// NOTE: We do not deserialize here!
+
+			return prefabHandle;
+		}
+
+		return Handle<Prefab>();
+	}
+
 	Handle<Mesh> EditorAssetManager::ImportMesh(Asset* asset)
 	{
 		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
@@ -997,6 +1053,22 @@ namespace HBL2
 
 		ofStream << data;
 		ofStream.close();
+	}
+
+	void EditorAssetManager::SavePrefab(Asset* asset)
+	{
+		Handle<Prefab> prefabHandle = Handle<Prefab>::UnPack(asset->Indentifier);
+
+		if (!prefabHandle.IsValid())
+		{
+			HBL2_CORE_ERROR("Could not save asset {0} at path: {1}, because the handle is invalid.", asset->DebugName, asset->FilePath.string());
+			return;
+		}
+
+		Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+		PrefabSerializer serializer(prefab);
+		serializer.Serialize(Project::GetAssetFileSystemPath(asset->FilePath));
 	}
 
 	/// Destroy methods
@@ -1338,6 +1410,53 @@ namespace HBL2
 		return true;
 	}
 
+	bool EditorAssetManager::DestroyPrefab(Asset* asset)
+	{
+		if (asset->Loaded)
+		{
+			UnloadPrefab(asset);
+		}
+
+		// Delete files
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath)))
+			{
+				HBL2_CORE_INFO("File {} deleted.", asset->FilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", asset->FilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), asset->FilePath);
+			return false;
+		}
+
+		const std::string& metafilePath = asset->FilePath.string() + ".hblprefab";
+
+		try
+		{
+			if (std::filesystem::remove(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblprefab"))
+			{
+				HBL2_CORE_INFO("File {} deleted.", metafilePath);
+			}
+			else
+			{
+				HBL2_CORE_WARN("File {} not found.", metafilePath);
+			}
+		}
+		catch (const std::filesystem::filesystem_error& err)
+		{
+			HBL2_CORE_ERROR("Filesystem error: {}, when trying to delete {}.", err.what(), metafilePath);
+			return false;
+		}
+
+		return true;
+	}
+
 	/// Unload methods
 
 	void EditorAssetManager::UnloadTexture(Asset* asset)
@@ -1570,6 +1689,29 @@ namespace HBL2
 
 		// Delete from pool.
 		ResourceManager::Instance->DeleteSound(soundHandle);
+
+		asset->Loaded = false;
+		asset->Indentifier = 0;
+	}
+
+	void EditorAssetManager::UnloadPrefab(Asset* asset)
+	{
+		Handle<Prefab> prefabHandle = Handle<Prefab>::UnPack(asset->Indentifier);
+
+		if (!prefabHandle.IsValid())
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" has an invalid resource handle, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		if (!asset->Loaded)
+		{
+			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+			return;
+		}
+
+		// Delete from pool.
+		ResourceManager::Instance->DeletePrefab(prefabHandle);
 
 		asset->Loaded = false;
 		asset->Indentifier = 0;

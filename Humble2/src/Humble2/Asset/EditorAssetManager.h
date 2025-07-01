@@ -9,6 +9,7 @@
 
 #include "Scene\SceneSerializer.h"
 #include "Project\Project.h"
+#include "Prefab\Prefab.h"
 
 #include "Utilities\Collections\Span.h"
 
@@ -38,12 +39,14 @@ namespace HBL2
 		Handle<Scene> ImportScene(Asset* asset);
 		Handle<Script> ImportScript(Asset* asset);
 		Handle<Sound> ImportSound(Asset* asset);
+		Handle<Prefab> ImportPrefab(Asset* asset);
 
 		void SaveMaterial(Asset* asset);
 		void SaveScene(Asset* asset);
 		void SaveTexture(Asset* asset);
 		void SaveScript(Asset* asset);
 		void SaveSound(Asset* asset);
+		void SavePrefab(Asset* asset);
 
 		bool DestroyTexture(Asset* asset);
 		bool DestroyShader(Asset* asset);
@@ -52,6 +55,7 @@ namespace HBL2
 		bool DestroyScript(Asset* asset);
 		bool DestroyScene(Asset* asset);
 		bool DestroySound(Asset* asset);
+		bool DestroyPrefab(Asset* asset);
 
 		void UnloadTexture(Asset* asset);
 		void UnloadShader(Asset* asset);
@@ -60,5 +64,6 @@ namespace HBL2
 		void UnloadScript(Asset* asset);
 		void UnloadScene(Asset* asset);
 		void UnloadSound(Asset* asset);
+		void UnloadPrefab(Asset* asset);
 	};
 }

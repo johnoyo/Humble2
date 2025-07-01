@@ -100,7 +100,7 @@ namespace HBL2
 			.debugName = "pre-pass-renderpass-layout",
 			.depthTargetFormat = Format::D32_FLOAT,
 			.subPasses = {
-				{.depthTarget = true },
+				{ .depthTarget = true },
 			},
 		});
 
@@ -932,7 +932,7 @@ namespace HBL2
 				.renderPass = m_PostProcessRenderPass,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 				.colorTargets = { Renderer::Instance->MainColorTexture },
-				});
+			});
 
 			ResourceManager::Instance->DeleteBindGroup(m_PostProcessBindGroup);
 
@@ -941,7 +941,7 @@ namespace HBL2
 				.usage = BufferUsage::UNIFORM,
 				.usageHint = BufferUsageHint::DYNAMIC,
 				.byteSize = sizeof(CameraSettings),
-				});
+			});
 
 			m_PostProcessBindGroup = ResourceManager::Instance->CreateBindGroup({
 				.debugName = "post-process-bind-group",
@@ -952,7 +952,7 @@ namespace HBL2
 				.buffers = {
 					{.buffer = m_PostProcessBuffer },
 				}
-				});
+			});
 		});
 
 		// Create pre-pass shaders.

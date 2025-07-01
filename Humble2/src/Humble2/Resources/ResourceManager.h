@@ -9,6 +9,7 @@
 #include "Scene\Scene.h"
 #include "Sound\Sound.h"
 #include "Scene\Script.h"
+#include "Prefab\Prefab.h"
 
 #include <cstring>
 #include <stdint.h>
@@ -168,6 +169,20 @@ namespace HBL2
 			return m_SoundPool.Get(handle);
 		}
 
+		// Prefabs
+		Handle<Prefab> CreatePrefab(const PrefabDescriptor&& desc)
+		{
+			return m_PrefabPool.Insert(Prefab(std::forward<const PrefabDescriptor>(desc)));
+		}
+		void DeletePrefab(Handle<Prefab> handle)
+		{
+			m_PrefabPool.Remove(handle);
+		}
+		Prefab* GetPrefab(Handle<Prefab> handle) const
+		{
+			return m_PrefabPool.Get(handle);
+		}
+
 	protected:
 		ResourceDeletionQueue m_DeletionQueue;
 
@@ -177,5 +192,6 @@ namespace HBL2
 		Pool<Scene, Scene> m_ScenePool;
 		Pool<Script, Script> m_ScriptPool;
 		Pool<Sound, Sound> m_SoundPool;
+		Pool<Prefab, Prefab> m_PrefabPool;
 	};
 }

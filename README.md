@@ -11,6 +11,8 @@ Features:
 - Uses an ECS architecture using the [EnTT](https://github.com/skypjack/entt) library.
 - Fully integrated C++ scripting support.
 - Powerfull physics support for 2D (using [Box2D](https://github.com/erincatto/box2d)) and 3D (using [Jolt](https://github.com/jrouwe/JoltPhysics)) games.
+- Support for prefabs (Instantiate, Unpack, Update, Destroy).
+    - Nested prefabs support is planned for the future.
 - Planned web support with [Emscripten](https://github.com/emscripten-core/emsdk) using WebGPU to build games for the browser.
 - Currently supports only Windows.
 

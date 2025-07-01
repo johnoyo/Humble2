@@ -89,6 +89,9 @@ namespace HBL2
 		virtual void* GetDepthAttachment() = 0;
 		virtual void* GetColorAttachment() = 0;
 
+		virtual void SetViewportAttachment(Handle<Texture> viewportTexture) = 0;
+		virtual void* GetViewportAttachment() = 0;
+
 		RenderPassPool& GetRenderPassPool() { return m_RenderPassPool; }
 
 		const uint32_t GetFrameNumber() const { return m_FrameNumber; }

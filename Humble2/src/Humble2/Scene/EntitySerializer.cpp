@@ -41,6 +41,20 @@ namespace HBL2
 			out << YAML::Key << "Translation" << YAML::Value << transform.Translation;
 			out << YAML::Key << "Rotation" << YAML::Value << transform.Rotation;
 			out << YAML::Key << "Scale" << YAML::Value << transform.Scale;
+			out << YAML::Key << "Static" << YAML::Value << transform.Static;
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::PrefabInstance>(m_Entity))
+		{
+			out << YAML::Key << "Component::PrefabInstance";
+			out << YAML::BeginMap;
+
+			auto& p = m_Scene->GetComponent<Component::PrefabInstance>(m_Entity);
+
+			out << YAML::Key << "Id" << YAML::Value << p.Id;
+			out << YAML::Key << "Version" << YAML::Value << p.Version;
+
 			out << YAML::EndMap;
 		}
 
@@ -407,7 +421,19 @@ namespace HBL2
 			auto& transform = m_Scene->GetComponent<Component::Transform>(m_Entity);
 			transform.Translation = transformComponent["Translation"].as<glm::vec3>();
 			transform.Rotation = transformComponent["Rotation"].as<glm::vec3>();
-			transform.Scale = transformComponent["Scale"].as<glm::vec3>();
+			transform.Scale = transformComponent["Scale"].as<glm::vec3>();				
+			if (transformComponent["Static"].IsDefined()) // TODO: Remove this in the future.
+			{
+				transform.Static = transformComponent["Static"].as<bool>();
+			}
+		}
+
+		auto p_NewComponent = entityNode["Component::PrefabInstance"];
+		if (p_NewComponent)
+		{
+			auto& p = m_Scene->AddComponent<Component::PrefabInstance>(m_Entity);
+			p.Id = p_NewComponent["Id"].as<UUID>();
+			p.Version = p_NewComponent["Version"].as<uint32_t>();
 		}
 
 		auto linkComponent = entityNode["Component::Link"];

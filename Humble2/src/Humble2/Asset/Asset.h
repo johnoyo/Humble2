@@ -18,6 +18,7 @@ namespace HBL2
 		Scene = 5,
 		Script = 6,
 		Sound = 7,
+		Prefab = 8,
 	};
 
 	struct HBL2_API AssetDescriptor

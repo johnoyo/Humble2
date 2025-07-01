@@ -9,10 +9,22 @@ namespace HBL2
 			const auto& tag = m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity);
 
 			bool selectedEntityCondition = HBL2::Component::EditorVisible::Selected && HBL2::Component::EditorVisible::SelectedEntity == entity;
+			bool isPrefab = m_ActiveScene->HasComponent<HBL2::Component::PrefabInstance>(entity);
 
 			ImGuiTreeNodeFlags flags = (selectedEntityCondition ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
 			flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
+
+			if (isPrefab)
+			{
+				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(IM_COL32(0, 255, 239, 255)));
+			}
+
 			bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.Name.c_str());
+
+			if (isPrefab)
+			{
+				ImGui::PopStyleColor();
+			}
 
 			if (ImGui::BeginDragDropSource())
 			{
@@ -41,7 +53,7 @@ namespace HBL2
 						m_ActiveScene->AddComponent<HBL2::Component::Link>(childEntity);
 					}
 
-					// Add Link component to this entity(parent of child entity) if it does not have one.
+					// Add Link component to this entity (parent of child entity) if it does not have one.
 					if (!m_ActiveScene->HasComponent<HBL2::Component::Link>(entity))
 					{
 						m_ActiveScene->AddComponent<HBL2::Component::Link>(entity);
@@ -80,6 +92,22 @@ namespace HBL2
 					m_EntityToBeDuplicated = entity;
 				}
 
+				if (m_ActiveScene->HasComponent<HBL2::Component::PrefabInstance>(entity))
+				{
+					if (ImGui::MenuItem("Unpack prefab"))
+					{
+						Prefab::Unpack(entity);
+					}
+					else if (ImGui::MenuItem("Save prefab"))
+					{
+						// Clear currently selected entity.
+						HBL2::Component::EditorVisible::Selected = false;
+						HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+
+						Prefab::Save(entity);
+					}
+				}
+
 				ImGui::EndPopup();
 			}
 
@@ -107,6 +135,7 @@ namespace HBL2
 		{
 			if (ImGui::BeginDragDropTarget())
 			{
+				// Drag and drop target for instantiating a mesh into the scene.
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
 				{
 					uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
@@ -184,6 +213,23 @@ namespace HBL2
 						subMeshIndex = 0;
 						meshIndex++;
 					}
+
+					ImGui::EndDragDropTarget();
+				}
+				
+				// Drag and drop target for instantiating a prefab into the scene.
+				else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Prefab"))
+				{
+					uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+					Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+					if (!assetHandle.IsValid())
+					{
+						ImGui::EndDragDropTarget();
+						return;
+					}
+
+					Prefab::Instantiate(assetHandle);
 
 					ImGui::EndDragDropTarget();
 				}
@@ -329,7 +375,15 @@ namespace HBL2
 			if (m_EntityToBeDeleted != entt::null)
 			{
 				// Destroy entity and clear entityToBeDeleted value.
-				m_ActiveScene->DestroyEntity(m_EntityToBeDeleted);
+				if (m_ActiveScene->HasComponent<HBL2::Component::PrefabInstance>(m_EntityToBeDeleted))
+				{
+					Prefab::Destroy(m_EntityToBeDeleted);
+				}
+				else
+				{
+					m_ActiveScene->DestroyEntity(m_EntityToBeDeleted);
+				}
+
 				m_EntityToBeDeleted = entt::null;
 
 				// Clear currently selected entity.

@@ -32,6 +32,7 @@ namespace HBL2
 			void DrawStatsPanel(float ts);
 			void DrawViewportPanel();
 			void DrawContentBrowserPanel();
+			void HandleContentBrowserDragAndDrop();
 			void DrawDirectoryRecursive(const std::filesystem::path& path);
 			void DrawContentBrowserContextMenu();
 			void DrawPlayStopPanel();

@@ -14,25 +14,81 @@ namespace HBL2
 	{
 	}
 
+	PrefabSerializer::PrefabSerializer(Prefab* prefab, Scene* scene)
+		: m_Context(prefab), m_Scene(scene)
+	{
+	}
+
+	PrefabSerializer::PrefabSerializer(Prefab* prefab, entt::entity instantiatedPrefabEntity)
+		: m_Context(prefab), m_InstantiatedPrefabEntity(instantiatedPrefabEntity)
+	{
+	}
+
 	void PrefabSerializer::Serialize(const std::filesystem::path& path)
 	{
+		/*		
+		- Instantiatiation: (Spawn into the scene)
+			- Instantiate the prefab into the scene from the file.
+			- Duplicate the instantiated entity so it has unique ID.
+			- Delete initial instantiated entity.
+		- Update: (the prefab is already instantiated and we want to update it since the source prefab changed.)
+			- Check if the version inside the scene matches the prefab source asset version.
+			- If they do not match
+				- Destroy instantiated prefab entity.
+				- Spawn the prefab source asset entity into the scene.
+				- Duplicate the prefab source asset entity to get the instantiated one.
+				- Delete prefab source entity.
+		- Save:
+			- Serialize the source prefab from the provided instantiated prefab entity.
+			- Update metadata file and base entity UUID.
+			- Update the instantiated prefab entities that exist in the scene.
+				- Destroy them and re-instantiate them.
+		*/
+
 		YAML::Emitter out;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Prefab" << YAML::BeginSeq;
 
-		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+		out << YAML::BeginMap;
+		out << YAML::Key << "Entities" << YAML::BeginSeq;
 
-		auto* link = activeScene->TryGetComponent<Component::Link>(m_Context->GetBaseEntity());
+		Scene* activeScene = GetScene();
+		entt::entity baseEntity;
+
+		if (m_InstantiatedPrefabEntity != entt::null)
+		{
+			baseEntity = m_InstantiatedPrefabEntity;
+		}
+		else
+		{
+			// NOTE: This branch is only hit when we drag and drop an entity from the hierachy panel
+			//		 to the content browser to create a new prefab.
+			baseEntity = activeScene->FindEntityByUUID(m_Context->GetBaseEntityUUID());
+		}
+
+		// Add the prefab component if the base entity does not have it.
+		if (!activeScene->HasComponent<Component::PrefabInstance>(baseEntity))
+		{
+			auto& prefab = activeScene->AddComponent<Component::PrefabInstance>(baseEntity);
+			prefab.Id = m_Context->m_UUID;
+			prefab.Version = m_Context->m_Version;
+		}
+
+		// Check if the entity has any children through the link component.
+		auto* link = activeScene->TryGetComponent<Component::Link>(baseEntity);
 
 		if (link == nullptr)
 		{
-			EntitySerializer entitySerializer(activeScene, m_Context->GetBaseEntity());
+			EntitySerializer entitySerializer(activeScene, baseEntity);
 			entitySerializer.Serialize(out);
 		}
 		else
 		{
-			SerializePrefab(activeScene, m_Context->GetBaseEntity(), out);
+			SerializePrefab(activeScene, baseEntity, out);
 		}
+
+		out << YAML::EndSeq;
+		out << YAML::EndMap;
 
 		out << YAML::EndSeq;
 		out << YAML::EndMap;
@@ -56,6 +112,8 @@ namespace HBL2
 
 		fOut << out.c_str();
 		fOut.close();
+
+		m_Context->m_Version++;
 	}
 
 	bool PrefabSerializer::Deserialize(const std::filesystem::path& path)
@@ -79,17 +137,19 @@ namespace HBL2
 			return false;
 		}
 
-		std::string prefabName = data["Prefab"].as<std::string>();
-		HBL2_CORE_TRACE("Deserializing Prefab: {0}", prefabName);
+		HBL2_CORE_TRACE("Deserializing Prefab at path: {0}", path);
 
-		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+		Scene* activeScene = GetScene();
 
-		const auto& entityNodes = data["Prefab"];
+		// Create the prefab entities and their components.
+		const auto& prefabNode = data["Prefab"];
+
+		const auto& entityNodes = prefabNode[0]["Entities"];
 		if (entityNodes)
 		{
 			for (const auto& entityNode : entityNodes)
 			{
-				EntitySerializer entitySerializer(activeScene, m_Context->GetBaseEntity());
+				EntitySerializer entitySerializer(activeScene, entt::null);
 				entitySerializer.Deserialize(entityNode);
 			}
 		}
@@ -115,5 +175,15 @@ namespace HBL2
 			entt::entity childEntity = ctx->FindEntityByUUID(child);
 			SerializePrefab(ctx, childEntity, out);
 		}
+	}
+
+	Scene* PrefabSerializer::GetScene()
+	{
+		if (m_Scene != nullptr)
+		{
+			return m_Scene;
+		}
+
+		return ResourceManager::Instance->GetScene(Context::ActiveScene);
 	}
 }
