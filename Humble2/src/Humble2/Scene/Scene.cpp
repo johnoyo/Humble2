@@ -397,7 +397,7 @@ namespace HBL2
 
         if (id == nullptr)
         {
-            HBL2_CORE_ERROR("Error while trying to destroy entity {}. It is either invalid or does not have the built in required components.", entity);
+            HBL2_CORE_ERROR("Error while trying to destroy entity {0}. It is either invalid or does not have the built in required components.", (uint32_t)entity);
             return;
         }
 
