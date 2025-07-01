@@ -45,12 +45,12 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
-		if (m_Scene->HasComponent<Component::Prefab>(m_Entity))
+		if (m_Scene->HasComponent<Component::PrefabInstance>(m_Entity))
 		{
-			out << YAML::Key << "Component::Prefab";
+			out << YAML::Key << "Component::PrefabInstance";
 			out << YAML::BeginMap;
 
-			auto& p = m_Scene->GetComponent<Component::Prefab>(m_Entity);
+			auto& p = m_Scene->GetComponent<Component::PrefabInstance>(m_Entity);
 
 			out << YAML::Key << "Id" << YAML::Value << p.Id;
 			out << YAML::Key << "Version" << YAML::Value << p.Version;
@@ -386,7 +386,7 @@ namespace HBL2
 		out << YAML::EndMap;
 	}
 
-	bool EntitySerializer::Deserialize(const YAML::Node& entityNode, bool isPrefab)
+	bool EntitySerializer::Deserialize(const YAML::Node& entityNode)
 	{
 		if (!entityNode["Entity"].IsDefined())
 		{
@@ -428,10 +428,10 @@ namespace HBL2
 			}
 		}
 
-		auto p_NewComponent = entityNode["Component::Prefab"];
+		auto p_NewComponent = entityNode["Component::PrefabInstance"];
 		if (p_NewComponent)
 		{
-			auto& p = m_Scene->AddComponent<Component::Prefab>(m_Entity);
+			auto& p = m_Scene->AddComponent<Component::PrefabInstance>(m_Entity);
 			p.Id = p_NewComponent["Id"].as<UUID>();
 			p.Version = p_NewComponent["Version"].as<uint32_t>();
 		}

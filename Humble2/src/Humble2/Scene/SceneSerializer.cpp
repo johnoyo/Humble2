@@ -10,8 +10,9 @@ namespace HBL2
 {
 	struct PrefabInfo
 	{
+		Component::Tag tag;
 		Component::Transform transform;
-		Component::Prefab prefab;
+		Component::PrefabInstance prefab;
 	};
 
 	SceneSerializer::SceneSerializer(Scene* scene) 
@@ -226,21 +227,21 @@ namespace HBL2
 		std::vector<entt::entity> prefabs;
 		std::vector<PrefabInfo> prefabsInfo;
 		m_Scene->GetRegistry()
-			.view<Component::Prefab>()
-			.each([&](entt::entity entity, Component::Prefab& prefab)
+			.view<Component::PrefabInstance>()
+			.each([&](entt::entity entity, Component::PrefabInstance& prefab)
 			{
 				prefabs.push_back(entity);
 
+				auto& tag = m_Scene->GetComponent<Component::Tag>(entity);
 				auto& tr = m_Scene->GetComponent<Component::Transform>(entity);
-				prefabsInfo.push_back({ tr, prefab });
+				prefabsInfo.push_back({ tag, tr, prefab });
 			});
 
 		HBL2_CORE_ASSERT(prefabs.size() == prefabsInfo.size(), "Expected prefabs and prefabsInfo arrays to be the same size!");
 
-		// Iterate over all the prefabs into the scene.
+		// Iterate over all the prefabs into the scene and delete their entities if needed.
 		for (int i = 0; i < prefabs.size(); i++)
 		{
-			auto& prefabEntity = prefabs[i];
 			auto& prefabInfo = prefabsInfo[i];
 
 			Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabInfo.prefab.Id);
@@ -256,7 +257,28 @@ namespace HBL2
 			// If there was an change in the source prefab.
 			if (prefab->m_Version != prefabInfo.prefab.Version)
 			{
-				m_Scene->DestroyEntity(prefabEntity);
+				m_Scene->DestroyEntity(prefabs[i]);
+			}
+		}
+
+		// Iterate over all the prefabs stored before and instantiate them if needed.
+		for (int i = 0; i < prefabsInfo.size(); i++)
+		{
+			auto& prefabInfo = prefabsInfo[i];
+
+			Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabInfo.prefab.Id);
+			Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
+			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+			if (prefab == nullptr)
+			{
+				HBL2_CORE_ERROR("Error while trying to update prefab while loading the scene!");
+				continue;
+			}
+
+			// If there was an change in the source prefab.
+			if (prefab->m_Version != prefabInfo.prefab.Version)
+			{
 				entt::entity clone = Prefab::Instantiate(prefabAssetHandle, m_Scene);
 
 				if (clone != entt::null)
@@ -266,6 +288,12 @@ namespace HBL2
 					tr.Rotation = prefabInfo.transform.Rotation;
 					tr.Scale = prefabInfo.transform.Scale;
 					tr.Static = prefabInfo.transform.Static;
+
+					auto& tagComponent = m_Scene->GetComponent<Component::Tag>(clone);
+					tagComponent.Name = prefabInfo.tag.Name;
+
+					auto& prefabComponent = m_Scene->GetComponent<Component::PrefabInstance>(clone);
+					prefabComponent.Version = prefab->m_Version;
 				}
 			}
 		}

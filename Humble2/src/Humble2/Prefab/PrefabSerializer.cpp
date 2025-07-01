@@ -19,6 +19,11 @@ namespace HBL2
 	{
 	}
 
+	PrefabSerializer::PrefabSerializer(Prefab* prefab, entt::entity instantiatedPrefabEntity)
+		: m_Context(prefab), m_InstantiatedPrefabEntity(instantiatedPrefabEntity)
+	{
+	}
+
 	void PrefabSerializer::Serialize(const std::filesystem::path& path)
 	{
 		/*		
@@ -38,10 +43,17 @@ namespace HBL2
 		out << YAML::Key << "Entities" << YAML::BeginSeq;
 
 		Scene* activeScene = GetScene();
-		entt::entity baseEntity = activeScene->FindEntityByUUID(m_Context->GetBaseEntityUUID());
-		if (baseEntity == entt::null)
+		entt::entity baseEntity;
+
+		if (m_InstantiatedPrefabEntity != entt::null)
 		{
-			baseEntity = activeScene->CreateEntityWithUUID(m_Context->GetBaseEntityUUID());
+			baseEntity = m_InstantiatedPrefabEntity;
+		}
+		else
+		{
+			// NOTE: This branch is only hit when we drag and drop an entity from the hierachy panel
+			//		 to the content browser to create a new prefab.
+			baseEntity = activeScene->FindEntityByUUID(m_Context->GetBaseEntityUUID());
 		}
 
 		// Find scene asset uuid to store it in the scene refs of the prefab.
@@ -70,9 +82,9 @@ namespace HBL2
 		}
 
 		// Add the prefab component if the base entity does not have it.
-		if (!activeScene->HasComponent<Component::Prefab>(baseEntity))
+		if (!activeScene->HasComponent<Component::PrefabInstance>(baseEntity))
 		{
-			auto& prefab = activeScene->AddComponent<Component::Prefab>(baseEntity);
+			auto& prefab = activeScene->AddComponent<Component::PrefabInstance>(baseEntity);
 			prefab.Id = m_Context->m_UUID;
 			prefab.Version = m_Context->m_Version;
 		}

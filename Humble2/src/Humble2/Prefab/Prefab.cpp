@@ -6,10 +6,8 @@
 namespace HBL2
 {
 	Prefab::Prefab(const PrefabDescriptor&& desc)
+		: m_UUID(desc.uuid), m_BaseEntityUUID(desc.baseEntityUUID), m_Version(desc.version)
 	{
-		m_UUID = desc.uuid;
-		m_BaseEntityUUID = desc.baseEntityUUID;
-		m_Version = desc.version;
 
 		Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(m_UUID);
 		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
@@ -51,7 +49,10 @@ namespace HBL2
 		prefabSerializer.Deserialize(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 		prefabSerializer.SerializeReferences(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 
-		return CloneSourcePrefab(prefab);
+		// Retrieve scene.
+		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+		return CloneSourcePrefab(prefab, activeScene);
 	}
 
 	entt::entity Prefab::Instantiate(Handle<Asset> assetHandle, const glm::vec3& position)
@@ -96,10 +97,16 @@ namespace HBL2
 			return;
 		}
 
-		// get the prefab component in order to retrieve the prefab source asset from it.
-		auto& prefabComponent = activeScene->GetComponent<HBL2::Component::Prefab>(instantiatedPrefabEntity);
+		// Get the prefab component in order to retrieve the prefab source asset from it.
+		auto* prefabComponent = activeScene->TryGetComponent<HBL2::Component::PrefabInstance>(instantiatedPrefabEntity);
 
-		Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabComponent.Id);
+		if (prefabComponent == nullptr)
+		{
+			HBL2_CORE_ERROR("Aborting prefab save proccess, provided entity is not an instantiated prefab!");
+			return;
+		}
+
+		Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabComponent->Id);
 		Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
 		Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
 
@@ -110,14 +117,14 @@ namespace HBL2
 		}
 
 		// Remove the prefab component from the entity.
-		activeScene->RemoveComponent<HBL2::Component::Prefab>(instantiatedPrefabEntity);
+		activeScene->RemoveComponent<HBL2::Component::PrefabInstance>(instantiatedPrefabEntity);
 
 		// Check if the prefab has any other references in the active scene.
 		bool hasAnyOtherPrefabs = false;
 
 		activeScene->GetRegistry()
-			.view<Component::Prefab>()
-			.each([&](entt::entity entity, Component::Prefab& prefab)
+			.view<Component::PrefabInstance>()
+			.each([&](entt::entity entity, Component::PrefabInstance& prefab)
 			{
 				hasAnyOtherPrefabs = true;
 			});
@@ -174,6 +181,90 @@ namespace HBL2
 		}
 	}
 
+	void Prefab::Save(entt::entity instantiatedPrefabEntity)
+	{
+		// Retrieve active scene.
+		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+		if (activeScene == nullptr)
+		{
+			HBL2_CORE_ERROR("Cannot retrieve active scene, aborting prefab unpacking process.");
+			return;
+		}
+
+		// Get the prefab component in order to retrieve the prefab source asset from it.
+		auto* prefabComponent = activeScene->TryGetComponent<HBL2::Component::PrefabInstance>(instantiatedPrefabEntity);
+
+		if (prefabComponent == nullptr)
+		{
+			HBL2_CORE_ERROR("Aborting prefab save proccess, provided entity is not an instantiated prefab!");
+			return;
+		}
+
+		Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabComponent->Id);
+		Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
+		Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+		if (prefab == nullptr)
+		{
+			HBL2_CORE_ERROR("Error while trying to unpack prefab, cannot retrieve source prefab asset!");
+			return;
+		}
+
+		// Serialize the source prefab from the provided instantiated prefab entity.
+		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
+
+		PrefabSerializer prefabSerializer(prefab, instantiatedPrefabEntity);
+		prefabSerializer.Serialize(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
+
+		// Update metadata file and base entity UUID.
+		prefab->m_BaseEntityUUID = activeScene->GetComponent<Component::ID>(instantiatedPrefabEntity).Identifier;
+		Prefab::CreateMetadataFile(prefabAsset, prefab->m_BaseEntityUUID, prefab->m_Version);
+
+		// Update the instantiated prefab entities that exist in the scene.
+		std::vector<entt::entity> otherInstantiatedPrefabEntities;
+		std::vector<Component::Transform> otherInstantiatedPrefabEntitiesTransform;
+
+		activeScene->GetRegistry()
+			.view<Component::PrefabInstance, Component::Transform>()
+			.each([&](entt::entity entity, Component::PrefabInstance& prefab, Component::Transform& tr)
+			{
+				if (prefab.Id == prefabAsset->UUID)
+				{
+					otherInstantiatedPrefabEntities.push_back(entity);
+					otherInstantiatedPrefabEntitiesTransform.push_back(tr);
+				}
+			});
+
+		HBL2_CORE_ASSERT(otherInstantiatedPrefabEntities.size() == otherInstantiatedPrefabEntitiesTransform.size(), "");
+
+		for (int i = 0; i < otherInstantiatedPrefabEntities.size(); i++)
+		{
+			const auto entity = otherInstantiatedPrefabEntities[i];
+			activeScene->DestroyEntity(entity);
+		}
+
+		for (int i = 0; i < otherInstantiatedPrefabEntities.size(); i++)
+		{
+			const auto entity = otherInstantiatedPrefabEntities[i];
+			const auto& transform = otherInstantiatedPrefabEntitiesTransform[i];
+
+			entt::entity clone = Prefab::Instantiate(prefabAssetHandle, activeScene);
+
+			if (clone != entt::null)
+			{
+				auto& tr = activeScene->GetComponent<Component::Transform>(clone);
+				tr.Translation = transform.Translation;
+				tr.Rotation = transform.Rotation;
+				tr.Scale = transform.Scale;
+				tr.Static = transform.Static;
+
+				auto& prefabComponent = activeScene->GetComponent<Component::PrefabInstance>(clone);
+				prefabComponent.Version = prefab->m_Version;
+			}
+		}
+
+	}
+
 	entt::entity Prefab::Instantiate(Handle<Asset> assetHandle, Scene* scene)
 	{
 		if (!AssetManager::Instance->IsAssetValid(assetHandle))
@@ -206,13 +297,12 @@ namespace HBL2
 		prefabSerializer.Deserialize(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 		prefabSerializer.SerializeReferences(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 
-		return CloneSourcePrefab(prefab);
+		return CloneSourcePrefab(prefab, scene);
 	}
 
-	entt::entity Prefab::CloneSourcePrefab(Prefab* prefab)
+	entt::entity Prefab::CloneSourcePrefab(Prefab* prefab, Scene* activeScene)
 	{
-		// Retrieve scene.
-		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+		// Check scene.
 		if (activeScene == nullptr)
 		{
 			HBL2_CORE_ERROR("Cannot retrieve active scene, aborting prefab cloning process of the instantiation.");
@@ -232,14 +322,14 @@ namespace HBL2
 		return clone;
 	}
 
-	void Prefab::CreateMetadataFile(Handle<Asset> assetHandle, UUID baseEntityUUID)
+	void Prefab::CreateMetadataFile(Handle<Asset> assetHandle, UUID baseEntityUUID, uint32_t version)
 	{
 		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 
-		CreateMetadataFile(prefabAsset, baseEntityUUID);
+		CreateMetadataFile(prefabAsset, baseEntityUUID, version);
 	}
 
-	void Prefab::CreateMetadataFile(Asset* prefabAsset, UUID baseEntityUUID)
+	void Prefab::CreateMetadataFile(Asset* prefabAsset, UUID baseEntityUUID, uint32_t version)
 	{
 		if (prefabAsset == nullptr)
 		{
@@ -255,6 +345,7 @@ namespace HBL2
 		out << YAML::BeginMap;
 		out << YAML::Key << "UUID" << YAML::Value << prefabAsset->UUID;
 		out << YAML::Key << "BaseEntityUUID" << YAML::Value << baseEntityUUID;
+		out << YAML::Key << "Version" << YAML::Value << version;
 		out << YAML::EndMap;
 		out << YAML::EndMap;
 		fout << out.c_str();

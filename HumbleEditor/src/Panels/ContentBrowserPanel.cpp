@@ -285,6 +285,12 @@ namespace HBL2
 					// Save asset.
 					AssetManager::Instance->SaveAsset(prefabAssetHandle);
 
+					// Delete the created prefab entity since we want the asset prefab entity be unique.
+					m_ActiveScene->DestroyEntity(entity);
+
+					// Instantiate the prefab entity again to get new UUIDs.
+					HBL2::Component::EditorVisible::SelectedEntity = Prefab::Instantiate(prefabAssetHandle);
+
 					ImGui::EndDragDropTarget();
 				}
 			}

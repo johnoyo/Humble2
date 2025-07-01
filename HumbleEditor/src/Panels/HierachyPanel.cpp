@@ -9,7 +9,7 @@ namespace HBL2
 			const auto& tag = m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity);
 
 			bool selectedEntityCondition = HBL2::Component::EditorVisible::Selected && HBL2::Component::EditorVisible::SelectedEntity == entity;
-			bool isPrefab = m_ActiveScene->HasComponent<HBL2::Component::Prefab>(entity);
+			bool isPrefab = m_ActiveScene->HasComponent<HBL2::Component::PrefabInstance>(entity);
 
 			ImGuiTreeNodeFlags flags = (selectedEntityCondition ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
 			flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
@@ -92,7 +92,7 @@ namespace HBL2
 					m_EntityToBeDuplicated = entity;
 				}
 
-				if (m_ActiveScene->HasComponent<HBL2::Component::Prefab>(entity))
+				if (m_ActiveScene->HasComponent<HBL2::Component::PrefabInstance>(entity))
 				{
 					if (ImGui::MenuItem("Unpack prefab"))
 					{
@@ -100,6 +100,10 @@ namespace HBL2
 					}
 					else if (ImGui::MenuItem("Save prefab"))
 					{
+						HBL2::Component::EditorVisible::Selected = false;
+						HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+
+						Prefab::Save(entity);
 					}
 				}
 

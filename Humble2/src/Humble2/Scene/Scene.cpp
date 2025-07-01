@@ -78,7 +78,7 @@ namespace HBL2
         copy_component(Component::BoxCollider{});
         copy_component(Component::SphereCollider{});
         copy_component(Component::CapsuleCollider{});
-        copy_component(Component::Prefab{});
+        copy_component(Component::PrefabInstance{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
@@ -209,9 +209,9 @@ namespace HBL2
         m_Registry.storage<Component::CapsuleCollider>().clear();
         m_Registry.compact<Component::CapsuleCollider>();
 
-        m_Registry.clear<Component::Prefab>();
-        m_Registry.storage<Component::Prefab>().clear();
-        m_Registry.compact<Component::Prefab>();
+        m_Registry.clear<Component::PrefabInstance>();
+        m_Registry.storage<Component::PrefabInstance>().clear();
+        m_Registry.compact<Component::PrefabInstance>();
 
         // Destroy all entities.
         for (auto& [uuid, entity] : m_EntityMap)
@@ -294,7 +294,7 @@ namespace HBL2
         copy_component(Component::BoxCollider{});
         copy_component(Component::SphereCollider{});
         copy_component(Component::CapsuleCollider{});
-        copy_component(Component::Prefab{});
+        copy_component(Component::PrefabInstance{});
 
         // Copy user defined components.
         std::vector<std::string> userComponentNames;
@@ -393,7 +393,15 @@ namespace HBL2
             }
         }
 
-        m_EntityMap.erase(m_Registry.get<Component::ID>(entity).Identifier);
+        Component::ID* id = TryGetComponent<Component::ID>(entity);
+
+        if (id == nullptr)
+        {
+            HBL2_CORE_ERROR("Error while trying to destroy entity {}. It is either invalid or does not have the built in required components.", entity);
+            return;
+        }
+
+        m_EntityMap.erase(id->Identifier);
         m_Registry.destroy(entity);
     }
 

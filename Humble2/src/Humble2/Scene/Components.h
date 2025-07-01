@@ -208,7 +208,7 @@ namespace HBL2
 			bool Enabled = true;
 		};
 
-		struct HBL2_API Prefab
+		struct HBL2_API PrefabInstance
 		{
 			UUID Id = 0;
 			uint32_t Version = 0;
