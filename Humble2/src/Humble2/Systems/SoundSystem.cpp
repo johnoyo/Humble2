@@ -2,8 +2,8 @@
 
 namespace HBL2
 {
-	void SoundSystem::OnCreate()
-	{
+    void SoundSystem::OnCreate()
+    {
         // Create the main system object.
         FMOD_RESULT result = FMOD::System_Create(&m_SoundSystem);
         if (result != FMOD_OK)
@@ -27,9 +27,8 @@ namespace HBL2
             return;
         }
 
-        m_Context->GetRegistry()
-            .view<Component::AudioSource>()
-            .each([&](entt::entity entity, Component::AudioSource& audioSource)
+        m_Context->View<Component::AudioSource>()
+            .Each([&](Component::AudioSource& audioSource)
             {
                 Sound* sound = ResourceManager::Instance->GetSound(audioSource.Sound);
 
@@ -38,13 +37,12 @@ namespace HBL2
                     sound->Create(m_SoundSystem);
                 }
             });
-	}
+    }
 
-	void SoundSystem::OnUpdate(float ts)
-	{
-        m_Context->GetRegistry()
-            .view<Component::AudioSource>()
-            .each([&](entt::entity entity, Component::AudioSource& audioSource)
+    void SoundSystem::OnUpdate(float ts)
+    {
+        m_Context->View<Component::AudioSource>()
+            .Each([&](Component::AudioSource& audioSource)
             {
                 Sound* sound = ResourceManager::Instance->GetSound(audioSource.Sound);
 
@@ -65,13 +63,12 @@ namespace HBL2
             });
 
         m_SoundSystem->update();
-	}
+    }
 
     void SoundSystem::OnDestroy()
     {
-        m_Context->GetRegistry()
-            .view<Component::AudioSource>()
-            .each([&](entt::entity entity, Component::AudioSource& audioSource)
+        m_Context->View<Component::AudioSource>()
+            .Each([&](Component::AudioSource& audioSource)
             {
                 Sound* sound = ResourceManager::Instance->GetSound(audioSource.Sound);
 

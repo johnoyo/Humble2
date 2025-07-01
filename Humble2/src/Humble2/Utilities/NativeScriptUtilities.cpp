@@ -8,19 +8,19 @@ namespace HBL2
 				
 		typedef const char* (*RegisterComponentFunc)(Scene*);
 
-		typedef entt::meta_any (*AddComponentFunc)(Scene*, entt::entity);
+		typedef entt::meta_any (*AddComponentFunc)(Scene*, Entity);
 
-		typedef entt::meta_any (*GetComponentFunc)(Scene*, entt::entity);
+		typedef entt::meta_any (*GetComponentFunc)(Scene*, Entity);
 
-		typedef void (*RemoveComponentFunc)(Scene*, entt::entity);
+		typedef void (*RemoveComponentFunc)(Scene*, Entity);
 
-		typedef bool (*HasComponentFunc)(Scene*, entt::entity);
+		typedef bool (*HasComponentFunc)(Scene*, Entity);
 
 		typedef void (*ClearComponentStorageFunc)(Scene*);
 
-		typedef void (*SerializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>&, bool);
+		typedef void (*SerializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>&, bool);
 
-		typedef void (*DeserializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>&);
+		typedef void (*DeserializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>&);
 	}
 
 	NativeScriptUtilities* NativeScriptUtilities::s_Instance = nullptr;
@@ -542,7 +542,7 @@ class {ScriptName}
 		}
 	}
 
-	entt::meta_any NativeScriptUtilities::AddComponent(const std::string& name, Scene* ctx, entt::entity entity)
+	entt::meta_any NativeScriptUtilities::AddComponent(const std::string& name, Scene* ctx, Entity entity)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -553,7 +553,7 @@ class {ScriptName}
 		return addComponent(ctx, entity);
 	}
 
-	entt::meta_any NativeScriptUtilities::GetComponent(const std::string& name, Scene* ctx, entt::entity entity)
+	entt::meta_any NativeScriptUtilities::GetComponent(const std::string& name, Scene* ctx, Entity entity)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -564,7 +564,7 @@ class {ScriptName}
 		return getComponent(ctx, entity);
 	}
 
-	void NativeScriptUtilities::RemoveComponent(const std::string& name, Scene* ctx, entt::entity entity)
+	void NativeScriptUtilities::RemoveComponent(const std::string& name, Scene* ctx, Entity entity)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -575,7 +575,7 @@ class {ScriptName}
 		removeComponent(ctx, entity);
 	}
 
-	bool NativeScriptUtilities::HasComponent(const std::string& name, Scene* ctx, entt::entity entity)
+	bool NativeScriptUtilities::HasComponent(const std::string& name, Scene* ctx, Entity entity)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -597,7 +597,7 @@ class {ScriptName}
 		clearComponentStorage(ctx);
 	}
 
-	void NativeScriptUtilities::SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data, bool cleanRegistry)
+	void NativeScriptUtilities::SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data, bool cleanRegistry)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -612,7 +612,7 @@ class {ScriptName}
 		serializeComponents(ctx, data, cleanRegistry);
 	}
 
-	void NativeScriptUtilities::DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data)
+	void NativeScriptUtilities::DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data)
 	{
 		const auto& path = GetUnityBuildPath();
 

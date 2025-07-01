@@ -6,16 +6,14 @@ namespace HBL2
 {
 	void LinkSystem::OnCreate()
 	{
-		m_Context->GetRegistry()
-			.group<Component::Link>(entt::get<Component::Transform>)
-			.each([&](entt::entity entity, Component::Link& link, Component::Transform& transform)
+		m_Context->Group<Component::Link>(Get<Component::Transform>)
+			.Each([&](Entity entity, Component::Link& link, Component::Transform& transform)
 			{
 				link.Children.clear();
 			});
 
-		m_Context->GetRegistry()
-			.group<Component::Link>(entt::get<Component::Transform>)
-			.each([&](entt::entity entity, Component::Link& link, Component::Transform& transform)
+		m_Context->Group<Component::Link>(Get<Component::Transform>)
+			.Each([&](Entity entity, Component::Link& link, Component::Transform& transform)
 			{
 				transform.WorldMatrix = GetWorldSpaceTransform(entity, link);
 				AddChildren(entity, link);
@@ -24,9 +22,8 @@ namespace HBL2
 
 	void LinkSystem::OnUpdate(float ts)
 	{
-		m_Context->GetRegistry()
-			.group<Component::Link>(entt::get<Component::Transform>)
-			.each([&](entt::entity entity, Component::Link& link, Component::Transform& transform)
+		m_Context->Group<Component::Link>(Get<Component::Transform>)
+			.Each([&](Entity entity, Component::Link& link, Component::Transform& transform)
 			{
 				if (!transform.Static)
 				{
@@ -231,14 +228,14 @@ namespace HBL2
 #endif
 	}
 
-	glm::mat4 LinkSystem::GetWorldSpaceTransform(entt::entity entity, Component::Link& link)
+	glm::mat4 LinkSystem::GetWorldSpaceTransform(Entity entity, Component::Link& link)
 	{
 		glm::mat4 transform = glm::mat4(1.0f);
 
 		if (link.Parent != 0)
 		{
-			entt::entity parentEntity = m_Context->FindEntityByUUID(link.Parent);
-			if (parentEntity != entt::null)
+			Entity parentEntity = m_Context->FindEntityByUUID(link.Parent);
+			if (parentEntity != Entity::Null)
 			{
 				Component::Link& parentLink = m_Context->GetComponent<Component::Link>(parentEntity);
 				transform = GetWorldSpaceTransform(parentEntity, parentLink);
@@ -248,12 +245,12 @@ namespace HBL2
 		return transform * m_Context->GetComponent<Component::Transform>(entity).LocalMatrix;
 	}
 
-	void LinkSystem::AddChildren(entt::entity entity, Component::Link& link)
+	void LinkSystem::AddChildren(Entity entity, Component::Link& link)
 	{
 		// Add the entity to its new parent's children list, if it has one.
 		if (link.Parent != 0)
 		{
-			entt::entity parent = m_Context->FindEntityByUUID(link.Parent);
+			Entity parent = m_Context->FindEntityByUUID(link.Parent);
 			auto* parentLink = m_Context->TryGetComponent<Component::Link>(parent);
 
 			if (parentLink)
@@ -263,7 +260,7 @@ namespace HBL2
 		}
 	}
 
-	void LinkSystem::UpdateChildren(entt::entity entity, Component::Link& link)
+	void LinkSystem::UpdateChildren(Entity entity, Component::Link& link)
 	{
 		// Check if the entity's parent has changed or if it's no longer a child.
 		if (link.PrevParent == link.Parent)
@@ -274,7 +271,7 @@ namespace HBL2
 		// Remove the entity from its previous parent's children list, if it had one.
 		if (link.PrevParent != 0)
 		{
-			entt::entity prevParent = m_Context->FindEntityByUUID(link.PrevParent);
+			Entity prevParent = m_Context->FindEntityByUUID(link.PrevParent);
 			auto* prevParentLink = m_Context->TryGetComponent<Component::Link>(prevParent);
 
 			if (prevParentLink)
@@ -292,7 +289,7 @@ namespace HBL2
 		// Add the entity to its new parent's children list, if it has one.
 		if (link.Parent != 0)
 		{
-			entt::entity parent = m_Context->FindEntityByUUID(link.Parent);
+			Entity parent = m_Context->FindEntityByUUID(link.Parent);
 			auto* parentLink = m_Context->TryGetComponent<Component::Link>(parent);
 
 			if (parentLink)

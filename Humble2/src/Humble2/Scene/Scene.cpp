@@ -41,7 +41,7 @@ namespace HBL2
             {
                 const auto& name = src->m_Registry.get<Component::Tag>(entity).Name;
 
-                entt::entity newEntity = dst->m_Registry.create(entity);
+                Entity newEntity = dst->m_Registry.create(entity);
 
                 dst->m_Registry.emplace<Component::Tag>(newEntity).Name = name;
                 dst->m_Registry.emplace<Component::ID>(newEntity).Identifier = id.Identifier;
@@ -100,7 +100,7 @@ namespace HBL2
 
         // Clone user defined components.
         std::vector<std::string> userComponentNames;
-        std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>> data;
+        std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
 
         // Store all registered meta types of the source scene.
         for (auto meta_type : entt::resolve(src->GetMetaContext()))
@@ -234,15 +234,15 @@ namespace HBL2
         m_RuntimeSystems.clear();
     }
 
-    void Scene::DestroyEntity(entt::entity entity)
+    void Scene::DestroyEntity(Entity entity)
     {
         InternalDestroyEntity(entity, true);
     }
 
-    entt::entity Scene::DuplicateEntity(entt::entity entity)
+    Entity Scene::DuplicateEntity(Entity entity)
     {
         std::string name = GetComponent<Component::Tag>(entity).Name;
-        entt::entity newEntity = CreateEntity(name + "(Clone)");
+        Entity newEntity = CreateEntity(name + "(Clone)");
         auto& newLink = AddComponent<HBL2::Component::Link>(newEntity);
 
         // Helper lamda for component copying
@@ -258,8 +258,8 @@ namespace HBL2
                 {
                     for (auto child : ((HBL2::Component::Link&)component).Children)
                     {
-                        entt::entity childEntity = FindEntityByUUID(child);
-                        entt::entity newChildEntity = DuplicateEntity(childEntity);
+                        Entity childEntity = FindEntityByUUID(child);
+                        Entity newChildEntity = DuplicateEntity(childEntity);
 
                         // Add the base entity as the parent of this
                         HBL2::Component::Link& newChildLink = GetComponent<HBL2::Component::Link>(newChildEntity);
@@ -298,7 +298,7 @@ namespace HBL2
 
         // Copy user defined components.
         std::vector<std::string> userComponentNames;
-        std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>> data;
+        std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
 
         for (auto meta_type : entt::resolve(m_MetaContext))
         {
@@ -356,7 +356,7 @@ namespace HBL2
         delete system;
     }
 
-    void Scene::InternalDestroyEntity(entt::entity entity, bool isRootCall)
+    void Scene::InternalDestroyEntity(Entity entity, bool isRootCall)
     {
         auto* link = TryGetComponent<Component::Link>(entity);
 
@@ -370,14 +370,14 @@ namespace HBL2
 
             for (auto child : link->Children)
             {
-                entt::entity childEntity = FindEntityByUUID(child);
+                Entity childEntity = FindEntityByUUID(child);
                 InternalDestroyEntity(childEntity, false);
             }
 
             // Remove this entity from its parent children list, if it has a parent.
             if (parentId != 0 && isRootCall)
             {
-                entt::entity parentEntity = FindEntityByUUID(parentId);
+                Entity parentEntity = FindEntityByUUID(parentId);
                 auto* parentLink = TryGetComponent<Component::Link>(parentEntity);
 
                 if (parentLink)
@@ -397,7 +397,7 @@ namespace HBL2
 
         if (id == nullptr)
         {
-            HBL2_CORE_ERROR("Error while trying to destroy entity {0}. It is either invalid or does not have the built in required components.", (uint32_t)entity);
+            HBL2_CORE_ERROR("Error while trying to destroy entity {0}. It is either invalid or does not have the built in required components.", (uint32_t)entity.Handle);
             return;
         }
 
