@@ -32,6 +32,13 @@ namespace HBL2
 			- Duplicate the instantiated entity so it has unique ID.
 			- Delete initial instantiated entity.
 		- Update: (the prefab is already instantiated and we want to update it since the source prefab changed.)
+			- Check if the version inside the scene matches the prefab source asset version.
+			- If they do not match
+				- Destroy instantiated prefab entity.
+				- Spawn the prefab source asset entity into the scene.
+				- Duplicate the prefab source asset entity to get the instantiated one.
+				- Delete prefab source entity.
+		- Save:
 			- ...
 		*/
 
@@ -56,31 +63,6 @@ namespace HBL2
 			baseEntity = activeScene->FindEntityByUUID(m_Context->GetBaseEntityUUID());
 		}
 
-		// Find scene asset uuid to store it in the scene refs of the prefab.
-		const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
-
-		for (auto handle : assetHandles)
-		{
-			Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-
-			if (asset->Type == AssetType::Scene)
-			{
-				Handle<Scene> sceneHandle = Handle<Scene>::UnPack(asset->Indentifier);
-				Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
-
-				if (activeScene == scene)
-				{
-					if (std::find(m_Context->m_SceneRefs.begin(), m_Context->m_SceneRefs.end(), asset->UUID) != m_Context->m_SceneRefs.end())
-					{
-						continue;
-					}
-
-					m_Context->m_SceneRefs.push_back(asset->UUID);
-					break;
-				}
-			}
-		}
-
 		// Add the prefab component if the base entity does not have it.
 		if (!activeScene->HasComponent<Component::PrefabInstance>(baseEntity))
 		{
@@ -101,30 +83,6 @@ namespace HBL2
 		{
 			SerializePrefab(activeScene, baseEntity, out);
 		}
-
-		out << YAML::EndSeq;
-		out << YAML::EndMap;
-
-		out << YAML::BeginMap;
-		out << YAML::Key << "References" << YAML::BeginSeq;
-
-		out << YAML::BeginMap;
-		out << YAML::Key << "Scenes" << YAML::BeginSeq;
-		for (UUID sceneUUID : m_Context->m_SceneRefs)
-		{
-			out << YAML::Key << sceneUUID << YAML::Value;
-		}
-		out << YAML::EndSeq;
-		out << YAML::EndMap;
-
-		out << YAML::BeginMap;
-		out << YAML::Key << "Prefabs" << YAML::BeginSeq;
-		for (UUID prefabUUID : m_Context->m_PrefabRefs)
-		{
-			out << YAML::Key << prefabUUID << YAML::Value;
-		}
-		out << YAML::EndSeq;
-		out << YAML::EndMap;
 
 		out << YAML::EndSeq;
 		out << YAML::EndMap;
@@ -155,45 +113,6 @@ namespace HBL2
 		m_Context->m_Version++;
 	}
 
-	void PrefabSerializer::SerializeReferences(const std::filesystem::path& path)
-	{
-		YAML::Node root = YAML::LoadFile(path.string());
-		YAML::Node prefabEntry = root["Prefab"][1];
-
-		YAML::Node refsSeq(YAML::NodeType::Sequence);
-
-		// Reconstruct the scene refs node.
-		YAML::Node scenesMap(YAML::NodeType::Map);
-		scenesMap["Scenes"] = YAML::Node(YAML::NodeType::Sequence);
-		for (UUID sceneUUID : m_Context->m_SceneRefs)
-		{
-			scenesMap["Scenes"].push_back(sceneUUID);
-		}
-		refsSeq.push_back(scenesMap);
-
-		// Reconstruct the prefab refs node.
-		YAML::Node prefabsMap(YAML::NodeType::Map);
-		prefabsMap["Prefabs"] = YAML::Node(YAML::NodeType::Sequence);
-		for (UUID prefabUUID : m_Context->m_PrefabRefs)
-		{
-			prefabsMap["Prefabs"].push_back(prefabUUID);
-		}
-		refsSeq.push_back(prefabsMap);
-
-		// Reconstruct the refs node.
-		prefabEntry["References"] = refsSeq;
-
-		std::ofstream fout(path.string());
-		if (!fout.is_open())
-		{
-			HBL2_CORE_ERROR("Failed to open prefab for writing: {0}", path.string());
-			return;
-		}
-
-		fout << root;
-		fout.close();
-	}
-
 	bool PrefabSerializer::Deserialize(const std::filesystem::path& path)
 	{
 		std::ifstream stream(path);
@@ -219,31 +138,6 @@ namespace HBL2
 
 		Scene* activeScene = GetScene();
 
-		// Find scene asset uuid to store it in the scene refs of the prefab.
-		const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
-
-		for (auto handle : assetHandles)
-		{
-			Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-
-			if (asset->Type == AssetType::Scene)
-			{
-				Handle<Scene> sceneHandle = Handle<Scene>::UnPack(asset->Indentifier);
-				Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
-
-				if (activeScene == scene)
-				{
-					if (std::find(m_Context->m_SceneRefs.begin(), m_Context->m_SceneRefs.end(), asset->UUID) != m_Context->m_SceneRefs.end())
-					{
-						continue;
-					}
-
-					m_Context->m_SceneRefs.push_back(asset->UUID);
-					break;
-				}
-			}
-		}
-
 		// Create the prefab entities and their components.
 		const auto& prefabNode = data["Prefab"];
 
@@ -257,68 +151,7 @@ namespace HBL2
 			}
 		}
 
-		// Update the prefab scene references.
-		const auto& refs = prefabNode[1]["References"];
-		if (refs)
-		{
-			const auto& sceneRefs = refs[0]["Scenes"];
-
-			for (const auto& sceneRef : sceneRefs)
-			{
-				if (std::find(m_Context->m_SceneRefs.begin(), m_Context->m_SceneRefs.end(), sceneRef.as<UUID>()) != m_Context->m_SceneRefs.end())
-				{
-					continue;
-				}
-
-				m_Context->m_SceneRefs.push_back(sceneRef.as<UUID>());
-			}
-		}
-
 		stream.close();
-		return true;
-	}
-
-	bool PrefabSerializer::DeserializeReferences(const std::filesystem::path& path)
-	{
-		std::ifstream stream(path);
-
-		if (!stream.is_open())
-		{
-			HBL2_CORE_ERROR("File not found: {0}", path.string());
-			return false;
-		}
-
-		std::stringstream ss;
-		ss << stream.rdbuf();
-
-		YAML::Node data = YAML::Load(ss.str());
-		if (!data["Prefab"].IsDefined())
-		{
-			HBL2_CORE_TRACE("Prefab not found: {0}", ss.str());
-			stream.close();
-			return false;
-		}
-
-		// Get the prefab node.
-		const auto& prefabNode = data["Prefab"];
-
-		// Set the prefab scene references.
-		const auto& refs = prefabNode[1]["References"];
-		if (refs)
-		{
-			const auto& sceneRefs = refs[0]["Scenes"];
-
-			for (const auto& sceneRef : sceneRefs)
-			{
-				if (std::find(m_Context->m_SceneRefs.begin(), m_Context->m_SceneRefs.end(), sceneRef.as<UUID>()) != m_Context->m_SceneRefs.end())
-				{
-					continue;
-				}
-
-				m_Context->m_SceneRefs.push_back(sceneRef.as<UUID>());
-			}
-		}
-
 		return true;
 	}
 

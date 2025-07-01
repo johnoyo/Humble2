@@ -36,7 +36,6 @@ namespace HBL2
 	private:
 		static entt::entity Instantiate(Handle<Asset> assetHandle, Scene* scene);
 		static entt::entity CloneSourcePrefab(Prefab* prefab, Scene* activeScene);
-		static void UpdatePrefabSceneRefs(Handle<Asset> prefabAssetHandle, Prefab* prefab, Scene* activeScene);
 
 		inline const UUID GetBaseEntityUUID() const { return m_BaseEntityUUID; }
 
@@ -44,11 +43,8 @@ namespace HBL2
 		UUID m_UUID = 0;
 		uint32_t m_Version = 0;
 		UUID m_BaseEntityUUID = 0;
-		std::vector<UUID> m_SceneRefs;
-		std::vector<UUID> m_PrefabRefs;
 
 		friend class PrefabSerializer;
 		friend class SceneSerializer;
-		friend class EditorAssetManager;
 	};
 }

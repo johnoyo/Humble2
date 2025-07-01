@@ -8,13 +8,6 @@ namespace HBL2
 	Prefab::Prefab(const PrefabDescriptor&& desc)
 		: m_UUID(desc.uuid), m_BaseEntityUUID(desc.baseEntityUUID), m_Version(desc.version)
 	{
-
-		Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(m_UUID);
-		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
-
-		// Load the scene refs into this prefab instance.
-		PrefabSerializer serializer(this);
-		serializer.DeserializeReferences(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 	}
 
 	entt::entity Prefab::Instantiate(Handle<Asset> assetHandle)
@@ -47,7 +40,6 @@ namespace HBL2
 		// Deserialize the source prefab into the scene.
 		PrefabSerializer prefabSerializer(prefab);
 		prefabSerializer.Deserialize(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
-		prefabSerializer.SerializeReferences(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 
 		// Retrieve scene.
 		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
@@ -118,22 +110,6 @@ namespace HBL2
 
 		// Remove the prefab component from the entity.
 		activeScene->RemoveComponent<HBL2::Component::PrefabInstance>(instantiatedPrefabEntity);
-
-		// Check if the prefab has any other references in the active scene.
-		bool hasAnyOtherPrefabs = false;
-
-		activeScene->GetRegistry()
-			.view<Component::PrefabInstance>()
-			.each([&](entt::entity entity, Component::PrefabInstance& prefab)
-			{
-				hasAnyOtherPrefabs = true;
-			});
-
-		// If it does not have any references, remove the scene uuid from its references.
-		if (!hasAnyOtherPrefabs)
-		{
-			UpdatePrefabSceneRefs(prefabAssetHandle, prefab, activeScene);
-		}
 	}
 
 	void Prefab::Save(entt::entity instantiatedPrefabEntity)
@@ -250,22 +226,6 @@ namespace HBL2
 		}
 
 		activeScene->DestroyEntity(instantiatedPrefabEntity);
-
-		// Check if the prefab has any other references in the active scene.
-		bool hasAnyOtherPrefabs = false;
-
-		activeScene->GetRegistry()
-			.view<Component::PrefabInstance>()
-			.each([&](entt::entity entity, Component::PrefabInstance& prefab)
-			{
-				hasAnyOtherPrefabs = true;
-			});
-
-		// If it does not have any references, remove the scene uuid from its references.
-		if (!hasAnyOtherPrefabs)
-		{
-			UpdatePrefabSceneRefs(prefabAssetHandle, prefab, activeScene);
-		}
 	}
 
 	entt::entity Prefab::Instantiate(Handle<Asset> assetHandle, Scene* scene)
@@ -298,7 +258,6 @@ namespace HBL2
 		// Deserialize the source prefab into the scene.
 		PrefabSerializer prefabSerializer(prefab, scene);
 		prefabSerializer.Deserialize(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
-		prefabSerializer.SerializeReferences(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 
 		return CloneSourcePrefab(prefab, scene);
 	}
@@ -323,56 +282,6 @@ namespace HBL2
 		activeScene->DestroyEntity(baseEntity);
 
 		return clone;
-	}
-
-	void Prefab::UpdatePrefabSceneRefs(Handle<Asset> prefabAssetHandle, Prefab* prefab, Scene* activeScene)
-	{
-		// Find scene asset uuid to remove it from the scene refs of the prefab.
-		const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
-
-		for (auto handle : assetHandles)
-		{
-			Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-
-			if (asset->Type == AssetType::Scene)
-			{
-				Handle<Scene> sceneHandle = Handle<Scene>::UnPack(asset->Indentifier);
-				Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
-
-				if (activeScene == scene)
-				{
-					uint32_t indexToRemove = UINT32_MAX;
-
-					for (int i = 0; i < prefab->m_SceneRefs.size(); i++)
-					{
-						if (asset->UUID == prefab->m_SceneRefs[i])
-						{
-							indexToRemove = i;
-							break;
-						}
-					}
-
-					if (indexToRemove == UINT32_MAX)
-					{
-						return;
-					}
-
-					uint32_t last = prefab->m_SceneRefs.size() - 1;
-
-					// Swap the scene uuid that we want to remove with the last one.
-					std::swap(prefab->m_SceneRefs[indexToRemove], prefab->m_SceneRefs[last]);
-
-					// Remove the last element.
-					prefab->m_SceneRefs.pop_back();
-				}
-			}
-		}
-
-		// Deserialize the source prefab into the scene.
-		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
-
-		PrefabSerializer prefabSerializer(prefab);
-		prefabSerializer.SerializeReferences(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 	}
 
 	void Prefab::CreateMetadataFile(Handle<Asset> assetHandle, UUID baseEntityUUID, uint32_t version)

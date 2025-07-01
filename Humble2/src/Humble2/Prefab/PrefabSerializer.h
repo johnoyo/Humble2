@@ -18,10 +18,7 @@ namespace HBL2
 		PrefabSerializer(Prefab* prefab, entt::entity instantiatedPrefabEntity);
 
 		void Serialize(const std::filesystem::path& path);
-		void SerializeReferences(const std::filesystem::path& path);
-
 		bool Deserialize(const std::filesystem::path& path);
-		bool DeserializeReferences(const std::filesystem::path& path);
 
 	private:
 		void SerializePrefab(Scene* ctx, entt::entity entity, YAML::Emitter& out);
