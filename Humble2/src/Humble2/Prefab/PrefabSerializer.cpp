@@ -39,7 +39,10 @@ namespace HBL2
 				- Duplicate the prefab source asset entity to get the instantiated one.
 				- Delete prefab source entity.
 		- Save:
-			- ...
+			- Serialize the source prefab from the provided instantiated prefab entity.
+			- Update metadata file and base entity UUID.
+			- Update the instantiated prefab entities that exist in the scene.
+				- Destroy them and re-instantiate them.
 		*/
 
 		YAML::Emitter out;

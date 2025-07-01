@@ -193,7 +193,6 @@ namespace HBL2
 				prefabComponent.Version = prefab->m_Version;
 			}
 		}
-
 	}
 
 	void Prefab::Destroy(entt::entity instantiatedPrefabEntity)
