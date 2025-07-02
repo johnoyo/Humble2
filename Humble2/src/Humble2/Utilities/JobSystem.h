@@ -84,6 +84,8 @@ namespace HBL2
         bool Busy(const JobContext& ctx);
         void Wait(const JobContext& ctx);
 
+        uint32_t GetThreadCount() const { return m_NumThreads; }
+
     private:
         JobSystem() {}
 

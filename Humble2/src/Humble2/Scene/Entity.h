@@ -7,7 +7,7 @@
 namespace HBL2
 {
 	/**
-	 * @brief A lightweight wrapper over an entity.
+	 * @brief An opaque handle that represents an entity.
 	 */
 	struct HBL2_API Entity
 	{
