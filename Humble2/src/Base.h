@@ -2,6 +2,7 @@
 
 #include "Humble2\Utilities\Log.h"
 #include "Humble2\Utilities\ProfilerScope.h"
+#include "Humble2\Utilities\Math.h"
 
 #include "Core\Timer.h"
 

@@ -322,6 +322,31 @@ namespace HBL2
 					}
 				}
 			}
+			else if (value.type() == entt::resolve<Handle<Prefab>>(ctx->GetMetaContext()))
+			{
+				Handle<Prefab>* prefabHandle = value.try_cast<Handle<Prefab>>();
+				if (prefabHandle)
+				{
+					uint32_t prefabHandlePacked = prefabHandle->Pack();
+					ImGui::InputScalar(memberName, ImGuiDataType_U32, (void*)(intptr_t*)&prefabHandlePacked);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Prefab"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							if (assetHandle.IsValid())
+							{
+								data.set(componentMeta, AssetManager::Instance->GetAsset<Prefab>(assetHandle));
+							}
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+				}
+			}
 			else if (value.type() == entt::resolve<entt::entity>(ctx->GetMetaContext()))
 			{
 				entt::entity* entity = value.try_cast<entt::entity>();
@@ -616,6 +641,35 @@ namespace HBL2
 					}
 				}
 			}
+			else if (value.type() == entt::resolve<Handle<Prefab>>(ctx->GetMetaContext()))
+			{
+				Handle<Prefab>* prefabHandle = value.try_cast<Handle<Prefab>>();
+				if (prefabHandle)
+				{
+					const auto& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+					Asset* prefabAsset = nullptr;
+
+					for (auto handle : assetHandles)
+					{
+						Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+						if (asset->Type == AssetType::Prefab && asset->Indentifier != 0 && asset->Indentifier == prefabHandle->Pack())
+						{
+							prefabAsset = asset;
+							break;
+						}
+					}
+
+					if (prefabAsset != nullptr)
+					{
+						out << YAML::Key << memberName << YAML::Value << prefabAsset->UUID;
+					}
+					else
+					{
+						out << YAML::Key << memberName << YAML::Value << (UUID)0;
+					}
+				}
+			}
 			else if (value.type() == entt::resolve<entt::entity>(ctx->GetMetaContext()))
 			{
 				entt::entity* entity = value.try_cast<entt::entity>();
@@ -755,6 +809,13 @@ namespace HBL2
 				if (value.try_cast<Handle<Texture>>())
 				{
 					data.set(componentMeta, AssetManager::Instance->GetAsset<Texture>(node[memberName].as<UUID>()));
+				}
+			}
+			else if (value.type() == entt::resolve<Handle<Prefab>>(ctx->GetMetaContext()))
+			{
+				if (value.try_cast<Handle<Prefab>>())
+				{
+					data.set(componentMeta, AssetManager::Instance->GetAsset<Prefab>(node[memberName].as<UUID>()));
 				}
 			}
 			else if (value.type() == entt::resolve<entt::entity>(ctx->GetMetaContext()))
