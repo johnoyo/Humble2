@@ -58,13 +58,12 @@ public:
 
 	virtual void OnUpdate(float ts) override
 	{
-		m_Context->GetRegistry()
-			.view<NewComponent>()
-			.each([&](NewComponent& newComponent)
+		m_Context->View<NewComponent>()
+			.Each([&](NewComponent& newComponent)
 			{
 				if (HBL2::Input::GetKeyPress(KeyCode::C))
 				{
-					if (newComponent.Mario == entt::null)
+					if (newComponent.Mario == Entity::Null)
 					{
 						HBL2_INFO("Hello!");
 					}
@@ -80,9 +79,8 @@ public:
 
 	virtual void OnFixedUpdate() override
 	{
-		m_Context->GetRegistry()
-			.view<Component::Rigidbody2D>()
-			.each([this](entt::entity entity, Component::Rigidbody2D& rb2d)
+		m_Context->View<Component::Rigidbody2D>()
+			.Each([this](Entity entity, Component::Rigidbody2D& rb2d)
 			{
 				if (rb2d.Type == Physics::BodyType::Dynamic)
 				{

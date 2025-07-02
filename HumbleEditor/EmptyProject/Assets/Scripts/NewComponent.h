@@ -6,7 +6,7 @@
 HBL2_COMPONENT(NewComponent,
 {
     int Value = 1;
-	entt::entity Mario = entt::null;
+	HBL2::Entity Mario = HBL2::Entity::Null;
 	HBL2::Handle<HBL2::Scene> SceneHandle = {};
 })
 
