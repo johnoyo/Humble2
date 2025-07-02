@@ -35,9 +35,8 @@ namespace HBL2
         HBL2_FUNC_PROFILE();
 
         // Copy entites
-        src->m_Registry
-            .view<Component::ID>()
-            .each([&](entt::entity entity, Component::ID& id)
+        src->View<Component::ID>()
+            .Each([&](Entity entity, Component::ID& id)
             {
                 const auto& name = src->m_Registry.get<Component::Tag>(entity).Name;
 
@@ -54,9 +53,8 @@ namespace HBL2
         {
             using Component = decltype(component_type);
 
-            src->m_Registry
-                .view<Component>()
-                .each([&](auto entity, const auto& component)
+            src->View<Component>()
+                .Each([&](auto entity, const auto& component)
                 {
                     dst->m_Registry.emplace_or_replace<Component>(entity, component);
                 });

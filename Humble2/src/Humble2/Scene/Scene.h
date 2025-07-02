@@ -65,7 +65,7 @@ namespace HBL2
 				return m_EntityMap.at(uuid);
 			}
 
-			return entt::null;
+			return Entity::Null;
 		}
 
 		void DestroyEntity(Entity entity);

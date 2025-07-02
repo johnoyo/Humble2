@@ -15,7 +15,7 @@ namespace HBL2
 
 	void RenderingSystem::OnUpdate(float ts)
 	{
-		entt::entity mainCamera = GetMainCamera();
+		Entity mainCamera = GetMainCamera();
 
 		m_SceneRenderer->Render(mainCamera);
 	}
@@ -25,11 +25,11 @@ namespace HBL2
 		m_SceneRenderer->CleanUp();
 	}
 
-	entt::entity RenderingSystem::GetMainCamera()
+	Entity RenderingSystem::GetMainCamera()
 	{
 		if (Context::Mode == Mode::Runtime)
 		{
-			if (m_Context->MainCamera != entt::null)
+			if (m_Context->MainCamera != Entity::Null)
 			{
 				return m_Context->MainCamera;
 			}
@@ -38,7 +38,7 @@ namespace HBL2
 		}
 		else if (Context::Mode == Mode::Editor)
 		{
-			if (m_EditorScene->MainCamera != entt::null)
+			if (m_EditorScene->MainCamera != Entity::Null)
 			{
 				return m_EditorScene->MainCamera;
 			}
@@ -46,6 +46,6 @@ namespace HBL2
 			HBL2_CORE_WARN("No main camera set for editor context.");
 		}
 
-		return entt::null;
+		return Entity::Null;
 	}
 }

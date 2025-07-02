@@ -10,13 +10,13 @@ namespace HBL2
 	class EntitySerializer
 	{
 	public:
-		EntitySerializer(Scene* scene, entt::entity entity);
+		EntitySerializer(Scene* scene, Entity entity);
 
 		void Serialize(YAML::Emitter& out);
 		bool Deserialize(const YAML::Node& entityNode);
 
 	private:
 		Scene* m_Scene;
-		entt::entity m_Entity;
+		Entity m_Entity;
 	};
 }

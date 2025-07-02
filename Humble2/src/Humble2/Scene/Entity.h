@@ -19,11 +19,15 @@ namespace HBL2
 		Entity& operator=(const Entity&) noexcept = default;
 		Entity& operator=(Entity&&) noexcept = default;
 
+		constexpr Entity(uint32_t e) noexcept : Handle((entt::entity)e) {}
+		constexpr Entity(uint64_t e) noexcept : Handle((entt::entity)e) {}
 		constexpr Entity(entt::entity e) noexcept : Handle(e) {}
 		constexpr Entity(entt::null_t) noexcept : Handle(entt::null) {}
 
 		constexpr operator entt::entity() const noexcept { return Handle; }
 		constexpr operator entt::null_t() const noexcept { return entt::null; }
+		constexpr operator uint64_t() const noexcept { return (uint64_t)Handle; }
+		constexpr operator uint32_t() const noexcept { return (uint32_t)Handle; }
 
 		constexpr bool operator==(Entity rhs) const noexcept { return Handle == rhs.Handle; }
 		constexpr bool operator!=(Entity rhs) const noexcept { return Handle != rhs.Handle; }

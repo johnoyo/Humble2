@@ -29,7 +29,7 @@ namespace HBL2
 	{
 	public:
 		virtual void Initialize(Scene* scene) override;
-		virtual void Render(entt::entity mainCamera) override;
+		virtual void Render(Entity mainCamera) override;
 		virtual void CleanUp() override;
 
 	private:
@@ -53,7 +53,7 @@ namespace HBL2
 		void PostProcessPass(CommandBuffer* commandBuffer);
 		void PresentPass(CommandBuffer* commandBuffer);
 
-		void GetViewProjection(entt::entity mainCamera);
+		void GetViewProjection(Entity mainCamera);
 
 		void CreateAlignedMatrixArray(const glm::mat4* matrices, size_t count, uint32_t alignedSize);
 

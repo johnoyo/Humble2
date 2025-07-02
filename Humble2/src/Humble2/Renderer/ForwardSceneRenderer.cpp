@@ -156,7 +156,7 @@ namespace HBL2
 		PresentPassSetup();
 	}
 
-	void ForwardSceneRenderer::Render(entt::entity mainCamera)
+	void ForwardSceneRenderer::Render(Entity mainCamera)
 	{
 		GetViewProjection(mainCamera);
 
@@ -1088,9 +1088,8 @@ namespace HBL2
 			m_PrePassStaticMeshDraws.Reset();
 			m_ShadowPassStaticMeshDraws.Reset();
 
-			m_Scene->GetRegistry()
-				.group<Component::StaticMesh>(entt::get<Component::Transform>)
-				.each([&](Component::StaticMesh& staticMesh, Component::Transform& transform)
+			m_Scene->Group<Component::StaticMesh>(Get<Component::Transform>)
+				.Each([&](Component::StaticMesh& staticMesh, Component::Transform& transform)
 				{
 					if (staticMesh.Enabled)
 					{
@@ -1201,9 +1200,8 @@ namespace HBL2
 			m_SpriteTransparentDraws.Reset();
 			m_PrePassSpriteDraws.Reset();
 
-			m_Scene->GetRegistry()
-				.group<Component::Sprite>(entt::get<Component::Transform>)
-				.each([&](Component::Sprite& sprite, Component::Transform& transform)
+			m_Scene->Group<Component::Sprite>(Get<Component::Transform>)
+				.Each([&](Component::Sprite& sprite, Component::Transform& transform)
 				{
 					if (sprite.Enabled)
 					{
@@ -1288,9 +1286,9 @@ namespace HBL2
 	void ForwardSceneRenderer::GatherLights()
 	{
 		m_LightData.LightCount = 0;
-		m_Scene->GetRegistry()
-			.group<Component::Light>(entt::get<Component::Transform>)
-			.each([&](Component::Light& light, Component::Transform& transform)
+
+		m_Scene->Group<Component::Light>(Get<Component::Transform>)
+			.Each([&](Component::Light& light, Component::Transform& transform)
 			{
 				if (light.Enabled)
 				{
@@ -1381,9 +1379,8 @@ namespace HBL2
 		Handle<BindGroup> globalBindings = Renderer::Instance->GetShadowBindings();
 		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)m_LightSpaceMatricesData.data());
 
-		m_Scene->GetRegistry()
-			.group<Component::Light>(entt::get<Component::Transform>)
-			.each([&](Component::Light& light, Component::Transform& transform)
+		m_Scene->Group<Component::Light>(Get<Component::Transform>)
+			.Each([&](Component::Light& light, Component::Transform& transform)
 			{
 				if (light.Enabled)
 				{
@@ -1513,9 +1510,8 @@ namespace HBL2
 
 		DrawList draws;
 
-		m_Scene->GetRegistry()
-			.view<Component::SkyLight>()
-			.each([&](Component::SkyLight& skyLight)
+		m_Scene->View<Component::SkyLight>()
+			.Each([&](Component::SkyLight& skyLight)
 			{
 				if (skyLight.Enabled)
 				{
@@ -1618,7 +1614,7 @@ namespace HBL2
 						.VertexBuffer = m_CubeMeshBuffer,
 						.BindGroup = mat->BindGroup,
 						.VertexCount = 36,
-						});
+					});
 				}
 			});
 
@@ -1706,7 +1702,7 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PresentPassTime);
 	}
 
-	void ForwardSceneRenderer::GetViewProjection(entt::entity mainCamera)
+	void ForwardSceneRenderer::GetViewProjection(Entity mainCamera)
 	{
 		Scene* scene = (Context::Mode == Mode::Editor ? m_EditorScene : m_Scene);
 
