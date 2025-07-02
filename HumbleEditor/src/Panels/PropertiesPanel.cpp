@@ -504,6 +504,17 @@ namespace HBL2
 					ImGui::DragFloat("Radius", &cc.Radius);
 				});
 
+				DrawComponent<HBL2::Component::Terrain>("Terrain", m_ActiveScene, [this](HBL2::Component::Terrain& t)
+				{
+					ImGui::DragInt("Seed", (int*)& t.Seed);
+					ImGui::DragFloat("HeightMultiplier", &t.HeightMultiplier);
+
+					if (ImGui::Button("Regenerate"))
+					{
+						t.Regenerate = true;
+					}
+				});
+
 				using namespace entt::literals;
 
 				// Iterate over all registered meta types
@@ -668,6 +679,15 @@ namespace HBL2
 						if (ImGui::MenuItem("CapsuleCollider"))
 						{
 							m_ActiveScene->AddComponent<HBL2::Component::CapsuleCollider>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
+					if (!m_ActiveScene->HasComponent<HBL2::Component::Terrain>(HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::MenuItem("Terrain"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::Terrain>(HBL2::Component::EditorVisible::SelectedEntity);
 							ImGui::CloseCurrentPopup();
 						}
 					}

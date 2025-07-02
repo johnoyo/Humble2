@@ -16,6 +16,11 @@ namespace HBL2
 			s_RandomEngine.seed(std::random_device()());
 		}
 
+		static void Seed(uint64_t seed = std::random_device()())
+		{
+			s_RandomEngine.seed(seed);
+		}
+
 		static double Double(double floor, double ceiling)
 		{
 			assert(floor < ceiling);

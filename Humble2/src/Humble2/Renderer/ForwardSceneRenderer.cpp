@@ -400,20 +400,20 @@ namespace HBL2
 			.height = Window::Instance->GetExtents().y,
 			.renderPass = m_DepthOnlyRenderPass,
 			.depthTarget = Renderer::Instance->MainDepthTexture,
-			});
+		});
 
 		Renderer::Instance->AddCallbackOnResize("Depth-Only-Resize-FrameBuffer", [this](uint32_t width, uint32_t height)
-			{
-				ResourceManager::Instance->DeleteFrameBuffer(m_DepthOnlyFrameBuffer);
+		{
+			ResourceManager::Instance->DeleteFrameBuffer(m_DepthOnlyFrameBuffer);
 
-				m_DepthOnlyFrameBuffer = ResourceManager::Instance->CreateFrameBuffer({
-					.debugName = "viewport-fb",
-					.width = width,
-					.height = height,
-					.renderPass = m_DepthOnlyRenderPass,
-					.depthTarget = Renderer::Instance->MainDepthTexture,
-					});
-			});
+			m_DepthOnlyFrameBuffer = ResourceManager::Instance->CreateFrameBuffer({
+				.debugName = "viewport-fb",
+				.width = width,
+				.height = height,
+				.renderPass = m_DepthOnlyRenderPass,
+				.depthTarget = Renderer::Instance->MainDepthTexture,
+				});
+		});
 
 		// Create pre-pass shaders.
 		const auto& prePassShaderCode = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-mesh.shader");
@@ -445,7 +445,7 @@ namespace HBL2
 				.variants = { variant },
 			},
 			.renderPass = m_DepthOnlyRenderPass,
-			});
+		});
 
 		ResourceManager::Instance->AddShaderVariant(m_DepthOnlyShader, variant);
 
@@ -472,7 +472,7 @@ namespace HBL2
 				.variants = { variant },
 			},
 			.renderPass = m_DepthOnlyRenderPass,
-			});
+		});
 
 		ResourceManager::Instance->AddShaderVariant(m_DepthOnlySpriteShader, variant);
 
@@ -481,7 +481,7 @@ namespace HBL2
 			.debugName = "depth-only-mesh-material",
 			.shader = m_DepthOnlyShader,
 			.bindGroup = m_DepthOnlyMeshBindGroup,
-			});
+		});
 
 		Material* mat0 = ResourceManager::Instance->GetMaterial(m_DepthOnlyMaterial);
 		mat0->VariantDescriptor = variant;
@@ -490,7 +490,7 @@ namespace HBL2
 			.debugName = "depth-only-sprite-material",
 			.shader = m_DepthOnlySpriteShader,
 			.bindGroup = m_DepthOnlySpriteBindGroup,
-			});
+		});
 
 		Material* mat1 = ResourceManager::Instance->GetMaterial(m_DepthOnlySpriteMaterial);
 		mat1->VariantDescriptor = variant;

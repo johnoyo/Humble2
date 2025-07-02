@@ -213,5 +213,23 @@ namespace HBL2
 			UUID Id = 0;
 			uint32_t Version = 0;
 		};
+
+		struct HBL2_API Terrain
+		{
+			uint32_t mapWidth = 100;
+			uint32_t mapHeight = 100;
+
+			uint64_t Seed = 5;
+
+			float scale = 25.f;
+			uint32_t octaves = 5;
+			float persistance = 0.5f;
+			float lacunarity = 2.f;
+			glm::vec2 offset = { 50.f, 0.f };
+
+			float HeightMultiplier = 1.f;
+
+			bool Regenerate = true;
+		};
 	}
 }

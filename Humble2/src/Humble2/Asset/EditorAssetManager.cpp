@@ -9,6 +9,8 @@
 #include "Systems\SoundSystem.h"
 #include "Systems\Physics2dSystem.h"
 #include "Systems\Physics3dSystem.h"
+#include "Systems\TerrainSystem.h"
+
 #include <Prefab/PrefabSerializer.h>
 
 namespace HBL2
@@ -592,6 +594,7 @@ namespace HBL2
 		scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
 		scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 		scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
+		scene->RegisterSystem(new TerrainSystem);
 
 		SceneSerializer sceneSerializer(scene);
 		sceneSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
@@ -859,6 +862,7 @@ namespace HBL2
 			scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
 			scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 			scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
+			scene->RegisterSystem(new TerrainSystem);
 
 			asset->Indentifier = sceneHandle.Pack();
 			asset->Loaded = true;

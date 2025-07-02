@@ -12,6 +12,7 @@
 #include "Systems\SoundSystem.h"
 #include "Systems\Physics2dSystem.h"
 #include "Systems\Physics3dSystem.h"
+#include "Systems\TerrainSystem.h"
 
 namespace HBL2
 {
@@ -77,6 +78,7 @@ namespace HBL2
         copy_component(Component::SphereCollider{});
         copy_component(Component::CapsuleCollider{});
         copy_component(Component::PrefabInstance{});
+        copy_component(Component::Terrain{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
@@ -86,6 +88,7 @@ namespace HBL2
         dst->RegisterSystem(new SoundSystem, SystemType::Runtime);
         dst->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
         dst->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
+        dst->RegisterSystem(new TerrainSystem);
 
         // Register any user systems to new scene.
         for (ISystem* system : src->m_RuntimeSystems)
@@ -211,6 +214,10 @@ namespace HBL2
         m_Registry.storage<Component::PrefabInstance>().clear();
         m_Registry.compact<Component::PrefabInstance>();
 
+        m_Registry.clear<Component::Terrain>();
+        m_Registry.storage<Component::Terrain>().clear();
+        m_Registry.compact<Component::Terrain>();
+
         // Destroy all entities.
         for (auto& [uuid, entity] : m_EntityMap)
         {
@@ -293,6 +300,7 @@ namespace HBL2
         copy_component(Component::SphereCollider{});
         copy_component(Component::CapsuleCollider{});
         copy_component(Component::PrefabInstance{});
+        copy_component(Component::Terrain{});
 
         // Copy user defined components.
         std::vector<std::string> userComponentNames;

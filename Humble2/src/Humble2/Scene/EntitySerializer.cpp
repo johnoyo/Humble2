@@ -359,6 +359,20 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::Terrain>(m_Entity))
+		{
+			out << YAML::Key << "Component::Terrain";
+			out << YAML::BeginMap;
+
+			auto& t = m_Scene->GetComponent<Component::Terrain>(m_Entity);
+
+			out << YAML::Key << "Seed" << YAML::Value << t.Seed;
+			out << YAML::Key << "HeightMultiplier" << YAML::Value << t.HeightMultiplier;
+			out << YAML::Key << "Regenerate" << YAML::Value << t.Regenerate;
+
+			out << YAML::EndMap;
+		}
+
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
 			const auto& alias = meta_type.second.info().name();
@@ -610,6 +624,15 @@ namespace HBL2
 			cc.Enabled = cc_NewComponent["Enabled"].as<bool>();
 			cc.Height = cc_NewComponent["Height"].as<float>();
 			cc.Radius = cc_NewComponent["Radius"].as<float>();
+		}
+
+		auto t_NewComponent = entityNode["Component::Terrain"];
+		if (t_NewComponent)
+		{
+			auto& t = m_Scene->AddComponent<Component::Terrain>(m_Entity);
+			t.Seed = t_NewComponent["Seed"].as<uint64_t>();
+			t.HeightMultiplier = t_NewComponent["HeightMultiplier"].as<float>();
+			t.Regenerate = t_NewComponent["Regenerate"].as<bool>();
 		}
 
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
