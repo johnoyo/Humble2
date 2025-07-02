@@ -53,7 +53,7 @@ namespace HBL2
 		{
 			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowItemOverlap;
 
-			if (HBL2::Component::EditorVisible::SelectedEntity != entt::null)
+			if (HBL2::Component::EditorVisible::SelectedEntity != Entity::Null)
 			{
 				// Tag component.
 				if (m_ActiveScene->HasComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity))

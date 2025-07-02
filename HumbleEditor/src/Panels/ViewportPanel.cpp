@@ -18,9 +18,8 @@ namespace HBL2
 
 				if (m_ActiveScene != nullptr)
 				{
-					m_ActiveScene->GetRegistry()
-						.view<HBL2::Component::Camera>()
-						.each([&](HBL2::Component::Camera& camera)
+					m_ActiveScene->View<HBL2::Component::Camera>()
+						.Each([&](HBL2::Component::Camera& camera)
 						{
 							if (camera.Enabled)
 							{
@@ -29,9 +28,8 @@ namespace HBL2
 						});
 				}
 
-				m_Context->GetRegistry()
-					.view<Component::EditorCamera, HBL2::Component::Camera>()
-					.each([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera)
+				m_Context->View<Component::EditorCamera, HBL2::Component::Camera>()
+					.Each([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera)
 					{
 						if (editorCamera.Enabled)
 						{
@@ -75,7 +73,7 @@ namespace HBL2
 			}
 
 			// Gizmos
-			if (m_Context->MainCamera != entt::null && Context::Mode == Mode::Editor)
+			if (m_Context->MainCamera != Entity::Null && Context::Mode == Mode::Editor)
 			{
 				auto selectedEntity = HBL2::Component::EditorVisible::SelectedEntity;
 
@@ -113,7 +111,7 @@ namespace HBL2
 				// Set viewport size.
 				ImGuiRenderer::Instance->Gizmos_SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
 
-				if (selectedEntity != entt::null && m_GizmoOperation != ImGuizmo::OPERATION::BOUNDS)
+				if (selectedEntity != Entity::Null && m_GizmoOperation != ImGuizmo::OPERATION::BOUNDS)
 				{
 					bool snap = Input::GetKeyDown(KeyCode::LeftControl);
 					float snapValue = 0.5f;

@@ -6,9 +6,8 @@ namespace HBL2
 	{
 		void EditorCameraSystem::OnCreate()
 		{
-			m_Context->GetRegistry()
-				.group<Component::EditorCamera>(entt::get<HBL2::Component::Transform>)
-				.each([&](Component::EditorCamera& editorCamera, HBL2::Component::Transform& transform)
+			m_Context->Group<Component::EditorCamera>(Get<HBL2::Component::Transform>)
+				.Each([&](Component::EditorCamera& editorCamera, HBL2::Component::Transform& transform)
 				{
 					if (editorCamera.Enabled)
 					{
@@ -96,9 +95,8 @@ namespace HBL2
 
 		void EditorCameraSystem::OnUpdate(float ts)
 		{
-			m_Context->GetRegistry()
-				.group<Component::EditorCamera>(entt::get<HBL2::Component::Transform>)
-				.each([&](Component::EditorCamera& editorCamera, HBL2::Component::Transform& transform)
+			m_Context->Group<Component::EditorCamera>(Get<HBL2::Component::Transform>)
+				.Each([&](Component::EditorCamera& editorCamera, HBL2::Component::Transform& transform)
 				{
 					if (editorCamera.Enabled)
 					{
