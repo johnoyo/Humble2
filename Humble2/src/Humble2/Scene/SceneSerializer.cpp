@@ -26,7 +26,7 @@ namespace HBL2
 		out << YAML::BeginMap;
 		out << YAML::Key << "Scene" << YAML::Value << m_Scene->GetName();
 		out << YAML::Key << "Entities" << YAML::BeginSeq;
-		m_Scene->View<Entity>()
+		m_Scene->Entities()
 			.Each([&](Entity entity)
 			{
 				if (entity == Entity::Null)

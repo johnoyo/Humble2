@@ -183,6 +183,16 @@ namespace HBL2
 			return m_Registry;
 		}
 
+		[[nodiscard]] inline auto Entities() noexcept
+		{
+			return HBL2::View{ m_Registry.view<entt::entity>() };
+		}
+
+		[[nodiscard]] inline auto Entities() const noexcept
+		{
+			return HBL2::View{ m_Registry.view<entt::entity>() };
+		}
+
 		template <typename... Inc>
 		[[nodiscard]] constexpr auto View() noexcept
 		{

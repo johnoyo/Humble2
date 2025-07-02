@@ -347,7 +347,7 @@ namespace HBL2
 
 			m_EntityToBeDeleted = Entity::Null;
 
-			const auto& entities = m_ActiveScene->View<Entity>();
+			const auto& entities = m_ActiveScene->Entities();
 
 			if (ImGui::CollapsingHeader("Entity Hierarchy", ImGuiTreeNodeFlags_DefaultOpen))
 			{
