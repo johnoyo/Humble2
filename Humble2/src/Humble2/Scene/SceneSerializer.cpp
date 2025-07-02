@@ -26,11 +26,10 @@ namespace HBL2
 		out << YAML::BeginMap;
 		out << YAML::Key << "Scene" << YAML::Value << m_Scene->GetName();
 		out << YAML::Key << "Entities" << YAML::BeginSeq;
-		m_Scene->GetRegistry()
-			.view<entt::entity>()
-			.each([&](entt::entity entity)
+		m_Scene->Entities()
+			.Each([&](Entity entity)
 			{
-				if (entity == entt::null)
+				if (entity == Entity::Null)
 				{
 					return;
 				}
@@ -217,7 +216,7 @@ namespace HBL2
 		{
 			for (const auto& entityNode : entityNodes)
 			{
-				entt::entity deserializedEntity = entt::null;
+				Entity deserializedEntity = Entity::Null;
 				EntitySerializer entitySerializer(m_Scene, deserializedEntity);
 				entitySerializer.Deserialize(entityNode);
 			}
@@ -232,13 +231,15 @@ namespace HBL2
 		//		2.3 Update its version.
 		//	3. If the prefab is not out of date do nothing.
 
+		// NOTE: In the future, we need to update the children list of the parent of the prefab if it has one.
+		//		 Since, we are deleting it and re-instantiating it, so the child uuid that the parent holds will be invalid.
+
 		// Gather all prefab entities and their info.
-		std::vector<entt::entity> prefabs;
+		std::vector<Entity> prefabs;
 		std::vector<PrefabInfo> prefabsInfo;
 
-		m_Scene->GetRegistry()
-			.view<Component::PrefabInstance>()
-			.each([&](entt::entity entity, Component::PrefabInstance& prefab)
+		m_Scene->View<Component::PrefabInstance>()
+			.Each([&](Entity entity, Component::PrefabInstance& prefab)
 			{
 				prefabs.push_back(entity);
 
@@ -289,9 +290,9 @@ namespace HBL2
 			// If there was an change in the source prefab.
 			if (prefab->m_Version != prefabInfo.prefab.Version)
 			{
-				entt::entity clone = Prefab::Instantiate(prefabAssetHandle, m_Scene);
+				Entity clone = Prefab::Instantiate(prefabAssetHandle, m_Scene);
 
-				if (clone != entt::null)
+				if (clone != Entity::Null)
 				{
 					auto& tr = m_Scene->GetComponent<Component::Transform>(clone);
 					tr.Translation = prefabInfo.transform.Translation;

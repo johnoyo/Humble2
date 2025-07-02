@@ -10,12 +10,12 @@ namespace HBL2
 	{
 	}
 
-	entt::entity Prefab::Instantiate(Handle<Asset> assetHandle)
+	Entity Prefab::Instantiate(Handle<Asset> assetHandle)
 	{
 		if (!AssetManager::Instance->IsAssetValid(assetHandle))
 		{
 			HBL2_CORE_ERROR("Asset handle provided is invalid, aborting prefab instantiation.");
-			return entt::null;
+			return Entity::Null;
 		}
 
 		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
@@ -23,7 +23,7 @@ namespace HBL2
 		if (prefabAsset->Type != AssetType::Prefab)
 		{
 			HBL2_CORE_ERROR("Asset handle provided is not a prefab, aborting prefab instantiation.");
-			return entt::null;
+			return Entity::Null;
 		}
 
 		// Get the asset handle (It will load the asset if not already loaded).
@@ -34,7 +34,7 @@ namespace HBL2
 		if (prefab == nullptr)
 		{
 			HBL2_CORE_ERROR("Prefab asset is invalid, aborting prefab instantiation.");
-			return entt::null;
+			return Entity::Null;
 		}
 
 		// Deserialize the source prefab into the scene.
@@ -47,15 +47,15 @@ namespace HBL2
 		return CloneSourcePrefab(prefab, activeScene);
 	}
 
-	entt::entity Prefab::Instantiate(Handle<Asset> assetHandle, const glm::vec3& position)
+	Entity Prefab::Instantiate(Handle<Asset> assetHandle, const glm::vec3& position)
 	{
 		// Instantiate the prefab normally.
-		entt::entity clone = Instantiate(assetHandle);
+		Entity clone = Instantiate(assetHandle);
 
 		// Get the prefab resource from the asset.
 		if (!AssetManager::Instance->IsAssetValid(assetHandle))
 		{
-			return entt::null;
+			return Entity::Null;
 		}
 
 		Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(assetHandle);
@@ -63,7 +63,7 @@ namespace HBL2
 
 		if (prefab == nullptr)
 		{
-			return entt::null;
+			return Entity::Null;
 		}
 
 		// Set the prefab transform.
@@ -72,14 +72,14 @@ namespace HBL2
 		if (activeScene == nullptr)
 		{
 			HBL2_CORE_ERROR("Cannot retrieve active scene, aborting set of prefab transform.");
-			return entt::null;
+			return Entity::Null;
 		}
 
 		auto& prefabTransform = activeScene->GetComponent<Component::Transform>(clone);
 		prefabTransform.Translation = position;
 	}
 
-	void Prefab::Unpack(entt::entity instantiatedPrefabEntity)
+	void Prefab::Unpack(Entity instantiatedPrefabEntity)
 	{
 		// Retrieve active scene.
 		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
@@ -112,7 +112,7 @@ namespace HBL2
 		activeScene->RemoveComponent<HBL2::Component::PrefabInstance>(instantiatedPrefabEntity);
 	}
 
-	void Prefab::Save(entt::entity instantiatedPrefabEntity)
+	void Prefab::Save(Entity instantiatedPrefabEntity)
 	{
 		// Retrieve active scene.
 		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
@@ -152,12 +152,14 @@ namespace HBL2
 		Prefab::CreateMetadataFile(prefabAsset, prefab->m_BaseEntityUUID, prefab->m_Version);
 
 		// Update the instantiated prefab entities that exist in the scene.
-		std::vector<entt::entity> otherInstantiatedPrefabEntities;
+		std::vector<Entity> otherInstantiatedPrefabEntities;
 		std::vector<Component::Transform> otherInstantiatedPrefabEntitiesTransform;
 
-		activeScene->GetRegistry()
-			.view<Component::PrefabInstance, Component::Transform>()
-			.each([&](entt::entity entity, Component::PrefabInstance& prefab, Component::Transform& tr)
+		// NOTE: In the future, we need to update the children list of the parent of the prefab if it has one.
+		//		 Since, we are deleting it and re-instantiating it, so the child uuid that the parent holds will be invalid.
+
+		activeScene->View<Component::PrefabInstance, Component::Transform>()
+			.Each([&](Entity entity, Component::PrefabInstance& prefab, Component::Transform& tr)
 			{
 				if (prefab.Id == prefabAsset->UUID)
 				{
@@ -179,9 +181,9 @@ namespace HBL2
 			const auto entity = otherInstantiatedPrefabEntities[i];
 			const auto& transform = otherInstantiatedPrefabEntitiesTransform[i];
 
-			entt::entity clone = Prefab::Instantiate(prefabAssetHandle, activeScene);
+			Entity clone = Prefab::Instantiate(prefabAssetHandle, activeScene);
 
-			if (clone != entt::null)
+			if (clone != Entity::Null)
 			{
 				auto& tr = activeScene->GetComponent<Component::Transform>(clone);
 				tr.Translation = transform.Translation;
@@ -195,7 +197,7 @@ namespace HBL2
 		}
 	}
 
-	void Prefab::Destroy(entt::entity instantiatedPrefabEntity)
+	void Prefab::Destroy(Entity instantiatedPrefabEntity)
 	{
 		// Retrieve active scene.
 		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
@@ -227,12 +229,12 @@ namespace HBL2
 		activeScene->DestroyEntity(instantiatedPrefabEntity);
 	}
 
-	entt::entity Prefab::Instantiate(Handle<Asset> assetHandle, Scene* scene)
+	Entity Prefab::Instantiate(Handle<Asset> assetHandle, Scene* scene)
 	{
 		if (!AssetManager::Instance->IsAssetValid(assetHandle))
 		{
 			HBL2_CORE_ERROR("Asset handle provided is invalid, aborting prefab instantiation.");
-			return entt::null;
+			return Entity::Null;
 		}
 
 		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
@@ -240,7 +242,7 @@ namespace HBL2
 		if (prefabAsset->Type != AssetType::Prefab)
 		{
 			HBL2_CORE_ERROR("Asset handle provided is not a prefab, aborting prefab instantiation.");
-			return entt::null;
+			return Entity::Null;
 		}
 
 		// Get the asset handle (It will load the asset if not already loaded).
@@ -251,7 +253,7 @@ namespace HBL2
 		if (prefab == nullptr)
 		{
 			HBL2_CORE_ERROR("Prefab asset is invalid, aborting prefab instantiation.");
-			return entt::null;
+			return Entity::Null;
 		}
 
 		// Deserialize the source prefab into the scene.
@@ -261,21 +263,21 @@ namespace HBL2
 		return CloneSourcePrefab(prefab, scene);
 	}
 
-	entt::entity Prefab::CloneSourcePrefab(Prefab* prefab, Scene* activeScene)
+	Entity Prefab::CloneSourcePrefab(Prefab* prefab, Scene* activeScene)
 	{
 		// Check scene.
 		if (activeScene == nullptr)
 		{
 			HBL2_CORE_ERROR("Cannot retrieve active scene, aborting prefab cloning process of the instantiation.");
-			return entt::null;
+			return Entity::Null;
 		}
 
 		// Retrieve the base entity of the source instantiated prefab.
 		UUID baseEntityUUID = prefab->GetBaseEntityUUID();
-		entt::entity baseEntity = activeScene->FindEntityByUUID(baseEntityUUID);
+		Entity baseEntity = activeScene->FindEntityByUUID(baseEntityUUID);
 
 		// Duplicate the source instantiated prefab.
-		entt::entity clone = activeScene->DuplicateEntity(baseEntity);
+		Entity clone = activeScene->DuplicateEntity(baseEntity);
 
 		// Destroy the source instantiated entity of the prefab since now we have its clone.
 		activeScene->DestroyEntity(baseEntity);

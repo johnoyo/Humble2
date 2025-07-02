@@ -11,7 +11,7 @@ namespace HBL2
 	{
 	public:
 		virtual void Initialize(Scene* scene) = 0;
-		virtual void Render(entt::entity mainCamera) = 0;
+		virtual void Render(Entity mainCamera) = 0;
 		virtual void CleanUp() = 0;
 
 		Handle<Texture> GetTexture() const { return m_Texture; }

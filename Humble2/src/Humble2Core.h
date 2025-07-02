@@ -55,7 +55,7 @@
 
 // Macro to generate component registration and factory functions
 #define REGISTER_HBL2_COMPONENT(TYPE, ...)                                                                                      \
-    using ByteStorage = std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>;              \
+    using ByteStorage = std::unordered_map<std::string, std::unordered_map<HBL2::Entity, std::vector<std::byte>>>;              \
     extern "C" __declspec(dllexport) const char* RegisterComponent_##TYPE(HBL2::Scene* ctx)                                     \
     {                                                                                                                           \
         using namespace entt::literals;                                                                                         \
@@ -65,24 +65,24 @@
         return typeid(TYPE).name();                                                                                             \
     }                                                                                                                           \
                                                                                                                                 \
-    extern "C" __declspec(dllexport) entt::meta_any AddComponent_##TYPE(HBL2::Scene* ctx, entt::entity entity)                  \
+    extern "C" __declspec(dllexport) entt::meta_any AddComponent_##TYPE(HBL2::Scene* ctx, HBL2::Entity entity)                  \
     {                                                                                                                           \
         auto& component = ctx->AddComponent<TYPE>(entity);                                                                      \
         return entt::forward_as_meta(ctx->GetMetaContext(), component);                                                         \
     }                                                                                                                           \
                                                                                                                                 \
-    extern "C" __declspec(dllexport) entt::meta_any GetComponent_##TYPE(HBL2::Scene* ctx, entt::entity entity)                  \
+    extern "C" __declspec(dllexport) entt::meta_any GetComponent_##TYPE(HBL2::Scene* ctx, HBL2::Entity entity)                  \
     {                                                                                                                           \
         auto& component = ctx->GetComponent<TYPE>(entity);                                                                      \
         return entt::forward_as_meta(ctx->GetMetaContext(), component);                                                         \
     }                                                                                                                           \
                                                                                                                                 \
-    extern "C" __declspec(dllexport) void RemoveComponent_##TYPE(HBL2::Scene* ctx, entt::entity entity)                         \
+    extern "C" __declspec(dllexport) void RemoveComponent_##TYPE(HBL2::Scene* ctx, HBL2::Entity entity)                         \
     {                                                                                                                           \
         ctx->RemoveComponent<TYPE>(entity);                                                                                     \
     }                                                                                                                           \
                                                                                                                                 \
-    extern "C" __declspec(dllexport) bool HasComponent_##TYPE(HBL2::Scene* ctx, entt::entity entity)                            \
+    extern "C" __declspec(dllexport) bool HasComponent_##TYPE(HBL2::Scene* ctx, HBL2::Entity entity)                            \
     {                                                                                                                           \
         return ctx->HasComponent<TYPE>(entity);                                                                                 \
     }                                                                                                                           \

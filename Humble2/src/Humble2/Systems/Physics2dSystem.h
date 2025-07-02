@@ -21,8 +21,8 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
-		Physics::ID CreateRigidbody(entt::entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform);
-		Physics::ID CreateBoxCollider(entt::entity entity, Component::BoxCollider2D& bc2d, Component::Rigidbody2D& rb2d, Component::Transform& transform);
+		Physics::ID CreateRigidbody(Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform);
+		Physics::ID CreateBoxCollider(Entity entity, Component::BoxCollider2D& bc2d, Component::Rigidbody2D& rb2d, Component::Transform& transform);
 
 	private:
 		Box2DPhysicsEngine* m_PhysicsEngine = nullptr;

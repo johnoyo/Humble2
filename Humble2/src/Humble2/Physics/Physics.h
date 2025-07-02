@@ -1,6 +1,6 @@
 #pragma once
 
-#include <entt.hpp>
+#include <Scene/Entity.h>
 
 #include <stdint.h>
 
@@ -29,44 +29,44 @@ namespace HBL2
 
 		struct CollisionEnterEvent
 		{
-			entt::entity entityA;
-			entt::entity entityB;
+			Entity entityA;
+			Entity entityB;
 		};
 
 		struct CollisionStayEvent
 		{
-			entt::entity entityA;
-			entt::entity entityB;
+			Entity entityA;
+			Entity entityB;
 		};
 
 		struct CollisionExitEvent
 		{
-			entt::entity entityA;
-			entt::entity entityB;
+			Entity entityA;
+			Entity entityB;
 		};
 
 		struct CollisionHitEvent
 		{
-			entt::entity entityA;
-			entt::entity entityB;
+			Entity entityA;
+			Entity entityB;
 		};
 
 		struct TriggerEnterEvent
 		{
-			entt::entity entityA;
-			entt::entity entityB;
+			Entity entityA;
+			Entity entityB;
 		};
 
 		struct TriggerStayEvent
 		{
-			entt::entity entityA;
-			entt::entity entityB;
+			Entity entityA;
+			Entity entityB;
 		};
 
 		struct TriggerExitEvent
 		{
-			entt::entity entityA;
-			entt::entity entityB;
+			Entity entityA;
+			Entity entityB;
 		};
 	}
 }

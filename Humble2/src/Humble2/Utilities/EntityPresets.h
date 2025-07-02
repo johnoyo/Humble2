@@ -9,14 +9,14 @@ namespace HBL2
 {
 	namespace EntityPreset
 	{
-		static entt::entity CreateEmpty()
+		static Entity CreateEmpty()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 			if (scene == nullptr)
 			{
 				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating an empty entity.");
-				return entt::null;
+				return Entity::Null;
 			}
 
 			auto entity = scene->CreateEntity();
@@ -25,14 +25,14 @@ namespace HBL2
 			return entity;
 		}
 
-		static entt::entity CreateCamera()
+		static Entity CreateCamera()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 			if (scene == nullptr)
 			{
 				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a camera entity.");
-				return entt::null;
+				return Entity::Null;
 			}
 
 			auto entity = scene->CreateEntity("Camera");
@@ -43,14 +43,14 @@ namespace HBL2
 			return entity;
 		}
 
-		static entt::entity CreateLight()
+		static Entity CreateLight()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 			if (scene == nullptr)
 			{
 				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a light entity.");
-				return entt::null;
+				return Entity::Null;
 			}
 
 			auto entity = scene->CreateEntity("New Light");
@@ -60,14 +60,14 @@ namespace HBL2
 			return entity;
 		}
 
-		static entt::entity CreateSkyLight()
+		static Entity CreateSkyLight()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 			if (scene == nullptr)
 			{
 				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a sky light entity.");
-				return entt::null;
+				return Entity::Null;
 			}
 
 			auto entity = scene->CreateEntity("New SkyLight");
@@ -77,14 +77,14 @@ namespace HBL2
 			return entity;
 		}
 
-		static entt::entity CreatePlane()
+		static Entity CreatePlane()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 			if (scene == nullptr)
 			{
 				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a plane entity.");
-				return entt::null;
+				return Entity::Null;
 			}
 
 			auto entity = scene->CreateEntity("Plane");
@@ -97,14 +97,14 @@ namespace HBL2
 			return entity;
 		}
 
-		static entt::entity CreateTessellatedPlane()
+		static Entity CreateTessellatedPlane()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 			if (scene == nullptr)
 			{
 				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a tessellated plane entity.");
-				return entt::null;
+				return Entity::Null;
 			}
 
 			auto entity = scene->CreateEntity("TessellatedPlane");
@@ -117,14 +117,14 @@ namespace HBL2
 			return entity;
 		}
 
-		static entt::entity CreateCube()
+		static Entity CreateCube()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 			if (scene == nullptr)
 			{
 				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a cube entity.");
-				return entt::null;
+				return Entity::Null;
 			}
 
 			auto entity = scene->CreateEntity("Cube");
@@ -137,14 +137,14 @@ namespace HBL2
 			return entity;
 		}
 
-		static entt::entity CreateSphere()
+		static Entity CreateSphere()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 			if (scene == nullptr)
 			{
 				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a sphere entity.");
-				return entt::null;
+				return Entity::Null;
 			}
 
 			auto entity = scene->CreateEntity("Sphere");
@@ -157,14 +157,14 @@ namespace HBL2
 			return entity;
 		}
 
-		static entt::entity CreateCapsule()
+		static Entity CreateCapsule()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 			if (scene == nullptr)
 			{
 				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a capsule entity.");
-				return entt::null;
+				return Entity::Null;
 			}
 
 			auto entity = scene->CreateEntity("Capsule");
@@ -177,14 +177,14 @@ namespace HBL2
 			return entity;
 		}
 
-		static entt::entity CreateCylinder()
+		static Entity CreateCylinder()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 			if (scene == nullptr)
 			{
 				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a cylinder entity.");
-				return entt::null;
+				return Entity::Null;
 			}
 
 			auto entity = scene->CreateEntity("Cylinder");
@@ -197,14 +197,14 @@ namespace HBL2
 			return entity;
 		}
 
-		static entt::entity CreateTorus()
+		static Entity CreateTorus()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 			if (scene == nullptr)
 			{
 				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a torus entity.");
-				return entt::null;
+				return Entity::Null;
 			}
 
 			auto entity = scene->CreateEntity("Torus");
@@ -217,14 +217,14 @@ namespace HBL2
 			return entity;
 		}
 	
-		static entt::entity CreateSprite()
+		static Entity CreateSprite()
 		{
 			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 			if (scene == nullptr)
 			{
 				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a sprite entity.");
-				return entt::null;
+				return Entity::Null;
 			}
 
 			auto entity = scene->CreateEntity("Sprite");

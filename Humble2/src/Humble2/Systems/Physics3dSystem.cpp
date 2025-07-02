@@ -40,12 +40,12 @@ namespace HBL2
 
 			if (ioSettings.mIsSensor)
 			{
-				Physics::TriggerEnterEvent triggerEnterEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
+				Physics::TriggerEnterEvent triggerEnterEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
 				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Enter, &triggerEnterEvent);
 			}
 			else
 			{
-				Physics::CollisionEnterEvent collisionEnterEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
+				Physics::CollisionEnterEvent collisionEnterEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
 				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Enter, &collisionEnterEvent);
 			}
 		}
@@ -54,12 +54,12 @@ namespace HBL2
 		{
 			if (ioSettings.mIsSensor)
 			{
-				Physics::TriggerStayEvent triggerStayEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
+				Physics::TriggerStayEvent triggerStayEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
 				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Stay, &triggerStayEvent);
 			}
 			else
 			{
-				Physics::CollisionEnterEvent collisionEnterEvent = { (entt::entity)inBody1.GetUserData(), (entt::entity)inBody2.GetUserData() };
+				Physics::CollisionEnterEvent collisionEnterEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
 				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Enter, &collisionEnterEvent);
 			}
 		}
@@ -78,12 +78,12 @@ namespace HBL2
 
 			if (bodyIterface.GetObjectLayer(body1ID) == Layers::TRIGGER || bodyIterface.GetObjectLayer(body2ID) == Layers::TRIGGER)
 			{
-				Physics::TriggerExitEvent triggerExitEvent = { (entt::entity)bodyIterface.GetUserData(body1ID), (entt::entity)bodyIterface.GetUserData(body2ID) };
+				Physics::TriggerExitEvent triggerExitEvent = { (Entity)bodyIterface.GetUserData(body1ID), (Entity)bodyIterface.GetUserData(body2ID) };
 				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Exit, &triggerExitEvent);
 			}
 			else
 			{
-				Physics::CollisionExitEvent collisionExitEvent = { (entt::entity)bodyIterface.GetUserData(body1ID), (entt::entity)bodyIterface.GetUserData(body2ID) };
+				Physics::CollisionExitEvent collisionExitEvent = { (Entity)bodyIterface.GetUserData(body1ID), (Entity)bodyIterface.GetUserData(body2ID) };
 				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Exit, &collisionExitEvent);
 			}
 		}
@@ -122,9 +122,8 @@ namespace HBL2
 
 		DynamicArray<JPH::BodyID, BumpAllocator> bulkAddBuffer = MakeDynamicArray<JPH::BodyID>(&Allocator::Frame);
 
-		m_Context->GetRegistry()
-			.group<Component::Rigidbody>(entt::get<Component::Transform>)
-			.each([this, &bodyInterface, &bulkAddBuffer](entt::entity entity, Component::Rigidbody& rb, Component::Transform& transform)
+		m_Context->Group<Component::Rigidbody>(Get<Component::Transform>)
+			.Each([this, &bodyInterface, &bulkAddBuffer](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
 			{
 				AddRigidBody(entity, rb, transform, bodyInterface);
 				bulkAddBuffer.Add(GetBodyIDFromPhysicsID(rb.BodyID));
@@ -143,9 +142,8 @@ namespace HBL2
 	void Physics3dSystem::OnFixedUpdate()
 	{
 		// Handle runtime creations and properties update.
-		m_Context->GetRegistry()
-			.group<Component::Rigidbody>(entt::get<Component::Transform>)
-			.each([this](entt::entity entity, Component::Rigidbody& rb, Component::Transform& transform)
+		m_Context->Group<Component::Rigidbody>(Get<Component::Transform>)
+			.Each([this](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
 			{
 				JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
 				if (rb.BodyID == Physics::InvalidID)
@@ -217,9 +215,8 @@ namespace HBL2
 		m_PhysicsEngine->Step(cDeltaTime, cCollisionSteps);
 
 		// Apply physics changes to transforms.
-		m_Context->GetRegistry()
-			.group<Component::Rigidbody>(entt::get<Component::Transform>)
-			.each([this, &bodyInterface](entt::entity entity, Component::Rigidbody& rb, Component::Transform& transform)
+		m_Context->Group<Component::Rigidbody>(Get<Component::Transform>)
+			.Each([this, &bodyInterface](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
 			{
 				glm::vec3 originalScale = transform.Scale;
 
@@ -252,7 +249,7 @@ namespace HBL2
 		m_Initialized = false;
 	}
 
-	void Physics3dSystem::AddRigidBody(entt::entity entity, Component::Rigidbody& rb, Component::Transform& transform, JPH::BodyInterface& bodyInterface)
+	void Physics3dSystem::AddRigidBody(Entity entity, Component::Rigidbody& rb, Component::Transform& transform, JPH::BodyInterface& bodyInterface)
 	{
 		JPH::ShapeRefC shapeRef;
 		JPH::EMotionType type = BodyTypeToEMotionType(rb.Type);
@@ -331,7 +328,7 @@ namespace HBL2
 		rb.BodyID = GetPhysicsIDFromBodyID(body->GetID());
 	}
 
-	bool Physics3dSystem::HasAnyCollider(entt::entity entity)
+	bool Physics3dSystem::HasAnyCollider(Entity entity)
 	{
 		return m_Context->HasComponent<Component::BoxCollider>(entity) ||
 			m_Context->HasComponent<Component::SphereCollider>(entity) ||

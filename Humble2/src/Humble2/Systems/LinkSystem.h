@@ -16,9 +16,9 @@ namespace HBL2
 		virtual void OnGuiRender(float ts) override;
 
 	private:
-		glm::mat4 GetWorldSpaceTransform(entt::entity entity, Component::Link& link);
-		void AddChildren(entt::entity entity, Component::Link& link);
-		void UpdateChildren(entt::entity entity, Component::Link& link);
+		glm::mat4 GetWorldSpaceTransform(Entity entity, Component::Link& link);
+		void AddChildren(Entity entity, Component::Link& link);
+		void UpdateChildren(Entity entity, Component::Link& link);
 
 	private:
 		bool m_GraphicsTabClicked = false;

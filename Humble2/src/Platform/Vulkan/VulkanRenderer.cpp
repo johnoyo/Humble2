@@ -309,6 +309,9 @@ namespace HBL2
 		// Destroy the swapchain
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 
+		// TODO: Destroy surface here maybe??
+		// ...
+
 		// Destroy old offscreen textures.
 		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);

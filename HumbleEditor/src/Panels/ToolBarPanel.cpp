@@ -42,7 +42,7 @@ namespace HBL2
 								.debugName = "Empty Scene",
 								.filePath = HBL2::Project::GetActive()->GetSpecification().StartingScene,
 								.type = AssetType::Scene,
-								});
+							});
 
 							HBL2::Project::OpenStartingScene();
 
@@ -231,9 +231,8 @@ namespace HBL2
 
 				if (ImGui::BeginMenu("View"))
 				{
-					m_Context->GetRegistry()
-						.view<Component::EditorPanel>()
-						.each([&](Component::EditorPanel& panel)
+					m_Context->View<Component::EditorPanel>()
+						.Each([&](Component::EditorPanel& panel)
 						{
 							ImGui::Checkbox(panel.Name.c_str(), &panel.Enabled);
 						});

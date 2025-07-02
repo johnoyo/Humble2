@@ -1,7 +1,11 @@
 #pragma once
 
+#include "Entity.h"
 #include "ISystem.h"
 #include "Components.h"
+
+#include "View.h"
+#include "Group.h"
 
 #include "Utilities\Random.h"
 
@@ -9,6 +13,12 @@
 
 namespace HBL2
 {
+	template <typename... Cs>
+	inline constexpr entt::get_t<Cs...> Get{};
+
+	template <typename... Cs>
+	inline constexpr entt::exclude_t<Cs...> Exclude{};
+
 	struct SceneDescriptor
 	{
 		std::string name;
@@ -25,19 +35,19 @@ namespace HBL2
 
 		void Clear();
 
-		entt::entity CreateEntity()
+		Entity CreateEntity()
 		{
 			return CreateEntityWithUUID(Random::UInt64());
 		}
 
-		entt::entity CreateEntity(const std::string& tag)
+		Entity CreateEntity(const std::string& tag)
 		{
 			return CreateEntityWithUUID(Random::UInt64(), tag);
 		}
 
-		entt::entity CreateEntityWithUUID(UUID uuid, const std::string& tag = "New Entity")
+		Entity CreateEntityWithUUID(UUID uuid, const std::string& tag = "New Entity")
 		{
-			entt::entity entity = m_Registry.create();
+			Entity entity = m_Registry.create();
 
 			m_Registry.emplace<Component::Tag>(entity).Name = tag;
 			m_Registry.emplace<Component::ID>(entity).Identifier = uuid;
@@ -48,19 +58,19 @@ namespace HBL2
 			return entity;
 		}
 
-		entt::entity FindEntityByUUID(UUID uuid)
+		Entity FindEntityByUUID(UUID uuid)
 		{
 			if (m_EntityMap.find(uuid) != m_EntityMap.end())
 			{
 				return m_EntityMap.at(uuid);
 			}
 
-			return entt::null;
+			return Entity::Null;
 		}
 
-		void DestroyEntity(entt::entity entity);
+		void DestroyEntity(Entity entity);
 
-		entt::entity DuplicateEntity(entt::entity entity);
+		Entity DuplicateEntity(Entity entity);
 
 		template<typename... T>
 		auto GetAllEntitiesWith()
@@ -74,43 +84,43 @@ namespace HBL2
 		}
 
 		template<typename T>
-		T& GetComponent(entt::entity entity)
+		T& GetComponent(Entity entity)
 		{
 			return m_Registry.get<T>(entity);
 		}
 
 		template<typename T>
-		T* TryGetComponent(entt::entity entity)
+		T* TryGetComponent(Entity entity)
 		{
 			return m_Registry.try_get<T>(entity);
 		}
 
 		template<typename T>
-		T& GetOrAddComponent(entt::entity entity)
+		T& GetOrAddComponent(Entity entity)
 		{
 			return m_Registry.get_or_emplace<T>(entity);
 		}
 
 		template<typename T>
-		bool HasComponent(entt::entity entity)
+		bool HasComponent(Entity entity)
 		{
 			return m_Registry.any_of<T>(entity);
 		}
 
 		template<typename T>
-		T& AddComponent(entt::entity entity)
+		T& AddComponent(Entity entity)
 		{
 			return m_Registry.emplace<T>(entity);
 		}
 
 		template<typename T>
-		T& AddOrReplaceComponent(entt::entity entity)
+		T& AddOrReplaceComponent(Entity entity)
 		{
 			return m_Registry.emplace_or_replace<T>(entity);
 		}
 
 		template<typename T>
-		void RemoveComponent(entt::entity entity)
+		void RemoveComponent(Entity entity)
 		{
 			m_Registry.remove<T>(entity);
 		}
@@ -173,6 +183,56 @@ namespace HBL2
 			return m_Registry;
 		}
 
+		[[nodiscard]] inline auto Entities() noexcept
+		{
+			return HBL2::View{ m_Registry.view<entt::entity>() };
+		}
+
+		[[nodiscard]] inline auto Entities() const noexcept
+		{
+			return HBL2::View{ m_Registry.view<entt::entity>() };
+		}
+
+		template <typename... Inc>
+		[[nodiscard]] constexpr auto View() noexcept
+		{
+			return HBL2::View{ m_Registry.view<Inc...>() };
+		}
+
+		template <typename... Inc, typename... Exc>
+		[[nodiscard]] constexpr auto View(entt::exclude_t<Exc...> ex) noexcept
+		{
+			return HBL2::View{ m_Registry.view<Inc...>(ex) };
+		}
+
+		template <typename... Owned>
+		[[nodiscard]] constexpr auto Group() noexcept
+		{
+			auto g = m_Registry.template group<Owned...>();
+			return HBL2::Group{ g };
+		}
+
+		template <typename... Owned, typename... Get>
+		[[nodiscard]] constexpr auto Group(entt::get_t<Get...> getter) noexcept
+		{
+			auto g = m_Registry.template group<Owned...>(getter);
+			return HBL2::Group{ g };
+		}
+
+		template <typename... Owned, typename... Get, typename... Ex>
+		[[nodiscard]] constexpr auto Group(entt::get_t<Get...> getter, entt::exclude_t<Ex...> excl) noexcept
+		{
+			auto g = m_Registry.template group<Owned...>(getter, excl);
+			return HBL2::Group{ g };
+		}
+
+		template <typename... Owned, typename... Ex>
+		[[nodiscard]] constexpr auto Group(entt::exclude_t<Ex...> excl) noexcept
+		{
+			auto g = m_Registry.template group<Owned...>(excl);
+			return HBL2::Group{ g };
+		}
+
 		entt::meta_ctx& GetMetaContext()
 		{
 			return m_MetaContext;
@@ -199,10 +259,10 @@ namespace HBL2
 			return component;
 		}
 
-		entt::entity MainCamera = entt::null;
+		Entity MainCamera = Entity::Null;
 
 	private:
-		void InternalDestroyEntity(entt::entity entity, bool isRootCall);
+		void InternalDestroyEntity(Entity entity, bool isRootCall);
 
 	private:
 		std::string m_Name;
@@ -211,7 +271,7 @@ namespace HBL2
 		std::vector<ISystem*> m_Systems;
 		std::vector<ISystem*> m_CoreSystems;
 		std::vector<ISystem*> m_RuntimeSystems;
-		std::unordered_map<UUID, entt::entity> m_EntityMap;
+		std::unordered_map<UUID, Entity> m_EntityMap;
 
 		void operator=(const HBL2::Scene&);
 

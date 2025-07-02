@@ -19,7 +19,7 @@ namespace HBL2
 	{
 	}
 
-	PrefabSerializer::PrefabSerializer(Prefab* prefab, entt::entity instantiatedPrefabEntity)
+	PrefabSerializer::PrefabSerializer(Prefab* prefab, Entity instantiatedPrefabEntity)
 		: m_Context(prefab), m_InstantiatedPrefabEntity(instantiatedPrefabEntity)
 	{
 	}
@@ -53,9 +53,9 @@ namespace HBL2
 		out << YAML::Key << "Entities" << YAML::BeginSeq;
 
 		Scene* activeScene = GetScene();
-		entt::entity baseEntity;
+		Entity baseEntity;
 
-		if (m_InstantiatedPrefabEntity != entt::null)
+		if (m_InstantiatedPrefabEntity != Entity::Null)
 		{
 			baseEntity = m_InstantiatedPrefabEntity;
 		}
@@ -149,7 +149,7 @@ namespace HBL2
 		{
 			for (const auto& entityNode : entityNodes)
 			{
-				EntitySerializer entitySerializer(activeScene, entt::null);
+				EntitySerializer entitySerializer(activeScene, Entity::Null);
 				entitySerializer.Deserialize(entityNode);
 			}
 		}
@@ -158,7 +158,7 @@ namespace HBL2
 		return true;
 	}
 
-	void PrefabSerializer::SerializePrefab(Scene* ctx, entt::entity entity, YAML::Emitter& out)
+	void PrefabSerializer::SerializePrefab(Scene* ctx, Entity entity, YAML::Emitter& out)
 	{
 		EntitySerializer entitySerializer(ctx, entity);
 		entitySerializer.Serialize(out);
@@ -172,7 +172,7 @@ namespace HBL2
 
 		for (auto child : link->Children)
 		{
-			entt::entity childEntity = ctx->FindEntityByUUID(child);
+			Entity childEntity = ctx->FindEntityByUUID(child);
 			SerializePrefab(ctx, childEntity, out);
 		}
 	}

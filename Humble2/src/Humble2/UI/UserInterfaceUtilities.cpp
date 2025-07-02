@@ -342,6 +342,26 @@ namespace HBL2
 					}
 				}
 			}
+			else if (value.type() == entt::resolve<Entity>(ctx->GetMetaContext()))
+			{
+				Entity* entity = value.try_cast<Entity>();
+				if (entity)
+				{
+					ImGui::InputScalar(memberName, ImGuiDataType_U32, entity);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
+						{
+							UUID entityUUID = *((UUID*)payload->Data);
+							Entity retrievedEntity = ctx->FindEntityByUUID(entityUUID);
+
+							data.set(componentMeta, retrievedEntity);
+							ImGui::EndDragDropTarget();
+						}
+					}
+				}
+			}
 		}
 		else
 		{
@@ -608,6 +628,18 @@ namespace HBL2
 					}
 				}
 			}
+			else if (value.type() == entt::resolve<Entity>(ctx->GetMetaContext()))
+			{
+				Entity* entity = value.try_cast<Entity>();
+				if (entity)
+				{
+					auto* id = ctx->TryGetComponent<Component::ID>(*entity);
+					if (id)
+					{
+						out << YAML::Key << memberName << YAML::Value << id->Identifier;
+					}
+				}
+			}
 		}
 		else
 		{
@@ -730,6 +762,14 @@ namespace HBL2
 				if (value.try_cast<entt::entity>())
 				{
 					entt::entity entity = ctx->FindEntityByUUID(node[memberName].as<UUID>());
+					data.set(componentMeta, entity);
+				}
+			}
+			else if (value.type() == entt::resolve<Entity>(ctx->GetMetaContext()))
+			{
+				if (value.try_cast<Entity>())
+				{
+					Entity entity = ctx->FindEntityByUUID(node[memberName].as<UUID>());
 					data.set(componentMeta, entity);
 				}
 			}

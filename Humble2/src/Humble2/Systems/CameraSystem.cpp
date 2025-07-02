@@ -9,9 +9,8 @@ namespace HBL2
 {
 	void CameraSystem::OnCreate()
 	{
-		m_Context->GetRegistry()
-			.group<Component::Camera>(entt::get<Component::Transform>)
-			.each([&](entt::entity entity, Component::Camera& camera, Component::Transform& transform)
+		m_Context->Group<Component::Camera>(Get<Component::Transform>)
+			.Each([&](Entity entity, Component::Camera& camera, Component::Transform& transform)
 			{
 				if (camera.Enabled)
 				{
@@ -39,9 +38,8 @@ namespace HBL2
 
 	void CameraSystem::OnUpdate(float ts)
 	{
-		m_Context->GetRegistry()
-			.group<Component::Camera>(entt::get<Component::Transform>)
-			.each([&](entt::entity entity, Component::Camera& camera, Component::Transform& transform)
+		m_Context->Group<Component::Camera>(Get<Component::Transform>)
+			.Each([&](Entity entity, Component::Camera& camera, Component::Transform& transform)
 			{
 				if (camera.Enabled)
 				{

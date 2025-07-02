@@ -20,7 +20,7 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
-		entt::entity GetMainCamera();
+		Entity GetMainCamera();
 
 	private:
 		ResourceManager* m_ResourceManager = nullptr;

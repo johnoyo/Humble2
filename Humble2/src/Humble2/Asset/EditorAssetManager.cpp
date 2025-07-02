@@ -953,7 +953,7 @@ namespace HBL2
 		}
 
 		std::vector<std::string> userComponentNames;
-		std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>> data;
+		std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
 
 		// Store all registered meta types.
 		for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))

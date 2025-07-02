@@ -38,7 +38,7 @@ namespace HBL2
 				m_ActiveScene = ResourceManager::Instance->GetScene(e.NewScene);
 
 				// Clear selected entity
-				HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+				HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
 
 				if (Context::Mode == Mode::Runtime)
 				{
@@ -57,9 +57,8 @@ namespace HBL2
 
 				if (m_ActiveScene != nullptr)
 				{
-					m_ActiveScene->GetRegistry()
-						.view<HBL2::Component::Camera>()
-						.each([&](HBL2::Component::Camera& camera)
+					m_ActiveScene->View<HBL2::Component::Camera>()
+						.Each([&](HBL2::Component::Camera& camera)
 						{
 							if (camera.Enabled)
 							{
@@ -199,9 +198,8 @@ namespace HBL2
 
 		void EditorPanelSystem::OnGuiRender(float ts)
 		{
-			m_Context->GetRegistry()
-				.view<Component::EditorPanel>()
-				.each([&](Component::EditorPanel& panel)
+			m_Context->View<Component::EditorPanel>()
+				.Each([&](Component::EditorPanel& panel)
 				{
 					if (panel.Enabled)
 					{

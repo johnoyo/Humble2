@@ -112,12 +112,12 @@ namespace HBL2
 					{
 						if (!entry.is_directory())
 						{
-							HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+							HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
 							m_SelectedAsset = assetHandle;
 						}
 						else
 						{
-							HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+							HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
 							m_SelectedAsset = {};
 						}
 					}
@@ -258,9 +258,9 @@ namespace HBL2
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
 				{
 					UUID entityUUID = *((UUID*)payload->Data);
-					entt::entity entity = m_ActiveScene->FindEntityByUUID(entityUUID);
+					Entity entity = m_ActiveScene->FindEntityByUUID(entityUUID);
 
-					if (entity == entt::null)
+					if (entity == Entity::Null)
 					{
 						HBL2_CORE_ERROR("Unable to create prefab asset, entity is invalid!");
 						ImGui::EndDragDropTarget();

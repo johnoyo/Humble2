@@ -4,14 +4,14 @@
 
 namespace HBL2
 {
-	static entt::entity GetEntityFromBodyId(Physics::ID body)
+	static Entity GetEntityFromBodyId(Physics::ID body)
 	{
-		return static_cast<entt::entity>(reinterpret_cast<intptr_t>(b2Body_GetUserData(b2LoadBodyId(body))));
+		return static_cast<uint32_t>(reinterpret_cast<intptr_t>(b2Body_GetUserData(b2LoadBodyId(body))));
 	}
 
-	static entt::entity GetEntityFromShapeId(Physics::ID shape)
+	static Entity GetEntityFromShapeId(Physics::ID shape)
 	{
-		return static_cast<entt::entity>(reinterpret_cast<intptr_t>(b2Shape_GetUserData(b2LoadShapeId(shape))));
+		return static_cast<uint32_t>(reinterpret_cast<intptr_t>(b2Shape_GetUserData(b2LoadShapeId(shape))));
 	}
 
 	static b2BodyType BodyTypeTob2BodyType(Physics::BodyType bodyType)
@@ -32,11 +32,10 @@ namespace HBL2
 		PhysicsEngine2D::Instance = new Box2DPhysicsEngine;
 		m_PhysicsEngine = (Box2DPhysicsEngine*)PhysicsEngine2D::Instance;
 		m_PhysicsEngine->Initialize();
-		m_PhysicsWorld = m_PhysicsEngine->Get();
+		m_PhysicsWorld = m_PhysicsEngine->Get();		
 
-		m_Context->GetRegistry()
-			.group<Component::Rigidbody2D>(entt::get<Component::Transform>)
-			.each([this](entt::entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
+		m_Context->Group<Component::Rigidbody2D>(Get<Component::Transform>)
+			.Each([&](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
 			{
 				rb2d.BodyId = CreateRigidbody(entity, rb2d, transform);
 
@@ -53,9 +52,8 @@ namespace HBL2
 	void Physics2dSystem::OnFixedUpdate()
 	{
 		// Handle runtime creations and properties update.
-		m_Context->GetRegistry()
-			.group<Component::Rigidbody2D>(entt::get<Component::Transform>)
-			.each([this](entt::entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
+		m_Context->Group<Component::Rigidbody2D>(Get<Component::Transform>)
+			.Each([&](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
 			{
 				// Create rigidbody if it was added and is uninitialized.
 				if (rb2d.BodyId == Physics::InvalidID)
@@ -103,9 +101,8 @@ namespace HBL2
 		m_PhysicsEngine->Step(Time::FixedTimeStep);
 
 		// Update the transform of rigidbodies. Consider using b2World_GetBodyEvents.
-		m_Context->GetRegistry()
-			.group<Component::Rigidbody2D>(entt::get<Component::Transform>)
-			.each([this](entt::entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
+		m_Context->Group<Component::Rigidbody2D>(Get<Component::Transform>)
+			.Each([&](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
 			{
 				b2BodyId bodyId = b2LoadBodyId(rb2d.BodyId);
 
@@ -191,20 +188,20 @@ namespace HBL2
 		m_Initialized = false;
 	}
 
-	Physics::ID Physics2dSystem::CreateRigidbody(entt::entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
+	Physics::ID Physics2dSystem::CreateRigidbody(Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
 	{
 		b2BodyDef bodyDef = b2DefaultBodyDef();
 		bodyDef.type = BodyTypeTob2BodyType(rb2d.Type);
 		bodyDef.position = { transform.Translation.x, transform.Translation.y };
 		bodyDef.rotation = b2MakeRot(glm::radians(transform.Rotation.z));
 		bodyDef.motionLocks.angularZ = rb2d.FixedRotation;
-		bodyDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>(entity));
+		bodyDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>((uint64_t)entity));
 
 		b2BodyId bodyId = b2CreateBody(m_PhysicsWorld, &bodyDef);
 		return b2StoreBodyId(bodyId);
 	}
 
-	Physics::ID Physics2dSystem::CreateBoxCollider(entt::entity entity, Component::BoxCollider2D& bc2d, Component::Rigidbody2D& rb2d, Component::Transform& transform)
+	Physics::ID Physics2dSystem::CreateBoxCollider(Entity entity, Component::BoxCollider2D& bc2d, Component::Rigidbody2D& rb2d, Component::Transform& transform)
 	{
 		b2ShapeDef shapeDef = b2DefaultShapeDef();
 		shapeDef.material.friction = bc2d.Friction;
@@ -213,7 +210,7 @@ namespace HBL2
 		shapeDef.enableContactEvents = bc2d.Trigger ? false : true;
 		shapeDef.enableSensorEvents = bc2d.Trigger ? true : false;
 		shapeDef.isSensor = bc2d.Trigger;
-		shapeDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>(entity));
+		shapeDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>((uint64_t)entity));
 
 		const b2Polygon polygon = b2MakeBox(bc2d.Size.x * transform.Scale.x, bc2d.Size.y * transform.Scale.y);
 

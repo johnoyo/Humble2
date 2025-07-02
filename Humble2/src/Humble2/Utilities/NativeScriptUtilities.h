@@ -105,14 +105,14 @@ namespace HBL2
 		std::string GetDefaultComponentCode(const std::string& componentName);	
 		std::string GetDefaultHelperScriptCode(const std::string& scriptName);
 
-		entt::meta_any AddComponent(const std::string& name, Scene* ctx, entt::entity entity);
-		entt::meta_any GetComponent(const std::string& name, Scene* ctx, entt::entity entity);
-		void RemoveComponent(const std::string& name, Scene* ctx, entt::entity entity);
-		bool HasComponent(const std::string& name, Scene* ctx, entt::entity entity);
+		entt::meta_any AddComponent(const std::string& name, Scene* ctx, Entity entity);
+		entt::meta_any GetComponent(const std::string& name, Scene* ctx, Entity entity);
+		void RemoveComponent(const std::string& name, Scene* ctx, Entity entity);
+		bool HasComponent(const std::string& name, Scene* ctx, Entity entity);
 		void ClearComponentStorage(const std::string& name, Scene* ctx);
 
-		void SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data, bool cleanRegistry = true);
-		void DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<entt::entity, std::vector<std::byte>>>& data);
+		void SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data, bool cleanRegistry = true);
+		void DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data);
 
 		std::string CleanComponentNameO1(const std::string& input);
 		std::string CleanComponentNameO3(const std::string& input);

@@ -103,7 +103,7 @@ namespace HBL2
 		struct HBL2_API EditorVisible
 		{
 			static inline bool Selected = false;
-			static inline entt::entity SelectedEntity = entt::null;
+			static inline Entity SelectedEntity = Entity::Null;
 
 			bool Enabled = true;
 		};
