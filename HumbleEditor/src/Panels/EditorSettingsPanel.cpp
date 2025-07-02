@@ -6,9 +6,8 @@ namespace HBL2
 	{
 		void EditorPanelSystem::DrawEditorSettingsPanel()
 		{
-			m_Context->GetRegistry()
-				.view<Component::EditorCamera>()
-				.each([&](entt::entity entity, Component::EditorCamera& editorCamera)
+			m_Context->View<Component::EditorCamera>()
+				.Each([&](Entity entity, Component::EditorCamera& editorCamera)
 				{
 					ImGui::Text("Camera Transform:");
 

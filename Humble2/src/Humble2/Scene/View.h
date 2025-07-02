@@ -20,8 +20,11 @@ namespace HBL2
             m_View.each(std::forward<F>(f));
         }
 
-        constexpr auto begin() const noexcept { return m_View.cbegin(); }
-        constexpr auto end()   const noexcept { return m_View.cend(); }
+        constexpr auto begin() noexcept { return m_View.begin(); }
+        constexpr auto end() noexcept { return m_View.end(); }
+
+        constexpr const auto begin() const noexcept { return m_View.begin(); }
+        constexpr const auto end() const noexcept { return m_View.end(); }
 
     private:
         ViewType m_View;

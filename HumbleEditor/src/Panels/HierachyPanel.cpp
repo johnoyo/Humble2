@@ -4,7 +4,7 @@ namespace HBL2
 {
 	namespace Editor
 	{
-		void EditorPanelSystem::DrawHierachy(entt::entity entity, const auto& entities)
+		void EditorPanelSystem::DrawHierachy(Entity entity, const auto& entities)
 		{
 			const auto& tag = m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity);
 
@@ -102,7 +102,7 @@ namespace HBL2
 					{
 						// Clear currently selected entity.
 						HBL2::Component::EditorVisible::Selected = false;
-						HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+						HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
 
 						Prefab::Save(entity);
 					}
@@ -345,9 +345,9 @@ namespace HBL2
 				ImGui::EndPopup();
 			}
 
-			m_EntityToBeDeleted = entt::null;
+			m_EntityToBeDeleted = Entity::Null;
 
-			const auto& entities = m_ActiveScene->GetRegistry().view<entt::entity>();
+			const auto& entities = m_ActiveScene->View<Entity>();
 
 			if (ImGui::CollapsingHeader("Entity Hierarchy", ImGuiTreeNodeFlags_DefaultOpen))
 			{
@@ -372,7 +372,7 @@ namespace HBL2
 				}
 			}
 
-			if (m_EntityToBeDeleted != entt::null)
+			if (m_EntityToBeDeleted != Entity::Null)
 			{
 				// Destroy entity and clear entityToBeDeleted value.
 				if (m_ActiveScene->HasComponent<HBL2::Component::PrefabInstance>(m_EntityToBeDeleted))
@@ -384,24 +384,24 @@ namespace HBL2
 					m_ActiveScene->DestroyEntity(m_EntityToBeDeleted);
 				}
 
-				m_EntityToBeDeleted = entt::null;
+				m_EntityToBeDeleted = Entity::Null;
 
 				// Clear currently selected entity.
-				HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+				HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
 				HBL2::Component::EditorVisible::Selected = false;
 			}
 
-			if (m_EntityToBeDuplicated != entt::null)
+			if (m_EntityToBeDuplicated != Entity::Null)
 			{
 				// Duplicate entity and clear entityToBeDuplicated value.
 				m_ActiveScene->DuplicateEntity(m_EntityToBeDuplicated);
-				m_EntityToBeDuplicated = entt::null;
+				m_EntityToBeDuplicated = Entity::Null;
 			}
 
 			// Clear selection if clicked on empty space inside hierachy panel.
 			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
 			{
-				HBL2::Component::EditorVisible::SelectedEntity = entt::null;
+				HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
 				HBL2::Component::EditorVisible::Selected = false;
 			}
 		}

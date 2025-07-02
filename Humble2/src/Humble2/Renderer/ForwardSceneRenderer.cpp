@@ -1706,7 +1706,7 @@ namespace HBL2
 	{
 		Scene* scene = (Context::Mode == Mode::Editor ? m_EditorScene : m_Scene);
 
-		if (scene == nullptr || mainCamera == entt::null)
+		if (scene == nullptr || mainCamera == Entity::Null)
 		{
 			m_OnlyRotationInViewProjection = glm::mat4(1.0f);
 			m_CameraData.ViewProjection = glm::mat4(1.0f);

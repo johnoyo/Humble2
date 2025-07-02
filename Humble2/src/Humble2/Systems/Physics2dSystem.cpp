@@ -6,12 +6,12 @@ namespace HBL2
 {
 	static Entity GetEntityFromBodyId(Physics::ID body)
 	{
-		return static_cast<entt::entity>(reinterpret_cast<intptr_t>(b2Body_GetUserData(b2LoadBodyId(body))));
+		return static_cast<uint32_t>(reinterpret_cast<intptr_t>(b2Body_GetUserData(b2LoadBodyId(body))));
 	}
 
 	static Entity GetEntityFromShapeId(Physics::ID shape)
 	{
-		return static_cast<entt::entity>(reinterpret_cast<intptr_t>(b2Shape_GetUserData(b2LoadShapeId(shape))));
+		return static_cast<uint32_t>(reinterpret_cast<intptr_t>(b2Shape_GetUserData(b2LoadShapeId(shape))));
 	}
 
 	static b2BodyType BodyTypeTob2BodyType(Physics::BodyType bodyType)
@@ -195,7 +195,7 @@ namespace HBL2
 		bodyDef.position = { transform.Translation.x, transform.Translation.y };
 		bodyDef.rotation = b2MakeRot(glm::radians(transform.Rotation.z));
 		bodyDef.motionLocks.angularZ = rb2d.FixedRotation;
-		bodyDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>((entt::entity)entity));
+		bodyDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>((uint64_t)entity));
 
 		b2BodyId bodyId = b2CreateBody(m_PhysicsWorld, &bodyDef);
 		return b2StoreBodyId(bodyId);
@@ -210,7 +210,7 @@ namespace HBL2
 		shapeDef.enableContactEvents = bc2d.Trigger ? false : true;
 		shapeDef.enableSensorEvents = bc2d.Trigger ? true : false;
 		shapeDef.isSensor = bc2d.Trigger;
-		shapeDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>((entt::entity)entity));
+		shapeDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>((uint64_t)entity));
 
 		const b2Polygon polygon = b2MakeBox(bc2d.Size.x * transform.Scale.x, bc2d.Size.y * transform.Scale.y);
 
