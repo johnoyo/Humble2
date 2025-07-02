@@ -155,6 +155,9 @@ namespace HBL2
 		std::vector<Entity> otherInstantiatedPrefabEntities;
 		std::vector<Component::Transform> otherInstantiatedPrefabEntitiesTransform;
 
+		// NOTE: In the future we may need to update the children list of the prefab if it has a parent.
+		//		 Since we are deleting it and re-instantiating it the child uuid that the parent holds will be invalid.
+
 		activeScene->View<Component::PrefabInstance, Component::Transform>()
 			.Each([&](Entity entity, Component::PrefabInstance& prefab, Component::Transform& tr)
 			{

@@ -231,6 +231,9 @@ namespace HBL2
 		//		2.3 Update its version.
 		//	3. If the prefab is not out of date do nothing.
 
+		// NOTE: In the future we may need to update the children list of the prefab if it has a parent.
+		//		 Since we are deleting it and re-instantiating it the child uuid that the parent holds will be invalid.
+
 		// Gather all prefab entities and their info.
 		std::vector<Entity> prefabs;
 		std::vector<PrefabInfo> prefabsInfo;
