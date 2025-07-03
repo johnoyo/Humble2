@@ -231,5 +231,31 @@ namespace HBL2
 
 			bool Regenerate = true;
 		};
+
+		struct HBL2_API AnimationCurve
+		{
+			struct KeyFrame
+			{
+				float Time = 0.0f;
+				float Value = 0.0f;
+				float InTan = 0.0f;
+				float OutTan = 0.0f;
+			};
+
+			enum class CurvePreset
+			{
+				Linear,
+				QuadraticEaseIn,
+				QuadraticEaseOut,
+				CubicEaseIn,
+				CubicEaseOut,
+				Custom
+			};
+
+			CurvePreset Preset = CurvePreset::Linear;
+			CurvePreset PrevPreset = CurvePreset::Linear; // For internal use only.
+			std::vector<KeyFrame> Keys;
+			bool RecalculateTangents = false;
+		};
 	}
 }

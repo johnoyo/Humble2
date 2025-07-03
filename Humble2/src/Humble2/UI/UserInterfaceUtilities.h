@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core\Context.h"
-#include "Editor.h"
+#include "EditorInspector.h"
 
 #include "Resources/ResourceManager.h"
 #include "Utilities/NativeScriptUtilities.h"

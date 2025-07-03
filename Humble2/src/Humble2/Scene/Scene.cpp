@@ -13,6 +13,7 @@
 #include "Systems\Physics2dSystem.h"
 #include "Systems\Physics3dSystem.h"
 #include "Systems\TerrainSystem.h"
+#include "Systems\AnimationCurveSystem.h"
 
 namespace HBL2
 {
@@ -89,6 +90,7 @@ namespace HBL2
         dst->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
         dst->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
         dst->RegisterSystem(new TerrainSystem);
+        dst->RegisterSystem(new AnimationCurveSystem);
 
         // Register any user systems to new scene.
         for (ISystem* system : src->m_RuntimeSystems)

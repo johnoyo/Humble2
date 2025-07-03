@@ -373,6 +373,26 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::AnimationCurve>(m_Entity))
+		{
+			out << YAML::Key << "Component::AnimationCurve";
+			out << YAML::BeginMap;
+
+			auto& curve = m_Scene->GetComponent<Component::AnimationCurve>(m_Entity);
+
+			out << YAML::Key << "Preset" << YAML::Value << (uint32_t)curve.Preset;
+
+			out << YAML::Key << "KeyFrames";
+			out << YAML::BeginSeq;
+			for (auto& keyFrame : curve.Keys)
+			{
+				out << glm::vec2(keyFrame.Time, keyFrame.Value);
+			}
+			out << YAML::EndSeq;
+
+			out << YAML::EndMap;
+		}
+
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
 		{
 			const auto& alias = meta_type.second.info().name();
@@ -633,6 +653,26 @@ namespace HBL2
 			t.Seed = t_NewComponent["Seed"].as<uint64_t>();
 			t.HeightMultiplier = t_NewComponent["HeightMultiplier"].as<float>();
 			t.Regenerate = t_NewComponent["Regenerate"].as<bool>();
+		}
+
+		auto curve_NewComponent = entityNode["Component::AnimationCurve"];
+		if (curve_NewComponent)
+		{
+			auto& curve = m_Scene->AddComponent<Component::AnimationCurve>(m_Entity);
+			curve.Preset = (Component::AnimationCurve::CurvePreset)curve_NewComponent["Preset"].as<uint32_t>();
+			curve.PrevPreset = curve.Preset;
+
+			curve.Keys.clear();
+			const YAML::Node keyFrames = curve_NewComponent["KeyFrames"];
+			if (keyFrames && keyFrames.IsSequence())
+			{
+				for (const YAML::Node& k : keyFrames)
+				{
+					glm::vec2 kv = k.as<glm::vec2>();
+					Component::AnimationCurve::KeyFrame frame = { kv.x, kv.y };
+					curve.Keys.push_back(frame);
+				}
+			}
 		}
 
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))

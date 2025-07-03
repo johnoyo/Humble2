@@ -1,9 +1,10 @@
-#include "Systems\EditorPanelSystem.h"
+﻿#include "Systems\EditorPanelSystem.h"
 
 #include <Utilities\NativeScriptUtilities.h>
 
 #include <UI\UserInterfaceUtilities.h>
 #include <UI\LayoutLib.h>
+#include <UI\AnimationCurveEditor.h>
 
 namespace HBL2
 {
@@ -515,6 +516,14 @@ namespace HBL2
 					}
 				});
 
+				DrawComponent<HBL2::Component::AnimationCurve>("AnimationCurve", m_ActiveScene, [this](HBL2::Component::AnimationCurve& curve)
+				{
+					if (HBL2::EditorUtilities::Get().HasCustomEditor<HBL2::Component::AnimationCurve>())
+					{
+						HBL2::EditorUtilities::Get().DrawCustomEditor<HBL2::Component::AnimationCurve, AnimationCurveEditor>(curve);
+					}
+				});
+
 				using namespace entt::literals;
 
 				// Iterate over all registered meta types
@@ -688,6 +697,15 @@ namespace HBL2
 						if (ImGui::MenuItem("Terrain"))
 						{
 							m_ActiveScene->AddComponent<HBL2::Component::Terrain>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
+					if (!m_ActiveScene->HasComponent<HBL2::Component::AnimationCurve>(HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::MenuItem("AnimationCurve"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::AnimationCurve>(HBL2::Component::EditorVisible::SelectedEntity);
 							ImGui::CloseCurrentPopup();
 						}
 					}

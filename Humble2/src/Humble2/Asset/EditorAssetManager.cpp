@@ -10,6 +10,7 @@
 #include "Systems\Physics2dSystem.h"
 #include "Systems\Physics3dSystem.h"
 #include "Systems\TerrainSystem.h"
+#include "Systems\AnimationCurveSystem.h"
 
 #include <Prefab/PrefabSerializer.h>
 
@@ -595,6 +596,7 @@ namespace HBL2
 		scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 		scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
 		scene->RegisterSystem(new TerrainSystem);
+		scene->RegisterSystem(new AnimationCurveSystem);
 
 		SceneSerializer sceneSerializer(scene);
 		sceneSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
@@ -863,6 +865,7 @@ namespace HBL2
 			scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 			scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
 			scene->RegisterSystem(new TerrainSystem);
+			scene->RegisterSystem(new AnimationCurveSystem);
 
 			asset->Indentifier = sceneHandle.Pack();
 			asset->Loaded = true;
