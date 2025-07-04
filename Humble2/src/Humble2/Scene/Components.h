@@ -6,8 +6,10 @@
 #include "Asset\Asset.h"
 
 #include "Physics\Physics.h"
+#include "Utilities\Bounds.h"
 
 #include <entt.hpp>
+#include <glm\gtx\hash.hpp>
 
 namespace HBL2
 {
@@ -216,8 +218,10 @@ namespace HBL2
 
 		struct HBL2_API Terrain
 		{
-			uint32_t mapWidth = 100;
-			uint32_t mapHeight = 100;
+			int32_t ChunkSize = 241;
+			float MaxViewDst = 450.f;
+			int32_t ChunksVisibleInViewDst = 0;
+			uint32_t LevelOfDetail = 0;
 
 			uint64_t Seed = 5;
 
@@ -229,7 +233,16 @@ namespace HBL2
 
 			float HeightMultiplier = 1.f;
 
+			std::unordered_map<glm::ivec2, Entity> ChunksCache;
+
 			bool Regenerate = true;
+		};
+
+		struct HBL2_API TerrainChunk
+		{
+			Bounds ChunkBounds;
+			bool Visible = false;
+			bool VisibleLastUpdate = false;
 		};
 
 		struct HBL2_API AnimationCurve

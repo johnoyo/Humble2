@@ -8,6 +8,7 @@
 
 #include <glm\glm.hpp>
 #include <glm\gtx\quaternion.hpp>
+#include <glm\gtx\hash.hpp>
 
 namespace HBL2
 {
@@ -22,10 +23,14 @@ namespace HBL2
 
 	private:
 		std::vector<float> GenerateNoiseMap(uint32_t mapWidth, uint32_t mapHeight, uint64_t seed, float scale, uint32_t octaves, float persistance, float lacunarity, const glm::vec2& offset);
-		void GenerateTerrainMeshData(const Span<const float> heightMap, uint32_t width, uint32_t height, float heightMultiplier);
+		void GenerateTerrainMeshData(const Span<const float> heightMap, uint32_t width, uint32_t height, float heightMultiplier, Component::AnimationCurve& curve, uint32_t levelOfDetail);
+
+		Entity CreateChunk(const glm::ivec2& coord, int32_t chunkSize, UUID parent);
+		Entity GetMainCamera();
 
 	private:
 		ResourceManager* m_ResourceManager = nullptr;
+		Scene* m_EditorScene = nullptr;
 
 		Handle<Mesh> m_Mesh;
 		Handle<Buffer> m_VertexBuffer;

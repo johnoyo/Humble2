@@ -508,6 +508,7 @@ namespace HBL2
 				DrawComponent<HBL2::Component::Terrain>("Terrain", m_ActiveScene, [this](HBL2::Component::Terrain& t)
 				{
 					ImGui::DragInt("Seed", (int*)& t.Seed);
+					ImGui::DragInt("LevelOfDetail", (int*)& t.LevelOfDetail, 1.f, 0, 6);
 					ImGui::DragFloat("HeightMultiplier", &t.HeightMultiplier);
 
 					if (ImGui::Button("Regenerate"))

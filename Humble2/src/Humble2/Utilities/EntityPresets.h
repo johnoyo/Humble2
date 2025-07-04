@@ -2,6 +2,8 @@
 
 #include <Core\Context.h>
 #include <Resources\ResourceManager.h>
+#include <Utilities\ShaderUtilities.h>
+#include <Utilities\MeshUtilities.h>
 
 #include <entt\include\entt.hpp>
 

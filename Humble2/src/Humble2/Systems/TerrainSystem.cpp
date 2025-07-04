@@ -1,17 +1,21 @@
 #include "TerrainSystem.h"
 
+#include "AnimationCurveSystem.h"
+#include "Utilities\EntityPresets.h"
+
 namespace HBL2
 {
 	void TerrainSystem::OnCreate()
 	{
 		m_ResourceManager = ResourceManager::Instance;
+		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 
-		m_Context->Group<Component::Terrain>(Get<Component::StaticMesh>)
-			.Each([&](Component::Terrain& terrain, Component::StaticMesh& staticMesh)
+		m_Context->Group<Component::Terrain>(Get<Component::StaticMesh, Component::AnimationCurve>)
+			.Each([&](Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
 			{
 				const auto& noiseMap = GenerateNoiseMap(
-					terrain.mapWidth,
-					terrain.mapHeight,
+					terrain.ChunkSize,
+					terrain.ChunkSize,
 					terrain.Seed,
 					terrain.scale,
 					terrain.octaves,
@@ -19,22 +23,38 @@ namespace HBL2
 					terrain.lacunarity,
 					terrain.offset);
 
-				GenerateTerrainMeshData(noiseMap, terrain.mapWidth, terrain.mapHeight, terrain.HeightMultiplier);
+				GenerateTerrainMeshData(noiseMap, terrain.ChunkSize, terrain.ChunkSize, terrain.HeightMultiplier, curve, terrain.LevelOfDetail);
 
 				staticMesh.Mesh = m_Mesh;
+				terrain.ChunksVisibleInViewDst = (int32_t)(terrain.MaxViewDst / terrain.ChunkSize);
 			});
 	}
 
 	void TerrainSystem::OnUpdate(float ts)
 	{
-		m_Context->Group<Component::Terrain>(Get<Component::StaticMesh>)
-			.Each([&](Component::Terrain& terrain, Component::StaticMesh& staticMesh)
+		Scene* scene = (Context::Mode == Mode::Editor ? m_EditorScene : m_Context);
+
+		const Component::Transform& viewer = scene->GetComponent<Component::Transform>(GetMainCamera());
+
+		m_Context->Group<Component::TerrainChunk>(Get<Component::StaticMesh>)
+			.Each([&](Component::TerrainChunk& terrainChunk, Component::StaticMesh& chunkMesh)
+			{
+				if (terrainChunk.VisibleLastUpdate)
+				{
+					chunkMesh.Enabled = false;
+					terrainChunk.Visible = false;
+					terrainChunk.VisibleLastUpdate = false;
+				}
+			});
+
+		m_Context->Group<Component::Terrain>(Get<Component::StaticMesh, Component::AnimationCurve>)
+			.Each([&](Entity e, Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
 			{
 				if (terrain.Regenerate)
 				{
 					const auto& noiseMap = GenerateNoiseMap(
-						terrain.mapWidth,
-						terrain.mapHeight,
+						terrain.ChunkSize,
+						terrain.ChunkSize,
 						terrain.Seed,
 						terrain.scale,
 						terrain.octaves,
@@ -42,13 +62,51 @@ namespace HBL2
 						terrain.lacunarity,
 						terrain.offset);
 
-					GenerateTerrainMeshData(noiseMap, terrain.mapWidth, terrain.mapHeight, terrain.HeightMultiplier);
+					GenerateTerrainMeshData(noiseMap, terrain.ChunkSize, terrain.ChunkSize, terrain.HeightMultiplier, curve, terrain.LevelOfDetail);
 
 					staticMesh.Mesh = m_Mesh;
+					terrain.ChunksVisibleInViewDst = (int32_t)(terrain.MaxViewDst / terrain.ChunkSize);
 
 					terrain.Regenerate = false;
+				}				
+
+				int32_t currentChunkCoordX = (int32_t)(viewer.Translation.x / terrain.ChunkSize);
+				int32_t currentChunkCoordY = (int32_t)(viewer.Translation.z / terrain.ChunkSize);
+
+				for (int yOffset = -terrain.ChunksVisibleInViewDst; yOffset <= terrain.ChunksVisibleInViewDst; yOffset++)
+				{
+					for (int xOffset = -terrain.ChunksVisibleInViewDst; xOffset <= terrain.ChunksVisibleInViewDst; xOffset++)
+					{
+						glm::ivec2 viewedChunkCoord(currentChunkCoordX + xOffset, currentChunkCoordY + yOffset);
+						
+						if (terrain.ChunksCache.contains(viewedChunkCoord))
+						{
+							Entity chunk = terrain.ChunksCache[viewedChunkCoord];
+
+							auto& terrainChunk = m_Context->GetComponent<Component::TerrainChunk>(chunk);
+							auto& chunkMesh = m_Context->GetComponent<Component::StaticMesh>(chunk);
+
+							float viewerDstFromNearestEdge = glm::sqrt(terrainChunk.ChunkBounds.SqrDistance(viewer.Translation));
+							terrainChunk.Visible = glm::abs(viewerDstFromNearestEdge) <= terrain.MaxViewDst;
+							chunkMesh.Enabled = terrainChunk.Visible;
+
+							if (terrainChunk.Visible)
+							{
+								terrainChunk.VisibleLastUpdate = true;
+							}
+							else
+							{
+								chunkMesh.Enabled = terrainChunk.Visible;
+							}
+						}
+						else
+						{
+							terrain.ChunksCache[viewedChunkCoord] = CreateChunk(viewedChunkCoord, terrain.ChunkSize - 1, m_Context->GetComponent<Component::ID>(e).Identifier);
+						}
+					}
 				}
 			});
+
 	}
 
 	void TerrainSystem::OnDestroy()
@@ -134,15 +192,18 @@ namespace HBL2
 		return noiseMap;
 	}
 	
-	void TerrainSystem::GenerateTerrainMeshData(const Span<const float> heightMap, uint32_t width, uint32_t height, float heightMultiplier)
+	void TerrainSystem::GenerateTerrainMeshData(const Span<const float> heightMap, uint32_t width, uint32_t height, float heightMultiplier, Component::AnimationCurve& curve, uint32_t levelOfDetail)
 	{
 		m_ResourceManager->DeleteBuffer(m_IndexBuffer);
 		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
 		m_ResourceManager->DeleteMesh(m_Mesh);
 
+		uint32_t meshSimplificationIncrement = ((levelOfDetail == 0) ? 1 : levelOfDetail * 2);
+		uint32_t verticesPerLine = ((width - 1) / meshSimplificationIncrement) + 1;
+
 		// Counts
-		uint32_t vertexCount = width * height;
-		uint32_t quadCount = (width - 1) * (height - 1);
+		uint32_t vertexCount = verticesPerLine * verticesPerLine;
+		uint32_t quadCount = (verticesPerLine - 1) * (verticesPerLine - 1);
 		uint32_t indexCount = quadCount * 6;
 
 		// Allocate GPU-side buffers
@@ -160,14 +221,14 @@ namespace HBL2
 		float topLeftX = (width - 1) / -2.0f;
 		float topLeftZ = (height - 1) / 2.0f;
 
-		for (uint32_t y = 0; y < height; ++y)
+		for (uint32_t y = 0; y < height; y += meshSimplificationIncrement)
 		{
-			for (uint32_t x = 0; x < width; ++x, ++vi)
+			for (uint32_t x = 0; x < width; x += meshSimplificationIncrement, vi++)
 			{
 				// Position
 				positions[vi] = glm::vec3(
 					topLeftX + x,
-					heightMap[y * width + x] * heightMultiplier,
+					AnimationCurveSystem::Evaluate(curve, heightMap[y * width + x]) * heightMultiplier,
 					topLeftZ - y
 				);
 
@@ -178,14 +239,15 @@ namespace HBL2
 				if (x < width - 1 && y < height - 1)
 				{
 					int a = vi;
-					int b = vi + width + 1;
-					int c = vi + width;
+					int b = vi + verticesPerLine + 1;
+					int c = vi + verticesPerLine;
 					int d = vi + 1;
 
 					// tri 1: a, b, c
 					indexBuffer[ii++] = a;
 					indexBuffer[ii++] = b;
 					indexBuffer[ii++] = c;
+
 					// tri 2: b, a, d
 					indexBuffer[ii++] = b;
 					indexBuffer[ii++] = a;
@@ -270,5 +332,51 @@ namespace HBL2
 
 		delete[] vertexBuffer;
 		delete[] indexBuffer;
+	}
+
+	Entity TerrainSystem::CreateChunk(const glm::ivec2& coord, int32_t chunkSize, UUID parent)
+	{
+		Entity plane = EntityPreset::CreateTessellatedPlane();
+
+		auto& tr = m_Context->GetComponent<Component::Transform>(plane);
+		tr.Translation = { ((glm::vec2)coord * (float)chunkSize).x, 0, ((glm::vec2)coord * (float)chunkSize).y };
+		tr.Scale = { chunkSize, chunkSize, chunkSize };
+
+		auto& mesh = m_Context->GetComponent<Component::StaticMesh>(plane);
+		mesh.Enabled = false;
+
+		auto& link = m_Context->AddComponent<Component::Link>(plane);
+		link.Parent = parent;
+
+		auto& chunk = m_Context->AddComponent<Component::TerrainChunk>(plane);
+		chunk.Visible = false;
+		chunk.VisibleLastUpdate = false;
+		chunk.ChunkBounds = Bounds({ coord.x * chunkSize, 0, coord.y * chunkSize }, glm::vec3(1.f) * (float)chunkSize);
+
+		return plane;
+	}
+
+	Entity TerrainSystem::GetMainCamera()
+	{
+		if (Context::Mode == Mode::Runtime)
+		{
+			if (m_Context->MainCamera != Entity::Null)
+			{
+				return m_Context->MainCamera;
+			}
+
+			HBL2_CORE_WARN("No main camera set for runtime context.");
+		}
+		else if (Context::Mode == Mode::Editor)
+		{
+			if (m_EditorScene->MainCamera != Entity::Null)
+			{
+				return m_EditorScene->MainCamera;
+			}
+
+			HBL2_CORE_WARN("No main camera set for editor context.");
+		}
+
+		return Entity::Null;
 	}
 }

@@ -79,7 +79,9 @@ namespace HBL2
         copy_component(Component::SphereCollider{});
         copy_component(Component::CapsuleCollider{});
         copy_component(Component::PrefabInstance{});
+        copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
+        copy_component(Component::TerrainChunk{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
@@ -216,9 +218,17 @@ namespace HBL2
         m_Registry.storage<Component::PrefabInstance>().clear();
         m_Registry.compact<Component::PrefabInstance>();
 
+        m_Registry.clear<Component::AnimationCurve>();
+        m_Registry.storage<Component::AnimationCurve>().clear();
+        m_Registry.compact<Component::AnimationCurve>();
+
         m_Registry.clear<Component::Terrain>();
         m_Registry.storage<Component::Terrain>().clear();
         m_Registry.compact<Component::Terrain>();
+
+        m_Registry.clear<Component::TerrainChunk>();
+        m_Registry.storage<Component::TerrainChunk>().clear();
+        m_Registry.compact<Component::TerrainChunk>();
 
         // Destroy all entities.
         for (auto& [uuid, entity] : m_EntityMap)
@@ -302,7 +312,9 @@ namespace HBL2
         copy_component(Component::SphereCollider{});
         copy_component(Component::CapsuleCollider{});
         copy_component(Component::PrefabInstance{});
+        copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
+        copy_component(Component::TerrainChunk{});
 
         // Copy user defined components.
         std::vector<std::string> userComponentNames;

@@ -9,6 +9,7 @@ namespace HBL2
 		m_Context->Group<Component::Link>(Get<Component::Transform>)
 			.Each([&](Entity entity, Component::Link& link, Component::Transform& transform)
 			{
+				link.Parent = 0;
 				link.Children.clear();
 			});
 
