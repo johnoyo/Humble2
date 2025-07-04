@@ -510,6 +510,24 @@ namespace HBL2
 					ImGui::DragInt("Seed", (int*)& t.Seed);
 					ImGui::DragInt("LevelOfDetail", (int*)& t.LevelOfDetail, 1.f, 0, 6);
 					ImGui::DragFloat("HeightMultiplier", &t.HeightMultiplier);
+					ImGui::DragFloat2("Offset", glm::value_ptr(t.Offset));
+
+					uint32_t materialHandle = t.Material.Pack();
+
+					ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							t.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
+
+							ImGui::EndDragDropTarget();
+						}
+					}
 
 					if (ImGui::Button("Regenerate"))
 					{

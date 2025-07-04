@@ -17,6 +17,7 @@ namespace HBL2
 	struct Material;
 	struct Sound;
 	struct Texture;
+	struct Buffer;
 
 	namespace Component
 	{
@@ -218,22 +219,32 @@ namespace HBL2
 
 		struct HBL2_API Terrain
 		{
+			enum class ENormaliseMode
+			{
+				LOCAL = 0,
+				GLOBAL,
+			};
+
+			float Scale = 1.f;
 			int32_t ChunkSize = 241;
 			float MaxViewDst = 450.f;
 			int32_t ChunksVisibleInViewDst = 0;
 			uint32_t LevelOfDetail = 0;
 
+			ENormaliseMode NormaliseMode = ENormaliseMode::GLOBAL;
 			uint64_t Seed = 5;
 
-			float scale = 25.f;
-			uint32_t octaves = 5;
-			float persistance = 0.5f;
-			float lacunarity = 2.f;
-			glm::vec2 offset = { 50.f, 0.f };
+			float Scale = 25.f;
+			uint32_t Octaves = 5;
+			float Persistance = 0.5f;
+			float Lacunarity = 2.f;
+			glm::vec2 Offset = { 50.f, 0.f };
 
 			float HeightMultiplier = 1.f;
 
 			std::unordered_map<glm::ivec2, Entity> ChunksCache;
+
+			Handle<Material> Material;
 
 			bool Regenerate = true;
 		};
@@ -243,6 +254,9 @@ namespace HBL2
 			Bounds ChunkBounds;
 			bool Visible = false;
 			bool VisibleLastUpdate = false;
+
+			Handle<Buffer> VertexBuffer;
+			Handle<Buffer> IndexBuffer;
 		};
 
 		struct HBL2_API AnimationCurve

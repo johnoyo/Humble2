@@ -22,10 +22,11 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
-		std::vector<float> GenerateNoiseMap(uint32_t mapWidth, uint32_t mapHeight, uint64_t seed, float scale, uint32_t octaves, float persistance, float lacunarity, const glm::vec2& offset);
+		std::vector<float> GenerateNoiseMap(Component::Terrain& terrain, const glm::vec2& center);
 		void GenerateTerrainMeshData(const Span<const float> heightMap, uint32_t width, uint32_t height, float heightMultiplier, Component::AnimationCurve& curve, uint32_t levelOfDetail);
+		Handle<Mesh> GenerateTerrainChunkMesh(const Span<const float> heightMap, uint32_t width, uint32_t height, float heightMultiplier, Component::AnimationCurve& curve, uint32_t levelOfDetail);
 
-		Entity CreateChunk(const glm::ivec2& coord, int32_t chunkSize, UUID parent);
+		Entity CreateChunk(const glm::ivec2& coord, int32_t chunkSize, UUID parent, Handle<Mesh> mesh, Handle<Material> material);
 		Entity GetMainCamera();
 
 	private:

@@ -370,6 +370,29 @@ namespace HBL2
 			out << YAML::Key << "HeightMultiplier" << YAML::Value << t.HeightMultiplier;
 			out << YAML::Key << "Regenerate" << YAML::Value << t.Regenerate;
 
+			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+			Asset* materialAsset = nullptr;
+
+			bool materialFound = false;
+
+			for (auto handle : assetHandles)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+				if (asset->Type == AssetType::Material && asset->Indentifier != 0 && !materialFound)
+				{
+					materialFound = true;
+					materialAsset = asset;
+				}
+
+				if (materialFound)
+				{
+					break;
+				}
+			}
+
+			out << YAML::Key << "Material" << YAML::Value << (materialAsset != nullptr ? materialAsset->UUID : (UUID)0);
+
 			out << YAML::EndMap;
 		}
 
@@ -653,6 +676,11 @@ namespace HBL2
 			t.Seed = t_NewComponent["Seed"].as<uint64_t>();
 			t.HeightMultiplier = t_NewComponent["HeightMultiplier"].as<float>();
 			t.Regenerate = t_NewComponent["Regenerate"].as<bool>();
+
+			if (staticMesh_NewComponent["Material"].IsDefined())
+			{
+				t.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
+			}
 		}
 
 		auto curve_NewComponent = entityNode["Component::AnimationCurve"];
