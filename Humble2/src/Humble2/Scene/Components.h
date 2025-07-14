@@ -225,7 +225,6 @@ namespace HBL2
 				GLOBAL,
 			};
 
-			float Scale = 1.f;
 			int32_t ChunkSize = 241;
 			float MaxViewDst = 450.f;
 			int32_t ChunksVisibleInViewDst = 0;

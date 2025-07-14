@@ -379,7 +379,7 @@ namespace HBL2
 			for (auto handle : assetHandles)
 			{
 				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-				if (asset->Type == AssetType::Material && asset->Indentifier != 0 && !materialFound)
+				if (asset->Type == AssetType::Material && asset->Indentifier != 0 && asset->Indentifier == t.Material.Pack() && !materialFound)
 				{
 					materialFound = true;
 					materialAsset = asset;
@@ -677,9 +677,9 @@ namespace HBL2
 			t.HeightMultiplier = t_NewComponent["HeightMultiplier"].as<float>();
 			t.Regenerate = t_NewComponent["Regenerate"].as<bool>();
 
-			if (staticMesh_NewComponent["Material"].IsDefined())
+			if (t_NewComponent["Material"].IsDefined())
 			{
-				t.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
+				t.Material = AssetManager::Instance->GetAsset<Material>(t_NewComponent["Material"].as<UUID>());
 			}
 		}
 
