@@ -240,7 +240,8 @@ namespace HBL2
 
 			glm::vec3 OldViewerPosition{};
 
-			float Scale = 25.f;
+			float Scale = 1.f;
+			float NoiseScale = 25.f;
 			uint32_t Octaves = 5;
 			float Persistance = 0.5f;
 			float Lacunarity = 2.f;
@@ -293,7 +294,7 @@ namespace HBL2
 				  InEditorPreviewLevelOfDetail(other.InEditorPreviewLevelOfDetail),
 				  NormaliseMode(other.NormaliseMode),
 				  Seed(other.Seed),
-				  Scale(other.Scale),
+				  NoiseScale(other.NoiseScale),
 				  Octaves(other.Octaves),
 				  Persistance(other.Persistance),
 				  Lacunarity(other.Lacunarity),
@@ -329,7 +330,7 @@ namespace HBL2
 				NormaliseMode = other.NormaliseMode;
 				Seed = other.Seed;
 
-				Scale = other.Scale;
+				NoiseScale = other.NoiseScale;
 				Octaves = other.Octaves;
 				Persistance = other.Persistance;
 				Lacunarity = other.Lacunarity;

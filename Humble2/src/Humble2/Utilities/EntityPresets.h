@@ -235,5 +235,26 @@ namespace HBL2
 
 			return entity;
 		}
+
+		static Entity CreateTerrain()
+		{
+			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+			if (scene == nullptr)
+			{
+				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a terrain entity.");
+				return Entity::Null;
+			}
+
+			auto entity = scene->CreateEntity("Terrain");
+			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
+
+			scene->AddComponent<HBL2::Component::Link>(entity);
+			scene->AddComponent<HBL2::Component::StaticMesh>(entity);
+			scene->AddComponent<HBL2::Component::AnimationCurve>(entity);
+			scene->AddComponent<HBL2::Component::Terrain>(entity);
+
+			return entity;
+		}
 	}
 }

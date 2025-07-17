@@ -58,9 +58,9 @@ namespace HBL2
 		m_Context->Group<Component::Terrain>(Get<Component::StaticMesh, Component::AnimationCurve>)
 			.Each([&](Entity e, Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
 			{
-				if (terrain.Scale <= 0)
+				if (terrain.NoiseScale <= 0)
 				{
-					terrain.Scale = 0.0001f;
+					terrain.NoiseScale = 0.0001f;
 				}
 
 				if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::LOCAL)
@@ -105,9 +105,11 @@ namespace HBL2
 					}
 				}
 
-				if (glm::dot(terrain.OldViewerPosition, viewer.Translation) < terrain.SqrViewerMoveThresholdForChunkUpdate)
+				glm::vec3 scaledViewerPosition = viewer.Translation / terrain.Scale;
+
+				if (glm::dot(terrain.OldViewerPosition, scaledViewerPosition) < terrain.SqrViewerMoveThresholdForChunkUpdate)
 				{
-					terrain.OldViewerPosition = viewer.Translation;
+					terrain.OldViewerPosition = scaledViewerPosition;
 					return;
 				}
 
@@ -176,8 +178,8 @@ namespace HBL2
 
 				for (int i = 0; i < terrain.Octaves; i++)
 				{
-					float sampleX = (x - halfWidth + octaveOffsets[i].x) / terrain.Scale * frequency;
-					float sampleY = (y - halfHeight + octaveOffsets[i].y) / terrain.Scale * frequency;
+					float sampleX = (x - halfWidth + octaveOffsets[i].x) / terrain.NoiseScale * frequency;
+					float sampleY = (y - halfHeight + octaveOffsets[i].y) / terrain.NoiseScale * frequency;
 
 					float perlinValue = Math::PerlinNoise(sampleX, sampleY) * 2 - 1;
 					noiseHeight += perlinValue * amplitude;
@@ -473,10 +475,12 @@ namespace HBL2
 
 	void TerrainSystem::UpdateTerrainChunk(Entity chunk, Component::Terrain& terrain, Component::AnimationCurve& curve, const Component::Transform& viewer)
 	{
+		glm::vec3 scaledViewerPosition = viewer.Translation / terrain.Scale;
+
 		auto& terrainChunk = m_Context->GetComponent<Component::TerrainChunk>(chunk);
 		auto& chunkMesh = m_Context->GetComponent<Component::StaticMesh>(chunk);
 
-		float viewerDstFromNearestEdge = glm::sqrt(terrainChunk.ChunkBounds.SqrDistance({ viewer.Translation.x, 0.0f, viewer.Translation.z }));
+		float viewerDstFromNearestEdge = glm::sqrt(terrainChunk.ChunkBounds.SqrDistance({ scaledViewerPosition.x, 0.0f, scaledViewerPosition.z }));
 
 		bool visible = (viewerDstFromNearestEdge <= terrain.MaxViewDst);
 
@@ -549,8 +553,10 @@ namespace HBL2
 				}
 			});
 
-		int32_t currentChunkCoordX = (int32_t)(viewer.Translation.x / terrain.ChunkSize);
-		int32_t currentChunkCoordY = (int32_t)(viewer.Translation.z / terrain.ChunkSize);
+		glm::vec3 scaledViewerPosition = viewer.Translation / terrain.Scale;
+
+		int32_t currentChunkCoordX = (int32_t)(scaledViewerPosition.x / terrain.ChunkSize);
+		int32_t currentChunkCoordY = (int32_t)(scaledViewerPosition.z / terrain.ChunkSize);
 
 		// Iterate over the visible chunks around the viewer position.
 		for (int yOffset = -terrain.ChunksVisibleInViewDst; yOffset <= terrain.ChunksVisibleInViewDst; yOffset++)
@@ -605,7 +611,8 @@ namespace HBL2
 		Entity terrainChunk = m_Context->CreateEntity("TerrainChunk");
 
 		auto& tr = m_Context->GetComponent<Component::Transform>(terrainChunk);
-		tr.Translation = { (float)(chunkData.ViewedCoord.x * chunkSize), 0, (float)(chunkData.ViewedCoord.y * chunkSize) };
+		tr.Translation = { (float)(chunkData.ViewedCoord.x * chunkSize) * terrain.Scale, 0, (float)(chunkData.ViewedCoord.y * chunkSize) * terrain.Scale };
+		tr.Scale = { terrain.Scale, terrain.Scale, terrain.Scale };
 
 		auto& meshComponent = m_Context->AddComponent<Component::StaticMesh>(terrainChunk);
 		meshComponent.Enabled = false;
