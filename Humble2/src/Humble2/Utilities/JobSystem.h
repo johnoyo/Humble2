@@ -22,6 +22,18 @@ namespace HBL2
         ThreadSafeDeque() {}
         ThreadSafeDeque(const ThreadSafeDeque<T>& other) : m_Data(other.m_Data) {}
 
+        ThreadSafeDeque& operator=(const ThreadSafeDeque<T>& other)
+        {
+            if (this == &other)
+            {
+                return *this;
+            }
+
+            m_Data = other.m_Data;
+
+            return *this;
+        }
+
         inline void PushBack(const T& item)
         {
             std::scoped_lock lock(m_Lock);
@@ -46,6 +58,16 @@ namespace HBL2
         {
             std::scoped_lock lock(m_Lock);
             m_Data.clear();
+        }
+
+        inline uint32_t Size() const
+        {
+            return m_Data.size();
+        }
+
+        inline bool IsEmpty() const
+        {
+            return m_Data.empty();
         }
 
     private:

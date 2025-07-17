@@ -7,6 +7,8 @@
 
 #include "Physics\Physics.h"
 #include "Utilities\Bounds.h"
+#include "Utilities\JobSystem.h"
+#include "Utilities\Collections\StaticArray.h"
 
 #include <entt.hpp>
 #include <glm\gtx\hash.hpp>
@@ -67,7 +69,7 @@ namespace HBL2
 
 		struct HBL2_API Camera
 		{
-			enum class Type
+			enum class EType
 			{
 				Perspective = 0,
 				Orthographic = 1,
@@ -80,7 +82,7 @@ namespace HBL2
 			float Near = 0.1f;
 			float Far = 1000.f;
 			float AspectRatio = 1.778f;
-			Type Type = Type::Perspective;
+			EType Type = EType::Perspective;
 
 			glm::mat4 View = glm::mat4(1.f);
 			glm::mat4 Projection = glm::mat4(1.f);
@@ -113,7 +115,7 @@ namespace HBL2
 
 		struct HBL2_API Light
 		{
-			enum class Type
+			enum class EType
 			{
 				Directional = 0,
 				Point,
@@ -132,7 +134,7 @@ namespace HBL2
 			float NormalOffsetScale = 0.0f;
 			float FieldOfView = 60.0f;
 			
-			Type Type = Type::Directional;
+			EType Type = EType::Directional;
 			bool CastsShadows = false;
 			bool Enabled = true;
 		};
@@ -228,10 +230,15 @@ namespace HBL2
 			int32_t ChunkSize = 241;
 			float MaxViewDst = 450.f;
 			int32_t ChunksVisibleInViewDst = 0;
-			uint32_t LevelOfDetail = 0;
+			uint32_t InEditorPreviewLevelOfDetail = 0;
 
 			ENormaliseMode NormaliseMode = ENormaliseMode::GLOBAL;
 			uint64_t Seed = 5;
+
+			float ViewerMoveThresholdForChunkUpdate = 15.f;
+			float SqrViewerMoveThresholdForChunkUpdate = ViewerMoveThresholdForChunkUpdate * ViewerMoveThresholdForChunkUpdate;
+
+			glm::vec3 OldViewerPosition{};
 
 			float Scale = 25.f;
 			uint32_t Octaves = 5;
@@ -243,19 +250,133 @@ namespace HBL2
 
 			std::unordered_map<glm::ivec2, Entity> ChunksCache;
 
+			struct TerrainChunkData
+			{
+				glm::ivec2 ViewedCoord{};
+				std::vector<float> NoiseMap;
+			};
+
+			struct TerrainChunkMeshData
+			{
+				Entity Chunk = Entity::Null;
+				int32_t Lod = -1;
+				float* VertexBuffer = nullptr;
+				uint32_t VertexCount = 0;
+				uint32_t* IndexBuffer = nullptr;
+				uint32_t IndexCount = 0;
+			};
+
+			JobContext ChunkDataContext{};
+			ThreadSafeDeque<TerrainChunkData> ChunkDataQueue;
+
+			JobContext ChunkMeshDataContext{};
+			ThreadSafeDeque<TerrainChunkMeshData> ChunkMeshDataQueue;
+
+			struct LodInfo
+			{
+				int32_t Lod;
+				float VisibleDstThreshold;
+			};
+
+			StaticArray<LodInfo, 3> DetailLevels;
+
 			Handle<Material> Material;
 
 			bool Regenerate = true;
+
+			Terrain() = default;
+
+			Terrain(const Terrain& other)
+				: ChunkSize(other.ChunkSize),
+				  MaxViewDst(other.MaxViewDst),
+				  ChunksVisibleInViewDst(other.ChunksVisibleInViewDst),
+				  InEditorPreviewLevelOfDetail(other.InEditorPreviewLevelOfDetail),
+				  NormaliseMode(other.NormaliseMode),
+				  Seed(other.Seed),
+				  Scale(other.Scale),
+				  Octaves(other.Octaves),
+				  Persistance(other.Persistance),
+				  Lacunarity(other.Lacunarity),
+				  Offset(other.Offset),
+				  HeightMultiplier(other.HeightMultiplier),
+				  ChunksCache(other.ChunksCache),
+				  Material(other.Material),
+				  Regenerate(other.Regenerate)
+			{
+				JobSystem::Get().Wait(ChunkDataContext);
+				JobSystem::Get().Wait(other.ChunkDataContext);
+				ChunkDataQueue = other.ChunkDataQueue;
+
+				JobSystem::Get().Wait(ChunkMeshDataContext);
+				JobSystem::Get().Wait(other.ChunkMeshDataContext);
+				ChunkMeshDataQueue = other.ChunkMeshDataQueue;
+
+				DetailLevels = other.DetailLevels;
+			}
+
+			Terrain& operator=(const Terrain& other)
+			{
+				if (this == &other)
+				{
+					return *this;
+				}
+
+				ChunkSize = other.ChunkSize;
+				MaxViewDst = other.MaxViewDst;
+				ChunksVisibleInViewDst = other.ChunksVisibleInViewDst;
+				InEditorPreviewLevelOfDetail = other.InEditorPreviewLevelOfDetail;
+
+				NormaliseMode = other.NormaliseMode;
+				Seed = other.Seed;
+
+				Scale = other.Scale;
+				Octaves = other.Octaves;
+				Persistance = other.Persistance;
+				Lacunarity = other.Lacunarity;
+				Offset = other.Offset;
+
+				HeightMultiplier = other.HeightMultiplier;
+
+				ChunksCache = other.ChunksCache;
+
+				JobSystem::Get().Wait(ChunkDataContext);
+				JobSystem::Get().Wait(other.ChunkDataContext);
+				ChunkDataQueue = other.ChunkDataQueue;
+
+				JobSystem::Get().Wait(ChunkMeshDataContext);
+				JobSystem::Get().Wait(other.ChunkMeshDataContext);
+				ChunkMeshDataQueue = other.ChunkMeshDataQueue;
+
+				DetailLevels = other.DetailLevels;
+
+				Material = other.Material;
+				Regenerate = other.Regenerate;
+
+				return *this;
+			}
 		};
 
 		struct HBL2_API TerrainChunk
 		{
+			struct LodMesh
+			{
+				int32_t Lod = 0;
+				bool HasMesh = false;
+				bool HasRequestedMesh = false;
+
+				Handle<Buffer> VertexBuffer;
+				Handle<Buffer> IndexBuffer;
+				Handle<Mesh> Mesh;
+			};
+
+			std::vector<float> NoiseMap;
 			Bounds ChunkBounds;
 			bool Visible = false;
 			bool VisibleLastUpdate = false;
+			uint32_t LevelOfDetail = 0;
+			int32_t PreviousLodIndex = -1;
 
-			Handle<Buffer> VertexBuffer;
-			Handle<Buffer> IndexBuffer;
+			StaticArray<LodMesh, 6> LodMeshes;
 		};
 
 		struct HBL2_API AnimationCurve

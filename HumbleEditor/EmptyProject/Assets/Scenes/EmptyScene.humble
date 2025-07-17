@@ -1,6 +1,6 @@
 Scene: EmptyScene
 Entities:
-  - Entity: 15
+  - Entity: 14
     Component::Tag:
       Tag: Ring(Clone)
     Component::ID:
@@ -21,7 +21,7 @@ Entities:
         UUID: 6460534838780001801
         MeshIndex: 0
         SubMeshIndex: 0
-  - Entity: 14
+  - Entity: 13
     Component::Tag:
       Tag: Saturn(Clone)
     Component::ID:
@@ -45,7 +45,7 @@ Entities:
         UUID: 17024591911543769407
         MeshIndex: 0
         SubMeshIndex: 0
-  - Entity: 11
+  - Entity: 12
     Component::Tag:
       Tag: Camera
     Component::ID:
@@ -65,12 +65,12 @@ Entities:
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 2.33251834
+      Aspect Ratio: 2.017699
       Exposure: 1
       Gamma: 2.20000005
       Zoom Level: 300
       Type: 0
-  - Entity: 10
+  - Entity: 11
     Component::Tag:
       Tag: Monkeh
     Component::ID:
@@ -96,8 +96,8 @@ Entities:
       Sound: 374884297105595585
     NewComponent:
       Value: 1
-      SceneHandle: 11559080649116764721
-  - Entity: 9
+      SceneHandle: 0
+  - Entity: 10
     Component::Tag:
       Tag: Sprite
     Component::ID:
@@ -114,15 +114,15 @@ Entities:
     Component::Sprite:
       Enabled: true
       Material: 5092745295480585008
-  - Entity: 8
+  - Entity: 9
     Component::Tag:
       Tag: Light
     Component::ID:
       ID: 5092772676877043712
     Component::Transform:
-      Translation: [0, 3.5, 4.5]
-      Rotation: [10.5096416, 0, 0]
-      Scale: [0.99999994, 0.99999994, 0.99999994]
+      Translation: [0, 11.8970108, 11.9897928]
+      Rotation: [10.5096102, 0, 0]
+      Scale: [0.99999994, 0.999999881, 0.999999881]
       Static: false
     Component::Link:
       Parent: 0
@@ -140,14 +140,14 @@ Entities:
       ConstantBias: 1.20000005
       SlopeBias: 1
       NormalOffsetScale: 0.00200000009
-      FieldOfView: 117
-  - Entity: 7
+      FieldOfView: 117.477997
+  - Entity: 8
     Component::Tag:
       Tag: Ground
     Component::ID:
       ID: 15074627630896146432
     Component::Transform:
-      Translation: [0, -2.19295812, 0]
+      Translation: [0, -7.79292631, 0]
       Rotation: [0, 0, 0]
       Scale: [13.9300184, 1, 13.4024048]
       Static: false
@@ -170,7 +170,7 @@ Entities:
     Component::BoxCollider:
       Enabled: true
       Size: [1, 1, 1]
-  - Entity: 6
+  - Entity: 7
     Component::Tag:
       Tag: Sky
     Component::ID:
@@ -182,8 +182,8 @@ Entities:
       Static: false
     Component::SkyLight:
       Enabled: true
-      EquirectangularMap: 8406239916870616777
-  - Entity: 5
+      EquirectangularMap: 6203812838040720333
+  - Entity: 6
     Component::Tag:
       Tag: Cube
     Component::ID:
@@ -212,7 +212,7 @@ Entities:
     Component::BoxCollider:
       Enabled: true
       Size: [1, 1, 1]
-  - Entity: 4
+  - Entity: 5
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
@@ -245,7 +245,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 3
+  - Entity: 4
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
@@ -278,7 +278,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 2
+  - Entity: 3
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
@@ -311,7 +311,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 1
+  - Entity: 2
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
@@ -344,7 +344,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 0
+  - Entity: 1
     Component::Tag:
       Tag: Sphere
     Component::ID:
@@ -373,6 +373,48 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
+  - Entity: 0
+    Component::Tag:
+      Tag: Terrain
+    Component::ID:
+      ID: 2743738841781062144
+    Component::Transform:
+      Translation: [0, -5.6013031, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        - 3889504334965337088
+        - 3737024980662518784
+        - 3918552708468023808
+        - 11572998486870257664
+        - 1402038867234593536
+        - 17135332171148875776
+        - 5510659295364480000
+        - 5053257531650306048
+        - 2199053299198578688
+    Component::StaticMesh:
+      Enabled: false
+      Material: 2424841968117342138
+      Mesh:
+        UUID: 0
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Terrain:
+      NormaliseMode: 1
+      Seed: 5
+      HeightMultiplier: 10
+      Regenerate: false
+      Material: 2424841968117342138
+    Component::AnimationCurve:
+      Preset: 1
+      KeyFrames:
+        - [0, 0]
+        - [0.531428576, 0.147239268]
+        - [0.731428564, 0.828220844]
+        - [1, 1]
 User Systems:
   - 1446947720767051862
 User Components:

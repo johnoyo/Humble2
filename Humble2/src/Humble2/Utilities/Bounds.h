@@ -22,10 +22,10 @@ struct Bounds {
         return { (mn + mx) * 0.5f, mx - mn };
     }
 
-    constexpr glm::vec3  size()    const { return Extents * 2.0f; }
-    constexpr glm::vec3  min()     const { return Center - Extents; }
-    constexpr glm::vec3  max()     const { return Center + Extents; }
-    constexpr float      volume()  const
+    constexpr glm::vec3 size() const { return Extents * 2.0f; }
+    constexpr glm::vec3 min() const { return Center - Extents; }
+    constexpr glm::vec3 max() const { return Center + Extents; }
+    constexpr float volume() const
     {
         glm::vec3 s = size(); return s.x * s.y * s.z;
     }

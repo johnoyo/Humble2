@@ -31,8 +31,8 @@ namespace HBL2
 
 	protected:
 		RenderPassContext m_RenderPassContext;
-		RenderPassEvent m_InjectionPoint;
-		const char* m_PassName;
+		RenderPassEvent m_InjectionPoint = RenderPassEvent::AfterRenderingPostProcess;
+		const char* m_PassName = "";
 	};
 
 	/*

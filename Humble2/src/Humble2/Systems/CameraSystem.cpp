@@ -14,7 +14,7 @@ namespace HBL2
 			{
 				if (camera.Enabled)
 				{
-					if (camera.Type == Component::Camera::Type::Perspective)
+					if (camera.Type == Component::Camera::EType::Perspective)
 					{
 						camera.Projection = glm::perspectiveRH_ZO(glm::radians(camera.Fov), camera.AspectRatio, camera.Near, camera.Far);
 					}
@@ -45,7 +45,7 @@ namespace HBL2
 				{
 					if (!transform.Static)
 					{
-						if (camera.Type == Component::Camera::Type::Perspective)
+						if (camera.Type == Component::Camera::EType::Perspective)
 						{
 							camera.Projection = glm::perspectiveRH_ZO(glm::radians(camera.Fov), camera.AspectRatio, camera.Near, camera.Far);
 						}

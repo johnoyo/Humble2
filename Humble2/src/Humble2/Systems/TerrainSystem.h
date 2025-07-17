@@ -22,11 +22,15 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
-		std::vector<float> GenerateNoiseMap(Component::Terrain& terrain, const glm::vec2& center);
+		std::vector<float> GenerateNoiseMap(const Component::Terrain& terrain, const glm::vec2& center);
 		void GenerateTerrainMeshData(const Span<const float> heightMap, uint32_t width, uint32_t height, float heightMultiplier, Component::AnimationCurve& curve, uint32_t levelOfDetail);
-		Handle<Mesh> GenerateTerrainChunkMesh(const Span<const float> heightMap, uint32_t width, uint32_t height, float heightMultiplier, Component::AnimationCurve& curve, uint32_t levelOfDetail);
+		void GenerateTerrainChunkMesh(const Span<const float> heightMap, uint32_t width, uint32_t height, float heightMultiplier, Component::AnimationCurve& curve, Component::Terrain::TerrainChunkMeshData& outChunkData);
 
-		Entity CreateChunk(const glm::ivec2& coord, int32_t chunkSize, UUID parent, Handle<Mesh> mesh, Handle<Material> material);
+		void UpdateTerrainChunk(Entity chunk, Component::Terrain& terrain, Component::AnimationCurve& curve, const Component::Transform& viewer);
+		void UpdateVisibleChunks(Component::Terrain& terrain, Component::AnimationCurve& curve, const Component::Transform& viewer);
+
+		Entity CreateEmptyChunk(const Component::Terrain& terrain, Component::Terrain::TerrainChunkData& chunkData, int32_t chunkSize, UUID parent);
+		void CreateChunkMesh(Component::Terrain::TerrainChunkMeshData& chunkMeshData);
 		Entity GetMainCamera();
 
 	private:

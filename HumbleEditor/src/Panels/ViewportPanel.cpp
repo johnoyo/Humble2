@@ -103,7 +103,7 @@ namespace HBL2
 				}
 
 				auto& camera = m_Context->GetComponent<HBL2::Component::Camera>(m_Context->MainCamera);
-				ImGuiRenderer::Instance->Gizmos_SetOrthographic(camera.Type == HBL2::Component::Camera::Type::Orthographic);
+				ImGuiRenderer::Instance->Gizmos_SetOrthographic(camera.Type == HBL2::Component::Camera::EType::Orthographic);
 
 				// Set window for rendering into.
 				ImGuiRenderer::Instance->Gizmos_SetDrawlist();

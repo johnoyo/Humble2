@@ -68,7 +68,8 @@ namespace HBL2
 
 	static CaptureMatrices g_CaptureMatrices =
 	{
-		.View = {
+		.View =
+		{
 			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
 			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
 			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
@@ -1131,7 +1132,7 @@ namespace HBL2
 								.VertexOffset = subMesh.VertexOffset,
 								.InstanceCount = subMesh.InstanceCount,
 								.InstanceOffset = subMesh.InstanceOffset,
-								});
+							});
 
 							// Include only opaque objects in depth pre-pass.
 							m_PrePassStaticMeshDraws.Insert({
@@ -1149,7 +1150,7 @@ namespace HBL2
 								.VertexOffset = subMesh.VertexOffset,
 								.InstanceCount = subMesh.InstanceCount,
 								.InstanceOffset = subMesh.InstanceOffset,
-								});
+							});
 						}
 						else
 						{
@@ -1168,7 +1169,7 @@ namespace HBL2
 								.VertexOffset = subMesh.VertexOffset,
 								.InstanceCount = subMesh.InstanceCount,
 								.InstanceOffset = subMesh.InstanceOffset,
-								});
+							});
 						}
 
 						if (material->ReceiveShadows)
@@ -1188,7 +1189,7 @@ namespace HBL2
 								.VertexOffset = subMesh.VertexOffset,
 								.InstanceCount = subMesh.InstanceCount,
 								.InstanceOffset = subMesh.InstanceOffset,
-								});
+							});
 						}
 					}
 				});
@@ -1232,7 +1233,7 @@ namespace HBL2
 								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawDataSprite),
 								.VertexCount = 6,
-								});
+							});
 
 							// Include only opaque objects in depth pre-pass.
 							m_PrePassSpriteDraws.Insert({
@@ -1244,7 +1245,7 @@ namespace HBL2
 								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawDataSprite),
 								.VertexCount = 6,
-								});
+							});
 						}
 						else
 						{
@@ -1257,7 +1258,7 @@ namespace HBL2
 								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawDataSprite),
 								.VertexCount = 6,
-								});
+							});
 						}
 					}
 				});
@@ -1300,13 +1301,13 @@ namespace HBL2
 
 					switch (light.Type)
 					{
-					case Component::Light::Type::Directional:
+					case Component::Light::EType::Directional:
 						lightType = 0.0f;
 						m_LightData.LightShadowData[(int)m_LightData.LightCount].y = light.ConstantBias;
 						m_LightData.LightShadowData[(int)m_LightData.LightCount].z = light.SlopeBias;
 						m_LightData.LightShadowData[(int)m_LightData.LightCount].w = light.NormalOffsetScale;
 						break;
-					case Component::Light::Type::Point:
+					case Component::Light::EType::Point:
 						lightType = 1.0f;
 						m_LightData.LightMetadata[(int)m_LightData.LightCount].y = attenuation.constant;
 						m_LightData.LightMetadata[(int)m_LightData.LightCount].z = attenuation.linear;
@@ -1316,7 +1317,7 @@ namespace HBL2
 						m_LightData.LightShadowData[(int)m_LightData.LightCount].z = light.SlopeBias;
 						m_LightData.LightShadowData[(int)m_LightData.LightCount].w = light.NormalOffsetScale;
 						break;
-					case Component::Light::Type::Spot:
+					case Component::Light::EType::Spot:
 						lightType = 2.0f;
 						m_LightData.LightMetadata[(int)m_LightData.LightCount].y = glm::cos(glm::radians(light.InnerCutOff));
 						m_LightData.LightMetadata[(int)m_LightData.LightCount].z = glm::cos(glm::radians(light.OuterCutOff));
@@ -1341,9 +1342,9 @@ namespace HBL2
 
 					glm::vec3 lightPos = glm::vec3(transform.WorldMatrix * glm::vec4(0.0, 0.0, 0.0, 1.0));
 					glm::vec3 lightDir = normalize(worldDirection);
-					glm::vec3 lightTarget = lightPos + lightDir; // look _towards_ this point
+					glm::vec3 lightTarget = lightPos + lightDir; // look towards this point
 
-					// Choose an up vector that’s not colinear with your direction:
+					// Choose an up vector thats not colinear with your direction:
 					glm::vec3 lightUp = glm::abs(glm::dot(lightDir, glm::vec3(0, 1, 0))) > 0.99f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
 
 					// If your light direction is nearly parallel to up, pick a different up vector:

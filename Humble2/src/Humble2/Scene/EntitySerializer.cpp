@@ -12,6 +12,11 @@ namespace HBL2
 
 	void EntitySerializer::Serialize(YAML::Emitter& out)
 	{
+		if (m_Scene->HasComponent<Component::TerrainChunk>(m_Entity))
+		{
+			return;
+		}
+
 		out << YAML::BeginMap;
 		out << YAML::Key << "Entity" << YAML::Value << (uint32_t)m_Entity;
 
@@ -366,6 +371,7 @@ namespace HBL2
 
 			auto& t = m_Scene->GetComponent<Component::Terrain>(m_Entity);
 
+			out << YAML::Key << "NormaliseMode" << YAML::Value << (uint32_t)t.NormaliseMode;
 			out << YAML::Key << "Seed" << YAML::Value << t.Seed;
 			out << YAML::Key << "HeightMultiplier" << YAML::Value << t.HeightMultiplier;
 			out << YAML::Key << "Regenerate" << YAML::Value << t.Regenerate;
@@ -524,10 +530,10 @@ namespace HBL2
 				switch (cameraComponent["Type"].as<int>())
 				{
 				case 1:
-					camera.Type = Component::Camera::Type::Perspective;
+					camera.Type = Component::Camera::EType::Perspective;
 					break;
 				case 2:
-					camera.Type = Component::Camera::Type::Orthographic;
+					camera.Type = Component::Camera::EType::Orthographic;
 					break;
 				default:
 					break;
@@ -578,13 +584,13 @@ namespace HBL2
 				switch (light_NewComponent["Type"].as<int>())
 				{
 				case 1:
-					light.Type = Component::Light::Type::Directional;
+					light.Type = Component::Light::EType::Directional;
 					break;
 				case 2:
-					light.Type = Component::Light::Type::Point;
+					light.Type = Component::Light::EType::Point;
 					break;
 				case 3:
-					light.Type = Component::Light::Type::Spot;
+					light.Type = Component::Light::EType::Spot;
 					break;
 				default:
 					break;
@@ -673,6 +679,7 @@ namespace HBL2
 		if (t_NewComponent)
 		{
 			auto& t = m_Scene->AddComponent<Component::Terrain>(m_Entity);
+			t.NormaliseMode = (Component::Terrain::ENormaliseMode)t_NewComponent["NormaliseMode"].as<uint32_t>();
 			t.Seed = t_NewComponent["Seed"].as<uint64_t>();
 			t.HeightMultiplier = t_NewComponent["HeightMultiplier"].as<float>();
 			t.Regenerate = t_NewComponent["Regenerate"].as<bool>();

@@ -152,28 +152,16 @@ namespace HBL2
 						ImGui::SliderFloat("Gamma", &camera.Gamma, 0, 4);
 						ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
 
-						std::string selectedProjection = camera.Type == HBL2::Component::Camera::Type::Perspective ? "Perspective" : "Orthographic";
-						std::string projectionTypes[2] = { "Perspective", "Orthographic" };
-
-						if (ImGui::BeginCombo("Type", selectedProjection.c_str()))
+						// Camera type.
 						{
-							for (const auto& type : projectionTypes)
+							const char* options[] = { "Perspective", "Orthographic" };
+							int currentItem = (int)camera.Type;
+
+							if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
 							{
-								bool isSelected = (selectedProjection == type);
-								if (ImGui::Selectable(type.c_str(), isSelected))
-								{
-									selectedProjection = type;
-								}
-
-								if (isSelected)
-								{
-									ImGui::SetItemDefaultFocus();
-								}
+								camera.Type = (HBL2::Component::Camera::EType)currentItem;
 							}
-							ImGui::EndCombo();
 						}
-
-						camera.Type = selectedProjection == "Perspective" ? HBL2::Component::Camera::Type::Perspective : HBL2::Component::Camera::Type::Orthographic;
 					}
 				});
 
@@ -253,28 +241,19 @@ namespace HBL2
 
 				DrawComponent<HBL2::Component::Light>("Light", m_ActiveScene, [this](HBL2::Component::Light& light)
 				{
-					ImGui::Checkbox("Enabled", &light.Enabled);					
-					
-					std::string lightTypes[3] = { "Directional", "Point", "Spot" };
-					std::string selectedType = lightTypes[(int)light.Type];
+					ImGui::Checkbox("Enabled", &light.Enabled);
 
-					if (ImGui::BeginCombo("Type", selectedType.c_str()))
+					// Light type.
 					{
-						for (const auto& type : lightTypes)
-						{
-							bool isSelected = (selectedType == type);
-							if (ImGui::Selectable(type.c_str(), isSelected))
-							{
-								selectedType = type;
-							}
+						const char* options[] = { "Directional", "Point", "Spot" };
+						int currentItem = (int)light.Type;
 
-							if (isSelected)
-							{
-								ImGui::SetItemDefaultFocus();
-							}
+						if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
+						{
+							light.Type = (HBL2::Component::Light::EType)currentItem;
 						}
-						ImGui::EndCombo();
 					}
+
 					ImGui::Checkbox("CastsShadows", &light.CastsShadows);
 					ImGui::SliderFloat("Intensity", &light.Intensity, 0, 30);
 
@@ -286,18 +265,8 @@ namespace HBL2
 					ImGui::SliderFloat("FieldOfView", &light.FieldOfView, 0.0f, 120.0f);
 
 					// Set type back.
-					if (selectedType == "Directional")
+					if (light.Type == HBL2::Component::Light::EType::Spot)
 					{
-						light.Type = HBL2::Component::Light::Type::Directional;
-					}
-					else if (selectedType == "Point")
-					{
-						light.Type = HBL2::Component::Light::Type::Point;
-						ImGui::SliderFloat("Distance", &light.Distance, 0, 150);
-					}
-					else
-					{
-						light.Type = HBL2::Component::Light::Type::Spot;
 						ImGui::SliderFloat("Distance", &light.Distance, 0, 150);
 						ImGui::SliderFloat("InnerCutOff", &light.InnerCutOff, 0, 50);
 						ImGui::SliderFloat("OuterCutOff", &light.OuterCutOff, 0, 50);
@@ -388,39 +357,16 @@ namespace HBL2
 				{
 					ImGui::Checkbox("Enabled", &rb2d.Enabled);
 
-					std::string selectedType = "Static";
-
-					switch (rb2d.Type)
+					// Rigidbody type.
 					{
-					case Physics::BodyType::Static: selectedType = "Static"; break;
-					case Physics::BodyType::Dynamic: selectedType = "Dynamic"; break;
-					case Physics::BodyType::Kinematic: selectedType = "Kinematic"; break;
-					}
+						const char* options[] = { "Static", "Dynamic", "Kinematic" };
+						int currentItem = (int)rb2d.Type;
 
-					std::string bodyTypes[3] = { "Static", "Dynamic", "Kinematic"};
-
-					if (ImGui::BeginCombo("Type", selectedType.c_str()))
-					{
-						for (const auto& type : bodyTypes)
+						if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
 						{
-							bool isSelected = (selectedType == type);
-							if (ImGui::Selectable(type.c_str(), isSelected))
-							{
-								selectedType = type;
-								rb2d.Dirty = true;
-							}
-
-							if (isSelected)
-							{
-								ImGui::SetItemDefaultFocus();
-							}
+							rb2d.Type = (Physics::BodyType)currentItem;
 						}
-						ImGui::EndCombo();
 					}
-
-					if (selectedType == "Static") rb2d.Type = Physics::BodyType::Static;
-					else if (selectedType == "Dynamic") rb2d.Type = Physics::BodyType::Dynamic;
-					else if (selectedType == "Kinematic") rb2d.Type = Physics::BodyType::Kinematic;
 
 					ImGui::Checkbox("FixedRotation", &rb2d.FixedRotation);
 				});
@@ -452,38 +398,16 @@ namespace HBL2
 						rb.Dirty = true;
 					}
 
-					std::string selectedType = "Static";
-
-					switch (rb.Type)
+					// Rigidbody type.
 					{
-					case Physics::BodyType::Static: selectedType = "Static"; break;
-					case Physics::BodyType::Dynamic: selectedType = "Dynamic"; break;
-					case Physics::BodyType::Kinematic: selectedType = "Kinematic"; break;
-					}
+						const char* options[] = { "Static", "Dynamic", "Kinematic" };
+						int currentItem = (int)rb.Type;
 
-					std::string bodyTypes[3] = { "Static", "Dynamic", "Kinematic" };
-
-					if (ImGui::BeginCombo("Type", selectedType.c_str()))
-					{
-						for (const auto& type : bodyTypes)
+						if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
 						{
-							bool isSelected = (selectedType == type);
-							if (ImGui::Selectable(type.c_str(), isSelected))
-							{
-								selectedType = type;
-							}
-
-							if (isSelected)
-							{
-								ImGui::SetItemDefaultFocus();
-							}
+							rb.Type = (Physics::BodyType)currentItem;
 						}
-						ImGui::EndCombo();
 					}
-
-					if (selectedType == "Static") rb.Type = Physics::BodyType::Static;
-					else if (selectedType == "Dynamic") rb.Type = Physics::BodyType::Dynamic;
-					else if (selectedType == "Kinematic") rb.Type = Physics::BodyType::Kinematic;
 				});
 
 				DrawComponent<HBL2::Component::BoxCollider>("BoxCollider", m_ActiveScene, [this](HBL2::Component::BoxCollider& bc)
@@ -507,8 +431,19 @@ namespace HBL2
 
 				DrawComponent<HBL2::Component::Terrain>("Terrain", m_ActiveScene, [this](HBL2::Component::Terrain& t)
 				{
+					// Normalisation mode.
+					{
+						const char* options[] = { "Global", "Local" };
+						int currentItem = (int)t.NormaliseMode;
+
+						if (ImGui::Combo("NormaliseMode", &currentItem, options, IM_ARRAYSIZE(options)))
+						{
+							t.NormaliseMode = (HBL2::Component::Terrain::ENormaliseMode)currentItem;
+						}
+					}
+
 					ImGui::DragInt("Seed", (int*)& t.Seed);
-					ImGui::DragInt("LevelOfDetail", (int*)& t.LevelOfDetail, 1.f, 0, 6);
+					ImGui::DragInt("InEditorPreviewLevelOfDetail", (int*)& t.InEditorPreviewLevelOfDetail, 1.f, 0, 6);
 					ImGui::DragFloat("HeightMultiplier", &t.HeightMultiplier);
 					ImGui::DragFloat2("Offset", glm::value_ptr(t.Offset));
 
@@ -533,6 +468,12 @@ namespace HBL2
 					{
 						t.Regenerate = true;
 					}
+				});
+
+				DrawComponent<HBL2::Component::TerrainChunk>("TerrainChunk", m_ActiveScene, [this](HBL2::Component::TerrainChunk& tc)
+				{
+					ImGui::Checkbox("Visible", &tc.Visible);
+					ImGui::DragInt("LevelOfDetail", (int*)&tc.LevelOfDetail);
 				});
 
 				DrawComponent<HBL2::Component::AnimationCurve>("AnimationCurve", m_ActiveScene, [this](HBL2::Component::AnimationCurve& curve)
