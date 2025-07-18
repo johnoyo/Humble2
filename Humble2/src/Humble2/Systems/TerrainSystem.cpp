@@ -124,12 +124,16 @@ namespace HBL2
 			return;
 		}
 
+		// Clean up resources of preview terrain.
 		m_ResourceManager->DeleteBuffer(m_IndexBuffer);
 		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
 		m_ResourceManager->DeleteMesh(m_Mesh);
 
+		// Clean up resources of terrain chunks.
+		std::vector<Entity> chunks;
+
 		m_Context->View<Component::TerrainChunk>()
-			.Each([&](Component::TerrainChunk& terrainChunk)
+			.Each([&](Entity chunk, Component::TerrainChunk& terrainChunk)
 			{
 				for (auto& lodMesh : terrainChunk.LodMeshes)
 				{
@@ -137,6 +141,34 @@ namespace HBL2
 					m_ResourceManager->DeleteBuffer(lodMesh.VertexBuffer);
 					m_ResourceManager->DeleteMesh(lodMesh.Mesh);
 				}
+
+				chunks.push_back(chunk);
+			});
+
+		// NOTE: We need to do such excessive clean up here because of play mode logic.
+		//		 When we enter play mode, we clone the scene, unload it (call OnDestroy) and load the cloned one.
+		//		 When exiting play mode, we unload and destroy the cloned scene and the we load the initial one.
+		//		 We want to preserve any unsaved changes made to that scene before entering play mode, so we dont completely delete and reload from disk.
+		//		 So we have to carefully clean up the scene, so when it gets loaded again after exiting play mode, it has a valid state.
+		//		 In this system its more complicated since we have to reinstantiate the terrain chunks each time from scratch, they are not serialized.
+
+		// Destroy chunk entities.
+		for (auto chunk : chunks)
+		{
+			m_Context->DestroyEntity(chunk);
+		}
+
+		// Clear the chunk cache stored in terrains.
+		m_Context->View<Component::Terrain>()
+			.Each([&](Component::Terrain& terrain)
+			{
+				terrain.ChunksCache.clear();
+
+				JobSystem::Get().Wait(terrain.ChunkDataContext);
+				terrain.ChunkDataQueue.Reset();
+
+				JobSystem::Get().Wait(terrain.ChunkMeshDataContext);
+				terrain.ChunkMeshDataQueue.Reset();
 			});
 	}
 

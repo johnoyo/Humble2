@@ -114,6 +114,8 @@ namespace HBL2
 		Renderer::Instance->Initialize();
 		ImGuiRenderer::Instance->Initialize();
 
+		m_Specification.Context->OnAttach();
+
 		m_Specification.Context->OnCreate();
 
 		Window::Instance->DispatchMainLoop([&]()
@@ -140,12 +142,13 @@ namespace HBL2
 
 		m_Specification.Context->OnDestroy();
 
+		m_Specification.Context->OnDetach();
+
 		Shutdown();
 	}
 
 	void Application::Shutdown()
 	{
-
 		ImGuiRenderer::Instance->Clean();
 		delete ImGuiRenderer::Instance;
 		ImGuiRenderer::Instance = nullptr;

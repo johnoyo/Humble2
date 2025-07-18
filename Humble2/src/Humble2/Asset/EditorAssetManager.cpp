@@ -591,11 +591,11 @@ namespace HBL2
 		scene->RegisterSystem(new TransformSystem);
 		scene->RegisterSystem(new LinkSystem);
 		scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
+		scene->RegisterSystem(new TerrainSystem);
 		scene->RegisterSystem(new RenderingSystem);
 		scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
 		scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 		scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
-		scene->RegisterSystem(new TerrainSystem);
 		scene->RegisterSystem(new AnimationCurveSystem);
 
 		SceneSerializer sceneSerializer(scene);
@@ -860,11 +860,11 @@ namespace HBL2
 			scene->RegisterSystem(new TransformSystem);
 			scene->RegisterSystem(new LinkSystem);
 			scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
+			scene->RegisterSystem(new TerrainSystem);
 			scene->RegisterSystem(new RenderingSystem);
 			scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
 			scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 			scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
-			scene->RegisterSystem(new TerrainSystem);
 			scene->RegisterSystem(new AnimationCurveSystem);
 
 			asset->Indentifier = sceneHandle.Pack();

@@ -27,11 +27,13 @@ namespace HBL2
 	public:
 		virtual ~ISystem() = default;
 
+		virtual void OnAttach()				{};
 		virtual void OnCreate()				= 0;
 		virtual void OnUpdate(float ts)		= 0;
 		virtual void OnFixedUpdate()        {}
 		virtual void OnGuiRender(float ts)	{}
 		virtual void OnDestroy()			{}
+		virtual void OnDetach()				{}
 
 		void SetContext(Scene* context)
 		{

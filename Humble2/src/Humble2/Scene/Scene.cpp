@@ -40,6 +40,12 @@ namespace HBL2
         src->View<Component::ID>()
             .Each([&](Entity entity, Component::ID& id)
             {
+                // Skip entities that are a terrain chunk.
+                if (src->m_Registry.any_of<Component::TerrainChunk>(entity))
+                {
+                    return;
+                }
+
                 const auto& name = src->m_Registry.get<Component::Tag>(entity).Name;
 
                 Entity newEntity = dst->m_Registry.create(entity);
@@ -58,6 +64,12 @@ namespace HBL2
             src->View<Component>()
                 .Each([&](auto entity, const auto& component)
                 {
+                    // Skip entities that are a terrain chunk.
+                    if (src->m_Registry.any_of<HBL2::Component::TerrainChunk>(entity))
+                    {
+                        return;
+                    }
+
                     dst->m_Registry.emplace_or_replace<Component>(entity, component);
                 });
         };
@@ -81,17 +93,19 @@ namespace HBL2
         copy_component(Component::PrefabInstance{});
         copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
-        copy_component(Component::TerrainChunk{});
+
+        // Do not copy the TerrainChunk component
+        // copy_component(Component::TerrainChunk{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
         dst->RegisterSystem(new LinkSystem);
         dst->RegisterSystem(new CameraSystem, SystemType::Runtime);
+        dst->RegisterSystem(new TerrainSystem);
         dst->RegisterSystem(new RenderingSystem);
         dst->RegisterSystem(new SoundSystem, SystemType::Runtime);
         dst->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
         dst->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
-        dst->RegisterSystem(new TerrainSystem);
         dst->RegisterSystem(new AnimationCurveSystem);
 
         // Register any user systems to new scene.

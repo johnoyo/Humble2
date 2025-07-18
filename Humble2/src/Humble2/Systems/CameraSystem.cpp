@@ -7,6 +7,22 @@
 
 namespace HBL2
 {
+	void CameraSystem::OnAttach()
+	{
+		m_Context->Group<Component::Camera>(Get<Component::Transform>)
+			.Each([&](Entity entity, Component::Camera& camera, Component::Transform& transform)
+			{
+				if (camera.Enabled)
+				{
+					if (camera.Primary)
+					{
+						m_Context->MainCamera = entity;
+						CalculateFrustum(camera);
+					}
+				}
+			});
+	}
+
 	void CameraSystem::OnCreate()
 	{
 		m_Context->Group<Component::Camera>(Get<Component::Transform>)
@@ -26,12 +42,6 @@ namespace HBL2
 
 					camera.View = glm::inverse(transform.WorldMatrix);
 					camera.ViewProjectionMatrix = camera.Projection * camera.View;
-
-					if (camera.Primary)
-					{
-						m_Context->MainCamera = entity;
-						CalculateFrustum(camera);
-					}
 				}
 			});
 	}

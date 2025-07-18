@@ -4,7 +4,7 @@ namespace HBL2
 {
 	namespace Runtime
 	{
-		void RuntimeContext::OnCreate()
+		void RuntimeContext::OnAttach()
 		{
 			HBL2::Context::Mode = HBL2::Mode::Runtime;
 			HBL2::AssetManager::Instance = new HBL2::EditorAssetManager;
@@ -40,6 +40,13 @@ namespace HBL2
 			});
 
 			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
+
+			// NOTE: The OnAttach method of the registered systems will be called from the SceneManager class.
+		}
+
+		void RuntimeContext::OnCreate()
+		{
+			// NOTE: The OnCreate method of the registered systems will be called from the SceneManager class.
 		}
 
 		void RuntimeContext::OnUpdate(float ts)
@@ -115,6 +122,19 @@ namespace HBL2
 			ShaderUtilities::Get().DeleteBuiltInShaders();
 			ShaderUtilities::Get().DeleteBuiltInMaterials();
 			MeshUtilities::Get().DeleteBuiltInMeshes();
+		}
+
+		void RuntimeContext::OnDetach()
+		{
+			if (m_ActiveScene == nullptr)
+			{
+				return;
+			}
+
+			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+			{
+				system->OnDetach();
+			}
 		}
 
 		bool RuntimeContext::OpenProject()

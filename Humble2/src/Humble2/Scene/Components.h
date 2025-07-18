@@ -300,19 +300,11 @@ namespace HBL2
 				  Lacunarity(other.Lacunarity),
 				  Offset(other.Offset),
 				  HeightMultiplier(other.HeightMultiplier),
-				  ChunksCache(other.ChunksCache),
+				  DetailLevels(other.DetailLevels),
 				  Material(other.Material),
 				  Regenerate(other.Regenerate)
 			{
-				JobSystem::Get().Wait(ChunkDataContext);
-				JobSystem::Get().Wait(other.ChunkDataContext);
-				ChunkDataQueue = other.ChunkDataQueue;
-
-				JobSystem::Get().Wait(ChunkMeshDataContext);
-				JobSystem::Get().Wait(other.ChunkMeshDataContext);
-				ChunkMeshDataQueue = other.ChunkMeshDataQueue;
-
-				DetailLevels = other.DetailLevels;
+				// NOTE: Only copy the data and parameters of the chunk, the other will be calculated from scratch.
 			}
 
 			Terrain& operator=(const Terrain& other)
@@ -338,20 +330,12 @@ namespace HBL2
 
 				HeightMultiplier = other.HeightMultiplier;
 
-				ChunksCache = other.ChunksCache;
-
-				JobSystem::Get().Wait(ChunkDataContext);
-				JobSystem::Get().Wait(other.ChunkDataContext);
-				ChunkDataQueue = other.ChunkDataQueue;
-
-				JobSystem::Get().Wait(ChunkMeshDataContext);
-				JobSystem::Get().Wait(other.ChunkMeshDataContext);
-				ChunkMeshDataQueue = other.ChunkMeshDataQueue;
-
 				DetailLevels = other.DetailLevels;
 
 				Material = other.Material;
 				Regenerate = other.Regenerate;
+
+				// NOTE: Only copy the data and parameters of the chunk, the other will be calculated from scratch.
 
 				return *this;
 			}
