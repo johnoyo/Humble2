@@ -359,7 +359,7 @@ namespace HBL2
 
 					// Rigidbody type.
 					{
-						const char* options[] = { "Static", "Dynamic", "Kinematic" };
+						const char* options[] = { "Static", "Kinematic", "Dynamic" };
 						int currentItem = (int)rb2d.Type;
 
 						if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
@@ -400,7 +400,7 @@ namespace HBL2
 
 					// Rigidbody type.
 					{
-						const char* options[] = { "Static", "Dynamic", "Kinematic" };
+						const char* options[] = { "Static", "Kinematic", "Dynamic" };
 						int currentItem = (int)rb.Type;
 
 						if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))

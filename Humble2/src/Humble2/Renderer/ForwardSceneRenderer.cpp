@@ -62,7 +62,7 @@ namespace HBL2
 	struct CaptureMatrices
 	{
 		glm::mat4 View[6];
-		float FaceSize = 1024.f;
+		float FaceSize = 2048.f;
 		float _padding[3];
 	};
 
@@ -1515,7 +1515,7 @@ namespace HBL2
 							m_ResourceManager->DeleteTexture(skyLight.CubeMap);
 
 							Material* mat = m_ResourceManager->GetMaterial(skyLight.CubeMapMaterial);
-							m_ResourceManager->DeleteBindGroup(mat->BindGroup);
+							m_ResourceManager->DeleteBindGroup(mat->BindGroup); 
 
 							m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
 
@@ -1530,7 +1530,7 @@ namespace HBL2
 
 						skyLight.CubeMap = m_ResourceManager->CreateTexture({
 							.debugName = "skybox-texture",
-							.dimensions = { 1024, 1024, 1 },
+							.dimensions = { (uint32_t)g_CaptureMatrices.FaceSize, (uint32_t)g_CaptureMatrices.FaceSize, 1 },
 							.format = Format::RGBA16_FLOAT,
 							.internalFormat = Format::RGBA16_FLOAT,
 							.usage = { TextureUsage::TEXTURE_BINDING, TextureUsage::SAMPLED, TextureUsage::STORAGE_BINDING },
@@ -1548,6 +1548,7 @@ namespace HBL2
 							{}
 						);
 
+						// FIXME: When entering the playmode multiple times in the session we create new descriptor sets in vk, so it exceeds the max in the pool.
 						m_ComputeBindGroup = m_ResourceManager->CreateBindGroup({
 							.debugName = "compute-bind-group",
 							.layout = m_EquirectToSkyboxBindGroupLayout,
@@ -1559,7 +1560,7 @@ namespace HBL2
 						{
 							.Shader = m_EquirectToSkyboxShader,
 							.BindGroup = m_ComputeBindGroup,
-							.ThreadGroupCount = { 1024 / 16, 1024 / 16, 6 },
+							.ThreadGroupCount = { (uint32_t)g_CaptureMatrices.FaceSize / 16, (uint32_t)g_CaptureMatrices.FaceSize / 16, 6 },
 							.Variant = m_ComputeVariant,
 						};
 

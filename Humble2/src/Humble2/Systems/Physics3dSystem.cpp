@@ -145,6 +145,8 @@ namespace HBL2
 		m_Context->Group<Component::Rigidbody>(Get<Component::Transform>)
 			.Each([this](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
 			{
+				return;
+
 				JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
 				if (rb.BodyID == Physics::InvalidID)
 				{
@@ -258,7 +260,7 @@ namespace HBL2
 		{
 			auto& bc = m_Context->GetComponent<Component::BoxCollider>(entity);
 
-			JPH::BoxShapeSettings shapeSettings(JPH::Vec3(bc.Size.x * transform.Scale.x, bc.Size.x * transform.Scale.y, bc.Size.x * transform.Scale.z));
+			JPH::BoxShapeSettings shapeSettings(JPH::Vec3(bc.Size.x * transform.Scale.x, bc.Size.y * transform.Scale.y, bc.Size.z * transform.Scale.z));
 			shapeSettings.SetEmbedded();
 
 			// Create the shape
@@ -298,6 +300,14 @@ namespace HBL2
 		{
 			bodyLayer = (type == JPH::EMotionType::Static ? Layers::NON_MOVING : Layers::MOVING);
 		}
+
+		/*glm::vec3 worldTransform = glm::vec3(transform.WorldMatrix * glm::vec4(transform.Translation, 1.0));
+
+		glm::mat3 rotationMatrix = glm::mat3(transform.WorldMatrix);
+		rotationMatrix[0] = glm::normalize(rotationMatrix[0]);
+		rotationMatrix[1] = glm::normalize(rotationMatrix[1]);
+		rotationMatrix[2] = glm::normalize(rotationMatrix[2]);
+		glm::quat worldQRotation = glm::quat_cast(rotationMatrix);*/
 
 		JPH::RVec3 bodyPosition = JPH::RVec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
 		JPH::Quat bodyRotation = JPH::Quat(transform.QRotation.x, transform.QRotation.y, transform.QRotation.z, transform.QRotation.w);

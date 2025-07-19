@@ -53,14 +53,14 @@ namespace HBL2
 				glm::vec3 Right = glm::vec3(1.0f, 0.0f, 0.0f);
 				glm::vec3 Up = glm::vec3(0.0f, 1.0f, 0.0f);
 				glm::vec3 WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);
-				float MovementSpeed = 8.0f;
-				float MouseSensitivity = 45.0f;
+				float MovementSpeed = 24.0f;
+				float MouseSensitivity = 75.0f;
 				float MousePreviousPositionX = 0.f;
 				float MousePreviousPositionY = 0.f;
 
 				float ZoomSpeed = 2.5f;
 				float ScrollZoomSpeed = 50.0f;
-				float PanSpeed = 5.0f;
+				float PanSpeed = 7.5f;
 
 				bool Enabled = true;
 			};
