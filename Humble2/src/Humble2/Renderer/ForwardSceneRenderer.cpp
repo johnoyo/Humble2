@@ -331,19 +331,6 @@ namespace HBL2
 			.depthTarget = Renderer::Instance->ShadowAtlasTexture,
 		});
 
-		Renderer::Instance->AddCallbackOnResize("Shadow-Resize-FrameBuffer", [this](uint32_t width, uint32_t height)
-		{
-			m_ResourceManager->DeleteFrameBuffer(m_ShadowFrameBuffer);
-
-			m_ShadowFrameBuffer = m_ResourceManager->CreateFrameBuffer({
-				.debugName = "shadow-fb",
-				.width = g_ShadowAtlasSize,
-				.height = g_ShadowAtlasSize,
-				.renderPass = m_ShadowRenderPass,
-				.depthTarget = Renderer::Instance->ShadowAtlasTexture,
-			});
-		});
-
 		// Create shadow pre-pass shader.
 		const auto& shadowPrePassShaderCode = ShaderUtilities::Get().Compile("assets/shaders/shadow-mapping-pre-pass.shader");
 
@@ -355,8 +342,8 @@ namespace HBL2
 
 		m_ShadowPrePassShader = ResourceManager::Instance->CreateShader({
 			.debugName = "shadow-pre-pass-shader",
-			.VS {.code = shadowPrePassShaderCode[0], .entryPoint = "main" },
-			.FS {.code = shadowPrePassShaderCode[1], .entryPoint = "main" },
+			.VS { .code = shadowPrePassShaderCode[0], .entryPoint = "main" },
+			.FS { .code = shadowPrePassShaderCode[1], .entryPoint = "main" },
 			.bindGroups {
 				Renderer::Instance->GetShadowBindingsLayout(),	// Global bind group (0)
 				m_DepthOnlyBindGroupLayout,						// (1)
@@ -366,9 +353,9 @@ namespace HBL2
 					{
 						.byteStride = 32,
 						.attributes = {
-							{.byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
-							{.byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
-							{.byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
+							{ .byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
+							{ .byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
+							{ .byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},
@@ -377,7 +364,7 @@ namespace HBL2
 			.renderPass = m_ShadowRenderPass,
 		});
 
-		ResourceManager::Instance->AddShaderVariant(m_DepthOnlyShader, variant);
+		ResourceManager::Instance->AddShaderVariant(m_ShadowPrePassShader, variant);
 
 		// Create shadow pre-pass material.
 		m_ShadowPrePassMaterial = ResourceManager::Instance->CreateMaterial({
@@ -546,7 +533,7 @@ namespace HBL2
 				.renderPass = m_OpaqueRenderPass,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
-				});
+			});
 		});
 	}
 

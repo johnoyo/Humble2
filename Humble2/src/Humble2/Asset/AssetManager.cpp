@@ -2,6 +2,7 @@
 
 #include "Project\Project.h"
 #include "Utilities/ShaderUtilities.h"
+#include "Utilities/MeshUtilities.h"
 
 namespace HBL2
 {
@@ -113,19 +114,17 @@ namespace HBL2
 
 		for (const auto handle : m_RegisteredAssets)
 		{
-			// Skip if is a built in shader asset.
-			bool isBuiltInShaderAsset = false;
+			// Skip if is a built in material or shader asset.
+			bool isBuiltInAsset = false;
 
 			for (const auto shaderAssetHandle : builtInShaderAssets)
 			{
-				if (handle == shaderAssetHandle)
-				{
-					isBuiltInShaderAsset = true;
-					break;
-				}
+				if (handle == shaderAssetHandle) { isBuiltInAsset = true; break; }
 			}
 
-			if (isBuiltInShaderAsset)
+			if (handle == ShaderUtilities::Get().LitMaterialAsset) { isBuiltInAsset = true; }
+
+			if (isBuiltInAsset)
 			{
 				continue;
 			}
@@ -145,5 +144,10 @@ namespace HBL2
 			Asset* asset = GetAssetMetadata(shaderAssetHandle);
 			m_RegisteredAssetMap[asset->UUID] = shaderAssetHandle;
 		}
+
+		// Reregister built in material asset.
+		m_RegisteredAssets.Add(ShaderUtilities::Get().LitMaterialAsset);
+		Asset* asset = GetAssetMetadata(ShaderUtilities::Get().LitMaterialAsset);
+		m_RegisteredAssetMap[asset->UUID] = ShaderUtilities::Get().LitMaterialAsset;
 	}
 }

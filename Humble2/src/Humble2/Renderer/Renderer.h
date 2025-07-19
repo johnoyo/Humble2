@@ -114,7 +114,7 @@ namespace HBL2
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
 
 		UniformRingBuffer* TempUniformRingBuffer = nullptr;
-		ShadowAtlasAllocator ShadowAtlasAllocator;
+		ShadowAtlasAllocator ShadowAtlasAllocator{};
 
 		Handle<Texture> IntermediateColorTexture;
 		Handle<Texture> MainColorTexture;

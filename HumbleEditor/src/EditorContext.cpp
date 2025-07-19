@@ -50,6 +50,11 @@ namespace HBL2
 
 		void EditorContext::OnCreate()
 		{
+			if (m_EditorScene == nullptr)
+			{
+				return;
+			}
+
 			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
 			{
 				system->OnCreate();
