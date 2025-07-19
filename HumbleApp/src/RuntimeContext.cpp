@@ -15,11 +15,16 @@ namespace HBL2
 			{
 				m_ActiveScene = HBL2::ResourceManager::Instance->GetScene(e.NewScene);
 			});
-
-			Context::ViewportPosition = { 0, 0 };
+			
+			Context::ViewportPosition = Window::Instance->GetPosition();
 			Context::ViewportSize = Window::Instance->GetExtents();
 
-			HBL2::EventDispatcher::Get().Register<WindowSizeEvent>([&](const HBL2::WindowSizeEvent& e)
+			HBL2::EventDispatcher::Get().Register<HBL2::WindowPositionEvent>([&](const HBL2::WindowPositionEvent& e)
+			{
+				Context::ViewportPosition = { e.XPosition, e.YPosition };
+			});
+
+			HBL2::EventDispatcher::Get().Register<HBL2::WindowSizeEvent>([&](const HBL2::WindowSizeEvent& e)
 			{
 				Context::ViewportSize = { e.Width, e.Height };
 
