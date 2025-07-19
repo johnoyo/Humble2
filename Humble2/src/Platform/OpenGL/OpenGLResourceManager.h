@@ -47,6 +47,16 @@ namespace HBL2
 			}
 		}
 		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle) override {}
+		virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) override
+		{
+			OpenGLTexture* texture = GetTexture(handle);
+			if (texture != nullptr)
+			{
+				return texture->Dimensions;
+			}
+
+			return { 0.f, 0.f, 0.f };
+		}
 		OpenGLTexture* GetTexture(Handle<Texture> handle) const
 		{
 			return m_TexturePool.Get(handle);
