@@ -393,6 +393,10 @@ namespace HBL2
 				DrawComponent<HBL2::Component::Rigidbody>("Rigidbody", m_ActiveScene, [this](HBL2::Component::Rigidbody& rb)
 				{
 					ImGui::Checkbox("Enabled", &rb.Enabled);
+
+					ImGui::SliderFloat("Friction", &rb.Friction, 0.0f, 1.0f);
+					ImGui::SliderFloat("GravityFactor", &rb.GravityFactor, 0.0f, 3.0f);
+
 					if (ImGui::Checkbox("Trigger", &rb.Trigger))
 					{
 						rb.Dirty = true;
@@ -406,6 +410,17 @@ namespace HBL2
 						if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
 						{
 							rb.Type = (Physics::BodyType)currentItem;
+						}
+					}
+
+					// Rigidbody type.
+					{
+						const char* options[] = { "Discrete", "Continuos" };
+						int currentItem = (int)rb.MotionQuality;
+
+						if (ImGui::Combo("MotionQuality", &currentItem, options, IM_ARRAYSIZE(options)))
+						{
+							rb.MotionQuality = (HBL2::Component::Rigidbody::EMotionQuality)currentItem;
 						}
 					}
 				});

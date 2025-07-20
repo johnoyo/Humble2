@@ -144,7 +144,7 @@ namespace HBL2
 				UUID* scalar = value.try_cast<UUID>();
 				if (scalar)
 				{
-					if (ImGui::InputScalar(memberName, ImGuiDataType_U32, scalar))
+					if (ImGui::InputScalar(memberName, ImGuiDataType_U64, scalar))
 					{
 						data.set(componentMeta, *scalar);
 					}
