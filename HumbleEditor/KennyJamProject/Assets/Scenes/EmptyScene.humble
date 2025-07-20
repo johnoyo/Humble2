@@ -1,0 +1,3207 @@
+Scene: EmptyScene
+Entities:
+  - Entity: 183
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 4483682900464413696
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 436851502675940992
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 14235897435519358733
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 182
+    Component::Tag:
+      Tag: item-box(Clone)
+    Component::ID:
+      ID: 436851502675940992
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 7780070893261874176
+      Children:
+        - 4483682900464413696
+  - Entity: 181
+    Component::Tag:
+      Tag: PowerUpBox(Clone)
+    Component::ID:
+      ID: 7780070893261874176
+    Component::Transform:
+      Translation: [20.6783981, 0.177374244, -57.0751801]
+      Rotation: [0, -30, 0]
+      Scale: [0.0199999996, 0.0199999996, 0.0199999996]
+      Static: false
+    Component::PrefabInstance:
+      Id: 13662391550117419451
+      Version: 12
+    Component::Link:
+      Parent: 0
+      Children:
+        - 436851502675940992
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: true
+      Type: 2
+      MotionQuality: 1
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 0
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::BoxCollider:
+      Enabled: true
+      Size: [30, 10, 30]
+    Item:
+      Enabled: false
+    PowerUp:
+      Value: 50
+  - Entity: 180
+    Component::Tag:
+      Tag: ItemManager
+    Component::ID:
+      ID: 11584184767011495936
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::AudioSource:
+      Enabled: true
+      Sound: 10654600473037857185
+    ItemManager:
+      Enabled: false
+      PowerUpPrefab: 13662391550117419451
+      ObstaclePrefab: 14944532339740765548
+      CoinPrefab: 7323856726782565947
+  - Entity: 179
+    Component::Tag:
+      Tag: track-road-wide-straight
+    Component::ID:
+      ID: 16399465414969485312
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 15225283747834789888
+      Children:
+        - 4491134043417669632
+  - Entity: 178
+    Component::Tag:
+      Tag: track-road-wide-straight
+    Component::ID:
+      ID: 15225283747834789888
+    Component::Transform:
+      Translation: [-0.395119667, -0.459005326, -9.98173809]
+      Rotation: [0, 0, 1.05267996e-10]
+      Scale: [0.0499643646, 0.0500000007, 0.0499643646]
+      Static: false
+    Component::Link:
+      Parent: 9748788491554455552
+      Children:
+        - 16399465414969485312
+  - Entity: 177
+    Component::Tag:
+      Tag: Camera
+    Component::ID:
+      ID: 15474040346407081984
+    Component::Transform:
+      Translation: [10.7399998, 17.1350002, -0.605000019]
+      Rotation: [-32.25, 60, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Camera:
+      Enabled: true
+      Primary: true
+      Far: 1000
+      Near: 0.100000001
+      FOV: 60
+      Aspect Ratio: 1.88862562
+      Exposure: 2.5
+      Gamma: 1.5
+      Zoom Level: 300
+      Type: 0
+  - Entity: 176
+    Component::Tag:
+      Tag: Light
+    Component::ID:
+      ID: 8559838060591596544
+    Component::Transform:
+      Translation: [22.139534, 12.6974773, -7.98564768]
+      Rotation: [1.49603338e-05, 0, 0]
+      Scale: [1.00000012, 1, 1]
+      Static: false
+    Component::Light:
+      Enabled: true
+      CastsShadows: true
+      Intensity: 0.796999991
+      Color: [1, 0.962029874, 0.452145219]
+      Type: 0
+      Distance: 50
+      InnerCutOff: 12.5
+      OuterCutOff: 17.5
+      ConstantBias: 0.202999994
+      SlopeBias: 0.00700000022
+      NormalOffsetScale: 0
+      FieldOfView: 78.0749969
+  - Entity: 175
+    Component::Tag:
+      Tag: colormap
+    Component::ID:
+      ID: 4491134043417669632
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 16399465414969485312
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 13613345232369488098
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 174
+    Component::Tag:
+      Tag: supports-wide
+    Component::ID:
+      ID: 2170728544440316928
+    Component::Transform:
+      Translation: [-0.25, -9.12859058, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 9748788491554455552
+      Children:
+        - 13422571876812613632
+  - Entity: 173
+    Component::Tag:
+      Tag: supports-wide
+    Component::ID:
+      ID: 13422571876812613632
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2170728544440316928
+      Children:
+        - 5256899137125567488
+  - Entity: 172
+    Component::Tag:
+      Tag: colormap
+    Component::ID:
+      ID: 5256899137125567488
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 13422571876812613632
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 171
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 7107166583879372800
+    Component::Transform:
+      Translation: [-0.25, -18.1176052, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 9748788491554455552
+      Children:
+        - 236031717558893120
+  - Entity: 170
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 236031717558893120
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 7107166583879372800
+      Children:
+        - 8781352161152035840
+  - Entity: 169
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 8781352161152035840
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 236031717558893120
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 168
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 16689461522417969152
+    Component::Transform:
+      Translation: [-0.25, -27.1108437, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 9748788491554455552
+      Children:
+        - 9198001306668346368
+  - Entity: 167
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 9198001306668346368
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 16689461522417969152
+      Children:
+        - 11814826944003213312
+  - Entity: 166
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 11814826944003213312
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 9198001306668346368
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 165
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 713899360805435008
+    Component::Transform:
+      Translation: [-0.25, -36.0946426, 0]
+      Rotation: [-1.26223504e-05, 90, 2.63823495e-06]
+      Scale: [0.0900000483, 0.0900000036, 0.0900000483]
+      Static: false
+    Component::Link:
+      Parent: 9748788491554455552
+      Children:
+        - 7923716383072525312
+  - Entity: 164
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 7923716383072525312
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 713899360805435008
+      Children:
+        - 16008954022456629248
+  - Entity: 163
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 16008954022456629248
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 7923716383072525312
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 162
+    Component::Tag:
+      Tag: TrackRoadPart
+    Component::ID:
+      ID: 9748788491554455552
+    Component::Transform:
+      Translation: [-5.07000017, 0, -11.7244997]
+      Rotation: [0, 0, 0]
+      Scale: [0.999999523, 1, 0.999999523]
+      Static: false
+    Component::Link:
+      Parent: 6828119717649938432
+      Children:
+        - 15225283747834789888
+        - 2170728544440316928
+        - 7107166583879372800
+        - 16689461522417969152
+        - 713899360805435008
+  - Entity: 161
+    Component::Tag:
+      Tag: vehicle-speedster
+    Component::ID:
+      ID: 2897863183812114432
+    Component::Transform:
+      Translation: [-6.1101985, 2.86113381, -10.680768]
+      Rotation: [0, -30, 0]
+      Scale: [0.0299999975, 0.0299999993, 0.0299999975]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        - 14428270844050423808
+        - 5015082868636918784
+        - 7536247863598353408
+        - 14814166831153364992
+        - 14744384458332270592
+    Component::AudioSource:
+      Enabled: false
+      Sound: 10706049075485826025
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 2
+      MotionQuality: 1
+      Mass: 1
+      Friction: 0.528999984
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::BoxCollider:
+      Enabled: true
+      Size: [40, 10, 40]
+    Speedster:
+      Enabled: false
+      Force: 4
+  - Entity: 160
+    Component::Tag:
+      Tag: vehicle-speedster
+    Component::ID:
+      ID: 14428270844050423808
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2897863183812114432
+      Children:
+        - 10505264431846064128
+  - Entity: 159
+    Component::Tag:
+      Tag: colormap
+    Component::ID:
+      ID: 10505264431846064128
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 14428270844050423808
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 17109484110232733155
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 158
+    Component::Tag:
+      Tag: wheel-bl
+    Component::ID:
+      ID: 5015082868636918784
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2897863183812114432
+      Children:
+        - 14844968243176597504
+  - Entity: 157
+    Component::Tag:
+      Tag: colormap
+    Component::ID:
+      ID: 14844968243176597504
+    Component::Transform:
+      Translation: [-21.25, 12.5, 31.25]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 5015082868636918784
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 17109484110232733155
+        MeshIndex: 1
+        SubMeshIndex: 0
+  - Entity: 156
+    Component::Tag:
+      Tag: wheel-fl
+    Component::ID:
+      ID: 7536247863598353408
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2897863183812114432
+      Children:
+        - 11181812714079764480
+  - Entity: 155
+    Component::Tag:
+      Tag: colormap
+    Component::ID:
+      ID: 11181812714079764480
+    Component::Transform:
+      Translation: [-21.25, 12.5, -18.75]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 7536247863598353408
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 17109484110232733155
+        MeshIndex: 2
+        SubMeshIndex: 0
+  - Entity: 154
+    Component::Tag:
+      Tag: wheel-br
+    Component::ID:
+      ID: 14814166831153364992
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2897863183812114432
+      Children:
+        - 16275829936459661312
+  - Entity: 153
+    Component::Tag:
+      Tag: colormap
+    Component::ID:
+      ID: 16275829936459661312
+    Component::Transform:
+      Translation: [21.25, 12.5, 31.25]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 14814166831153364992
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 17109484110232733155
+        MeshIndex: 3
+        SubMeshIndex: 0
+  - Entity: 152
+    Component::Tag:
+      Tag: wheel-fr
+    Component::ID:
+      ID: 14744384458332270592
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2897863183812114432
+      Children:
+        - 6800034019438039040
+  - Entity: 151
+    Component::Tag:
+      Tag: colormap
+    Component::ID:
+      ID: 6800034019438039040
+    Component::Transform:
+      Translation: [21.25, 12.5, -18.75]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 14744384458332270592
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 17109484110232733155
+        MeshIndex: 4
+        SubMeshIndex: 0
+  - Entity: 150
+    Component::Tag:
+      Tag: gate
+    Component::ID:
+      ID: 8437147934229741568
+    Component::Transform:
+      Translation: [-5.44999981, 0.75, -60.1329994]
+      Rotation: [0, 0, 0]
+      Scale: [0.100000001, 0.100000001, 0.100000001]
+      Static: false
+    Component::Link:
+      Parent: 6828119717649938432
+      Children:
+        - 2781047440010755584
+  - Entity: 149
+    Component::Tag:
+      Tag: gate
+    Component::ID:
+      ID: 2781047440010755584
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 8437147934229741568
+      Children:
+        - 6773149449649725440
+  - Entity: 148
+    Component::Tag:
+      Tag: colormap
+    Component::ID:
+      ID: 6773149449649725440
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2781047440010755584
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 7021117453745597684
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 147
+    Component::Tag:
+      Tag: TrackRoadPart(Clone)
+    Component::ID:
+      ID: 13277129079768621056
+    Component::Transform:
+      Translation: [-5.07000017, 0, -31.7099991]
+      Rotation: [0, 0, 0]
+      Scale: [0.999987364, 1, 0.999987364]
+      Static: false
+    Component::Link:
+      Parent: 6828119717649938432
+      Children:
+        - 9243957085451751424
+        - 17315085695912245248
+        - 6861228549888825344
+        - 17289833896093812736
+        - 11553287236752941056
+  - Entity: 146
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 9243957085451751424
+    Component::Transform:
+      Translation: [-0.25, -36.0946426, 0]
+      Rotation: [-1.26223504e-05, 90, 2.63823495e-06]
+      Scale: [0.0900000483, 0.0900000036, 0.0900000483]
+      Static: false
+    Component::Link:
+      Parent: 13277129079768621056
+      Children:
+        - 11030463188629585920
+  - Entity: 145
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 11030463188629585920
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 9243957085451751424
+      Children:
+        - 7101605313866408960
+  - Entity: 144
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 7101605313866408960
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 11030463188629585920
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 143
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 17315085695912245248
+    Component::Transform:
+      Translation: [-0.25, -27.1108437, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 13277129079768621056
+      Children:
+        - 10538850308595820544
+  - Entity: 142
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 10538850308595820544
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 17315085695912245248
+      Children:
+        - 15280191796459010048
+  - Entity: 141
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 15280191796459010048
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 10538850308595820544
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 140
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 6861228549888825344
+    Component::Transform:
+      Translation: [-0.25, -18.1176052, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 13277129079768621056
+      Children:
+        - 11509067489788504064
+  - Entity: 139
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 11509067489788504064
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 6861228549888825344
+      Children:
+        - 5324656684452355072
+  - Entity: 138
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 5324656684452355072
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 11509067489788504064
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 137
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 17289833896093812736
+    Component::Transform:
+      Translation: [-0.25, -9.12859058, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 13277129079768621056
+      Children:
+        - 1970855357528135680
+  - Entity: 136
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 1970855357528135680
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 17289833896093812736
+      Children:
+        - 16564954878610866176
+  - Entity: 135
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 16564954878610866176
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 1970855357528135680
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 134
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)
+    Component::ID:
+      ID: 11553287236752941056
+    Component::Transform:
+      Translation: [-0.395119667, -0.459005326, -9.98173809]
+      Rotation: [0, 0, 1.05267996e-10]
+      Scale: [0.0499643646, 0.0500000007, 0.0499643646]
+      Static: false
+    Component::Link:
+      Parent: 13277129079768621056
+      Children:
+        - 4167470828732759040
+  - Entity: 133
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)
+    Component::ID:
+      ID: 4167470828732759040
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 11553287236752941056
+      Children:
+        - 15936706829636622336
+  - Entity: 132
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 15936706829636622336
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 4167470828732759040
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 13613345232369488098
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 131
+    Component::Tag:
+      Tag: TrackRoadPart(Clone)
+    Component::ID:
+      ID: 7236345904992488448
+    Component::Transform:
+      Translation: [-5.07000017, 0, -51.6899986]
+      Rotation: [0, 0, 0]
+      Scale: [0.999999523, 1, 0.999999523]
+      Static: false
+    Component::Link:
+      Parent: 6828119717649938432
+      Children:
+        - 3399810841868736512
+        - 11966295548654407680
+        - 393673452058067328
+        - 2822683621732601344
+        - 14158401045079965696
+  - Entity: 130
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 3399810841868736512
+    Component::Transform:
+      Translation: [-0.25, -36.0946426, 0]
+      Rotation: [-1.26223504e-05, 90, 2.63823495e-06]
+      Scale: [0.0900000483, 0.0900000036, 0.0900000483]
+      Static: false
+    Component::Link:
+      Parent: 7236345904992488448
+      Children:
+        - 8672761053071656960
+  - Entity: 129
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 8672761053071656960
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 3399810841868736512
+      Children:
+        - 10866469550020872192
+  - Entity: 128
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 10866469550020872192
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 8672761053071656960
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 127
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 11966295548654407680
+    Component::Transform:
+      Translation: [-0.25, -27.1108437, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 7236345904992488448
+      Children:
+        - 14687074069718249472
+  - Entity: 126
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 14687074069718249472
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 11966295548654407680
+      Children:
+        - 12734748989239910400
+  - Entity: 125
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 12734748989239910400
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 14687074069718249472
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 124
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 393673452058067328
+    Component::Transform:
+      Translation: [-0.25, -18.1176052, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 7236345904992488448
+      Children:
+        - 17555055885508530176
+  - Entity: 123
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 17555055885508530176
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 393673452058067328
+      Children:
+        - 12814309019259281408
+  - Entity: 122
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 12814309019259281408
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 17555055885508530176
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 121
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 2822683621732601344
+    Component::Transform:
+      Translation: [-0.25, -9.12859058, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 7236345904992488448
+      Children:
+        - 1912311969921050624
+  - Entity: 120
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 1912311969921050624
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2822683621732601344
+      Children:
+        - 17451652416329170944
+  - Entity: 119
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 17451652416329170944
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 1912311969921050624
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 118
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)
+    Component::ID:
+      ID: 14158401045079965696
+    Component::Transform:
+      Translation: [-0.395119667, -0.459005326, -9.98173809]
+      Rotation: [0, 0, 1.05267996e-10]
+      Scale: [0.0499643646, 0.0500000007, 0.0499643646]
+      Static: false
+    Component::Link:
+      Parent: 7236345904992488448
+      Children:
+        - 14674245707139282944
+  - Entity: 117
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)
+    Component::ID:
+      ID: 14674245707139282944
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 14158401045079965696
+      Children:
+        - 646945400788635904
+  - Entity: 116
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 646945400788635904
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 14674245707139282944
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 13613345232369488098
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 115
+    Component::Tag:
+      Tag: RoadCollider
+    Component::ID:
+      ID: 12999903517598003200
+    Component::Transform:
+      Translation: [-5.50321054, -0.954998255, -12.2637129]
+      Rotation: [0, -29.9999619, 0]
+      Scale: [4.5, 1, 125.79512]
+      Static: false
+    Component::Link:
+      Parent: 8488381364304904192
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: false
+      Material: 7648240370554952727
+      Mesh:
+        UUID: 12185676794561251927
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 0
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::BoxCollider:
+      Enabled: true
+      Size: [1, 1, 1]
+  - Entity: 114
+    Component::Tag:
+      Tag: LivingRoomSkybox
+    Component::ID:
+      ID: 7739978645889156096
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::SkyLight:
+      Enabled: true
+      EquirectangularMap: 3889268138299744526
+  - Entity: 113
+    Component::Tag:
+      Tag: TrackColliders
+    Component::ID:
+      ID: 8488381364304904192
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        - 12999903517598003200
+        - 16024356495242438656
+        - 5532757957854922752
+  - Entity: 112
+    Component::Tag:
+      Tag: RoadSideCollider(Clone)
+    Component::ID:
+      ID: 16024356495242438656
+    Component::Transform:
+      Translation: [-10.25, -0.341522932, -14.919466]
+      Rotation: [0, -29.9999619, 0]
+      Scale: [1, 1.39328957, 125.795105]
+      Static: false
+    Component::Link:
+      Parent: 8488381364304904192
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: false
+      Material: 7648240370554952727
+      Mesh:
+        UUID: 12185676794561251927
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 0
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::BoxCollider:
+      Enabled: true
+      Size: [1, 1, 1]
+  - Entity: 111
+    Component::Tag:
+      Tag: RoadSideCollider(Clone)(Clone)
+    Component::ID:
+      ID: 5532757957854922752
+    Component::Transform:
+      Translation: [-0.589999974, -0.341522932, -9.56714821]
+      Rotation: [0, -29.9999619, 0]
+      Scale: [1, 1.39328957, 125.795105]
+      Static: false
+    Component::Link:
+      Parent: 8488381364304904192
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: false
+      Material: 7648240370554952727
+      Mesh:
+        UUID: 12185676794561251927
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 0
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::BoxCollider:
+      Enabled: true
+      Size: [1, 1, 1]
+  - Entity: 110
+    Component::Tag:
+      Tag: RoadTrackChunk0
+    Component::ID:
+      ID: 6828119717649938432
+    Component::Transform:
+      Translation: [-17.4158821, 0, 19.3176575]
+      Rotation: [0, -30, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        - 9748788491554455552
+        - 8437147934229741568
+        - 13277129079768621056
+        - 7236345904992488448
+    TrackChunk:
+      Enabled: false
+  - Entity: 109
+    Component::Tag:
+      Tag: RoadTrackChunk1
+    Component::ID:
+      ID: 7876327091130926080
+    Component::Transform:
+      Translation: [12.3820038, 0, -32.2940483]
+      Rotation: [0, -30, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        - 11262834206647339008
+        - 379857053849276800
+        - 15499533449776181248
+        - 16839697138851446784
+    TrackChunk:
+      Enabled: false
+  - Entity: 108
+    Component::Tag:
+      Tag: TrackRoadPart(Clone)(Clone)
+    Component::ID:
+      ID: 11262834206647339008
+    Component::Transform:
+      Translation: [-5.07000017, 0, -52.0449982]
+      Rotation: [0, 0, 0]
+      Scale: [0.999999523, 1, 0.999999523]
+      Static: false
+    Component::Link:
+      Parent: 7876327091130926080
+      Children:
+        - 16681203403957891072
+        - 2235931576038034432
+        - 1745123747739221504
+        - 2015118300264045056
+        - 15942590859136692224
+  - Entity: 107
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)(Clone)
+    Component::ID:
+      ID: 16681203403957891072
+    Component::Transform:
+      Translation: [-0.395119667, -0.459005326, -9.98173809]
+      Rotation: [0, 0, 1.05267996e-10]
+      Scale: [0.0499643646, 0.0500000007, 0.0499643646]
+      Static: false
+    Component::Link:
+      Parent: 11262834206647339008
+      Children:
+        - 7672627464964824064
+  - Entity: 106
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)(Clone)
+    Component::ID:
+      ID: 7672627464964824064
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 16681203403957891072
+      Children:
+        - 12662417783802748928
+  - Entity: 105
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 12662417783802748928
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 7672627464964824064
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 14395778657493503133
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 104
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 2235931576038034432
+    Component::Transform:
+      Translation: [-0.25, -9.12859058, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 11262834206647339008
+      Children:
+        - 16921993320139591680
+  - Entity: 103
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 16921993320139591680
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2235931576038034432
+      Children:
+        - 6922635126198635520
+  - Entity: 102
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 6922635126198635520
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 16921993320139591680
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 6325526914600390535
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 101
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 1745123747739221504
+    Component::Transform:
+      Translation: [-0.25, -18.1176052, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 11262834206647339008
+      Children:
+        - 10958350502905225216
+  - Entity: 100
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 10958350502905225216
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 1745123747739221504
+      Children:
+        - 9816024859598342144
+  - Entity: 99
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 9816024859598342144
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 10958350502905225216
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 6325526914600390535
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 98
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 2015118300264045056
+    Component::Transform:
+      Translation: [-0.25, -27.1108437, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 11262834206647339008
+      Children:
+        - 4189662695340217344
+  - Entity: 97
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 4189662695340217344
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2015118300264045056
+      Children:
+        - 11092759889296478208
+  - Entity: 96
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 11092759889296478208
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 4189662695340217344
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 6325526914600390535
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 95
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 15942590859136692224
+    Component::Transform:
+      Translation: [-0.25, -36.0946426, 0]
+      Rotation: [-1.26223504e-05, 90, 2.63823495e-06]
+      Scale: [0.0900000483, 0.0900000036, 0.0900000483]
+      Static: false
+    Component::Link:
+      Parent: 11262834206647339008
+      Children:
+        - 10471511849699821568
+  - Entity: 94
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 10471511849699821568
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 15942590859136692224
+      Children:
+        - 14814063580200206336
+  - Entity: 93
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 14814063580200206336
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 10471511849699821568
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 6325526914600390535
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 92
+    Component::Tag:
+      Tag: TrackRoadPart(Clone)(Clone)
+    Component::ID:
+      ID: 379857053849276800
+    Component::Transform:
+      Translation: [-5.07000017, 0, -32.0629997]
+      Rotation: [0, 0, 0]
+      Scale: [0.999987364, 1, 0.999987364]
+      Static: false
+    Component::Link:
+      Parent: 7876327091130926080
+      Children:
+        - 6365207653260808192
+        - 13252392124727701504
+        - 5378933797965576192
+        - 1287662160531671040
+        - 4274305857847396864
+  - Entity: 91
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)(Clone)
+    Component::ID:
+      ID: 6365207653260808192
+    Component::Transform:
+      Translation: [-0.395119667, -0.459005326, -9.98173809]
+      Rotation: [0, 0, 1.05267996e-10]
+      Scale: [0.0499643646, 0.0500000007, 0.0499643646]
+      Static: false
+    Component::Link:
+      Parent: 379857053849276800
+      Children:
+        - 4440203237266300416
+  - Entity: 90
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)(Clone)
+    Component::ID:
+      ID: 4440203237266300416
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 6365207653260808192
+      Children:
+        - 2648149511269857792
+  - Entity: 89
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 2648149511269857792
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 4440203237266300416
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 14395778657493503133
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 88
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 13252392124727701504
+    Component::Transform:
+      Translation: [-0.25, -9.12859058, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 379857053849276800
+      Children:
+        - 15282112342175225856
+  - Entity: 87
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 15282112342175225856
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 13252392124727701504
+      Children:
+        - 8050312122715864064
+  - Entity: 86
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 8050312122715864064
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 15282112342175225856
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 6325526914600390535
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 85
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 5378933797965576192
+    Component::Transform:
+      Translation: [-0.25, -18.1176052, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 379857053849276800
+      Children:
+        - 15750276219881132032
+  - Entity: 84
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 15750276219881132032
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 5378933797965576192
+      Children:
+        - 3226936900340433920
+  - Entity: 83
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 3226936900340433920
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 15750276219881132032
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 6325526914600390535
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 82
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 1287662160531671040
+    Component::Transform:
+      Translation: [-0.25, -27.1108437, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 379857053849276800
+      Children:
+        - 466745490664101376
+  - Entity: 81
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 466745490664101376
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 1287662160531671040
+      Children:
+        - 2608837161471812608
+  - Entity: 80
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 2608837161471812608
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 466745490664101376
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 6325526914600390535
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 79
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 4274305857847396864
+    Component::Transform:
+      Translation: [-0.25, -36.0946426, 0]
+      Rotation: [-1.26223504e-05, 90, 2.63823495e-06]
+      Scale: [0.0900000483, 0.0900000036, 0.0900000483]
+      Static: false
+    Component::Link:
+      Parent: 379857053849276800
+      Children:
+        - 5777219568009110528
+  - Entity: 78
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 5777219568009110528
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 4274305857847396864
+      Children:
+        - 6917702038649327616
+  - Entity: 77
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 6917702038649327616
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 5777219568009110528
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 6325526914600390535
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 76
+    Component::Tag:
+      Tag: gate(Clone)
+    Component::ID:
+      ID: 15499533449776181248
+    Component::Transform:
+      Translation: [-5.44999981, 0.75, -60.1329994]
+      Rotation: [0, 0, 0]
+      Scale: [0.100000001, 0.100000001, 0.100000001]
+      Static: false
+    Component::Link:
+      Parent: 7876327091130926080
+      Children:
+        - 18335741090599243776
+  - Entity: 75
+    Component::Tag:
+      Tag: gate(Clone)
+    Component::ID:
+      ID: 18335741090599243776
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 15499533449776181248
+      Children:
+        - 12541416727360854016
+  - Entity: 74
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 12541416727360854016
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 18335741090599243776
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 7021117453745597684
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 73
+    Component::Tag:
+      Tag: TrackRoadPart(Clone)
+    Component::ID:
+      ID: 16839697138851446784
+    Component::Transform:
+      Translation: [-5.07000017, 0, -12.0780001]
+      Rotation: [0, 0, 0]
+      Scale: [0.999999523, 1, 0.999999523]
+      Static: false
+    Component::Link:
+      Parent: 7876327091130926080
+      Children:
+        - 6952381421355445248
+        - 13279914893426688000
+        - 6551685111523297280
+        - 7641157676728997888
+        - 13711856955689840640
+  - Entity: 72
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 6952381421355445248
+    Component::Transform:
+      Translation: [-0.25, -36.0946426, 0]
+      Rotation: [-1.26223504e-05, 90, 2.63823495e-06]
+      Scale: [0.0900000483, 0.0900000036, 0.0900000483]
+      Static: false
+    Component::Link:
+      Parent: 16839697138851446784
+      Children:
+        - 13945899927819327488
+  - Entity: 71
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 13945899927819327488
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 6952381421355445248
+      Children:
+        - 7310256892995121152
+  - Entity: 70
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 7310256892995121152
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 13945899927819327488
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 6325526914600390535
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 69
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 13279914893426688000
+    Component::Transform:
+      Translation: [-0.25, -27.1108437, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 16839697138851446784
+      Children:
+        - 4125487157717670400
+  - Entity: 68
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 4125487157717670400
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 13279914893426688000
+      Children:
+        - 7244237995894295552
+  - Entity: 67
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 7244237995894295552
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 4125487157717670400
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 6325526914600390535
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 66
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 6551685111523297280
+    Component::Transform:
+      Translation: [-0.25, -18.1176052, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 16839697138851446784
+      Children:
+        - 2336344441225868800
+  - Entity: 65
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 2336344441225868800
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 6551685111523297280
+      Children:
+        - 10931549659689605120
+  - Entity: 64
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 10931549659689605120
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2336344441225868800
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 6325526914600390535
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 63
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 7641157676728997888
+    Component::Transform:
+      Translation: [-0.25, -9.12859058, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 16839697138851446784
+      Children:
+        - 1440653727961892096
+  - Entity: 62
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 1440653727961892096
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 7641157676728997888
+      Children:
+        - 16478537777412163584
+  - Entity: 61
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 16478537777412163584
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 1440653727961892096
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 6325526914600390535
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 60
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)
+    Component::ID:
+      ID: 13711856955689840640
+    Component::Transform:
+      Translation: [-0.395119667, -0.459005326, -9.98173809]
+      Rotation: [0, 0, 1.05267996e-10]
+      Scale: [0.0499643646, 0.0500000007, 0.0499643646]
+      Static: false
+    Component::Link:
+      Parent: 16839697138851446784
+      Children:
+        - 9935075098763583488
+  - Entity: 59
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)
+    Component::ID:
+      ID: 9935075098763583488
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 13711856955689840640
+      Children:
+        - 1113963622303530112
+  - Entity: 58
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 1113963622303530112
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 9935075098763583488
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 14395778657493503133
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 57
+    Component::Tag:
+      Tag: RoadTrackChunk2
+    Component::ID:
+      ID: 15041047262217275392
+    Component::Transform:
+      Translation: [42.3116646, 0, -84.1424026]
+      Rotation: [0, -30, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        - 3798842780980555776
+        - 17331202929075351552
+        - 12624312689031591936
+        - 18143580722814990336
+    TrackChunk:
+      Enabled: false
+  - Entity: 56
+    Component::Tag:
+      Tag: TrackRoadPart(Clone)(Clone)
+    Component::ID:
+      ID: 3798842780980555776
+    Component::Transform:
+      Translation: [-5.07000017, 0, -51.6899986]
+      Rotation: [0, 0, 0]
+      Scale: [0.999999523, 1, 0.999999523]
+      Static: false
+    Component::Link:
+      Parent: 15041047262217275392
+      Children:
+        - 13671132236331122688
+        - 768053457600758400
+        - 523154259332338304
+        - 15901681810732824576
+        - 7316959734551460864
+  - Entity: 55
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)(Clone)
+    Component::ID:
+      ID: 13671132236331122688
+    Component::Transform:
+      Translation: [-0.395119667, -0.459005326, -9.98173809]
+      Rotation: [0, 0, 1.05267996e-10]
+      Scale: [0.0499643646, 0.0500000007, 0.0499643646]
+      Static: false
+    Component::Link:
+      Parent: 3798842780980555776
+      Children:
+        - 8595331399641411584
+  - Entity: 54
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)(Clone)
+    Component::ID:
+      ID: 8595331399641411584
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 13671132236331122688
+      Children:
+        - 8174587971160674304
+  - Entity: 53
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 8174587971160674304
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 8595331399641411584
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 8035926770970459835
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 52
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 768053457600758400
+    Component::Transform:
+      Translation: [-0.25, -9.12859058, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 3798842780980555776
+      Children:
+        - 6516970722455339008
+  - Entity: 51
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 6516970722455339008
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 768053457600758400
+      Children:
+        - 17410388673137676288
+  - Entity: 50
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 17410388673137676288
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 6516970722455339008
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 49
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 523154259332338304
+    Component::Transform:
+      Translation: [-0.25, -18.1176052, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 3798842780980555776
+      Children:
+        - 8067146179908345856
+  - Entity: 48
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 8067146179908345856
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 523154259332338304
+      Children:
+        - 1143487485104767488
+  - Entity: 47
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 1143487485104767488
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 8067146179908345856
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 46
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 15901681810732824576
+    Component::Transform:
+      Translation: [-0.25, -27.1108437, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 3798842780980555776
+      Children:
+        - 7898547721864878080
+  - Entity: 45
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 7898547721864878080
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 15901681810732824576
+      Children:
+        - 14233922033410598912
+  - Entity: 44
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 14233922033410598912
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 7898547721864878080
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 43
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 7316959734551460864
+    Component::Transform:
+      Translation: [-0.25, -36.0946426, 0]
+      Rotation: [-1.26223504e-05, 90, 2.63823495e-06]
+      Scale: [0.0900000483, 0.0900000036, 0.0900000483]
+      Static: false
+    Component::Link:
+      Parent: 3798842780980555776
+      Children:
+        - 7001908257015792640
+  - Entity: 42
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 7001908257015792640
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 7316959734551460864
+      Children:
+        - 8564527225211804672
+  - Entity: 41
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 8564527225211804672
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 7001908257015792640
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 40
+    Component::Tag:
+      Tag: TrackRoadPart(Clone)(Clone)
+    Component::ID:
+      ID: 17331202929075351552
+    Component::Transform:
+      Translation: [-5.07000017, 0, -31.8670006]
+      Rotation: [0, 0, 0]
+      Scale: [0.999987364, 1, 0.999987364]
+      Static: false
+    Component::Link:
+      Parent: 15041047262217275392
+      Children:
+        - 2282422851577634048
+        - 10895835504661987328
+        - 10510511310589536256
+        - 7688586060325277696
+        - 7334520882381434880
+  - Entity: 39
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)(Clone)
+    Component::ID:
+      ID: 2282422851577634048
+    Component::Transform:
+      Translation: [-0.395119667, -0.459005326, -9.98173809]
+      Rotation: [0, 0, 1.05267996e-10]
+      Scale: [0.0499643646, 0.0500000007, 0.0499643646]
+      Static: false
+    Component::Link:
+      Parent: 17331202929075351552
+      Children:
+        - 3356632237642394112
+  - Entity: 38
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)(Clone)
+    Component::ID:
+      ID: 3356632237642394112
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2282422851577634048
+      Children:
+        - 1334830455420867328
+  - Entity: 37
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 1334830455420867328
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 3356632237642394112
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 8035926770970459835
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 36
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 10895835504661987328
+    Component::Transform:
+      Translation: [-0.25, -9.12859058, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 17331202929075351552
+      Children:
+        - 8748571509136384000
+  - Entity: 35
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 8748571509136384000
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 10895835504661987328
+      Children:
+        - 11738019860212310016
+  - Entity: 34
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 11738019860212310016
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 8748571509136384000
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 33
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 10510511310589536256
+    Component::Transform:
+      Translation: [-0.25, -18.1176052, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 17331202929075351552
+      Children:
+        - 266008395297202752
+  - Entity: 32
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 266008395297202752
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 10510511310589536256
+      Children:
+        - 15727787794604521472
+  - Entity: 31
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 15727787794604521472
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 266008395297202752
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 30
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 7688586060325277696
+    Component::Transform:
+      Translation: [-0.25, -27.1108437, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 17331202929075351552
+      Children:
+        - 3123940358373018112
+  - Entity: 29
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 3123940358373018112
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 7688586060325277696
+      Children:
+        - 1665100173806316288
+  - Entity: 28
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 1665100173806316288
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 3123940358373018112
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 27
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 7334520882381434880
+    Component::Transform:
+      Translation: [-0.25, -36.0946426, 0]
+      Rotation: [-1.26223504e-05, 90, 2.63823495e-06]
+      Scale: [0.0900000483, 0.0900000036, 0.0900000483]
+      Static: false
+    Component::Link:
+      Parent: 17331202929075351552
+      Children:
+        - 8472292835462387712
+  - Entity: 26
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 8472292835462387712
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 7334520882381434880
+      Children:
+        - 9428170025049286656
+  - Entity: 25
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 9428170025049286656
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 8472292835462387712
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 24
+    Component::Tag:
+      Tag: gate(Clone)
+    Component::ID:
+      ID: 12624312689031591936
+    Component::Transform:
+      Translation: [-5.44999981, 0.75, -60.1329994]
+      Rotation: [0, 0, 0]
+      Scale: [0.100000001, 0.100000001, 0.100000001]
+      Static: false
+    Component::Link:
+      Parent: 15041047262217275392
+      Children:
+        - 9200596755491356672
+  - Entity: 23
+    Component::Tag:
+      Tag: gate(Clone)
+    Component::ID:
+      ID: 9200596755491356672
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 12624312689031591936
+      Children:
+        - 8115427440544685056
+  - Entity: 22
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 8115427440544685056
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 9200596755491356672
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 7021117453745597684
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 21
+    Component::Tag:
+      Tag: TrackRoadPart(Clone)
+    Component::ID:
+      ID: 18143580722814990336
+    Component::Transform:
+      Translation: [-5.07000017, 0, -12.0590658]
+      Rotation: [0, 0, 0]
+      Scale: [0.999999523, 1, 0.999999523]
+      Static: false
+    Component::Link:
+      Parent: 15041047262217275392
+      Children:
+        - 11460953185592473600
+        - 2419621069317187584
+        - 9974318597315256320
+        - 17108019576835588096
+        - 17446664053012946944
+  - Entity: 20
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 11460953185592473600
+    Component::Transform:
+      Translation: [-0.25, -36.0946426, 0]
+      Rotation: [-1.26223504e-05, 90, 2.63823495e-06]
+      Scale: [0.0900000483, 0.0900000036, 0.0900000483]
+      Static: false
+    Component::Link:
+      Parent: 18143580722814990336
+      Children:
+        - 11250370241918205952
+  - Entity: 19
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 11250370241918205952
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 11460953185592473600
+      Children:
+        - 11821812063906232320
+  - Entity: 18
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 11821812063906232320
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 11250370241918205952
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 17
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 2419621069317187584
+    Component::Transform:
+      Translation: [-0.25, -27.1108437, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 18143580722814990336
+      Children:
+        - 11290033910301698048
+  - Entity: 16
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 11290033910301698048
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2419621069317187584
+      Children:
+        - 8673352611623188480
+  - Entity: 15
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 8673352611623188480
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 11290033910301698048
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 14
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 9974318597315256320
+    Component::Transform:
+      Translation: [-0.25, -18.1176052, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 18143580722814990336
+      Children:
+        - 2440393985478830080
+  - Entity: 13
+    Component::Tag:
+      Tag: supports-wide(Clone)(Clone)
+    Component::ID:
+      ID: 2440393985478830080
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 9974318597315256320
+      Children:
+        - 16369274616393617408
+  - Entity: 12
+    Component::Tag:
+      Tag: colormap(Clone)(Clone)
+    Component::ID:
+      ID: 16369274616393617408
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2440393985478830080
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 11
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 17108019576835588096
+    Component::Transform:
+      Translation: [-0.25, -9.12859058, 0]
+      Rotation: [0, 90, 0]
+      Scale: [0.0899999961, 0.0900000036, 0.0899999961]
+      Static: false
+    Component::Link:
+      Parent: 18143580722814990336
+      Children:
+        - 17345142689371688960
+  - Entity: 10
+    Component::Tag:
+      Tag: supports-wide(Clone)
+    Component::ID:
+      ID: 17345142689371688960
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 17108019576835588096
+      Children:
+        - 13744255322529939456
+  - Entity: 9
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 13744255322529939456
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 17345142689371688960
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 12978907811945361281
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 8
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)
+    Component::ID:
+      ID: 17446664053012946944
+    Component::Transform:
+      Translation: [-0.395119667, -0.459005326, -10.0799999]
+      Rotation: [0, 0, 1.05267996e-10]
+      Scale: [0.0499643646, 0.0500000007, 0.0499643646]
+      Static: false
+    Component::Link:
+      Parent: 18143580722814990336
+      Children:
+        - 11669146841736091648
+  - Entity: 7
+    Component::Tag:
+      Tag: track-road-wide-straight(Clone)
+    Component::ID:
+      ID: 11669146841736091648
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 17446664053012946944
+      Children:
+        - 18140665468054632448
+  - Entity: 6
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 18140665468054632448
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 11669146841736091648
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 8035926770970459835
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 5
+    Component::Tag:
+      Tag: BananaObstacle(Clone)
+    Component::ID:
+      ID: 17766691999334735872
+    Component::Transform:
+      Translation: [14.1771412, 0.221415579, -47.7184792]
+      Rotation: [0, -29.9999657, 0]
+      Scale: [0.0250000004, 0.0250000004, 0.0250000004]
+      Static: false
+    Component::PrefabInstance:
+      Id: 14944532339740765548
+      Version: 3
+    Component::Link:
+      Parent: 0
+      Children:
+        - 14106506990034012160
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 1
+      MotionQuality: 1
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::BoxCollider:
+      Enabled: true
+      Size: [5, 5, 5]
+    Item:
+      Enabled: false
+    Obstacle:
+      Value: 1
+  - Entity: 4
+    Component::Tag:
+      Tag: item-banana(Clone)
+    Component::ID:
+      ID: 14106506990034012160
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 17766691999334735872
+      Children:
+        - 12205109605034719232
+  - Entity: 3
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 12205109605034719232
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 14106506990034012160
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 8357224531347045213
+        MeshIndex: 0
+        SubMeshIndex: 0
+  - Entity: 2
+    Component::Tag:
+      Tag: Coin(Clone)
+    Component::ID:
+      ID: 2650180173606062592
+    Component::Transform:
+      Translation: [30.9261856, 0.266565561, -68.7564774]
+      Rotation: [0, -29.9999657, 0]
+      Scale: [0.0300000031, 0.0299999993, 0.0300000031]
+      Static: false
+    Component::PrefabInstance:
+      Id: 7323856726782565947
+      Version: 9
+    Component::Link:
+      Parent: 0
+      Children:
+        - 4968220530621853696
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: true
+      Type: 2
+      MotionQuality: 1
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 0
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::SphereCollider:
+      Enabled: true
+      Radius: 20
+    Coin:
+      Value: 1000
+    Item:
+      Enabled: false
+  - Entity: 1
+    Component::Tag:
+      Tag: item-coin-silver(Clone)
+    Component::ID:
+      ID: 4968220530621853696
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 2650180173606062592
+      Children:
+        - 3895419547298577408
+  - Entity: 0
+    Component::Tag:
+      Tag: colormap(Clone)
+    Component::ID:
+      ID: 3895419547298577408
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 4968220530621853696
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6198298381560671307
+      Mesh:
+        UUID: 7321002217532407064
+        MeshIndex: 0
+        SubMeshIndex: 0
+User Systems:
+  - 1235532775420066905
+  - 8123073847668204429
+  - 9237715305936940555
+  - 6749889921041121830
+User Components:
+  - 16760085139454737834
+  - 18179794844206499024
+  - 11540510044302971899
+  - 18302177574194052322
+  - 8854989110761690149
+  - 10889622258715599482
+  - 7490827275809130383
+User Helper Scripts:
+  []

@@ -1,0 +1,5 @@
+Project:
+  Name: KennyJamProject
+  StartingScene: Scenes\EmptyScene.humble
+  AssetDirectory: Assets
+  ScriptDirectory: Assets\Scripts

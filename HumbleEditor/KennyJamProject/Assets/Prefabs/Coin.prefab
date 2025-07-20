@@ -1,0 +1,72 @@
+Prefab:
+  - Entities:
+      - Entity: 184
+        Component::Tag:
+          Tag: Coin
+        Component::ID:
+          ID: 7104915734875214848
+        Component::Transform:
+          Translation: [30.9261856, 0.266565561, -68.7564774]
+          Rotation: [0, -29.9999657, 0]
+          Scale: [0.0300000031, 0.0299999993, 0.0300000031]
+          Static: false
+        Component::PrefabInstance:
+          Id: 7323856726782565947
+          Version: 7
+        Component::Link:
+          Parent: 0
+          Children:
+            - 13678315826260502528
+        Component::Rigidbody:
+          Enabled: true
+          Trigger: true
+          Type: 2
+          MotionQuality: 1
+          Mass: 1
+          Friction: 0.200000003
+          GravityFactor: 0
+          Restitution: 0.100000001
+          LinearDamping: 0.0500000007
+          AngularDamping: 0.0500000007
+        Component::SphereCollider:
+          Enabled: true
+          Radius: 20
+        Coin:
+          Value: 1000
+        Item:
+          Enabled: true
+      - Entity: 185
+        Component::Tag:
+          Tag: item-coin-silver
+        Component::ID:
+          ID: 13678315826260502528
+        Component::Transform:
+          Translation: [0, 0, 0]
+          Rotation: [0, 0, 0]
+          Scale: [1, 1, 1]
+          Static: false
+        Component::Link:
+          Parent: 7104915734875214848
+          Children:
+            - 18341766014721583104
+      - Entity: 186
+        Component::Tag:
+          Tag: colormap
+        Component::ID:
+          ID: 18341766014721583104
+        Component::Transform:
+          Translation: [0, 0, 0]
+          Rotation: [0, 0, 0]
+          Scale: [1, 1, 1]
+          Static: false
+        Component::Link:
+          Parent: 13678315826260502528
+          Children:
+            []
+        Component::StaticMesh:
+          Enabled: true
+          Material: 6198298381560671307
+          Mesh:
+            UUID: 7321002217532407064
+            MeshIndex: 0
+            SubMeshIndex: 0

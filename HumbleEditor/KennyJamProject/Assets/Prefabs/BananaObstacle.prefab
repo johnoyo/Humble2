@@ -1,0 +1,72 @@
+Prefab:
+  - Entities:
+      - Entity: 181
+        Component::Tag:
+          Tag: BananaObstacle
+        Component::ID:
+          ID: 15715669892414103552
+        Component::Transform:
+          Translation: [14.1771412, 0.221415579, -47.7184792]
+          Rotation: [0, -29.9999657, 0]
+          Scale: [0.0250000004, 0.0250000004, 0.0250000004]
+          Static: false
+        Component::PrefabInstance:
+          Id: 14944532339740765548
+          Version: 2
+        Component::Link:
+          Parent: 0
+          Children:
+            - 6391677746661177344
+        Component::Rigidbody:
+          Enabled: true
+          Trigger: false
+          Type: 1
+          MotionQuality: 1
+          Mass: 1
+          Friction: 0.200000003
+          GravityFactor: 1
+          Restitution: 0.100000001
+          LinearDamping: 0.0500000007
+          AngularDamping: 0.0500000007
+        Component::BoxCollider:
+          Enabled: true
+          Size: [5, 5, 5]
+        Item:
+          Enabled: true
+        Obstacle:
+          Value: 1
+      - Entity: 182
+        Component::Tag:
+          Tag: item-banana
+        Component::ID:
+          ID: 6391677746661177344
+        Component::Transform:
+          Translation: [0, 0, 0]
+          Rotation: [0, 0, 0]
+          Scale: [1, 1, 1]
+          Static: false
+        Component::Link:
+          Parent: 15715669892414103552
+          Children:
+            - 2236793666631028736
+      - Entity: 183
+        Component::Tag:
+          Tag: colormap
+        Component::ID:
+          ID: 2236793666631028736
+        Component::Transform:
+          Translation: [0, 0, 0]
+          Rotation: [0, 0, 0]
+          Scale: [1, 1, 1]
+          Static: false
+        Component::Link:
+          Parent: 6391677746661177344
+          Children:
+            []
+        Component::StaticMesh:
+          Enabled: true
+          Material: 6198298381560671307
+          Mesh:
+            UUID: 8357224531347045213
+            MeshIndex: 0
+            SubMeshIndex: 0

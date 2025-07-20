@@ -1,0 +1,72 @@
+Prefab:
+  - Entities:
+      - Entity: 1048578
+        Component::Tag:
+          Tag: PowerUpBox
+        Component::ID:
+          ID: 17464694666060222464
+        Component::Transform:
+          Translation: [20.6783981, 0.177374244, -57.0751801]
+          Rotation: [0, -30, 0]
+          Scale: [0.0199999996, 0.0199999996, 0.0199999996]
+          Static: false
+        Component::PrefabInstance:
+          Id: 13662391550117419451
+          Version: 10
+        Component::Link:
+          Parent: 0
+          Children:
+            - 8677872487457547264
+        Component::Rigidbody:
+          Enabled: true
+          Trigger: true
+          Type: 2
+          MotionQuality: 1
+          Mass: 1
+          Friction: 0.200000003
+          GravityFactor: 0
+          Restitution: 0.100000001
+          LinearDamping: 0.0500000007
+          AngularDamping: 0.0500000007
+        Component::BoxCollider:
+          Enabled: true
+          Size: [30, 10, 30]
+        Item:
+          Enabled: true
+        PowerUp:
+          Value: 50
+      - Entity: 1048577
+        Component::Tag:
+          Tag: item-box
+        Component::ID:
+          ID: 8677872487457547264
+        Component::Transform:
+          Translation: [0, 0, 0]
+          Rotation: [0, 0, 0]
+          Scale: [1, 1, 1]
+          Static: false
+        Component::Link:
+          Parent: 17464694666060222464
+          Children:
+            - 17991173423313340416
+      - Entity: 1048576
+        Component::Tag:
+          Tag: colormap
+        Component::ID:
+          ID: 17991173423313340416
+        Component::Transform:
+          Translation: [0, 0, 0]
+          Rotation: [0, 0, 0]
+          Scale: [1, 1, 1]
+          Static: false
+        Component::Link:
+          Parent: 8677872487457547264
+          Children:
+            []
+        Component::StaticMesh:
+          Enabled: true
+          Material: 6198298381560671307
+          Mesh:
+            UUID: 14235897435519358733
+            MeshIndex: 0
+            SubMeshIndex: 0
