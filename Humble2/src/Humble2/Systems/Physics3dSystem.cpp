@@ -145,13 +145,11 @@ namespace HBL2
 		m_Context->Group<Component::Rigidbody>(Get<Component::Transform>)
 			.Each([this](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
 			{
-				return;
-
 				JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
 				if (rb.BodyID == Physics::InvalidID)
 				{
 					AddRigidBody(entity, rb, transform, bodyInterface);
-					bodyInterface.AddBody(GetBodyIDFromPhysicsID(rb.BodyID), JPH::EActivation::DontActivate);
+					bodyInterface.AddBody(GetBodyIDFromPhysicsID(rb.BodyID), JPH::EActivation::Activate);
 					return;
 				}
 
@@ -191,6 +189,11 @@ namespace HBL2
 				if (bodyInterface.GetFriction(bodyID) != rb.Friction)
 				{
 					bodyInterface.SetFriction(bodyID, rb.Friction);
+				}
+
+				if (bodyInterface.GetGravityFactor(bodyID) != rb.GravityFactor)
+				{
+					bodyInterface.SetGravityFactor(bodyID, rb.GravityFactor);
 				}
 
 				if (bodyInterface.GetRestitution(bodyID) != rb.Restitution)
@@ -314,13 +317,16 @@ namespace HBL2
 
 		// Create the settings for the body itself.
 		JPH::BodyCreationSettings bodySettings(shapeRef, bodyPosition, bodyRotation, type, bodyLayer);
+		bodySettings.mGravityFactor = rb.GravityFactor;
 		bodySettings.mFriction = rb.Friction;
 		bodySettings.mRestitution = rb.Restitution;
 		bodySettings.mLinearDamping = rb.LinearDamping;
 		bodySettings.mAngularDamping = rb.AngularDamping;
 		bodySettings.mAllowDynamicOrKinematic = true;
 		bodySettings.mIsSensor = rb.Trigger;
+
 		bodySettings.mCollideKinematicVsNonDynamic = rb.Trigger;
+		bodySettings.mMotionQuality = (rb.MotionQuality == Component::Rigidbody::EMotionQuality::Discrete ? JPH::EMotionQuality::Discrete : JPH::EMotionQuality::LinearCast);
 
 		// Create the actual rigid body. Note that if we run out of bodies this can return nullptr.
 		JPH::Body* body = bodyInterface.CreateBody(bodySettings);

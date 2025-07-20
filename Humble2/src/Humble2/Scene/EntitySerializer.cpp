@@ -315,8 +315,10 @@ namespace HBL2
 			out << YAML::Key << "Enabled" << YAML::Value << rb.Enabled;
 			out << YAML::Key << "Trigger" << YAML::Value << rb.Trigger;
 			out << YAML::Key << "Type" << YAML::Value << (int)rb.Type;
+			out << YAML::Key << "MotionQuality" << YAML::Value << (int)rb.MotionQuality;
 			out << YAML::Key << "Mass" << YAML::Value << (int)rb.Mass;
 			out << YAML::Key << "Friction" << YAML::Value << rb.Friction;
+			out << YAML::Key << "GravityFactor" << YAML::Value << rb.GravityFactor;
 			out << YAML::Key << "Restitution" << YAML::Value << rb.Restitution;
 			out << YAML::Key << "LinearDamping" << YAML::Value << rb.LinearDamping;
 			out << YAML::Key << "AngularDamping" << YAML::Value << rb.AngularDamping;
@@ -643,8 +645,16 @@ namespace HBL2
 			rb.Enabled = rb_NewComponent["Enabled"].as<bool>();
 			rb.Trigger = rb_NewComponent["Trigger"].as<bool>();
 			rb.Type = (Physics::BodyType)rb_NewComponent["Type"].as<int>();
+			if (rb_NewComponent["MotionQuality"].IsDefined()) // TODO: Remove if statement in the future.
+			{
+				rb.MotionQuality = (Component::Rigidbody::EMotionQuality)rb_NewComponent["MotionQuality"].as<int>();
+			}
 			rb.Mass = rb_NewComponent["Mass"].as<float>();
 			rb.Friction = rb_NewComponent["Friction"].as<float>();
+			if (rb_NewComponent["GravityFactor"].IsDefined()) // TODO: Remove if statement in the future.
+			{
+				rb.GravityFactor = rb_NewComponent["GravityFactor"].as<float>();
+			}
 			rb.Restitution = rb_NewComponent["Restitution"].as<float>();
 			rb.LinearDamping = rb_NewComponent["LinearDamping"].as<float>();
 			rb.AngularDamping = rb_NewComponent["AngularDamping"].as<float>();

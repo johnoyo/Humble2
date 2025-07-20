@@ -182,13 +182,21 @@ namespace HBL2
 
 		struct HBL2_API Rigidbody
 		{
+			enum class EMotionQuality
+			{
+				Discrete,
+				Continuos,
+			};
+
 			Physics::ID BodyID = Physics::InvalidID;
+			float GravityFactor = 1.0f;
 			float Friction = 0.2f;
 			float Restitution = 0.1f;
 			Physics::BodyType Type = Physics::BodyType::Static;
 			float LinearDamping = 0.05f;
 			float AngularDamping = 0.05f;
 			float Mass = 1.0f;
+			EMotionQuality MotionQuality = EMotionQuality::Discrete;
 			bool Trigger = false;
 			bool Dirty = false;
 			bool Enabled = true;
