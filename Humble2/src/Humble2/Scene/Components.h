@@ -148,10 +148,35 @@ namespace HBL2
 			bool Enabled = true;
 		};
 
+		struct HBL2_API AudioListener
+		{
+			bool Enabled;
+		};
+
 		struct HBL2_API AudioSource
 		{
+			enum AudioFlags : uint8_t
+			{
+				Looping = 1 << 0,
+				Spatialised = 1 << 1,
+			};
+
+			enum class PlaybackState : uint8_t
+			{
+				Stopped,
+				Playing,
+				Paused,
+				Trigger,
+				Resume,
+			};
+
 			Handle<Sound> Sound;
-			bool Enabled = true;
+			float Volume = 1.0f; // from 0 to 1
+			float Pitch = 1.f; // from 0.5 to 2
+			uint8_t Flags = 0;
+			PlaybackState State = PlaybackState::Stopped;
+
+			uint32_t ChannelIndex = UINT32_MAX; // For internall use only.
 		};
 
 		struct HBL2_API Rigidbody2D

@@ -246,7 +246,6 @@ namespace HBL2
 
 			auto& soundSource = m_Scene->GetComponent<Component::AudioSource>(m_Entity);
 
-			out << YAML::Key << "Enabled" << YAML::Value << soundSource.Enabled;
 
 			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
 
@@ -269,6 +268,10 @@ namespace HBL2
 			}
 
 			out << YAML::Key << "Sound" << YAML::Value << (soundAsset != nullptr ? soundAsset->UUID : (UUID)0);
+			out << YAML::Key << "Volume" << YAML::Value << soundSource.Volume;
+			out << YAML::Key << "Pitch" << YAML::Value << soundSource.Pitch;
+			out << YAML::Key << "Flags" << YAML::Value << soundSource.Flags;
+			out << YAML::Key << "State" << YAML::Value << (uint8_t)soundSource.State;
 
 			out << YAML::EndMap;
 		}
@@ -612,8 +615,11 @@ namespace HBL2
 		if (soundSource_NewComponent)
 		{
 			auto& soundSource = m_Scene->AddComponent<Component::AudioSource>(m_Entity);
-			soundSource.Enabled = soundSource_NewComponent["Enabled"].as<bool>();
 			soundSource.Sound = AssetManager::Instance->GetAsset<Sound>(soundSource_NewComponent["Sound"].as<UUID>());
+			soundSource.Volume = soundSource_NewComponent["Volume"].as<float>();
+			soundSource.Pitch = soundSource_NewComponent["Pitch"].as<float>();
+			soundSource.Flags = soundSource_NewComponent["Flags"].as<uint8_t>();
+			soundSource.State = (Component::AudioSource::PlaybackState)soundSource_NewComponent["State"].as<uint8_t>();
 		}
 
 		auto rb2d_NewComponent = entityNode["Component::Rigidbody2D"];

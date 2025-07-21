@@ -665,8 +665,6 @@ namespace HBL2
 			auto sound = ResourceManager::Instance->CreateSound({
 				.debugName = _strdup(std::format("{}-sound", soundName).c_str()),
 				.path = asset->FilePath,
-				.loop = soundProperties["Loop"].as<bool>(),
-				.startPaused = soundProperties["StartPaused"].as<bool>(),
 			});
 
 			stream.close();
@@ -1041,13 +1039,6 @@ namespace HBL2
 			HBL2_CORE_TRACE("Sound not found: {0}", ss.str());
 			ifStream.close();
 			return;
-		}
-
-		auto soundProperties = data["Sound"];
-		if (soundProperties)
-		{
-			soundProperties["Loop"] = sound->Loop;
-			soundProperties["StartPaused"] = sound->StartPaused;
 		}
 
 		std::ofstream ofStream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblsound", std::ios::out);
@@ -1691,7 +1682,11 @@ namespace HBL2
 		Sound* sound = ResourceManager::Instance->GetSound(soundHandle);
 		if (sound != nullptr)
 		{
-			sound->Destroy();
+			if (sound->Instance != nullptr)
+			{
+				sound->Instance->release();
+				sound->Instance = nullptr;
+			}
 		}
 
 		// Delete from pool.

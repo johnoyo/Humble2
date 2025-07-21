@@ -314,8 +314,49 @@ namespace HBL2
 				{
 					uint32_t soundHandle = audioSource.Sound.Pack();
 
-					ImGui::Checkbox("Enabled", &audioSource.Enabled);
 					ImGui::InputScalar("Sound", ImGuiDataType_U32, (void*)(intptr_t*)&soundHandle);
+					ImGui::DragFloat("Volume", &audioSource.Volume, 0.05f, 0.f, 1.f);
+					ImGui::DragFloat("Pitch", &audioSource.Pitch, 0.1f, 0.5f, 2.f);
+
+					// PlaybackState.
+					{
+						const char* options[] = { "Stopped", "Playing", "Paused" };
+						int currentItem = (uint8_t)audioSource.State;
+
+						if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
+						{
+							audioSource.State = (HBL2::Component::AudioSource::PlaybackState)currentItem;
+						}
+					}
+
+					static bool loop = false;
+					ImGui::Checkbox("Loop", &loop);
+
+					if (loop)
+					{
+						audioSource.Flags |= HBL2::Component::AudioSource::AudioFlags::Looping;
+					}
+					else
+					{
+						audioSource.Flags &= ~HBL2::Component::AudioSource::AudioFlags::Looping;
+					}
+
+					static bool spatialised = false;
+					ImGui::Checkbox("Spatialised", &spatialised);
+
+					if (spatialised)
+					{
+						audioSource.Flags |= HBL2::Component::AudioSource::AudioFlags::Spatialised;
+					}
+					else
+					{
+						audioSource.Flags &= ~HBL2::Component::AudioSource::AudioFlags::Spatialised;
+					}
+
+					if (!loop && !spatialised)
+					{
+						audioSource.Flags = 0;
+					}
 
 					if (ImGui::BeginDragDropTarget())
 					{
@@ -337,8 +378,6 @@ namespace HBL2
 									out << YAML::Key << "Sound" << YAML::Value;
 									out << YAML::BeginMap;
 									out << YAML::Key << "UUID" << YAML::Value << soundAsset->UUID;
-									out << YAML::Key << "Loop" << YAML::Value << false;
-									out << YAML::Key << "StartPaused" << YAML::Value << false;
 									out << YAML::EndMap;
 									out << YAML::EndMap;
 									fout << out.c_str();
@@ -797,9 +836,6 @@ namespace HBL2
 							}
 
 							ImGui::Text(std::format("Name: {}", sound->Name).c_str());
-
-							ImGui::Checkbox("Loop", &sound->Loop);
-							ImGui::Checkbox("StartPaused", &sound->StartPaused);
 						}
 						break;
 					case AssetType::Scene:

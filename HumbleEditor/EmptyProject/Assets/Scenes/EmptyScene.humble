@@ -92,8 +92,11 @@ Entities:
         MeshIndex: 0
         SubMeshIndex: 0
     Component::AudioSource:
-      Enabled: true
       Sound: 374884297105595585
+      Volume: 1.0
+      Pitch: 0.5
+      State: 1
+      Flags: 0
     NewComponent:
       Value: 1
       SceneHandle: 0
@@ -182,7 +185,7 @@ Entities:
       Static: false
     Component::SkyLight:
       Enabled: true
-      EquirectangularMap: 6203812838040720333
+      EquirectangularMap: 15759064936957256613
   - Entity: 6
     Component::Tag:
       Tag: Cube
