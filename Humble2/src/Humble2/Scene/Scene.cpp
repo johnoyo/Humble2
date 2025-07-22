@@ -83,6 +83,7 @@ namespace HBL2
         copy_component(Component::StaticMesh{});
         copy_component(Component::Light{});
         copy_component(Component::SkyLight{});
+        copy_component(Component::AudioListener{});
         copy_component(Component::AudioSource{});
         copy_component(Component::Rigidbody2D{});
         copy_component(Component::BoxCollider2D{});
@@ -204,6 +205,10 @@ namespace HBL2
         m_Registry.storage<Component::AudioSource>().clear();
         m_Registry.compact<Component::AudioSource>();
 
+        m_Registry.clear<Component::AudioListener>();
+        m_Registry.storage<Component::AudioListener>().clear();
+        m_Registry.compact<Component::AudioListener>();
+
         m_Registry.clear<Component::Rigidbody2D>();
         m_Registry.storage<Component::Rigidbody2D>().clear();
         m_Registry.compact<Component::Rigidbody2D>();
@@ -318,6 +323,7 @@ namespace HBL2
         copy_component(Component::StaticMesh{});
         copy_component(Component::Light{});
         copy_component(Component::SkyLight{});
+        copy_component(Component::AudioListener{});
         copy_component(Component::AudioSource{});
         copy_component(Component::Rigidbody2D{});
         copy_component(Component::BoxCollider2D{});

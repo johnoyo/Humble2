@@ -320,6 +320,12 @@ namespace HBL2
 
 			Terrain() = default;
 
+			~Terrain()
+			{
+				JobSystem::Get().Wait(ChunkDataContext);
+				JobSystem::Get().Wait(ChunkMeshDataContext);
+			}
+
 			Terrain(const Terrain& other)
 				: ChunkSize(other.ChunkSize),
 				  MaxViewDst(other.MaxViewDst),
@@ -338,6 +344,11 @@ namespace HBL2
 				  Regenerate(other.Regenerate)
 			{
 				// NOTE: Only copy the data and parameters of the chunk, the other will be calculated from scratch.
+				JobSystem::Get().Wait(ChunkDataContext);
+				JobSystem::Get().Wait(ChunkMeshDataContext);
+
+				JobSystem::Get().Wait(other.ChunkDataContext);
+				JobSystem::Get().Wait(other.ChunkMeshDataContext);
 			}
 
 			Terrain& operator=(const Terrain& other)
@@ -369,6 +380,11 @@ namespace HBL2
 				Regenerate = other.Regenerate;
 
 				// NOTE: Only copy the data and parameters of the chunk, the other will be calculated from scratch.
+				JobSystem::Get().Wait(ChunkDataContext);
+				JobSystem::Get().Wait(ChunkMeshDataContext);
+
+				JobSystem::Get().Wait(other.ChunkDataContext);
+				JobSystem::Get().Wait(other.ChunkMeshDataContext);
 
 				return *this;
 			}

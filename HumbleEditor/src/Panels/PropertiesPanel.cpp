@@ -391,6 +391,11 @@ namespace HBL2
 						}
 					}
 				});
+
+				DrawComponent<HBL2::Component::AudioListener>("AudioListener", m_ActiveScene, [this](HBL2::Component::AudioListener& audioListener)
+				{
+					ImGui::Checkbox("Enabled", &audioListener.Enabled);
+				});
 				
 				DrawComponent<HBL2::Component::Rigidbody2D>("Rigidbody2D", m_ActiveScene, [this](HBL2::Component::Rigidbody2D& rb2d)
 				{
