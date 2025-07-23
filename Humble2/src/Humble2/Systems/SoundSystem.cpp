@@ -65,6 +65,8 @@ namespace HBL2
 
     void SoundSystem::OnUpdate(float ts)
     {
+        BEGIN_PROFILE_SYSTEM();
+
         m_Context->View<Component::AudioSource>()
             .Each([&](Entity entity, Component::AudioSource& audioSource)
             {
@@ -146,6 +148,8 @@ namespace HBL2
             });
 
         m_SoundSystem->update();
+
+        END_PROFILE_SYSTEM(RunningTime);
     }
 
     void SoundSystem::OnDestroy()

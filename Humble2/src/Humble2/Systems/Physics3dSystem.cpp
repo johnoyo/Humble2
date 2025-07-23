@@ -141,6 +141,8 @@ namespace HBL2
 
 	void Physics3dSystem::OnFixedUpdate()
 	{
+		BEGIN_PROFILE_SYSTEM();
+
 		// Handle runtime creations and properties update.
 		m_Context->Group<Component::Rigidbody>(Get<Component::Transform>)
 			.Each([this](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
@@ -240,6 +242,8 @@ namespace HBL2
 
 				transform.Scale = originalScale;
 			});
+
+		END_PROFILE_SYSTEM(RunningTime);
 	}
 
 	void Physics3dSystem::OnDestroy()

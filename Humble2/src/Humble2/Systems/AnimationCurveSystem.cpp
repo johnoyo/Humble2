@@ -69,6 +69,8 @@ namespace HBL2
 
 	void AnimationCurveSystem::OnUpdate(float ts)
 	{
+		BEGIN_PROFILE_SYSTEM();
+
 		m_Context->View<Component::AnimationCurve>()
 			.Each([&](Component::AnimationCurve& curve)
 			{
@@ -89,6 +91,8 @@ namespace HBL2
 					curve.RecalculateTangents = false;
 				}
 			});
+
+		END_PROFILE_SYSTEM(RunningTime);
 	}
 
 	float AnimationCurveSystem::Evaluate(const Component::AnimationCurve& curve, float t)

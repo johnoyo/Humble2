@@ -51,6 +51,8 @@ namespace HBL2
 
 	void TerrainSystem::OnUpdate(float ts)
 	{
+		BEGIN_PROFILE_SYSTEM();
+
 		Scene* scene = (Context::Mode == Mode::Editor ? m_EditorScene : m_Context);
 
 		const Component::Transform& viewer = scene->GetComponent<Component::Transform>(GetMainCamera());
@@ -125,6 +127,8 @@ namespace HBL2
 
 				UpdateVisibleChunks(terrain, curve, viewer);
 			});
+
+		END_PROFILE_SYSTEM(RunningTime);
 	}
 
 	void TerrainSystem::OnDestroy()

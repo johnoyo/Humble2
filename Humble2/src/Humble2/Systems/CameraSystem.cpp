@@ -48,6 +48,8 @@ namespace HBL2
 
 	void CameraSystem::OnUpdate(float ts)
 	{
+		BEGIN_PROFILE_SYSTEM();
+
 		m_Context->Group<Component::Camera>(Get<Component::Transform>)
 			.Each([&](Entity entity, Component::Camera& camera, Component::Transform& transform)
 			{
@@ -76,6 +78,8 @@ namespace HBL2
 					}
 				}
 			});
+
+		END_PROFILE_SYSTEM(RunningTime);
 	}
 
 	void CameraSystem::CalculateFrustum(Component::Camera& camera)

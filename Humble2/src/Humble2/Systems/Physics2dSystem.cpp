@@ -51,6 +51,8 @@ namespace HBL2
 
 	void Physics2dSystem::OnFixedUpdate()
 	{
+		BEGIN_PROFILE_SYSTEM();
+
 		// Handle runtime creations and properties update.
 		m_Context->Group<Component::Rigidbody2D>(Get<Component::Transform>)
 			.Each([&](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
@@ -174,6 +176,8 @@ namespace HBL2
 
 			m_PhysicsEngine->DispatchTriggerEvent(Physics::CollisionEventType::Exit, &triggerExitEvent);
 		}
+
+		END_PROFILE_SYSTEM(RunningTime);
 	}
 
 	void Physics2dSystem::OnDestroy()
