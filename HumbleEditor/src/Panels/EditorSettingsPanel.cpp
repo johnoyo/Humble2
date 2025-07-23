@@ -24,7 +24,7 @@ namespace HBL2
 					auto& camera = m_Context->GetComponent<HBL2::Component::Camera>(entity);
 
 					ImGui::SliderFloat("Near", &camera.Near, 0, 10);
-					ImGui::SliderFloat("Far", &camera.Far, 100, 1500);
+					ImGui::SliderFloat("Far", &camera.Far, 100, 2500);
 					ImGui::SliderFloat("FOV", &camera.Fov, 0, 120);
 					ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 3);
 					ImGui::SliderFloat("Exposure", &camera.Exposure, 0, 50);
@@ -35,7 +35,7 @@ namespace HBL2
 
 					ImGui::Text("Camera Controls:");
 
-					ImGui::SliderFloat("MovementSpeed", &editorCamera.MovementSpeed, 0, 50);
+					ImGui::SliderFloat("MovementSpeed", &editorCamera.MovementSpeed, 0, 150);
 					ImGui::SliderFloat("MouseSensitivity", &editorCamera.MouseSensitivity, 0, 100);
 					ImGui::SliderFloat("PanSpeed", &editorCamera.PanSpeed, 0, 200);
 					ImGui::SliderFloat("ZoomSpeed", &editorCamera.ZoomSpeed, 0, 15);
