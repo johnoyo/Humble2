@@ -320,12 +320,6 @@ namespace HBL2
 
 			Terrain() = default;
 
-			~Terrain()
-			{
-				JobSystem::Get().Wait(ChunkDataContext);
-				JobSystem::Get().Wait(ChunkMeshDataContext);
-			}
-
 			Terrain(const Terrain& other)
 				: ChunkSize(other.ChunkSize),
 				  MaxViewDst(other.MaxViewDst),

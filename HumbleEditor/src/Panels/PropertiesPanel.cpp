@@ -504,6 +504,8 @@ namespace HBL2
 					ImGui::DragInt("Seed", (int*)& t.Seed);
 					ImGui::DragInt("InEditorPreviewLevelOfDetail", (int*)& t.InEditorPreviewLevelOfDetail, 1.f, 0, 6);
 					ImGui::DragFloat("HeightMultiplier", &t.HeightMultiplier);
+					ImGui::DragFloat("Scale", &t.Scale);
+					ImGui::DragFloat("NoiseScale", &t.NoiseScale);
 					ImGui::DragFloat2("Offset", glm::value_ptr(t.Offset));
 
 					uint32_t materialHandle = t.Material.Pack();

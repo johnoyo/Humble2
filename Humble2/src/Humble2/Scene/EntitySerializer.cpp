@@ -389,6 +389,8 @@ namespace HBL2
 			out << YAML::Key << "NormaliseMode" << YAML::Value << (uint32_t)t.NormaliseMode;
 			out << YAML::Key << "Seed" << YAML::Value << t.Seed;
 			out << YAML::Key << "HeightMultiplier" << YAML::Value << t.HeightMultiplier;
+			out << YAML::Key << "Scale" << YAML::Value << t.Scale;
+			out << YAML::Key << "NoiseScale" << YAML::Value << t.NoiseScale;
 			out << YAML::Key << "Regenerate" << YAML::Value << t.Regenerate;
 
 			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
@@ -715,12 +717,23 @@ namespace HBL2
 			t.NormaliseMode = (Component::Terrain::ENormaliseMode)t_NewComponent["NormaliseMode"].as<uint32_t>();
 			t.Seed = t_NewComponent["Seed"].as<uint64_t>();
 			t.HeightMultiplier = t_NewComponent["HeightMultiplier"].as<float>();
-			t.Regenerate = t_NewComponent["Regenerate"].as<bool>();
 
-			if (t_NewComponent["Material"].IsDefined())
+			if (t_NewComponent["Scale"].IsDefined()) // TODO: Remove if.
+			{
+				t.Scale = t_NewComponent["Scale"].as<float>();
+			}
+
+			if (t_NewComponent["NoiseScale"].IsDefined()) // TODO: Remove if.
+			{
+				t.NoiseScale = t_NewComponent["NoiseScale"].as<float>();
+			}
+
+			if (t_NewComponent["Material"].IsDefined()) // TODO: Remove if.
 			{
 				t.Material = AssetManager::Instance->GetAsset<Material>(t_NewComponent["Material"].as<UUID>());
 			}
+
+			t.Regenerate = t_NewComponent["Regenerate"].as<bool>();
 		}
 
 		auto curve_NewComponent = entityNode["Component::AnimationCurve"];

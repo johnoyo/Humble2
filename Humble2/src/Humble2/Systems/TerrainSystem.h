@@ -33,6 +33,8 @@ namespace HBL2
 		void CreateChunkMesh(Component::Terrain::TerrainChunkMeshData& chunkMeshData);
 		Entity GetMainCamera();
 
+		void CleanUpChunks();
+
 	private:
 		ResourceManager* m_ResourceManager = nullptr;
 		Scene* m_EditorScene = nullptr;
