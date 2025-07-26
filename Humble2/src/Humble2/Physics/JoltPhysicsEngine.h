@@ -143,7 +143,6 @@ namespace HBL2
 		virtual void SetLinearVelocity(Component::Rigidbody& rb, const glm::vec3& linearVelocity) override;
 		virtual glm::vec3 GetLinearVelocity(Component::Rigidbody& rb) override;
 
-		virtual void AddAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity) override;
 		virtual void SetAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity) override;
 		virtual glm::vec3 GetAngularVelocity(Component::Rigidbody& rb) override;
 

@@ -60,7 +60,7 @@ namespace HBL2
 			else
 			{
 				Physics::CollisionEnterEvent collisionEnterEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
-				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Enter, &collisionEnterEvent);
+				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Stay, &collisionEnterEvent);
 			}
 		}
 
@@ -217,7 +217,7 @@ namespace HBL2
 		// Update internal simulation step.
 		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
 		const float cDeltaTime = Time::FixedTimeStep;
-		const int cCollisionSteps = 1;
+		const int cCollisionSteps = 4;
 
 		m_PhysicsEngine->Step(cDeltaTime, cCollisionSteps);
 
@@ -328,6 +328,7 @@ namespace HBL2
 		bodySettings.mAngularDamping = rb.AngularDamping;
 		bodySettings.mAllowDynamicOrKinematic = true;
 		bodySettings.mIsSensor = rb.Trigger;
+		bodySettings.mMaxLinearVelocity = 1000.f;
 
 		bodySettings.mCollideKinematicVsNonDynamic = rb.Trigger;
 		bodySettings.mMotionQuality = (rb.MotionQuality == Component::Rigidbody::EMotionQuality::Discrete ? JPH::EMotionQuality::Discrete : JPH::EMotionQuality::LinearCast);
