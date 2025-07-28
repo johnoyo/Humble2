@@ -27,6 +27,7 @@ Installation:
 
 - NOTE: You need to have installed the [VulkanSDK](https://vulkan.lunarg.com/sdk/home) with the optional debug libraries.
 
-Screenshots:
+Screenshots & Gifs:
 ------------
-![alt text](Resources/Screenshots/editor-0.png)
+![editor-0](Resources/Screenshots/editor-0.png)
+![humble-editor](Resources/Gifs/humble-editor.gif)
