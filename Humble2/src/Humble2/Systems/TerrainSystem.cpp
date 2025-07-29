@@ -548,18 +548,68 @@ namespace HBL2
 
 	void TerrainSystem::UpdateVisibleChunks(Component::Terrain& terrain, Component::AnimationCurve& curve, const Component::Transform& viewer)
 	{
-		m_Context->Group<Component::TerrainChunk>(Get<Component::StaticMesh>)
-			.Each([&](Component::TerrainChunk& terrainChunk, Component::StaticMesh& chunkMesh)
+		glm::vec3 scaledViewerPosition = viewer.Translation / terrain.Scale;
+
+		float maxDistanceForChunkToStayLoaded = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold * 4;
+		DynamicArray<Entity, BumpAllocator> chunks = MakeDynamicArray<Entity>(&Allocator::Frame);
+
+		m_Context->Group<Component::TerrainChunk>(Get<Component::Transform, Component::StaticMesh>)
+			.Each([&](Entity chunk, Component::TerrainChunk& terrainChunk, Component::Transform& tr, Component::StaticMesh& chunkMesh)
 			{
+				// Disable all the chunks visible last update.
 				if (terrainChunk.VisibleLastUpdate)
 				{
 					chunkMesh.Enabled = false;
 					terrainChunk.Visible = false;
 					terrainChunk.VisibleLastUpdate = false;
 				}
+
+				// If the distance of the chunk is bigger than the threshold to stay loaded, unload it.
+				if (glm::distance(scaledViewerPosition, tr.Translation) >= maxDistanceForChunkToStayLoaded)
+				{
+					// Clean up gpu buffers.
+					for (auto& lodMesh : terrainChunk.LodMeshes)
+					{
+						// Skip chunk unload, si,ce a job is generating a lod mesh atm.
+						if (lodMesh.HasRequestedMesh && !lodMesh.HasMesh)
+						{
+							return;
+						}
+
+						m_ResourceManager->DeleteBuffer(lodMesh.IndexBuffer);
+						m_ResourceManager->DeleteBuffer(lodMesh.VertexBuffer);
+						m_ResourceManager->DeleteMesh(lodMesh.Mesh);
+					}
+
+					// Store chunk entities to remove.
+					chunks.Add(chunk);
+
+					// Remove the chunk entity from the terrain chunk cache.
+					glm::ivec2 chunkCoordToRemove;
+					bool chunkCoordToRemoveFound = false;
+
+					for (const auto& [coord, entity] : terrain.ChunksCache)
+					{
+						if (entity == chunk)
+						{
+							chunkCoordToRemove = coord;
+							chunkCoordToRemoveFound = true;
+							break;
+						}
+					}
+
+					if (chunkCoordToRemoveFound)
+					{
+						terrain.ChunksCache.erase(chunkCoordToRemove);
+					}
+				}
 			});
 
-		glm::vec3 scaledViewerPosition = viewer.Translation / terrain.Scale;
+		// Destroy chunk entities that need to be unloaded.
+		for (auto chunk : chunks)
+		{
+			m_Context->DestroyEntity(chunk);
+		}
 
 		int32_t currentChunkCoordX = (int32_t)(scaledViewerPosition.x / terrain.ChunkSize);
 		int32_t currentChunkCoordY = (int32_t)(scaledViewerPosition.z / terrain.ChunkSize);
@@ -726,7 +776,7 @@ namespace HBL2
 	void TerrainSystem::CleanUpChunks()
 	{
 		// Clean up resources of terrain chunks.
-		std::vector<Entity> chunks;
+		DynamicArray<Entity, BumpAllocator> chunks = MakeDynamicArray<Entity>(&Allocator::Frame);
 
 		m_Context->View<Component::TerrainChunk>()
 			.Each([&](Entity chunk, Component::TerrainChunk& terrainChunk)
@@ -738,7 +788,7 @@ namespace HBL2
 					m_ResourceManager->DeleteMesh(lodMesh.Mesh);
 				}
 
-				chunks.push_back(chunk);
+				chunks.Add(chunk);
 			});
 
 		// NOTE: We need to do such excessive clean up here because of play mode logic.

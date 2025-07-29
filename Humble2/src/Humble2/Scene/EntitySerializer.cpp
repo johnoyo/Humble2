@@ -269,8 +269,8 @@ namespace HBL2
 			out << YAML::Key << "Sound" << YAML::Value << (soundAsset != nullptr ? soundAsset->UUID : (UUID)0);
 			out << YAML::Key << "Volume" << YAML::Value << soundSource.Volume;
 			out << YAML::Key << "Pitch" << YAML::Value << soundSource.Pitch;
-			out << YAML::Key << "Flags" << YAML::Value << soundSource.Flags;
-			out << YAML::Key << "State" << YAML::Value << (uint8_t)soundSource.State;
+			out << YAML::Key << "State" << YAML::Value << (uint32_t)(uint8_t)soundSource.State;
+			out << YAML::Key << "Flags" << YAML::Value << (uint32_t)soundSource.Flags;
 
 			out << YAML::EndMap;
 		}
@@ -630,8 +630,8 @@ namespace HBL2
 			soundSource.Sound = AssetManager::Instance->GetAsset<Sound>(soundSource_NewComponent["Sound"].as<UUID>());
 			soundSource.Volume = soundSource_NewComponent["Volume"].as<float>();
 			soundSource.Pitch = soundSource_NewComponent["Pitch"].as<float>();
-			soundSource.Flags = soundSource_NewComponent["Flags"].as<uint8_t>();
-			soundSource.State = (Component::AudioSource::PlaybackState)soundSource_NewComponent["State"].as<uint8_t>();
+			soundSource.State = (Component::AudioSource::PlaybackState)(uint8_t)soundSource_NewComponent["State"].as<uint32_t>();
+			soundSource.Flags = (uint8_t)soundSource_NewComponent["Flags"].as<uint32_t>();
 		}
 
 		auto audioListener_NewComponent = entityNode["Component::AudioListener"];

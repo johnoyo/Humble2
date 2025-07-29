@@ -314,7 +314,41 @@ namespace HBL2
 				{
 					uint32_t soundHandle = audioSource.Sound.Pack();
 
-					ImGui::InputScalar("Sound", ImGuiDataType_U32, (void*)(intptr_t*)&soundHandle);
+					ImGui::InputScalar("Sound", ImGuiDataType_U32, (void*)(intptr_t*)&soundHandle);				
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Sound"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							if (assetHandle.IsValid())
+							{
+								Asset* soundAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+								if (!std::filesystem::exists(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound"))
+								{
+									std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound", 0);
+
+									YAML::Emitter out;
+									out << YAML::BeginMap;
+									out << YAML::Key << "Sound" << YAML::Value;
+									out << YAML::BeginMap;
+									out << YAML::Key << "UUID" << YAML::Value << soundAsset->UUID;
+									out << YAML::EndMap;
+									out << YAML::EndMap;
+									fout << out.c_str();
+									fout.close();	
+								}
+							}
+
+							audioSource.Sound = AssetManager::Instance->GetAsset<Sound>(assetHandle);
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+
 					ImGui::DragFloat("Volume", &audioSource.Volume, 0.05f, 0.f, 1.f);
 					ImGui::DragFloat("Pitch", &audioSource.Pitch, 0.1f, 0.5f, 2.f);
 
@@ -356,39 +390,6 @@ namespace HBL2
 					if (!loop && !spatialised)
 					{
 						audioSource.Flags = 0;
-					}
-
-					if (ImGui::BeginDragDropTarget())
-					{
-						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Sound"))
-						{
-							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
-
-							if (assetHandle.IsValid())
-							{
-								Asset* soundAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
-
-								if (!std::filesystem::exists(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound"))
-								{
-									std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound", 0);
-
-									YAML::Emitter out;
-									out << YAML::BeginMap;
-									out << YAML::Key << "Sound" << YAML::Value;
-									out << YAML::BeginMap;
-									out << YAML::Key << "UUID" << YAML::Value << soundAsset->UUID;
-									out << YAML::EndMap;
-									out << YAML::EndMap;
-									fout << out.c_str();
-									fout.close();	
-								}
-							}
-
-							audioSource.Sound = AssetManager::Instance->GetAsset<Sound>(assetHandle);
-
-							ImGui::EndDragDropTarget();
-						}
 					}
 				});
 
