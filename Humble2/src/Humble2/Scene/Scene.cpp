@@ -91,6 +91,7 @@ namespace HBL2
         copy_component(Component::BoxCollider{});
         copy_component(Component::SphereCollider{});
         copy_component(Component::CapsuleCollider{});
+        copy_component(Component::TerrainCollider{});
         copy_component(Component::PrefabInstance{});
         copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
@@ -233,6 +234,10 @@ namespace HBL2
         m_Registry.storage<Component::CapsuleCollider>().clear();
         m_Registry.compact<Component::CapsuleCollider>();
 
+        m_Registry.clear<Component::TerrainCollider>();
+        m_Registry.storage<Component::TerrainCollider>().clear();
+        m_Registry.compact<Component::TerrainCollider>();
+
         m_Registry.clear<Component::PrefabInstance>();
         m_Registry.storage<Component::PrefabInstance>().clear();
         m_Registry.compact<Component::PrefabInstance>();
@@ -331,6 +336,7 @@ namespace HBL2
         copy_component(Component::BoxCollider{});
         copy_component(Component::SphereCollider{});
         copy_component(Component::CapsuleCollider{});
+        copy_component(Component::TerrainCollider{});
         copy_component(Component::PrefabInstance{});
         copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});

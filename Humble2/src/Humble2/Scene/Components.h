@@ -246,6 +246,12 @@ namespace HBL2
 			bool Enabled = true;
 		};
 
+		struct HBL2_API TerrainCollider
+		{
+			glm::ivec2 ViewedCoord{ 0, 0 };
+			bool Enabled = true;
+		};
+
 		struct HBL2_API PrefabInstance
 		{
 			UUID Id = 0;
@@ -315,6 +321,8 @@ namespace HBL2
 			StaticArray<LodInfo, 3> DetailLevels;
 
 			Handle<Material> Material;
+
+			bool AddColliders = true;
 
 			bool Regenerate = true;
 

@@ -489,11 +489,17 @@ namespace HBL2
 					ImGui::DragFloat("Radius", &cc.Radius);
 				});
 
+				DrawComponent<HBL2::Component::TerrainCollider>("TerrainCollider", m_ActiveScene, [this](HBL2::Component::TerrainCollider& tc)
+				{
+					ImGui::Checkbox("Enabled", &tc.Enabled);
+					ImGui::DragInt2("ViewedCoord", glm::value_ptr(tc.ViewedCoord));
+				});
+
 				DrawComponent<HBL2::Component::Terrain>("Terrain", m_ActiveScene, [this](HBL2::Component::Terrain& t)
 				{
 					// Normalisation mode.
 					{
-						const char* options[] = { "Global", "Local" };
+						const char* options[] = { "Local", "Global" };
 						int currentItem = (int)t.NormaliseMode;
 
 						if (ImGui::Combo("NormaliseMode", &currentItem, options, IM_ARRAYSIZE(options)))
@@ -525,6 +531,8 @@ namespace HBL2
 							ImGui::EndDragDropTarget();
 						}
 					}
+
+					ImGui::Checkbox("AddColliders", &t.AddColliders);
 
 					if (ImGui::Button("Regenerate"))
 					{

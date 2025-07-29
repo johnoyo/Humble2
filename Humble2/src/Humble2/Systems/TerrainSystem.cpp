@@ -67,6 +67,18 @@ namespace HBL2
 
 				if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::LOCAL)
 				{
+					m_Context->Group<Component::TerrainChunk>(Get<Component::Transform, Component::StaticMesh>)
+						.Each([&](Component::TerrainChunk& terrainChunk, Component::Transform& tr, Component::StaticMesh& chunkMesh)
+						{
+							// Disable all the chunks visible last update.
+							if (terrainChunk.VisibleLastUpdate)
+							{
+								chunkMesh.Enabled = false;
+								terrainChunk.Visible = false;
+								terrainChunk.VisibleLastUpdate = false;
+							}
+						});
+
 					if (terrain.Regenerate)
 					{
 						const auto& noiseMap = GenerateNoiseMap(terrain, glm::vec2(0.f));
@@ -689,6 +701,15 @@ namespace HBL2
 		}
 
 		chunk.NoiseMap = std::move(chunkData.NoiseMap);
+
+		if (terrain.AddColliders)
+		{
+			auto& chunkRigidbody = m_Context->AddComponent<Component::Rigidbody>(terrainChunk);
+			chunkRigidbody.Type = Physics::BodyType::Static;
+
+			auto& chunkCollider = m_Context->AddComponent<Component::TerrainCollider>(terrainChunk);
+			chunkCollider.ViewedCoord = chunkData.ViewedCoord;
+		}
 
 		return terrainChunk;
 	}

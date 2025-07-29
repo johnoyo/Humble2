@@ -391,6 +391,7 @@ namespace HBL2
 			out << YAML::Key << "HeightMultiplier" << YAML::Value << t.HeightMultiplier;
 			out << YAML::Key << "Scale" << YAML::Value << t.Scale;
 			out << YAML::Key << "NoiseScale" << YAML::Value << t.NoiseScale;
+			out << YAML::Key << "AddColliders" << YAML::Value << t.AddColliders;
 			out << YAML::Key << "Regenerate" << YAML::Value << t.Regenerate;
 
 			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
@@ -731,6 +732,11 @@ namespace HBL2
 			if (t_NewComponent["Material"].IsDefined()) // TODO: Remove if.
 			{
 				t.Material = AssetManager::Instance->GetAsset<Material>(t_NewComponent["Material"].as<UUID>());
+			}
+
+			if (t_NewComponent["AddColliders"].IsDefined()) // TODO: Remove if.
+			{
+				t.AddColliders = t_NewComponent["AddColliders"].as<bool>();
 			}
 
 			t.Regenerate = t_NewComponent["Regenerate"].as<bool>();
