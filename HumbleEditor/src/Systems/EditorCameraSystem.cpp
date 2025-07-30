@@ -34,7 +34,7 @@ namespace HBL2
 					return;
 				}
 
-				float zoomAmount = (float)e.YOffset * m_EditorCamera->ScrollZoomSpeed * m_Timestep;
+				float zoomAmount = (float)e.YOffset * m_EditorCamera->ScrollZoomSpeed;
 				m_Transform->Translation += m_EditorCamera->Front * zoomAmount;
 			});
 
@@ -49,7 +49,7 @@ namespace HBL2
 				{
 					float dy = (float)e.YPosition - m_EditorCamera->MousePreviousPositionY;
 
-					float zoomAmount = dy * m_EditorCamera->ZoomSpeed * m_Timestep;
+					float zoomAmount = dy * m_EditorCamera->ZoomSpeed;
 
 					m_Transform->Translation += m_EditorCamera->Front * zoomAmount;
 				}
@@ -58,8 +58,8 @@ namespace HBL2
 					float dx = (float)e.XPosition - m_EditorCamera->MousePreviousPositionX;
 					float dy = (float)e.YPosition - m_EditorCamera->MousePreviousPositionY;
 
-					glm::vec3 panRight = m_EditorCamera->Right * -dx * m_EditorCamera->PanSpeed * m_Timestep;
-					glm::vec3 panUp = m_EditorCamera->Up * dy * m_EditorCamera->PanSpeed * m_Timestep;
+					glm::vec3 panRight = m_EditorCamera->Right * -dx * m_EditorCamera->PanSpeed;
+					glm::vec3 panUp = m_EditorCamera->Up * dy * m_EditorCamera->PanSpeed;
 
 					m_Transform->Translation += panRight + panUp;
 				}
@@ -68,8 +68,8 @@ namespace HBL2
 					float dx = (float)e.XPosition - m_EditorCamera->MousePreviousPositionX;
 					float dy = (float)e.YPosition - m_EditorCamera->MousePreviousPositionY;
 
-					dx *= -m_EditorCamera->MouseSensitivity * m_Timestep;
-					dy *= m_EditorCamera->MouseSensitivity * m_Timestep;
+					dx *= -m_EditorCamera->MouseSensitivity;
+					dy *= m_EditorCamera->MouseSensitivity;
 
 					m_EditorCamera->Yaw += dx;
 					m_EditorCamera->Pitch += dy;
@@ -102,7 +102,6 @@ namespace HBL2
 					{
 						m_EditorCamera = &editorCamera;
 						m_Transform = &transform;
-						m_Timestep = ts;
 
 						float velocity = 0.0f;
 						

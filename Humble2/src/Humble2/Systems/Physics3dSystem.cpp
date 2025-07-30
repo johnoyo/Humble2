@@ -340,7 +340,7 @@ namespace HBL2
 			JPH::Vec3 scale(S, H, S);
 
 			// This is the centre of the render chunk.
-			glm::vec3 chunkOrigin = { tc.ViewedCoord.x * (N - 1) * S, 0.0f, tc.ViewedCoord.y * (N - 1) * S };
+			glm::vec3 chunkOrigin = { 0.0f, 0.0f, 0.0f };
 
 			// Send the NW corner (sample 0,0) to Jolt
 			JPH::Vec3 offset(chunkOrigin.x - halfSize, 0.0f, chunkOrigin.z - halfSize);

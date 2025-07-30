@@ -230,6 +230,7 @@ namespace HBL2
 				.internalFormat = textureSettings.PixelFormat,
 				.usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },
 				.aspect = TextureAspect::COLOR,
+				.sampler = { .filter = Filter::LINEAR },
 				.initialData = textureData,
 			});
 

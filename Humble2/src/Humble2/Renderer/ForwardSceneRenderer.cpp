@@ -1713,8 +1713,10 @@ namespace HBL2
 		m_CameraSettings.Gamma = camera.Gamma;
 		m_CameraData.ViewProjection = camera.ViewProjectionMatrix;
 		m_CameraFrustum = camera.Frustum;
+
 		Component::Transform& tr = scene->GetComponent<Component::Transform>(mainCamera);
-		m_LightData.ViewPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
+		//m_LightData.ViewPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
+		m_LightData.ViewPosition = tr.WorldMatrix[3];
 		m_OnlyRotationInViewProjection = camera.Projection * glm::mat4(glm::mat3(camera.View));
 		m_CameraProjection = camera.Projection;		
 	}

@@ -108,24 +108,20 @@ namespace HBL2
 
     bool Input::IGetKeyPress(int keyCode)
     {
-        if (CheckState(keyCode) == GLFW_PRESS && m_LastPressedState[keyCode] == GLFW_RELEASE)
-        {
-            return IGetKeyDown(keyCode, GLFW_PRESS);
-        }
+        int current = CheckState(keyCode);
+        bool pressed = (current == GLFW_PRESS) && (m_LastPressedState[keyCode] == GLFW_RELEASE);
 
-        m_LastPressedState[keyCode] = CheckState(keyCode);
-        return false;
+        m_LastPressedState[keyCode] = current;
+        return pressed;
     }
 
     bool Input::IGetKeyRelease(int keyCode)
     {
-        if (CheckState(keyCode) == GLFW_RELEASE && m_LastReleasedState[keyCode] == GLFW_PRESS)
-        {
-            return IGetKeyDown(keyCode, GLFW_RELEASE);
-        }
+        int current = CheckState(keyCode);
+        bool released = (current == GLFW_RELEASE) && (m_LastReleasedState[keyCode] == GLFW_PRESS);
 
-        m_LastReleasedState[keyCode] = CheckState(keyCode);
-        return false;
+        m_LastReleasedState[keyCode] = current;
+        return released;
     }
 
     const glm::vec2& Input::IGetMousePosition()

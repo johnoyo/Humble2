@@ -18,25 +18,15 @@ namespace HBL2
 				GenerateTerrainMeshData(noiseMap, terrain.ChunkSize, terrain.ChunkSize, terrain.HeightMultiplier, curve, terrain.InEditorPreviewLevelOfDetail);
 				staticMesh.Mesh = m_Mesh;
 
-				// Set the detail levels
-				terrain.DetailLevels[0].Lod = 0;
-				terrain.DetailLevels[0].VisibleDstThreshold = 200;
-
-				terrain.DetailLevels[1].Lod = 2;
-				terrain.DetailLevels[1].VisibleDstThreshold = 400;
-
-				terrain.DetailLevels[2].Lod = 5;
-				terrain.DetailLevels[2].VisibleDstThreshold = 600;
-
-				// Calculate chunk visibility and max view distance
-				terrain.MaxViewDst = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold;
-				terrain.ChunksVisibleInViewDst = (int32_t)(terrain.MaxViewDst / terrain.ChunkSize);
+				InitializeTerrain(terrain);
 
 				// Clear the serialized chunks.
 				if (m_Context->HasComponent<Component::Link>(entity))
 				{
 					m_Context->GetComponent<Component::Link>(entity).Children.clear();
 				}
+
+				terrain.Initialized = true;
 			});
 
 		Scene* scene = (Context::Mode == Mode::Editor ? m_EditorScene : m_Context);
@@ -60,6 +50,12 @@ namespace HBL2
 		m_Context->Group<Component::Terrain>(Get<Component::StaticMesh, Component::AnimationCurve>)
 			.Each([&](Entity e, Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
 			{
+				if (!terrain.Initialized)
+				{
+					InitializeTerrain(terrain);
+					terrain.Initialized = true;
+				}
+
 				if (terrain.NoiseScale <= 0)
 				{
 					terrain.NoiseScale = 0.0001f;
@@ -156,6 +152,23 @@ namespace HBL2
 		m_ResourceManager->DeleteMesh(m_Mesh);
 
 		CleanUpChunks();
+	}
+
+	void TerrainSystem::InitializeTerrain(Component::Terrain& terrain)
+	{
+		// Set the detail levels
+		terrain.DetailLevels[0].Lod = 0;
+		terrain.DetailLevels[0].VisibleDstThreshold = 200;
+
+		terrain.DetailLevels[1].Lod = 2;
+		terrain.DetailLevels[1].VisibleDstThreshold = 400;
+
+		terrain.DetailLevels[2].Lod = 5;
+		terrain.DetailLevels[2].VisibleDstThreshold = 600;
+
+		// Calculate chunk visibility and max view distance
+		terrain.MaxViewDst = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold;
+		terrain.ChunksVisibleInViewDst = (int32_t)(terrain.MaxViewDst / terrain.ChunkSize);
 	}
 
 	std::vector<float> TerrainSystem::GenerateNoiseMap(const Component::Terrain& terrain, const glm::vec2& center)

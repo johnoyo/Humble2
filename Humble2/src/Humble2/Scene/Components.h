@@ -323,7 +323,7 @@ namespace HBL2
 			Handle<Material> Material;
 
 			bool AddColliders = true;
-
+			bool Initialized = false;
 			bool Regenerate = true;
 
 			Terrain() = default;
@@ -335,6 +335,7 @@ namespace HBL2
 				  InEditorPreviewLevelOfDetail(other.InEditorPreviewLevelOfDetail),
 				  NormaliseMode(other.NormaliseMode),
 				  Seed(other.Seed),
+				  Scale(other.Scale),
 				  NoiseScale(other.NoiseScale),
 				  Octaves(other.Octaves),
 				  Persistance(other.Persistance),
@@ -368,6 +369,7 @@ namespace HBL2
 				NormaliseMode = other.NormaliseMode;
 				Seed = other.Seed;
 
+				Scale = other.Scale;
 				NoiseScale = other.NoiseScale;
 				Octaves = other.Octaves;
 				Persistance = other.Persistance;
