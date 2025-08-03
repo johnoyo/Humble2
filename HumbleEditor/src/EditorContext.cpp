@@ -5,7 +5,7 @@ namespace HBL2
 {
 	namespace Editor
 	{
-		void EditorContext::OnCreate()
+		void EditorContext::OnAttach()
 		{
 			Mode = HBL2::Mode::Editor;
 			AssetManager::Instance = new EditorAssetManager;
@@ -32,10 +32,9 @@ namespace HBL2
 			m_EditorScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.y = 0.5f;
 			m_EditorScene->GetComponent<HBL2::Component::Transform>(editorCameraEntity).Translation.z = 5.f;
 
-			// Create editor systems.
 			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
 			{
-				system->OnCreate();
+				system->OnAttach();
 			}
 
 			EventDispatcher::Get().Register<SceneChangeEvent>([&](const HBL2::SceneChangeEvent& e)
@@ -45,6 +44,23 @@ namespace HBL2
 			});
 
 			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
+
+			// NOTE: The OnCreate method of the registered systems will be called from the SceneManager class.
+		}
+
+		void EditorContext::OnCreate()
+		{
+			if (m_EditorScene == nullptr)
+			{
+				return;
+			}
+
+			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+			{
+				system->OnCreate();
+			}
+
+			// NOTE: The OnCreate method of the registered systems will be called from the SceneManager class.
 		}
 
 		void EditorContext::OnUpdate(float ts)
@@ -179,6 +195,25 @@ namespace HBL2
 			ShaderUtilities::Get().DeleteBuiltInShaders();
 			ShaderUtilities::Get().DeleteBuiltInMaterials();
 			MeshUtilities::Get().DeleteBuiltInMeshes();
+		}
+
+		void EditorContext::OnDetach()
+		{
+			if (m_EditorScene != nullptr)
+			{
+				for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+				{
+					system->OnDetach();
+				}
+			}
+
+			if (IsActiveSceneValid())
+			{
+				for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+				{
+					system->OnDetach();
+				}
+			}
 		}
 
 		bool EditorContext::OpenEmptyProject()

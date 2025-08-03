@@ -7,13 +7,17 @@ Features:
 
 - Supports multiple graphics APIs **OpenGL 4.6** and **Vulkan**.
     - **WebGPU**  support is planned for the future.
+- Forward, API agnostic, PBR renderer that features shadow maps, equirectangular skyboxes and various post processing effects.
 - Complete UI Editor for creating applications / games.
 - Uses an ECS architecture using the [EnTT](https://github.com/skypjack/entt) library.
 - Fully integrated C++ scripting support.
+- Flexible job system with support for async asset loading.
 - Powerfull physics support for 2D (using [Box2D](https://github.com/erincatto/box2d)) and 3D (using [Jolt](https://github.com/jrouwe/JoltPhysics)) games.
+- Endless procedurally terrain support, utilizing the job system for multithreading.
 - Support for prefabs (Instantiate, Unpack, Update, Destroy).
     - Nested prefabs support is planned for the future.
 - Planned web support with [Emscripten](https://github.com/emscripten-core/emsdk) using WebGPU to build games for the browser.
+- Editor to Runtime workflow for publishing games properly without the editor.
 - Currently supports only Windows.
 
 Installation:
@@ -30,4 +34,5 @@ Installation:
 Screenshots & Gifs:
 ------------
 ![editor-0](Resources/Screenshots/editor-0.png)
+![humble-editor-terrain](Resources/Gifs/humble-editor-terrain.gif)
 ![humble-editor](Resources/Gifs/humble-editor.gif)

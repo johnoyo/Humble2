@@ -164,6 +164,8 @@ namespace HBL2
 			}
 			else
 			{
+				ImVec2 avail = ImGui::GetContentRegionAvail();
+
 				switch (m_Configuration.layout.sizing.width.Style)
 				{
 				case FlexStyle::FIXED:
@@ -172,7 +174,7 @@ namespace HBL2
 				case FlexStyle::GROW:
 					if (m_Editor)
 					{
-						m_Configuration.layout.sizing.width.Value = ImGui::GetWindowWidth() - 60.f;
+						m_Configuration.layout.sizing.width.Value = avail.x;
 					}
 					else
 					{
@@ -189,7 +191,7 @@ namespace HBL2
 				case FlexStyle::GROW:
 					if (m_Editor)
 					{
-						m_Configuration.layout.sizing.height.Value = ImGui::GetWindowHeight(); // TODO: Fix! overflows.
+						m_Configuration.layout.sizing.height.Value = avail.y;
 					}
 					else
 					{

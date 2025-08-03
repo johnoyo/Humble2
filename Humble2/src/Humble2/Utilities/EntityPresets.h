@@ -2,6 +2,8 @@
 
 #include <Core\Context.h>
 #include <Resources\ResourceManager.h>
+#include <Utilities\ShaderUtilities.h>
+#include <Utilities\MeshUtilities.h>
 
 #include <entt\include\entt.hpp>
 
@@ -230,6 +232,27 @@ namespace HBL2
 			auto entity = scene->CreateEntity("Sprite");
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			scene->AddComponent<HBL2::Component::Sprite>(entity);
+
+			return entity;
+		}
+
+		static Entity CreateTerrain()
+		{
+			Scene* scene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+			if (scene == nullptr)
+			{
+				HBL2_CORE_ERROR("Could not retrieve ActiveScene when creating a terrain entity.");
+				return Entity::Null;
+			}
+
+			auto entity = scene->CreateEntity("Terrain");
+			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
+
+			scene->AddComponent<HBL2::Component::Link>(entity);
+			scene->AddComponent<HBL2::Component::StaticMesh>(entity);
+			scene->AddComponent<HBL2::Component::AnimationCurve>(entity);
+			scene->AddComponent<HBL2::Component::Terrain>(entity);
 
 			return entity;
 		}

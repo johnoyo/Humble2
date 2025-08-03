@@ -225,12 +225,6 @@ namespace HBL2
 		return { v.GetX(), v.GetY(), v.GetZ() };
 	}
 
-	void JoltPhysicsEngine::AddAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity)
-	{
-		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
-		bodyInterface.AddLinearVelocity(GetBodyIDFromPhysicsID(rb.BodyID), { angularVelocity.x, angularVelocity.y, angularVelocity.z });
-	}
-
 	void JoltPhysicsEngine::SetAngularVelocity(Component::Rigidbody& rb, const glm::vec3& angularVelocity)
 	{
 		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();

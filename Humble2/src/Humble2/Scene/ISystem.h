@@ -6,6 +6,14 @@
 
 namespace HBL2
 {
+#ifdef DIST
+	#define BEGIN_PROFILE_SYSTEM()
+	#define END_PROFILE_SYSTEM(time)
+#else
+	#define BEGIN_PROFILE_SYSTEM() Timer profileSystem
+	#define END_PROFILE_SYSTEM(time) time = profileSystem.ElapsedMillis()
+#endif
+
 	class Scene;
 
 	enum class HBL2_API SystemType
@@ -27,11 +35,13 @@ namespace HBL2
 	public:
 		virtual ~ISystem() = default;
 
+		virtual void OnAttach()				{};
 		virtual void OnCreate()				= 0;
 		virtual void OnUpdate(float ts)		= 0;
 		virtual void OnFixedUpdate()        {}
 		virtual void OnGuiRender(float ts)	{}
 		virtual void OnDestroy()			{}
+		virtual void OnDetach()				{}
 
 		void SetContext(Scene* context)
 		{
@@ -66,6 +76,7 @@ namespace HBL2
 		}
 
 		std::string Name = "UnnamedSystem";
+		float RunningTime = 0.f;
 
 	protected:
 

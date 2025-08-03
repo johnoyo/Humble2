@@ -15,6 +15,12 @@ namespace HBL2
 		EventDispatcher::Get().Post(WindowSizeEvent(width, height));
 	}
 
+	static void WindowPositionCallback(GLFWwindow* window, int xpos, int ypos)
+	{
+		Window::Instance->SetPosition(xpos, ypos);
+		EventDispatcher::Get().Post(WindowPositionEvent(xpos, ypos));
+	}
+
 	static void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 	{
 		Window::Instance->SetExtents(width, height);
@@ -126,6 +132,7 @@ namespace HBL2
 	{
 		glfwSetWindowCloseCallback(m_Window, WindowCloseCallback);
 		glfwSetWindowSizeCallback(m_Window, WindowSizeCallback);
+		glfwSetWindowPosCallback(m_Window, WindowPositionCallback);
 		glfwSetFramebufferSizeCallback(m_Window, FramebufferSizeCallback);
 		glfwSetWindowFocusCallback(m_Window, WindowFocusCallback);
 		glfwSetWindowRefreshCallback(m_Window, WindowRefreshCallback);
@@ -134,5 +141,8 @@ namespace HBL2
 		glfwSetCursorPosCallback(m_Window, CursorPosCallback);
 		glfwSetCursorEnterCallback(m_Window, CursorEnterCallback);
 		glfwSetKeyCallback(m_Window, KeyCallback);
+
+		// Set the initial window position.
+		glfwGetWindowPos(m_Window, &m_Position.x, &m_Position.y);
 	}
 }

@@ -27,6 +27,22 @@ namespace HBL2
 			ImGui::Text("Scene");
 			ImGui::NewLine();
 			ImGui::Text("Entities: %d", m_ActiveScene != nullptr ? m_ActiveScene->GetEntityCount() : 0);
+			ImGui::NewLine();
+
+			ImGui::Text("Systems");
+			Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+			if (activeScene != nullptr)
+			{
+				for (ISystem* system : activeScene->GetSystems())
+				{
+					if (system == nullptr)
+					{
+						continue;
+					}
+
+					ImGui::Text("%s: %f ms", system->Name.c_str(), system->RunningTime);
+				}
+			}
 
 			ImGui::Separator();
 

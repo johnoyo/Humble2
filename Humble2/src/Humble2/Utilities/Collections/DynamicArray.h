@@ -374,12 +374,12 @@ namespace HBL2
 
         T& Back()
         {
-            return *(m_Data + m_CurrentSize);
+            return *(m_Data + (m_CurrentSize - 1));
         }
 
         const T& Back() const
         {
-            return *(m_Data + m_CurrentSize);
+            return *(m_Data + (m_CurrentSize - 1));
         }
 
         /**

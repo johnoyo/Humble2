@@ -58,6 +58,16 @@ namespace HBL2
 				texture->TrasitionLayout((VulkanCommandBuffer*)commandBuffer, currentLayout, newLayout, bindGroup);
 			}
 		}
+		virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) override
+		{
+			VulkanTexture* texture = GetTexture(handle);
+			if (texture != nullptr)
+			{
+				return { texture->Extent.width, texture->Extent.height, texture->Extent.depth };
+			}
+
+			return { 0.f, 0.f, 0.f };
+		}
 		VulkanTexture* GetTexture(Handle<Texture> handle) const
 		{
 			return m_TexturePool.Get(handle);

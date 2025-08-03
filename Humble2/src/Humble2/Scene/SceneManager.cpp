@@ -54,6 +54,11 @@ namespace HBL2
 				{
 					system->OnDestroy();
 				}
+
+				for (ISystem* system : scene->GetSystems())
+				{
+					system->OnDetach();
+				}
 			}
 		}
 
@@ -118,6 +123,23 @@ namespace HBL2
 			return;
 		}
 
+		// Call OnAttach of systems.
+		for (ISystem* system : scene->GetCoreSystems())
+		{
+			system->OnAttach();
+			system->SetState(SystemState::Play);
+		}
+
+		if (m_RuntimeSceneChange)
+		{
+			for (ISystem* system : scene->GetRuntimeSystems())
+			{
+				system->OnAttach();
+				system->SetState(SystemState::Play);
+			}
+		}
+
+		// Call OnCreate of systems.
 		for (ISystem* system : scene->GetCoreSystems())
 		{
 			system->OnCreate();
@@ -189,6 +211,23 @@ namespace HBL2
 			return;
 		}
 
+		// Call OnAttach of systems.
+		for (ISystem* system : scene->GetCoreSystems())
+		{
+			system->OnAttach();
+			system->SetState(SystemState::Play);
+		}
+
+		if (m_RuntimeSceneChange)
+		{
+			for (ISystem* system : scene->GetRuntimeSystems())
+			{
+				system->OnAttach();
+				system->SetState(SystemState::Play);
+			}
+		}
+
+		// Call OnCreate of systems.
 		for (ISystem* system : scene->GetCoreSystems())
 		{
 			system->OnCreate();
@@ -240,7 +279,7 @@ namespace HBL2
 		else
 		{
 			// Find the current scene asset handle.
-			// NOTE: This is needed since if in playmode we change the scene, and then when we exit play mode and cahnge scenes,
+			// NOTE: This is needed since if in playmode we change the scene, and then when we exit play mode and change scenes,
 			//		 the scene that was changed in play mode will be present, so the wrong scene will be unloaded.
 			m_CurrentSceneAssetHandle = {};
 
@@ -272,6 +311,23 @@ namespace HBL2
 			return;
 		}
 
+		// Call OnAttach of systems.
+		for (ISystem* system : scene->GetCoreSystems())
+		{
+			system->OnAttach();
+			system->SetState(SystemState::Play);
+		}
+
+		if (m_RuntimeSceneChange)
+		{
+			for (ISystem* system : scene->GetRuntimeSystems())
+			{
+				system->OnAttach();
+				system->SetState(SystemState::Play);
+			}
+		}
+
+		// Call OnCreate of systems.
 		for (ISystem* system : scene->GetCoreSystems())
 		{
 			system->OnCreate();

@@ -12,6 +12,8 @@
 #include "Systems\SoundSystem.h"
 #include "Systems\Physics2dSystem.h"
 #include "Systems\Physics3dSystem.h"
+#include "Systems\TerrainSystem.h"
+#include "Systems\AnimationCurveSystem.h"
 
 namespace HBL2
 {
@@ -38,6 +40,12 @@ namespace HBL2
         src->View<Component::ID>()
             .Each([&](Entity entity, Component::ID& id)
             {
+                // Skip entities that are a terrain chunk.
+                if (src->m_Registry.any_of<Component::TerrainChunk>(entity))
+                {
+                    return;
+                }
+
                 const auto& name = src->m_Registry.get<Component::Tag>(entity).Name;
 
                 Entity newEntity = dst->m_Registry.create(entity);
@@ -56,6 +64,12 @@ namespace HBL2
             src->View<Component>()
                 .Each([&](auto entity, const auto& component)
                 {
+                    // Skip entities that are a terrain chunk.
+                    if (src->m_Registry.any_of<HBL2::Component::TerrainChunk>(entity))
+                    {
+                        return;
+                    }
+
                     dst->m_Registry.emplace_or_replace<Component>(entity, component);
                 });
         };
@@ -69,6 +83,7 @@ namespace HBL2
         copy_component(Component::StaticMesh{});
         copy_component(Component::Light{});
         copy_component(Component::SkyLight{});
+        copy_component(Component::AudioListener{});
         copy_component(Component::AudioSource{});
         copy_component(Component::Rigidbody2D{});
         copy_component(Component::BoxCollider2D{});
@@ -76,16 +91,24 @@ namespace HBL2
         copy_component(Component::BoxCollider{});
         copy_component(Component::SphereCollider{});
         copy_component(Component::CapsuleCollider{});
+        copy_component(Component::TerrainCollider{});
         copy_component(Component::PrefabInstance{});
+        copy_component(Component::AnimationCurve{});
+        copy_component(Component::Terrain{});
+
+        // Do not copy the TerrainChunk component
+        // copy_component(Component::TerrainChunk{});
 
         // Clone systems.
         dst->RegisterSystem(new TransformSystem);
         dst->RegisterSystem(new LinkSystem);
         dst->RegisterSystem(new CameraSystem, SystemType::Runtime);
+        dst->RegisterSystem(new TerrainSystem);
         dst->RegisterSystem(new RenderingSystem);
         dst->RegisterSystem(new SoundSystem, SystemType::Runtime);
         dst->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
         dst->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
+        dst->RegisterSystem(new AnimationCurveSystem);
 
         // Register any user systems to new scene.
         for (ISystem* system : src->m_RuntimeSystems)
@@ -183,6 +206,10 @@ namespace HBL2
         m_Registry.storage<Component::AudioSource>().clear();
         m_Registry.compact<Component::AudioSource>();
 
+        m_Registry.clear<Component::AudioListener>();
+        m_Registry.storage<Component::AudioListener>().clear();
+        m_Registry.compact<Component::AudioListener>();
+
         m_Registry.clear<Component::Rigidbody2D>();
         m_Registry.storage<Component::Rigidbody2D>().clear();
         m_Registry.compact<Component::Rigidbody2D>();
@@ -207,9 +234,25 @@ namespace HBL2
         m_Registry.storage<Component::CapsuleCollider>().clear();
         m_Registry.compact<Component::CapsuleCollider>();
 
+        m_Registry.clear<Component::TerrainCollider>();
+        m_Registry.storage<Component::TerrainCollider>().clear();
+        m_Registry.compact<Component::TerrainCollider>();
+
         m_Registry.clear<Component::PrefabInstance>();
         m_Registry.storage<Component::PrefabInstance>().clear();
         m_Registry.compact<Component::PrefabInstance>();
+
+        m_Registry.clear<Component::AnimationCurve>();
+        m_Registry.storage<Component::AnimationCurve>().clear();
+        m_Registry.compact<Component::AnimationCurve>();
+
+        m_Registry.clear<Component::Terrain>();
+        m_Registry.storage<Component::Terrain>().clear();
+        m_Registry.compact<Component::Terrain>();
+
+        m_Registry.clear<Component::TerrainChunk>();
+        m_Registry.storage<Component::TerrainChunk>().clear();
+        m_Registry.compact<Component::TerrainChunk>();
 
         // Destroy all entities.
         for (auto& [uuid, entity] : m_EntityMap)
@@ -285,6 +328,7 @@ namespace HBL2
         copy_component(Component::StaticMesh{});
         copy_component(Component::Light{});
         copy_component(Component::SkyLight{});
+        copy_component(Component::AudioListener{});
         copy_component(Component::AudioSource{});
         copy_component(Component::Rigidbody2D{});
         copy_component(Component::BoxCollider2D{});
@@ -292,7 +336,11 @@ namespace HBL2
         copy_component(Component::BoxCollider{});
         copy_component(Component::SphereCollider{});
         copy_component(Component::CapsuleCollider{});
+        copy_component(Component::TerrainCollider{});
         copy_component(Component::PrefabInstance{});
+        copy_component(Component::AnimationCurve{});
+        copy_component(Component::Terrain{});
+        copy_component(Component::TerrainChunk{});
 
         // Copy user defined components.
         std::vector<std::string> userComponentNames;

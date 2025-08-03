@@ -37,6 +37,7 @@ namespace HBL2
 		virtual void DeleteTexture(Handle<Texture> handle) = 0;
 		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) = 0;
 		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle) = 0;
+		virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) = 0;
 
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) = 0;

@@ -17,11 +17,13 @@ namespace HBL2
 		class EditorContext final : public HBL2::Context
 		{
 		public:
+			virtual void OnAttach() override;
 			virtual void OnCreate() override;
 			virtual void OnUpdate(float ts) override;
 			virtual void OnFixedUpdate() override;
 			virtual void OnGuiRender(float ts) override;
 			virtual void OnDestroy() override;
+			virtual void OnDetach() override;
 
 		private:
 			bool OpenEmptyProject();

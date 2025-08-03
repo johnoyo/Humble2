@@ -44,6 +44,7 @@ namespace HBL2
 								.type = AssetType::Scene,
 							});
 
+							MeshUtilities::Get().LoadBuiltInMeshes();
 							HBL2::Project::OpenStartingScene();
 
 							m_ProjectChanged = true;
@@ -73,6 +74,7 @@ namespace HBL2
 
 							if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 							{
+								MeshUtilities::Get().LoadBuiltInMeshes();
 								HBL2::Project::OpenStartingScene();
 
 								m_ProjectChanged = true;
