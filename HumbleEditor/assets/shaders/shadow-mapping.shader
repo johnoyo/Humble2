@@ -351,6 +351,6 @@ void main()
     totalShadow = clamp(totalShadow / float(u_Light.Count), 0.0, 1.0);
 
     // Final color
-    vec3 result = ambient + (1.0 - totalShadow) * textureColor * diffuseAcc + specularAcc;
+    vec3 result = ambient + (1.0 - totalShadow) * (textureColor * diffuseAcc + specularAcc);
     FragColor = vec4(result * v_Color.rgb, 1.0);
 }

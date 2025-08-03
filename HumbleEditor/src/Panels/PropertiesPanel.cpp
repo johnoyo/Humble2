@@ -1,9 +1,10 @@
-#include "Systems\EditorPanelSystem.h"
+﻿#include "Systems\EditorPanelSystem.h"
 
 #include <Utilities\NativeScriptUtilities.h>
 
 #include <UI\UserInterfaceUtilities.h>
 #include <UI\LayoutLib.h>
+#include <UI\AnimationCurveEditor.h>
 
 namespace HBL2
 {
@@ -151,28 +152,16 @@ namespace HBL2
 						ImGui::SliderFloat("Gamma", &camera.Gamma, 0, 4);
 						ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
 
-						std::string selectedProjection = camera.Type == HBL2::Component::Camera::Type::Perspective ? "Perspective" : "Orthographic";
-						std::string projectionTypes[2] = { "Perspective", "Orthographic" };
-
-						if (ImGui::BeginCombo("Type", selectedProjection.c_str()))
+						// Camera type.
 						{
-							for (const auto& type : projectionTypes)
+							const char* options[] = { "Perspective", "Orthographic" };
+							int currentItem = (int)camera.Type;
+
+							if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
 							{
-								bool isSelected = (selectedProjection == type);
-								if (ImGui::Selectable(type.c_str(), isSelected))
-								{
-									selectedProjection = type;
-								}
-
-								if (isSelected)
-								{
-									ImGui::SetItemDefaultFocus();
-								}
+								camera.Type = (HBL2::Component::Camera::EType)currentItem;
 							}
-							ImGui::EndCombo();
 						}
-
-						camera.Type = selectedProjection == "Perspective" ? HBL2::Component::Camera::Type::Perspective : HBL2::Component::Camera::Type::Orthographic;
 					}
 				});
 
@@ -252,28 +241,19 @@ namespace HBL2
 
 				DrawComponent<HBL2::Component::Light>("Light", m_ActiveScene, [this](HBL2::Component::Light& light)
 				{
-					ImGui::Checkbox("Enabled", &light.Enabled);					
-					
-					std::string lightTypes[3] = { "Directional", "Point", "Spot" };
-					std::string selectedType = lightTypes[(int)light.Type];
+					ImGui::Checkbox("Enabled", &light.Enabled);
 
-					if (ImGui::BeginCombo("Type", selectedType.c_str()))
+					// Light type.
 					{
-						for (const auto& type : lightTypes)
-						{
-							bool isSelected = (selectedType == type);
-							if (ImGui::Selectable(type.c_str(), isSelected))
-							{
-								selectedType = type;
-							}
+						const char* options[] = { "Directional", "Point", "Spot" };
+						int currentItem = (int)light.Type;
 
-							if (isSelected)
-							{
-								ImGui::SetItemDefaultFocus();
-							}
+						if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
+						{
+							light.Type = (HBL2::Component::Light::EType)currentItem;
 						}
-						ImGui::EndCombo();
 					}
+
 					ImGui::Checkbox("CastsShadows", &light.CastsShadows);
 					ImGui::SliderFloat("Intensity", &light.Intensity, 0, 30);
 
@@ -285,18 +265,8 @@ namespace HBL2
 					ImGui::SliderFloat("FieldOfView", &light.FieldOfView, 0.0f, 120.0f);
 
 					// Set type back.
-					if (selectedType == "Directional")
+					if (light.Type == HBL2::Component::Light::EType::Spot)
 					{
-						light.Type = HBL2::Component::Light::Type::Directional;
-					}
-					else if (selectedType == "Point")
-					{
-						light.Type = HBL2::Component::Light::Type::Point;
-						ImGui::SliderFloat("Distance", &light.Distance, 0, 150);
-					}
-					else
-					{
-						light.Type = HBL2::Component::Light::Type::Spot;
 						ImGui::SliderFloat("Distance", &light.Distance, 0, 150);
 						ImGui::SliderFloat("InnerCutOff", &light.InnerCutOff, 0, 50);
 						ImGui::SliderFloat("OuterCutOff", &light.OuterCutOff, 0, 50);
@@ -344,8 +314,7 @@ namespace HBL2
 				{
 					uint32_t soundHandle = audioSource.Sound.Pack();
 
-					ImGui::Checkbox("Enabled", &audioSource.Enabled);
-					ImGui::InputScalar("Sound", ImGuiDataType_U32, (void*)(intptr_t*)&soundHandle);
+					ImGui::InputScalar("Sound", ImGuiDataType_U32, (void*)(intptr_t*)&soundHandle);				
 
 					if (ImGui::BeginDragDropTarget())
 					{
@@ -367,8 +336,6 @@ namespace HBL2
 									out << YAML::Key << "Sound" << YAML::Value;
 									out << YAML::BeginMap;
 									out << YAML::Key << "UUID" << YAML::Value << soundAsset->UUID;
-									out << YAML::Key << "Loop" << YAML::Value << false;
-									out << YAML::Key << "StartPaused" << YAML::Value << false;
 									out << YAML::EndMap;
 									out << YAML::EndMap;
 									fout << out.c_str();
@@ -381,45 +348,70 @@ namespace HBL2
 							ImGui::EndDragDropTarget();
 						}
 					}
+
+					ImGui::DragFloat("Volume", &audioSource.Volume, 0.05f, 0.f, 1.f);
+					ImGui::DragFloat("Pitch", &audioSource.Pitch, 0.1f, 0.5f, 2.f);
+
+					// PlaybackState.
+					{
+						const char* options[] = { "Stopped", "Playing", "Paused" };
+						int currentItem = (uint8_t)audioSource.State;
+
+						if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
+						{
+							audioSource.State = (HBL2::Component::AudioSource::PlaybackState)currentItem;
+						}
+					}
+
+					static bool loop = false;
+					ImGui::Checkbox("Loop", &loop);
+
+					if (loop)
+					{
+						audioSource.Flags |= HBL2::Component::AudioSource::AudioFlags::Looping;
+					}
+					else
+					{
+						audioSource.Flags &= ~HBL2::Component::AudioSource::AudioFlags::Looping;
+					}
+
+					static bool spatialised = false;
+					ImGui::Checkbox("Spatialised", &spatialised);
+
+					if (spatialised)
+					{
+						audioSource.Flags |= HBL2::Component::AudioSource::AudioFlags::Spatialised;
+					}
+					else
+					{
+						audioSource.Flags &= ~HBL2::Component::AudioSource::AudioFlags::Spatialised;
+					}
+
+					if (!loop && !spatialised)
+					{
+						audioSource.Flags = 0;
+					}
+				});
+
+				DrawComponent<HBL2::Component::AudioListener>("AudioListener", m_ActiveScene, [this](HBL2::Component::AudioListener& audioListener)
+				{
+					ImGui::Checkbox("Enabled", &audioListener.Enabled);
 				});
 				
 				DrawComponent<HBL2::Component::Rigidbody2D>("Rigidbody2D", m_ActiveScene, [this](HBL2::Component::Rigidbody2D& rb2d)
 				{
 					ImGui::Checkbox("Enabled", &rb2d.Enabled);
 
-					std::string selectedType = "Static";
-
-					switch (rb2d.Type)
+					// Rigidbody type.
 					{
-					case Physics::BodyType::Static: selectedType = "Static"; break;
-					case Physics::BodyType::Dynamic: selectedType = "Dynamic"; break;
-					case Physics::BodyType::Kinematic: selectedType = "Kinematic"; break;
-					}
+						const char* options[] = { "Static", "Kinematic", "Dynamic" };
+						int currentItem = (int)rb2d.Type;
 
-					std::string bodyTypes[3] = { "Static", "Dynamic", "Kinematic"};
-
-					if (ImGui::BeginCombo("Type", selectedType.c_str()))
-					{
-						for (const auto& type : bodyTypes)
+						if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
 						{
-							bool isSelected = (selectedType == type);
-							if (ImGui::Selectable(type.c_str(), isSelected))
-							{
-								selectedType = type;
-								rb2d.Dirty = true;
-							}
-
-							if (isSelected)
-							{
-								ImGui::SetItemDefaultFocus();
-							}
+							rb2d.Type = (Physics::BodyType)currentItem;
 						}
-						ImGui::EndCombo();
 					}
-
-					if (selectedType == "Static") rb2d.Type = Physics::BodyType::Static;
-					else if (selectedType == "Dynamic") rb2d.Type = Physics::BodyType::Dynamic;
-					else if (selectedType == "Kinematic") rb2d.Type = Physics::BodyType::Kinematic;
 
 					ImGui::Checkbox("FixedRotation", &rb2d.FixedRotation);
 				});
@@ -446,43 +438,36 @@ namespace HBL2
 				DrawComponent<HBL2::Component::Rigidbody>("Rigidbody", m_ActiveScene, [this](HBL2::Component::Rigidbody& rb)
 				{
 					ImGui::Checkbox("Enabled", &rb.Enabled);
+
+					ImGui::SliderFloat("Friction", &rb.Friction, 0.0f, 1.0f);
+					ImGui::SliderFloat("GravityFactor", &rb.GravityFactor, 0.0f, 3.0f);
+
 					if (ImGui::Checkbox("Trigger", &rb.Trigger))
 					{
 						rb.Dirty = true;
 					}
 
-					std::string selectedType = "Static";
-
-					switch (rb.Type)
+					// Rigidbody type.
 					{
-					case Physics::BodyType::Static: selectedType = "Static"; break;
-					case Physics::BodyType::Dynamic: selectedType = "Dynamic"; break;
-					case Physics::BodyType::Kinematic: selectedType = "Kinematic"; break;
-					}
+						const char* options[] = { "Static", "Kinematic", "Dynamic" };
+						int currentItem = (int)rb.Type;
 
-					std::string bodyTypes[3] = { "Static", "Dynamic", "Kinematic" };
-
-					if (ImGui::BeginCombo("Type", selectedType.c_str()))
-					{
-						for (const auto& type : bodyTypes)
+						if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
 						{
-							bool isSelected = (selectedType == type);
-							if (ImGui::Selectable(type.c_str(), isSelected))
-							{
-								selectedType = type;
-							}
-
-							if (isSelected)
-							{
-								ImGui::SetItemDefaultFocus();
-							}
+							rb.Type = (Physics::BodyType)currentItem;
 						}
-						ImGui::EndCombo();
 					}
 
-					if (selectedType == "Static") rb.Type = Physics::BodyType::Static;
-					else if (selectedType == "Dynamic") rb.Type = Physics::BodyType::Dynamic;
-					else if (selectedType == "Kinematic") rb.Type = Physics::BodyType::Kinematic;
+					// Rigidbody type.
+					{
+						const char* options[] = { "Discrete", "Continuos" };
+						int currentItem = (int)rb.MotionQuality;
+
+						if (ImGui::Combo("MotionQuality", &currentItem, options, IM_ARRAYSIZE(options)))
+						{
+							rb.MotionQuality = (HBL2::Component::Rigidbody::EMotionQuality)currentItem;
+						}
+					}
 				});
 
 				DrawComponent<HBL2::Component::BoxCollider>("BoxCollider", m_ActiveScene, [this](HBL2::Component::BoxCollider& bc)
@@ -502,6 +487,71 @@ namespace HBL2
 					ImGui::Checkbox("Enabled", &cc.Enabled);
 					ImGui::DragFloat("Height", &cc.Height);
 					ImGui::DragFloat("Radius", &cc.Radius);
+				});
+
+				DrawComponent<HBL2::Component::TerrainCollider>("TerrainCollider", m_ActiveScene, [this](HBL2::Component::TerrainCollider& tc)
+				{
+					ImGui::Checkbox("Enabled", &tc.Enabled);
+					ImGui::DragInt2("ViewedCoord", glm::value_ptr(tc.ViewedCoord));
+				});
+
+				DrawComponent<HBL2::Component::Terrain>("Terrain", m_ActiveScene, [this](HBL2::Component::Terrain& t)
+				{
+					// Normalisation mode.
+					{
+						const char* options[] = { "Local", "Global" };
+						int currentItem = (int)t.NormaliseMode;
+
+						if (ImGui::Combo("NormaliseMode", &currentItem, options, IM_ARRAYSIZE(options)))
+						{
+							t.NormaliseMode = (HBL2::Component::Terrain::ENormaliseMode)currentItem;
+						}
+					}
+
+					ImGui::DragInt("Seed", (int*)& t.Seed);
+					ImGui::DragInt("InEditorPreviewLevelOfDetail", (int*)& t.InEditorPreviewLevelOfDetail, 1.f, 0, 6);
+					ImGui::DragFloat("HeightMultiplier", &t.HeightMultiplier);
+					ImGui::DragFloat("Scale", &t.Scale);
+					ImGui::DragFloat("NoiseScale", &t.NoiseScale);
+					ImGui::DragFloat2("Offset", glm::value_ptr(t.Offset));
+
+					uint32_t materialHandle = t.Material.Pack();
+
+					ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							t.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
+
+							ImGui::EndDragDropTarget();
+						}
+					}
+
+					ImGui::Checkbox("AddColliders", &t.AddColliders);
+
+					if (ImGui::Button("Regenerate"))
+					{
+						t.Regenerate = true;
+					}
+				});
+
+				DrawComponent<HBL2::Component::TerrainChunk>("TerrainChunk", m_ActiveScene, [this](HBL2::Component::TerrainChunk& tc)
+				{
+					ImGui::Checkbox("Visible", &tc.Visible);
+					ImGui::DragInt("LevelOfDetail", (int*)&tc.LevelOfDetail);
+				});
+
+				DrawComponent<HBL2::Component::AnimationCurve>("AnimationCurve", m_ActiveScene, [this](HBL2::Component::AnimationCurve& curve)
+				{
+					if (HBL2::EditorUtilities::Get().HasCustomEditor<HBL2::Component::AnimationCurve>())
+					{
+						HBL2::EditorUtilities::Get().DrawCustomEditor<HBL2::Component::AnimationCurve, AnimationCurveEditor>(curve);
+					}
 				});
 
 				using namespace entt::literals;
@@ -672,6 +722,24 @@ namespace HBL2
 						}
 					}
 
+					if (!m_ActiveScene->HasComponent<HBL2::Component::Terrain>(HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::MenuItem("Terrain"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::Terrain>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
+					if (!m_ActiveScene->HasComponent<HBL2::Component::AnimationCurve>(HBL2::Component::EditorVisible::SelectedEntity))
+					{
+						if (ImGui::MenuItem("AnimationCurve"))
+						{
+							m_ActiveScene->AddComponent<HBL2::Component::AnimationCurve>(HBL2::Component::EditorVisible::SelectedEntity);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
 					// Iterate over all registered meta types
 					for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
 					{
@@ -784,9 +852,6 @@ namespace HBL2
 							}
 
 							ImGui::Text(std::format("Name: {}", sound->Name).c_str());
-
-							ImGui::Checkbox("Loop", &sound->Loop);
-							ImGui::Checkbox("StartPaused", &sound->StartPaused);
 						}
 						break;
 					case AssetType::Scene:

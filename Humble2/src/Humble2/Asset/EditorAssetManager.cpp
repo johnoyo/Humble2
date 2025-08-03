@@ -9,6 +9,9 @@
 #include "Systems\SoundSystem.h"
 #include "Systems\Physics2dSystem.h"
 #include "Systems\Physics3dSystem.h"
+#include "Systems\TerrainSystem.h"
+#include "Systems\AnimationCurveSystem.h"
+
 #include <Prefab/PrefabSerializer.h>
 
 namespace HBL2
@@ -227,6 +230,7 @@ namespace HBL2
 				.internalFormat = textureSettings.PixelFormat,
 				.usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },
 				.aspect = TextureAspect::COLOR,
+				.sampler = { .filter = Filter::LINEAR },
 				.initialData = textureData,
 			});
 
@@ -588,10 +592,12 @@ namespace HBL2
 		scene->RegisterSystem(new TransformSystem);
 		scene->RegisterSystem(new LinkSystem);
 		scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
+		scene->RegisterSystem(new TerrainSystem);
 		scene->RegisterSystem(new RenderingSystem);
 		scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
 		scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 		scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
+		scene->RegisterSystem(new AnimationCurveSystem);
 
 		SceneSerializer sceneSerializer(scene);
 		sceneSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
@@ -660,8 +666,6 @@ namespace HBL2
 			auto sound = ResourceManager::Instance->CreateSound({
 				.debugName = _strdup(std::format("{}-sound", soundName).c_str()),
 				.path = asset->FilePath,
-				.loop = soundProperties["Loop"].as<bool>(),
-				.startPaused = soundProperties["StartPaused"].as<bool>(),
 			});
 
 			stream.close();
@@ -855,10 +859,12 @@ namespace HBL2
 			scene->RegisterSystem(new TransformSystem);
 			scene->RegisterSystem(new LinkSystem);
 			scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
+			scene->RegisterSystem(new TerrainSystem);
 			scene->RegisterSystem(new RenderingSystem);
 			scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
 			scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
 			scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
+			scene->RegisterSystem(new AnimationCurveSystem);
 
 			asset->Indentifier = sceneHandle.Pack();
 			asset->Loaded = true;
@@ -1034,13 +1040,6 @@ namespace HBL2
 			HBL2_CORE_TRACE("Sound not found: {0}", ss.str());
 			ifStream.close();
 			return;
-		}
-
-		auto soundProperties = data["Sound"];
-		if (soundProperties)
-		{
-			soundProperties["Loop"] = sound->Loop;
-			soundProperties["StartPaused"] = sound->StartPaused;
 		}
 
 		std::ofstream ofStream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblsound", std::ios::out);
@@ -1684,7 +1683,11 @@ namespace HBL2
 		Sound* sound = ResourceManager::Instance->GetSound(soundHandle);
 		if (sound != nullptr)
 		{
-			sound->Destroy();
+			if (sound->Instance != nullptr)
+			{
+				sound->Instance->release();
+				sound->Instance = nullptr;
+			}
 		}
 
 		// Delete from pool.

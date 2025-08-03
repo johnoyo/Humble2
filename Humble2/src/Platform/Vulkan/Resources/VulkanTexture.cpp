@@ -28,7 +28,9 @@ namespace HBL2
 			break;
 		case Format::RGBA16_FLOAT:
 		case Format::RGB32_FLOAT:
-		case Format::R10G10B10A2_UNORM:
+			m_PixelByteSize = 8;
+			break;
+		case Format::R10G10B10A2_UNORM: // TODO: Maybe the byte size here should be 4? Investigate!
 			m_PixelByteSize = 8;
 			break;
 		}

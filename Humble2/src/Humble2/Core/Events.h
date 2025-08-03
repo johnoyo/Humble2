@@ -28,6 +28,17 @@ namespace HBL2
 		int Height = 0;
 	};
 
+	class HBL2_API WindowPositionEvent final : public EventType<WindowPositionEvent>
+	{
+	public:
+		WindowPositionEvent(int xpos, int ypos) : XPosition(xpos), YPosition(ypos)
+		{
+		}
+
+		int XPosition = 0;
+		int YPosition = 0;
+	};
+
 	class HBL2_API FramebufferSizeEvent final : public EventType<FramebufferSizeEvent>
 	{
 	public:

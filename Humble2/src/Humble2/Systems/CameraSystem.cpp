@@ -7,6 +7,22 @@
 
 namespace HBL2
 {
+	void CameraSystem::OnAttach()
+	{
+		m_Context->Group<Component::Camera>(Get<Component::Transform>)
+			.Each([&](Entity entity, Component::Camera& camera, Component::Transform& transform)
+			{
+				if (camera.Enabled)
+				{
+					if (camera.Primary)
+					{
+						m_Context->MainCamera = entity;
+						CalculateFrustum(camera);
+					}
+				}
+			});
+	}
+
 	void CameraSystem::OnCreate()
 	{
 		m_Context->Group<Component::Camera>(Get<Component::Transform>)
@@ -14,7 +30,7 @@ namespace HBL2
 			{
 				if (camera.Enabled)
 				{
-					if (camera.Type == Component::Camera::Type::Perspective)
+					if (camera.Type == Component::Camera::EType::Perspective)
 					{
 						camera.Projection = glm::perspectiveRH_ZO(glm::radians(camera.Fov), camera.AspectRatio, camera.Near, camera.Far);
 					}
@@ -26,18 +42,14 @@ namespace HBL2
 
 					camera.View = glm::inverse(transform.WorldMatrix);
 					camera.ViewProjectionMatrix = camera.Projection * camera.View;
-
-					if (camera.Primary)
-					{
-						m_Context->MainCamera = entity;
-						CalculateFrustum(camera);
-					}
 				}
 			});
 	}
 
 	void CameraSystem::OnUpdate(float ts)
 	{
+		BEGIN_PROFILE_SYSTEM();
+
 		m_Context->Group<Component::Camera>(Get<Component::Transform>)
 			.Each([&](Entity entity, Component::Camera& camera, Component::Transform& transform)
 			{
@@ -45,7 +57,7 @@ namespace HBL2
 				{
 					if (!transform.Static)
 					{
-						if (camera.Type == Component::Camera::Type::Perspective)
+						if (camera.Type == Component::Camera::EType::Perspective)
 						{
 							camera.Projection = glm::perspectiveRH_ZO(glm::radians(camera.Fov), camera.AspectRatio, camera.Near, camera.Far);
 						}
@@ -66,6 +78,8 @@ namespace HBL2
 					}
 				}
 			});
+
+		END_PROFILE_SYSTEM(RunningTime);
 	}
 
 	void CameraSystem::CalculateFrustum(Component::Camera& camera)

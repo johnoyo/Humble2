@@ -33,6 +33,6 @@ namespace HBL2
 		const GPUProperties& GetGPUProperties() const { return m_GPUProperties; }
 
 	protected:
-		GPUProperties m_GPUProperties;
+		GPUProperties m_GPUProperties{};
 	};
 }

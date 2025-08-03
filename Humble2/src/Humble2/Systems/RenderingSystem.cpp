@@ -15,9 +15,13 @@ namespace HBL2
 
 	void RenderingSystem::OnUpdate(float ts)
 	{
+		BEGIN_PROFILE_SYSTEM();
+
 		Entity mainCamera = GetMainCamera();
 
 		m_SceneRenderer->Render(mainCamera);
+
+		END_PROFILE_SYSTEM(RunningTime);
 	}
 
 	void RenderingSystem::OnDestroy()

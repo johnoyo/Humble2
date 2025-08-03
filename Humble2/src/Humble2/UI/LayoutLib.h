@@ -5,7 +5,7 @@
 
 #include "Panel.h"
 #include "Elements.h"
-#include "Editor.h"
+#include "EditorInspector.h"
 #include "UserInterfaceUtilities.h"
 
 #include "glm\glm.hpp"
@@ -18,7 +18,7 @@
 
 */
 
-class LinkEditor : public Editor<LinkEditor, HBL2::Component::Link>
+class LinkEditor : public HBL2::EditorInspector<LinkEditor, HBL2::Component::Link>
 {
 public:
 	void OnCreate()
@@ -52,7 +52,7 @@ public:
 	}
 };
 
-class CameraEditor : public Editor<CameraEditor, HBL2::Component::Camera>
+class CameraEditor : public HBL2::EditorInspector<CameraEditor, HBL2::Component::Camera>
 {
 public:
 	void OnCreate()

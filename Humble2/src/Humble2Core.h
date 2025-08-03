@@ -16,6 +16,8 @@
 #include "Physics\PhysicsEngine2D.h"
 #include "Physics\PhysicsEngine3D.h"
 
+#include "UI\LayoutLib.h"
+
 #include "Utilities\Allocators\BaseAllocator.h"
 #include "Utilities\Allocators\StandardAllocator.h"
 #include "Utilities\Allocators\BumpAllocator.h"

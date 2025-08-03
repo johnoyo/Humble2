@@ -142,7 +142,7 @@ namespace HBL2
 			case Format::D32_FLOAT:
 				return GL_DEPTH_COMPONENT32;
 			case Format::RGBA8_RGB:
-				return GL_RGBA8;
+				return GL_SRGB8_ALPHA8;
 			case Format::RGBA8_UNORM:
 				return GL_RGBA8;
 			case Format::BGRA8_UNORM:

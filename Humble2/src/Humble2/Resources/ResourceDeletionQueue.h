@@ -8,7 +8,7 @@
 
 struct DeleteItem
 {
-    uint32_t Frame;
+    uint32_t Frame = 0;
     std::function<void()> Deletor;
 };
 

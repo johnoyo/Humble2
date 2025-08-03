@@ -22,6 +22,8 @@ namespace HBL2
 
 	void LinkSystem::OnUpdate(float ts)
 	{
+		BEGIN_PROFILE_SYSTEM();
+
 		m_Context->Group<Component::Link>(Get<Component::Transform>)
 			.Each([&](Entity entity, Component::Link& link, Component::Transform& transform)
 			{
@@ -31,6 +33,8 @@ namespace HBL2
 					UpdateChildren(entity, link);
 				}
 			});
+
+		END_PROFILE_SYSTEM(RunningTime);
 	}
 
 	void LinkSystem::OnGuiRender(float ts)

@@ -12,6 +12,11 @@ namespace HBL2
 
 	void EntitySerializer::Serialize(YAML::Emitter& out)
 	{
+		if (m_Scene->HasComponent<Component::TerrainChunk>(m_Entity))
+		{
+			return;
+		}
+
 		out << YAML::BeginMap;
 		out << YAML::Key << "Entity" << YAML::Value << (uint32_t)m_Entity;
 
@@ -241,8 +246,6 @@ namespace HBL2
 
 			auto& soundSource = m_Scene->GetComponent<Component::AudioSource>(m_Entity);
 
-			out << YAML::Key << "Enabled" << YAML::Value << soundSource.Enabled;
-
 			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
 
 			Asset* soundAsset = nullptr;
@@ -264,6 +267,21 @@ namespace HBL2
 			}
 
 			out << YAML::Key << "Sound" << YAML::Value << (soundAsset != nullptr ? soundAsset->UUID : (UUID)0);
+			out << YAML::Key << "Volume" << YAML::Value << soundSource.Volume;
+			out << YAML::Key << "Pitch" << YAML::Value << soundSource.Pitch;
+			out << YAML::Key << "State" << YAML::Value << (uint32_t)(uint8_t)soundSource.State;
+			out << YAML::Key << "Flags" << YAML::Value << (uint32_t)soundSource.Flags;
+
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::AudioListener>(m_Entity))
+		{
+			out << YAML::Key << "Component::AudioListener";
+			out << YAML::BeginMap;
+
+			auto& audioListener = m_Scene->GetComponent<Component::AudioListener>(m_Entity);
+			out << YAML::Key << "Enabled" << YAML::Value << audioListener.Enabled;
 
 			out << YAML::EndMap;
 		}
@@ -310,8 +328,10 @@ namespace HBL2
 			out << YAML::Key << "Enabled" << YAML::Value << rb.Enabled;
 			out << YAML::Key << "Trigger" << YAML::Value << rb.Trigger;
 			out << YAML::Key << "Type" << YAML::Value << (int)rb.Type;
+			out << YAML::Key << "MotionQuality" << YAML::Value << (int)rb.MotionQuality;
 			out << YAML::Key << "Mass" << YAML::Value << (int)rb.Mass;
 			out << YAML::Key << "Friction" << YAML::Value << rb.Friction;
+			out << YAML::Key << "GravityFactor" << YAML::Value << rb.GravityFactor;
 			out << YAML::Key << "Restitution" << YAML::Value << rb.Restitution;
 			out << YAML::Key << "LinearDamping" << YAML::Value << rb.LinearDamping;
 			out << YAML::Key << "AngularDamping" << YAML::Value << rb.AngularDamping;
@@ -355,6 +375,67 @@ namespace HBL2
 			out << YAML::Key << "Enabled" << YAML::Value << cc.Enabled;
 			out << YAML::Key << "Height" << YAML::Value << cc.Height;
 			out << YAML::Key << "Radius" << YAML::Value << cc.Radius;
+
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::Terrain>(m_Entity))
+		{
+			out << YAML::Key << "Component::Terrain";
+			out << YAML::BeginMap;
+
+			auto& t = m_Scene->GetComponent<Component::Terrain>(m_Entity);
+
+			out << YAML::Key << "NormaliseMode" << YAML::Value << (uint32_t)t.NormaliseMode;
+			out << YAML::Key << "Seed" << YAML::Value << t.Seed;
+			out << YAML::Key << "HeightMultiplier" << YAML::Value << t.HeightMultiplier;
+			out << YAML::Key << "Scale" << YAML::Value << t.Scale;
+			out << YAML::Key << "NoiseScale" << YAML::Value << t.NoiseScale;
+			out << YAML::Key << "AddColliders" << YAML::Value << t.AddColliders;
+			out << YAML::Key << "Regenerate" << YAML::Value << t.Regenerate;
+
+			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+			Asset* materialAsset = nullptr;
+
+			bool materialFound = false;
+
+			for (auto handle : assetHandles)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+				if (asset->Type == AssetType::Material && asset->Indentifier != 0 && asset->Indentifier == t.Material.Pack() && !materialFound)
+				{
+					materialFound = true;
+					materialAsset = asset;
+				}
+
+				if (materialFound)
+				{
+					break;
+				}
+			}
+
+			out << YAML::Key << "Material" << YAML::Value << (materialAsset != nullptr ? materialAsset->UUID : (UUID)0);
+
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::AnimationCurve>(m_Entity))
+		{
+			out << YAML::Key << "Component::AnimationCurve";
+			out << YAML::BeginMap;
+
+			auto& curve = m_Scene->GetComponent<Component::AnimationCurve>(m_Entity);
+
+			out << YAML::Key << "Preset" << YAML::Value << (uint32_t)curve.Preset;
+
+			out << YAML::Key << "KeyFrames";
+			out << YAML::BeginSeq;
+			for (auto& keyFrame : curve.Keys)
+			{
+				out << glm::vec2(keyFrame.Time, keyFrame.Value);
+			}
+			out << YAML::EndSeq;
 
 			out << YAML::EndMap;
 		}
@@ -467,10 +548,10 @@ namespace HBL2
 				switch (cameraComponent["Type"].as<int>())
 				{
 				case 1:
-					camera.Type = Component::Camera::Type::Perspective;
+					camera.Type = Component::Camera::EType::Perspective;
 					break;
 				case 2:
-					camera.Type = Component::Camera::Type::Orthographic;
+					camera.Type = Component::Camera::EType::Orthographic;
 					break;
 				default:
 					break;
@@ -521,13 +602,13 @@ namespace HBL2
 				switch (light_NewComponent["Type"].as<int>())
 				{
 				case 1:
-					light.Type = Component::Light::Type::Directional;
+					light.Type = Component::Light::EType::Directional;
 					break;
 				case 2:
-					light.Type = Component::Light::Type::Point;
+					light.Type = Component::Light::EType::Point;
 					break;
 				case 3:
-					light.Type = Component::Light::Type::Spot;
+					light.Type = Component::Light::EType::Spot;
 					break;
 				default:
 					break;
@@ -547,8 +628,18 @@ namespace HBL2
 		if (soundSource_NewComponent)
 		{
 			auto& soundSource = m_Scene->AddComponent<Component::AudioSource>(m_Entity);
-			soundSource.Enabled = soundSource_NewComponent["Enabled"].as<bool>();
 			soundSource.Sound = AssetManager::Instance->GetAsset<Sound>(soundSource_NewComponent["Sound"].as<UUID>());
+			soundSource.Volume = soundSource_NewComponent["Volume"].as<float>();
+			soundSource.Pitch = soundSource_NewComponent["Pitch"].as<float>();
+			soundSource.State = (Component::AudioSource::PlaybackState)(uint8_t)soundSource_NewComponent["State"].as<uint32_t>();
+			soundSource.Flags = (uint8_t)soundSource_NewComponent["Flags"].as<uint32_t>();
+		}
+
+		auto audioListener_NewComponent = entityNode["Component::AudioListener"];
+		if (audioListener_NewComponent)
+		{
+			auto& audioListener = m_Scene->AddComponent<Component::AudioListener>(m_Entity);
+			audioListener.Enabled = audioListener_NewComponent["Enabled"].as<bool>();
 		}
 
 		auto rb2d_NewComponent = entityNode["Component::Rigidbody2D"];
@@ -580,8 +671,16 @@ namespace HBL2
 			rb.Enabled = rb_NewComponent["Enabled"].as<bool>();
 			rb.Trigger = rb_NewComponent["Trigger"].as<bool>();
 			rb.Type = (Physics::BodyType)rb_NewComponent["Type"].as<int>();
+			if (rb_NewComponent["MotionQuality"].IsDefined()) // TODO: Remove if statement in the future.
+			{
+				rb.MotionQuality = (Component::Rigidbody::EMotionQuality)rb_NewComponent["MotionQuality"].as<int>();
+			}
 			rb.Mass = rb_NewComponent["Mass"].as<float>();
 			rb.Friction = rb_NewComponent["Friction"].as<float>();
+			if (rb_NewComponent["GravityFactor"].IsDefined()) // TODO: Remove if statement in the future.
+			{
+				rb.GravityFactor = rb_NewComponent["GravityFactor"].as<float>();
+			}
 			rb.Restitution = rb_NewComponent["Restitution"].as<float>();
 			rb.LinearDamping = rb_NewComponent["LinearDamping"].as<float>();
 			rb.AngularDamping = rb_NewComponent["AngularDamping"].as<float>();
@@ -610,6 +709,57 @@ namespace HBL2
 			cc.Enabled = cc_NewComponent["Enabled"].as<bool>();
 			cc.Height = cc_NewComponent["Height"].as<float>();
 			cc.Radius = cc_NewComponent["Radius"].as<float>();
+		}
+
+		auto t_NewComponent = entityNode["Component::Terrain"];
+		if (t_NewComponent)
+		{
+			auto& t = m_Scene->AddComponent<Component::Terrain>(m_Entity);
+			t.NormaliseMode = (Component::Terrain::ENormaliseMode)t_NewComponent["NormaliseMode"].as<uint32_t>();
+			t.Seed = t_NewComponent["Seed"].as<uint64_t>();
+			t.HeightMultiplier = t_NewComponent["HeightMultiplier"].as<float>();
+
+			if (t_NewComponent["Scale"].IsDefined()) // TODO: Remove if.
+			{
+				t.Scale = t_NewComponent["Scale"].as<float>();
+			}
+
+			if (t_NewComponent["NoiseScale"].IsDefined()) // TODO: Remove if.
+			{
+				t.NoiseScale = t_NewComponent["NoiseScale"].as<float>();
+			}
+
+			if (t_NewComponent["Material"].IsDefined()) // TODO: Remove if.
+			{
+				t.Material = AssetManager::Instance->GetAsset<Material>(t_NewComponent["Material"].as<UUID>());
+			}
+
+			if (t_NewComponent["AddColliders"].IsDefined()) // TODO: Remove if.
+			{
+				t.AddColliders = t_NewComponent["AddColliders"].as<bool>();
+			}
+
+			t.Regenerate = t_NewComponent["Regenerate"].as<bool>();
+		}
+
+		auto curve_NewComponent = entityNode["Component::AnimationCurve"];
+		if (curve_NewComponent)
+		{
+			auto& curve = m_Scene->AddComponent<Component::AnimationCurve>(m_Entity);
+			curve.Preset = (Component::AnimationCurve::CurvePreset)curve_NewComponent["Preset"].as<uint32_t>();
+			curve.PrevPreset = curve.Preset;
+
+			curve.Keys.clear();
+			const YAML::Node keyFrames = curve_NewComponent["KeyFrames"];
+			if (keyFrames && keyFrames.IsSequence())
+			{
+				for (const YAML::Node& k : keyFrames)
+				{
+					glm::vec2 kv = k.as<glm::vec2>();
+					Component::AnimationCurve::KeyFrame frame = { kv.x, kv.y };
+					curve.Keys.push_back(frame);
+				}
+			}
 		}
 
 		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))

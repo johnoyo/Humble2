@@ -101,7 +101,7 @@ namespace HBL2
         Input() {}
 
         int m_LastReleasedState[512] = { GLFW_RELEASE };
-        int m_LastPressedState[512] = { GLFW_PRESS };
+        int m_LastPressedState[512] = { GLFW_RELEASE };
         bool m_LastGamepadState[16][15] = {};
         glm::vec2 m_MousePosition = {};
 

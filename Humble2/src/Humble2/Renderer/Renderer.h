@@ -113,8 +113,8 @@ namespace HBL2
 
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
 
-		UniformRingBuffer* TempUniformRingBuffer;
-		ShadowAtlasAllocator ShadowAtlasAllocator;
+		UniformRingBuffer* TempUniformRingBuffer = nullptr;
+		ShadowAtlasAllocator ShadowAtlasAllocator{};
 
 		Handle<Texture> IntermediateColorTexture;
 		Handle<Texture> MainColorTexture;
@@ -137,7 +137,7 @@ namespace HBL2
 
 	protected:
 		uint32_t m_FrameNumber = 0;
-		GraphicsAPI m_GraphicsAPI;
+		GraphicsAPI m_GraphicsAPI = GraphicsAPI::NONE;
 		RendererStats m_Stats{};
 		RenderPassPool m_RenderPassPool;
 

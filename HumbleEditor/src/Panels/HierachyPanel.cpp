@@ -342,6 +342,14 @@ namespace HBL2
 					HBL2::Component::EditorVisible::Selected = true;
 				}
 
+				if (ImGui::MenuItem("Create Terrain"))
+				{
+					auto entity = HBL2::EntityPreset::CreateTerrain();
+
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
+					HBL2::Component::EditorVisible::Selected = true;
+				}
+
 				ImGui::EndPopup();
 			}
 

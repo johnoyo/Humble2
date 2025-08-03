@@ -11,6 +11,7 @@ namespace HBL2
 	public:
 		CameraSystem() { Name = "CameraSystem"; }
 
+		virtual void OnAttach() override;
 		virtual void OnCreate() override;
 		virtual void OnUpdate(float ts) override;
 

@@ -5,6 +5,8 @@
 
 #include "Resources/ResourceManager.h"
 
+#include "AnimationCurveSystem.h"
+
 #include "Utilities/Collections/DynamicArray.h"
 #include "Utilities/Allocators/BumpAllocator.h"
 
@@ -60,7 +62,7 @@ namespace HBL2
 			else
 			{
 				Physics::CollisionEnterEvent collisionEnterEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
-				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Enter, &collisionEnterEvent);
+				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Stay, &collisionEnterEvent);
 			}
 		}
 
@@ -141,6 +143,8 @@ namespace HBL2
 
 	void Physics3dSystem::OnFixedUpdate()
 	{
+		BEGIN_PROFILE_SYSTEM();
+
 		// Handle runtime creations and properties update.
 		m_Context->Group<Component::Rigidbody>(Get<Component::Transform>)
 			.Each([this](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
@@ -149,7 +153,7 @@ namespace HBL2
 				if (rb.BodyID == Physics::InvalidID)
 				{
 					AddRigidBody(entity, rb, transform, bodyInterface);
-					bodyInterface.AddBody(GetBodyIDFromPhysicsID(rb.BodyID), JPH::EActivation::DontActivate);
+					bodyInterface.AddBody(GetBodyIDFromPhysicsID(rb.BodyID), JPH::EActivation::Activate);
 					return;
 				}
 
@@ -191,6 +195,11 @@ namespace HBL2
 					bodyInterface.SetFriction(bodyID, rb.Friction);
 				}
 
+				if (bodyInterface.GetGravityFactor(bodyID) != rb.GravityFactor)
+				{
+					bodyInterface.SetGravityFactor(bodyID, rb.GravityFactor);
+				}
+
 				if (bodyInterface.GetRestitution(bodyID) != rb.Restitution)
 				{
 					bodyInterface.SetRestitution(bodyID, rb.Restitution);
@@ -210,7 +219,7 @@ namespace HBL2
 		// Update internal simulation step.
 		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
 		const float cDeltaTime = Time::FixedTimeStep;
-		const int cCollisionSteps = 1;
+		const int cCollisionSteps = 4;
 
 		m_PhysicsEngine->Step(cDeltaTime, cCollisionSteps);
 
@@ -235,6 +244,8 @@ namespace HBL2
 
 				transform.Scale = originalScale;
 			});
+
+		END_PROFILE_SYSTEM(RunningTime);
 	}
 
 	void Physics3dSystem::OnDestroy()
@@ -254,11 +265,22 @@ namespace HBL2
 		JPH::ShapeRefC shapeRef;
 		JPH::EMotionType type = BodyTypeToEMotionType(rb.Type);
 
+		/*glm::vec3 worldTransform = glm::vec3(transform.WorldMatrix * glm::vec4(transform.Translation, 1.0));
+
+		glm::mat3 rotationMatrix = glm::mat3(transform.WorldMatrix);
+		rotationMatrix[0] = glm::normalize(rotationMatrix[0]);
+		rotationMatrix[1] = glm::normalize(rotationMatrix[1]);
+		rotationMatrix[2] = glm::normalize(rotationMatrix[2]);
+		glm::quat worldQRotation = glm::quat_cast(rotationMatrix);*/
+
+		JPH::RVec3 bodyPosition = JPH::RVec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
+		JPH::Quat bodyRotation = JPH::Quat(transform.QRotation.x, transform.QRotation.y, transform.QRotation.z, transform.QRotation.w);
+
 		if (m_Context->HasComponent<Component::BoxCollider>(entity))
 		{
 			auto& bc = m_Context->GetComponent<Component::BoxCollider>(entity);
 
-			JPH::BoxShapeSettings shapeSettings(JPH::Vec3(bc.Size.x * transform.Scale.x, bc.Size.x * transform.Scale.y, bc.Size.x * transform.Scale.z));
+			JPH::BoxShapeSettings shapeSettings(JPH::Vec3(bc.Size.x * transform.Scale.x, bc.Size.y * transform.Scale.y, bc.Size.z * transform.Scale.z));
 			shapeSettings.SetEmbedded();
 
 			// Create the shape
@@ -287,6 +309,49 @@ namespace HBL2
 			JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
 			shapeRef = shapeResult.Get();
 		}
+		else if (m_Context->HasComponent<Component::TerrainCollider>(entity))
+		{
+			auto& tc = m_Context->GetComponent<Component::TerrainCollider>(entity);
+			auto& chunk = m_Context->GetComponent<Component::TerrainChunk>(entity);
+			auto& tr = m_Context->GetComponent<Component::Transform>(entity);
+
+			auto& link = m_Context->GetComponent<Component::Link>(entity);
+			Entity terrainEntity = m_Context->FindEntityByUUID(link.Parent);
+			auto& terrain = m_Context->GetComponent<Component::Terrain>(terrainEntity);
+			auto& curve = m_Context->GetComponent<Component::AnimationCurve>(terrainEntity);
+
+			const int32_t N = terrain.ChunkSize;
+			const float S = terrain.Scale;
+			const float H = terrain.HeightMultiplier;
+			const float halfSize = 0.5f * (N - 1) * S;
+
+			// The height-field that Jolt expects and the visual mesh we create are	laid out mirrored in the Z axis.
+			std::vector<float> samples(chunk.NoiseMap.size());
+			for (int32_t y = 0; y < N; ++y)
+			{
+				for (int32_t x = 0; x < N; ++x)
+				{
+					// source row is (N-1-y) instead of y
+					float h = chunk.NoiseMap[(N - 1 - y) * N + x];
+					samples[y * N + x] = AnimationCurveSystem::Evaluate(curve, h);
+				}
+			}
+
+			JPH::Vec3 scale(S, H, S);
+
+			// This is the centre of the render chunk.
+			glm::vec3 chunkOrigin = { 0.0f, 0.0f, 0.0f };
+
+			// Send the NW corner (sample 0,0) to Jolt
+			JPH::Vec3 offset(chunkOrigin.x - halfSize, 0.0f, chunkOrigin.z - halfSize);
+
+			JPH::HeightFieldShapeSettings shapeSettings(samples.data(), offset, scale, (uint32_t)N);
+			shapeSettings.SetEmbedded();
+
+			// Create the shape
+			JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
+			shapeRef = shapeResult.Get();
+		}
 
 		JPH::ObjectLayer bodyLayer;
 
@@ -297,20 +362,23 @@ namespace HBL2
 		else
 		{
 			bodyLayer = (type == JPH::EMotionType::Static ? Layers::NON_MOVING : Layers::MOVING);
-		}
-
-		JPH::RVec3 bodyPosition = JPH::RVec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
-		JPH::Quat bodyRotation = JPH::Quat(transform.QRotation.x, transform.QRotation.y, transform.QRotation.z, transform.QRotation.w);
+		}		
 
 		// Create the settings for the body itself.
 		JPH::BodyCreationSettings bodySettings(shapeRef, bodyPosition, bodyRotation, type, bodyLayer);
+		bodySettings.mGravityFactor = rb.GravityFactor;
 		bodySettings.mFriction = rb.Friction;
 		bodySettings.mRestitution = rb.Restitution;
 		bodySettings.mLinearDamping = rb.LinearDamping;
 		bodySettings.mAngularDamping = rb.AngularDamping;
 		bodySettings.mAllowDynamicOrKinematic = true;
 		bodySettings.mIsSensor = rb.Trigger;
+		bodySettings.mMaxLinearVelocity = 1000.f;
+		bodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
+		bodySettings.mMassPropertiesOverride = { .mMass = rb.Mass };
+
 		bodySettings.mCollideKinematicVsNonDynamic = rb.Trigger;
+		bodySettings.mMotionQuality = (rb.MotionQuality == Component::Rigidbody::EMotionQuality::Discrete ? JPH::EMotionQuality::Discrete : JPH::EMotionQuality::LinearCast);
 
 		// Create the actual rigid body. Note that if we run out of bodies this can return nullptr.
 		JPH::Body* body = bodyInterface.CreateBody(bodySettings);
@@ -332,6 +400,7 @@ namespace HBL2
 	{
 		return m_Context->HasComponent<Component::BoxCollider>(entity) ||
 			m_Context->HasComponent<Component::SphereCollider>(entity) ||
-			m_Context->HasComponent<Component::CapsuleCollider>(entity);
+			m_Context->HasComponent<Component::CapsuleCollider>(entity)||
+			m_Context->HasComponent<Component::TerrainCollider>(entity);
 	}
 }

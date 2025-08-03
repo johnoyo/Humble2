@@ -18,6 +18,8 @@ namespace HBL2
 
 	void TransformSystem::OnUpdate(float ts)
 	{
+		BEGIN_PROFILE_SYSTEM();
+
 		m_Context->View<Component::Transform>()
 			.Each([&](Component::Transform& transform)
 			{
@@ -31,5 +33,7 @@ namespace HBL2
 					transform.WorldMatrix = transform.LocalMatrix;
 				}
 			});
+
+		END_PROFILE_SYSTEM(RunningTime);
 	}
 }
