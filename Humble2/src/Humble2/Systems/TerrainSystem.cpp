@@ -588,6 +588,9 @@ namespace HBL2
 					terrainChunk.Visible = false;
 					terrainChunk.VisibleLastUpdate = false;
 				}
+				
+				// NOTE: There is a crash if the terrain scale is not 1.0, not sure if the chunk unloading is the culprit.
+				//		 Maybe in the future unload chunkks in a job as well.
 
 				// If the distance of the chunk is bigger than the threshold to stay loaded, unload it.
 				if (glm::distance(scaledViewerPosition, tr.Translation) >= maxDistanceForChunkToStayLoaded)
@@ -595,7 +598,7 @@ namespace HBL2
 					// Clean up gpu buffers.
 					for (auto& lodMesh : terrainChunk.LodMeshes)
 					{
-						// Skip chunk unload, si,ce a job is generating a lod mesh atm.
+						// Skip chunk unload, since a job is generating a lod mesh atm.
 						if (lodMesh.HasRequestedMesh && !lodMesh.HasMesh)
 						{
 							return;
