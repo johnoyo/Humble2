@@ -4,7 +4,7 @@ namespace HBL2
 {
 	namespace Runtime
 	{
-		void RuntimeContext::OnCreate()
+		void RuntimeContext::OnAttach()
 		{
 			HBL2::Context::Mode = HBL2::Mode::Runtime;
 			HBL2::AssetManager::Instance = new HBL2::EditorAssetManager;
@@ -15,11 +15,16 @@ namespace HBL2
 			{
 				m_ActiveScene = HBL2::ResourceManager::Instance->GetScene(e.NewScene);
 			});
-
-			Context::ViewportPosition = { 0, 0 };
+			
+			Context::ViewportPosition = Window::Instance->GetPosition();
 			Context::ViewportSize = Window::Instance->GetExtents();
 
-			HBL2::EventDispatcher::Get().Register<WindowSizeEvent>([&](const HBL2::WindowSizeEvent& e)
+			HBL2::EventDispatcher::Get().Register<HBL2::WindowPositionEvent>([&](const HBL2::WindowPositionEvent& e)
+			{
+				Context::ViewportPosition = { e.XPosition, e.YPosition };
+			});
+
+			HBL2::EventDispatcher::Get().Register<HBL2::WindowSizeEvent>([&](const HBL2::WindowSizeEvent& e)
 			{
 				Context::ViewportSize = { e.Width, e.Height };
 
@@ -40,6 +45,13 @@ namespace HBL2
 			});
 
 			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
+
+			// NOTE: The OnAttach method of the registered systems will be called from the SceneManager class.
+		}
+
+		void RuntimeContext::OnCreate()
+		{
+			// NOTE: The OnCreate method of the registered systems will be called from the SceneManager class.
 		}
 
 		void RuntimeContext::OnUpdate(float ts)
@@ -47,6 +59,21 @@ namespace HBL2
 			if (m_ActiveScene == nullptr)
 			{
 				return;
+			}
+
+			if (m_FirstFrame)
+			{
+				m_ActiveScene->GetRegistry()
+					.view<HBL2::Component::Camera>()
+					.each([&](HBL2::Component::Camera& camera)
+					{
+						if (camera.Enabled)
+						{
+							camera.AspectRatio = Context::ViewportSize.x / Context::ViewportSize.y;
+						}
+					});
+
+				m_FirstFrame = false;
 			}
 
 			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
@@ -115,6 +142,19 @@ namespace HBL2
 			ShaderUtilities::Get().DeleteBuiltInShaders();
 			ShaderUtilities::Get().DeleteBuiltInMaterials();
 			MeshUtilities::Get().DeleteBuiltInMeshes();
+		}
+
+		void RuntimeContext::OnDetach()
+		{
+			if (m_ActiveScene == nullptr)
+			{
+				return;
+			}
+
+			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+			{
+				system->OnDetach();
+			}
 		}
 
 		bool RuntimeContext::OpenProject()
