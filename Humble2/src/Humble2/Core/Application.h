@@ -13,6 +13,7 @@
 #include "ImGui\ImGuiRenderer.h"
 #include "Renderer\Device.h"
 #include "Renderer\Renderer.h"
+#include "Renderer\DebugRenderer.h"
 #include "Resources\ResourceManager.h"
 
 #include "Platform\OpenGL\OpenGLResourceManager.h"

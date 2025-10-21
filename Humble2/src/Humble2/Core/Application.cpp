@@ -64,6 +64,8 @@ namespace HBL2
 		m_Specification.Context->EditorScene = ResourceManager::Instance->CreateScene({ .name = "Editor Scene" });
 		
 		ShaderUtilities::Initialize();
+
+		DebugRenderer::Instance = new DebugRenderer;
 	}
 
 	Application::~Application()
@@ -112,9 +114,11 @@ namespace HBL2
 
 		Device::Instance->Initialize();
 		Renderer::Instance->Initialize();
-		ImGuiRenderer::Instance->Initialize();
 
 		m_Specification.Context->OnAttach();
+
+		ImGuiRenderer::Instance->Initialize();
+		DebugRenderer::Instance->Initialize();
 
 		m_Specification.Context->OnCreate();
 
@@ -122,14 +126,14 @@ namespace HBL2
 		{
 			BeginFrame();
 
+			DebugRenderer::Instance->BeginFrame();
+			m_Specification.Context->OnGizmoRender(Time::DeltaTime);
+			DebugRenderer::Instance->EndFrame();
+
 			Renderer::Instance->BeginFrame();
 			m_Specification.Context->OnUpdate(Time::DeltaTime);
 			m_Specification.Context->OnFixedUpdate();
 			Renderer::Instance->EndFrame();
-
-			/*DebugRenderer::Instance->BeginFrame();
-			m_Specification.Context->OnGizmoRender(Time::DeltaTime);
-			DebugRenderer::Instance->EndFrame();*/
 
 			ImGuiRenderer::Instance->BeginFrame();
 			m_Specification.Context->OnGuiRender(Time::DeltaTime);
@@ -152,6 +156,10 @@ namespace HBL2
 		ImGuiRenderer::Instance->Clean();
 		delete ImGuiRenderer::Instance;
 		ImGuiRenderer::Instance = nullptr;
+
+		DebugRenderer::Instance->Clean();
+		delete DebugRenderer::Instance;
+		DebugRenderer::Instance = nullptr;
 
 		AssetManager::Instance->DeregisterAssets();
 		delete AssetManager::Instance;

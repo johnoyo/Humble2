@@ -35,5 +35,8 @@ namespace HBL2
 		virtual void ApplyTorque(Component::Rigidbody& rb, const glm::vec3& torque) {}
 		virtual void ApplyImpulse(Component::Rigidbody& rb, const glm::vec3& impluse) {}
 		virtual void ApplyAngularImpulse(Component::Rigidbody& rb, const glm::vec3& angularImpulse) {}
+
+		virtual void SetDebugDrawEnabled(bool enabled) {}
+		virtual void OnDebugDraw() {}
 	};
 }

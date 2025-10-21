@@ -24,5 +24,6 @@ namespace HBL2
 		GLenum WrapToGLenum(Wrap wrap);
 		GLenum CompareToGLenum(Compare compare);
 		GLenum TextureTypeToGLenum(TextureType textureType);
+		GLenum TopologyToGLenum(Topology topology);
 	}
 }

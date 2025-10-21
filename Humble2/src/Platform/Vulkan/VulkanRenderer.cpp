@@ -139,6 +139,7 @@ namespace HBL2
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
+		m_ResourceManager->DeleteBindGroupLayout(m_DebugBindingsLayout);
 
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
@@ -153,6 +154,7 @@ namespace HBL2
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalBindings2D);
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalBindings3D);
 			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalPresentBindings);
+			m_ResourceManager->DeleteBindGroup(m_Frames[i].DebugBindings);
 		}
 
 		for (int i = 0; i < m_FrameBuffers.size(); i++)
@@ -199,9 +201,6 @@ namespace HBL2
 		case HBL2::CommandBufferType::MAIN:
 			cmd = GetCurrentFrame().MainCommandBuffer;
 			vkCmdObj = &m_MainCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
-			break;
-		case HBL2::CommandBufferType::CUSTOM:
-			HBL2_CORE_ASSERT(false, "Custom Command buffers not implemented yet!");
 			break;
 		case HBL2::CommandBufferType::UI:
 			cmd = GetCurrentFrame().ImGuiCommandBuffer;
@@ -407,7 +406,7 @@ namespace HBL2
 		const SwapChainSupportDetails& swapChainSupport = m_Device->GetSwapChainSupportDetails();
 
 		VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
-		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.PresentModes);
+		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.PresentModes, Window::Instance->GetSpec().VerticalSync);
 		VkExtent2D extent = ChooseSwapExtent(swapChainSupport.Capabilities);
 
 		uint32_t imageCount = swapChainSupport.Capabilities.minImageCount + 1;
@@ -516,7 +515,6 @@ namespace HBL2
 			.pNext = nullptr,
 			.flags = VK_FENCE_CREATE_SIGNALED_BIT,
 		};
-
 
 		// For the semaphores we don't need any flags.
 		VkSemaphoreCreateInfo semaphoreCreateInfo =
@@ -894,17 +892,69 @@ namespace HBL2
 				},
 			},
 		});
+
+		// Bindings for debug rendering.
+		m_DebugBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "debug-draw-bind-group-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM,
+				},
+			},
+		});
+
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			auto cameraBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "debug-draw-camera-uniform-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.usageHint = BufferUsageHint::DYNAMIC,
+				.memoryUsage = MemoryUsage::GPU_CPU,
+				.byteSize = sizeof(CameraData),
+				.initialData = nullptr,
+			});
+
+		 	m_Frames[i].DebugBindings = m_ResourceManager->CreateBindGroup({
+				.debugName = "debug-draw-bind-group",
+				.layout = m_DebugBindingsLayout,
+				.buffers = { { .buffer = cameraBuffer } }
+			});
+		}
 	}
 
 	// Helper
 
-	VkPresentModeKHR VulkanRenderer::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+	VkPresentModeKHR VulkanRenderer::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool verticalSync)
 	{
 		for (const auto& availablePresentMode : availablePresentModes)
 		{
-			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+			if (verticalSync)
 			{
-				return availablePresentMode;
+				if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+				{
+					return availablePresentMode;
+				}
+
+				// Fallback.
+				if (availablePresentMode == VK_PRESENT_MODE_FIFO_KHR)
+				{
+					return availablePresentMode;
+				}
+			}
+			else
+			{
+				if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+				{
+					return availablePresentMode;
+				}
+
+				// Fallback.
+				if (availablePresentMode == VK_PRESENT_MODE_FIFO_RELAXED_KHR)
+				{
+					return availablePresentMode;
+				}
 			}
 		}
 

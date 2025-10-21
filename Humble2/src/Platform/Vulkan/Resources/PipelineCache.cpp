@@ -192,7 +192,7 @@ namespace HBL2
 			.depthBiasConstantFactor = 0.0f,
 			.depthBiasClamp = 0.0f,
 			.depthBiasSlopeFactor = 0.0f,
-			.lineWidth = 1.0f,
+			.lineWidth = 1.5f,
 		};
 
 		// Multisample state.

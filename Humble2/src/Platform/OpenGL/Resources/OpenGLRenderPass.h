@@ -8,24 +8,7 @@ namespace HBL2
 	struct OpenGLRenderPass
 	{
 		OpenGLRenderPass() = default;
-		OpenGLRenderPass(const RenderPassDescriptor&& desc)
-		{
-			DebugName = desc.debugName;
-
-			ColorClearValues.reserve(desc.colorTargets.Size());
-			for (const auto& colorTarget : desc.colorTargets)
-			{
-				ColorClearValues.push_back(colorTarget.loadOp == LoadOperation::CLEAR);
-				ClearColor = colorTarget.clearColor;
-			}
-			ColorTargetCount = desc.colorTargets.Size();
-
-			DepthClearValue = desc.depthTarget.loadOp == LoadOperation::CLEAR;
-			ClearDepth = desc.depthTarget.clearZ;
-
-			StencilClearValue = desc.depthTarget.stencilLoadOp == LoadOperation::CLEAR;
-			ClearStencil = desc.depthTarget.clearStencil;
-		}
+		OpenGLRenderPass(const RenderPassDescriptor&& desc);
 
 		const char* DebugName = "";
 

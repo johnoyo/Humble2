@@ -1,5 +1,8 @@
 #include "RenderingSystem.h"
 
+#include "Core/Application.h"
+#include "Renderer/DebugRenderer.h"
+
 namespace HBL2
 {
 	void RenderingSystem::OnCreate()
@@ -27,6 +30,9 @@ namespace HBL2
 	void RenderingSystem::OnDestroy()
 	{
 		m_SceneRenderer->CleanUp();
+
+		delete m_SceneRenderer;
+		m_SceneRenderer = nullptr;
 	}
 
 	Entity RenderingSystem::GetMainCamera()

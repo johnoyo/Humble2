@@ -163,7 +163,14 @@ namespace HBL2
 
 			glBindBuffer(GL_ARRAY_BUFFER, RendererId);
 			glEnableVertexAttribArray(bufferIndex + j);
-			glVertexAttribPointer(bufferIndex + j, size, type, GL_FALSE, stride, (const void*)offset);
+			if (type == GL_FLOAT)
+			{
+				glVertexAttribPointer(bufferIndex + j, size, type, GL_FALSE, stride, (const void*)offset);
+			}
+			else
+			{
+				glVertexAttribIPointer(bufferIndex + j, size, type, stride, (const void*)offset);
+			}
 		}
 	}
 

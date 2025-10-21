@@ -20,6 +20,7 @@ namespace HBL2
 			ImGui::Text("SkyboxPass: %f ms", stats.SkyboxPassTime);
 			ImGui::Text("TransparentPass: %f ms", stats.TransparentPassTime);
 			ImGui::Text("PostProcessPass: %f ms", stats.PostProcessPassTime);
+			ImGui::Text("DebugPassTime: %f ms", stats.DebugPassTime);
 			ImGui::Text("PresentPass: %f ms", stats.PresentPassTime);
 
 			ImGui::Separator();

@@ -40,6 +40,7 @@ namespace HBL2
 		void SpriteRenderingSetup();
 		void SkyboxPassSetup();
 		void PostProcessPassSetup();
+		void DebugPassSetup();
 		void PresentPassSetup();
 
 		void GatherDraws();
@@ -51,6 +52,7 @@ namespace HBL2
 		void TransparentPass(CommandBuffer* commandBuffer);
 		void SkyboxPass(CommandBuffer* commandBuffer);
 		void PostProcessPass(CommandBuffer* commandBuffer);
+		void DebugPass(CommandBuffer* commandBuffer);
 		void PresentPass(CommandBuffer* commandBuffer);
 
 		void GetViewProjection(Entity mainCamera);
@@ -121,10 +123,8 @@ namespace HBL2
 		Handle<Buffer> m_VertexBuffer;
 
 		Handle<Buffer> m_PostProcessQuadVertexBuffer;
-		Handle<Mesh> m_PostProcessQuadMesh;
 
 		Handle<Buffer> m_QuadVertexBuffer;
-		Handle<Mesh> m_QuadMesh;
 		Handle<Material> m_QuadMaterial;
 		Handle<Shader> m_PresentShader;
 

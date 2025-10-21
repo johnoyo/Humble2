@@ -44,13 +44,13 @@ namespace HBL2
 					});
 			});
 
-			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
-
 			// NOTE: The OnAttach method of the registered systems will be called from the SceneManager class.
 		}
 
 		void RuntimeContext::OnCreate()
 		{
+			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
+
 			// NOTE: The OnCreate method of the registered systems will be called from the SceneManager class.
 		}
 

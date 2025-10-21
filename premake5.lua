@@ -44,7 +44,7 @@ JoltDefines = {
 
     -- Enable profiling & debug renderer in Debug/Release if desired :contentReference[oaicite:6]{index=6}
     "JPH_PROFILER_IN_DEBUG_AND_RELEASE",
-    "JPH_DEBUG_RENDERER_IN_DEBUG_AND_RELEASE",
+    "JPH_DEBUG_RENDERER",
 
     -- Enable ObjectStream support (CMake's ENABLE_OBJECT_STREAM ON by default) :contentReference[oaicite:7]{index=7}
     "JPH_OBJECT_STREAM",

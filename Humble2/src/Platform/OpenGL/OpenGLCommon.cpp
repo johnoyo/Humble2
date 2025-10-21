@@ -131,6 +131,29 @@ namespace HBL2
 			return -1;
 		}
 
+		GLenum TopologyToGLenum(Topology topology)
+		{
+			switch (topology)
+			{
+			case HBL2::Topology::POINT_LIST:
+				return GL_POINTS;
+			case HBL2::Topology::LINE_LIST:
+				return GL_LINES;
+			case HBL2::Topology::LINE_STRIP:
+				return  GL_LINE_STRIP;
+			case HBL2::Topology::TRIANGLE_LIST:
+				return GL_TRIANGLES;
+			case HBL2::Topology::TRIANGLE_STRIP:
+				return GL_TRIANGLE_STRIP;
+			case HBL2::Topology::TRIANGLE_FAN:
+				return GL_TRIANGLE_FAN;
+			case HBL2::Topology::PATCH_LIST:
+				return GL_PATCHES;
+			}
+
+			return -1;
+		}
+
 		GLenum FormatToGLenum(Format format)
 		{
 			switch (format)

@@ -1,5 +1,7 @@
 #include "JoltPhysicsEngine.h"
 
+#include "JoltDebugRenderer.h"
+
 namespace HBL2
 {
 	static inline const JPH::BodyID& GetBodyIDFromPhysicsID(Physics::ID id)
@@ -49,6 +51,8 @@ namespace HBL2
 			m_BroadPhaseLayerInterface,
 			m_ObjectVsBroadPhaseLayerFilter,
 			m_ObjectVsObjectLayerFilter);
+
+		m_DebugRenderer = new JoltDebugRenderer;
 	}
 
 	void JoltPhysicsEngine::Step(float inDeltaTime, int inCollisionSteps)
@@ -81,6 +85,10 @@ namespace HBL2
 
 		// Delete physics system.
 		delete m_PhysicsSystem;
+		m_PhysicsSystem = nullptr;
+
+		delete m_DebugRenderer;
+		m_DebugRenderer = nullptr;
 	}
 
 	void JoltPhysicsEngine::DispatchCollisionEvent(Physics::CollisionEventType collisionEventType, void* collisionEventData)
@@ -260,6 +268,24 @@ namespace HBL2
 	{
 		auto& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
 		bodyInterface.AddAngularImpulse(GetBodyIDFromPhysicsID(rb.BodyID), { angularImpulse.x, angularImpulse.y, angularImpulse.z });
+	}
+
+	void JoltPhysicsEngine::SetDebugDrawEnabled(bool enabled)
+	{
+		m_DebugDrawEnabled = enabled;
+	}
+
+	void JoltPhysicsEngine::OnDebugDraw()
+	{
+		if (!m_DebugDrawEnabled || m_PhysicsSystem == nullptr)
+		{
+			return;
+		}
+
+		JPH::BodyManager::DrawSettings settings;
+		settings.mDrawShapeWireframe = true;
+
+		m_PhysicsSystem->DrawBodies(settings, m_DebugRenderer, nullptr);
 	}
 }
 

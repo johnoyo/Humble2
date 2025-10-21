@@ -32,6 +32,7 @@ namespace HBL2
 		VkCommandBuffer ImGuiCommandBuffer;
 
 		Handle<BindGroup> ShadowBindings;
+		Handle<BindGroup> DebugBindings;
 		Handle<BindGroup> GlobalBindings2D;
 		Handle<BindGroup> GlobalBindings3D;
 		Handle<BindGroup> GlobalPresentBindings;
@@ -66,12 +67,13 @@ namespace HBL2
 		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalBindings2D; }
 		virtual Handle<BindGroup> GetGlobalBindings3D() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalBindings3D; }
 		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalPresentBindings; }
+		virtual Handle<BindGroup> GetDebugBindings() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].DebugBindings; }
 
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() override { return m_FrameBuffers[m_SwapchainImageIndex]; }
 
 		const VmaAllocator& GetAllocator() const { return m_Allocator; } // TODO: Move to VulkanResourceManager
 
-		const uint32_t GetFrameIndex() const { return m_FrameNumber % FRAME_OVERLAP; }
+		virtual const uint32_t GetFrameIndex() const override { return m_FrameNumber % FRAME_OVERLAP; }
 		const FrameData& GetCurrentFrame() const { return m_Frames[m_FrameNumber % FRAME_OVERLAP]; }
 		const VkFormat& GetSwapchainImageFormat() const { return m_SwapChainImageFormat; }
 		const VkExtent2D& GetSwapchainExtent() const { return m_SwapChainExtent; }
@@ -102,7 +104,7 @@ namespace HBL2
 		void CreateDescriptorSets();
 
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool verticalSync);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 		void StubRenderPass();

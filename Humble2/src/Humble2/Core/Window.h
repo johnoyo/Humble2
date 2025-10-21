@@ -45,6 +45,8 @@ namespace HBL2
 		glm::u32vec2 GetExtents() const { return { m_Spec.Width, m_Spec.Height }; }
 		void SetExtents(uint32_t x, uint32_t y) { m_Spec.Width = x; m_Spec.Height = y; }
 
+		const WindowSpecification& GetSpec() const { return m_Spec; }
+
 	protected:
 		void AttachEventCallbacks();
 

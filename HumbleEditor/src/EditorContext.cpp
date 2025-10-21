@@ -43,13 +43,14 @@ namespace HBL2
 				m_ActiveScene = ResourceManager::Instance->GetScene(e.NewScene);
 			});
 
-			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
 
-			// NOTE: The OnCreate method of the registered systems will be called from the SceneManager class.
+			// NOTE: The OnAttach method of the registered systems will be called from the SceneManager class.
 		}
 
 		void EditorContext::OnCreate()
 		{
+			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
+
 			if (m_EditorScene == nullptr)
 			{
 				return;
