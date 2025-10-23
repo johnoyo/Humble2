@@ -139,6 +139,17 @@ namespace HBL2
 				break;
 			}
 		}
+
+		// Polygon mode.
+		switch (variantDesc.polygonMode)
+		{
+		case PolygonMode::FILL:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			break;
+		case PolygonMode::LINE:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			break;
+		}
 	}
 
 	void OpenGLShader::Bind()

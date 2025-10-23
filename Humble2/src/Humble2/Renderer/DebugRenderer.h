@@ -44,8 +44,11 @@ namespace HBL2
 		virtual void DrawWireSphere(const glm::vec3& position, float radius);
 		virtual void DrawCube(const glm::vec3& center, const glm::vec3& size);
 		virtual void DrawWireCube(const glm::vec3& center, const glm::vec3& size);
+		virtual void DrawTriangle(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3);
+		virtual void DrawWireTriangle(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3);
 
 	private:
+		void InitSphereMesh(int segments = 16, int rings = 12);
 		glm::mat4 GetCameraMVP();
 
 	private:
@@ -60,23 +63,34 @@ namespace HBL2
 		ResourceManager* m_ResourceManager = nullptr;
 
 		Handle<Shader> m_DebugShader;
+
 		Handle<Material> m_DebugLineMaterial;
 		uint64_t m_DebugLineMaterialVariantHash = UINT64_MAX;
+
+		Handle<Material> m_DebugFillMaterial;
+		uint64_t m_DebugFillMaterialVariantHash = UINT64_MAX;
+
+		Handle<Material> m_DebugWireMaterial;
+		uint64_t m_DebugWireMaterialVariantHash = UINT64_MAX;
 
 		Handle<RenderPass> m_DebugRenderPass;
 		Handle<RenderPassLayout> m_DebugRenderPassLayout;
 		Handle<FrameBuffer> m_DebugFrameBuffer;
 
-		Handle<Buffer> m_LineVertexBuffer;
+		Handle<Buffer> m_DebugLineVertexBuffer;
+		Handle<Buffer> m_DebugFillTriVertexBuffer;
+		Handle<Buffer> m_DebugWireTriVertexBuffer;
 
 		DrawList m_Draws;
 
-		std::vector<DebugVertex> m_LineVerts;
 		uint32_t m_CurrentLineIndex = 0;
+		std::vector<DebugVertex> m_LineVerts;
 
+		uint32_t m_CurrentFillIndex = 0;
 		std::vector<DebugVertex> m_FillTrisVerts;
 		std::vector<uint32_t>  m_FillTrisIndices;
 
+		uint32_t m_CurrentWireIndex = 0;
 		std::vector<DebugVertex> m_WireTrisVerts;
 		std::vector<uint32_t>  m_WireTrisIndices;
 	};
