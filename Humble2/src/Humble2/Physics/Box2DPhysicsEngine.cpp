@@ -9,6 +9,8 @@ namespace HBL2
 		worldDef.restitutionThreshold = 0.5f;
 
 		m_PhysicsWorld = b2CreateWorld(&worldDef);
+
+		m_DebugDraw = b2DefaultDebugDraw();
 	}
 
 	void Box2DPhysicsEngine::Step(float timeStep)
@@ -186,5 +188,20 @@ namespace HBL2
 	float Box2DPhysicsEngine::GetAngularVelocity(Component::Rigidbody2D& rb2d)
 	{
 		return b2Body_GetAngularVelocity(b2LoadBodyId(rb2d.BodyId));
+	}
+
+	void Box2DPhysicsEngine::SetDebugDrawEnabled(bool enabled)
+	{
+		m_DebugDrawEnabled = enabled;
+	}
+
+	void Box2DPhysicsEngine::OnDebugDraw()
+	{
+		if (!m_DebugDrawEnabled || B2_IS_NULL(m_PhysicsWorld))
+		{
+			return;
+		}
+
+		b2World_Draw(m_PhysicsWorld, &m_DebugDraw);
 	}
 }

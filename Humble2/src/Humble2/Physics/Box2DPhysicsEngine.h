@@ -50,5 +50,7 @@ namespace HBL2
 
 		std::vector<std::function<void(Physics::TriggerEnterEvent*)>> m_TriggerEnterEvents;
 		std::vector<std::function<void(Physics::TriggerExitEvent*)>> m_TriggerExitEvents;
+
+		bool m_DebugDrawEnabled = false;
 	};
 }
