@@ -1,5 +1,6 @@
 #include "Systems\EditorPanelSystem.h"
 
+#include "Physics/PhysicsEngine2D.h"
 #include "Physics/PhysicsEngine3D.h"
 
 namespace HBL2
@@ -56,6 +57,11 @@ namespace HBL2
 
 			static bool showPhysicsColliders = false;
 			ImGui::Checkbox("Show Physics Colliders", &showPhysicsColliders);
+
+			if (PhysicsEngine2D::Instance != nullptr)
+			{
+				PhysicsEngine2D::Instance->SetDebugDrawEnabled(showPhysicsColliders);
+			}
 
 			if (PhysicsEngine3D::Instance != nullptr)
 			{

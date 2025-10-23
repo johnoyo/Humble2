@@ -11,6 +11,7 @@ namespace HBL2
 		m_PhysicsWorld = b2CreateWorld(&worldDef);
 
 		m_DebugDraw = b2DefaultDebugDraw();
+		// TODO: Attach debug draw methods to function pointers.
 	}
 
 	void Box2DPhysicsEngine::Step(float timeStep)

@@ -2,7 +2,10 @@
 
 #include "Core/Context.h"
 #include "Core/Window.h"
+
+#include "Physics/PhysicsEngine2D.h"
 #include "Physics/PhysicsEngine3D.h"
+
 #include "Utilities/ShaderUtilities.h"
 
 namespace HBL2
@@ -207,6 +210,11 @@ namespace HBL2
 		m_CurrentLineIndex = 0;
 		m_CurrentFillIndex = 0;
 		m_CurrentWireIndex = 0;
+
+		if (PhysicsEngine2D::Instance != nullptr)
+		{
+			PhysicsEngine2D::Instance->OnDebugDraw();
+		}
 
 		if (PhysicsEngine3D::Instance != nullptr)
 		{
