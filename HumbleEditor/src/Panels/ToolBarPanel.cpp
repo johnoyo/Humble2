@@ -1,6 +1,7 @@
 #include "Systems\EditorPanelSystem.h"
 
 #include <Utilities\FileDialogs.h>
+#include <Physics/PhysicsEngine2D.h>
 
 namespace HBL2
 {
@@ -228,6 +229,16 @@ namespace HBL2
 
 				if (ImGui::BeginMenu("Edit"))
 				{
+					if (ImGui::MenuItem("Project Settings"))
+					{
+						m_ShowProjectSettingsWindow = true;
+					}
+
+					if (ImGui::MenuItem("Editor Settings"))
+					{
+						m_ShowEditorSettingsWindow = true;
+					}
+
 					ImGui::EndMenu();
 				}
 
@@ -243,6 +254,119 @@ namespace HBL2
 				}
 
 				ImGui::EndMainMenuBar();
+			}
+
+			// Project Settings Window.
+			if (m_ShowProjectSettingsWindow)
+			{
+				ImGui::Begin("Project Settings##Window", &m_ShowProjectSettingsWindow);
+
+				auto& spec = HBL2::Project::GetActive()->GetSpecification();
+
+				ImGui::Text("Renderer Settings");
+
+				// Renderer.
+				{
+					const char* options[] = { "Forward", "ForwardPlus", "Deffered" };
+					int currentItem = (int)spec.Settings.Renderer;
+
+					if (ImGui::Combo("Renderer Type", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						spec.Settings.Renderer = (RendererType)currentItem;
+					}
+				}
+
+				ImGui::Separator();
+
+				ImGui::Text("Physics2D Settings");
+
+				// Physics 2d.
+				{
+					if (ImGui::DragFloat("Gravity##2d", &spec.Settings.GravityForce2D, 0.01f))
+					{
+					}
+
+					if (ImGui::Checkbox("Show Colliders##2d", &spec.Settings.ShowPhysicsColliders2D))
+					{
+						PhysicsEngine2D::Instance->SetDebugDrawEnabled(spec.Settings.ShowPhysicsColliders2D);
+					}
+				}
+
+				ImGui::Separator();
+
+				ImGui::Text("Physics3D Settings");
+
+				// Physics 3d.
+				{
+					if (ImGui::DragFloat("Gravity##3d", &spec.Settings.GravityForce3D, 0.01f))
+					{
+					}
+
+					if (ImGui::Checkbox("Show Colliders##3d", &spec.Settings.ShowPhysicsColliders3D))
+					{
+						PhysicsEngine3D::Instance->SetDebugDrawEnabled(spec.Settings.ShowPhysicsColliders3D);
+					}
+
+					if (spec.Settings.ShowPhysicsColliders3D)
+					{
+						if (ImGui::Checkbox("Show Only Bounding Boxes", &spec.Settings.ShowOnlyBoundingBoxes3D))
+						{
+							PhysicsEngine3D::Instance->SetDebugDrawShowOnlyBoundingBoxes(spec.Settings.ShowOnlyBoundingBoxes3D);
+						}
+					}
+				}
+
+				ImGui::Separator();
+
+				if (ImGui::Button("Save Project Settings"))
+				{
+					HBL2::Project::GetActive()->Save();
+				}
+
+				ImGui::End();
+			}
+		
+			if (m_ShowEditorSettingsWindow)
+			{
+				ImGui::Begin("Editor Settings##Window", &m_ShowEditorSettingsWindow);
+
+				m_Context->View<Component::EditorCamera>()
+					.Each([&](Entity entity, Component::EditorCamera& editorCamera)
+					{
+						ImGui::Text("Camera Transform:");
+
+						auto& transform = m_Context->GetComponent<HBL2::Component::Transform>(entity);
+
+						ImGui::DragFloat3("Translation", glm::value_ptr(transform.Translation), 0.25f);
+						ImGui::DragFloat3("Rotation", glm::value_ptr(transform.Rotation), 0.25f);
+						ImGui::DragFloat3("Scale", glm::value_ptr(transform.Scale), 0.25f);
+
+						ImGui::Separator();
+
+						ImGui::Text("Camera View:");
+
+						auto& camera = m_Context->GetComponent<HBL2::Component::Camera>(entity);
+
+						ImGui::SliderFloat("Near", &camera.Near, 0, 10);
+						ImGui::SliderFloat("Far", &camera.Far, 100, 2500);
+						ImGui::SliderFloat("FOV", &camera.Fov, 0, 120);
+						ImGui::SliderFloat("Aspect Ratio", &camera.AspectRatio, 0, 3);
+						ImGui::SliderFloat("Exposure", &camera.Exposure, 0, 50);
+						ImGui::SliderFloat("Gamma", &camera.Gamma, 0, 4);
+						ImGui::SliderFloat("Zoom Level", &camera.ZoomLevel, 0, 500);
+
+						ImGui::Separator();
+
+						ImGui::Text("Camera Controls:");
+
+						ImGui::SliderFloat("MovementSpeed", &editorCamera.MovementSpeed, 0, 150);
+						ImGui::SliderFloat("MouseSensitivity", &editorCamera.MouseSensitivity, 0, 100);
+						ImGui::SliderFloat("PanSpeed", &editorCamera.PanSpeed, 0, 200);
+						ImGui::SliderFloat("ZoomSpeed", &editorCamera.ZoomSpeed, 0, 15);
+						ImGui::SliderFloat("ScrollZoomSpeed", &editorCamera.ScrollZoomSpeed, 0, 200);
+					});
+
+				ImGui::End();
 			}
 		}
 	}

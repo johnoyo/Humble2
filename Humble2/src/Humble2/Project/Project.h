@@ -13,6 +13,25 @@
 
 namespace HBL2
 {
+	enum class RendererType
+	{
+		Forward = 0,
+		ForwardPlus,
+		Deferred,
+	};
+
+	struct ProjectSettings
+	{
+		RendererType Renderer = RendererType::ForwardPlus;
+		// GraphicsAPI EditorGraphicsAPI = GraphicsAPI::OpenGL;
+		// GraphicsAPI RuntimeGraphicsAPI = GraphicsAPI::VULKAN;
+		float GravityForce2D = -9.81f;
+		bool ShowPhysicsColliders2D = false;
+		float GravityForce3D = -9.81f;
+		bool ShowPhysicsColliders3D = false;
+		bool ShowOnlyBoundingBoxes3D = false;
+	};
+
 	struct HBL2_API ProjectSpecification
 	{
 		std::string Name = "Untitled";
@@ -20,6 +39,8 @@ namespace HBL2
 		std::filesystem::path StartingScene;
 		std::filesystem::path AssetDirectory;
 		std::filesystem::path ScriptDirectory;
+
+		ProjectSettings Settings;
 	};
 
 	class HBL2_API Project
@@ -56,13 +77,15 @@ namespace HBL2
 
 		static Project* Create(const std::string& name = "");
 		static Project* Load(const std::filesystem::path& path);
-		static void Save(const std::filesystem::path& path);
+		static void Save(const std::filesystem::path& path = "");
 
 		static void OpenStartingScene(bool runtime = false);
+		static void ApplySettings();
 
 	private:
 		ProjectSpecification m_Spec;
 		std::filesystem::path m_ProjectDirectory;
+		std::filesystem::path m_ProjectFilePath;
 
 		static Project* s_ActiveProject;
 	};

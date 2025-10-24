@@ -74,6 +74,8 @@ namespace HBL2
 		ShaderUtilities::Initialize();
 
 		DebugRenderer::Instance = new DebugRenderer;
+		PhysicsEngine3D::Instance = new JoltPhysicsEngine;
+		PhysicsEngine2D::Instance = new Box2DPhysicsEngine;
 	}
 
 	Application::~Application()

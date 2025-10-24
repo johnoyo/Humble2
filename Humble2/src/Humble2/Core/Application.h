@@ -16,6 +16,11 @@
 #include "Renderer\DebugRenderer.h"
 #include "Resources\ResourceManager.h"
 
+#include "Physics/PhysicsEngine2D.h"
+#include "Physics/JoltPhysicsEngine.h"
+#include "Physics/PhysicsEngine3D.h"
+#include "Physics/Box2DPhysicsEngine.h"
+
 #include "Platform\OpenGL\OpenGLResourceManager.h"
 #include "Platform\OpenGL\OpenGLImGuiRenderer.h"
 #include "Platform\OpenGL\OpenGLRenderer.h"

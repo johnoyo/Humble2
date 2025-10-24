@@ -153,6 +153,7 @@ namespace HBL2
 		virtual void ApplyAngularImpulse(Component::Rigidbody& rb, const glm::vec3& angularImpulse) override;
 
 		virtual void SetDebugDrawEnabled(bool enabled) override;
+		virtual void SetDebugDrawShowOnlyBoundingBoxes(bool enabled) override;
 		virtual void OnDebugDraw() override;
 
 	private:
@@ -172,6 +173,7 @@ namespace HBL2
 		std::vector<std::function<void(Physics::TriggerExitEvent*)>> m_TriggerExitEvents;
 
 		bool m_DebugDrawEnabled = false;
+		bool m_DebugDrawShowOnlyBoundingBoxes = false;
 		JPH::DebugRenderer* m_DebugRenderer = nullptr;
 	};
 

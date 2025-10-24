@@ -3,6 +3,9 @@
 #include "ProjectSerializer.h"
 #include <Core\Context.h>
 
+#include "Physics/PhysicsEngine2D.h"
+#include "Physics/PhysicsEngine3D.h"
+
 #include <yaml-cpp/yaml.h>
 
 namespace HBL2
@@ -38,6 +41,7 @@ namespace HBL2
 
 			s_ActiveProject = project;
 			s_ActiveProject->m_ProjectDirectory = path.parent_path();
+			s_ActiveProject->m_ProjectFilePath = path;
 
 			return s_ActiveProject;
 		}
@@ -47,7 +51,12 @@ namespace HBL2
 
 	void Project::Save(const std::filesystem::path& path)
 	{
-		s_ActiveProject->m_ProjectDirectory = path.parent_path();
+		if (path.empty())
+		{
+			ProjectSerializer serializer(s_ActiveProject);
+			serializer.Serialize(s_ActiveProject->m_ProjectFilePath);
+			return;
+		}
 
 		ProjectSerializer serializer(s_ActiveProject);
 		serializer.Serialize(path);
@@ -104,5 +113,14 @@ namespace HBL2
 		}
 
 		SceneManager::Get().LoadScene(sceneHandle, runtime);
+	}
+
+	void Project::ApplySettings()
+	{
+		auto& spec = s_ActiveProject->GetSpecification();
+
+		PhysicsEngine2D::Instance->SetDebugDrawEnabled(spec.Settings.ShowPhysicsColliders2D);
+		PhysicsEngine3D::Instance->SetDebugDrawEnabled(spec.Settings.ShowPhysicsColliders3D);
+		PhysicsEngine3D::Instance->SetDebugDrawShowOnlyBoundingBoxes(spec.Settings.ShowOnlyBoundingBoxes3D);
 	}
 }

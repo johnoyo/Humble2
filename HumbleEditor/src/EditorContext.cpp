@@ -16,6 +16,8 @@ namespace HBL2
 				return;
 			}
 
+			Project::ApplySettings();
+
 			m_EditorScene = ResourceManager::Instance->GetScene(EditorScene);
 			m_EmptyScene = ResourceManager::Instance->GetScene(EmptyScene);
 

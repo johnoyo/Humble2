@@ -54,19 +54,6 @@ namespace HBL2
 			}
 
 			ImGui::SameLine();
-
-			static bool showPhysicsColliders = false;
-			ImGui::Checkbox("Show Physics Colliders", &showPhysicsColliders);
-
-			if (PhysicsEngine2D::Instance != nullptr)
-			{
-				PhysicsEngine2D::Instance->SetDebugDrawEnabled(showPhysicsColliders);
-			}
-
-			if (PhysicsEngine3D::Instance != nullptr)
-			{
-				PhysicsEngine3D::Instance->SetDebugDrawEnabled(showPhysicsColliders);
-			}
 		}
 	}
 }
