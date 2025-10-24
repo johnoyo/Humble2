@@ -196,7 +196,7 @@ namespace HBL2
 		m_DebugWireMaterialVariantHash = ResourceManager::Instance->GetShaderVariantHash(wireMat->VariantDescriptor);
 
 		// Initialize sphere mesh data.
-		InitSphereMesh(12, 8);
+		InitSphereMesh(8, 4);
 
 		// Initial buffer data set (vectors are resized to max vertices so they will never reallocate).
 		m_ResourceManager->SetBufferData(m_DebugLineVertexBuffer, 0, m_LineVerts.data());
@@ -220,24 +220,6 @@ namespace HBL2
 		{
 			PhysicsEngine3D::Instance->OnDebugDraw();
 		}
-
-		// Test draw calls.
-		Color = Color::Red;
-		DrawLine({ 0,0,0 }, { 1,0,0 });    // +X
-		Color = Color::Green;
-		DrawLine({ 0,0,0 }, { 0,1,0 });    // +Y
-		Color = Color::Blue;
-		DrawLine({ 0,0,0 }, { 0,0,1 });    // +Z
-
-		DrawTriangle({ -0.5f, 0.0f, 0.0f }, { 0.5f, 0.0f, 0.0f }, { 0.0f, 0.5f, 0.0f });
-
-		DrawWireTriangle({ 1.0f, 0.0f, 0.0f }, { 2.0f, 0.0f, 0.0f }, { 1.5f, 0.5f, 0.0f });
-
-		Color = Color::Yellow;
-		DrawCube({ -2.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
-
-		Color = Color::Cyan;
-		DrawWireSphere({ 2.0f, 0.0f, 0.0f }, 0.5f);
 	}
 
 	void DebugRenderer::EndFrame()

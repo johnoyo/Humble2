@@ -189,6 +189,8 @@ namespace HBL2
 
 		m_PhysicsEngine->Shutdown();
 
+		PhysicsEngine2D::Instance = nullptr;
+
 		m_Initialized = false;
 	}
 
