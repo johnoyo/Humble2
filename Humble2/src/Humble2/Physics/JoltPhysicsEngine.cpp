@@ -35,7 +35,7 @@ namespace HBL2
 		JPH::RegisterTypes();
 
 		m_TempAllocator = new JPH::TempAllocatorImpl(50_MB);
-		m_JobSystem.Init(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, -1);
+		m_JobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, -1);
 
 		const uint32_t cMaxBodies = 65536;
 		const uint32_t cNumBodyMutexes = 0;
@@ -57,7 +57,7 @@ namespace HBL2
 
 	void JoltPhysicsEngine::Step(float inDeltaTime, int inCollisionSteps)
 	{
-		m_PhysicsSystem->Update(inDeltaTime, inCollisionSteps, m_TempAllocator, &m_JobSystem);
+		m_PhysicsSystem->Update(inDeltaTime, inCollisionSteps, m_TempAllocator, m_JobSystem);
 	}
 
 	void JoltPhysicsEngine::ShutDown()
@@ -83,10 +83,15 @@ namespace HBL2
 		delete JPH::Factory::sInstance;
 		JPH::Factory::sInstance = nullptr;
 
+		// Delete job system.
+		delete m_JobSystem;
+		m_JobSystem = nullptr;
+
 		// Delete physics system.
 		delete m_PhysicsSystem;
 		m_PhysicsSystem = nullptr;
 
+		// Delete jolt debug renderer.
 		delete m_DebugRenderer;
 		m_DebugRenderer = nullptr;
 	}

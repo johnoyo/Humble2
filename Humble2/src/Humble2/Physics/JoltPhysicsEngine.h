@@ -158,7 +158,7 @@ namespace HBL2
 
 	private:
 		JPH::TempAllocatorImpl* m_TempAllocator = nullptr;
-		JPH::JobSystemThreadPool m_JobSystem;
+		JPH::JobSystemThreadPool* m_JobSystem = nullptr;
 		JPH::PhysicsSystem* m_PhysicsSystem = nullptr;
 		BPLayerInterfaceImpl m_BroadPhaseLayerInterface;
 		ObjectVsBroadPhaseLayerFilterImpl m_ObjectVsBroadPhaseLayerFilter;
