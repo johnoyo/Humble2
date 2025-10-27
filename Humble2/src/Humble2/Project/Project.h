@@ -18,18 +18,26 @@ namespace HBL2
 		Forward = 0,
 		ForwardPlus,
 		Deferred,
+		Custom,
 	};
 
 	struct ProjectSettings
 	{
-		RendererType Renderer = RendererType::ForwardPlus;
-		// GraphicsAPI EditorGraphicsAPI = GraphicsAPI::OpenGL;
+		RendererType Renderer = RendererType::Forward;
+		// GraphicsAPI EditorGraphicsAPI = GraphicsAPI::OPENGL;
 		// GraphicsAPI RuntimeGraphicsAPI = GraphicsAPI::VULKAN;
+		
+		// Physics2DEngineImpl Physics2D = Physics2DEngineImpl::BOX2D;
 		float GravityForce2D = -9.81f;
 		bool ShowPhysicsColliders2D = false;
+
+		// Physics3DEngineImpl Physics3D = Physics3DEngineImpl::JOLT;
 		float GravityForce3D = -9.81f;
 		bool ShowPhysicsColliders3D = false;
 		bool ShowOnlyBoundingBoxes3D = false;
+
+		// uint32_t GameArenaSize = 1_GB;
+		// uint32_t UniformBufferSize = 64_MB; 
 	};
 
 	struct HBL2_API ProjectSpecification

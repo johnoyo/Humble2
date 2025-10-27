@@ -6,6 +6,12 @@
 
 namespace HBL2
 {
+	enum class Physics2DEngineImpl
+	{
+		BOX2D = 0,
+		CUSTOM,
+	};
+
 	class HBL2_API PhysicsEngine2D
 	{
 	public:
