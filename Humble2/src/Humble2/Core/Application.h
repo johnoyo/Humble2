@@ -13,7 +13,13 @@
 #include "ImGui\ImGuiRenderer.h"
 #include "Renderer\Device.h"
 #include "Renderer\Renderer.h"
+#include "Renderer\DebugRenderer.h"
 #include "Resources\ResourceManager.h"
+
+#include "Physics/PhysicsEngine2D.h"
+#include "Physics/JoltPhysicsEngine.h"
+#include "Physics/PhysicsEngine3D.h"
+#include "Physics/Box2DPhysicsEngine.h"
 
 #include "Platform\OpenGL\OpenGLResourceManager.h"
 #include "Platform\OpenGL\OpenGLImGuiRenderer.h"
@@ -63,6 +69,22 @@ namespace HBL2
 		Context* Context = nullptr;
 	};
 
+	struct ApplicationStats
+	{
+		float DebugDrawTime = 0.f;
+		float AppUpdateTime = 0.f;
+		float AppGuiDrawTime = 0.f;
+		float PresentTime = 0.f;
+
+		void Reset()
+		{
+			DebugDrawTime = 0.f;
+			AppUpdateTime = 0.f;
+			AppGuiDrawTime = 0.f;
+			PresentTime = 0.f;
+		}
+	};
+
 	class HBL2_API Application
 	{
 	public:
@@ -77,11 +99,14 @@ namespace HBL2
 		}
 
 		const ApplicationSpec& GetSpec() const { return m_Specification; }
+		const ApplicationStats& GetStats() const { return m_PreviousStats; }
 
 	private:
 		static Application* s_Instance;
 
 		ApplicationSpec m_Specification;
+		ApplicationStats m_CurrentStats;
+		ApplicationStats m_PreviousStats;
 
 		float m_LastTime = 0.0f;
 		float m_Timer = m_LastTime;

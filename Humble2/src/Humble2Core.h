@@ -12,6 +12,8 @@
 #include "Asset\AssetManager.h"
 #include "Resources\ResourceManager.h"
 
+#include "Renderer\DebugRenderer.h"
+
 #include "Physics\Physics.h"
 #include "Physics\PhysicsEngine2D.h"
 #include "Physics\PhysicsEngine3D.h"

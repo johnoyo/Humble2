@@ -22,6 +22,7 @@ namespace HBL2
 			if (renderPass->GetInjectionPoint() == event)
 			{
 				renderPass->Execute();
+				return;
 			}
 		}
 	}

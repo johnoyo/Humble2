@@ -17,6 +17,7 @@ namespace HBL2
 		AfterRenderingTransparents,
 		BeforeRenderingPostProcess,
 		AfterRenderingPostProcess,
+		BeforePresenting,
 		AfterRendering,
 	};
 
@@ -35,8 +36,7 @@ namespace HBL2
 	enum class CommandBufferType
 	{
 		MAIN = 0,
-		CUSTOM = 1,
-		UI = 2,
+		UI = 1,
 	};
 
 	enum class PipelineStage

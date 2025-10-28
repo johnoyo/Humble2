@@ -21,8 +21,15 @@ namespace HBL2
 	struct OpenGLRenderPassLayout
 	{
 		OpenGLRenderPassLayout() = default;
-		OpenGLRenderPassLayout(const RenderPassLayoutDescriptor&& desc) {}
+		OpenGLRenderPassLayout(const RenderPassLayoutDescriptor&& desc)
+		{
+			if (desc.subPasses.Size() > 0)
+			{
+				Pass = desc.subPasses[0]; // NOTE: There is only support for one subpass for now.
+			}
+		}
 
 		const char* DebugName = "";
+		RenderPassLayoutDescriptor::SubPass Pass;
 	};
 }

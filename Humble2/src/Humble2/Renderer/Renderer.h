@@ -54,6 +54,7 @@ namespace HBL2
 		float SkyboxPassTime = 0.f;
 		float TransparentPassTime = 0.f;
 		float PostProcessPassTime = 0.f;
+		float DebugPassTime = 0.f;
 		float PresentPassTime = 0.f;
 
 		void Reset()
@@ -67,6 +68,7 @@ namespace HBL2
 			SkyboxPassTime = 0.f;
 			TransparentPassTime = 0.f;
 			PostProcessPassTime = 0.f;
+			DebugPassTime = 0.f;
 			PresentPassTime = 0.f;
 		}
 	};
@@ -94,6 +96,7 @@ namespace HBL2
 
 		RenderPassPool& GetRenderPassPool() { return m_RenderPassPool; }
 
+		virtual const uint32_t GetFrameIndex() const = 0;
 		const uint32_t GetFrameNumber() const { return m_FrameNumber; }
 		RendererStats& GetStats() { return m_Stats; }
 
@@ -105,11 +108,13 @@ namespace HBL2
 		virtual Handle<BindGroup> GetGlobalBindings2D() = 0;
 		virtual Handle<BindGroup> GetGlobalBindings3D() = 0;
 		virtual Handle<BindGroup> GetGlobalPresentBindings() = 0;
+		virtual Handle<BindGroup> GetDebugBindings() = 0;
 
 		const Handle<BindGroupLayout> GetShadowBindingsLayout() const { return m_ShadowBindingsLayout; }
 		const Handle<BindGroupLayout> GetGlobalBindingsLayout2D() const { return m_GlobalBindingsLayout2D; }
 		const Handle<BindGroupLayout> GetGlobalBindingsLayout3D() const { return m_GlobalBindingsLayout3D; }
 		const Handle<BindGroupLayout> GetGlobalPresentBindingsLayout() const { return m_GlobalPresentBindingsLayout; }
+		const Handle<BindGroupLayout> GetDebugBindingsLayout() const { return m_DebugBindingsLayout; }
 
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
 
@@ -145,6 +150,8 @@ namespace HBL2
 		Handle<BindGroupLayout> m_GlobalBindingsLayout2D;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
 		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
+		Handle<BindGroupLayout> m_DebugBindingsLayout;
+
 		Handle<RenderPass> m_RenderPass;
 		Handle<RenderPass> m_RenderingRenderPass;
 

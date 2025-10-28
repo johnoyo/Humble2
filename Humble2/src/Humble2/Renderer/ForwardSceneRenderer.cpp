@@ -2,6 +2,7 @@
 
 #include "Core/Window.h"
 #include "Core/Context.h"
+#include "Renderer/DebugRenderer.h"
 #include "Renderer/Device.h"
 #include "Utilities/ShaderUtilities.h"
 
@@ -92,7 +93,7 @@ namespace HBL2
 			.debugName = "main-renderpass-layout",
 			.depthTargetFormat = Format::D32_FLOAT,
 			.subPasses = {
-				{.depthTarget = true, .colorTargets = 1, },
+				{ .depthTarget = true, .colorTargets = 1, },
 			},
 		});
 
@@ -218,6 +219,9 @@ namespace HBL2
 		PostProcessPass(commandBuffer);
 		renderPassPool.Execute(RenderPassEvent::AfterRenderingPostProcess);
 
+		DebugPass(commandBuffer);
+
+		renderPassPool.Execute(RenderPassEvent::BeforePresenting);
 		PresentPass(commandBuffer);
 		renderPassPool.Execute(RenderPassEvent::AfterRendering);
 
@@ -300,13 +304,12 @@ namespace HBL2
 		m_ResourceManager->DeleteMesh(m_SpriteMesh);
 
 		m_ResourceManager->DeleteBuffer(m_PostProcessQuadVertexBuffer);
-		m_ResourceManager->DeleteMesh(m_PostProcessQuadMesh);
 		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
-		m_ResourceManager->DeleteMesh(m_QuadMesh);
 		m_ResourceManager->DeleteShader(m_PresentShader);
 		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
 	}
 
+	// Pass setup.
 	void ForwardSceneRenderer::ShadowPassSetup()
 	{
 		// Create shadow framebuffer.
@@ -363,8 +366,6 @@ namespace HBL2
 			},
 			.renderPass = m_ShadowRenderPass,
 		});
-
-		ResourceManager::Instance->AddShaderVariant(m_ShadowPrePassShader, variant);
 
 		// Create shadow pre-pass material.
 		m_ShadowPrePassMaterial = ResourceManager::Instance->CreateMaterial({
@@ -435,8 +436,6 @@ namespace HBL2
 			.renderPass = m_DepthOnlyRenderPass,
 		});
 
-		ResourceManager::Instance->AddShaderVariant(m_DepthOnlyShader, variant);
-
 		const auto& prePassSpriteShaderCode = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-sprite.shader");
 
 		m_DepthOnlySpriteShader = ResourceManager::Instance->CreateShader({
@@ -461,8 +460,6 @@ namespace HBL2
 			},
 			.renderPass = m_DepthOnlyRenderPass,
 		});
-
-		ResourceManager::Instance->AddShaderVariant(m_DepthOnlySpriteShader, variant);
 
 		// Create pre-pass materials.
 		m_DepthOnlyMaterial = ResourceManager::Instance->CreateMaterial({
@@ -583,7 +580,7 @@ namespace HBL2
 				.renderPass = m_TransparentRenderPass,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
-				});
+			});
 		});
 	}
 
@@ -747,8 +744,6 @@ namespace HBL2
 			.renderPass = m_TransparentRenderPass,
 		});
 
-		ResourceManager::Instance->AddShaderVariant(m_SkyboxShader, m_SkyboxVariant);
-
 		// Cube mesh
 		float vertexBuffer[] =
 		{
@@ -825,22 +820,6 @@ namespace HBL2
 			.initialData = vertexBuffer,
 		});
 
-		m_PostProcessQuadMesh = m_ResourceManager->CreateMesh({
-			.debugName = "quad-mesh",
-			.meshes = {
-				{
-					.debugName = "quad-mesh-part",
-					.subMeshes = {
-						{
-							.vertexOffset = 0,
-							.vertexCount = 6,
-						}
-					},
-					.vertexBuffers = { m_PostProcessQuadVertexBuffer },
-				}
-			}
-		});
-
 		// Create camera settings buffer.
 		m_PostProcessBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "camera-settings-buffer",
@@ -874,7 +853,7 @@ namespace HBL2
 				Renderer::Instance->IntermediateColorTexture
 			},
 			.buffers = {
-				{.buffer = m_PostProcessBuffer },
+				{ .buffer = m_PostProcessBuffer },
 			}
 		});
 
@@ -954,8 +933,8 @@ namespace HBL2
 
 		m_PostProcessShader = ResourceManager::Instance->CreateShader({
 			.debugName = "post-process-shader",
-			.VS {.code = postProcessShaderCode[0], .entryPoint = "main" },
-			.FS {.code = postProcessShaderCode[1], .entryPoint = "main" },
+			.VS { .code = postProcessShaderCode[0], .entryPoint = "main" },
+			.FS { .code = postProcessShaderCode[1], .entryPoint = "main" },
 			.bindGroups {
 				m_PostProcessBindGroupLayout,	// Global bind group (0)
 			},
@@ -964,8 +943,8 @@ namespace HBL2
 					{
 						.byteStride = 16,
 						.attributes = {
-							{.byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
-							{.byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
+							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+							{ .byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},
@@ -973,8 +952,6 @@ namespace HBL2
 			},
 			.renderPass = m_PostProcessRenderPass,
 		});
-
-		ResourceManager::Instance->AddShaderVariant(m_PostProcessShader, variant);
 
 		// Create post-process material.
 		m_PostProcessMaterial = ResourceManager::Instance->CreateMaterial({
@@ -985,6 +962,10 @@ namespace HBL2
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_PostProcessMaterial);
 		mat->VariantDescriptor = variant;
+	}
+
+	void ForwardSceneRenderer::DebugPassSetup()
+	{
 	}
 
 	void ForwardSceneRenderer::PresentPassSetup()
@@ -1005,22 +986,6 @@ namespace HBL2
 			.initialData = vertexBuffer,
 		});
 
-		m_QuadMesh = m_ResourceManager->CreateMesh({
-			.debugName = "quad-mesh",
-			.meshes = {
-				{
-					.debugName = "quad-mesh-part",
-					.subMeshes = {
-						{
-							.vertexOffset = 0,
-							.vertexCount = 6,
-						}
-					},
-					.vertexBuffers = { m_QuadVertexBuffer },
-				}
-			}
-		});
-
 		ShaderDescriptor::RenderPipeline::Variant variant = {};
 		variant.blend.enabled = false;
 		variant.depthTest.enabled = false;
@@ -1033,8 +998,8 @@ namespace HBL2
 		// Create present bind group layout.
 		m_PresentShader = ResourceManager::Instance->CreateShader({
 			.debugName = "present-shader",
-			.VS {.code = presentShaderCode[0], .entryPoint = "main" },
-			.FS {.code = presentShaderCode[1], .entryPoint = "main" },
+			.VS { .code = presentShaderCode[0], .entryPoint = "main" },
+			.FS { .code = presentShaderCode[1], .entryPoint = "main" },
 			.bindGroups {
 				Renderer::Instance->GetGlobalPresentBindingsLayout(),	// Global bind group (0)
 			},
@@ -1043,8 +1008,8 @@ namespace HBL2
 					{
 						.byteStride = 16,
 						.attributes = {
-							{.byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
-							{.byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
+							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+							{ .byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},
@@ -1062,6 +1027,7 @@ namespace HBL2
 		mat->VariantDescriptor = variant;
 	}
 
+	// Gathering.
 	void ForwardSceneRenderer::GatherDraws()
 	{
 		BEGIN_PROFILE_PASS();
@@ -1353,6 +1319,7 @@ namespace HBL2
 			});
 	}
 
+	// Pass rendering.
 	void ForwardSceneRenderer::ShadowPass(CommandBuffer* commandBuffer)
 	{
 		BEGIN_PROFILE_PASS();
@@ -1553,7 +1520,7 @@ namespace HBL2
 							.debugName = "compute-bind-group",
 							.layout = m_EquirectToSkyboxBindGroupLayout,
 							.textures = { skyLight.EquirectangularMap, skyLight.CubeMap },
-							.buffers = { {.buffer = m_CaptureMatricesBuffer, } }
+							.buffers = { { .buffer = m_CaptureMatricesBuffer, } }
 						});
 
 						Dispatch dispatch =
@@ -1656,6 +1623,15 @@ namespace HBL2
 		commandBuffer->EndRenderPass(*passRenderer);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PostProcessPassTime);
+	}
+
+	void ForwardSceneRenderer::DebugPass(CommandBuffer* commandBuffer)
+	{
+		BEGIN_PROFILE_PASS();
+
+		DebugRenderer::Instance->Flush(commandBuffer);
+
+		END_PROFILE_PASS(Renderer::Instance->GetStats().DebugPassTime);
 	}
 
 	void ForwardSceneRenderer::PresentPass(CommandBuffer* commandBuffer)

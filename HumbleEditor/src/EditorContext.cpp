@@ -16,6 +16,8 @@ namespace HBL2
 				return;
 			}
 
+			Project::ApplySettings();
+
 			m_EditorScene = ResourceManager::Instance->GetScene(EditorScene);
 			m_EmptyScene = ResourceManager::Instance->GetScene(EmptyScene);
 
@@ -43,13 +45,14 @@ namespace HBL2
 				m_ActiveScene = ResourceManager::Instance->GetScene(e.NewScene);
 			});
 
-			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
 
-			// NOTE: The OnCreate method of the registered systems will be called from the SceneManager class.
+			// NOTE: The OnAttach method of the registered systems will be called from the SceneManager class.
 		}
 
 		void EditorContext::OnCreate()
 		{
+			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
+
 			if (m_EditorScene == nullptr)
 			{
 				return;
@@ -166,6 +169,39 @@ namespace HBL2
 					if (system->GetState() == SystemState::Play)
 					{
 						system->OnGuiRender(ts);
+					}
+				}
+			}
+		}
+
+		void EditorContext::OnGizmoRender(float ts)
+		{
+			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+			{
+				system->OnGizmoRender(ts);
+			}
+
+			if (!IsActiveSceneValid())
+			{
+				HBL2_CORE_TRACE("Active Scene is null.");
+				return;
+			}
+
+			for (HBL2::ISystem* system : m_ActiveScene->GetCoreSystems())
+			{
+				if (system->GetState() == SystemState::Play)
+				{
+					system->OnGizmoRender(ts);
+				}
+			}
+
+			if (Mode == Mode::Runtime)
+			{
+				for (HBL2::ISystem* system : m_ActiveScene->GetRuntimeSystems())
+				{
+					if (system->GetState() == SystemState::Play)
+					{
+						system->OnGizmoRender(ts);
 					}
 				}
 			}

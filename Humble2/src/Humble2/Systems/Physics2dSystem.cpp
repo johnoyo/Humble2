@@ -29,7 +29,6 @@ namespace HBL2
 
 	void Physics2dSystem::OnCreate()
 	{
-		PhysicsEngine2D::Instance = new Box2DPhysicsEngine;
 		m_PhysicsEngine = (Box2DPhysicsEngine*)PhysicsEngine2D::Instance;
 		m_PhysicsEngine->Initialize();
 		m_PhysicsWorld = m_PhysicsEngine->Get();		

@@ -6,11 +6,22 @@ namespace HBL2
 	{
 		void EditorPanelSystem::DrawStatsPanel(float ts)
 		{
+			const auto& appStats = Application::Get().GetStats();
+
+			ImGui::Text("App");
+			ImGui::NewLine();
+			ImGui::Text("Frame Time: %f ms", ts * 1000.0f);
+			ImGui::Text("Debug Draw Time: %f ms", appStats.DebugDrawTime);
+			ImGui::Text("App Update Time: %f ms", appStats.AppUpdateTime);
+			ImGui::Text("Gui Draw Time: %f ms", appStats.AppGuiDrawTime);
+			ImGui::Text("Present Time: %f ms", appStats.PresentTime);
+
+			ImGui::Separator();
+
 			const auto& stats = Renderer::Instance->GetStats();
 
 			ImGui::Text("Renderer");
 			ImGui::NewLine();
-			ImGui::Text("Frame Time: %f ms", ts * 1000.0f);
 			ImGui::Text("Draw calls: %d", stats.DrawCalls);
 			ImGui::Text("GatherTime: %f ms", stats.GatherTime);
 			ImGui::Text("SortingTime: %f ms", stats.SortingTime);
@@ -20,6 +31,7 @@ namespace HBL2
 			ImGui::Text("SkyboxPass: %f ms", stats.SkyboxPassTime);
 			ImGui::Text("TransparentPass: %f ms", stats.TransparentPassTime);
 			ImGui::Text("PostProcessPass: %f ms", stats.PostProcessPassTime);
+			ImGui::Text("DebugPassTime: %f ms", stats.DebugPassTime);
 			ImGui::Text("PresentPass: %f ms", stats.PresentPassTime);
 
 			ImGui::Separator();

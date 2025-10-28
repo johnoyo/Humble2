@@ -13,6 +13,7 @@ namespace HBL2
 		// Origin at upper-left, depth range [0..1] (same as Vulkan)
 		glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
 		glDepthRangef(0.0f, 1.0f);
+		glLineWidth(1.5f);
 
 		m_MainCommandBuffer = new OpenGLCommandBuffer();
 		m_UserInterfaceCommandBuffer = new OpenGLCommandBuffer();
@@ -48,9 +49,6 @@ namespace HBL2
 		{
 		case HBL2::CommandBufferType::MAIN:
 			return m_MainCommandBuffer;
-		case HBL2::CommandBufferType::CUSTOM:
-			HBL2_CORE_ASSERT(false, "Custom Command buffers not implemented yet!");
-			break;
 		case HBL2::CommandBufferType::UI:
 			return m_UserInterfaceCommandBuffer;
 		}
@@ -159,16 +157,20 @@ namespace HBL2
 
 		TempUniformRingBuffer->Free();
 
+		m_ResourceManager->DeleteBindGroupLayout(m_ShadowBindingsLayout);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
+		m_ResourceManager->DeleteBindGroupLayout(m_DebugBindingsLayout);
 
 		m_ResourceManager->DeleteBindGroup(m_ShadowBindings);
 		m_ResourceManager->DeleteBindGroup(m_GlobalBindings2D);
 		m_ResourceManager->DeleteBindGroup(m_GlobalBindings3D);
 		m_ResourceManager->DeleteBindGroup(m_GlobalPresentBindings);
+		m_ResourceManager->DeleteBindGroup(m_DebugBindings);
 
 		m_ResourceManager->DeleteRenderPass(m_RenderPass);
+		m_ResourceManager->DeleteRenderPass(m_RenderingRenderPass);
 		m_ResourceManager->DeleteFrameBuffer(m_MainFrameBuffer);
 	}
 
@@ -310,6 +312,33 @@ namespace HBL2
 					.visibility = ShaderStage::FRAGMENT,
 				},
 			},
+		});
+
+		// Bindings for debug rendering.
+		m_DebugBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "debug-draw-bind-group-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM,
+				},
+			},
+		});
+
+		auto cameraBuffer = m_ResourceManager->CreateBuffer({
+			.debugName = "debug-draw-camera-uniform-buffer",
+			.usage = BufferUsage::UNIFORM,
+			.usageHint = BufferUsageHint::DYNAMIC,
+			.memoryUsage = MemoryUsage::GPU_CPU,
+			.byteSize = sizeof(CameraData),
+			.initialData = nullptr,
+		});
+
+		m_DebugBindings = m_ResourceManager->CreateBindGroup({
+			.debugName = "debug-draw-bind-group",
+			.layout = m_DebugBindingsLayout,
+			.buffers = { { .buffer = cameraBuffer } }
 		});
 	}
 

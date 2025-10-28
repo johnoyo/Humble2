@@ -23,6 +23,9 @@ namespace HBL2
 		glfwSetErrorCallback(ErrorCallback);
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
@@ -68,11 +71,11 @@ namespace HBL2
 
 		GLint versionMajor = 0;
 		glGetIntegerv(GL_MAJOR_VERSION, &versionMajor);
-		HBL2_CORE_ASSERT(versionMajor >= 4, "Humble2 requires an minimum OpenGL version of 4.5!");
+		HBL2_CORE_ASSERT(versionMajor >= 4, "Humble2 requires an minimum OpenGL version of 4.6!");
 
 		GLint versionMinor = 0;
 		glGetIntegerv(GL_MINOR_VERSION, &versionMinor);
-		HBL2_CORE_ASSERT(versionMinor >= 5, "Humble2 requires an minimum OpenGL version of 4.5!");
+		HBL2_CORE_ASSERT(versionMinor >= 6, "Humble2 requires an minimum OpenGL version of 4.6!");
 
 		AttachEventCallbacks();
 

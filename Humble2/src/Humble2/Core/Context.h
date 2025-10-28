@@ -24,6 +24,7 @@ namespace HBL2
 		virtual void OnUpdate(float ts) {}
 		virtual void OnFixedUpdate() {}
 		virtual void OnGuiRender(float ts) {}
+		virtual void OnGizmoRender(float ts) {}
 		virtual void OnDestroy() {}
 		virtual void OnDetach() {}
 

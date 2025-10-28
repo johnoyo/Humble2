@@ -106,21 +106,23 @@ namespace HBL2
 				}
 			}
 
+			GLenum topology = OpenGLUtils::TopologyToGLenum(material->VariantDescriptor.topology);
+
 			// Draw the mesh accordingly
 			if (draw.IndexBuffer.IsValid())
 			{
 				if (draw.IndexOffset == 0)
 				{
-					glDrawElements(GL_TRIANGLES, draw.IndexCount, GL_UNSIGNED_INT, nullptr);
+					glDrawElements(topology, draw.IndexCount, GL_UNSIGNED_INT, nullptr);
 				}
 				else
 				{
-					glDrawElementsBaseVertex(GL_TRIANGLES, draw.IndexCount, GL_UNSIGNED_INT, (void*)(draw.IndexOffset * sizeof(uint32_t)), draw.VertexOffset);
+					glDrawElementsBaseVertex(topology, draw.IndexCount, GL_UNSIGNED_INT, (void*)(draw.IndexOffset * sizeof(uint32_t)), draw.VertexOffset);
 				}
 			}
 			else
 			{
-				glDrawArrays(GL_TRIANGLES, draw.VertexOffset, draw.VertexCount);
+				glDrawArrays(topology, draw.VertexOffset, draw.VertexCount);
 			}
 		}
 	}

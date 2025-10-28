@@ -152,9 +152,14 @@ namespace HBL2
 		virtual void ApplyImpulse(Component::Rigidbody& rb, const glm::vec3& impluse) override;
 		virtual void ApplyAngularImpulse(Component::Rigidbody& rb, const glm::vec3& angularImpulse) override;
 
+		virtual void SetDebugDrawEnabled(bool enabled) override;
+		virtual void ShowColliders(bool show) override;
+		virtual void ShowBoundingBoxes(bool show) override;
+		virtual void OnDebugDraw() override;
+
 	private:
 		JPH::TempAllocatorImpl* m_TempAllocator = nullptr;
-		JPH::JobSystemThreadPool m_JobSystem;
+		JPH::JobSystemThreadPool* m_JobSystem = nullptr;
 		JPH::PhysicsSystem* m_PhysicsSystem = nullptr;
 		BPLayerInterfaceImpl m_BroadPhaseLayerInterface;
 		ObjectVsBroadPhaseLayerFilterImpl m_ObjectVsBroadPhaseLayerFilter;
@@ -167,6 +172,11 @@ namespace HBL2
 		std::vector<std::function<void(Physics::TriggerEnterEvent*)>> m_TriggerEnterEvents;
 		std::vector<std::function<void(Physics::TriggerStayEvent*)>> m_TriggerStayEvents;
 		std::vector<std::function<void(Physics::TriggerExitEvent*)>> m_TriggerExitEvents;
+
+		bool m_DebugDrawEnabled = false;
+		bool m_ShowColliders = false;
+		bool m_ShowBoundingBoxes = false;
+		JPH::DebugRenderer* m_DebugRenderer = nullptr;
 	};
 
 }

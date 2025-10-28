@@ -893,7 +893,7 @@ namespace HBL2
 			return;
 		}
 
-		// Open texture metadat file.
+		// Open texture metadata file.
 		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture");
 
 		if (!stream.is_open())

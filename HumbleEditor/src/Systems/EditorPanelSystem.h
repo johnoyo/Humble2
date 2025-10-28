@@ -38,7 +38,6 @@ namespace HBL2
 			void DrawPlayStopPanel();
 			void DrawSystemsPanel();
 			void DrawTrayPanel();
-			void DrawEditorSettingsPanel();
 
 			Entity m_EntityToBeDeleted = Entity::Null;
 			Entity m_EntityToBeDuplicated = Entity::Null;
@@ -46,6 +45,9 @@ namespace HBL2
 			glm::vec2 m_ViewportSize = { 0.f, 0.f };
 			std::filesystem::path m_CurrentDirectory;
 			std::filesystem::path m_EditorScenePath;
+
+			bool m_ShowProjectSettingsWindow = false;
+			bool m_ShowEditorSettingsWindow = false;
 
 			bool m_OpenNewFolderSetupPopup = false;
 			bool m_OpenSceneSetupPopup = false;

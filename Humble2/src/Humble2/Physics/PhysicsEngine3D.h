@@ -6,6 +6,12 @@
 
 namespace HBL2
 {
+	enum class Physics3DEngineImpl
+	{
+		JOLT = 0,
+		CUSTOM,
+	};
+
 	class HBL2_API PhysicsEngine3D
 	{
 	public:
@@ -35,5 +41,10 @@ namespace HBL2
 		virtual void ApplyTorque(Component::Rigidbody& rb, const glm::vec3& torque) {}
 		virtual void ApplyImpulse(Component::Rigidbody& rb, const glm::vec3& impluse) {}
 		virtual void ApplyAngularImpulse(Component::Rigidbody& rb, const glm::vec3& angularImpulse) {}
+
+		virtual void SetDebugDrawEnabled(bool enabled) {}
+		virtual void ShowColliders(bool show) {}
+		virtual void ShowBoundingBoxes(bool show) {}
+		virtual void OnDebugDraw() {}
 	};
 }

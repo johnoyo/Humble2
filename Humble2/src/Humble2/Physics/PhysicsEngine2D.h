@@ -6,6 +6,12 @@
 
 namespace HBL2
 {
+	enum class Physics2DEngineImpl
+	{
+		BOX2D = 0,
+		CUSTOM,
+	};
+
 	class HBL2_API PhysicsEngine2D
 	{
 	public:
@@ -34,5 +40,8 @@ namespace HBL2
 		virtual glm::vec2 GetLinearVelocity(Component::Rigidbody2D& rb2d) { return {}; }
 		virtual void SetAngularVelocity(Component::Rigidbody2D& rb2d, float velocity) {}
 		virtual float GetAngularVelocity(Component::Rigidbody2D& rb2d) { return 0.0f; }
+
+		virtual void SetDebugDrawEnabled(bool enabled) {}
+		virtual void OnDebugDraw() {}
 	};
 }

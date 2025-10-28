@@ -29,7 +29,7 @@ namespace HBL2
 			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
 		};
 
-		VkDescriptorPoolCreateInfo pool_info =
+		VkDescriptorPoolCreateInfo poolInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 			.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
@@ -38,7 +38,7 @@ namespace HBL2
 			.pPoolSizes = poolSizes,
 		};
 
-		VK_VALIDATE(vkCreateDescriptorPool(m_Device->Get(), &pool_info, nullptr, &m_ImGuiPool), "vkCreateDescriptorPool");
+		VK_VALIDATE(vkCreateDescriptorPool(m_Device->Get(), &poolInfo, nullptr, &m_ImGuiPool), "vkCreateDescriptorPool");
 
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -47,7 +47,12 @@ namespace HBL2
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+
+		if (Context::Mode == Mode::Editor)
+		{
+			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+		}
+
 		//io.ConfigViewportsNoAutoMerge = true;
 		//io.ConfigViewportsNoTaskBarIcon = true;
 

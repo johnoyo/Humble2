@@ -1,5 +1,8 @@
 #include "Systems\EditorPanelSystem.h"
 
+#include "Physics/PhysicsEngine2D.h"
+#include "Physics/PhysicsEngine3D.h"
+
 namespace HBL2
 {
 	namespace Editor
@@ -43,12 +46,14 @@ namespace HBL2
 
 			if (isPlaying)
 			{
-				ImGui::Text("Playing ...");
+				ImGui::Text("Playing ... ");
 			}
 			else
 			{
-				ImGui::Text("Editing ...");
+				ImGui::Text("Editing ... ");
 			}
+
+			ImGui::SameLine();
 		}
 	}
 }

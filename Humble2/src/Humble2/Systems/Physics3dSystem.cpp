@@ -110,7 +110,6 @@ namespace HBL2
 
 	void Physics3dSystem::OnCreate()
 	{
-		PhysicsEngine3D::Instance = new JoltPhysicsEngine;
 		m_PhysicsEngine = (JoltPhysicsEngine*)PhysicsEngine3D::Instance;
 
 		m_PhysicsEngine->Initialize();

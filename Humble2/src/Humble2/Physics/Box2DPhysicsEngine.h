@@ -39,6 +39,9 @@ namespace HBL2
 		virtual void SetAngularVelocity(Component::Rigidbody2D& rb2d, float velocity) override;
 		virtual float GetAngularVelocity(Component::Rigidbody2D& rb2d) override;
 
+		virtual void SetDebugDrawEnabled(bool enabled) override;
+		virtual void OnDebugDraw() override;
+
 	private:
 		b2WorldId m_PhysicsWorld = {};
 		int m_SubStepCount = 4;
@@ -50,5 +53,8 @@ namespace HBL2
 
 		std::vector<std::function<void(Physics::TriggerEnterEvent*)>> m_TriggerEnterEvents;
 		std::vector<std::function<void(Physics::TriggerExitEvent*)>> m_TriggerExitEvents;
+
+		bool m_DebugDrawEnabled = false;
+		b2DebugDraw m_DebugDraw;
 	};
 }

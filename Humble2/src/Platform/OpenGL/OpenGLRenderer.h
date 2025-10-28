@@ -43,10 +43,13 @@ namespace HBL2
 
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() override { return m_MainFrameBuffer; }
 		
+		virtual const uint32_t GetFrameIndex() const override { return 0; }
+
 		virtual Handle<BindGroup> GetShadowBindings() override { return m_ShadowBindings; }
 		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_GlobalBindings2D; }
 		virtual Handle<BindGroup> GetGlobalBindings3D() override { return m_GlobalBindings3D; }
 		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_GlobalPresentBindings; }
+		virtual Handle<BindGroup> GetDebugBindings() override { return m_DebugBindings; }
 
 	protected:
 		virtual void PreInitialize() override;
@@ -61,13 +64,14 @@ namespace HBL2
 		OpenGLResourceManager* m_ResourceManager = nullptr;
 
 		CommandBuffer* m_MainCommandBuffer = nullptr;
-
 		CommandBuffer* m_UserInterfaceCommandBuffer = nullptr;
 
 		Handle<BindGroup> m_ShadowBindings;
 		Handle<BindGroup> m_GlobalBindings2D;
 		Handle<BindGroup> m_GlobalBindings3D;
 		Handle<BindGroup> m_GlobalPresentBindings;
+		Handle<BindGroup> m_DebugBindings;
+
 		Handle<FrameBuffer> m_MainFrameBuffer;
 
 		bool m_Resize = false;

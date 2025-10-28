@@ -22,6 +22,26 @@ namespace HBL2
 		out << YAML::Key << "StartingScene" << YAML::Value << spec.StartingScene.string();
 		out << YAML::Key << "AssetDirectory" << YAML::Value << spec.AssetDirectory.string();
 		out << YAML::Key << "ScriptDirectory" << YAML::Value << spec.ScriptDirectory.string();
+
+		out << YAML::Key << "Renderer" << YAML::Value;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Type" << YAML::Value << (int)spec.Settings.Renderer;
+		out << YAML::EndMap;
+
+		out << YAML::Key << "Physics2D" << YAML::Value;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Gravity Force" << YAML::Value << spec.Settings.GravityForce2D;
+		out << YAML::Key << "Enable Debug Draw" << YAML::Value << spec.Settings.EnableDebugDraw2D;
+		out << YAML::EndMap;
+
+		out << YAML::Key << "Physics3D" << YAML::Value;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Gravity Force" << YAML::Value << spec.Settings.GravityForce2D;
+		out << YAML::Key << "Enable Debug Draw" << YAML::Value << spec.Settings.EnableDebugDraw3D;
+		out << YAML::Key << "Show Colliders" << YAML::Value << spec.Settings.ShowColliders3D;
+		out << YAML::Key << "Show Bounding Boxes" << YAML::Value << spec.Settings.ShowBoundingBoxes3D;
+		out << YAML::EndMap;
+
 		out << YAML::EndMap;
 		out << YAML::EndMap;
 
@@ -56,6 +76,20 @@ namespace HBL2
 		spec.StartingScene = data["Project"]["StartingScene"].as<std::string>();
 		spec.AssetDirectory = data["Project"]["AssetDirectory"].as<std::string>();
 		spec.ScriptDirectory = data["Project"]["ScriptDirectory"].as<std::string>();
+
+		if (!data["Project"]["Renderer"].IsDefined() ||	!data["Project"]["Physics2D"].IsDefined() || !data["Project"]["Physics3D"].IsDefined())
+		{
+			HBL2_CORE_ERROR("Project settings are incomplete or corrupted: {0}", filePath.string());
+			return true;
+		}
+
+		spec.Settings.Renderer = (RendererType)data["Project"]["Renderer"]["Type"].as<int>();
+		spec.Settings.GravityForce2D = data["Project"]["Physics2D"]["Gravity Force"].as<float>();
+		spec.Settings.EnableDebugDraw2D = data["Project"]["Physics2D"]["Enable Debug Draw"].as<bool>();
+		spec.Settings.GravityForce3D = data["Project"]["Physics3D"]["Gravity Force"].as<float>();
+		spec.Settings.EnableDebugDraw3D = data["Project"]["Physics3D"]["Enable Debug Draw"].as<bool>();
+		spec.Settings.ShowColliders3D = data["Project"]["Physics3D"]["Show Colliders"].as<bool>();
+		spec.Settings.ShowBoundingBoxes3D = data["Project"]["Physics3D"]["Show Bounding Boxes"].as<bool>();
 
 		return true;
 	}

@@ -146,8 +146,11 @@ namespace HBL2
 		}
 
 		// Reregister built in material asset.
-		m_RegisteredAssets.Add(ShaderUtilities::Get().LitMaterialAsset);
-		Asset* asset = GetAssetMetadata(ShaderUtilities::Get().LitMaterialAsset);
-		m_RegisteredAssetMap[asset->UUID] = ShaderUtilities::Get().LitMaterialAsset;
+		if (ShaderUtilities::Get().LitMaterialAsset.IsValid())
+		{
+			m_RegisteredAssets.Add(ShaderUtilities::Get().LitMaterialAsset);
+			Asset* asset = GetAssetMetadata(ShaderUtilities::Get().LitMaterialAsset);
+			m_RegisteredAssetMap[asset->UUID] = ShaderUtilities::Get().LitMaterialAsset;
+		}
 	}
 }

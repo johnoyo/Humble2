@@ -50,6 +50,19 @@ namespace HBL2
 			}
 		}
 
+		template<typename T>
+		static void AddComponentButton(const std::string& name, Scene* ctx)
+		{
+			if (!ctx->HasComponent<T>(HBL2::Component::EditorVisible::SelectedEntity))
+			{
+				if (ImGui::MenuItem(name.c_str()))
+				{
+					ctx->AddComponent<T>(HBL2::Component::EditorVisible::SelectedEntity);
+					ImGui::CloseCurrentPopup();
+				}
+			}
+		}
+
 		void EditorPanelSystem::DrawPropertiesPanel()
 		{
 			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowItemOverlap;
@@ -605,140 +618,21 @@ namespace HBL2
 
 				if (ImGui::BeginPopup("AddComponent"))
 				{
-					if (!m_ActiveScene->HasComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("Sprite"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::Sprite>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("StaticMesh"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::StaticMesh>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("Camera"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::Camera>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("Link"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::Link>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("Light"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::Light>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::SkyLight>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("SkyLight"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::SkyLight>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("AudioSource"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::AudioSource>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::Rigidbody2D>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("Rigidbody2D"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::Rigidbody2D>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::BoxCollider2D>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("BoxCollider2D"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::BoxCollider2D>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::Rigidbody>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("Rigidbody"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::Rigidbody>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::BoxCollider>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("BoxCollider"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::BoxCollider>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::SphereCollider>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("SphereCollider"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::SphereCollider>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::CapsuleCollider>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("CapsuleCollider"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::CapsuleCollider>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::Terrain>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("Terrain"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::Terrain>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
-					if (!m_ActiveScene->HasComponent<HBL2::Component::AnimationCurve>(HBL2::Component::EditorVisible::SelectedEntity))
-					{
-						if (ImGui::MenuItem("AnimationCurve"))
-						{
-							m_ActiveScene->AddComponent<HBL2::Component::AnimationCurve>(HBL2::Component::EditorVisible::SelectedEntity);
-							ImGui::CloseCurrentPopup();
-						}
-					}
+					AddComponentButton<HBL2::Component::Sprite>("Sprite", m_ActiveScene);
+					AddComponentButton<HBL2::Component::StaticMesh>("StaticMesh", m_ActiveScene);
+					AddComponentButton<HBL2::Component::Camera>("Camera", m_ActiveScene);
+					AddComponentButton<HBL2::Component::Link>("Link", m_ActiveScene);
+					AddComponentButton<HBL2::Component::Light>("Light", m_ActiveScene);
+					AddComponentButton<HBL2::Component::SkyLight>("SkyLight", m_ActiveScene);
+					AddComponentButton<HBL2::Component::AudioSource>("AudioSource", m_ActiveScene);
+					AddComponentButton<HBL2::Component::Rigidbody2D>("Rigidbody2D", m_ActiveScene);
+					AddComponentButton<HBL2::Component::BoxCollider2D>("BoxCollider2D", m_ActiveScene);
+					AddComponentButton<HBL2::Component::Rigidbody>("Rigidbody", m_ActiveScene);
+					AddComponentButton<HBL2::Component::BoxCollider>("BoxCollider", m_ActiveScene);
+					AddComponentButton<HBL2::Component::SphereCollider>("SphereCollider", m_ActiveScene);
+					AddComponentButton<HBL2::Component::CapsuleCollider>("CapsuleCollider", m_ActiveScene);
+					AddComponentButton<HBL2::Component::Terrain>("Terrain", m_ActiveScene);
+					AddComponentButton<HBL2::Component::AnimationCurve>("AnimationCurve", m_ActiveScene);
 
 					// Iterate over all registered meta types
 					for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))

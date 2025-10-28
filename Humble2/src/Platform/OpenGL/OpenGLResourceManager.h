@@ -107,13 +107,13 @@ namespace HBL2
 				return;
 			}
 
-			glBindBuffer(GL_UNIFORM_BUFFER, openGLBuffer->RendererId);
+			glBindBuffer(openGLBuffer->Usage, openGLBuffer->RendererId);
 
-			void* ptr = glMapBufferRange(GL_UNIFORM_BUFFER, offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+			void* ptr = glMapBufferRange(openGLBuffer->Usage, offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
 			memcpy(ptr, (void*)((char*)openGLBuffer->Data + offset), size);
-			glUnmapBuffer(GL_UNIFORM_BUFFER);
+			glUnmapBuffer(openGLBuffer->Usage);
 
-			glBindBuffer(GL_UNIFORM_BUFFER, 0);
+			glBindBuffer(openGLBuffer->Usage, 0);
 		}
 		OpenGLBuffer* GetBuffer(Handle<Buffer> handle) const
 		{

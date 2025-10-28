@@ -1,5 +1,15 @@
 #include "Application.h"
 
+#ifdef DIST
+	#define BEGIN_APP_PROFILE(tag)
+	#define END_APP_PROFILE(tag, time)
+	#define SWAP_AND_RESET_PROFILED_TIMERS()
+#else
+	#define BEGIN_APP_PROFILE(tag) Timer tag
+	#define END_APP_PROFILE(tag, time) time = tag.ElapsedMillis()
+	#define SWAP_AND_RESET_PROFILED_TIMERS() (m_PreviousStats = m_CurrentStats, m_CurrentStats.Reset())
+#endif
+
 namespace HBL2
 {
 	Application* Application::s_Instance = nullptr;
@@ -48,8 +58,6 @@ namespace HBL2
 			HBL2_CORE_ERROR("No RendererAPI specified. Please choose between OpenGL, or Vulkan depending on your target platform.");
 			exit(-1);
 			break;
-		default:
-			break;
 		}
 
 		Window::Instance->Initialize({
@@ -64,6 +72,10 @@ namespace HBL2
 		m_Specification.Context->EditorScene = ResourceManager::Instance->CreateScene({ .name = "Editor Scene" });
 		
 		ShaderUtilities::Initialize();
+
+		DebugRenderer::Instance = new DebugRenderer;
+		PhysicsEngine3D::Instance = new JoltPhysicsEngine;
+		PhysicsEngine2D::Instance = new Box2DPhysicsEngine;
 	}
 
 	Application::~Application()
@@ -102,6 +114,8 @@ namespace HBL2
 
 		// Reset frame allocator.
 		Allocator::Frame.Invalidate();
+
+		SWAP_AND_RESET_PROFILED_TIMERS();
 	}
 
 	void Application::Start()
@@ -112,9 +126,11 @@ namespace HBL2
 
 		Device::Instance->Initialize();
 		Renderer::Instance->Initialize();
-		ImGuiRenderer::Instance->Initialize();
 
 		m_Specification.Context->OnAttach();
+
+		ImGuiRenderer::Instance->Initialize();
+		DebugRenderer::Instance->Initialize();
 
 		m_Specification.Context->OnCreate();
 
@@ -122,20 +138,28 @@ namespace HBL2
 		{
 			BeginFrame();
 
+			BEGIN_APP_PROFILE(debugDraw);
+			DebugRenderer::Instance->BeginFrame();
+			m_Specification.Context->OnGizmoRender(Time::DeltaTime);
+			DebugRenderer::Instance->EndFrame();
+			END_APP_PROFILE(debugDraw, m_CurrentStats.DebugDrawTime);
+
+			BEGIN_APP_PROFILE(appUpdate);
 			Renderer::Instance->BeginFrame();
 			m_Specification.Context->OnUpdate(Time::DeltaTime);
 			m_Specification.Context->OnFixedUpdate();
 			Renderer::Instance->EndFrame();
+			END_APP_PROFILE(appUpdate, m_CurrentStats.AppUpdateTime);
 
-			/*DebugRenderer::Instance->BeginFrame();
-			m_Specification.Context->OnGizmoRender(Time::DeltaTime);
-			DebugRenderer::Instance->EndFrame();*/
-
+			BEGIN_APP_PROFILE(appGUIDraw);
 			ImGuiRenderer::Instance->BeginFrame();
 			m_Specification.Context->OnGuiRender(Time::DeltaTime);
 			ImGuiRenderer::Instance->EndFrame();
+			END_APP_PROFILE(appGUIDraw, m_CurrentStats.AppGuiDrawTime);
 
+			BEGIN_APP_PROFILE(present);
 			Renderer::Instance->Present();
+			END_APP_PROFILE(present, m_CurrentStats.PresentTime);
 
 			EndFrame();
 		});
@@ -152,6 +176,10 @@ namespace HBL2
 		ImGuiRenderer::Instance->Clean();
 		delete ImGuiRenderer::Instance;
 		ImGuiRenderer::Instance = nullptr;
+
+		DebugRenderer::Instance->Clean();
+		delete DebugRenderer::Instance;
+		DebugRenderer::Instance = nullptr;
 
 		AssetManager::Instance->DeregisterAssets();
 		delete AssetManager::Instance;

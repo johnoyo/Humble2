@@ -36,7 +36,6 @@ namespace HBL2
 					PlayStop,
 					Systems,
 					Tray,
-					EditorSettings,
 					Custom
 				} Type = Panel::None;
 

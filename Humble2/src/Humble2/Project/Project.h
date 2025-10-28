@@ -13,6 +13,34 @@
 
 namespace HBL2
 {
+	enum class RendererType
+	{
+		Forward = 0,
+		ForwardPlus,
+		Deferred,
+		Custom,
+	};
+
+	struct ProjectSettings
+	{
+		RendererType Renderer = RendererType::Forward;
+		// GraphicsAPI EditorGraphicsAPI = GraphicsAPI::OPENGL;
+		// GraphicsAPI RuntimeGraphicsAPI = GraphicsAPI::VULKAN;
+		
+		// Physics2DEngineImpl Physics2D = Physics2DEngineImpl::BOX2D;
+		float GravityForce2D = -9.81f;
+		bool EnableDebugDraw2D = false;
+
+		// Physics3DEngineImpl Physics3D = Physics3DEngineImpl::JOLT;
+		float GravityForce3D = -9.81f;
+		bool EnableDebugDraw3D = false;
+		bool ShowColliders3D = false;
+		bool ShowBoundingBoxes3D = false;
+
+		// uint32_t GameArenaSize = 1_GB;
+		// uint32_t UniformBufferSize = 64_MB; 
+	};
+
 	struct HBL2_API ProjectSpecification
 	{
 		std::string Name = "Untitled";
@@ -20,6 +48,8 @@ namespace HBL2
 		std::filesystem::path StartingScene;
 		std::filesystem::path AssetDirectory;
 		std::filesystem::path ScriptDirectory;
+
+		ProjectSettings Settings;
 	};
 
 	class HBL2_API Project
@@ -56,13 +86,15 @@ namespace HBL2
 
 		static Project* Create(const std::string& name = "");
 		static Project* Load(const std::filesystem::path& path);
-		static void Save(const std::filesystem::path& path);
+		static void Save(const std::filesystem::path& path = "");
 
 		static void OpenStartingScene(bool runtime = false);
+		static void ApplySettings();
 
 	private:
 		ProjectSpecification m_Spec;
 		std::filesystem::path m_ProjectDirectory;
+		std::filesystem::path m_ProjectFilePath;
 
 		static Project* s_ActiveProject;
 	};
