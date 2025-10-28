@@ -936,12 +936,6 @@ namespace HBL2
 				{
 					return availablePresentMode;
 				}
-
-				// Fallback.
-				if (availablePresentMode == VK_PRESENT_MODE_FIFO_KHR)
-				{
-					return availablePresentMode;
-				}
 			}
 			else
 			{
@@ -949,16 +943,16 @@ namespace HBL2
 				{
 					return availablePresentMode;
 				}
-
-				// Fallback.
-				if (availablePresentMode == VK_PRESENT_MODE_FIFO_RELAXED_KHR)
-				{
-					return availablePresentMode;
-				}
 			}
 		}
 
-		return VK_PRESENT_MODE_FIFO_KHR;
+		// Fallback.
+		if (verticalSync)
+		{
+			return VK_PRESENT_MODE_FIFO_KHR;
+		}
+
+		return VK_PRESENT_MODE_FIFO_RELAXED_KHR;
 	}
 
 	VkExtent2D VulkanRenderer::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)

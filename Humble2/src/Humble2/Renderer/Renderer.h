@@ -43,6 +43,14 @@ namespace HBL2
 		WEBGPU,
 	};
 
+	enum class RendererType
+	{
+		Forward = 0,
+		ForwardPlus,
+		Deferred,
+		Custom,
+	};
+
 	struct RendererStats
 	{
 		uint32_t DrawCalls = 0;

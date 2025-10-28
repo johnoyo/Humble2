@@ -3,3 +3,20 @@ Project:
   StartingScene: Scenes\EmptyScene.humble
   AssetDirectory: Assets
   ScriptDirectory: ""
+  Renderer:
+    Type: 0
+    Editor API: 1
+    Runtime API: 2
+  Physics2D:
+    Gravity Force: -9.81000042
+    Enable Debug Draw: false
+    Implementation: 1
+  Physics3D:
+    Gravity Force: -9.81000042
+    Enable Debug Draw: false
+    Show Colliders: true
+    Show Bounding Boxes: true
+    Implementation: 1
+  Advanced:
+    Max App Memory: 1073741824
+    Max UniformBuffer Memory: 67108864

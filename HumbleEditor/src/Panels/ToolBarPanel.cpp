@@ -267,15 +267,39 @@ namespace HBL2
 
 				// Renderer.
 				{
-					const char* options[] = { "Forward", "ForwardPlus", "Deffered" };
-					int currentItem = (int)spec.Settings.Renderer;
-
-					if (ImGui::Combo("Renderer Type", &currentItem, options, IM_ARRAYSIZE(options)))
 					{
-						spec.Settings.Renderer = (RendererType)currentItem;
+						const char* options[] = { "Forward", "ForwardPlus", "Deffered", "Custom" };
+						int currentItem = (int)spec.Settings.Renderer;
+
+						if (ImGui::Combo("Renderer Type", &currentItem, options, IM_ARRAYSIZE(options)))
+						{
+							spec.Settings.Renderer = (RendererType)currentItem;
+						}
+
+						ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 					}
 
-					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+					{
+						const char* options[] = { "None", "OpenGL", "Vulkan" };
+						int currentItem = (int)spec.Settings.EditorGraphicsAPI;
+
+						if (ImGui::Combo("Editor Graphics API", &currentItem, options, IM_ARRAYSIZE(options)))
+						{
+							spec.Settings.EditorGraphicsAPI = (GraphicsAPI)currentItem;
+						}
+
+						ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+					}
+
+					{
+						const char* options[] = { "None", "OpenGL", "Vulkan" };
+						int currentItem = (int)spec.Settings.RuntimeGraphicsAPI;
+
+						if (ImGui::Combo("Runtime Graphics API", &currentItem, options, IM_ARRAYSIZE(options)))
+						{
+							spec.Settings.RuntimeGraphicsAPI = (GraphicsAPI)currentItem;
+						}
+					}
 				}
 
 				ImGui::Separator();
@@ -292,6 +316,16 @@ namespace HBL2
 					{
 						PhysicsEngine2D::Instance->SetDebugDrawEnabled(spec.Settings.EnableDebugDraw2D);
 					}
+
+					const char* options[] = { "Custom", "Box2D" };
+					int currentItem = (int)spec.Settings.Physics2DImpl;
+
+					if (ImGui::Combo("Implementation", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						spec.Settings.Physics2DImpl = (Physics2DEngineImpl)currentItem;
+					}
+
+					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 				}
 
 				ImGui::Separator();
@@ -321,6 +355,34 @@ namespace HBL2
 							PhysicsEngine3D::Instance->ShowBoundingBoxes(spec.Settings.ShowBoundingBoxes3D);
 						}
 					}
+
+					const char* options[] = { "Custom", "Jolt" };
+					int currentItem = (int)spec.Settings.Physics3DImpl;
+
+					if (ImGui::Combo("Implementation", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						spec.Settings.Physics3DImpl = (Physics3DEngineImpl)currentItem;
+					}
+
+					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+				}
+
+				ImGui::Separator();
+
+				ImGui::Text("Advanced Settings");
+
+				{
+					if (ImGui::InputScalar("Max App Memory", ImGuiDataType_U32, (void*)(intptr_t*)&spec.Settings.MaxAppMemory))
+					{
+					}
+
+					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					if (ImGui::InputScalar("Max UniformBuffer Memory", ImGuiDataType_U32, (void*)(intptr_t*)&spec.Settings.MaxUniformBufferMemory))
+					{
+					}
+
+					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 				}
 
 				ImGui::Separator();

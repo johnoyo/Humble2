@@ -27,7 +27,8 @@ namespace HBL2
 			virtual void OnDetach() override;
 
 		private:
-			bool OpenEmptyProject();
+			bool OpenProject();
+			void LoadProject();
 			void LoadBuiltInAssets();
 			bool IsActiveSceneValid();
 

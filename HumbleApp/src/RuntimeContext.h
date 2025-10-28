@@ -19,6 +19,9 @@ namespace HBL2
 
 		private:
 			bool OpenProject();
+			void LoadProject();
+
+		private:
 			Scene* m_ActiveScene = nullptr;
 			float m_AccumulatedTime = 0.0f;
 			bool m_FirstFrame = true;

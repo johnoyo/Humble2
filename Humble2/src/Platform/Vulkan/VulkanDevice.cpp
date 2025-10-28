@@ -239,12 +239,32 @@ namespace HBL2
 		}
 
 		VkPhysicalDeviceFeatures deviceFeatures = {};
+		vkGetPhysicalDeviceFeatures(m_PhysicalDevice, &deviceFeatures);
+
+		VkPhysicalDeviceFeatures enabledFeatures = {};
+		if (deviceFeatures.wideLines)
+		{
+			enabledFeatures.wideLines = VK_TRUE;
+		}
+		else
+		{
+			HBL2_CORE_ERROR("GPU does not support wideLines feature!\n");
+		}
+
+		if (deviceFeatures.fillModeNonSolid)
+		{
+			enabledFeatures.fillModeNonSolid = VK_TRUE;
+		}
+		else
+		{
+			HBL2_CORE_ERROR("GPU does not support fillModeNonSolid feature!\n");
+		}
 
 		VkDeviceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
-		createInfo.pEnabledFeatures = &deviceFeatures;
+		createInfo.pEnabledFeatures = &enabledFeatures;
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(m_DeviceExtensions.size());
 		createInfo.ppEnabledExtensionNames = m_DeviceExtensions.data();
 
