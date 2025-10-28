@@ -461,8 +461,6 @@ namespace HBL2
 			.renderPass = m_DepthOnlyRenderPass,
 		});
 
-		ResourceManager::Instance->AddShaderVariant(m_DepthOnlySpriteShader, variant); // TODO: Remove, already handled by shader creation.
-
 		// Create pre-pass materials.
 		m_DepthOnlyMaterial = ResourceManager::Instance->CreateMaterial({
 			.debugName = "depth-only-mesh-material",
