@@ -1,0 +1,461 @@
+Scene: Physics3D
+Entities:
+  - Entity: 14
+    Component::Tag:
+      Tag: Capsule
+    Component::ID:
+      ID: 6426881450287509504
+    Component::Transform:
+      Translation: [0, 17.2709484, 0]
+      Rotation: [89.9999771, 0, 0]
+      Scale: [2.30999994, 2.3099997, 2.3099997]
+      Static: false
+    Component::StaticMesh:
+      Enabled: true
+      Material: 7648240370554952727
+      Mesh:
+        UUID: 642598463146126675
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 0
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::CapsuleCollider:
+      Enabled: true
+      Height: 2.30999994
+      Radius: 1.20000005
+  - Entity: 13
+    Component::Tag:
+      Tag: Sphere(Clone)
+    Component::ID:
+      ID: 14672722984330715136
+    Component::Transform:
+      Translation: [0.735600233, 20.925951, -1.01215827]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 7648240370554952727
+      Mesh:
+        UUID: 17024591911543769407
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 2
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::SphereCollider:
+      Enabled: true
+      Radius: 0.5
+  - Entity: 12
+    Component::Tag:
+      Tag: Sphere(Clone)
+    Component::ID:
+      ID: 3682527432637360128
+    Component::Transform:
+      Translation: [-0.64348793, 20.925951, -1.00114095]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 7648240370554952727
+      Mesh:
+        UUID: 17024591911543769407
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 2
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::SphereCollider:
+      Enabled: true
+      Radius: 0.5
+  - Entity: 11
+    Component::Tag:
+      Tag: Sphere(Clone)
+    Component::ID:
+      ID: 6788832715555026944
+    Component::Transform:
+      Translation: [0.735918641, 20.925951, 1.14116931]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 7648240370554952727
+      Mesh:
+        UUID: 17024591911543769407
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 2
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::SphereCollider:
+      Enabled: true
+      Radius: 0.5
+  - Entity: 10
+    Component::Tag:
+      Tag: Sphere(Clone)
+    Component::ID:
+      ID: 13954231338135384064
+    Component::Transform:
+      Translation: [-0.709916115, 20.925951, 1.17721808]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 7648240370554952727
+      Mesh:
+        UUID: 17024591911543769407
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 2
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::SphereCollider:
+      Enabled: true
+      Radius: 0.5
+  - Entity: 9
+    Component::Tag:
+      Tag: Sphere
+    Component::ID:
+      ID: 12342293755244210176
+    Component::Transform:
+      Translation: [-0.444004178, 24.5062866, -1.28947771]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::StaticMesh:
+      Enabled: true
+      Material: 7648240370554952727
+      Mesh:
+        UUID: 17024591911543769407
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 2
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::SphereCollider:
+      Enabled: true
+      Radius: 0.5
+  - Entity: 8
+    Component::Tag:
+      Tag: Base
+    Component::ID:
+      ID: 8584478374824038400
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        - 15480861324867094528
+        - 7022661491485889536
+        - 7668479049059885056
+        - 751340220887560064
+        - 13847820474674585600
+  - Entity: 7
+    Component::Tag:
+      Tag: Cube(Clone)(Clone)(Clone)
+    Component::ID:
+      ID: 7022661491485889536
+    Component::Transform:
+      Translation: [18.5266571, 1.20364952, -0.113631725]
+      Rotation: [0, 89.9999771, 0]
+      Scale: [25.375, 2.2186234, 1.21266985]
+      Static: false
+    Component::Link:
+      Parent: 8584478374824038400
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6805961995243789723
+      Mesh:
+        UUID: 12185676794561251927
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 0
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::BoxCollider:
+      Enabled: true
+      Size: [1, 1, 1]
+  - Entity: 6
+    Component::Tag:
+      Tag: Cube(Clone)(Clone)
+    Component::ID:
+      ID: 7668479049059885056
+    Component::Transform:
+      Translation: [-18.605648, 1.20364952, -0.113645442]
+      Rotation: [0, 89.9999771, 0]
+      Scale: [25.375, 2.2186234, 1.21266985]
+      Static: false
+    Component::Link:
+      Parent: 8584478374824038400
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6805961995243789723
+      Mesh:
+        UUID: 12185676794561251927
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 0
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::BoxCollider:
+      Enabled: true
+      Size: [1, 1, 1]
+  - Entity: 5
+    Component::Tag:
+      Tag: Cube(Clone)(Clone)
+    Component::ID:
+      ID: 751340220887560064
+    Component::Transform:
+      Translation: [0, 1.20590591, 24.0707493]
+      Rotation: [0, 0, 0]
+      Scale: [19.7098732, 2.2186234, 1.21267188]
+      Static: false
+    Component::Link:
+      Parent: 8584478374824038400
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6805961995243789723
+      Mesh:
+        UUID: 12185676794561251927
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 0
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::BoxCollider:
+      Enabled: true
+      Size: [1, 1, 1]
+  - Entity: 4
+    Component::Tag:
+      Tag: Cube(Clone)
+    Component::ID:
+      ID: 13847820474674585600
+    Component::Transform:
+      Translation: [0, 1.20590591, -24.2246799]
+      Rotation: [0, 0, 0]
+      Scale: [19.7211494, 2.2186234, 1.21267188]
+      Static: false
+    Component::Link:
+      Parent: 8584478374824038400
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6805961995243789723
+      Mesh:
+        UUID: 12185676794561251927
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 0
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::BoxCollider:
+      Enabled: true
+      Size: [1, 1, 1]
+  - Entity: 3
+    Component::Tag:
+      Tag: Cube
+    Component::ID:
+      ID: 15480861324867094528
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [17.5001011, 1, 23.0755997]
+      Static: false
+    Component::Link:
+      Parent: 8584478374824038400
+      Children:
+        []
+    Component::StaticMesh:
+      Enabled: true
+      Material: 6805961995243789723
+      Mesh:
+        UUID: 12185676794561251927
+        MeshIndex: 0
+        SubMeshIndex: 0
+    Component::Rigidbody:
+      Enabled: true
+      Trigger: false
+      Type: 0
+      MotionQuality: 0
+      Mass: 1
+      Friction: 0.200000003
+      GravityFactor: 1
+      Restitution: 0.100000001
+      LinearDamping: 0.0500000007
+      AngularDamping: 0.0500000007
+    Component::BoxCollider:
+      Enabled: true
+      Size: [1, 1, 1]
+  - Entity: 2
+    Component::Tag:
+      Tag: Sky
+    Component::ID:
+      ID: 17093918129918375936
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::SkyLight:
+      Enabled: true
+      EquirectangularMap: 6203812838040720333
+  - Entity: 1
+    Component::Tag:
+      Tag: Sun
+    Component::ID:
+      ID: 10979612935761795072
+    Component::Transform:
+      Translation: [27.9343605, 56.3301201, 1.79611823e-06]
+      Rotation: [3.02067133e-06, 1.51860104e-06, -26.6901436]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Light:
+      Enabled: true
+      CastsShadows: true
+      Intensity: 1
+      Color: [1, 1, 1]
+      Type: 0
+      Distance: 50
+      InnerCutOff: 12.5
+      OuterCutOff: 17.5
+      ConstantBias: 0.00200000009
+      SlopeBias: 0.122000001
+      NormalOffsetScale: 0.5
+      FieldOfView: 61.3349991
+  - Entity: 0
+    Component::Tag:
+      Tag: Camera
+    Component::ID:
+      ID: 18222251502712741888
+    Component::Transform:
+      Translation: [52, 55, 0.5]
+      Rotation: [-45, 90, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Camera:
+      Enabled: true
+      Primary: true
+      Far: 1000
+      Near: 0.100000001
+      FOV: 30
+      Aspect Ratio: 2.14988804
+      Exposure: 1
+      Gamma: 2.20000005
+      Zoom Level: 300
+      Type: 0
+User Systems:
+  - 1446947720767051862
+User Components:
+  - 7276202125255088842
+User Helper Scripts:
+  - 14679799005195782872
