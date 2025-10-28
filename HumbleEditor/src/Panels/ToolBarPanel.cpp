@@ -286,9 +286,9 @@ namespace HBL2
 					{
 					}
 
-					if (ImGui::Checkbox("Show Colliders##2d", &spec.Settings.ShowPhysicsColliders2D))
+					if (ImGui::Checkbox("Enable Debug Draw##2d", &spec.Settings.EnableDebugDraw2D))
 					{
-						PhysicsEngine2D::Instance->SetDebugDrawEnabled(spec.Settings.ShowPhysicsColliders2D);
+						PhysicsEngine2D::Instance->SetDebugDrawEnabled(spec.Settings.EnableDebugDraw2D);
 					}
 				}
 
@@ -302,16 +302,21 @@ namespace HBL2
 					{
 					}
 
-					if (ImGui::Checkbox("Show Colliders##3d", &spec.Settings.ShowPhysicsColliders3D))
+					if (ImGui::Checkbox("Enable Debug Draw##3d", &spec.Settings.EnableDebugDraw3D))
 					{
-						PhysicsEngine3D::Instance->SetDebugDrawEnabled(spec.Settings.ShowPhysicsColliders3D);
+						PhysicsEngine3D::Instance->SetDebugDrawEnabled(spec.Settings.EnableDebugDraw3D);
 					}
 
-					if (spec.Settings.ShowPhysicsColliders3D)
+					if (spec.Settings.EnableDebugDraw3D)
 					{
-						if (ImGui::Checkbox("Show Only Bounding Boxes", &spec.Settings.ShowOnlyBoundingBoxes3D))
+						if (ImGui::Checkbox("Show Colliders", &spec.Settings.ShowColliders3D))
 						{
-							PhysicsEngine3D::Instance->SetDebugDrawShowOnlyBoundingBoxes(spec.Settings.ShowOnlyBoundingBoxes3D);
+							PhysicsEngine3D::Instance->ShowColliders(spec.Settings.ShowColliders3D);
+						}
+
+						if (ImGui::Checkbox("Show Bounding Boxes", &spec.Settings.ShowBoundingBoxes3D))
+						{
+							PhysicsEngine3D::Instance->ShowBoundingBoxes(spec.Settings.ShowBoundingBoxes3D);
 						}
 					}
 				}

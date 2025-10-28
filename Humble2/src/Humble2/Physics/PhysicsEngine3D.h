@@ -43,7 +43,8 @@ namespace HBL2
 		virtual void ApplyAngularImpulse(Component::Rigidbody& rb, const glm::vec3& angularImpulse) {}
 
 		virtual void SetDebugDrawEnabled(bool enabled) {}
-		virtual void SetDebugDrawShowOnlyBoundingBoxes(bool enabled) {}
+		virtual void ShowColliders(bool show) {}
+		virtual void ShowBoundingBoxes(bool show) {}
 		virtual void OnDebugDraw() {}
 	};
 }

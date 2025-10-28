@@ -29,12 +29,13 @@ namespace HBL2
 		
 		// Physics2DEngineImpl Physics2D = Physics2DEngineImpl::BOX2D;
 		float GravityForce2D = -9.81f;
-		bool ShowPhysicsColliders2D = false;
+		bool EnableDebugDraw2D = false;
 
 		// Physics3DEngineImpl Physics3D = Physics3DEngineImpl::JOLT;
 		float GravityForce3D = -9.81f;
-		bool ShowPhysicsColliders3D = false;
-		bool ShowOnlyBoundingBoxes3D = false;
+		bool EnableDebugDraw3D = false;
+		bool ShowColliders3D = false;
+		bool ShowBoundingBoxes3D = false;
 
 		// uint32_t GameArenaSize = 1_GB;
 		// uint32_t UniformBufferSize = 64_MB; 

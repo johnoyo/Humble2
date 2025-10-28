@@ -280,9 +280,14 @@ namespace HBL2
 		m_DebugDrawEnabled = enabled;
 	}
 
-	void JoltPhysicsEngine::SetDebugDrawShowOnlyBoundingBoxes(bool enabled)
+	void JoltPhysicsEngine::ShowColliders(bool show)
 	{
-		m_DebugDrawShowOnlyBoundingBoxes = enabled;
+		m_ShowColliders = show;
+	}
+
+	void JoltPhysicsEngine::ShowBoundingBoxes(bool show)
+	{
+		m_ShowBoundingBoxes = show;
 	}
 
 	void JoltPhysicsEngine::OnDebugDraw()
@@ -293,9 +298,9 @@ namespace HBL2
 		}
 
 		JPH::BodyManager::DrawSettings settings;
-		settings.mDrawShape = !m_DebugDrawShowOnlyBoundingBoxes;
-		settings.mDrawBoundingBox = m_DebugDrawShowOnlyBoundingBoxes;
-		settings.mDrawShapeWireframe = true;
+		settings.mDrawShape = m_ShowColliders;
+		settings.mDrawBoundingBox = m_ShowBoundingBoxes;
+		settings.mDrawShapeWireframe = false;
 
 		m_PhysicsSystem->DrawBodies(settings, m_DebugRenderer, nullptr);
 	}

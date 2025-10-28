@@ -31,14 +31,15 @@ namespace HBL2
 		out << YAML::Key << "Physics2D" << YAML::Value;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Gravity Force" << YAML::Value << spec.Settings.GravityForce2D;
-		out << YAML::Key << "Show Colliders" << YAML::Value << spec.Settings.ShowPhysicsColliders2D;
+		out << YAML::Key << "Enable Debug Draw" << YAML::Value << spec.Settings.EnableDebugDraw2D;
 		out << YAML::EndMap;
 
 		out << YAML::Key << "Physics3D" << YAML::Value;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Gravity Force" << YAML::Value << spec.Settings.GravityForce2D;
-		out << YAML::Key << "Show Colliders" << YAML::Value << spec.Settings.ShowPhysicsColliders3D;
-		out << YAML::Key << "Show Only Bounding Boxes" << YAML::Value << spec.Settings.ShowOnlyBoundingBoxes3D;
+		out << YAML::Key << "Enable Debug Draw" << YAML::Value << spec.Settings.EnableDebugDraw3D;
+		out << YAML::Key << "Show Colliders" << YAML::Value << spec.Settings.ShowColliders3D;
+		out << YAML::Key << "Show Bounding Boxes" << YAML::Value << spec.Settings.ShowBoundingBoxes3D;
 		out << YAML::EndMap;
 
 		out << YAML::EndMap;
@@ -84,10 +85,11 @@ namespace HBL2
 
 		spec.Settings.Renderer = (RendererType)data["Project"]["Renderer"]["Type"].as<int>();
 		spec.Settings.GravityForce2D = data["Project"]["Physics2D"]["Gravity Force"].as<float>();
-		spec.Settings.ShowPhysicsColliders2D = data["Project"]["Physics2D"]["Show Colliders"].as<bool>();
+		spec.Settings.EnableDebugDraw2D = data["Project"]["Physics2D"]["Enable Debug Draw"].as<bool>();
 		spec.Settings.GravityForce3D = data["Project"]["Physics3D"]["Gravity Force"].as<float>();
-		spec.Settings.ShowPhysicsColliders3D = data["Project"]["Physics3D"]["Show Colliders"].as<bool>();
-		spec.Settings.ShowOnlyBoundingBoxes3D = data["Project"]["Physics3D"]["Show Only Bounding Boxes"].as<bool>();
+		spec.Settings.EnableDebugDraw3D = data["Project"]["Physics3D"]["Enable Debug Draw"].as<bool>();
+		spec.Settings.ShowColliders3D = data["Project"]["Physics3D"]["Show Colliders"].as<bool>();
+		spec.Settings.ShowBoundingBoxes3D = data["Project"]["Physics3D"]["Show Bounding Boxes"].as<bool>();
 
 		return true;
 	}
