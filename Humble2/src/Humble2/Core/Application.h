@@ -59,8 +59,6 @@ namespace HBL2
 	struct HBL2_API ApplicationSpec
 	{
 		std::string Name = "Humble2 Application";
-		std::string CommandLineArgs = "";
-		GraphicsAPI GraphicsAPI = GraphicsAPI::OPENGL;
 		float Width = 1600.f;
 		float Height = 900.f;
 		bool VerticalSync = true;

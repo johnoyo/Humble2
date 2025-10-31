@@ -401,7 +401,7 @@ namespace HBL2
 				.height = height,
 				.renderPass = m_DepthOnlyRenderPass,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
-				});
+			});
 		});
 
 		// Create pre-pass shaders.
@@ -414,8 +414,8 @@ namespace HBL2
 
 		m_DepthOnlyShader = ResourceManager::Instance->CreateShader({
 			.debugName = "mesh-pre-pass-shader",
-			.VS {.code = prePassShaderCode[0], .entryPoint = "main" },
-			.FS {.code = prePassShaderCode[1], .entryPoint = "main" },
+			.VS { .code = prePassShaderCode[0], .entryPoint = "main" },
+			.FS { .code = prePassShaderCode[1], .entryPoint = "main" },
 			.bindGroups {
 				Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
 				m_DepthOnlyBindGroupLayout,							// (1)
@@ -425,9 +425,9 @@ namespace HBL2
 					{
 						.byteStride = 32,
 						.attributes = {
-							{.byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
-							{.byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
-							{.byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
+							{ .byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
+							{ .byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
+							{ .byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},
@@ -440,8 +440,8 @@ namespace HBL2
 
 		m_DepthOnlySpriteShader = ResourceManager::Instance->CreateShader({
 			.debugName = "sprite-pre-pass-shader",
-			.VS {.code = prePassSpriteShaderCode[0], .entryPoint = "main" },
-			.FS {.code = prePassSpriteShaderCode[1], .entryPoint = "main" },
+			.VS { .code = prePassSpriteShaderCode[0], .entryPoint = "main" },
+			.FS { .code = prePassSpriteShaderCode[1], .entryPoint = "main" },
 			.bindGroups {
 				Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
 				m_DepthOnlyBindGroupLayout,							// (1)
@@ -451,8 +451,8 @@ namespace HBL2
 					{
 						.byteStride = 20,
 						.attributes = {
-							{.byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
-							{.byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
+							{ .byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
+							{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},

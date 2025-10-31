@@ -6,12 +6,6 @@
 
 namespace HBL2
 {
-	enum class Physics3DEngineImpl
-	{
-		JOLT = 0,
-		CUSTOM,
-	};
-
 	class HBL2_API PhysicsEngine3D
 	{
 	public:

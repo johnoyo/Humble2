@@ -7,9 +7,12 @@ namespace HBL2
 		void RuntimeContext::OnAttach()
 		{
 			HBL2::Context::Mode = HBL2::Mode::Runtime;
-			HBL2::AssetManager::Instance = new HBL2::EditorAssetManager;
-
 			OpenProject();
+		}
+
+		void RuntimeContext::OnCreate()
+		{
+			LoadProject();
 
 			HBL2::EventDispatcher::Get().Register<SceneChangeEvent>([&](const HBL2::SceneChangeEvent& e)
 			{
@@ -44,14 +47,9 @@ namespace HBL2
 					});
 			});
 
-			// NOTE: The OnAttach method of the registered systems will be called from the SceneManager class.
-		}
+			// NOTE: The OnAttach and OnCreate method of the registered systems will be called from the SceneManager class.
 
-		void RuntimeContext::OnCreate()
-		{
 			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
-
-			// NOTE: The OnCreate method of the registered systems will be called from the SceneManager class.
 		}
 
 		void RuntimeContext::OnUpdate(float ts)
@@ -177,19 +175,24 @@ namespace HBL2
 
 			if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 			{
-				TextureUtilities::Get().LoadWhiteTexture();
-				ShaderUtilities::Get().LoadBuiltInShaders();
-				ShaderUtilities::Get().LoadBuiltInMaterials();
-				MeshUtilities::Get().LoadBuiltInMeshes();
-
-				HBL2::Project::OpenStartingScene(true);
 				return true;
 			}
 
 			HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
-			HBL2::Window::Instance->Close();
 
 			return false;
+		}
+
+		void RuntimeContext::LoadProject()
+		{
+			TextureUtilities::Get().LoadWhiteTexture();
+			ShaderUtilities::Get().LoadBuiltInShaders();
+			ShaderUtilities::Get().LoadBuiltInMaterials();
+			MeshUtilities::Get().LoadBuiltInMeshes();
+
+			HBL2::Project::OpenStartingScene(true);
+
+			Project::ApplySettings();
 		}
 	}
 }

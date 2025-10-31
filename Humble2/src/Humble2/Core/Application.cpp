@@ -1,5 +1,7 @@
 #include "Application.h"
 
+#include "Asset\EditorAssetManager.h"
+
 #ifdef DIST
 	#define BEGIN_APP_PROFILE(tag)
 	#define END_APP_PROFILE(tag, time)
@@ -22,19 +24,42 @@ namespace HBL2
 
 		s_Instance = this;
 
+		Log::Initialize();
+		Random::Initialize();
+
+		m_Specification.Context->OnAttach();
+
+		if (Project::GetActive() == nullptr)
+		{
+			exit(-1);
+		}
+
+		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
+
 		Allocator::Frame.Initialize(32_MB);
 		Allocator::Persistent.Initialize(256_MB);
 
-		Log::Initialize();
-		Random::Initialize();
+		GraphicsAPI gfxAPI = GraphicsAPI::NONE;
+
+		switch (Context::Mode)
+		{
+		case Mode::Editor:
+			AssetManager::Instance = new EditorAssetManager;
+			gfxAPI = projectSettings.EditorGraphicsAPI;
+			break;
+		case Mode::Runtime:
+			AssetManager::Instance = new EditorAssetManager; // TODO: Change to RuntimeAssetManager when implemented.
+			gfxAPI = projectSettings.RuntimeGraphicsAPI;
+			break;
+		}
+
 		EventDispatcher::Initialize();
 		JobSystem::Initialize();
-
 		MeshUtilities::Initialize();
 		NativeScriptUtilities::Initialize();
 		UnityBuild::Initialize();
 
-		switch (m_Specification.GraphicsAPI)
+		switch (gfxAPI)
 		{
 		case GraphicsAPI::OPENGL:
 			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
@@ -74,8 +99,22 @@ namespace HBL2
 		ShaderUtilities::Initialize();
 
 		DebugRenderer::Instance = new DebugRenderer;
-		PhysicsEngine3D::Instance = new JoltPhysicsEngine;
-		PhysicsEngine2D::Instance = new Box2DPhysicsEngine;
+
+		switch (projectSettings.Physics2DImpl)
+		{
+		case Physics2DEngineImpl::BOX2D:
+		case Physics2DEngineImpl::CUSTOM:
+			PhysicsEngine2D::Instance = new Box2DPhysicsEngine;
+			break;
+		}
+
+		switch (projectSettings.Physics3DImpl)
+		{
+		case Physics3DEngineImpl::JOLT:
+		case Physics3DEngineImpl::CUSTOM:
+			PhysicsEngine3D::Instance = new JoltPhysicsEngine;
+			break;
+		}
 	}
 
 	Application::~Application()
@@ -126,9 +165,6 @@ namespace HBL2
 
 		Device::Instance->Initialize();
 		Renderer::Instance->Initialize();
-
-		m_Specification.Context->OnAttach();
-
 		ImGuiRenderer::Instance->Initialize();
 		DebugRenderer::Instance->Initialize();
 

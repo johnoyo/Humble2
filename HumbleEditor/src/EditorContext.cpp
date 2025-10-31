@@ -8,15 +8,17 @@ namespace HBL2
 		void EditorContext::OnAttach()
 		{
 			Mode = HBL2::Mode::Editor;
-			AssetManager::Instance = new EditorAssetManager;
 
-			if (!OpenEmptyProject())
+			if (!OpenProject())
 			{
 				ActiveScene = EmptyScene;
 				return;
 			}
+		}
 
-			Project::ApplySettings();
+		void EditorContext::OnCreate()
+		{
+			LoadProject();
 
 			m_EditorScene = ResourceManager::Instance->GetScene(EditorScene);
 			m_EmptyScene = ResourceManager::Instance->GetScene(EmptyScene);
@@ -38,6 +40,7 @@ namespace HBL2
 			{
 				system->OnAttach();
 			}
+			// NOTE: The OnAttach method of the registered systems will be called from the SceneManager class.
 
 			EventDispatcher::Get().Register<SceneChangeEvent>([&](const HBL2::SceneChangeEvent& e)
 			{
@@ -45,12 +48,6 @@ namespace HBL2
 				m_ActiveScene = ResourceManager::Instance->GetScene(e.NewScene);
 			});
 
-
-			// NOTE: The OnAttach method of the registered systems will be called from the SceneManager class.
-		}
-
-		void EditorContext::OnCreate()
-		{
 			ImGui::SetCurrentContext(HBL2::ImGuiRenderer::Instance->GetContext());
 
 			if (m_EditorScene == nullptr)
@@ -62,7 +59,6 @@ namespace HBL2
 			{
 				system->OnCreate();
 			}
-
 			// NOTE: The OnCreate method of the registered systems will be called from the SceneManager class.
 		}
 
@@ -252,23 +248,27 @@ namespace HBL2
 			}
 		}
 
-		bool EditorContext::OpenEmptyProject()
+		bool EditorContext::OpenProject()
 		{
 			std::string filepath = HBL2::FileDialogs::OpenFile("Humble Project", "", {"Humble Project Files (*.hblproj)", "*.hblproj"});
 
 			if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 			{
-				LoadBuiltInAssets();
-
-				HBL2::Project::OpenStartingScene();
-
 				return true;
 			}
 
 			HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
-			HBL2::Window::Instance->Close();
 
 			return false;
+		}
+
+		void EditorContext::LoadProject()
+		{
+			LoadBuiltInAssets();
+
+			HBL2::Project::OpenStartingScene();
+
+			Project::ApplySettings();
 		}
 
 		void EditorContext::LoadBuiltInAssets()

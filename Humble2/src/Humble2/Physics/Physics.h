@@ -6,6 +6,18 @@
 
 namespace HBL2
 {
+	enum class Physics2DEngineImpl
+	{
+		CUSTOM = 0,
+		BOX2D,
+	};
+
+	enum class Physics3DEngineImpl
+	{
+		CUSTOM = 0,
+		JOLT,
+	};
+
 	namespace Physics
 	{
 		enum class BodyType

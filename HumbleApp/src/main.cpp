@@ -8,7 +8,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	HBL2::ApplicationSpec applicationSpec =
 	{
 		.Name = "Humble App",
-		.GraphicsAPI = HBL2::GraphicsAPI::OPENGL,
 		.VerticalSync = false,
 		.Context = new HBL2::Runtime::RuntimeContext,
 	};
