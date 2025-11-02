@@ -61,9 +61,9 @@ namespace HBL2
 
 					// Set the parent of the child entity to be this entity that it was dragged into.
 					m_ActiveScene->GetComponent<HBL2::Component::Link>(childEntity).Parent = m_ActiveScene->GetComponent<HBL2::Component::ID>(entity).Identifier;
-
-					ImGui::EndDragDropTarget();
 				}
+
+				ImGui::EndDragDropTarget();
 			}
 
 			if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
@@ -213,10 +213,7 @@ namespace HBL2
 						subMeshIndex = 0;
 						meshIndex++;
 					}
-
-					ImGui::EndDragDropTarget();
-				}
-				
+				}				
 				// Drag and drop target for instantiating a prefab into the scene.
 				else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Prefab"))
 				{
@@ -230,9 +227,9 @@ namespace HBL2
 					}
 
 					Prefab::Instantiate(assetHandle);
-
-					ImGui::EndDragDropTarget();
 				}
+
+				ImGui::EndDragDropTarget();
 			}
 		}
 

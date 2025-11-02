@@ -128,8 +128,9 @@ namespace HBL2
 								{
 									link.Parent = parentEntityUUID;
 								}
-								ImGui::EndDragDropTarget();
 							}
+
+							ImGui::EndDragDropTarget();
 						}
 
 						if (ImGui::BeginPopupContextItem())
@@ -194,9 +195,9 @@ namespace HBL2
 							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
 
 							sprite.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				});
 
@@ -231,9 +232,9 @@ namespace HBL2
 							}
 
 							mesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(assetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 
 					ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
@@ -246,9 +247,9 @@ namespace HBL2
 							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
 
 							mesh.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				});
 
@@ -312,9 +313,9 @@ namespace HBL2
 							}
 
 							skyLight.EquirectangularMap = AssetManager::Instance->GetAsset<Texture>(assetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 
 					if (ImGui::Button("Update"))
@@ -357,9 +358,9 @@ namespace HBL2
 							}
 
 							audioSource.Sound = AssetManager::Instance->GetAsset<Sound>(assetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 
 					ImGui::DragFloat("Volume", &audioSource.Volume, 0.05f, 0.f, 1.f);
@@ -540,9 +541,9 @@ namespace HBL2
 							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
 
 							t.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 
 					ImGui::Checkbox("AddColliders", &t.AddColliders);

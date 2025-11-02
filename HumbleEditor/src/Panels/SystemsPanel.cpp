@@ -42,9 +42,9 @@ namespace HBL2
 								HBL2_WARN("Could not load script - invalid script handle.");
 							}
 						}
-
-						ImGui::EndDragDropTarget();
 					}
+
+					ImGui::EndDragDropTarget();
 				}
 
 				ImGui::TextWrapped(m_ActiveScene->GetName().c_str());

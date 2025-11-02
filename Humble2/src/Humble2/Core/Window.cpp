@@ -96,9 +96,9 @@ namespace HBL2
 		return m_Window;
 	}
 
-	GLFWwindow* Window::GetWorkerHandle()
+	std::span<GLFWwindow*> Window::GetWorkerHandles()
 	{
-		return m_WorkerWindow;
+		return m_WorkerWindows;
 	}
 
 	void Window::SetTitle(const std::string& title)
@@ -119,9 +119,12 @@ namespace HBL2
 
 	void Window::Terminate()
 	{
-		if (m_WorkerWindow)
+		for (int i = 0; i < MAX_WORKERS; ++i)
 		{
-			glfwDestroyWindow(m_WorkerWindow);
+			if (m_WorkerWindows[i])
+			{
+				glfwDestroyWindow(m_WorkerWindows[i]);
+			}
 		}
 
 		glfwDestroyWindow(m_Window);

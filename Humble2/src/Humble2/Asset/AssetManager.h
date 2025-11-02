@@ -150,7 +150,7 @@ namespace HBL2
 
 			JobSystem::Get().Execute(ctx, [this, assetHandle, task]()
 			{
-				Device::Instance->SetContext(Window::Instance->GetWorkerHandle());
+				Device::Instance->SetContext(ContextType::FETCH);
 
 				// NOTE: Keep an eye here, it may cause problems if we still load an asset while we change scenes!
 				if (task != nullptr)
@@ -158,7 +158,8 @@ namespace HBL2
 					task->ResourceHandle = GetAsset<T>(assetHandle);
 					task->m_Finished = true;
 				}
-				Device::Instance->SetContext(nullptr);
+
+				Device::Instance->SetContext(ContextType::NONE);
 			});
 
 			return task;

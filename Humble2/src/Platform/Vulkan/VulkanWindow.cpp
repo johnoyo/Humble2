@@ -16,7 +16,7 @@ namespace HBL2
 
 		if (!glfwInit())
 		{
-			std::cout << "Error initializing window!\n";
+			HBL2_CORE_FATAL("Error initializing window!");
 			exit(-1);
 		}
 
@@ -44,11 +44,17 @@ namespace HBL2
 
 		if (!m_Window)
 		{
-			std::cout << "Error creating window!\n";
+			HBL2_CORE_FATAL("Error creating window!");
 			glfwTerminate();
 			exit(-1);
 		}
 
 		AttachEventCallbacks();
+
+		// No extra context windows for worker threads in vulkan,
+		for (int i = 0; i < MAX_WORKERS; ++i)
+		{
+			m_WorkerWindows[i] = nullptr;
+		}
 	}
 }

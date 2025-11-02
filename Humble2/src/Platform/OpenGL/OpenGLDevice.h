@@ -16,9 +16,9 @@ namespace HBL2
 
 		virtual void Initialize() override;
 		virtual void Destroy() override;
-		virtual void SetContext(void* windowContext);
+		virtual void SetContext(ContextType ctxType);
 
 	private:
-		std::mutex m_WorkerMutex;
+		std::atomic<int32_t> m_WorkerIndex;
 	};
 }

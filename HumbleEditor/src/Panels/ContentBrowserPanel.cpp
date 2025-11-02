@@ -290,9 +290,9 @@ namespace HBL2
 
 					// Instantiate the prefab entity again to get new UUIDs.
 					HBL2::Component::EditorVisible::SelectedEntity = Prefab::Instantiate(prefabAssetHandle);
-
-					ImGui::EndDragDropTarget();
 				}
+
+				ImGui::EndDragDropTarget();
 			}
 		}
 
@@ -677,8 +677,9 @@ namespace HBL2
 					{
 						shaderAssetHandlePacked = *((uint32_t*)payload->Data);
 						shaderAssetHandle = Handle<Asset>::UnPack(shaderAssetHandlePacked);
-						ImGui::EndDragDropTarget();
 					}
+
+					ImGui::EndDragDropTarget();
 				}
 
 				Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderAssetHandle);
@@ -769,9 +770,9 @@ namespace HBL2
 						}
 
 						g_AlbedoMapTask = AssetManager::Instance->GetAssetAsync<Texture>(albedoMapAssetHandle);
-
-						ImGui::EndDragDropTarget();
 					}
+
+					ImGui::EndDragDropTarget();
 				}
 
 				Handle<Asset> normalMapAssetHandle;
@@ -817,9 +818,9 @@ namespace HBL2
 							}
 
 							g_NormalMapTask = AssetManager::Instance->GetAssetAsync<Texture>(normalMapAssetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 
 					// Metalicness map
@@ -859,9 +860,9 @@ namespace HBL2
 							}
 
 							g_MetallicMapTask = AssetManager::Instance->GetAssetAsync<Texture>(metallicMapAssetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 
 					// Roughness map
@@ -901,9 +902,9 @@ namespace HBL2
 							}
 
 							g_RoughnessMapTask = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapAssetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				}
 
