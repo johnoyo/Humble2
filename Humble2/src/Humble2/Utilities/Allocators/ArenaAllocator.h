@@ -7,8 +7,7 @@ namespace HBL2
     /**
      * @brief STL-compatible allocator that allocates memory from a given Arena.
      *
-     * This adapter allows STL containers (and custom containers like Stack)
-     * to use the Arena allocator seamlessly.
+     * This adapter allows STL containers (and custom containers) to use the Arena allocator seamlessly.
      *
      * @tparam T Type of elements to allocate.
      */
@@ -30,14 +29,20 @@ namespace HBL2
 
         template<typename U>
         ArenaAllocator(const ArenaAllocator<U>& other) noexcept
-            : m_Arena(other.GetArena()) {
+            : m_Arena(other.GetArena())
+        {
         }
 
         [[nodiscard]] T* allocate(std::size_t n)
         {
             HBL2_CORE_ASSERT(m_Arena, "ArenaAllocator: no arena set!");
             void* ptr = m_Arena->Alloc(n * sizeof(T), alignof(T));
-            if (!ptr) throw std::bad_alloc();
+
+            if (!ptr)
+            {
+                return nullptr;
+            }
+
             return static_cast<T*>(ptr);
         }
 
