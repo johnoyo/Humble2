@@ -470,11 +470,21 @@ namespace HBL2
 			glm::vec4 albedoColor = materialProperties["AlbedoColor"].as<glm::vec4>();
 			float glossiness = materialProperties["Glossiness"].as<float>();
 
-			auto shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
-			auto albedoMapHandle = AssetManager::Instance->GetAsset<Texture>(albedoMapUUID);
-			auto normalMapHandle = AssetManager::Instance->GetAsset<Texture>(normalMapUUID);
-			auto metallicMapHandle = AssetManager::Instance->GetAsset<Texture>(metallicMapUUID);
-			auto roughnessMapHandle = AssetManager::Instance->GetAsset<Texture>(roughnessMapUUID);
+			JobContext materialJobsCtx;
+
+			auto shaderJobHandle = AssetManager::Instance->GetAssetAsync<Shader>(shaderUUID, &materialJobsCtx);
+			auto albedoMapJobHandle = AssetManager::Instance->GetAssetAsync<Texture>(albedoMapUUID, &materialJobsCtx);
+			auto normalMapJobHandle = AssetManager::Instance->GetAssetAsync<Texture>(normalMapUUID, &materialJobsCtx);
+			auto metallicMapJobHandle = AssetManager::Instance->GetAssetAsync<Texture>(metallicMapUUID, &materialJobsCtx);
+			auto roughnessMapJobHandle = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapUUID, &materialJobsCtx);
+
+			AssetManager::Instance->WaitForAsyncJobs(&materialJobsCtx);
+
+			Handle<Shader> shaderHandle = (shaderJobHandle ? shaderJobHandle->ResourceHandle : Handle<Shader>{});
+			Handle<Texture> albedoMapHandle = (albedoMapJobHandle ? albedoMapJobHandle->ResourceHandle : Handle<Texture>{});
+			Handle<Texture> normalMapHandle = (normalMapJobHandle ? normalMapJobHandle->ResourceHandle : Handle<Texture>{});
+			Handle<Texture> metallicMapHandle = (metallicMapJobHandle ? metallicMapJobHandle->ResourceHandle : Handle<Texture>{});
+			Handle<Texture> roughnessMapHandle = (roughnessMapJobHandle ? roughnessMapJobHandle->ResourceHandle : Handle<Texture>{});
 
 			// If shader is not set, get the built in shader depending on material type.
 			if (!shaderHandle.IsValid())
