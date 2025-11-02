@@ -24,6 +24,7 @@ namespace HBL2
 
 		virtual void BeginFrame() override;
 		virtual void EndFrame() override;
+		virtual void Render() override;
 
 		virtual void Clean() override;
 

@@ -68,7 +68,6 @@ namespace HBL2
 
 	void VulkanImGuiRenderer::BeginFrame()
 	{
-		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
@@ -77,6 +76,12 @@ namespace HBL2
 	void VulkanImGuiRenderer::EndFrame()
 	{
 		ImGui::Render();
+		Render();
+	}
+
+	void VulkanImGuiRenderer::Render()
+	{
+		ImGui_ImplVulkan_NewFrame();
 
 		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI);
 		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_ImGuiRenderPass, m_Renderer->GetMainFrameBuffer());

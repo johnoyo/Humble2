@@ -20,7 +20,6 @@ namespace HBL2
 
 	void OpenGLImGuiRenderer::BeginFrame()
 	{
-		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
@@ -29,6 +28,12 @@ namespace HBL2
 	void OpenGLImGuiRenderer::EndFrame()
 	{
 		ImGui::Render();
+		Render();
+	}
+
+	void OpenGLImGuiRenderer::Render()
+	{
+		ImGui_ImplOpenGL3_NewFrame();
 
 		int display_w, display_h;
 		glfwGetFramebufferSize(m_Window->GetHandle(), &display_w, &display_h);

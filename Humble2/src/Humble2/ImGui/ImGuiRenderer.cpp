@@ -83,9 +83,9 @@ namespace HBL2
         // Tabs
         colors[ImGuiCol_Tab] = ImVec4(0.08f, 0.08f, 0.08f, 1.0f);
         colors[ImGuiCol_TabHovered] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);
-        colors[ImGuiCol_TabActive] = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);
-        colors[ImGuiCol_TabUnfocused] = ImVec4(0.07f, 0.07f, 0.07f, 1.0f);
-        colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.12f, 0.12f, 0.12f, 1.0f);
+        colors[ImGuiCol_TabSelected] = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);
+        colors[ImGuiCol_TabDimmed] = ImVec4(0.07f, 0.07f, 0.07f, 1.0f);
+        colors[ImGuiCol_TabDimmedSelected] = ImVec4(0.12f, 0.12f, 0.12f, 1.0f);
 
         // Text
         colors[ImGuiCol_Text] = ImVec4(0.90f, 0.90f, 0.90f, 1.0f);
