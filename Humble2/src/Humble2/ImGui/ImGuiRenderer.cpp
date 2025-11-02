@@ -123,7 +123,7 @@ namespace HBL2
 
 		if (src->CmdListsCount > 0)
 		{
-			dst->CmdLists = IM_NEW(ImDrawList*)[src->CmdListsCount];
+			dst->CmdLists.resize(src->CmdListsCount);
 			for (int i = 0; i < src->CmdListsCount; i++)
 			{
 				dst->CmdLists[i] = src->CmdLists[i]->CloneOutput();

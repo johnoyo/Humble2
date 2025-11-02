@@ -137,7 +137,7 @@ namespace HBL2
 
 		void EditorContext::OnGuiRender(float ts)
 		{
-			ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+			ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
 			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
 			{

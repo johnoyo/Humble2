@@ -67,9 +67,9 @@ namespace HBL2
 					HBL2::SceneManager::Get().LoadScene(sceneAssetHandle, false);
 
 					m_EditorScenePath = path;
-
-					ImGui::EndDragDropTarget();
 				}
+
+				ImGui::EndDragDropTarget();
 			}
 
 			// Gizmos

@@ -54,17 +54,21 @@ namespace HBL2
 			.Device = m_Device->Get(),
 			.Queue = m_Renderer->GetGraphicsQueue(),
 			.DescriptorPool = m_ImGuiPool,
-			.Subpass = 0,
 			.MinImageCount = 3,
 			.ImageCount = 3,
-			.MSAASamples = VK_SAMPLE_COUNT_1_BIT,
+			.PipelineInfoMain =
+			{
+				.RenderPass = renderPass->RenderPass,
+				.Subpass = 0,
+				.MSAASamples = VK_SAMPLE_COUNT_1_BIT,
+			}
 		};
-		ImGui_ImplVulkan_Init(&initInfo, renderPass->RenderPass);
+		ImGui_ImplVulkan_Init(&initInfo);
 
-		m_Renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
+		/*m_Renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
 		{
 			ImGui_ImplVulkan_CreateFontsTexture(cmd);
-		});
+		});*/
 	}
 
 	void VulkanImGuiRenderer::BeginFrame()
