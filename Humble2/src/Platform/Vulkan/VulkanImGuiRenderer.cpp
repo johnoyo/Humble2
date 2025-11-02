@@ -64,11 +64,6 @@ namespace HBL2
 			}
 		};
 		ImGui_ImplVulkan_Init(&initInfo);
-
-		/*m_Renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
-		{
-			ImGui_ImplVulkan_CreateFontsTexture(cmd);
-		});*/
 	}
 
 	void VulkanImGuiRenderer::BeginFrame()
@@ -107,12 +102,13 @@ namespace HBL2
 	{
 		vkDeviceWaitIdle(m_Device->Get());
 
+		ImGui_ImplVulkan_Shutdown();
+
 		vkDestroyDescriptorPool(m_Device->Get(), m_ImGuiPool, nullptr);
 
 		VulkanRenderPass* renderPass = m_ResourceManager->GetRenderPass(m_ImGuiRenderPass);
 		vkDestroyRenderPass(m_Device->Get(), renderPass->RenderPass, nullptr);
 
-		ImGui_ImplVulkan_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
 	}
