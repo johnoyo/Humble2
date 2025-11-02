@@ -160,6 +160,7 @@ namespace HBL2
 	void Application::Start()
 	{
 		Window::Instance->Create();
+		ImGuiRenderer::Instance->Create();
 		
 		Input::Initialize();
 

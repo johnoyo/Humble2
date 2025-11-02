@@ -22,7 +22,11 @@ namespace HBL2
 
 		Entity mainCamera = GetMainCamera();
 
-		m_SceneRenderer->Render(mainCamera);
+		void* frameData = m_SceneRenderer->Gather(mainCamera);
+
+		// Renderer::Instance->CollectRenderData(frameData);
+
+		m_SceneRenderer->Render(frameData);
 
 		END_PROFILE_SYSTEM(RunningTime);
 	}

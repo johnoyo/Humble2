@@ -26,7 +26,8 @@ namespace HBL2
         /**
          * @brief Default constructor. Creates an empty string.
          */
-        String() : m_Size(0), m_Capacity(SSO_SIZE), m_HeapData(nullptr), m_Allocator(nullptr)
+        String()
+            : m_Size(0), m_Capacity(SSO_SIZE), m_HeapData(nullptr), m_Allocator(nullptr)
         {
             m_SSOBuffer[0] = '\0';
             m_IsUsingSSO = true;
@@ -37,7 +38,8 @@ namespace HBL2
          *
          * @param allocator The allocator to use.
          */
-        String(TAllocator* allocator) : m_Size(0), m_Capacity(SSO_SIZE), m_HeapData(nullptr), m_Allocator(allocator)
+        String(TAllocator* allocator)
+            : m_Size(0), m_Capacity(SSO_SIZE), m_HeapData(nullptr), m_Allocator(allocator)
         {
             m_SSOBuffer[0] = '\0';
             m_IsUsingSSO = true;
@@ -48,7 +50,8 @@ namespace HBL2
          *
          * @param str The C-style string to copy.
          */
-        String(const char* str) : m_Allocator(nullptr)
+        String(const char* str)
+            : m_Allocator(nullptr)
         {
             size_t len = std::strlen(str);
             if (len < SSO_SIZE)
@@ -74,7 +77,8 @@ namespace HBL2
          * @param allocator The allocator to use.
          * @param str The C-style string to copy.
          */
-        String(TAllocator* allocator, const char* str) : m_Allocator(allocator)
+        String(TAllocator* allocator, const char* str)
+            : m_Allocator(allocator)
         {
             size_t len = std::strlen(str);
             if (len < SSO_SIZE)
@@ -128,7 +132,11 @@ namespace HBL2
          *
          * @param other The string to copy from.
          */
-        String(const String& other) : m_Allocator(other.m_Allocator) { CopyFrom(other); }
+        String(const String& other)
+            : m_Allocator(other.m_Allocator)
+        {
+            CopyFrom(other);
+        }
 
         /**
          * @brief Move constructor.

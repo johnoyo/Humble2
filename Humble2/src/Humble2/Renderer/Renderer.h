@@ -2,10 +2,11 @@
 
 #include "Resources\Types.h"
 #include "Resources\Handle.h"
+
 #include "CommandBuffer.h"
 #include "UniformRingBuffer.h"
 #include "RenderPassPool.h"
-#include "Renderer\ShadowAtlasAllocator.h"
+#include "ShadowAtlasAllocator.h"
 
 namespace HBL2
 {

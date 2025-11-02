@@ -5,9 +5,10 @@
 #include "DrawList.h"
 #include "UniformRingBuffer.h"
 
-#include <Scene/Scene.h>
+#include "Scene/Scene.h"
 #include "Renderer/Renderer.h"
-#include <Resources/ResourceManager.h>
+#include "Renderer/FrameQueue.h"
+#include "Resources/ResourceManager.h"
 
 namespace HBL2
 {
@@ -25,13 +26,20 @@ namespace HBL2
 		glm::vec4 Color = { 0.0f, 0.0f, 0.0f, 0.0f };
 	};
 
+	struct SceneRenderData
+	{
+
+	};
+
 	class HBL2_API ForwardSceneRenderer final : public SceneRenderer
 	{
 	public:
 		virtual void Initialize(Scene* scene) override;
-		virtual void Render(Entity mainCamera) override;
+		virtual void* Gather(Entity mainCamera) override;
+		virtual void Render(void* renderData) override;
 		virtual void CleanUp() override;
 
+		FrameQueue<SceneRenderData, 2> m_FrameQueue;
 	private:
 		void ShadowPassSetup();
 		void DepthPrePassSetup();
@@ -60,6 +68,7 @@ namespace HBL2
 		void CreateAlignedMatrixArray(const glm::mat4* matrices, size_t count, uint32_t alignedSize);
 
 	private:
+
 		ResourceManager* m_ResourceManager = nullptr;
 		UniformRingBuffer* m_UniformRingBuffer = nullptr;
 

@@ -13,11 +13,11 @@ namespace HBL2
 	public:
 		static ImGuiRenderer* Instance;
 
-		virtual void Initialize() = 0;
+		void Create();
 
+		virtual void Initialize() = 0;
 		virtual void BeginFrame() = 0;
 		virtual void EndFrame() = 0;
-
 		virtual void Clean() = 0;
 
 		// Wrapped ImGuizmo functions to work from dll.
@@ -34,6 +34,7 @@ namespace HBL2
 
 	protected:
 		void SetImGuiStyle();
+		ImDrawData* DeepCopyImDrawData(const ImDrawData* src);
 
 	protected:
 		Window* m_Window = nullptr;

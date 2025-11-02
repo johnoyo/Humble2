@@ -259,9 +259,6 @@ namespace HBL2
 		// Wireframe triangle rendering.
 		if (m_CurrentWireIndex != 0)
 		{
-			// Update dynamic wire vertex buffer.
-			m_ResourceManager->MapBufferData(m_DebugWireTriVertexBuffer, 0, m_CurrentWireIndex * sizeof(DebugVertex));
-
 			// Gather wire draws.
 			m_Draws.Insert({
 				.Shader = m_DebugShader,
@@ -275,6 +272,24 @@ namespace HBL2
 
 	void DebugRenderer::Flush(CommandBuffer* commandBuffer)
 	{
+		if (m_CurrentLineIndex != 0)
+		{
+			// Update dynamic line vertex buffer.
+			m_ResourceManager->MapBufferData(m_DebugLineVertexBuffer, 0, m_CurrentLineIndex * sizeof(DebugVertex));
+		}
+
+		if (m_CurrentFillIndex != 0)
+		{
+			// Update dynamic fill vertex buffer.
+			m_ResourceManager->MapBufferData(m_DebugFillTriVertexBuffer, 0, m_CurrentFillIndex * sizeof(DebugVertex));
+		}
+
+		if (m_CurrentWireIndex != 0)
+		{
+			// Update dynamic wire vertex buffer.
+			m_ResourceManager->MapBufferData(m_DebugWireTriVertexBuffer, 0, m_CurrentWireIndex * sizeof(DebugVertex));
+		}
+
 		const auto& cameraMVP = GetCameraMVP();
 
 		Handle<BindGroup> globalBindings = Renderer::Instance->GetDebugBindings();

@@ -40,41 +40,6 @@ namespace HBL2
 
 		VK_VALIDATE(vkCreateDescriptorPool(m_Device->Get(), &poolInfo, nullptr, &m_ImGuiPool), "vkCreateDescriptorPool");
 
-		// Setup Dear ImGui context
-		IMGUI_CHECKVERSION();
-		m_ImGuiContext = ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-
-		if (Context::Mode == Mode::Editor)
-		{
-			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
-		}
-
-		//io.ConfigViewportsNoAutoMerge = true;
-		//io.ConfigViewportsNoTaskBarIcon = true;
-
-		const auto& boldFontPath = std::filesystem::path("assets") / "fonts" / "OpenSans-Bold.ttf";
-		const auto& regularFontPath = std::filesystem::path("assets") / "fonts" / "OpenSans-Regular.ttf";
-
-		float fontSize = 18.0f;
-		io.Fonts->AddFontFromFileTTF(boldFontPath.string().c_str(), fontSize);
-		io.FontDefault = io.Fonts->AddFontFromFileTTF(regularFontPath.string().c_str(), fontSize);
-
-		// Setup Dear ImGui style
-		ImGui::StyleColorsDark();
-		SetImGuiStyle();
-
-		// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
-		ImGuiStyle& style = ImGui::GetStyle();
-		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-		{
-			style.WindowRounding = 0.0f;
-			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-		}
-
 		CreateRenderPass();
 
 		VulkanRenderPass* renderPass = m_ResourceManager->GetRenderPass(m_ImGuiRenderPass);

@@ -158,12 +158,20 @@ namespace HBL2
 		PresentPassSetup();
 	}
 
-	void ForwardSceneRenderer::Render(Entity mainCamera)
+	void* ForwardSceneRenderer::Gather(Entity mainCamera)
 	{
 		GetViewProjection(mainCamera);
 
 		GatherDraws();
 		GatherLights();
+
+		return nullptr;
+	}
+
+	void ForwardSceneRenderer::Render(void* renderData)
+	{
+		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
+		m_ResourceManager->MapBufferData(m_UniformRingBuffer->GetBuffer(), m_UBOStartingOffset, m_UniformRingBuffer->GetCurrentOffset() - m_UBOStartingOffset);
 
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
@@ -1216,9 +1224,6 @@ namespace HBL2
 					}
 				});
 		}
-
-		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
-		m_ResourceManager->MapBufferData(m_UniformRingBuffer->GetBuffer(), m_UBOStartingOffset, m_UniformRingBuffer->GetCurrentOffset() - m_UBOStartingOffset);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().GatherTime);
 
