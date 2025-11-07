@@ -123,4 +123,4 @@
         }                                                                                                                       \
     }                                                                                                                           \
 
-#define HBL2_COMPONENT_MEMBER(type, member) .data<&##type::##member>(#member##_hs).prop("name"_hs, #member)
+#define HBL2_COMPONENT_MEMBER(type, member) .data<&##type::##member>(#member##_hs).custom<HBL2::MemberNameTag>(HBL2::MemberNameTag{#member})

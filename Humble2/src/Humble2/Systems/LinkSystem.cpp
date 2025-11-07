@@ -7,13 +7,13 @@ namespace HBL2
 	void LinkSystem::OnCreate()
 	{
 		m_Context->Group<Component::Link>(Get<Component::Transform>)
-			.Each([&](Entity entity, Component::Link& link, Component::Transform& transform)
+			.Each([](Entity entity, Component::Link& link, Component::Transform& transform)
 			{
 				link.Children.clear();
 			});
 
 		m_Context->Group<Component::Link>(Get<Component::Transform>)
-			.Each([&](Entity entity, Component::Link& link, Component::Transform& transform)
+			.Each([this](Entity entity, Component::Link& link, Component::Transform& transform)
 			{
 				transform.WorldMatrix = GetWorldSpaceTransform(entity, link);
 				AddChildren(entity, link);
@@ -25,7 +25,7 @@ namespace HBL2
 		BEGIN_PROFILE_SYSTEM();
 
 		m_Context->Group<Component::Link>(Get<Component::Transform>)
-			.Each([&](Entity entity, Component::Link& link, Component::Transform& transform)
+			.Each([this](Entity entity, Component::Link& link, Component::Transform& transform)
 			{
 				if (!transform.Static)
 				{

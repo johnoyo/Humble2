@@ -121,9 +121,9 @@ namespace HBL2
 		}
 
 		template<typename T>
-		ResourceTask<T>* GetAssetAsync(UUID assetUUID)
+		ResourceTask<T>* GetAssetAsync(UUID assetUUID, JobContext* customJobCtx = nullptr)
 		{
-			return GetAssetAsync<T>(GetHandleFromUUID(assetUUID));
+			return GetAssetAsync<T>(GetHandleFromUUID(assetUUID), customJobCtx);
 		}
 
 		template<typename T>

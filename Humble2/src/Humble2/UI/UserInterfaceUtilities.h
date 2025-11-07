@@ -16,6 +16,11 @@
 
 namespace HBL2
 {
+	struct MemberNameTag
+	{
+		std::string Value;
+	};
+
 	HBL2_API void RegisterComponentToReflection(const std::string& structCode);
 
 	namespace UI
@@ -47,15 +52,14 @@ namespace HBL2
 			for (auto [id, data] : entt::resolve(activeScene->GetMetaContext(), componentMeta.type().info().hash()).data())
 			{
 				// Retrieve the name property of the member
-				auto name_prop = data.prop("name"_hs);
-				if (name_prop)
+				if (auto* name = static_cast<MemberNameTag*>(data.custom()))
 				{
 					std::string typeName = componentMeta.type().info().name().data();
 
 					typeName = NativeScriptUtilities::Get().CleanComponentNameO1(typeName);
 
 					const char* typeNameClean = typeName.c_str();
-					const char* memberName = name_prop.value().cast<const char*>();
+					const char* memberName = name->Value.c_str();
 
 					DrawComponent(activeScene, componentMeta, typeNameClean, memberName);
 				}
@@ -70,15 +74,14 @@ namespace HBL2
 			for (auto [id, data] : entt::resolve(ctx->GetMetaContext(), componentMeta.type().info().hash()).data())
 			{
 				// Retrieve the name property of the member
-				auto name_prop = data.prop("name"_hs);
-				if (name_prop)
+				if (auto* name = static_cast<MemberNameTag*>(data.custom()))
 				{
 					std::string typeName = componentMeta.type().info().name().data();
 
 					typeName = NativeScriptUtilities::Get().CleanComponentNameO1(typeName);
 
 					const char* typeNameClean = typeName.c_str();
-					const char* memberName = name_prop.value().cast<const char*>();
+					const char* memberName = name->Value.c_str();
 
 					SerializeComponent(out, ctx, componentMeta, typeNameClean, memberName);
 				}
@@ -93,15 +96,14 @@ namespace HBL2
 			for (auto [id, data] : entt::resolve(ctx->GetMetaContext(), componentMeta.type().info().hash()).data())
 			{
 				// Retrieve the name property of the member
-				auto name_prop = data.prop("name"_hs);
-				if (name_prop)
+				if (auto* name = static_cast<MemberNameTag*>(data.custom()))
 				{
 					std::string typeName = componentMeta.type().info().name().data();
 
 					typeName = NativeScriptUtilities::Get().CleanComponentNameO1(typeName);
 
 					const char* typeNameClean = typeName.c_str();
-					const char* memberName = name_prop.value().cast<const char*>();
+					const char* memberName = name->Value.c_str();
 
 					DeserializeComponent(node, ctx, componentMeta, typeNameClean, memberName);
 				}
@@ -121,11 +123,10 @@ namespace HBL2
 			for (auto [id, data] : entt::resolve<C>(activeScene->GetMetaContext()).data())
 			{
 				// Retrieve the name property of the member
-				auto name_prop = data.prop("name"_hs);
-				if (name_prop)
+				if (auto* name = static_cast<MemberNameTag*>(data.custom()))
 				{
 					const char* typeName = typeid(C).name();
-					const char* memberName = name_prop.value().cast<const char*>();
+					const char* memberName = name->Value.c_str();
 
 					DrawComponent(activeScene, componentMeta, typeName, memberName);
 				}

@@ -34,7 +34,7 @@ namespace HBL2
 		m_PhysicsWorld = m_PhysicsEngine->Get();		
 
 		m_Context->Group<Component::Rigidbody2D>(Get<Component::Transform>)
-			.Each([&](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
+			.Each([this](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
 			{
 				rb2d.BodyId = CreateRigidbody(entity, rb2d, transform);
 
@@ -54,7 +54,7 @@ namespace HBL2
 
 		// Handle runtime creations and properties update.
 		m_Context->Group<Component::Rigidbody2D>(Get<Component::Transform>)
-			.Each([&](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
+			.Each([this](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
 			{
 				// Create rigidbody if it was added and is uninitialized.
 				if (rb2d.BodyId == Physics::InvalidID)
@@ -103,7 +103,7 @@ namespace HBL2
 
 		// Update the transform of rigidbodies. Consider using b2World_GetBodyEvents.
 		m_Context->Group<Component::Rigidbody2D>(Get<Component::Transform>)
-			.Each([&](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
+			.Each([](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
 			{
 				b2BodyId bodyId = b2LoadBodyId(rb2d.BodyId);
 

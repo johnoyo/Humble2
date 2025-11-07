@@ -45,7 +45,7 @@ namespace HBL2
         m_Channels.reserve(256);
 
         m_Context->View<Component::AudioSource>()
-            .Each([&](Component::AudioSource& audioSource)
+            .Each([this](Component::AudioSource& audioSource)
             {
                 if (!audioSource.Sound.IsValid())
                 {
@@ -68,7 +68,7 @@ namespace HBL2
         BEGIN_PROFILE_SYSTEM();
 
         m_Context->View<Component::AudioSource>()
-            .Each([&](Entity entity, Component::AudioSource& audioSource)
+            .Each([this](Entity entity, Component::AudioSource& audioSource)
             {
                 if (!audioSource.Sound.IsValid())
                 {
@@ -166,7 +166,7 @@ namespace HBL2
 
         // Release sounds.
         m_Context->View<Component::AudioSource>()
-            .Each([&](Component::AudioSource& audioSource)
+            .Each([](Component::AudioSource& audioSource)
             {
                 Sound* sound = ResourceManager::Instance->GetSound(audioSource.Sound);
 

@@ -24,6 +24,7 @@ namespace HBL2
 	private:
 		void InitializeTerrain(Component::Terrain& terrain);
 
+		std::vector<float> LoadHeightmap(const std::string& path, int& outWidth, int& outHeight, bool flipVertically = false, bool useRedChannelIfRGB = false);
 		std::vector<float> GenerateNoiseMap(const Component::Terrain& terrain, const glm::vec2& center);
 		void GenerateTerrainMeshData(const Span<const float> heightMap, uint32_t width, uint32_t height, float heightMultiplier, Component::AnimationCurve& curve, uint32_t levelOfDetail);
 		void GenerateTerrainChunkMesh(const Span<const float> heightMap, uint32_t width, uint32_t height, float heightMultiplier, Component::AnimationCurve& curve, Component::Terrain::TerrainChunkMeshData& outChunkData);

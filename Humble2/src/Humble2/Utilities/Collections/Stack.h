@@ -241,6 +241,11 @@ namespace HBL2
 
         T* Allocate(uint32_t count)
         {
+            if (count == 0)
+            {
+                return nullptr;
+            }
+
             if (!m_Allocator.has_value())
             {
                 return new T[count];
@@ -270,7 +275,7 @@ namespace HBL2
     template<typename T>
     auto MakeStack(Arena* arena, uint32_t initialCapacity = 8)
     {
-        return Stack<T>(ArenaAllocator<T>(&arena), initialCapacity);
+        return Stack<T>(ArenaAllocator<T>(arena), initialCapacity);
     }
 
     template<typename T>

@@ -2,6 +2,7 @@
 
 #include "AnimationCurveSystem.h"
 #include "Utilities\EntityPresets.h"
+#include "Project\Project.h"
 
 namespace HBL2
 {
@@ -11,7 +12,7 @@ namespace HBL2
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 
 		m_Context->Group<Component::Terrain>(Get<Component::StaticMesh, Component::AnimationCurve>)
-			.Each([&](Entity entity, Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
+			.Each([this](Entity entity, Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
 			{
 				// Create and set up the preview mesh of terrain.
 				const auto& noiseMap = GenerateNoiseMap(terrain, glm::vec2(0.f));
@@ -33,7 +34,7 @@ namespace HBL2
 		const Component::Transform& viewer = scene->GetComponent<Component::Transform>(GetMainCamera());
 
 		m_Context->Group<Component::Terrain>(Get<Component::StaticMesh, Component::AnimationCurve>)
-			.Each([&](Entity e, Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
+			.Each([this, &viewer](Entity e, Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
 			{
 				UpdateVisibleChunks(terrain, curve, viewer);
 			});
@@ -48,7 +49,7 @@ namespace HBL2
 		const Component::Transform& viewer = scene->GetComponent<Component::Transform>(GetMainCamera());
 
 		m_Context->Group<Component::Terrain>(Get<Component::StaticMesh, Component::AnimationCurve>)
-			.Each([&](Entity e, Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
+			.Each([this, &viewer](Entity e, Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
 			{
 				if (!terrain.Initialized)
 				{
@@ -63,8 +64,10 @@ namespace HBL2
 
 				if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::LOCAL)
 				{
+					staticMesh.Enabled = true;
+
 					m_Context->Group<Component::TerrainChunk>(Get<Component::Transform, Component::StaticMesh>)
-						.Each([&](Component::TerrainChunk& terrainChunk, Component::Transform& tr, Component::StaticMesh& chunkMesh)
+						.Each([](Component::TerrainChunk& terrainChunk, Component::Transform& tr, Component::StaticMesh& chunkMesh)
 						{
 							// Disable all the chunks visible last update.
 							if (terrainChunk.VisibleLastUpdate)
@@ -77,18 +80,35 @@ namespace HBL2
 
 					if (terrain.Regenerate)
 					{
-						const auto& noiseMap = GenerateNoiseMap(terrain, glm::vec2(0.f));
-						GenerateTerrainMeshData(noiseMap, terrain.ChunkSize, terrain.ChunkSize, terrain.HeightMultiplier, curve, terrain.InEditorPreviewLevelOfDetail);
+						Asset* heightMapAsset = AssetManager::Instance->GetAssetMetadata(terrain.HeightMap);
+
+						if (heightMapAsset == nullptr)
+						{
+							const auto& noiseMap = GenerateNoiseMap(terrain, glm::vec2(0.f));
+							GenerateTerrainMeshData(noiseMap, terrain.ChunkSize, terrain.ChunkSize, terrain.HeightMultiplier, curve, terrain.InEditorPreviewLevelOfDetail);
+						}
+						else
+						{
+							int w, h;
+							const auto& noiseMap = LoadHeightmap(Project::GetAssetFileSystemPath(heightMapAsset->FilePath).string(), w, h, true); // TODO: Fix heightmap loading.
+							GenerateTerrainMeshData(noiseMap, w, h, terrain.HeightMultiplier, curve, terrain.InEditorPreviewLevelOfDetail);
+							terrain.ChunkSize = h;
+						}
+
 						staticMesh.Mesh = m_Mesh;
 
 						terrain.MaxViewDst = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold;
 						terrain.ChunksVisibleInViewDst = (int32_t)(terrain.MaxViewDst / terrain.ChunkSize);
+						m_Context->GetComponent<Component::Transform>(e).Scale = {terrain.Scale, terrain.Scale, terrain.Scale};
 
 						terrain.Regenerate = false;
 					}
 
 					return;
 				}
+
+				staticMesh.Enabled = false;
+				m_Context->GetComponent<Component::Transform>(e).Scale = { 1.f, 1.f, 1.f };
 
 				// Process chunck data (from job #JOB1).
 				while (!terrain.ChunkDataQueue.IsEmpty())
@@ -169,6 +189,126 @@ namespace HBL2
 		// Calculate chunk visibility and max view distance
 		terrain.MaxViewDst = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold;
 		terrain.ChunksVisibleInViewDst = (int32_t)(terrain.MaxViewDst / terrain.ChunkSize);
+	}
+
+	std::vector<float> TerrainSystem::LoadHeightmap(const std::string& path, int& outWidth, int& outHeight, bool flipVertically, bool useRedChannelIfRGB)
+	{
+		stbi_set_flip_vertically_on_load(flipVertically);
+
+		int w = 0;
+		int h = 0;
+		int channelsInFile = 0;
+		std::vector<float> heights;
+
+		// Detect bit depth (8-bit vs 16-bit per channel)
+		const bool is16 = stbi_is_16_bit(path.c_str()) != 0;
+
+		if (is16)
+		{
+			// 16-bit path
+			uint16_t* pixels16 = nullptr;
+
+			if (useRedChannelIfRGB)
+			{
+				// Keep native channels, then take R
+				pixels16 = stbi_load_16(path.c_str(), &w, &h, &channelsInFile, /*req_comp*/ 0);
+			}
+			else
+			{
+				// Ask stb to convert to single-channel grayscale
+				pixels16 = stbi_load_16(path.c_str(), &w, &h, &channelsInFile, /*req_comp*/ 1);
+				// channelsInFile is still the original file channels, not req_comp.
+			}
+
+			if (!pixels16)
+			{
+				throw std::runtime_error(std::string("stbi_load_16 failed: ") + stbi_failure_reason());
+			}
+
+			outWidth = w;
+			outHeight = h;
+			const size_t count = static_cast<size_t>(w) * static_cast<size_t>(h);
+			heights.resize(count);
+
+			if (useRedChannelIfRGB)
+			{
+				if (channelsInFile <= 0)
+				{
+					stbi_image_free(pixels16);
+					throw std::runtime_error("Invalid channel count in PNG.");
+				}
+
+				for (size_t i = 0; i < count; ++i)
+				{
+					const uint16_t r = pixels16[i * channelsInFile + 0];
+					heights[i] = static_cast<float>(r) / 65535.0f;
+				}
+			}
+			else
+			{
+				// Already 1-channel from req_comp = 1
+				for (size_t i = 0; i < count; ++i)
+				{
+					heights[i] = static_cast<float>(pixels16[i]) / 65535.0f;
+				}
+			}
+
+			stbi_image_free(pixels16);
+		}
+		else
+		{
+			// 8-bit path
+			unsigned char* pixels8 = nullptr;
+
+			if (useRedChannelIfRGB)
+			{
+				// Keep native channels, then take R
+				pixels8 = stbi_load(path.c_str(), &w, &h, &channelsInFile, /*req_comp*/ 0);
+			}
+			else
+			{
+				// Ask stb to convert to single-channel grayscale
+				pixels8 = stbi_load(path.c_str(), &w, &h, &channelsInFile, /*req_comp*/ 1);
+			}
+
+			if (!pixels8)
+			{
+				throw std::runtime_error(std::string("stbi_load failed: ") + stbi_failure_reason());
+			}
+
+			outWidth = w;
+			outHeight = h;
+			const size_t count = static_cast<size_t>(w) * static_cast<size_t>(h);
+			heights.resize(count);
+
+			if (useRedChannelIfRGB)
+			{
+				if (channelsInFile <= 0)
+				{
+					stbi_image_free(pixels8);
+					throw std::runtime_error("Invalid channel count in PNG.");
+				}
+				for (size_t i = 0; i < count; ++i)
+				{
+					const unsigned char r = pixels8[i * channelsInFile + 0];
+					heights[i] = static_cast<float>(r) / 255.0f;
+				}
+			}
+			else
+			{
+				// Already 1-channel from req_comp = 1
+				for (size_t i = 0; i < count; ++i)
+				{
+					heights[i] = static_cast<float>(pixels8[i]) / 255.0f;
+				}
+			}
+
+			stbi_image_free(pixels8);
+		}
+
+		// Optional: reset flipping for future loads (global state).
+		stbi_set_flip_vertically_on_load(false);
+		return heights;
 	}
 
 	std::vector<float> TerrainSystem::GenerateNoiseMap(const Component::Terrain& terrain, const glm::vec2& center)
@@ -286,11 +426,8 @@ namespace HBL2
 			for (uint32_t x = 0; x < width; x += meshSimplificationIncrement, vi++)
 			{
 				// Position
-				positions[vi] = glm::vec3(
-					topLeftX + x,
-					AnimationCurveSystem::Evaluate(curve, heightMap[y * width + x]) * heightMultiplier,
-					topLeftZ - y
-				);
+				float heightY = AnimationCurveSystem::Evaluate(curve, heightMap[y * width + x]) * heightMultiplier;
+				positions[vi] = glm::vec3(topLeftX + x, heightY, topLeftZ - y);
 
 				// UV
 				uvs[vi] = glm::vec2(x / float(width), y / float(height));
@@ -426,11 +563,8 @@ namespace HBL2
 			for (uint32_t x = 0; x < width; x += meshSimplificationIncrement, vi++)
 			{
 				// Position
-				positions[vi] = glm::vec3(
-					topLeftX + x,
-					AnimationCurveSystem::Evaluate(curve, heightMap[y * width + x]) * heightMultiplier,
-					topLeftZ - y
-				);
+				float heightY = AnimationCurveSystem::Evaluate(curve, heightMap[y * width + x]) * heightMultiplier;
+				positions[vi] = glm::vec3(topLeftX + x, heightY, topLeftZ - y);
 
 				// UV
 				uvs[vi] = glm::vec2(x / float(width), y / float(height));
@@ -816,7 +950,7 @@ namespace HBL2
 		DynamicArray<Entity, BumpAllocator> chunks = MakeDynamicArray<Entity>(&Allocator::Frame);
 
 		m_Context->View<Component::TerrainChunk>()
-			.Each([&](Entity chunk, Component::TerrainChunk& terrainChunk)
+			.Each([this, &chunks](Entity chunk, Component::TerrainChunk& terrainChunk)
 			{
 				for (auto& lodMesh : terrainChunk.LodMeshes)
 				{
@@ -843,7 +977,7 @@ namespace HBL2
 
 		// Clear the chunk cache stored in terrains.
 		m_Context->View<Component::Terrain>()
-			.Each([&](Component::Terrain& terrain)
+			.Each([](Component::Terrain& terrain)
 			{
 				terrain.ChunksCache.clear();
 
