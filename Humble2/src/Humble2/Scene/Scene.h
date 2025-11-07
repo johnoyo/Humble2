@@ -29,6 +29,7 @@ namespace HBL2
 	public:
 		Scene() = default;
 		Scene(const SceneDescriptor&& desc);
+		~Scene() { Clear(); }
 
 		static Scene* Copy(Scene* other);
 		static void Copy(Scene* src, Scene* dst);

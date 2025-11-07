@@ -4,6 +4,9 @@
 
 namespace HBL2
 {
+	template <typename T>
+	class Span;
+
 	/**
 	 * @brief The interface that all allocators implement.
 	 *
@@ -32,5 +35,37 @@ namespace HBL2
 		virtual void Initialize(size_t sizeInBytes) = 0;
 		virtual void Free() = 0;
 		virtual void Invalidate() = 0;
+
+		// Helpers
+		template <typename T>
+		inline T* AllocateObject()
+		{
+			constexpr bool isValidConstr = std::is_trivially_constructible_v<T> || std::is_default_constructible_v<T>;
+			static_assert(isValidConstr, "T must be trivially or default constructible to be used with a MemoryArena");
+
+			T* ptr = Allocate<T>(sizeof(T));
+
+			new(ptr) T{};
+
+			return ptr;
+		}
+
+		template <typename T>
+		inline T* AllocateObjects(size_t numberOfObjects)
+		{
+			constexpr bool isValidConstr = std::is_trivially_constructible_v<T> || std::is_default_constructible_v<T>;
+			static_assert(isValidConstr, "T must be trivially or default constructible to be used with a MemoryArena");
+
+			T* ptr = Allocate<T>(numberOfObjects * sizeof(T));
+
+			Span<T> objects = { ptr, numberOfObjects };
+
+			for (auto& obj : objects)
+			{
+				new(&obj) T{};
+			}
+
+			return ptr;
+		}
 	};
 }

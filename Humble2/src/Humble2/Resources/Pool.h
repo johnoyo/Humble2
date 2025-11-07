@@ -1,9 +1,10 @@
 #pragma once
 
+#include "Core/Allocators.h"
+
 #include "Handle.h"
 #include "Utilities\Collections\Span.h"
-
-#include <stack>
+#include "Utilities\Collections\Stack.h"
 
 namespace HBL2
 {
@@ -13,10 +14,10 @@ namespace HBL2
 	public:
 		Pool()
 		{
-			m_Data = new T[m_Size];
-			m_GenerationalCounter = new uint16_t[m_Size];
+			m_Data = Allocator::Persistent.AllocateObjects<T>(m_Size);
+			m_GenerationalCounter = Allocator::Persistent.Allocate<uint16_t>(sizeof(uint16_t) * m_Size);
 
-			memset(m_Data, 0, sizeof(m_Data));
+			// std::memset(m_Data, 0, sizeof(m_Data));
 
 			for (uint32_t i = 0; i < m_Size; i++)
 			{
@@ -25,20 +26,20 @@ namespace HBL2
 
 			for (int32_t i = (m_Size - 1); i >= 0; i--)
 			{
-				m_FreeList.push((uint16_t)i);
+				m_FreeList.Push((uint16_t)i);
 			}
 		}
 
 		Handle<H> Insert(const T& data)
 		{
-			if (m_FreeList.empty())
+			if (m_FreeList.Empty())
 			{
 				ReAllocate();
 			}
 
-			uint16_t index = m_FreeList.top();
+			uint16_t index = m_FreeList.Top();
 
-			m_FreeList.pop();
+			m_FreeList.Pop();
 
 			m_Data[index] = data;
 
@@ -53,7 +54,7 @@ namespace HBL2
 			}
 
 			m_GenerationalCounter[handle.m_ArrayIndex]++;
-			m_FreeList.push(handle.m_ArrayIndex);
+			m_FreeList.Push(handle.m_ArrayIndex);
 		}
 
 		T* Get(Handle<H> handle) const
@@ -73,7 +74,7 @@ namespace HBL2
 
 		const Span<T> GetDataPool()
 		{
-			return { m_Data, m_FreeList.top() };
+			return { m_Data, m_FreeList.Top() };
 		}
 
 		Handle<H> GetHandleFromIndex(uint16_t index) { return { index, m_GenerationalCounter[index] }; }
@@ -84,20 +85,21 @@ namespace HBL2
 			// Resize data array
 			T* oldData = m_Data;
 
-			m_Data = new T[m_Size * (uint32_t)2];
-			memset(m_Data, 0, sizeof(m_Data));
+			m_Data = Allocator::Persistent.AllocateObjects<T>(m_Size * 2U);
+
+			// std::memset(m_Data, 0, sizeof(m_Data));
 
 			for (uint32_t i = 0; i < m_Size; i++)
 			{
 				m_Data[i] = oldData[i];
 			}
 
-			delete[] oldData;
+			Allocator::Persistent.Deallocate(oldData);
 
 			// Resize generational counter array
 			uint16_t* oldGenerationalCounter = m_GenerationalCounter;
 
-			m_GenerationalCounter = new uint16_t[m_Size * (uint32_t)2];
+			m_GenerationalCounter = Allocator::Persistent.Allocate<uint16_t>(sizeof(uint16_t) * m_Size * 2U);
 
 			for (uint32_t i = m_Size; i < m_Size * 2; i++)
 			{
@@ -109,25 +111,25 @@ namespace HBL2
 				m_GenerationalCounter[i] = oldGenerationalCounter[i];
 			}
 
-			delete[] oldGenerationalCounter;
+			Allocator::Persistent.Deallocate(oldGenerationalCounter);
 
 			// Resize free list stack
-			while (!m_FreeList.empty())
+			while (!m_FreeList.Empty())
 			{
-				m_FreeList.pop();
+				m_FreeList.Pop();
 			}
 
 			for (uint32_t i = (m_Size * 2) - 1; i >= m_Size; i--)
 			{
-				m_FreeList.push((uint16_t)i);
+				m_FreeList.Push((uint16_t)i);
 			}
 
 			// Double size
-			m_Size = m_Size * 2;
+			m_Size = m_Size * 2U;
 		}
 
 	private:
-		std::stack<uint16_t> m_FreeList;
+		Stack<uint16_t> m_FreeList;
 		T* m_Data;
 		uint16_t* m_GenerationalCounter;
 		uint32_t m_Size = 32;
