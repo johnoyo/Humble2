@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Entity.h"
-#include "ISystem.h"
 #include "Components.h"
 
 #include "View.h"
@@ -13,6 +12,15 @@
 
 namespace HBL2
 {
+	class ISystem;
+
+	enum class HBL2_API SystemType
+	{
+		Core = 0,
+		Runtime,
+		User,
+	};
+
 	template <typename... Cs>
 	inline constexpr entt::get_t<Cs...> Get{};
 
@@ -125,43 +133,11 @@ namespace HBL2
 			m_Registry.remove<T>(entity);
 		}
 
-		void DeregisterSystem(const std::string& systemName)
-		{
-			ISystem* systemToBeDeleted = nullptr;
-
-			for (ISystem* system : m_Systems)
-			{
-				if (system->Name == systemName)
-				{
-					systemToBeDeleted = system;
-					break;
-				}
-			}
-
-			DeregisterSystem(systemToBeDeleted);
-		}
+		void DeregisterSystem(const std::string& systemName);
 
 		void DeregisterSystem(ISystem* system);
 
-		void RegisterSystem(ISystem* system, SystemType type = SystemType::Core)
-		{
-			system->SetType(type);
-			system->SetContext(this);
-			m_Systems.push_back(system);
-
-			switch (type)
-			{
-			case HBL2::SystemType::Core:
-				m_CoreSystems.push_back(system);
-				break;
-			case HBL2::SystemType::Runtime:
-				m_RuntimeSystems.push_back(system);
-				break;
-			case HBL2::SystemType::User:
-				m_RuntimeSystems.push_back(system);
-				break;
-			}
-		}
+		void RegisterSystem(ISystem* system, SystemType type = SystemType::Core);
 
 		const std::vector<ISystem*>& GetSystems() const
 		{

@@ -20,6 +20,11 @@ namespace HBL2
             m_View.each(std::forward<F>(f));
         }
 
+        inline auto Each() const
+        {
+            return m_View.each();
+        }
+
         constexpr auto begin() noexcept { return m_View.begin(); }
         constexpr auto end() noexcept { return m_View.end(); }
 

@@ -1,5 +1,6 @@
 #include "Scene.h"
 
+#include "ISystem.h"
 #include "Utilities/NativeScriptUtilities.h"
 
 #include "Project\Project.h"
@@ -362,6 +363,22 @@ namespace HBL2
         return newEntity;
     }
 
+    void Scene::DeregisterSystem(const std::string& systemName)
+    {
+        ISystem* systemToBeDeleted = nullptr;
+
+        for (ISystem* system : m_Systems)
+        {
+            if (system->Name == systemName)
+            {
+                systemToBeDeleted = system;
+                break;
+            }
+        }
+
+        DeregisterSystem(systemToBeDeleted);
+    }
+
     void Scene::DeregisterSystem(ISystem* system)
     {
         if (system == nullptr)
@@ -400,6 +417,26 @@ namespace HBL2
         }
 
         delete system;
+    }
+
+    void Scene::RegisterSystem(ISystem* system, SystemType type)
+    {
+        system->SetType(type);
+        system->SetContext(this);
+        m_Systems.push_back(system);
+
+        switch (type)
+        {
+        case HBL2::SystemType::Core:
+            m_CoreSystems.push_back(system);
+            break;
+        case HBL2::SystemType::Runtime:
+            m_RuntimeSystems.push_back(system);
+            break;
+        case HBL2::SystemType::User:
+            m_RuntimeSystems.push_back(system);
+            break;
+        }
     }
 
     void Scene::InternalDestroyEntity(Entity entity, bool isRootCall)

@@ -20,6 +20,11 @@ namespace HBL2
             m_Group.each(std::forward<F>(f));
         }
 
+        inline auto Each() const
+        {
+            return m_Group.each();
+        }
+
         constexpr auto begin() noexcept { return m_Group.begin(); }
         constexpr auto end() noexcept { return m_Group.end(); }
 

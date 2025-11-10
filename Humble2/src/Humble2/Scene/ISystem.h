@@ -2,7 +2,17 @@
 
 #include "Base.h"
 
-#include <Core\Events.h>
+#include "Scene.h"
+#include "IJob.h"
+
+#include "Core\Events.h"
+
+#include <vector>
+#include <bitset>
+#include <functional>
+#include <algorithm>
+#include <typeindex>
+#include <iostream>
 
 namespace HBL2
 {
@@ -13,15 +23,6 @@ namespace HBL2
 	#define BEGIN_PROFILE_SYSTEM() Timer profileSystem
 	#define END_PROFILE_SYSTEM(time) time = profileSystem.ElapsedMillis()
 #endif
-
-	class Scene;
-
-	enum class HBL2_API SystemType
-	{
-		Core = 0,
-		Runtime,
-		User,
-	};
 
 	enum class HBL2_API SystemState
 	{
@@ -78,13 +79,82 @@ namespace HBL2
 
 		std::string Name = "UnnamedSystem";
 		float RunningTime = 0.f;
+		int32_t ExecutionOrder = 1000;
 
 	protected:
+		template<typename T>
+		void AppendJob(Scene* ctx)
+		{
+			IJob* job = new T;
+			job->Resolve();
+			job->SetContext(ctx);
 
-		// TODO: Add execution order.
+			m_Jobs.push_back(job);
+		}
 
+		void ScheduleJobs()
+		{
+			std::vector<std::vector<JobEntry>> batches;
+
+			ComponentMaskType batchReadMask;
+			ComponentMaskType batchWriteMask;
+
+			batches.emplace_back();
+			std::vector<JobEntry>* currentBatch = &batches.back();
+
+			for (IJob* job : m_Jobs)
+			{
+				const auto& jobCtx = job->GetEntry();
+
+				// Check conflicts with current batch.
+				bool conflict =
+					(jobCtx.WriteMask & batchWriteMask).any() ||  // WW conflict
+					(jobCtx.WriteMask & batchReadMask).any() ||   // WR conflict
+					(jobCtx.ReadMask & batchWriteMask).any();     // RW conflict
+
+				if (conflict)
+				{
+					// Start new batch
+					batches.emplace_back();
+					batchReadMask.reset();
+					batchWriteMask.reset();
+					currentBatch = &batches.back();
+				}
+
+				// Add system to current batch.
+				currentBatch->push_back(jobCtx);
+
+				// Update read and write mask for current batch.
+				batchReadMask |= jobCtx.ReadMask;
+				batchWriteMask |= jobCtx.WriteMask;
+			}
+
+			// Execute batches
+			for (const auto& batch : batches)
+			{
+				if (batch.size() == 1)
+				{
+					batch[0].Job->Execute();
+				}
+				else
+				{
+					JobContext ctx;
+					for (const auto& e : batch)
+					{
+						IJob* job = e.Job;
+						JobSystem::Get().Execute(ctx, [job]() { job->Execute(); });
+					}
+					JobSystem::Get().Wait(ctx);
+				}
+			}
+
+			m_Jobs.clear();
+		}
+
+	protected:
 		Scene* m_Context = nullptr;
 		SystemType m_Type = SystemType::Core;
 		SystemState m_State = SystemState::Idle;
-	};
+		std::vector<IJob*> m_Jobs;
+	};	
 }
