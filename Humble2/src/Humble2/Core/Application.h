@@ -40,6 +40,7 @@
 #include "Utilities\NativeScriptUtilities.h"
 #include "Utilities\UnityBuild.h"
 
+#include "Utilities/Allocators/ArenaAllocator.h"
 #include "Utilities/Allocators/BumpAllocator.h"
 #include "Utilities/Allocators/BinAllocator.h"
 

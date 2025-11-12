@@ -36,6 +36,7 @@ namespace HBL2
 
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
+		Allocator::Arena.Initialize(50_MB, 1_MB);
 		Allocator::Frame.Initialize(32_MB);
 		Allocator::Persistent.Initialize(256_MB);
 
@@ -201,6 +202,55 @@ namespace HBL2
 			EndFrame();
 		});
 
+		/*
+		JobSystem::Get().Execute({}, [&]()
+		{
+			Device::Instance->Initialize();
+			Renderer::Instance->Initialize();
+			ImGuiRenderer::Instance->Initialize();
+			DebugRenderer::Instance->Initialize();
+
+			while (true)
+			{
+				Renderer::Instance->WaitAndRender();
+
+				Renderer::Instance->BeginFrame();
+				Renderer::Instance->Render();
+				ImGuiRenderer::Instance->Render();
+				Renderer::Instance->EndFrame();
+
+				BEGIN_APP_PROFILE(present);
+				Renderer::Instance->Present();
+				END_APP_PROFILE(present, m_CurrentStats.PresentTime);
+			}
+		});
+
+		Window::Instance->DispatchMainLoop([&]()
+		{
+			BeginFrame();
+
+			BEGIN_APP_PROFILE(debugDraw);
+			DebugRenderer::Instance->BeginFrame();
+			m_Specification.Context->OnGizmoRender(Time::DeltaTime);
+			DebugRenderer::Instance->EndFrame();
+			END_APP_PROFILE(debugDraw, m_CurrentStats.DebugDrawTime);
+
+			BEGIN_APP_PROFILE(appUpdate);
+			m_Specification.Context->OnUpdate(Time::DeltaTime);
+			m_Specification.Context->OnFixedUpdate();
+			END_APP_PROFILE(appUpdate, m_CurrentStats.AppUpdateTime);
+
+			BEGIN_APP_PROFILE(appGUIDraw);
+			ImGuiRenderer::Instance->BeginFrame();
+			m_Specification.Context->OnGuiRender(Time::DeltaTime);
+			ImGuiRenderer::Instance->EndFrame();
+			END_APP_PROFILE(appGUIDraw, m_CurrentStats.AppGuiDrawTime);
+
+			Renderer::Instance->WaitAndSubmit();
+
+			EndFrame();
+		});
+		*/
 		m_Specification.Context->OnDestroy();
 
 		m_Specification.Context->OnDetach();
