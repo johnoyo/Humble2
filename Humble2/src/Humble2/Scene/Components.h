@@ -279,6 +279,8 @@ namespace HBL2
 
 			glm::vec3 OldViewerPosition{};
 
+			Handle<Asset> HeightMap;
+
 			float Scale = 1.f;
 			float NoiseScale = 25.f;
 			uint32_t Octaves = 5;
