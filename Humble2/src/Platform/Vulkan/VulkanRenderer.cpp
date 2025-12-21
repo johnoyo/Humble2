@@ -58,8 +58,6 @@ namespace HBL2
 		VK_VALIDATE(vkResetFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence), "vkResetFences");
 		VK_VALIDATE(vkAcquireNextImageKHR(m_Device->Get(), m_SwapChain, 1000000000, GetCurrentFrame().ImageAvailableSemaphore, nullptr, &m_SwapchainImageIndex), "vkAcquireNextImageKHR");
 
-		TempUniformRingBuffer->Invalidate();
-
 		m_Stats.Reset();
 	}
 
@@ -83,6 +81,7 @@ namespace HBL2
 		}
 
 		m_ResourceManager->Flush(m_FrameNumber);
+		TempUniformRingBuffer->Invalidate();
 	}
 
 	void VulkanRenderer::Present()

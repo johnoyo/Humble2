@@ -76,17 +76,19 @@ namespace HBL2
 	void VulkanImGuiRenderer::EndFrame()
 	{
 		ImGui::Render();
-		Render();
+
+		m_Renderer->CollectImGuiRenderData(ImGui::GetDrawData(), ImGui::GetTime());
+		// Render(ImGui::GetDrawData());
 	}
 
-	void VulkanImGuiRenderer::Render()
+	void VulkanImGuiRenderer::Render(ImDrawData* data)
 	{
 		ImGui_ImplVulkan_NewFrame();
 
 		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI);
 		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_ImGuiRenderPass, m_Renderer->GetMainFrameBuffer());
 
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);
+		ImGui_ImplVulkan_RenderDrawData(data, m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);
 
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 
@@ -106,6 +108,8 @@ namespace HBL2
 	void VulkanImGuiRenderer::Clean()
 	{
 		vkDeviceWaitIdle(m_Device->Get());
+
+		m_Renderer->ClearFrameDataBuffer();
 
 		ImGui_ImplVulkan_Shutdown();
 

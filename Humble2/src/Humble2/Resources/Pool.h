@@ -1,135 +1,136 @@
 #pragma once
 
 #include "Handle.h"
-#include "Utilities\Collections\Span.h"
+#include "LockFreeIndexStack.h"
+#include "Utilities/Collections/Span.h"
 
-#include <stack>
+#include <atomic>
+#include <cstdint>
+#include <new>
+#include <type_traits>
 
 namespace HBL2
 {
-	template <typename T, typename H>
-	class Pool
-	{
-	public:
-		Pool()
-		{
-			m_Data = new T[m_Size];
-			m_GenerationalCounter = new uint16_t[m_Size];
+    template <typename T, typename H>
+    class Pool
+    {
+    public:
+        static constexpr uint16_t InvalidIndex = LockFreeIndexStack::InvalidIndex;
 
-			memset(m_Data, 0, sizeof(m_Data));
+        Pool() = default;
 
-			for (uint32_t i = 0; i < m_Size; i++)
-			{
-				m_GenerationalCounter[i] = 1;
-			}
+        explicit Pool(uint32_t size)
+            : m_Size(size)
+        {
+            if (m_Size == 0 || m_Size > 0xFFFEu)
+            {
+                m_Size = 32;
+            }
 
-			for (int32_t i = (m_Size - 1); i >= 0; i--)
-			{
-				m_FreeList.push((uint16_t)i);
-			}
-		}
+            m_Data = new T[m_Size];
 
-		Handle<H> Insert(const T& data)
-		{
-			if (m_FreeList.empty())
-			{
-				ReAllocate();
-			}
+            m_GenerationalCounter = new std::atomic<uint16_t>[m_Size];
+            m_NextFree = new std::atomic<uint16_t>[m_Size];
 
-			uint16_t index = m_FreeList.top();
+            for (uint32_t i = 0; i < m_Size; ++i)
+            {
+                m_GenerationalCounter[i].store(1, std::memory_order_relaxed);
+            }
 
-			m_FreeList.pop();
+            m_FreeList.Initialize(m_NextFree, m_Size);
+        }
 
-			m_Data[index] = data;
+        ~Pool()
+        {
+            delete[] m_NextFree;
+            delete[] m_GenerationalCounter;
+        }
 
-			return { index, m_GenerationalCounter[index] };
-		}
+        Handle<H> Insert(const T& data)
+        {
+            const uint16_t index = m_FreeList.Pop();
+            if (index == InvalidIndex)
+            {
+                HBL2_CORE_ASSERT(false, "Exhausted available Pool indeces!");
+                return {};
+            }
 
-		void Remove(Handle<H> handle)
-		{
-			if (!handle.IsValid())
-			{
-				return;
-			}
+            m_Data[index] = data;
 
-			m_GenerationalCounter[handle.m_ArrayIndex]++;
-			m_FreeList.push(handle.m_ArrayIndex);
-		}
+            const uint16_t gen = m_GenerationalCounter[index].load(std::memory_order_relaxed);
+            return { index, gen };
+        }
 
-		T* Get(Handle<H> handle) const
-		{
-			if (!handle.IsValid())
-			{
-				 return nullptr;
-			}
+        void Remove(Handle<H> handle)
+        {
+            if (!handle.IsValid())
+            {
+                return;
+            }
 
-			if (handle.m_GenerationalCounter != m_GenerationalCounter[handle.m_ArrayIndex])
-			{
-				return nullptr;
-			}
+            const uint16_t idx = handle.m_ArrayIndex;
+            if (idx == InvalidIndex || idx >= m_Size)
+            {
+                return;
+            }
 
-			return &m_Data[handle.m_ArrayIndex];
-		}
+            const uint16_t cur = m_GenerationalCounter[idx].load(std::memory_order_acquire);
+            if (cur != handle.m_GenerationalCounter)
+            {
+                return;
+            }
 
-		const Span<T> GetDataPool()
-		{
-			return { m_Data, m_FreeList.top() };
-		}
+            m_GenerationalCounter[idx].fetch_add(1, std::memory_order_acq_rel);
+            m_FreeList.Push(idx);
+        }
 
-		Handle<H> GetHandleFromIndex(uint16_t index) { return { index, m_GenerationalCounter[index] }; }
+        T* Get(Handle<H> handle) const
+        {
+            if (!handle.IsValid())
+            {
+                return nullptr;
+            }
 
-	private:
-		void ReAllocate()
-		{
-			// Resize data array
-			T* oldData = m_Data;
+            const uint16_t idx = handle.m_ArrayIndex;
+            if (idx == InvalidIndex || idx >= m_Size)
+            {
+                HBL2_CORE_ASSERT(false, "Exhausted available Pool indeces!");
+                return nullptr;
+            }
 
-			m_Data = new T[m_Size * (uint32_t)2];
-			memset(m_Data, 0, sizeof(m_Data));
+            const uint16_t gen = m_GenerationalCounter[idx].load(std::memory_order_acquire);
+            if (gen != handle.m_GenerationalCounter)
+            {
+                return nullptr;
+            }
 
-			for (uint32_t i = 0; i < m_Size; i++)
-			{
-				m_Data[i] = oldData[i];
-			}
+            return &m_Data[idx];
+        }
 
-			delete[] oldData;
+        const Span<T> GetDataPool() const
+        {
+            return { m_Data, m_Size };
+        }
 
-			// Resize generational counter array
-			uint16_t* oldGenerationalCounter = m_GenerationalCounter;
+        Handle<H> GetHandleFromIndex(uint16_t index) const
+        {
+            if (index == InvalidIndex || index >= m_Size)
+            {
+                return {};
+            }
 
-			m_GenerationalCounter = new uint16_t[m_Size * (uint32_t)2];
+            return { index, m_GenerationalCounter[index].load(std::memory_order_acquire) };
+        }
 
-			for (uint32_t i = m_Size; i < m_Size * 2; i++)
-			{
-				m_GenerationalCounter[i] = 1;
-			}
+        uint32_t Capacity() const { return m_Size; }
 
-			for (uint32_t i = 0; i < m_Size; i++)
-			{
-				m_GenerationalCounter[i] = oldGenerationalCounter[i];
-			}
+    private:
+        LockFreeIndexStack m_FreeList;
 
-			delete[] oldGenerationalCounter;
+        std::atomic<uint16_t>* m_NextFree = nullptr;
+        T* m_Data = nullptr;
+        std::atomic<uint16_t>* m_GenerationalCounter = nullptr;
 
-			// Resize free list stack
-			while (!m_FreeList.empty())
-			{
-				m_FreeList.pop();
-			}
-
-			for (uint32_t i = (m_Size * 2) - 1; i >= m_Size; i--)
-			{
-				m_FreeList.push((uint16_t)i);
-			}
-
-			// Double size
-			m_Size = m_Size * 2;
-		}
-
-	private:
-		std::stack<uint16_t> m_FreeList;
-		T* m_Data;
-		uint16_t* m_GenerationalCounter;
-		uint32_t m_Size = 32;
-	};
+        uint32_t m_Size = 32;
+    };
 }

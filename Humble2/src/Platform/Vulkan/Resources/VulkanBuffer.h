@@ -143,8 +143,8 @@ namespace HBL2
 		}
 
 		const char* DebugName = "";
-		VkBuffer Buffer = VK_NULL_HANDLE;
-		VmaAllocation Allocation = VK_NULL_HANDLE;
+		VkBuffer Buffer = VK_NULL_HANDLE; // Hot
+		VmaAllocation Allocation = VK_NULL_HANDLE; // Hot
 		uint32_t ByteOffset = 0;
 		uint32_t ByteSize = 0;
 		VkBufferUsageFlags BufferUsageFlags = VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;

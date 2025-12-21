@@ -22,7 +22,7 @@ namespace HBL2
 		static PipelineCache& GetPipelineCache();
 
 		const char* DebugName = "";
-		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
+		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE; // Hot
 		VkRenderPass RenderPass = VK_NULL_HANDLE;
 		VkShaderModule VertexShaderModule = VK_NULL_HANDLE;
 		VkShaderModule FragmentShaderModule = VK_NULL_HANDLE;

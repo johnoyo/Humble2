@@ -35,6 +35,7 @@ namespace HBL2
 		virtual void Create() = 0;
 		void Terminate();
 		void Close();
+		bool ShouldClose() const;
 
 		void DispatchMainLoop(const std::function<void()>& mainLoop);
 		void SetTitle(const std::string& title);

@@ -320,7 +320,7 @@ namespace HBL2
 					const char* options[] = { "Custom", "Box2D" };
 					int currentItem = (int)spec.Settings.Physics2DImpl;
 
-					if (ImGui::Combo("Implementation", &currentItem, options, IM_ARRAYSIZE(options)))
+					if (ImGui::Combo("Implementation##2d", &currentItem, options, IM_ARRAYSIZE(options)))
 					{
 						spec.Settings.Physics2DImpl = (Physics2DEngineImpl)currentItem;
 					}
@@ -359,7 +359,7 @@ namespace HBL2
 					const char* options[] = { "Custom", "Jolt" };
 					int currentItem = (int)spec.Settings.Physics3DImpl;
 
-					if (ImGui::Combo("Implementation", &currentItem, options, IM_ARRAYSIZE(options)))
+					if (ImGui::Combo("Implementation##3d", &currentItem, options, IM_ARRAYSIZE(options)))
 					{
 						spec.Settings.Physics3DImpl = (Physics3DEngineImpl)currentItem;
 					}

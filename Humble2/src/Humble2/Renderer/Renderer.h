@@ -7,6 +7,10 @@
 #include "UniformRingBuffer.h"
 #include "RenderPassPool.h"
 #include "ShadowAtlasAllocator.h"
+#include "SceneRenderer.h"
+
+#include "ImGui\imgui_threaded_rendering.h"
+#include <queue>
 
 namespace HBL2
 {
@@ -82,6 +86,21 @@ namespace HBL2
 		}
 	};
 
+	struct FrameData2
+	{
+		SceneRenderer* Renderer = nullptr;
+		void* RenderData = nullptr;
+
+		ImDrawDataSnapshot ImGuiRenderData;
+	};
+
+	struct RenderCommand
+	{
+		std::function<void()> Fn;
+		std::function<void()> Done;
+	};
+
+
 	class HBL2_API Renderer
 	{
 	public:
@@ -94,6 +113,18 @@ namespace HBL2
 		virtual void EndFrame() = 0;
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
+
+		void Render(SceneRenderer* renderer, void* renderData);
+		FrameData2& WaitAndRender();
+		void WaitAndSubmit();
+		void CollectRenderData(SceneRenderer* renderer, void* renderData);
+		void CollectImGuiRenderData(void* renderData, double currentTime);
+		void ClearFrameDataBuffer();
+		inline uint32_t GetFrameWriteIndex() const { return m_WriteIndex; }
+
+		void Submit(std::function<void()> fn);
+		void SubmitBlocking(std::function<void()> fn);
+		void ProcessSubmittedCommands();
 
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) = 0;
 
@@ -165,5 +196,23 @@ namespace HBL2
 		Handle<RenderPass> m_RenderingRenderPass;
 
 		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
+
+	private:
+		static constexpr uint32_t FrameCount = 2;
+
+		FrameData2 m_Frames[FrameCount];
+
+		uint32_t m_WriteIndex = 0;
+		uint32_t m_ReadIndex = 0;
+
+		bool m_FrameReady[FrameCount] = { false, false };
+
+		std::mutex m_Mutex;
+		std::condition_variable m_CanSubmit;
+		std::condition_variable m_CanRender;
+
+		std::mutex m_SubmitMutex;
+		std::condition_variable m_SubmitCV;
+		std::queue<RenderCommand> m_SubmitQueue;
 	};
 }

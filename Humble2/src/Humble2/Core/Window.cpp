@@ -117,6 +117,11 @@ namespace HBL2
 		glfwSetWindowShouldClose(m_Window, GLFW_TRUE);
 	}
 
+	bool Window::ShouldClose() const
+	{
+		return glfwWindowShouldClose(m_Window);
+	}
+
 	void Window::Terminate()
 	{
 		for (int i = 0; i < MAX_WORKERS; ++i)

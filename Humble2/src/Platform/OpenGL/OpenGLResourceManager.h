@@ -255,14 +255,14 @@ namespace HBL2
 		}
 
 	private:
-		Pool<OpenGLTexture, Texture> m_TexturePool;
-		Pool<OpenGLBuffer, Buffer> m_BufferPool;
-		Pool<OpenGLShader, Shader> m_ShaderPool;
-		Pool<OpenGLFrameBuffer, FrameBuffer> m_FrameBufferPool;
-		Pool<OpenGLBindGroup, BindGroup> m_BindGroupPool;
-		Pool<OpenGLBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
-		Pool<OpenGLRenderPass, RenderPass> m_RenderPassPool;
-		Pool<OpenGLRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
+		Pool<OpenGLTexture, Texture> m_TexturePool = Pool<OpenGLTexture, Texture>(64);
+		Pool<OpenGLBuffer, Buffer> m_BufferPool = Pool<OpenGLBuffer, Buffer>(512);
+		Pool<OpenGLShader, Shader> m_ShaderPool = Pool<OpenGLShader, Shader>(64);
+		Pool<OpenGLFrameBuffer, FrameBuffer> m_FrameBufferPool = Pool<OpenGLFrameBuffer, FrameBuffer>(32);
+		Pool<OpenGLBindGroup, BindGroup> m_BindGroupPool = Pool<OpenGLBindGroup, BindGroup>(32);
+		Pool<OpenGLBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool = Pool<OpenGLBindGroupLayout, BindGroupLayout>(32);
+		Pool<OpenGLRenderPass, RenderPass> m_RenderPassPool = Pool<OpenGLRenderPass, RenderPass>(32);
+		Pool<OpenGLRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool = Pool<OpenGLRenderPassLayout, RenderPassLayout>(32);
 
 	private:
 		uint64_t CalculateBindGroupHash(const OpenGLBindGroup* bindGroup)

@@ -1,6 +1,7 @@
 #include "OpenGLImGuiRenderer.h"
 
 #include "Core/Context.h"
+#include "Renderer/Renderer.h"
 
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -28,10 +29,12 @@ namespace HBL2
 	void OpenGLImGuiRenderer::EndFrame()
 	{
 		ImGui::Render();
-		Render();
+		Renderer::Instance->CollectImGuiRenderData(ImGui::GetDrawData(), ImGui::GetTime());
+
+		// Render(ImGui::GetDrawData());
 	}
 
-	void OpenGLImGuiRenderer::Render()
+	void OpenGLImGuiRenderer::Render(ImDrawData* data)
 	{
 		ImGui_ImplOpenGL3_NewFrame();
 
@@ -39,7 +42,7 @@ namespace HBL2
 		glfwGetFramebufferSize(m_Window->GetHandle(), &display_w, &display_h);
 		glViewport(0, 0, display_w, display_h);
 
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		ImGui_ImplOpenGL3_RenderDrawData(data);
 
 		ImGuiIO& io = ImGui::GetIO();
 
@@ -54,6 +57,8 @@ namespace HBL2
 
 	void OpenGLImGuiRenderer::Clean()
 	{
+		Renderer::Instance->ClearFrameDataBuffer();
+
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();

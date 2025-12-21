@@ -32,7 +32,7 @@ namespace HBL2
 		virtual void Initialize();
 		virtual void BeginFrame();
 		virtual void EndFrame();
-		virtual void Flush(CommandBuffer* commandBuffer);
+		virtual void Render(CommandBuffer* commandBuffer);
 		virtual void Clean();
 
 		// Public API

@@ -40,7 +40,6 @@ namespace HBL2
 	void OpenGLRenderer::BeginFrame()
 	{
 		m_Stats.Reset();
-		TempUniformRingBuffer->Invalidate();
 	}
 
 	CommandBuffer* OpenGLRenderer::BeginCommandRecording(CommandBufferType type)
@@ -59,6 +58,7 @@ namespace HBL2
 	void OpenGLRenderer::EndFrame()
 	{
 		m_ResourceManager->Flush(m_FrameNumber);
+		TempUniformRingBuffer->Invalidate();
 	}
 
 	void OpenGLRenderer::Present()

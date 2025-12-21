@@ -158,20 +158,21 @@ namespace HBL2
 		PresentPassSetup();
 	}
 
-	void* ForwardSceneRenderer::Gather(Entity mainCamera)
+	void ForwardSceneRenderer::Gather(Entity mainCamera)
 	{
 		GetViewProjection(mainCamera);
 
 		GatherDraws();
 		GatherLights();
-
-		return nullptr;
 	}
 
 	void ForwardSceneRenderer::Render(void* renderData)
 	{
+		SceneRenderData* sceneRenderData = (SceneRenderData*)renderData;
+		UniformRingBuffer* uniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
+
 		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
-		m_ResourceManager->MapBufferData(m_UniformRingBuffer->GetBuffer(), m_UBOStartingOffset, m_UniformRingBuffer->GetCurrentOffset() - m_UBOStartingOffset);
+		ResourceManager::Instance->MapBufferData(uniformRingBuffer->GetBuffer(), m_UBOStartingOffset, uniformRingBuffer->GetCurrentOffset() - m_UBOStartingOffset);
 
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
@@ -315,6 +316,11 @@ namespace HBL2
 		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
 		m_ResourceManager->DeleteShader(m_PresentShader);
 		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
+	}
+
+	void* ForwardSceneRenderer::GetRenderData()
+	{
+		return &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
 	}
 
 	// Pass setup.
@@ -1634,7 +1640,7 @@ namespace HBL2
 	{
 		BEGIN_PROFILE_PASS();
 
-		DebugRenderer::Instance->Flush(commandBuffer);
+		DebugRenderer::Instance->Render(commandBuffer);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().DebugPassTime);
 	}

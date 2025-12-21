@@ -210,8 +210,8 @@ namespace HBL2
 		shapeDef.material.friction = bc2d.Friction;
 		shapeDef.material.restitution = bc2d.Restitution;
 		shapeDef.density = bc2d.Density;
-		shapeDef.enableContactEvents = bc2d.Trigger ? false : true;
-		shapeDef.enableSensorEvents = bc2d.Trigger ? true : false;
+		shapeDef.enableContactEvents = !bc2d.Trigger;
+		shapeDef.enableSensorEvents = bc2d.Trigger;
 		shapeDef.isSensor = bc2d.Trigger;
 		shapeDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>((uint64_t)entity));
 

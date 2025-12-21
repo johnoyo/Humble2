@@ -227,9 +227,6 @@ namespace HBL2
 		// Line rendering.
 		if (m_CurrentLineIndex != 0)
 		{
-			// Update dynamic line vertex buffer.
-			m_ResourceManager->MapBufferData(m_DebugLineVertexBuffer, 0, m_CurrentLineIndex * sizeof(DebugVertex));
-
 			// Gather line draws.
 			m_Draws.Insert({
 				.Shader = m_DebugShader,
@@ -243,9 +240,6 @@ namespace HBL2
 		// Fill triangle rendering.
 		if (m_CurrentFillIndex != 0)
 		{
-			// Update dynamic fill vertex buffer.
-			m_ResourceManager->MapBufferData(m_DebugFillTriVertexBuffer, 0, m_CurrentFillIndex * sizeof(DebugVertex));
-
 			// Gather fill draws.
 			m_Draws.Insert({
 				.Shader = m_DebugShader,
@@ -270,7 +264,7 @@ namespace HBL2
 		}
 	}
 
-	void DebugRenderer::Flush(CommandBuffer* commandBuffer)
+	void DebugRenderer::Render(CommandBuffer* commandBuffer)
 	{
 		if (m_CurrentLineIndex != 0)
 		{
@@ -315,6 +309,8 @@ namespace HBL2
 
 		m_ResourceManager->DeleteShader(m_DebugShader);
 		m_ResourceManager->DeleteMaterial(m_DebugLineMaterial);
+		m_ResourceManager->DeleteMaterial(m_DebugFillMaterial);
+		m_ResourceManager->DeleteMaterial(m_DebugWireMaterial);
 
 		m_LineVerts.clear();
 		m_FillTrisVerts.clear();

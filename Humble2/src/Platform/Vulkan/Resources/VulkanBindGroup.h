@@ -19,9 +19,9 @@ namespace HBL2
 		void Destroy();
 
 		const char* DebugName = "";
-		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE;
+		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE; // Hot
 
-		std::vector<BindGroupDescriptor::BufferEntry> Buffers;
+		std::vector<BindGroupDescriptor::BufferEntry> Buffers; // Hot
 		std::vector<Handle<Texture>> Textures;
 		Handle<BindGroupLayout> BindGroupLayout;
 	};
