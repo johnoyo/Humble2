@@ -104,7 +104,12 @@ namespace HBL2
 		}
 
 		// Load scene asset.
-		Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(assetUUID);
+		JobContext sceneJobCtx;
+		auto sceneJobHandle = AssetManager::Instance->GetAssetAsync<Scene>(assetUUID, &sceneJobCtx);
+		AssetManager::Instance->WaitForAsyncJobs(&sceneJobCtx);
+		Handle<Scene> sceneHandle = (sceneJobHandle ? sceneJobHandle->ResourceHandle : Handle<Scene>{});
+
+		//Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(assetUUID);
 
 		if (!sceneHandle.IsValid())
 		{

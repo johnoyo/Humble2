@@ -23,9 +23,9 @@ namespace HBL2
 		ResourceManager::Instance->SetBufferData(m_Buffer, 0, m_BufferData);
 	}
 
-	void UniformRingBuffer::Invalidate()
+	void UniformRingBuffer::Invalidate(uint32_t startOffset)
 	{
-		m_CurrentOffset = 0;
+		m_CurrentOffset = startOffset;
 	}
 
 	void UniformRingBuffer::Free()

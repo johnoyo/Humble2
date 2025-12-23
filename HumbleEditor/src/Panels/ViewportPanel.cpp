@@ -38,38 +38,43 @@ namespace HBL2
 					});
 			}
 
-			ImGui::Image((ImTextureID)HBL2::Renderer::Instance->GetColorAttachment(), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+			ImTextureID viewportTexture = (ImTextureID)HBL2::Renderer::Instance->GetColorAttachment();
 
-			if (ImGui::BeginDragDropTarget())
+			if (viewportTexture != 0)
 			{
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Scene"))
+				ImGui::Image(viewportTexture, ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+				if (ImGui::BeginDragDropTarget())
 				{
-					uint32_t sceneAssetHandlePacked = *((uint32_t*)payload->Data);
-					Handle<Asset> sceneAssetHandle = Handle<Asset>::UnPack(sceneAssetHandlePacked);
-					Asset* sceneAsset = AssetManager::Instance->GetAssetMetadata(sceneAssetHandle);
-
-					if (sceneAsset == nullptr)
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Scene"))
 					{
-						HBL2_WARN("Could not load scene - invalid asset handle.");
-						ImGui::EndDragDropTarget();
-						return;
+						uint32_t sceneAssetHandlePacked = *((uint32_t*)payload->Data);
+						Handle<Asset> sceneAssetHandle = Handle<Asset>::UnPack(sceneAssetHandlePacked);
+						Asset* sceneAsset = AssetManager::Instance->GetAssetMetadata(sceneAssetHandle);
+
+						if (sceneAsset == nullptr)
+						{
+							HBL2_WARN("Could not load scene - invalid asset handle.");
+							ImGui::EndDragDropTarget();
+							return;
+						}
+
+						auto path = HBL2::Project::GetAssetFileSystemPath(sceneAsset->FilePath);
+
+						if (path.extension().string() != ".humble")
+						{
+							HBL2_WARN("Could not load {0} - not a scene file", path.filename().string());
+							ImGui::EndDragDropTarget();
+							return;
+						}
+
+						HBL2::SceneManager::Get().LoadScene(sceneAssetHandle, false);
+
+						m_EditorScenePath = path;
 					}
 
-					auto path = HBL2::Project::GetAssetFileSystemPath(sceneAsset->FilePath);
-
-					if (path.extension().string() != ".humble")
-					{
-						HBL2_WARN("Could not load {0} - not a scene file", path.filename().string());
-						ImGui::EndDragDropTarget();
-						return;
-					}
-
-					HBL2::SceneManager::Get().LoadScene(sceneAssetHandle, false);
-
-					m_EditorScenePath = path;
+					ImGui::EndDragDropTarget();
 				}
-
-				ImGui::EndDragDropTarget();
 			}
 
 			// Gizmos

@@ -70,16 +70,28 @@ namespace HBL2
 
 	struct ApplicationStats
 	{
+		float GameThreadTime = 0.f;
+		float GameThreadWaitTime = 0.f;
 		float DebugDrawTime = 0.f;
 		float AppUpdateTime = 0.f;
 		float AppGuiDrawTime = 0.f;
+
+		float RenderThreadTime = 0.f;
+		float RenderThreadWaitTime = 0.f;
+		float RenderTime = 0.f;
 		float PresentTime = 0.f;
 
 		void Reset()
 		{
+			GameThreadTime = 0.f;
+			GameThreadWaitTime = 0.f;
 			DebugDrawTime = 0.f;
 			AppUpdateTime = 0.f;
 			AppGuiDrawTime = 0.f;
+
+			RenderThreadTime = 0.f;
+			RenderThreadWaitTime = 0.f;
+			RenderTime = 0.f;
 			PresentTime = 0.f;
 		}
 	};
@@ -113,6 +125,13 @@ namespace HBL2
 
 		int m_FixedUpdates = 0;
 
+	private:
+		std::thread m_RenderThread;
+		void DispatchRenderLoop(const std::function<void()>& renderLoop);
+		void WaitForRenderThreadInitialization();
+		std::atomic_bool m_RenderThreadInitializationFinished = { false };
+
+	private:
 		void BeginFrame();
 		void EndFrame();
 		void Shutdown();

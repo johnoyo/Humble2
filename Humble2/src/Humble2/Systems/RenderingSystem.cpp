@@ -25,8 +25,6 @@ namespace HBL2
 		m_SceneRenderer->Gather(mainCamera);
 		Renderer::Instance->CollectRenderData(m_SceneRenderer, m_SceneRenderer->GetRenderData());
 
-		// m_SceneRenderer->Render(m_SceneRenderer->GetRenderData());
-
 		END_PROFILE_SYSTEM(RunningTime);
 	}
 

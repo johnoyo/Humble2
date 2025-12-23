@@ -114,13 +114,14 @@ namespace HBL2
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
 
-		void Render(SceneRenderer* renderer, void* renderData);
-		FrameData2& WaitAndRender();
+		void Render(const FrameData2& frameData);
+		FrameData2* WaitAndRender();
 		void WaitAndSubmit();
 		void CollectRenderData(SceneRenderer* renderer, void* renderData);
 		void CollectImGuiRenderData(void* renderData, double currentTime);
 		void ClearFrameDataBuffer();
 		inline uint32_t GetFrameWriteIndex() const { return m_WriteIndex; }
+		inline uint32_t GetFrameReadIndex() const { return m_WriteIndex; }
 
 		void Submit(std::function<void()> fn);
 		void SubmitBlocking(std::function<void()> fn);
@@ -181,7 +182,7 @@ namespace HBL2
 		virtual void PostInitialize() = 0;
 
 	protected:
-		uint32_t m_FrameNumber = 0;
+		std::atomic_int32_t m_FrameNumber = { 0 };
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::NONE;
 		RendererStats m_Stats{};
 		RenderPassPool m_RenderPassPool;
@@ -197,22 +198,22 @@ namespace HBL2
 
 		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 
-	private:
+	protected:
 		static constexpr uint32_t FrameCount = 2;
 
 		FrameData2 m_Frames[FrameCount];
+		uint32_t m_UniformRingBufferSize = 32_MB * 2;
+		uint32_t m_UniformRingBufferFrameOffsets[FrameCount] = { 0, m_UniformRingBufferSize / 2 };
 
+		bool m_FrameReady[FrameCount] = { false, false };
 		uint32_t m_WriteIndex = 0;
 		uint32_t m_ReadIndex = 0;
 
-		bool m_FrameReady[FrameCount] = { false, false };
+		std::mutex m_WorkMutex;
+		std::condition_variable m_WorkCV;
 
-		std::mutex m_Mutex;
-		std::condition_variable m_CanSubmit;
-		std::condition_variable m_CanRender;
-
-		std::mutex m_SubmitMutex;
-		std::condition_variable m_SubmitCV;
 		std::queue<RenderCommand> m_SubmitQueue;
+
+		std::atomic<bool> m_Running{ true };
 	};
 }

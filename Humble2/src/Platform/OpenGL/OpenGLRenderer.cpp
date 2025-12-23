@@ -57,8 +57,7 @@ namespace HBL2
 
 	void OpenGLRenderer::EndFrame()
 	{
-		m_ResourceManager->Flush(m_FrameNumber);
-		TempUniformRingBuffer->Invalidate();
+		m_ResourceManager->Flush(m_FrameNumber.load());
 	}
 
 	void OpenGLRenderer::Present()

@@ -13,9 +13,12 @@ namespace HBL2
 			ImGui::Text("Frame Time: %f ms", ts * 1000.0f);
 			ImGui::Text("Game Thread Time: %f ms", appStats.GameThreadTime);
 			ImGui::Text("Render Thread Time: %f ms", appStats.RenderThreadTime);
+
 			ImGui::Text("Debug Draw Time: %f ms", appStats.DebugDrawTime);
 			ImGui::Text("App Update Time: %f ms", appStats.AppUpdateTime);
 			ImGui::Text("Gui Draw Time: %f ms", appStats.AppGuiDrawTime);
+
+			ImGui::Text("Render Time: %f ms", appStats.RenderTime);
 			ImGui::Text("Present Time: %f ms", appStats.PresentTime);
 
 			ImGui::Separator();

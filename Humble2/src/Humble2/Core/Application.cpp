@@ -12,6 +12,8 @@
 	#define SWAP_AND_RESET_PROFILED_TIMERS() (m_PreviousStats = m_CurrentStats, m_CurrentStats.Reset())
 #endif
 
+#define MULTITHREADING 1
+
 namespace HBL2
 {
 	Application* Application::s_Instance = nullptr;
@@ -124,6 +126,22 @@ namespace HBL2
 		Allocator::Persistent.Free();
 	}
 
+	void Application::DispatchRenderLoop(const std::function<void()>& renderLoop)
+	{
+		m_RenderThread = std::thread(renderLoop);
+	}
+
+	void Application::WaitForRenderThreadInitialization()
+	{
+		while (!m_RenderThreadInitializationFinished.load())
+		{
+			// no-op
+		}
+
+		// Setup a render context for main thread.
+		Device::Instance->SetContext(ContextType::FETCH);
+	}
+
 	void Application::BeginFrame()
 	{
 		float time = (float)Window::Instance->GetTime();
@@ -165,69 +183,34 @@ namespace HBL2
 		
 		Input::Initialize();
 
+#if !MULTITHREADING
 		Device::Instance->Initialize();
 		Renderer::Instance->Initialize();
 		ImGuiRenderer::Instance->Initialize();
 		DebugRenderer::Instance->Initialize();
 
+		TextureUtilities::Get().LoadWhiteTexture();
+		ShaderUtilities::Get().LoadBuiltInShaders();
+		ShaderUtilities::Get().LoadBuiltInMaterials();
+		MeshUtilities::Get().LoadBuiltInMeshes();
+#endif
+#if !MULTITHREADING
 		m_Specification.Context->OnCreate();
 
-		Window::Instance->DispatchMainLoop([&]()
+		int frameIndex = 0;
+
+		Window::Instance->DispatchMainLoop([this, &frameIndex]()
 		{
+			BEGIN_APP_PROFILE(gameThread);
+
 			BeginFrame();
 
-			BEGIN_APP_PROFILE(debugDraw);
-			DebugRenderer::Instance->BeginFrame();
-			m_Specification.Context->OnGizmoRender(Time::DeltaTime);
-			DebugRenderer::Instance->EndFrame();
-			END_APP_PROFILE(debugDraw, m_CurrentStats.DebugDrawTime);
-
-			BEGIN_APP_PROFILE(appUpdate);
-			Renderer::Instance->BeginFrame();
-			m_Specification.Context->OnUpdate(Time::DeltaTime);
-			m_Specification.Context->OnFixedUpdate();
-			Renderer::Instance->EndFrame();
-			END_APP_PROFILE(appUpdate, m_CurrentStats.AppUpdateTime);
-
-			BEGIN_APP_PROFILE(appGUIDraw);
-			ImGuiRenderer::Instance->BeginFrame();
-			m_Specification.Context->OnGuiRender(Time::DeltaTime);
-			ImGuiRenderer::Instance->EndFrame();
-			END_APP_PROFILE(appGUIDraw, m_CurrentStats.AppGuiDrawTime);
-
-			BEGIN_APP_PROFILE(present);
-			Renderer::Instance->Present();
-			END_APP_PROFILE(present, m_CurrentStats.PresentTime);
-
-			EndFrame();
-		});
-
-		/*
-		JobSystem::Get().Execute({}, [&]()
-		{
-			Device::Instance->Initialize();
-			Renderer::Instance->Initialize();
-			ImGuiRenderer::Instance->Initialize();
-			DebugRenderer::Instance->Initialize();
-
-			while (true)
+			if (frameIndex == 0)
 			{
-				Renderer::Instance->WaitAndRender();
-
-				Renderer::Instance->BeginFrame();
-				Renderer::Instance->Render();
-				ImGuiRenderer::Instance->Render();
-				Renderer::Instance->EndFrame();
-
-				BEGIN_APP_PROFILE(present);
-				Renderer::Instance->Present();
-				END_APP_PROFILE(present, m_CurrentStats.PresentTime);
+				frameIndex++;
+				EndFrame();
+				return;
 			}
-		});
-
-		Window::Instance->DispatchMainLoop([&]()
-		{
-			BeginFrame();
 
 			BEGIN_APP_PROFILE(debugDraw);
 			DebugRenderer::Instance->BeginFrame();
@@ -249,8 +232,113 @@ namespace HBL2
 			Renderer::Instance->WaitAndSubmit();
 
 			EndFrame();
+
+			END_APP_PROFILE(gameThread, m_CurrentStats.GameThreadTime);
+
+			// -------------------------------------------------------------------
+
+			BEGIN_APP_PROFILE(renderThread);
+
+			const FrameData2* frameData = Renderer::Instance->WaitAndRender();
+
+			if (frameData == nullptr)
+			{
+				return;
+			}
+
+			BEGIN_APP_PROFILE(render);
+			Renderer::Instance->BeginFrame();
+			Renderer::Instance->Render(*frameData);
+			ImGuiRenderer::Instance->Render(*frameData);
+			Renderer::Instance->EndFrame();
+			END_APP_PROFILE(render, m_CurrentStats.RenderTime);
+
+			BEGIN_APP_PROFILE(present);
+			Renderer::Instance->Present();
+			END_APP_PROFILE(present, m_CurrentStats.PresentTime);
+
+			END_APP_PROFILE(renderThread, m_CurrentStats.RenderThreadTime);
 		});
-		*/
+#else
+		int frameIndex0 = 0;
+
+		DispatchRenderLoop([this, &frameIndex0]()
+		{
+			Device::Instance->Initialize();
+			Renderer::Instance->Initialize();
+			ImGuiRenderer::Instance->Initialize();
+			DebugRenderer::Instance->Initialize();
+
+			TextureUtilities::Get().LoadWhiteTexture();
+			ShaderUtilities::Get().LoadBuiltInShaders();
+			ShaderUtilities::Get().LoadBuiltInMaterials();
+			MeshUtilities::Get().LoadBuiltInMeshes();
+
+			m_RenderThreadInitializationFinished.store(true);
+
+			while (!Window::Instance->ShouldClose())
+			{
+				if (frameIndex0 == 0) { frameIndex0++; continue; }
+
+				BEGIN_APP_PROFILE(renderThread);
+
+				const FrameData2* frameData = Renderer::Instance->WaitAndRender();
+
+				if (frameData == nullptr) { continue; }
+
+				BEGIN_APP_PROFILE(render);
+				Renderer::Instance->BeginFrame();
+				Renderer::Instance->Render(*frameData);
+				ImGuiRenderer::Instance->Render(*frameData);
+				Renderer::Instance->EndFrame();
+				END_APP_PROFILE(render, m_CurrentStats.RenderTime);
+
+				BEGIN_APP_PROFILE(present);
+				Renderer::Instance->Present();
+				END_APP_PROFILE(present, m_CurrentStats.PresentTime);
+
+				END_APP_PROFILE(renderThread, m_CurrentStats.RenderThreadTime);
+			}
+		});
+
+		WaitForRenderThreadInitialization();
+
+		m_Specification.Context->OnCreate();
+
+		int frameIndex = 0;
+
+		Window::Instance->DispatchMainLoop([this, &frameIndex]()
+		{
+			BEGIN_APP_PROFILE(gameThread);
+
+			BeginFrame();
+
+			if (frameIndex == 0) { frameIndex++; EndFrame(); return; }
+
+			BEGIN_APP_PROFILE(debugDraw);
+			DebugRenderer::Instance->BeginFrame();
+			m_Specification.Context->OnGizmoRender(Time::DeltaTime);
+			DebugRenderer::Instance->EndFrame();
+			END_APP_PROFILE(debugDraw, m_CurrentStats.DebugDrawTime);
+
+			BEGIN_APP_PROFILE(appUpdate);
+			m_Specification.Context->OnUpdate(Time::DeltaTime);
+			m_Specification.Context->OnFixedUpdate();
+			END_APP_PROFILE(appUpdate, m_CurrentStats.AppUpdateTime);
+
+			BEGIN_APP_PROFILE(appGUIDraw);
+			ImGuiRenderer::Instance->BeginFrame();
+			m_Specification.Context->OnGuiRender(Time::DeltaTime);
+			ImGuiRenderer::Instance->EndFrame();
+			END_APP_PROFILE(appGUIDraw, m_CurrentStats.AppGuiDrawTime);
+
+			Renderer::Instance->WaitAndSubmit();
+
+			EndFrame();
+
+			END_APP_PROFILE(gameThread, m_CurrentStats.GameThreadTime);
+		});
+#endif
 		m_Specification.Context->OnDestroy();
 
 		m_Specification.Context->OnDetach();

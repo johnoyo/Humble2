@@ -7,6 +7,8 @@ namespace HBL2
 {
 	void OpenGLDevice::Initialize()
 	{
+		Window::Instance->Setup();
+
 		int32_t uniformBufferAlignSize;
 		glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBufferAlignSize);
 		m_GPUProperties.limits.minUniformBufferOffsetAlignment = uniformBufferAlignSize;

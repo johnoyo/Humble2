@@ -264,19 +264,9 @@ namespace HBL2
 
 		void EditorContext::LoadProject()
 		{
-			LoadBuiltInAssets();
-
 			HBL2::Project::OpenStartingScene();
 
 			Project::ApplySettings();
-		}
-
-		void EditorContext::LoadBuiltInAssets()
-		{
-			TextureUtilities::Get().LoadWhiteTexture();
-			ShaderUtilities::Get().LoadBuiltInShaders();
-			ShaderUtilities::Get().LoadBuiltInMaterials();
-			MeshUtilities::Get().LoadBuiltInMeshes();
 		}
 
 		bool EditorContext::IsActiveSceneValid()

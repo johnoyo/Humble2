@@ -185,11 +185,6 @@ namespace HBL2
 
 		void RuntimeContext::LoadProject()
 		{
-			TextureUtilities::Get().LoadWhiteTexture();
-			ShaderUtilities::Get().LoadBuiltInShaders();
-			ShaderUtilities::Get().LoadBuiltInMaterials();
-			MeshUtilities::Get().LoadBuiltInMeshes();
-
 			HBL2::Project::OpenStartingScene(true);
 
 			Project::ApplySettings();

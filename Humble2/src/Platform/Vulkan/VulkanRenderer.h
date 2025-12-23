@@ -58,23 +58,23 @@ namespace HBL2
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
 
 		virtual void* GetDepthAttachment() override { return nullptr; }
-		virtual void* GetColorAttachment() override { return m_ColorAttachmentID; }
+		virtual void* GetColorAttachment() override;		
 
 		virtual void SetViewportAttachment(Handle<Texture> viewportTexture) {}
 		virtual void* GetViewportAttachment() override { return m_ColorAttachmentID; }
 
-		virtual Handle<BindGroup> GetShadowBindings() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].ShadowBindings; }
-		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalBindings2D; }
-		virtual Handle<BindGroup> GetGlobalBindings3D() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalBindings3D; }
-		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalPresentBindings; }
-		virtual Handle<BindGroup> GetDebugBindings() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].DebugBindings; }
+		virtual Handle<BindGroup> GetShadowBindings() override { return m_Frames[m_FrameNumber.load() % FRAME_OVERLAP].ShadowBindings; }
+		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_Frames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalBindings2D; }
+		virtual Handle<BindGroup> GetGlobalBindings3D() override { return m_Frames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalBindings3D; }
+		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_Frames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalPresentBindings; }
+		virtual Handle<BindGroup> GetDebugBindings() override { return m_Frames[m_FrameNumber.load() % FRAME_OVERLAP].DebugBindings; }
 
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() override { return m_FrameBuffers[m_SwapchainImageIndex]; }
 
 		const VmaAllocator& GetAllocator() const { return m_Allocator; } // TODO: Move to VulkanResourceManager
 
-		virtual const uint32_t GetFrameIndex() const override { return m_FrameNumber % FRAME_OVERLAP; }
-		const FrameData& GetCurrentFrame() const { return m_Frames[m_FrameNumber % FRAME_OVERLAP]; }
+		virtual const uint32_t GetFrameIndex() const override { return m_FrameNumber.load() % FRAME_OVERLAP; }
+		const FrameData& GetCurrentFrame() const { return m_Frames[m_FrameNumber.load() % FRAME_OVERLAP]; }
 		const VkFormat& GetSwapchainImageFormat() const { return m_SwapChainImageFormat; }
 		const VkExtent2D& GetSwapchainExtent() const { return m_SwapChainExtent; }
 

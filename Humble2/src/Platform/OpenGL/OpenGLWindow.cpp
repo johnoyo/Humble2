@@ -52,6 +52,13 @@ namespace HBL2
 			exit(-1);
 		}
 
+		glfwMakeContextCurrent(nullptr);
+
+		AttachEventCallbacks();
+	}
+
+	void OpenGLWindow::Setup()
+	{
 		glfwMakeContextCurrent(m_Window);
 
 		if (m_Spec.VerticalSync)
@@ -77,7 +84,6 @@ namespace HBL2
 		glGetIntegerv(GL_MINOR_VERSION, &versionMinor);
 		HBL2_CORE_ASSERT(versionMinor >= 6, "Humble2 requires an minimum OpenGL version of 4.6!");
 
-		AttachEventCallbacks();
 
 		// Create worker thread context
 		for (int i = 0; i < MAX_WORKERS; ++i)

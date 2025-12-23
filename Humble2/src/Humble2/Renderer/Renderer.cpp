@@ -2,7 +2,10 @@
 
 #include "Device.h"
 #include "Core/Window.h"
+
 #include <future>
+
+#define MULTITHREADING 1
 
 namespace HBL2
 {
@@ -12,7 +15,7 @@ namespace HBL2
 	{
 		PreInitialize();
 
-		TempUniformRingBuffer = new UniformRingBuffer(32_MB, Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
+		TempUniformRingBuffer = new UniformRingBuffer(m_UniformRingBufferSize, Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
 
 		IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "intermediate-color-target",
@@ -77,57 +80,117 @@ namespace HBL2
 		PostInitialize();
 	}
 
-	void Renderer::Render(SceneRenderer* renderer, void* renderData)
+	void Renderer::Render(const FrameData2& frameData)
 	{
-		renderer->Render(renderData);
+		if (frameData.Renderer == nullptr)
+		{
+			return;
+		}
+
+		frameData.Renderer->Render(frameData.RenderData);
 	}
 
-	FrameData2& Renderer::WaitAndRender()
+	FrameData2* Renderer::WaitAndRender()
 	{
 #if MULTITHREADING
-		std::unique_lock<std::mutex> lock(m_Mutex);
-
-		// Wait until a frame is ready
-		m_CanRender.wait(lock, [&]
+		for (;;)
 		{
-			return m_FrameReady[m_ReadIndex];
-		});
-#endif
+			std::unique_lock<std::mutex> lock(m_WorkMutex);
+
+			// Wait for any work (frame or commands).
+			m_WorkCV.wait(lock, [&]
+			{
+				return m_FrameReady[m_ReadIndex] || !m_SubmitQueue.empty() || !m_Running.load();
+			});
+
+			if (!m_Running.load())
+			{
+				// TODO: Handle shutdown.
+			}
+
+			// If we have commands, swap them out and run them outside the lock.
+			std::queue<RenderCommand> localCmds;
+			if (!m_SubmitQueue.empty())
+			{
+				std::swap(localCmds, m_SubmitQueue);
+			}
+
+			// If we have a frame, consume it now.
+			FrameData2* frame = nullptr;
+			if (m_FrameReady[m_ReadIndex])
+			{
+				frame = &m_Frames[m_ReadIndex];
+				m_FrameReady[m_ReadIndex] = false;
+				m_ReadIndex = (m_ReadIndex + 1) % FrameCount;
+
+				// Wake game thread if it was blocked on submit.
+				// (write slot may now be free)
+				m_WorkCV.notify_one();
+			}
+
+			lock.unlock();
+
+			// Execute commands outside lock (safe point).
+			while (!localCmds.empty())
+			{
+				RenderCommand cmd = std::move(localCmds.front());
+				localCmds.pop();
+
+				cmd.Fn();
+
+				if (cmd.Done)
+				{
+					cmd.Done();
+				}
+			}
+
+			// Return frame if we got one, otherwise loop (we woke only for commands).
+			if (frame)
+			{
+				return frame;
+			}
+		}
+#else
 		// Consume frame
-		FrameData2& frame = m_Frames[m_ReadIndex];
+		FrameData2* frame = &m_Frames[m_ReadIndex];
 		m_FrameReady[m_ReadIndex] = false;
 
 		// Advance read index
 		m_ReadIndex = (m_ReadIndex + 1) % FrameCount;
 
-#if MULTITHREADING
-		// Wake game thread
-		m_CanSubmit.notify_one();
-#endif
 		return frame;
+#endif
 	}
 
 	void Renderer::WaitAndSubmit()
 	{
 #if MULTITHREADING
-		std::unique_lock<std::mutex> lock(m_Mutex);
+		std::unique_lock<std::mutex> lock(m_WorkMutex);
 
-		// Wait until the write slot is free
-		m_CanSubmit.wait(lock, [this]
+		// Wait until the write slot is free.
+		m_WorkCV.wait(lock, [&]
 		{
-			return !m_FrameReady[m_WriteIndex];
+			return !m_FrameReady[m_WriteIndex] || !m_Running.load();
 		});
+
+		if (!m_Running.load())
+		{
+			return;
+		}
 #endif
 
-		// Write frame data
+		// Mark frame ready.
 		m_FrameReady[m_WriteIndex] = true;
 
-		// Advance write index
+		// Advance write index.
 		m_WriteIndex = (m_WriteIndex + 1) % FrameCount;
 
+		// Reset temp uniform buffer to new offset.
+		TempUniformRingBuffer->Invalidate(m_UniformRingBufferFrameOffsets[m_WriteIndex]);
+
 #if MULTITHREADING
-		// Wake render thread
-		m_CanRender.notify_one();
+		lock.unlock();
+		m_WorkCV.notify_one(); // wake render thread
 #endif
 	}
 
@@ -140,6 +203,12 @@ namespace HBL2
 	void Renderer::CollectImGuiRenderData(void* renderData, double currentTime)
 	{
 		m_Frames[m_WriteIndex].ImGuiRenderData.SnapUsingSwap((ImDrawData*)renderData, currentTime);
+
+		// NOTE: This was added since we update the textures manually and prematurely to prevent an assertion
+		// caused from threaded rendering in imgui so that the render thread does not update them again.
+		// But, this caused a validation error in vk backend. If we leave this out, there is no error, but
+		// we update the textures twice which could be fine i guess. Keep an eye out for this.
+		// m_Frames[m_WriteIndex].ImGuiRenderData.DrawData.Textures = nullptr;
 	}
 
 	void Renderer::ClearFrameDataBuffer()
@@ -154,27 +223,38 @@ namespace HBL2
 
 	void Renderer::Submit(std::function<void()> fn)
 	{
+#if MULTITHREADING
 		{
-			std::lock_guard<std::mutex> lock(m_SubmitMutex);
+			std::lock_guard<std::mutex> lock(m_WorkMutex);
 			m_SubmitQueue.push(RenderCommand{ .Fn = std::move(fn) });
 		}
-		m_SubmitCV.notify_one();
+		m_WorkCV.notify_one();
+#else
+		fn();
+#endif
 	}
 
 	void Renderer::SubmitBlocking(std::function<void()> fn)
 	{
+#if MULTITHREADING
+		// HBL2_CORE_ASSERT(!IsRenderThread(), "SubmitBlocking called from render thread!");
+
 		auto completion = std::make_shared<std::promise<void>>();
 		std::future<void> future = completion->get_future();
 
 		{
-			std::lock_guard<std::mutex> lock(m_SubmitMutex);
-			m_SubmitQueue.push(RenderCommand{ .Fn = std::move(fn), .Done = [completion]() { completion->set_value(); } });
+			std::lock_guard<std::mutex> lock(m_WorkMutex);
+			m_SubmitQueue.push(RenderCommand{
+				.Fn = std::move(fn),
+				.Done = [completion]() { completion->set_value(); }
+			});
 		}
 
-		m_SubmitCV.notify_one();
-
-		// Block game thread until the render thread runs the command
-		future.wait();
+		m_WorkCV.notify_one();
+		future.wait(); // blocks game thread
+#else
+		fn();
+#endif
 	}
 
 	void Renderer::ProcessSubmittedCommands()
@@ -182,7 +262,7 @@ namespace HBL2
 		std::queue<RenderCommand> local;
 
 		{
-			std::lock_guard<std::mutex> lock(m_SubmitMutex);
+			std::lock_guard<std::mutex> lock(m_WorkMutex);
 			std::swap(local, m_SubmitQueue);
 		}
 
@@ -199,5 +279,4 @@ namespace HBL2
 			}
 		}
 	}
-
 }

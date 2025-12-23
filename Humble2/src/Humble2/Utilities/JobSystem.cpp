@@ -29,7 +29,7 @@ namespace HBL2
 
     void JobSystem::InternalInitialize()
     {
-        m_NumThreads = std::max(1u, std::thread::hardware_concurrency() - 1);
+        m_NumThreads = std::max(1u, std::thread::hardware_concurrency() - 2);
 
         m_LocalJobQueues.resize(m_NumThreads);
         m_Workers.reserve(m_NumThreads);
@@ -40,8 +40,8 @@ namespace HBL2
 
             auto handle = worker.native_handle();
 
-            // Put threads on increasing cores starting from 2nd.
-            int core = threadID + 1;
+            // Put threads on increasing cores starting from 3rd.
+            int core = threadID + 2;
 #ifdef _WIN32
             // Put each thread on to dedicated core.
             DWORD_PTR affinityMask = 1ull << core;

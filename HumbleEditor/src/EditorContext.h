@@ -29,7 +29,6 @@ namespace HBL2
 		private:
 			bool OpenProject();
 			void LoadProject();
-			void LoadBuiltInAssets();
 			bool IsActiveSceneValid();
 
 		private:

@@ -71,17 +71,7 @@ namespace HBL2
 			StubRenderPass();
 		}
 
-		// NOTE: Maybe this is not needed to happen every end of the frame, since all the frames in flight use the same texture.
-		if (MainColorTexture.IsValid())
-		{
-			Handle<BindGroup> presentBindGroupHandle = m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalPresentBindings;
-
-			VulkanBindGroup* vkPresentBindGroup = m_ResourceManager->GetBindGroup(presentBindGroupHandle);
-			m_ColorAttachmentID = vkPresentBindGroup->DescriptorSet;
-		}
-
-		m_ResourceManager->Flush(m_FrameNumber);
-		TempUniformRingBuffer->Invalidate();
+		m_ResourceManager->Flush(m_FrameNumber.load());
 	}
 
 	void VulkanRenderer::Present()
@@ -199,11 +189,11 @@ namespace HBL2
 		{
 		case HBL2::CommandBufferType::MAIN:
 			cmd = GetCurrentFrame().MainCommandBuffer;
-			vkCmdObj = &m_MainCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
+			vkCmdObj = &m_MainCommandBuffers[m_FrameNumber.load() % FRAME_OVERLAP];
 			break;
 		case HBL2::CommandBufferType::UI:
 			cmd = GetCurrentFrame().ImGuiCommandBuffer;
-			vkCmdObj = &m_ImGuiCommandBuffers[m_FrameNumber % FRAME_OVERLAP];
+			vkCmdObj = &m_ImGuiCommandBuffers[m_FrameNumber.load() % FRAME_OVERLAP];
 			break;
 		default:
 			break;
@@ -224,6 +214,15 @@ namespace HBL2
 		VK_VALIDATE(vkBeginCommandBuffer(cmd, &cmdBeginInfo), "vkBeginCommandBuffer");
 
 		return vkCmdObj;
+	}
+
+	void* VulkanRenderer::GetColorAttachment()
+	{
+		Handle<BindGroup> presentBindGroupHandle = m_Frames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalPresentBindings;
+		VulkanBindGroup* vkPresentBindGroup = m_ResourceManager->GetBindGroup(presentBindGroupHandle);
+		m_ColorAttachmentID = vkPresentBindGroup->DescriptorSet;
+
+		return m_ColorAttachmentID;
 	}
 
 	void VulkanRenderer::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function)

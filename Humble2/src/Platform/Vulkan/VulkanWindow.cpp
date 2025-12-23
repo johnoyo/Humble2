@@ -50,7 +50,10 @@ namespace HBL2
 		}
 
 		AttachEventCallbacks();
+	}
 
+	void VulkanWindow::Setup()
+	{
 		// No extra context windows for worker threads in vulkan,
 		for (int i = 0; i < MAX_WORKERS; ++i)
 		{

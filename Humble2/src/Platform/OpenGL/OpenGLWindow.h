@@ -12,5 +12,6 @@ namespace HBL2
 		~OpenGLWindow() = default;
 
 		virtual void Create() override;
+		virtual void Setup() override;
 	};
 }
