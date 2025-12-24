@@ -222,11 +222,6 @@ namespace HBL2
 			}
 
 			ImGui::SetCurrentContext(nullptr);
-
-			TextureUtilities::Get().DeleteWhiteTexture();
-			ShaderUtilities::Get().DeleteBuiltInShaders();
-			ShaderUtilities::Get().DeleteBuiltInMaterials();
-			MeshUtilities::Get().DeleteBuiltInMeshes();
 		}
 
 		void EditorContext::OnDetach()

@@ -12,6 +12,9 @@
 	#define SWAP_AND_RESET_PROFILED_TIMERS() (m_PreviousStats = m_CurrentStats, m_CurrentStats.Reset())
 #endif
 
+#define SKIP_FIRST_MT_FRAME() static bool isFirstMTFrame = true; if (isFirstMTFrame) { isFirstMTFrame = false; EndFrame(); return; }
+#define SKIP_FIRST_RT_FRAME() static bool isFirstRTFrame = true; if (isFirstRTFrame) { isFirstRTFrame = false; continue; }
+
 #define MULTITHREADING 1
 
 namespace HBL2
@@ -142,6 +145,21 @@ namespace HBL2
 		Device::Instance->SetContext(ContextType::FETCH);
 	}
 
+	void Application::WaitForRenderThreadIdle()
+	{
+		Renderer::Instance->SubmitBlocking([]() {});
+	}
+
+	void Application::WaitForRenderThreadShutdown()
+	{
+		Renderer::Instance->ShutdownRenderThread();
+
+		if (m_RenderThread.joinable())
+		{
+			m_RenderThread.join();
+		}
+	}
+
 	void Application::BeginFrame()
 	{
 		float time = (float)Window::Instance->GetTime();
@@ -167,6 +185,11 @@ namespace HBL2
 
 		if (SceneManager::Get().SceneChangeRequested)
 		{
+			Renderer::Instance->SubmitBlocking([]()
+			{
+				Renderer::Instance->ResetForSceneChange();
+			});
+
 			SceneManager::Get().LoadSceneDeffered();
 		}
 
@@ -260,9 +283,7 @@ namespace HBL2
 			END_APP_PROFILE(renderThread, m_CurrentStats.RenderThreadTime);
 		});
 #else
-		int frameIndex0 = 0;
-
-		DispatchRenderLoop([this, &frameIndex0]()
+		DispatchRenderLoop([this]()
 		{
 			Device::Instance->Initialize();
 			Renderer::Instance->Initialize();
@@ -276,15 +297,15 @@ namespace HBL2
 
 			m_RenderThreadInitializationFinished.store(true);
 
-			while (!Window::Instance->ShouldClose())
+			while (true)
 			{
-				if (frameIndex0 == 0) { frameIndex0++; continue; }
+				SKIP_FIRST_RT_FRAME();
 
 				BEGIN_APP_PROFILE(renderThread);
 
 				const FrameData2* frameData = Renderer::Instance->WaitAndRender();
 
-				if (frameData == nullptr) { continue; }
+				if (frameData == nullptr) { break; }
 
 				BEGIN_APP_PROFILE(render);
 				Renderer::Instance->BeginFrame();
@@ -299,21 +320,24 @@ namespace HBL2
 
 				END_APP_PROFILE(renderThread, m_CurrentStats.RenderThreadTime);
 			}
+
+			TextureUtilities::Get().DeleteWhiteTexture();
+			ShaderUtilities::Get().DeleteBuiltInShaders();
+			ShaderUtilities::Get().DeleteBuiltInMaterials();
+			MeshUtilities::Get().DeleteBuiltInMeshes();
 		});
 
 		WaitForRenderThreadInitialization();
 
 		m_Specification.Context->OnCreate();
 
-		int frameIndex = 0;
-
-		Window::Instance->DispatchMainLoop([this, &frameIndex]()
+		Window::Instance->DispatchMainLoop([this]()
 		{
 			BEGIN_APP_PROFILE(gameThread);
 
 			BeginFrame();
 
-			if (frameIndex == 0) { frameIndex++; EndFrame(); return; }
+			SKIP_FIRST_MT_FRAME();
 
 			BEGIN_APP_PROFILE(debugDraw);
 			DebugRenderer::Instance->BeginFrame();
@@ -339,9 +363,13 @@ namespace HBL2
 			END_APP_PROFILE(gameThread, m_CurrentStats.GameThreadTime);
 		});
 #endif
+		WaitForRenderThreadIdle();
+
 		m_Specification.Context->OnDestroy();
 
 		m_Specification.Context->OnDetach();
+
+		WaitForRenderThreadShutdown();
 
 		Shutdown();
 	}

@@ -189,7 +189,7 @@ namespace HBL2
 
 	private:
 		Pool<Mesh, Mesh> m_MeshPool = Pool<Mesh, Mesh>(64);
-		Pool<Material, Material> m_MaterialPool = Pool<Material, Material>(32);
+		Pool<Material, Material> m_MaterialPool = Pool<Material, Material>(64);
 		Pool<Scene, Scene> m_ScenePool = Pool<Scene, Scene>(16);
 		Pool<Script, Script> m_ScriptPool = Pool<Script, Script>(32);
 		Pool<Sound, Sound> m_SoundPool = Pool<Sound, Sound>(32);

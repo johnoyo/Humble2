@@ -100,13 +100,11 @@ namespace HBL2
 			// Wait for any work (frame or commands).
 			m_WorkCV.wait(lock, [&]
 			{
-				return m_FrameReady[m_ReadIndex] || !m_SubmitQueue.empty() || !m_Running.load();
+				return m_FrameReady[m_ReadIndex] || !m_SubmitQueue.empty() || !m_Running.load(std::memory_order_acquire);
 			});
 
-			if (!m_Running.load())
-			{
-				// TODO: Handle shutdown.
-			}
+			// If shutting down, break AFTER we drain commands below
+			bool shuttingDown = !m_Running.load(std::memory_order_acquire);
 
 			// If we have commands, swap them out and run them outside the lock.
 			std::queue<RenderCommand> localCmds;
@@ -144,6 +142,11 @@ namespace HBL2
 				}
 			}
 
+			if (shuttingDown)
+			{
+				return nullptr;
+			}
+
 			// Return frame if we got one, otherwise loop (we woke only for commands).
 			if (frame)
 			{
@@ -170,13 +173,8 @@ namespace HBL2
 		// Wait until the write slot is free.
 		m_WorkCV.wait(lock, [&]
 		{
-			return !m_FrameReady[m_WriteIndex] || !m_Running.load();
+			return !m_FrameReady[m_WriteIndex];
 		});
-
-		if (!m_Running.load())
-		{
-			return;
-		}
 #endif
 
 		// Mark frame ready.
@@ -221,9 +219,35 @@ namespace HBL2
 		}
 	}
 
+	void Renderer::ResetForSceneChange()
+	{
+		for (int i = 0; i < FrameCount; ++i)
+		{
+			m_FrameReady[i] = false;
+		}
+
+		m_ReadIndex = 0;
+		m_WriteIndex = 0;
+	}
+
+	void Renderer::ShutdownRenderThread()
+	{
+		m_Running.store(false, std::memory_order_release);
+
+		// Wake render thread if it's waiting for frames/commands
+		m_WorkCV.notify_all();
+
+		m_AcceptSubmits.store(false, std::memory_order_release);
+	}
+
 	void Renderer::Submit(std::function<void()> fn)
 	{
 #if MULTITHREADING
+		if (!m_AcceptSubmits.load(std::memory_order_acquire))
+		{
+			return;
+		}
+
 		{
 			std::lock_guard<std::mutex> lock(m_WorkMutex);
 			m_SubmitQueue.push(RenderCommand{ .Fn = std::move(fn) });
@@ -238,6 +262,11 @@ namespace HBL2
 	{
 #if MULTITHREADING
 		// HBL2_CORE_ASSERT(!IsRenderThread(), "SubmitBlocking called from render thread!");
+
+		if (!m_AcceptSubmits.load(std::memory_order_acquire))
+		{
+			return;
+		}
 
 		auto completion = std::make_shared<std::promise<void>>();
 		std::future<void> future = completion->get_future();

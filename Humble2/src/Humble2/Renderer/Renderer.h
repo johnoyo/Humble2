@@ -122,6 +122,8 @@ namespace HBL2
 		void ClearFrameDataBuffer();
 		inline uint32_t GetFrameWriteIndex() const { return m_WriteIndex; }
 		inline uint32_t GetFrameReadIndex() const { return m_WriteIndex; }
+		void ResetForSceneChange();
+		void ShutdownRenderThread();
 
 		void Submit(std::function<void()> fn);
 		void SubmitBlocking(std::function<void()> fn);
@@ -215,5 +217,6 @@ namespace HBL2
 		std::queue<RenderCommand> m_SubmitQueue;
 
 		std::atomic<bool> m_Running{ true };
+		std::atomic<bool> m_AcceptSubmits{ true };
 	};
 }
