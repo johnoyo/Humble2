@@ -76,6 +76,12 @@ namespace HBL2
 
 		stbi_uc* pixels = stbi_load_from_memory((const stbi_uc*)bytes.Data(), bytes.Size(), &width, &height, &channels, STBI_default);
 
+		if (pixels == NULL)
+		{
+			HBL2_CORE_ERROR("Failed to write image data to {}.", path);
+			return false;
+		}
+
 		int result = stbi_write_png(path.string().c_str(), width, height, channels, pixels, width * channels);
 
 		if (!result)

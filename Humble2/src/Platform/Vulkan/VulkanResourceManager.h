@@ -308,11 +308,11 @@ namespace HBL2
 		}
 
 	private:
-		Pool<VulkanTexture, Texture> m_TexturePool = Pool<VulkanTexture, Texture>(64);
+		Pool<VulkanTexture, Texture> m_TexturePool = Pool<VulkanTexture, Texture>(128);
 		Pool<VulkanBuffer, Buffer> m_BufferPool = Pool<VulkanBuffer, Buffer>(512);
 		Pool<VulkanShader, Shader> m_ShaderPool = Pool<VulkanShader, Shader>(64);
 		Pool<VulkanFrameBuffer, FrameBuffer> m_FrameBufferPool = Pool<VulkanFrameBuffer, FrameBuffer>(32);
-		Pool<VulkanBindGroup, BindGroup> m_BindGroupPool = Pool<VulkanBindGroup, BindGroup>(32);
+		Pool<VulkanBindGroup, BindGroup> m_BindGroupPool = Pool<VulkanBindGroup, BindGroup>(64);
 		Pool<VulkanBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool = Pool<VulkanBindGroupLayout, BindGroupLayout>(32);
 		Pool<VulkanRenderPass, RenderPass> m_RenderPassPool = Pool<VulkanRenderPass, RenderPass>(32);
 		Pool<VulkanRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool = Pool<VulkanRenderPassLayout, RenderPassLayout>(32);

@@ -1272,34 +1272,36 @@ namespace HBL2
 
 					const Attenuation& attenuation = GetClosestAttenuation(light.Distance);
 
-					sceneRenderData->m_LightData.LightShadowData[(int)sceneRenderData->m_LightData.LightCount].x = light.CastsShadows ? 1.0f : 0.0f;
+					int lightIndex = (int)sceneRenderData->m_LightData.LightCount;
+
+					sceneRenderData->m_LightData.LightShadowData[lightIndex].x = light.CastsShadows ? 1.0f : 0.0f;
 
 					switch (light.Type)
 					{
 					case Component::Light::EType::Directional:
 						lightType = 0.0f;
-						sceneRenderData->m_LightData.LightShadowData[(int)sceneRenderData->m_LightData.LightCount].y = light.ConstantBias;
-						sceneRenderData->m_LightData.LightShadowData[(int)sceneRenderData->m_LightData.LightCount].z = light.SlopeBias;
-						sceneRenderData->m_LightData.LightShadowData[(int)sceneRenderData->m_LightData.LightCount].w = light.NormalOffsetScale;
+						sceneRenderData->m_LightData.LightShadowData[lightIndex].y = light.ConstantBias;
+						sceneRenderData->m_LightData.LightShadowData[lightIndex].z = light.SlopeBias;
+						sceneRenderData->m_LightData.LightShadowData[lightIndex].w = light.NormalOffsetScale;
 						break;
 					case Component::Light::EType::Point:
 						lightType = 1.0f;
-						sceneRenderData->m_LightData.LightMetadata[(int)sceneRenderData->m_LightData.LightCount].y = attenuation.constant;
-						sceneRenderData->m_LightData.LightMetadata[(int)sceneRenderData->m_LightData.LightCount].z = attenuation.linear;
-						sceneRenderData->m_LightData.LightMetadata[(int)sceneRenderData->m_LightData.LightCount].w = attenuation.quadratic;
+						sceneRenderData->m_LightData.LightMetadata[lightIndex].y = attenuation.constant;
+						sceneRenderData->m_LightData.LightMetadata[lightIndex].z = attenuation.linear;
+						sceneRenderData->m_LightData.LightMetadata[lightIndex].w = attenuation.quadratic;
 
-						sceneRenderData->m_LightData.LightShadowData[(int)sceneRenderData->m_LightData.LightCount].y = light.ConstantBias;
-						sceneRenderData->m_LightData.LightShadowData[(int)sceneRenderData->m_LightData.LightCount].z = light.SlopeBias;
-						sceneRenderData->m_LightData.LightShadowData[(int)sceneRenderData->m_LightData.LightCount].w = light.NormalOffsetScale;
+						sceneRenderData->m_LightData.LightShadowData[lightIndex].y = light.ConstantBias;
+						sceneRenderData->m_LightData.LightShadowData[lightIndex].z = light.SlopeBias;
+						sceneRenderData->m_LightData.LightShadowData[lightIndex].w = light.NormalOffsetScale;
 						break;
 					case Component::Light::EType::Spot:
 						lightType = 2.0f;
-						sceneRenderData->m_LightData.LightMetadata[(int)sceneRenderData->m_LightData.LightCount].y = glm::cos(glm::radians(light.InnerCutOff));
-						sceneRenderData->m_LightData.LightMetadata[(int)sceneRenderData->m_LightData.LightCount].z = glm::cos(glm::radians(light.OuterCutOff));
+						sceneRenderData->m_LightData.LightMetadata[lightIndex].y = glm::cos(glm::radians(light.InnerCutOff));
+						sceneRenderData->m_LightData.LightMetadata[lightIndex].z = glm::cos(glm::radians(light.OuterCutOff));
 
-						sceneRenderData->m_LightData.LightShadowData[(int)sceneRenderData->m_LightData.LightCount].y = light.ConstantBias;
-						sceneRenderData->m_LightData.LightShadowData[(int)sceneRenderData->m_LightData.LightCount].z = light.SlopeBias;
-						sceneRenderData->m_LightData.LightShadowData[(int)sceneRenderData->m_LightData.LightCount].w = light.NormalOffsetScale;
+						sceneRenderData->m_LightData.LightShadowData[lightIndex].y = light.ConstantBias;
+						sceneRenderData->m_LightData.LightShadowData[lightIndex].z = light.SlopeBias;
+						sceneRenderData->m_LightData.LightShadowData[lightIndex].w = light.NormalOffsetScale;
 						break;
 					}
 
@@ -1330,12 +1332,12 @@ namespace HBL2
 
 					glm::mat4 lightView = glm::lookAt(lightPos, lightTarget, lightUp);
 
-					sceneRenderData->m_LightData.LightPositions[(int)sceneRenderData->m_LightData.LightCount] = transform.WorldMatrix * glm::vec4(transform.Translation, 1.0f);
-					sceneRenderData->m_LightData.LightPositions[(int)sceneRenderData->m_LightData.LightCount].w = lightType;
-					sceneRenderData->m_LightData.LightDirections[(int)sceneRenderData->m_LightData.LightCount] = glm::vec4(worldDirection, 0.0f);
-					sceneRenderData->m_LightData.LightMetadata[(int)sceneRenderData->m_LightData.LightCount].x = light.Intensity;
-					sceneRenderData->m_LightData.LightColors[(int)sceneRenderData->m_LightData.LightCount] = glm::vec4(light.Color, 1.0f);
-					sceneRenderData->m_LightData.LightSpaceMatrices[(int)sceneRenderData->m_LightData.LightCount] = lightProjection * lightView;
+					sceneRenderData->m_LightData.LightPositions[lightIndex] = transform.WorldMatrix * glm::vec4(transform.Translation, 1.0f);
+					sceneRenderData->m_LightData.LightPositions[lightIndex].w = lightType;
+					sceneRenderData->m_LightData.LightDirections[lightIndex] = glm::vec4(worldDirection, 0.0f);
+					sceneRenderData->m_LightData.LightMetadata[lightIndex].x = light.Intensity;
+					sceneRenderData->m_LightData.LightColors[lightIndex] = glm::vec4(light.Color, 1.0f);
+					sceneRenderData->m_LightData.LightSpaceMatrices[lightIndex] = lightProjection * lightView;
 					sceneRenderData->m_LightData.LightCount++;
 				}
 			});

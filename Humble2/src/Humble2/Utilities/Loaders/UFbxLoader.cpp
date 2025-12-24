@@ -134,6 +134,11 @@ namespace HBL2
                     case UFBX_SHADER_FBX_PHONG:
                         type = 1;
                         break;
+                    case UFBX_SHADER_ARNOLD_STANDARD_SURFACE:
+                        type = 2;
+                        break;
+                    default:
+                        HBL2_CORE_ASSERT(false, "Error while loading FBX model, fbxMaterial->shader_type not supported. Add supprt if applicable.");
                     }
 
                     ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, type);

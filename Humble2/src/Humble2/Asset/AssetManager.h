@@ -202,7 +202,7 @@ namespace HBL2
 
 	private:
 		JobContext m_ResourceJobCtx;
-		Pool<Asset, Asset> m_AssetPool = Pool<Asset, Asset>(128);
+		Pool<Asset, Asset> m_AssetPool = Pool<Asset, Asset>(1024);
 		HashMap<UUID, Handle<Asset>, BinAllocator> m_RegisteredAssetMap = MakeHashMap<UUID, Handle<Asset>>(&Allocator::Persistent);
 		DynamicArray<Handle<Asset>, BinAllocator> m_RegisteredAssets = MakeDynamicArray<Handle<Asset>>(&Allocator::Persistent);
 	};

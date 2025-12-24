@@ -255,11 +255,11 @@ namespace HBL2
 		}
 
 	private:
-		Pool<OpenGLTexture, Texture> m_TexturePool = Pool<OpenGLTexture, Texture>(64);
+		Pool<OpenGLTexture, Texture> m_TexturePool = Pool<OpenGLTexture, Texture>(128);
 		Pool<OpenGLBuffer, Buffer> m_BufferPool = Pool<OpenGLBuffer, Buffer>(512);
 		Pool<OpenGLShader, Shader> m_ShaderPool = Pool<OpenGLShader, Shader>(64);
 		Pool<OpenGLFrameBuffer, FrameBuffer> m_FrameBufferPool = Pool<OpenGLFrameBuffer, FrameBuffer>(32);
-		Pool<OpenGLBindGroup, BindGroup> m_BindGroupPool = Pool<OpenGLBindGroup, BindGroup>(32);
+		Pool<OpenGLBindGroup, BindGroup> m_BindGroupPool = Pool<OpenGLBindGroup, BindGroup>(64);
 		Pool<OpenGLBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool = Pool<OpenGLBindGroupLayout, BindGroupLayout>(32);
 		Pool<OpenGLRenderPass, RenderPass> m_RenderPassPool = Pool<OpenGLRenderPass, RenderPass>(32);
 		Pool<OpenGLRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool = Pool<OpenGLRenderPassLayout, RenderPassLayout>(32);
