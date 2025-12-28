@@ -103,13 +103,17 @@ namespace HBL2
 			stream.close();
 		}
 
+		// NOTE: The scene load below works since the render thread currelty waits for the main thread to submit the frame
+		// in order to start rendering it. Normally this could cause problems if the render thread was in the middle of rendering,
+		// since the scene load loads textures, materials, shaders, models.
+
 		// Load scene asset.
-		JobContext sceneJobCtx;
+		/*JobContext sceneJobCtx;
 		auto sceneJobHandle = AssetManager::Instance->GetAssetAsync<Scene>(assetUUID, &sceneJobCtx);
 		AssetManager::Instance->WaitForAsyncJobs(&sceneJobCtx);
-		Handle<Scene> sceneHandle = (sceneJobHandle ? sceneJobHandle->ResourceHandle : Handle<Scene>{});
+		Handle<Scene> sceneHandle = (sceneJobHandle ? sceneJobHandle->ResourceHandle : Handle<Scene>{});*/
 
-		//Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(assetUUID);
+		Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(assetUUID);
 
 		if (!sceneHandle.IsValid())
 		{

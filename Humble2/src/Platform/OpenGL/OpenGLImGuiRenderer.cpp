@@ -82,6 +82,8 @@ namespace HBL2
 					ImGui::RenderPlatformWindowsDefault();
 					glfwMakeContextCurrent(Window::Instance->GetHandle());
 				});
+
+				Device::Instance->SetContext(ContextType::FETCH);
 			}
 		}
 

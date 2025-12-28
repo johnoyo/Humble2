@@ -89,6 +89,11 @@ namespace HBL2
 			ImportedLocalTransform = std::move(*((LocalTransform*)&desc.importedLocalTransform));
 		}
 
+		bool IsEmpty() const
+		{
+			return SubMeshes.empty();
+		}
+
 		const char* DebugName = "";
 		std::vector<SubMesh> SubMeshes;
 		Handle<Buffer> IndexBuffer;
@@ -106,6 +111,7 @@ namespace HBL2
 	struct Mesh
 	{
 		Mesh() = default;
+		Mesh(const MeshDescriptor2&& desc);
 		Mesh(const MeshDescriptor&& desc)
 		{
 			DebugName = desc.debugName;
@@ -125,11 +131,24 @@ namespace HBL2
 				Extents.Max.y = glm::max(meshPart.Extents.Max.y, Extents.Max.y);
 				Extents.Max.z = glm::max(meshPart.Extents.Max.z, Extents.Max.z);
 			}
+
+			m_HasItems.store(true, std::memory_order_release);
+		}
+
+		bool IsEmpty()
+		{
+			return !m_HasItems.load(std::memory_order_acquire);
 		}
 
 		const char* DebugName = "";
 		std::vector<MeshPart> Meshes;
 		MeshExtents Extents;
+
+	private:
+		std::atomic<bool> m_HasItems{ false };
+
+		void operator=(const Mesh& other);
+		friend class Pool<Mesh, Mesh>;
 	};
 
 	struct Material

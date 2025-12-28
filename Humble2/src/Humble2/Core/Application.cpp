@@ -132,11 +132,29 @@ namespace HBL2
 	void Application::DispatchRenderLoop(const std::function<void()>& renderLoop)
 	{
 		m_RenderThread = std::thread(renderLoop);
+
+		auto handle = m_RenderThread.native_handle();
+
+#ifdef _WIN32
+		// Put render thread on to dedicated core.
+		DWORD_PTR affinityMask = 1ull << 1;
+		DWORD_PTR affinity_result = SetThreadAffinityMask(handle, affinityMask);
+		assert(affinity_result > 0);
+
+		// Set priority to normal.
+		BOOL priority_result = SetThreadPriority(handle, THREAD_PRIORITY_NORMAL);
+		assert(priority_result != 0);
+
+		// Give a name to render thread for easier debugging.
+		std::wstring wthreadname = L"HBL2::RenderThread";
+		HRESULT hr = SetThreadDescription(handle, wthreadname.c_str());
+		assert(SUCCEEDED(hr));
+#endif
 	}
 
 	void Application::WaitForRenderThreadInitialization()
 	{
-		while (!m_RenderThreadInitializationFinished.load())
+		while (!m_RenderThreadInitializationFinished.load(std::memory_order_acquire))
 		{
 			// no-op
 		}
@@ -295,7 +313,7 @@ namespace HBL2
 			ShaderUtilities::Get().LoadBuiltInMaterials();
 			MeshUtilities::Get().LoadBuiltInMeshes();
 
-			m_RenderThreadInitializationFinished.store(true);
+			m_RenderThreadInitializationFinished.store(true, std::memory_order_release);
 
 			while (true)
 			{

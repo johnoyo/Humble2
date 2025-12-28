@@ -403,9 +403,6 @@ namespace HBL2
 				int32_t Lod = 0;
 				bool HasMesh = false;
 				bool HasRequestedMesh = false;
-
-				Handle<Buffer> VertexBuffer;
-				Handle<Buffer> IndexBuffer;
 				Handle<Mesh> Mesh;
 			};
 

@@ -271,6 +271,20 @@ namespace HBL2
 		std::vector<MeshPartDescriptor> meshes;
 	};
 
+	struct MeshDescriptorSettings
+	{
+		bool recalculateNormals = false;
+		bool recalculateBounds = false;
+	};
+
+	struct MeshDescriptor2
+	{
+		const char* debugName;
+		Span<const float> vertices;
+		Span<const uint32_t> indeces;
+		MeshDescriptorSettings settings = {};
+	};
+
 	struct MaterialDescriptor
 	{
 		const char* debugName;

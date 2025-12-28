@@ -105,6 +105,10 @@ namespace HBL2
 		{
 			return m_MeshPool.Insert(Mesh(std::forward<const MeshDescriptor>(desc)));
 		}
+		Handle<Mesh> CreateMesh(const MeshDescriptor2&& desc)
+		{
+			return m_MeshPool.Emplace(std::forward<const MeshDescriptor2>(desc));
+		}
 		void DeleteMesh(Handle<Mesh> handle)
 		{
 			m_MeshPool.Remove(handle);
@@ -188,7 +192,7 @@ namespace HBL2
 		ResourceDeletionQueue m_DeletionQueue;
 
 	private:
-		Pool<Mesh, Mesh> m_MeshPool = Pool<Mesh, Mesh>(64);
+		Pool<Mesh, Mesh> m_MeshPool = Pool<Mesh, Mesh>(256);
 		Pool<Material, Material> m_MaterialPool = Pool<Material, Material>(64);
 		Pool<Scene, Scene> m_ScenePool = Pool<Scene, Scene>(16);
 		Pool<Script, Script> m_ScriptPool = Pool<Script, Script>(32);

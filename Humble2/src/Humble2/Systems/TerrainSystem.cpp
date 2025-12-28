@@ -738,8 +738,23 @@ namespace HBL2
 							return;
 						}
 
-						m_ResourceManager->DeleteBuffer(lodMesh.IndexBuffer);
-						m_ResourceManager->DeleteBuffer(lodMesh.VertexBuffer);
+						Mesh* mesh = m_ResourceManager->GetMesh(lodMesh.Mesh);
+
+						if (mesh == nullptr)
+						{
+							continue;
+						}
+
+						for (auto& meshPart : mesh->Meshes)
+						{
+							m_ResourceManager->DeleteBuffer(meshPart.IndexBuffer);
+
+							for (auto& vertexBuffer : meshPart.VertexBuffers)
+							{
+								m_ResourceManager->DeleteBuffer(vertexBuffer);
+							}
+						}
+
 						m_ResourceManager->DeleteMesh(lodMesh.Mesh);
 					}
 
@@ -868,43 +883,11 @@ namespace HBL2
 	{
 		HBL2_FUNC_PROFILE()
 
-		// Create GPU buffers
-		Handle<Buffer> indexBufferHandle = m_ResourceManager->CreateBuffer({
-			.debugName = "terrain-index-buffer",
-			.usage = BufferUsage::INDEX,
-			.byteSize = (uint32_t)sizeof(uint32_t) * chunkMeshData.IndexCount,
-			.initialData = chunkMeshData.IndexBuffer,
-		});
-
-		Handle<Buffer> vertexBufferHandle = m_ResourceManager->CreateBuffer({
-			.debugName = "terrain-vertex-buffer",
-			.usage = BufferUsage::VERTEX,
-			.byteSize = (uint32_t)sizeof(float) * chunkMeshData.VertexCount * 8,
-			.initialData = chunkMeshData.VertexBuffer,
-		});
-
-		// Create mesh resource.
 		Handle<Mesh> chunkMesh = m_ResourceManager->CreateMesh({
 			.debugName = "terrain-mesh",
-			.meshes = {
-				{
-					.debugName = "terrain-part",
-					.subMeshes = {
-						{
-							.indexCount = chunkMeshData.IndexCount,
-							.vertexOffset = 0,
-							.vertexCount = chunkMeshData.VertexCount,
-						}
-					},
-					.indexBuffer = indexBufferHandle,
-					.vertexBuffers = { vertexBufferHandle },
-				}
-			}
-		});
-
-		// Free cpu side buffer data.
-		delete[] chunkMeshData.VertexBuffer;
-		delete[] chunkMeshData.IndexBuffer;
+			.vertices = { chunkMeshData.VertexBuffer, chunkMeshData.VertexCount },
+			.indeces = { chunkMeshData.IndexBuffer, chunkMeshData.IndexCount },
+		});		
 
 		auto& chunkMeshComponent = m_Context->GetComponent<Component::StaticMesh>(chunkMeshData.Chunk);
 		chunkMeshComponent.Mesh = chunkMesh;
@@ -914,8 +897,6 @@ namespace HBL2
 
 		auto& lodMesh = chunkComponent.LodMeshes[chunkMeshData.Lod];
 		lodMesh.Mesh = chunkMesh;
-		lodMesh.IndexBuffer = indexBufferHandle;
-		lodMesh.VertexBuffer = vertexBufferHandle;
 
 		lodMesh.HasMesh = true;
 	}
@@ -954,8 +935,23 @@ namespace HBL2
 			{
 				for (auto& lodMesh : terrainChunk.LodMeshes)
 				{
-					m_ResourceManager->DeleteBuffer(lodMesh.IndexBuffer);
-					m_ResourceManager->DeleteBuffer(lodMesh.VertexBuffer);
+					Mesh* mesh = m_ResourceManager->GetMesh(lodMesh.Mesh);
+
+					if (mesh == nullptr)
+					{
+						continue;
+					}
+
+					for (auto& meshPart : mesh->Meshes)
+					{
+						m_ResourceManager->DeleteBuffer(meshPart.IndexBuffer);
+
+						for (auto& vertexBuffer : meshPart.VertexBuffers)
+						{
+							m_ResourceManager->DeleteBuffer(vertexBuffer);
+						}
+					}
+
 					m_ResourceManager->DeleteMesh(lodMesh.Mesh);
 				}
 

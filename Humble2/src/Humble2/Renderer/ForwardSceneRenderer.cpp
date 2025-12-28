@@ -1077,7 +1077,19 @@ namespace HBL2
 
 						Material* material = ResourceManager::Instance->GetMaterial(staticMesh.Material);
 						Mesh* mesh = ResourceManager::Instance->GetMesh(staticMesh.Mesh);
+
+						if (mesh->IsEmpty())
+						{
+							return;
+						}
+
 						const auto& meshPart = mesh->Meshes[staticMesh.MeshIndex];
+
+						if (meshPart.IsEmpty())
+						{
+							return;
+						}
+
 						const auto& subMesh = meshPart.SubMeshes[staticMesh.SubMeshIndex];
 
 						if (material == nullptr)

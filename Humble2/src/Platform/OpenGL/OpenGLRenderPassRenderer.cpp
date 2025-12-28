@@ -25,6 +25,13 @@ namespace HBL2
 					glBindBuffer(GL_UNIFORM_BUFFER, buffer->RendererId);
 
 					void* ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+
+					if (ptr == nullptr)
+					{
+						HBL2_CORE_ERROR("An error occured when trying to map data of buffer: {}.", buffer->DebugName);
+						continue;
+					}
+
 					memcpy(ptr, (void*)buffer->Data, buffer->ByteSize);
 					glUnmapBuffer(GL_UNIFORM_BUFFER);
 

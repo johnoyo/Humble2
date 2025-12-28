@@ -110,6 +110,13 @@ namespace HBL2
 			glBindBuffer(openGLBuffer->Usage, openGLBuffer->RendererId);
 
 			void* ptr = glMapBufferRange(openGLBuffer->Usage, offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+
+			if (ptr == nullptr)
+			{
+				HBL2_CORE_ERROR("An error occured when trying to map data of buffer: {}.", openGLBuffer->DebugName);
+				return;
+			}
+
 			memcpy(ptr, (void*)((char*)openGLBuffer->Data + offset), size);
 			glUnmapBuffer(openGLBuffer->Usage);
 
