@@ -56,7 +56,7 @@ bool test_reservation_allocation()
 
     PoolReservation* r1 = global.Reserve("Render", 256_KB);
     TEST_ASSERT(r1 != nullptr);
-    TEST_ASSERT(r1->Name == "Render");
+    TEST_ASSERT(std::strcmp(r1->Name, "Render") == 0);
     TEST_ASSERT(r1->Size == 256_KB);
 
     PoolReservation* r2 = global.GetReservation("Render");

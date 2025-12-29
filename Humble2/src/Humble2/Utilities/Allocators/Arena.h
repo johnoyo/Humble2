@@ -66,7 +66,7 @@ namespace HBL2
      */
     struct PoolReservation
     {
-        std::string Name;
+        const char* Name = nullptr;
         size_t Start;                 // offset within DATA region (relative to DATA base)
         size_t Size;                  // total reserved bytes
         size_t Offset;                // current carve offset inside reservation
@@ -76,6 +76,7 @@ namespace HBL2
         PoolReservation()
             : Name(), Start(SIZE_MAX), Size(0), Offset(0)
         {
+            FreeChunks.reserve(256);
         }
     };
 
@@ -204,6 +205,11 @@ namespace HBL2
 
             m_MetaCarved.store(0);
             m_DataCarved.store(0);
+
+            m_Reservations.max_load_factor(0.75f);
+            m_Reservations.reserve(64);
+
+            m_ChunkFreeList.reserve(512);
         }
 
         /**
@@ -214,48 +220,61 @@ namespace HBL2
          * @return Pointer to the PoolReservation (placement-new'd in META).
          * @throws std::bad_alloc when meta or data region cannot satisfy request.
          */
-        PoolReservation* Reserve(const std::string& name, size_t bytes)
+        PoolReservation* Reserve(std::string_view name, size_t bytes)
         {
+            // Lock meta for the entire reservation creation + map insertion.
+            std::unique_lock<std::mutex> lk_meta(m_MetaMutex);
+
+            // Check if it already exists (now safe).
+            auto it = m_Reservations.find(name);
+            if (it != m_Reservations.end())
             {
-                std::lock_guard<std::mutex> lk_meta(m_MetaMutex);
-                if (m_Reservations.find(name) != m_Reservations.end())
-                {
-                    return m_Reservations[name];
-                }
+                return it->second;
             }
 
-            void* metaPtr = AllocMeta(sizeof(PoolReservation), alignof(PoolReservation));
+            // Intern name into META
+            const char* internedName = InternString(name.data(), name.size());
+
+            void* metaPtr = AllocMetaNoLock(sizeof(PoolReservation), alignof(PoolReservation));
             if (!metaPtr)
             {
-                ADBG("GlobalArena ERROR: meta region exhausted when creating reservation '%s'\n", name.c_str());
+                ADBG("GlobalArena ERROR: meta region exhausted when creating reservation '%s'\n", name.data());
                 throw std::bad_alloc();
             }
 
             PoolReservation* r = ::new (metaPtr) PoolReservation();
-            r->Name = name;
+            r->Name = internedName;
 
-            std::lock_guard<std::mutex> lk_data(m_DataMutex);
-            size_t alignedDataOff = AlignUp(m_DataOffset, alignof(std::max_align_t));
-            if (alignedDataOff + bytes > m_DataSize)
+            // Carve DATA region under data lock.
             {
-                r->~PoolReservation();
-                ADBG("GlobalArena ERROR: data region insufficient for reservation '%s' (%zu bytes)\n", name.c_str(), bytes);
-                throw std::bad_alloc();
+                std::lock_guard<std::mutex> lk_data(m_DataMutex);
+                size_t alignedDataOff = AlignUp(m_DataOffset, alignof(std::max_align_t));
+                if (alignedDataOff + bytes > m_DataSize)
+                {
+                    r->~PoolReservation();
+                    ADBG("GlobalArena ERROR: data region insufficient for reservation '%s' (%zu bytes)\n", name.data(), bytes);
+                    throw std::bad_alloc();
+                }
+
+                r->Start = alignedDataOff;
+                r->Size = bytes;
+                r->Offset = 0;
+
+                m_DataOffset = alignedDataOff + bytes;
+                #ifdef ARENA_DEBUG
+                m_DataCarved.fetch_add(bytes);
+                #endif
             }
 
-            r->Start = alignedDataOff;
-            r->Size = bytes;
-            r->Offset = 0;
-
-            m_DataOffset = alignedDataOff + bytes;
-            m_Reservations[name] = r;
+            // Insert into map while meta lock still held.
+            m_Reservations.emplace(r->Name, r);
 
 #ifdef ARENA_DEBUG
             m_MetaCarved.fetch_add(sizeof(PoolReservation));
-            m_DataCarved.fetch_add(bytes);
 #endif
             return r;
         }
+
 
         /**
          * @brief Get an existing reservation by name.
@@ -320,9 +339,8 @@ namespace HBL2
          * @param alignment Required alignment.
          * @return pointer in META region or nullptr when META exhausted.
          */
-        void* AllocMeta(size_t bytes, size_t alignment = alignof(std::max_align_t))
+        void* AllocMetaNoLock(size_t bytes, size_t alignment = alignof(std::max_align_t))
         {
-            std::lock_guard<std::mutex> lk(m_MetaMutex);
             size_t aligned = AlignUp(m_MetaOffset, alignment);
             if (aligned + bytes <= m_MetaSize)
             {
@@ -334,6 +352,19 @@ namespace HBL2
                 return p;
             }
             return nullptr;
+        }
+
+        /**
+         * @brief Allocate @p bytes from META region for placement-new use.
+         *
+         * @param bytes Number of bytes to allocate.
+         * @param alignment Required alignment.
+         * @return pointer in META region or nullptr when META exhausted.
+         */
+        void* AllocMeta(size_t bytes, size_t alignment = alignof(std::max_align_t))
+        {
+            std::lock_guard<std::mutex> lk(m_MetaMutex);
+            return AllocMetaNoLock(bytes, alignment);
         }
 
         /**
@@ -448,6 +479,18 @@ namespace HBL2
         size_t DataSize() const { return m_DataSize; }
 
     private:
+        const char* InternString(const char* str, size_t len)
+        {
+            // +1 for null terminator
+            char* mem = static_cast<char*>(AllocMetaNoLock(len + 1, alignof(char)));
+            if (!mem) throw std::bad_alloc();
+
+            std::memcpy(mem, str, len);
+            mem[len] = '\0';
+            return mem;
+        }
+
+    private:
         uint8_t* m_Mem = nullptr;
 
         // META region
@@ -467,7 +510,7 @@ namespace HBL2
         std::vector<ArenaChunk*> m_ChunkFreeList;
 
         // Reservations map (name -> PoolReservation*)
-        std::unordered_map<std::string, PoolReservation*> m_Reservations;
+        std::unordered_map<std::string_view, PoolReservation*> m_Reservations;
 
         size_t m_TotalBytes = 0;
 
@@ -484,20 +527,18 @@ namespace HBL2
     class Arena
     {
     public:
+        Arena() = default;
+
         /**
          * @brief Construct an Arena bound to a GlobalArena and optional reservation.
          *
          * @param global Reference to the GlobalArena.
-         * @param cfg Arena configuration.
+         * @param bytes Arena configuration.
          * @param reservation Optional PoolReservation* to prefer.
          */
-        Arena(GlobalArena& global, size_t bytes, PoolReservation* reservation = nullptr)
-            : m_GlobalArena(global), m_Bytes(bytes), m_Reservation(reservation), m_Current(nullptr), m_NextChunkSize(bytes)
+        Arena(GlobalArena* global, size_t bytes, PoolReservation* reservation = nullptr)
         {
-            AcquireChunk(m_NextChunkSize);
-
-            m_Used.store(0);
-            m_HighWater.store(0);
+            Initialize(global, bytes, reservation);
         }
 
         /**
@@ -508,11 +549,25 @@ namespace HBL2
             // Return chunk structs to per-reservation or global free lists
             for (ArenaChunk* ch : m_Chunks)
             {
-                m_GlobalArena.FreeChunkStruct(ch);
+                m_GlobalArena->FreeChunkStruct(ch);
             }
 
             m_Chunks.clear();
             m_Current = nullptr;
+        }
+
+        void Initialize(GlobalArena* global, size_t bytes, PoolReservation* reservation = nullptr)
+        {
+            m_GlobalArena = global;
+            m_Bytes = bytes;
+            m_Reservation = reservation;
+            m_Current = nullptr;
+            m_NextChunkSize = bytes;
+
+            AcquireChunk(m_NextChunkSize);
+
+            m_Used.store(0);
+            m_HighWater.store(0);
         }
 
         /**
@@ -587,7 +642,7 @@ namespace HBL2
         template<typename T, typename... Args>
         T* AllocConstruct(Args&&... args)
         {
-            void* mem = alloc(sizeof(T), alignof(T));
+            void* mem = Alloc(sizeof(T), alignof(T));
             T* obj = ::new (mem) T(std::forward<Args>(args)...);
             return obj;
         }
@@ -600,7 +655,7 @@ namespace HBL2
         template<typename T>
         void Destruct(T* object)
         {
-            try { object.~T(); }
+            try { object->~T(); }
             catch (...) {}
         }
 
@@ -637,7 +692,7 @@ namespace HBL2
             {
                 ArenaChunk* c = m_Chunks.back();
                 m_Chunks.pop_back();
-                m_GlobalArena.FreeChunkStruct(c);
+                m_GlobalArena->FreeChunkStruct(c);
             }
 
             if (!m_Chunks.empty())
@@ -664,7 +719,7 @@ namespace HBL2
             {
                 ArenaChunk* c = m_Chunks.back();
                 m_Chunks.pop_back();
-                m_GlobalArena.FreeChunkStruct(c);
+                m_GlobalArena->FreeChunkStruct(c);
             }
 
             if (!m_Chunks.empty())
@@ -701,7 +756,7 @@ namespace HBL2
          */
         void AcquireChunk(size_t minCapacity)
         {
-            ArenaChunk* newChunk = m_GlobalArena.AllocateChunkStruct(minCapacity, m_Reservation);
+            ArenaChunk* newChunk = m_GlobalArena->AllocateChunkStruct(minCapacity, m_Reservation);
             m_Chunks.push_back(newChunk);
             m_Current = newChunk;
         }
@@ -724,7 +779,7 @@ namespace HBL2
         }
 
     private:
-        GlobalArena& m_GlobalArena;
+        GlobalArena* m_GlobalArena = nullptr;
         size_t m_Bytes;
         PoolReservation* m_Reservation;
         std::vector<ArenaChunk*> m_Chunks;

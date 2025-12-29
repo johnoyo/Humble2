@@ -27,7 +27,7 @@ namespace HBL2
 		// Textures
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) override
 		{
-			return m_TexturePool.Insert(VulkanTexture(std::forward<const TextureDescriptor>(desc)));
+			return m_TexturePool.Insert(std::forward<const TextureDescriptor>(desc));
 		}
 		virtual void DeleteTexture(Handle<Texture> handle) override
 		{
@@ -76,7 +76,7 @@ namespace HBL2
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) override
 		{
-			return m_BufferPool.Insert(VulkanBuffer(std::forward<const BufferDescriptor>(desc)));
+			return m_BufferPool.Insert(std::forward<const BufferDescriptor>(desc));
 		}
 		virtual void DeleteBuffer(Handle<Buffer> handle) override
 		{
@@ -136,7 +136,7 @@ namespace HBL2
 		// Framebuffers
 		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) override
 		{
-			return m_FrameBufferPool.Insert(VulkanFrameBuffer(std::forward<const FrameBufferDescriptor>(desc)));
+			return m_FrameBufferPool.Insert(std::forward<const FrameBufferDescriptor>(desc));
 		}
 		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) override
 		{
@@ -168,7 +168,7 @@ namespace HBL2
 		// Shaders
 		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) override
 		{
-			return m_ShaderPool.Insert(VulkanShader(std::forward<const ShaderDescriptor>(desc)));
+			return m_ShaderPool.Insert(std::forward<const ShaderDescriptor>(desc));
 		}
 		virtual void DeleteShader(Handle<Shader> handle) override
 		{
@@ -215,7 +215,7 @@ namespace HBL2
 				index++;
 			}
 
-			return m_BindGroupPool.Insert(VulkanBindGroup(std::forward<const BindGroupDescriptor>(desc)));
+			return m_BindGroupPool.Insert(std::forward<const BindGroupDescriptor>(desc));
 		}
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) override
 		{
@@ -249,7 +249,7 @@ namespace HBL2
 		// BindGroupsLayouts
 		virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) override
 		{
-			return m_BindGroupLayoutPool.Insert(VulkanBindGroupLayout(std::forward<const BindGroupLayoutDescriptor>(desc)));
+			return m_BindGroupLayoutPool.Insert(std::forward<const BindGroupLayoutDescriptor>(desc));
 		}
 		virtual void DeleteBindGroupLayout(Handle<BindGroupLayout> handle) override
 		{
@@ -271,7 +271,7 @@ namespace HBL2
 		// RenderPass
 		virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) override
 		{
-			return m_RenderPassPool.Insert(VulkanRenderPass(std::forward<const RenderPassDescriptor>(desc)));
+			return m_RenderPassPool.Insert(std::forward<const RenderPassDescriptor>(desc));
 		}
 		virtual void DeleteRenderPass(Handle<RenderPass> handle) override
 		{
@@ -293,7 +293,7 @@ namespace HBL2
 		// RenderPassLayouts
 		virtual Handle<RenderPassLayout> CreateRenderPassLayout(const RenderPassLayoutDescriptor&& desc) override
 		{
-			return m_RenderPassLayoutPool.Insert(VulkanRenderPassLayout(std::forward<const RenderPassLayoutDescriptor>(desc)));
+			return m_RenderPassLayoutPool.Insert(std::forward<const RenderPassLayoutDescriptor>(desc));
 		}
 		virtual void DeleteRenderPassLayout(Handle<RenderPassLayout> handle) override
 		{

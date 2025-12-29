@@ -175,13 +175,14 @@ namespace HBL2
 	{
 		SceneRenderData* sceneRenderData = (SceneRenderData*)renderData;
 		UniformRingBuffer* uniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
+		ResourceManager* rm = ResourceManager::Instance;
 
 		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
-		ResourceManager::Instance->MapBufferData(uniformRingBuffer->GetBuffer(), sceneRenderData->m_UBOStartingOffset, sceneRenderData->m_UBOEndingOffset - sceneRenderData->m_UBOStartingOffset);
+		rm->MapBufferData(uniformRingBuffer->GetBuffer(), sceneRenderData->m_UBOStartingOffset, sceneRenderData->m_UBOEndingOffset - sceneRenderData->m_UBOStartingOffset);
 
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
-		ResourceManager::Instance->TransitionTextureLayout(
+		rm->TransitionTextureLayout(
 			commandBuffer,
 			Renderer::Instance->IntermediateColorTexture,
 			TextureLayout::UNDEFINED,
@@ -189,7 +190,7 @@ namespace HBL2
 			{}
 		);
 
-		ResourceManager::Instance->TransitionTextureLayout(
+		rm->TransitionTextureLayout(
 			commandBuffer,
 			Renderer::Instance->MainColorTexture,
 			TextureLayout::UNDEFINED,
@@ -197,7 +198,7 @@ namespace HBL2
 			{}
 		);
 
-		ResourceManager::Instance->TransitionTextureLayout(
+		rm->TransitionTextureLayout(
 			commandBuffer,
 			Renderer::Instance->ShadowAtlasTexture,
 			TextureLayout::UNDEFINED,

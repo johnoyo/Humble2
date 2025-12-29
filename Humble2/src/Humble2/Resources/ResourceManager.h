@@ -103,11 +103,11 @@ namespace HBL2
 		// Meshes	
 		Handle<Mesh> CreateMesh(const MeshDescriptor&& desc)
 		{
-			return m_MeshPool.Insert(Mesh(std::forward<const MeshDescriptor>(desc)));
+			return m_MeshPool.Insert(std::forward<const MeshDescriptor>(desc));
 		}
 		Handle<Mesh> CreateMesh(const MeshDescriptor2&& desc)
 		{
-			return m_MeshPool.Emplace(std::forward<const MeshDescriptor2>(desc));
+			return m_MeshPool.Insert(std::forward<const MeshDescriptor2>(desc));
 		}
 		void DeleteMesh(Handle<Mesh> handle)
 		{
@@ -121,7 +121,7 @@ namespace HBL2
 		// Materials
 		Handle<Material> CreateMaterial(const MaterialDescriptor&& desc)
 		{
-			return m_MaterialPool.Insert(Material(std::forward<const MaterialDescriptor>(desc)));
+			return m_MaterialPool.Insert(std::forward<const MaterialDescriptor>(desc));
 		}
 		void DeleteMaterial(Handle<Material> handle)
 		{
@@ -135,7 +135,7 @@ namespace HBL2
 		// Scenes
 		Handle<Scene> CreateScene(const SceneDescriptor&& desc)
 		{
-			return m_ScenePool.Insert(Scene(std::forward<const SceneDescriptor>(desc)));
+			return m_ScenePool.Insert(std::forward<const SceneDescriptor>(desc));
 		}
 		void DeleteScene(Handle<Scene> handle)
 		{
@@ -149,7 +149,7 @@ namespace HBL2
 		// Scripts
 		Handle<Script> CreateScript(const ScriptDescriptor&& desc)
 		{
-			return m_ScriptPool.Insert(Script(std::forward<const ScriptDescriptor>(desc)));
+			return m_ScriptPool.Insert(std::forward<const ScriptDescriptor>(desc));
 		}
 		void DeleteScript(Handle<Script> handle)
 		{
@@ -163,7 +163,7 @@ namespace HBL2
 		// Sounds
 		Handle<Sound> CreateSound(const SoundDescriptor&& desc)
 		{
-			return m_SoundPool.Insert(Sound(std::forward<const SoundDescriptor>(desc)));
+			return m_SoundPool.Insert(std::forward<const SoundDescriptor>(desc));
 		}
 		void DeleteSound(Handle<Sound> handle)
 		{
@@ -177,7 +177,7 @@ namespace HBL2
 		// Prefabs
 		Handle<Prefab> CreatePrefab(const PrefabDescriptor&& desc)
 		{
-			return m_PrefabPool.Insert(Prefab(std::forward<const PrefabDescriptor>(desc)));
+			return m_PrefabPool.Insert(std::forward<const PrefabDescriptor>(desc));
 		}
 		void DeletePrefab(Handle<Prefab> handle)
 		{

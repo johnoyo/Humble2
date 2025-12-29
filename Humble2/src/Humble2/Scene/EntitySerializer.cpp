@@ -572,7 +572,6 @@ namespace HBL2
 		{
 			auto& staticMesh = m_Scene->AddComponent<Component::StaticMesh>(m_Entity);
 			staticMesh.Enabled = staticMesh_NewComponent["Enabled"].as<bool>();
-			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
 
 			if (staticMesh_NewComponent["Mesh"].IsDefined())
 			{
@@ -580,6 +579,8 @@ namespace HBL2
 				staticMesh.MeshIndex = staticMesh_NewComponent["Mesh"]["MeshIndex"].as<uint32_t>();
 				staticMesh.SubMeshIndex = staticMesh_NewComponent["Mesh"]["SubMeshIndex"].as<uint32_t>();
 			}
+
+			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
 		}
 
 		auto light_NewComponent = entityNode["Component::Light"];

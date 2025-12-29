@@ -305,6 +305,16 @@ namespace HBL2
 
 				ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
 					.ShaderAssetHandle = {}, // Use built-in shaders depending on material type.
+					.VariantDescriptor = {
+						.blend = {
+							.enabled = false,
+						},
+						.depthTest =
+						{
+							.writeEnabled = false,
+							.depthTest = Compare::LESS_OR_EQUAL,
+						},
+					},
 					.AlbedoColor = albedoColor,
 					.Glossiness = (float)roughness,
 					.AlbedoMapAssetHandle = albedoMapAssetHandle,

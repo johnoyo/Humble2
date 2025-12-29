@@ -16,7 +16,12 @@ namespace HBL2
     {
     public:
         using value_type = T;
+        using is_always_equal = std::false_type;
+        using propagate_on_container_move_assignment = std::true_type;
+        using propagate_on_container_copy_assignment = std::false_type;
+        using propagate_on_container_swap = std::true_type;
 
+    public:
         explicit ArenaAllocator(Arena* arena) noexcept
             : m_Arena(arena)
         {
@@ -40,7 +45,7 @@ namespace HBL2
 
             if (!ptr)
             {
-                return nullptr;
+                throw std::bad_alloc{};
             }
 
             return static_cast<T*>(ptr);

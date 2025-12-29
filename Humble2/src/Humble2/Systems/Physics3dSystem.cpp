@@ -6,9 +6,7 @@
 #include "Resources/ResourceManager.h"
 
 #include "AnimationCurveSystem.h"
-
-#include "Utilities/Collections/DynamicArray.h"
-#include "Utilities/Allocators/BumpAllocator.h"
+#include "Utilities/Collections/Collections.h"
 
 namespace HBL2
 {
@@ -121,17 +119,17 @@ namespace HBL2
 		// The main way to interact with the bodies in the physics system is through the body interface.
 		JPH::BodyInterface& bodyInterface = m_PhysicsEngine->Get()->GetBodyInterfaceNoLock();
 
-		DynamicArray<JPH::BodyID, BumpAllocator> bulkAddBuffer = MakeDynamicArray<JPH::BodyID>(&Allocator::Frame);
+		DArray<JPH::BodyID> bulkAddBuffer = MakeDArray<JPH::BodyID>(Allocator::FrameArena, 32);
 
 		m_Context->Group<Component::Rigidbody>(Get<Component::Transform>)
 			.Each([this, &bodyInterface, &bulkAddBuffer](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
 			{
 				AddRigidBody(entity, rb, transform, bodyInterface);
-				bulkAddBuffer.Add(GetBodyIDFromPhysicsID(rb.BodyID));
+				bulkAddBuffer.push_back(GetBodyIDFromPhysicsID(rb.BodyID));
 			});
 
-		JPH::BodyInterface::AddState addState =  bodyInterface.AddBodiesPrepare(bulkAddBuffer.Data(), bulkAddBuffer.Size());
-		bodyInterface.AddBodiesFinalize(bulkAddBuffer.Data(), bulkAddBuffer.Size(), addState, JPH::EActivation::Activate);
+		JPH::BodyInterface::AddState addState =  bodyInterface.AddBodiesPrepare(bulkAddBuffer.data(), bulkAddBuffer.size());
+		bodyInterface.AddBodiesFinalize(bulkAddBuffer.data(), bulkAddBuffer.size(), addState, JPH::EActivation::Activate);
 
 		m_Initialized = true;
 	}

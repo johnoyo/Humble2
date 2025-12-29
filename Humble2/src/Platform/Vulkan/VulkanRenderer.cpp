@@ -500,7 +500,7 @@ namespace HBL2
 			swapchainImage.ImageView = m_SwapChainImageViews[i];
 			swapchainImage.Extent = { m_SwapChainExtent.width, m_SwapChainExtent.height, 1 };
 			swapchainImage.Aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-			m_SwapChainColorTextures.push_back(m_ResourceManager->m_TexturePool.Insert(swapchainImage));
+			m_SwapChainColorTextures.push_back(m_ResourceManager->m_TexturePool.Insert(std::move(swapchainImage)));
 		}
 	}
 

@@ -16,7 +16,7 @@ class ResourceDeletionQueue
 {
 public:
     ResourceDeletionQueue()
-        : m_Capacity(128), m_Buffer(128), m_Head(0), m_Tail(0), m_Size(0) {}
+        : m_Capacity(512), m_Buffer(512), m_Head(0), m_Tail(0), m_Size(0) {}
 
     ResourceDeletionQueue(size_t initialCapacity)
         : m_Capacity(initialCapacity), m_Buffer(initialCapacity), m_Head(0), m_Tail(0), m_Size(0) {}

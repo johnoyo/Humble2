@@ -150,6 +150,14 @@ namespace HBL2
 		}
 	}
 
+	VulkanTexture::VulkanTexture(const VulkanTexture&& other)
+	{
+		Image = other.Image;
+		ImageView = other.ImageView;
+		Extent = other.Extent;
+		Aspect = other.Aspect;
+	}
+
 	void VulkanTexture::Update(const Span<const std::byte>& bytes)
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;

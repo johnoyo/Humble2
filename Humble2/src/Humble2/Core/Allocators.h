@@ -16,6 +16,11 @@ namespace HBL2
 		static GlobalArena Arena;
 
 		/**
+		 * @brief Arena allocator for the duration of a frame. Not thread safe, only to be used by the main thread.
+		 */
+		static HBL2::Arena FrameArena;
+
+		/**
 		 * @brief Arena allocator for the duration of a frame.
 		 */
 		static BumpAllocator Frame;

@@ -47,7 +47,7 @@ namespace HBL2
         }
 
         template <typename Arg>
-        Handle<H> Emplace(const Arg&& arg)
+        Handle<H> Insert(const Arg&& arg)
         {
             const uint16_t index = m_FreeList.Pop();
             if (index == InvalidIndex)
@@ -57,21 +57,6 @@ namespace HBL2
             }
 
             new (&m_Data[index]) T(std::forward<const Arg>(arg));
-
-            const uint16_t gen = m_GenerationalCounter[index].load(std::memory_order_relaxed);
-            return { index, gen };
-        }
-
-        Handle<H> Insert(const T& data)
-        {
-            const uint16_t index = m_FreeList.Pop();
-            if (index == InvalidIndex)
-            {
-                HBL2_CORE_ASSERT(false, "Exhausted available Pool indeces!");
-                return {};
-            }
-
-            m_Data[index] = data;
 
             const uint16_t gen = m_GenerationalCounter[index].load(std::memory_order_relaxed);
             return { index, gen };
