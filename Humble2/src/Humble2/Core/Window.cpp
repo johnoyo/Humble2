@@ -32,6 +32,16 @@ namespace HBL2
 		EventDispatcher::Get().Post(WindowFocusEvent(focused));
 	}
 
+	static void WindowIconifyCallback(GLFWwindow* window, int iconified)
+	{
+		EventDispatcher::Get().Post(WindowIconifyEvent(iconified));
+	}
+
+	static void WindowMaximizeCallback(GLFWwindow* window, int maximized)
+	{
+		EventDispatcher::Get().Post(WindowMaximizeEvent(maximized));
+	}
+
 	static void WindowRefreshCallback(GLFWwindow* window)
 	{
 		EventDispatcher::Get().Post(WindowRefreshEvent());
@@ -143,7 +153,8 @@ namespace HBL2
 		glfwSetWindowPosCallback(m_Window, WindowPositionCallback);
 		glfwSetFramebufferSizeCallback(m_Window, FramebufferSizeCallback);
 		glfwSetWindowFocusCallback(m_Window, WindowFocusCallback);
-		glfwSetWindowRefreshCallback(m_Window, WindowRefreshCallback);
+		glfwSetWindowIconifyCallback(m_Window, WindowIconifyCallback);
+		glfwSetWindowMaximizeCallback(m_Window, WindowMaximizeCallback);
 		glfwSetMouseButtonCallback(m_Window, MouseButtonCallback);
 		glfwSetScrollCallback(m_Window, ScrollCallback);
 		glfwSetCursorPosCallback(m_Window, CursorPosCallback);

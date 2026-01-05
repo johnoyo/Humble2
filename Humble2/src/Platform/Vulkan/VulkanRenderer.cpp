@@ -53,10 +53,16 @@ namespace HBL2
 
 	void VulkanRenderer::BeginFrame()
 	{
+		if (m_Resize)
+		{
+			Resize(m_NewSize.x, m_NewSize.y);
+			m_Resize = false;
+		}
+
 		// Wait until the GPU has finished rendering the last frame. Timeout of 1 second
-		VK_VALIDATE(vkWaitForFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence, true, 1000000000), "vkWaitForFences");
+		VK_VALIDATE(vkWaitForFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence, true, UINT64_MAX), "vkWaitForFences");
 		VK_VALIDATE(vkResetFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence), "vkResetFences");
-		VK_VALIDATE(vkAcquireNextImageKHR(m_Device->Get(), m_SwapChain, 1000000000, GetCurrentFrame().ImageAvailableSemaphore, nullptr, &m_SwapchainImageIndex), "vkAcquireNextImageKHR");
+		VK_VALIDATE(vkAcquireNextImageKHR(m_Device->Get(), m_SwapChain, UINT64_MAX, GetCurrentFrame().ImageAvailableSemaphore, nullptr, &m_SwapchainImageIndex), "vkAcquireNextImageKHR");
 
 		m_Stats.Reset();
 	}
@@ -94,10 +100,9 @@ namespace HBL2
 
 		m_FrameNumber++;
 
-		if (m_Resize)
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		{
-			Resize(m_NewSize.x, m_NewSize.y);
-			m_Resize = false;
+			m_Resize = true;
 		}
 		else
 		{
@@ -283,6 +288,9 @@ namespace HBL2
 
 		VK_VALIDATE(vkDeviceWaitIdle(m_Device->Get()), "vkDeviceWaitIdle");
 
+		// Store old swapchain.
+		VkSwapchainKHR oldSwapchain = m_SwapChain;
+
 		// Cleanup old swapchain resources.
 		for (auto frameBuffer : m_FrameBuffers)
 		{
@@ -303,23 +311,24 @@ namespace HBL2
 		// Destroy the depth buffer.
 		m_ResourceManager->DeleteTexture(m_DepthImage);
 
-		// Destroy the swapchain
-		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
-
-		// TODO: Destroy surface here maybe??
-		// ...
-
 		// Destroy old offscreen textures.
+		m_FrameNumber++;
+		m_FrameNumber++;
 		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
+		m_FrameNumber--;
+		m_FrameNumber--;
 
 		m_Device->UpdateSwapChainSupportDetails();
 
 		// Recreate swapchain and associated resources.
-		CreateSwapchain();
+		CreateSwapchain(oldSwapchain);
 		CreateImageViews();
 		CreateFrameBuffers();
+
+		// Destroy the swapchain.
+		vkDestroySwapchainKHR(m_Device->Get(), oldSwapchain, nullptr);
 
 		// Recreate the offscreen texture (render target).
 		IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
@@ -399,7 +408,7 @@ namespace HBL2
 		VK_VALIDATE(vmaCreateAllocator(&allocatorInfo, &m_Allocator), "vmaCreateAllocator");
 	}
 
-	void VulkanRenderer::CreateSwapchain()
+	void VulkanRenderer::CreateSwapchain(VkSwapchainKHR oldSwapchain)
 	{
 		const SwapChainSupportDetails& swapChainSupport = m_Device->GetSwapChainSupportDetails();
 
@@ -444,7 +453,7 @@ namespace HBL2
 		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 		createInfo.presentMode = presentMode;
 		createInfo.clipped = VK_TRUE;
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
+		createInfo.oldSwapchain = oldSwapchain;
 
 		VK_VALIDATE(vkCreateSwapchainKHR(m_Device->Get(), &createInfo, nullptr, &m_SwapChain), "vkCreateSwapchainKHR");
 

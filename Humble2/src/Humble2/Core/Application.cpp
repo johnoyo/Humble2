@@ -12,8 +12,8 @@
 	#define SWAP_AND_RESET_PROFILED_TIMERS() (m_PreviousStats = m_CurrentStats, m_CurrentStats.Reset())
 #endif
 
-#define SKIP_FIRST_MT_FRAME() static bool isFirstMTFrame = true; if (isFirstMTFrame) { isFirstMTFrame = false; EndFrame(); return; }
-#define SKIP_FIRST_RT_FRAME() static bool isFirstRTFrame = true; if (isFirstRTFrame) { isFirstRTFrame = false; continue; }
+#define SKIP_MT_FRAME() if (skipMTFrame.load() <= 0) { if (skipMTFrame.load() == 0) { skipMTFrame = 1; } EndFrame(); return; }
+#define SKIP_RT_FRAME() if (skipRTFrame.load() <= 0) { if (skipRTFrame.load() == 0) { skipRTFrame = 1; } continue; }
 
 #define MULTITHREADING 1
 
@@ -22,6 +22,8 @@ namespace HBL2
 	Application* Application::s_Instance = nullptr;
 
 	static const char* g_GfxAPI;
+	static std::atomic_int32_t skipMTFrame = { 0 };
+	static std::atomic_int32_t skipRTFrame = { 0 };
 
 	Application::Application(ApplicationSpec& specification) : m_Specification(specification)
 	{
@@ -123,6 +125,20 @@ namespace HBL2
 			PhysicsEngine3D::Instance = new JoltPhysicsEngine;
 			break;
 		}
+
+		EventDispatcher::Get().Register<WindowIconifyEvent>([](const WindowIconifyEvent& e)
+		{
+			if (e.Iconified)
+			{
+				skipMTFrame = -1;
+				skipRTFrame = -1;
+			}
+			else
+			{
+				skipMTFrame = 1;
+				skipRTFrame = 1;
+			}
+		});
 	}
 
 	Application::~Application()
@@ -320,7 +336,7 @@ namespace HBL2
 
 			while (true)
 			{
-				SKIP_FIRST_RT_FRAME();
+				SKIP_RT_FRAME();
 
 				BEGIN_APP_PROFILE(renderThread);
 
@@ -358,7 +374,7 @@ namespace HBL2
 
 			BeginFrame();
 
-			SKIP_FIRST_MT_FRAME();
+			SKIP_MT_FRAME();
 
 			BEGIN_APP_PROFILE(debugDraw);
 			DebugRenderer::Instance->BeginFrame();

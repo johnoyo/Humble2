@@ -93,7 +93,7 @@ namespace HBL2
 
 	private:
 		void CreateAllocator();
-		void CreateSwapchain();
+		void CreateSwapchain(VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
 		void CreateImageViews();
 		void CreateSyncStructures();
 		void CreateCommands();

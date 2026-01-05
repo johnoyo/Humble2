@@ -114,8 +114,10 @@ namespace HBL2
 
                 ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
                     .ShaderAssetHandle = {}, // Use built-in shaders depending on material type.
-                    .VariantDescriptor = {
-                        .blend = {
+                    .VariantDescriptor =
+                    {
+                        .blend =
+                        {
                             .enabled = false,
                         },
                         .depthTest = 
