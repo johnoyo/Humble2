@@ -110,14 +110,6 @@ namespace HBL2
 
 		DebugRenderer::Instance = new DebugRenderer;
 
-		switch (projectSettings.Physics2DImpl)
-		{
-		case Physics2DEngineImpl::BOX2D:
-		case Physics2DEngineImpl::CUSTOM:
-			PhysicsEngine2D::Instance = new Box2DPhysicsEngine;
-			break;
-		}
-
 		EventDispatcher::Get().Register<WindowIconifyEvent>([](const WindowIconifyEvent& e)
 		{
 			if (e.Iconified)
