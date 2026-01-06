@@ -134,29 +134,51 @@ namespace HBL2
 
 					// Transformation gizmo
 					auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(selectedEntity);
-					bool editedTransformation = ImGuiRenderer::Instance->Gizmos_Manipulate(
+					auto* link = m_ActiveScene->TryGetComponent<HBL2::Component::Link>(selectedEntity);
+
+					glm::mat4 parentW(1.0f);
+					if (link != nullptr && link->Parent != 0)
+					{
+						Entity p = m_ActiveScene->FindEntityByUUID(link->Parent);
+						if (p != Entity::Null)
+						{
+							parentW = m_ActiveScene->GetComponent<HBL2::Component::Transform>(p).WorldMatrix;
+						}
+					}
+
+					bool edited = ImGuiRenderer::Instance->Gizmos_Manipulate(
 						glm::value_ptr(camera.View),
 						glm::value_ptr(camera.Projection),
 						m_GizmoOperation,
 						m_GizmoMode,
-						m_GizmoMode == ImGuizmo::MODE::LOCAL ? glm::value_ptr(transform.LocalMatrix) : glm::value_ptr(transform.WorldMatrix),
+						glm::value_ptr(transform.WorldMatrix),
 						nullptr,
 						snapValuesFinal
 					);
 
-					if (editedTransformation)
+					if (edited && ImGuiRenderer::Instance->Gizmos_IsUsing())
 					{
-						if (ImGuiRenderer::Instance->Gizmos_IsUsing())
-						{
-							glm::vec3 newTranslation;
-							glm::vec3 newRotation;
-							glm::vec3 newScale;
-							const glm::mat4& matrix = (m_GizmoMode == ImGuizmo::MODE::LOCAL ? transform.LocalMatrix : transform.WorldMatrix);
-							ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(matrix), glm::value_ptr(newTranslation), glm::value_ptr(newRotation), glm::value_ptr(newScale));
-							transform.Translation = glm::vec3(newTranslation.x, newTranslation.y, newTranslation.z);
-							transform.Rotation += glm::vec3(newRotation.x - transform.Rotation.x, newRotation.y - transform.Rotation.y, newRotation.z - transform.Rotation.z);
-							transform.Scale = glm::vec3(newScale.x, newScale.y, newScale.z);
-						}
+						// Convert edited world -> local
+						glm::mat4 localM = glm::inverse(parentW) * transform.WorldMatrix;
+
+						glm::vec3 lt, lr, ls;
+						ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(localM), glm::value_ptr(lt), glm::value_ptr(lr), glm::value_ptr(ls));
+
+						transform.Translation = lt;
+						transform.Rotation = lr;  // degrees
+						transform.Scale = ls;
+
+						// Keep world fields in sync (optional)
+						glm::vec3 wt, wr, ws;
+						ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(transform.WorldMatrix), glm::value_ptr(wt), glm::value_ptr(wr), glm::value_ptr(ws));
+
+						transform.WorldTranslation = wt;
+						transform.WorldRotation = wr;
+						transform.WorldScale = ws;
+
+						transform.PrevWorldTranslation = wt;
+						transform.PrevWorldRotation = wr;
+						transform.PrevWorldScale = ws;
 					}
 				}
 

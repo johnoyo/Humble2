@@ -1,28 +1,56 @@
 #include "HierachySystem.h"
 
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/euler_angles.hpp>
+
 namespace HBL2
 {
+	static bool DecomposeTRS(const glm::mat4& m, glm::vec3& outTranslation, glm::vec3& outRotationDeg, glm::vec3& outScale )
+	{
+		glm::vec3 skew;
+		glm::vec4 perspective;
+		glm::quat orientation;
+
+		if (!glm::decompose(m, outScale, orientation, outTranslation, skew, perspective))
+		{
+			return false;
+		}
+
+		// Convert quat -> euler radians -> degrees
+		outRotationDeg = glm::degrees(glm::eulerAngles(orientation));
+		return true;
+	}
+
+	static glm::mat4 TRS(const glm::vec3& t, const glm::vec3& rDeg, const glm::vec3& s)
+	{
+		glm::mat4 T = glm::translate(glm::mat4(1.0f), t);
+		glm::quat q = glm::quat(glm::radians(rDeg));
+		glm::mat4 R = glm::toMat4(q);
+		glm::mat4 S = glm::scale(glm::mat4(1.0f), s);
+		return T * R * S;
+	}
+
 	void HierachySystem::OnCreate()
 	{
 		m_Context->View<Component::Transform>()
 			.Each([&](Component::Transform& transform)
 			{
 				glm::mat4 T = glm::translate(glm::mat4(1.0f), transform.Translation);
-				transform.QRotation = glm::quat({ glm::radians(transform.Rotation.x), glm::radians(transform.Rotation.y), glm::radians(transform.Rotation.z) });
+				transform.QRotation = glm::quat(glm::radians(transform.Rotation));
 				glm::mat4 S = glm::scale(glm::mat4(1.0f), transform.Scale);
 
 				transform.LocalMatrix = T * glm::toMat4(transform.QRotation) * S;
 				transform.WorldMatrix = transform.LocalMatrix;
 			});
 
-		m_Context->Group<Component::Link>(Get<Component::Transform>)
-			.Each([&](Entity entity, Component::Link& link, Component::Transform& transform)
+		m_Context->Group<Component::Transform, Component::Link>()
+			.Each([&](Entity entity, Component::Transform& transform, Component::Link& link)
 			{
 				link.Children.clear();
 			});
 
-		m_Context->Group<Component::Link>(Get<Component::Transform>)
-			.Each([&](Entity entity, Component::Link& link, Component::Transform& transform)
+		m_Context->Group<Component::Transform, Component::Link>()
+			.Each([&](Entity entity, Component::Transform& transform, Component::Link& link)
 			{
 				transform.WorldMatrix = GetWorldSpaceTransform(entity, link);
 				AddChildren(entity, link);
@@ -33,73 +61,76 @@ namespace HBL2
 	{
 		BEGIN_PROFILE_SYSTEM();
 
-		// Handle world translation changes.
-		m_Context->Group<Component::Link>(Get<Component::Transform>)
-			.Each([&](Entity entity, Component::Link& link, Component::Transform& transform)
+		m_Context->Group<Component::Transform, Component::Link>()
+			.Each([&](Entity entity, Component::Transform& transform, Component::Link& link)
 			{
-				if (transform.PrevWorldTranslation == transform.WorldTranslation)
-				{
-					return;
-				}
+				const bool worldTChanged = (transform.PrevWorldTranslation != transform.WorldTranslation);
+				const bool worldRChanged = (transform.PrevWorldRotation != transform.WorldRotation);
+				const bool worldSChanged = (transform.PrevWorldScale != transform.WorldScale);
 
-				// Fetch parent world matrix
-				glm::mat4 parentW = glm::mat4(1.0f);
-				if (link.Parent != 0)
+				// Handle world transform changes.
+				if (!transform.Static && (worldTChanged || worldRChanged || worldSChanged))
 				{
-					Entity p = m_Context->FindEntityByUUID(link.Parent);
-					if (p != Entity::Null)
+					// Fetch parent world matrix.
+					glm::mat4 parentW(1.0f);
+					if (link.Parent != 0)
 					{
-						parentW = m_Context->GetComponent<Component::Transform>(p).WorldMatrix;
+						Entity p = m_Context->FindEntityByUUID(link.Parent);
+						if (p != Entity::Null)
+						{
+							parentW = m_Context->GetComponent<Component::Transform>(p).WorldMatrix;
+						}
 					}
+
+					glm::mat4 desiredWorld = TRS(transform.WorldTranslation, transform.WorldRotation, transform.WorldScale);
+					glm::mat4 localM = glm::inverse(parentW) * desiredWorld;
+
+					// Set local transforms.
+					glm::vec3 lt, lr, ls;
+					if (DecomposeTRS(localM, lt, lr, ls))
+					{
+						transform.Translation = lt;
+						transform.Rotation = lr;
+						transform.Scale = ls;
+					}
+
+					transform.PrevWorldTranslation = transform.WorldTranslation;
+					transform.PrevWorldRotation = transform.WorldRotation;
+					transform.PrevWorldScale = transform.WorldScale;
 				}
 
-				// Compute new local translation = inverse(parent) * desired world
-				glm::vec3 localPos = glm::vec3(glm::inverse(parentW) * glm::vec4(transform.WorldTranslation, 1));
-
-				// Set local translation
-				if (localPos != transform.Translation)
-				{
-					transform.Translation = localPos;
-				}
-			});
-
-		// Calculate local matrices.
-		m_Context->View<Component::Transform>()
-			.Each([&](Component::Transform& transform)
-			{
+				// Calculate local matrices.
 				if (!transform.Static)
 				{
-					glm::mat4 T = glm::translate(glm::mat4(1.0f), transform.Translation);
-					transform.QRotation = glm::quat({ glm::radians(transform.Rotation.x), glm::radians(transform.Rotation.y), glm::radians(transform.Rotation.z) });
-					glm::mat4 S = glm::scale(glm::mat4(1.0f), transform.Scale);
-
-					glm::mat4 newLocalMatrix = T * glm::toMat4(transform.QRotation) * S;
-
-					if (transform.LocalMatrix != newLocalMatrix)
-					{
-						transform.LocalMatrix = std::move(newLocalMatrix);
-						transform.WorldMatrix = transform.LocalMatrix;
-						transform.Dirty = true;
-					}
-					else
-					{
-						transform.Dirty = false;
-					}
+					transform.QRotation = glm::quat(glm::radians(transform.Rotation));
+					transform.LocalMatrix = TRS(transform.Translation, transform.Rotation, transform.Scale);
 				}
 			});
 
 		// Calculate world matrices.
-		m_Context->Group<Component::Link>(Get<Component::Transform>)
-			.Each([&](Entity entity, Component::Link& link, Component::Transform& transform)
+		m_Context->Group<Component::Transform, Component::Link>()
+			.Each([&](Entity entity, Component::Transform& transform, Component::Link& link)
 			{
 				if (!transform.Static)
 				{
-					if (transform.Dirty)
+					transform.WorldMatrix = GetWorldSpaceTransform(entity, link);
+
+					// Set world transforms.
+					glm::vec3 wt, wr, ws;
+					if (DecomposeTRS(transform.WorldMatrix, wt, wr, ws))
 					{
-						transform.WorldMatrix = GetWorldSpaceTransform(entity, link);
-						transform.WorldTranslation = glm::vec3(transform.WorldMatrix[3]);
-						transform.Dirty = false;
+						transform.WorldTranslation = wt;
+						transform.WorldRotation = wr;
+						transform.WorldScale = ws;
 					}
+					else
+					{
+						transform.WorldTranslation = glm::vec3(transform.WorldMatrix[3]);
+					}
+
+					transform.PrevWorldTranslation = transform.WorldTranslation;
+					transform.PrevWorldRotation = transform.WorldRotation;
+					transform.PrevWorldScale = transform.WorldScale;
 
 					UpdateChildren(entity, link);
 				}

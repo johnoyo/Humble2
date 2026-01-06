@@ -8,6 +8,7 @@
 
 #include "Systems\TransformSystem.h"
 #include "Systems\LinkSystem.h"
+#include "Systems\HierachySystem.h"
 #include "Systems\CameraSystem.h"
 #include "Systems\RenderingSystem.h"
 #include "Systems\SoundSystem.h"
@@ -101,8 +102,9 @@ namespace HBL2
         // copy_component(Component::TerrainChunk{});
 
         // Clone systems.
-        dst->RegisterSystem(new TransformSystem);
-        dst->RegisterSystem(new LinkSystem);
+        //dst->RegisterSystem(new TransformSystem);
+        //dst->RegisterSystem(new LinkSystem);
+        dst->RegisterSystem(new HierachySystem);
         dst->RegisterSystem(new CameraSystem, SystemType::Runtime);
         dst->RegisterSystem(new TerrainSystem);
         dst->RegisterSystem(new RenderingSystem);

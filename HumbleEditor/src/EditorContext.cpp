@@ -1,4 +1,5 @@
 #include "EditorContext.h"
+
 #include <Utilities\FileDialogs.h>
 
 namespace HBL2

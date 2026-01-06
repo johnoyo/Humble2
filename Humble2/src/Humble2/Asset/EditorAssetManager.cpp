@@ -599,8 +599,9 @@ namespace HBL2
 			return sceneHandle;
 		}
 
-		scene->RegisterSystem(new TransformSystem);
-		scene->RegisterSystem(new LinkSystem);
+		//scene->RegisterSystem(new TransformSystem);
+		//scene->RegisterSystem(new LinkSystem);
+		scene->RegisterSystem(new HierachySystem);
 		scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
 		scene->RegisterSystem(new TerrainSystem);
 		scene->RegisterSystem(new RenderingSystem);
@@ -866,8 +867,9 @@ namespace HBL2
 				return;
 			}
 
-			scene->RegisterSystem(new TransformSystem);
-			scene->RegisterSystem(new LinkSystem);
+			//scene->RegisterSystem(new TransformSystem);
+			//scene->RegisterSystem(new LinkSystem);
+			scene->RegisterSystem(new HierachySystem);
 			scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
 			scene->RegisterSystem(new TerrainSystem);
 			scene->RegisterSystem(new RenderingSystem);

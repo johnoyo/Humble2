@@ -399,6 +399,19 @@ namespace HBL2
 			{
 				ImGui::Begin("Editor Settings##Window", &m_ShowEditorSettingsWindow);
 
+				// Gizmo mode.
+				{
+					const char* options[] = { "Local", "World" };
+					int currentItem = (int)m_GizmoMode;
+
+					if (ImGui::Combo("GizmoMode", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						m_GizmoMode = (ImGuizmo::MODE)currentItem;
+					}
+				}
+
+				ImGui::Separator();
+
 				m_Context->View<Component::EditorCamera>()
 					.Each([&](Entity entity, Component::EditorCamera& editorCamera)
 					{
