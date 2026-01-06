@@ -9,14 +9,9 @@ namespace HBL2
 	class Box2DPhysicsEngine final : public PhysicsEngine2D
 	{
 	public:
-		void Initialize();
-		void Step(float timeStep);
-		void Shutdown();
-
-		void DispatchCollisionEvent(Physics::CollisionEventType collisionEventType, void* collisionEventData);
-		void DispatchTriggerEvent(Physics::CollisionEventType collisionEventType, void* triggerEventData);
-
-		b2WorldId Get() { return m_PhysicsWorld; }
+		virtual void Initialize(Scene* ctx) override;
+		virtual void Update() override;
+		virtual void Shutdown() override;
 
 		virtual void OnCollisionEnterEvent(std::function<void(Physics::CollisionEnterEvent*)>&& enterEventFunc) override;
 		virtual void OnCollisionStayEvent(std::function<void(Physics::CollisionStayEvent*)>&& stayEventFunc) override;
@@ -43,6 +38,13 @@ namespace HBL2
 		virtual void OnDebugDraw() override;
 
 	private:
+		void DispatchCollisionEvent(Physics::CollisionEventType collisionEventType, void* collisionEventData);
+		void DispatchTriggerEvent(Physics::CollisionEventType collisionEventType, void* triggerEventData);
+
+		Physics::ID CreateRigidbody(Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform);
+		Physics::ID CreateBoxCollider(Entity entity, Component::BoxCollider2D& bc2d, Component::Rigidbody2D& rb2d, Component::Transform& transform);
+
+	private:
 		b2WorldId m_PhysicsWorld = {};
 		int m_SubStepCount = 4;
 		float m_GravityForce = -9.81f;
@@ -56,5 +58,6 @@ namespace HBL2
 
 		bool m_DebugDrawEnabled = false;
 		b2DebugDraw m_DebugDraw;
+		Scene* m_Context = nullptr;
 	};
 }

@@ -127,8 +127,6 @@ namespace HBL2
 		virtual void Update() override;
 		virtual void Shutdown() override;
 
-		void DispatchCollisionEvent(Physics::CollisionEventType collisionEventType, void* collisionEventData);
-		void DispatchTriggerEvent(Physics::CollisionEventType collisionEventType, void* triggerEventData);
 
 		virtual void OnCollisionEnterEvent(std::function<void(Physics::CollisionEnterEvent*)>&& enterEventFunc) override;
 		virtual void OnCollisionStayEvent(std::function<void(Physics::CollisionStayEvent*)>&& stayEventFunc) override;
@@ -158,6 +156,9 @@ namespace HBL2
 		virtual void OnDebugDraw() override;
 
 	private:
+		void DispatchCollisionEvent(Physics::CollisionEventType collisionEventType, void* collisionEventData);
+		void DispatchTriggerEvent(Physics::CollisionEventType collisionEventType, void* triggerEventData);
+
 		void AddRigidBody(Entity entity, Component::Rigidbody& rb, Component::Transform& transform, JPH::BodyInterface& bodyInterface);
 		bool HasAnyCollider(Entity entity);
 
@@ -183,6 +184,8 @@ namespace HBL2
 		JPH::DebugRenderer* m_DebugRenderer = nullptr;
 
 		Scene* m_Context = nullptr;
+
+		friend class HumbleContactListener;
 	};
 
 }
