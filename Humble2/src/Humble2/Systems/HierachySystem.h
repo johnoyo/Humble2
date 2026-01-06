@@ -32,7 +32,11 @@ namespace HBL2
 		
 	private:
 		glm::mat4 GetWorldSpaceTransform(Entity entity, Component::Link& link);
+		glm::mat4 GetWorldSpaceTransform2(Entity entity, Component::Link& link);
 		void AddChildren(Entity entity, Component::Link& link);
 		void UpdateChildren(Entity entity, Component::Link& link);
+
+	private:
+		std::unordered_map<UUID, glm::mat4> m_WorldCache;
 	};
 }

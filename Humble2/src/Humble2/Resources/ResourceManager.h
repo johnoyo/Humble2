@@ -73,17 +73,17 @@ namespace HBL2
 
 			for (const auto& bufferEntry : desc.buffers)
 			{
-				hash += bufferEntry.buffer.HashKey();
+				hash += bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code();
 				hash += bufferEntry.byteOffset;
 				hash += bufferEntry.range;
 			}
 
 			for (const auto texture : desc.textures)
 			{
-				hash += texture.HashKey();
+				hash += texture.HashKey() + typeid(Texture).hash_code();
 			}
 
-			hash += desc.layout.HashKey();
+			hash += desc.layout.HashKey() + typeid(BindGroupLayout).hash_code();
 
 			return hash;
 		}

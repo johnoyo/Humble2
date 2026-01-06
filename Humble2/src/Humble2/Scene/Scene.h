@@ -43,38 +43,13 @@ namespace HBL2
 
 		void Clear();
 
-		Entity CreateEntity()
-		{
-			return CreateEntityWithUUID(Random::UInt64());
-		}
+		Entity CreateEntity();
 
-		Entity CreateEntity(const std::string& tag)
-		{
-			return CreateEntityWithUUID(Random::UInt64(), tag);
-		}
+		Entity CreateEntity(const std::string& tag);
 
-		Entity CreateEntityWithUUID(UUID uuid, const std::string& tag = "New Entity")
-		{
-			Entity entity = m_Registry.create();
+		Entity CreateEntityWithUUID(UUID uuid, const std::string& tag = "New Entity");
 
-			m_Registry.emplace<Component::Tag>(entity).Name = tag;
-			m_Registry.emplace<Component::ID>(entity).Identifier = uuid;
-			m_Registry.emplace<Component::Transform>(entity);
-
-			m_EntityMap[uuid] = entity;
-
-			return entity;
-		}
-
-		Entity FindEntityByUUID(UUID uuid)
-		{
-			if (m_EntityMap.find(uuid) != m_EntityMap.end())
-			{
-				return m_EntityMap.at(uuid);
-			}
-
-			return Entity::Null;
-		}
+		Entity FindEntityByUUID(UUID uuid);
 
 		void DestroyEntity(Entity entity);
 

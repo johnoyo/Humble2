@@ -113,7 +113,7 @@ namespace HBL2
 			{
 				if (!transform.Static)
 				{
-					transform.WorldMatrix = GetWorldSpaceTransform(entity, link);
+					transform.WorldMatrix = GetWorldSpaceTransform2(entity, link);
 
 					// Set world transforms.
 					glm::vec3 wt, wr, ws;
@@ -141,6 +141,34 @@ namespace HBL2
 
 	glm::mat4 HierachySystem::GetWorldSpaceTransform(Entity entity, Component::Link& link)
 	{
+		const UUID id = m_Context->GetComponent<Component::ID>(entity).Identifier;
+
+		// cache hit
+		if (auto it = m_WorldCache.find(id); it != m_WorldCache.end())
+		{
+			return it->second;
+		}
+
+		glm::mat4 parentW(1.0f);
+
+		if (link.Parent != 0)
+		{
+			Entity parentEntity = m_Context->FindEntityByUUID(link.Parent);
+			if (parentEntity != Entity::Null)
+			{
+				auto& parentLink = m_Context->GetComponent<Component::Link>(parentEntity);
+				parentW = GetWorldSpaceTransform(parentEntity, parentLink);
+			}
+		}
+
+		glm::mat4 world = parentW * m_Context->GetComponent<Component::Transform>(entity).LocalMatrix;
+		m_WorldCache.emplace(id, world);
+		return world;
+	}
+
+
+	glm::mat4 HierachySystem::GetWorldSpaceTransform2(Entity entity, Component::Link& link)
+	{
 		glm::mat4 transform = glm::mat4(1.0f);
 
 		if (link.Parent != 0)
@@ -149,7 +177,7 @@ namespace HBL2
 			if (parentEntity != Entity::Null)
 			{
 				Component::Link& parentLink = m_Context->GetComponent<Component::Link>(parentEntity);
-				transform = GetWorldSpaceTransform(parentEntity, parentLink);
+				transform = GetWorldSpaceTransform2(parentEntity, parentLink);
 			}
 		}
 

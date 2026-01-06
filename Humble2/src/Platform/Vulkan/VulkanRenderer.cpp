@@ -44,7 +44,7 @@ namespace HBL2
 			});
 		}
 
-		EventDispatcher::Get().Register<FramebufferSizeEvent>([&](const FramebufferSizeEvent& e)
+		EventDispatcher::Get().Register<FramebufferSizeEvent>([this](const FramebufferSizeEvent& e)
 		{
 			m_Resize = true;
 			m_NewSize = { e.Width, e.Height };
@@ -55,12 +55,21 @@ namespace HBL2
 	{
 		if (m_Resize)
 		{
+			for (uint32_t i = 0; i < FRAME_OVERLAP; ++i)
+			{
+				VK_VALIDATE(vkWaitForFences(m_Device->Get(), 1, &m_Frames[i].InFlightFence, VK_TRUE, UINT64_MAX), "vkWaitForFences");
+			}
+
 			Resize(m_NewSize.x, m_NewSize.y);
 			m_Resize = false;
 		}
 
 		// Wait until the GPU has finished rendering the last frame. Timeout of 1 second
-		VK_VALIDATE(vkWaitForFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence, true, UINT64_MAX), "vkWaitForFences");
+		VK_VALIDATE(vkWaitForFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence, VK_TRUE, UINT64_MAX), "vkWaitForFences");
+		
+		// Flush any pending deletions that occured in the frames before the current one.
+		m_ResourceManager->Flush(m_FrameNumber.load());
+
 		VK_VALIDATE(vkResetFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence), "vkResetFences");
 		VK_VALIDATE(vkAcquireNextImageKHR(m_Device->Get(), m_SwapChain, UINT64_MAX, GetCurrentFrame().ImageAvailableSemaphore, nullptr, &m_SwapchainImageIndex), "vkAcquireNextImageKHR");
 
@@ -76,14 +85,12 @@ namespace HBL2
 		{
 			StubRenderPass();
 		}
-
-		m_ResourceManager->Flush(m_FrameNumber.load());
 	}
 
 	void VulkanRenderer::Present()
 	{
 		// This will put the image we just rendered into the visible window.
-		// We want to wait on the renderSemaphore for that, as it's necessary that drawing commands have finished before the image is displayed to the user
+		// We want to wait on the ImGuiRenderFinishedSemaphore for that, as it's necessary that drawing commands have finished before the image is displayed to the user
 		
 		VkPresentInfoKHR presentInfo = 
 		{
@@ -327,7 +334,7 @@ namespace HBL2
 		CreateImageViews();
 		CreateFrameBuffers();
 
-		// Destroy the swapchain.
+		// Destroy the old swapchain.
 		vkDestroySwapchainKHR(m_Device->Get(), oldSwapchain, nullptr);
 
 		// Recreate the offscreen texture (render target).
@@ -748,19 +755,21 @@ namespace HBL2
 
 	void VulkanRenderer::CreateDescriptorPool()
 	{
+		const uint32_t poolSize = 512;
+
 		VkDescriptorPoolSize poolSizes[] =
 		{
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 256 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 256 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 256 },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 256 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, poolSize },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolSize },
 		};
 
 		VkDescriptorPoolCreateInfo tDescriptorPoolInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 			.flags = 0,
-			.maxSets = 256,
+			.maxSets = poolSize,
 			.poolSizeCount = std::size(poolSizes),
 			.pPoolSizes = poolSizes,
 		};

@@ -200,11 +200,10 @@ namespace HBL2
 		{
 			// Caching mechanism so that materials with the same resources, use the same bind group.
 			uint16_t index = 0;
+			uint64_t descriptorHash = ResourceManager::Instance->GetBindGroupHash(desc);
 
 			for (const auto& bindGroup : m_BindGroupPool.GetDataPool())
 			{
-				uint64_t descriptorHash = ResourceManager::Instance->GetBindGroupHash(desc);
-
 				uint64_t hash = CalculateBindGroupHash(&bindGroup);
 
 				if (descriptorHash == hash)
@@ -331,17 +330,17 @@ namespace HBL2
 
 			for (const auto& bufferEntry : bindGroup->Buffers)
 			{
-				hash += bufferEntry.buffer.HashKey();
+				hash += bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code();
 				hash += bufferEntry.byteOffset;
 				hash += bufferEntry.range;
 			}
 
 			for (const auto texture : bindGroup->Textures)
 			{
-				hash += texture.HashKey();
+				hash += texture.HashKey() + typeid(Texture).hash_code();
 			}
 
-			hash += bindGroup->BindGroupLayout.HashKey();
+			hash += bindGroup->BindGroupLayout.HashKey() + typeid(BindGroupLayout).hash_code();
 
 			return hash;
 		}

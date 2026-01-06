@@ -253,8 +253,7 @@ namespace HBL2
 		ShaderUtilities::Get().LoadBuiltInShaders();
 		ShaderUtilities::Get().LoadBuiltInMaterials();
 		MeshUtilities::Get().LoadBuiltInMeshes();
-#endif
-#if !MULTITHREADING
+
 		m_Specification.Context->OnCreate();
 
 		int frameIndex = 0;

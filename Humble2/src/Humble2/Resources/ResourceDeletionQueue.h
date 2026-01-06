@@ -38,7 +38,7 @@ public:
         while (m_Size > 0)
         {
             const DeleteItem& item = m_Buffer[m_Head];
-            if (item.Frame > currentFrame)
+            if (item.Frame >= currentFrame)
             {
                 // Stop processing as the current item is not ready for deletion.
                 break;

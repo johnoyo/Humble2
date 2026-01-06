@@ -278,6 +278,41 @@ namespace HBL2
         m_RuntimeSystems.clear();
     }
 
+    Entity Scene::CreateEntity()
+    {
+        return CreateEntityWithUUID(Random::UInt64());
+    }
+
+    Entity Scene::CreateEntity(const std::string& tag)
+    {
+        return CreateEntityWithUUID(Random::UInt64(), tag);
+    }
+
+    Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& tag)
+    {
+        Entity entity = m_Registry.create();
+
+        m_Registry.emplace<Component::Tag>(entity).Name = tag;
+        m_Registry.emplace<Component::ID>(entity).Identifier = uuid;
+        m_Registry.emplace<Component::Transform>(entity);
+
+        m_EntityMap[uuid] = entity;
+
+        return entity;
+    }
+
+    Entity Scene::FindEntityByUUID(UUID uuid)
+    {
+        auto it = m_EntityMap.find(uuid);
+
+        if (it != m_EntityMap.end())
+        {
+            return it->second;
+        }
+
+        return Entity::Null;
+    }
+
     void Scene::DestroyEntity(Entity entity)
     {
         InternalDestroyEntity(entity, true);

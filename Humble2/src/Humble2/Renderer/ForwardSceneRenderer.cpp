@@ -290,6 +290,7 @@ namespace HBL2
 			m_ResourceManager->DeleteBuffer(m_CubeMeshBuffer);
 			m_ResourceManager->DeleteMesh(m_CubeMesh);
 
+			m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
 			m_Scene->GetRegistry()
 				.view<Component::SkyLight>()
 				.each([&](Component::SkyLight& skyLight)
@@ -1571,8 +1572,6 @@ namespace HBL2
 						ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.CubeMap }, {});
 						computePassRenderer->Dispatch({ dispatch });
 						commandBuffer->EndComputePass(*computePassRenderer);
-
-						m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup); // TODO: Fix this! Thats whats causing the validation error.
 
 						auto skyboxBindGroup = m_ResourceManager->CreateBindGroup({
 							.debugName = "skybox-bind-group",
