@@ -40,9 +40,13 @@ namespace HBL2
 			glm::quat QRotation = glm::quat(Rotation);
 			glm::vec3 Scale = { 1.f, 1.f, 1.f };
 
+			glm::vec3 WorldTranslation = { 0.f, 0.f, 0.f };
+			glm::vec3 PrevWorldTranslation = { 0.f, 0.f, 0.f }; // For internal use only.
+
 			glm::mat4 LocalMatrix = glm::mat4(1.f);
 			glm::mat4 WorldMatrix = glm::mat4(1.f);
 			bool Static = false;
+			bool Dirty = true;
 		};
 
 		struct HBL2_API Link
