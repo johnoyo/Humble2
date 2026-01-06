@@ -2,6 +2,8 @@
 
 #include "PhysicsEngine3D.h"
 
+#include "Scene\Scene.h"
+
 // Jolt includes
 #include <Jolt/Jolt.h>
 #include <Jolt/RegisterTypes.h>
@@ -121,14 +123,12 @@ namespace HBL2
 	public:
 		virtual ~JoltPhysicsEngine() = default;
 
-		void Initialize();
-		void Step(float inDeltaTime, int inCollisionSteps);
-		void ShutDown();
+		virtual void Initialize(Scene* ctx) override;
+		virtual void Update() override;
+		virtual void Shutdown() override;
 
 		void DispatchCollisionEvent(Physics::CollisionEventType collisionEventType, void* collisionEventData);
 		void DispatchTriggerEvent(Physics::CollisionEventType collisionEventType, void* triggerEventData);
-
-		JPH::PhysicsSystem* Get() { return m_PhysicsSystem; }
 
 		virtual void OnCollisionEnterEvent(std::function<void(Physics::CollisionEnterEvent*)>&& enterEventFunc) override;
 		virtual void OnCollisionStayEvent(std::function<void(Physics::CollisionStayEvent*)>&& stayEventFunc) override;
@@ -158,6 +158,10 @@ namespace HBL2
 		virtual void OnDebugDraw() override;
 
 	private:
+		void AddRigidBody(Entity entity, Component::Rigidbody& rb, Component::Transform& transform, JPH::BodyInterface& bodyInterface);
+		bool HasAnyCollider(Entity entity);
+
+	private:
 		JPH::TempAllocatorImpl* m_TempAllocator = nullptr;
 		JPH::JobSystemThreadPool* m_JobSystem = nullptr;
 		JPH::PhysicsSystem* m_PhysicsSystem = nullptr;
@@ -177,6 +181,8 @@ namespace HBL2
 		bool m_ShowColliders = false;
 		bool m_ShowBoundingBoxes = false;
 		JPH::DebugRenderer* m_DebugRenderer = nullptr;
+
+		Scene* m_Context = nullptr;
 	};
 
 }

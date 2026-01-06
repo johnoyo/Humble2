@@ -18,12 +18,6 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
-		void AddRigidBody(Entity entity, Component::Rigidbody& rb, Component::Transform& transform, JPH::BodyInterface& bodyInterface);
-		bool HasAnyCollider(Entity entity);
-
-	private:
-		JoltPhysicsEngine* m_PhysicsEngine = nullptr;
-		JPH::PhysicsSystem* m_PhysicsSystem = nullptr;
 		bool m_Initialized = false;
 	};
 }

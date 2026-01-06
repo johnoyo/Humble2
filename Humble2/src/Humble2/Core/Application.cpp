@@ -118,14 +118,6 @@ namespace HBL2
 			break;
 		}
 
-		switch (projectSettings.Physics3DImpl)
-		{
-		case Physics3DEngineImpl::JOLT:
-		case Physics3DEngineImpl::CUSTOM:
-			PhysicsEngine3D::Instance = new JoltPhysicsEngine;
-			break;
-		}
-
 		EventDispatcher::Get().Register<WindowIconifyEvent>([](const WindowIconifyEvent& e)
 		{
 			if (e.Iconified)
