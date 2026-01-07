@@ -1695,10 +1695,10 @@ namespace HBL2
 		Sound* sound = ResourceManager::Instance->GetSound(soundHandle);
 		if (sound != nullptr)
 		{
-			if (sound->Instance != nullptr)
+			if (sound->ID != InvalidSoundID)
 			{
-				sound->Instance->release();
-				sound->Instance = nullptr;
+				SoundEngine::Instance->ReleaseSound(sound->ID);
+				sound->ID = InvalidSoundID;
 			}
 		}
 

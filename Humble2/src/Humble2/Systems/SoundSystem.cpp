@@ -1,25 +1,11 @@
 ﻿#include "SoundSystem.h"
 
 #include <Project\Project.h>
+#include <Sound\FmodSoundEngine.h>
 
 namespace HBL2
 {
-    #define FMOD_CHECK(expr)                                                     \
-        do                                                                       \
-        {                                                                        \
-            FMOD_RESULT _res = (expr);                                           \
-            if (_res != FMOD_OK)                                                 \
-            {                                                                    \
-                HBL2_CORE_ERROR("[FMOD] {} : {}", #expr, FMOD_ErrorString(_res));\
-            }                                                                    \
-        } while (false)                                                          \
-    
-    constexpr uint32_t InvalidIndex = UINT32_MAX;
-
-    inline FMOD_VECTOR ToFmodVec(const glm::vec3& v)
-    {
-        return FMOD_VECTOR{ v.x, v.y, v.z };
-    }
+    static constexpr uint32_t InvalidIndex = UINT32_MAX;
 
     SoundSystem::SoundSystem()
     {
@@ -28,24 +14,31 @@ namespace HBL2
 
     void SoundSystem::OnCreate()
     {
-        // Create the main system object.
-        FMOD_CHECK(FMOD::System_Create(&m_SoundSystem));
+        const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
-        if (m_SoundSystem == nullptr)
+        // Pick implementation.
+        switch (projectSettings.SoundImpl)
+        {
+        case SoundEngineImpl::FMOD:
+        case SoundEngineImpl::CUSTOM:
+            SoundEngine::Instance = new FmodSoundEngine;
+            break;
+        }
+
+        SoundEngineConfig cfg{};
+        cfg.MaxChannels = 512;
+        cfg.Enable3D = true;
+
+        if (!SoundEngine::Instance || !SoundEngine::Instance->Initialize(m_Context, cfg))
         {
             return;
         }
 
-        // Initialize FMOD.
-        FMOD_CHECK(m_SoundSystem->init(512, FMOD_INIT_NORMAL, 0));
-
-        // Create the channel group.
-        FMOD_CHECK(m_SoundSystem->createChannelGroup("InGameSoundEffects", &m_ChannelGroup));
-
         m_Channels.reserve(256);
 
+        // Pre-load sounds referenced by existing AudioSource components.
         m_Context->View<Component::AudioSource>()
-            .Each([this](Component::AudioSource& audioSource)
+            .Each([&](Component::AudioSource& audioSource)
             {
                 if (!audioSource.Sound.IsValid())
                 {
@@ -53,68 +46,111 @@ namespace HBL2
                 }
 
                 Sound* sound = ResourceManager::Instance->GetSound(audioSource.Sound);
-
-                if (sound->Instance == nullptr)
+                if (!sound)
                 {
-                    static unsigned kDefaultMode = FMOD_DEFAULT | FMOD_CREATECOMPRESSEDSAMPLE | FMOD_NONBLOCKING | FMOD_3D;
-                    const std::string& finalPath = Project::GetAssetFileSystemPath(sound->Path).string();
-                    FMOD_CHECK(m_SoundSystem->createSound(finalPath.c_str(), kDefaultMode, nullptr, &sound->Instance));
+                    return;
+                }
+
+                if (sound->ID == InvalidSoundID)
+                {
+                    const auto absPath = Project::GetAssetFileSystemPath(sound->Path);
+                    SoundLoadFlags flags = SoundLoadFlags::Compressed | SoundLoadFlags::NonBlocking | SoundLoadFlags::Spatial3D;
+                    sound->ID = SoundEngine::Instance->LoadSound(absPath, sound->Name.c_str(), flags);
                 }
             });
+
+        m_Initialized = true;
     }
 
     void SoundSystem::OnUpdate(float ts)
     {
         BEGIN_PROFILE_SYSTEM();
 
+        if (!m_Initialized || !SoundEngine::Instance)
+        {
+            END_PROFILE_SYSTEM(RunningTime);
+            return;
+        }
+
+        UpdateListener();
+
         m_Context->View<Component::AudioSource>()
-            .Each([this](Entity entity, Component::AudioSource& audioSource)
+            .Each([&](Entity entity, Component::AudioSource& audioSource)
             {
                 if (!audioSource.Sound.IsValid())
                 {
                     return;
                 }
 
-                ChannelEntry* entry = (audioSource.ChannelIndex != UINT32_MAX) ? &m_Channels[audioSource.ChannelIndex] : nullptr;
+                Sound* sound = ResourceManager::Instance->GetSound(audioSource.Sound);
+                if (!sound)
+                {
+                    return;
+                }
+
+                // Lazy-load for runtime-added sources
+                if (sound->ID == InvalidSoundID)
+                {
+                    const auto absPath = Project::GetAssetFileSystemPath(sound->Path);
+                    SoundLoadFlags flags = SoundLoadFlags::Compressed | SoundLoadFlags::NonBlocking | SoundLoadFlags::Spatial3D;
+                    sound->ID = SoundEngine::Instance->LoadSound(absPath, sound->Name.c_str(), flags);
+                    if (sound->ID == InvalidSoundID)
+                    {
+                        return;
+                    }
+                }
+
+                ChannelEntry* entry =
+                    (audioSource.ChannelIndex != InvalidIndex && audioSource.ChannelIndex < m_Channels.size())
+                    ? &m_Channels[audioSource.ChannelIndex]
+                    : nullptr;
+
+                // If the channel finished, clear it
+                if (entry && entry->channel != SoundEngine::InvalidChannel && !SoundEngine::Instance->IsValid(entry->channel))
+                {
+                    entry->channel = SoundEngine::InvalidChannel;
+                    audioSource.ChannelIndex = InvalidIndex;
+                    entry = nullptr;
+                }
 
                 switch (audioSource.State)
                 {
                 case Component::AudioSource::PlaybackState::Playing:
+                {
+                    if (!entry || entry->channel == SoundEngine::InvalidChannel)
                     {
-                        if (!entry || !entry->channel)
-                        {
-                            StartChannel(audioSource, entity, false);
-                        }
-                        else
-                        {
-                            PauseChannel(*entry, false);
-                        }
-                        break;
+                        StartChannel(audioSource, entity, false);
                     }
+                    else
+                    {
+                        PauseChannel(*entry, false);
+                    }
+                    break;
+                }
                 case Component::AudioSource::PlaybackState::Paused:
+                {
+                    if (!entry || entry->channel == SoundEngine::InvalidChannel)
                     {
-                        if (!entry || !entry->channel)
-                        {
-                            StartChannel(audioSource, entity, true);
-                        }
-                        else
-                        {
-                            PauseChannel(*entry, true);
-                        }
-                        break;
+                        StartChannel(audioSource, entity, true);
                     }
+                    else
+                    {
+                        PauseChannel(*entry, true);
+                    }
+                    break;
+                }
                 case Component::AudioSource::PlaybackState::Stopped:
+                {
+                    if (entry && entry->channel != SoundEngine::InvalidChannel)
                     {
-                        if (entry && entry->channel)
-                        {
-                            StopChannel(*entry, audioSource.ChannelIndex);
-                            audioSource.ChannelIndex = InvalidIndex;
-                        }
-                        break;
+                        StopChannel(*entry, audioSource.ChannelIndex);
+                        audioSource.ChannelIndex = InvalidIndex;
                     }
+                    break;
+                }
                 case Component::AudioSource::PlaybackState::Trigger:
                 {
-                    if (entry && entry->channel)
+                    if (entry && entry->channel != SoundEngine::InvalidChannel)
                     {
                         StopChannel(*entry, audioSource.ChannelIndex);
                         audioSource.ChannelIndex = InvalidIndex;
@@ -125,89 +161,90 @@ namespace HBL2
                 }
                 case Component::AudioSource::PlaybackState::Resume:
                 {
-                    // If we already have a channel then just un-pause it
-                    if (entry && entry->channel)
+                    if (entry && entry->channel != SoundEngine::InvalidChannel)
                     {
                         PauseChannel(*entry, false);
                     }
                     else
                     {
-                        // The clip had never played or it finished while paused
                         StartChannel(audioSource, entity, false);
                     }
-                    audioSource.State = Component::AudioSource::PlaybackState::Playing;   // auto-clear
+
+                    audioSource.State = Component::AudioSource::PlaybackState::Playing;
                     break;
                 }
                 }
 
-                // Live parameter update (volume / pitch / 3-D)
-                if (entry && entry->channel && audioSource.State != Component::AudioSource::PlaybackState::Stopped)
+                // Live parameter update
+                entry =
+                    (audioSource.ChannelIndex != InvalidIndex && audioSource.ChannelIndex < m_Channels.size())
+                    ? &m_Channels[audioSource.ChannelIndex]
+                    : nullptr;
+
+                if (entry && entry->channel != SoundEngine::InvalidChannel && audioSource.State != Component::AudioSource::PlaybackState::Stopped)
                 {
                     UpdateChannelParams(audioSource, *entry);
                 }
             });
 
-        m_SoundSystem->update();
+        SoundEngine::Instance->Update();
 
         END_PROFILE_SYSTEM(RunningTime);
     }
 
     void SoundSystem::OnDestroy()
     {
-        // Stop everything.
-        for (ChannelEntry& e : m_Channels)
+        if (!m_Initialized)
         {
-            if (e.channel)
+            return;
+        }
+
+        // Stop everything
+        if (SoundEngine::Instance)
+        {
+            for (ChannelEntry& e : m_Channels)
             {
-                e.channel->stop();
-                e.channel = nullptr;
+                if (e.channel != SoundEngine::InvalidChannel)
+                {
+                    SoundEngine::Instance->StopChannel(e.channel);
+                    e.channel = SoundEngine::InvalidChannel;
+                }
             }
         }
 
-        // Release sounds.
+        // Release sounds referenced by AudioSources.
+        std::unordered_set<SoundID> released;
+
         m_Context->View<Component::AudioSource>()
-            .Each([](Component::AudioSource& audioSource)
+            .Each([&](Component::AudioSource& audioSource)
             {
                 Sound* sound = ResourceManager::Instance->GetSound(audioSource.Sound);
-
-                if (sound == nullptr)
+                if (!sound)
                 {
                     return;
                 }
 
-                if (sound->Instance != nullptr)
+                if (sound->ID != InvalidSoundID && SoundEngine::Instance)
                 {
-                    sound->Instance->release();
-                    sound->Instance = nullptr;
+                    if (released.insert(sound->ID).second)
+                    {
+                        SoundEngine::Instance->ReleaseSound(sound->ID);
+                    }
+
+                    sound->ID = InvalidSoundID;
                 }
             });
 
-        FMOD_CHECK(m_ChannelGroup ? m_ChannelGroup->release() : FMOD_OK);
-        FMOD_CHECK(m_SoundSystem ? m_SoundSystem->close() : FMOD_OK);
-        FMOD_CHECK(m_SoundSystem ? m_SoundSystem->release() : FMOD_OK);
+        if (SoundEngine::Instance)
+        {
+            SoundEngine::Instance->Shutdown();
+            delete SoundEngine::Instance;
+            SoundEngine::Instance = nullptr;
+        }
 
         m_Channels.clear();
         m_Free = {};
-    }
-
-    void SoundSystem::Play(Component::AudioSource& audioSource)
-    {
-        audioSource.State = Component::AudioSource::PlaybackState::Trigger;
-    }
-
-    void SoundSystem::Pause(Component::AudioSource& audioSource)
-    {
-        audioSource.State = Component::AudioSource::PlaybackState::Paused;
-    }
-
-    void SoundSystem::Resume(Component::AudioSource& audioSource)
-    {
-        audioSource.State = Component::AudioSource::PlaybackState::Resume;
-    }
-
-    void SoundSystem::Stop(Component::AudioSource& audioSource)
-    {
-        audioSource.State = Component::AudioSource::PlaybackState::Stopped;
+        m_Initialized = false;
     }
 
     uint32_t SoundSystem::AllocateSlot()
@@ -220,7 +257,7 @@ namespace HBL2
         }
 
         m_Channels.emplace_back();
-        return static_cast<uint32_t>(m_Channels.size() - 1);
+        return (uint32_t)m_Channels.size() - 1;
     }
 
     void SoundSystem::FreeSlot(uint32_t idx)
@@ -231,18 +268,16 @@ namespace HBL2
         }
 
         ChannelEntry& e = m_Channels[idx];
-        e.channel = nullptr;
+        e.channel = SoundEngine::InvalidChannel;
         e.owner = Entity::Null;
 
         m_Free.push(idx);
     }
 
-    void SoundSystem::StartChannel(Component::AudioSource& src, uint32_t entity, bool paused)
+    void SoundSystem::StartChannel(Component::AudioSource& src, Entity entity, bool paused)
     {
-        // Resolve the asset
         Sound* sound = ResourceManager::Instance->GetSound(src.Sound);
-
-        if (!sound)
+        if (!sound || sound->ID == InvalidSoundID || !SoundEngine::Instance)
         {
             return;
         }
@@ -253,19 +288,23 @@ namespace HBL2
         e.owner = entity;
         src.ChannelIndex = slot;
 
-        FMOD_CHECK(m_SoundSystem->playSound(sound->Instance, m_ChannelGroup, true, &e.channel));
-
-        // Basic parameters
-        e.channel->setVolume(src.Volume);
-        e.channel->setPitch(src.Pitch);
-
-        if (src.Flags & Component::AudioSource::AudioFlags::Looping)
+        // Start paused so we can configure first
+        e.channel = SoundEngine::Instance->PlaySound(sound->ID, true);
+        if (e.channel == SoundEngine::InvalidChannel)
         {
-            e.channel->setMode(FMOD_LOOP_NORMAL);
+            FreeSlot(slot);
+            src.ChannelIndex = InvalidIndex;
+            return;
         }
 
-        // 3-D?
-        if (src.Flags & Component::AudioSource::AudioFlags::Spatialised)
+        SoundEngine::Instance->SetVolume(e.channel, src.Volume);
+        SoundEngine::Instance->SetPitch(e.channel, src.Pitch);
+        SoundEngine::Instance->SetLooping(e.channel, (src.Flags & Component::AudioSource::Looping) != 0);
+
+        const bool spatial = (src.Flags & Component::AudioSource::Spatialised) != 0;
+        SoundEngine::Instance->Set3DEnabled(e.channel, spatial);
+
+        if (spatial)
         {
             if (m_Context->HasComponent<Component::Transform>(entity))
             {
@@ -274,24 +313,19 @@ namespace HBL2
             }
             else
             {
-                // No transform then treat as 2-D
-                e.channel->setMode(FMOD_2D);
+                SoundEngine::Instance->Set3DEnabled(e.channel, false);
             }
         }
-        else
-        {
-            e.channel->setMode(FMOD_2D);
-        }
 
-        e.channel->setPaused(paused);
+        SoundEngine::Instance->SetPaused(e.channel, paused);
     }
 
     void SoundSystem::StopChannel(ChannelEntry& e, uint32_t slotIndex)
     {
-        if (e.channel)
+        if (SoundEngine::Instance && e.channel != SoundEngine::InvalidChannel)
         {
-            e.channel->stop();
-            e.channel = nullptr;
+            SoundEngine::Instance->StopChannel(e.channel);
+            e.channel = SoundEngine::InvalidChannel;
         }
 
         FreeSlot(slotIndex);
@@ -299,18 +333,24 @@ namespace HBL2
 
     void SoundSystem::PauseChannel(ChannelEntry& e, bool paused)
     {
-        if (e.channel)
+        if (SoundEngine::Instance && e.channel != SoundEngine::InvalidChannel)
         {
-            e.channel->setPaused(paused);
+            SoundEngine::Instance->SetPaused(e.channel, paused);
         }
     }
 
     void SoundSystem::UpdateChannelParams(const Component::AudioSource& src, ChannelEntry& e)
     {
-        e.channel->setVolume(src.Volume);
-        e.channel->setPitch(src.Pitch);
+        if (!SoundEngine::Instance || e.channel == SoundEngine::InvalidChannel)
+        {
+            return;
+        }
 
-        if ((src.Flags & Component::AudioSource::AudioFlags::Spatialised) && m_Context->HasComponent<Component::Transform>(e.owner))
+        SoundEngine::Instance->SetVolume(e.channel, src.Volume);
+        SoundEngine::Instance->SetPitch(e.channel, src.Pitch);
+        SoundEngine::Instance->SetLooping(e.channel, (src.Flags & Component::AudioSource::Looping) != 0);
+
+        if ((src.Flags & Component::AudioSource::Spatialised) && m_Context->HasComponent<Component::Transform>(e.owner))
         {
             auto& tr = m_Context->GetComponent<Component::Transform>(e.owner);
             Update3D(e, tr);
@@ -321,14 +361,20 @@ namespace HBL2
     {
         glm::vec3 worldPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
 
-        FMOD_VECTOR pos = ToFmodVec(worldPosition);
-        FMOD_VECTOR vel = { 0, 0, 0 };
+        Source3D s{};
+        s.Position = worldPosition;
+        s.Velocity = { 0, 0, 0 };
 
-        e.channel->set3DAttributes(&pos, &vel);
+        SoundEngine::Instance->Set3DAttributes(e.channel, s);
     }
 
     void SoundSystem::UpdateListener()
     {
+        if (!SoundEngine::Instance)
+        {
+            return;
+        }
+
         if (m_Context->MainCamera == Entity::Null)
         {
             return;
@@ -339,16 +385,27 @@ namespace HBL2
             return;
         }
 
-        auto& listerner = m_Context->GetComponent<Component::AudioListener>(m_Context->MainCamera);
+        auto& listener = m_Context->GetComponent<Component::AudioListener>(m_Context->MainCamera);
+        if (!listener.Enabled)
+        {
+            return;
+        }
+
+        if (!m_Context->HasComponent<Component::Transform>(m_Context->MainCamera))
+        {
+            return;
+        }
+
         auto& tr = m_Context->GetComponent<Component::Transform>(m_Context->MainCamera);
 
         glm::vec3 worldPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
 
-        FMOD_VECTOR pos = ToFmodVec(worldPosition);
-        FMOD_VECTOR vel = { 0, 0, 0 };
-        FMOD_VECTOR fwd = ToFmodVec({ 0.f, 0.f, 1.f });
-        FMOD_VECTOR up = ToFmodVec({ 0.f, 1.f, 0.f });
+        Listener3D l{};
+        l.Position = worldPosition;
+        l.Velocity = { 0, 0, 0 };
+        l.Forward = { 0.f, 0.f, 1.f };
+        l.Up = { 0.f, 1.f, 0.f };
 
-        FMOD_CHECK(m_SoundSystem->set3DListenerAttributes(0, &pos, &vel, &fwd, &up));
+        SoundEngine::Instance->SetListener(0, l);
     }
 }

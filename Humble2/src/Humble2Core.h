@@ -18,6 +18,8 @@
 #include "Physics\PhysicsEngine2D.h"
 #include "Physics\PhysicsEngine3D.h"
 
+#include "Sound\SoundEngine.h"
+
 #include "UI\LayoutLib.h"
 
 #include "Utilities\Allocators\BaseAllocator.h"
