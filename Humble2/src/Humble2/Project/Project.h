@@ -9,6 +9,7 @@
 #include "Renderer\Renderer.h"
 #include "Resources\ResourceManager.h"
 #include "Physics\Physics.h"
+#include "Sound\Sound.h"
 
 #include <string>
 #include <filesystem>
@@ -30,6 +31,8 @@ namespace HBL2
 		bool EnableDebugDraw3D = false;
 		bool ShowColliders3D = false;
 		bool ShowBoundingBoxes3D = false;
+
+		SoundEngineImpl SoundImpl = SoundEngineImpl::FMOD;
 
 		uint32_t MaxAppMemory = 1_GB;
 		uint32_t MaxUniformBufferMemory = 64_MB;
