@@ -102,10 +102,13 @@ namespace HBL2
 			.initialData = nullptr,
 		});
 
-		// Reserve some space for the vertices to avoid multiple allocations.
-		m_LineVerts.resize(s_MaxDebugVertices);
-		m_FillTrisVerts.resize(s_MaxDebugVertices);
-		m_WireTrisVerts.resize(s_MaxDebugVertices);
+		// Reserve max space for the verticescpu storage to avoid allocations.
+		for (auto& renderData : m_RenderData)
+		{
+			renderData.LineVerts.resize(s_MaxDebugVertices);
+			renderData.FillTrisVerts.resize(s_MaxDebugVertices);
+			renderData.WireTrisVerts.resize(s_MaxDebugVertices);
+		}
 
 		// Shader variant descriptions.
 		ShaderDescriptor::RenderPipeline::Variant lineVariant = {};
@@ -197,19 +200,16 @@ namespace HBL2
 
 		// Initialize sphere mesh data.
 		InitSphereMesh(8, 4);
-
-		// Initial buffer data set (vectors are resized to max vertices so they will never reallocate).
-		m_ResourceManager->SetBufferData(m_DebugLineVertexBuffer, 0, m_LineVerts.data());
-		m_ResourceManager->SetBufferData(m_DebugFillTriVertexBuffer, 0, m_FillTrisVerts.data());
-		m_ResourceManager->SetBufferData(m_DebugWireTriVertexBuffer, 0, m_WireTrisVerts.data());
 	}
 	
 	void DebugRenderer::BeginFrame()
 	{
-		m_Draws.Reset();
-		m_CurrentLineIndex = 0;
-		m_CurrentFillIndex = 0;
-		m_CurrentWireIndex = 0;
+		DebugRenderData* renderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
+
+		renderData->Draws.Reset();
+		renderData->CurrentLineIndex = 0;
+		renderData->CurrentFillIndex = 0;
+		renderData->CurrentWireIndex = 0;
 
 		if (PhysicsEngine2D::Instance != nullptr)
 		{
@@ -224,64 +224,76 @@ namespace HBL2
 
 	void DebugRenderer::EndFrame()
 	{
+		DebugRenderData* renderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
+
 		// Line rendering.
-		if (m_CurrentLineIndex != 0)
+		if (renderData->CurrentLineIndex != 0)
 		{
 			// Gather line draws.
-			m_Draws.Insert({
+			renderData->Draws.Insert({
 				.Shader = m_DebugShader,
 				.Material = m_DebugLineMaterial,
 				.VariantHash = m_DebugLineMaterialVariantHash,
 				.VertexBuffer = m_DebugLineVertexBuffer,
-				.VertexCount = (uint32_t)m_CurrentLineIndex,
+				.VertexCount = renderData->CurrentLineIndex,
 			});
 		}
 
 		// Fill triangle rendering.
-		if (m_CurrentFillIndex != 0)
+		if (renderData->CurrentFillIndex != 0)
 		{
 			// Gather fill draws.
-			m_Draws.Insert({
+			renderData->Draws.Insert({
 				.Shader = m_DebugShader,
 				.Material = m_DebugFillMaterial,
 				.VariantHash = m_DebugFillMaterialVariantHash,
 				.VertexBuffer = m_DebugFillTriVertexBuffer,
-				.VertexCount = (uint32_t)m_CurrentFillIndex,
+				.VertexCount = renderData->CurrentFillIndex,
 			});
 		}
 
 		// Wireframe triangle rendering.
-		if (m_CurrentWireIndex != 0)
+		if (renderData->CurrentWireIndex != 0)
 		{
 			// Gather wire draws.
-			m_Draws.Insert({
+			renderData->Draws.Insert({
 				.Shader = m_DebugShader,
 				.Material = m_DebugWireMaterial,
 				.VariantHash = m_DebugWireMaterialVariantHash,
 				.VertexBuffer = m_DebugWireTriVertexBuffer,
-				.VertexCount = (uint32_t)m_CurrentWireIndex,
+				.VertexCount = renderData->CurrentWireIndex,
 			});
 		}
+
+		Renderer::Instance->CollectDebugRenderData(renderData);
 	}
 
-	void DebugRenderer::Render(CommandBuffer* commandBuffer)
+	void DebugRenderer::Render(CommandBuffer* commandBuffer, void* debugRenderData)
 	{
-		if (m_CurrentLineIndex != 0)
+		DebugRenderData* renderData = (DebugRenderData*)debugRenderData;
+
+		m_ResourceManager->SetBufferData(m_DebugLineVertexBuffer, 0, renderData->LineVerts.data());
+
+		if (renderData->CurrentLineIndex != 0)
 		{
 			// Update dynamic line vertex buffer.
-			m_ResourceManager->MapBufferData(m_DebugLineVertexBuffer, 0, m_CurrentLineIndex * sizeof(DebugVertex));
+			m_ResourceManager->MapBufferData(m_DebugLineVertexBuffer, 0, renderData->CurrentLineIndex * sizeof(DebugVertex));
 		}
 
-		if (m_CurrentFillIndex != 0)
+		m_ResourceManager->SetBufferData(m_DebugFillTriVertexBuffer, 0, renderData->FillTrisVerts.data());
+
+		if (renderData->CurrentFillIndex != 0)
 		{
 			// Update dynamic fill vertex buffer.
-			m_ResourceManager->MapBufferData(m_DebugFillTriVertexBuffer, 0, m_CurrentFillIndex * sizeof(DebugVertex));
+			m_ResourceManager->MapBufferData(m_DebugFillTriVertexBuffer, 0, renderData->CurrentFillIndex * sizeof(DebugVertex));
 		}
 
-		if (m_CurrentWireIndex != 0)
+		m_ResourceManager->SetBufferData(m_DebugWireTriVertexBuffer, 0, renderData->WireTrisVerts.data());
+
+		if (renderData->CurrentWireIndex != 0)
 		{
 			// Update dynamic wire vertex buffer.
-			m_ResourceManager->MapBufferData(m_DebugWireTriVertexBuffer, 0, m_CurrentWireIndex * sizeof(DebugVertex));
+			m_ResourceManager->MapBufferData(m_DebugWireTriVertexBuffer, 0, renderData->CurrentWireIndex * sizeof(DebugVertex));
 		}
 
 		const auto& cameraMVP = GetCameraMVP();
@@ -292,7 +304,7 @@ namespace HBL2
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DebugRenderPass, m_DebugFrameBuffer);
 
 		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
-		passRenderer->DrawSubPass(globalDrawStream, m_Draws);
+		passRenderer->DrawSubPass(globalDrawStream, renderData->Draws);
 
 		commandBuffer->EndRenderPass(*passRenderer);
 	}
@@ -312,9 +324,13 @@ namespace HBL2
 		m_ResourceManager->DeleteMaterial(m_DebugFillMaterial);
 		m_ResourceManager->DeleteMaterial(m_DebugWireMaterial);
 
-		m_LineVerts.clear();
-		m_FillTrisVerts.clear();
-		m_WireTrisVerts.clear();
+		for (auto& renderData : m_RenderData)
+		{
+			renderData.Draws.Reset();
+			renderData.LineVerts.clear();
+			renderData.FillTrisVerts.clear();
+			renderData.WireTrisVerts.clear();
+		}
 
 		s_SphereIndices.clear();
 		s_SphereVerts.clear();
@@ -322,14 +338,18 @@ namespace HBL2
 
 	void DebugRenderer::DrawLine(const glm::vec3& from, const glm::vec3& to)
 	{
-		m_LineVerts[m_CurrentLineIndex++] = { from, Color };
-		m_LineVerts[m_CurrentLineIndex++] = { to, Color };
+		DebugRenderData* renderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
+
+		renderData->LineVerts[renderData->CurrentLineIndex++] = { from, Color };
+		renderData->LineVerts[renderData->CurrentLineIndex++] = { to, Color };
 	}
 
 	void DebugRenderer::DrawRay(const glm::vec3& from, const glm::vec3& direction)
 	{
-		m_LineVerts[m_CurrentLineIndex++] = { from, Color };
-		m_LineVerts[m_CurrentLineIndex++] = { from + direction, Color };
+		DebugRenderData* renderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
+
+		renderData->LineVerts[renderData->CurrentLineIndex++] = { from, Color };
+		renderData->LineVerts[renderData->CurrentLineIndex++] = { from + direction, Color };
 	}
 
 	void DebugRenderer::DrawSphere(const glm::vec3& position, float radius)
@@ -422,16 +442,20 @@ namespace HBL2
 
 	void DebugRenderer::DrawTriangle(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3)
 	{
-		m_FillTrisVerts[m_CurrentFillIndex++] = { v1, Color };
-		m_FillTrisVerts[m_CurrentFillIndex++] = { v2, Color };
-		m_FillTrisVerts[m_CurrentFillIndex++] = { v3, Color };
+		DebugRenderData* renderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
+
+		renderData->FillTrisVerts[renderData->CurrentFillIndex++] = { v1, Color };
+		renderData->FillTrisVerts[renderData->CurrentFillIndex++] = { v2, Color };
+		renderData->FillTrisVerts[renderData->CurrentFillIndex++] = { v3, Color };
 	}
 
 	void DebugRenderer::DrawWireTriangle(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3)
 	{
-		m_WireTrisVerts[m_CurrentWireIndex++] = { v1, Color };
-		m_WireTrisVerts[m_CurrentWireIndex++] = { v2, Color };
-		m_WireTrisVerts[m_CurrentWireIndex++] = { v3, Color };
+		DebugRenderData* renderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
+
+		renderData->WireTrisVerts[renderData->CurrentWireIndex++] = { v1, Color };
+		renderData->WireTrisVerts[renderData->CurrentWireIndex++] = { v2, Color };
+		renderData->WireTrisVerts[renderData->CurrentWireIndex++] = { v3, Color };
 	}
 	
 	void DebugRenderer::InitSphereMesh(int segments, int rings)

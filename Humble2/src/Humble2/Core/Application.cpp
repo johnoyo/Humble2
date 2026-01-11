@@ -323,7 +323,9 @@ namespace HBL2
 
 				BEGIN_APP_PROFILE(renderThread);
 
+				BEGIN_APP_PROFILE(renderThreadWait);
 				const FrameData2* frameData = Renderer::Instance->WaitAndRender();
+				END_APP_PROFILE(renderThreadWait, m_CurrentStats.RenderThreadWaitTime);
 
 				if (frameData == nullptr) { break; }
 
@@ -376,7 +378,9 @@ namespace HBL2
 			ImGuiRenderer::Instance->EndFrame();
 			END_APP_PROFILE(appGUIDraw, m_CurrentStats.AppGuiDrawTime);
 
+			BEGIN_APP_PROFILE(gameThreadWait);
 			Renderer::Instance->WaitAndSubmit();
+			END_APP_PROFILE(gameThreadWait, m_CurrentStats.GameThreadWaitTime);
 
 			EndFrame();
 

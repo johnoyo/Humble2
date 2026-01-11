@@ -171,7 +171,7 @@ namespace HBL2
 		GatherLights(sceneRenderData);
 	}
 
-	void ForwardSceneRenderer::Render(void* renderData)
+	void ForwardSceneRenderer::Render(void* renderData, void* debugRenderData)
 	{
 		SceneRenderData* sceneRenderData = (SceneRenderData*)renderData;
 		UniformRingBuffer* uniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
@@ -234,7 +234,7 @@ namespace HBL2
 		PostProcessPass(commandBuffer, sceneRenderData);
 		renderPassPool.Execute(RenderPassEvent::AfterRenderingPostProcess);
 
-		DebugPass(commandBuffer, sceneRenderData);
+		DebugPass(commandBuffer, debugRenderData);
 
 		renderPassPool.Execute(RenderPassEvent::BeforePresenting);
 		PresentPass(commandBuffer, sceneRenderData);
@@ -1661,11 +1661,11 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PostProcessPassTime);
 	}
 
-	void ForwardSceneRenderer::DebugPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::DebugPass(CommandBuffer* commandBuffer, void* debugRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
-		DebugRenderer::Instance->Render(commandBuffer);
+		DebugRenderer::Instance->Render(commandBuffer, debugRenderData);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().DebugPassTime);
 	}

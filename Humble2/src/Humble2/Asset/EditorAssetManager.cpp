@@ -4,6 +4,7 @@
 
 #include "Systems\TransformSystem.h"
 #include "Systems\LinkSystem.h"
+#include "Systems\HierachySystem.h"
 #include "Systems\CameraSystem.h"
 #include "Systems\RenderingSystem.h"
 #include "Systems\SoundSystem.h"

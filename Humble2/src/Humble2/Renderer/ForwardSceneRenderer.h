@@ -55,7 +55,7 @@ namespace HBL2
 	public:
 		virtual void Initialize(Scene* scene) override;
 		virtual void Gather(Entity mainCamera) override;
-		virtual void Render(void* renderData) override;
+		virtual void Render(void* renderData, void* debugRenderData) override;
 		virtual void CleanUp() override;
 
 		virtual void* GetRenderData() override;
@@ -80,7 +80,7 @@ namespace HBL2
 		void TransparentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
 		void SkyboxPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
 		void PostProcessPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
-		void DebugPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
+		void DebugPass(CommandBuffer* commandBuffer, void* debugRenderData);
 		void PresentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
 
 		void GetViewProjection(SceneRenderData* sceneRenderData, Entity mainCamera);

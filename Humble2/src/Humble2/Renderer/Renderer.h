@@ -90,6 +90,7 @@ namespace HBL2
 	{
 		SceneRenderer* Renderer = nullptr;
 		void* RenderData = nullptr;
+		void* DebugRenderData = nullptr;
 
 		ImDrawDataSnapshot ImGuiRenderData;
 	};
@@ -118,10 +119,11 @@ namespace HBL2
 		FrameData2* WaitAndRender();
 		void WaitAndSubmit();
 		void CollectRenderData(SceneRenderer* renderer, void* renderData);
+		void CollectDebugRenderData(void* renderData);
 		void CollectImGuiRenderData(void* renderData, double currentTime);
 		void ClearFrameDataBuffer();
 		inline uint32_t GetFrameWriteIndex() const { return m_WriteIndex; }
-		inline uint32_t GetFrameReadIndex() const { return m_WriteIndex; }
+		inline uint32_t GetFrameReadIndex() const { return m_ReadIndex; }
 		void ResetForSceneChange();
 		void ShutdownRenderThread();
 

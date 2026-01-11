@@ -87,7 +87,7 @@ namespace HBL2
 			return;
 		}
 
-		frameData.Renderer->Render(frameData.RenderData);
+		frameData.Renderer->Render(frameData.RenderData, frameData.DebugRenderData);
 	}
 
 	FrameData2* Renderer::WaitAndRender()
@@ -196,6 +196,11 @@ namespace HBL2
 	{
 		m_Frames[m_WriteIndex].Renderer = renderer;
 		m_Frames[m_WriteIndex].RenderData = renderData;
+	}
+
+	void Renderer::CollectDebugRenderData(void* renderData)
+	{
+		m_Frames[m_WriteIndex].DebugRenderData = renderData;
 	}
 
 	void Renderer::CollectImGuiRenderData(void* renderData, double currentTime)
