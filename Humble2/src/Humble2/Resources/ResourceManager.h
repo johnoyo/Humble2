@@ -8,7 +8,7 @@
 
 #include "Scene\Scene.h"
 #include "Sound\Sound.h"
-#include "Scene\Script.h"
+#include "Script\Script.h"
 #include "Prefab\Prefab.h"
 
 #include <cstring>

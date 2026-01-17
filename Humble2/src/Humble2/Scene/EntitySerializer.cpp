@@ -1,5 +1,6 @@
 #include "EntitySerializer.h"
 
+#include "Script\BuildEngine.h"
 #include "Utilities\YamlUtilities.h"
 #include "UI\UserInterfaceUtilities.h"
 
@@ -451,11 +452,11 @@ namespace HBL2
 
 			const std::string& componentName = alias.data();
 
-			const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+			const std::string& cleanedComponentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
 
-			if (NativeScriptUtilities::Get().HasComponent(cleanedComponentName, m_Scene, m_Entity))
+			if (BuildEngine::Instance->HasComponent(cleanedComponentName, m_Scene, m_Entity))
 			{
-				auto componentMeta = NativeScriptUtilities::Get().GetComponent(cleanedComponentName, m_Scene, m_Entity);
+				auto componentMeta = BuildEngine::Instance->GetComponent(cleanedComponentName, m_Scene, m_Entity);
 				out << YAML::Key << cleanedComponentName;
 
 				out << YAML::BeginMap;
@@ -773,12 +774,12 @@ namespace HBL2
 			}
 
 			const std::string& componentName = alias.data();
-			const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+			const std::string& cleanedComponentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
 
 			auto userComponent = entityNode[cleanedComponentName];
 			if (userComponent)
 			{
-				auto componentMeta = NativeScriptUtilities::Get().AddComponent(cleanedComponentName, m_Scene, m_Entity);
+				auto componentMeta = BuildEngine::Instance->AddComponent(cleanedComponentName, m_Scene, m_Entity);
 				EditorUtilities::Get().DeserializeComponentFromYAML(userComponent, componentMeta, m_Scene);
 			}
 		}

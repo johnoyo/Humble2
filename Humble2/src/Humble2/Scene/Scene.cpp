@@ -1,8 +1,8 @@
 #include "Scene.h"
 
 #include "ISystem.h"
-#include "Utilities/NativeScriptUtilities.h"
 
+#include "Script\BuildEngine.h"
 #include "Project\Project.h"
 #include "SceneSerializer.h"
 
@@ -118,7 +118,7 @@ namespace HBL2
         {
             if (system->GetType() == SystemType::User)
             {
-                NativeScriptUtilities::Get().RegisterSystem(system->Name, dst);
+                BuildEngine::Instance->RegisterSystem(system->Name, dst);
             }
         }
 
@@ -130,16 +130,16 @@ namespace HBL2
         for (auto meta_type : entt::resolve(src->GetMetaContext()))
         {
             std::string componentName = meta_type.second.info().name().data();
-            componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+            componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
             userComponentNames.push_back(componentName);
 
-            NativeScriptUtilities::Get().SerializeComponents(componentName, src, data, false);
+            BuildEngine::Instance->SerializeComponents(componentName, src, data, false);
         }
 
         // Copy the components to the new scene.
         for (const auto& userComponentName : userComponentNames)
         {
-            NativeScriptUtilities::Get().DeserializeComponents(userComponentName, dst, data);
+            BuildEngine::Instance->DeserializeComponents(userComponentName, dst, data);
         }
 
         // Set main camera.
@@ -161,8 +161,8 @@ namespace HBL2
 
             const std::string& componentName = alias.data();
 
-            const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
-            NativeScriptUtilities::Get().ClearComponentStorage(cleanedComponentName, this);
+            const std::string& cleanedComponentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
+            BuildEngine::Instance->ClearComponentStorage(cleanedComponentName, this);
         }
 
         // Clear reflection system.
@@ -387,12 +387,12 @@ namespace HBL2
         for (auto meta_type : entt::resolve(m_MetaContext))
         {
             std::string componentName = meta_type.second.info().name().data();
-            componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+            componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
 
-            if (NativeScriptUtilities::Get().HasComponent(componentName, this, entity))
+            if (BuildEngine::Instance->HasComponent(componentName, this, entity))
             {
-                auto componentMeta = NativeScriptUtilities::Get().GetComponent(componentName, this, entity);
-                auto newComponentMeta = NativeScriptUtilities::Get().AddComponent(componentName, this, newEntity);
+                auto componentMeta = BuildEngine::Instance->GetComponent(componentName, this, entity);
+                auto newComponentMeta = BuildEngine::Instance->AddComponent(componentName, this, newEntity);
                 newComponentMeta.assign(componentMeta);
             }
         }
@@ -523,23 +523,5 @@ namespace HBL2
 
         m_EntityMap.erase(id->Identifier);
         m_Registry.destroy(entity);
-    }
-
-    void Scene::operator=(const HBL2::Scene& other)
-    {
-        m_Name = other.m_Name;
-
-        // NOTE: Here ^ we copy only the name of the scene.
-        //       Its only used by the Pool class where the scene is empty
-        //       and we only want to pass the name through.
-
-        /*
-        m_Systems = other.m_Systems;
-        m_CoreSystems = other.m_CoreSystems;
-        m_RuntimeSystems = other.m_RuntimeSystems;
-        m_EntityMap = other.m_EntityMap;
-        m_MetaContext = other.m_MetaContext;
-        MainCamera = other.MainCamera;
-        */
     }
 }

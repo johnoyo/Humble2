@@ -224,8 +224,6 @@ namespace HBL2
 		std::vector<ISystem*> m_RuntimeSystems;
 		std::unordered_map<UUID, Entity> m_EntityMap;
 
-		void operator=(const HBL2::Scene&);
-
 		friend class Pool<Scene, Scene>;
 	};
 }

@@ -1,5 +1,7 @@
 #include "SceneManager.h"
 
+#include "ISystem.h"
+
 namespace HBL2
 {
 	SceneManager& SceneManager::Get()

@@ -1,7 +1,8 @@
 #include "Systems\EditorPanelSystem.h"
 
+#include "Script\BuildEngine.h"
 #include "Utilities\YamlUtilities.h"
-#include <Utilities\FileDialogs.h>
+#include "Utilities\FileDialogs.h"
 
 namespace HBL2
 {
@@ -493,7 +494,7 @@ namespace HBL2
 				if (ImGui::Button("OK"))
 				{
 					// Create .h file with placeholder code.
-					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateSystemFile(m_CurrentDirectory, systemNameBuffer);
+					auto scriptAssetHandle = BuildEngine::Instance->CreateSystemFile(m_CurrentDirectory, systemNameBuffer);
 
 					// Import script.
 					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
@@ -533,7 +534,7 @@ namespace HBL2
 				if (ImGui::Button("OK"))
 				{
 					// Create .h file with placeholder code.
-					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateComponentFile(m_CurrentDirectory, componentNameBuffer);
+					auto scriptAssetHandle = BuildEngine::Instance->CreateComponentFile(m_CurrentDirectory, componentNameBuffer);
 
 					// Import script.
 					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
@@ -573,7 +574,7 @@ namespace HBL2
 				if (ImGui::Button("OK"))
 				{
 					// Create .h file with placeholder code.
-					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateHelperScriptFile(m_CurrentDirectory, scriptNameBuffer);
+					auto scriptAssetHandle = BuildEngine::Instance->CreateHelperScriptFile(m_CurrentDirectory, scriptNameBuffer);
 
 					// Import script.
 					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);

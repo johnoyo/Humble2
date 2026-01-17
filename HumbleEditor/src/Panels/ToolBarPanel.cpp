@@ -1,7 +1,8 @@
 #include "Systems\EditorPanelSystem.h"
 
-#include <Utilities\FileDialogs.h>
-#include <Physics/PhysicsEngine2D.h>
+#include "Script\BuildEngine.h"
+#include "Utilities\FileDialogs.h"
+#include "Physics\PhysicsEngine2D.h"
 
 namespace HBL2
 {
@@ -31,7 +32,7 @@ namespace HBL2
 							AssetManager::Instance->DeregisterAssets();
 
 							// Free unity build dll.
-							NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
+							BuildEngine::Instance->UnloadBuild(m_ActiveScene);
 
 							// Clear the invalid cached mesh handles, since we deregistered all the assets.
 							MeshUtilities::Get().ClearCachedHandles();
@@ -68,7 +69,7 @@ namespace HBL2
 							AssetManager::Instance->DeregisterAssets();
 
 							// Free unity build dll.
-							NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
+							BuildEngine::Instance->UnloadBuild(m_ActiveScene);
 
 							// Clear the invalid cached mesh handles, since we deregistered all the assets.
 							MeshUtilities::Get().ClearCachedHandles();

@@ -1,5 +1,7 @@
 #include "Systems\EditorPanelSystem.h"
 
+#include "Script\BuildEngine.h"
+
 namespace HBL2
 {
 	namespace Editor
@@ -30,7 +32,7 @@ namespace HBL2
 
 								if (script->Type == ScriptType::SYSTEM)
 								{
-									NativeScriptUtilities::Get().RegisterSystem(script->Name, m_ActiveScene);
+									BuildEngine::Instance->RegisterSystem(script->Name, m_ActiveScene);
 								}
 								else
 								{

@@ -1,7 +1,7 @@
 #include "ShaderUtilities.h"
 
-#include <Project\Project.h>
-#include <Utilities\YamlUtilities.h>
+#include "Project\Project.h"
+#include "Utilities\YamlUtilities.h"
 
 namespace HBL2
 {

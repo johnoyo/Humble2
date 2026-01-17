@@ -1,6 +1,8 @@
 #include "Application.h"
 
 #include "Asset\EditorAssetManager.h"
+#include "Script\BuildEngine.h"
+#include "Platform\Windows\WindowsBuildEngine.h"
 
 #ifdef DIST
 	#define BEGIN_APP_PROFILE(tag)
@@ -66,8 +68,8 @@ namespace HBL2
 		EventDispatcher::Initialize();
 		JobSystem::Initialize();
 		MeshUtilities::Initialize();
-		NativeScriptUtilities::Initialize();
-		UnityBuild::Initialize();
+
+		BuildEngine::Instance = new WindowsBuildEngine;
 
 		switch (gfxAPI)
 		{
@@ -222,6 +224,8 @@ namespace HBL2
 
 	void Application::Start()
 	{
+		BuildEngine::Instance->Initialize();
+
 		Window::Instance->Create();
 		ImGuiRenderer::Instance->Create();
 		
@@ -427,10 +431,12 @@ namespace HBL2
 		Window::Instance->Terminate();
 		delete Window::Instance;
 		Window::Instance = nullptr;
+		
+		BuildEngine::Instance->ShutDown();
+		delete BuildEngine::Instance;
+		BuildEngine::Instance = nullptr;
 
 		Input::ShutDown();
-		UnityBuild::Shutdown();
-		NativeScriptUtilities::Shutdown();
 		ShaderUtilities::Shutdown();
 		MeshUtilities::Shutdown();
 		EventDispatcher::Shutdown();

@@ -978,25 +978,25 @@ namespace HBL2
 		for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
 		{
 			std::string componentName = meta_type.second.info().name().data();
-			componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+			componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
 			userComponentNames.push_back(componentName);
 
-			NativeScriptUtilities::Get().SerializeComponents(componentName, activeScene, data);
+			BuildEngine::Instance->SerializeComponents(componentName, activeScene, data);
 		}
 
 		// Unload unity build dll.
-		NativeScriptUtilities::Get().UnloadUnityBuild(activeScene);
+		BuildEngine::Instance->UnloadBuild(activeScene);
 
 		// Combine all .cpp files in assets in unity build source file.
-		UnityBuild::Get().Combine();
+		BuildEngine::Instance->Combine();
 
 		// Build unity build source dll.
-		UnityBuild::Get().Build();
+		BuildEngine::Instance->Build();
 
 		// Re-register systems.
 		for (const auto& userSystemName : userSystemNames)
 		{
-			NativeScriptUtilities::Get().RegisterSystem(userSystemName, activeScene);
+			BuildEngine::Instance->RegisterSystem(userSystemName, activeScene);
 		}
 
 		bool newComponentTobeRegistered = true;
@@ -1012,14 +1012,14 @@ namespace HBL2
 				}
 			}
 
-			NativeScriptUtilities::Get().RegisterComponent(userComponentName, activeScene);
+			BuildEngine::Instance->RegisterComponent(userComponentName, activeScene);
 
-			NativeScriptUtilities::Get().DeserializeComponents(userComponentName, activeScene, data);
+			BuildEngine::Instance->DeserializeComponents(userComponentName, activeScene, data);
 		}
 
 		if (newComponentTobeRegistered && script->Type == ScriptType::COMPONENT)
 		{
-			NativeScriptUtilities::Get().RegisterComponent(script->Name, activeScene);
+			BuildEngine::Instance->RegisterComponent(script->Name, activeScene);
 		}
 	}
 
@@ -1628,11 +1628,11 @@ namespace HBL2
 			for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
 			{
 				std::string componentName = meta_type.second.info().name().data();
-				componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+				componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
 
 				if (script->Name == componentName)
 				{
-					NativeScriptUtilities::Get().ClearComponentStorage(componentName, activeScene);
+					BuildEngine::Instance->ClearComponentStorage(componentName, activeScene);
 					entt::meta_reset(activeScene->GetMetaContext(), meta_type.first);
 					break;
 				}

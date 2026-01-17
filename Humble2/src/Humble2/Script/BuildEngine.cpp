@@ -1,16 +1,22 @@
-#include "NativeScriptUtilities.h"
+#include "BuildEngine.h"
+
+#include "Asset\AssetManager.h"
+#include "Project\Project.h"
+#include "Scene\ISystem.h"
 
 namespace HBL2
 {
+	BuildEngine* BuildEngine::Instance = nullptr;
+
 	extern "C"
 	{
 		typedef void (*RegisterSystemFunc)(Scene*);
-				
+
 		typedef const char* (*RegisterComponentFunc)(Scene*);
 
-		typedef entt::meta_any (*AddComponentFunc)(Scene*, Entity);
+		typedef entt::meta_any(*AddComponentFunc)(Scene*, Entity);
 
-		typedef entt::meta_any (*GetComponentFunc)(Scene*, Entity);
+		typedef entt::meta_any(*GetComponentFunc)(Scene*, Entity);
 
 		typedef void (*RemoveComponentFunc)(Scene*, Entity);
 
@@ -23,30 +29,233 @@ namespace HBL2
 		typedef void (*DeserializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>&);
 	}
 
-	NativeScriptUtilities* NativeScriptUtilities::s_Instance = nullptr;
-
-	NativeScriptUtilities& NativeScriptUtilities::Get()
+	void BuildEngine::Initialize()
 	{
-		HBL2_CORE_ASSERT(s_Instance != nullptr, "NativeScriptUtilities::s_Instance is null! Call NativeScriptUtilities::Initialize before use.");
-		return *s_Instance;
+
 	}
 
-	void NativeScriptUtilities::Initialize()
+	void BuildEngine::ShutDown()
 	{
-		HBL2_CORE_ASSERT(s_Instance == nullptr, "NativeScriptUtilities::s_Instance is not null! NativeScriptUtilities::Initialize has been called twice.");
 
-		s_Instance = new NativeScriptUtilities;
 	}
 
-	void NativeScriptUtilities::Shutdown()
+	bool BuildEngine::Build()
 	{
-		HBL2_CORE_ASSERT(s_Instance != nullptr, "NativeScriptUtilities::s_Instance is null!");
+		// Create directory.
+		try
+		{
+			std::filesystem::create_directories(Project::GetProjectDirectory() / "ProjectFiles");
+		}
+		catch (std::exception& e)
+		{
+			HBL2_ERROR("Project directory creation failed: {0}", e.what());
+		}
 
-		delete s_Instance;
-		s_Instance = nullptr;
+		// Open and inject final code.
+		std::ofstream stream(Project::GetProjectDirectory() / "ProjectFiles" / "UnityBuildSource.cpp", std::ios::out);
+
+		if (!stream.is_open())
+		{
+			HBL2_CORE_ERROR("UnityBuildSource file not found: {0}", Project::GetProjectDirectory() / "UnityBuildSource.cpp");
+			return false;
+		}
+
+		stream << m_UnityBuildSourceFinal;
+
+		stream.close();
+
+		// Build
+		const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles";
+
+		// Build the solution					
+#ifdef DEBUG
+		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / "UnityBuild.sln").string() + R"( /t:)" + "UnityBuild" + R"( /p:Configuration=Debug")";
+#else
+		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / "UnityBuild.sln").string() + R"( /t:)" + "UnityBuild" + R"( /p:Configuration=Release")";
+#endif // DEBUG
+
+		system(command.c_str());
+
+		LoadBuild();
+
+		return true;
 	}
 
-	Handle<Asset> NativeScriptUtilities::CreateSystemFile(const std::filesystem::path& currentDir, const std::string& systemName)
+	void BuildEngine::Combine()
+	{
+		// Create directory.
+		try
+		{
+			std::filesystem::create_directories(Project::GetProjectDirectory() / "ProjectFiles");
+		}
+		catch (std::exception& e)
+		{
+			HBL2_ERROR("Project directory creation failed: {0}", e.what());
+		}
+
+		m_UnityBuildSourceFinal = m_UnityBuildSource;
+
+		// Collect includes and systems registration
+		std::string componentIncludes;
+		std::string helperScriptsIncludes;
+		std::string systemIncludes;
+		std::string projectIncludes;
+
+		for (const auto assetHandle : AssetManager::Instance->GetRegisteredAssets())
+		{
+			if (!AssetManager::Instance->IsAssetValid(assetHandle))
+			{
+				continue;
+			}
+
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+			if (asset->Type == AssetType::Script)
+			{
+				Handle<Script> scriptHandle = AssetManager::Instance->GetAsset<Script>(asset->UUID);
+
+				if (scriptHandle.IsValid())
+				{
+					Script* script = ResourceManager::Instance->GetScript(scriptHandle);
+
+					if (script->Type == ScriptType::COMPONENT)
+					{
+						componentIncludes += std::format("#include \"{}\"\n", script->Path.string());
+					}
+					else if (script->Type == ScriptType::SYSTEM)
+					{
+						systemIncludes += std::format("#include \"{}\"\n", script->Path.string());
+					}
+					else if (script->Type == ScriptType::HELPER_SCRIPT)
+					{
+						helperScriptsIncludes += std::format("#include \"{}\"\n", script->Path.string());
+					}
+
+					projectIncludes += std::format("  <ClInclude Include=\"..\\Assets\\{}\" />\n", script->Path.string());
+				}
+			}
+		}
+
+		// Inject includes in the code.
+		{
+			const std::string& placeholder = "{ComponentIncludes}";
+
+			size_t pos = m_UnityBuildSourceFinal.find(placeholder);
+
+			while (pos != std::string::npos)
+			{
+				((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), componentIncludes);
+				pos = m_UnityBuildSourceFinal.find(placeholder, pos + componentIncludes.length());
+			}
+		}
+
+		{
+			const std::string& placeholder = "{HelperScriptIncludes}";
+
+			size_t pos = m_UnityBuildSourceFinal.find(placeholder);
+
+			while (pos != std::string::npos)
+			{
+				((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), helperScriptsIncludes);
+				pos = m_UnityBuildSourceFinal.find(placeholder, pos + helperScriptsIncludes.length());
+			}
+		}
+
+		{
+			const std::string& placeholder = "{SystemIncludes}";
+
+			size_t pos = m_UnityBuildSourceFinal.find(placeholder);
+
+			while (pos != std::string::npos)
+			{
+				((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), systemIncludes);
+				pos = m_UnityBuildSourceFinal.find(placeholder, pos + systemIncludes.length());
+			}
+		}
+
+		const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles";
+
+		// Create solution file for new system
+		std::ofstream solutionFile(projectFilesPath / "UnityBuild.sln");
+
+		if (!solutionFile.is_open())
+		{
+			return;
+		}
+
+		solutionFile << GetDefaultSolutionText();
+		solutionFile.close();
+
+		// Create vcxproj file for new system
+		std::ofstream projectFile(projectFilesPath / "UnityBuild.vcxproj");
+
+		if (!projectFile.is_open())
+		{
+			return;
+		}
+
+		projectFile << GetDefaultProjectText(projectIncludes);
+		projectFile.close();
+	}
+
+	void BuildEngine::Recompile()
+	{
+		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+		std::vector<std::string> userSystemNames;
+
+		// Store registered user system names.
+		for (ISystem* userSystem : activeScene->GetRuntimeSystems())
+		{
+			if (userSystem->GetType() == SystemType::User)
+			{
+				userSystemNames.push_back(userSystem->Name);
+			}
+		}
+
+		std::vector<std::string> userComponentNames;
+		std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
+
+		// Store all registered meta types.
+		for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
+		{
+			std::string componentName = meta_type.second.info().name().data();
+			componentName = CleanComponentNameO3(componentName);
+			userComponentNames.push_back(componentName);
+
+			SerializeComponents(componentName, activeScene, data);
+		}
+
+		// Unload unity build dll.
+		UnloadBuild(activeScene);
+
+		// Combine all .cpp files in assets in unity build source file.
+		Combine();
+
+		// Build unity build source dll.
+		Build();
+
+		// Re-register systems.
+		for (const auto& userSystemName : userSystemNames)
+		{
+			RegisterSystem(userSystemName, activeScene);
+		}
+
+		// Re-register the components.
+		for (const auto& userComponentName : userComponentNames)
+		{
+			RegisterComponent(userComponentName, activeScene);
+			DeserializeComponents(userComponentName, activeScene, data);
+		}
+	}
+
+	bool BuildEngine::Exists()
+	{
+		const auto& path = GetUnityBuildPath();
+		return std::filesystem::exists(path);
+	}
+
+	Handle<Asset> BuildEngine::CreateSystemFile(const std::filesystem::path& currentDir, const std::string& systemName)
 	{
 		auto relativePath = std::filesystem::relative(currentDir / (systemName + ".h"), HBL2::Project::GetAssetDirectory());
 
@@ -78,7 +287,7 @@ namespace HBL2
 		return scriptAssetHandle;
 	}
 
-	Handle<Asset> NativeScriptUtilities::CreateComponentFile(const std::filesystem::path& currentDir, const std::string& componentName)
+	Handle<Asset> BuildEngine::CreateComponentFile(const std::filesystem::path& currentDir, const std::string& componentName)
 	{
 		auto relativePath = std::filesystem::relative(currentDir / (componentName + ".h"), HBL2::Project::GetAssetDirectory());
 
@@ -86,7 +295,7 @@ namespace HBL2
 			.debugName = "script-asset",
 			.filePath = relativePath,
 			.type = AssetType::Script,
-		});
+			});
 
 		if (scriptAssetHandle.IsValid())
 		{
@@ -110,7 +319,7 @@ namespace HBL2
 		return scriptAssetHandle;
 	}
 
-	Handle<Asset> NativeScriptUtilities::CreateHelperScriptFile(const std::filesystem::path& currentDir, const std::string& scriptName)
+	Handle<Asset> BuildEngine::CreateHelperScriptFile(const std::filesystem::path& currentDir, const std::string& scriptName)
 	{
 		auto relativePath = std::filesystem::relative(currentDir / (scriptName + ".h"), HBL2::Project::GetAssetDirectory());
 
@@ -118,7 +327,7 @@ namespace HBL2
 			.debugName = "script-asset",
 			.filePath = relativePath,
 			.type = AssetType::Script,
-		});
+			});
 
 		if (scriptAssetHandle.IsValid())
 		{
@@ -142,18 +351,18 @@ namespace HBL2
 		return scriptAssetHandle;
 	}
 
-	const std::filesystem::path NativeScriptUtilities::GetUnityBuildPath() const
+	const std::filesystem::path BuildEngine::GetUnityBuildPath() const
 	{
 		const std::string& projectName = Project::GetActive()->GetName();
 
-#ifdef DEBUG
+		#ifdef DEBUG
 		return std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
+		#else
 		return std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
+		#endif
 	}
 
-	std::string NativeScriptUtilities::GetDefaultSystemCode(const std::string& systemName)
+	std::string BuildEngine::GetDefaultSystemCode(const std::string& systemName)
 	{
 		const std::string& placeholder = "{SystemName}";
 
@@ -186,7 +395,7 @@ REGISTER_HBL2_SYSTEM({SystemName})
 		return systemCode;
 	}
 
-	std::string NativeScriptUtilities::GetDefaultSolutionText()
+	std::string BuildEngine::GetDefaultSolutionText()
 	{
 		const std::string& solutionText = R"(
 Microsoft Visual Studio Solution File, Format Version 12.00
@@ -213,7 +422,7 @@ EndGlobal
 		return solutionText;
 	}
 
-	std::string NativeScriptUtilities::GetDefaultProjectText(const std::string& projectIncludes)
+	std::string BuildEngine::GetDefaultProjectText(const std::string& projectIncludes)
 	{
 		const std::string& vulkanSDK = std::getenv("VULKAN_SDK");
 
@@ -261,10 +470,10 @@ EndGlobal
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" + std::string(")") +  R"(" Label ="LocalAppDataPlatform" />
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" + std::string(")") + R"(" Label ="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" + std::string(")") +  R"(" Label="LocalAppDataPlatform" />
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" + std::string(")") + R"(" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -393,7 +602,7 @@ EndGlobal
 		return projectText;
 	}
 
-	std::string NativeScriptUtilities::GetDefaultComponentCode(const std::string& componentName)
+	std::string BuildEngine::GetDefaultComponentCode(const std::string& componentName)
 	{
 		const std::string& placeholder = "{ComponentName}";
 
@@ -423,7 +632,7 @@ REGISTER_HBL2_COMPONENT({ComponentName},
 		return componentCode;
 	}
 
-	std::string NativeScriptUtilities::GetDefaultHelperScriptCode(const std::string& scriptName)
+	std::string BuildEngine::GetDefaultHelperScriptCode(const std::string& scriptName)
 	{
 		const std::string& placeholder = "{ScriptName}";
 
@@ -448,7 +657,7 @@ class {ScriptName}
 		return scriptCode;
 	}
 
-	void NativeScriptUtilities::RegisterSystem(const std::string& name, Scene* ctx)
+	void BuildEngine::RegisterSystem(const std::string& name, Scene* ctx)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -465,7 +674,7 @@ class {ScriptName}
 		registerSystem(ctx);
 	}
 
-	void NativeScriptUtilities::RegisterComponent(const std::string& name, Scene* ctx)
+	void BuildEngine::RegisterComponent(const std::string& name, Scene* ctx)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -482,20 +691,19 @@ class {ScriptName}
 		const char* properName = registerComponent(ctx);
 	}
 
-	void NativeScriptUtilities::LoadUnityBuild()
+	void BuildEngine::LoadBuild()
 	{
 		const auto& path = GetUnityBuildPath();
-
-		LoadUnityBuild(path.string());
+		LoadBuild(path.string());
 	}
 
-	void NativeScriptUtilities::LoadUnityBuild(const std::string& path)
+	void BuildEngine::LoadBuild(const std::string& path)
 	{
 		// Load new unity build dll.
 		m_DynamicLibrary = DynamicLibrary(path);
 	}
 
-	void NativeScriptUtilities::UnloadUnityBuild(Scene* ctx)
+	void BuildEngine::UnloadBuild(Scene* ctx)
 	{
 		// Clear user defined components.
 		for (auto meta_type : entt::resolve(ctx->GetMetaContext()))
@@ -509,8 +717,8 @@ class {ScriptName}
 
 			const std::string& componentName = alias.data();
 
-			const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
-			NativeScriptUtilities::Get().ClearComponentStorage(cleanedComponentName, ctx);
+			const std::string& cleanedComponentName = CleanComponentNameO3(componentName);
+			ClearComponentStorage(cleanedComponentName, ctx);
 		}
 
 		// Reset reflection system.
@@ -542,7 +750,7 @@ class {ScriptName}
 		}
 	}
 
-	entt::meta_any NativeScriptUtilities::AddComponent(const std::string& name, Scene* ctx, Entity entity)
+	entt::meta_any BuildEngine::AddComponent(const std::string& name, Scene* ctx, Entity entity)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -553,7 +761,7 @@ class {ScriptName}
 		return addComponent(ctx, entity);
 	}
 
-	entt::meta_any NativeScriptUtilities::GetComponent(const std::string& name, Scene* ctx, Entity entity)
+	entt::meta_any BuildEngine::GetComponent(const std::string& name, Scene* ctx, Entity entity)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -564,7 +772,7 @@ class {ScriptName}
 		return getComponent(ctx, entity);
 	}
 
-	void NativeScriptUtilities::RemoveComponent(const std::string& name, Scene* ctx, Entity entity)
+	void BuildEngine::RemoveComponent(const std::string& name, Scene* ctx, Entity entity)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -575,7 +783,7 @@ class {ScriptName}
 		removeComponent(ctx, entity);
 	}
 
-	bool NativeScriptUtilities::HasComponent(const std::string& name, Scene* ctx, Entity entity)
+	bool BuildEngine::HasComponent(const std::string& name, Scene* ctx, Entity entity)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -586,7 +794,7 @@ class {ScriptName}
 		return hasComponent(ctx, entity);
 	}
 
-	void NativeScriptUtilities::ClearComponentStorage(const std::string& name, Scene* ctx)
+	void BuildEngine::ClearComponentStorage(const std::string& name, Scene* ctx)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -597,7 +805,7 @@ class {ScriptName}
 		clearComponentStorage(ctx);
 	}
 
-	void NativeScriptUtilities::SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data, bool cleanRegistry)
+	void BuildEngine::SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data, bool cleanRegistry)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -612,7 +820,7 @@ class {ScriptName}
 		serializeComponents(ctx, data, cleanRegistry);
 	}
 
-	void NativeScriptUtilities::DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data)
+	void BuildEngine::DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data)
 	{
 		const auto& path = GetUnityBuildPath();
 
@@ -627,7 +835,7 @@ class {ScriptName}
 		deserializeComponents(ctx, data);
 	}
 
-	std::string NativeScriptUtilities::CleanComponentNameO1(const std::string& input)
+	std::string BuildEngine::CleanComponentNameO1(const std::string& input)
 	{
 		std::string output = input;
 
@@ -640,8 +848,8 @@ class {ScriptName}
 
 		return output;
 	}
-	
-	std::string NativeScriptUtilities::CleanComponentNameO3(const std::string& input)
+
+	std::string BuildEngine::CleanComponentNameO3(const std::string& input)
 	{
 		std::string output = input;
 

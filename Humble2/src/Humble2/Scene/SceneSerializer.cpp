@@ -1,7 +1,8 @@
 #include "SceneSerializer.h"
 
-#include "Utilities\UnityBuild.h"
-#include "Utilities\NativeScriptUtilities.h"
+#include "Script\Script.h"
+#include "Script\BuildEngine.h"
+#include "Resources\ResourceManager.h"
 #include "Utilities\YamlUtilities.h"
 
 #include "EntitySerializer.h"
@@ -147,12 +148,12 @@ namespace HBL2
 		auto systems = data["User Systems"];
 
 		// If we have user defined scripts but no dll exists, build it.
-		if ((components.size() > 0 || systems.size() > 0 || helperScripts.size() > 0) && !UnityBuild::Get().Exists())
+		if ((components.size() > 0 || systems.size() > 0 || helperScripts.size() > 0) && !BuildEngine::Instance->Exists())
 		{
 			HBL2_CORE_TRACE("No user defined scripts dll found for scene: {}, building one now...", m_Scene->GetName());
 
-			UnityBuild::Get().Combine();
-			UnityBuild::Get().Build();
+			BuildEngine::Instance->Combine();
+			BuildEngine::Instance->Build();
 		}
 
 		if (components)
@@ -165,7 +166,7 @@ namespace HBL2
 				if (componentScriptHandle.IsValid())
 				{
 					Script* componentScript = ResourceManager::Instance->GetScript(componentScriptHandle);
-					NativeScriptUtilities::Get().RegisterComponent(componentScript->Name, m_Scene);
+					BuildEngine::Instance->RegisterComponent(componentScript->Name, m_Scene);
 					HBL2_CORE_TRACE("Successfully resgistered user component: {0}", componentScript->Name);
 				}
 				else
@@ -200,7 +201,7 @@ namespace HBL2
 				if (systemScriptHandle.IsValid())
 				{
 					Script* systemScript = ResourceManager::Instance->GetScript(systemScriptHandle);
-					NativeScriptUtilities::Get().RegisterSystem(systemScript->Name, m_Scene);
+					BuildEngine::Instance->RegisterSystem(systemScript->Name, m_Scene);
 					HBL2_CORE_TRACE("Successfully resgistered user system: {0}", systemScript->Name);
 				}
 				else

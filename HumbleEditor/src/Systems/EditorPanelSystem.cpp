@@ -10,7 +10,6 @@
 #include "Resources\TypeDescriptors.h"
 
 #include "UI/LayoutLib.h"
-#include "Utilities/UnityBuild.h"
 
 namespace HBL2
 {
@@ -24,6 +23,7 @@ namespace HBL2
 			EventDispatcher::Get().Register<SceneChangeEvent>([&](const HBL2::SceneChangeEvent& e)
 			{
 				HBL2_CORE_INFO("EditorPanelSystem::SceneChangeEvent");
+
 				// Delete temporary play mode scene.
 				Scene* currentScene = ResourceManager::Instance->GetScene(e.OldScene);
 				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != std::string::npos)

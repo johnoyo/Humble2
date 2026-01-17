@@ -1,6 +1,6 @@
 ﻿#include "Systems\EditorPanelSystem.h"
 
-#include <Utilities\NativeScriptUtilities.h>
+#include "Script\BuildEngine.h"
 
 #include <UI\UserInterfaceUtilities.h>
 #include <UI\LayoutLib.h>
@@ -574,9 +574,9 @@ namespace HBL2
 				for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
 				{
 					std::string componentName = meta_type.second.info().name().data();
-					componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+					componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
 
-					if (NativeScriptUtilities::Get().HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
+					if (BuildEngine::Instance->HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
 					{
 						ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
 
@@ -595,7 +595,7 @@ namespace HBL2
 
 						if (opened)
 						{
-							entt::meta_any componentMeta = HBL2::NativeScriptUtilities::Get().GetComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+							entt::meta_any componentMeta = BuildEngine::Instance->GetComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
 
 							HBL2::EditorUtilities::Get().DrawDefaultEditor(componentMeta);
 
@@ -606,7 +606,7 @@ namespace HBL2
 
 						if (removeComponent)
 						{
-							HBL2::NativeScriptUtilities::Get().RemoveComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+							BuildEngine::Instance->RemoveComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
 						}
 					}
 				}
@@ -639,13 +639,13 @@ namespace HBL2
 					for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
 					{
 						std::string componentName = meta_type.second.info().name().data();
-						componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+						componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
 
-						if (!HBL2::NativeScriptUtilities::Get().HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
+						if (!BuildEngine::Instance->HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
 						{
 							if (ImGui::MenuItem(componentName.c_str()))
 							{
-								HBL2::NativeScriptUtilities::Get().AddComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+								BuildEngine::Instance->AddComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
 								ImGui::CloseCurrentPopup();
 							}
 						}
