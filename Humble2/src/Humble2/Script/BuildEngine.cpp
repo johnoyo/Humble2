@@ -36,7 +36,7 @@ namespace HBL2
 
 	void BuildEngine::ShutDown()
 	{
-
+		m_DynamicLibrary.Free();
 	}
 
 	void BuildEngine::Recompile()

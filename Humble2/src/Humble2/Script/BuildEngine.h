@@ -19,7 +19,6 @@ namespace HBL2
 
 		virtual bool Build() = 0;
 		void Recompile();
-
 		bool Exists();
 
 		Handle<Asset> CreateSystemFile(const std::filesystem::path& currentDir, const std::string& systemName);

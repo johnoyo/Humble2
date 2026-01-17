@@ -1,7 +1,8 @@
 #include "RenderingSystem.h"
 
-#include "Core/Application.h"
-#include "Renderer/DebugRenderer.h"
+#include "Project\Project.h"
+#include "Core\Application.h"
+#include "Renderer\DebugRenderer.h"
 
 namespace HBL2
 {
@@ -10,8 +11,19 @@ namespace HBL2
 		m_ResourceManager = ResourceManager::Instance;
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 
+		// Retrieve project settings.
+		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
+
 		// Switch on the renderer type.
-		m_SceneRenderer = new ForwardSceneRenderer;
+		switch (projectSettings.Renderer)
+		{
+		case RendererType::Forward:
+		case RendererType::ForwardPlus:
+		case RendererType::Deferred:
+		case RendererType::Custom:
+			m_SceneRenderer = new ForwardSceneRenderer;
+			break;
+		}
 
 		m_SceneRenderer->Initialize(m_Context);
 	}
