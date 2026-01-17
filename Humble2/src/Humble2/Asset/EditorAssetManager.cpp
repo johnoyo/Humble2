@@ -1,5 +1,6 @@
 #include "EditorAssetManager.h"
 
+#include "Script\BuildEngine.h"
 #include "Utilities\YamlUtilities.h"
 
 #include "Systems\TransformSystem.h"
@@ -986,9 +987,6 @@ namespace HBL2
 
 		// Unload unity build dll.
 		BuildEngine::Instance->UnloadBuild(activeScene);
-
-		// Combine all .cpp files in assets in unity build source file.
-		BuildEngine::Instance->Combine();
 
 		// Build unity build source dll.
 		BuildEngine::Instance->Build();

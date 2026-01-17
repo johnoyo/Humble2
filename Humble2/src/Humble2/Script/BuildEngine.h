@@ -17,8 +17,7 @@ namespace HBL2
 		void Initialize();
 		void ShutDown();
 
-		void Combine();
-		bool Build();
+		virtual bool Build() = 0;
 		void Recompile();
 
 		bool Exists();
@@ -36,8 +35,6 @@ namespace HBL2
 
 		const std::filesystem::path GetUnityBuildPath() const;
 		std::string GetDefaultSystemCode(const std::string& systemName);
-		std::string GetDefaultSolutionText();
-		std::string GetDefaultProjectText(const std::string& projectIncludes);
 		std::string GetDefaultComponentCode(const std::string& componentName);
 		std::string GetDefaultHelperScriptCode(const std::string& scriptName);
 
@@ -53,7 +50,7 @@ namespace HBL2
 		std::string CleanComponentNameO1(const std::string& input);
 		std::string CleanComponentNameO3(const std::string& input);
 
-	private:
+	protected:
 		DynamicLibrary m_DynamicLibrary;
 		const std::string m_UnityBuildSource = R"({ComponentIncludes}
 

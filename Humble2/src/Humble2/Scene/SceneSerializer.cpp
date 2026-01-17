@@ -151,8 +151,6 @@ namespace HBL2
 		if ((components.size() > 0 || systems.size() > 0 || helperScripts.size() > 0) && !BuildEngine::Instance->Exists())
 		{
 			HBL2_CORE_TRACE("No user defined scripts dll found for scene: {}, building one now...", m_Scene->GetName());
-
-			BuildEngine::Instance->Combine();
 			BuildEngine::Instance->Build();
 		}
 
