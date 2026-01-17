@@ -176,7 +176,7 @@ namespace HBL2
 
 		TempUniformRingBuffer->Free();
 
-		m_ResourceManager->Flush(UINT32_MAX);
+		m_ResourceManager->FlushAll();
 
 		vmaDestroyAllocator(m_Allocator);
 	}

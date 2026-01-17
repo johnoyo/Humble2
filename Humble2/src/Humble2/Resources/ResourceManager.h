@@ -30,6 +30,11 @@ namespace HBL2
 			m_DeletionQueue.Flush(currentFrame);
 		}
 
+		void FlushAll()
+		{
+			m_DeletionQueue.FlushAll();
+		}
+
 		virtual void Clean() = 0;
 
 		// Textures
