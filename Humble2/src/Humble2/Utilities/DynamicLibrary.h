@@ -23,11 +23,11 @@ namespace HBL2
 
 		void Load(const std::string& path)
 		{
-			#if defined(_WIN32)
+#if defined(_WIN32)
 			m_Library = LoadLibraryA(path.c_str());
-			#else
+#else
 			m_Library = dlopen(path.c_str(), RTLD_LAZY);
-			#endif
+#endif
 			if (!m_Library)
 			{
 				HBL2_CORE_ERROR("Failed to load library: {}", path);
@@ -42,11 +42,11 @@ namespace HBL2
 		{
 			if (m_Library)
 			{
-				#if defined(_WIN32)
+#if defined(_WIN32)
 				FreeLibrary((HMODULE)m_Library);
-				#else
+#else
 				dlclose(m_Library);
-				#endif
+#endif
 			}
 
 			m_Loaded = false;
@@ -55,11 +55,11 @@ namespace HBL2
 		template<typename Func>
 		Func GetFunction(const std::string& name)
 		{
-			#if defined(_WIN32)
+#if defined(_WIN32)
 			return reinterpret_cast<Func>(GetProcAddress((HMODULE)m_Library, name.c_str()));
-			#else
+#else
 			return reinterpret_cast<Func>(dlsym(m_Library, name.c_str()));
-			#endif
+#endif
 		}
 
 		inline const bool IsLoaded() const { return m_Loaded; }

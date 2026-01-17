@@ -45,7 +45,6 @@ namespace HBL2
 	void ShaderUtilities::Initialize()
 	{
 		HBL2_CORE_ASSERT(s_Instance == nullptr, "ShaderUtilities::s_Instance is not null! ShaderUtilities::Initialize has been called twice.");
-		//s_Instance = Allocator::App.Allocate<ShaderUtilities>();
 		s_Instance = new ShaderUtilities;
 	}
 
@@ -53,7 +52,6 @@ namespace HBL2
 	{
 		HBL2_CORE_ASSERT(s_Instance != nullptr, "ShaderUtilities::s_Instance is null!");
 
-		//Allocator::App.Deallocate(s_Instance);
 		delete s_Instance;
 		s_Instance = nullptr;
 	}
