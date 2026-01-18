@@ -86,7 +86,7 @@ namespace HBL2
 		}
 	};
 
-	struct FrameData2
+	struct FrameData
 	{
 		SceneRenderer* Renderer = nullptr;
 		void* RenderData = nullptr;
@@ -115,8 +115,8 @@ namespace HBL2
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
 
-		void Render(const FrameData2& frameData);
-		FrameData2* WaitAndRender();
+		void Render(const FrameData& frameData);
+		FrameData* WaitAndRender();
 		void WaitAndSubmit();
 		void CollectRenderData(SceneRenderer* renderer, void* renderData);
 		void CollectDebugRenderData(void* renderData);
@@ -205,7 +205,7 @@ namespace HBL2
 	protected:
 		static constexpr uint32_t FrameCount = 2;
 
-		FrameData2 m_Frames[FrameCount];
+		FrameData m_Frames[FrameCount];
 		uint32_t m_UniformRingBufferSize = 32_MB * 2;
 		uint32_t m_UniformRingBufferFrameOffsets[FrameCount] = { 0, m_UniformRingBufferSize / 2 };
 

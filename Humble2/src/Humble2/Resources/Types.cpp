@@ -5,7 +5,7 @@
 
 namespace HBL2
 {
-	Mesh::Mesh(const MeshDescriptor2&& desc)
+	Mesh::Mesh(const MeshDescriptor&& desc)
 	{
 		DebugName = desc.debugName;
 

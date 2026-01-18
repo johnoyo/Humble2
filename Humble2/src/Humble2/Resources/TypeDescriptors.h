@@ -265,7 +265,7 @@ namespace HBL2
 		} importedLocalTransform;
 	};
 
-	struct MeshDescriptor
+	struct MeshDescriptorEx
 	{
 		const char* debugName;
 		std::vector<MeshPartDescriptor> meshes;
@@ -277,7 +277,7 @@ namespace HBL2
 		bool recalculateBounds = false;
 	};
 
-	struct MeshDescriptor2
+	struct MeshDescriptor
 	{
 		const char* debugName;
 		Span<const float> vertices;

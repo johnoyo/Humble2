@@ -126,7 +126,7 @@ namespace HBL2
 		m_Renderer->CollectImGuiRenderData(ImGui::GetDrawData(), ImGui::GetTime());
 	}
 
-	void VulkanImGuiRenderer::Render(const FrameData2& frameData)
+	void VulkanImGuiRenderer::Render(const FrameData& frameData)
 	{
 		ImDrawData* data = (ImDrawData*)&frameData.ImGuiRenderData.DrawData;
 

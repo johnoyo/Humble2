@@ -90,7 +90,7 @@ namespace HBL2
 		Renderer::Instance->CollectImGuiRenderData(ImGui::GetDrawData(), ImGui::GetTime());
 	}
 
-	void OpenGLImGuiRenderer::Render(const FrameData2& frameData)
+	void OpenGLImGuiRenderer::Render(const FrameData& frameData)
 	{
 		ImDrawData* data = (ImDrawData*)&frameData.ImGuiRenderData.DrawData;
 

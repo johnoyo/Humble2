@@ -328,7 +328,7 @@ namespace HBL2
 				BEGIN_APP_PROFILE(renderThread);
 
 				BEGIN_APP_PROFILE(renderThreadWait);
-				const FrameData2* frameData = Renderer::Instance->WaitAndRender();
+				const FrameData* frameData = Renderer::Instance->WaitAndRender();
 				END_APP_PROFILE(renderThreadWait, m_CurrentStats.RenderThreadWaitTime);
 
 				if (frameData == nullptr) { break; }

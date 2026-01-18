@@ -7,7 +7,6 @@
 
 #include "Scene/Scene.h"
 #include "Renderer/Renderer.h"
-#include "Renderer/FrameQueue.h"
 #include "Resources/ResourceManager.h"
 
 namespace HBL2

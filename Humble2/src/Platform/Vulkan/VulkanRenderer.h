@@ -19,7 +19,7 @@ namespace HBL2
 
 	constexpr unsigned int FRAME_OVERLAP = 2;
 
-	struct FrameData
+	struct VkFrameData
 	{
 		VkSemaphore ImageAvailableSemaphore; // Signal from swapchain.
 		VkSemaphore MainRenderFinishedSemaphore; // Signal that main render is done.
@@ -74,7 +74,7 @@ namespace HBL2
 		const VmaAllocator& GetAllocator() const { return m_Allocator; } // TODO: Move to VulkanResourceManager
 
 		virtual const uint32_t GetFrameIndex() const override { return m_FrameNumber.load() % FRAME_OVERLAP; }
-		const FrameData& GetCurrentFrame() const { return m_Frames[m_FrameNumber.load() % FRAME_OVERLAP]; }
+		const VkFrameData& GetCurrentFrame() const { return m_Frames[m_FrameNumber.load() % FRAME_OVERLAP]; }
 		const VkFormat& GetSwapchainImageFormat() const { return m_SwapChainImageFormat; }
 		const VkExtent2D& GetSwapchainExtent() const { return m_SwapChainExtent; }
 
@@ -115,7 +115,7 @@ namespace HBL2
 		VmaAllocator m_Allocator;
 		DeletionQueue m_MainDeletionQueue;
 
-		FrameData m_Frames[FRAME_OVERLAP];
+		VkFrameData m_Frames[FRAME_OVERLAP];
 		
 		VulkanCommandBuffer m_MainCommandBuffers[FRAME_OVERLAP];
 		VulkanCommandBuffer m_ImGuiCommandBuffers[FRAME_OVERLAP];

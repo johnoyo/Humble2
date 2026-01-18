@@ -111,8 +111,8 @@ namespace HBL2
 	struct Mesh
 	{
 		Mesh() = default;
-		Mesh(const MeshDescriptor2&& desc);
-		Mesh(const MeshDescriptor&& desc)
+		Mesh(const MeshDescriptor&& desc);
+		Mesh(const MeshDescriptorEx&& desc)
 		{
 			DebugName = desc.debugName;
 

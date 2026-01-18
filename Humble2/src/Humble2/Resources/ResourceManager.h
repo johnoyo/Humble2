@@ -106,13 +106,13 @@ namespace HBL2
 		virtual void DeleteRenderPassLayout(Handle<RenderPassLayout> handle) = 0;
 
 		// Meshes	
+		Handle<Mesh> CreateMesh(const MeshDescriptorEx&& desc)
+		{
+			return m_MeshPool.Insert(std::forward<const MeshDescriptorEx>(desc));
+		}
 		Handle<Mesh> CreateMesh(const MeshDescriptor&& desc)
 		{
 			return m_MeshPool.Insert(std::forward<const MeshDescriptor>(desc));
-		}
-		Handle<Mesh> CreateMesh(const MeshDescriptor2&& desc)
-		{
-			return m_MeshPool.Insert(std::forward<const MeshDescriptor2>(desc));
 		}
 		void DeleteMesh(Handle<Mesh> handle)
 		{

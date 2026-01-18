@@ -80,7 +80,7 @@ namespace HBL2
 		PostInitialize();
 	}
 
-	void Renderer::Render(const FrameData2& frameData)
+	void Renderer::Render(const FrameData& frameData)
 	{
 		if (frameData.Renderer == nullptr)
 		{
@@ -90,7 +90,7 @@ namespace HBL2
 		frameData.Renderer->Render(frameData.RenderData, frameData.DebugRenderData);
 	}
 
-	FrameData2* Renderer::WaitAndRender()
+	FrameData* Renderer::WaitAndRender()
 	{
 #if MULTITHREADING
 		for (;;)
@@ -114,7 +114,7 @@ namespace HBL2
 			}
 
 			// If we have a frame, consume it now.
-			FrameData2* frame = nullptr;
+			FrameData* frame = nullptr;
 			if (m_FrameReady[m_ReadIndex])
 			{
 				frame = &m_Frames[m_ReadIndex];

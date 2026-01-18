@@ -19,7 +19,7 @@ namespace HBL2
 		virtual void Initialize() = 0;
 		virtual void BeginFrame() = 0;
 		virtual void EndFrame() = 0;
-		virtual void Render(const FrameData2& frameData) = 0;
+		virtual void Render(const FrameData& frameData) = 0;
 		virtual void Clean() = 0;
 
 		// Wrapped ImGuizmo functions to work from dll.
