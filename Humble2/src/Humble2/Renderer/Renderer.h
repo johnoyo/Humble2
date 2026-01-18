@@ -118,6 +118,7 @@ namespace HBL2
 		void Render(const FrameData& frameData);
 		FrameData* WaitAndRender();
 		void WaitAndSubmit();
+		void WaitForRenderThreadIdle();
 		void CollectRenderData(SceneRenderer* renderer, void* renderData);
 		void CollectDebugRenderData(void* renderData);
 		void CollectImGuiRenderData(void* renderData, double currentTime);
@@ -220,5 +221,8 @@ namespace HBL2
 
 		std::atomic<bool> m_Running{ true };
 		std::atomic<bool> m_AcceptSubmits{ true };
+
+		std::condition_variable m_IdleCV;
+		bool m_Busy = true;
 	};
 }

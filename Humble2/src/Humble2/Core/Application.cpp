@@ -167,11 +167,6 @@ namespace HBL2
 		Device::Instance->SetContext(ContextType::FETCH);
 	}
 
-	void Application::WaitForRenderThreadIdle()
-	{
-		Renderer::Instance->SubmitBlocking([]() {});
-	}
-
 	void Application::WaitForRenderThreadShutdown()
 	{
 		Renderer::Instance->ShutdownRenderThread();
@@ -207,11 +202,13 @@ namespace HBL2
 
 		if (SceneManager::Get().SceneChangeRequested)
 		{
-			Renderer::Instance->SubmitBlocking([]()
-			{
-				Renderer::Instance->ResetForSceneChange();
-			});
+			// Ensure current frame is done rendering before resetting.
+			Renderer::Instance->WaitForRenderThreadIdle();
 
+			// Reset renderer for scene change.
+			Renderer::Instance->ResetForSceneChange();
+
+			// Begin the scene load.
 			SceneManager::Get().LoadSceneDeffered();
 		}
 
@@ -393,7 +390,7 @@ namespace HBL2
 			END_APP_PROFILE(gameThread, m_CurrentStats.GameThreadTime);
 		});
 #endif
-		WaitForRenderThreadIdle();
+		Renderer::Instance->WaitForRenderThreadIdle();
 
 		m_Specification.Context->OnDestroy();
 

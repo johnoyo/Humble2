@@ -9,15 +9,24 @@
 
 namespace HBL2
 {
+
 	class HBL2_API BuildEngine
 	{
 	public:
+		enum class Configuration
+		{
+			Debug,
+			Release,
+		};
+
 		static BuildEngine* Instance;
 
 		void Initialize();
 		void ShutDown();
 
 		virtual bool Build() = 0;
+		virtual bool RunRuntime(Configuration configuration) = 0;
+		virtual bool BuildRuntime(Configuration configuration) = 0;
 		void Recompile();
 		bool Exists();
 

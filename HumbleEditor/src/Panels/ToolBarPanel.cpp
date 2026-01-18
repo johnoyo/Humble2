@@ -164,7 +164,7 @@ namespace HBL2
 						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 						// Build.
-						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Debug");
+						BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Debug);
 
 						// Copy project folder to build folder.
 						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Debug-x86_64\\HumbleApp\\" + projectName);
@@ -177,7 +177,7 @@ namespace HBL2
 						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 						// Build.
-						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
+						BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Release);
 
 						// Copy project folder to build folder.
 						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName);
@@ -190,7 +190,7 @@ namespace HBL2
 						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 						// Build.
-						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Debug");
+						BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Debug);
 
 						// Copy project folder to build folder.
 						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Debug-x86_64\\HumbleApp\\" + projectName);
@@ -199,14 +199,14 @@ namespace HBL2
 						FileUtils::CopyFolder("./assets", "..\\bin\\Debug-x86_64\\HumbleApp\\assets");
 
 						// Run.
-						system("cd ..\\bin\\Debug-x86_64\\HumbleApp && HumbleApp.exe");
+						BuildEngine::Instance->RunRuntime(BuildEngine::Configuration::Debug);
 					}
 					else if (ImGui::MenuItem("Build & Run (Windows - Release)"))
 					{
 						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 						// Build.
-						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
+						BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Release);
 
 						// Copy project folder to build folder.
 						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName);
@@ -215,7 +215,7 @@ namespace HBL2
 						FileUtils::CopyFolder("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets");
 
 						// Run.
-						system("cd ..\\bin\\Release-x86_64\\HumbleApp && HumbleApp.exe");
+						BuildEngine::Instance->RunRuntime(BuildEngine::Configuration::Release);
 					}
 					else if (ImGui::MenuItem("Build (Web)"))
 					{
@@ -276,6 +276,10 @@ namespace HBL2
 						{
 							spec.Settings.Renderer = (RendererType)currentItem;
 						}
+
+						ImGui::SameLine();
+
+						ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 					}
 
 					{

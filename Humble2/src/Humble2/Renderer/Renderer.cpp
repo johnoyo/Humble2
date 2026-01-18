@@ -97,11 +97,20 @@ namespace HBL2
 		{
 			std::unique_lock<std::mutex> lock(m_WorkMutex);
 
+			if (!(m_FrameReady[m_ReadIndex] || !m_SubmitQueue.empty() || !m_Running.load(std::memory_order_acquire)))
+			{
+				m_Busy = false;
+				m_IdleCV.notify_all();
+			}
+
 			// Wait for any work (frame or commands).
 			m_WorkCV.wait(lock, [&]
 			{
 				return m_FrameReady[m_ReadIndex] || !m_SubmitQueue.empty() || !m_Running.load(std::memory_order_acquire);
 			});
+
+			// We have work (or shutdown), so we're no longer idle
+			m_Busy = true;
 
 			// If shutting down, break AFTER we drain commands below
 			bool shuttingDown = !m_Running.load(std::memory_order_acquire);
@@ -189,6 +198,18 @@ namespace HBL2
 #if MULTITHREADING
 		lock.unlock();
 		m_WorkCV.notify_one(); // wake render thread
+#endif
+	}
+
+	void Renderer::WaitForRenderThreadIdle()
+	{
+#if MULTITHREADING
+		std::unique_lock<std::mutex> lock(m_WorkMutex);
+
+		m_IdleCV.wait(lock, [&]
+		{
+			return !m_Busy && m_SubmitQueue.empty() && !m_FrameReady[m_ReadIndex];
+		});
 #endif
 	}
 

@@ -52,7 +52,8 @@ namespace HBL2
 				if (globalBindGroup != nullptr)
 				{
 					uint32_t offsetCount = (globalDraw.GlobalBufferOffset == UINT32_MAX ? 0 : 1);
-					vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 0, 1, &globalBindGroup->DescriptorSet, offsetCount, &globalDraw.GlobalBufferOffset);
+					const uint32_t* offset = (globalDraw.GlobalBufferOffset == UINT32_MAX ? nullptr : &globalDraw.GlobalBufferOffset);
+					vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 0, 1, &globalBindGroup->DescriptorSet, offsetCount, offset);
 				}
 
 				prevVariantHash = draw.VariantHash;

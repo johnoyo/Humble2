@@ -127,7 +127,6 @@ namespace HBL2
 		std::thread m_RenderThread;
 		void DispatchRenderLoop(const std::function<void()>& renderLoop);
 		void WaitForRenderThreadInitialization();
-		void WaitForRenderThreadIdle();
 		void WaitForRenderThreadShutdown();
 		std::atomic_bool m_RenderThreadInitializationFinished = { false };
 

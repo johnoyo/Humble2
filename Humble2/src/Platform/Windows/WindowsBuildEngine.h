@@ -8,6 +8,8 @@ namespace HBL2
 	{
 	public:
 		virtual bool Build() override;
+		virtual bool RunRuntime(Configuration configuration) override;
+		virtual bool BuildRuntime(Configuration configuration) override;
 
 	private:
 		void Combine();

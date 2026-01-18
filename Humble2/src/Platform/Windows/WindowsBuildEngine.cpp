@@ -49,6 +49,36 @@ namespace HBL2
 		return true;
 	}
 
+	bool WindowsBuildEngine::RunRuntime(Configuration configuration)
+	{
+		switch (configuration)
+		{
+		case HBL2::BuildEngine::Configuration::Debug:
+			system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Debug");
+			return true;
+		case HBL2::BuildEngine::Configuration::Release:
+			system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
+			return true;
+		}
+
+		return false;
+	}
+
+	bool WindowsBuildEngine::BuildRuntime(Configuration configuration)
+	{
+		switch (configuration)
+		{
+		case HBL2::BuildEngine::Configuration::Debug:
+			system("cd ..\\bin\\Debug-x86_64\\HumbleApp && HumbleApp.exe");
+			return true;
+		case HBL2::BuildEngine::Configuration::Release:
+			system("cd ..\\bin\\Release-x86_64\\HumbleApp && HumbleApp.exe");
+			return true;
+		}
+
+		return false;
+	}
+
 	void WindowsBuildEngine::Combine()
 	{
 		// Create directory.
