@@ -46,6 +46,16 @@ namespace HBL2
 		out << YAML::Key << "Implementation" << YAML::Value << (int)spec.Settings.Physics3DImpl;
 		out << YAML::EndMap;
 
+		out << YAML::Key << "Sound" << YAML::Value;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Implementation" << YAML::Value << (int)spec.Settings.SoundImpl;
+		out << YAML::EndMap;
+
+		out << YAML::Key << "Editor" << YAML::Value;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Multiple Viewports" << YAML::Value << spec.Settings.EditorMultipleViewports;
+		out << YAML::EndMap;
+
 		out << YAML::Key << "Advanced" << YAML::Value;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Max App Memory" << YAML::Value << spec.Settings.MaxAppMemory;
@@ -87,7 +97,8 @@ namespace HBL2
 		spec.AssetDirectory = data["Project"]["AssetDirectory"].as<std::string>();
 		spec.ScriptDirectory = data["Project"]["ScriptDirectory"].as<std::string>();
 
-		if (!data["Project"]["Renderer"].IsDefined() ||	!data["Project"]["Physics2D"].IsDefined() || !data["Project"]["Physics3D"].IsDefined() || !data["Project"]["Advanced"].IsDefined())
+		if (!data["Project"]["Renderer"].IsDefined() ||	!data["Project"]["Physics2D"].IsDefined() || !data["Project"]["Physics3D"].IsDefined()
+		 || !data["Project"]["Advanced"].IsDefined() || !data["Project"]["Editor"].IsDefined() || !data["Project"]["Sound"].IsDefined())
 		{
 			HBL2_CORE_ERROR("Project settings are incomplete or corrupted: {0}", filePath.string());
 			return true;
@@ -106,6 +117,10 @@ namespace HBL2
 		spec.Settings.ShowColliders3D = data["Project"]["Physics3D"]["Show Colliders"].as<bool>();
 		spec.Settings.ShowBoundingBoxes3D = data["Project"]["Physics3D"]["Show Bounding Boxes"].as<bool>();
 		spec.Settings.Physics3DImpl = (Physics3DEngineImpl)data["Project"]["Physics3D"]["Implementation"].as<int>();
+
+		spec.Settings.SoundImpl = (SoundEngineImpl)data["Project"]["Sound"]["Implementation"].as<int>();
+
+		spec.Settings.EditorMultipleViewports = data["Project"]["Editor"]["Multiple Viewports"].as<bool>();
 
 		spec.Settings.MaxAppMemory = data["Project"]["Advanced"]["Max App Memory"].as<uint32_t>();
 		spec.Settings.MaxUniformBufferMemory = data["Project"]["Advanced"]["Max UniformBuffer Memory"].as<uint32_t>();

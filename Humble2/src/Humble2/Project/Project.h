@@ -34,6 +34,8 @@ namespace HBL2
 
 		SoundEngineImpl SoundImpl = SoundEngineImpl::FMOD;
 
+		bool EditorMultipleViewports = true;
+
 		uint32_t MaxAppMemory = 1_GB;
 		uint32_t MaxUniformBufferMemory = 64_MB;
 	};

@@ -9,12 +9,17 @@
 
 namespace HBL2
 {
+	struct ImGuiRendererSpecification
+	{
+		bool EnableMultiViewports = true;
+	};
+
 	class HBL2_API ImGuiRenderer
 	{
 	public:
 		static ImGuiRenderer* Instance;
 
-		void Create();
+		void Create(const ImGuiRendererSpecification&& spec);
 
 		virtual void Initialize() = 0;
 		virtual void BeginFrame() = 0;

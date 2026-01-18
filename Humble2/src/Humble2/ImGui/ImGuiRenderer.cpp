@@ -6,7 +6,7 @@ namespace HBL2
 {
 	ImGuiRenderer* ImGuiRenderer::Instance = nullptr;
 
-	void ImGuiRenderer::Create()
+	void ImGuiRenderer::Create(const ImGuiRendererSpecification&& spec)
 	{
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -18,7 +18,10 @@ namespace HBL2
 
 		if (Context::Mode == Mode::Editor)
 		{
-			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+			if (spec.EnableMultiViewports)
+			{
+				io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
+			}
 		}
 
 		const auto& boldFontPath = std::filesystem::path("assets") / "fonts" / "OpenSans-Bold.ttf";

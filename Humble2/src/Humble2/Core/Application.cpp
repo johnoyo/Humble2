@@ -224,10 +224,12 @@ namespace HBL2
 
 	void Application::Start()
 	{
+		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
+
 		BuildEngine::Instance->Initialize();
 
 		Window::Instance->Create();
-		ImGuiRenderer::Instance->Create();
+		ImGuiRenderer::Instance->Create({ .EnableMultiViewports = projectSettings.EditorMultipleViewports });
 		
 		Input::Initialize();
 

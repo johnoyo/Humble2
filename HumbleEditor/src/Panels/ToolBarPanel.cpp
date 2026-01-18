@@ -276,8 +276,6 @@ namespace HBL2
 						{
 							spec.Settings.Renderer = (RendererType)currentItem;
 						}
-
-						ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 					}
 
 					{
@@ -288,6 +286,8 @@ namespace HBL2
 						{
 							spec.Settings.EditorGraphicsAPI = (GraphicsAPI)currentItem;
 						}
+
+						ImGui::SameLine();
 
 						ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 					}
@@ -328,6 +328,8 @@ namespace HBL2
 					{
 						spec.Settings.Physics2DImpl = (Physics2DEngineImpl)currentItem;
 					}
+
+					ImGui::SameLine();
 
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 				}
@@ -377,6 +379,40 @@ namespace HBL2
 						spec.Settings.Physics3DImpl = (Physics3DEngineImpl)currentItem;
 					}
 
+					ImGui::SameLine();
+
+					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+				}
+
+				ImGui::Separator();
+
+				ImGui::Text("Editor Settings");
+
+				{
+					if (ImGui::Checkbox("Multiple Viewports", &spec.Settings.EditorMultipleViewports))
+					{
+					}
+
+					ImGui::SameLine();
+
+					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+				}
+
+				ImGui::Separator();
+
+				ImGui::Text("Audio Settings");
+
+				{
+					const char* options[] = { "Custom", "FMOD" };
+					int currentItem = (int)spec.Settings.SoundImpl;
+
+					if (ImGui::Combo("Implementation##sound", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						spec.Settings.SoundImpl = (SoundEngineImpl)currentItem;
+					}
+
+					ImGui::SameLine();
+
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 				}
 
@@ -389,11 +425,15 @@ namespace HBL2
 					{
 					}
 
+					ImGui::SameLine();
+
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 
 					if (ImGui::InputScalar("Max UniformBuffer Memory", ImGuiDataType_U32, (void*)(intptr_t*)&spec.Settings.MaxUniformBufferMemory))
 					{
 					}
+
+					ImGui::SameLine();
 
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 				}
