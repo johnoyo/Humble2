@@ -103,7 +103,12 @@ namespace HBL2
 			.pImageIndices = &m_SwapchainImageIndex,
 		};		
 
-		VkResult result = vkQueuePresentKHR(m_PresentQueue, &presentInfo);
+		VkResult result;
+
+		{
+			std::lock_guard<std::mutex> lock(m_GraphicsQueueSubmitMutex);
+			result = vkQueuePresentKHR(m_PresentQueue, &presentInfo);
+		}
 
 		m_FrameNumber++;
 
@@ -277,9 +282,12 @@ namespace HBL2
 
 		// Submit command buffer to the queue and execute it.
 		// UploadFence will now block until the graphic commands finish execution
-		VK_VALIDATE(vkQueueSubmit(m_GraphicsQueue, 1, &submit, s_UploadContext.UploadFence), "vkQueueSubmit");
+		{
+			std::lock_guard<std::mutex> lock(m_GraphicsQueueSubmitMutex);
+			VK_VALIDATE(vkQueueSubmit(m_GraphicsQueue, 1, &submit, s_UploadContext.UploadFence), "vkQueueSubmit");
+		}
 
-		vkWaitForFences(m_Device->Get(), 1, &s_UploadContext.UploadFence, true, 9999999999);
+		vkWaitForFences(m_Device->Get(), 1, &s_UploadContext.UploadFence, true, UINT64_MAX);
 		vkResetFences(m_Device->Get(), 1, &s_UploadContext.UploadFence);
 
 		// Reset the command buffers inside the command pool
@@ -293,7 +301,10 @@ namespace HBL2
 			return;
 		}
 
-		VK_VALIDATE(vkDeviceWaitIdle(m_Device->Get()), "vkDeviceWaitIdle");
+		{
+			std::lock_guard<std::mutex> lock(m_GraphicsQueueSubmitMutex);
+			VK_VALIDATE(vkDeviceWaitIdle(m_Device->Get()), "vkDeviceWaitIdle");
+		}
 
 		// Store old swapchain.
 		VkSwapchainKHR oldSwapchain = m_SwapChain;
@@ -670,11 +681,15 @@ namespace HBL2
 		auto ctx = s_UploadContext;
 		
 		// Queue resources for deletion.
-		m_MainDeletionQueue.PushFunction([this, ctx]()
 		{
-			vkDestroyCommandPool(m_Device->Get(), ctx.CommandPool, nullptr);
-			vkDestroyFence(m_Device->Get(), ctx.UploadFence, nullptr);
-		});
+			std::lock_guard<std::mutex> lock(m_DeletionQueueMutex);
+
+			m_MainDeletionQueue.PushFunction([this, ctx]()
+			{
+				vkDestroyCommandPool(m_Device->Get(), ctx.CommandPool, nullptr);
+				vkDestroyFence(m_Device->Get(), ctx.UploadFence, nullptr);
+			});
+		}
 	}
 
 	void VulkanRenderer::CreateRenderPass()

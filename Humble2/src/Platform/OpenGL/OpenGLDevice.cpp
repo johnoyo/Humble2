@@ -38,9 +38,23 @@ namespace HBL2
 	{
 		static thread_local int localWorkerIndex = -1;
 
-		if (ctxType == ContextType::NONE)
+		if (ctxType == ContextType::FLUSH_CLEAR)
 		{
+			GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+			glFlush();
+			glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
+			glDeleteSync(fence);
+
 			glfwMakeContextCurrent(nullptr);
+
+			return;
+		}
+
+		if (ctxType == ContextType::CLEAR)
+		{
+			glFlush();
+			glfwMakeContextCurrent(nullptr);
+
 			return;
 		}
 

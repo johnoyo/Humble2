@@ -78,6 +78,7 @@ namespace HBL2
 		const VkFormat& GetSwapchainImageFormat() const { return m_SwapChainImageFormat; }
 		const VkExtent2D& GetSwapchainExtent() const { return m_SwapChainExtent; }
 
+		std::mutex& GetGraphicsQueueMutex() { return m_GraphicsQueueSubmitMutex; }
 		const VkQueue& GetGraphicsQueue() const { return m_GraphicsQueue; }
 		const VkQueue& GetPresentQueue() const { return m_PresentQueue; }
 
@@ -143,5 +144,8 @@ namespace HBL2
 
 		bool m_Resize = false;
 		glm::uvec2 m_NewSize{};
+
+		std::mutex m_GraphicsQueueSubmitMutex;
+		std::mutex m_DeletionQueueMutex;
 	};
 }

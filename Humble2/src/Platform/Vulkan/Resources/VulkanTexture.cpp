@@ -216,7 +216,11 @@ namespace HBL2
 
 		// Wait for device to idle in case the descriptors are still in use.
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
-		vkDeviceWaitIdle(device->Get());
+		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
+		{
+			std::lock_guard<std::mutex> lock(renderer->GetGraphicsQueueMutex());
+			vkDeviceWaitIdle(device->Get());
+		}
 
 		// Update bind group with new image layout.
 		ImageLayout = VkUtils::TextureLayoutToVkImageLayout(newLayout);

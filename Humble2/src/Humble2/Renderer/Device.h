@@ -23,7 +23,8 @@ namespace HBL2
 	enum class ContextType
 	{
 		FETCH = 0,
-		NONE,
+		FLUSH_CLEAR,
+		CLEAR,
 	};
 
 	class HBL2_API Device

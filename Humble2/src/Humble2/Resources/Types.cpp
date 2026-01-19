@@ -15,8 +15,8 @@ namespace HBL2
 		float* vertices = (float*)desc.vertices.Data();
 		uint32_t verticesCount = uint32_t(desc.vertices.Size());
 
-		Renderer::Instance->Submit([this, vertices, verticesCount, indeces, indecesCount]()
-		{
+		//Renderer::Instance->Submit([this, vertices, verticesCount, indeces, indecesCount]()
+		//{
 			Handle<Buffer> indexBufferHandle = ResourceManager::Instance->CreateBuffer({
 				.debugName = "terrain-index-buffer",
 				.usage = BufferUsage::INDEX,
@@ -60,7 +60,7 @@ namespace HBL2
 			// Free cpu side buffer data.
 			delete[] vertices;
 			delete[] indeces;
-		});
+		//});
 	}
 
 	void Mesh::operator=(const Mesh& other)

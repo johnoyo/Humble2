@@ -197,6 +197,9 @@ namespace HBL2
 		};
 
 		// Submit command buffer to the queue and execute it. RenderFence will now block until the graphic commands finish execution.
-		VK_VALIDATE(vkQueueSubmit(renderer->GetGraphicsQueue(), 1, &submitInfo, m_BlockFence), "vkQueueSubmit");
+		{
+			std::lock_guard<std::mutex> lock(renderer->GetGraphicsQueueMutex());
+			VK_VALIDATE(vkQueueSubmit(renderer->GetGraphicsQueue(), 1, &submitInfo, m_BlockFence), "vkQueueSubmit");
+		}
     }
 }

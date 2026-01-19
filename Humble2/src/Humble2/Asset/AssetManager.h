@@ -23,10 +23,10 @@ namespace HBL2
 	{
 	public:
 		Handle<T> ResourceHandle = Handle<T>();
-		inline const bool Finished() const { return m_Finished; }
+		inline const bool Finished() const { return m_Finished.load(std::memory_order_acquire); }
 
 	private:
-		bool m_Finished = false;
+		std::atomic_bool m_Finished = false;
 		friend class AssetManager;
 	};
 
@@ -155,16 +155,11 @@ namespace HBL2
 				// NOTE: Keep an eye here, it may cause problems if we still load an asset while we change scenes!
 				if (task != nullptr)
 				{
-					// NOTE: In order for the async asset api to be safe to be called from user code, we could pass a flag
-					//		 into the GetAsset method to instruct it to do any renderer specific calls through the submit blocking method.
-					//		 We consider keeping also the current behaviour, since in safe points, such as scene change or at app start up,
-					//		 we safely execute renderer specific calls from other threads, since the render thread is currelty waiting for
-					//		 the main thread to finish with the scene change.
 					task->ResourceHandle = GetAsset<T>(assetHandle);
-					task->m_Finished = true;
+					task->m_Finished.store(true, std::memory_order_release);
 				}
 
-				Device::Instance->SetContext(ContextType::NONE);
+				Device::Instance->SetContext(ContextType::FLUSH_CLEAR);
 			});
 
 			return task;
