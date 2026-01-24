@@ -139,15 +139,15 @@ namespace HBL2
 				BlendFactor srcAlphaFactor = BlendFactor::ONE;
 				BlendFactor dstAlphaFactor = BlendFactor::ZERO;
 				bool colorOutput = true;
-				bool enabled = true;
+				bool enabled = false;
 			};
 
 			struct DepthTest
 			{
 				bool enabled = true;
-				bool writeEnabled = true;
+				bool writeEnabled = false;
 				bool stencilEnabled = true;
-				Compare depthTest = Compare::LESS;
+				Compare depthTest = Compare::LESS_OR_EQUAL;
 			};
 
 			struct Variant

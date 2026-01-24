@@ -60,6 +60,7 @@ namespace HBL2
 
 		// Shaders
 		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) = 0;
+		virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) = 0;
 		virtual void DeleteShader(Handle<Shader> handle) = 0;
 		virtual void AddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::Variant& variantDesc) = 0;
 		uint64_t GetShaderVariantHash(const ShaderDescriptor::RenderPipeline::Variant& variantDesc)

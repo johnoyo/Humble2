@@ -140,6 +140,20 @@ namespace HBL2
 								}
 							}
 						}
+						else if (extension == ".shader")
+						{
+							if (ImGui::MenuItem("Recompile"))
+							{
+								AssetManager::Instance->ReloadAssetAsync<Shader>(assetHandle);
+							}
+						}
+						else if (extension == ".mat")
+						{
+							if (ImGui::MenuItem("Reload"))
+							{
+								AssetManager::Instance->ReloadAssetAsync<Material>(assetHandle);
+							}
+						}
 
 						if (ImGui::MenuItem("Delete"))
 						{

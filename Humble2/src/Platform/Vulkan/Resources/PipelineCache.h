@@ -25,8 +25,8 @@ namespace HBL2
 	{
 	public:
 		VkPipeline GetPipeline(uint64_t variantHash);
-		VkPipeline GetOrCreatePipeline(const PipelineConfig& config);
-		VkPipeline GetOrCreateComputePipeline(const PipelineConfig& config);
+		VkPipeline GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld = false);
+		VkPipeline GetOrCreateComputePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld = false);
 		bool ContainsPipeline(uint64_t variantHash);
 		bool ContainsPipeline(const ShaderDescriptor::RenderPipeline::Variant& variantDesc);
 		void Destroy();
@@ -34,7 +34,8 @@ namespace HBL2
 	private:
 		VkPipeline CreatePipeline(const PipelineConfig& config);
 		VkPipeline CreateComputePipeline(const PipelineConfig& config);
-
-		HashMap<uint64_t, VkPipeline> m_PipelineCache;
+		std::mutex m_CacheMutex;
+		std::unordered_map<uint64_t, VkPipeline> m_PipelineCache;
+		std::vector<VkPipeline> m_RetiredPipelines;
 	};
 }

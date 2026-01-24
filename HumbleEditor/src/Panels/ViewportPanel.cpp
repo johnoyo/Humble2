@@ -68,6 +68,13 @@ namespace HBL2
 							return;
 						}
 
+						if (Context::Mode == Mode::Runtime)
+						{
+							HBL2_WARN("Could not load {0} - exit play mode and then change scenes.", path.filename().string());
+							ImGui::EndDragDropTarget();
+							return;
+						}
+
 						HBL2::SceneManager::Get().LoadScene(sceneAssetHandle, false);
 
 						m_EditorScenePath = path;

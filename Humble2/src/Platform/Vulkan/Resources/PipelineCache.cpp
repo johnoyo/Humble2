@@ -10,25 +10,35 @@ namespace HBL2
 {
 	VkPipeline PipelineCache::GetPipeline(uint64_t variantHash)
 	{
+		std::lock_guard<std::mutex> lock(m_CacheMutex);
+
 		VkPipeline outPipeline = VK_NULL_HANDLE;
 
-		if (m_PipelineCache.Find(variantHash, outPipeline))
+		if (m_PipelineCache.find(variantHash) != m_PipelineCache.end())
 		{
-			return outPipeline;
+			return m_PipelineCache[variantHash];
 		}
 
 		return VK_NULL_HANDLE;
 	}
 
-	VkPipeline PipelineCache::GetOrCreatePipeline(const PipelineConfig& config)
+	VkPipeline PipelineCache::GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld)
 	{
+		std::lock_guard<std::mutex> lock(m_CacheMutex);
+
 		VkPipeline outPipeline = VK_NULL_HANDLE;
 
 		uint64_t hash = std::hash<ShaderDescriptor::RenderPipeline::Variant>()(config.variantDesc);
 
-		if (m_PipelineCache.Find(hash, outPipeline))
+		if (m_PipelineCache.find(hash) != m_PipelineCache.end())
 		{
-			return outPipeline;
+			if (!forceCreateNewAndRemoveOld)
+			{
+				return m_PipelineCache[hash];
+			}
+
+			m_RetiredPipelines.push_back(m_PipelineCache[hash]);
+			m_PipelineCache.erase(hash);
 		}
 
 		outPipeline = CreatePipeline(config);
@@ -37,15 +47,23 @@ namespace HBL2
 		return outPipeline;
 	}
 
-	VkPipeline PipelineCache::GetOrCreateComputePipeline(const PipelineConfig& config)
+	VkPipeline PipelineCache::GetOrCreateComputePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld)
 	{
+		std::lock_guard<std::mutex> lock(m_CacheMutex);
+
 		VkPipeline outPipeline = VK_NULL_HANDLE;
 
 		uint64_t hash = std::hash<ShaderDescriptor::RenderPipeline::Variant>()(config.variantDesc);
 
-		if (m_PipelineCache.Find(hash, outPipeline))
+		if (m_PipelineCache.find(hash) != m_PipelineCache.end())
 		{
-			return outPipeline;
+			if (!forceCreateNewAndRemoveOld)
+			{
+				return m_PipelineCache[hash];
+			}
+
+			m_RetiredPipelines.push_back(m_PipelineCache[hash]);
+			m_PipelineCache.erase(hash);
 		}
 
 		outPipeline = CreateComputePipeline(config);
@@ -56,13 +74,13 @@ namespace HBL2
 
 	bool PipelineCache::ContainsPipeline(uint64_t variantHash)
 	{
-		return m_PipelineCache.ContainsKey(variantHash);
+		return (m_PipelineCache.find(variantHash) != m_PipelineCache.end());
 	}
 
 	bool PipelineCache::ContainsPipeline(const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
 	{
 		uint64_t hash = std::hash<ShaderDescriptor::RenderPipeline::Variant>()(variantDesc);
-		return m_PipelineCache.ContainsKey(hash);
+		return (m_PipelineCache.find(hash) != m_PipelineCache.end());
 	}
 
 	void PipelineCache::Destroy()
@@ -70,6 +88,11 @@ namespace HBL2
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 
 		for (const auto& [variantDesc, pipeline] : m_PipelineCache)
+		{
+			vkDestroyPipeline(device->Get(), pipeline, nullptr);
+		}
+
+		for (const auto& pipeline : m_RetiredPipelines)
 		{
 			vkDestroyPipeline(device->Get(), pipeline, nullptr);
 		}

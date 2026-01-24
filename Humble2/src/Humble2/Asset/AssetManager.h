@@ -14,10 +14,19 @@
 
 #include "Utilities\Allocators\BinAllocator.h"
 
+#include <concepts>
+
 namespace HBL2
 {
 	class Window;
 
+	template<typename T, typename F>
+	concept AssetLoadCallback = std::invocable<F, Handle<T>> && std::same_as<std::invoke_result_t<F, Handle<T>>, void>;
+
+	// Refactor in the future to this API:
+	//	AssetManager::Instance->GetAssetAsync<Texture>(albedoMapAssetHandle)
+	//		.Then([](Handle<Texture> h) {})
+	//		.ThenOnMainThread([](Handle<Texture> h) {});
 	template<typename T>
 	class ResourceTask
 	{
@@ -119,6 +128,44 @@ namespace HBL2
 
 			return Handle<T>();
 		}
+		
+		// NOTE: The onLoadCallback will be called in the job thread, so any non thread safe code in the callback could be problematic.
+		template<typename T, typename TCallback> requires AssetLoadCallback<T, TCallback>
+		void GetAssetAsync(UUID assetUUID, TCallback&& onLoadCallback, JobContext* customJobCtx = nullptr)
+		{
+			GetAssetAsync<T>(GetHandleFromUUID(assetUUID), std::forward<TCallback>(onLoadCallback), customJobCtx);
+		}
+
+		// NOTE: The onLoadCallback will be called in the job thread, so any non thread safe code in the callback could be problematic.
+		template<typename T, typename TCallback> requires AssetLoadCallback<T, TCallback>
+		void GetAssetAsync(Handle<Asset> assetHandle, TCallback&& onLoadCallback, JobContext* customJobCtx = nullptr)
+		{
+			// Do not schedule job if the asset handle is invalid.
+			if (!IsAssetValid(assetHandle))
+			{
+				return;
+			}
+
+			// Do not schedule job if the asset is loaded.
+			if (IsAssetLoaded(assetHandle))
+			{
+				Handle<T> resourceHandle = GetAsset<T>(assetHandle);
+				onLoadCallback(resourceHandle);
+				return;
+			}
+
+			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
+
+			JobSystem::Get().Execute(ctx, [this, assetHandle, cb = std::forward<TCallback>(onLoadCallback)]() mutable
+			{
+				Device::Instance->SetContext(ContextType::FETCH);
+
+				Handle<T> resourceHandle = GetAsset<T>(assetHandle);
+				cb(resourceHandle);
+
+				Device::Instance->SetContext(ContextType::FLUSH_CLEAR);
+			});
+		}
 
 		template<typename T>
 		ResourceTask<T>* GetAssetAsync(UUID assetUUID, JobContext* customJobCtx = nullptr)
@@ -165,6 +212,115 @@ namespace HBL2
 			return task;
 		}
 
+		template<typename T>
+		Handle<T> ReloadAsset(UUID assetUUID)
+		{
+			return ReloadAsset<T>(GetHandleFromUUID(assetUUID));
+		}
+
+		template<typename T>
+		Handle<T> ReloadAsset(Handle<Asset> handle)
+		{
+			if (!IsAssetValid(handle))
+			{
+				return Handle<T>();
+			}
+
+			Asset* asset = GetAssetMetadata(handle);
+			if (asset->Loaded)
+			{
+				uint32_t packedHandle = ReloadAsset(handle);
+				return Handle<T>::UnPack(packedHandle);
+			}
+			else
+			{
+				uint32_t packedHandle = LoadAsset(handle);
+				return Handle<T>::UnPack(packedHandle);
+			}
+
+			return Handle<T>();
+		}
+
+		template<typename T>
+		ResourceTask<T>* ReloadAssetAsync(UUID assetUUID, JobContext* customJobCtx = nullptr)
+		{
+			return ReloadAssetAsync<T>(GetHandleFromUUID(assetUUID), customJobCtx);
+		}
+
+		template<typename T>
+		ResourceTask<T>* ReloadAssetAsync(Handle<Asset> assetHandle, JobContext* customJobCtx = nullptr)
+		{
+			// Do not schedule job if the asset handle is invalid.
+			if (!IsAssetValid(assetHandle))
+			{
+				return nullptr;
+			}
+
+			ResourceTask<T>* task = Allocator::Persistent.Allocate<ResourceTask<T>>();
+			task->m_Finished = false;
+
+			// Load from scratch if the asset is loaded.
+			if (!IsAssetLoaded(assetHandle))
+			{
+				return GetAssetAsync<T>(assetHandle, customJobCtx);
+			}
+
+			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
+
+			JobSystem::Get().Execute(ctx, [this, assetHandle, task]()
+			{
+				Device::Instance->SetContext(ContextType::FETCH);
+
+				// NOTE: Keep an eye here, it may cause problems if we still reload an asset while we change scenes!
+				if (task != nullptr)
+				{
+					task->ResourceHandle = ReloadAsset<T>(assetHandle);
+					task->m_Finished.store(true, std::memory_order_release);
+				}
+
+				Device::Instance->SetContext(ContextType::FLUSH_CLEAR);
+			});
+
+			return task;
+		}
+
+		// NOTE: The onLoadCallback will be called in the job thread, so any non thread safe code in the callback could be problematic.
+		template<typename T, typename TCallback> requires AssetLoadCallback<T, TCallback>
+		void ReloadAssetAsync(UUID assetUUID, TCallback&& onLoadCallback, JobContext* customJobCtx = nullptr)
+		{
+			ReloadAssetAsync<T>(GetHandleFromUUID(assetUUID), std::forward<TCallback>(onLoadCallback), customJobCtx);
+		}
+
+		// NOTE: The onLoadCallback will be called in the job thread, so any non thread safe code in the callback could be problematic.
+		template<typename T, typename TCallback> requires AssetLoadCallback<T, TCallback>
+		void ReloadAssetAsync(Handle<Asset> assetHandle, TCallback&& onLoadCallback, JobContext* customJobCtx = nullptr)
+		{
+			// Do not schedule job if the asset handle is invalid.
+			if (!IsAssetValid(assetHandle))
+			{
+				return;
+			}
+
+			// Load from scratch if the asset is not loaded.
+			if (!IsAssetLoaded(assetHandle))
+			{
+				GetAssetAsync<T>(assetHandle, std::forward<TCallback>(onLoadCallback), customJobCtx);
+				return;
+			}
+
+			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
+
+			JobSystem::Get().Execute(ctx, [this, assetHandle, cb = std::forward<TCallback>(onLoadCallback)]() mutable
+			{
+				Device::Instance->SetContext(ContextType::FETCH);
+
+				Handle<T> resourceHandle = ReloadAsset<T>(assetHandle);
+				cb(resourceHandle);
+
+				Device::Instance->SetContext(ContextType::FLUSH_CLEAR);
+			});
+		}
+
 		void WaitForAsyncJobs(JobContext* customJobCtx = nullptr)
 		{
 			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
@@ -197,6 +353,7 @@ namespace HBL2
 
 	protected:
 		virtual uint32_t LoadAsset(Handle<Asset> handle) = 0;
+		virtual uint32_t ReloadAsset(Handle<Asset> handle) = 0;
 		virtual void UnloadAsset(Handle<Asset> handle) = 0;
 		virtual bool DestroyAsset(Handle<Asset> handle) = 0;
 

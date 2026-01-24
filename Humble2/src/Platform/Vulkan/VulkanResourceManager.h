@@ -68,6 +68,10 @@ namespace HBL2
 
 			return { 0.f, 0.f, 0.f };
 		}
+		virtual void* GetTextureData(Handle<Texture> handle) override
+		{
+			return nullptr;
+		}
 		VulkanTexture* GetTexture(Handle<Texture> handle) const
 		{
 			return m_TexturePool.Get(handle);
@@ -169,6 +173,23 @@ namespace HBL2
 		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) override
 		{
 			return m_ShaderPool.Insert(std::forward<const ShaderDescriptor>(desc));
+		}
+		virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) override
+		{
+			VulkanShader* shader = GetShader(handle);
+			if (shader != nullptr)
+			{
+				shader->Recompile(std::forward<const ShaderDescriptor>(desc), true);
+			}
+
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+			{
+				VulkanShader* shader = GetShader(handle);
+				if (shader != nullptr)
+				{
+					shader->DestroyOld();
+				}
+			});
 		}
 		virtual void DeleteShader(Handle<Shader> handle) override
 		{

@@ -64,7 +64,7 @@ namespace HBL2
 		static void Shutdown();
 
 		std::string ReadFile(const std::string& filepath);
-		std::vector<std::vector<uint32_t>> Compile(const std::string& shaderFilePath);
+		std::vector<std::vector<uint32_t>> Compile(const std::string& shaderFilePath, bool forceRecompile = false);
 		const ReflectionData& GetReflectionData(const std::string& shaderFilePath) { return m_ShaderReflectionData[shaderFilePath]; }
 
 		void LoadBuiltInShaders();
@@ -176,7 +176,7 @@ namespace HBL2
 			}
 		}
 
-		std::vector<uint32_t> Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage);
+		std::vector<uint32_t> Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage, bool forceRecompile = false);
 		ReflectionData Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData, const Span<uint32_t>& computeShaderData);
 
 	private:

@@ -4,6 +4,11 @@ namespace HBL2
 {
 	OpenGLShader::OpenGLShader(const ShaderDescriptor&& desc)
 	{
+		Recompile(std::forward<const ShaderDescriptor>(desc));
+	}
+
+	void OpenGLShader::Recompile(const ShaderDescriptor&& desc)
+	{
 		DebugName = desc.debugName;
 
 		Program = glCreateProgram();

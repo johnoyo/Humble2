@@ -161,6 +161,15 @@ namespace HBL2
 		{
 			return m_ShaderPool.Insert(std::forward<const ShaderDescriptor>(desc));
 		}
+		virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) override
+		{
+			OpenGLShader* shader = GetShader(handle);
+			if (shader != nullptr)
+			{
+				shader->Destroy();
+				shader->Recompile(std::forward<const ShaderDescriptor>(desc));
+			}
+		}
 		virtual void DeleteShader(Handle<Shader> handle) override
 		{
 			OpenGLShader* shader = GetShader(handle);

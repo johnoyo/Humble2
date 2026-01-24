@@ -83,7 +83,7 @@ namespace HBL2
 		return result;
 	}
 
-	std::vector<uint32_t> ShaderUtilities::Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage)
+	std::vector<uint32_t> ShaderUtilities::Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage, bool forceRecompile)
 	{
 		HBL2_FUNC_PROFILE();
 
@@ -116,7 +116,7 @@ namespace HBL2
 			std::filesystem::path cachedPath = cacheDirectory / (shaderPath.filename().string() + GLShaderStageCachedVulkanFileExtension(stage));
 
 			std::ifstream in(cachedPath, std::ios::in | std::ios::binary);
-			if (in.is_open())
+			if (in.is_open() && !forceRecompile)
 			{
 				in.seekg(0, std::ios::end);
 				auto size = in.tellg();
@@ -160,7 +160,7 @@ namespace HBL2
 			std::filesystem::path cachedPath = cacheDirectory / (shaderPath.filename().string() + GLShaderStageCachedOpenGLFileExtension(stage));
 
 			std::ifstream in(cachedPath, std::ios::in | std::ios::binary);
-			if (in.is_open())
+			if (in.is_open() && !forceRecompile)
 			{
 				in.seekg(0, std::ios::end);
 				auto size = in.tellg();
@@ -205,7 +205,7 @@ namespace HBL2
 		}
 	}
 
-	std::vector<std::vector<uint32_t>> ShaderUtilities::Compile(const std::string& shaderFilePath)
+	std::vector<std::vector<uint32_t>> ShaderUtilities::Compile(const std::string& shaderFilePath, bool forceRecompile)
 	{
 		HBL2_FUNC_PROFILE();
 
@@ -253,8 +253,8 @@ namespace HBL2
 
 		if (type != ShaderStage::COMPUTE)
 		{
-			shaderBinaries.push_back(Compile(shaderFilePath, ss[0].str(), ShaderStage::VERTEX));
-			shaderBinaries.push_back(Compile(shaderFilePath, ss[1].str(), ShaderStage::FRAGMENT));
+			shaderBinaries.push_back(Compile(shaderFilePath, ss[0].str(), ShaderStage::VERTEX, forceRecompile));
+			shaderBinaries.push_back(Compile(shaderFilePath, ss[1].str(), ShaderStage::FRAGMENT, forceRecompile));
 
 			if (shaderBinaries[0].empty() || shaderBinaries[1].empty())
 			{

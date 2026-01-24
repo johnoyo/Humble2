@@ -365,6 +365,8 @@ namespace HBL2
 		ShaderDescriptor::RenderPipeline::Variant variant = {};
 		variant.blend.colorOutput = false;
 		variant.blend.enabled = false;
+		variant.depthTest.depthTest = Compare::LESS;
+		variant.depthTest.writeEnabled = true;
 		variant.cullMode = CullMode::FRONT;
 		variant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
 
@@ -435,6 +437,8 @@ namespace HBL2
 		ShaderDescriptor::RenderPipeline::Variant variant = {};
 		variant.blend.colorOutput = false;
 		variant.blend.enabled = false;
+		variant.depthTest.depthTest = Compare::LESS;
+		variant.depthTest.writeEnabled = true;
 		variant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
 
 		m_DepthOnlyShader = ResourceManager::Instance->CreateShader({
@@ -749,8 +753,8 @@ namespace HBL2
 
 		m_SkyboxShader = ResourceManager::Instance->CreateShader({
 			.debugName = "skybox-shader",
-			.VS {.code = skyboxShaderCode[0], .entryPoint = "main" },
-			.FS {.code = skyboxShaderCode[1], .entryPoint = "main" },
+			.VS { .code = skyboxShaderCode[0], .entryPoint = "main" },
+			.FS { .code = skyboxShaderCode[1], .entryPoint = "main" },
 			.bindGroups {
 				m_SkyboxGlobalBindGroupLayout,	// Global bind group (0)
 				m_SkyboxBindGroupLayout,		// (1)
@@ -760,7 +764,7 @@ namespace HBL2
 					{
 						.byteStride = 12,
 						.attributes = {
-							{.byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
+							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
 						},
 					}
 				},

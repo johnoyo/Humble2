@@ -144,20 +144,33 @@ namespace HBL2
 
 						AssetManager::Instance->SaveAsset(assetHandle);
 
-						HBL2::SceneManager::Get().LoadScene(assetHandle, false);
-
-						m_EditorScenePath = filepath;
+						if (Context::Mode == Mode::Runtime)
+						{
+							HBL2_WARN("Can not open a scene right now, exit play mode and then open scenes.");
+						}
+						else
+						{
+							HBL2::SceneManager::Get().LoadScene(assetHandle, false);
+							m_EditorScenePath = filepath;
+						}
 					}
 					else if (ImGui::MenuItem("Open Scene"))
 					{
-						std::string filepath = HBL2::FileDialogs::OpenFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
+						if (Context::Mode == Mode::Runtime)
+						{
+							HBL2_WARN("Can not open a scene right now, exit play mode and then open scenes.");
+						}
+						else
+						{
+							std::string filepath = HBL2::FileDialogs::OpenFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
 
-						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
-						UUID sceneUUID = std::hash<std::string>()(relativePath.string());
+							auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
+							UUID sceneUUID = std::hash<std::string>()(relativePath.string());
 
-						HBL2::SceneManager::Get().LoadScene(AssetManager::Instance->GetHandleFromUUID(sceneUUID), false);
+							HBL2::SceneManager::Get().LoadScene(AssetManager::Instance->GetHandleFromUUID(sceneUUID), false);
 
-						m_EditorScenePath = filepath;
+							m_EditorScenePath = filepath;
+						}
 					}
 					else if (ImGui::MenuItem("Build (Windows - Debug)"))
 					{

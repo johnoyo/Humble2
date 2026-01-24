@@ -18,18 +18,28 @@ namespace HBL2
 
 		VkPipeline GetOrCreateVariant(uint64_t variantHash, Handle<Material> materialHandle);
 		VkPipeline GetOrCreateVariant(const ShaderDescriptor::RenderPipeline::Variant& variantDesc);
+
+		void Recompile(const ShaderDescriptor&& desc, bool removeVariants = false);
 		void Destroy();
+		void DestroyOld();
+
 		static PipelineCache& GetPipelineCache();
 
 		const char* DebugName = "";
-		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE; // Hot
 		VkRenderPass RenderPass = VK_NULL_HANDLE;
+		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE; // Hot
 		VkShaderModule VertexShaderModule = VK_NULL_HANDLE;
 		VkShaderModule FragmentShaderModule = VK_NULL_HANDLE;
 		VkShaderModule ComputeShaderModule = VK_NULL_HANDLE;
+
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding> VertexBufferBindings;
 
 	private:
 		static inline PipelineCache s_PipelineCache{};
+		
+		VkPipelineLayout m_OldPipelineLayout = VK_NULL_HANDLE;
+		VkShaderModule m_OldVertexShaderModule = VK_NULL_HANDLE;
+		VkShaderModule m_OldFragmentShaderModule = VK_NULL_HANDLE;
+		VkShaderModule m_OldComputeShaderModule = VK_NULL_HANDLE;
 	};
 }

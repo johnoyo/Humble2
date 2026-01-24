@@ -65,6 +65,29 @@ namespace HBL2
 		return 0;
     }
 
+	uint32_t EditorAssetManager::ReloadAsset(Handle<Asset> handle)
+	{
+		Asset* asset = GetAssetMetadata(handle);
+		if (asset == nullptr)
+		{
+			return 0;
+		}
+
+		switch (asset->Type)
+		{
+		case AssetType::Shader:
+			asset->Indentifier = ReimportShader(asset).Pack();
+			asset->Loaded = (asset->Indentifier != 0);
+			return asset->Indentifier;
+		case AssetType::Material:
+			asset->Indentifier = ReimportMaterial(asset).Pack();
+			asset->Loaded = (asset->Indentifier != 0);
+			return asset->Indentifier;
+		}
+
+		return 0;
+	}
+
     void EditorAssetManager::UnloadAsset(Handle<Asset> handle)
     {
         Asset* asset = GetAssetMetadata(handle);
@@ -363,8 +386,8 @@ namespace HBL2
 		// Create resource.
 		auto shader = ResourceManager::Instance->CreateShader({
 			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
-			.VS {.code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
-			.FS {.code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
+			.VS { .code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
+			.FS { .code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
 			.bindGroups {
 				globalBindGroupLayout,	// Global bind group (0)
 				drawBindGroupLayout,	// Material bind group (1)
@@ -537,8 +560,13 @@ namespace HBL2
 			Handle<BindGroup> drawBindings;
 			uint32_t dynamicUniformBufferRange = (type == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData));
 
-			if (normalMapHandle.IsValid() && metallicMapHandle.IsValid() && roughnessMapHandle.IsValid())
+			if (type == 2) // PBR
 			{
+				if (!normalMapHandle.IsValid())
+				{
+					normalMapHandle = TextureUtilities::Get().WhiteTexture;
+				}
+
 				drawBindings = ResourceManager::Instance->CreateBindGroup({
 					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
 					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
@@ -766,6 +794,203 @@ namespace HBL2
 		stream.close();
 
 		return Handle<Mesh>();
+	}
+
+	/// Reimport methods
+
+	Handle<Shader> EditorAssetManager::ReimportShader(Asset* asset)
+	{
+		Handle<Shader> shaderHandle = Handle<Shader>::UnPack(asset->Indentifier);
+
+		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+
+		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
+		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
+
+		std::ifstream stream(shaderPath.string() + ".hblshader");
+
+		if (!stream.is_open())
+		{
+			HBL2_CORE_ERROR("Shader metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblshader");
+			return Handle<Shader>();
+		}
+
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Shader"].IsDefined())
+		{
+			HBL2_CORE_ERROR("Shader not found: {0}", asset->DebugName);
+			stream.close();
+			return Handle<Shader>();
+		}
+
+		const std::string& shaderName = asset->FilePath.filename().stem().string();
+
+		Handle<BindGroupLayout> globalBindGroupLayout;
+		Handle<BindGroupLayout> drawBindGroupLayout;
+
+		// auto shaderVariants = MakeDynamicArray<ShaderDescriptor::RenderPipeline::Variant>(&Allocator::Frame);
+		std::vector<ShaderDescriptor::RenderPipeline::Variant> shaderVariants;
+
+		const auto& shaderProperties = data["Shader"];
+		if (shaderProperties)
+		{
+			uint32_t type = shaderProperties["Type"].as<uint32_t>();
+
+			switch (type)
+			{
+			case 0:
+				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout2D();
+				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::UNLIT);
+				break;
+			case 1:
+				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
+				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG);
+				break;
+			case 2:
+				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
+				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR);
+				break;
+			default:
+				HBL2_CORE_ERROR("Unknown Shader type: {0}", asset->DebugName);
+				stream.close();
+				return Handle<Shader>();
+			}
+
+			// Retrieve shader variants.
+			const auto& shaderVariantsProperty = shaderProperties["Variants"];
+
+			if (shaderVariantsProperty)
+			{
+				for (const YAML::Node& variantNode : shaderVariantsProperty)
+				{
+					ShaderDescriptor::RenderPipeline::Variant variant = {};
+
+					// Set shader hash key from asset UUID.
+					variant.shaderHashKey = asset->UUID;
+
+					// Retrieve blend state.
+					const auto& blendStateProp = variantNode["BlendState"];
+
+					if (blendStateProp)
+					{
+						variant.blend = {
+							.colorOutput = blendStateProp["ColorOutputEnabled"].as<bool>(),
+							.enabled = blendStateProp["Enabled"].as<bool>(),
+						};
+					}
+
+					// Retrieve depth state.
+					const auto& depthStateProp = variantNode["DepthState"];
+
+					if (depthStateProp)
+					{
+						variant.depthTest =
+						{
+							.enabled = depthStateProp["Enabled"].as<bool>(),
+							.writeEnabled = depthStateProp["WriteEnabled"].as<bool>(),
+							.stencilEnabled = depthStateProp["StencilEnabled"].as<bool>(),
+							.depthTest = (Compare)depthStateProp["DepthTest"].as<int>(),
+						};
+					}
+
+					//shaderVariants.Add(variant);
+					shaderVariants.push_back(variant);
+				}
+			}
+		}
+
+		// Compile Shader.
+		const auto& shaderCode = ShaderUtilities::Get().Compile(shaderPath.string(), true);
+
+		if (shaderCode.empty())
+		{
+			HBL2_CORE_ERROR("Shader asset: {0}, at path: {1}, could not be compiled. Returning invalid shader.", asset->DebugName, shaderPath.string());
+			stream.close();
+			return ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::INVALID);
+		}
+
+		// Reflect shader.
+		const auto& reflectionData = ShaderUtilities::Get().GetReflectionData(shaderPath.string());
+
+		// Create resource.
+		ResourceManager::Instance->RecompileShader(shaderHandle, {
+			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
+			.VS { .code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
+			.FS { .code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
+			.bindGroups {
+				globalBindGroupLayout,	// Global bind group (0)
+				drawBindGroupLayout,	// Material bind group (1)
+			},
+			.renderPipeline {
+				.vertexBufferBindings = {
+					{
+						.byteStride = reflectionData.ByteStride,
+						.attributes = reflectionData.Attributes,
+					},
+				},
+				.variants = { shaderVariants.data(), shaderVariants.size() },
+			},
+			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
+		});
+
+		stream.close();
+
+		return shaderHandle;
+	}
+
+	Handle<Material> EditorAssetManager::ReimportMaterial(Asset* asset)
+	{
+		Handle<Material> materialHandle = Handle<Material>::UnPack(asset->Indentifier);
+
+		if (!materialHandle.IsValid())
+		{
+			HBL2_CORE_ERROR("Could not save asset {0} at path: {1}, because the handle is invalid.", asset->DebugName, asset->FilePath.string());
+			return Handle<Material>();
+		}
+
+		Material* mat = ResourceManager::Instance->GetMaterial(materialHandle);
+
+		std::fstream ioStream(Project::GetAssetFileSystemPath(asset->FilePath), std::ios::in | std::ios::out);
+
+		if (!ioStream.is_open())
+		{
+			HBL2_CORE_ERROR("Material file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath));
+			return Handle<Material>();
+		}
+
+		std::stringstream ss;
+		ss << ioStream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Material"].IsDefined())
+		{
+			HBL2_CORE_TRACE("Material file: {0}, is not in correct format!", ss.str());
+			ioStream.close();
+			return Handle<Material>();
+		}
+
+		auto materialProperties = data["Material"];
+		if (materialProperties)
+		{
+			// Shader reload.
+			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
+			if (shaderUUID == mat->VariantDescriptor.shaderHashKey)
+			{
+				AssetManager::Instance->ReloadAsset<Shader>(shaderUUID);
+			}
+			else
+			{
+				// TODO: Handle shader resource change.
+			}
+		}
+
+		ioStream.close();
+
+		return materialHandle;
 	}
 
 	/// Save methods
