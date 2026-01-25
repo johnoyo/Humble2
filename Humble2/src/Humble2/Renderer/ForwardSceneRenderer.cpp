@@ -1018,6 +1018,7 @@ namespace HBL2
 		ShaderDescriptor::RenderPipeline::Variant variant = {};
 		variant.blend.enabled = false;
 		variant.depthTest.enabled = false;
+		variant.depthTest.writeEnabled = true;
 		variant.frontFace = FrontFace::CLOCKWISE;
 		variant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
 
