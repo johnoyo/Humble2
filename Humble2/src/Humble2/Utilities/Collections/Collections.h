@@ -3,6 +3,7 @@
 #include "Utilities\Allocators\ArenaAllocator.h"
 
 #include <vector>
+#include <stack>
 
 namespace HBL2
 {
@@ -65,5 +66,29 @@ namespace HBL2
         m.max_load_factor(maxLoadFactor);
         m.reserve(reserveCount);
         return m;
+    }
+
+    // Stack
+    template<typename T>
+    using Stack = std::stack<T, ArenaAllocator<T>>;
+
+    template<typename T>
+    [[nodiscard]] Stack<T> MakeStack(Arena& arena)
+    {
+        return Stack<T>(ArenaAllocator<T>(&arena));
+    }
+
+    template<typename T>
+    [[nodiscard]] Stack<T> MakeStack(Arena& arena, std::size_t reserveCount)
+    {
+        Stack<T> v{ ArenaAllocator<T>(&arena) };
+        v.reserve(reserveCount);
+        return v;
+    }
+
+    template<typename T>
+    [[nodiscard]] Stack<T> MakeStack(ScratchArena& scratch)
+    {
+        return Stack<T>(ArenaAllocator<T>(&scratch));
     }
 }

@@ -141,6 +141,7 @@ namespace HBL2
 
 					// Transformation gizmo
 					auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(selectedEntity);
+					auto& transformEx = m_ActiveScene->GetComponent<HBL2::Component::TransformEx>(selectedEntity);
 					auto* link = m_ActiveScene->TryGetComponent<HBL2::Component::Link>(selectedEntity);
 
 					glm::mat4 parentW(1.0f);
@@ -175,7 +176,7 @@ namespace HBL2
 						transform.Rotation = lr;  // degrees
 						transform.Scale = ls;
 
-						// Keep world fields in sync (optional)
+						// Keep world fields in sync.
 						glm::vec3 wt, wr, ws;
 						ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(transform.WorldMatrix), glm::value_ptr(wt), glm::value_ptr(wr), glm::value_ptr(ws));
 
@@ -183,9 +184,9 @@ namespace HBL2
 						transform.WorldRotation = wr;
 						transform.WorldScale = ws;
 
-						transform.PrevWorldTranslation = wt;
-						transform.PrevWorldRotation = wr;
-						transform.PrevWorldScale = ws;
+						transformEx.PrevWorldTranslation = wt;
+						transformEx.PrevWorldRotation = wr;
+						transformEx.PrevWorldScale = ws;
 					}
 				}
 

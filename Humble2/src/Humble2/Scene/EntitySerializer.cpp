@@ -521,7 +521,7 @@ namespace HBL2
 		auto linkComponent = entityNode["Component::Link"];
 		if (linkComponent)
 		{
-			auto& link = m_Scene->AddComponent<Component::Link>(m_Entity);
+			auto& link = m_Scene->GetOrAddComponent<Component::Link>(m_Entity); // TODO: Just do Get in the future.
 			link.Parent = linkComponent["Parent"].as<UUID>();
 			link.PrevParent = link.Parent;
 			if (linkComponent["Children"].IsDefined())

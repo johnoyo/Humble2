@@ -29,12 +29,17 @@ namespace HBL2
 
 		virtual void OnCreate() override;
 		virtual void OnUpdate(float ts) override;
+		void OnUpdate2(float ts);
 		
 	private:
 		glm::mat4 GetWorldSpaceTransform(Entity entity, Component::Link& link);
 		glm::mat4 GetWorldSpaceTransform2(Entity entity, Component::Link& link);
 		void AddChildren(Entity entity, Component::Link& link);
 		void UpdateChildren(Entity entity, Component::Link& link);
+
+		void ComputeWorldFromRoots();
+		void MarkDirtyRecursive(Entity e);
+		void ComputeWorldFromDirtyRoots();
 
 	private:
 		std::unordered_map<UUID, glm::mat4> m_WorldCache;

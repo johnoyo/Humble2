@@ -78,6 +78,7 @@ namespace HBL2
 
         // Copy components.
         copy_component(Component::Transform{});
+        copy_component(Component::TransformEx{});
         copy_component(Component::Link{});
         copy_component(Component::Camera{});
         copy_component(Component::EditorVisible{});
@@ -184,6 +185,10 @@ namespace HBL2
         m_Registry.clear<Component::Transform>();
         m_Registry.storage<Component::Transform>().clear();
         m_Registry.compact<Component::Transform>();
+
+        m_Registry.clear<Component::TransformEx>();
+        m_Registry.storage<Component::TransformEx>().clear();
+        m_Registry.compact<Component::TransformEx>();
 
         m_Registry.clear<Component::Link>();
         m_Registry.storage<Component::Link>().clear();
@@ -295,6 +300,8 @@ namespace HBL2
         m_Registry.emplace<Component::Tag>(entity).Name = tag;
         m_Registry.emplace<Component::ID>(entity).Identifier = uuid;
         m_Registry.emplace<Component::Transform>(entity);
+        m_Registry.emplace<Component::TransformEx>(entity);
+        m_Registry.emplace<Component::Link>(entity);
 
         m_EntityMap[uuid] = entity;
 
@@ -359,6 +366,7 @@ namespace HBL2
 
         // Copy built in components
         copy_component(Component::Transform{});
+        copy_component(Component::TransformEx{});
         copy_component(Component::Link{});
         copy_component(Component::Camera{});
         copy_component(Component::EditorVisible{});
