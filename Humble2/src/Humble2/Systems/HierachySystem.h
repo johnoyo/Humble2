@@ -9,19 +9,6 @@
 
 namespace HBL2
 {
-	namespace Transform
-	{
-		void SetLocal();
-		void SetLocalTranslation();
-		void SetLocalRotation();
-		void SetLocalScale();
-
-		void Set();
-		void SetTranslation();
-		void SetRotation();
-		void SetScale();
-	}
-
 	class HBL2_API HierachySystem final : public ISystem
 	{
 	public:
@@ -33,15 +20,10 @@ namespace HBL2
 		
 	private:
 		glm::mat4 GetWorldSpaceTransform(Entity entity, Component::Link& link);
-		glm::mat4 GetWorldSpaceTransform2(Entity entity, Component::Link& link);
 		void AddChildren(Entity entity, Component::Link& link);
 		void UpdateChildren(Entity entity, Component::Link& link);
 
-		void ComputeWorldFromRoots();
 		void MarkDirtyRecursive(Entity e);
 		void ComputeWorldFromDirtyRoots();
-
-	private:
-		std::unordered_map<UUID, glm::mat4> m_WorldCache;
 	};
 }

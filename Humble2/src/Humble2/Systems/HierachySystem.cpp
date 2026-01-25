@@ -99,7 +99,7 @@ namespace HBL2
 						transform.Scale = ls;
 					}
 
-					// local changed -> mark dirty
+					// Local transform changed, so mark dirty 'entity' and all entities that descendants of 'entity'.
 					MarkDirtyRecursive(entity);
 
 					transformEx.PrevWorldTranslation = transform.WorldTranslation;
@@ -112,11 +112,11 @@ namespace HBL2
 		m_Context->Group<Component::Transform, Component::TransformEx, Component::Link>()
 			.Each([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
 			{
-				// this already early-outs if no change
 				const UUID before = link.PrevParent;
 				UpdateChildren(entity, link);
 
-				if (before != link.PrevParent) // parent changed
+				// Parent changed, so mark dirty 'entity' and all entities that descendants of 'entity'.
+				if (before != link.PrevParent)
 				{
 					MarkDirtyRecursive(entity);
 				}
@@ -131,10 +131,12 @@ namespace HBL2
 					return;
 				}
 
+				// Check if local transform has changed.
 				const bool localTChanged = (transformEx.PrevTranslation != transform.Translation);
 				const bool localRChanged = (transformEx.PrevRotation != transform.Rotation);
 				const bool localSChanged = (transformEx.PrevScale != transform.Scale);
 
+				// If changed, mark dirty 'entity' and all entities that descendants of 'entity'.
 				if (localTChanged || localRChanged || localSChanged)
 				{
 					MarkDirtyRecursive(entity);
@@ -143,11 +145,13 @@ namespace HBL2
 					transformEx.PrevScale = transform.Scale;
 				}
 
+				// Return if not marked as dirty.
 				if (!transform.Dirty)
 				{
 					return;
 				}
 
+				// Compute local matrix and rotation in quaternion form.
 				transform.QRotation = glm::quat(glm::radians(transform.Rotation));
 				transform.LocalMatrix = TRS(transform.Translation, transform.Rotation, transform.Scale);
 			});
@@ -158,29 +162,29 @@ namespace HBL2
 		// Update world TRS.
 		m_Context->Group<Component::Transform, Component::TransformEx, Component::Link>()
 			.Each([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
+			{
+				if (transform.Static || !transform.Dirty)
 				{
-					if (transform.Static || !transform.Dirty)
-					{
-						return;
-					}
+					return;
+				}
 
-					// Always cheap position
-					transform.WorldTranslation = glm::vec3(transform.WorldMatrix[3]);
+				// Always cheap position
+				transform.WorldTranslation = glm::vec3(transform.WorldMatrix[3]);
 
-					// Decompose rotation/scale in world space (maybe add an ifdef to happen only in editor).
-					glm::vec3 wt, wr, ws;
-					if (DecomposeTRS(transform.WorldMatrix, wt, wr, ws))
-					{
-						transform.WorldRotation = wr;
-						transform.WorldScale = ws;
-					}
+				// Decompose rotation, scale in world space (maybe add an #ifdef to happen only in editor).
+				glm::vec3 wt, wr, ws;
+				if (DecomposeTRS(transform.WorldMatrix, wt, wr, ws))
+				{
+					transform.WorldRotation = wr;
+					transform.WorldScale = ws;
+				}
 
-					transformEx.PrevWorldTranslation = transform.WorldTranslation;
-					transformEx.PrevWorldRotation = transform.WorldRotation;
-					transformEx.PrevWorldScale = transform.WorldScale;
+				transformEx.PrevWorldTranslation = transform.WorldTranslation;
+				transformEx.PrevWorldRotation = transform.WorldRotation;
+				transformEx.PrevWorldScale = transform.WorldScale;
 
-					transform.Dirty = false; // done
-				});
+				transform.Dirty = false;
+			});
 
 		END_PROFILE_SYSTEM(RunningTime);
 	}
@@ -211,8 +215,8 @@ namespace HBL2
 					return;
 				}
 
-				auto* pt = m_Context->TryGetComponent<Component::Transform>(p);
-				if (!pt || pt->Static || !pt->Dirty)
+				auto& pt = m_Context->GetComponent<Component::Transform>(p);
+				if (pt.Static || !pt.Dirty)
 				{
 					dirtyRoots.push_back(e);
 				}
@@ -232,11 +236,8 @@ namespace HBL2
 				Entity p = m_Context->FindEntityByUUID(rl.Parent);
 				if (p != Entity::Null)
 				{
-					auto* pt = m_Context->TryGetComponent<Component::Transform>(p);
-					if (pt)
-					{
-						parentW = pt->WorldMatrix;
-					}
+					auto& pt = m_Context->GetComponent<Component::Transform>(p);
+					parentW = pt.WorldMatrix;
 				}
 			}
 
@@ -261,24 +262,20 @@ namespace HBL2
 						continue;
 					}
 
-					auto* childT = m_Context->TryGetComponent<Component::Transform>(child);
-					auto* childL = m_Context->TryGetComponent<Component::Link>(child);
-					if (!childT || !childL)
-					{
-						continue;
-					}
+					auto& childT = m_Context->GetComponent<Component::Transform>(child);
+					auto& childL = m_Context->GetComponent<Component::Link>(child);
 
-					// Only update dirty children (should be true if you propagate dirty properly)
-					if (childT->Static)
+					// Only update dirty children.
+					if (childT.Static)
 					{
 						continue;
 					}
 
 					// If parent is dirty, child world must be recomputed.
 					// Ensure child is considered dirty for this traversal.
-					childT->Dirty = true;
+					childT.Dirty = true;
 
-					childT->WorldMatrix = parentT.WorldMatrix * childT->LocalMatrix;
+					childT.WorldMatrix = parentT.WorldMatrix * childT.LocalMatrix;
 					stack.push_back(child);
 				}
 			}
@@ -303,67 +300,6 @@ namespace HBL2
 			if (c != Entity::Null)
 			{
 				MarkDirtyRecursive(c);
-			}
-		}
-	}
-
-	void HierachySystem::ComputeWorldFromRoots()
-	{
-		std::vector<Entity> roots;
-		roots.reserve(128);
-
-		// Find roots (Parent == 0 or invalid parent)
-		m_Context->Group<Component::Transform, Component::TransformEx, Component::Link>()
-			.Each([&](Entity e, Component::Transform& t, Component::TransformEx& tEx, Component::Link& l)
-			{
-				if (l.Parent == 0)
-				{
-					roots.push_back(e);
-					return;
-				}
-
-				Entity p = m_Context->FindEntityByUUID(l.Parent);
-				if (p == Entity::Null)
-				{
-					roots.push_back(e);
-				}
-			});
-
-		std::vector<Entity> stack;
-		stack.reserve(256);
-
-		for (Entity root : roots)
-		{
-			auto& rt = m_Context->GetComponent<Component::Transform>(root);
-			auto& rl = m_Context->GetComponent<Component::Link>(root);
-
-			// Root world == root local (unless you support scene root transform)
-			rt.WorldMatrix = rt.LocalMatrix;
-
-			stack.clear();
-			stack.push_back(root);
-
-			while (!stack.empty())
-			{
-				Entity parent = stack.back();
-				stack.pop_back();
-
-				auto& parentT = m_Context->GetComponent<Component::Transform>(parent);
-				auto& parentL = m_Context->GetComponent<Component::Link>(parent);
-
-				for (UUID childId : parentL.Children)
-				{
-					Entity child = m_Context->FindEntityByUUID(childId);
-					if (child == Entity::Null)
-					{
-						continue;
-					}
-
-					auto& childT = m_Context->GetComponent<Component::Transform>(child);
-					childT.WorldMatrix = parentT.WorldMatrix * childT.LocalMatrix;
-
-					stack.push_back(child);
-				}
 			}
 		}
 	}
@@ -424,7 +360,7 @@ namespace HBL2
 				{
 				if (!transform.Static)
 				{
-					transform.WorldMatrix = GetWorldSpaceTransform2(entity, link);
+					transform.WorldMatrix = GetWorldSpaceTransform(entity, link);
 
 					// Set world transforms.
 					glm::vec3 wt, wr, ws;
@@ -452,33 +388,6 @@ namespace HBL2
 
 	glm::mat4 HierachySystem::GetWorldSpaceTransform(Entity entity, Component::Link& link)
 	{
-		const UUID id = m_Context->GetComponent<Component::ID>(entity).Identifier;
-
-		// cache hit
-		if (auto it = m_WorldCache.find(id); it != m_WorldCache.end())
-		{
-			return it->second;
-		}
-
-		glm::mat4 parentW(1.0f);
-
-		if (link.Parent != 0)
-		{
-			Entity parentEntity = m_Context->FindEntityByUUID(link.Parent);
-			if (parentEntity != Entity::Null)
-			{
-				auto& parentLink = m_Context->GetComponent<Component::Link>(parentEntity);
-				parentW = GetWorldSpaceTransform(parentEntity, parentLink);
-			}
-		}
-
-		glm::mat4 world = parentW * m_Context->GetComponent<Component::Transform>(entity).LocalMatrix;
-		m_WorldCache.emplace(id, world);
-		return world;
-	}
-
-	glm::mat4 HierachySystem::GetWorldSpaceTransform2(Entity entity, Component::Link& link)
-	{
 		glm::mat4 transform = glm::mat4(1.0f);
 
 		if (link.Parent != 0)
@@ -487,7 +396,7 @@ namespace HBL2
 			if (parentEntity != Entity::Null)
 			{
 				Component::Link& parentLink = m_Context->GetComponent<Component::Link>(parentEntity);
-				transform = GetWorldSpaceTransform2(parentEntity, parentLink);
+				transform = GetWorldSpaceTransform(parentEntity, parentLink);
 			}
 		}
 
