@@ -3,8 +3,6 @@
 #include "Script\BuildEngine.h"
 #include "Utilities\YamlUtilities.h"
 
-#include "Systems\TransformSystem.h"
-#include "Systems\LinkSystem.h"
 #include "Systems\HierachySystem.h"
 #include "Systems\CameraSystem.h"
 #include "Systems\RenderingSystem.h"
@@ -629,8 +627,6 @@ namespace HBL2
 			return sceneHandle;
 		}
 
-		//scene->RegisterSystem(new TransformSystem);
-		//scene->RegisterSystem(new LinkSystem);
 		scene->RegisterSystem(new HierachySystem);
 		scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
 		scene->RegisterSystem(new TerrainSystem);
@@ -1094,8 +1090,6 @@ namespace HBL2
 				return;
 			}
 
-			//scene->RegisterSystem(new TransformSystem);
-			//scene->RegisterSystem(new LinkSystem);
 			scene->RegisterSystem(new HierachySystem);
 			scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
 			scene->RegisterSystem(new TerrainSystem);
