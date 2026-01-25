@@ -329,7 +329,7 @@ namespace HBL2
     {
         std::string name = GetComponent<Component::Tag>(entity).Name;
         Entity newEntity = CreateEntity(name + "(Clone)");
-        auto& newLink = AddComponent<HBL2::Component::Link>(newEntity);
+        auto& newLink = GetComponent<HBL2::Component::Link>(newEntity);
 
         // Helper lamda for component copying
         auto copy_component = [&](auto component_type)

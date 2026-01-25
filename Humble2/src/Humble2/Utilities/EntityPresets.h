@@ -249,7 +249,6 @@ namespace HBL2
 			auto entity = scene->CreateEntity("Terrain");
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 
-			scene->AddComponent<HBL2::Component::Link>(entity);
 			scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 			scene->AddComponent<HBL2::Component::AnimationCurve>(entity);
 			scene->AddComponent<HBL2::Component::Terrain>(entity);

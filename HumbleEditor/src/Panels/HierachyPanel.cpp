@@ -176,7 +176,6 @@ namespace HBL2
 
 					auto mainMeshEntity = m_ActiveScene->CreateEntity(mesh->DebugName);
 					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(mainMeshEntity);
-					m_ActiveScene->AddComponent<HBL2::Component::Link>(mainMeshEntity);
 
 					uint32_t meshIndex = 0;
 					uint32_t subMeshIndex = 0;
@@ -185,7 +184,7 @@ namespace HBL2
 					{
 						auto meshEntity = m_ActiveScene->CreateEntity(meshPart.DebugName);
 						m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(meshEntity);
-						auto& link = m_ActiveScene->AddComponent<HBL2::Component::Link>(meshEntity);
+						auto& link = m_ActiveScene->GetComponent<HBL2::Component::Link>(meshEntity);
 
 						link.Parent = m_ActiveScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
 
@@ -193,7 +192,7 @@ namespace HBL2
 						{
 							auto subMeshEntity = m_ActiveScene->CreateEntity(subMesh.DebugName);
 							m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(subMeshEntity);
-							auto& link = m_ActiveScene->AddComponent<HBL2::Component::Link>(subMeshEntity);
+							auto& link = m_ActiveScene->GetComponent<HBL2::Component::Link>(subMeshEntity);
 							link.Parent = m_ActiveScene->GetComponent<HBL2::Component::ID>(meshEntity).Identifier;
 
 							auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(subMeshEntity);
