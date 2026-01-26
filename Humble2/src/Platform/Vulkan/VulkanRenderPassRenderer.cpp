@@ -35,6 +35,7 @@ namespace HBL2
 		Handle<Buffer> prevIndexBuffer;
 		Handle<Buffer> prevVertexBuffer;
 		uint64_t prevVariantHash = 0;
+		uint64_t prevPipelineLayoutHash = 0;
 
 		for (const auto& draw : draws.GetDraws())
 		{
@@ -48,15 +49,20 @@ namespace HBL2
 				// Bind pipeline
 				vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-				// Bind global descriptor set for per frame data (i.e.: Camera and lighting data).
-				if (globalBindGroup != nullptr)
-				{
-					uint32_t offsetCount = (globalDraw.GlobalBufferOffset == UINT32_MAX ? 0 : 1);
-					const uint32_t* offset = (globalDraw.GlobalBufferOffset == UINT32_MAX ? nullptr : &globalDraw.GlobalBufferOffset);
-					vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 0, 1, &globalBindGroup->DescriptorSet, offsetCount, offset);
-				}
-
 				prevVariantHash = draw.VariantHash;
+
+				if (prevPipelineLayoutHash != shader->PipelineLayoutHash)
+				{
+					// Bind global descriptor set for per frame data (i.e.: Camera and lighting data).
+					if (globalBindGroup != nullptr)
+					{
+						uint32_t offsetCount = (globalDraw.GlobalBufferOffset == UINT32_MAX ? 0 : 1);
+						const uint32_t* offset = (globalDraw.GlobalBufferOffset == UINT32_MAX ? nullptr : &globalDraw.GlobalBufferOffset);
+						vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 0, 1, &globalBindGroup->DescriptorSet, offsetCount, offset);
+					}
+
+					prevPipelineLayoutHash = shader->PipelineLayoutHash;
+				}
 			}
 
 			// Bind the index buffer if needed.

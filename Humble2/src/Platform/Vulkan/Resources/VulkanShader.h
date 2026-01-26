@@ -34,6 +34,8 @@ namespace HBL2
 
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding> VertexBufferBindings;
 
+		uint64_t PipelineLayoutHash = UINT64_MAX;
+
 	private:
 		static inline PipelineCache s_PipelineCache{};
 		

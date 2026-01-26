@@ -140,6 +140,11 @@ namespace HBL2
 			}
 		}
 
+		if (!setLayouts.empty())
+		{
+			PipelineLayoutHash = (uint64_t)setLayouts[0];
+		}
+
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
