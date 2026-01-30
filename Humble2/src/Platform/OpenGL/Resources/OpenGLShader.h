@@ -20,7 +20,7 @@ namespace HBL2
 
 		void Recompile(const ShaderDescriptor&& desc);
 		GLuint Compile(GLuint type, const char* entryPoint, const Span<const uint32_t>& binaryCode);
-		void SetVariantProperties(const ShaderDescriptor::RenderPipeline::Variant& variantDesc);
+		void SetVariantProperties(const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc);
 		void Bind();
 		void BindPipeline();
 		void Destroy();

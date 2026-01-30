@@ -11,7 +11,7 @@ namespace HBL2
 	{
 		std::sort(m_Draws.begin(), m_Draws.end(), [](const LocalDrawStream& a, const LocalDrawStream& b)
 		{
-			return a.VariantHash < b.VariantHash;
+			return a.VariantHash.Key() < b.VariantHash.Key();
 		});
 	}
 

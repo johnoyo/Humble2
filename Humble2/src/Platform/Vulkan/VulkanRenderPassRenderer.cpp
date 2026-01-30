@@ -34,22 +34,25 @@ namespace HBL2
 
 		Handle<Buffer> prevIndexBuffer;
 		Handle<Buffer> prevVertexBuffer;
-		uint64_t prevVariantHash = 0;
+		Handle<Shader> prevShader;
+
+		ShaderDescriptor::RenderPipeline::PackedVariant prevVariantHash = g_NullVariant;
 		uint64_t prevPipelineLayoutHash = 0;
 
 		for (const auto& draw : draws.GetDraws())
 		{
 			VulkanShader* shader = rm->GetShader(draw.Shader);
 
-			if (prevVariantHash != draw.VariantHash)
+			if (prevVariantHash != draw.VariantHash || prevShader != draw.Shader)
 			{
 				// Get pipeline from cache or create it. 
-				VkPipeline pipeline = shader->GetOrCreateVariant(draw.VariantHash, draw.Material);
+				VkPipeline pipeline = shader->GetOrCreateVariant(draw.VariantHash);
 
 				// Bind pipeline
 				vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 				prevVariantHash = draw.VariantHash;
+				prevShader = draw.Shader;
 
 				if (prevPipelineLayoutHash != shader->PipelineLayoutHash)
 				{

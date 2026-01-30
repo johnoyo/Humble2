@@ -100,15 +100,15 @@ namespace HBL2
 		Handle<RenderPass> m_ShadowRenderPass;
 		Handle<Shader> m_ShadowPrePassShader;
 		Handle<Material> m_ShadowPrePassMaterial;
-		uint64_t m_ShadowPrePassMaterialHash;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_ShadowPrePassMaterialHash = g_NullVariant;
 
 		Handle<RenderPassLayout> m_DepthOnlyRenderPassLayout;
 		Handle<RenderPass> m_DepthOnlyRenderPass;
 		Handle<FrameBuffer> m_DepthOnlyFrameBuffer;
 		Handle<Material> m_DepthOnlyMaterial;
-		uint64_t m_DepthOnlyMaterialHash;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_DepthOnlyMaterialHash = g_NullVariant;
 		Handle<Material> m_DepthOnlySpriteMaterial;
-		uint64_t m_DepthOnlySpriteMaterialHash;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_DepthOnlySpriteMaterialHash = g_NullVariant;
 		Handle<BindGroup> m_DepthOnlyMeshBindGroup;
 		Handle<BindGroup> m_DepthOnlySpriteBindGroup;
 		Handle<BindGroupLayout> m_DepthOnlyBindGroupLayout;
@@ -128,8 +128,8 @@ namespace HBL2
 		Handle<Shader> m_SkyboxShader;
 		Handle<BindGroupLayout> m_SkyboxBindGroupLayout;
 		Handle<BindGroup> m_ComputeBindGroup;
-		ShaderDescriptor::RenderPipeline::Variant m_SkyboxVariant{};
-		ShaderDescriptor::RenderPipeline::Variant m_ComputeVariant{};
+		ShaderDescriptor::RenderPipeline::PackedVariant m_SkyboxVariant{};
+		ShaderDescriptor::RenderPipeline::PackedVariant m_ComputeVariant{};
 
 		Handle<RenderPass> m_PostProcessRenderPass;
 		Handle<FrameBuffer> m_PostProcessFrameBuffer;

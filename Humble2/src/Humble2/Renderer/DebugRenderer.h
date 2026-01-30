@@ -81,13 +81,13 @@ namespace HBL2
 		Handle<Shader> m_DebugShader;
 
 		Handle<Material> m_DebugLineMaterial;
-		uint64_t m_DebugLineMaterialVariantHash = UINT64_MAX;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_DebugLineMaterialVariantHash = g_NullVariant;
 
 		Handle<Material> m_DebugFillMaterial;
-		uint64_t m_DebugFillMaterialVariantHash = UINT64_MAX;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_DebugFillMaterialVariantHash = g_NullVariant;
 
 		Handle<Material> m_DebugWireMaterial;
-		uint64_t m_DebugWireMaterialVariantHash = UINT64_MAX;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_DebugWireMaterialVariantHash = g_NullVariant;
 
 		Handle<RenderPass> m_DebugRenderPass;
 		Handle<RenderPassLayout> m_DebugRenderPassLayout;

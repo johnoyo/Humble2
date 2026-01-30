@@ -2,6 +2,7 @@
 
 #include "Script\BuildEngine.h"
 #include "Utilities\YamlUtilities.h"
+#include "Utilities\Collections\Collections.h"
 
 #include "Systems\HierachySystem.h"
 #include "Systems\CameraSystem.h"
@@ -16,6 +17,8 @@
 
 namespace HBL2
 {
+	using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
+
     uint32_t EditorAssetManager::LoadAsset(Handle<Asset> handle)
     {
         Asset* asset = GetAssetMetadata(handle);
@@ -299,7 +302,7 @@ namespace HBL2
 		Handle<BindGroupLayout> globalBindGroupLayout;
 		Handle<BindGroupLayout> drawBindGroupLayout;
 
-		auto shaderVariants = MakeDynamicArray<ShaderDescriptor::RenderPipeline::Variant>(&Allocator::Frame);
+		auto shaderVariants = MakeDArray<ShaderDescriptor::RenderPipeline::PackedVariant>(Allocator::FrameArena);
 
 		const auto& shaderProperties = data["Shader"];
 		if (shaderProperties)
@@ -333,20 +336,15 @@ namespace HBL2
 			{
 				for (const YAML::Node& variantNode : shaderVariantsProperty)
 				{
-					ShaderDescriptor::RenderPipeline::Variant variant = {};
-
-					// Set shader hash key from asset UUID.
-					variant.shaderHashKey = asset->UUID;
+					ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 
 					// Retrieve blend state.
 					const auto& blendStateProp = variantNode["BlendState"];
 
 					if (blendStateProp)
 					{
-						variant.blend = {
-							.colorOutput = blendStateProp["ColorOutputEnabled"].as<bool>(),
-							.enabled = blendStateProp["Enabled"].as<bool>(),
-						};
+						variant.colorOutput = blendStateProp["ColorOutputEnabled"].as<bool>();
+						variant.blendEnabled = blendStateProp["Enabled"].as<bool>();
 					}
 
 					// Retrieve depth state.
@@ -354,16 +352,13 @@ namespace HBL2
 
 					if (depthStateProp)
 					{
-						variant.depthTest =
-						{
-							.enabled = depthStateProp["Enabled"].as<bool>(),
-							.writeEnabled = depthStateProp["WriteEnabled"].as<bool>(),
-							.stencilEnabled = depthStateProp["StencilEnabled"].as<bool>(),
-							.depthTest = (Compare)depthStateProp["DepthTest"].as<int>(),
-						};
+						variant.depthEnabled = depthStateProp["Enabled"].as<bool>();
+						variant.depthWrite = depthStateProp["WriteEnabled"].as<bool>();
+						variant.stencilEnabled = depthStateProp["StencilEnabled"].as<bool>();
+						variant.depthCompare = (packed_size)(Compare)depthStateProp["DepthTest"].as<int>();
 					}
 
-					shaderVariants.Add(variant);
+					shaderVariants.push_back(variant);
 				}
 			}
 		}
@@ -397,7 +392,7 @@ namespace HBL2
 						.attributes = reflectionData.Attributes,
 					},
 				},
-				.variants = { shaderVariants.Data(), shaderVariants.Size() },
+				.variants = { shaderVariants.data(), shaderVariants.size() },
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
 		});
@@ -469,20 +464,20 @@ namespace HBL2
 		{
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
 
-			ShaderDescriptor::RenderPipeline::Variant variantDesc = {};
+			ShaderDescriptor::RenderPipeline::PackedVariant variantDesc = {};
 
 			if (materialProperties["BlendState"].IsDefined())
 			{
-				variantDesc.blend.enabled = materialProperties["BlendState"]["Enabled"].as<bool>();
-				variantDesc.blend.colorOutput = materialProperties["BlendState"]["ColorOutputEnabled"].as<bool>();
+				variantDesc.colorOutput = materialProperties["BlendState"]["ColorOutputEnabled"].as<bool>();
+				variantDesc.blendEnabled = materialProperties["BlendState"]["Enabled"].as<bool>();
 			}
 
 			if (materialProperties["DepthState"].IsDefined())
 			{
-				variantDesc.depthTest.enabled = materialProperties["DepthState"]["Enabled"].as<bool>();
-				variantDesc.depthTest.writeEnabled = materialProperties["DepthState"]["WriteEnabled"].as<bool>();
-				variantDesc.depthTest.stencilEnabled = materialProperties["DepthState"]["StencilEnabled"].as<bool>();
-				variantDesc.depthTest.depthTest = (Compare)materialProperties["DepthState"]["DepthTest"].as<int>();
+				variantDesc.depthEnabled = materialProperties["DepthState"]["Enabled"].as<bool>();
+				variantDesc.depthWrite = materialProperties["DepthState"]["WriteEnabled"].as<bool>();
+				variantDesc.stencilEnabled = materialProperties["DepthState"]["StencilEnabled"].as<bool>();
+				variantDesc.depthCompare = (packed_size)(Compare)materialProperties["DepthState"]["DepthTest"].as<int>();
 			}
 
 			UUID albedoMapUUID = materialProperties["AlbedoMap"].as<UUID>();
@@ -542,8 +537,6 @@ namespace HBL2
 			HBL2_CORE_ASSERT(shaderHandle.IsValid(), "Error while trying to load shader of material!");
 			HBL2_CORE_ASSERT(shaderUUID != 0, "Error while trying to load shader of material!");
 
-			variantDesc.shaderHashKey = shaderUUID;
-
 			ResourceManager::Instance->AddShaderVariant(shaderHandle, variantDesc);
 			ShaderUtilities::Get().UpdateShaderVariantMetadataFile(shaderUUID, variantDesc);
 
@@ -595,7 +588,7 @@ namespace HBL2
 			Material* mat = ResourceManager::Instance->GetMaterial(material);
 			mat->AlbedoColor = albedoColor;
 			mat->Glossiness = glossiness;
-			mat->VariantDescriptor = variantDesc;
+			mat->VariantHash = variantDesc;
 
 			stream.close();
 			return material;
@@ -828,8 +821,7 @@ namespace HBL2
 		Handle<BindGroupLayout> globalBindGroupLayout;
 		Handle<BindGroupLayout> drawBindGroupLayout;
 
-		// auto shaderVariants = MakeDynamicArray<ShaderDescriptor::RenderPipeline::Variant>(&Allocator::Frame);
-		std::vector<ShaderDescriptor::RenderPipeline::Variant> shaderVariants;
+		auto shaderVariants = MakeDArray<ShaderDescriptor::RenderPipeline::PackedVariant>(Allocator::FrameArena);
 
 		const auto& shaderProperties = data["Shader"];
 		if (shaderProperties)
@@ -863,20 +855,15 @@ namespace HBL2
 			{
 				for (const YAML::Node& variantNode : shaderVariantsProperty)
 				{
-					ShaderDescriptor::RenderPipeline::Variant variant = {};
-
-					// Set shader hash key from asset UUID.
-					variant.shaderHashKey = asset->UUID;
+					ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 
 					// Retrieve blend state.
 					const auto& blendStateProp = variantNode["BlendState"];
 
 					if (blendStateProp)
 					{
-						variant.blend = {
-							.colorOutput = blendStateProp["ColorOutputEnabled"].as<bool>(),
-							.enabled = blendStateProp["Enabled"].as<bool>(),
-						};
+						variant.colorOutput = blendStateProp["ColorOutputEnabled"].as<bool>();
+						variant.blendEnabled = blendStateProp["Enabled"].as<bool>();
 					}
 
 					// Retrieve depth state.
@@ -884,16 +871,12 @@ namespace HBL2
 
 					if (depthStateProp)
 					{
-						variant.depthTest =
-						{
-							.enabled = depthStateProp["Enabled"].as<bool>(),
-							.writeEnabled = depthStateProp["WriteEnabled"].as<bool>(),
-							.stencilEnabled = depthStateProp["StencilEnabled"].as<bool>(),
-							.depthTest = (Compare)depthStateProp["DepthTest"].as<int>(),
-						};
+						variant.depthEnabled = depthStateProp["Enabled"].as<bool>();
+						variant.depthWrite = depthStateProp["WriteEnabled"].as<bool>();
+						variant.stencilEnabled = depthStateProp["StencilEnabled"].as<bool>();
+						variant.depthCompare = (packed_size)(Compare)depthStateProp["DepthTest"].as<int>();
 					}
 
-					//shaderVariants.Add(variant);
 					shaderVariants.push_back(variant);
 				}
 			}
@@ -974,7 +957,9 @@ namespace HBL2
 		{
 			// Shader reload.
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
-			if (shaderUUID == mat->VariantDescriptor.shaderHashKey)
+			Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
+
+			if (shaderHandle == mat->Shader)
 			{
 				AssetManager::Instance->ReloadAsset<Shader>(shaderUUID);
 			}
@@ -1028,19 +1013,19 @@ namespace HBL2
 			materialProperties["AlbedoColor"] = mat->AlbedoColor;
 			materialProperties["Glossiness"] = mat->Glossiness;
 
-			materialProperties["BlendState"]["Enabled"] = mat->VariantDescriptor.blend.enabled;
-			materialProperties["BlendState"]["ColorOutputEnabled"] = mat->VariantDescriptor.blend.colorOutput;
+			materialProperties["BlendState"]["Enabled"] = mat->VariantHash.blendEnabled;
+			materialProperties["BlendState"]["ColorOutputEnabled"] = mat->VariantHash.colorOutput;
 
-			materialProperties["DepthState"]["Enabled"] = mat->VariantDescriptor.depthTest.enabled;
-			materialProperties["DepthState"]["WriteEnabled"] = mat->VariantDescriptor.depthTest.writeEnabled;
-			materialProperties["DepthState"]["StencilEnabled"] = mat->VariantDescriptor.depthTest.stencilEnabled;
-			materialProperties["DepthState"]["DepthTest"] = (int)mat->VariantDescriptor.depthTest.depthTest;
+			materialProperties["DepthState"]["Enabled"] = mat->VariantHash.depthEnabled;
+			materialProperties["DepthState"]["WriteEnabled"] = mat->VariantHash.depthWrite;
+			materialProperties["DepthState"]["StencilEnabled"] = mat->VariantHash.stencilEnabled;
+			materialProperties["DepthState"]["DepthTest"] = (int)mat->VariantHash.depthCompare;
 
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
 			Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
 
-			ResourceManager::Instance->AddShaderVariant(shaderHandle, mat->VariantDescriptor);
-			ShaderUtilities::Get().UpdateShaderVariantMetadataFile(shaderUUID, mat->VariantDescriptor);
+			ResourceManager::Instance->AddShaderVariant(shaderHandle, mat->VariantHash);
+			ShaderUtilities::Get().UpdateShaderVariantMetadataFile(shaderUUID, mat->VariantHash);
 		}
 
 		ioStream.seekg(0, std::ios::beg);

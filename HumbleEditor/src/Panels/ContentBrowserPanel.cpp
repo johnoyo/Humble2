@@ -946,17 +946,14 @@ namespace HBL2
 
 						ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
 							.ShaderAssetHandle = shaderAssetHandle,
-							.VariantDescriptor = {
-								.blend = {
-									.colorOutput = colorOutput,
-									.enabled = blendEnabled,
-								},
-								.depthTest = {
-									.enabled = depthEnabled,
-									.writeEnabled = depthWriteEnabled,
-									.stencilEnabled = stencilEnabled,
-									.depthTest = (Compare)depthTest,
-								},
+							.VariantHash =
+							{
+								.blendEnabled = blendEnabled,
+								.colorOutput = colorOutput,
+								.depthEnabled = depthEnabled,
+								.depthWrite = depthWriteEnabled,
+								.stencilEnabled = stencilEnabled,
+								.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)(Compare)depthTest,
 							},
 							.AlbedoColor = { color[0], color[1], color[2], color[3] },
 							.Glossiness = glossiness,

@@ -20,18 +20,18 @@ namespace HBL2
 		return false;
 	}
 
-	static YAML::Node VariantToYAMLNode(uint64_t newVariantHash, const ShaderDescriptor::RenderPipeline::Variant& variant)
+	static YAML::Node VariantToYAMLNode(uint64_t newVariantHash, const ShaderDescriptor::RenderPipeline::PackedVariant& variant)
 	{
 		YAML::Node baseVariant;
 
 		baseVariant["Variant"] = newVariantHash;
-		baseVariant["BlendState"]["Enabled"] = variant.blend.enabled;
-		baseVariant["BlendState"]["ColorOutputEnabled"] = variant.blend.colorOutput;
+		baseVariant["BlendState"]["Enabled"] = (bool)variant.blendEnabled;
+		baseVariant["BlendState"]["ColorOutputEnabled"] = (bool)variant.colorOutput;
 
-		baseVariant["DepthState"]["Enabled"] = variant.depthTest.enabled;
-		baseVariant["DepthState"]["WriteEnabled"] = variant.depthTest.writeEnabled;
-		baseVariant["DepthState"]["StencilEnabled"] = variant.depthTest.stencilEnabled;
-		baseVariant["DepthState"]["DepthTest"] = (int)variant.depthTest.depthTest;
+		baseVariant["DepthState"]["Enabled"] = (bool)variant.depthEnabled;
+		baseVariant["DepthState"]["WriteEnabled"] = (bool)variant.depthWrite;
+		baseVariant["DepthState"]["StencilEnabled"] = (bool)variant.stencilEnabled;
+		baseVariant["DepthState"]["DepthTest"] = (int)variant.depthCompare;
 
 		return baseVariant;
 	}
@@ -531,7 +531,7 @@ namespace HBL2
 		std::ofstream fout(path.string() + ".hblshader", 0);
 
 		Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(handle);
-		uint64_t variantHash = ResourceManager::Instance->GetShaderVariantHash({});
+		ShaderDescriptor::RenderPipeline::PackedVariant variantHash = {};
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;
@@ -542,7 +542,7 @@ namespace HBL2
 
 		out << YAML::Key << "Variants" << YAML::BeginSeq;
 		out << YAML::BeginMap;
-		out << YAML::Key << "Variant" << YAML::Value << variantHash;
+		out << YAML::Key << "Variant" << YAML::Value << variantHash.Key();
 
 		out << YAML::Key << "BlendState";
 		out << YAML::BeginMap;
@@ -568,7 +568,7 @@ namespace HBL2
 		fout.close();
 	}
 
-	void ShaderUtilities::UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::Variant& newVariant)
+	void ShaderUtilities::UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::PackedVariant& newVariant)
 	{
 		Handle<Asset> shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
 		Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
@@ -586,7 +586,7 @@ namespace HBL2
 		YAML::Node root = YAML::LoadFile(filePath.string() + ".hblshader");
 		YAML::Node variants = root["Shader"]["Variants"];
 
-		uint64_t newVariantHash = ResourceManager::Instance->GetShaderVariantHash(newVariant);
+		uint64_t newVariantHash = newVariant.Key();
 
 		if (!VariantExists(variants, newVariantHash))
 		{
@@ -678,16 +678,16 @@ namespace HBL2
 
 		out << YAML::Key << "BlendState";
 		out << YAML::BeginMap;
-		out << YAML::Key << "Enabled" << YAML::Value << desc.VariantDescriptor.blend.enabled;
-		out << YAML::Key << "ColorOutputEnabled" << YAML::Value << desc.VariantDescriptor.blend.colorOutput;
+		out << YAML::Key << "Enabled" << YAML::Value << desc.VariantHash.blendEnabled;
+		out << YAML::Key << "ColorOutputEnabled" << YAML::Value << desc.VariantHash.colorOutput;
 		out << YAML::EndMap;
 
 		out << YAML::Key << "DepthState";
 		out << YAML::BeginMap;
-		out << YAML::Key << "Enabled" << YAML::Value << desc.VariantDescriptor.depthTest.enabled;
-		out << YAML::Key << "WriteEnabled" << YAML::Value << desc.VariantDescriptor.depthTest.writeEnabled;
-		out << YAML::Key << "StencilEnabled" << YAML::Value << desc.VariantDescriptor.depthTest.stencilEnabled;
-		out << YAML::Key << "DepthTest" << YAML::Value << (int)desc.VariantDescriptor.depthTest.depthTest;
+		out << YAML::Key << "Enabled" << YAML::Value << desc.VariantHash.depthEnabled;
+		out << YAML::Key << "WriteEnabled" << YAML::Value << desc.VariantHash.depthWrite;
+		out << YAML::Key << "StencilEnabled" << YAML::Value << desc.VariantHash.stencilEnabled;
+		out << YAML::Key << "DepthTest" << YAML::Value << (int)desc.VariantHash.depthCompare;
 		out << YAML::EndMap;
 
 		if (desc.AlbedoMapAssetHandle.IsValid())

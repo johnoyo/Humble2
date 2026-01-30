@@ -7,7 +7,6 @@
 #include "Platform\Vulkan\VulkanRenderer.h"
 
 #include "Platform\Vulkan\VulkanCommon.h"
-#include "Platform\Vulkan\Resources\PipelineCache.h"
 
 namespace HBL2
 {
@@ -16,14 +15,13 @@ namespace HBL2
 		VulkanShader() = default;
 		VulkanShader(const ShaderDescriptor&& desc);
 
-		VkPipeline GetOrCreateVariant(uint64_t variantHash, Handle<Material> materialHandle);
-		VkPipeline GetOrCreateVariant(const ShaderDescriptor::RenderPipeline::Variant& variantDesc);
+		VkPipeline Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex, bool forceCreateNewAndRemoveOld = false);
+		VkPipeline GetOrCreateVariant(ShaderDescriptor::RenderPipeline::PackedVariant key);
+		VkPipeline GetOrCreateComputeVariant(ShaderDescriptor::RenderPipeline::PackedVariant key);
 
 		void Recompile(const ShaderDescriptor&& desc, bool removeVariants = false);
 		void Destroy();
 		void DestroyOld();
-
-		static PipelineCache& GetPipelineCache();
 
 		const char* DebugName = "";
 		VkRenderPass RenderPass = VK_NULL_HANDLE;
@@ -37,11 +35,37 @@ namespace HBL2
 		uint64_t PipelineLayoutHash = UINT64_MAX;
 
 	private:
-		static inline PipelineCache s_PipelineCache{};
-		
+		struct PipelineConfig
+		{
+			StaticArray<VkShaderModule, 2> shaderModules;
+			StaticArray<const char*, 2> entryPoints;
+			uint32_t shaderModuleCount = 2;
+			ShaderDescriptor::RenderPipeline::PackedVariant variantDesc{};
+			VkPipelineLayout pipelineLayout;
+			VkRenderPass renderPass;
+			Span<const ShaderDescriptor::RenderPipeline::VertexBufferBinding> vertexBufferBindings;
+		};
+
+		VkPipeline GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld = false);
+		VkPipeline CreatePipeline(const PipelineConfig& config);
+		VkPipeline CreateComputePipeline(const PipelineConfig& config);
+
 		VkPipelineLayout m_OldPipelineLayout = VK_NULL_HANDLE;
 		VkShaderModule m_OldVertexShaderModule = VK_NULL_HANDLE;
 		VkShaderModule m_OldFragmentShaderModule = VK_NULL_HANDLE;
 		VkShaderModule m_OldComputeShaderModule = VK_NULL_HANDLE;
+
+		struct VariantEntry
+		{
+			ShaderDescriptor::RenderPipeline::PackedVariant Key = g_NullVariant;
+			VkPipeline Pipeline = VK_NULL_HANDLE;
+		};
+
+		static constexpr uint32_t MaxVariants = 16;
+
+		alignas(64) std::array<VariantEntry, MaxVariants> m_Entries;
+		std::vector<VkPipeline> m_RetiredPipelines;
+		std::atomic<uint32_t> m_Count{ 0 };
+		mutable std::mutex m_WriteMutex;
 	};
 }

@@ -51,7 +51,7 @@ namespace HBL2
 		Handle<Buffer> prevIndexBuffer;
 		Handle<Buffer> prevVertexBuffer;
 		Handle<BindGroup> previouslyUsedBindGroup;
-		uint64_t prevVariantHash = 0;
+		ShaderDescriptor::RenderPipeline::PackedVariant prevVariantHash = g_NullVariant;
 
 		for (const auto& draw : draws.GetDraws())
 		{
@@ -62,7 +62,7 @@ namespace HBL2
 				OpenGLShader* shader = rm->GetShader(draw.Shader);
 
 				// Set blend, depth state.
-				shader->SetVariantProperties(material->VariantDescriptor);
+				shader->SetVariantProperties(material->VariantHash);
 
 				// Bind Vertex Array
 				shader->BindPipeline();
@@ -113,7 +113,7 @@ namespace HBL2
 				}
 			}
 
-			GLenum topology = OpenGLUtils::TopologyToGLenum(material->VariantDescriptor.topology);
+			GLenum topology = OpenGLUtils::TopologyToGLenum((Topology)material->VariantHash.topology);
 
 			// Draw the mesh accordingly
 			if (draw.IndexBuffer.IsValid())

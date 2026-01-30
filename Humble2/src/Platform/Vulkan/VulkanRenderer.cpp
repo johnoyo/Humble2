@@ -177,8 +177,6 @@ namespace HBL2
 
 		m_ResourceManager->DeleteTexture(m_DepthImage);
 
-		VulkanShader::GetPipelineCache().Destroy();
-
 		TempUniformRingBuffer->Free();
 
 		m_ResourceManager->FlushAll();

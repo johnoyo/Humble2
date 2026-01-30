@@ -111,33 +111,32 @@ namespace HBL2
 		}
 
 		// Shader variant descriptions.
-		ShaderDescriptor::RenderPipeline::Variant lineVariant = {};
-		lineVariant.topology = Topology::LINE_LIST;
-		lineVariant.blend.enabled = false;
-		lineVariant.depthTest.enabled = false;
-		lineVariant.depthTest.writeEnabled = false;
-		lineVariant.depthTest.stencilEnabled = false;
-		lineVariant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
+		using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
 
-		ShaderDescriptor::RenderPipeline::Variant fillTriVariant = {};
-		fillTriVariant.topology = Topology::TRIANGLE_LIST;
-		fillTriVariant.polygonMode = PolygonMode::FILL;
-		fillTriVariant.blend.enabled = false;
-		fillTriVariant.depthTest.enabled = false;
-		fillTriVariant.depthTest.writeEnabled = false;
-		fillTriVariant.depthTest.stencilEnabled = false;
-		fillTriVariant.frontFace = Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL ? FrontFace::COUNTER_CLOCKWISE : FrontFace::CLOCKWISE; // TODO: Fix discrepancy.
-		fillTriVariant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
+		ShaderDescriptor::RenderPipeline::PackedVariant lineVariant = {};
+		lineVariant.topology = (packed_size)Topology::LINE_LIST;
+		lineVariant.blendEnabled = false;
+		lineVariant.depthEnabled = false;
+		lineVariant.depthWrite = false;
+		lineVariant.stencilEnabled = false;
 
-		ShaderDescriptor::RenderPipeline::Variant wireTriVariant = {};
-		wireTriVariant.topology = Topology::TRIANGLE_LIST;
-		wireTriVariant.polygonMode = PolygonMode::LINE;
-		wireTriVariant.blend.enabled = false;
-		wireTriVariant.depthTest.enabled = false;
-		wireTriVariant.depthTest.writeEnabled = false;
-		wireTriVariant.depthTest.stencilEnabled = false;
-		wireTriVariant.frontFace = Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL ? FrontFace::COUNTER_CLOCKWISE : FrontFace::CLOCKWISE; // TODO: Fix discrepancy.
-		wireTriVariant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
+		ShaderDescriptor::RenderPipeline::PackedVariant fillTriVariant = {};
+		fillTriVariant.topology = (packed_size)Topology::TRIANGLE_LIST;
+		fillTriVariant.polygonMode = (packed_size)PolygonMode::FILL;
+		fillTriVariant.blendEnabled = false;
+		fillTriVariant.depthEnabled = false;
+		fillTriVariant.depthWrite = false;
+		fillTriVariant.stencilEnabled = false;
+		fillTriVariant.frontFace = Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL ? (packed_size)FrontFace::COUNTER_CLOCKWISE : (packed_size)FrontFace::CLOCKWISE; // TODO: Fix discrepancy.
+
+		ShaderDescriptor::RenderPipeline::PackedVariant wireTriVariant = {};
+		wireTriVariant.topology = (packed_size)Topology::TRIANGLE_LIST;
+		wireTriVariant.polygonMode = (packed_size)PolygonMode::LINE;
+		wireTriVariant.blendEnabled = false;
+		wireTriVariant.depthEnabled = false;
+		wireTriVariant.depthWrite = false;
+		wireTriVariant.stencilEnabled = false;
+		wireTriVariant.frontFace = Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL ? (packed_size)FrontFace::COUNTER_CLOCKWISE : (packed_size)FrontFace::CLOCKWISE; // TODO: Fix discrepancy.
 
 		// Compile debug shader.
 		const auto& debugShaderCode = ShaderUtilities::Get().Compile("assets/shaders/debug-draw.shader");
@@ -173,8 +172,8 @@ namespace HBL2
 		});
 
 		Material* lineMat = m_ResourceManager->GetMaterial(m_DebugLineMaterial);
-		lineMat->VariantDescriptor = lineVariant;
-		m_DebugLineMaterialVariantHash = ResourceManager::Instance->GetShaderVariantHash(lineMat->VariantDescriptor);
+		lineMat->VariantHash = lineVariant;
+		m_DebugLineMaterialVariantHash = lineMat->VariantHash;
 
 		// Debug fill triangle material.
 		m_DebugFillMaterial = m_ResourceManager->CreateMaterial({
@@ -184,8 +183,8 @@ namespace HBL2
 		});
 
 		Material* fillMat = m_ResourceManager->GetMaterial(m_DebugFillMaterial);
-		fillMat->VariantDescriptor = fillTriVariant;
-		m_DebugFillMaterialVariantHash = ResourceManager::Instance->GetShaderVariantHash(fillMat->VariantDescriptor);
+		fillMat->VariantHash = fillTriVariant;
+		m_DebugFillMaterialVariantHash = fillMat->VariantHash;
 
 		// Debug wire triangle material.
 		m_DebugWireMaterial = m_ResourceManager->CreateMaterial({
@@ -195,8 +194,8 @@ namespace HBL2
 		});
 
 		Material* wireMat = m_ResourceManager->GetMaterial(m_DebugWireMaterial);
-		wireMat->VariantDescriptor = wireTriVariant;
-		m_DebugWireMaterialVariantHash = ResourceManager::Instance->GetShaderVariantHash(wireMat->VariantDescriptor);
+		wireMat->VariantHash = wireTriVariant;
+		m_DebugWireMaterialVariantHash = wireMat->VariantHash;
 
 		// Initialize sphere mesh data.
 		InitSphereMesh(8, 4);

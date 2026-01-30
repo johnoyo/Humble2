@@ -80,6 +80,8 @@ namespace HBL2
 		}
 	};
 
+	using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
+
 	void ForwardSceneRenderer::Initialize(Scene* scene)
 	{
 		m_Scene = scene;
@@ -362,13 +364,12 @@ namespace HBL2
 		// Create shadow pre-pass shader.
 		const auto& shadowPrePassShaderCode = ShaderUtilities::Get().Compile("assets/shaders/shadow-mapping-pre-pass.shader");
 
-		ShaderDescriptor::RenderPipeline::Variant variant = {};
-		variant.blend.colorOutput = false;
-		variant.blend.enabled = false;
-		variant.depthTest.depthTest = Compare::LESS;
-		variant.depthTest.writeEnabled = true;
-		variant.cullMode = CullMode::FRONT;
-		variant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
+		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
+		variant.colorOutput = false;
+		variant.blendEnabled = false;
+		variant.depthCompare = (packed_size)Compare::LESS;
+		variant.depthWrite = true;
+		variant.cullMode = (packed_size)CullMode::FRONT;
 
 		m_ShadowPrePassShader = ResourceManager::Instance->CreateShader({
 			.debugName = "shadow-pre-pass-shader",
@@ -402,9 +403,9 @@ namespace HBL2
 		});
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_ShadowPrePassMaterial);
-		mat->VariantDescriptor = variant;
+		mat->VariantHash = variant;
 
-		m_ShadowPrePassMaterialHash = ResourceManager::Instance->GetShaderVariantHash(variant);
+		m_ShadowPrePassMaterialHash = variant;
 	}
 
 	void ForwardSceneRenderer::DepthPrePassSetup()
@@ -434,12 +435,11 @@ namespace HBL2
 		// Create pre-pass shaders.
 		const auto& prePassShaderCode = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-mesh.shader");
 
-		ShaderDescriptor::RenderPipeline::Variant variant = {};
-		variant.blend.colorOutput = false;
-		variant.blend.enabled = false;
-		variant.depthTest.depthTest = Compare::LESS;
-		variant.depthTest.writeEnabled = true;
-		variant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
+		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
+		variant.colorOutput = false;
+		variant.blendEnabled = false;
+		variant.depthCompare = (packed_size)Compare::LESS;
+		variant.depthWrite = true;
 
 		m_DepthOnlyShader = ResourceManager::Instance->CreateShader({
 			.debugName = "mesh-pre-pass-shader",
@@ -498,7 +498,7 @@ namespace HBL2
 		});
 
 		Material* mat0 = ResourceManager::Instance->GetMaterial(m_DepthOnlyMaterial);
-		mat0->VariantDescriptor = variant;
+		mat0->VariantHash = variant;
 
 		m_DepthOnlySpriteMaterial = ResourceManager::Instance->CreateMaterial({
 			.debugName = "depth-only-sprite-material",
@@ -507,9 +507,9 @@ namespace HBL2
 		});
 
 		Material* mat1 = ResourceManager::Instance->GetMaterial(m_DepthOnlySpriteMaterial);
-		mat1->VariantDescriptor = variant;
+		mat1->VariantHash = variant;
 
-		m_DepthOnlyMaterialHash = ResourceManager::Instance->GetShaderVariantHash(variant);
+		m_DepthOnlyMaterialHash = variant;
 		m_DepthOnlySpriteMaterialHash = m_DepthOnlyMaterialHash;
 	}
 
@@ -686,8 +686,6 @@ namespace HBL2
 			},
 		});
 
-		m_ComputeVariant.shaderHashKey = Random::UInt64();
-
 		m_EquirectToSkyboxShader = ResourceManager::Instance->CreateShader({
 			.debugName = "compute-shader",
 			.type = ShaderType::COMPUTE,
@@ -745,11 +743,10 @@ namespace HBL2
 		// Create skybox shader.
 		const auto& skyboxShaderCode = ShaderUtilities::Get().Compile("assets/shaders/skybox.shader");
 
-		m_SkyboxVariant.blend.enabled = false;
-		m_SkyboxVariant.depthTest.writeEnabled = false;
-		m_SkyboxVariant.depthTest.depthTest = Compare::LESS_OR_EQUAL;
-		m_SkyboxVariant.cullMode = CullMode::FRONT;
-		m_SkyboxVariant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
+		m_SkyboxVariant.blendEnabled = false;
+		m_SkyboxVariant.depthWrite = false;
+		m_SkyboxVariant.depthCompare = (packed_size)Compare::LESS_OR_EQUAL;
+		m_SkyboxVariant.cullMode = (packed_size)CullMode::FRONT;
 
 		m_SkyboxShader = ResourceManager::Instance->CreateShader({
 			.debugName = "skybox-shader",
@@ -954,11 +951,10 @@ namespace HBL2
 		// Create pre-pass shaders.
 		const auto& postProcessShaderCode = ShaderUtilities::Get().Compile("assets/shaders/post-process-tone-mapping.shader");
 
-		ShaderDescriptor::RenderPipeline::Variant variant = {};
-		variant.blend.enabled = false;
-		variant.depthTest.writeEnabled = false;
-		variant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
-		variant.frontFace = FrontFace::CLOCKWISE;
+		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
+		variant.blendEnabled = false;
+		variant.depthWrite = false;
+		variant.frontFace = (packed_size)FrontFace::CLOCKWISE;
 
 		m_PostProcessShader = ResourceManager::Instance->CreateShader({
 			.debugName = "post-process-shader",
@@ -990,7 +986,7 @@ namespace HBL2
 		});
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_PostProcessMaterial);
-		mat->VariantDescriptor = variant;
+		mat->VariantHash = variant;
 	}
 
 	void ForwardSceneRenderer::DebugPassSetup()
@@ -1015,12 +1011,11 @@ namespace HBL2
 			.initialData = vertexBuffer,
 		});
 
-		ShaderDescriptor::RenderPipeline::Variant variant = {};
-		variant.blend.enabled = false;
-		variant.depthTest.enabled = false;
-		variant.depthTest.writeEnabled = true;
-		variant.frontFace = FrontFace::CLOCKWISE;
-		variant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
+		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
+		variant.blendEnabled = false;
+		variant.depthEnabled = false;
+		variant.depthWrite = true;
+		variant.frontFace = (packed_size)FrontFace::CLOCKWISE;
 
 		// Compile present shaders.
 		const auto& presentShaderCode = ShaderUtilities::Get().Compile("assets/shaders/present.shader");
@@ -1054,7 +1049,7 @@ namespace HBL2
 		});
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
-		mat->VariantDescriptor = variant;
+		mat->VariantHash = variant;
 	}
 
 	// Gathering.
@@ -1110,12 +1105,12 @@ namespace HBL2
 						alloc.Data->Color = material->AlbedoColor;
 						alloc.Data->Glossiness = material->Glossiness;
 
-						if (!material->VariantDescriptor.blend.enabled)
+						if (!material->VariantHash.blendEnabled)
 						{
 							sceneRenderData->m_StaticMeshOpaqueDraws.Insert({
 								.Shader = material->Shader,
 								.Material = staticMesh.Material,
-								.VariantHash = ResourceManager::Instance->GetShaderVariantHash(material->VariantDescriptor),
+								.VariantHash = material->VariantHash,
 								.IndexBuffer = meshPart.IndexBuffer,
 								.VertexBuffer = meshPart.VertexBuffers[0],
 								.BindGroup = material->BindGroup,
@@ -1152,7 +1147,7 @@ namespace HBL2
 							sceneRenderData->m_StaticMeshTransparentDraws.Insert({
 								.Shader = material->Shader,
 								.Material = staticMesh.Material,
-								.VariantHash = ResourceManager::Instance->GetShaderVariantHash(material->VariantDescriptor),
+								.VariantHash = material->VariantHash,
 								.IndexBuffer = meshPart.IndexBuffer,
 								.VertexBuffer = meshPart.VertexBuffers[0],
 								.BindGroup = material->BindGroup,
@@ -1217,12 +1212,12 @@ namespace HBL2
 						alloc.Data->Model = transform.WorldMatrix;
 						alloc.Data->Color = material->AlbedoColor;
 
-						if (!material->VariantDescriptor.blend.enabled)
+						if (!material->VariantHash.blendEnabled)
 						{
 							sceneRenderData->m_SpriteOpaqueDraws.Insert({
 								.Shader = material->Shader,
 								.Material = sprite.Material,
-								.VariantHash = ResourceManager::Instance->GetShaderVariantHash(material->VariantDescriptor),
+								.VariantHash = material->VariantHash,
 								.VertexBuffer = m_VertexBuffer,
 								.BindGroup = material->BindGroup,
 								.Offset = alloc.Offset,
@@ -1247,7 +1242,7 @@ namespace HBL2
 							sceneRenderData->m_SpriteTransparentDraws.Insert({
 								.Shader = material->Shader,
 								.Material = sprite.Material,
-								.VariantHash = ResourceManager::Instance->GetShaderVariantHash(material->VariantDescriptor),
+								.VariantHash = material->VariantHash,
 								.VertexBuffer = m_VertexBuffer,
 								.BindGroup = material->BindGroup,
 								.Offset = alloc.Offset,
@@ -1592,7 +1587,7 @@ namespace HBL2
 						});
 
 						Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
-						mat->VariantDescriptor = m_SkyboxVariant;
+						mat->VariantHash = m_SkyboxVariant;
 
 						skyLight.Converted = true;
 					}
@@ -1607,7 +1602,7 @@ namespace HBL2
 					draws.Insert({
 						.Shader = m_SkyboxShader,
 						.Material = skyLight.CubeMapMaterial,
-						.VariantHash = ResourceManager::Instance->GetShaderVariantHash(mat->VariantDescriptor),
+						.VariantHash = mat->VariantHash,
 						.VertexBuffer = m_CubeMeshBuffer,
 						.BindGroup = mat->BindGroup,
 						.VertexCount = 36,
@@ -1652,7 +1647,7 @@ namespace HBL2
 		draws.Insert({
 			.Shader = m_PostProcessShader,
 			.Material = m_PostProcessMaterial,
-			.VariantHash = ResourceManager::Instance->GetShaderVariantHash(mat->VariantDescriptor),
+			.VariantHash = mat->VariantHash,
 			.VertexBuffer = m_PostProcessQuadVertexBuffer,
 			.VertexCount = 6,
 		});
@@ -1695,7 +1690,7 @@ namespace HBL2
 		draws.Insert({
 			.Shader = m_PresentShader,
 			.Material = m_QuadMaterial,
-			.VariantHash = ResourceManager::Instance->GetShaderVariantHash(mat->VariantDescriptor),
+			.VariantHash = mat->VariantHash,
 			.VertexBuffer = m_QuadVertexBuffer,
 			.VertexCount = 6,
 		});

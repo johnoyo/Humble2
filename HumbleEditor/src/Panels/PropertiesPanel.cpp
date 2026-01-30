@@ -699,36 +699,52 @@ namespace HBL2
 							// Blend mode.
 							{
 								const char* options[] = { "Opaque", "Transparent" };
-								int currentItem = mat->VariantDescriptor.blend.enabled ? 1 : 0;
+								int currentItem = mat->VariantHash.blendEnabled ? 1 : 0;
 
 								if (ImGui::Combo("Blend Mode", &currentItem, options, IM_ARRAYSIZE(options)))
 								{
-									mat->VariantDescriptor.blend.enabled = currentItem == 0 ? false : true;
+									mat->VariantHash.blendEnabled = currentItem == 0 ? false : true;
 								}
 							}
 
 							// Color output.
-							ImGui::Checkbox("Color Output", &mat->VariantDescriptor.blend.colorOutput);
+							bool colorOutput = mat->VariantHash.colorOutput != 0;
+							if (ImGui::Checkbox("Color Output", &colorOutput))
+							{
+								mat->VariantHash.colorOutput = colorOutput ? 1 : 0;
+							}
 							
 							// Depth enabled.
-							ImGui::Checkbox("Depth", &mat->VariantDescriptor.depthTest.enabled);
+							bool depthEnabled = mat->VariantHash.depthEnabled != 0;
+							if (ImGui::Checkbox("Depth", &depthEnabled))
+							{
+								mat->VariantHash.depthEnabled = depthEnabled ? 1 : 0;
+							}
 							
 							// Depth test mode.
 							{
 								const char* options[] = { "Less", "Less Equal", "Greater", "Greater Equal", "Equal", "Not Equal", "Always", "Never" };
-								int currentItem = (int)mat->VariantDescriptor.depthTest.depthTest;
+								int currentItem = (int)mat->VariantHash.depthCompare;
 
 								if (ImGui::Combo("Depth Test", &currentItem, options, IM_ARRAYSIZE(options)))
 								{
-									mat->VariantDescriptor.depthTest.depthTest = (Compare)currentItem;
+									mat->VariantHash.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)(Compare)currentItem;
 								}
 							}
 
 							// Depth write mode.
-							ImGui::Checkbox("Depth Write", &mat->VariantDescriptor.depthTest.writeEnabled);
+							bool depthWrite = mat->VariantHash.depthWrite != 0;
+							if (ImGui::Checkbox("Depth Write", &depthWrite))
+							{
+								mat->VariantHash.depthWrite = depthWrite ? 1 : 0;
+							}
 
 							// Stencil enabled.
-							ImGui::Checkbox("Stencil", &mat->VariantDescriptor.depthTest.stencilEnabled);
+							bool stencil = mat->VariantHash.stencilEnabled != 0;
+							if (ImGui::Checkbox("Stencil", &stencil))
+							{
+								mat->VariantHash.stencilEnabled = stencil ? 1 : 0;
+							}
 
 							ImGui::ColorEdit4("AlbedoColor", glm::value_ptr(mat->AlbedoColor));
 							ImGui::InputFloat("Glossiness", &mat->Glossiness, 0.05f);
