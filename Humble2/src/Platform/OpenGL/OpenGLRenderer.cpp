@@ -178,6 +178,12 @@ namespace HBL2
 		if (MainDepthTexture.IsValid())
 		{
 			OpenGLTexture* openGLTexture = m_ResourceManager->GetTexture(MainDepthTexture);
+
+			if (openGLTexture == nullptr)
+			{
+				return nullptr;
+			}
+
 			return (void*)(intptr_t)openGLTexture->RendererId;
 		}
 
@@ -189,6 +195,12 @@ namespace HBL2
 		if (MainColorTexture.IsValid())
 		{
 			OpenGLTexture* openGLTexture = m_ResourceManager->GetTexture(MainColorTexture);
+
+			if (openGLTexture == nullptr)
+			{
+				return nullptr;
+			}
+
 			return (void*)(intptr_t)openGLTexture->RendererId;
 		}
 
