@@ -14,13 +14,14 @@ namespace HBL2
 			const uint64_t shaderA = a.Shader.HashKey();
 			const uint64_t shaderB = b.Shader.HashKey();
 
+			// First sort by shader.
 			if (shaderA != shaderB)
 			{
 				return shaderA < shaderB;
 			}
 
-			// Same shader -> sort by variant key
-			return a.VariantHash.Key() < b.VariantHash.Key();
+			// If they have same shader then sort by variant key.
+			return a.VariantHash < b.VariantHash;
 		});
 	}
 

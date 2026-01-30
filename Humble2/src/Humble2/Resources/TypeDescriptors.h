@@ -182,12 +182,22 @@ namespace HBL2
 
 				friend constexpr bool operator<(const PackedVariant& a, const PackedVariant& b) noexcept
 				{
-					return a.Key() < b.Key();
+					return std::bit_cast<uint64_t>(a) < std::bit_cast<uint64_t>(b);
+				}
+
+				friend constexpr bool operator<(const PackedVariant& a, const uint64_t& b) noexcept
+				{
+					return std::bit_cast<uint64_t>(a) < b;
 				}
 
 				friend constexpr bool operator==(const PackedVariant& a, const PackedVariant& b) noexcept
 				{
-					return a.Key() == b.Key();
+					return std::bit_cast<uint64_t>(a) == std::bit_cast<uint64_t>(b);
+				}
+
+				friend constexpr bool operator==(const PackedVariant& a, const uint64_t& b) noexcept
+				{
+					return std::bit_cast<uint64_t>(a) == b;
 				}
 			};
 
