@@ -124,10 +124,15 @@ namespace HBL2
 
 			// If we have a frame, consume it now.
 			FrameData* frame = nullptr;
+			int acquiredIndex = -1;
 			if (m_FrameReady[m_ReadIndex])
 			{
+				acquiredIndex = m_ReadIndex;
 				frame = &m_Frames[m_ReadIndex];
 				m_FrameReady[m_ReadIndex] = false;
+				m_FrameInUse[acquiredIndex] = true;
+
+				frame->AcquiredIndex = acquiredIndex;
 				m_ReadIndex = (m_ReadIndex + 1) % FrameCount;
 
 				// Wake game thread if it was blocked on submit.
@@ -174,7 +179,7 @@ namespace HBL2
 #endif
 	}
 
-	void Renderer::WaitAndSubmit()
+	void Renderer::WaitAndBegin()
 	{
 #if MULTITHREADING
 		std::unique_lock<std::mutex> lock(m_WorkMutex);
@@ -182,15 +187,27 @@ namespace HBL2
 		// Wait until the write slot is free.
 		m_WorkCV.wait(lock, [&]
 		{
-			return !m_FrameReady[m_WriteIndex];
+			return !m_FrameReady[m_WriteIndex] && !m_FrameInUse[m_WriteIndex];
 		});
 #endif
+		m_ReservedWriteIndex = m_WriteIndex;
+	}
+
+	void Renderer::MarkAndSubmit()
+	{
+#if MULTITHREADING
+		std::unique_lock<std::mutex> lock(m_WorkMutex);
+#endif
+		HBL2_CORE_ASSERT(m_ReservedWriteIndex != UINT32_MAX, "m_ReservedWriteIndex != UINT32_MAX");
+		HBL2_CORE_ASSERT(!m_FrameReady[m_ReservedWriteIndex], "!m_FrameReady[m_ReservedWriteIndex]");
+		HBL2_CORE_ASSERT(!m_FrameInUse[m_ReservedWriteIndex], "!m_FrameInUse[m_ReservedWriteIndex]");
 
 		// Mark frame ready.
-		m_FrameReady[m_WriteIndex] = true;
+		m_FrameReady[m_ReservedWriteIndex] = true;
 
 		// Advance write index.
-		m_WriteIndex = (m_WriteIndex + 1) % FrameCount;
+		m_WriteIndex = (m_ReservedWriteIndex + 1) % FrameCount;
+		m_ReservedWriteIndex = UINT32_MAX;
 
 		// Reset temp uniform buffer to new offset.
 		TempUniformRingBuffer->Invalidate(m_UniformRingBufferFrameOffsets[m_WriteIndex]);
@@ -215,8 +232,8 @@ namespace HBL2
 
 	void Renderer::CollectRenderData(SceneRenderer* renderer, void* renderData)
 	{
-		m_Frames[m_WriteIndex].Renderer = renderer;
-		m_Frames[m_WriteIndex].RenderData = renderData;
+		m_Frames[m_ReservedWriteIndex].Renderer = renderer;
+		m_Frames[m_ReservedWriteIndex].RenderData = renderData;
 	}
 
 	void Renderer::CollectDebugRenderData(void* renderData)
@@ -226,13 +243,23 @@ namespace HBL2
 
 	void Renderer::CollectImGuiRenderData(void* renderData, double currentTime)
 	{
-		m_Frames[m_WriteIndex].ImGuiRenderData.SnapUsingSwap((ImDrawData*)renderData, currentTime);
+		m_Frames[m_ReservedWriteIndex].ImGuiRenderData.SnapUsingSwap((ImDrawData*)renderData, currentTime);
 
 		// NOTE: This was added since we update the textures manually and prematurely to prevent an assertion
 		// caused from threaded rendering in imgui so that the render thread does not update them again.
 		// But, this caused a validation error in vk backend. If we leave this out, there is no error, but
 		// we update the textures twice which could be fine i guess. Keep an eye out for this.
-		// m_Frames[m_WriteIndex].ImGuiRenderData.DrawData.Textures = nullptr;
+		// m_Frames[m_ReservedWriteIndex].ImGuiRenderData.DrawData.Textures = nullptr;
+	}
+
+	void Renderer::ReleaseFrameSlot(int32_t acquiredIndex)
+	{
+		{
+			std::lock_guard<std::mutex> lock(m_WorkMutex);
+			m_FrameInUse[acquiredIndex] = false;
+		}
+
+		m_WorkCV.notify_one();
 	}
 
 	void Renderer::ClearFrameDataBuffer()

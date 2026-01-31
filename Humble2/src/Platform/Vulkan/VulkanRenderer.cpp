@@ -37,7 +37,7 @@ namespace HBL2
 	{
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
-			m_Frames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
+			m_VkFrames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "global-present-bind-group",
 				.layout = GetGlobalPresentBindingsLayout(),
 				.textures = { MainColorTexture },
@@ -57,7 +57,7 @@ namespace HBL2
 		{
 			for (uint32_t i = 0; i < FRAME_OVERLAP; ++i)
 			{
-				VK_VALIDATE(vkWaitForFences(m_Device->Get(), 1, &m_Frames[i].InFlightFence, VK_TRUE, UINT64_MAX), "vkWaitForFences");
+				VK_VALIDATE(vkWaitForFences(m_Device->Get(), 1, &m_VkFrames[i].InFlightFence, VK_TRUE, UINT64_MAX), "vkWaitForFences");
 			}
 
 			Resize(m_NewSize.x, m_NewSize.y);
@@ -149,18 +149,18 @@ namespace HBL2
 
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
-			VulkanBindGroup* shadowBindGroup = m_ResourceManager->GetBindGroup(m_Frames[i].ShadowBindings);
+			VulkanBindGroup* shadowBindGroup = m_ResourceManager->GetBindGroup(m_VkFrames[i].ShadowBindings);
 
 			for (auto& bufferEntry : shadowBindGroup->Buffers)
 			{
 				m_ResourceManager->DeleteBuffer(bufferEntry.buffer);
 			}
 
-			m_ResourceManager->DeleteBindGroup(m_Frames[i].ShadowBindings);
-			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalBindings2D);
-			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalBindings3D);
-			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalPresentBindings);
-			m_ResourceManager->DeleteBindGroup(m_Frames[i].DebugBindings);
+			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].ShadowBindings);
+			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].GlobalBindings2D);
+			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].GlobalBindings3D);
+			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].GlobalPresentBindings);
+			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].DebugBindings);
 		}
 
 		for (int i = 0; i < m_FrameBuffers.size(); i++)
@@ -233,7 +233,7 @@ namespace HBL2
 
 	void* VulkanRenderer::GetColorAttachment()
 	{
-		Handle<BindGroup> presentBindGroupHandle = m_Frames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalPresentBindings;
+		Handle<BindGroup> presentBindGroupHandle = m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalPresentBindings;
 		VulkanBindGroup* vkPresentBindGroup = m_ResourceManager->GetBindGroup(presentBindGroupHandle);
 		m_ColorAttachmentID = vkPresentBindGroup->DescriptorSet;
 
@@ -393,15 +393,15 @@ namespace HBL2
 		// Update descriptor sets (for the quad shader).
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
-			m_ResourceManager->DeleteBindGroup(m_Frames[i].GlobalPresentBindings);
+			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].GlobalPresentBindings);
 
-			m_Frames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
+			m_VkFrames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "global-present-bind-group",
 				.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
 				.textures = { MainColorTexture },  // Updated with new size
 			});
 
-			VulkanBindGroup* vkGlobalPresentBindings = m_ResourceManager->GetBindGroup(m_Frames[i].GlobalPresentBindings);
+			VulkanBindGroup* vkGlobalPresentBindings = m_ResourceManager->GetBindGroup(m_VkFrames[i].GlobalPresentBindings);
 			vkGlobalPresentBindings->Update();
 		}
 
@@ -549,24 +549,24 @@ namespace HBL2
 
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
-			VK_VALIDATE(vkCreateFence(m_Device->Get(), &fenceCreateInfo, nullptr, &m_Frames[i].InFlightFence), "vkCreateFence");
+			VK_VALIDATE(vkCreateFence(m_Device->Get(), &fenceCreateInfo, nullptr, &m_VkFrames[i].InFlightFence), "vkCreateFence");
 
 			//enqueue the destruction of the fence
 			m_MainDeletionQueue.PushFunction([=]()
 			{
-				vkDestroyFence(m_Device->Get(), m_Frames[i].InFlightFence, nullptr);
+				vkDestroyFence(m_Device->Get(), m_VkFrames[i].InFlightFence, nullptr);
 			});
 
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].ImageAvailableSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].MainRenderFinishedSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_Frames[i].ImGuiRenderFinishedSemaphore), "vkCreateSemaphore");
+			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_VkFrames[i].ImageAvailableSemaphore), "vkCreateSemaphore");
+			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_VkFrames[i].MainRenderFinishedSemaphore), "vkCreateSemaphore");
+			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_VkFrames[i].ImGuiRenderFinishedSemaphore), "vkCreateSemaphore");
 
 			//enqueue the destruction of semaphores
 			m_MainDeletionQueue.PushFunction([=]()
 			{
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].ImageAvailableSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].MainRenderFinishedSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_Frames[i].ImGuiRenderFinishedSemaphore, nullptr);
+				vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].ImageAvailableSemaphore, nullptr);
+				vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].MainRenderFinishedSemaphore, nullptr);
+				vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].ImGuiRenderFinishedSemaphore, nullptr);
 			});
 		}
 	}
@@ -595,7 +595,7 @@ namespace HBL2
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
 			// Primary
-			VK_VALIDATE(vkCreateCommandPool(m_Device->Get(), &commandPoolInfo, nullptr, &m_Frames[i].CommandPool), "vkCreateCommandPool");
+			VK_VALIDATE(vkCreateCommandPool(m_Device->Get(), &commandPoolInfo, nullptr, &m_VkFrames[i].CommandPool), "vkCreateCommandPool");
 
 			// Allocate the default and ImGui command buffers that we will use for regular and imgui rendering.
 			VkCommandBuffer commandBuffers[2];
@@ -603,35 +603,35 @@ namespace HBL2
 			{
 				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 				.pNext = nullptr,
-				.commandPool = m_Frames[i].CommandPool,
+				.commandPool = m_VkFrames[i].CommandPool,
 				.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 				.commandBufferCount = 2,
 			};			
 
 			VK_VALIDATE(vkAllocateCommandBuffers(m_Device->Get(), &cmdAllocInfo, commandBuffers), "vkAllocateCommandBuffers");
 
-			m_Frames[i].MainCommandBuffer = commandBuffers[0];
-			m_Frames[i].ImGuiCommandBuffer = commandBuffers[1];
+			m_VkFrames[i].MainCommandBuffer = commandBuffers[0];
+			m_VkFrames[i].ImGuiCommandBuffer = commandBuffers[1];
 
 			m_MainDeletionQueue.PushFunction([=]()
 			{
-				vkDestroyCommandPool(m_Device->Get(), m_Frames[i].CommandPool, nullptr);
+				vkDestroyCommandPool(m_Device->Get(), m_VkFrames[i].CommandPool, nullptr);
 			});
 
 			m_MainCommandBuffers[i] = VulkanCommandBuffer({
 				.type = CommandBufferType::MAIN,
-				.commandBuffer = m_Frames[i].MainCommandBuffer,
+				.commandBuffer = m_VkFrames[i].MainCommandBuffer,
 				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_Frames[i].ImageAvailableSemaphore,
-				.signalSemaphore = m_Frames[i].MainRenderFinishedSemaphore,
+				.waitSemaphore = m_VkFrames[i].ImageAvailableSemaphore,
+				.signalSemaphore = m_VkFrames[i].MainRenderFinishedSemaphore,
 			});
 
 			m_ImGuiCommandBuffers[i] = VulkanCommandBuffer({
 				.type = CommandBufferType::UI,
-				.commandBuffer = m_Frames[i].ImGuiCommandBuffer,
-				.blockFence = m_Frames[i].InFlightFence,
-				.waitSemaphore = m_Frames[i].MainRenderFinishedSemaphore,
-				.signalSemaphore = m_Frames[i].ImGuiRenderFinishedSemaphore,
+				.commandBuffer = m_VkFrames[i].ImGuiCommandBuffer,
+				.blockFence = m_VkFrames[i].InFlightFence,
+				.waitSemaphore = m_VkFrames[i].MainRenderFinishedSemaphore,
+				.signalSemaphore = m_VkFrames[i].ImGuiRenderFinishedSemaphore,
 			});
 		}
 
@@ -820,7 +820,7 @@ namespace HBL2
 				.initialData = nullptr,
 			});
 
-			m_Frames[i].GlobalBindings2D = m_ResourceManager->CreateBindGroup({
+			m_VkFrames[i].GlobalBindings2D = m_ResourceManager->CreateBindGroup({
 				.debugName = "unlit-colored-bind-group",
 				.layout = m_GlobalBindingsLayout2D,
 				.buffers = {
@@ -855,7 +855,7 @@ namespace HBL2
 				.initialData = nullptr
 			});
 
-			m_Frames[i].ShadowBindings = m_ResourceManager->CreateBindGroup({
+			m_VkFrames[i].ShadowBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "shadow-bind-group",
 				.layout = m_ShadowBindingsLayout,
 				.buffers = {
@@ -901,7 +901,7 @@ namespace HBL2
 				.initialData = nullptr,
 			});
 
-			m_Frames[i].GlobalBindings3D = m_ResourceManager->CreateBindGroup({
+			m_VkFrames[i].GlobalBindings3D = m_ResourceManager->CreateBindGroup({
 				.debugName = "global-bind-group",
 				.layout = m_GlobalBindingsLayout3D,
 				.buffers = {
@@ -945,7 +945,7 @@ namespace HBL2
 				.initialData = nullptr,
 			});
 
-		 	m_Frames[i].DebugBindings = m_ResourceManager->CreateBindGroup({
+			m_VkFrames[i].DebugBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "debug-draw-bind-group",
 				.layout = m_DebugBindingsLayout,
 				.buffers = { { .buffer = cameraBuffer } }

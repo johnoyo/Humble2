@@ -48,6 +48,7 @@ namespace HBL2
 			globalBindGroup->Set();
 		}
 
+		Handle<Shader> prevShader;
 		Handle<Buffer> prevIndexBuffer;
 		Handle<Buffer> prevVertexBuffer;
 		Handle<BindGroup> previouslyUsedBindGroup;
@@ -57,7 +58,7 @@ namespace HBL2
 		{
 			Material* material = rm->GetMaterial(draw.Material);
 
-			if (prevVariantHash != draw.VariantHash)
+			if (prevVariantHash != draw.VariantHash || prevShader != draw.Shader)
 			{
 				OpenGLShader* shader = rm->GetShader(draw.Shader);
 
@@ -70,6 +71,7 @@ namespace HBL2
 				// Bind shader
 				shader->Bind();
 
+				prevShader = draw.Shader;
 				prevVariantHash = draw.VariantHash;
 			}
 

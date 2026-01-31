@@ -341,6 +341,7 @@ namespace HBL2
 
 				BEGIN_APP_PROFILE(present);
 				Renderer::Instance->Present();
+				Renderer::Instance->ReleaseFrameSlot(frameData->AcquiredIndex);
 				END_APP_PROFILE(present, m_CurrentStats.PresentTime);
 
 				END_APP_PROFILE(renderThread, m_CurrentStats.RenderThreadTime);
@@ -364,6 +365,10 @@ namespace HBL2
 
 			SKIP_MT_FRAME();
 
+			BEGIN_APP_PROFILE(gameThreadWait);
+			Renderer::Instance->WaitAndBegin();
+			END_APP_PROFILE(gameThreadWait, m_CurrentStats.GameThreadWaitTime);
+
 			BEGIN_APP_PROFILE(debugDraw);
 			DebugRenderer::Instance->BeginFrame();
 			m_Specification.Context->OnGizmoRender(Time::DeltaTime);
@@ -381,9 +386,7 @@ namespace HBL2
 			ImGuiRenderer::Instance->EndFrame();
 			END_APP_PROFILE(appGUIDraw, m_CurrentStats.AppGuiDrawTime);
 
-			BEGIN_APP_PROFILE(gameThreadWait);
-			Renderer::Instance->WaitAndSubmit();
-			END_APP_PROFILE(gameThreadWait, m_CurrentStats.GameThreadWaitTime);
+			Renderer::Instance->MarkAndSubmit();
 
 			EndFrame();
 

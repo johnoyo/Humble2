@@ -24,15 +24,15 @@ namespace HBL2
 		void DestroyOld();
 
 		const char* DebugName = "";
-		VkRenderPass RenderPass = VK_NULL_HANDLE;
+		uint64_t PipelineLayoutHash = UINT64_MAX; // Hot
 		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE; // Hot
+
+		VkRenderPass RenderPass = VK_NULL_HANDLE;
 		VkShaderModule VertexShaderModule = VK_NULL_HANDLE;
 		VkShaderModule FragmentShaderModule = VK_NULL_HANDLE;
 		VkShaderModule ComputeShaderModule = VK_NULL_HANDLE;
 
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding> VertexBufferBindings;
-
-		uint64_t PipelineLayoutHash = UINT64_MAX;
 
 	private:
 		struct PipelineConfig

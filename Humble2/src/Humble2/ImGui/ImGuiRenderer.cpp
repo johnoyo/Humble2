@@ -14,10 +14,11 @@ namespace HBL2
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
 
 		if (Context::Mode == Mode::Editor)
 		{
+			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+
 			if (spec.EnableMultiViewports)
 			{
 				io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows

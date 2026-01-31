@@ -91,6 +91,7 @@ namespace HBL2
 		SceneRenderer* Renderer = nullptr;
 		void* RenderData = nullptr;
 		void* DebugRenderData = nullptr;
+		int32_t AcquiredIndex = -1;
 
 		ImDrawDataSnapshot ImGuiRenderData;
 	};
@@ -117,14 +118,15 @@ namespace HBL2
 
 		void Render(const FrameData& frameData);
 		FrameData* WaitAndRender();
-		void WaitAndSubmit();
+		void WaitAndBegin();
+		void MarkAndSubmit();
 		void WaitForRenderThreadIdle();
 		void CollectRenderData(SceneRenderer* renderer, void* renderData);
 		void CollectDebugRenderData(void* renderData);
 		void CollectImGuiRenderData(void* renderData, double currentTime);
+		void ReleaseFrameSlot(int32_t acquiredIndex);
 		void ClearFrameDataBuffer();
-		inline uint32_t GetFrameWriteIndex() const { return m_WriteIndex; }
-		inline uint32_t GetFrameReadIndex() const { return m_ReadIndex; }
+		inline uint32_t GetFrameWriteIndex() const { HBL2_CORE_ASSERT(m_ReservedWriteIndex != UINT32_MAX, "WriteIndex not reserved!"); return m_ReservedWriteIndex; }
 		void ResetForSceneChange();
 		void ShutdownRenderThread();
 
@@ -211,6 +213,8 @@ namespace HBL2
 		uint32_t m_UniformRingBufferFrameOffsets[FrameCount] = { 0, m_UniformRingBufferSize / 2 };
 
 		bool m_FrameReady[FrameCount] = { false, false };
+		bool m_FrameInUse[FrameCount] = { false, false };
+		uint32_t m_ReservedWriteIndex = UINT32_MAX;
 		uint32_t m_WriteIndex = 0;
 		uint32_t m_ReadIndex = 0;
 
