@@ -110,6 +110,8 @@ namespace HBL2
 
 		virtual ~Renderer() = default;
 
+		static constexpr uint32_t FrameCount = 2;
+
 		void Initialize();
 		virtual void BeginFrame() = 0;
 		virtual void EndFrame() = 0;
@@ -206,14 +208,13 @@ namespace HBL2
 		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 
 	protected:
-		static constexpr uint32_t FrameCount = 2;
 
 		FrameData m_Frames[FrameCount];
-		uint32_t m_UniformRingBufferSize = 32_MB * 2;
-		uint32_t m_UniformRingBufferFrameOffsets[FrameCount] = { 0, m_UniformRingBufferSize / 2 };
+		uint32_t m_UniformRingBufferSize = 32_MB * FrameCount;
+		uint32_t m_UniformRingBufferFrameOffsets[FrameCount];
 
-		bool m_FrameReady[FrameCount] = { false, false };
-		bool m_FrameInUse[FrameCount] = { false, false };
+		bool m_FrameReady[FrameCount];
+		bool m_FrameInUse[FrameCount];
 		uint32_t m_ReservedWriteIndex = UINT32_MAX;
 		uint32_t m_WriteIndex = 0;
 		uint32_t m_ReadIndex = 0;

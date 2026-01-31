@@ -91,7 +91,7 @@ namespace HBL2
 		UniformRingBuffer* m_UniformRingBuffer = nullptr;
 
 		Scene* m_EditorScene = nullptr;
-		SceneRenderData m_RenderData[2]{};
+		SceneRenderData m_RenderData[Renderer::FrameCount]{};
 		
 		Handle<RenderPassLayout> m_RenderPassLayout;
 

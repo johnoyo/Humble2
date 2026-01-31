@@ -13,6 +13,18 @@ namespace HBL2
 
 	void Renderer::Initialize()
 	{
+		uint32_t offset = 0;
+		uint32_t singleUBSize = m_UniformRingBufferSize / FrameCount;
+
+		for (int i = 0; i < FrameCount; i++)
+		{
+			m_FrameReady[i] = false;
+			m_FrameInUse[i] = false;
+			m_UniformRingBufferFrameOffsets[i] = offset;
+
+			offset += singleUBSize;
+		}
+
 		PreInitialize();
 
 		TempUniformRingBuffer = new UniformRingBuffer(m_UniformRingBufferSize, Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
@@ -238,7 +250,7 @@ namespace HBL2
 
 	void Renderer::CollectDebugRenderData(void* renderData)
 	{
-		m_Frames[m_WriteIndex].DebugRenderData = renderData;
+		m_Frames[m_ReservedWriteIndex].DebugRenderData = renderData;
 	}
 
 	void Renderer::CollectImGuiRenderData(void* renderData, double currentTime)
@@ -274,13 +286,15 @@ namespace HBL2
 
 	void Renderer::ResetForSceneChange()
 	{
-		for (int i = 0; i < FrameCount; ++i)
+		for (int i = 0; i < FrameCount; i++)
 		{
 			m_FrameReady[i] = false;
+			m_FrameInUse[i] = false;
 		}
 
 		m_ReadIndex = 0;
 		m_WriteIndex = 0;
+		m_ReservedWriteIndex = UINT32_MAX;
 	}
 
 	void Renderer::ShutdownRenderThread()

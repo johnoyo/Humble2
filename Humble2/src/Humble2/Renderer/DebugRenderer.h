@@ -97,6 +97,6 @@ namespace HBL2
 		Handle<Buffer> m_DebugFillTriVertexBuffer;
 		Handle<Buffer> m_DebugWireTriVertexBuffer;
 
-		DebugRenderData m_RenderData[2];
+		DebugRenderData m_RenderData[Renderer::FrameCount];
 	};
 }
