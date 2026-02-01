@@ -43,7 +43,9 @@ namespace HBL2
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override;
 		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
 		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) override;
-		VulkanBuffer* GetBuffer(Handle<Buffer> handle) const;
+		VulkanBuffer GetBuffer(Handle<Buffer> handle) const;
+		VulkanBufferHot* GetBufferHot(Handle<Buffer> handle) const;
+		VulkanBufferCold* GetBufferCold(Handle<Buffer> handle) const;
 
 		// Framebuffers
 		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) override;
@@ -86,7 +88,7 @@ namespace HBL2
 
 	private:
 		Pool<VulkanTexture, Texture> m_TexturePool;
-		Pool<VulkanBuffer, Buffer> m_BufferPool;
+		SplitPool<VulkanBufferHot, VulkanBufferCold, Buffer> m_BufferSplitPool;
 		SplitPool<VulkanShaderHot, VulkanShaderCold, Shader> m_ShaderSplitPool;
 		Pool<VulkanFrameBuffer, FrameBuffer> m_FrameBufferPool;
 		SplitPool<VulkanBindGroupHot, VulkanBindGroupCold, BindGroup> m_BindGroupSplitPool;

@@ -25,7 +25,7 @@ namespace HBL2
 			// Map global buffers per frame data (i.e.: Camera and lighting data)
 			for (const auto& bufferEntry : globalBindGroupCold->Buffers)
 			{
-				VulkanBuffer* buffer = rm->GetBuffer(bufferEntry.buffer);
+				VulkanBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
 
 				void* data;
 				vmaMapMemory(renderer->GetAllocator(), buffer->Allocation, &data);
@@ -72,7 +72,7 @@ namespace HBL2
 			{
 				if (draw.IndexBuffer.IsValid())
 				{
-					VulkanBuffer* indexBuffer = rm->GetBuffer(draw.IndexBuffer);
+					VulkanBufferHot* indexBuffer = rm->GetBufferHot(draw.IndexBuffer);
 					vkCmdBindIndexBuffer(m_CommandBuffer, indexBuffer->Buffer, 0, VK_INDEX_TYPE_UINT32);
 
 					prevIndexBuffer = draw.IndexBuffer;
@@ -82,7 +82,7 @@ namespace HBL2
 			// Bind the vertex buffer if needed.
 			if (prevVertexBuffer != draw.VertexBuffer)
 			{
-				VulkanBuffer* vertexBuffer = rm->GetBuffer(draw.VertexBuffer);
+				VulkanBufferHot* vertexBuffer = rm->GetBufferHot(draw.VertexBuffer);
 				VkDeviceSize offsets[] = { 0 };
 				vkCmdBindVertexBuffers(m_CommandBuffer, 0, 1, &vertexBuffer->Buffer, offsets);
 				prevVertexBuffer = draw.VertexBuffer;

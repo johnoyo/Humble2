@@ -83,7 +83,7 @@ namespace HBL2
 
 		for (int i = 0; i < Cold->Buffers.size(); i++)
 		{
-			VulkanBuffer* buffer = rm->GetBuffer(Cold->Buffers[i].buffer);
+			VulkanBufferHot* buffer = rm->GetBufferHot(Cold->Buffers[i].buffer);
 
 			descriptorBufferInfo[i] =
 			{

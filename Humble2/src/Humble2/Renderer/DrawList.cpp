@@ -26,17 +26,26 @@ namespace HBL2
 	{
 		std::sort(m_Draws.begin(), m_Draws.end(), [](const LocalDrawStream& a, const LocalDrawStream& b)
 		{
-			const uint64_t shaderA = a.Shader.HashKey();
-			const uint64_t shaderB = b.Shader.HashKey();
-
 			// First sort by shader.
+			const uint32_t shaderA = a.Shader.HashKey();
+			const uint32_t shaderB = b.Shader.HashKey();
+
 			if (shaderA != shaderB)
 			{
 				return shaderA < shaderB;
 			}
 
-			// If they have same shader then sort by variant key.
-			return a.VariantHandle < b.VariantHandle;
+			// If they have same shader, then sort by variant key.
+			if (a.VariantHandle != b.VariantHandle)
+			{
+				return a.VariantHandle < b.VariantHandle;
+			}
+
+			// Then, order by index buffer.
+			const uint32_t ibA = a.IndexBuffer.HashKey();
+			const uint32_t ibB = b.IndexBuffer.HashKey();
+
+			return ibA < ibB;
 		});
 	}
 

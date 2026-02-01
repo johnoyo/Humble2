@@ -5,7 +5,7 @@ namespace HBL2
 	void VulkanResourceManager::Initialize()
 	{
 		m_TexturePool.Initialize(128);
-		m_BufferPool.Initialize(512);
+		m_BufferSplitPool.Initialize(512);
 		m_ShaderSplitPool.Initialize(64);
 		m_FrameBufferPool.Initialize(32);
 		m_BindGroupSplitPool.Initialize(64);
@@ -73,32 +73,35 @@ namespace HBL2
 	// Buffers
 	Handle<Buffer> VulkanResourceManager::CreateBuffer(const BufferDescriptor&& desc)
 	{
-		return m_BufferPool.Insert(std::forward<const BufferDescriptor>(desc));
+		VulkanBuffer buffer;
+		Handle<Buffer> bufferHandle = m_BufferSplitPool.Insert(&buffer.Hot, &buffer.Cold);
+		buffer.Initialize(std::forward<const BufferDescriptor>(desc));
+		return bufferHandle;
 	}
 	void VulkanResourceManager::DeleteBuffer(Handle<Buffer> handle)
 	{
 		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 		{
-			VulkanBuffer* buffer = GetBuffer(handle);
-			if (buffer != nullptr)
+			VulkanBuffer buffer = GetBuffer(handle);
+			if (buffer.IsValid())
 			{
-				buffer->Destroy();
-				m_BufferPool.Remove(handle);
+				buffer.Destroy();
+				m_BufferSplitPool.Remove(handle);
 			}
 		});
 	}
 	void VulkanResourceManager::ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset)
 	{
-		VulkanBuffer* buffer = GetBuffer(handle);
-		buffer->ReAllocate(currentOffset);
+		VulkanBuffer buffer = GetBuffer(handle);
+		buffer.ReAllocate(currentOffset);
 	}
 	void* VulkanResourceManager::GetBufferData(Handle<Buffer> handle)
 	{
-		return m_BufferPool.Get(handle)->Data;
+		return GetBufferHot(handle)->Data;
 	}
 	void VulkanResourceManager::SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData)
 	{
-		VulkanBuffer* vulkanBuffer = GetBuffer(buffer);
+		VulkanBufferHot* vulkanBuffer = GetBufferHot(buffer);
 		vulkanBuffer->Data = (void*)((char*)newData + offset);
 	}
 	void VulkanResourceManager::SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData)
@@ -113,7 +116,7 @@ namespace HBL2
 	{
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 
-		VulkanBuffer* vulkanBuffer = GetBuffer(buffer);
+		VulkanBufferHot* vulkanBuffer = GetBufferHot(buffer);
 
 		if (vulkanBuffer == nullptr)
 		{
@@ -125,9 +128,23 @@ namespace HBL2
 		memcpy((void*)((char*)data + offset), (void*)((char*)vulkanBuffer->Data + offset), size);
 		vmaUnmapMemory(renderer->GetAllocator(), vulkanBuffer->Allocation);
 	}
-	VulkanBuffer* VulkanResourceManager::GetBuffer(Handle<Buffer> handle) const
+	VulkanBuffer VulkanResourceManager::GetBuffer(Handle<Buffer> handle) const
 	{
-		return m_BufferPool.Get(handle);
+		VulkanBuffer buffer;
+		if (m_BufferSplitPool.Get(handle, &buffer.Hot, &buffer.Cold))
+		{
+			return buffer;
+		}
+
+		return {};
+	}
+	VulkanBufferHot* VulkanResourceManager::GetBufferHot(Handle<Buffer> handle) const
+	{
+		return m_BufferSplitPool.GetHot(handle);
+	}
+	VulkanBufferCold* VulkanResourceManager::GetBufferCold(Handle<Buffer> handle) const
+	{
+		return m_BufferSplitPool.GetCold(handle);
 	}
 
 	// Framebuffers

@@ -144,15 +144,16 @@ namespace HBL2
 
 		for (auto& buffer : m_BuffersWrite)
 		{
-			VulkanBuffer* vkBuffer = rm->GetBuffer(buffer);
+			VulkanBufferHot* vkBufferHot = rm->GetBufferHot(buffer);
+			VulkanBufferCold* vkBufferCold = rm->GetBufferCold(buffer);
 
 			VkBufferMemoryBarrier barrier = {};
 			barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT; // Fix
 			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT; // Fix
-			barrier.buffer = vkBuffer->Buffer;
-			barrier.offset = vkBuffer->ByteOffset;
-			barrier.size = vkBuffer->ByteSize;
+			barrier.buffer = vkBufferHot->Buffer;
+			barrier.offset = vkBufferCold->ByteOffset;
+			barrier.size = vkBufferHot->ByteSize;
 
 			bufferBarriers[index++] = barrier;
 		}

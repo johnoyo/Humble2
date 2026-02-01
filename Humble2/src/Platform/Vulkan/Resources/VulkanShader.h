@@ -12,8 +12,8 @@ namespace HBL2
 {
 	struct VulkanShaderHot
 	{
-		uint64_t PipelineLayoutHash = UINT64_MAX; // Hot
-		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE; // Hot
+		uint64_t PipelineLayoutHash = UINT64_MAX;
+		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
 
 		void Destroy();
 	};

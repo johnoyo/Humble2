@@ -12,7 +12,7 @@ namespace HBL2
 {
 	struct VulkanBindGroupHot
 	{
-		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE; // Hot
+		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE;
 	};
 
 	struct VulkanBindGroupCold
