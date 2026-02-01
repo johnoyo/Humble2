@@ -21,7 +21,7 @@ namespace HBL2
 			}
 
 			// If they have same shader then sort by variant key.
-			return a.VariantHash < b.VariantHash;
+			return a.VariantHandle < b.VariantHandle;
 		});
 	}
 

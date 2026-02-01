@@ -1110,7 +1110,7 @@ namespace HBL2
 							sceneRenderData->m_StaticMeshOpaqueDraws.Insert({
 								.Shader = material->Shader,
 								.Material = staticMesh.Material,
-								.VariantHash = material->VariantHash,
+								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.IndexBuffer = meshPart.IndexBuffer,
 								.VertexBuffer = meshPart.VertexBuffers[0],
 								.BindGroup = material->BindGroup,
@@ -1128,7 +1128,7 @@ namespace HBL2
 							sceneRenderData->m_PrePassStaticMeshDraws.Insert({
 								.Shader = m_DepthOnlyShader,
 								.Material = m_DepthOnlyMaterial,
-								.VariantHash = m_DepthOnlyMaterialHash,
+								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlyShader, m_DepthOnlyMaterialHash),
 								.IndexBuffer = meshPart.IndexBuffer,
 								.VertexBuffer = meshPart.VertexBuffers[0],
 								.BindGroup = m_DepthOnlyMeshBindGroup,
@@ -1147,7 +1147,7 @@ namespace HBL2
 							sceneRenderData->m_StaticMeshTransparentDraws.Insert({
 								.Shader = material->Shader,
 								.Material = staticMesh.Material,
-								.VariantHash = material->VariantHash,
+								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.IndexBuffer = meshPart.IndexBuffer,
 								.VertexBuffer = meshPart.VertexBuffers[0],
 								.BindGroup = material->BindGroup,
@@ -1167,7 +1167,7 @@ namespace HBL2
 							sceneRenderData->m_ShadowPassStaticMeshDraws.Insert({
 								.Shader = m_ShadowPrePassShader,
 								.Material = m_ShadowPrePassMaterial,
-								.VariantHash = m_ShadowPrePassMaterialHash,
+								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_ShadowPrePassShader, m_ShadowPrePassMaterialHash),
 								.IndexBuffer = meshPart.IndexBuffer,
 								.VertexBuffer = meshPart.VertexBuffers[0],
 								.BindGroup = m_DepthOnlyMeshBindGroup,
@@ -1217,7 +1217,7 @@ namespace HBL2
 							sceneRenderData->m_SpriteOpaqueDraws.Insert({
 								.Shader = material->Shader,
 								.Material = sprite.Material,
-								.VariantHash = material->VariantHash,
+								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.VertexBuffer = m_VertexBuffer,
 								.BindGroup = material->BindGroup,
 								.Offset = alloc.Offset,
@@ -1229,7 +1229,7 @@ namespace HBL2
 							sceneRenderData->m_PrePassSpriteDraws.Insert({
 								.Shader = m_DepthOnlySpriteShader,
 								.Material = m_DepthOnlySpriteMaterial,
-								.VariantHash = m_DepthOnlySpriteMaterialHash,
+								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlySpriteShader, m_DepthOnlySpriteMaterialHash),
 								.VertexBuffer = m_VertexBuffer,
 								.BindGroup = m_DepthOnlySpriteBindGroup,
 								.Offset = alloc.Offset,
@@ -1242,7 +1242,7 @@ namespace HBL2
 							sceneRenderData->m_SpriteTransparentDraws.Insert({
 								.Shader = material->Shader,
 								.Material = sprite.Material,
-								.VariantHash = material->VariantHash,
+								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.VertexBuffer = m_VertexBuffer,
 								.BindGroup = material->BindGroup,
 								.Offset = alloc.Offset,
@@ -1602,7 +1602,7 @@ namespace HBL2
 					draws.Insert({
 						.Shader = m_SkyboxShader,
 						.Material = skyLight.CubeMapMaterial,
-						.VariantHash = mat->VariantHash,
+						.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_SkyboxShader, mat->VariantHash),
 						.VertexBuffer = m_CubeMeshBuffer,
 						.BindGroup = mat->BindGroup,
 						.VertexCount = 36,
@@ -1647,7 +1647,7 @@ namespace HBL2
 		draws.Insert({
 			.Shader = m_PostProcessShader,
 			.Material = m_PostProcessMaterial,
-			.VariantHash = mat->VariantHash,
+			.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_PostProcessShader, mat->VariantHash),
 			.VertexBuffer = m_PostProcessQuadVertexBuffer,
 			.VertexCount = 6,
 		});
@@ -1690,7 +1690,7 @@ namespace HBL2
 		draws.Insert({
 			.Shader = m_PresentShader,
 			.Material = m_QuadMaterial,
-			.VariantHash = mat->VariantHash,
+			.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_PresentShader, mat->VariantHash),
 			.VertexBuffer = m_QuadVertexBuffer,
 			.VertexCount = 6,
 		});

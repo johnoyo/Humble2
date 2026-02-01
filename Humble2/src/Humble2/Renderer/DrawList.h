@@ -18,7 +18,7 @@ namespace HBL2
 	{
 		Handle<Shader> Shader;
 		Handle<Material> Material;
-		ShaderDescriptor::RenderPipeline::PackedVariant VariantHash = g_NullVariant;
+		uint64_t VariantHandle = 0;
 
 		Handle<Buffer> IndexBuffer;
 		Handle<Buffer> VertexBuffer;

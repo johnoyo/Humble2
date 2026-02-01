@@ -232,7 +232,7 @@ namespace HBL2
 			renderData->Draws.Insert({
 				.Shader = m_DebugShader,
 				.Material = m_DebugLineMaterial,
-				.VariantHash = m_DebugLineMaterialVariantHash,
+				.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DebugShader, m_DebugLineMaterialVariantHash),
 				.VertexBuffer = m_DebugLineVertexBuffer,
 				.VertexCount = renderData->CurrentLineIndex,
 			});
@@ -245,7 +245,7 @@ namespace HBL2
 			renderData->Draws.Insert({
 				.Shader = m_DebugShader,
 				.Material = m_DebugFillMaterial,
-				.VariantHash = m_DebugFillMaterialVariantHash,
+				.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DebugShader, m_DebugFillMaterialVariantHash),
 				.VertexBuffer = m_DebugFillTriVertexBuffer,
 				.VertexCount = renderData->CurrentFillIndex,
 			});
@@ -258,7 +258,7 @@ namespace HBL2
 			renderData->Draws.Insert({
 				.Shader = m_DebugShader,
 				.Material = m_DebugWireMaterial,
-				.VariantHash = m_DebugWireMaterialVariantHash,
+				.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DebugShader, m_DebugWireMaterialVariantHash),
 				.VertexBuffer = m_DebugWireTriVertexBuffer,
 				.VertexCount = renderData->CurrentWireIndex,
 			});
