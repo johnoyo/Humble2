@@ -300,7 +300,7 @@ namespace HBL2
 		JobContext m_ResourceJobCtx;
 		Pool<Asset, Asset> m_AssetPool;
 		std::optional<HMap<UUID, Handle<Asset>>> m_RegisteredAssetMap;
-		std::optional < DArray<Handle<Asset>>> m_RegisteredAssets;
+		std::optional<DArray<Handle<Asset>>> m_RegisteredAssets;
 
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_PoolArena;

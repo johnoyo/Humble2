@@ -40,6 +40,7 @@ namespace HBL2
 
 	DrawList ScriptableRenderPass::GetDraws()
 	{
+		// TODO: Fix draw list handling, we need an arena.
 		DrawList drawList;
 
 		drawList.Insert({

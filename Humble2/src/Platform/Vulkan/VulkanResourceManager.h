@@ -56,7 +56,9 @@ namespace HBL2
 		virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) override;
 		virtual void DeleteShader(Handle<Shader> handle) override;
 		virtual uint64_t GetOrAddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc) override;
-		VulkanShader* GetShader(Handle<Shader> handle) const;
+		VulkanShader GetShader(Handle<Shader> handle) const;
+		VulkanShaderHot* GetShaderHot(Handle<Shader> handle) const;
+		VulkanShaderCold* GetShaderCold(Handle<Shader> handle) const;
 
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) override;
@@ -85,7 +87,7 @@ namespace HBL2
 	private:
 		Pool<VulkanTexture, Texture> m_TexturePool;
 		Pool<VulkanBuffer, Buffer> m_BufferPool;
-		Pool<VulkanShader, Shader> m_ShaderPool;
+		SplitPool<VulkanShaderHot, VulkanShaderCold, Shader> m_ShaderSplitPool;
 		Pool<VulkanFrameBuffer, FrameBuffer> m_FrameBufferPool;
 		SplitPool<VulkanBindGroupHot, VulkanBindGroupCold, BindGroup> m_BindGroupSplitPool;
 		Pool<VulkanBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;

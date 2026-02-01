@@ -5,12 +5,13 @@
 
 namespace HBL2
 {
-	VulkanShader::VulkanShader(const ShaderDescriptor&& desc)
+	void VulkanShaderHot::Destroy()
 	{
-		Recompile(std::forward<const ShaderDescriptor>(desc));
+		VulkanDevice* device = (VulkanDevice*)Device::Instance;
+		vkDestroyPipelineLayout(device->Get(), PipelineLayout, nullptr);
 	}
 
-	VkPipeline VulkanShader::Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex, bool forceCreateNewAndRemoveOld)
+	VkPipeline VulkanShaderCold::Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex, bool forceCreateNewAndRemoveOld)
 	{
 		uint32_t n = m_Count.load(std::memory_order_acquire);
 
@@ -26,158 +27,13 @@ namespace HBL2
 		return VK_NULL_HANDLE;
 	}
 
-	VkPipeline VulkanShader::GetOrCreateVariant(ShaderDescriptor::RenderPipeline::PackedVariant key)
-	{
-		return GetOrCreatePipeline({
-			.shaderModules = { VertexShaderModule, FragmentShaderModule },
-			.entryPoints = { "main", "main" },
-			.shaderModuleCount = 2,
-			.variantDesc = key,
-			.pipelineLayout = PipelineLayout,
-			.renderPass = RenderPass,
-			.vertexBufferBindings = VertexBufferBindings,
-		});
-	}
-
-	VkPipeline VulkanShader::GetOrCreateComputeVariant(ShaderDescriptor::RenderPipeline::PackedVariant key)
-	{
-		return GetOrCreatePipeline({
-			.shaderModules = { ComputeShaderModule, VK_NULL_HANDLE },
-			.entryPoints = { "main", "" },
-			.shaderModuleCount = 1,
-			.variantDesc = key,
-			.pipelineLayout = PipelineLayout,
-			.renderPass = RenderPass,
-			.vertexBufferBindings = VertexBufferBindings,
-		});
-	}
-	
-	void VulkanShader::Recompile(const ShaderDescriptor&& desc, bool removeVariants)
-	{
-		VulkanDevice* device = (VulkanDevice*)Device::Instance;
-		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
-		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
-
-		m_OldVertexShaderModule = VertexShaderModule;
-		m_OldFragmentShaderModule = FragmentShaderModule;
-		m_OldComputeShaderModule = ComputeShaderModule;
-		m_OldPipelineLayout = PipelineLayout;
-
-		DebugName = desc.debugName;
-		VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
-		RenderPass = rm->GetRenderPass(desc.renderPass)->RenderPass;
-
-		StaticArray<VkShaderModule, 2> shaderModules{};
-		StaticArray<const char*, 2> entryPoints{};
-		uint32_t shaderModuleCount = 0;
-
-		if (desc.type == ShaderType::RASTERIZATION)
-		{
-			// Vertex shader module.
-			{
-				VkShaderModuleCreateInfo createInfo =
-				{
-					.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-					.pNext = nullptr,
-					.codeSize = 4 * desc.VS.code.Size(),
-					.pCode = reinterpret_cast<const uint32_t*>(desc.VS.code.Data()),
-				};
-				VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &VertexShaderModule), "vkCreateShaderModule");
-			}
-
-			// Fragment shader module.
-			{
-				VkShaderModuleCreateInfo createInfo =
-				{
-					.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-					.pNext = nullptr,
-					.codeSize = 4 * desc.FS.code.Size(),
-					.pCode = reinterpret_cast<const uint32_t*>(desc.FS.code.Data()),
-				};
-				VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &FragmentShaderModule), "vkCreateShaderModule");
-			}
-
-			entryPoints[0] = desc.VS.entryPoint;
-			shaderModules[0] = VertexShaderModule;
-			entryPoints[1] = desc.FS.entryPoint;
-			shaderModules[1] = FragmentShaderModule;
-			shaderModuleCount = 2;
-		}
-		else
-		{
-			VkShaderModuleCreateInfo createInfo =
-			{
-				.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-				.pNext = nullptr,
-				.codeSize = 4 * desc.CS.code.Size(),
-				.pCode = reinterpret_cast<const uint32_t*>(desc.CS.code.Data()),
-			};
-			VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &ComputeShaderModule), "vkCreateShaderModule");
-
-			entryPoints[0] = desc.CS.entryPoint;
-			shaderModules[0] = ComputeShaderModule;
-			entryPoints[1] = "";
-			shaderModules[1] = VK_NULL_HANDLE;
-			shaderModuleCount = 1;
-		}
-
-		// Pipeline layout.
-		std::vector<VkDescriptorSetLayout> setLayouts;
-
-		for (const auto& bindGroup : desc.bindGroups)
-		{
-			if (bindGroup.IsValid())
-			{
-				VulkanBindGroupLayout* vkBindGroupLayout = rm->GetBindGroupLayout(bindGroup);
-				setLayouts.push_back(vkBindGroupLayout->DescriptorSetLayout);
-			}
-		}
-
-		if (!setLayouts.empty())
-		{
-			PipelineLayoutHash = (uint64_t)setLayouts[0];
-		}
-
-		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
-		{
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-			.pNext = nullptr,
-			.flags = 0,
-			.setLayoutCount = (uint32_t)setLayouts.size(),
-			.pSetLayouts = setLayouts.data(),
-			.pushConstantRangeCount = 0,
-			.pPushConstantRanges = nullptr,
-		};
-
-		VK_VALIDATE(vkCreatePipelineLayout(device->Get(), &pipelineLayoutCreateInfo, nullptr, &PipelineLayout), "vkCreatePipelineLayout");
-
-		// Create shader variants.
-		for (const auto& variant : desc.renderPipeline.variants)
-		{
-			const PipelineConfig pipelineConfig =
-			{
-				.shaderModules = shaderModules,
-				.entryPoints = entryPoints,
-				.shaderModuleCount = shaderModuleCount,
-				.variantDesc = variant,
-				.pipelineLayout = PipelineLayout,
-				.renderPass = RenderPass,
-				.vertexBufferBindings = VertexBufferBindings,
-			};
-
-			GetOrCreatePipeline(pipelineConfig, removeVariants);
-		}
-	}
-
-	void VulkanShader::Destroy()
+	void VulkanShaderCold::Destroy()
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 
 		vkDestroyShaderModule(device->Get(), VertexShaderModule, nullptr);
 		vkDestroyShaderModule(device->Get(), FragmentShaderModule, nullptr);
 		vkDestroyShaderModule(device->Get(), ComputeShaderModule, nullptr);
-
-		vkDestroyPipelineLayout(device->Get(), PipelineLayout, nullptr);
 
 		for (const auto& variantEntry : m_Entries)
 		{
@@ -190,7 +46,7 @@ namespace HBL2
 		}
 	}
 
-	void VulkanShader::DestroyOld()
+	void VulkanShaderCold::DestroyOld()
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 
@@ -201,7 +57,7 @@ namespace HBL2
 		vkDestroyPipelineLayout(device->Get(), m_OldPipelineLayout, nullptr);
 	}
 
-	VkPipeline VulkanShader::GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld)
+	VkPipeline VulkanShaderCold::GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld)
 	{
 		VkPipeline p = VK_NULL_HANDLE;
 		uint32_t pipelineIndex = UINT32_MAX;
@@ -274,7 +130,7 @@ namespace HBL2
 		return p;
 	}
 
-	VkPipeline VulkanShader::CreatePipeline(const PipelineConfig& config)
+	VkPipeline VulkanShaderCold::CreatePipeline(const PipelineConfig& config)
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
@@ -507,7 +363,7 @@ namespace HBL2
 		return pipeline;
 	}
 
-	VkPipeline VulkanShader::CreateComputePipeline(const PipelineConfig& config)
+	VkPipeline VulkanShaderCold::CreateComputePipeline(const PipelineConfig& config)
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 
@@ -536,5 +392,194 @@ namespace HBL2
 		}
 
 		return computePipeline;
+	}
+
+	bool VulkanShader::IsValid() const
+	{
+		return Cold != nullptr && Hot != nullptr;
+	}
+
+	void VulkanShader::Initialize(const ShaderDescriptor&& desc)
+	{
+		Recompile(std::forward<const ShaderDescriptor>(desc));
+	}
+
+	VkPipeline VulkanShader::GetOrCreateVariant(ShaderDescriptor::RenderPipeline::PackedVariant key)
+	{
+		if (!IsValid())
+		{
+			return VK_NULL_HANDLE;
+		}
+
+		return Cold->GetOrCreatePipeline({
+			.shaderModules = { Cold->VertexShaderModule, Cold->FragmentShaderModule },
+			.entryPoints = { "main", "main" },
+			.shaderModuleCount = 2,
+			.variantDesc = key,
+			.pipelineLayout = Hot->PipelineLayout,
+			.renderPass = Cold->RenderPass,
+			.vertexBufferBindings = Cold->VertexBufferBindings,
+		});
+	}
+
+	VkPipeline VulkanShader::GetOrCreateComputeVariant(ShaderDescriptor::RenderPipeline::PackedVariant key)
+	{
+		if (!IsValid())
+		{
+			return VK_NULL_HANDLE;
+		}
+
+		return Cold->GetOrCreatePipeline({
+			.shaderModules = { Cold->ComputeShaderModule, VK_NULL_HANDLE },
+			.entryPoints = { "main", "" },
+			.shaderModuleCount = 1,
+			.variantDesc = key,
+			.pipelineLayout = Hot->PipelineLayout,
+			.renderPass = Cold->RenderPass,
+			.vertexBufferBindings = Cold->VertexBufferBindings,
+		});
+	}
+	
+	void VulkanShader::Recompile(const ShaderDescriptor&& desc, bool removeVariants)
+	{
+		if (!IsValid())
+		{
+			return;
+		}
+
+		VulkanDevice* device = (VulkanDevice*)Device::Instance;
+		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
+		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
+
+		Cold->m_OldVertexShaderModule = Cold->VertexShaderModule;
+		Cold->m_OldFragmentShaderModule = Cold->FragmentShaderModule;
+		Cold->m_OldComputeShaderModule = Cold->ComputeShaderModule;
+		Cold->m_OldPipelineLayout = Hot->PipelineLayout;
+
+		Cold->DebugName = desc.debugName;
+		Cold->VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
+		Cold->RenderPass = rm->GetRenderPass(desc.renderPass)->RenderPass;
+
+		std::array<VkShaderModule, 2> shaderModules{};
+		std::array<const char*, 2> entryPoints{};
+		uint32_t shaderModuleCount = 0;
+
+		if (desc.type == ShaderType::RASTERIZATION)
+		{
+			// Vertex shader module.
+			{
+				VkShaderModuleCreateInfo createInfo =
+				{
+					.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+					.pNext = nullptr,
+					.codeSize = 4 * desc.VS.code.Size(),
+					.pCode = reinterpret_cast<const uint32_t*>(desc.VS.code.Data()),
+				};
+				VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &Cold->VertexShaderModule), "vkCreateShaderModule");
+			}
+
+			// Fragment shader module.
+			{
+				VkShaderModuleCreateInfo createInfo =
+				{
+					.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+					.pNext = nullptr,
+					.codeSize = 4 * desc.FS.code.Size(),
+					.pCode = reinterpret_cast<const uint32_t*>(desc.FS.code.Data()),
+				};
+				VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &Cold->FragmentShaderModule), "vkCreateShaderModule");
+			}
+
+			entryPoints[0] = desc.VS.entryPoint;
+			shaderModules[0] = Cold->VertexShaderModule;
+			entryPoints[1] = desc.FS.entryPoint;
+			shaderModules[1] = Cold->FragmentShaderModule;
+			shaderModuleCount = 2;
+		}
+		else
+		{
+			VkShaderModuleCreateInfo createInfo =
+			{
+				.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+				.pNext = nullptr,
+				.codeSize = 4 * desc.CS.code.Size(),
+				.pCode = reinterpret_cast<const uint32_t*>(desc.CS.code.Data()),
+			};
+			VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &Cold->ComputeShaderModule), "vkCreateShaderModule");
+
+			entryPoints[0] = desc.CS.entryPoint;
+			shaderModules[0] = Cold->ComputeShaderModule;
+			entryPoints[1] = "";
+			shaderModules[1] = VK_NULL_HANDLE;
+			shaderModuleCount = 1;
+		}
+
+		// Pipeline layout.
+		std::vector<VkDescriptorSetLayout> setLayouts;
+
+		for (const auto& bindGroup : desc.bindGroups)
+		{
+			if (bindGroup.IsValid())
+			{
+				VulkanBindGroupLayout* vkBindGroupLayout = rm->GetBindGroupLayout(bindGroup);
+				setLayouts.push_back(vkBindGroupLayout->DescriptorSetLayout);
+			}
+		}
+
+		if (!setLayouts.empty())
+		{
+			Hot->PipelineLayoutHash = (uint64_t)setLayouts[0];
+		}
+
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.setLayoutCount = (uint32_t)setLayouts.size(),
+			.pSetLayouts = setLayouts.data(),
+			.pushConstantRangeCount = 0,
+			.pPushConstantRanges = nullptr,
+		};
+
+		VK_VALIDATE(vkCreatePipelineLayout(device->Get(), &pipelineLayoutCreateInfo, nullptr, &Hot->PipelineLayout), "vkCreatePipelineLayout");
+
+		// Create shader variants.
+		for (const auto& variant : desc.renderPipeline.variants)
+		{
+			const VulkanShaderCold::PipelineConfig pipelineConfig =
+			{
+				.shaderModules = shaderModules,
+				.entryPoints = entryPoints,
+				.shaderModuleCount = shaderModuleCount,
+				.variantDesc = variant,
+				.pipelineLayout = Hot->PipelineLayout,
+				.renderPass = Cold->RenderPass,
+				.vertexBufferBindings = Cold->VertexBufferBindings,
+			};
+
+			Cold->GetOrCreatePipeline(pipelineConfig, removeVariants);
+		}
+	}
+
+	void VulkanShader::Destroy()
+	{
+		if (!IsValid())
+		{
+			return;
+		}
+
+		Hot->Destroy();
+		Cold->Destroy();
+	}
+
+	void VulkanShader::DestroyOld()
+	{
+		if (!IsValid())
+		{
+			return;
+		}
+
+		Cold->DestroyOld();
 	}
 }

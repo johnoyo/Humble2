@@ -178,6 +178,8 @@ namespace HBL2
 		m_ResourceManager->DeleteTexture(m_DepthImage);
 
 		TempUniformRingBuffer->Free();
+		delete TempUniformRingBuffer;
+		TempUniformRingBuffer = nullptr;
 
 		m_ResourceManager->FlushAll();
 

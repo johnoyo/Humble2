@@ -43,7 +43,7 @@ namespace HBL2
 
 		for (const auto& draw : draws.GetDraws())
 		{
-			VulkanShader* shader = rm->GetShader(draw.Shader);
+			VulkanShaderHot* shader = rm->GetShaderHot(draw.Shader);
 
 			if (prevVariantHash != draw.VariantHandle || prevShader != draw.Shader)
 			{

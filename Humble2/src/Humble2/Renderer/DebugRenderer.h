@@ -32,15 +32,15 @@ namespace HBL2
 		DrawList Draws;
 
 		uint32_t CurrentLineIndex = 0;
-		std::vector<DebugVertex> LineVerts;
+		DArray<DebugVertex> LineVerts;
 
 		uint32_t CurrentFillIndex = 0;
-		std::vector<DebugVertex> FillTrisVerts;
-		std::vector<uint32_t>  FillTrisIndices;
+		DArray<DebugVertex> FillTrisVerts;
+		DArray<uint32_t>  FillTrisIndices;
 
 		uint32_t CurrentWireIndex = 0;
-		std::vector<DebugVertex> WireTrisVerts;
-		std::vector<uint32_t>  WireTrisIndices;
+		DArray<DebugVertex> WireTrisVerts;
+		DArray<uint32_t>  WireTrisIndices;
 	};
 
 	class HBL2_API DebugRenderer
@@ -98,5 +98,8 @@ namespace HBL2
 		Handle<Buffer> m_DebugWireTriVertexBuffer;
 
 		DebugRenderData m_RenderData[Renderer::FrameCount];
+
+		PoolReservation* m_Reservation = nullptr;
+		Arena m_Arena;
 	};
 }

@@ -22,6 +22,8 @@ namespace HBL2
         using propagate_on_container_swap = std::true_type;
 
     public:
+        ArenaAllocator() = default;
+
         explicit ArenaAllocator(Arena* arena) noexcept
             : m_Arena(arena)
         {
@@ -60,6 +62,7 @@ namespace HBL2
         template<typename U>
         struct rebind { using other = ArenaAllocator<U>; };
 
+        void SetArena(Arena* arena) { m_Arena = arena; }
         Arena* GetArena() const noexcept { return m_Arena; }
 
         bool operator==(const ArenaAllocator& rhs) const noexcept { return m_Arena == rhs.m_Arena; }

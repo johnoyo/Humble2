@@ -75,7 +75,7 @@ namespace HBL2
 
 		Handle<Shader> GetBuiltInShader(BuiltInShader shader) { return m_Shaders[shader]; }
 		Handle<BindGroupLayout> GetBuiltInShaderLayout(BuiltInShader shader) { return m_ShaderLayouts[shader]; }
-		const Span<const Handle<Asset>> GetBuiltInShaderAssets() const { return { m_ShaderAssets.Data(), m_ShaderAssets.Size() }; }
+		const Span<const Handle<Asset>> GetBuiltInShaderAssets() const { return { m_ShaderAssets.data(), m_ShaderAssets.size() }; }
 
 		void CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType);
 		void UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::PackedVariant& newVariant);
@@ -88,93 +88,12 @@ namespace HBL2
 	private:
 		ShaderUtilities() = default;
 
-		const char* GetCacheDirectory(GraphicsAPI target)
-		{
-			switch (target)
-			{
-				case GraphicsAPI::OPENGL:
-					return "assets/cache/shader/opengl";
-				case GraphicsAPI::VULKAN:
-					return "assets/cache/shader/vulkan";
-				default:
-					HBL2_CORE_ASSERT(false, "Stage not supported");
-					return "";
-			}
-		}
-
-		void CreateCacheDirectoryIfNeeded(GraphicsAPI target)
-		{
-			std::string cacheDirectory = GetCacheDirectory(target);
-
-			if (!std::filesystem::exists(cacheDirectory))
-			{
-				std::filesystem::create_directories(cacheDirectory);
-			}
-		}
-
-		const char* GLShaderStageCachedVulkanFileExtension(ShaderStage stage)
-		{
-			switch (stage)
-			{
-				case ShaderStage::VERTEX:
-					return ".cached_vulkan.vert";
-				case ShaderStage::FRAGMENT:
-					return ".cached_vulkan.frag";
-				case ShaderStage::COMPUTE:
-					return ".cached_vulkan.comp";
-				default:
-					HBL2_CORE_ASSERT(false, "Stage not supported");
-					return "";
-			}
-		}
-
-		const char* GLShaderStageCachedOpenGLFileExtension(ShaderStage stage)
-		{
-			switch (stage)
-			{
-				case ShaderStage::VERTEX:
-					return ".cached_opengl.vert";
-				case ShaderStage::FRAGMENT:
-					return ".cached_opengl.frag";
-				case ShaderStage::COMPUTE:
-					return ".cached_opengl.comp";
-				default:
-					HBL2_CORE_ASSERT(false, "Stage not supported");
-					return "";
-			}
-		}
-
-		shaderc_shader_kind GLShaderStageToShaderC(ShaderStage stage)
-		{
-			switch (stage)
-			{
-				case ShaderStage::VERTEX:
-					return shaderc_glsl_vertex_shader;
-				case ShaderStage::FRAGMENT:
-					return shaderc_glsl_fragment_shader;
-				case ShaderStage::COMPUTE:
-					return shaderc_glsl_compute_shader;
-				default:
-					HBL2_CORE_ASSERT(false, "Stage not supported");
-					return (shaderc_shader_kind)0;
-			}
-		}
-
-		const char* GLShaderStageToString(ShaderStage stage)
-		{
-			switch (stage)
-			{
-				case ShaderStage::VERTEX:
-					return "ShaderStage::VERTEX";
-				case ShaderStage::FRAGMENT:
-					return "ShaderStage::FRAGMENT";
-				case ShaderStage::COMPUTE:
-					return "ShaderStage::COMPUTE";
-				default:
-					HBL2_CORE_ASSERT(false, "Stage not supported");
-					return "";
-			}
-		}
+		const char* GetCacheDirectory(GraphicsAPI target);
+		void CreateCacheDirectoryIfNeeded(GraphicsAPI target);
+		const char* GLShaderStageCachedVulkanFileExtension(ShaderStage stage);
+		const char* GLShaderStageCachedOpenGLFileExtension(ShaderStage stage);
+		shaderc_shader_kind GLShaderStageToShaderC(ShaderStage stage);
+		const char* GLShaderStageToString(ShaderStage stage);
 
 		std::vector<uint32_t> Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage, bool forceRecompile = false);
 		ReflectionData Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData, const Span<uint32_t>& computeShaderData);
@@ -184,7 +103,10 @@ namespace HBL2
 		std::unordered_map<BuiltInShader, Handle<Shader>> m_Shaders;
 		std::unordered_map<BuiltInShader, Handle<BindGroupLayout>> m_ShaderLayouts;
 
-		DynamicArray<Handle<Asset>, BinAllocator> m_ShaderAssets = MakeDynamicArray<Handle<Asset>>(&Allocator::Persistent);
+		DArray<Handle<Asset>> m_ShaderAssets;
+
+		PoolReservation* m_Reservation = nullptr;
+		Arena m_Arena;
 
 		static ShaderUtilities* s_Instance;
 	};

@@ -8,6 +8,9 @@ namespace HBL2
 	UniformRingBuffer::UniformRingBuffer(uint32_t size, uint32_t uniformOffset)
 		: m_BufferSize(size), m_UniformOffset(uniformOffset), m_CurrentOffset(0)
 	{
+		m_Reservation = Allocator::Arena.Reserve("ShaderUtilitiesPool", m_BufferSize);
+		m_Arena.Initialize(&Allocator::Arena, m_BufferSize, m_Reservation);
+
 		m_Buffer = ResourceManager::Instance->CreateBuffer({
 			.debugName = "dynamic-uniform-buffer",
 			.usage = BufferUsage::UNIFORM,
@@ -17,7 +20,7 @@ namespace HBL2
 			.initialData = nullptr,
 		});
 
-		m_BufferData = operator new(m_BufferSize);
+		m_BufferData = m_Arena.Alloc(m_BufferSize);
 		memset(m_BufferData, 0, m_BufferSize);
 
 		ResourceManager::Instance->SetBufferData(m_Buffer, 0, m_BufferData);
@@ -30,12 +33,13 @@ namespace HBL2
 
 	void UniformRingBuffer::Free()
 	{
-		operator delete(m_BufferData);
+		m_Arena.Reset();
 		ResourceManager::Instance->DeleteBuffer(m_Buffer);
 	}
 
 	void UniformRingBuffer::ReAllocate()
 	{
+#if DISABLED
 		// Reallocate GPU buffer.
 		ResourceManager::Instance->ReAllocateBuffer(m_Buffer, m_CurrentOffset);
 
@@ -52,6 +56,7 @@ namespace HBL2
 
 		// Update buffer.
 		ResourceManager::Instance->SetBufferData(m_Buffer, 0, m_BufferData);
+#endif
 	}
 
 	uint32_t UniformRingBuffer::CeilToNextMultiple(uint32_t value, uint32_t step)

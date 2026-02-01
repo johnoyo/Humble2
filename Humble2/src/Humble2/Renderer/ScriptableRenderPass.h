@@ -19,6 +19,8 @@ namespace HBL2
 	class HBL2_API ScriptableRenderPass
 	{
 	public:
+		virtual ~ScriptableRenderPass() = default;
+
 		virtual void Initialize() = 0;
 		virtual void Execute() = 0;
 		virtual void Destroy() = 0;

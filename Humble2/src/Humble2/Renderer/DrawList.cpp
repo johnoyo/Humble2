@@ -2,9 +2,24 @@
 
 namespace HBL2
 {
+	DrawList::DrawList(Arena& arena, uint32_t reservedDrawCount)
+	{
+		Initialize(arena, reservedDrawCount);
+	}
+
+	void DrawList::Initialize(Arena& arena)
+	{
+		m_Draws = MakeDArray<LocalDrawStream>(arena, 32768);
+	}
+
+	void DrawList::Initialize(Arena& arena, uint32_t reserveDrawCount)
+	{
+		m_Draws = MakeDArray<LocalDrawStream>(arena, reserveDrawCount);
+	}
+
 	void DrawList::Insert(LocalDrawStream&& draw)
 	{
-		m_Draws.Emplace(std::move(draw));
+		m_Draws.emplace_back(std::move(draw));
 	}
 
 	void DrawList::Sort()
@@ -27,6 +42,6 @@ namespace HBL2
 
 	void DrawList::Reset()
 	{
-		m_Draws.Clear();
+		m_Draws.clear();
 	}
 }

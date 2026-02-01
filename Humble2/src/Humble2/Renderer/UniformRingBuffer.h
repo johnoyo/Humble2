@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Core\Allocators.h"
+#include "Utilities\Allocators\Arena.h"
+
 #include "Resources\Types.h"
 #include "Resources\Handle.h"
 
@@ -54,5 +57,8 @@ namespace HBL2
 		uint32_t m_BufferSize;
 		uint32_t m_CurrentOffset;
 		uint32_t m_UniformOffset;
+
+		PoolReservation* m_Reservation = nullptr;
+		Arena m_Arena;
 	};
 }

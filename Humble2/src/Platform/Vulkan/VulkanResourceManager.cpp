@@ -6,7 +6,7 @@ namespace HBL2
 	{
 		m_TexturePool.Initialize(128);
 		m_BufferPool.Initialize(512);
-		m_ShaderPool.Initialize(64);
+		m_ShaderSplitPool.Initialize(64);
 		m_FrameBufferPool.Initialize(32);
 		m_BindGroupSplitPool.Initialize(64);
 		m_BindGroupLayoutPool.Initialize(32);
@@ -165,50 +165,56 @@ namespace HBL2
 	// Shaders
 	Handle<Shader> VulkanResourceManager::CreateShader(const ShaderDescriptor&& desc)
 	{
-		return m_ShaderPool.Insert(std::forward<const ShaderDescriptor>(desc));
+		VulkanShader shader;
+		Handle<Shader> shaderHandle = m_ShaderSplitPool.Insert(&shader.Hot, &shader.Cold);
+		shader.Initialize(std::forward<const ShaderDescriptor>(desc));
+		return shaderHandle;
 	}
 	void VulkanResourceManager::RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc)
 	{
-		VulkanShader* shader = GetShader(handle);
-		if (shader != nullptr)
-		{
-			shader->Recompile(std::forward<const ShaderDescriptor>(desc), true);
-		}
+		VulkanShader shader = GetShader(handle);
+		shader.Recompile(std::forward<const ShaderDescriptor>(desc), true);
 
 		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 		{
-			VulkanShader* shader = GetShader(handle);
-			if (shader != nullptr)
-			{
-				shader->DestroyOld();
-			}
+			VulkanShader shader = GetShader(handle);
+			shader.DestroyOld();
 		});
 	}
 	void VulkanResourceManager::DeleteShader(Handle<Shader> handle)
 	{
 		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 		{
-			VulkanShader* shader = GetShader(handle);
-			if (shader != nullptr)
+			VulkanShader shader = GetShader(handle);
+			if (shader.IsValid())
 			{
-				shader->Destroy();
-				m_ShaderPool.Remove(handle);
+				shader.Destroy();
+				m_ShaderSplitPool.Remove(handle);
 			}
 		});
 	}
 	uint64_t VulkanResourceManager::GetOrAddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc)
 	{
-		VulkanShader* shader = GetShader(handle);
-		if (shader != nullptr)
+		VulkanShader shader = GetShader(handle);
+		return (uint64_t)shader.GetOrCreateVariant(variantDesc);
+	}
+	VulkanShader VulkanResourceManager::GetShader(Handle<Shader> handle) const
+	{
+		VulkanShader shader;
+		if (m_ShaderSplitPool.Get(handle, &shader.Hot, &shader.Cold))
 		{
-			return (uint64_t)shader->GetOrCreateVariant(variantDesc);
+			return shader;
 		}
 
-		return 0;
+		return {};
 	}
-	VulkanShader* VulkanResourceManager::GetShader(Handle<Shader> handle) const
+	VulkanShaderHot* VulkanResourceManager::GetShaderHot(Handle<Shader> handle) const
 	{
-		return m_ShaderPool.Get(handle);
+		return m_ShaderSplitPool.GetHot(handle);
+	}
+	VulkanShaderCold* VulkanResourceManager::GetShaderCold(Handle<Shader> handle) const
+	{
+		return m_ShaderSplitPool.GetCold(handle);
 	}
 
 	// BindGroups

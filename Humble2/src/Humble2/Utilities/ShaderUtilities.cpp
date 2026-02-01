@@ -46,6 +46,11 @@ namespace HBL2
 	{
 		HBL2_CORE_ASSERT(s_Instance == nullptr, "ShaderUtilities::s_Instance is not null! ShaderUtilities::Initialize has been called twice.");
 		s_Instance = new ShaderUtilities;
+
+		Get().m_Reservation = Allocator::Arena.Reserve("ShaderUtilitiesPool", 16_MB);
+		Get().m_Arena.Initialize(&Allocator::Arena, 16_MB, Get().m_Reservation);
+
+		Get().m_ShaderAssets = MakeDArray<Handle<Asset>>(Get().m_Arena, 1024);
 	}
 
 	void ShaderUtilities::Shutdown()
@@ -421,7 +426,7 @@ namespace HBL2
 			CreateShaderMetadataFile(invalidShaderAssetHandle, 0);
 			auto invalidShaderHandle = AssetManager::Instance->GetAsset<Shader>(invalidShaderAssetHandle);
 			m_Shaders[BuiltInShader::INVALID] = invalidShaderHandle;
-			m_ShaderAssets.Add(invalidShaderAssetHandle);
+			m_ShaderAssets.push_back(invalidShaderAssetHandle);
 		}
 
 		// Unlit shader
@@ -435,7 +440,7 @@ namespace HBL2
 			CreateShaderMetadataFile(unlitShaderAssetHandle, 0);
 			auto unlitShaderHandle = AssetManager::Instance->GetAsset<Shader>(unlitShaderAssetHandle);
 			m_Shaders[BuiltInShader::UNLIT] = unlitShaderHandle;
-			m_ShaderAssets.Add(unlitShaderAssetHandle);
+			m_ShaderAssets.push_back(unlitShaderAssetHandle);
 		}
 
 		// Blinn-Phong shader
@@ -449,7 +454,7 @@ namespace HBL2
 			CreateShaderMetadataFile(blinnPhongShaderAssetHandle, 1);
 			auto blinnPhongShaderHandle = AssetManager::Instance->GetAsset<Shader>(blinnPhongShaderAssetHandle);
 			m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderHandle;
-			m_ShaderAssets.Add(blinnPhongShaderAssetHandle);
+			m_ShaderAssets.push_back(blinnPhongShaderAssetHandle);
 		}
 
 		// PBR shader
@@ -463,7 +468,7 @@ namespace HBL2
 			CreateShaderMetadataFile(pbrShaderAssetHandle, 2);
 			auto pbrShaderHandle = AssetManager::Instance->GetAsset<Shader>(pbrShaderAssetHandle);
 			m_Shaders[BuiltInShader::PBR] = pbrShaderHandle;
-			m_ShaderAssets.Add(pbrShaderAssetHandle);
+			m_ShaderAssets.push_back(pbrShaderAssetHandle);
 		}
 	}
 
@@ -482,8 +487,7 @@ namespace HBL2
 		}
 
 		m_Shaders.clear();
-
-		m_ShaderAssets.Clear();
+		m_ShaderAssets.clear();
 	}
 
 	void ShaderUtilities::LoadBuiltInMaterials()
@@ -1100,5 +1104,93 @@ namespace HBL2
 		}
 
 		return reflectionData;
+	}
+
+	const char* ShaderUtilities::GetCacheDirectory(GraphicsAPI target)
+	{
+		switch (target)
+		{
+		case GraphicsAPI::OPENGL:
+			return "assets/cache/shader/opengl";
+		case GraphicsAPI::VULKAN:
+			return "assets/cache/shader/vulkan";
+		default:
+			HBL2_CORE_ASSERT(false, "Stage not supported");
+			return "";
+		}
+	}
+
+	void ShaderUtilities::CreateCacheDirectoryIfNeeded(GraphicsAPI target)
+	{
+		std::string cacheDirectory = GetCacheDirectory(target);
+
+		if (!std::filesystem::exists(cacheDirectory))
+		{
+			std::filesystem::create_directories(cacheDirectory);
+		}
+	}
+
+	const char* ShaderUtilities::GLShaderStageCachedVulkanFileExtension(ShaderStage stage)
+	{
+		switch (stage)
+		{
+		case ShaderStage::VERTEX:
+			return ".cached_vulkan.vert";
+		case ShaderStage::FRAGMENT:
+			return ".cached_vulkan.frag";
+		case ShaderStage::COMPUTE:
+			return ".cached_vulkan.comp";
+		default:
+			HBL2_CORE_ASSERT(false, "Stage not supported");
+			return "";
+		}
+	}
+
+	const char* ShaderUtilities::GLShaderStageCachedOpenGLFileExtension(ShaderStage stage)
+	{
+		switch (stage)
+		{
+		case ShaderStage::VERTEX:
+			return ".cached_opengl.vert";
+		case ShaderStage::FRAGMENT:
+			return ".cached_opengl.frag";
+		case ShaderStage::COMPUTE:
+			return ".cached_opengl.comp";
+		default:
+			HBL2_CORE_ASSERT(false, "Stage not supported");
+			return "";
+		}
+	}
+
+	shaderc_shader_kind ShaderUtilities::GLShaderStageToShaderC(ShaderStage stage)
+	{
+		switch (stage)
+		{
+		case ShaderStage::VERTEX:
+			return shaderc_glsl_vertex_shader;
+		case ShaderStage::FRAGMENT:
+			return shaderc_glsl_fragment_shader;
+		case ShaderStage::COMPUTE:
+			return shaderc_glsl_compute_shader;
+		default:
+			HBL2_CORE_ASSERT(false, "Stage not supported");
+			return (shaderc_shader_kind)0;
+		}
+	}
+
+	const char* ShaderUtilities::GLShaderStageToString(ShaderStage stage)
+	{
+		switch (stage)
+		{
+		case ShaderStage::VERTEX:
+			return "ShaderStage::VERTEX";
+		case ShaderStage::FRAGMENT:
+			return "ShaderStage::FRAGMENT";
+		case ShaderStage::COMPUTE:
+			return "ShaderStage::COMPUTE";
+		default:
+			HBL2_CORE_ASSERT(false, "Stage not supported");
+			return "";
+		}
 	}
 }

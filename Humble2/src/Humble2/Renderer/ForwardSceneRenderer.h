@@ -52,6 +52,8 @@ namespace HBL2
 	class HBL2_API ForwardSceneRenderer final : public SceneRenderer
 	{
 	public:
+		virtual ~ForwardSceneRenderer() = default;
+
 		virtual void Initialize(Scene* scene) override;
 		virtual void Gather(Entity mainCamera) override;
 		virtual void Render(void* renderData, void* debugRenderData) override;
@@ -149,5 +151,8 @@ namespace HBL2
 		Handle<Buffer> m_QuadVertexBuffer;
 		Handle<Material> m_QuadMaterial;
 		Handle<Shader> m_PresentShader;		
+
+		PoolReservation* m_Reservation = nullptr;
+		Arena m_Arena;
 	};
 }

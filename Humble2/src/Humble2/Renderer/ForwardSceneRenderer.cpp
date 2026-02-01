@@ -84,6 +84,23 @@ namespace HBL2
 
 	void ForwardSceneRenderer::Initialize(Scene* scene)
 	{
+		// Each draw list is pre allocated with ~2MB of space (~32K draws), we have 16, 2 per renderData in flight.
+		// So, for the draw lists we need ~32MB.
+		m_Reservation = Allocator::Arena.Reserve("ForwardSceneRendererPool", 64_MB);
+		m_Arena.Initialize(&Allocator::Arena, 64_MB, m_Reservation);
+
+		for (auto& sceneRenderData : m_RenderData)
+		{
+			sceneRenderData.m_PrePassSpriteDraws.Initialize(m_Arena);
+			sceneRenderData.m_PrePassStaticMeshDraws.Initialize(m_Arena);
+			sceneRenderData.m_ShadowPassSpriteDraws.Initialize(m_Arena);
+			sceneRenderData.m_ShadowPassStaticMeshDraws.Initialize(m_Arena);
+			sceneRenderData.m_SpriteOpaqueDraws.Initialize(m_Arena);
+			sceneRenderData.m_SpriteTransparentDraws.Initialize(m_Arena);
+			sceneRenderData.m_StaticMeshOpaqueDraws.Initialize(m_Arena);
+			sceneRenderData.m_StaticMeshTransparentDraws.Initialize(m_Arena);
+		}
+
 		m_Scene = scene;
 
 		m_ResourceManager = ResourceManager::Instance;
@@ -1062,6 +1079,9 @@ namespace HBL2
 
 		// Static meshes
 		{
+			uint64_t depthOnlyVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlyShader, m_DepthOnlyMaterialHash);
+			uint64_t shadowPrePassVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_ShadowPrePassShader, m_ShadowPrePassMaterialHash);
+
 			sceneRenderData->m_StaticMeshOpaqueDraws.Reset();
 			sceneRenderData->m_StaticMeshTransparentDraws.Reset();
 			sceneRenderData->m_PrePassStaticMeshDraws.Reset();
@@ -1128,7 +1148,7 @@ namespace HBL2
 							sceneRenderData->m_PrePassStaticMeshDraws.Insert({
 								.Shader = m_DepthOnlyShader,
 								.Material = m_DepthOnlyMaterial,
-								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlyShader, m_DepthOnlyMaterialHash),
+								.VariantHandle = depthOnlyVariantHandle,
 								.IndexBuffer = meshPart.IndexBuffer,
 								.VertexBuffer = meshPart.VertexBuffers[0],
 								.BindGroup = m_DepthOnlyMeshBindGroup,
@@ -1167,7 +1187,7 @@ namespace HBL2
 							sceneRenderData->m_ShadowPassStaticMeshDraws.Insert({
 								.Shader = m_ShadowPrePassShader,
 								.Material = m_ShadowPrePassMaterial,
-								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_ShadowPrePassShader, m_ShadowPrePassMaterialHash),
+								.VariantHandle = shadowPrePassVariantHandle,
 								.IndexBuffer = meshPart.IndexBuffer,
 								.VertexBuffer = meshPart.VertexBuffers[0],
 								.BindGroup = m_DepthOnlyMeshBindGroup,
@@ -1187,6 +1207,8 @@ namespace HBL2
 
 		// Sprites
 		{
+			uint64_t depthOnlySpriteVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlySpriteShader, m_DepthOnlySpriteMaterialHash);
+
 			sceneRenderData->m_SpriteOpaqueDraws.Reset();
 			sceneRenderData->m_SpriteTransparentDraws.Reset();
 			sceneRenderData->m_PrePassSpriteDraws.Reset();
@@ -1229,7 +1251,7 @@ namespace HBL2
 							sceneRenderData->m_PrePassSpriteDraws.Insert({
 								.Shader = m_DepthOnlySpriteShader,
 								.Material = m_DepthOnlySpriteMaterial,
-								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlySpriteShader, m_DepthOnlySpriteMaterialHash),
+								.VariantHandle = depthOnlySpriteVariantHandle,
 								.VertexBuffer = m_VertexBuffer,
 								.BindGroup = m_DepthOnlySpriteBindGroup,
 								.Offset = alloc.Offset,
@@ -1501,7 +1523,9 @@ namespace HBL2
 	{
 		BEGIN_PROFILE_PASS();
 
-		DrawList draws;
+		DrawList draws(Allocator::FrameArena, 16);
+
+		uint64_t skyboxVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_EquirectToSkyboxShader, m_ComputeVariant);
 
 		m_Scene->View<Component::SkyLight>()
 			.Each([&](Component::SkyLight& skyLight)
@@ -1566,7 +1590,7 @@ namespace HBL2
 							.Shader = m_EquirectToSkyboxShader,
 							.BindGroup = m_ComputeBindGroup,
 							.ThreadGroupCount = { (uint32_t)g_CaptureMatrices.FaceSize / 16, (uint32_t)g_CaptureMatrices.FaceSize / 16, 6 },
-							.Variant = m_ComputeVariant,
+							.VariantHandle = skyboxVariantHandle,
 						};
 
 						ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.CubeMap }, {});
@@ -1643,7 +1667,8 @@ namespace HBL2
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass, m_PostProcessFrameBuffer);
 
-		DrawList draws;
+		DrawList draws(Allocator::FrameArena, 1);
+
 		draws.Insert({
 			.Shader = m_PostProcessShader,
 			.Material = m_PostProcessMaterial,
@@ -1686,7 +1711,8 @@ namespace HBL2
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
 
-		DrawList draws;
+		DrawList draws(Allocator::FrameArena, 1);
+
 		draws.Insert({
 			.Shader = m_PresentShader,
 			.Material = m_QuadMaterial,

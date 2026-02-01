@@ -710,7 +710,7 @@ namespace HBL2
 		glm::vec3 scaledViewerPosition = viewer.Translation / terrain.Scale;
 
 		float maxDistanceForChunkToStayLoaded = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold * 4;
-		DynamicArray<Entity, BumpAllocator> chunks = MakeDynamicArray<Entity>(&Allocator::Frame);
+		DArray<Entity> chunks = MakeDArray<Entity>(Allocator::FrameArena, 256);
 
 		m_Context->Group<Component::TerrainChunk>(Get<Component::Transform, Component::StaticMesh>)
 			.Each([&](Entity chunk, Component::TerrainChunk& terrainChunk, Component::Transform& tr, Component::StaticMesh& chunkMesh)
@@ -759,7 +759,7 @@ namespace HBL2
 					}
 
 					// Store chunk entities to remove.
-					chunks.Add(chunk);
+					chunks.push_back(chunk);
 
 					// Remove the chunk entity from the terrain chunk cache.
 					glm::ivec2 chunkCoordToRemove;
@@ -928,7 +928,7 @@ namespace HBL2
 	void TerrainSystem::CleanUpChunks()
 	{
 		// Clean up resources of terrain chunks.
-		DynamicArray<Entity, BumpAllocator> chunks = MakeDynamicArray<Entity>(&Allocator::Frame);
+		DArray<Entity> chunks = MakeDArray<Entity>(Allocator::FrameArena, 256);
 
 		m_Context->View<Component::TerrainChunk>()
 			.Each([this, &chunks](Entity chunk, Component::TerrainChunk& terrainChunk)
@@ -955,7 +955,7 @@ namespace HBL2
 					m_ResourceManager->DeleteMesh(lodMesh.Mesh);
 				}
 
-				chunks.Add(chunk);
+				chunks.push_back(chunk);
 			});
 
 		// NOTE: We need to do such excessive clean up here because of play mode logic.

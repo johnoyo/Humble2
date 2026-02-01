@@ -48,8 +48,8 @@ namespace HBL2
 		Allocator::Arena.Initialize(500_MB, 1_MB);
 		Allocator::FrameArena.Initialize(&Allocator::Arena, 50_MB);
 
-		Allocator::Frame.Initialize(32_MB);
-		Allocator::Persistent.Initialize(256_MB);
+		Allocator::Frame.Initialize(4_MB);
+		Allocator::Persistent.Initialize(16_MB);
 
 		GraphicsAPI gfxAPI = GraphicsAPI::NONE;
 

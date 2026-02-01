@@ -10,6 +10,8 @@ namespace HBL2
 	class HBL2_API SceneRenderer
 	{
 	public:
+		virtual ~SceneRenderer() = default;
+
 		virtual void Initialize(Scene* scene) = 0;
 		virtual void Gather(Entity mainCamera) = 0;
 		virtual void Render(void* renderData, void* debugRenderData) = 0;

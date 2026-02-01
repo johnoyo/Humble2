@@ -26,6 +26,14 @@ namespace HBL2
     }
 
     template<typename T>
+    [[nodiscard]] DArray<T> MakeDArrayResized(Arena& arena, std::size_t resizeCount)
+    {
+        DArray<T> v{ ArenaAllocator<T>(&arena) };
+        v.resize(resizeCount);
+        return v;
+    }
+
+    template<typename T>
     [[nodiscard]] DArray<T> MakeDArray(ScratchArena& scratch)
     {
         return DArray<T>(ArenaAllocator<T>(&scratch));

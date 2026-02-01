@@ -13,7 +13,7 @@ namespace HBL2
 		Handle<Shader> Shader;
 		Handle<BindGroup> BindGroup;
 		glm::uvec3 ThreadGroupCount{};
-		ShaderDescriptor::RenderPipeline::PackedVariant Variant = g_NullVariant;
+		uint64_t VariantHandle = 0;
 	};
 
 	class HBL2_API ComputePassRenderer

@@ -155,6 +155,8 @@ namespace HBL2
 		m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
 
 		TempUniformRingBuffer->Free();
+		delete TempUniformRingBuffer;
+		TempUniformRingBuffer = nullptr;
 
 		m_ResourceManager->DeleteBindGroupLayout(m_ShadowBindingsLayout);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);

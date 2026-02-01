@@ -17,6 +17,21 @@ namespace HBL2
 
 	void DebugRenderer::Initialize()
 	{
+		// We need 48MB for the vector verticesn since we have 1M max vertices per primitives, each being 16MB.
+		// The rest is used for the draw list, which only requires a couple hundred bytes but we round up.
+		// If memory usage becomes a problem, we can shave a couple dozen MBs here.
+		m_Reservation = Allocator::Arena.Reserve("DebugRendererPool", 64_MB);
+		m_Arena.Initialize(&Allocator::Arena, 64_MB, m_Reservation);
+
+		// Reserve max space for the draws and vertices cpu storage to avoid allocations.
+		for (auto& renderData : m_RenderData)
+		{
+			renderData.Draws.Initialize(m_Arena, 3);
+			renderData.LineVerts = MakeDArrayResized<DebugVertex>(m_Arena, s_MaxDebugVertices);
+			renderData.FillTrisVerts = MakeDArrayResized<DebugVertex>(m_Arena, s_MaxDebugVertices);
+			renderData.WireTrisVerts = MakeDArrayResized<DebugVertex>(m_Arena, s_MaxDebugVertices);
+		}
+
 		m_ResourceManager = ResourceManager::Instance;
 
 		m_DebugRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
@@ -80,7 +95,7 @@ namespace HBL2
 			.usage = BufferUsage::VERTEX,
 			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::CPU_GPU,
-			.byteSize = s_MaxDebugVertices * sizeof(DebugVertex), // TODO: Fix with max allowed vertex number.
+			.byteSize = s_MaxDebugVertices * sizeof(DebugVertex),
 			.initialData = nullptr,
 		});
 
@@ -89,7 +104,7 @@ namespace HBL2
 			.usage = BufferUsage::VERTEX,
 			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::CPU_GPU,
-			.byteSize = s_MaxDebugVertices * sizeof(DebugVertex), // TODO: Fix with max allowed vertex number.
+			.byteSize = s_MaxDebugVertices * sizeof(DebugVertex),
 			.initialData = nullptr,
 		});
 
@@ -98,17 +113,9 @@ namespace HBL2
 			.usage = BufferUsage::VERTEX,
 			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::CPU_GPU,
-			.byteSize = s_MaxDebugVertices * sizeof(DebugVertex), // TODO: Fix with max allowed vertex number.
+			.byteSize = s_MaxDebugVertices * sizeof(DebugVertex),
 			.initialData = nullptr,
 		});
-
-		// Reserve max space for the verticescpu storage to avoid allocations.
-		for (auto& renderData : m_RenderData)
-		{
-			renderData.LineVerts.resize(s_MaxDebugVertices);
-			renderData.FillTrisVerts.resize(s_MaxDebugVertices);
-			renderData.WireTrisVerts.resize(s_MaxDebugVertices);
-		}
 
 		// Shader variant descriptions.
 		using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
@@ -333,6 +340,8 @@ namespace HBL2
 
 		s_SphereIndices.clear();
 		s_SphereVerts.clear();
+
+		m_Arena.Reset();
 	}
 
 	void DebugRenderer::DrawLine(const glm::vec3& from, const glm::vec3& to)
