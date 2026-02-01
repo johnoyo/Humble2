@@ -261,9 +261,9 @@ namespace HBL2
                 r->Offset = 0;
 
                 m_DataOffset = alignedDataOff + bytes;
-                #ifdef ARENA_DEBUG
+#ifdef ARENA_DEBUG
                 m_DataCarved.fetch_add(bytes);
-                #endif
+#endif
             }
 
             // Insert into map while meta lock still held.
@@ -443,7 +443,11 @@ namespace HBL2
          */
         void FreeChunkStruct(ArenaChunk* ch)
         {
-            if (!ch) return;
+            if (!ch)
+            {
+                return;
+            }
+
             ch->Used = 0;
 
             if (ch->Reservation)
@@ -477,6 +481,11 @@ namespace HBL2
          * @brief DATA region size (debug).
          */
         size_t DataSize() const { return m_DataSize; }
+
+        float GetFullPercentage()
+        {
+            return ((float)m_DataOffset / (float)m_DataSize) * 100.f;
+        }
 
     private:
         const char* InternString(const char* str, size_t len)
@@ -583,7 +592,10 @@ namespace HBL2
          */
         void* Alloc(size_t size, size_t alignment = alignof(std::max_align_t))
         {
-            if (size == 0) return nullptr;
+            if (size == 0)
+            {
+                return nullptr;
+            }
 
             ArenaChunk* ch = m_Current;
             if (ch && ch->HasSpace(size, alignment))
@@ -631,6 +643,30 @@ namespace HBL2
         {
             T* obj = ::new (allocatedMemory) T(std::forward<Args>(args)...);
             return obj;
+        }
+
+        /**
+         * @brief Construct an array of objects of type T in the provided allocated memory
+         *        by invoking their constructors using placement new.
+         *
+         * @tparam T Type of object to construct.
+         * @tparam Args Argument types forwarded to the constructor of T.
+         *
+         * @param allocatedMemory Pointer to raw allocated memory with sufficient size and alignment for an array of T.
+         * @param count Number of objects to construct.
+         * @param args Arguments forwarded to the constructor of each T instance.
+         *
+         * @return Pointer to the first constructed object in the array.
+         */
+        template<typename T, typename... Args>
+        T* ConstructArray(void* allocatedMemory, size_t count, Args&&... args)
+        {
+            T* p = static_cast<T*>(allocatedMemory);
+            for (size_t i = 0; i < count; i++)
+            {
+                ::new (static_cast<void*>(p + i)) T(std::forward<Args>(args)...);
+            }
+            return p;
         }
 
         /**
@@ -772,19 +808,26 @@ namespace HBL2
         void RecalcStats()
         {
             size_t total = 0;
-            for (ArenaChunk* c : m_Chunks) total += c->Used;
+            for (ArenaChunk* c : m_Chunks)
+            {
+                total += c->Used;
+            }
+
             m_Used.store(total);
             size_t hw = m_HighWater.load();
-            if (total > hw) m_HighWater.store(total);
+            if (total > hw)
+            {
+                m_HighWater.store(total);
+            }
         }
 
     private:
         GlobalArena* m_GlobalArena = nullptr;
-        size_t m_Bytes;
-        PoolReservation* m_Reservation;
+        size_t m_Bytes = 0;
+        PoolReservation* m_Reservation = nullptr;
         std::vector<ArenaChunk*> m_Chunks;
-        ArenaChunk* m_Current;
-        size_t m_NextChunkSize;
+        ArenaChunk* m_Current = nullptr;
+        size_t m_NextChunkSize = 0;
 
         std::atomic<size_t> m_Used{ 0 };
         std::atomic<size_t> m_HighWater{ 0 };

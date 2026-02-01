@@ -11,7 +11,7 @@ namespace HBL2
 		for (const auto& dispatch : dispatches)
 		{
 			VulkanShader* shader = rm->GetShader(dispatch.Shader);
-			VulkanBindGroup* bindGroup = rm->GetBindGroup(dispatch.BindGroup);
+			VulkanBindGroupHot* bindGroup = rm->GetBindGroupHot(dispatch.BindGroup);
 
 			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, shader->GetOrCreateVariant(dispatch.Variant));
 			vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, shader->PipelineLayout, 0, 1, &bindGroup->DescriptorSet, 0, nullptr);

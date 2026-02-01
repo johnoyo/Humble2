@@ -94,7 +94,7 @@ bool test_arena_basic_allocation()
 {
     GlobalArena global(2_MB, 256_KB);
     PoolReservation* r = global.Reserve("Main", 512_KB);
-    Arena arena(global, 128_KB, r);
+    Arena arena(&global, 128_KB, r);
 
     int* p1 = static_cast<int*>(arena.Alloc(sizeof(int), alignof(int)));
     TEST_ASSERT(p1);
@@ -114,7 +114,7 @@ bool test_arena_reset_and_restore()
 {
     GlobalArena global(1_MB, 128_KB);
     PoolReservation* r = global.Reserve("Scratch", 256_KB);
-    Arena arena(global, 128_KB, r);
+    Arena arena(&global, 128_KB, r);
 
     auto m1 = arena.Mark();
     void* a1 = arena.Alloc(64);
@@ -139,7 +139,7 @@ bool test_arena_reset_and_restore()
 bool test_scratch_scope_raii()
 {
     GlobalArena global(512_KB, 64_KB);
-    Arena arena(global, 128_KB);
+    Arena arena(&global, 128_KB);
     {
         ScratchArena scratch(arena);
         void* a1 = scratch.Alloc(32);
@@ -161,7 +161,7 @@ bool test_chunk_exhaustion_and_bad_alloc()
     {
         GlobalArena global(64_KB, 8_KB);
         PoolReservation* r = global.Reserve("Tiny", 8_KB);
-        Arena arena(global, 8_KB, r);
+        Arena arena(&global, 8_KB, r);
         for (int i = 0; i < 100; ++i)
             arena.Alloc(1024); // likely to fill up
     }
@@ -201,7 +201,7 @@ bool test_meta_data_accounting()
 {
     GlobalArena global(1024 * 1024, 128 * 1024);
     PoolReservation* r = global.Reserve("MetaTest", 128 * 1024);
-    Arena arena(global, {}, r);
+    Arena arena(&global, {}, r);
 
     size_t before_meta = global.MetaCarved();
     arena.Alloc(256);
@@ -215,7 +215,7 @@ bool test_meta_data_accounting()
 bool test_alignment_and_padding()
 {
     GlobalArena global(1_MB, 128_KB);
-    Arena arena(global, 500_KB);
+    Arena arena(&global, 500_KB);
 
     void* p1 = arena.Alloc(1, 8);
     TEST_ASSERT(reinterpret_cast<uintptr_t>(p1) % 8 == 0);
@@ -233,7 +233,7 @@ bool stress_test_many_small_allocs()
 {
     GlobalArena global(16_MB, 512_KB);
     PoolReservation* r = global.Reserve("Stress", 2_MB);
-    Arena arena(global, 2_MB, r);
+    Arena arena(&global, 2_MB, r);
 
     std::vector<void*> ptrs;
     for (int i = 0; i < 100000; ++i)

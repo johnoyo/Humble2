@@ -4,6 +4,9 @@
 #include "LockFreeIndexStack.h"
 #include "Utilities/Collections/Span.h"
 
+#include "Core\Allocators.h"
+#include "Utilities\Allocators\Arena.h"
+
 #include <atomic>
 #include <cstdint>
 #include <new>
@@ -20,18 +23,35 @@ namespace HBL2
         SplitPool() = default;
 
         explicit SplitPool(uint32_t size)
-            : m_Size(size)
         {
+            Initialize(size);
+        }
+
+        ~SplitPool()
+        {
+        }
+
+        void Initialize(uint32_t size)
+        {
+            m_Size = size;
+
             if (m_Size == 0 || m_Size > 0xFFFEu)
             {
                 m_Size = 32;
             }
 
-            m_HotData = new THot[m_Size];
-            m_ColdData = new TCold[m_Size];
+            uint32_t byteSize = (sizeof(THot) + sizeof(TCold) + 2 * sizeof(std::atomic<uint16_t>)) * m_Size;
+            m_Reservation = Allocator::Arena.Reserve("SplitPool", byteSize);
+            m_PoolArena.Initialize(&Allocator::Arena, byteSize, m_Reservation);
 
-            m_GenerationalCounter = new std::atomic<uint16_t>[m_Size];
-            m_NextFree = new std::atomic<uint16_t>[m_Size];
+            m_HotData = (THot*)m_PoolArena.Alloc(sizeof(THot) * m_Size, alignof(THot));
+            m_ColdData = (TCold*)m_PoolArena.Alloc(sizeof(TCold) * m_Size, alignof(TCold));
+
+            void* generationalCounterMem = m_PoolArena.Alloc(sizeof(std::atomic<uint16_t>) * m_Size, alignof(std::atomic<uint16_t>));
+            m_GenerationalCounter = m_PoolArena.ConstructArray<std::atomic<uint16_t>>(generationalCounterMem, m_Size, 0);
+
+            void* nextFreeMem = m_PoolArena.Alloc(sizeof(std::atomic<uint16_t>) * m_Size, alignof(std::atomic<uint16_t>));
+            m_NextFree = m_PoolArena.ConstructArray<std::atomic<uint16_t>>(nextFreeMem, m_Size, 0);
 
             for (uint32_t i = 0; i < m_Size; ++i)
             {
@@ -41,13 +61,7 @@ namespace HBL2
             m_FreeList.Initialize(m_NextFree, m_Size);
         }
 
-        ~SplitPool()
-        {
-            delete[] m_NextFree;
-            delete[] m_GenerationalCounter;
-        }
-
-        Handle<H> Insert(const THot&& hotInit, const TCold&& coldInit)
+        Handle<H> Insert(THot** outHot, TCold** outCold)
         {
             const uint16_t index = m_FreeList.Pop();
             if (index == InvalidIndex)
@@ -56,8 +70,11 @@ namespace HBL2
                 return {};
             }
 
-            new (&m_HotData[index]) THot(std::forward<THot>(hotInit);
-            new (&m_ColdData[index] TCold(std::forward<TCold>(coldInit);
+            new (&m_HotData[index]) THot;
+            new (&m_ColdData[index]) TCold;
+
+            *outHot = &m_HotData[index];
+            *outCold = &m_ColdData[index];
 
             const uint16_t gen = m_GenerationalCounter[index].load(std::memory_order_relaxed);
             return { index, gen };
@@ -132,7 +149,7 @@ namespace HBL2
             return &m_ColdData[idx];
         }
 
-        bool Get(Handle<H> handle, THot* outHot, TCold* outCold) const
+        bool Get(Handle<H> handle, THot** outHot, TCold** outCold) const
         {
             if (!handle.IsValid())
             {
@@ -152,10 +169,20 @@ namespace HBL2
                 return false;
             }
 
-            outHot = &m_HotData[idx];
-            outCold = &m_ColdData[idx];
+            *outHot = &m_HotData[idx];
+            *outCold = &m_ColdData[idx];
 
-            return false;
+            return true;
+        }
+
+        const Span<THot> GetDataHotPool() const
+        {
+            return { m_HotData, m_Size };
+        }
+
+        const Span<TCold> GetDataColdPool() const
+        {
+            return { m_ColdData, m_Size };
         }
 
         Handle<H> GetHandleFromIndex(uint16_t index) const
@@ -180,5 +207,8 @@ namespace HBL2
         std::atomic<uint16_t>* m_GenerationalCounter = nullptr;
 
         uint32_t m_Size = 32;
+
+        PoolReservation* m_Reservation = nullptr;
+        Arena m_PoolArena;
     };
 }

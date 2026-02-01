@@ -45,7 +45,7 @@ namespace HBL2
 
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
-		Allocator::Arena.Initialize(100_MB, 1_MB);
+		Allocator::Arena.Initialize(500_MB, 1_MB);
 		Allocator::FrameArena.Initialize(&Allocator::Arena, 50_MB);
 
 		Allocator::Frame.Initialize(32_MB);
@@ -96,6 +96,9 @@ namespace HBL2
 			exit(-1);
 			break;
 		}
+
+		AssetManager::Instance->Initialize();
+		ResourceManager::Instance->Initialize();
 
 		Window::Instance->Initialize({
 			.Title = m_Specification.Name,

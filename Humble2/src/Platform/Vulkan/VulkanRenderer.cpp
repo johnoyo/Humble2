@@ -149,9 +149,9 @@ namespace HBL2
 
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
-			VulkanBindGroup* shadowBindGroup = m_ResourceManager->GetBindGroup(m_VkFrames[i].ShadowBindings);
+			VulkanBindGroupCold* shadowBindGroupCold = m_ResourceManager->GetBindGroupCold(m_VkFrames[i].ShadowBindings);
 
-			for (auto& bufferEntry : shadowBindGroup->Buffers)
+			for (auto& bufferEntry : shadowBindGroupCold->Buffers)
 			{
 				m_ResourceManager->DeleteBuffer(bufferEntry.buffer);
 			}
@@ -234,8 +234,8 @@ namespace HBL2
 	void* VulkanRenderer::GetColorAttachment()
 	{
 		Handle<BindGroup> presentBindGroupHandle = m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalPresentBindings;
-		VulkanBindGroup* vkPresentBindGroup = m_ResourceManager->GetBindGroup(presentBindGroupHandle);
-		m_ColorAttachmentID = vkPresentBindGroup->DescriptorSet;
+		VulkanBindGroupHot* vkPresentBindGroupHot = m_ResourceManager->GetBindGroupHot(presentBindGroupHandle);
+		m_ColorAttachmentID = vkPresentBindGroupHot->DescriptorSet;
 
 		return m_ColorAttachmentID;
 	}
@@ -401,8 +401,8 @@ namespace HBL2
 				.textures = { MainColorTexture },  // Updated with new size
 			});
 
-			VulkanBindGroup* vkGlobalPresentBindings = m_ResourceManager->GetBindGroup(m_VkFrames[i].GlobalPresentBindings);
-			vkGlobalPresentBindings->Update();
+			VulkanBindGroup vkGlobalPresentBindings = m_ResourceManager->GetBindGroup(m_VkFrames[i].GlobalPresentBindings);
+			vkGlobalPresentBindings.Update();
 		}
 
 		// Call on resize callbacks.

@@ -68,6 +68,20 @@ namespace HBL2
         return m;
     }
 
+    template<typename K, typename V, typename Hash = std::hash<K>, typename KeyEq = std::equal_to<K>>
+    [[nodiscard]] HMap<K, V, Hash, KeyEq> MakeHMapWithBuckets(Arena& arena, std::size_t expectedElements, float maxLoadFactor)
+    {
+        using Alloc = ArenaAllocator<std::pair<const K, V>>;
+        HMap<K, V, Hash, KeyEq> m(0, Hash{}, KeyEq{}, Alloc{ &arena });
+
+        m.max_load_factor(maxLoadFactor);
+
+        const std::size_t buckets = static_cast<std::size_t>(std::ceil(expectedElements / maxLoadFactor));
+
+        m.rehash(buckets);
+        return m;
+    }
+
     // Stack
     template<typename T>
     using Stack = std::stack<T, ArenaAllocator<T>>;

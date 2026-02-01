@@ -180,6 +180,11 @@ namespace HBL2
 
 				constexpr uint64_t Key() const noexcept { return std::bit_cast<uint64_t>(*this); }
 
+				static constexpr PackedVariant FromKey(packed_size key) noexcept
+				{
+					return std::bit_cast<PackedVariant>(key);
+				}
+
 				friend constexpr bool operator<(const PackedVariant& a, const PackedVariant& b) noexcept
 				{
 					return std::bit_cast<uint64_t>(a) < std::bit_cast<uint64_t>(b);

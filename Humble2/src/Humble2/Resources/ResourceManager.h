@@ -18,23 +18,36 @@ namespace HBL2
 {
 	class CommandBuffer;
 
+	struct ResourceManagerStats
+	{
+		uint32_t Textures;
+		uint32_t Buffers;
+		uint32_t FrameBuffers;
+		uint32_t Shaders;
+		uint32_t BindGroups;
+		uint32_t BindGroupLayouts;
+		uint32_t RenderPass;
+		uint32_t RenderPassLayouts;
+		uint32_t Meshes;
+		uint32_t Materials;
+		uint32_t Scenes;
+		uint32_t Scripts;
+		uint32_t Sounds;
+		uint32_t Prefabs;
+	};
+
 	class HBL2_API ResourceManager
 	{
 	public:
 		static ResourceManager* Instance;
 
+		ResourceManager() = default;
 		virtual ~ResourceManager() = default;
 
-		void Flush(uint32_t currentFrame)
-		{
-			m_DeletionQueue.Flush(currentFrame);
-		}
+		void Flush(uint32_t currentFrame);
+		void FlushAll();
 
-		void FlushAll()
-		{
-			m_DeletionQueue.FlushAll();
-		}
-
+		virtual void Initialize() = 0;
 		virtual void Clean() = 0;
 
 		// Textures
@@ -43,6 +56,7 @@ namespace HBL2
 		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) = 0;
 		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle) = 0;
 		virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) = 0;
+		virtual void* GetTextureData(Handle<Texture> handle) = 0;
 
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) = 0;
@@ -62,7 +76,7 @@ namespace HBL2
 		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) = 0;
 		virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) = 0;
 		virtual void DeleteShader(Handle<Shader> handle) = 0;
-		virtual void AddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc) = 0;
+		virtual uint64_t GetOrAddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc) = 0;
 
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) = 0;
@@ -103,92 +117,35 @@ namespace HBL2
 		virtual void DeleteRenderPassLayout(Handle<RenderPassLayout> handle) = 0;
 
 		// Meshes	
-		Handle<Mesh> CreateMesh(const MeshDescriptorEx&& desc)
-		{
-			return m_MeshPool.Insert(std::forward<const MeshDescriptorEx>(desc));
-		}
-		Handle<Mesh> CreateMesh(const MeshDescriptor&& desc)
-		{
-			return m_MeshPool.Insert(std::forward<const MeshDescriptor>(desc));
-		}
-		void DeleteMesh(Handle<Mesh> handle)
-		{
-			m_MeshPool.Remove(handle);
-		}
-		Mesh* GetMesh(Handle<Mesh> handle) const
-		{
-			return m_MeshPool.Get(handle);
-		}
+		Handle<Mesh> CreateMesh(const MeshDescriptorEx&& desc);
+		Handle<Mesh> CreateMesh(const MeshDescriptor&& desc);
+		void DeleteMesh(Handle<Mesh> handle);
+		Mesh* GetMesh(Handle<Mesh> handle) const;
 
 		// Materials
-		Handle<Material> CreateMaterial(const MaterialDescriptor&& desc)
-		{
-			return m_MaterialPool.Insert(std::forward<const MaterialDescriptor>(desc));
-		}
-		void DeleteMaterial(Handle<Material> handle)
-		{
-			m_MaterialPool.Remove(handle);
-		}
-		Material* GetMaterial(Handle<Material> handle) const
-		{
-			return m_MaterialPool.Get(handle);
-		}
+		Handle<Material> CreateMaterial(const MaterialDescriptor&& desc);
+		void DeleteMaterial(Handle<Material> handle);
+		Material* GetMaterial(Handle<Material> handle) const;
 		
 		// Scenes
-		Handle<Scene> CreateScene(const SceneDescriptor&& desc)
-		{
-			return m_ScenePool.Insert(std::forward<const SceneDescriptor>(desc));
-		}
-		void DeleteScene(Handle<Scene> handle)
-		{
-			m_ScenePool.Remove(handle);
-		}
-		Scene* GetScene(Handle<Scene> handle) const
-		{
-			return m_ScenePool.Get(handle);
-		}
+		Handle<Scene> CreateScene(const SceneDescriptor&& desc);
+		void DeleteScene(Handle<Scene> handle);
+		Scene* GetScene(Handle<Scene> handle) const;
 
 		// Scripts
-		Handle<Script> CreateScript(const ScriptDescriptor&& desc)
-		{
-			return m_ScriptPool.Insert(std::forward<const ScriptDescriptor>(desc));
-		}
-		void DeleteScript(Handle<Script> handle)
-		{
-			m_ScriptPool.Remove(handle);
-		}
-		Script* GetScript(Handle<Script> handle) const
-		{
-			return m_ScriptPool.Get(handle);
-		}
+		Handle<Script> CreateScript(const ScriptDescriptor&& desc);
+		void DeleteScript(Handle<Script> handle);
+		Script* GetScript(Handle<Script> handle) const;
 
 		// Sounds
-		Handle<Sound> CreateSound(const SoundDescriptor&& desc)
-		{
-			return m_SoundPool.Insert(std::forward<const SoundDescriptor>(desc));
-		}
-		void DeleteSound(Handle<Sound> handle)
-		{
-			m_SoundPool.Remove(handle);
-		}
-		Sound* GetSound(Handle<Sound> handle) const
-		{
-			return m_SoundPool.Get(handle);
-		}
+		Handle<Sound> CreateSound(const SoundDescriptor&& desc);
+		void DeleteSound(Handle<Sound> handle);
+		Sound* GetSound(Handle<Sound> handle) const;
 
 		// Prefabs
-		Handle<Prefab> CreatePrefab(const PrefabDescriptor&& desc)
-		{
-			return m_PrefabPool.Insert(std::forward<const PrefabDescriptor>(desc));
-		}
-		void DeletePrefab(Handle<Prefab> handle)
-		{
-			m_PrefabPool.Remove(handle);
-		}
-		Prefab* GetPrefab(Handle<Prefab> handle) const
-		{
-			return m_PrefabPool.Get(handle);
-		}
+		Handle<Prefab> CreatePrefab(const PrefabDescriptor&& desc);
+		void DeletePrefab(Handle<Prefab> handle);
+		Prefab* GetPrefab(Handle<Prefab> handle) const;
 
 	protected:
 		ResourceDeletionQueue m_DeletionQueue;

@@ -16,6 +16,7 @@ namespace HBL2
 
 		void Bind(uint32_t slot);
 		void Update(const Span<const std::byte>& bytes);
+		void* GetData();
 		void Destroy();
 
 		const char* DebugName = "";

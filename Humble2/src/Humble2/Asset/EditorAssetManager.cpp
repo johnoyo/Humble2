@@ -160,7 +160,30 @@ namespace HBL2
 		return false;
     }
 
-    void EditorAssetManager::SaveAsset(Handle<Asset> handle)
+	void AssetManager::WaitForAsyncJobs(JobContext* customJobCtx)
+	{
+		JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
+		JobSystem::Get().Wait(ctx);
+	}
+
+	Handle<Asset> AssetManager::GetHandleFromUUID(UUID assetUUID)
+	{
+		Handle<Asset> assetHandle;
+
+		if (m_RegisteredAssetMap->find(assetUUID) != m_RegisteredAssetMap->end())
+		{
+			assetHandle = m_RegisteredAssetMap->operator[](assetUUID);
+		}
+
+		return assetHandle;
+	}
+
+	void AssetManager::SaveAsset(UUID assetUUID)
+	{
+		return SaveAsset(GetHandleFromUUID(assetUUID));
+	}
+
+	void EditorAssetManager::SaveAsset(Handle<Asset> handle)
     {
         Asset* asset = GetAssetMetadata(handle);
 
@@ -537,7 +560,7 @@ namespace HBL2
 			HBL2_CORE_ASSERT(shaderHandle.IsValid(), "Error while trying to load shader of material!");
 			HBL2_CORE_ASSERT(shaderUUID != 0, "Error while trying to load shader of material!");
 
-			ResourceManager::Instance->AddShaderVariant(shaderHandle, variantDesc);
+			ResourceManager::Instance->GetOrAddShaderVariant(shaderHandle, variantDesc);
 			ShaderUtilities::Get().UpdateShaderVariantMetadataFile(shaderUUID, variantDesc);
 
 			// If albedo map is not set use the built in white texture.
@@ -1024,7 +1047,7 @@ namespace HBL2
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
 			Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
 
-			ResourceManager::Instance->AddShaderVariant(shaderHandle, mat->VariantHash);
+			ResourceManager::Instance->GetOrAddShaderVariant(shaderHandle, mat->VariantHash);
 			ShaderUtilities::Get().UpdateShaderVariantMetadataFile(shaderUUID, mat->VariantHash);
 		}
 

@@ -4,6 +4,9 @@
 #include "LockFreeIndexStack.h"
 #include "Utilities/Collections/Span.h"
 
+#include "Core\Allocators.h"
+#include "Utilities\Allocators\Arena.h"
+
 #include <atomic>
 #include <cstdint>
 #include <new>
@@ -20,17 +23,34 @@ namespace HBL2
         Pool() = default;
 
         explicit Pool(uint32_t size)
-            : m_Size(size)
         {
+            Initialize(size);
+        }
+
+        ~Pool()
+        {
+        }
+
+        void Initialize(uint32_t size)
+        {
+            m_Size = size;
+
             if (m_Size == 0 || m_Size > 0xFFFEu)
             {
                 m_Size = 32;
             }
 
-            m_Data = new T[m_Size];
+            uint32_t byteSize = (sizeof(T) + 2 * sizeof(std::atomic<uint16_t>)) * m_Size;
+            m_Reservation = Allocator::Arena.Reserve("Pool", byteSize);
+            m_PoolArena.Initialize(&Allocator::Arena, byteSize, m_Reservation);
 
-            m_GenerationalCounter = new std::atomic<uint16_t>[m_Size];
-            m_NextFree = new std::atomic<uint16_t>[m_Size];
+            m_Data = (T*)m_PoolArena.Alloc(sizeof(T) * m_Size, alignof(T));
+
+            void* generationalCounterMem = m_PoolArena.Alloc(sizeof(std::atomic<uint16_t>) * m_Size, alignof(std::atomic<uint16_t>));
+            m_GenerationalCounter = m_PoolArena.ConstructArray<std::atomic<uint16_t>>(generationalCounterMem, m_Size, 0);
+
+            void* nextFreeMem = m_PoolArena.Alloc(sizeof(std::atomic<uint16_t>) * m_Size, alignof(std::atomic<uint16_t>));
+            m_NextFree = m_PoolArena.ConstructArray<std::atomic<uint16_t>>(nextFreeMem, m_Size, 0);
 
             for (uint32_t i = 0; i < m_Size; ++i)
             {
@@ -38,12 +58,6 @@ namespace HBL2
             }
 
             m_FreeList.Initialize(m_NextFree, m_Size);
-        }
-
-        ~Pool()
-        {
-            delete[] m_NextFree;
-            delete[] m_GenerationalCounter;
         }
 
         template <typename Arg>
@@ -133,5 +147,8 @@ namespace HBL2
         std::atomic<uint16_t>* m_GenerationalCounter = nullptr;
 
         uint32_t m_Size = 32;
+
+        PoolReservation* m_Reservation = nullptr;
+        Arena m_PoolArena;
     };
 }

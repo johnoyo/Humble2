@@ -11,6 +11,7 @@
 #include "Utilities\JobSystem.h"
 #include "Utilities/Collections/DynamicArray.h"
 #include "Utilities/Collections/HashMap.h"
+#include "Utilities/Collections/Collections.h"
 
 #include "Utilities\Allocators\BinAllocator.h"
 
@@ -47,55 +48,11 @@ namespace HBL2
 		AssetManager() = default;
 		virtual ~AssetManager() = default;
 
-		Handle<Asset> CreateAsset(const AssetDescriptor&& desc)
-		{
-			auto handle = GetHandleFromUUID(std::hash<std::string>()(desc.filePath.string()));
+		void Initialize();
 
-			if (IsAssetValid(handle))
-			{
-				return handle;
-			}
-
-			handle = m_AssetPool.Insert(Asset(std::forward<const AssetDescriptor>(desc)));
-			m_RegisteredAssets.Add(handle);
-
-			Asset* asset = GetAssetMetadata(handle);
-			m_RegisteredAssetMap[asset->UUID] = handle;
-
-			return handle;
-		}
-		void DeleteAsset(Handle<Asset> handle, bool destroy = false)
-		{
-			if (destroy)
-			{
-				if (DestroyAsset(handle))
-				{
-					Asset* asset = GetAssetMetadata(handle);
-					if (asset != nullptr)
-					{
-						m_RegisteredAssetMap.Erase(asset->UUID);
-					}
-
-					auto assetIterator = std::find(m_RegisteredAssets.begin(), m_RegisteredAssets.end(), handle);
-				
-					if (assetIterator != m_RegisteredAssets.end())
-					{
-						m_RegisteredAssets.Erase(*assetIterator);
-					}
-
-					m_AssetPool.Remove(handle);
-				}
-			}
-			else
-			{
-				UnloadAsset(handle);
-			}
-
-		}
-		Asset* GetAssetMetadata(Handle<Asset> handle) const
-		{
-			return m_AssetPool.Get(handle);
-		}
+		Handle<Asset> CreateAsset(const AssetDescriptor&& desc);
+		void DeleteAsset(Handle<Asset> handle, bool destroy = false);
+		Asset* GetAssetMetadata(Handle<Asset> handle) const;
 
 		void RegisterAssets();
 		Handle<Asset> RegisterAsset(const std::filesystem::path& assetPath);
@@ -321,33 +278,15 @@ namespace HBL2
 			});
 		}
 
-		void WaitForAsyncJobs(JobContext* customJobCtx = nullptr)
-		{
-			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
-			JobSystem::Get().Wait(ctx);
-		}
+		void WaitForAsyncJobs(JobContext* customJobCtx = nullptr);
 
-		Span<const Handle<Asset>> GetRegisteredAssets() { return { m_RegisteredAssets.Data(), m_RegisteredAssets.Size() }; }
+		Span<const Handle<Asset>> GetRegisteredAssets() { return { m_RegisteredAssets->data(), m_RegisteredAssets->size() }; }
 
-		Handle<Asset> GetHandleFromUUID(UUID assetUUID)
-		{
-			Handle<Asset> assetHandle;
+		Handle<Asset> GetHandleFromUUID(UUID assetUUID);
 
-			if (m_RegisteredAssetMap.ContainsKey(assetUUID))
-			{
-				assetHandle = m_RegisteredAssetMap[assetUUID];
-			}
-
-			return assetHandle;
-		}
-
-		void SaveAsset(UUID assetUUID)
-		{
-			return SaveAsset(GetHandleFromUUID(assetUUID));
-		}
+		void SaveAsset(UUID assetUUID);
 
 		virtual void SaveAsset(Handle<Asset> handle) = 0;
-
 		virtual bool IsAssetValid(Handle<Asset> handle) = 0;
 		virtual bool IsAssetLoaded(Handle<Asset> handle) = 0;
 
@@ -359,8 +298,11 @@ namespace HBL2
 
 	private:
 		JobContext m_ResourceJobCtx;
-		Pool<Asset, Asset> m_AssetPool = Pool<Asset, Asset>(1024);
-		HashMap<UUID, Handle<Asset>, BinAllocator> m_RegisteredAssetMap = MakeHashMap<UUID, Handle<Asset>>(&Allocator::Persistent);
-		DynamicArray<Handle<Asset>, BinAllocator> m_RegisteredAssets = MakeDynamicArray<Handle<Asset>>(&Allocator::Persistent);
+		Pool<Asset, Asset> m_AssetPool;
+		std::optional<HMap<UUID, Handle<Asset>>> m_RegisteredAssetMap;
+		std::optional < DArray<Handle<Asset>>> m_RegisteredAssets;
+
+		PoolReservation* m_Reservation = nullptr;
+		Arena m_PoolArena;
 	};
 }

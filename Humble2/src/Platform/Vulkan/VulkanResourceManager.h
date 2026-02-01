@@ -3,6 +3,7 @@
 #include "Resources\ResourceManager.h"
 
 #include "Resources\Pool.h"
+#include "Resources\SplitPool.h"
 #include "Resources\Types.h"
 #include "Resources\TypeDescriptors.h"
 
@@ -22,348 +23,78 @@ namespace HBL2
 	public:
 		virtual ~VulkanResourceManager() = default;
 
-		virtual void Clean() override {}
+		virtual void Initialize() override;
+		virtual void Clean() override;
 
 		// Textures
-		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) override
-		{
-			return m_TexturePool.Insert(std::forward<const TextureDescriptor>(desc));
-		}
-		virtual void DeleteTexture(Handle<Texture> handle) override
-		{
-			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
-			{
-				VulkanTexture* texture = GetTexture(handle);
-				if (texture != nullptr)
-				{
-					texture->Destroy();
-					m_TexturePool.Remove(handle);
-				}
-			});
-		}
-		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) override
-		{
-			VulkanTexture* texture = GetTexture(handle);
-			if (texture != nullptr)
-			{
-				texture->Update(bytes);
-			}
-		}
-		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle) override
-		{
-			VulkanTexture* texture = GetTexture(handle);
-			if (texture != nullptr)
-			{
-				VulkanBindGroup* bindGroup = GetBindGroup(bindGroupHandle);
-				texture->TrasitionLayout((VulkanCommandBuffer*)commandBuffer, currentLayout, newLayout, bindGroup);
-			}
-		}
-		virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) override
-		{
-			VulkanTexture* texture = GetTexture(handle);
-			if (texture != nullptr)
-			{
-				return { texture->Extent.width, texture->Extent.height, texture->Extent.depth };
-			}
-
-			return { 0.f, 0.f, 0.f };
-		}
-		virtual void* GetTextureData(Handle<Texture> handle) override
-		{
-			return nullptr;
-		}
-		VulkanTexture* GetTexture(Handle<Texture> handle) const
-		{
-			return m_TexturePool.Get(handle);
-		}
+		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) override;
+		virtual void DeleteTexture(Handle<Texture> handle) override;
+		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) override;
+		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle) override;
+		virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) override;
+		virtual void* GetTextureData(Handle<Texture> handle) override;
+		VulkanTexture* GetTexture(Handle<Texture> handle) const;
 
 		// Buffers
-		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) override
-		{
-			return m_BufferPool.Insert(std::forward<const BufferDescriptor>(desc));
-		}
-		virtual void DeleteBuffer(Handle<Buffer> handle) override
-		{
-			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
-			{
-				VulkanBuffer* buffer = GetBuffer(handle);
-				if (buffer != nullptr)
-				{
-					buffer->Destroy();
-					m_BufferPool.Remove(handle);
-				}
-			});
-		}
-		virtual void ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset) override
-		{
-			VulkanBuffer* buffer = GetBuffer(handle);
-			buffer->ReAllocate(currentOffset);
-		}
-		virtual void* GetBufferData(Handle<Buffer> handle) override
-		{
-			return m_BufferPool.Get(handle)->Data;
-		}
-		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override
-		{
-			VulkanBuffer* vulkanBuffer = GetBuffer(buffer);
-			vulkanBuffer->Data = (void*)((char*)newData + offset);
-		}
-		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override
-		{
-			VulkanBindGroup* vulkanBindGroup = GetBindGroup(bindGroup);
-			if (bufferIndex < vulkanBindGroup->Buffers.size())
-			{
-				SetBufferData(vulkanBindGroup->Buffers[bufferIndex].buffer, vulkanBindGroup->Buffers[bufferIndex].byteOffset, newData);
-			}
-		}
-		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) override
-		{
-			VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
-
-			VulkanBuffer* vulkanBuffer = GetBuffer(buffer);
-
-			if (vulkanBuffer == nullptr)
-			{
-				return;
-			}
-
-			void* data;
-			vmaMapMemory(renderer->GetAllocator(), vulkanBuffer->Allocation, &data);
-			memcpy((void*)((char*)data + offset), (void*)((char*)vulkanBuffer->Data + offset), size);
-			vmaUnmapMemory(renderer->GetAllocator(), vulkanBuffer->Allocation);
-		}
-		VulkanBuffer* GetBuffer(Handle<Buffer> handle) const
-		{
-			return m_BufferPool.Get(handle);
-		}
+		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) override;
+		virtual void DeleteBuffer(Handle<Buffer> handle) override;
+		virtual void ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset) override;
+		virtual void* GetBufferData(Handle<Buffer> handle) override;
+		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override;
+		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
+		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) override;
+		VulkanBuffer* GetBuffer(Handle<Buffer> handle) const;
 
 		// Framebuffers
-		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) override
-		{
-			return m_FrameBufferPool.Insert(std::forward<const FrameBufferDescriptor>(desc));
-		}
-		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) override
-		{
-			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
-			{
-				VulkanFrameBuffer* frameBuffer = GetFrameBuffer(handle);
-				if (frameBuffer != nullptr)
-				{
-					frameBuffer->Destroy();
-					m_FrameBufferPool.Remove(handle);
-				}
-			});
-		}
-		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) override
-		{
-			if (!handle.IsValid())
-			{
-				return;
-			}
-
-			VulkanFrameBuffer* frameBuffer = GetFrameBuffer(handle);
-			frameBuffer->Resize(width, height);
-		}
-		VulkanFrameBuffer* GetFrameBuffer(Handle<FrameBuffer> handle) const
-		{
-			return m_FrameBufferPool.Get(handle);
-		}
+		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) override;
+		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) override;
+		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) override;
+		VulkanFrameBuffer* GetFrameBuffer(Handle<FrameBuffer> handle) const;
 
 		// Shaders
-		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) override
-		{
-			return m_ShaderPool.Insert(std::forward<const ShaderDescriptor>(desc));
-		}
-		virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) override
-		{
-			VulkanShader* shader = GetShader(handle);
-			if (shader != nullptr)
-			{
-				shader->Recompile(std::forward<const ShaderDescriptor>(desc), true);
-			}
-
-			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
-			{
-				VulkanShader* shader = GetShader(handle);
-				if (shader != nullptr)
-				{
-					shader->DestroyOld();
-				}
-			});
-		}
-		virtual void DeleteShader(Handle<Shader> handle) override
-		{
-			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
-			{
-				VulkanShader* shader = GetShader(handle);
-				if (shader != nullptr)
-				{
-					shader->Destroy();
-					m_ShaderPool.Remove(handle);
-				}
-			});
-		}
-		virtual void AddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc) override
-		{
-			VulkanShader* shader = GetShader(handle);
-			if (shader != nullptr)
-			{
-				shader->GetOrCreateVariant(variantDesc);
-			}
-		}
-		VulkanShader* GetShader(Handle<Shader> handle) const
-		{
-			return m_ShaderPool.Get(handle);
-		}
+		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) override;
+		virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) override;
+		virtual void DeleteShader(Handle<Shader> handle) override;
+		virtual uint64_t GetOrAddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc) override;
+		VulkanShader* GetShader(Handle<Shader> handle) const;
 
 		// BindGroups
-		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) override
-		{
-			// Caching mechanism so that materials with the same resources, use the same bind group.
-			uint16_t index = 0;
-			uint64_t descriptorHash = ResourceManager::Instance->GetBindGroupHash(desc);
-
-			for (const auto& bindGroup : m_BindGroupPool.GetDataPool())
-			{
-				uint64_t hash = CalculateBindGroupHash(&bindGroup);
-
-				if (descriptorHash == hash)
-				{
-					return m_BindGroupPool.GetHandleFromIndex(index);
-				}
-
-				index++;
-			}
-
-			return m_BindGroupPool.Insert(std::forward<const BindGroupDescriptor>(desc));
-		}
-		virtual void DeleteBindGroup(Handle<BindGroup> handle) override
-		{
-			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
-			{
-				VulkanBindGroup* bindGroup = GetBindGroup(handle);
-				if (bindGroup != nullptr)
-				{
-					bindGroup->Destroy();
-					m_BindGroupPool.Remove(handle);
-				}
-			});
-		}
-		virtual void UpdateBindGroup(Handle<BindGroup> handle)
-		{
-			VulkanBindGroup* bindGroup = GetBindGroup(handle);
-			if (bindGroup != nullptr)
-			{
-				bindGroup->Update();
-			}
-		}
-		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) override
-		{
-			return CalculateBindGroupHash(GetBindGroup(handle));
-		}
-		VulkanBindGroup* GetBindGroup(Handle<BindGroup> handle) const
-		{
-			return m_BindGroupPool.Get(handle);
-		}
+		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) override;
+		virtual void DeleteBindGroup(Handle<BindGroup> handle) override;
+		virtual void UpdateBindGroup(Handle<BindGroup> handle);
+		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) override;
+		VulkanBindGroup GetBindGroup(Handle<BindGroup> handle) const;
+		VulkanBindGroupHot* GetBindGroupHot(Handle<BindGroup> handle) const;
+		VulkanBindGroupCold* GetBindGroupCold(Handle<BindGroup> handle) const;
 
 		// BindGroupsLayouts
-		virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) override
-		{
-			return m_BindGroupLayoutPool.Insert(std::forward<const BindGroupLayoutDescriptor>(desc));
-		}
-		virtual void DeleteBindGroupLayout(Handle<BindGroupLayout> handle) override
-		{
-			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
-			{
-				VulkanBindGroupLayout* bindGroupLayout = GetBindGroupLayout(handle);
-				if (bindGroupLayout != nullptr)
-				{
-					bindGroupLayout->Destroy();
-					m_BindGroupLayoutPool.Remove(handle);
-				}
-			});
-		}
-		VulkanBindGroupLayout* GetBindGroupLayout(Handle<BindGroupLayout> handle) const
-		{
-			return m_BindGroupLayoutPool.Get(handle);
-		}
+		virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) override;
+		virtual void DeleteBindGroupLayout(Handle<BindGroupLayout> handle) override;
+		VulkanBindGroupLayout* GetBindGroupLayout(Handle<BindGroupLayout> handle) const;
 
 		// RenderPass
-		virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) override
-		{
-			return m_RenderPassPool.Insert(std::forward<const RenderPassDescriptor>(desc));
-		}
-		virtual void DeleteRenderPass(Handle<RenderPass> handle) override
-		{
-			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
-			{
-				VulkanRenderPass* renderPass = GetRenderPass(handle);
-				if (renderPass != nullptr)
-				{
-					renderPass->Destroy();
-					m_RenderPassPool.Remove(handle);
-				}
-			});
-		}
-		VulkanRenderPass* GetRenderPass(Handle<RenderPass> handle) const
-		{
-			return m_RenderPassPool.Get(handle);
-		}
+		virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) override;
+		virtual void DeleteRenderPass(Handle<RenderPass> handle) override;
+		VulkanRenderPass* GetRenderPass(Handle<RenderPass> handle) const;
 
 		// RenderPassLayouts
-		virtual Handle<RenderPassLayout> CreateRenderPassLayout(const RenderPassLayoutDescriptor&& desc) override
-		{
-			return m_RenderPassLayoutPool.Insert(std::forward<const RenderPassLayoutDescriptor>(desc));
-		}
-		virtual void DeleteRenderPassLayout(Handle<RenderPassLayout> handle) override
-		{
-			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
-			{
-				m_RenderPassLayoutPool.Remove(handle);
-			});
-		}
-		VulkanRenderPassLayout* GetRenderPassLayout(Handle<RenderPassLayout> handle) const
-		{
-			return m_RenderPassLayoutPool.Get(handle);
-		}
+		virtual Handle<RenderPassLayout> CreateRenderPassLayout(const RenderPassLayoutDescriptor&& desc) override;
+		virtual void DeleteRenderPassLayout(Handle<RenderPassLayout> handle) override;
+		VulkanRenderPassLayout* GetRenderPassLayout(Handle<RenderPassLayout> handle) const;
 
 	private:
-		Pool<VulkanTexture, Texture> m_TexturePool = Pool<VulkanTexture, Texture>(128);
-		Pool<VulkanBuffer, Buffer> m_BufferPool = Pool<VulkanBuffer, Buffer>(512);
-		Pool<VulkanShader, Shader> m_ShaderPool = Pool<VulkanShader, Shader>(64);
-		Pool<VulkanFrameBuffer, FrameBuffer> m_FrameBufferPool = Pool<VulkanFrameBuffer, FrameBuffer>(32);
-		Pool<VulkanBindGroup, BindGroup> m_BindGroupPool = Pool<VulkanBindGroup, BindGroup>(64);
-		Pool<VulkanBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool = Pool<VulkanBindGroupLayout, BindGroupLayout>(32);
-		Pool<VulkanRenderPass, RenderPass> m_RenderPassPool = Pool<VulkanRenderPass, RenderPass>(32);
-		Pool<VulkanRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool = Pool<VulkanRenderPassLayout, RenderPassLayout>(32);
+		Pool<VulkanTexture, Texture> m_TexturePool;
+		Pool<VulkanBuffer, Buffer> m_BufferPool;
+		Pool<VulkanShader, Shader> m_ShaderPool;
+		Pool<VulkanFrameBuffer, FrameBuffer> m_FrameBufferPool;
+		SplitPool<VulkanBindGroupHot, VulkanBindGroupCold, BindGroup> m_BindGroupSplitPool;
+		Pool<VulkanBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
+		Pool<VulkanRenderPass, RenderPass> m_RenderPassPool;
+		Pool<VulkanRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
 
 		friend class VulkanRenderer; // This is required for a hack to create the swapchain images in the VulkanRenderer
 
 	private:
-		uint64_t CalculateBindGroupHash(const VulkanBindGroup* bindGroup)
-		{
-			if (bindGroup == nullptr)
-			{
-				return 0;
-			}
-
-			uint64_t hash = 0;
-
-			for (const auto& bufferEntry : bindGroup->Buffers)
-			{
-				hash += bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code();
-				hash += bufferEntry.byteOffset;
-				hash += bufferEntry.range;
-			}
-
-			for (const auto texture : bindGroup->Textures)
-			{
-				hash += texture.HashKey() + typeid(Texture).hash_code();
-			}
-
-			hash += bindGroup->BindGroupLayout.HashKey() + typeid(BindGroupLayout).hash_code();
-
-			return hash;
-		}
+		uint64_t CalculateBindGroupHash(const VulkanBindGroupCold* bindGroupCold);
 	};
 }

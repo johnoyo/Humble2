@@ -81,7 +81,7 @@ namespace HBL2
 			.renderPass = renderPass,
 		});
 
-		ResourceManager::Instance->AddShaderVariant(ctx.Shader, variant);
+		ResourceManager::Instance->GetOrAddShaderVariant(ctx.Shader, variant);
 
 		// Create srp material.
 		ctx.Material = ResourceManager::Instance->CreateMaterial({
