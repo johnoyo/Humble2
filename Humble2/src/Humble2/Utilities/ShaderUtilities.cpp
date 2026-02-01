@@ -46,11 +46,6 @@ namespace HBL2
 	{
 		HBL2_CORE_ASSERT(s_Instance == nullptr, "ShaderUtilities::s_Instance is not null! ShaderUtilities::Initialize has been called twice.");
 		s_Instance = new ShaderUtilities;
-
-		Get().m_Reservation = Allocator::Arena.Reserve("ShaderUtilitiesPool", 16_MB);
-		Get().m_Arena.Initialize(&Allocator::Arena, 16_MB, Get().m_Reservation);
-
-		Get().m_ShaderAssets = MakeDArray<Handle<Asset>>(Get().m_Arena, 1024);
 	}
 
 	void ShaderUtilities::Shutdown()
@@ -59,6 +54,17 @@ namespace HBL2
 
 		delete s_Instance;
 		s_Instance = nullptr;
+	}
+
+	ShaderUtilities::ShaderUtilities()
+	{
+		m_Reservation = Allocator::Arena.Reserve("ShaderUtilitiesPool", 16_MB);
+		m_Arena.Initialize(&Allocator::Arena, 16_MB, m_Reservation);
+
+		m_ShaderAssets = MakeDArray<Handle<Asset>>(m_Arena, 1024);
+		m_ShaderReflectionData = MakeHMap<std::string, ReflectionData>(m_Arena, 1024);
+		m_Shaders = MakeHMap<BuiltInShader, Handle<Shader>>(m_Arena, 1024);
+		m_ShaderLayouts = MakeHMap<BuiltInShader, Handle<BindGroupLayout>>(m_Arena, 64);
 	}
 
 	std::string ShaderUtilities::ReadFile(const std::string& filepath)

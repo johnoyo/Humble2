@@ -16,8 +16,8 @@ namespace HBL2
 		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", byteSize);
 		m_PoolArena.Initialize(&Allocator::Arena, byteSize, m_Reservation);
 
-		m_RegisteredAssetMap.emplace(MakeHMap<UUID, Handle<Asset>>(m_PoolArena, 1024));
-		m_RegisteredAssets.emplace(MakeDArray<Handle<Asset>>(m_PoolArena, 1024));
+		m_RegisteredAssetMap = MakeHMap<UUID, Handle<Asset>>(m_PoolArena, 1024);
+		m_RegisteredAssets = MakeDArray<Handle<Asset>>(m_PoolArena, 1024);
 	}
 
 	Handle<Asset> AssetManager::CreateAsset(const AssetDescriptor&& desc)
@@ -30,10 +30,10 @@ namespace HBL2
 		}
 
 		handle = m_AssetPool.Insert(Asset(std::forward<const AssetDescriptor>(desc)));
-		m_RegisteredAssets->push_back(handle);
+		m_RegisteredAssets.push_back(handle);
 
 		Asset* asset = GetAssetMetadata(handle);
-		m_RegisteredAssetMap->operator[](asset->UUID) = handle;
+		m_RegisteredAssetMap[asset->UUID] = handle;
 
 		return handle;
 	}
@@ -47,14 +47,14 @@ namespace HBL2
 				Asset* asset = GetAssetMetadata(handle);
 				if (asset != nullptr)
 				{
-					m_RegisteredAssetMap->erase(asset->UUID);
+					m_RegisteredAssetMap.erase(asset->UUID);
 				}
 
-				auto assetIterator = std::find(m_RegisteredAssets->begin(), m_RegisteredAssets->end(), handle);
+				auto assetIterator = std::find(m_RegisteredAssets.begin(), m_RegisteredAssets.end(), handle);
 
-				if (assetIterator != m_RegisteredAssets->end())
+				if (assetIterator != m_RegisteredAssets.end())
 				{
-					m_RegisteredAssets->erase(assetIterator);
+					m_RegisteredAssets.erase(assetIterator);
 				}
 
 				m_AssetPool.Remove(handle);
@@ -176,7 +176,7 @@ namespace HBL2
 		
 		const auto& builtInShaderAssets = ShaderUtilities::Get().GetBuiltInShaderAssets();
 
-		for (const auto handle : *m_RegisteredAssets)
+		for (const auto handle : m_RegisteredAssets)
 		{
 			// Skip if is a built in material or shader asset.
 			bool isBuiltInAsset = false;
@@ -198,23 +198,23 @@ namespace HBL2
 		}
 
 		// Clear asset handle caches.
-		m_RegisteredAssets->clear();
-		m_RegisteredAssetMap->clear();
+		m_RegisteredAssets.clear();
+		m_RegisteredAssetMap.clear();
 
 		// Reregister built in shader assets.
 		for (const auto shaderAssetHandle : builtInShaderAssets)
 		{
-			m_RegisteredAssets->push_back(shaderAssetHandle);
+			m_RegisteredAssets.push_back(shaderAssetHandle);
 			Asset* asset = GetAssetMetadata(shaderAssetHandle);
-			m_RegisteredAssetMap->operator[](asset->UUID) = shaderAssetHandle;
+			m_RegisteredAssetMap[asset->UUID] = shaderAssetHandle;
 		}
 
 		// Reregister built in material asset.
 		if (ShaderUtilities::Get().LitMaterialAsset.IsValid())
 		{
-			m_RegisteredAssets->push_back(ShaderUtilities::Get().LitMaterialAsset);
+			m_RegisteredAssets.push_back(ShaderUtilities::Get().LitMaterialAsset);
 			Asset* asset = GetAssetMetadata(ShaderUtilities::Get().LitMaterialAsset);
-			m_RegisteredAssetMap->operator[](asset->UUID) = ShaderUtilities::Get().LitMaterialAsset;
+			m_RegisteredAssetMap[asset->UUID] = ShaderUtilities::Get().LitMaterialAsset;
 		}
 	}
 }

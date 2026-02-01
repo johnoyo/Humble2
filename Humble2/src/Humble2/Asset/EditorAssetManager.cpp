@@ -170,9 +170,10 @@ namespace HBL2
 	{
 		Handle<Asset> assetHandle;
 
-		if (m_RegisteredAssetMap->find(assetUUID) != m_RegisteredAssetMap->end())
+		auto it = m_RegisteredAssetMap.find(assetUUID);
+		if (it != m_RegisteredAssetMap.end())
 		{
-			assetHandle = m_RegisteredAssetMap->operator[](assetUUID);
+			assetHandle = it->second;
 		}
 
 		return assetHandle;

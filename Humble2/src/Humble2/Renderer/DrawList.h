@@ -62,6 +62,6 @@ namespace HBL2
 		const Span<const LocalDrawStream> GetDraws() const { return { m_Draws.data(), m_Draws.size() }; }
 
 	private:
-		DArray<LocalDrawStream> m_Draws;
+		DArray<LocalDrawStream> m_Draws = MakeEmptyDArray<LocalDrawStream>();
 	};
 }
