@@ -4,7 +4,7 @@ namespace HBL2
 {
 	void RenderPassPool::AddRenderPass(ScriptableRenderPass* renderPass)
 	{
-		m_RenderPasses.Add(renderPass);
+		m_RenderPasses.push_back(renderPass);
 	}
 
 	void RenderPassPool::Initialize()

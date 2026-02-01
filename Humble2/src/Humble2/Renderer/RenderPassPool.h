@@ -3,7 +3,7 @@
 #include "Enums.h"
 #include "ScriptableRenderPass.h"
 
-#include "Utilities\Collections\DynamicArray.h"
+#include <vector>
 
 namespace HBL2
 {
@@ -16,6 +16,6 @@ namespace HBL2
 		void Destroy();
 
 	private:
-		DynamicArray<ScriptableRenderPass*> m_RenderPasses;
+		std::vector<ScriptableRenderPass*> m_RenderPasses;
 	};
 }
