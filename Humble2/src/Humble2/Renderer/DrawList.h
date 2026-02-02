@@ -5,13 +5,7 @@
 #include "Resources\ResourceManager.h"
 
 #include "Core/Allocators.h"
-
 #include "Utilities/Collections/Collections.h"
-#include "Utilities/Collections/HashMap.h"
-#include "Utilities/Allocators/BumpAllocator.h"
-
-#include <functional>
-#include <unordered_map>
 
 namespace HBL2
 {
