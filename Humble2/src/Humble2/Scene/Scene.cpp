@@ -326,12 +326,30 @@ namespace HBL2
         InternalDestroyEntity(entity, true);
     }
 
-    Entity Scene::DuplicateEntity(Entity entity)
+    Entity Scene::DuplicateEntity(Entity entity, EntityDuplicationNaming namingConvention)
     {
         std::string name = GetComponent<Component::Tag>(entity).Name;
-        Entity newEntity = CreateEntity(name + "(Clone)");
 
-        return InternalDuplicateEntity(entity, newEntity);
+        switch (namingConvention)
+        {
+        case HBL2::EntityDuplicationNaming::APPEND_CLONE_RECURSIVE:
+            {
+                Entity newEntity = CreateEntity(name + "(Clone)");
+                return InternalDuplicateEntity(entity, newEntity, true);
+            }
+        case HBL2::EntityDuplicationNaming::APPEND_CLONE_TO_BASE_ONLY:
+            {
+                Entity newEntity = CreateEntity(name + "(Clone)");
+                return InternalDuplicateEntity(entity, newEntity, false);
+            }
+        case HBL2::EntityDuplicationNaming::DONT_APPEND_CLONE:
+            {
+                Entity newEntity = CreateEntity(name);
+                return InternalDuplicateEntity(entity, newEntity, false);
+            }
+        }
+
+        return Entity::Null;
     }
 
     void Scene::DeregisterSystem(const std::string& systemName)
@@ -459,7 +477,7 @@ namespace HBL2
         m_Registry.destroy(entity);
     }
 
-    Entity Scene::InternalDuplicateEntity(Entity entity, Entity newEntity)
+    Entity Scene::InternalDuplicateEntity(Entity entity, Entity newEntity, bool appendCloneToName)
     {
         auto& newLink = GetComponent<HBL2::Component::Link>(newEntity);
 
@@ -477,7 +495,7 @@ namespace HBL2
                     for (auto child : ((HBL2::Component::Link&)component).Children)
                     {
                         Entity childEntity = FindEntityByUUID(child);
-                        Entity newChildEntity = DuplicateEntity(childEntity);
+                        Entity newChildEntity = DuplicateEntity(childEntity, appendCloneToName ? EntityDuplicationNaming::APPEND_CLONE_RECURSIVE : EntityDuplicationNaming::DONT_APPEND_CLONE);
 
                         // Add the base entity as the parent of this
                         HBL2::Component::Link& newChildLink = GetComponent<HBL2::Component::Link>(newChildEntity);
@@ -606,7 +624,7 @@ namespace HBL2
         gatherPreserved(gatherPreserved, entityToPreserveFrom);
 
         // Dupilcate the entity from the prefab source entity.
-        Entity clone = DuplicateEntity(prefabSourceEntity);
+        Entity clone = DuplicateEntity(prefabSourceEntity, EntityDuplicationNaming::DONT_APPEND_CLONE);
 
         auto updateUUIDsFromPreserved = [&](auto&& self, Entity e, Entity parent) -> void
         {

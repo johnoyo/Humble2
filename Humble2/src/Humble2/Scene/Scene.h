@@ -32,6 +32,13 @@ namespace HBL2
 		std::string name;
 	};
 
+	enum class EntityDuplicationNaming
+	{
+		APPEND_CLONE_RECURSIVE = 0,
+		APPEND_CLONE_TO_BASE_ONLY = 1,
+		DONT_APPEND_CLONE = 2,
+	};
+
 	class HBL2_API Scene
 	{
 	public:
@@ -53,7 +60,7 @@ namespace HBL2
 
 		void DestroyEntity(Entity entity);
 
-		Entity DuplicateEntity(Entity entity);
+		Entity DuplicateEntity(Entity entity, EntityDuplicationNaming namingConvention = EntityDuplicationNaming::APPEND_CLONE_TO_BASE_ONLY);
 
 		template<typename... T>
 		auto GetAllEntitiesWith()
@@ -214,8 +221,7 @@ namespace HBL2
 
 	private:
 		void InternalDestroyEntity(Entity entity, bool isRootCall);
-		Entity InternalDuplicateEntity(Entity entity, Entity newEntity);
-
+		Entity InternalDuplicateEntity(Entity entity, Entity newEntity, bool appendCloneToName);
 		Entity DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(Entity entity, Entity entityToPreserveFrom);
 		friend class Prefab;
 		friend class SceneSerializer;

@@ -183,7 +183,7 @@ namespace HBL2
 		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
 
 		// Duplicate the entity prefab before serializing to ensure unique UUIDs.
-		Entity clone = activeScene->DuplicateEntity(instantiatedPrefabEntity);
+		Entity clone = activeScene->DuplicateEntity(instantiatedPrefabEntity, EntityDuplicationNaming::DONT_APPEND_CLONE);
 
 		// Serialize now that is has unique UUIDs.
 		PrefabSerializer prefabSerializer(prefab, clone);
