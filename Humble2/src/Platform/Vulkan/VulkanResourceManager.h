@@ -23,7 +23,8 @@ namespace HBL2
 	public:
 		virtual ~VulkanResourceManager() = default;
 
-		virtual void Initialize() override;
+		virtual void Initialize(const ResourceManagerSpecification& spec) override;
+		virtual const ResourceManagerSpecification GetUsageStats() override;
 		virtual void Clean() override;
 
 		// Textures

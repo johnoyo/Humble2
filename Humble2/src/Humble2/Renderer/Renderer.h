@@ -148,7 +148,9 @@ namespace HBL2
 
 		virtual const uint32_t GetFrameIndex() const = 0;
 		const uint32_t GetFrameNumber() const { return m_FrameNumber; }
-		RendererStats& GetStats() { return m_Stats; }
+		RendererStats& GetStats() { return m_CurrentStats; }
+		RendererStats& GetStatsForDisplay() { return m_PreviousStats; }
+		void SwapAndResetStats() { (m_PreviousStats = m_CurrentStats, m_CurrentStats.Reset()); }
 
 		const Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
 		const Handle<RenderPass> GetRenderingRenderPass() const { return m_RenderingRenderPass; }
@@ -193,7 +195,8 @@ namespace HBL2
 	protected:
 		std::atomic_int32_t m_FrameNumber = { 0 };
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::NONE;
-		RendererStats m_Stats{};
+		RendererStats m_CurrentStats{};
+		RendererStats m_PreviousStats{};
 		RenderPassPool m_RenderPassPool;
 
 		Handle<BindGroupLayout> m_ShadowBindingsLayout;

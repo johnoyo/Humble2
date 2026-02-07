@@ -276,10 +276,14 @@ namespace HBL2
 				ImGui::Begin("Project Settings##Window", &m_ShowProjectSettingsWindow);
 
 				auto& spec = HBL2::Project::GetActive()->GetSpecification();
-
-				ImGui::Text("Renderer Settings");
+				const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
 
 				// Renderer.
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+				bool rOpened = ImGui::TreeNodeEx((void*)69420690, treeNodeFlags, "Renderer Settings");
+				ImGui::PopStyleVar();
+
+				if (rOpened)
 				{
 					{
 						const char* options[] = { "Forward", "ForwardPlus", "Deffered", "Custom" };
@@ -318,13 +322,16 @@ namespace HBL2
 							spec.Settings.RuntimeGraphicsAPI = (GraphicsAPI)currentItem;
 						}
 					}
+
+					ImGui::TreePop();
 				}
 
-				ImGui::Separator();
-
-				ImGui::Text("Physics2D Settings");
-
 				// Physics 2d.
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+				bool ph2dOpened = ImGui::TreeNodeEx((void*)69420691, treeNodeFlags, "Physics2D Settings");
+				ImGui::PopStyleVar();
+
+				if (ph2dOpened)
 				{
 					if (ImGui::DragFloat("Gravity##2d", &spec.Settings.GravityForce2D, 0.01f))
 					{
@@ -349,13 +356,16 @@ namespace HBL2
 					ImGui::SameLine();
 
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					ImGui::TreePop();
 				}
 
-				ImGui::Separator();
-
-				ImGui::Text("Physics3D Settings");
-
 				// Physics 3d.
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+				bool ph3dOpened = ImGui::TreeNodeEx((void*)69420692, treeNodeFlags, "Physics3D Settings");
+				ImGui::PopStyleVar();
+
+				if (ph3dOpened)
 				{
 					if (ImGui::DragFloat("Gravity##3d", &spec.Settings.GravityForce3D, 0.01f))
 					{
@@ -399,12 +409,15 @@ namespace HBL2
 					ImGui::SameLine();
 
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					ImGui::TreePop();
 				}
 
-				ImGui::Separator();
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+				bool edsOpened = ImGui::TreeNodeEx((void*)69420693, treeNodeFlags, "Editor Settings");
+				ImGui::PopStyleVar();
 
-				ImGui::Text("Editor Settings");
-
+				if (edsOpened)
 				{
 					if (ImGui::Checkbox("Multiple Viewports", &spec.Settings.EditorMultipleViewports))
 					{
@@ -413,12 +426,15 @@ namespace HBL2
 					ImGui::SameLine();
 
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					ImGui::TreePop();
 				}
 
-				ImGui::Separator();
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+				bool ausOpened = ImGui::TreeNodeEx((void*)69420694, treeNodeFlags, "Audio Settings");
+				ImGui::PopStyleVar();
 
-				ImGui::Text("Audio Settings");
-
+				if (ausOpened)
 				{
 					const char* options[] = { "Custom", "FMOD" };
 					int currentItem = (int)spec.Settings.SoundImpl;
@@ -431,31 +447,67 @@ namespace HBL2
 					ImGui::SameLine();
 
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					ImGui::TreePop();
 				}
 
-				ImGui::Separator();
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+				bool asOpened = ImGui::TreeNodeEx((void*)69420695, treeNodeFlags, "Advanced Settings");
+				ImGui::PopStyleVar();
 
-				ImGui::Text("Advanced Settings");
-
+				if (asOpened)
 				{
-					if (ImGui::InputScalar("Max App Memory", ImGuiDataType_U32, (void*)(intptr_t*)&spec.Settings.MaxAppMemory))
-					{
-					}
-
+					ImGui::InputScalar("Max App Memory", ImGuiDataType_U32, (void*)(intptr_t*)&spec.Settings.MaxAppMemory);
 					ImGui::SameLine();
-
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 
-					if (ImGui::InputScalar("Max UniformBuffer Memory", ImGuiDataType_U32, (void*)(intptr_t*)&spec.Settings.MaxUniformBufferMemory))
+					ImGui::InputScalar("Max UniformBuffer Memory", ImGuiDataType_U32, (void*)(intptr_t*)&spec.Settings.MaxUniformBufferMemory);
+					ImGui::SameLine();
+					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					ImGui::Separator();
+					
+					ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+					bool rmOpened = ImGui::TreeNodeEx((void*)typeid(ResourceManager).hash_code(), treeNodeFlags, "Resource Manager Settings");
+					ImGui::PopStyleVar();
+
+					if (rmOpened)
 					{
+						ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+						ImGui::InputInt("Textures Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Textures);
+						ImGui::InputInt("Shaders Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Shaders);
+						ImGui::InputInt("Buffers Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Buffers);
+						ImGui::InputInt("BindGroups Pool Size", (int*)&spec.Settings.ResourceManagerSpec.BindGroups);
+						ImGui::InputInt("BindGroupLayouts Pool Size", (int*)&spec.Settings.ResourceManagerSpec.BindGroupLayouts);
+						ImGui::InputInt("FrameBuffers Pool Size", (int*)&spec.Settings.ResourceManagerSpec.FrameBuffers);
+						ImGui::InputInt("RenderPass Pool Size", (int*)&spec.Settings.ResourceManagerSpec.RenderPass);
+						ImGui::InputInt("RenderPassLayouts Pool Size", (int*)&spec.Settings.ResourceManagerSpec.RenderPassLayouts);
+						ImGui::InputInt("Meshes Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Meshes);
+						ImGui::InputInt("Materials Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Materials);
+						ImGui::InputInt("Scenes Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Scenes);
+						ImGui::InputInt("Scripts Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Scripts);
+						ImGui::InputInt("Sounds Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Sounds);
+						ImGui::InputInt("Prefabs Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Prefabs);
+
+						ImGui::TreePop();
 					}
 
-					ImGui::SameLine();
+					ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+					bool amOpened = ImGui::TreeNodeEx((void*)typeid(AssetManager).hash_code(), treeNodeFlags, "Asset Manager Settings");
+					ImGui::PopStyleVar();
 
-					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+					if (amOpened)
+					{
+						ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+						ImGui::InputInt("Asset Pool Size", (int*)&spec.Settings.AssetManagerSpec.Assets);
+
+						ImGui::TreePop();
+					}
+
+					ImGui::TreePop();
 				}
 
-				ImGui::Separator();
+				ImGui::NewLine();
 
 				if (ImGui::Button("Save Project Settings"))
 				{

@@ -4,6 +4,21 @@ namespace HBL2
 {
 	ResourceManager* ResourceManager::Instance = nullptr;
 
+	void ResourceManager::InternalInitialize()
+	{
+		m_MeshPool.Initialize(m_Spec.Meshes);
+		m_MaterialPool.Initialize(m_Spec.Materials);
+		m_ScenePool.Initialize(m_Spec.Scenes);
+		m_ScriptPool.Initialize(m_Spec.Scripts);
+		m_SoundPool.Initialize(m_Spec.Sounds);
+		m_PrefabPool.Initialize(m_Spec.Prefabs);
+	}
+
+	const ResourceManagerSpecification& ResourceManager::GetSpec() const
+	{
+		return m_Spec;
+	}
+
 	void ResourceManager::Flush(uint32_t currentFrame)
 	{
 		m_DeletionQueue.Flush(currentFrame);

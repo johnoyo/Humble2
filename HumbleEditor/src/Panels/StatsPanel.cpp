@@ -4,6 +4,28 @@ namespace HBL2
 {
 	namespace Editor
 	{
+		static void TextWithCapacityColor(const char* label, int used, int capacity)
+		{
+			float ratio = capacity > 0 ? (float)used / (float)capacity : 0.0f;
+
+			ImVec4 color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // white
+			if (ratio > 0.90f)
+			{
+				color = ImVec4(1.0f, 0.25f, 0.25f, 1.0f); // red
+			}
+			else if (ratio > 0.75f)
+			{
+				color = ImVec4(1.0f, 1.0f, 0.25f, 1.0f); // yellow
+			}
+
+			ImGui::Text("%s:", label);
+			ImGui::SameLine();
+
+			ImGui::PushStyleColor(ImGuiCol_Text, color);
+			ImGui::Text("%d / %d", used, capacity);
+			ImGui::PopStyleColor();
+		}
+
 		void EditorPanelSystem::DrawStatsPanel(float ts)
 		{
 			const auto& appStats = Application::Get().GetStats();
@@ -26,7 +48,7 @@ namespace HBL2
 
 			ImGui::Separator();
 
-			const auto& stats = Renderer::Instance->GetStats();
+			const auto& stats = Renderer::Instance->GetStatsForDisplay();
 
 			ImGui::Text("Renderer");
 			ImGui::NewLine();
@@ -66,9 +88,42 @@ namespace HBL2
 
 			ImGui::Separator();
 
+			ImGui::Text("Resource Manager");
+			ImGui::NewLine();
+
+			const auto& rmSpec = ResourceManager::Instance->GetSpec();
+			const auto& rmStats = ResourceManager::Instance->GetUsageStats();
+
+			TextWithCapacityColor("Textures Pool", rmStats.Textures, rmSpec.Textures);
+			TextWithCapacityColor("Shaders Pool", rmStats.Shaders, rmSpec.Shaders);
+			TextWithCapacityColor("Buffers Pool", rmStats.Buffers, rmSpec.Buffers);
+			TextWithCapacityColor("BindGroups Pool", rmStats.BindGroups, rmSpec.BindGroups);
+			TextWithCapacityColor("BindGroupLayouts Pool", rmStats.BindGroupLayouts, rmSpec.BindGroupLayouts);
+			TextWithCapacityColor("FrameBuffers Pool", rmStats.FrameBuffers, rmSpec.FrameBuffers);
+			TextWithCapacityColor("RenderPass Pool", rmStats.RenderPass, rmSpec.RenderPass);
+			TextWithCapacityColor("RenderPassLayouts Pool", rmStats.RenderPassLayouts, rmSpec.RenderPassLayouts);
+			TextWithCapacityColor("Meshes Pool", rmStats.Meshes, rmSpec.Meshes);
+			TextWithCapacityColor("Materials Pool", rmStats.Materials, rmSpec.Materials);
+			TextWithCapacityColor("Scenes Pool", rmStats.Scenes, rmSpec.Scenes);
+			TextWithCapacityColor("Scripts Pool", rmStats.Scripts, rmSpec.Scripts);
+			TextWithCapacityColor("Sounds Pool", rmStats.Sounds, rmSpec.Sounds);
+			TextWithCapacityColor("Prefabs Pool", rmStats.Prefabs, rmSpec.Prefabs);
+
+			ImGui::Separator();
+
+			ImGui::Text("Asset Manager");
+			ImGui::NewLine();
+
+			const auto& amSpec = AssetManager::Instance->GetSpec();
+			const auto& amStats = AssetManager::Instance->GetUsageStats();
+
+			TextWithCapacityColor("Assets Pool", amStats.Assets, amSpec.Assets);
+
+			ImGui::Separator();
+
 			ImGui::Text("Arena Allocators");
+			ImGui::NewLine();
 			ImGui::Text("Arena: %f %%", Allocator::Arena.GetFullPercentage());
-			ImGui::Text("Frame: %f %%", Allocator::Frame.GetFullPercentage());
 			ImGui::Text("Persistent: %f %%", Allocator::Persistent.GetFullPercentage());
 		}
 	}

@@ -39,7 +39,7 @@ namespace HBL2
 
 	void OpenGLRenderer::BeginFrame()
 	{
-		m_Stats.Reset();
+		SwapAndResetStats();
 	}
 
 	CommandBuffer* OpenGLRenderer::BeginCommandRecording(CommandBufferType type)

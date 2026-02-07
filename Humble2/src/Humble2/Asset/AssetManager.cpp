@@ -8,16 +8,33 @@ namespace HBL2
 {
 	AssetManager* AssetManager::Instance = nullptr;
 
-	void AssetManager::Initialize()
+	void AssetManager::Initialize(const AssetManagerSpecification& spec)
 	{
-		m_AssetPool.Initialize(1024);
+		m_Spec = spec;
 
-		uint32_t byteSize = (sizeof(UUID) + 2 * sizeof(Handle<Asset>)) * 2048;
+		m_AssetPool.Initialize(m_Spec.Assets);
+
+		uint32_t byteSize = (sizeof(UUID) + 2 * sizeof(Handle<Asset>)) * (2 * m_Spec.Assets);
 		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", byteSize);
 		m_PoolArena.Initialize(&Allocator::Arena, byteSize, m_Reservation);
 
-		m_RegisteredAssetMap = MakeHMap<UUID, Handle<Asset>>(m_PoolArena, 1024);
-		m_RegisteredAssets = MakeDArray<Handle<Asset>>(m_PoolArena, 1024);
+		m_RegisteredAssetMap = MakeHMap<UUID, Handle<Asset>>(m_PoolArena, m_Spec.Assets);
+		m_RegisteredAssets = MakeDArray<Handle<Asset>>(m_PoolArena, m_Spec.Assets);
+	}
+
+	const AssetManagerSpecification& AssetManager::GetSpec() const
+	{
+		return m_Spec;
+	}
+
+	const AssetManagerSpecification& AssetManager::GetUsageStats()
+	{
+		AssetManagerSpecification currentSpec =
+		{
+			.Assets = m_AssetPool.FreeSlotCount(),
+		};
+
+		return currentSpec;
 	}
 
 	Handle<Asset> AssetManager::CreateAsset(const AssetDescriptor&& desc)
@@ -216,5 +233,29 @@ namespace HBL2
 			Asset* asset = GetAssetMetadata(ShaderUtilities::Get().LitMaterialAsset);
 			m_RegisteredAssetMap[asset->UUID] = ShaderUtilities::Get().LitMaterialAsset;
 		}
+	}
+
+	void AssetManager::WaitForAsyncJobs(JobContext* customJobCtx)
+	{
+		JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
+		JobSystem::Get().Wait(ctx);
+	}
+
+	Handle<Asset> AssetManager::GetHandleFromUUID(UUID assetUUID)
+	{
+		Handle<Asset> assetHandle;
+
+		auto it = m_RegisteredAssetMap.find(assetUUID);
+		if (it != m_RegisteredAssetMap.end())
+		{
+			assetHandle = it->second;
+		}
+
+		return assetHandle;
+	}
+
+	void AssetManager::SaveAsset(UUID assetUUID)
+	{
+		return SaveAsset(GetHandleFromUUID(assetUUID));
 	}
 }

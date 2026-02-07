@@ -21,11 +21,6 @@ namespace HBL2
 		static HBL2::Arena FrameArena;
 
 		/**
-		 * @brief Arena allocator for the duration of a frame.
-		 */
-		static BumpAllocator Frame;
-
-		/**
 		* @brief Arena allocator for the duration of the app.
 		*/
 		static BinAllocator Persistent;

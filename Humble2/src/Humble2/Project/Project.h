@@ -38,6 +38,8 @@ namespace HBL2
 
 		uint32_t MaxAppMemory = 1_GB;
 		uint32_t MaxUniformBufferMemory = 64_MB;
+		ResourceManagerSpecification ResourceManagerSpec = {};
+		AssetManagerSpecification AssetManagerSpec = {};
 	};
 
 	struct HBL2_API ProjectSpecification

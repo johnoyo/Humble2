@@ -139,6 +139,8 @@ namespace HBL2
 
         uint32_t Capacity() const { return m_Size; }
 
+        uint32_t FreeSlotCount() const { return m_FreeList.NonInvalidCount(); }
+
     private:
         LockFreeIndexStack m_FreeList;
 

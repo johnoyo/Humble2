@@ -197,6 +197,8 @@ namespace HBL2
 
         uint32_t Capacity() const { return m_Size; }
 
+        uint32_t FreeSlotCount() const { return m_FreeList.NonInvalidCount(); }
+
     private:
         LockFreeIndexStack m_FreeList;
         std::atomic<uint16_t>* m_NextFree = nullptr;

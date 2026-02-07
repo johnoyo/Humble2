@@ -84,6 +84,10 @@ namespace HBL2
 			asset->Indentifier = ReimportMaterial(asset).Pack();
 			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
+		case AssetType::Prefab:
+			asset->Indentifier = ReimportPrefab(asset).Pack();
+			asset->Loaded = (asset->Indentifier != 0);
+			return asset->Indentifier;
 		}
 
 		return 0;
@@ -159,30 +163,6 @@ namespace HBL2
 		HBL2_CORE_ASSERT(false, "Unsupported asset type!");
 		return false;
     }
-
-	void AssetManager::WaitForAsyncJobs(JobContext* customJobCtx)
-	{
-		JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
-		JobSystem::Get().Wait(ctx);
-	}
-
-	Handle<Asset> AssetManager::GetHandleFromUUID(UUID assetUUID)
-	{
-		Handle<Asset> assetHandle;
-
-		auto it = m_RegisteredAssetMap.find(assetUUID);
-		if (it != m_RegisteredAssetMap.end())
-		{
-			assetHandle = it->second;
-		}
-
-		return assetHandle;
-	}
-
-	void AssetManager::SaveAsset(UUID assetUUID)
-	{
-		return SaveAsset(GetHandleFromUUID(assetUUID));
-	}
 
 	void EditorAssetManager::SaveAsset(Handle<Asset> handle)
     {
@@ -996,6 +976,11 @@ namespace HBL2
 		ioStream.close();
 
 		return materialHandle;
+	}
+
+	Handle<Prefab> EditorAssetManager::ReimportPrefab(Asset* asset)
+	{
+		return Handle<Prefab>();
 	}
 
 	/// Save methods

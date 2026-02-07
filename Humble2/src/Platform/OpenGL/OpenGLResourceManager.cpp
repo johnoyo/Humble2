@@ -2,16 +2,42 @@
 
 namespace HBL2
 {
-	void OpenGLResourceManager::Initialize()
+	void OpenGLResourceManager::Initialize(const ResourceManagerSpecification& spec)
 	{
-		m_TexturePool.Initialize(128);
-		m_BufferPool.Initialize(512);
-		m_ShaderPool.Initialize(64);
-		m_FrameBufferPool.Initialize(32);
-		m_BindGroupPool.Initialize(64);
-		m_BindGroupLayoutPool.Initialize(32);
-		m_RenderPassPool.Initialize(32);
-		m_RenderPassLayoutPool.Initialize(32);
+		m_Spec = spec;
+
+		InternalInitialize();
+
+		m_TexturePool.Initialize(m_Spec.Textures);
+		m_BufferPool.Initialize(m_Spec.Buffers);
+		m_ShaderPool.Initialize(m_Spec.Shaders);
+		m_FrameBufferPool.Initialize(m_Spec.FrameBuffers);
+		m_BindGroupPool.Initialize(m_Spec.BindGroups);
+		m_BindGroupLayoutPool.Initialize(m_Spec.BindGroupLayouts);
+		m_RenderPassPool.Initialize(m_Spec.RenderPass);
+		m_RenderPassLayoutPool.Initialize(m_Spec.RenderPassLayouts);
+	}
+	const ResourceManagerSpecification OpenGLResourceManager::GetUsageStats()
+	{
+		ResourceManagerSpecification currentSpec =
+		{
+			.Textures = m_TexturePool.FreeSlotCount(),
+			.Buffers = m_BufferPool.FreeSlotCount(),
+			.FrameBuffers = m_FrameBufferPool.FreeSlotCount(),
+			.Shaders = m_ShaderPool.FreeSlotCount(),
+			.BindGroups = m_BindGroupPool.FreeSlotCount(),
+			.BindGroupLayouts = m_BindGroupLayoutPool.FreeSlotCount(),
+			.RenderPass = m_RenderPassPool.FreeSlotCount(),
+			.RenderPassLayouts = m_RenderPassLayoutPool.FreeSlotCount(),
+			.Meshes = m_MeshPool.FreeSlotCount(),
+			.Materials = m_MaterialPool.FreeSlotCount(),
+			.Scenes = m_ScenePool.FreeSlotCount(),
+			.Scripts = m_ScriptPool.FreeSlotCount(),
+			.Sounds = m_SoundPool.FreeSlotCount(),
+			.Prefabs = m_PrefabPool.FreeSlotCount(),
+		};
+
+		return currentSpec;
 	}
 	void OpenGLResourceManager::Clean()
 	{

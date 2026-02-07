@@ -47,8 +47,6 @@ namespace HBL2
 
 		Allocator::Arena.Initialize(500_MB, 1_MB);
 		Allocator::FrameArena.Initialize(&Allocator::Arena, 50_MB);
-
-		Allocator::Frame.Initialize(4_MB);
 		Allocator::Persistent.Initialize(16_MB);
 
 		GraphicsAPI gfxAPI = GraphicsAPI::NONE;
@@ -97,8 +95,8 @@ namespace HBL2
 			break;
 		}
 
-		AssetManager::Instance->Initialize();
-		ResourceManager::Instance->Initialize();
+		AssetManager::Instance->Initialize(projectSettings.AssetManagerSpec);
+		ResourceManager::Instance->Initialize(projectSettings.ResourceManagerSpec);
 
 		Window::Instance->Initialize({
 			.Title = m_Specification.Name,
@@ -132,7 +130,6 @@ namespace HBL2
 
 	Application::~Application()
 	{
-		Allocator::Frame.Free();
 		Allocator::Persistent.Free();
 	}
 
@@ -216,7 +213,6 @@ namespace HBL2
 		}
 
 		// Reset frame allocator.
-		Allocator::Frame.Invalidate();
 		Allocator::FrameArena.Reset();
 
 		SWAP_AND_RESET_PROFILED_TIMERS();
@@ -233,82 +229,6 @@ namespace HBL2
 		
 		Input::Initialize();
 
-#if !MULTITHREADING
-		Device::Instance->Initialize();
-		Renderer::Instance->Initialize();
-		ImGuiRenderer::Instance->Initialize();
-		DebugRenderer::Instance->Initialize();
-
-		TextureUtilities::Get().LoadWhiteTexture();
-		ShaderUtilities::Get().LoadBuiltInShaders();
-		ShaderUtilities::Get().LoadBuiltInMaterials();
-		MeshUtilities::Get().LoadBuiltInMeshes();
-
-		m_Specification.Context->OnCreate();
-
-		int frameIndex = 0;
-
-		Window::Instance->DispatchMainLoop([this, &frameIndex]()
-		{
-			BEGIN_APP_PROFILE(gameThread);
-
-			BeginFrame();
-
-			if (frameIndex == 0)
-			{
-				frameIndex++;
-				EndFrame();
-				return;
-			}
-
-			BEGIN_APP_PROFILE(debugDraw);
-			DebugRenderer::Instance->BeginFrame();
-			m_Specification.Context->OnGizmoRender(Time::DeltaTime);
-			DebugRenderer::Instance->EndFrame();
-			END_APP_PROFILE(debugDraw, m_CurrentStats.DebugDrawTime);
-
-			BEGIN_APP_PROFILE(appUpdate);
-			m_Specification.Context->OnUpdate(Time::DeltaTime);
-			m_Specification.Context->OnFixedUpdate();
-			END_APP_PROFILE(appUpdate, m_CurrentStats.AppUpdateTime);
-
-			BEGIN_APP_PROFILE(appGUIDraw);
-			ImGuiRenderer::Instance->BeginFrame();
-			m_Specification.Context->OnGuiRender(Time::DeltaTime);
-			ImGuiRenderer::Instance->EndFrame();
-			END_APP_PROFILE(appGUIDraw, m_CurrentStats.AppGuiDrawTime);
-
-			Renderer::Instance->WaitAndSubmit();
-
-			EndFrame();
-
-			END_APP_PROFILE(gameThread, m_CurrentStats.GameThreadTime);
-
-			// -------------------------------------------------------------------
-
-			BEGIN_APP_PROFILE(renderThread);
-
-			const FrameData2* frameData = Renderer::Instance->WaitAndRender();
-
-			if (frameData == nullptr)
-			{
-				return;
-			}
-
-			BEGIN_APP_PROFILE(render);
-			Renderer::Instance->BeginFrame();
-			Renderer::Instance->Render(*frameData);
-			ImGuiRenderer::Instance->Render(*frameData);
-			Renderer::Instance->EndFrame();
-			END_APP_PROFILE(render, m_CurrentStats.RenderTime);
-
-			BEGIN_APP_PROFILE(present);
-			Renderer::Instance->Present();
-			END_APP_PROFILE(present, m_CurrentStats.PresentTime);
-
-			END_APP_PROFILE(renderThread, m_CurrentStats.RenderThreadTime);
-		});
-#else
 		DispatchRenderLoop([this]()
 		{
 			Device::Instance->Initialize();
@@ -395,7 +315,7 @@ namespace HBL2
 
 			END_APP_PROFILE(gameThread, m_CurrentStats.GameThreadTime);
 		});
-#endif
+
 		Renderer::Instance->WaitForRenderThreadIdle();
 
 		m_Specification.Context->OnDestroy();

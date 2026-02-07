@@ -18,22 +18,22 @@ namespace HBL2
 {
 	class CommandBuffer;
 
-	struct ResourceManagerStats
+	struct ResourceManagerSpecification
 	{
-		uint32_t Textures;
-		uint32_t Buffers;
-		uint32_t FrameBuffers;
-		uint32_t Shaders;
-		uint32_t BindGroups;
-		uint32_t BindGroupLayouts;
-		uint32_t RenderPass;
-		uint32_t RenderPassLayouts;
-		uint32_t Meshes;
-		uint32_t Materials;
-		uint32_t Scenes;
-		uint32_t Scripts;
-		uint32_t Sounds;
-		uint32_t Prefabs;
+		uint32_t Textures = 128;
+		uint32_t Buffers = 512;
+		uint32_t FrameBuffers = 32;
+		uint32_t Shaders = 64;
+		uint32_t BindGroups = 64;
+		uint32_t BindGroupLayouts = 32;
+		uint32_t RenderPass = 32;
+		uint32_t RenderPassLayouts = 32;
+		uint32_t Meshes = 256;
+		uint32_t Materials = 64;
+		uint32_t Scenes = 16;
+		uint32_t Scripts = 32;
+		uint32_t Sounds = 32;
+		uint32_t Prefabs = 64;
 	};
 
 	class HBL2_API ResourceManager
@@ -44,10 +44,12 @@ namespace HBL2
 		ResourceManager() = default;
 		virtual ~ResourceManager() = default;
 
+		const ResourceManagerSpecification& GetSpec() const;
 		void Flush(uint32_t currentFrame);
 		void FlushAll();
 
-		virtual void Initialize() = 0;
+		virtual void Initialize(const ResourceManagerSpecification& spec) = 0;
+		virtual const ResourceManagerSpecification GetUsageStats() = 0;
 		virtual void Clean() = 0;
 
 		// Textures
@@ -148,14 +150,16 @@ namespace HBL2
 		Prefab* GetPrefab(Handle<Prefab> handle) const;
 
 	protected:
-		ResourceDeletionQueue m_DeletionQueue;
+		void InternalInitialize();
 
-	private:
-		Pool<Mesh, Mesh> m_MeshPool = Pool<Mesh, Mesh>(256);
-		Pool<Material, Material> m_MaterialPool = Pool<Material, Material>(64);
-		Pool<Scene, Scene> m_ScenePool = Pool<Scene, Scene>(16);
-		Pool<Script, Script> m_ScriptPool = Pool<Script, Script>(32);
-		Pool<Sound, Sound> m_SoundPool = Pool<Sound, Sound>(32);
-		Pool<Prefab, Prefab> m_PrefabPool = Pool<Prefab, Prefab>(64);
+		ResourceDeletionQueue m_DeletionQueue;
+		ResourceManagerSpecification m_Spec;
+
+		Pool<Mesh, Mesh> m_MeshPool;
+		Pool<Material, Material> m_MaterialPool;
+		Pool<Scene, Scene> m_ScenePool;
+		Pool<Script, Script> m_ScriptPool;
+		Pool<Sound, Sound> m_SoundPool;
+		Pool<Prefab, Prefab> m_PrefabPool;
 	};
 }

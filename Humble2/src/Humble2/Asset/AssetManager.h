@@ -38,6 +38,11 @@ namespace HBL2
 		friend class AssetManager;
 	};
 
+	struct AssetManagerSpecification
+	{
+		uint32_t Assets = 1024;
+	};
+
 	class HBL2_API AssetManager
 	{
 	public:
@@ -46,7 +51,9 @@ namespace HBL2
 		AssetManager() = default;
 		virtual ~AssetManager() = default;
 
-		void Initialize();
+		void Initialize(const AssetManagerSpecification& spec);
+		const AssetManagerSpecification& GetSpec() const;
+		const AssetManagerSpecification& GetUsageStats();
 
 		Handle<Asset> CreateAsset(const AssetDescriptor&& desc);
 		void DeleteAsset(Handle<Asset> handle, bool destroy = false);
@@ -289,6 +296,8 @@ namespace HBL2
 		virtual bool IsAssetLoaded(Handle<Asset> handle) = 0;
 
 	protected:
+		AssetManagerSpecification m_Spec;
+
 		virtual uint32_t LoadAsset(Handle<Asset> handle) = 0;
 		virtual uint32_t ReloadAsset(Handle<Asset> handle) = 0;
 		virtual void UnloadAsset(Handle<Asset> handle) = 0;
