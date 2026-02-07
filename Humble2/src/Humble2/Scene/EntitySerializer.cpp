@@ -64,6 +64,18 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::PrefabEntity>(m_Entity))
+		{
+			out << YAML::Key << "Component::PrefabEntity";
+			out << YAML::BeginMap;
+
+			auto& pe = m_Scene->GetComponent<Component::PrefabEntity>(m_Entity);
+
+			out << YAML::Key << "EntityId" << YAML::Value << pe.EntityId;
+
+			out << YAML::EndMap;
+		}
+
 		if (m_Scene->HasComponent<Component::Link>(m_Entity))
 		{
 			out << YAML::Key << "Component::Link";
@@ -516,6 +528,13 @@ namespace HBL2
 			auto& p = m_Scene->AddComponent<Component::PrefabInstance>(m_Entity);
 			p.Id = p_NewComponent["Id"].as<UUID>();
 			p.Version = p_NewComponent["Version"].as<uint32_t>();
+		}
+
+		auto pe_NewComponent = entityNode["Component::PrefabEntity"];
+		if (pe_NewComponent)
+		{
+			auto& pe = m_Scene->AddComponent<Component::PrefabEntity>(m_Entity);
+			pe.EntityId = pe_NewComponent["EntityId"].as<UUID>();
 		}
 
 		auto linkComponent = entityNode["Component::Link"];

@@ -7,6 +7,7 @@ namespace HBL2
 		void EditorPanelSystem::DrawHierachy(Entity entity, const auto& entities)
 		{
 			const auto& tag = m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity);
+			const auto& id = m_ActiveScene->GetComponent<HBL2::Component::ID>(entity);
 
 			bool selectedEntityCondition = HBL2::Component::EditorVisible::Selected && HBL2::Component::EditorVisible::SelectedEntity == entity;
 			bool isPrefab = m_ActiveScene->HasComponent<HBL2::Component::PrefabInstance>(entity);
@@ -19,7 +20,7 @@ namespace HBL2
 				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(IM_COL32(0, 255, 239, 255)));
 			}
 
-			bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.Name.c_str());
+			bool opened = ImGui::TreeNodeEx((void*)(uint64_t)id.Identifier, flags, tag.Name.c_str());
 
 			if (isPrefab)
 			{

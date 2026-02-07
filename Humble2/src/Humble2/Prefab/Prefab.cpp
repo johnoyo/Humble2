@@ -5,6 +5,16 @@
 
 namespace HBL2
 {
+	struct PrefabInfo
+	{
+		Entity entity;
+		Component::Tag tag;
+		Component::Transform transform;
+		Component::PrefabInstance prefab;
+		UUID parent;
+		UUID uuid;
+	};
+
 	Prefab::Prefab(const PrefabDescriptor&& desc)
 		: m_UUID(desc.uuid), m_BaseEntityUUID(desc.baseEntityUUID), m_Version(desc.version)
 	{
@@ -108,8 +118,36 @@ namespace HBL2
 			return;
 		}
 
-		// Remove the prefab component from the entity.
+		// Remove the prefab instance component from the base entity.
 		activeScene->RemoveComponent<HBL2::Component::PrefabInstance>(instantiatedPrefabEntity);
+
+		// Remove the prefab entity component from all the entities in the sub tree.
+		std::function<void(Entity)> unpack = [&](Entity e)
+		{
+			if (e == Entity::Null)
+			{
+				return;
+			}
+
+			activeScene->RemoveComponent<Component::PrefabEntity>(e);
+
+			auto* link = activeScene->TryGetComponent<Component::Link>(e);
+			if (!link)
+			{
+				return;
+			}
+
+			for (UUID childUUID : link->Children)
+			{
+				Entity child = activeScene->FindEntityByUUID(childUUID);
+				if (child != Entity::Null)
+				{
+					unpack(child);
+				}
+			}
+		};
+
+		unpack(instantiatedPrefabEntity);
 	}
 
 	void Prefab::Save(Entity instantiatedPrefabEntity)
@@ -144,57 +182,89 @@ namespace HBL2
 		// Serialize the source prefab from the provided instantiated prefab entity.
 		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
 
-		PrefabSerializer prefabSerializer(prefab, instantiatedPrefabEntity);
+		// Duplicate the entity prefab before serializing to ensure unique UUIDs.
+		Entity clone = activeScene->DuplicateEntity(instantiatedPrefabEntity);
+
+		// Serialize now that is has unique UUIDs.
+		PrefabSerializer prefabSerializer(prefab, clone);
 		prefabSerializer.Serialize(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 
 		// Update metadata file and base entity UUID.
-		prefab->m_BaseEntityUUID = activeScene->GetComponent<Component::ID>(instantiatedPrefabEntity).Identifier;
+		prefab->m_BaseEntityUUID = activeScene->GetComponent<Component::ID>(clone).Identifier;
 		Prefab::CreateMetadataFile(prefabAsset, prefab->m_BaseEntityUUID, prefab->m_Version);
 
+		// Destroy the cloned entity
+		activeScene->DestroyEntity(clone);
+
+		Update(prefabAsset, prefab, activeScene, instantiatedPrefabEntity, false, false);
+	}
+
+	void Prefab::Update(Asset* prefabAsset, Prefab* prefab, Scene* activeScene, Entity instantiatedPrefabEntity, bool checkVersion, bool preserveName)
+	{
 		// Update the instantiated prefab entities that exist in the scene.
-		std::vector<Entity> otherInstantiatedPrefabEntities;
-		std::vector<Component::Transform> otherInstantiatedPrefabEntitiesTransform;
+		std::vector<PrefabInfo> instantiatedPrefabEntitiesInfo;
 
-		// NOTE: In the future, we need to update the children list of the parent of the prefab if it has one.
-		//		 Since, we are deleting it and re-instantiating it, so the child uuid that the parent holds will be invalid.
-
-		activeScene->View<Component::PrefabInstance, Component::Transform>()
-			.Each([&](Entity entity, Component::PrefabInstance& prefab, Component::Transform& tr)
+		activeScene->View<Component::ID, Component::PrefabInstance, Component::Transform, Component::Tag>()
+			.Each([&](Entity entity, Component::ID& id, Component::PrefabInstance& prefab, Component::Transform& tr, Component::Tag& tag)
 			{
 				if (prefab.Id == prefabAsset->UUID)
 				{
-					otherInstantiatedPrefabEntities.push_back(entity);
-					otherInstantiatedPrefabEntitiesTransform.push_back(tr);
+					UUID parent = 0;
+					if (auto* link = activeScene->TryGetComponent<Component::Link>(entity))
+					{
+						parent = link->Parent;
+					}
+
+					instantiatedPrefabEntitiesInfo.push_back({ entity, tag, tr, prefab, parent, id.Identifier });
 				}
 			});
 
-		HBL2_CORE_ASSERT(otherInstantiatedPrefabEntities.size() == otherInstantiatedPrefabEntitiesTransform.size(), "");
+		// Deserialize the source prefab into the scene.
+		PrefabSerializer prefabSerializer(prefab, activeScene);
+		prefabSerializer.Deserialize(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 
-		for (int i = 0; i < otherInstantiatedPrefabEntities.size(); i++)
+		// Retrieve the base entity of the source instantiated prefab.
+		UUID baseEntityUUID = prefab->GetBaseEntityUUID();
+		Entity baseEntity = activeScene->FindEntityByUUID(baseEntityUUID);
+
+		for (int i = 0; i < instantiatedPrefabEntitiesInfo.size(); i++)
 		{
-			const auto entity = otherInstantiatedPrefabEntities[i];
-			activeScene->DestroyEntity(entity);
-		}
+			const auto entity = instantiatedPrefabEntitiesInfo[i].entity;
+			const auto& transform = instantiatedPrefabEntitiesInfo[i].transform;
 
-		for (int i = 0; i < otherInstantiatedPrefabEntities.size(); i++)
-		{
-			const auto entity = otherInstantiatedPrefabEntities[i];
-			const auto& transform = otherInstantiatedPrefabEntitiesTransform[i];
+			if (prefab->m_Version == instantiatedPrefabEntitiesInfo[i].prefab.Version && checkVersion)
+			{
+				continue;
+			}
 
-			Entity clone = Prefab::Instantiate(prefabAssetHandle, activeScene);
+			Entity clone = activeScene->DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(baseEntity, entity);
 
 			if (clone != Entity::Null)
 			{
+				// Reset parent of updated prefab, since it was overriden with the saved in the source prefab.
+				auto& link = activeScene->GetComponent<Component::Link>(clone);
+				link.Parent = instantiatedPrefabEntitiesInfo[i].parent;
+				link.PrevParent = link.Parent;
+
 				auto& tr = activeScene->GetComponent<Component::Transform>(clone);
 				tr.Translation = transform.Translation;
 				tr.Rotation = transform.Rotation;
 				tr.Scale = transform.Scale;
 				tr.Static = transform.Static;
 
+				if (preserveName)
+				{
+					auto& tagComponent = activeScene->GetComponent<Component::Tag>(clone);
+					tagComponent.Name = instantiatedPrefabEntitiesInfo[i].tag.Name;
+				}
+
 				auto& prefabComponent = activeScene->GetComponent<Component::PrefabInstance>(clone);
 				prefabComponent.Version = prefab->m_Version;
 			}
 		}
+
+		// Destroy the source prefab entity.
+		activeScene->DestroyEntity(baseEntity);
 	}
 
 	void Prefab::Destroy(Entity instantiatedPrefabEntity)
@@ -261,6 +331,71 @@ namespace HBL2
 		prefabSerializer.Deserialize(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
 
 		return CloneSourcePrefab(prefab, scene);
+	}
+
+	void Prefab::ConvertEntityToPrefabPhase0(Entity entity, Scene* scene)
+	{
+		std::function<void(Entity)> convert = [&](Entity e)
+		{
+			if (e == Entity::Null)
+			{
+				return;
+			}
+
+			auto& prefabEntity = scene->GetOrAddComponent<Component::PrefabEntity>(e);
+			prefabEntity.EntityId = Random::UInt64();
+
+			auto* link = scene->TryGetComponent<Component::Link>(e);
+			if (!link)
+			{
+				return;
+			}
+
+			for (UUID childUUID : link->Children)
+			{
+				Entity child = scene->FindEntityByUUID(childUUID);
+				if (child != Entity::Null)
+				{
+					convert(child);
+				}
+			}
+		};
+
+		convert(entity);
+	}
+
+	bool Prefab::ConvertEntityToPrefabPhase1(Entity entity, Handle<Asset> assetHandle, Scene* scene)
+	{
+		if (!AssetManager::Instance->IsAssetValid(assetHandle))
+		{
+			HBL2_CORE_ERROR("Asset handle provided is invalid, aborting prefab instantiation.");
+			return false;
+		}
+
+		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+		if (prefabAsset->Type != AssetType::Prefab)
+		{
+			HBL2_CORE_ERROR("Asset handle provided is not a prefab, aborting prefab instantiation.");
+			return false;
+		}
+
+		// Get the asset handle (It will load the asset if not already loaded).
+		Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(assetHandle);
+
+		Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+		if (prefab == nullptr)
+		{
+			HBL2_CORE_ERROR("Prefab asset is invalid, aborting prefab instantiation.");
+			return false;
+		}
+
+		auto& prefabInstance = scene->GetOrAddComponent<Component::PrefabInstance>(entity);
+		prefabInstance.Id = prefab->m_UUID;
+		prefabInstance.Version = prefab->m_Version;
+
+		return true;
 	}
 
 	Entity Prefab::CloneSourcePrefab(Prefab* prefab, Scene* activeScene)

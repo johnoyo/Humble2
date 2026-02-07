@@ -275,6 +275,15 @@ namespace HBL2
 			uint32_t Version = 0;
 		};
 
+		/**
+		 * @brief Stable ID inside the prefab, its used to transfer over to the new instance the UUIDs of each entity.
+		 *		  Each entity inside a prefab has this component.
+		 */
+		struct HBL2_API PrefabEntity
+		{
+			UUID EntityId = 0;
+		};
+
 		struct HBL2_API Terrain
 		{
 			enum class ENormaliseMode

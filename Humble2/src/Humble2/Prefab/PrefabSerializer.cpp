@@ -28,21 +28,22 @@ namespace HBL2
 	{
 		/*		
 		- Instantiatiation: (Spawn into the scene)
-			- Instantiate the prefab into the scene from the file.
+			- Instantiate the source prefab into the scene from the file.
 			- Duplicate the instantiated entity so it has unique ID.
 			- Delete initial instantiated entity.
 		- Update: (the prefab is already instantiated and we want to update it since the source prefab changed.)
 			- Check if the version inside the scene matches the prefab source asset version.
 			- If they do not match
-				- Destroy instantiated prefab entity.
 				- Spawn the prefab source asset entity into the scene.
-				- Duplicate the prefab source asset entity to get the instantiated one.
+				- Duplicate the prefab source asset entity to get the updated one, while preserving the UUIDs of the original.
+				- Destroy instantiated prefab entity.
 				- Delete prefab source entity.
 		- Save:
-			- Serialize the source prefab from the provided instantiated prefab entity.
+			- Duplicate the instantiated prefab entity.
+			- Serialize the source prefab from the provided duplicated instantiated prefab entity.
 			- Update metadata file and base entity UUID.
 			- Update the instantiated prefab entities that exist in the scene.
-				- Destroy them and re-instantiate them.
+				- Destroy them and re-instantiate them while preserving their UUIDs.
 		*/
 
 		YAML::Emitter out;
@@ -74,18 +75,7 @@ namespace HBL2
 			prefab.Version = m_Context->m_Version;
 		}
 
-		// Check if the entity has any children through the link component.
-		auto* link = activeScene->TryGetComponent<Component::Link>(baseEntity);
-
-		if (link == nullptr)
-		{
-			EntitySerializer entitySerializer(activeScene, baseEntity);
-			entitySerializer.Serialize(out);
-		}
-		else
-		{
-			SerializePrefab(activeScene, baseEntity, out);
-		}
+		SerializePrefab(activeScene, baseEntity, out);
 
 		out << YAML::EndSeq;
 		out << YAML::EndMap;
@@ -160,6 +150,13 @@ namespace HBL2
 
 	void PrefabSerializer::SerializePrefab(Scene* ctx, Entity entity, YAML::Emitter& out)
 	{
+		// Add the prefab entity component if the entity does not have it.
+		if (!ctx->HasComponent<Component::PrefabEntity>(entity))
+		{
+			auto& prefabEntity = ctx->AddComponent<Component::PrefabEntity>(entity);
+			prefabEntity.EntityId = Random::UInt64();
+		}
+
 		EntitySerializer entitySerializer(ctx, entity);
 		entitySerializer.Serialize(out);
 

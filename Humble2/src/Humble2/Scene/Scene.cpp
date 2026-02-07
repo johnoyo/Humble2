@@ -94,6 +94,7 @@ namespace HBL2
         copy_component(Component::CapsuleCollider{});
         copy_component(Component::TerrainCollider{});
         copy_component(Component::PrefabInstance{});
+        copy_component(Component::PrefabEntity{});
         copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
 
@@ -246,6 +247,10 @@ namespace HBL2
         m_Registry.storage<Component::PrefabInstance>().clear();
         m_Registry.compact<Component::PrefabInstance>();
 
+        m_Registry.clear<Component::PrefabEntity>();
+        m_Registry.storage<Component::PrefabEntity>().clear();
+        m_Registry.compact<Component::PrefabEntity>();
+
         m_Registry.clear<Component::AnimationCurve>();
         m_Registry.storage<Component::AnimationCurve>().clear();
         m_Registry.compact<Component::AnimationCurve>();
@@ -325,83 +330,8 @@ namespace HBL2
     {
         std::string name = GetComponent<Component::Tag>(entity).Name;
         Entity newEntity = CreateEntity(name + "(Clone)");
-        auto& newLink = GetComponent<HBL2::Component::Link>(newEntity);
 
-        // Helper lamda for component copying
-        auto copy_component = [&](auto component_type)
-        {
-            using Component = decltype(component_type);
-
-            if (HasComponent<Component>(entity))
-            {
-                auto& component = GetComponent<Component>(entity);
-
-                if (typeid(Component) == typeid(HBL2::Component::Link))
-                {
-                    for (auto child : ((HBL2::Component::Link&)component).Children)
-                    {
-                        Entity childEntity = FindEntityByUUID(child);
-                        Entity newChildEntity = DuplicateEntity(childEntity);
-
-                        // Add the base entity as the parent of this
-                        HBL2::Component::Link& newChildLink = GetComponent<HBL2::Component::Link>(newChildEntity);
-                        newChildLink.Parent = GetComponent<HBL2::Component::ID>(newEntity).Identifier;
-                        newChildLink.PrevParent = newChildLink.Parent;
-
-                        // Add the new child entity to the new base entity
-                        newLink.Children.push_back(GetComponent<HBL2::Component::ID>(newChildEntity).Identifier);
-                    }
-                }
-                else
-                {
-                    m_Registry.emplace_or_replace<Component>(newEntity, component);
-                }
-
-            }
-        };
-
-        // Copy built in components
-        copy_component(Component::Transform{});
-        copy_component(Component::TransformEx{});
-        copy_component(Component::Link{});
-        copy_component(Component::Camera{});
-        copy_component(Component::EditorVisible{});
-        copy_component(Component::Sprite{});
-        copy_component(Component::StaticMesh{});
-        copy_component(Component::Light{});
-        copy_component(Component::SkyLight{});
-        copy_component(Component::AudioListener{});
-        copy_component(Component::AudioSource{});
-        copy_component(Component::Rigidbody2D{});
-        copy_component(Component::BoxCollider2D{});
-        copy_component(Component::Rigidbody{});
-        copy_component(Component::BoxCollider{});
-        copy_component(Component::SphereCollider{});
-        copy_component(Component::CapsuleCollider{});
-        copy_component(Component::TerrainCollider{});
-        copy_component(Component::PrefabInstance{});
-        copy_component(Component::AnimationCurve{});
-        copy_component(Component::Terrain{});
-        copy_component(Component::TerrainChunk{});
-
-        // Copy user defined components.
-        std::vector<std::string> userComponentNames;
-        std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
-
-        for (auto meta_type : entt::resolve(m_MetaContext))
-        {
-            std::string componentName = meta_type.second.info().name().data();
-            componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-
-            if (BuildEngine::Instance->HasComponent(componentName, this, entity))
-            {
-                auto componentMeta = BuildEngine::Instance->GetComponent(componentName, this, entity);
-                auto newComponentMeta = BuildEngine::Instance->AddComponent(componentName, this, newEntity);
-                newComponentMeta.assign(componentMeta);
-            }
-        }
-
-        return newEntity;
+        return InternalDuplicateEntity(entity, newEntity);
     }
 
     void Scene::DeregisterSystem(const std::string& systemName)
@@ -527,5 +457,215 @@ namespace HBL2
 
         m_EntityMap.erase(id->Identifier);
         m_Registry.destroy(entity);
+    }
+
+    Entity Scene::InternalDuplicateEntity(Entity entity, Entity newEntity)
+    {
+        auto& newLink = GetComponent<HBL2::Component::Link>(newEntity);
+
+        // Helper lamda for component copying
+        auto copy_component = [&](auto component_type)
+        {
+            using Component = decltype(component_type);
+
+            if (HasComponent<Component>(entity))
+            {
+                auto& component = GetComponent<Component>(entity);
+
+                if (typeid(Component) == typeid(HBL2::Component::Link))
+                {
+                    for (auto child : ((HBL2::Component::Link&)component).Children)
+                    {
+                        Entity childEntity = FindEntityByUUID(child);
+                        Entity newChildEntity = DuplicateEntity(childEntity);
+
+                        // Add the base entity as the parent of this
+                        HBL2::Component::Link& newChildLink = GetComponent<HBL2::Component::Link>(newChildEntity);
+                        newChildLink.Parent = GetComponent<HBL2::Component::ID>(newEntity).Identifier;
+                        newChildLink.PrevParent = newChildLink.Parent;
+
+                        // Add the new child entity to the new base entity
+                        newLink.Children.push_back(GetComponent<HBL2::Component::ID>(newChildEntity).Identifier);
+                    }
+                }
+                else
+                {
+                    m_Registry.emplace_or_replace<Component>(newEntity, component);
+                }
+
+            }
+        };
+
+        // Copy built in components
+        copy_component(Component::Transform{});
+        copy_component(Component::TransformEx{});
+        copy_component(Component::Link{});
+        copy_component(Component::Camera{});
+        copy_component(Component::EditorVisible{});
+        copy_component(Component::Sprite{});
+        copy_component(Component::StaticMesh{});
+        copy_component(Component::Light{});
+        copy_component(Component::SkyLight{});
+        copy_component(Component::AudioListener{});
+        copy_component(Component::AudioSource{});
+        copy_component(Component::Rigidbody2D{});
+        copy_component(Component::BoxCollider2D{});
+        copy_component(Component::Rigidbody{});
+        copy_component(Component::BoxCollider{});
+        copy_component(Component::SphereCollider{});
+        copy_component(Component::CapsuleCollider{});
+        copy_component(Component::TerrainCollider{});
+        copy_component(Component::PrefabInstance{});
+        copy_component(Component::PrefabEntity{});
+        copy_component(Component::AnimationCurve{});
+        copy_component(Component::Terrain{});
+        copy_component(Component::TerrainChunk{});
+
+        // Copy user defined components.
+        std::vector<std::string> userComponentNames;
+        std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
+
+        for (auto meta_type : entt::resolve(m_MetaContext))
+        {
+            std::string componentName = meta_type.second.info().name().data();
+            componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
+
+            if (BuildEngine::Instance->HasComponent(componentName, this, entity))
+            {
+                auto componentMeta = BuildEngine::Instance->GetComponent(componentName, this, entity);
+                auto newComponentMeta = BuildEngine::Instance->AddComponent(componentName, this, newEntity);
+                newComponentMeta.assign(componentMeta);
+            }
+        }
+
+        return newEntity;
+    }
+
+    Entity Scene::DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(Entity prefabSourceEntity, Entity entityToPreserveFrom)
+    {
+        // Store the entities of the current instantiated prefab entity.
+        // We need to delete them in the end but we wont have the UUID to Entity mapping so we store them beforehand.
+        std::function<void(Entity, std::vector<Entity>&)> collect = [&](Entity e, std::vector<Entity>& originals)
+        {
+            if (e == Entity::Null)
+            {
+                return;
+            }
+
+            originals.push_back(e);
+
+            auto* link = TryGetComponent<Component::Link>(e);
+            if (!link)
+            {
+                return;
+            }
+
+            for (UUID childUUID : link->Children)
+            {
+                Entity child = FindEntityByUUID(childUUID);
+                if (child != Entity::Null)
+                {
+                    collect(child, originals);
+                }
+            }
+        };
+
+        std::vector<Entity> originals1;
+        originals1.reserve(16);
+        collect(entityToPreserveFrom, originals1);
+
+        // Create a PrefabEntity to entity UUID mapping, so that after the duplication
+        // we can preserve their UUIDs by checking this component in order to find the old matching UUID.
+        std::unordered_map<UUID, UUID> preserved;
+
+        auto gatherPreserved = [&](auto&& self, Entity e) -> void
+        {
+            if (e == Entity::Null)
+            {
+                return;
+            }
+
+            if (HasComponent<Component::PrefabEntity>(e))
+            {
+                const auto& pe = GetComponent<Component::PrefabEntity>(e);
+                const auto& id = GetComponent<Component::ID>(e);
+                preserved[pe.EntityId] = id.Identifier;
+            }
+
+            const auto& link = GetComponent<Component::Link>(e);
+            for (UUID childUUID : link.Children)
+            {
+                Entity child = FindEntityByUUID(childUUID);
+                if (child != Entity::Null)
+                {
+                    self(self, child);
+                }
+            }
+        };
+        
+        gatherPreserved(gatherPreserved, entityToPreserveFrom);
+
+        // Dupilcate the entity from the prefab source entity.
+        Entity clone = DuplicateEntity(prefabSourceEntity);
+
+        auto updateUUIDsFromPreserved = [&](auto&& self, Entity e, Entity parent) -> void
+        {
+            if (e == Entity::Null)
+            {
+                return;
+            }
+
+            // First restore the UUID in the ID component and update the entity map.
+            if (HasComponent<Component::PrefabEntity>(e))
+            {
+                const auto& pe = GetComponent<Component::PrefabEntity>(e);
+                auto& id = GetComponent<Component::ID>(e);
+                m_EntityMap.erase(id.Identifier);
+                id.Identifier = preserved[pe.EntityId];
+                m_EntityMap[id.Identifier] = e;
+            }
+
+            auto& link = GetComponent<Component::Link>(e);
+
+            // Then, update the parent UUID in the Link component if applicable.
+            if (parent != Entity::Null && HasComponent<Component::PrefabEntity>(parent))
+            {
+                const auto& pe = GetComponent<Component::PrefabEntity>(parent);
+                auto& parentID = GetComponent<Component::ID>(parent);
+                link.Parent = parentID.Identifier;
+                link.PrevParent = parentID.Identifier;
+            }
+
+            // Do the update resursively for each child, while also updating the UUIDs in the child array.
+            for (UUID& childUUID : link.Children)
+            {
+                Entity child = FindEntityByUUID(childUUID);
+                if (child != Entity::Null)
+                {
+                    self(self, child, e);
+                }
+
+                childUUID = GetComponent<Component::ID>(child).Identifier;
+            }
+        };
+
+        updateUUIDsFromPreserved(updateUUIDsFromPreserved, clone, Entity::Null);
+
+        // Destroy the entity that was instantiated in the scene before from the cached entities we stored before.
+        for (auto it = originals1.rbegin(); it != originals1.rend(); ++it)
+        {
+            Entity oldE = *it;
+            if (oldE == Entity::Null)
+            {
+                continue;
+            }
+
+            if (m_Registry.valid(oldE.Handle))
+            {
+                m_Registry.destroy(oldE.Handle);
+            }
+        }
+
+        return clone;
     }
 }

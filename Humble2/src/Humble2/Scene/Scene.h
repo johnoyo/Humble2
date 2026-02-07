@@ -214,6 +214,11 @@ namespace HBL2
 
 	private:
 		void InternalDestroyEntity(Entity entity, bool isRootCall);
+		Entity InternalDuplicateEntity(Entity entity, Entity newEntity);
+
+		Entity DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(Entity entity, Entity entityToPreserveFrom);
+		friend class Prefab;
+		friend class SceneSerializer;
 
 	private:
 		std::string m_Name;

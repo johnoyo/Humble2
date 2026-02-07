@@ -31,8 +31,12 @@ namespace HBL2
 		static void CreateMetadataFile(Handle<Asset> assetHandle, UUID baseEntityUUID, uint32_t version = 1);
 		static void CreateMetadataFile(Asset* prefabAsset, UUID baseEntityUUID, uint32_t version = 1);
 
+		static void ConvertEntityToPrefabPhase0(Entity entity, Scene* scene);
+		static bool ConvertEntityToPrefabPhase1(Entity entity, Handle<Asset> assetHandle, Scene* scene);
+
 	private:
 		static Entity Instantiate(Handle<Asset> assetHandle, Scene* scene);
+		static void Update(Asset* prefabAsset, Prefab* prefab, Scene* activeScene, Entity instantiatedPrefabEntity, bool checkVersion, bool preserveName);
 		static Entity CloneSourcePrefab(Prefab* prefab, Scene* activeScene);
 
 		inline const UUID GetBaseEntityUUID() const { return m_BaseEntityUUID; }

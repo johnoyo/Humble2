@@ -294,17 +294,29 @@ namespace HBL2
 						.type = AssetType::Prefab,
 					});
 
-					// Create asset metadata file.
-					Prefab::CreateMetadataFile(prefabAssetHandle, entityUUID);
+					// Adds the PrefabEntity component and sets its values.
+					Prefab::ConvertEntityToPrefabPhase0(entity, m_ActiveScene);
 
-					// Save asset.
+					// We need to duplicate the prefab entity before serializing it, since we need it to have unique UUIDs.
+					// The serialization code will add the PrefabInstance component with the correct values.
+					Entity clone = m_ActiveScene->DuplicateEntity(entity);
+					UUID prefabEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(clone).Identifier;
+					Prefab::CreateMetadataFile(prefabAssetHandle, prefabEntityUUID);
 					AssetManager::Instance->SaveAsset(prefabAssetHandle);
 
-					// Delete the created prefab entity since we want the asset prefab entity be unique.
-					m_ActiveScene->DestroyEntity(entity);
+					// Now that we saved it to disk we can destroy the clone.
+					m_ActiveScene->DestroyEntity(clone);
 
-					// Instantiate the prefab entity again to get new UUIDs.
-					HBL2::Component::EditorVisible::SelectedEntity = Prefab::Instantiate(prefabAssetHandle);
+					// Finish the conversion by adding the PrefabInstance component and setting its values from the prefab source.
+					if (Prefab::ConvertEntityToPrefabPhase1(entity, prefabAssetHandle, m_ActiveScene))
+					{
+						HBL2_CORE_ERROR("Could not convert entity to prefab!");
+						ImGui::EndDragDropTarget();
+						return;
+					}
+
+					// Set it as the currenlty selected entity.
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
 				}
 
 				ImGui::EndDragDropTarget();

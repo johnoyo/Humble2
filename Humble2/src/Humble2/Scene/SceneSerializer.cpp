@@ -9,13 +9,6 @@
 
 namespace HBL2
 {
-	struct PrefabInfo
-	{
-		Component::Tag tag;
-		Component::Transform transform;
-		Component::PrefabInstance prefab;
-	};
-
 	SceneSerializer::SceneSerializer(Scene* scene) 
 		: m_Scene(scene)
 	{
@@ -226,86 +219,30 @@ namespace HBL2
 		//	1. Gather all prefabs in the scene.
 		//	2. If the prefab is out of date.
 		//		2.1 Destroy the prefab.
-		//		2.2 Re-instantiate it and set its transform and tag.
+		//		2.2 Re-instantiate while preserving UUIDs it and set its transform and tag.
 		//		2.3 Update its version.
 		//	3. If the prefab is not out of date do nothing.
 
-		// NOTE: In the future, we need to update the children list of the parent of the prefab if it has one.
-		//		 Since, we are deleting it and re-instantiating it, so the child uuid that the parent holds will be invalid.
-
-		// Gather all prefab entities and their info.
-		std::vector<Entity> prefabs;
-		std::vector<PrefabInfo> prefabsInfo;
+		// Gather all prefab entities and their prefab uuid.
+		std::unordered_map<UUID, Entity> handledPrefabInstances;
 
 		m_Scene->View<Component::PrefabInstance>()
-			.Each([&](Entity entity, Component::PrefabInstance& prefab)
+			.Each([&](Entity entity, Component::PrefabInstance& prefabInstance)
 			{
-				prefabs.push_back(entity);
-
-				auto& tag = m_Scene->GetComponent<Component::Tag>(entity);
-				auto& tr = m_Scene->GetComponent<Component::Transform>(entity);
-				prefabsInfo.push_back({ tag, tr, prefab });
+				if (handledPrefabInstances.find(prefabInstance.Id) == handledPrefabInstances.end())
+				{
+					handledPrefabInstances[prefabInstance.Id] = entity;
+				}
 			});
 
-		HBL2_CORE_ASSERT(prefabs.size() == prefabsInfo.size(), "Expected prefabs and prefabsInfo arrays to be the same size!");
-
-		// Iterate over all the prefabs into the scene and delete their entities if needed.
-		for (int i = 0; i < prefabs.size(); i++)
+		for (const auto& [prefabUUID, entity] : handledPrefabInstances)
 		{
-			auto& prefabInfo = prefabsInfo[i];
-
-			Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabInfo.prefab.Id);
+			Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabUUID);
+			Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
 			Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
 			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
 
-			if (prefab == nullptr)
-			{
-				HBL2_CORE_ERROR("Error while trying to update prefab while loading the scene!");
-				continue;
-			}
-
-			// If there was an change in the source prefab.
-			if (prefab->m_Version != prefabInfo.prefab.Version)
-			{
-				m_Scene->DestroyEntity(prefabs[i]);
-			}
-		}
-
-		// Iterate over all the prefabs stored before and instantiate them if needed.
-		for (int i = 0; i < prefabsInfo.size(); i++)
-		{
-			auto& prefabInfo = prefabsInfo[i];
-
-			Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabInfo.prefab.Id);
-			Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
-			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
-
-			if (prefab == nullptr)
-			{
-				HBL2_CORE_ERROR("Error while trying to update prefab while loading the scene!");
-				continue;
-			}
-
-			// If there was an change in the source prefab.
-			if (prefab->m_Version != prefabInfo.prefab.Version)
-			{
-				Entity clone = Prefab::Instantiate(prefabAssetHandle, m_Scene);
-
-				if (clone != Entity::Null)
-				{
-					auto& tr = m_Scene->GetComponent<Component::Transform>(clone);
-					tr.Translation = prefabInfo.transform.Translation;
-					tr.Rotation = prefabInfo.transform.Rotation;
-					tr.Scale = prefabInfo.transform.Scale;
-					tr.Static = prefabInfo.transform.Static;
-
-					auto& tagComponent = m_Scene->GetComponent<Component::Tag>(clone);
-					tagComponent.Name = prefabInfo.tag.Name;
-
-					auto& prefabComponent = m_Scene->GetComponent<Component::PrefabInstance>(clone);
-					prefabComponent.Version = prefab->m_Version;
-				}
-			}
+			Prefab::Update(prefabAsset, prefab, m_Scene, entity, true, true);
 		}
 
 		stream.close();
