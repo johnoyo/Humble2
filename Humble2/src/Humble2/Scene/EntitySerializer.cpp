@@ -60,6 +60,7 @@ namespace HBL2
 
 			out << YAML::Key << "Id" << YAML::Value << p.Id;
 			out << YAML::Key << "Version" << YAML::Value << p.Version;
+			out << YAML::Key << "Override" << YAML::Value << p.Override;
 
 			out << YAML::EndMap;
 		}
@@ -528,6 +529,7 @@ namespace HBL2
 			auto& p = m_Scene->AddComponent<Component::PrefabInstance>(m_Entity);
 			p.Id = p_NewComponent["Id"].as<UUID>();
 			p.Version = p_NewComponent["Version"].as<uint32_t>();
+			p.Override = p_NewComponent["Override"].as<bool>();
 		}
 
 		auto pe_NewComponent = entityNode["Component::PrefabEntity"];

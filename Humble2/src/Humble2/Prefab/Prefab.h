@@ -26,6 +26,7 @@ namespace HBL2
 
 		static void Unpack(Entity instantiatedPrefabEntity);
 		static void Save(Entity instantiatedPrefabEntity);
+		static void Revert(Entity instantiatedPrefabEntity);
 		static void Destroy(Entity instantiatedPrefabEntity);
 
 		static void CreateMetadataFile(Handle<Asset> assetHandle, UUID baseEntityUUID, uint32_t version = 1);

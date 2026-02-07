@@ -273,6 +273,7 @@ namespace HBL2
 		{
 			UUID Id = 0;
 			uint32_t Version = 0;
+			bool Override = true;
 		};
 
 		/**

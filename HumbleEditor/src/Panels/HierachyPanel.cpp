@@ -107,6 +107,14 @@ namespace HBL2
 
 						Prefab::Save(entity);
 					}
+					else if (ImGui::MenuItem("Revert prefab"))
+					{
+						// Clear currently selected entity.
+						HBL2::Component::EditorVisible::Selected = false;
+						HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
+
+						Prefab::Revert(entity);
+					}
 				}
 
 				ImGui::EndPopup();

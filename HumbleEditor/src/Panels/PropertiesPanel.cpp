@@ -568,6 +568,11 @@ namespace HBL2
 					}
 				});
 
+				DrawComponent<HBL2::Component::PrefabInstance>("PrefabInstance", m_ActiveScene, [this](HBL2::Component::PrefabInstance& pi)
+				{
+					ImGui::Checkbox("Override From Source", &pi.Override);
+				});
+
 				using namespace entt::literals;
 
 				// Iterate over all registered meta types

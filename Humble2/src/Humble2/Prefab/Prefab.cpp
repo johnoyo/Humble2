@@ -12,7 +12,6 @@ namespace HBL2
 		Component::Transform transform;
 		Component::PrefabInstance prefab;
 		UUID parent;
-		UUID uuid;
 	};
 
 	Prefab::Prefab(const PrefabDescriptor&& desc)
@@ -54,7 +53,59 @@ namespace HBL2
 		// Retrieve scene.
 		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
-		return CloneSourcePrefab(prefab, activeScene);
+		Entity instantiatedPrefab = CloneSourcePrefab(prefab, activeScene);
+
+		// Retrieve the base entity of the source instantiated prefab.
+		UUID baseEntityUUID = prefab->GetBaseEntityUUID();
+		Entity baseEntity = activeScene->FindEntityByUUID(baseEntityUUID);
+
+		// Gather all prefab entities and their prefab uuid that are nested in this prefab.
+		std::function<void(Entity, std::unordered_map<UUID, Entity>&)> collect = [&](Entity e, std::unordered_map<UUID, Entity>& nestedPrefabs)
+		{
+			if (e == Entity::Null)
+			{
+				return;
+			}
+
+			if (auto* pi = activeScene->TryGetComponent<Component::PrefabInstance>(e))
+			{
+				if (prefab->m_UUID != pi->Id)
+				{
+					nestedPrefabs[pi->Id] = e;
+				}
+			}
+
+			auto* link = activeScene->TryGetComponent<Component::Link>(e);
+			if (!link)
+			{
+				return;
+			}
+
+			for (UUID childUUID : link->Children)
+			{
+				Entity child = activeScene->FindEntityByUUID(childUUID);
+				if (child != Entity::Null)
+				{
+					collect(child, nestedPrefabs);
+				}
+			}
+		};
+
+		std::unordered_map<UUID, Entity> handledPrefabInstances;
+		handledPrefabInstances.reserve(16);
+		collect(instantiatedPrefab, handledPrefabInstances);
+
+		for (const auto& [prefabUUID, entity] : handledPrefabInstances)
+		{
+			Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabUUID);
+			Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
+			Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
+			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+			Prefab::Update(prefabAsset, prefab, activeScene, entity, true, true);
+		}
+
+		return instantiatedPrefab;
 	}
 
 	Entity Prefab::Instantiate(Handle<Asset> assetHandle, const glm::vec3& position)
@@ -199,6 +250,81 @@ namespace HBL2
 		Update(prefabAsset, prefab, activeScene, instantiatedPrefabEntity, false, false);
 	}
 
+	void Prefab::Revert(Entity instantiatedPrefabEntity)
+	{
+		// Retrieve active scene.
+		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+		if (activeScene == nullptr)
+		{
+			HBL2_CORE_ERROR("Cannot retrieve active scene, aborting prefab unpacking process.");
+			return;
+		}
+
+		// Get the prefab component in order to retrieve the prefab source asset from it.
+		auto* prefabComponent = activeScene->TryGetComponent<HBL2::Component::PrefabInstance>(instantiatedPrefabEntity);
+
+		if (prefabComponent == nullptr)
+		{
+			HBL2_CORE_ERROR("Aborting prefab save proccess, provided entity is not an instantiated prefab!");
+			return;
+		}
+
+		Handle<Asset> prefabAssetHandle = AssetManager::Instance->GetHandleFromUUID(prefabComponent->Id);
+		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
+
+		Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
+		Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+		if (prefab == nullptr)
+		{
+			HBL2_CORE_ERROR("Error while trying to revert prefab, cannot retrieve source prefab asset!");
+			return;
+		}
+
+		auto* pi = activeScene->TryGetComponent<Component::PrefabInstance>(instantiatedPrefabEntity);
+		if (!pi)
+		{
+			HBL2_CORE_ERROR("Error while trying to revert prefab, cannot retrieve prefab instance component!");
+			return;
+		}
+
+		pi->Override = true;
+
+		// Copy them intentionally, since we want to use them after the destruction of their entity.
+		Component::Transform transform = activeScene->GetComponent<Component::Transform>(instantiatedPrefabEntity);
+		Component::Link link = activeScene->GetComponent<Component::Link>(instantiatedPrefabEntity);
+
+		// Deserialize the source prefab into the scene.
+		PrefabSerializer prefabSerializer(prefab, activeScene);
+		prefabSerializer.Deserialize(Project::GetAssetFileSystemPath(prefabAsset->FilePath));
+
+		// Retrieve the base entity of the source instantiated prefab.
+		UUID baseEntityUUID = prefab->GetBaseEntityUUID();
+		Entity baseEntity = activeScene->FindEntityByUUID(baseEntityUUID);
+
+		Entity clone = activeScene->DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(baseEntity, instantiatedPrefabEntity);
+
+		if (clone != Entity::Null)
+		{
+			// Reset parent of updated prefab, since it was overriden with the saved in the source prefab.
+			auto& lk = activeScene->GetComponent<Component::Link>(clone);
+			lk.Parent = link.Parent;
+			lk.PrevParent = link.Parent;
+
+			auto& tr = activeScene->GetComponent<Component::Transform>(clone);
+			tr.Translation = transform.Translation;
+			tr.Rotation = transform.Rotation;
+			tr.Scale = transform.Scale;
+			tr.Static = transform.Static;
+
+			auto& prefabComponent = activeScene->GetComponent<Component::PrefabInstance>(clone);
+			prefabComponent.Version = prefab->m_Version;
+		}
+
+		// Destroy the source prefab entity.
+		activeScene->DestroyEntity(baseEntity);
+	}
+
 	void Prefab::Update(Asset* prefabAsset, Prefab* prefab, Scene* activeScene, Entity instantiatedPrefabEntity, bool checkVersion, bool preserveName)
 	{
 		// Update the instantiated prefab entities that exist in the scene.
@@ -207,7 +333,7 @@ namespace HBL2
 		activeScene->View<Component::ID, Component::PrefabInstance, Component::Transform, Component::Tag>()
 			.Each([&](Entity entity, Component::ID& id, Component::PrefabInstance& prefab, Component::Transform& tr, Component::Tag& tag)
 			{
-				if (prefab.Id == prefabAsset->UUID)
+				if (prefab.Id == prefabAsset->UUID && prefab.Override)
 				{
 					UUID parent = 0;
 					if (auto* link = activeScene->TryGetComponent<Component::Link>(entity))
@@ -215,7 +341,7 @@ namespace HBL2
 						parent = link->Parent;
 					}
 
-					instantiatedPrefabEntitiesInfo.push_back({ entity, tag, tr, prefab, parent, id.Identifier });
+					instantiatedPrefabEntitiesInfo.push_back({ entity, tag, tr, prefab, parent });
 				}
 			});
 
@@ -342,8 +468,11 @@ namespace HBL2
 				return;
 			}
 
-			auto& prefabEntity = scene->GetOrAddComponent<Component::PrefabEntity>(e);
-			prefabEntity.EntityId = Random::UInt64();
+			if (!scene->HasComponent<Component::PrefabEntity>(e))
+			{
+				auto& prefabEntity = scene->AddComponent<Component::PrefabEntity>(e);
+				prefabEntity.EntityId = Random::UInt64();
+			}
 
 			auto* link = scene->TryGetComponent<Component::Link>(e);
 			if (!link)

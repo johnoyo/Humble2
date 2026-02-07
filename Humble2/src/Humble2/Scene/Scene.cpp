@@ -646,9 +646,8 @@ namespace HBL2
             auto& link = GetComponent<Component::Link>(e);
 
             // Then, update the parent UUID in the Link component if applicable.
-            if (parent != Entity::Null && HasComponent<Component::PrefabEntity>(parent))
+            if (parent != Entity::Null)
             {
-                const auto& pe = GetComponent<Component::PrefabEntity>(parent);
                 auto& parentID = GetComponent<Component::ID>(parent);
                 link.Parent = parentID.Identifier;
                 link.PrevParent = parentID.Identifier;
