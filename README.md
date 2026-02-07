@@ -14,8 +14,7 @@ Features:
 - Flexible job system with support for async asset loading.
 - Powerfull physics support for 2D (using [Box2D](https://github.com/erincatto/box2d)) and 3D (using [Jolt](https://github.com/jrouwe/JoltPhysics)) games.
 - Endless procedurally terrain support, utilizing the job system for multithreading.
-- Support for prefabs (Instantiate, Unpack, Update, Destroy).
-    - Nested prefabs support is planned for the future.
+- Support for prefabs (Instantiate, Unpack, Update, Revert, Override, Destroy) and with infinite prefab nesting.
 - Planned web support with [Emscripten](https://github.com/emscripten-core/emsdk) using WebGPU to build games for the browser.
 - Editor to Runtime workflow for publishing games properly without the editor.
 - Currently supports only Windows.
