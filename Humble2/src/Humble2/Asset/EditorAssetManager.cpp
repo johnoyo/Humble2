@@ -744,7 +744,7 @@ namespace HBL2
 			if (prefab == nullptr)
 			{
 				HBL2_CORE_ERROR("Prefab asset \"{0}\" is invalid, aborting prefab load.", asset->FilePath.filename().stem().string());
-				return prefabHandle;
+				return Handle<Prefab>();
 			}
 
 			// NOTE: We do not deserialize here!

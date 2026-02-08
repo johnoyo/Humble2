@@ -53,14 +53,14 @@ namespace HBL2
 		// Retrieve scene.
 		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
-		Entity instantiatedPrefab = CloneSourcePrefab(prefab, activeScene);
+		Entity instantiatedPrefabEntity = CloneSourcePrefab(prefab, activeScene);
 
 		// Retrieve the base entity of the source instantiated prefab.
 		UUID baseEntityUUID = prefab->GetBaseEntityUUID();
 		Entity baseEntity = activeScene->FindEntityByUUID(baseEntityUUID);
 
 		// Gather all prefab entities and their prefab uuid that are nested in this prefab.
-		std::function<void(Entity, std::unordered_map<UUID, Entity>&)> collect = [&](Entity e, std::unordered_map<UUID, Entity>& nestedPrefabs)
+		auto collect = [&](Entity e, std::unordered_map<UUID, Entity>& nestedPrefabs)
 		{
 			if (e == Entity::Null)
 			{
@@ -93,7 +93,7 @@ namespace HBL2
 
 		std::unordered_map<UUID, Entity> handledPrefabInstances;
 		handledPrefabInstances.reserve(16);
-		collect(instantiatedPrefab, handledPrefabInstances);
+		collect(instantiatedPrefabEntity, handledPrefabInstances);
 
 		for (const auto& [prefabUUID, entity] : handledPrefabInstances)
 		{
@@ -105,7 +105,7 @@ namespace HBL2
 			Prefab::Update(prefabAsset, prefab, activeScene, entity, true, true);
 		}
 
-		return instantiatedPrefab;
+		return instantiatedPrefabEntity;
 	}
 
 	Entity Prefab::Instantiate(Handle<Asset> assetHandle, const glm::vec3& position)
@@ -170,7 +170,21 @@ namespace HBL2
 		}
 
 		// Remove the prefab instance component from the base entity.
-		activeScene->RemoveComponent<HBL2::Component::PrefabInstance>(instantiatedPrefabEntity);
+		activeScene->RemoveComponent<Component::PrefabInstance>(instantiatedPrefabEntity);
+
+		// Before removing the PrefabEntity component check if is a nested prefab.
+		// Since then we need the PrefabEntity components if is nested.
+		if (auto* link = activeScene->TryGetComponent<Component::Link>(instantiatedPrefabEntity))
+		{
+			Entity parent = activeScene->FindEntityByUUID(link->Parent);
+
+			if (parent != Entity::Null && activeScene->HasComponent<Component::PrefabEntity>(parent))
+			{
+				// The parent has a PrefabEntity component, which means he is part of a prefab,
+				// which means the instantiatedPrefabEntity was a nested prefab, so return.
+				return;
+			}
+		}
 
 		// Remove the prefab entity component from all the entities in the sub tree.
 		std::function<void(Entity)> unpack = [&](Entity e)
@@ -207,7 +221,7 @@ namespace HBL2
 		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 		if (activeScene == nullptr)
 		{
-			HBL2_CORE_ERROR("Cannot retrieve active scene, aborting prefab unpacking process.");
+			HBL2_CORE_ERROR("Cannot retrieve active scene, aborting prefab save process.");
 			return;
 		}
 
@@ -226,7 +240,7 @@ namespace HBL2
 
 		if (prefab == nullptr)
 		{
-			HBL2_CORE_ERROR("Error while trying to unpack prefab, cannot retrieve source prefab asset!");
+			HBL2_CORE_ERROR("Error while trying to save prefab, cannot retrieve source prefab asset!");
 			return;
 		}
 
@@ -244,7 +258,7 @@ namespace HBL2
 		prefab->m_BaseEntityUUID = activeScene->GetComponent<Component::ID>(clone).Identifier;
 		Prefab::CreateMetadataFile(prefabAsset, prefab->m_BaseEntityUUID, prefab->m_Version);
 
-		// Destroy the cloned entity
+		// Destroy the cloned prefab entity.
 		activeScene->DestroyEntity(clone);
 
 		Update(prefabAsset, prefab, activeScene, instantiatedPrefabEntity, false, false);
