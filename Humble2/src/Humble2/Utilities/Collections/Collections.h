@@ -15,7 +15,7 @@ namespace HBL2
     template<typename T>
     [[nodiscard]] inline DArray<T> MakeEmptyDArray()
     {
-        return DArray<T>(0, ArenaAllocator<T>(&Allocator::FrameArena));
+        return DArray<T>(0, ArenaAllocator<T>(&Allocator::DummyArena));
     }
 
     template<typename T>
@@ -54,7 +54,7 @@ namespace HBL2
     [[nodiscard]] inline HMap<K, V, Hash, KeyEq> MakeEmptyHMap()
     {
         using Alloc = ArenaAllocator<std::pair<const K, V>>;
-        return HMap<K, V, Hash, KeyEq>(0, Hash{}, KeyEq{}, Alloc{ &Allocator::FrameArena });
+        return HMap<K, V, Hash, KeyEq>(0, Hash{}, KeyEq{}, Alloc{ &Allocator::DummyArena });
     }
 
     template<typename K, typename V, typename Hash = std::hash<K>, typename KeyEq = std::equal_to<K>>
@@ -111,7 +111,7 @@ namespace HBL2
     template<typename T>
     [[nodiscard]] inline Stack<T> MakeEmptyStack()
     {
-        return Stack<T>(0, ArenaAllocator<T>(&Allocator::FrameArena));
+        return Stack<T>(0, ArenaAllocator<T>(&Allocator::DummyArena));
     }
 
     template<typename T>
@@ -139,7 +139,7 @@ namespace HBL2
 
     [[nodiscard]] inline String MakeEmptyString()
     {
-        return String(0, '\0', HBL2::ArenaAllocator<char>(&Allocator::FrameArena));
+        return String(0, '\0', HBL2::ArenaAllocator<char>(&Allocator::DummyArena));
     }
 
     [[nodiscard]] inline String MakeString(HBL2::Arena& arena)

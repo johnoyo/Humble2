@@ -222,6 +222,11 @@ namespace HBL2
 	private:
 		void InternalDestroyEntity(Entity entity, bool isRootCall);
 		Entity InternalDuplicateEntity(Entity entity, Entity newEntity, bool appendCloneToName);
+
+		Entity DuplicateEntityAlt(Entity entity, std::unordered_map<UUID, Entity>& preservedEntityIDs);
+		Entity InternalDuplicateEntityAlt(Entity entity, Entity newEntity, std::unordered_map<UUID, Entity>& preservedEntityIDs);
+
+
 		Entity DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(Entity entity, Entity entityToPreserveFrom);
 		friend class Prefab;
 		friend class SceneSerializer;

@@ -60,7 +60,7 @@ namespace HBL2
 		Entity baseEntity = activeScene->FindEntityByUUID(baseEntityUUID);
 
 		// Gather all prefab entities and their prefab uuid that are nested in this prefab.
-		auto collect = [&](Entity e, std::unordered_map<UUID, Entity>& nestedPrefabs)
+		std::function<void(Entity, std::unordered_map<UUID, Entity>&)> collect = [&](Entity e, std::unordered_map<UUID, Entity>& nestedPrefabs)
 		{
 			if (e == Entity::Null)
 			{

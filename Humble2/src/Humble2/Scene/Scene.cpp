@@ -559,6 +559,116 @@ namespace HBL2
         return newEntity;
     }
 
+    Entity Scene::DuplicateEntityAlt(Entity entity, std::unordered_map<UUID, Entity>& preservedEntityIDs)
+    {
+        std::string name = GetComponent<Component::Tag>(entity).Name;
+        UUID uuid = Random::UInt64();
+
+        Entity newEntity;
+
+        if (auto* pe = TryGetComponent<Component::PrefabEntity>(entity))
+        {
+            const Entity oldEntity = preservedEntityIDs[pe->EntityId];
+            newEntity = m_Registry.create(oldEntity.Handle);
+        }
+        else
+        {
+            newEntity = m_Registry.create();
+        }
+
+        m_Registry.emplace<Component::Tag>(newEntity).Name = name;
+        m_Registry.emplace<Component::ID>(newEntity).Identifier = uuid;
+        m_Registry.emplace<Component::Transform>(newEntity);
+        m_Registry.emplace<Component::TransformEx>(newEntity);
+        m_Registry.emplace<Component::Link>(newEntity);
+
+        m_EntityMap[uuid] = newEntity;
+
+        return InternalDuplicateEntityAlt(entity, newEntity, preservedEntityIDs);
+    }
+
+    Entity Scene::InternalDuplicateEntityAlt(Entity entity, Entity newEntity, std::unordered_map<UUID, Entity>& preservedEntityIDs)
+    {
+        auto& newLink = GetComponent<HBL2::Component::Link>(newEntity);
+
+        // Helper lamda for component copying
+        auto copy_component = [&](auto component_type)
+        {
+            using Component = decltype(component_type);
+
+            if (HasComponent<Component>(entity))
+            {
+                auto& component = GetComponent<Component>(entity);
+
+                if (typeid(Component) == typeid(HBL2::Component::Link))
+                {
+                    for (auto child : ((HBL2::Component::Link&)component).Children)
+                    {
+                        Entity childEntity = FindEntityByUUID(child);
+                        Entity newChildEntity = DuplicateEntityAlt(childEntity, preservedEntityIDs);
+
+                        // Add the base entity as the parent of this
+                        HBL2::Component::Link& newChildLink = GetComponent<HBL2::Component::Link>(newChildEntity);
+                        newChildLink.Parent = GetComponent<HBL2::Component::ID>(newEntity).Identifier;
+                        newChildLink.PrevParent = newChildLink.Parent;
+
+                        // Add the new child entity to the new base entity
+                        newLink.Children.push_back(GetComponent<HBL2::Component::ID>(newChildEntity).Identifier);
+                    }
+                }
+                else
+                {
+                    m_Registry.emplace_or_replace<Component>(newEntity, component);
+                }
+
+            }
+        };
+
+        // Copy built in components
+        copy_component(Component::Transform{});
+        copy_component(Component::TransformEx{});
+        copy_component(Component::Link{});
+        copy_component(Component::Camera{});
+        copy_component(Component::EditorVisible{});
+        copy_component(Component::Sprite{});
+        copy_component(Component::StaticMesh{});
+        copy_component(Component::Light{});
+        copy_component(Component::SkyLight{});
+        copy_component(Component::AudioListener{});
+        copy_component(Component::AudioSource{});
+        copy_component(Component::Rigidbody2D{});
+        copy_component(Component::BoxCollider2D{});
+        copy_component(Component::Rigidbody{});
+        copy_component(Component::BoxCollider{});
+        copy_component(Component::SphereCollider{});
+        copy_component(Component::CapsuleCollider{});
+        copy_component(Component::TerrainCollider{});
+        copy_component(Component::PrefabInstance{});
+        copy_component(Component::PrefabEntity{});
+        copy_component(Component::AnimationCurve{});
+        copy_component(Component::Terrain{});
+        copy_component(Component::TerrainChunk{});
+
+        // Copy user defined components.
+        std::vector<std::string> userComponentNames;
+        std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
+
+        for (auto meta_type : entt::resolve(m_MetaContext))
+        {
+            std::string componentName = meta_type.second.info().name().data();
+            componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
+
+            if (BuildEngine::Instance->HasComponent(componentName, this, entity))
+            {
+                auto componentMeta = BuildEngine::Instance->GetComponent(componentName, this, entity);
+                auto newComponentMeta = BuildEngine::Instance->AddComponent(componentName, this, newEntity);
+                newComponentMeta.assign(componentMeta);
+            }
+        }
+
+        return newEntity;
+    }
+
     Entity Scene::DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(Entity prefabSourceEntity, Entity entityToPreserveFrom)
     {
         // Store the entities of the current instantiated prefab entity.
@@ -594,9 +704,10 @@ namespace HBL2
 
         // Create a PrefabEntity to entity UUID mapping, so that after the duplication
         // we can preserve their UUIDs by checking this component in order to find the old matching UUID.
-        std::unordered_map<UUID, UUID> preserved;
+        std::unordered_map<UUID, UUID> preservedUUIDs;
+        std::unordered_map<UUID, Entity> preservedEntityIDs;
 
-        auto gatherPreserved = [&](auto&& self, Entity e) -> void
+        auto gatherPreservedUUIDs = [&](auto&& self, Entity e) -> void
         {
             if (e == Entity::Null)
             {
@@ -607,7 +718,8 @@ namespace HBL2
             {
                 const auto& pe = GetComponent<Component::PrefabEntity>(e);
                 const auto& id = GetComponent<Component::ID>(e);
-                preserved[pe.EntityId] = id.Identifier;
+                preservedUUIDs[pe.EntityId] = id.Identifier;
+                preservedEntityIDs[pe.EntityId] = e;
             }
 
             const auto& link = GetComponent<Component::Link>(e);
@@ -621,10 +733,25 @@ namespace HBL2
             }
         };
         
-        gatherPreserved(gatherPreserved, entityToPreserveFrom);
+        gatherPreservedUUIDs(gatherPreservedUUIDs, entityToPreserveFrom);
+
+        // Destroy the entity that was instantiated in the scene before from the cached entities we stored before.
+        for (auto it = originals1.rbegin(); it != originals1.rend(); ++it)
+        {
+            Entity oldE = *it;
+            if (oldE == Entity::Null)
+            {
+                continue;
+            }
+
+            if (m_Registry.valid(oldE.Handle))
+            {
+                m_Registry.destroy(oldE.Handle);
+            }
+        }
 
         // Dupilcate the entity from the prefab source entity.
-        Entity clone = DuplicateEntity(prefabSourceEntity, EntityDuplicationNaming::DONT_APPEND_CLONE);
+        Entity clone = DuplicateEntityAlt(prefabSourceEntity, preservedEntityIDs);
 
         auto updateUUIDsFromPreserved = [&](auto&& self, Entity e, Entity parent) -> void
         {
@@ -639,7 +766,7 @@ namespace HBL2
                 const auto& pe = GetComponent<Component::PrefabEntity>(e);
                 auto& id = GetComponent<Component::ID>(e);
                 m_EntityMap.erase(id.Identifier);
-                id.Identifier = preserved[pe.EntityId];
+                id.Identifier = preservedUUIDs[pe.EntityId];
                 m_EntityMap[id.Identifier] = e;
             }
 
@@ -666,22 +793,7 @@ namespace HBL2
             }
         };
 
-        updateUUIDsFromPreserved(updateUUIDsFromPreserved, clone, Entity::Null);
-
-        // Destroy the entity that was instantiated in the scene before from the cached entities we stored before.
-        for (auto it = originals1.rbegin(); it != originals1.rend(); ++it)
-        {
-            Entity oldE = *it;
-            if (oldE == Entity::Null)
-            {
-                continue;
-            }
-
-            if (m_Registry.valid(oldE.Handle))
-            {
-                m_Registry.destroy(oldE.Handle);
-            }
-        }
+        updateUUIDsFromPreserved(updateUUIDsFromPreserved, clone, Entity::Null);        
 
         return clone;
     }

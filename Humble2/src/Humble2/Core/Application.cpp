@@ -46,6 +46,7 @@ namespace HBL2
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
 		Allocator::Arena.Initialize(500_MB, 1_MB);
+		Allocator::DummyArena.Initialize(&Allocator::Arena, 10_KB);
 		Allocator::FrameArena.Initialize(&Allocator::Arena, 50_MB);
 		Allocator::Persistent.Initialize(16_MB);
 
@@ -214,6 +215,7 @@ namespace HBL2
 
 		// Reset frame allocator.
 		Allocator::FrameArena.Reset();
+		Allocator::DummyArena.Reset();
 
 		SWAP_AND_RESET_PROFILED_TIMERS();
 	}
