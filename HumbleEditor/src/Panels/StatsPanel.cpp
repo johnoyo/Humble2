@@ -123,8 +123,22 @@ namespace HBL2
 
 			ImGui::Text("Arena Allocators");
 			ImGui::NewLine();
-			ImGui::Text("Arena: %f %%", Allocator::Arena.GetFullPercentage());
-			ImGui::Text("Frame Arena: %f %%", ((float)Allocator::FrameArena.UsedBytes() / (float)50_MB) * 100.f);
+
+			float globalArenaFullPercentage = Allocator::Arena.GetFullPercentage();
+
+			float frameArenaMTUsedBytes = (float)Allocator::FrameArenaMT.UsedBytes();
+			float frameArenaMTTotalBytes = (float)Allocator::FrameArenaMT.TotalBytes();
+			float frameArenaMTHighWater = (float)Allocator::FrameArenaMT.HighWater();
+
+			float frameArenaRTUsedBytes = (float)Allocator::FrameArenaRT.UsedBytes();
+			float frameArenaRTTotalBytes = (float)Allocator::FrameArenaRT.TotalBytes();
+			float frameArenaRTHighWater = (float)Allocator::FrameArenaRT.HighWater();
+
+			ImGui::Text("Arena: %f %%", globalArenaFullPercentage);
+			ImGui::Text("Frame Arena MT: %f %%", (frameArenaMTUsedBytes / frameArenaMTTotalBytes) * 100.f);
+			ImGui::Text("Frame Arena MT HW: %f %%", (frameArenaMTHighWater / frameArenaMTTotalBytes) * 100.f);
+			ImGui::Text("Frame Arena RT: %f %%", (frameArenaRTUsedBytes / frameArenaRTTotalBytes) * 100.f);
+			ImGui::Text("Frame Arena RT HW: %f %%", (frameArenaRTHighWater / frameArenaRTTotalBytes) * 100.f);
 		}
 	}
 }

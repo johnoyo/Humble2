@@ -156,7 +156,7 @@ namespace HBL2
 		std::vector<Handle<Buffer>> vertexBuffers;
 		std::vector<Handle<Material>> materials;
 
-		// Delete previous buffers and embeded material.
+		// Collect previous buffers and embeded material.
 		for (const MeshPart& meshPart : mesh->Meshes)
 		{
 			indexBuffers.push_back(meshPart.IndexBuffer);
@@ -186,7 +186,6 @@ namespace HBL2
 		{
 			ResourceManager::Instance->DeleteBuffer(vb);
 		}
-
 		for (Handle<Material> mat : materials)
 		{
 			ResourceManager::Instance->DeleteMaterial(mat);

@@ -1523,7 +1523,9 @@ namespace HBL2
 	{
 		BEGIN_PROFILE_PASS();
 
-		DrawList draws(Allocator::FrameArena, 16);
+		ScratchArena scratch(Allocator::FrameArenaRT);
+
+		DrawList draws(scratch, 16);
 
 		uint64_t skyboxVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_EquirectToSkyboxShader, m_ComputeVariant);
 
@@ -1667,7 +1669,8 @@ namespace HBL2
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass, m_PostProcessFrameBuffer);
 
-		DrawList draws(Allocator::FrameArena, 1);
+		ScratchArena scratch(Allocator::FrameArenaRT);
+		DrawList draws(scratch, 1);
 
 		draws.Insert({
 			.Shader = m_PostProcessShader,
@@ -1711,7 +1714,8 @@ namespace HBL2
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
 
-		DrawList draws(Allocator::FrameArena, 1);
+		ScratchArena scratch(Allocator::FrameArenaRT);
+		DrawList draws(scratch, 1);
 
 		draws.Insert({
 			.Shader = m_PresentShader,

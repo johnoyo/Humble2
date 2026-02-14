@@ -4,7 +4,7 @@
 // -----------------------------------------------------------------------------
 //
 // Style: Minimal, macro-based test framework (no external dependencies).
-// Focus: Core correctness of GlobalArena, PoolReservation, Arena, ScratchArena.
+// Focus: Core correctness of MainArena, PoolReservation, Arena, ScratchArena.
 //
 // -----------------------------------------------------------------------------
 #pragma once
@@ -42,7 +42,7 @@ using namespace HBL2;
 
 bool test_global_arena_initialization()
 {
-    GlobalArena global(1_MB, 128_KB);
+    MainArena global(1_MB, 128_KB);
     TEST_ASSERT(global.MetaSize() > 0);
     TEST_ASSERT(global.DataSize() > 0);
     TEST_ASSERT(global.MetaCarved() == 0);
@@ -52,7 +52,7 @@ bool test_global_arena_initialization()
 
 bool test_reservation_allocation()
 {
-    GlobalArena global(1_MB, 128_KB);
+    MainArena global(1_MB, 128_KB);
 
     PoolReservation* r1 = global.Reserve("Render", 256_KB);
     TEST_ASSERT(r1 != nullptr);
@@ -68,7 +68,7 @@ bool test_reservation_allocation()
 
 bool test_chunk_allocation_and_reuse()
 {
-    GlobalArena global(512 * 1024, 64 * 1024);
+    MainArena global(512 * 1024, 64 * 1024);
     PoolReservation* r = global.Reserve("Physics", 128 * 1024);
 
     ArenaChunk* c1 = global.AllocateChunkStruct(32 * 1024, r);
@@ -92,7 +92,7 @@ bool test_chunk_allocation_and_reuse()
 
 bool test_arena_basic_allocation()
 {
-    GlobalArena global(2_MB, 256_KB);
+    MainArena global(2_MB, 256_KB);
     PoolReservation* r = global.Reserve("Main", 512_KB);
     Arena arena(&global, 128_KB, r);
 
@@ -112,7 +112,7 @@ bool test_arena_basic_allocation()
 
 bool test_arena_reset_and_restore()
 {
-    GlobalArena global(1_MB, 128_KB);
+    MainArena global(1_MB, 128_KB);
     PoolReservation* r = global.Reserve("Scratch", 256_KB);
     Arena arena(&global, 128_KB, r);
 
@@ -138,7 +138,7 @@ bool test_arena_reset_and_restore()
 
 bool test_scratch_scope_raii()
 {
-    GlobalArena global(512_KB, 64_KB);
+    MainArena global(512_KB, 64_KB);
     Arena arena(&global, 128_KB);
     {
         ScratchArena scratch(arena);
@@ -159,7 +159,7 @@ bool test_chunk_exhaustion_and_bad_alloc()
     bool caught = false;
     try
     {
-        GlobalArena global(64_KB, 8_KB);
+        MainArena global(64_KB, 8_KB);
         PoolReservation* r = global.Reserve("Tiny", 8_KB);
         Arena arena(&global, 8_KB, r);
         for (int i = 0; i < 100; ++i)
@@ -175,7 +175,7 @@ bool test_chunk_exhaustion_and_bad_alloc()
 
 bool test_free_list_scaling_under_stress()
 {
-    GlobalArena global(4_MB, 256_KB);
+    MainArena global(4_MB, 256_KB);
     PoolReservation* r1 = global.Reserve("Audio", 512_KB);
     PoolReservation* r2 = global.Reserve("Render", 512_KB);
 
@@ -199,7 +199,7 @@ bool test_free_list_scaling_under_stress()
 
 bool test_meta_data_accounting()
 {
-    GlobalArena global(1024 * 1024, 128 * 1024);
+    MainArena global(1024 * 1024, 128 * 1024);
     PoolReservation* r = global.Reserve("MetaTest", 128 * 1024);
     Arena arena(&global, {}, r);
 
@@ -214,7 +214,7 @@ bool test_meta_data_accounting()
 
 bool test_alignment_and_padding()
 {
-    GlobalArena global(1_MB, 128_KB);
+    MainArena global(1_MB, 128_KB);
     Arena arena(&global, 500_KB);
 
     void* p1 = arena.Alloc(1, 8);
@@ -231,7 +231,7 @@ bool test_alignment_and_padding()
 
 bool stress_test_many_small_allocs()
 {
-    GlobalArena global(16_MB, 512_KB);
+    MainArena global(16_MB, 512_KB);
     PoolReservation* r = global.Reserve("Stress", 2_MB);
     Arena arena(&global, 2_MB, r);
 

@@ -129,6 +129,11 @@ namespace HBL2
 		std::atomic_bool m_RenderThreadInitializationFinished = { false };
 
 	private:
+		PoolReservation* m_FrameArenaReservationDummy = nullptr;
+		PoolReservation* m_FrameArenaReservationMT = nullptr;
+		PoolReservation* m_FrameArenaReservationRT = nullptr;
+
+	private:
 		void BeginFrame();
 		void EndFrame();
 		void Shutdown();

@@ -191,7 +191,8 @@ namespace HBL2
 	
 	void HierachySystem::ComputeWorldFromDirtyRoots()
 	{
-		DArray<Entity> dirtyRoots = MakeDArray<Entity>(Allocator::FrameArena, 512);
+		ScratchArena scratch(Allocator::FrameArenaMT);
+		DArray<Entity> dirtyRoots = MakeDArray<Entity>(scratch, 512);
 
 		// Find "dirty roots" (dirty nodes whose parent is not dirty, or no/invalid parent)
 		m_Context->Group<Component::Transform, Component::TransformEx, Component::Link>()
@@ -223,7 +224,7 @@ namespace HBL2
 			});
 
 		// Traverse only dirty subtrees.
-		DArray<Entity> stack = MakeDArray<Entity>(Allocator::FrameArena, 1024);
+		DArray<Entity> stack = MakeDArray<Entity>(scratch, 1024);
 
 		for (Entity root : dirtyRoots)
 		{

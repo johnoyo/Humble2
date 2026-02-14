@@ -710,7 +710,9 @@ namespace HBL2
 		glm::vec3 scaledViewerPosition = viewer.Translation / terrain.Scale;
 
 		float maxDistanceForChunkToStayLoaded = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold * 4;
-		DArray<Entity> chunks = MakeDArray<Entity>(Allocator::FrameArena, 256);
+
+		ScratchArena scratch(Allocator::FrameArenaMT);
+		DArray<Entity> chunks = MakeDArray<Entity>(scratch, 512);
 
 		m_Context->Group<Component::TerrainChunk>(Get<Component::Transform, Component::StaticMesh>)
 			.Each([&](Entity chunk, Component::TerrainChunk& terrainChunk, Component::Transform& tr, Component::StaticMesh& chunkMesh)
@@ -928,7 +930,8 @@ namespace HBL2
 	void TerrainSystem::CleanUpChunks()
 	{
 		// Clean up resources of terrain chunks.
-		DArray<Entity> chunks = MakeDArray<Entity>(Allocator::FrameArena, 256);
+		ScratchArena scratch(Allocator::FrameArenaMT);
+		DArray<Entity> chunks = MakeDArray<Entity>(scratch, 512);
 
 		m_Context->View<Component::TerrainChunk>()
 			.Each([this, &chunks](Entity chunk, Component::TerrainChunk& terrainChunk)

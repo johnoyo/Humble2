@@ -2,7 +2,8 @@
 
 namespace HBL2
 {
-	GlobalArena Allocator::Arena;
-	HBL2::Arena Allocator::FrameArena;
+	MainArena Allocator::Arena;
+	HBL2::Arena Allocator::FrameArenaMT;
+	HBL2::Arena Allocator::FrameArenaRT;
 	HBL2::Arena Allocator::DummyArena;
 }

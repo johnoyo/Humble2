@@ -154,7 +154,8 @@ namespace HBL2
 		// The main way to interact with the bodies in the physics system is through the body interface.
 		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
 
-		DArray<JPH::BodyID> bulkAddBuffer = MakeDArray<JPH::BodyID>(Allocator::FrameArena, 32);
+		ScratchArena scratch(Allocator::FrameArenaMT);
+		DArray<JPH::BodyID> bulkAddBuffer = MakeDArray<JPH::BodyID>(scratch, 512);
 
 		m_Context->Group<Component::Rigidbody>(Get<Component::Transform>)
 			.Each([this, &bodyInterface, &bulkAddBuffer](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)

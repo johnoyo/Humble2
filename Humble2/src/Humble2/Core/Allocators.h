@@ -2,9 +2,8 @@
 
 #include "Base.h"
 
+#include "Utilities/Allocators/MainArena.h"
 #include "Utilities/Allocators/Arena.h"
-#include "Utilities/Allocators/BinAllocator.h"
-#include "Utilities/Allocators/BumpAllocator.h"
 
 namespace HBL2
 {
@@ -13,12 +12,17 @@ namespace HBL2
 		/**
 		 * @brief ...
 		 */
-		static GlobalArena Arena;
+		static MainArena Arena;
 
 		/**
 		 * @brief Arena allocator for the duration of a frame. Not thread safe, only to be used by the main thread.
 		 */
-		static HBL2::Arena FrameArena;
+		static HBL2::Arena FrameArenaMT;
+
+		/**
+		 * @brief Arena allocator for the duration of a frame. Not thread safe, only to be used by the render thread.
+		 */
+		static HBL2::Arena FrameArenaRT;
 
 		/**
 		 * @brief ...

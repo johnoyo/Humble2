@@ -46,8 +46,15 @@ namespace HBL2
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
 		Allocator::Arena.Initialize(500_MB, 1_MB);
-		Allocator::DummyArena.Initialize(&Allocator::Arena, 10_KB);
-		Allocator::FrameArena.Initialize(&Allocator::Arena, 50_MB);
+
+		m_FrameArenaReservationDummy = Allocator::Arena.Reserve("FrameArenaReservationDummy", 8_KB);
+		Allocator::DummyArena.Initialize(&Allocator::Arena, 8_KB, m_FrameArenaReservationDummy);
+
+		m_FrameArenaReservationMT = Allocator::Arena.Reserve("FrameArenaReservationMT", 32_MB);
+		Allocator::FrameArenaMT.Initialize(&Allocator::Arena, 32_MB, m_FrameArenaReservationMT);
+
+		m_FrameArenaReservationRT = Allocator::Arena.Reserve("FrameArenaReservationRT", 8_MB);
+		Allocator::FrameArenaRT.Initialize(&Allocator::Arena, 8_MB, m_FrameArenaReservationRT);
 
 		GraphicsAPI gfxAPI = GraphicsAPI::NONE;
 
@@ -212,7 +219,7 @@ namespace HBL2
 		}
 
 		// Reset frame allocator.
-		Allocator::FrameArena.Reset();
+		Allocator::FrameArenaMT.Reset();
 		Allocator::DummyArena.Reset();
 
 		SWAP_AND_RESET_PROFILED_TIMERS();
@@ -266,6 +273,8 @@ namespace HBL2
 				Renderer::Instance->Present();
 				Renderer::Instance->ReleaseFrameSlot(frameData->AcquiredIndex);
 				END_APP_PROFILE(present, m_CurrentStats.PresentTime);
+
+				Allocator::FrameArenaRT.Reset();
 
 				END_APP_PROFILE(renderThread, m_CurrentStats.RenderThreadTime);
 			}

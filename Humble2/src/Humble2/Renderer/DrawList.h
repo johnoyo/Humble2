@@ -44,10 +44,13 @@ namespace HBL2
 	{
 	public:
 		DrawList() = default;
-		DrawList(Arena& arena, uint32_t reserveDrawCount);
+		DrawList(Arena& arena, uint32_t reservedDrawCount);
+		DrawList(ScratchArena& arena, uint32_t reservedDrawCount);
 
 		void Initialize(Arena& arena);
-		void Initialize(Arena& arena, uint32_t reserveDrawCount);
+		void Initialize(ScratchArena& arena);
+		void Initialize(Arena& arena, uint32_t reservedDrawCount);
+		void Initialize(ScratchArena& arena, uint32_t reservedDrawCount);
 		void Insert(LocalDrawStream&& draw);
 		void Sort();
 		void Reset();

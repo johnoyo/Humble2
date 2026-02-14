@@ -46,6 +46,22 @@ namespace HBL2
         return DArray<T>(ArenaAllocator<T>(&scratch));
     }
 
+    template<typename T>
+    [[nodiscard]] inline DArray<T> MakeDArray(ScratchArena& scratch, std::size_t reserveCount)
+    {
+        DArray<T> v{ ArenaAllocator<T>(&scratch) };
+        v.reserve(reserveCount);
+        return v;
+    }
+
+    template<typename T>
+    [[nodiscard]] inline DArray<T> MakeDArrayResized(ScratchArena& scratch, std::size_t resizeCount)
+    {
+        DArray<T> v{ ArenaAllocator<T>(&scratch) };
+        v.resize(resizeCount);
+        return v;
+    }
+
     // Hash Map
     template<typename K, typename V, typename Hash = std::hash<K>, typename KeyEq = std::equal_to<K>>
     using HMap = std::unordered_map<K, V, Hash, KeyEq, ArenaAllocator<std::pair<const K, V>>>;

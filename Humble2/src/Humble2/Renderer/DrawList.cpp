@@ -7,14 +7,29 @@ namespace HBL2
 		Initialize(arena, reservedDrawCount);
 	}
 
+	DrawList::DrawList(ScratchArena& arena, uint32_t reservedDrawCount)
+	{
+		Initialize(arena, reservedDrawCount);
+	}
+
 	void DrawList::Initialize(Arena& arena)
 	{
 		m_Draws = MakeDArray<LocalDrawStream>(arena, 32768);
 	}
 
-	void DrawList::Initialize(Arena& arena, uint32_t reserveDrawCount)
+	void DrawList::Initialize(ScratchArena& arena)
 	{
-		m_Draws = MakeDArray<LocalDrawStream>(arena, reserveDrawCount);
+		m_Draws = MakeDArray<LocalDrawStream>(arena, 32768);
+	}
+
+	void DrawList::Initialize(Arena& arena, uint32_t reservedDrawCount)
+	{
+		m_Draws = MakeDArray<LocalDrawStream>(arena, reservedDrawCount);
+	}
+
+	void DrawList::Initialize(ScratchArena& arena, uint32_t reservedDrawCount)
+	{
+		m_Draws = MakeDArray<LocalDrawStream>(arena, reservedDrawCount);
 	}
 
 	void DrawList::Insert(LocalDrawStream&& draw)

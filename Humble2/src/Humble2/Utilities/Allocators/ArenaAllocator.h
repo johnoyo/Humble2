@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Arena.h"
+#include "ScratchArena.h"
 
 namespace HBL2
 {
@@ -74,7 +75,7 @@ namespace HBL2
 
         void deallocate(T* p, std::size_t) noexcept
         {
-            // Arena allocators typically don't free individual blocks
+            // Arena allocators doesn't free individual blocks
             // Memory is released when the arena is reset or destroyed
         }
 

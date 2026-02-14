@@ -86,7 +86,7 @@ namespace HBL2
 		template<typename T>
 		void AppendJob(Scene* ctx)
 		{
-			IJob* job = Allocator::FrameArena.AllocConstruct<T>();
+			IJob* job = Allocator::FrameArenaMT.AllocConstruct<T>();
 			m_Jobs.push_back(job);
 
 			job->SetContext(ctx);
