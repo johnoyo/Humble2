@@ -421,61 +421,64 @@ namespace HBL2
 		});
 		m_ShaderLayouts[BuiltInShader::PBR] = drawBindGroupLayout1;
 
-		// Invalid shader
-		{
-			auto invalidShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "invalid-shader-asset",
-				.filePath = "assets/shaders/invalid.shader",
-				.type = AssetType::Shader,
-			});
+		JobContext ctx;
 
-			CreateShaderMetadataFile(invalidShaderAssetHandle, 0);
-			auto invalidShaderHandle = AssetManager::Instance->GetAsset<Shader>(invalidShaderAssetHandle);
-			m_Shaders[BuiltInShader::INVALID] = invalidShaderHandle;
-			m_ShaderAssets.push_back(invalidShaderAssetHandle);
-		}
+		// Invalid shader
+		auto invalidShaderAssetHandle = AssetManager::Instance->CreateAsset({
+			.debugName = "invalid-shader-asset",
+			.filePath = "assets/shaders/invalid.shader",
+			.type = AssetType::Shader,
+		});
+
+		CreateShaderMetadataFile(invalidShaderAssetHandle, 0);
+		auto* invalidShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(invalidShaderAssetHandle, &ctx);
 
 		// Unlit shader
-		{
-			auto unlitShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "unlit-shader-asset",
-				.filePath = "assets/shaders/unlit.shader",
-				.type = AssetType::Shader,
-			});
+		auto unlitShaderAssetHandle = AssetManager::Instance->CreateAsset({
+			.debugName = "unlit-shader-asset",
+			.filePath = "assets/shaders/unlit.shader",
+			.type = AssetType::Shader,
+		});
 
-			CreateShaderMetadataFile(unlitShaderAssetHandle, 0);
-			auto unlitShaderHandle = AssetManager::Instance->GetAsset<Shader>(unlitShaderAssetHandle);
-			m_Shaders[BuiltInShader::UNLIT] = unlitShaderHandle;
-			m_ShaderAssets.push_back(unlitShaderAssetHandle);
-		}
+		CreateShaderMetadataFile(unlitShaderAssetHandle, 0);
+		auto* unlitShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(unlitShaderAssetHandle, &ctx);
 
 		// Blinn-Phong shader
-		{
-			auto blinnPhongShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "blinn-phong-shader-asset",
-				.filePath = "assets/shaders/shadow-mapping.shader",
-				.type = AssetType::Shader,
-			});
+		auto blinnPhongShaderAssetHandle = AssetManager::Instance->CreateAsset({
+			.debugName = "blinn-phong-shader-asset",
+			.filePath = "assets/shaders/shadow-mapping.shader",
+			.type = AssetType::Shader,
+		});
 
-			CreateShaderMetadataFile(blinnPhongShaderAssetHandle, 1);
-			auto blinnPhongShaderHandle = AssetManager::Instance->GetAsset<Shader>(blinnPhongShaderAssetHandle);
-			m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderHandle;
-			m_ShaderAssets.push_back(blinnPhongShaderAssetHandle);
-		}
+		CreateShaderMetadataFile(blinnPhongShaderAssetHandle, 1);
+		auto* blinnPhongShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(blinnPhongShaderAssetHandle, &ctx);
 
 		// PBR shader
-		{
-			auto pbrShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "pbr-shader-asset",
-				.filePath = "assets/shaders/pbr.shader",
-				.type = AssetType::Shader,
-			});
+		auto pbrShaderAssetHandle = AssetManager::Instance->CreateAsset({
+			.debugName = "pbr-shader-asset",
+			.filePath = "assets/shaders/pbr.shader",
+			.type = AssetType::Shader,
+		});
 
-			CreateShaderMetadataFile(pbrShaderAssetHandle, 2);
-			auto pbrShaderHandle = AssetManager::Instance->GetAsset<Shader>(pbrShaderAssetHandle);
-			m_Shaders[BuiltInShader::PBR] = pbrShaderHandle;
-			m_ShaderAssets.push_back(pbrShaderAssetHandle);
-		}
+		CreateShaderMetadataFile(pbrShaderAssetHandle, 2);
+		auto* pbrShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(pbrShaderAssetHandle, &ctx);
+
+		m_ShaderAssets.push_back(invalidShaderAssetHandle);
+		m_ShaderAssets.push_back(unlitShaderAssetHandle);
+		m_ShaderAssets.push_back(blinnPhongShaderAssetHandle);
+		m_ShaderAssets.push_back(pbrShaderAssetHandle);
+
+		AssetManager::Instance->WaitForAsyncJobs(&ctx);
+
+		m_Shaders[BuiltInShader::INVALID] = invalidShaderTask ? invalidShaderTask->ResourceHandle : Handle<Shader>();
+		m_Shaders[BuiltInShader::UNLIT] = unlitShaderTask ? unlitShaderTask->ResourceHandle : Handle<Shader>();
+		m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderTask ? blinnPhongShaderTask->ResourceHandle : Handle<Shader>();
+		m_Shaders[BuiltInShader::PBR] = pbrShaderTask ? pbrShaderTask->ResourceHandle : Handle<Shader>();
+
+		AssetManager::Instance->ReleaseResourceTask(invalidShaderTask);
+		AssetManager::Instance->ReleaseResourceTask(unlitShaderTask);
+		AssetManager::Instance->ReleaseResourceTask(blinnPhongShaderTask);
+		AssetManager::Instance->ReleaseResourceTask(pbrShaderTask);
 	}
 
 	void ShaderUtilities::DeleteBuiltInShaders()

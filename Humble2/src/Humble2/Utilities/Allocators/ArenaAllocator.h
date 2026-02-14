@@ -43,7 +43,26 @@ namespace HBL2
         [[nodiscard]] T* allocate(std::size_t n)
         {
             HBL2_CORE_ASSERT(m_Arena, "ArenaAllocator: no arena set!");
+
+            // Overflow check.
+            if (n > (std::size_t(-1) / sizeof(T)))
+            {
+                throw std::bad_array_new_length{};
+            }
+
+            if (n == 0)
+            {
+#if defined(_MSC_VER) && defined(_ITERATOR_DEBUG_LEVEL) && (_ITERATOR_DEBUG_LEVEL != 0)
+                void* p = m_Arena->Alloc(1, alignof(T));
+                return static_cast<T*>(p ? p : reinterpret_cast<void*>(static_cast<std::uintptr_t>(alignof(T))));
+#else
+                return nullptr;
+#endif
+            }
+
             void* ptr = m_Arena->Alloc(n * sizeof(T), alignof(T));
+
+            HBL2_CORE_ASSERT(reinterpret_cast<uintptr_t>(ptr) % alignof(T) == 0, "misaligned");
 
             if (!ptr)
             {

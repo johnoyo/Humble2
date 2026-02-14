@@ -100,10 +100,8 @@ namespace HBL2
                     }
                 }
 
-                ChannelEntry* entry =
-                    (audioSource.ChannelIndex != InvalidIndex && audioSource.ChannelIndex < m_Channels.size())
-                    ? &m_Channels[audioSource.ChannelIndex]
-                    : nullptr;
+                bool isValid = (audioSource.ChannelIndex != InvalidIndex && audioSource.ChannelIndex < m_Channels.size());
+                ChannelEntry* entry = isValid ? &m_Channels[audioSource.ChannelIndex] : nullptr;
 
                 // If the channel finished, clear it
                 if (entry && entry->channel != SoundEngine::InvalidChannel && !SoundEngine::Instance->IsValid(entry->channel))
@@ -176,10 +174,8 @@ namespace HBL2
                 }
 
                 // Live parameter update
-                entry =
-                    (audioSource.ChannelIndex != InvalidIndex && audioSource.ChannelIndex < m_Channels.size())
-                    ? &m_Channels[audioSource.ChannelIndex]
-                    : nullptr;
+                isValid = (audioSource.ChannelIndex != InvalidIndex && audioSource.ChannelIndex < m_Channels.size());
+                entry = isValid ? &m_Channels[audioSource.ChannelIndex] : nullptr;
 
                 if (entry && entry->channel != SoundEngine::InvalidChannel && audioSource.State != Component::AudioSource::PlaybackState::Stopped)
                 {

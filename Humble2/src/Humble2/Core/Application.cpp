@@ -48,7 +48,6 @@ namespace HBL2
 		Allocator::Arena.Initialize(500_MB, 1_MB);
 		Allocator::DummyArena.Initialize(&Allocator::Arena, 10_KB);
 		Allocator::FrameArena.Initialize(&Allocator::Arena, 50_MB);
-		Allocator::Persistent.Initialize(16_MB);
 
 		GraphicsAPI gfxAPI = GraphicsAPI::NONE;
 
@@ -131,7 +130,6 @@ namespace HBL2
 
 	Application::~Application()
 	{
-		Allocator::Persistent.Free();
 	}
 
 	void Application::DispatchRenderLoop(const std::function<void()>& renderLoop)

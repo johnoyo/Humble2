@@ -10,6 +10,17 @@
 
 namespace HBL2
 {
+	enum class BuiltInMesh
+	{
+		PLANE,
+		TESSELATED_PLANE,
+		CUBE,
+		SPHERE,
+		CYLINDER,
+		CAPSULE,
+		TORUS,
+	};
+
 	class HBL2_API MeshUtilities
 	{
 	public:
@@ -21,30 +32,26 @@ namespace HBL2
 		static void Shutdown();
 
 		Handle<Mesh> Load(const std::filesystem::path& path);
-		void ClearCachedHandles();
-
-		Handle<Mesh> GetLoadedMeshHandle(const std::string& path)
-		{
-			if (m_LoadedMeshes.find(path) == m_LoadedMeshes.end())
-			{
-				return {};
-			}
-
-			return m_LoadedMeshes[path];
-		}
+		void Reload(Asset* asset);
 
 		void LoadBuiltInMeshes();
 		void DeleteBuiltInMeshes();
+		Handle<Mesh> GetBuiltInLoadedMeshHandle(BuiltInMesh builtInMesh);
+		Span<const Handle<Asset>> GetBuiltInMeshAssets();
 
 	private:
 		void CreateMeshMetadataFile(Handle<Asset> handle);
 
 	private:
-		MeshUtilities() = default;
+		MeshUtilities();
 		UFbxLoader* m_UFbxLoader = nullptr;
 		FastGltfLoader* m_FastGltfLoader = nullptr;
 
-		std::unordered_map<std::string, Handle<Mesh>> m_LoadedMeshes;
+		DArray<Handle<Asset>> m_BuiltInMeshAssets = MakeEmptyDArray<Handle<Asset>>();
+		HMap<BuiltInMesh, Handle<Mesh>> m_LoadedBuiltInMeshes = MakeEmptyHMap<BuiltInMesh, Handle<Mesh>>();
+
+		PoolReservation* m_Reservation = nullptr;
+		Arena m_Arena;
 
 		static MeshUtilities* s_Instance;
 	};

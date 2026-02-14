@@ -34,8 +34,8 @@ namespace HBL2
 		inline const bool Finished() const { return m_Finished.load(std::memory_order_acquire); }
 
 	private:
-		std::atomic_bool m_Finished = false;
 		friend class AssetManager;
+		std::atomic_bool m_Finished = false;
 	};
 
 	struct AssetManagerSpecification
@@ -144,7 +144,7 @@ namespace HBL2
 				return nullptr;
 			}
 
-			ResourceTask<T>* task = Allocator::Persistent.Allocate<ResourceTask<T>>();
+			ResourceTask<T>* task = m_ResourceTaskPoolArena.AllocConstruct<ResourceTask<T>>();
 			task->m_Finished = false;
 
 			// Do not schedule job if the asset is loaded.
@@ -218,7 +218,7 @@ namespace HBL2
 				return nullptr;
 			}
 
-			ResourceTask<T>* task = Allocator::Persistent.Allocate<ResourceTask<T>>();
+			ResourceTask<T>* task = m_ResourceTaskPoolArena.AllocConstruct<ResourceTask<T>>();
 			task->m_Finished = false;
 
 			// Load from scratch if the asset is loaded.
@@ -285,6 +285,12 @@ namespace HBL2
 
 		void WaitForAsyncJobs(JobContext* customJobCtx = nullptr);
 
+		template<typename T>
+		void ReleaseResourceTask(ResourceTask<T>* task)
+		{
+			m_ResourceTaskPoolArena.Free(task);
+		}
+
 		Span<const Handle<Asset>> GetRegisteredAssets() { return { m_RegisteredAssets.data(), m_RegisteredAssets.size() }; }
 
 		Handle<Asset> GetHandleFromUUID(UUID assetUUID);
@@ -311,5 +317,6 @@ namespace HBL2
 
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_PoolArena;
+		PoolArena m_ResourceTaskPoolArena;
 	};
 }

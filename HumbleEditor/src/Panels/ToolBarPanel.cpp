@@ -34,9 +34,6 @@ namespace HBL2
 							// Free unity build dll.
 							BuildEngine::Instance->UnloadBuild(m_ActiveScene);
 
-							// Clear the invalid cached mesh handles, since we deregistered all the assets.
-							MeshUtilities::Get().ClearCachedHandles();
-
 							// Create and open new project
 							HBL2::Project::Create(projectName)->Save(filepath);
 
@@ -46,7 +43,6 @@ namespace HBL2
 								.type = AssetType::Scene,
 							});
 
-							MeshUtilities::Get().LoadBuiltInMeshes();
 							HBL2::Project::OpenStartingScene();
 
 							m_ProjectChanged = true;
@@ -71,12 +67,8 @@ namespace HBL2
 							// Free unity build dll.
 							BuildEngine::Instance->UnloadBuild(m_ActiveScene);
 
-							// Clear the invalid cached mesh handles, since we deregistered all the assets.
-							MeshUtilities::Get().ClearCachedHandles();
-
 							if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 							{
-								MeshUtilities::Get().LoadBuiltInMeshes();
 								HBL2::Project::OpenStartingScene();
 
 								m_ProjectChanged = true;
@@ -117,6 +109,9 @@ namespace HBL2
 							.filePath = relativePath,
 							.type = AssetType::Scene,
 						});
+
+						// NOTE: We need to clear the CMD before copy.
+						m_ActiveScene->ClearStructuralCommandBuffer();
 
 						AssetManager::Instance->SaveAsset(assetHandle);
 						Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);

@@ -13,6 +13,7 @@
 namespace HBL2
 {
 	class ISystem;
+	class StructuralCommandBuffer;
 
 	enum class HBL2_API SystemType
 	{
@@ -37,6 +38,68 @@ namespace HBL2
 		APPEND_CLONE_RECURSIVE = 0,
 		APPEND_CLONE_TO_BASE_ONLY = 1,
 		DONT_APPEND_CLONE = 2,
+	};
+
+	class Scene;
+
+	template<class T>
+	struct LookupRO
+	{
+		entt::storage<T>* storage = nullptr;
+		const Scene* scene = nullptr;
+		uint64_t epoch = 0;
+
+		bool Has(Entity e) const
+		{
+#if !DIST
+			if (!scene || scene->Epoch() != epoch)
+			{
+				return false;
+			}
+#endif
+			return scene && scene->Epoch() == epoch && storage->contains(e);
+		}
+
+		const T* TryGet(Entity e) const
+		{
+#if !DIST
+			if (!scene || scene->Epoch() != epoch)
+			{
+				return nullptr;
+			}
+#endif
+			return storage->contains(e) ? &storage->get(e) : nullptr;
+		}
+	};
+
+	template<class T>
+	struct LookupRW
+	{
+		entt::storage<T>* storage = nullptr;
+		Scene* scene = nullptr;
+		uint64_t epoch = 0;
+
+		bool Has(Entity e) const
+		{
+#if !DIST
+			if (!scene || scene->Epoch() != epoch)
+			{
+				return false;
+			}
+#endif
+			return scene && scene->Epoch() == epoch && storage->contains(e);
+		}
+
+		T* TryGet(Entity e) const
+		{
+#if !DIST
+			if (!scene || scene->Epoch() != epoch)
+			{
+				return nullptr;
+			}
+#endif
+			return storage->contains(e) ? &storage->get(e) : nullptr;
+		}
 	};
 
 	class HBL2_API Scene
@@ -219,6 +282,16 @@ namespace HBL2
 
 		Entity MainCamera = Entity::Null;
 
+		StructuralCommandBuffer* Cmd()
+		{
+			return m_CmdBuffer;
+		}
+
+		void InitializeStructuralCommandBuffer();
+		void ClearStructuralCommandBuffer();
+
+		uint64_t Epoch() const { return m_Epoch; }
+
 	private:
 		void InternalDestroyEntity(Entity entity, bool isRootCall);
 		Entity InternalDuplicateEntity(Entity entity, Entity newEntity, bool appendCloneToName);
@@ -232,6 +305,8 @@ namespace HBL2
 		friend class SceneSerializer;
 
 	private:
+		friend class Pool<Scene, Scene>;
+
 		std::string m_Name;
 		entt::registry m_Registry;
 		entt::meta_ctx m_MetaContext;
@@ -240,6 +315,12 @@ namespace HBL2
 		std::vector<ISystem*> m_RuntimeSystems;
 		std::unordered_map<UUID, Entity> m_EntityMap;
 
-		friend class Pool<Scene, Scene>;
+	private:
+		friend class ISystem;
+
+		uint64_t m_Epoch = 0;
+		StructuralCommandBuffer* m_CmdBuffer = nullptr;
+		void PlaybackStructuralChanges();
+		void AdvanceEpoch();
 	};
 }

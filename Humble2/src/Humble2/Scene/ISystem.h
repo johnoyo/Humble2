@@ -3,6 +3,7 @@
 #include "Base.h"
 
 #include "Scene.h"
+#include "TypeResolver.h"
 #include "IJob.h"
 
 #include "Core\Events.h"
@@ -85,11 +86,11 @@ namespace HBL2
 		template<typename T>
 		void AppendJob(Scene* ctx)
 		{
-			IJob* job = new T;
-			job->Resolve();
-			job->SetContext(ctx);
-
+			IJob* job = Allocator::FrameArena.AllocConstruct<T>();
 			m_Jobs.push_back(job);
+
+			job->SetContext(ctx);
+			job->Resolve(m_TypeResolver);
 		}
 
 		void ScheduleJobs()
@@ -146,6 +147,9 @@ namespace HBL2
 					}
 					JobSystem::Get().Wait(ctx);
 				}
+
+				m_Context->PlaybackStructuralChanges();
+				m_Context->AdvanceEpoch();
 			}
 
 			m_Jobs.clear();
@@ -155,6 +159,7 @@ namespace HBL2
 		Scene* m_Context = nullptr;
 		SystemType m_Type = SystemType::Core;
 		SystemState m_State = SystemState::Idle;
+		TypeResolver m_TypeResolver;
 		std::vector<IJob*> m_Jobs;
 	};	
 }

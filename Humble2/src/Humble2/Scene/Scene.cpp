@@ -15,15 +15,22 @@
 #include "Systems\TerrainSystem.h"
 #include "Systems\AnimationCurveSystem.h"
 
+#include "StructuralCommandBuffer.h"
+
 namespace HBL2
 {
     Scene::Scene(const SceneDescriptor&& desc) : m_Name(desc.name)
     {
+        m_CmdBuffer = new StructuralCommandBuffer;
+        m_CmdBuffer->Initialize();
     }
 
     Scene* Scene::Copy(Scene* other)
     {
         HBL2_FUNC_PROFILE();
+
+        // NOTE: We need to clear the CMD before copy.
+        other->ClearStructuralCommandBuffer();
 
         Scene* newScene = new Scene({ .name = other->m_Name + "(Clone)"});
 
@@ -282,6 +289,10 @@ namespace HBL2
         m_Systems.clear();
         m_CoreSystems.clear();
         m_RuntimeSystems.clear();
+
+        m_CmdBuffer->ClearAll();
+        delete m_CmdBuffer;
+        m_CmdBuffer = nullptr;
     }
 
     Entity Scene::CreateEntity()
@@ -426,6 +437,16 @@ namespace HBL2
             m_RuntimeSystems.push_back(system);
             break;
         }
+    }
+
+    void Scene::InitializeStructuralCommandBuffer()
+    {
+        m_CmdBuffer->Initialize();
+    }
+
+    void Scene::ClearStructuralCommandBuffer()
+    {
+        m_CmdBuffer->ClearAll();
     }
 
     void Scene::InternalDestroyEntity(Entity entity, bool isRootCall)
@@ -796,5 +817,15 @@ namespace HBL2
         updateUUIDsFromPreserved(updateUUIDsFromPreserved, clone, Entity::Null);        
 
         return clone;
+    }
+    
+    void Scene::PlaybackStructuralChanges()
+    {
+        m_CmdBuffer->Playback(this);
+    }
+
+    void Scene::AdvanceEpoch()
+    {
+        ++m_Epoch;
     }
 }

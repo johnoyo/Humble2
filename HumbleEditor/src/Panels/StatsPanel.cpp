@@ -125,7 +125,6 @@ namespace HBL2
 			ImGui::NewLine();
 			ImGui::Text("Arena: %f %%", Allocator::Arena.GetFullPercentage());
 			ImGui::Text("Frame Arena: %f %%", ((float)Allocator::FrameArena.UsedBytes() / (float)50_MB) * 100.f);
-			ImGui::Text("Persistent: %f %%", Allocator::Persistent.GetFullPercentage());
 		}
 	}
 }

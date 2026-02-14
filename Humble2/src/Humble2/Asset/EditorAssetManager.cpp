@@ -84,6 +84,10 @@ namespace HBL2
 			asset->Indentifier = ReimportMaterial(asset).Pack();
 			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
+		case AssetType::Mesh:
+			asset->Indentifier = ReimportMesh(asset).Pack();
+			asset->Loaded = (asset->Indentifier != 0);
+			return asset->Indentifier;
 		case AssetType::Prefab:
 			asset->Indentifier = ReimportPrefab(asset).Pack();
 			asset->Loaded = (asset->Indentifier != 0);
@@ -528,11 +532,11 @@ namespace HBL2
 
 				for (const auto shaderAssetHandle : builtInShaderAssets)
 				{
-					Asset* asset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+					Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
 
-					if (shaderHandle.Pack() == asset->Indentifier)
+					if (shaderHandle.Pack() == shaderAsset->Indentifier)
 					{
-						shaderUUID = asset->UUID;
+						shaderUUID = shaderAsset->UUID;
 						break;
 					}
 				}
@@ -976,6 +980,47 @@ namespace HBL2
 		ioStream.close();
 
 		return materialHandle;
+	}
+
+	Handle<Mesh> EditorAssetManager::ReimportMesh(Asset* asset)
+	{
+		Handle<Mesh> meshHandle = Handle<Mesh>::UnPack(asset->Indentifier);
+		Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
+
+		if (mesh == nullptr)
+		{
+			return {};
+		}
+
+		mesh->MarkAsEmpty();
+
+		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const std::filesystem::path& meshPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+
+		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
+		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
+
+		std::ifstream stream(meshPath.string() + ".hblmesh");
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Mesh"].IsDefined())
+		{
+			HBL2_CORE_TRACE("Mesh not found: {0}", ss.str());
+			stream.close();
+
+			return Handle<Mesh>();
+		}
+
+		auto meshProperties = data["Mesh"];
+		if (meshProperties)
+		{
+			MeshUtilities::Get().Reload(asset);
+		}
+
+		stream.close();
+		return meshHandle;
 	}
 
 	Handle<Prefab> EditorAssetManager::ReimportPrefab(Asset* asset)
@@ -1744,13 +1789,16 @@ namespace HBL2
 
 		Mesh* mesh = ResourceManager::Instance->GetMesh(meshAssetHandle);
 
-		for (auto& meshPart : mesh->Meshes)
+		if (mesh != nullptr)
 		{
-			ResourceManager::Instance->DeleteBuffer(meshPart.IndexBuffer);
-
-			for (const auto vertexBuffer : meshPart.VertexBuffers)
+			for (auto& meshPart : mesh->Meshes)
 			{
-				ResourceManager::Instance->DeleteBuffer(vertexBuffer);
+				ResourceManager::Instance->DeleteBuffer(meshPart.IndexBuffer);
+
+				for (const auto vertexBuffer : meshPart.VertexBuffers)
+				{
+					ResourceManager::Instance->DeleteBuffer(vertexBuffer);
+				}
 			}
 		}
 
@@ -1802,54 +1850,57 @@ namespace HBL2
 
 		Script* script = ResourceManager::Instance->GetScript(scriptAssetHandle);
 
-		switch (script->Type)
+		if (script != nullptr)
 		{
-		case ScriptType::SYSTEM:
-		{
-			Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
-
-			// If active scene is null, it means it is already unloaded and all the attached scripts are unloaded as well.
-			if (activeScene == nullptr)
+			switch (script->Type)
 			{
-				break;
-			}
-
-			// Delete registered user system.
-			for (ISystem* userSystem : activeScene->GetRuntimeSystems())
+			case ScriptType::SYSTEM:
 			{
-				if (userSystem->Name == script->Name && userSystem->GetType() == SystemType::User)
+				Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+				// If active scene is null, it means it is already unloaded and all the attached scripts are unloaded as well.
+				if (activeScene == nullptr)
 				{
-					activeScene->DeregisterSystem(userSystem);
 					break;
 				}
-			}
-		}
-		break;
-		case ScriptType::COMPONENT:
-		{
-			Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
-			// If active scene is null, it means it is already unloaded and all the attached scripts are unloaded as well.
-			if (activeScene == nullptr)
-			{
-				break;
-			}
-
-			// Remove component from all the entities of the source scene.
-			for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
-			{
-				std::string componentName = meta_type.second.info().name().data();
-				componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-
-				if (script->Name == componentName)
+				// Delete registered user system.
+				for (ISystem* userSystem : activeScene->GetRuntimeSystems())
 				{
-					BuildEngine::Instance->ClearComponentStorage(componentName, activeScene);
-					entt::meta_reset(activeScene->GetMetaContext(), meta_type.first);
-					break;
+					if (userSystem->Name == script->Name && userSystem->GetType() == SystemType::User)
+					{
+						activeScene->DeregisterSystem(userSystem);
+						break;
+					}
 				}
 			}
-		}
-		break;
+			break;
+			case ScriptType::COMPONENT:
+			{
+				Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
+
+				// If active scene is null, it means it is already unloaded and all the attached scripts are unloaded as well.
+				if (activeScene == nullptr)
+				{
+					break;
+				}
+
+				// Remove component from all the entities of the source scene.
+				for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
+				{
+					std::string componentName = meta_type.second.info().name().data();
+					componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
+
+					if (script->Name == componentName)
+					{
+						BuildEngine::Instance->ClearComponentStorage(componentName, activeScene);
+						entt::meta_reset(activeScene->GetMetaContext(), meta_type.first);
+						break;
+					}
+				}
+			}
+			break;
+			}
 		}
 
 		ResourceManager::Instance->DeleteScript(scriptAssetHandle);
@@ -1878,7 +1929,10 @@ namespace HBL2
 		Scene* currentScene = ResourceManager::Instance->GetScene(sceneHandle);
 
 		// Clear entire scene.
-		currentScene->Clear();
+		if (currentScene != nullptr)
+		{
+			currentScene->Clear();
+		}
 
 		// Delete from pool.
 		ResourceManager::Instance->DeleteScene(sceneHandle);

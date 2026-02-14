@@ -154,6 +154,13 @@ namespace HBL2
 								AssetManager::Instance->ReloadAssetAsync<Material>(assetHandle);
 							}
 						}
+						else if (asset && asset->Type == AssetType::Mesh)
+						{
+							if (ImGui::MenuItem("Reload"))
+							{
+								AssetManager::Instance->ReloadAssetAsync<Mesh>(assetHandle);
+							}
+						}
 
 						if (ImGui::MenuItem("Delete"))
 						{
@@ -790,12 +797,7 @@ namespace HBL2
 							TextureUtilities::Get().CreateAssetMetadataFile(albedoMapAssetHandle);
 						}
 
-						if (g_AlbedoMapTask)
-						{
-							Allocator::Persistent.Deallocate(g_AlbedoMapTask);
-							g_AlbedoMapTask = nullptr;
-						}
-
+						AssetManager::Instance->ReleaseResourceTask(g_AlbedoMapTask);
 						g_AlbedoMapTask = AssetManager::Instance->GetAssetAsync<Texture>(albedoMapAssetHandle);
 					}
 
@@ -838,12 +840,7 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(normalMapAssetHandle);
 							}
 
-							if (g_NormalMapTask)
-							{
-								Allocator::Persistent.Deallocate(g_NormalMapTask);
-								g_NormalMapTask = nullptr;
-							}
-
+							AssetManager::Instance->ReleaseResourceTask(g_NormalMapTask);
 							g_NormalMapTask = AssetManager::Instance->GetAssetAsync<Texture>(normalMapAssetHandle);
 						}
 
@@ -880,12 +877,7 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(metallicMapAssetHandle);
 							}
 
-							if (g_MetallicMapTask)
-							{
-								Allocator::Persistent.Deallocate(g_MetallicMapTask);
-								g_MetallicMapTask = nullptr;
-							}
-
+							AssetManager::Instance->ReleaseResourceTask(g_MetallicMapTask);
 							g_MetallicMapTask = AssetManager::Instance->GetAssetAsync<Texture>(metallicMapAssetHandle);
 						}
 
@@ -922,12 +914,7 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(roughnessMapAssetHandle);
 							}
 
-							if (g_RoughnessMapTask)
-							{
-								Allocator::Persistent.Deallocate(g_RoughnessMapTask);
-								g_RoughnessMapTask = nullptr;
-							}
-
+							AssetManager::Instance->ReleaseResourceTask(g_RoughnessMapTask);
 							g_RoughnessMapTask = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapAssetHandle);
 						}
 
@@ -980,29 +967,14 @@ namespace HBL2
 							ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, m_SelectedMaterialType);
 						}
 
-						if (g_AlbedoMapTask)
-						{
-							Allocator::Persistent.Deallocate(g_AlbedoMapTask);
-							g_AlbedoMapTask = nullptr;
-						}
-
-						if (g_NormalMapTask)
-						{
-							Allocator::Persistent.Deallocate(g_NormalMapTask);
-							g_NormalMapTask = nullptr;
-						}
-
-						if (g_MetallicMapTask)
-						{
-							Allocator::Persistent.Deallocate(g_MetallicMapTask);
-							g_MetallicMapTask = nullptr;
-						}
-
-						if (g_RoughnessMapTask)
-						{
-							Allocator::Persistent.Deallocate(g_RoughnessMapTask);
-							g_RoughnessMapTask = nullptr;
-						}
+						AssetManager::Instance->ReleaseResourceTask(g_AlbedoMapTask);
+						g_AlbedoMapTask = nullptr;
+						AssetManager::Instance->ReleaseResourceTask(g_NormalMapTask);
+						g_NormalMapTask = nullptr;
+						AssetManager::Instance->ReleaseResourceTask(g_MetallicMapTask);
+						g_MetallicMapTask = nullptr;
+						AssetManager::Instance->ReleaseResourceTask(g_RoughnessMapTask);
+						g_RoughnessMapTask = nullptr;
 
 						m_OpenMaterialSetupPopup = false;
 					}
@@ -1014,29 +986,14 @@ namespace HBL2
 				{
 					m_OpenMaterialSetupPopup = false;
 
-					if (g_AlbedoMapTask)
-					{
-						Allocator::Persistent.Deallocate(g_AlbedoMapTask);
-						g_AlbedoMapTask = nullptr;
-					}
-
-					if (g_NormalMapTask)
-					{
-						Allocator::Persistent.Deallocate(g_NormalMapTask);
-						g_NormalMapTask = nullptr;
-					}
-
-					if (g_MetallicMapTask)
-					{
-						Allocator::Persistent.Deallocate(g_MetallicMapTask);
-						g_MetallicMapTask = nullptr;
-					}
-
-					if (g_RoughnessMapTask)
-					{
-						Allocator::Persistent.Deallocate(g_RoughnessMapTask);
-						g_RoughnessMapTask = nullptr;
-					}
+					AssetManager::Instance->ReleaseResourceTask(g_AlbedoMapTask);
+					g_AlbedoMapTask = nullptr;
+					AssetManager::Instance->ReleaseResourceTask(g_NormalMapTask);
+					g_NormalMapTask = nullptr;
+					AssetManager::Instance->ReleaseResourceTask(g_MetallicMapTask);
+					g_MetallicMapTask = nullptr;
+					AssetManager::Instance->ReleaseResourceTask(g_RoughnessMapTask);
+					g_RoughnessMapTask = nullptr;
 				}
 
 				ImGui::End();

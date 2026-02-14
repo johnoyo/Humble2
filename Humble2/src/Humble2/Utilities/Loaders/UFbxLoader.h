@@ -16,25 +16,20 @@ namespace HBL2
 	{
 	public:
 		Handle<Mesh> Load(const std::filesystem::path& path);
+		void Reload(Asset* asset);
 
 	private:
-		void LoadMaterials(const std::filesystem::path& path);
-		Handle<Asset> LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, void* internalData = nullptr);
+		void LoadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path);
+		Handle<Asset> LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, ResourceTask<Texture>* textureTask, void* internalData = nullptr);
 		Handle<Asset> LoadTexture(const ufbx_texture* texture, ResourceTask<Texture>* resourceTask);
-		void CleanUpResourceTasks();
+		void CleanUpResourceTasks(ResourceTask<Texture>* albedoMapTask, ResourceTask<Texture>* normalMapTask, ResourceTask<Texture>* roughnessMapTask, ResourceTask<Texture>* metallicMapTask);
 
 		Result<MeshPartDescriptor> LoadMeshData(const ufbx_node* node, uint32_t meshIndex);
 		Result<SubMeshDescriptor> LoadSubMeshVertexData(const ufbx_node* node, uint32_t meshIndex, uint32_t subMeshIndex);
 
 	private:
-		ufbx_scene* m_Scene;
-		std::vector<Vertex> m_Vertices;
-		std::vector<uint32_t> m_Indeces;
-		std::unordered_map<const char*, Handle<Material>> m_MaterialNameToHandle;
-
-		ResourceTask<Texture>* m_AlbedoMapTask = nullptr;
-		ResourceTask<Texture>* m_NormalMapTask = nullptr;
-		ResourceTask<Texture>* m_RoughnessMapTask = nullptr;
-		ResourceTask<Texture>* m_MetallicMapTask = nullptr;
+		static thread_local std::vector<Vertex> s_Vertices;
+		static thread_local std::vector<uint32_t> s_Indeces;
+		static thread_local std::unordered_map<const char*, Handle<Material>> s_MaterialNameToHandle;
 	};
 }

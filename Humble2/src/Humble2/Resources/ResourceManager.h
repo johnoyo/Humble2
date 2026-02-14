@@ -121,6 +121,8 @@ namespace HBL2
 		// Meshes	
 		Handle<Mesh> CreateMesh(const MeshDescriptorEx&& desc);
 		Handle<Mesh> CreateMesh(const MeshDescriptor&& desc);
+		void ReimportMesh(Handle<Mesh> handle, const MeshDescriptor&& desc);
+		void ReimportMesh(Handle<Mesh> handle, const MeshDescriptorEx&& desc);
 		void DeleteMesh(Handle<Mesh> handle);
 		Mesh* GetMesh(Handle<Mesh> handle) const;
 

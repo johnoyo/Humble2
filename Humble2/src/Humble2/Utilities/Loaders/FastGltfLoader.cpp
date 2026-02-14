@@ -12,6 +12,11 @@
 
 namespace HBL2
 {
+	thread_local std::vector<Vertex> FastGltfLoader::s_Vertices;
+	thread_local std::vector<uint32_t> FastGltfLoader::s_Indices;
+	thread_local std::vector<Handle<Asset>> FastGltfLoader::s_Textures;
+	thread_local std::unordered_map<const char*, Handle<Material>> FastGltfLoader::s_MaterialNameToHandle;
+
 	Handle<Mesh> FastGltfLoader::Load(const std::filesystem::path& path)
 	{
 		HBL2_FUNC_PROFILE();
@@ -77,12 +82,123 @@ namespace HBL2
 		return handle;
 	}
 
+	void FastGltfLoader::Reload(Asset* asset)
+	{
+		HBL2_FUNC_PROFILE();
+
+		// glTF files list their required extensions
+		constexpr auto extensions =
+			fastgltf::Extensions::KHR_mesh_quantization | fastgltf::Extensions::KHR_materials_emissive_strength |
+			fastgltf::Extensions::KHR_lights_punctual | fastgltf::Extensions::KHR_texture_transform;
+
+		constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble |
+			fastgltf::Options::LoadGLBBuffers | fastgltf::Options::LoadExternalBuffers |
+			fastgltf::Options::LoadExternalImages | fastgltf::Options::GenerateMeshIndices;
+
+		// Initialize fastgltf parser
+		fastgltf::GltfDataBuffer dataBuffer;
+		fastgltf::Parser parser(extensions);
+
+		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const std::filesystem::path& meshPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+
+		auto dataBufferResult = dataBuffer.FromPath(meshPath.string());
+
+		if (!dataBufferResult)
+		{
+			HBL2_CORE_ERROR("Failed to load GLTF file: {0}", meshPath.string());
+			return;
+		}
+
+		auto gltfAsset = parser.loadGltf(dataBufferResult.get(), meshPath.parent_path(), gltfOptions);
+		if (!gltfAsset)
+		{
+			HBL2_CORE_ERROR("Failed to parse GLTF file: {0}", meshPath.string());
+			return;
+		}
+
+		LoadTextures(meshPath, gltfAsset.get());
+		LoadMaterials(meshPath, gltfAsset.get());
+
+		std::vector<MeshPartDescriptor> meshes;
+		uint32_t meshIndex = 0;
+
+		for (const auto& node : gltfAsset->nodes)
+		{
+			HBL2_CORE_TRACE("Object: {0}", node.name);
+
+			if (node.meshIndex)
+			{
+				auto result = LoadMeshData(gltfAsset.get(), node, meshIndex++);
+				if (result.IsOk())
+				{
+					meshes.push_back(result.Unwrap());
+				}
+			}
+		}
+
+		if (meshes.empty())
+		{
+			return;
+		}
+
+		Handle<Mesh> handle = Handle<Mesh>::UnPack(asset->Indentifier);
+		Mesh* mesh = ResourceManager::Instance->GetMesh(handle);
+
+		if (mesh == nullptr)
+		{
+			return;
+		}
+
+		mesh->MarkAsEmpty();
+
+		std::vector<Handle<Buffer>> indexBuffers;
+		std::vector<Handle<Buffer>> vertexBuffers;
+		std::vector<Handle<Material>> materials;
+
+		// Delete previous buffers and embeded material.
+		for (const MeshPart& meshPart : mesh->Meshes)
+		{
+			indexBuffers.push_back(meshPart.IndexBuffer);
+
+			for (Handle<Buffer> vb : meshPart.VertexBuffers)
+			{
+				vertexBuffers.push_back(vb);
+			}
+
+			for (const SubMesh& subMesh : meshPart.SubMeshes)
+			{
+				materials.push_back(subMesh.EmbededMaterial);
+			}
+		}
+
+		HBL2::ResourceManager::Instance->ReimportMesh(handle, {
+			.debugName = _strdup(meshPath.filename().stem().string().c_str()),
+			.meshes = std::move(meshes),
+		});
+
+		// Delete previous buffers and embeded material.
+		for (Handle<Buffer> ib : indexBuffers)
+		{
+			ResourceManager::Instance->DeleteBuffer(ib);
+		}
+		for (Handle<Buffer> vb : vertexBuffers)
+		{
+			ResourceManager::Instance->DeleteBuffer(vb);
+		}
+
+		for (Handle<Material> mat : materials)
+		{
+			ResourceManager::Instance->DeleteMaterial(mat);
+		}
+	}
+
 	void FastGltfLoader::LoadTextures(const std::filesystem::path& path, const fastgltf::Asset& asset)
 	{
-		m_Textures.clear();
+		s_Textures.clear();
 
 		size_t numTextures = asset.images.size();
-		m_Textures.resize(numTextures);
+		s_Textures.resize(numTextures);
 
 		for (uint32_t imageIndex = 0; imageIndex < numTextures; ++imageIndex)
 		{
@@ -238,13 +354,13 @@ namespace HBL2
 					bufferFromBufferView.data);
 			}
 
-			m_Textures[imageIndex] = textureAssetHandle;
+			s_Textures[imageIndex] = textureAssetHandle;
 		}
 	}
 
 	void FastGltfLoader::LoadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset)
 	{
-		m_MaterialNameToHandle.clear();
+		s_MaterialNameToHandle.clear();
 
 		size_t numMaterials = asset.materials.size();
 
@@ -280,7 +396,7 @@ namespace HBL2
 					uint32_t diffuseMapIndex = glTFMaterial.pbrData.baseColorTexture.value().textureIndex;
 					uint32_t imageIndex = asset.textures[diffuseMapIndex].imageIndex.value();
 
-					albedoMapAssetHandle = m_Textures[imageIndex];
+					albedoMapAssetHandle = s_Textures[imageIndex];
 				}
 
 				// normal map
@@ -289,7 +405,7 @@ namespace HBL2
 					uint32_t normalMapIndex = glTFMaterial.normalTexture.value().textureIndex;
 					uint32_t imageIndex = asset.textures[normalMapIndex].imageIndex.value();
 
-					normalMapAssetHandle = m_Textures[imageIndex];
+					normalMapAssetHandle = s_Textures[imageIndex];
 				}
 
 				// texture for roughness and metallicness
@@ -298,7 +414,7 @@ namespace HBL2
 					int metallicRoughnessMapIndex = glTFMaterial.pbrData.metallicRoughnessTexture.value().textureIndex;
 					uint32_t imageIndex = asset.textures[metallicRoughnessMapIndex].imageIndex.value();
 
-					metallicRoughnessMapAssetHandle = m_Textures[imageIndex];
+					metallicRoughnessMapAssetHandle = s_Textures[imageIndex];
 				}
 
 				AssetManager::Instance->WaitForAsyncJobs();
@@ -347,14 +463,14 @@ namespace HBL2
 				materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetUUID);
 			}
 
-			m_MaterialNameToHandle[glTFMaterial.name.c_str()] = materialHandle;
+			s_MaterialNameToHandle[glTFMaterial.name.c_str()] = materialHandle;
 		}
 	}
 
 	Result<MeshPartDescriptor> FastGltfLoader::LoadMeshData(const fastgltf::Asset& asset, const fastgltf::Node& node, uint32_t meshIndex)
 	{
-		m_Vertices.clear();
-		m_Indices.clear();
+		s_Vertices.clear();
+		s_Indices.clear();
 
 		MeshPartDescriptor meshPartDescriptor{};
 		const fastgltf::Mesh& mesh = asset.meshes[*node.meshIndex];
@@ -414,20 +530,20 @@ namespace HBL2
 			.debugName = "gltf-mesh-vertex-buffer",
 			.usage = BufferUsage::VERTEX,
 			.memoryUsage = MemoryUsage::GPU_ONLY,
-			.byteSize = static_cast<uint32_t>(m_Vertices.size() * sizeof(Vertex)),
-			.initialData = m_Vertices.data(),
+			.byteSize = static_cast<uint32_t>(s_Vertices.size() * sizeof(Vertex)),
+			.initialData = s_Vertices.data(),
 		});
 
 		meshPartDescriptor.vertexBuffers = { vertexBuffer };
 
-		if (!m_Indices.empty())
+		if (!s_Indices.empty())
 		{
 			meshPartDescriptor.indexBuffer = ResourceManager::Instance->CreateBuffer({
 				.debugName = "gltf-mesh-index-buffer",
 				.usage = BufferUsage::INDEX,
 				.memoryUsage = MemoryUsage::GPU_ONLY,
-				.byteSize = static_cast<uint32_t>(m_Indices.size() * sizeof(uint32_t)),
-				.initialData = m_Indices.data(),
+				.byteSize = static_cast<uint32_t>(s_Indices.size() * sizeof(uint32_t)),
+				.initialData = s_Indices.data(),
 			});
 		}
 
@@ -441,7 +557,7 @@ namespace HBL2
 
 		const fastgltf::Primitive& primitive = mesh.primitives[subMeshIndex];
 
-		subMeshDescriptor.embededMaterial = m_MaterialNameToHandle[asset.materials[mesh.primitives[subMeshIndex].materialIndex.value_or(0)].name.c_str()];
+		subMeshDescriptor.embededMaterial = s_MaterialNameToHandle[asset.materials[mesh.primitives[subMeshIndex].materialIndex.value_or(0)].name.c_str()];
 
 		size_t vertexCount = 0;
 		size_t indexCount = 0;
@@ -472,9 +588,9 @@ namespace HBL2
 		}
 
 		// Append data to model's vertex buffer
-		uint32_t numVerticesBefore = m_Vertices.size();
-		uint32_t numIndicesBefore = m_Indices.size();
-		m_Vertices.resize(numVerticesBefore + vertexCount);
+		uint32_t numVerticesBefore = s_Vertices.size();
+		uint32_t numIndicesBefore = s_Indices.size();
+		s_Vertices.resize(numVerticesBefore + vertexCount);
 
 		uint32_t vertexIndex = numVerticesBefore;
 
@@ -503,7 +619,7 @@ namespace HBL2
 			// UV
 			vertex.UV = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[vertexIterator * 2]) : glm::vec3(0.0f);
 
-			m_Vertices[vertexIndex++] = vertex;
+			s_Vertices[vertexIndex++] = vertex;
 		}
 
 		// Indices
@@ -513,8 +629,8 @@ namespace HBL2
 			indexCount = accessor.count;
 
 			// append indices for submesh to global index array
-			m_Indices.resize(m_Indices.size() + indexCount);
-			uint32_t* destination = m_Indices.data() + numIndicesBefore;
+			s_Indices.resize(s_Indices.size() + indexCount);
+			uint32_t* destination = s_Indices.data() + numIndicesBefore;
 			fastgltf::iterateAccessorWithIndex<uint32_t>(asset, accessor, [&](uint32_t subMeshIndex, size_t iterator)
 			{
 				destination[iterator] = subMeshIndex;

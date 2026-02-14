@@ -112,33 +112,12 @@ namespace HBL2
 	{
 		Mesh() = default;
 		Mesh(const MeshDescriptor&& desc);
-		Mesh(const MeshDescriptorEx&& desc)
-		{
-			DebugName = desc.debugName;
+		Mesh(const MeshDescriptorEx&& desc);
 
-			for (const MeshPartDescriptor& meshPartDescriptor : desc.meshes)
-			{
-				Meshes.emplace_back(std::forward<const MeshPartDescriptor>(meshPartDescriptor));
-			}
-
-			for (const MeshPart& meshPart : Meshes)
-			{
-				Extents.Min.x = glm::min(meshPart.Extents.Min.x, Extents.Min.x);
-				Extents.Min.y = glm::min(meshPart.Extents.Min.y, Extents.Min.y);
-				Extents.Min.z = glm::min(meshPart.Extents.Min.z, Extents.Min.z);
-
-				Extents.Max.x = glm::max(meshPart.Extents.Max.x, Extents.Max.x);
-				Extents.Max.y = glm::max(meshPart.Extents.Max.y, Extents.Max.y);
-				Extents.Max.z = glm::max(meshPart.Extents.Max.z, Extents.Max.z);
-			}
-
-			m_HasItems.store(true, std::memory_order_release);
-		}
-
-		bool IsEmpty()
-		{
-			return !m_HasItems.load(std::memory_order_acquire);
-		}
+		bool IsEmpty();
+		void MarkAsEmpty();
+		void Reimport(const MeshDescriptor&& desc);
+		void Reimport(const MeshDescriptorEx&& desc);
 
 		const char* DebugName = "";
 		std::vector<MeshPart> Meshes;
@@ -146,9 +125,6 @@ namespace HBL2
 
 	private:
 		std::atomic<bool> m_HasItems{ false };
-
-		void operator=(const Mesh& other);
-		friend class Pool<Mesh, Mesh>;
 	};
 
 	struct Material

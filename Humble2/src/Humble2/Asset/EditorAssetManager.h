@@ -43,6 +43,7 @@ namespace HBL2
 
 		Handle<Shader> ReimportShader(Asset* asset);
 		Handle<Material> ReimportMaterial(Asset* asset);
+		Handle<Mesh> ReimportMesh(Asset* asset);
 		Handle<Prefab> ReimportPrefab(Asset* asset);
 
 		void SaveMaterial(Asset* asset);

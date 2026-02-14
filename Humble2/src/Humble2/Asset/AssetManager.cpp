@@ -15,8 +15,10 @@ namespace HBL2
 		m_AssetPool.Initialize(m_Spec.Assets);
 
 		uint32_t byteSize = (sizeof(UUID) + 2 * sizeof(Handle<Asset>)) * (2 * m_Spec.Assets);
-		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", byteSize);
+		constexpr uint32_t resourceTasksByteSize = 6_B * 1024;
+		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", byteSize + resourceTasksByteSize);
 		m_PoolArena.Initialize(&Allocator::Arena, byteSize, m_Reservation);
+		m_ResourceTaskPoolArena.Initialize(&Allocator::Arena, resourceTasksByteSize, 6, m_Reservation);
 
 		m_RegisteredAssetMap = MakeHMap<UUID, Handle<Asset>>(m_PoolArena, m_Spec.Assets);
 		m_RegisteredAssets = MakeDArray<Handle<Asset>>(m_PoolArena, m_Spec.Assets);
@@ -192,15 +194,21 @@ namespace HBL2
 		WaitForAsyncJobs();
 		
 		const auto& builtInShaderAssets = ShaderUtilities::Get().GetBuiltInShaderAssets();
+		const auto& builtInMeshAssets = MeshUtilities::Get().GetBuiltInMeshAssets();
 
 		for (const auto handle : m_RegisteredAssets)
 		{
-			// Skip if is a built in material or shader asset.
+			// Skip if is a built in material, shader or mesh asset.
 			bool isBuiltInAsset = false;
 
 			for (const auto shaderAssetHandle : builtInShaderAssets)
 			{
 				if (handle == shaderAssetHandle) { isBuiltInAsset = true; break; }
+			}
+
+			for (const auto meshAssetHandle : builtInMeshAssets)
+			{
+				if (handle == meshAssetHandle) { isBuiltInAsset = true; break; }
 			}
 
 			if (handle == ShaderUtilities::Get().LitMaterialAsset) { isBuiltInAsset = true; }

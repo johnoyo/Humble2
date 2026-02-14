@@ -38,6 +38,22 @@ namespace HBL2
 	{
 		return m_MeshPool.Insert(std::forward<const MeshDescriptor>(desc));
 	}
+	void ResourceManager::ReimportMesh(Handle<Mesh> handle, const MeshDescriptor&& desc)
+	{
+		Mesh* mesh = m_MeshPool.Get(handle);
+		if (mesh != nullptr)
+		{
+			mesh->Reimport(std::forward<const MeshDescriptor>(desc));
+		}
+	}
+	void ResourceManager::ReimportMesh(Handle<Mesh> handle, const MeshDescriptorEx&& desc)
+	{
+		Mesh* mesh = m_MeshPool.Get(handle);
+		if (mesh != nullptr)
+		{
+			mesh->Reimport(std::forward<const MeshDescriptorEx>(desc));
+		}
+	}
 	void ResourceManager::DeleteMesh(Handle<Mesh> handle)
 	{
 		m_MeshPool.Remove(handle);

@@ -3,6 +3,8 @@
 #include "Scene.h"
 #include "Entity.h"
 #include "Components.h"
+#include "TypeResolver.h"
+#include "StructuralCommandBuffer.h"
 
 #include "Utilities\JobSystem.h"
 
@@ -19,45 +21,6 @@ namespace HBL2
 
 	using ComponentMaskType = std::bitset<MAX_COMPONENT_TYPES>;
 
-	struct TypeResolver
-	{
-	public:
-		template<typename T>
-		std::uint32_t Resolve() const
-		{
-			using U = std::remove_cv_t<std::remove_reference_t<T>>;
-			auto it = m_TypeMap.find(std::type_index(typeid(U)));
-
-			if (it == m_TypeMap.end())
-			{
-				const_cast<TypeResolver*>(this)->Register<U>();
-				it = m_TypeMap.find(std::type_index(typeid(U)));
-			}
-
-			return it->second;
-		}
-
-		template<typename T>
-		std::uint32_t Register()
-		{
-			using U = std::remove_cv_t<std::remove_reference_t<T>>;
-			std::type_index key(typeid(U));
-			if (auto it = m_TypeMap.find(key); it != m_TypeMap.end())
-			{
-				return it->second;
-			}
-			const auto id = m_Next++;
-			m_TypeMap.emplace(key, id);
-			return id;
-		}
-
-		std::uint32_t Count() const { return m_Next; }
-
-	private:
-		std::unordered_map<std::type_index, std::uint32_t> m_TypeMap{};
-		std::uint32_t m_Next = 0;
-	};
-
 	class IJob;
 
 	struct JobEntry
@@ -70,10 +33,12 @@ namespace HBL2
 	class IJob
 	{
 	public:
-		virtual void Resolve() = 0;
+		IJob() : m_Entry({ .Job = this }) {}
+
+		virtual void Resolve(TypeResolver& resolver) = 0;
 		virtual void Execute() = 0;
 
-		void SetContext(Scene* ctx) { m_Context = ctx; }
+		void SetContext(Scene* ctx) { m_Context = ctx; StructuralCmdBuffer = ctx->Cmd(); }
 		const JobEntry& GetEntry() const { return m_Entry; }
 
 	protected:
@@ -110,6 +75,32 @@ namespace HBL2
 			apply(typename TQuery::GetTypes{}); // get<T...>
 			apply(typename TQuery::ExTypes{});  // excluded always treated as read-only
 		}
+
+		template<class T>
+		void Read(TypeResolver& r)
+		{
+			m_Entry.ReadMask.set(r.Resolve<T>());
+		}
+
+		template<class T>
+		void Write(TypeResolver& r)
+		{
+			m_Entry.WriteMask.set(r.Resolve<T>());
+		}
+
+		template<class T>
+		LookupRO<T> LookupRead() const
+		{
+			return LookupRO<T>{ &m_Context->GetRegistry().storage<T>(), m_Context, m_Context->Epoch() };
+		}
+
+		template<class T>
+		LookupRW<T> LookupWrite()
+		{
+			return LookupRW<T>{ &m_Context->GetRegistry().storage<T>(), m_Context, m_Context->Epoch() };
+		}
+
+		StructuralCommandBuffer* StructuralCmdBuffer = nullptr;
 
 	private:
 		JobEntry m_Entry;
@@ -237,7 +228,7 @@ namespace HBL2
 		return Query<IncT<Owned...>, GetT<Get...>, ExT<Ex...>>{};
 	}
 
-	class Physics2dJob final : public IJob
+	/*class Physics2dJob final : public IJob
 	{
 		static constexpr auto G = MakeGroup<Component::Rigidbody2D>(entt::get<Component::Transform>);
 
@@ -253,23 +244,31 @@ namespace HBL2
 			{
 
 			});
-		}
+		}B
 	};
 
+
+	
 	class Physics3dJob final : public IJob
 	{
 		static constexpr auto G = MakeGroup<Component::Rigidbody>(entt::get<Component::Transform>);
 
-		virtual void Resolve()
+		virtual void Resolve(TypeResolver& resolver)
 		{
-			MakeRuntimeEntry<decltype(G)>({});
+			MakeRuntimeEntry<decltype(G)>(resolver);
+			Read<Component::BoxCollider>(resolver);
 		}
 
 		virtual void Execute() override
 		{
-			Query(G).Each([](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
-			{
+			auto bcRO = LookupRead<Component::BoxCollider>();
 
+			Query(G).Each([&](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
+			{
+				if (auto* bc = bcRO.TryGet(entity))
+				{
+					StructuralCmdBuffer->Add<Component::AudioSource>(entity);
+				}
 			});
 		}
 	};
@@ -278,9 +277,11 @@ namespace HBL2
 	{
 		static constexpr auto G = MakeGroup<Component::Rigidbody>(entt::get<Component::Transform>);
 
-		virtual void Resolve()
+		virtual void Resolve(TypeResolver& resolver)
 		{
-			MakeRuntimeEntry<decltype(G)>({});
+			MakeRuntimeEntry<decltype(G)>(resolver);
+
+
 		}
 
 		virtual void Execute() override
@@ -292,7 +293,7 @@ namespace HBL2
 		}
 	};
 
-	/*
+	
 	class PhysicsSystem final : public ISystem
 	{
 	public:
@@ -316,8 +317,7 @@ namespace HBL2
 		{
 
 		}
-	};
-	*/
+	};*/
 
 	//bool MustRunBefore(const JobEntry& A, const JobEntry& B)
 	//{

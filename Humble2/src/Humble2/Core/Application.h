@@ -39,8 +39,6 @@
 #include "Utilities\ShaderUtilities.h"
 
 #include "Utilities/Allocators/ArenaAllocator.h"
-#include "Utilities/Allocators/BumpAllocator.h"
-#include "Utilities/Allocators/BinAllocator.h"
 
 #include <string>
 #include <sstream>

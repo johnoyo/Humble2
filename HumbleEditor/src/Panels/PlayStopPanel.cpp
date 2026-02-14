@@ -17,6 +17,8 @@ namespace HBL2
 
 				if (!m_ActiveSceneTemp.IsValid())
 				{
+					m_ActiveScene->ClearStructuralCommandBuffer();
+
 					m_ActiveSceneTemp = Context::ActiveScene;
 					auto playSceneHandle = ResourceManager::Instance->CreateScene({ .name = m_ActiveScene->GetName() + "(Clone)" });
 					Scene* playScene = ResourceManager::Instance->GetScene(playSceneHandle);
