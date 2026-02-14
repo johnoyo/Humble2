@@ -589,8 +589,15 @@ namespace HBL2
 
         if (auto* pe = TryGetComponent<Component::PrefabEntity>(entity))
         {
-            const Entity oldEntity = preservedEntityIDs[pe->EntityId];
-            newEntity = m_Registry.create(oldEntity.Handle);
+            if (preservedEntityIDs.contains(pe->EntityId))
+            {
+                const Entity oldEntity = preservedEntityIDs.at(pe->EntityId);
+                newEntity = m_Registry.create(oldEntity.Handle);
+            }
+            else
+            {
+                newEntity = m_Registry.create();
+            }
         }
         else
         {
@@ -756,7 +763,7 @@ namespace HBL2
         
         gatherPreservedUUIDs(gatherPreservedUUIDs, entityToPreserveFrom);
 
-        // Destroy the entity that was instantiated in the scene before from the cached entities we stored before.
+        // Destroy the entity that was instantiated in the scene before from the cached entities we stored above.
         for (auto it = originals1.rbegin(); it != originals1.rend(); ++it)
         {
             Entity oldE = *it;
@@ -787,7 +794,12 @@ namespace HBL2
                 const auto& pe = GetComponent<Component::PrefabEntity>(e);
                 auto& id = GetComponent<Component::ID>(e);
                 m_EntityMap.erase(id.Identifier);
-                id.Identifier = preservedUUIDs[pe.EntityId];
+
+                if (preservedUUIDs.contains(pe.EntityId))
+                {
+                    id.Identifier = preservedUUIDs[pe.EntityId];
+                }
+
                 m_EntityMap[id.Identifier] = e;
             }
 

@@ -247,6 +247,38 @@ namespace HBL2
 		// Serialize the source prefab from the provided instantiated prefab entity.
 		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
 
+		// Before duplicating instantiatedPrefabEntity ensure all descendants have PrefabEntity component.
+		// This is to cover the case where a new entity was added to the prefab and then we save.
+		std::function<void(Entity)> applyPrefabEntity = [&](Entity e)
+		{
+			if (e == Entity::Null)
+			{
+				return;
+			}
+
+			if (!activeScene->HasComponent<Component::PrefabEntity>(e))
+			{
+				auto& prefabEntity = activeScene->AddComponent<Component::PrefabEntity>(e);
+				prefabEntity.EntityId = Random::UInt64();
+			}
+
+			auto* link = activeScene->TryGetComponent<Component::Link>(e);
+			if (!link)
+			{
+				return;
+			}
+
+			for (UUID childUUID : link->Children)
+			{
+				Entity child = activeScene->FindEntityByUUID(childUUID);
+				if (child != Entity::Null)
+				{
+					applyPrefabEntity(child);
+				}
+			}
+		};
+		applyPrefabEntity(instantiatedPrefabEntity);
+
 		// Duplicate the entity prefab before serializing to ensure unique UUIDs.
 		Entity clone = activeScene->DuplicateEntity(instantiatedPrefabEntity, EntityDuplicationNaming::DONT_APPEND_CLONE);
 

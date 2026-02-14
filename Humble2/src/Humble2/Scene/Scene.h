@@ -299,7 +299,6 @@ namespace HBL2
 		Entity DuplicateEntityAlt(Entity entity, std::unordered_map<UUID, Entity>& preservedEntityIDs);
 		Entity InternalDuplicateEntityAlt(Entity entity, Entity newEntity, std::unordered_map<UUID, Entity>& preservedEntityIDs);
 
-
 		Entity DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(Entity entity, Entity entityToPreserveFrom);
 		friend class Prefab;
 		friend class SceneSerializer;
