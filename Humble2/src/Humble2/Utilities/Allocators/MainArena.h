@@ -50,7 +50,7 @@
 
 namespace HBL2
 {
-    static inline size_t AlignUp(size_t value, size_t alignment)
+    static constexpr size_t AlignUp(size_t value, size_t alignment)
     {
         assert((alignment & (alignment - 1)) == 0);
         size_t mask = alignment - 1;
@@ -483,6 +483,8 @@ namespace HBL2
          * @brief DATA region size (debug).
          */
         size_t DataSize() const { return m_DataSize; }
+
+        uint8_t* DataBase() const { return m_DataBase; }
 
         float GetFullPercentage()
         {

@@ -11,6 +11,7 @@
 
 #include "Base.h"
 #include "../Arena.h"
+#include "../ScratchArena.h"
 
 #include <iostream>
 #include <vector>
