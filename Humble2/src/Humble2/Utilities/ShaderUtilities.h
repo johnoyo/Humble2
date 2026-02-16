@@ -80,7 +80,7 @@ namespace HBL2
 		void CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType);
 		void UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::PackedVariant& newVariant);
 
-		void CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType);
+		void CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType, bool autoImported = false);
 		void CreateMaterialAssetFile(Handle<Asset> handle, const MaterialDataDescriptor&& desc);
 
 		Handle<Asset> LitMaterialAsset;

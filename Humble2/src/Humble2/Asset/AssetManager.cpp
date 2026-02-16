@@ -83,7 +83,6 @@ namespace HBL2
 		{
 			UnloadAsset(handle);
 		}
-
 	}
 
 	Asset* AssetManager::GetAssetMetadata(Handle<Asset> handle) const

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Base.h"
+#include "Resources\RefCounted.h"
 #include "Resources\TypeDescriptors.h"
 
 #include "Platform\Vulkan\VulkanDevice.h"
@@ -15,7 +16,7 @@ namespace HBL2
 		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE;
 	};
 
-	struct VulkanBindGroupCold
+	struct VulkanBindGroupCold : public RefCounted
 	{
 		const char* DebugName = "";
 		Handle<BindGroupLayout> BindGroupLayout;

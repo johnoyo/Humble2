@@ -39,14 +39,7 @@
 #include <new>
 #include <stdexcept>
 
-/// Uncomment to enable debug statistics and messages.
 #define ARENA_DEBUG
-
-#ifdef ARENA_DEBUG
-# define ADBG(fmt, ...) std::fprintf(stderr, (fmt), ##__VA_ARGS__)
-#else
-# define ADBG(fmt, ...) ((void)0)
-#endif
 
 namespace HBL2
 {
@@ -187,13 +180,15 @@ namespace HBL2
 
             if (metaBytes == 0 || metaBytes >= totalBytes)
             {
-                throw std::invalid_argument("metaBytes must be >0 and < totalBytes");
+                HBL2_CORE_FATAL("MainArena ERROR: meta bytes must be > 0 and <= than totalBytes.");
+                exit(-1);
             }
 
             m_Mem = static_cast<uint8_t*>(std::malloc(m_TotalBytes));
             if (!m_Mem)
             {
-                throw std::bad_alloc();
+                HBL2_CORE_FATAL("MainArena ERROR: could not allocate {} bytes.", m_TotalBytes);
+                exit(-1);
             }
 
             m_MetaBase = m_Mem;
@@ -220,7 +215,6 @@ namespace HBL2
          * @param name Human-readable reservation name.
          * @param bytes Number of bytes to reserve.
          * @return Pointer to the PoolReservation (placement-new'd in META).
-         * @throws std::bad_alloc when meta or data region cannot satisfy request.
          */
         PoolReservation* Reserve(std::string_view name, size_t bytes)
         {
@@ -236,12 +230,17 @@ namespace HBL2
 
             // Intern name into META
             const char* internedName = InternString(name.data(), name.size());
+            if (!internedName)
+            {
+                HBL2_CORE_ERROR("MainArena ERROR: Could not allocate string in meta region, reservation {} failed.", name.data());
+                return nullptr;
+            }
 
             void* metaPtr = AllocMetaNoLock(sizeof(PoolReservation), alignof(PoolReservation));
             if (!metaPtr)
             {
-                ADBG("GlobalArena ERROR: meta region exhausted when creating reservation '%s'\n", name.data());
-                throw std::bad_alloc();
+                HBL2_CORE_ERROR("MainArena ERROR: Meta region exhausted when creating reservation '{}'", name.data());
+                return nullptr;
             }
 
             PoolReservation* r = ::new (metaPtr) PoolReservation();
@@ -254,8 +253,8 @@ namespace HBL2
                 if (alignedDataOff + bytes > m_DataSize)
                 {
                     r->~PoolReservation();
-                    ADBG("GlobalArena ERROR: data region insufficient for reservation '%s' (%zu bytes)\n", name.data(), bytes);
-                    throw std::bad_alloc();
+                    HBL2_CORE_ERROR("MainArena ERROR: Data region insufficient for reservation '{}' ({} bytes)", name.data(), bytes);
+                    return nullptr;
                 }
 
                 r->Start = alignedDataOff;
@@ -263,17 +262,17 @@ namespace HBL2
                 r->Offset = 0;
 
                 m_DataOffset = alignedDataOff + bytes;
-                #ifdef ARENA_DEBUG
+#ifdef ARENA_DEBUG
                 m_DataCarved.fetch_add(bytes);
-                #endif
+#endif
             }
 
             // Insert into map while meta lock still held.
             m_Reservations.emplace(r->Name, r);
 
-            #ifdef ARENA_DEBUG
+#ifdef ARENA_DEBUG
             m_MetaCarved.fetch_add(sizeof(PoolReservation));
-            #endif
+#endif
             return r;
         }
 
@@ -311,9 +310,9 @@ namespace HBL2
                 {
                     uint8_t* p = m_DataBase + r->Start + aligned;
                     r->Offset = aligned + bytes;
-                    #ifdef ARENA_DEBUG
+#ifdef ARENA_DEBUG
                     m_DataCarved.fetch_add(bytes);
-                    #endif
+#endif
                     return p;
                 }
                 // fall-through to global carve
@@ -324,14 +323,14 @@ namespace HBL2
             {
                 uint8_t* p = m_DataBase + alignedGlobal;
                 m_DataOffset = alignedGlobal + bytes;
-                #ifdef ARENA_DEBUG
+#ifdef ARENA_DEBUG
                 m_DataCarved.fetch_add(bytes);
-                #endif
+#endif
                 return p;
             }
 
-            ADBG("GlobalArena ERROR: data region exhausted (requested %zu bytes)\n", bytes);
-            throw std::bad_alloc();
+            HBL2_CORE_ERROR("GlobalArena ERROR: Data region exhausted (requested {} bytes)", bytes);
+            return nullptr;
         }
 
         /**
@@ -348,9 +347,9 @@ namespace HBL2
             {
                 void* p = m_MetaBase + aligned;
                 m_MetaOffset = aligned + bytes;
-                #ifdef ARENA_DEBUG
+#ifdef ARENA_DEBUG
                 m_MetaCarved.fetch_add(bytes);
-                #endif
+#endif
                 return p;
             }
             return nullptr;
@@ -380,7 +379,6 @@ namespace HBL2
          * @param payload_capacity desired chunk capacity
          * @param reservation optional reservation to prefer
          * @return ArenaChunk* (placement-new'd in META)
-         * @throws std::bad_alloc when unable to allocate
          */
         ArenaChunk* AllocateChunkStruct(size_t payload_capacity, PoolReservation* reservation)
         {
@@ -423,12 +421,17 @@ namespace HBL2
             void* structMem = AllocMeta(sizeof(ArenaChunk), alignof(ArenaChunk));
             if (!structMem)
             {
-                ADBG("GlobalArena ERROR: meta region exhausted while allocating ArenaChunk\n");
-                throw std::bad_alloc();
+                HBL2_CORE_ERROR("GlobalArena ERROR: meta region exhausted while allocating ArenaChunk");
+                return nullptr;
             }
 
-            // Carve payload (may throw)
+            // Carve payload.
             uint8_t* payload = CarveData(payload_capacity, reservation);
+
+            if (!payload)
+            {
+                return nullptr;
+            }
 
             // Construct chunk in META
             ArenaChunk* ch = ::new (structMem) ArenaChunk(payload, payload_capacity, reservation);
@@ -496,7 +499,10 @@ namespace HBL2
         {
             // +1 for null terminator
             char* mem = static_cast<char*>(AllocMetaNoLock(len + 1, alignof(char)));
-            if (!mem) throw std::bad_alloc();
+            if (!mem)
+            {
+                return nullptr;
+            }
 
             std::memcpy(mem, str, len);
             mem[len] = '\0';

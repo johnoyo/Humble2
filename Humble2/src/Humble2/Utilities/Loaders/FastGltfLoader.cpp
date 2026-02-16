@@ -117,8 +117,8 @@ namespace HBL2
 			return;
 		}
 
-		LoadTextures(meshPath, gltfAsset.get());
-		LoadMaterials(meshPath, gltfAsset.get());
+		ReloadTextures(meshPath, gltfAsset.get());
+		ReloadMaterials(meshPath, gltfAsset.get());
 
 		std::vector<MeshPartDescriptor> meshes;
 		uint32_t meshIndex = 0;
@@ -154,7 +154,6 @@ namespace HBL2
 
 		std::vector<Handle<Buffer>> indexBuffers;
 		std::vector<Handle<Buffer>> vertexBuffers;
-		std::vector<Handle<Material>> materials;
 
 		// Collect previous buffers and embeded material.
 		for (const MeshPart& meshPart : mesh->Meshes)
@@ -164,11 +163,6 @@ namespace HBL2
 			for (Handle<Buffer> vb : meshPart.VertexBuffers)
 			{
 				vertexBuffers.push_back(vb);
-			}
-
-			for (const SubMesh& subMesh : meshPart.SubMeshes)
-			{
-				materials.push_back(subMesh.EmbededMaterial);
 			}
 		}
 
@@ -185,10 +179,6 @@ namespace HBL2
 		for (Handle<Buffer> vb : vertexBuffers)
 		{
 			ResourceManager::Instance->DeleteBuffer(vb);
-		}
-		for (Handle<Material> mat : materials)
-		{
-			ResourceManager::Instance->DeleteMaterial(mat);
 		}
 	}
 
@@ -215,33 +205,25 @@ namespace HBL2
 
 					const auto& relativeTexturePath = FileUtils::RelativePath(texturePath, Project::GetAssetDirectory());
 
-					if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativeTexturePath)))
-					{
-						UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath);
-						textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
+					UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath);
+					textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
-						if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
-						{
-							textureAssetHandle = AssetManager::Instance->CreateAsset({
-								.debugName = "texture-asset",
-								.filePath = relativeTexturePath,
-								.type = AssetType::Texture,
-							});
-						}
+					// If the texture asset has not been registered yet, register it now.
+					if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
+					{
+						textureAssetHandle = AssetManager::Instance->CreateAsset({
+							.debugName = "texture-asset",
+							.filePath = relativeTexturePath,
+							.type = AssetType::Texture,
+						});
 
 						if (textureAssetHandle.IsValid())
 						{
 							TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
 						}
+					}
 
-						AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
-					}
-					else
-					{
-						UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath);
-						textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
-						AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
-					}
+					AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
 				}
 				else
 				{
@@ -357,6 +339,162 @@ namespace HBL2
 		}
 	}
 
+	void FastGltfLoader::ReloadTextures(const std::filesystem::path& path, const fastgltf::Asset& asset)
+	{
+		s_Textures.clear();
+
+		size_t numTextures = asset.images.size();
+		s_Textures.resize(numTextures);
+
+		for (uint32_t imageIndex = 0; imageIndex < numTextures; ++imageIndex)
+		{
+			const fastgltf::Image& glTFImage = asset.images[imageIndex];
+
+			Handle<Asset> textureAssetHandle;
+
+			if (auto* filePath = std::get_if<fastgltf::sources::URI>(&glTFImage.data))
+			{
+				const auto& texturePath = std::filesystem::path(filePath->uri.string());
+
+				if (std::filesystem::exists(texturePath))
+				{
+					HBL2_CORE_INFO("FastGltfLoader::LoadTexture::AlbedoMap located at: \"{}\".", texturePath);
+
+					const auto& relativeTexturePath = FileUtils::RelativePath(texturePath, Project::GetAssetDirectory());
+
+					UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath);
+					textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
+
+					// If the texture asset has not been registered yet, register it now.
+					if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
+					{
+						textureAssetHandle = AssetManager::Instance->CreateAsset({
+							.debugName = "texture-asset",
+							.filePath = relativeTexturePath,
+							.type = AssetType::Texture,
+						});
+
+						if (textureAssetHandle.IsValid())
+						{
+							TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
+						}
+					}
+					else
+					{
+						// Delete (unload) old texture asset.
+						AssetManager::Instance->DeleteAsset(textureAssetHandle);
+					}
+
+					AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
+				}
+				else
+				{
+					HBL2_CORE_ERROR("Failed to retrieve texture file of \"{}\" gltf file. The texture path {} does not exist!", path, texturePath);
+					continue;
+				}
+			}
+			else if (auto* byteArray = std::get_if<fastgltf::sources::Array>(&glTFImage.data))
+			{
+				const auto& relativeTexturePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Textures" / (std::string(glTFImage.name) + std::to_string(imageIndex) + ".png");
+				
+				UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath.string());
+				textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
+
+				if (std::filesystem::exists(Project::GetAssetFileSystemPath(relativeTexturePath)))
+				{
+					// Delete (unload) old texture asset.
+					AssetManager::Instance->DeleteAsset(textureAssetHandle);
+				}
+
+				if (!TextureUtilities::Get().Save(Project::GetAssetFileSystemPath(relativeTexturePath), { byteArray->bytes.data(), byteArray->bytes.size() }, true))
+				{
+					HBL2_CORE_ERROR("Failed to serialize texture file located inside of \"{}\" gltf file.", path);
+					continue;
+				}
+
+				if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
+				{
+					textureAssetHandle = AssetManager::Instance->CreateAsset({
+						.debugName = "texture-asset",
+						.filePath = relativeTexturePath,
+						.type = AssetType::Texture,
+					});
+
+					if (textureAssetHandle.IsValid())
+					{
+						TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
+					}
+				}
+
+				AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
+			}
+			else if (auto* view = std::get_if<fastgltf::sources::BufferView>(&glTFImage.data))
+			{
+				auto& bufferView = asset.bufferViews[view->bufferViewIndex];
+				auto& bufferFromBufferView = asset.buffers[bufferView.bufferIndex];
+
+				std::visit(
+					fastgltf::visitor{
+						[&](const fastgltf::sources::Array& arr)
+						{
+							auto full = std::span<const std::byte>(arr.bytes.data(), arr.bytes.size());
+
+							size_t begin = static_cast<size_t>(bufferView.byteOffset);
+							size_t len = static_cast<size_t>(bufferView.byteLength);
+
+							HBL2_CORE_ASSERT(begin + len <= full.size(), "BufferView out of range");
+
+							auto slice = full.subspan(begin, len);
+
+							const auto& relativeTexturePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Textures" / (std::string(glTFImage.name) + std::to_string(imageIndex) + ".png");
+
+							UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath.string());
+							textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
+
+							if (std::filesystem::exists(Project::GetAssetFileSystemPath(relativeTexturePath)))
+							{
+								// Delete (unload) old texture asset.
+								AssetManager::Instance->DeleteAsset(textureAssetHandle);
+							}
+
+							if (!TextureUtilities::Get().Save(Project::GetAssetFileSystemPath(relativeTexturePath), { slice.data(), slice.size() }))
+							{
+								HBL2_CORE_ERROR("Failed to serialize texture file located inside of \"{}\" gltf file.", path);
+								return;
+							}
+
+							if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
+							{
+								textureAssetHandle = AssetManager::Instance->CreateAsset({
+									.debugName = "texture-asset",
+									.filePath = relativeTexturePath,
+									.type = AssetType::Texture,
+								});
+
+								if (textureAssetHandle.IsValid())
+								{
+									TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
+								}
+							}
+
+							AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
+						},
+						[&](fastgltf::sources::Array& arr) // load from memory
+						{
+							HBL2_CORE_FATAL("not supported default branch (image data = BUfferView) {}", glTFImage.name);
+						},
+						[&](auto& arg) // default branch if image data is not supported
+						{
+							HBL2_CORE_FATAL("not supported default branch (image data = BUfferView) {}", glTFImage.name);
+						}
+					},
+					bufferFromBufferView.data);
+			}
+
+			s_Textures[imageIndex] = textureAssetHandle;
+		}
+	}
+
 	void FastGltfLoader::LoadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset)
 	{
 		s_MaterialNameToHandle.clear();
@@ -451,7 +589,7 @@ namespace HBL2
 						type = 2;
 					}
 
-					ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, type);
+					ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, type, true);
 				}
 
 				materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetHandle);
@@ -460,6 +598,133 @@ namespace HBL2
 			{
 				UUID materialAssetUUID = std::hash<std::string>()(relativePath.string());
 				materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetUUID);
+			}
+
+			s_MaterialNameToHandle[glTFMaterial.name.c_str()] = materialHandle;
+		}
+	}
+
+	void FastGltfLoader::ReloadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset)
+	{
+		s_MaterialNameToHandle.clear();
+
+		size_t numMaterials = asset.materials.size();
+
+		for (uint32_t materialIndex = 0; materialIndex < numMaterials; ++materialIndex)
+		{
+			const fastgltf::Material& glTFMaterial = asset.materials[materialIndex];
+
+			Handle<Asset> materialAssetHandle;
+			Handle<Material> materialHandle;
+
+			const auto& relativePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Materials" / (std::string(glTFMaterial.name) + std::to_string(materialIndex) + ".mat");
+
+			// diffuse color aka base color factor used as constant color, if no diffuse texture is provided
+			glm::vec4 albedoColor = glm::make_vec4(glTFMaterial.pbrData.baseColorFactor.data());
+			float roughness = glTFMaterial.pbrData.roughnessFactor;
+			float metalicness = glTFMaterial.pbrData.metallicFactor;
+
+			Handle<Asset> albedoMapAssetHandle;
+			Handle<Asset> normalMapAssetHandle;
+			Handle<Asset> metallicRoughnessMapAssetHandle;
+
+			// diffuse map aka basecolor aka albedo
+			if (glTFMaterial.pbrData.baseColorTexture.has_value())
+			{
+				uint32_t diffuseMapIndex = glTFMaterial.pbrData.baseColorTexture.value().textureIndex;
+				uint32_t imageIndex = asset.textures[diffuseMapIndex].imageIndex.value();
+
+				albedoMapAssetHandle = s_Textures[imageIndex];
+			}
+
+			// normal map
+			if (glTFMaterial.normalTexture.has_value())
+			{
+				uint32_t normalMapIndex = glTFMaterial.normalTexture.value().textureIndex;
+				uint32_t imageIndex = asset.textures[normalMapIndex].imageIndex.value();
+
+				normalMapAssetHandle = s_Textures[imageIndex];
+			}
+
+			// texture for roughness and metallicness
+			if (glTFMaterial.pbrData.metallicRoughnessTexture.has_value())
+			{
+				int metallicRoughnessMapIndex = glTFMaterial.pbrData.metallicRoughnessTexture.value().textureIndex;
+				uint32_t imageIndex = asset.textures[metallicRoughnessMapIndex].imageIndex.value();
+
+				metallicRoughnessMapAssetHandle = s_Textures[imageIndex];
+			}
+
+			if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativePath)))
+			{
+				materialAssetHandle = AssetManager::Instance->CreateAsset({
+					.debugName = "material-asset",
+					.filePath = relativePath,
+					.type = AssetType::Material,
+				});
+
+				ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
+					.ShaderAssetHandle = {}, // Use built-in shaders depending on material type.
+					.VariantHash =
+					{
+						.blendEnabled = false,
+						.depthWrite = false,
+						.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)Compare::LESS_OR_EQUAL,
+					},
+					.AlbedoColor = albedoColor,
+					.Glossiness = (float)roughness,
+					.AlbedoMapAssetHandle = albedoMapAssetHandle,
+					.NormalMapAssetHandle = normalMapAssetHandle,
+					.RoughnessMapAssetHandle = metallicRoughnessMapAssetHandle,
+					.MetallicMapAssetHandle = metallicRoughnessMapAssetHandle,
+				});
+
+				if (materialAssetHandle.IsValid())
+				{
+					uint32_t type = UINT32_MAX;
+
+					if (glTFMaterial.unlit)
+					{
+						type = 0;
+					}
+					else if (!glTFMaterial.pbrData.metallicRoughnessTexture.has_value())
+					{
+						type = 1;
+					}
+					else
+					{
+						type = 2;
+					}
+
+					ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, type, true);
+				}
+
+				materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetHandle);
+			}
+			else
+			{
+				UUID materialAssetUUID = std::hash<std::string>()(relativePath.string());
+				materialAssetHandle = AssetManager::Instance->GetHandleFromUUID(materialAssetUUID);
+
+				// Recreate material asset file with new data.
+				ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
+					.ShaderAssetHandle = {}, // Use built-in shaders depending on material type.
+					.VariantHash =
+					{
+						.blendEnabled = false,
+						.depthWrite = false,
+						.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)Compare::LESS_OR_EQUAL,
+					},
+					.AlbedoColor = albedoColor,
+					.Glossiness = (float)roughness,
+					.AlbedoMapAssetHandle = albedoMapAssetHandle,
+					.NormalMapAssetHandle = normalMapAssetHandle,
+					.RoughnessMapAssetHandle = metallicRoughnessMapAssetHandle,
+					.MetallicMapAssetHandle = metallicRoughnessMapAssetHandle,
+				});
+
+				// Reload material now that we have set the new resourses.
+				materialHandle = AssetManager::Instance->ReloadAsset<Material>(materialAssetUUID);
 			}
 
 			s_MaterialNameToHandle[glTFMaterial.name.c_str()] = materialHandle;

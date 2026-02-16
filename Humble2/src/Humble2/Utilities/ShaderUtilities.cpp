@@ -615,7 +615,7 @@ namespace HBL2
 		}
 	}
 
-	void ShaderUtilities::CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType)
+	void ShaderUtilities::CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType, bool autoImported)
 	{
 		Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
 
@@ -647,6 +647,7 @@ namespace HBL2
 		out << YAML::BeginMap;
 		out << YAML::Key << "UUID" << YAML::Value << asset->UUID;
 		out << YAML::Key << "Type" << YAML::Value << materialType;
+		out << YAML::Key << "AutoImported" << YAML::Value << autoImported;
 		out << YAML::EndMap;
 		out << YAML::EndMap;
 		fout << out.c_str();
@@ -669,7 +670,7 @@ namespace HBL2
 			}
 		}
 
-		std::ofstream fout(path, 0);
+		std::ofstream fout(path, std::ios::out | std::ios::trunc);
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;
@@ -691,15 +692,15 @@ namespace HBL2
 
 		out << YAML::Key << "BlendState";
 		out << YAML::BeginMap;
-		out << YAML::Key << "Enabled" << YAML::Value << desc.VariantHash.blendEnabled;
-		out << YAML::Key << "ColorOutputEnabled" << YAML::Value << desc.VariantHash.colorOutput;
+		out << YAML::Key << "Enabled" << YAML::Value << (bool)desc.VariantHash.blendEnabled;
+		out << YAML::Key << "ColorOutputEnabled" << YAML::Value << (bool)desc.VariantHash.colorOutput;
 		out << YAML::EndMap;
 
 		out << YAML::Key << "DepthState";
 		out << YAML::BeginMap;
-		out << YAML::Key << "Enabled" << YAML::Value << desc.VariantHash.depthEnabled;
-		out << YAML::Key << "WriteEnabled" << YAML::Value << desc.VariantHash.depthWrite;
-		out << YAML::Key << "StencilEnabled" << YAML::Value << desc.VariantHash.stencilEnabled;
+		out << YAML::Key << "Enabled" << YAML::Value << (bool)desc.VariantHash.depthEnabled;
+		out << YAML::Key << "WriteEnabled" << YAML::Value << (bool)desc.VariantHash.depthWrite;
+		out << YAML::Key << "StencilEnabled" << YAML::Value << (bool)desc.VariantHash.stencilEnabled;
 		out << YAML::Key << "DepthTest" << YAML::Value << (int)desc.VariantHash.depthCompare;
 		out << YAML::EndMap;
 

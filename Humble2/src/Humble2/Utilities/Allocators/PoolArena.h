@@ -76,7 +76,7 @@ namespace HBL2
             m_BlockCount = static_cast<uint32_t>(m_TotalBytes / m_BlockSize);
             if (m_BlockCount == 0)
             {
-                ADBG("PoolArena ERROR: totalBytes (%zu) too small for blockSize (%zu)\n", totalBytes, m_BlockSize);
+                HBL2_CORE_ERROR("PoolArena ERROR: totalBytes {} too small for blockSize {}\n", totalBytes, m_BlockSize);
                 throw std::bad_alloc();
             }
 
@@ -84,7 +84,7 @@ namespace HBL2
             void* nextMem = m_GlobalArena->AllocMeta(sizeof(std::atomic<uint32_t>) * m_BlockCount, alignof(std::atomic<uint32_t>));
             if (!nextMem)
             {
-                ADBG("PoolArena ERROR: meta exhausted allocating next array (%u entries)\n", m_BlockCount);
+                HBL2_CORE_ERROR("PoolArena ERROR: meta exhausted allocating next array ({} entries)\n", m_BlockCount);
                 throw std::bad_alloc();
             }
 
@@ -102,10 +102,10 @@ namespace HBL2
 
             m_HeadTagged.store(PackTagged(0u, 0u), std::memory_order_release);
 
-            #ifdef ARENA_DEBUG
+#ifdef ARENA_DEBUG
             m_InUse.store(0);
             m_HighWater.store(0);
-            #endif
+#endif
         }
 
         /**
@@ -115,31 +115,34 @@ namespace HBL2
          */
         void* Alloc(size_t size, size_t alignment = alignof(std::max_align_t))
         {
-            if (size == 0) return nullptr;
+            if (size == 0)
+            {
+                return nullptr;
+            }
 
             // Fixed-block allocator constraints
             if (size > m_BlockSize)
             {
-                ADBG("PoolArena ERROR: request size %zu > block size %zu\n", size, m_BlockSize);
+                HBL2_CORE_ERROR("PoolArena ERROR: request size {} > block size {}", size, m_BlockSize);
                 throw std::bad_alloc();
             }
             if (alignment > m_BlockAlign)
             {
                 // Because blocks are aligned to m_BlockAlign; larger alignment would not be guaranteed.
-                ADBG("PoolArena ERROR: request alignment %zu > pool block alignment %zu\n", alignment, m_BlockAlign);
+                HBL2_CORE_ERROR("PoolArena ERROR: request alignment {} > pool block alignment {}", alignment, m_BlockAlign);
                 throw std::bad_alloc();
             }
 
             const uint32_t idx = PopIndex();
             if (idx == InvalidIndex)
             {
-                ADBG("PoolArena ERROR: exhausted (blocks=%u, blockSize=%zu)\n", m_BlockCount, m_BlockSize);
+                HBL2_CORE_ERROR("PoolArena ERROR: exhausted (blocks={}, blockSize={})", m_BlockCount, m_BlockSize);
                 throw std::bad_alloc();
             }
 
-            #ifdef ARENA_DEBUG
+#ifdef ARENA_DEBUG
             UpdateStats(+1);
-            #endif
+#endif
             return static_cast<void*>(m_Data + (static_cast<size_t>(idx) * m_BlockSize));
         }
 
@@ -150,35 +153,38 @@ namespace HBL2
          */
         void Free(void* p)
         {
-            if (!p) return;
+            if (!p)
+            {
+                return;
+            }
 
             uint8_t* up = static_cast<uint8_t*>(p);
             if (up < m_Data || up >= (m_Data + m_TotalBytes))
             {
                 // Strict but non-fatal: ignore or assert; your choice.
-                assert(false && "PoolArena::Free pointer out of range");
+                HBL2_CORE_ASSERT(false, "PoolArena::Free pointer out of range");
                 return;
             }
 
             const size_t off = static_cast<size_t>(up - m_Data);
             if ((off % m_BlockSize) != 0)
             {
-                assert(false && "PoolArena::Free pointer not block-aligned");
+                HBL2_CORE_ASSERT(false, "PoolArena::Free pointer not block-aligned");
                 return;
             }
 
             const uint32_t idx = static_cast<uint32_t>(off / m_BlockSize);
             if (idx >= m_BlockCount)
             {
-                assert(false && "PoolArena::Free index out of range");
+                HBL2_CORE_ASSERT(false, "PoolArena::Free index out of range");
                 return;
             }
 
             PushIndex(idx);
 
-            #ifdef ARENA_DEBUG
+#ifdef ARENA_DEBUG
             UpdateStats(-1);
-            #endif
+#endif
         }
 
         template<typename T, typename... Args>
@@ -199,14 +205,14 @@ namespace HBL2
         uint32_t BlockCount() const { return m_BlockCount; }
         size_t CapacityBytes() const { return static_cast<size_t>(m_BlockCount) * m_BlockSize; }
 
-        #ifdef ARENA_DEBUG
+#ifdef ARENA_DEBUG
         int32_t InUseBlocks() const { return m_InUse.load(); }
         int32_t HighWaterBlocks() const { return m_HighWater.load(); }
         uint8_t* DebugBase() const { return m_Data; }
         size_t DebugTotalBytes() const { return m_TotalBytes; }
         size_t DebugBlockSize() const { return m_BlockSize; }
         uint32_t DebugBlockCount() const { return m_BlockCount; }
-        #endif
+#endif
 
     private:
         static constexpr uint32_t InvalidIndex = 0xFFFFFFFFu;
@@ -272,14 +278,14 @@ namespace HBL2
             }
         }
 
-        #ifdef ARENA_DEBUG
+#ifdef ARENA_DEBUG
         void UpdateStats(int32_t delta)
         {
             int32_t cur = m_InUse.fetch_add(delta, std::memory_order_relaxed) + delta;
             int32_t hw = m_HighWater.load(std::memory_order_relaxed);
             while (cur > hw && !m_HighWater.compare_exchange_weak(hw, cur, std::memory_order_relaxed)) {}
         }
-        #endif
+#endif
 
     private:
         MainArena* m_GlobalArena = nullptr;
@@ -301,9 +307,9 @@ namespace HBL2
         // Tagged head: index+tag to reduce ABA on head CAS
         std::atomic<uint64_t> m_HeadTagged{ PackTagged(InvalidIndex, 0u) };
 
-        #ifdef ARENA_DEBUG
+#ifdef ARENA_DEBUG
         std::atomic<int32_t> m_InUse{ 0 };
         std::atomic<int32_t> m_HighWater{ 0 };
-        #endif
+#endif
     };
 }

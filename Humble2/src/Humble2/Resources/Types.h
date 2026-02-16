@@ -130,12 +130,9 @@ namespace HBL2
 	struct Material
 	{
 		Material() = default;
-		Material(const MaterialDescriptor&& desc)
-		{
-			DebugName = desc.debugName;
-			Shader = desc.shader;
-			BindGroup = desc.bindGroup;
-		}
+		Material(const MaterialDescriptor&& desc);
+
+		void Reimport(const MaterialDescriptor&& desc);
 
 		const char* DebugName = "";
 		Handle<Shader> Shader;

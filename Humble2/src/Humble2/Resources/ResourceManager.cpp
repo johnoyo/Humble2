@@ -68,6 +68,14 @@ namespace HBL2
 	{
 		return m_MaterialPool.Insert(std::forward<const MaterialDescriptor>(desc));
 	}
+	void ResourceManager::ReimportMaterial(Handle<Material> handle, const MaterialDescriptor&& desc)
+	{
+		Material* mat = m_MaterialPool.Get(handle);
+		if (mat != nullptr)
+		{
+			mat->Reimport(std::forward<const MaterialDescriptor>(desc));
+		}
+	}
 	void ResourceManager::DeleteMaterial(Handle<Material> handle)
 	{
 		m_MaterialPool.Remove(handle);

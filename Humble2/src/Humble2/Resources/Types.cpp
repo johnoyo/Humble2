@@ -104,4 +104,16 @@ namespace HBL2
 
 		m_HasItems.store(true, std::memory_order_release);
 	}
+
+	Material::Material(const MaterialDescriptor&& desc)
+	{
+		Reimport(std::forward<const MaterialDescriptor>(desc));
+	}
+
+	void Material::Reimport(const MaterialDescriptor&& desc)
+	{
+		DebugName = desc.debugName;
+		Shader = desc.shader;
+		BindGroup = desc.bindGroup;
+	}
 }

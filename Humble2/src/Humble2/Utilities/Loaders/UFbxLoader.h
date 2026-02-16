@@ -20,8 +20,10 @@ namespace HBL2
 
 	private:
 		void LoadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path);
-		Handle<Asset> LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, ResourceTask<Texture>* textureTask, void* internalData = nullptr);
-		Handle<Asset> LoadTexture(const ufbx_texture* texture, ResourceTask<Texture>* resourceTask);
+		void ReloadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path);
+		Handle<Asset> LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, JobContext& ctx, ResourceTask<Texture>*& textureTask, bool reload, void* internalData = nullptr);
+		Handle<Asset> LoadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>*& resourceTask);
+		Handle<Asset> ReloadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>*& resourceTask);
 		void CleanUpResourceTasks(ResourceTask<Texture>* albedoMapTask, ResourceTask<Texture>* normalMapTask, ResourceTask<Texture>* roughnessMapTask, ResourceTask<Texture>* metallicMapTask);
 
 		Result<MeshPartDescriptor> LoadMeshData(const ufbx_node* node, uint32_t meshIndex);
@@ -30,6 +32,6 @@ namespace HBL2
 	private:
 		static thread_local std::vector<Vertex> s_Vertices;
 		static thread_local std::vector<uint32_t> s_Indeces;
-		static thread_local std::unordered_map<const char*, Handle<Material>> s_MaterialNameToHandle;
+		static thread_local std::unordered_map<std::string, Handle<Material>> s_MaterialNameToHandle;
 	};
 }

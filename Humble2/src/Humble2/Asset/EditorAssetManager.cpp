@@ -567,6 +567,16 @@ namespace HBL2
 					normalMapHandle = TextureUtilities::Get().WhiteTexture;
 				}
 
+				if (!metallicMapHandle.IsValid())
+				{
+					metallicMapHandle = TextureUtilities::Get().WhiteTexture;
+				}
+
+				if (!roughnessMapHandle.IsValid())
+				{
+					roughnessMapHandle = TextureUtilities::Get().WhiteTexture;
+				}
+
 				drawBindings = ResourceManager::Instance->CreateBindGroup({
 					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
 					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
@@ -934,6 +944,12 @@ namespace HBL2
 	{
 		Handle<Material> materialHandle = Handle<Material>::UnPack(asset->Indentifier);
 
+		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+
+		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
+		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
+
 		if (!materialHandle.IsValid())
 		{
 			HBL2_CORE_ERROR("Could not save asset {0} at path: {1}, because the handle is invalid.", asset->DebugName, asset->FilePath.string());
@@ -974,7 +990,123 @@ namespace HBL2
 			}
 			else
 			{
-				// TODO: Handle shader resource change.
+				uint32_t type = UINT32_MAX;
+				bool autoImported = false;
+
+				// Gather metadata.
+				{
+					std::ifstream metaDataStream(materialPath.string() + ".hblmat");
+
+					if (!metaDataStream.is_open())
+					{
+						HBL2_CORE_ERROR("Material metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmat");
+						return Handle<Material>();
+					}
+
+					std::stringstream ssMetadata;
+					ssMetadata << metaDataStream.rdbuf();
+
+					YAML::Node dataMetadata = YAML::Load(ssMetadata.str());
+					if (!dataMetadata["Material"].IsDefined())
+					{
+						HBL2_CORE_TRACE("Material not found in metadata file: {0}", ssMetadata.str());
+						metaDataStream.close();
+						return Handle<Material>();
+					}
+
+					auto materialMetadataProperties = dataMetadata["Material"];
+					if (materialMetadataProperties)
+					{
+						type = materialMetadataProperties["Type"].as<uint32_t>();
+						autoImported = materialMetadataProperties["AutoImported"].as<bool>();
+					}
+
+					metaDataStream.close();
+				}
+
+				// If shader is not set, get the built in shader depending on material type.
+				if (!shaderHandle.IsValid())
+				{
+					if (type == 0)
+					{
+						shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::UNLIT);
+					}
+					else if (type == 1)
+					{
+						shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::BLINN_PHONG);
+					}
+					else if (type == 2)
+					{
+						shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PBR);
+					}
+				}
+
+				// Get textures.
+				UUID albedoMapUUID = materialProperties["AlbedoMap"].as<UUID>();
+				Handle<Texture> albedoMapHandle = AssetManager::Instance->GetAsset<Texture>(albedoMapUUID);
+
+				UUID normalMapUUID = materialProperties["NormalMap"].as<UUID>();
+				Handle<Texture> normalMapHandle = AssetManager::Instance->GetAsset<Texture>(normalMapUUID);
+
+				UUID metallicMapUUID = materialProperties["MetallicMap"].as<UUID>();
+				Handle<Texture> metallicMapHandle = AssetManager::Instance->GetAsset<Texture>(metallicMapUUID);
+
+				UUID roughnessMapUUID = materialProperties["RoughnessMap"].as<UUID>();
+				Handle<Texture> roughnessMapHandle = AssetManager::Instance->GetAsset<Texture>(roughnessMapUUID);
+
+				// If albedo map is not set use the built in white texture.
+				if (!albedoMapHandle.IsValid())
+				{
+					albedoMapHandle = TextureUtilities::Get().WhiteTexture;
+				}
+
+				const std::string& materialName = asset->FilePath.filename().stem().string();
+
+				Handle<BindGroup> drawBindings;
+				uint32_t dynamicUniformBufferRange = (type == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData));
+
+				if (type == 2) // PBR
+				{
+					if (!normalMapHandle.IsValid())
+					{
+						normalMapHandle = TextureUtilities::Get().WhiteTexture;
+					}
+
+					drawBindings = ResourceManager::Instance->CreateBindGroup({
+						.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
+						.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
+						.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle, Renderer::Instance->ShadowAtlasTexture },
+						.buffers = {
+							{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
+						}
+					});
+				}
+				else
+				{
+					drawBindings = ResourceManager::Instance->CreateBindGroup({
+						.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
+						.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
+						.textures = { albedoMapHandle, Renderer::Instance->ShadowAtlasTexture },
+						.buffers = {
+							{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
+						}
+					});
+				}
+
+				// Delete old bind group.
+				ResourceManager::Instance->DeleteBindGroup(mat->BindGroup);
+
+				ResourceManager::Instance->ReimportMaterial(materialHandle, {
+					.debugName = _strdup(std::format("{}-material", materialName).c_str()),
+					.shader = shaderHandle,
+					.bindGroup = drawBindings,
+				});
+
+				glm::vec4 albedoColor = materialProperties["AlbedoColor"].as<glm::vec4>();
+				float glossiness = materialProperties["Glossiness"].as<float>();
+
+				mat->AlbedoColor = albedoColor;
+				mat->Glossiness = glossiness;
 			}
 		}
 
@@ -1199,7 +1331,7 @@ namespace HBL2
 			// Update gpu texture storage.
 			ResourceManager::Instance->UpdateTexture(textureHandle, { (std::byte*)textureData, (size_t)(textureSettings.Width * textureSettings.Height) });
 
-			// Free the cpu side pixel data sice they are copied by the driver.
+			// Free the cpu side pixel data since they are copied by the driver.
 			stbi_image_free(textureData);
 		}
 

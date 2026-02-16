@@ -273,7 +273,13 @@ namespace HBL2
 
 			if (descriptorHash == hash)
 			{
-				return m_BindGroupSplitPool.GetHandleFromIndex(index);
+				VulkanBindGroupCold* mutBindGroup = (VulkanBindGroupCold*)&bindGroup;
+				if (mutBindGroup->TryAddRef())
+				{
+					return m_BindGroupSplitPool.GetHandleFromIndex(index);
+				}
+
+				break;
 			}
 
 			index++;
@@ -282,19 +288,27 @@ namespace HBL2
 		VulkanBindGroup bindgroup;
 		Handle<BindGroup> bg = m_BindGroupSplitPool.Insert(&bindgroup.Hot, &bindgroup.Cold);
 		bindgroup.Initialize(std::forward<const BindGroupDescriptor>(desc));
+
+		// Increase ref count of bindgroup.
+		bindgroup.Cold->TryAddRef();
+
 		return bg;
 	}
 	void VulkanResourceManager::DeleteBindGroup(Handle<BindGroup> handle)
 	{
-		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+		VulkanBindGroupCold* bindGroupCold = GetBindGroupCold(handle);
+		if (bindGroupCold->ReleaseRefAndMaybeDelete())
 		{
-			VulkanBindGroupCold* bindGroupCold = GetBindGroupCold(handle);
-			if (bindGroupCold != nullptr)
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 			{
-				bindGroupCold->Destroy();
-				m_BindGroupSplitPool.Remove(handle);
-			}
-		});
+				VulkanBindGroupCold* bindGroupCold = GetBindGroupCold(handle);
+				if (bindGroupCold != nullptr)
+				{
+					bindGroupCold->Destroy();
+					m_BindGroupSplitPool.Remove(handle);
+				}
+			});
+		}
 	}
 	void VulkanResourceManager::UpdateBindGroup(Handle<BindGroup> handle)
 	{

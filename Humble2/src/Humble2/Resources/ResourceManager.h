@@ -128,6 +128,7 @@ namespace HBL2
 
 		// Materials
 		Handle<Material> CreateMaterial(const MaterialDescriptor&& desc);
+		void ReimportMaterial(Handle<Material> handle, const MaterialDescriptor&& desc);
 		void DeleteMaterial(Handle<Material> handle);
 		Material* GetMaterial(Handle<Material> handle) const;
 		

@@ -75,6 +75,12 @@ namespace HBL2
             }
 
             ArenaChunk* ch = m_Current;
+
+            if (!m_Current)
+            {
+                return nullptr;
+            }
+
             if (ch && ch->HasSpace(size, alignment))
             {
                 uintptr_t base = reinterpret_cast<uintptr_t>(ch->Data);
@@ -100,6 +106,11 @@ namespace HBL2
             }
 
             AcquireChunk(requestSize);
+
+            if (!m_Current)
+            {
+                return nullptr;
+            }
 
             ch = m_Current;
             uintptr_t base = reinterpret_cast<uintptr_t>(ch->Data);
@@ -281,8 +292,12 @@ namespace HBL2
         void AcquireChunk(size_t minCapacity)
         {
             ArenaChunk* newChunk = m_GlobalArena->AllocateChunkStruct(minCapacity, m_Reservation);
-            m_Chunks.push_back(newChunk);
-            m_Current = newChunk;
+
+            if (newChunk)
+            {
+                m_Chunks.push_back(newChunk);
+                m_Current = newChunk;
+            }
         }
 
         void UpdateStats(size_t delta)
