@@ -61,7 +61,6 @@ namespace HBL2
 		out << YAML::Key << "Max App Memory" << YAML::Value << spec.Settings.MaxAppMemory;
 		out << YAML::Key << "Max UniformBuffer Memory" << YAML::Value << spec.Settings.MaxUniformBufferMemory;
 
-		out << YAML::BeginMap;
 		out << YAML::Key << "Resource Manager" << YAML::Value;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Textures Pool Size" << YAML::Value << spec.Settings.ResourceManagerSpec.Textures;
@@ -79,13 +78,10 @@ namespace HBL2
 		out << YAML::Key << "Sounds Pool Size" << YAML::Value << spec.Settings.ResourceManagerSpec.Sounds;
 		out << YAML::Key << "Prefabs Pool Size" << YAML::Value << spec.Settings.ResourceManagerSpec.Prefabs;
 		out << YAML::EndMap;
-		out << YAML::EndMap;
 
-		out << YAML::BeginMap;
 		out << YAML::Key << "Asset Manager" << YAML::Value;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Assets Pool Size" << YAML::Value << spec.Settings.AssetManagerSpec.Assets;
-		out << YAML::EndMap;
 		out << YAML::EndMap;
 
 		out << YAML::EndMap;

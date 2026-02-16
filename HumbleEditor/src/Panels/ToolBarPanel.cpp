@@ -452,11 +452,11 @@ namespace HBL2
 
 				if (asOpened)
 				{
-					ImGui::InputScalar("Max App Memory", ImGuiDataType_U32, (void*)(intptr_t*)&spec.Settings.MaxAppMemory);
+					ImGui::InputInt("Max App Memory (in MB)", (int*)&spec.Settings.MaxAppMemory);
 					ImGui::SameLine();
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 
-					ImGui::InputScalar("Max UniformBuffer Memory", ImGuiDataType_U32, (void*)(intptr_t*)&spec.Settings.MaxUniformBufferMemory);
+					ImGui::InputInt("Max UniformBuffer Memory (in MB)", (int*)&spec.Settings.MaxUniformBufferMemory);
 					ImGui::SameLine();
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 

@@ -36,8 +36,8 @@ namespace HBL2
 
 		bool EditorMultipleViewports = true;
 
-		uint32_t MaxAppMemory = 1_GB;
-		uint32_t MaxUniformBufferMemory = 64_MB;
+		uint32_t MaxAppMemory = 500_MB;
+		uint32_t MaxUniformBufferMemory = 32_MB;
 		ResourceManagerSpecification ResourceManagerSpec = {};
 		AssetManagerSpecification AssetManagerSpec = {};
 	};
