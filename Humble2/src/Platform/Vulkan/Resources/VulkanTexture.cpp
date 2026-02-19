@@ -150,7 +150,7 @@ namespace HBL2
 		}
 	}
 
-	VulkanTexture::VulkanTexture(const VulkanTexture&& other)
+	VulkanTexture::VulkanTexture(const VulkanTexture&& other) noexcept
 	{
 		Image = other.Image;
 		ImageView = other.ImageView;

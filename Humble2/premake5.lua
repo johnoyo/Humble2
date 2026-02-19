@@ -4,8 +4,7 @@ project "Humble2"
     language "C++"
     cppdialect "C++20"
     staticruntime "Off"
-
-    flags { "MultiProcessorCompile" }
+    multiprocessorcompile "On"
 
     -- Directories for binary and intermediate files.
     targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
@@ -183,7 +182,7 @@ project "Humble2"
     filter "configurations:Emscripten"
         defines { "EMSCRIPTEN" }
         runtime "Release"
-        optimize "on"
+        optimize "On"
         
         links
         {

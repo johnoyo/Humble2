@@ -37,7 +37,7 @@ namespace HBL2
 		void CopyBufferToTexture(VulkanRenderer* renderer, VkBuffer stagingBuffer);
 
 		friend class Pool<VulkanTexture, Texture>; // This is required for a hack to create the swapchain images in the VulkanRenderer
-		VulkanTexture(const VulkanTexture&& other);
+		VulkanTexture(const VulkanTexture&& other) noexcept;
 	private:
 		uint32_t m_PixelByteSize = 0;
 	};

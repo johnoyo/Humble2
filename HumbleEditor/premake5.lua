@@ -3,8 +3,7 @@ project "HumbleEditor"
     language "C++"
     cppdialect "C++20"
     staticruntime "Off"
-
-    flags { "MultiProcessorCompile" }
+    multiprocessorcompile "On"
 
     targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
     objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
