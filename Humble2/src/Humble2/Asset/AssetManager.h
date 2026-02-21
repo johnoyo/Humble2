@@ -25,9 +25,10 @@ namespace HBL2
 	public:
 		Handle<T> ResourceHandle = Handle<T>();
 
-		ResourceTask<T> Then(StaticFunction<void(Handle<T>), 64>&& workerThreadCb)
+		ResourceTask<T>* Then(StaticFunction<void(Handle<T>), 64>&& workerThreadCb)
 		{
 			m_WorkerThreadCallback = std::move(workerThreadCb);
+			return this;
 		}
 
 		void ThenOnMainThread(StaticFunction<void(Handle<T>), 64>&& mainThreadCb)
