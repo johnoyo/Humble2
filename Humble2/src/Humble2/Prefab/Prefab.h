@@ -45,6 +45,7 @@ namespace HBL2
 		uint32_t m_Version = 0;
 		UUID m_BaseEntityUUID = 0;
 		Handle<Scene> m_SubSceneHandle;
+		bool m_Loaded = false;
 
 		friend class PrefabSerializer;
 		friend class SceneSerializer;
