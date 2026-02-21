@@ -307,6 +307,7 @@ namespace HBL2
 			END_APP_PROFILE(debugDraw, m_CurrentStats.DebugDrawTime);
 
 			BEGIN_APP_PROFILE(appUpdate);
+			AssetManager::Instance->Dispatch();
 			m_Specification.Context->OnUpdate(Time::DeltaTime);
 			m_Specification.Context->OnFixedUpdate();
 			END_APP_PROFILE(appUpdate, m_CurrentStats.AppUpdateTime);

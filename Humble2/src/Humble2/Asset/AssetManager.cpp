@@ -15,15 +15,24 @@ namespace HBL2
 		m_AssetPool.Initialize(m_Spec.Assets);
 
 		uint32_t byteSize = Allocator::CalculateSoAByteSize<UUID, Handle<Asset>, Handle<Asset>>(2 * m_Spec.Assets) * 2;
-		constexpr size_t resourceTasksReserveBytes = 16_KB;
-		constexpr size_t resourceTasksByteSize = 6_B * 1024;
+		constexpr size_t resourceTasksByteSize = 192_B * 1024;
+		constexpr size_t resourceTasksReserveBytes = resourceTasksByteSize * 2;
 
 		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", byteSize + resourceTasksReserveBytes);
 		m_PoolArena.Initialize(&Allocator::Arena, byteSize, m_Reservation);
-		m_ResourceTaskPoolArena.Initialize(&Allocator::Arena, resourceTasksByteSize, 6, m_Reservation);
+		m_ResourceTaskPoolArena.Initialize(&Allocator::Arena, resourceTasksByteSize, 192, m_Reservation);
 
 		m_RegisteredAssetMap = MakeHMap<UUID, Handle<Asset>>(m_PoolArena, m_Spec.Assets);
 		m_RegisteredAssets = MakeDArray<Handle<Asset>>(m_PoolArena, m_Spec.Assets);
+	}
+
+	void AssetManager::Dispatch()
+	{
+		StaticFunction<void(void), 128> fn;
+		while (m_MainThreadCallbacks.try_dequeue(fn))
+		{
+			fn();
+		}
 	}
 
 	const AssetManagerSpecification& AssetManager::GetSpec() const

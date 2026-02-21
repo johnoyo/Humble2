@@ -6,35 +6,43 @@
 
 #include "Renderer\Device.h"
 
-#include "Core/Allocators.h"
+#include "Core\Allocators.h"
 
 #include "Utilities\JobSystem.h"
-#include "Utilities/Allocators/PoolArena.h"
-#include "Utilities/Collections/Collections.h"
+#include "Utilities\Allocators\PoolArena.h"
+#include "Utilities\Collections\Collections.h"
+#include "Utilities\Collections\StaticFunction.h"
 
-#include <concepts>
+#include "Vendor\moodycamel\concurrentqueue.h"
 
 namespace HBL2
 {
 	class Window;
 
-	template<typename T, typename F>
-	concept AssetLoadCallback = std::invocable<F, Handle<T>> && std::same_as<std::invoke_result_t<F, Handle<T>>, void>;
-
-	// Refactor in the future to this API:
-	//	AssetManager::Instance->GetAssetAsync<Texture>(albedoMapAssetHandle)
-	//		.Then([](Handle<Texture> h) {})
-	//		.ThenOnMainThread([](Handle<Texture> h) {});
 	template<typename T>
 	class ResourceTask
 	{
 	public:
 		Handle<T> ResourceHandle = Handle<T>();
+
+		ResourceTask<T> Then(StaticFunction<void(Handle<T>), 64>&& workerThreadCb)
+		{
+			m_WorkerThreadCallback = std::move(workerThreadCb);
+		}
+
+		void ThenOnMainThread(StaticFunction<void(Handle<T>), 64>&& mainThreadCb)
+		{
+			m_MainThreadCallback = std::move(mainThreadCb);			
+		}
+
 		inline const bool Finished() const { return m_Finished.load(std::memory_order_acquire); }
 
 	private:
 		friend class AssetManager;
+
 		std::atomic_bool m_Finished = false;
+		StaticFunction<void(Handle<T>), 64> m_WorkerThreadCallback;
+		StaticFunction<void(Handle<T>), 64> m_MainThreadCallback;
 	};
 
 	struct AssetManagerSpecification
@@ -51,6 +59,8 @@ namespace HBL2
 		virtual ~AssetManager() = default;
 
 		void Initialize(const AssetManagerSpecification& spec);
+		void Dispatch();
+
 		const AssetManagerSpecification& GetSpec() const;
 		const AssetManagerSpecification& GetUsageStats();
 
@@ -88,44 +98,6 @@ namespace HBL2
 			}
 
 			return Handle<T>();
-		}
-		
-		// NOTE: The onLoadCallback will be called in the job thread, so any non thread safe code in the callback could be problematic.
-		template<typename T, typename TCallback> requires AssetLoadCallback<T, TCallback>
-		void GetAssetAsync(UUID assetUUID, TCallback&& onLoadCallback, JobContext* customJobCtx = nullptr)
-		{
-			GetAssetAsync<T>(GetHandleFromUUID(assetUUID), std::forward<TCallback>(onLoadCallback), customJobCtx);
-		}
-
-		// NOTE: The onLoadCallback will be called in the job thread, so any non thread safe code in the callback could be problematic.
-		template<typename T, typename TCallback> requires AssetLoadCallback<T, TCallback>
-		void GetAssetAsync(Handle<Asset> assetHandle, TCallback&& onLoadCallback, JobContext* customJobCtx = nullptr)
-		{
-			// Do not schedule job if the asset handle is invalid.
-			if (!IsAssetValid(assetHandle))
-			{
-				return;
-			}
-
-			// Do not schedule job if the asset is loaded.
-			if (IsAssetLoaded(assetHandle))
-			{
-				Handle<T> resourceHandle = GetAsset<T>(assetHandle);
-				onLoadCallback(resourceHandle);
-				return;
-			}
-
-			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
-
-			JobSystem::Get().Execute(ctx, [this, assetHandle, cb = std::forward<TCallback>(onLoadCallback)]() mutable
-			{
-				Device::Instance->SetContext(ContextType::FETCH);
-
-				Handle<T> resourceHandle = GetAsset<T>(assetHandle);
-				cb(resourceHandle);
-
-				Device::Instance->SetContext(ContextType::FLUSH_CLEAR);
-			});
 		}
 
 		template<typename T>
@@ -165,6 +137,20 @@ namespace HBL2
 				{
 					task->ResourceHandle = GetAsset<T>(assetHandle);
 					task->m_Finished.store(true, std::memory_order_release);
+
+					if (task->m_WorkerThreadCallback)
+					{
+						task->m_WorkerThreadCallback(task->ResourceHandle);
+					}
+
+					if (task->m_MainThreadCallback)
+					{
+						m_MainThreadCallbacks.enqueue(
+							StaticFunction<void(void), 128>([cb = std::move(task->m_MainThreadCallback), handle = task->ResourceHandle]() mutable
+							{
+								cb(handle);
+							}));
+					}
 				}
 
 				Device::Instance->SetContext(ContextType::FLUSH_CLEAR);
@@ -237,49 +223,17 @@ namespace HBL2
 				{
 					task->ResourceHandle = ReloadAsset<T>(assetHandle);
 					task->m_Finished.store(true, std::memory_order_release);
+
+					if (task->m_WorkerThreadCallback)
+					{
+						task->m_WorkerThreadCallback(task->ResourceHandle);
+					}
 				}
 
 				Device::Instance->SetContext(ContextType::FLUSH_CLEAR);
 			});
 
 			return task;
-		}
-
-		// NOTE: The onLoadCallback will be called in the job thread, so any non thread safe code in the callback could be problematic.
-		template<typename T, typename TCallback> requires AssetLoadCallback<T, TCallback>
-		void ReloadAssetAsync(UUID assetUUID, TCallback&& onLoadCallback, JobContext* customJobCtx = nullptr)
-		{
-			ReloadAssetAsync<T>(GetHandleFromUUID(assetUUID), std::forward<TCallback>(onLoadCallback), customJobCtx);
-		}
-
-		// NOTE: The onLoadCallback will be called in the job thread, so any non thread safe code in the callback could be problematic.
-		template<typename T, typename TCallback> requires AssetLoadCallback<T, TCallback>
-		void ReloadAssetAsync(Handle<Asset> assetHandle, TCallback&& onLoadCallback, JobContext* customJobCtx = nullptr)
-		{
-			// Do not schedule job if the asset handle is invalid.
-			if (!IsAssetValid(assetHandle))
-			{
-				return;
-			}
-
-			// Load from scratch if the asset is not loaded.
-			if (!IsAssetLoaded(assetHandle))
-			{
-				GetAssetAsync<T>(assetHandle, std::forward<TCallback>(onLoadCallback), customJobCtx);
-				return;
-			}
-
-			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
-
-			JobSystem::Get().Execute(ctx, [this, assetHandle, cb = std::forward<TCallback>(onLoadCallback)]() mutable
-			{
-				Device::Instance->SetContext(ContextType::FETCH);
-
-				Handle<T> resourceHandle = ReloadAsset<T>(assetHandle);
-				cb(resourceHandle);
-
-				Device::Instance->SetContext(ContextType::FLUSH_CLEAR);
-			});
 		}
 
 		void WaitForAsyncJobs(JobContext* customJobCtx = nullptr);
@@ -318,5 +272,7 @@ namespace HBL2
 
 		HMap<UUID, Handle<Asset>> m_RegisteredAssetMap = MakeEmptyHMap<UUID, Handle<Asset>>();
 		DArray<Handle<Asset>> m_RegisteredAssets = MakeEmptyDArray<Handle<Asset>>();
+
+		moodycamel::ConcurrentQueue<StaticFunction<void(void), 128>> m_MainThreadCallbacks;
 	};
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Base.h"
+#include "BaseTypeDefinitions.h"
 #include "TypeDescriptors.h"
 
 #include <glm/glm.hpp>
@@ -11,15 +12,6 @@
 
 namespace HBL2
 {
-	struct Texture {};
-	struct Buffer {};
-	struct Shader {};
-	struct FrameBuffer;
-	struct BindGroup;
-	struct BindGroupLayout {};
-	struct RenderPass;
-	struct RenderPassLayout;
-
 	struct Vertex
 	{
 		glm::vec3 Position;

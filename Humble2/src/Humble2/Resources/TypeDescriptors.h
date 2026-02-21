@@ -2,6 +2,7 @@
 
 #include "Renderer\Enums.h"
 #include "Handle.h"
+#include "BaseTypeDefinitions.h"
 
 #include "Utilities\Collections\Span.h"
 #include "Utilities\Collections\BitFlags.h"
@@ -13,15 +14,6 @@
 
 namespace HBL2
 {
-	struct Texture;
-	struct TextureView;
-	struct Buffer;
-	struct Shader;
-	struct Framebuffer;
-	struct BindGroup;
-	struct BindGroupLayout;
-	struct RenderPass;
-	struct RenderPassLayout;
 	struct Material;
 
 	struct TextureDescriptor

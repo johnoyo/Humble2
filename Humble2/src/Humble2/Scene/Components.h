@@ -3,6 +3,8 @@
 #include "Base.h"
 
 #include "Resources\Handle.h"
+#include "Resources\Types.h"
+#include "Sound\Sound.h"
 #include "Asset\Asset.h"
 
 #include "Physics\Physics.h"
@@ -15,12 +17,6 @@
 
 namespace HBL2
 {
-	struct Mesh;
-	struct Material;
-	struct Sound;
-	struct Texture;
-	struct Buffer;
-
 	namespace Component
 	{
 		struct HBL2_API Tag

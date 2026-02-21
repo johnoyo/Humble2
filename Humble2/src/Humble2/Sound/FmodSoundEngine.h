@@ -2,6 +2,9 @@
 
 #include "SoundEngine.h"
 
+#include <fmod.hpp>
+#include <fmod_errors.h>
+
 namespace HBL2
 {
     class HBL2_API FmodSoundEngine final : public SoundEngine

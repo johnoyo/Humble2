@@ -2,9 +2,6 @@
 
 #include "Humble2API.h"
 
-#include <fmod.hpp>
-#include <fmod_errors.h>
-
 #include <string>
 #include <filesystem>
 
