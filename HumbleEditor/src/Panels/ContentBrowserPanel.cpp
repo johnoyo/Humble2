@@ -2,6 +2,7 @@
 
 #include "Script\BuildEngine.h"
 #include "Utilities\YamlUtilities.h"
+#include "Utilities\PrefabUtilities.h"
 #include "Utilities\FileDialogs.h"
 
 namespace HBL2
@@ -302,20 +303,15 @@ namespace HBL2
 					});
 
 					// Adds the PrefabEntity component and sets its values.
-					Prefab::ConvertEntityToPrefabPhase0(entity, m_ActiveScene);
+					PrefabUtilities::Get().ConvertEntityToPrefabPhase0(entity, m_ActiveScene);
 
-					// We need to duplicate the prefab entity before serializing it, since we need it to have unique UUIDs.
-					// The serialization code will add the PrefabInstance component with the correct values.
-					Entity clone = m_ActiveScene->DuplicateEntity(entity, EntityDuplicationNaming::DONT_APPEND_CLONE);
-					UUID prefabEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(clone).Identifier;
-					Prefab::CreateMetadataFile(prefabAssetHandle, prefabEntityUUID);
+					// The serialization code will add the PrefabInstance component with the correct values, but in the prefab sub-scene.
+					UUID prefabEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(entity).Identifier;
+					PrefabUtilities::Get().CreateMetadataFile(prefabAssetHandle, prefabEntityUUID);
 					AssetManager::Instance->SaveAsset(prefabAssetHandle);
 
-					// Now that we saved it to disk we can destroy the clone.
-					m_ActiveScene->DestroyEntity(clone);
-
 					// Finish the conversion by adding the PrefabInstance component and setting its values from the prefab source.
-					if (Prefab::ConvertEntityToPrefabPhase1(entity, prefabAssetHandle, m_ActiveScene))
+					if (!PrefabUtilities::Get().ConvertEntityToPrefabPhase1(entity, prefabAssetHandle, m_ActiveScene))
 					{
 						HBL2_CORE_ERROR("Could not convert entity to prefab!");
 						ImGui::EndDragDropTarget();

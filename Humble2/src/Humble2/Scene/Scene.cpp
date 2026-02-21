@@ -351,17 +351,43 @@ namespace HBL2
         case HBL2::EntityDuplicationNaming::APPEND_CLONE_RECURSIVE:
             {
                 Entity newEntity = CreateEntity(name + "(Clone)");
-                return InternalDuplicateEntity(entity, newEntity, true);
+                return InternalDuplicateEntity(entity, this, newEntity, true);
             }
         case HBL2::EntityDuplicationNaming::APPEND_CLONE_TO_BASE_ONLY:
             {
                 Entity newEntity = CreateEntity(name + "(Clone)");
-                return InternalDuplicateEntity(entity, newEntity, false);
+                return InternalDuplicateEntity(entity, this, newEntity, false);
             }
         case HBL2::EntityDuplicationNaming::DONT_APPEND_CLONE:
             {
                 Entity newEntity = CreateEntity(name);
-                return InternalDuplicateEntity(entity, newEntity, false);
+                return InternalDuplicateEntity(entity, this, newEntity, false);
+            }
+        }
+
+        return Entity::Null;
+    }
+
+    Entity Scene::DuplicateEntityFromScene(Entity entity, Scene* otherScene, EntityDuplicationNaming namingConvention)
+    {
+        std::string name = GetComponent<Component::Tag>(entity).Name;
+
+        switch (namingConvention)
+        {
+        case HBL2::EntityDuplicationNaming::APPEND_CLONE_RECURSIVE:
+            {
+                Entity newEntity = CreateEntity(name + "(Clone)");
+                return InternalDuplicateEntity(entity, otherScene, newEntity, true);
+            }
+        case HBL2::EntityDuplicationNaming::APPEND_CLONE_TO_BASE_ONLY:
+            {
+                Entity newEntity = CreateEntity(name + "(Clone)");
+                return InternalDuplicateEntity(entity, otherScene, newEntity, false);
+            }
+        case HBL2::EntityDuplicationNaming::DONT_APPEND_CLONE:
+            {
+                Entity newEntity = CreateEntity(name);
+                return InternalDuplicateEntity(entity, otherScene, newEntity, false);
             }
         }
 
@@ -493,7 +519,7 @@ namespace HBL2
         m_Registry.destroy(entity);
     }
 
-    Entity Scene::InternalDuplicateEntity(Entity entity, Entity newEntity, bool appendCloneToName)
+    Entity Scene::InternalDuplicateEntity(Entity entity, Scene* sourceEntityScene, Entity newEntity, bool appendCloneToName)
     {
         auto& newLink = GetComponent<HBL2::Component::Link>(newEntity);
 
@@ -502,16 +528,16 @@ namespace HBL2
         {
             using Component = decltype(component_type);
 
-            if (HasComponent<Component>(entity))
+            if (sourceEntityScene->HasComponent<Component>(entity))
             {
-                auto& component = GetComponent<Component>(entity);
+                auto& component = sourceEntityScene->GetComponent<Component>(entity);
 
                 if (typeid(Component) == typeid(HBL2::Component::Link))
                 {
                     for (auto child : ((HBL2::Component::Link&)component).Children)
                     {
-                        Entity childEntity = FindEntityByUUID(child);
-                        Entity newChildEntity = DuplicateEntity(childEntity, appendCloneToName ? EntityDuplicationNaming::APPEND_CLONE_RECURSIVE : EntityDuplicationNaming::DONT_APPEND_CLONE);
+                        Entity childEntity = sourceEntityScene->FindEntityByUUID(child);
+                        Entity newChildEntity = DuplicateEntityFromScene(childEntity, sourceEntityScene, appendCloneToName ? EntityDuplicationNaming::APPEND_CLONE_RECURSIVE : EntityDuplicationNaming::DONT_APPEND_CLONE);
 
                         // Add the base entity as the parent of this
                         HBL2::Component::Link& newChildLink = GetComponent<HBL2::Component::Link>(newChildEntity);
@@ -559,14 +585,14 @@ namespace HBL2
         std::vector<std::string> userComponentNames;
         std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
 
-        for (auto meta_type : entt::resolve(m_MetaContext))
+        for (auto meta_type : entt::resolve(sourceEntityScene->m_MetaContext))
         {
             std::string componentName = meta_type.second.info().name().data();
             componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
 
-            if (BuildEngine::Instance->HasComponent(componentName, this, entity))
+            if (BuildEngine::Instance->HasComponent(componentName, sourceEntityScene, entity))
             {
-                auto componentMeta = BuildEngine::Instance->GetComponent(componentName, this, entity);
+                auto componentMeta = BuildEngine::Instance->GetComponent(componentName, sourceEntityScene, entity);
                 auto newComponentMeta = BuildEngine::Instance->AddComponent(componentName, this, newEntity);
                 newComponentMeta.assign(componentMeta);
             }
@@ -575,14 +601,14 @@ namespace HBL2
         return newEntity;
     }
 
-    Entity Scene::DuplicateEntityAlt(Entity entity, std::unordered_map<UUID, Entity>& preservedEntityIDs)
+    Entity Scene::DuplicateEntityFromSceneAlt(Entity entity, Scene* sourceEntityScene, std::unordered_map<UUID, Entity>& preservedEntityIDs)
     {
-        std::string name = GetComponent<Component::Tag>(entity).Name;
+        std::string name = sourceEntityScene->GetComponent<Component::Tag>(entity).Name;
         UUID uuid = Random::UInt64();
 
         Entity newEntity;
 
-        if (auto* pe = TryGetComponent<Component::PrefabEntity>(entity))
+        if (auto* pe = sourceEntityScene->TryGetComponent<Component::PrefabEntity>(entity))
         {
             if (preservedEntityIDs.contains(pe->EntityId))
             {
@@ -607,10 +633,10 @@ namespace HBL2
 
         m_EntityMap[uuid] = newEntity;
 
-        return InternalDuplicateEntityAlt(entity, newEntity, preservedEntityIDs);
+        return InternalDuplicateEntityFromSceneAlt(entity, sourceEntityScene, newEntity, preservedEntityIDs);
     }
 
-    Entity Scene::InternalDuplicateEntityAlt(Entity entity, Entity newEntity, std::unordered_map<UUID, Entity>& preservedEntityIDs)
+    Entity Scene::InternalDuplicateEntityFromSceneAlt(Entity entity, Scene* sourceEntityScene, Entity newEntity, std::unordered_map<UUID, Entity>& preservedEntityIDs)
     {
         auto& newLink = GetComponent<HBL2::Component::Link>(newEntity);
 
@@ -619,16 +645,16 @@ namespace HBL2
         {
             using Component = decltype(component_type);
 
-            if (HasComponent<Component>(entity))
+            if (sourceEntityScene->HasComponent<Component>(entity))
             {
-                auto& component = GetComponent<Component>(entity);
+                auto& component = sourceEntityScene->GetComponent<Component>(entity);
 
                 if (typeid(Component) == typeid(HBL2::Component::Link))
                 {
                     for (auto child : ((HBL2::Component::Link&)component).Children)
                     {
-                        Entity childEntity = FindEntityByUUID(child);
-                        Entity newChildEntity = DuplicateEntityAlt(childEntity, preservedEntityIDs);
+                        Entity childEntity = sourceEntityScene->FindEntityByUUID(child);
+                        Entity newChildEntity = DuplicateEntityFromSceneAlt(childEntity, sourceEntityScene, preservedEntityIDs);
 
                         // Add the base entity as the parent of this
                         HBL2::Component::Link& newChildLink = GetComponent<HBL2::Component::Link>(newChildEntity);
@@ -676,14 +702,14 @@ namespace HBL2
         std::vector<std::string> userComponentNames;
         std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
 
-        for (auto meta_type : entt::resolve(m_MetaContext))
+        for (auto meta_type : entt::resolve(sourceEntityScene->m_MetaContext))
         {
             std::string componentName = meta_type.second.info().name().data();
             componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
 
-            if (BuildEngine::Instance->HasComponent(componentName, this, entity))
+            if (BuildEngine::Instance->HasComponent(componentName, sourceEntityScene, entity))
             {
-                auto componentMeta = BuildEngine::Instance->GetComponent(componentName, this, entity);
+                auto componentMeta = BuildEngine::Instance->GetComponent(componentName, sourceEntityScene, entity);
                 auto newComponentMeta = BuildEngine::Instance->AddComponent(componentName, this, newEntity);
                 newComponentMeta.assign(componentMeta);
             }
@@ -692,7 +718,7 @@ namespace HBL2
         return newEntity;
     }
 
-    Entity Scene::DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(Entity prefabSourceEntity, Entity entityToPreserveFrom)
+    Entity Scene::DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(Entity prefabSourceEntity, Scene* prefabSourceScene, Entity entityToPreserveFrom)
     {
         // Store the entities of the current instantiated prefab entity.
         // We need to delete them in the end but we wont have the UUID to Entity mapping so we store them beforehand.
@@ -774,7 +800,7 @@ namespace HBL2
         }
 
         // Dupilcate the entity from the prefab source entity.
-        Entity clone = DuplicateEntityAlt(prefabSourceEntity, preservedEntityIDs);
+        Entity clone = DuplicateEntityFromSceneAlt(prefabSourceEntity, prefabSourceScene, preservedEntityIDs);
 
         auto updateUUIDsFromPreserved = [&](auto&& self, Entity e, Entity parent) -> void
         {

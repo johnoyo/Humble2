@@ -762,7 +762,9 @@ namespace HBL2
 				return Handle<Prefab>();
 			}
 
-			// NOTE: We do not deserialize here!
+			// Deserialize the source prefab into the prefabs' sub-scene.
+			PrefabSerializer prefabSerializer(prefab);
+			prefabSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
 
 			return prefabHandle;
 		}
@@ -2122,6 +2124,14 @@ namespace HBL2
 		{
 			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
 			return;
+		}
+
+		// Unload.
+		Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+		if (prefab)
+		{
+			prefab->Unload();
 		}
 
 		// Delete from pool.

@@ -6,6 +6,10 @@
 
 namespace HBL2
 {
+	EntitySerializer::EntitySerializer(Scene* scene)
+		: m_Scene(scene)
+	{
+	}
 	EntitySerializer::EntitySerializer(Scene* scene, Entity entity)
 		: m_Scene(scene), m_Entity(entity)
 	{

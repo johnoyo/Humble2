@@ -12,7 +12,6 @@ namespace HBL2
 
 			if (!OpenProject())
 			{
-				ActiveScene = EmptyScene;
 				return;
 			}
 		}
@@ -22,7 +21,6 @@ namespace HBL2
 			LoadProject();
 
 			m_EditorScene = ResourceManager::Instance->GetScene(EditorScene);
-			m_EmptyScene = ResourceManager::Instance->GetScene(EmptyScene);
 
 			// Create editor systems.
 			m_EditorScene->RegisterSystem(new EditorPanelSystem);

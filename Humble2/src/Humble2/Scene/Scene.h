@@ -127,6 +127,8 @@ namespace HBL2
 
 		Entity DuplicateEntity(Entity entity, EntityDuplicationNaming namingConvention = EntityDuplicationNaming::APPEND_CLONE_TO_BASE_ONLY);
 
+		Entity DuplicateEntityFromScene(Entity entity, Scene* otherScene, EntityDuplicationNaming namingConvention = EntityDuplicationNaming::APPEND_CLONE_TO_BASE_ONLY);
+
 		template<typename... T>
 		auto GetAllEntitiesWith()
 		{
@@ -274,13 +276,13 @@ namespace HBL2
 
 	private:
 		void InternalDestroyEntity(Entity entity, bool isRootCall);
-		Entity InternalDuplicateEntity(Entity entity, Entity newEntity, bool appendCloneToName);
+		Entity InternalDuplicateEntity(Entity entity, Scene* sourceEntityScene, Entity newEntity, bool appendCloneToName);
 
-		Entity DuplicateEntityAlt(Entity entity, std::unordered_map<UUID, Entity>& preservedEntityIDs);
-		Entity InternalDuplicateEntityAlt(Entity entity, Entity newEntity, std::unordered_map<UUID, Entity>& preservedEntityIDs);
+		Entity DuplicateEntityFromSceneAlt(Entity entity, Scene* sourceEntityScene, std::unordered_map<UUID, Entity>& preservedEntityIDs);
+		Entity InternalDuplicateEntityFromSceneAlt(Entity entity, Scene* sourceEntityScene, Entity newEntity, std::unordered_map<UUID, Entity>& preservedEntityIDs);
 
-		Entity DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(Entity entity, Entity entityToPreserveFrom);
-		friend class Prefab;
+		Entity DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(Entity entity, Scene* prefabSourceScene, Entity entityToPreserveFrom);
+		friend class PrefabUtilities;
 		friend class SceneSerializer;
 
 	private:

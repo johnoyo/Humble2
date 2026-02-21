@@ -32,7 +32,6 @@ namespace HBL2
 		inline static glm::vec2 ViewportPosition;
 
 		inline static Handle<Scene> ActiveScene;
-		inline static Handle<Scene> EmptyScene;
 		inline static Handle<Scene> EditorScene;
 
 		inline static Mode Mode = Mode::None;

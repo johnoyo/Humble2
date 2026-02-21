@@ -73,6 +73,8 @@ namespace HBL2
 		EventDispatcher::Initialize();
 		JobSystem::Initialize();
 		MeshUtilities::Initialize();
+		PrefabUtilities::Initialize();
+		ShaderUtilities::Initialize();
 
 		BuildEngine::Instance = new WindowsBuildEngine;
 
@@ -113,10 +115,7 @@ namespace HBL2
 			.VerticalSync = m_Specification.VerticalSync
 		});
 
-		m_Specification.Context->EmptyScene = ResourceManager::Instance->CreateScene({ .name = "Empty Scene" });
-		m_Specification.Context->EditorScene = ResourceManager::Instance->CreateScene({ .name = "Editor Scene" });
-		
-		ShaderUtilities::Initialize();
+		m_Specification.Context->EditorScene = ResourceManager::Instance->CreateScene({ .name = "Editor Scene" });		
 
 		DebugRenderer::Instance = new DebugRenderer;
 
@@ -373,6 +372,7 @@ namespace HBL2
 		Input::ShutDown();
 		ShaderUtilities::Shutdown();
 		MeshUtilities::Shutdown();
+		PrefabUtilities::Shutdown();
 		EventDispatcher::Shutdown();
 		JobSystem::Shutdown();
 	}

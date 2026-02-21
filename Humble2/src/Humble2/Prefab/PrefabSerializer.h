@@ -14,7 +14,6 @@ namespace HBL2
 	{
 	public:
 		PrefabSerializer(Prefab* prefab);
-		PrefabSerializer(Prefab* prefab, Scene* scene);
 		PrefabSerializer(Prefab* prefab, Entity instantiatedPrefabEntity);
 
 		void Serialize(const std::filesystem::path& path);
@@ -22,11 +21,9 @@ namespace HBL2
 
 	private:
 		void SerializePrefab(Scene* ctx, Entity entity, YAML::Emitter& out);
-		Scene* GetScene();
 
 	private:
 		Prefab* m_Context;
-		Scene* m_Scene = nullptr;
 		Entity m_InstantiatedPrefabEntity = Entity::Null;
 	};
 }

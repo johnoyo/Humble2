@@ -4,6 +4,7 @@
 #include "Script\BuildEngine.h"
 #include "Resources\ResourceManager.h"
 #include "Utilities\YamlUtilities.h"
+#include "Utilities\PrefabUtilities.h"
 
 #include "EntitySerializer.h"
 
@@ -242,7 +243,7 @@ namespace HBL2
 			Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
 			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
 
-			Prefab::Update(prefabAsset, prefab, m_Scene, entity, true, true);
+			PrefabUtilities::Get().Update(prefabAsset, prefab, m_Scene, entity, true, true);
 		}
 
 		stream.close();

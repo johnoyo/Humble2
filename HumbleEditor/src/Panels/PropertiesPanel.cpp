@@ -513,12 +513,42 @@ namespace HBL2
 				{
 					// Normalisation mode.
 					{
-						const char* options[] = { "Local", "Global" };
+						const char* options[] = { "Fixed", "Infinite" };
 						int currentItem = (int)t.NormaliseMode;
 
-						if (ImGui::Combo("NormaliseMode", &currentItem, options, IM_ARRAYSIZE(options)))
+						if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
 						{
 							t.NormaliseMode = (HBL2::Component::Terrain::ENormaliseMode)currentItem;
+						}
+					}
+
+					if (t.NormaliseMode == HBL2::Component::Terrain::ENormaliseMode::LOCAL)
+					{
+						uint32_t textureHandle = t.HeightMap.Pack();
+
+						ImGui::InputScalar("Height Map", ImGuiDataType_U32, (void*)(intptr_t*)&textureHandle);
+
+						if (ImGui::BeginDragDropTarget())
+						{
+							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+							{
+								uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+								Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+								if (assetHandle.IsValid())
+								{
+									Asset* textureAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+									if (!std::filesystem::exists(HBL2::Project::GetAssetFileSystemPath(textureAsset->FilePath).string() + ".hbltexture"))
+									{
+										TextureUtilities::Get().CreateAssetMetadataFile(assetHandle);
+									}
+								}
+
+								t.HeightMap = assetHandle;
+							}
+
+							ImGui::EndDragDropTarget();
 						}
 					}
 

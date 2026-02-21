@@ -1,5 +1,7 @@
 #include "Systems\EditorPanelSystem.h"
 
+#include "Utilities\PrefabUtilities.h"
+
 namespace HBL2
 {
 	namespace Editor
@@ -97,7 +99,7 @@ namespace HBL2
 				{
 					if (ImGui::MenuItem("Unpack prefab"))
 					{
-						Prefab::Unpack(entity);
+						PrefabUtilities::Get().Unpack(entity);
 					}
 					else if (ImGui::MenuItem("Save prefab"))
 					{
@@ -105,7 +107,7 @@ namespace HBL2
 						HBL2::Component::EditorVisible::Selected = false;
 						HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
 
-						Prefab::Save(entity);
+						PrefabUtilities::Get().Save(entity);
 					}
 					else if (ImGui::MenuItem("Revert prefab"))
 					{
@@ -113,7 +115,7 @@ namespace HBL2
 						HBL2::Component::EditorVisible::Selected = false;
 						HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
 
-						Prefab::Revert(entity);
+						PrefabUtilities::Get().Revert(entity);
 					}
 				}
 
