@@ -7,6 +7,8 @@
 #include "Group.h"
 
 #include "Utilities\Random.h"
+#include "Utilities\Allocators\Arena.h"
+#include "Utilities\Collections\Collections.h"
 
 #include <entt.hpp>
 
@@ -182,27 +184,18 @@ namespace HBL2
 
 		void DeregisterSystem(ISystem* system);
 
+		template<typename T>
+		void RegisterSystem(SystemType type = SystemType::Core)
+		{
+			RegisterSystem(m_SceneArena.AllocConstruct<T>(), type);
+		}
+
 		void RegisterSystem(ISystem* system, SystemType type = SystemType::Core);
 
-		const std::vector<ISystem*>& GetSystems() const
-		{
-			return m_Systems;
-		}
-
-		const std::vector<ISystem*>& GetCoreSystems() const
-		{
-			return m_CoreSystems;
-		}
-
-		const std::vector<ISystem*>& GetRuntimeSystems() const
-		{
-			return m_RuntimeSystems;
-		}
-
-		entt::registry& GetRegistry()
-		{
-			return m_Registry;
-		}
+		const DArray<ISystem*>& GetSystems() const { return m_Systems; }
+		const DArray<ISystem*>& GetCoreSystems() const { return m_CoreSystems; }
+		const DArray<ISystem*>& GetRuntimeSystems() const { return m_RuntimeSystems; }
+		entt::registry& GetRegistry() { return m_Registry; }
 
 		[[nodiscard]] inline auto Entities() noexcept
 		{
@@ -254,15 +247,8 @@ namespace HBL2
 			return HBL2::Group{ g };
 		}
 
-		entt::meta_ctx& GetMetaContext()
-		{
-			return m_MetaContext;
-		}
-
-		const std::string& GetName() const
-		{
-			return m_Name;
-		}
+		entt::meta_ctx& GetMetaContext() { return m_MetaContext; }
+		const std::string& GetName() const { return m_Name; }
 
 		template <typename T>
 		static std::vector<std::byte> Serialize(const T& component)
@@ -282,15 +268,9 @@ namespace HBL2
 
 		Entity MainCamera = Entity::Null;
 
-		StructuralCommandBuffer* Cmd()
-		{
-			return m_CmdBuffer;
-		}
-
-		void InitializeStructuralCommandBuffer();
-		void ClearStructuralCommandBuffer();
-
+		StructuralCommandBuffer* Cmd() { return m_CmdBuffer; }
 		uint64_t Epoch() const { return m_Epoch; }
+		Arena* GetArena() { return &m_SceneArena; }
 
 	private:
 		void InternalDestroyEntity(Entity entity, bool isRootCall);
@@ -309,10 +289,13 @@ namespace HBL2
 		std::string m_Name;
 		entt::registry m_Registry;
 		entt::meta_ctx m_MetaContext;
-		std::vector<ISystem*> m_Systems;
-		std::vector<ISystem*> m_CoreSystems;
-		std::vector<ISystem*> m_RuntimeSystems;
-		std::unordered_map<UUID, Entity> m_EntityMap;
+		DArray<ISystem*> m_Systems = MakeEmptyDArray<ISystem*>();
+		DArray<ISystem*> m_CoreSystems = MakeEmptyDArray<ISystem*>();
+		DArray<ISystem*> m_RuntimeSystems = MakeEmptyDArray<ISystem*>();
+		HMap<UUID, Entity> m_EntityMap = MakeEmptyHMap<UUID, Entity>();
+
+		Arena m_SceneArena;
+		PoolReservation* m_Reservation = nullptr;
 
 	private:
 		friend class ISystem;

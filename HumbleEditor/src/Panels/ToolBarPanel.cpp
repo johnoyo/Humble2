@@ -110,9 +110,6 @@ namespace HBL2
 							.type = AssetType::Scene,
 						});
 
-						// NOTE: We need to clear the CMD before copy.
-						m_ActiveScene->ClearStructuralCommandBuffer();
-
 						AssetManager::Instance->SaveAsset(assetHandle);
 						Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 

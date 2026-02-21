@@ -45,7 +45,7 @@ namespace HBL2
 
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
-		Allocator::Arena.Initialize(500_MB, 10_MB);
+		Allocator::Arena.Initialize(500_MB, 16_MB);
 
 		m_FrameArenaReservationDummy = Allocator::Arena.Reserve("FrameArenaReservationDummy", 8_KB);
 		Allocator::DummyArena.Initialize(&Allocator::Arena, 8_KB, m_FrameArenaReservationDummy);

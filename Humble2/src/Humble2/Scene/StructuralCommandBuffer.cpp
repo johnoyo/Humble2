@@ -2,23 +2,20 @@
 
 namespace HBL2
 {
-	void StructuralCommandBuffer::Initialize()
+	void StructuralCommandBuffer::Initialize(PoolReservation* reservation)
 	{
-		uint32_t mainArenaByteSize = (sizeof(StructuralCommandBuffer::ChunkCommands) + sizeof(Arena)) * JobSystem::Get().GetThreadCount();
+		uint32_t workerThreadCount = JobSystem::Get().GetThreadCount();
+		uint32_t mainArenaByteSize = (uint32_t)Allocator::CalculateInterleavedByteSize<StructuralCommandBuffer::ChunkCommands, Arena>(workerThreadCount);
+		m_Arena.Initialize(&Allocator::Arena, mainArenaByteSize, reservation);
 
-		m_Reservation = Allocator::Arena.Reserve(std::format("SCB-MPool"), mainArenaByteSize);
-		m_Arena.Initialize(&Allocator::Arena, mainArenaByteSize, m_Reservation);
-
-		m_ChunkCommands = MakeDArrayResized<StructuralCommandBuffer::ChunkCommands>(m_Arena, JobSystem::Get().GetThreadCount());
+		m_ChunkCommands = MakeDArrayResized<StructuralCommandBuffer::ChunkCommands>(m_Arena, workerThreadCount);
 
 		constexpr uint32_t byteSize = 100_KB;
 
-		for (int i = 0; i < JobSystem::Get().GetThreadCount(); i++)
+		for (int i = 0; i < workerThreadCount; i++)
 		{
-			m_ChunkCommands[i].Reservation = Allocator::Arena.Reserve(std::format("SCB-WPool-{}", i), byteSize);
-
 			m_ChunkCommands[i].Arena = m_Arena.AllocConstruct<Arena>();
-			m_ChunkCommands[i].Arena->Initialize(&Allocator::Arena, byteSize, m_ChunkCommands[i].Reservation);
+			m_ChunkCommands[i].Arena->Initialize(&Allocator::Arena, byteSize, reservation);
 
 			m_ChunkCommands[i].Commands = MakeDArray<StructuralCommandBuffer::Command>(*m_ChunkCommands[i].Arena, 64);
 		}
@@ -43,22 +40,21 @@ namespace HBL2
 				}
 			}
 
-			m_ChunkCommands[i].Arena->Reset(false);
+			m_ChunkCommands[i].Arena->Reset();
 		}
+	}
+
+	void StructuralCommandBuffer::Reset()
+	{
+		m_Arena.Reset();
 	}
 
 	void StructuralCommandBuffer::Clear()
 	{
-		m_Arena.Reset(false);
-	}
-
-	void StructuralCommandBuffer::ClearAll()
-	{
 		for (int i = 0; i < m_ChunkCommands.size(); i++)
 		{
-			m_ChunkCommands[i].Arena->Reset(false);
+			m_Arena.Destruct(&m_ChunkCommands[i].Commands);
+			m_Arena.Destruct(m_ChunkCommands[i].Arena);
 		}
-
-		m_Arena.Reset(false);
 	}
 }

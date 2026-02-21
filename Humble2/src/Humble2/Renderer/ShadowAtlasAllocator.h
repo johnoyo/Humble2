@@ -39,9 +39,9 @@ namespace HBL2
         void Clear();
 
     private:
-        DArray<ShadowTile> m_FreeTiles = MakeEmptyDArray<ShadowTile>();
-
         PoolReservation* m_Reservation = nullptr;
         Arena m_Arena;
+
+        DArray<ShadowTile> m_FreeTiles = MakeEmptyDArray<ShadowTile>();
     };
 }

@@ -74,7 +74,7 @@ namespace HBL2
 		glm::mat4 GetCameraMVP();
 
 	private:
-		static constexpr uint32_t s_MaxDebugVertices = 1'000'000; // 1 million vertices = ~16MB
+		static constexpr uint32_t s_MaxDebugVertices = 500'000; // 500k vertices = ~8MB
 				
 		ResourceManager* m_ResourceManager = nullptr;
 
@@ -97,9 +97,9 @@ namespace HBL2
 		Handle<Buffer> m_DebugFillTriVertexBuffer;
 		Handle<Buffer> m_DebugWireTriVertexBuffer;
 
-		DebugRenderData m_RenderData[Renderer::FrameCount];
-
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_Arena;
+
+		DebugRenderData m_RenderData[Renderer::FrameCount];
 	};
 }

@@ -62,11 +62,10 @@ namespace HBL2
 		struct ChunkCommands
 		{
 			Arena* Arena = nullptr;
-			PoolReservation* Reservation = nullptr;
 			DArray<Command> Commands = MakeEmptyDArray<Command>();
 		};
 
-		void Initialize();
+		void Initialize(PoolReservation* reservation);
 
 		template<class T>
 		void Add(Entity e, T value = {})
@@ -100,12 +99,11 @@ namespace HBL2
 		}
 
 		void Playback(Scene* scene);
+		void Reset();
 		void Clear();
-		void ClearAll();
 
 	private:
 		Arena m_Arena;
-		PoolReservation* m_Reservation;
 		DArray<ChunkCommands> m_ChunkCommands = MakeEmptyDArray<ChunkCommands>();
 	};
 }

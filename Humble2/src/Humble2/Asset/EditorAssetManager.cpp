@@ -639,14 +639,14 @@ namespace HBL2
 			return sceneHandle;
 		}
 
-		scene->RegisterSystem(new HierachySystem);
-		scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
-		scene->RegisterSystem(new TerrainSystem);
-		scene->RegisterSystem(new RenderingSystem);
-		scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
-		scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
-		scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
-		scene->RegisterSystem(new AnimationCurveSystem);
+		scene->RegisterSystem<HierachySystem>();
+		scene->RegisterSystem<CameraSystem>(SystemType::Runtime);
+		scene->RegisterSystem<TerrainSystem>();
+		scene->RegisterSystem<RenderingSystem>();
+		scene->RegisterSystem<SoundSystem>(SystemType::Runtime);
+		scene->RegisterSystem<Physics2dSystem>(SystemType::Runtime);
+		scene->RegisterSystem<Physics3dSystem>(SystemType::Runtime);
+		scene->RegisterSystem<AnimationCurveSystem>();
 
 		SceneSerializer sceneSerializer(scene);
 		sceneSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
@@ -1262,14 +1262,14 @@ namespace HBL2
 				return;
 			}
 
-			scene->RegisterSystem(new HierachySystem);
-			scene->RegisterSystem(new CameraSystem, SystemType::Runtime);
-			scene->RegisterSystem(new TerrainSystem);
-			scene->RegisterSystem(new RenderingSystem);
-			scene->RegisterSystem(new SoundSystem, SystemType::Runtime);
-			scene->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
-			scene->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
-			scene->RegisterSystem(new AnimationCurveSystem);
+			scene->RegisterSystem<HierachySystem>();
+			scene->RegisterSystem<CameraSystem>(SystemType::Runtime);
+			scene->RegisterSystem<TerrainSystem>();
+			scene->RegisterSystem<RenderingSystem>();
+			scene->RegisterSystem<SoundSystem>(SystemType::Runtime);
+			scene->RegisterSystem<Physics2dSystem>(SystemType::Runtime);
+			scene->RegisterSystem<Physics3dSystem>(SystemType::Runtime);
+			scene->RegisterSystem<AnimationCurveSystem>();
 
 			asset->Indentifier = sceneHandle.Pack();
 			asset->Loaded = true;

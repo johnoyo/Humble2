@@ -36,8 +36,8 @@ namespace HBL2
 
     ShadowAtlasAllocator::ShadowAtlasAllocator()
     {
-        m_Reservation = Allocator::Arena.Reserve("ShadowAtlasAllocatorPool", 128);
-        m_Arena.Initialize(&Allocator::Arena, 128, m_Reservation);
+        m_Reservation = Allocator::Arena.Reserve("ShadowAtlasAllocatorPool", 512);
+        m_Arena.Initialize(&Allocator::Arena, 512, m_Reservation);
 
         m_FreeTiles = MakeDArray<ShadowTile>(m_Arena, g_MaxTiles);
 

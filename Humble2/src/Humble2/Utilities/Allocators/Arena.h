@@ -10,10 +10,15 @@ namespace HBL2
      * The Arena requests chunks from MainArena. Allocations inside an Arena are
      * lock-free (simple pointer arithmetic) and intended for use by a single thread.
      */
-    class Arena
+    class HBL2_API Arena
     {
     public:
         Arena() = default;
+
+        /**
+         * @brief Destroy the Arena and return chunks to free lists.
+         */
+        ~Arena();
 
         /**
          * @brief Construct an Arena bound to a MainArena and optional reservation.
@@ -22,108 +27,24 @@ namespace HBL2
          * @param bytes Arena configuration.
          * @param reservation Optional PoolReservation* to prefer.
          */
-        Arena(MainArena* global, size_t bytes, PoolReservation* reservation = nullptr)
-        {
-            Initialize(global, bytes, reservation);
-        }
+        void Initialize(MainArena* global, size_t bytes, PoolReservation* reservation);
 
         /**
          * @brief Destroy the Arena and return chunks to free lists.
          */
-        ~Arena()
-        {
-            // Return chunk structs to per-reservation or global free lists
-            for (ArenaChunk* ch : m_Chunks)
-            {
-                m_GlobalArena->FreeChunkStruct(ch);
-            }
-
-            m_Chunks.clear();
-            m_Current = nullptr;
-        }
-
-        void Initialize(MainArena* global, size_t bytes, PoolReservation* reservation = nullptr)
-        {
-            m_GlobalArena = global;
-            m_Bytes = bytes;
-            m_Reservation = reservation;
-            m_Current = nullptr;
-            m_NextChunkSize = bytes;
-
-            AcquireChunk(m_NextChunkSize);
-
-            m_Used.store(0);
-            m_HighWater.store(0);
-        }
+        void Destroy();
 
         /**
          * @brief Allocate @p size bytes with @p alignment from this arena.
          *
          * Fast path: allocate from current chunk (no locks). When current chunk
-         * cannot satisfy the request, the arena requests a new chunk from MainArena.
+         * cannot satisfy the request, the arena requests a new chunk from MainArena reservation.
          *
          * @param size Number of bytes.
          * @param alignment Required alignment.
          * @return Pointer to allocated memory.
-         * @throws std::bad_alloc if MainArena cannot provide a new chunk.
          */
-        void* Alloc(size_t size, size_t alignment = alignof(std::max_align_t))
-        {
-            if (size == 0)
-            {
-                return nullptr;
-            }
-
-            ArenaChunk* ch = m_Current;
-
-            if (!m_Current)
-            {
-                return nullptr;
-            }
-
-            if (ch && ch->HasSpace(size, alignment))
-            {
-                uintptr_t base = reinterpret_cast<uintptr_t>(ch->Data);
-                uintptr_t cur = base + ch->Used;
-                uintptr_t aligned = AlignUp(cur, alignment);
-                size_t offset = static_cast<size_t>(aligned - base);
-                ch->Used = offset + size;
-#ifdef ARENA_DEBUG
-                UpdateStats(size);
-#endif
-                return static_cast<void*>(ch->Data + offset);
-            }
-
-            // Request new chunk (may throw)
-            size_t requestSize = std::max<size_t>(size + alignment, m_NextChunkSize);
-            if (m_NextChunkSize < requestSize)
-            {
-                m_NextChunkSize = requestSize;
-            }
-            else
-            {
-                m_NextChunkSize = std::min(m_NextChunkSize * 2, requestSize);
-            }
-
-            AcquireChunk(requestSize);
-
-            if (!m_Current)
-            {
-                return nullptr;
-            }
-
-            ch = m_Current;
-            uintptr_t base = reinterpret_cast<uintptr_t>(ch->Data);
-            uintptr_t cur = base + ch->Used;
-            uintptr_t aligned = AlignUp(cur, alignment);
-            size_t offset = static_cast<size_t>(aligned - base);
-            assert(offset + size <= ch->Capacity);
-            ch->Used = offset + size;
-#ifdef ARENA_DEBUG
-            UpdateStats(size);
-#endif
-            return static_cast<void*>(ch->Data + offset);
-        }
+        void* Alloc(size_t size, size_t alignment = alignof(std::max_align_t));
 
         /**
          * @brief Contruct the provided allocated memory (by calling the ctor using placement new).
@@ -173,6 +94,12 @@ namespace HBL2
         T* AllocConstruct(Args&&... args)
         {
             void* mem = Alloc(sizeof(T), alignof(T));
+
+            if (!mem)
+            {
+                return nullptr;
+            }
+
             T* obj = ::new (mem) T(std::forward<Args>(args)...);
             return obj;
         }
@@ -203,128 +130,41 @@ namespace HBL2
          *
          * @return Mark snapshot.
          */
-        Marker Mark() const
-        {
-            Marker m{};
-            m.ChunkCount = m_Chunks.size();
-            m.UsedInLast = m_Chunks.empty() ? 0 : m_Chunks.back()->Used;
-            return m;
-        }
+        Marker Mark() const;
 
         /**
          * @brief Restore to a previous mark. Chunks allocated after the mark are returned to free lists.
          *
          * @param m Mark returned from mark().
          */
-        void Restore(const Marker& m)
-        {
-            while (m_Chunks.size() > m.ChunkCount)
-            {
-                ArenaChunk* c = m_Chunks.back();
-                m_Chunks.pop_back();
-                m_GlobalArena->FreeChunkStruct(c);
-            }
-
-            if (!m_Chunks.empty())
-            {
-                m_Chunks.back()->Used = m.UsedInLast;
-                m_Current = m_Chunks.back();
-            }
-            else
-            {
-                m_Current = nullptr;
-            }
-
-#ifdef ARENA_DEBUG
-            RecalcStats();
-#endif
-        }
+        void Restore(const Marker& m);
 
         /**
          * @brief Reset arena: return all but optionally keep one chunk.
          */
-        void Reset(bool keepOneChunk = true)
-        {
-            while (m_Chunks.size() > (keepOneChunk ? 1u : 0u))
-            {
-                ArenaChunk* c = m_Chunks.back();
-                m_Chunks.pop_back();
-                m_GlobalArena->FreeChunkStruct(c);
-            }
-
-            if (!m_Chunks.empty())
-            {
-                m_Chunks.back()->Used = 0;
-                m_Current = m_Chunks.back();
-            }
-            else
-            {
-                m_Current = nullptr;
-            }
-
-#ifdef ARENA_DEBUG
-            RecalcStats();
-#endif
-        }
+        void Reset(bool keepOneChunk = true);
 
         /**
          * @brief Current used bytes inside this arena (debug).
          */
-        size_t UsedBytes() const { return m_UsedBeforeReset.load(); }
+        inline size_t UsedBytes() const { return m_UsedBeforeReset.load(); }
 
         /**
          * @brief Total available bytes inside this arena (debug).
          */
-        size_t TotalBytes() const { return m_Bytes; }
+        inline size_t TotalBytes() const { return m_Bytes; }
 
         /**
          * @brief High-water mark for this arena (debug).
          */
-        size_t HighWater() const { return m_HighWater.load(); }
+        inline size_t HighWater() const { return m_HighWater.load(); }
 
     private:
-        /**
-         * @brief Acquire a chunk for the arena.
-         *
-         * Try reservation free list, then global free list, then allocate a new chunk
-         * (placement-new in META and carve payload from DATA).
-         */
-        void AcquireChunk(size_t minCapacity)
-        {
-            ArenaChunk* newChunk = m_GlobalArena->AllocateChunkStruct(minCapacity, m_Reservation);
+        bool AcquireChunk(size_t minCapacity);
 
-            if (newChunk)
-            {
-                m_Chunks.push_back(newChunk);
-                m_Current = newChunk;
-            }
-        }
+        void UpdateStats(size_t delta);
 
-        void UpdateStats(size_t delta)
-        {
-            size_t prev = m_Used.fetch_add(delta);
-            size_t cur = prev + delta;
-            size_t oldhw = m_HighWater.load();
-            while (cur > oldhw && !m_HighWater.compare_exchange_weak(oldhw, cur)) {}
-        }
-
-        void RecalcStats()
-        {
-            m_UsedBeforeReset.store(m_Used.load());
-
-            size_t total = 0;
-            for (ArenaChunk* c : m_Chunks)
-            {
-                total += c->Used;
-            }
-
-            m_Used.store(total);
-            size_t hw = m_HighWater.load();
-            if (total > hw)
-            {
-                m_HighWater.store(total);
-            }
-        }
+        void RecalcStats();
 
     private:
         MainArena* m_GlobalArena = nullptr;
@@ -333,6 +173,7 @@ namespace HBL2
         std::vector<ArenaChunk*> m_Chunks;
         ArenaChunk* m_Current = nullptr;
         size_t m_NextChunkSize = 0;
+        bool m_Destructed = false;
 
         std::atomic<size_t> m_Used{ 0 };
         std::atomic<size_t> m_UsedBeforeReset{ 0 };

@@ -1,102 +1,159 @@
-// -----------------------------------------------------------------------------
-// Strict Preallocated Global Arena Allocator (v3) with per-reservation free lists
-// -----------------------------------------------------------------------------
-//
-// Main features & logic (concise):
-//  - Single contiguous preallocated region split into META and DATA areas.
-//  - All metadata (PoolReservation, ArenaChunk structs) placement-new'd in META.
-//  - All chunk payloads carved from DATA; no runtime malloc fallback (strict).
-//  - Per-reservation free lists for chunk reuse (mutex-protected).
-//  - Global free list for chunks without reservation.
-//  - Arena: ultra-fast bump allocator intended for single-thread use (no locks).
-//  - ScratchScope: thin RAII wrapper (mark/restore) for temporary allocations.
-//  - Debug statistics (ARENA_DEBUG) for meta/data carved bytes and per-arena usage.
-//  - Strict failure: allocation that cannot be satisfied throws std::bad_alloc.
-//
-// Usage:
-//  - #include "ArenaAllocator.hpp"
-//  - Create MainArena once (total_bytes, meta_bytes).
-//  - Optionally Reserve slices: global.Reserve("Render", size).
-//  - Create per-thread/subsystem Arena(global, config, reservation).
-//  - Use ScratchScope(arena) for temporary allocations.
-//
-// -----------------------------------------------------------------------------
-
 #pragma once
+
+#include "Base.h"
 
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <functional>
-#include <iostream>
 #include <mutex>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 #include <atomic>
 #include <new>
-#include <stdexcept>
-
-#define ARENA_DEBUG
+#include <algorithm>
+#include <thread>
 
 namespace HBL2
 {
     static constexpr size_t AlignUp(size_t value, size_t alignment)
     {
-        assert((alignment & (alignment - 1)) == 0);
+        HBL2_CORE_ASSERT((alignment & (alignment - 1)) == 0, "Bad alignment!");
         size_t mask = alignment - 1;
         return (value + mask) & ~mask;
     }
 
-    /**
-     * @brief Reservation of a contiguous slice in the global data region.
-     *
-     * PoolReservation is placement-new'd inside the META region. It holds a
-     * per-reservation free list and a mutex protecting that list and the reservation offset.
-     */
-    struct PoolReservation
+    static inline void CopyName(char* dst, size_t dstCap, std::string_view name)
     {
-        const char* Name = nullptr;
-        size_t Start;                 // offset within DATA region (relative to DATA base)
-        size_t Size;                  // total reserved bytes
-        size_t Offset;                // current carve offset inside reservation
-        std::vector<class ArenaChunk*> FreeChunks; // reservation-local free list
-        std::mutex FreeChunksMutex;   // protect FreeChunks and (optionally) Offset modifications
+        const std::size_t len = std::min(name.size(), dstCap - 1);
+        std::memcpy(dst, name.data(), len);
+        dst[len] = '\0';
+    }
 
-        PoolReservation()
-            : Name(), Start(SIZE_MAX), Size(0), Offset(0)
+    static constexpr uint32_t INVALID32 = 0xFFFFFFFFu;
+
+    static constexpr uint32_t NUM_TOP_BINS = 32;
+    static constexpr uint32_t BINS_PER_LEAF = 8;
+    static constexpr uint32_t TOP_BINS_INDEX_SHIFT = 3;
+    static constexpr uint32_t LEAF_BINS_INDEX_MASK = 0x7;
+    static constexpr uint32_t NUM_LEAF_BINS = NUM_TOP_BINS * BINS_PER_LEAF;
+
+    typedef uint32_t NodeIndex;
+
+    struct ArenaAllocation
+    {
+        static constexpr uint32_t NO_SPACE = 0xffffffff;
+
+        uint32_t offset = NO_SPACE;
+        NodeIndex metadata = NO_SPACE; // internal: node index
+    };
+
+    struct StorageReport
+    {
+        uint32_t totalFreeSpace;
+        uint32_t largestFreeRegion;
+    };
+
+    struct StorageReportFull
+    {
+        struct Region
         {
-            FreeChunks.reserve(256);
-        }
+            uint32_t size;
+            uint32_t count;
+        };
+
+        Region freeRegions[NUM_LEAF_BINS];
     };
 
     /**
-     * @brief A contiguous chunk used by an Arena to perform bump allocations.
+     * @brief ...
      *
-     * ArenaChunk structs are placement-new'd inside the META region. The Data pointer points
-     * into the DATA region and is owned by the chunk (no external free). Capacity is fixed.
+     * @note Reservations are NOT thread-safe for allocation.
+     */
+    struct PoolReservation
+    {
+        static constexpr std::size_t MaxName = 64;
+        char Name[MaxName]{};
+
+        // Reservation payload in DATA heap
+        size_t Start = SIZE_MAX; // offset within DATA region (relative to DATA base)
+        size_t Size = 0;         // total reserved bytes
+        size_t Offset = 0;       // bump offset inside reservation
+
+        std::atomic<uint32_t> RefCount{ 0 };
+
+        // Chunk struct reuse list (structs live in META)
+        std::vector<class ArenaChunk*> FreeChunks;
+        std::mutex FreeChunksMutex;
+
+        // Internal handle to free reservation backing memory from DATA heap.
+        // (User never touches this; required for Release().)
+        uint32_t BackingOffset = 0xFFFFFFFFu;
+        uint32_t BackingMeta = 0xFFFFFFFFu;
+
+        PoolReservation(std::string_view name)
+        {
+            FreeChunks.reserve(256);
+            CopyName(Name, MaxName, name);
+        }
+
+        bool IsLive() const { return Start != SIZE_MAX && Size != 0; }
+
+#ifdef ARENA_DEBUG
+        // Debug safety rails
+        std::atomic<uint32_t> LiveChunks{ 0 };
+        uint32_t Generation = 1;
+        std::thread::id OwnerThread{};
+        bool OwnerSet = false;
+
+        void ResetDebugState()
+        {
+            LiveChunks.store(0, std::memory_order_relaxed);
+            Generation++;
+            OwnerThread = {};
+            OwnerSet = false;
+        }
+
+        void DebugClaimThread()
+        {
+            if (!OwnerSet)
+            {
+                OwnerThread = std::this_thread::get_id();
+                OwnerSet = true;
+            }
+            else
+            {
+                HBL2_CORE_ASSERT(OwnerThread == std::this_thread::get_id(), "PoolReservation used from multiple threads");
+            }
+        }
+#endif
+    };
+
+    /**
+     * @brief ...
      */
     struct ArenaChunk
     {
-        uint8_t* Data;           // chunk payload pointer (in DATA region)
-        size_t Capacity;         // payload size
-        size_t Used;             // bump pointer
-        PoolReservation* Reservation; // owning reservation at allocation time
+        uint8_t* Data = nullptr;
+        size_t Capacity = 0;
+        size_t Used = 0;
+        PoolReservation* Reservation = nullptr;
+
+#ifdef ARENA_DEBUG
+        uint32_t ReservationGeneration = 0;
+#endif
 
         ArenaChunk(uint8_t* d, size_t c, PoolReservation* r)
             : Data(d), Capacity(c), Used(0), Reservation(r)
         {
+#ifdef ARENA_DEBUG
+            ReservationGeneration = r ? r->Generation : 0;
+#endif
         }
 
-        /**
-         * @brief Check if this chunk can satisfy an allocation of @p size with @p alignment.
-         *
-         * @param size Allocation size in bytes.
-         * @param alignment Required alignment.
-         * @return true when allocation fits, false otherwise.
-         */
         inline bool HasSpace(size_t size, size_t alignment) const
         {
             uintptr_t base = reinterpret_cast<uintptr_t>(Data);
@@ -105,435 +162,136 @@ namespace HBL2
             size_t offset = static_cast<size_t>(aligned - base);
             return (offset + size) <= Capacity;
         }
+
+#ifdef ARENA_DEBUG
+        inline void DebugValidateLive() const
+        {
+            if (!Reservation) return;
+            HBL2_CORE_ASSERT(Reservation->IsLive(), "Using a chunk from a released reservation");
+            HBL2_CORE_ASSERT(ReservationGeneration == Reservation->Generation, "Using a chunk from an old reservation generation");
+        }
+#endif
     };
 
     /**
-     * @brief MainArena owns the contiguous preallocated memory and metadata region.
+     * @brief ...
      *
-     * The buffer is split into META and DATA regions. All metadata objects (reservations,
-     * chunk structs) are placement-new'd into META. Chunk payloads are carved from DATA.
-     *
-     * Strict policy: no malloc fallback. If meta or data region cannot satisfy a request,
-     * functions throw std::bad_alloc.
+     * @note Inspired by Sebastian Aaltonens' OffsetAllocator and adjusted to use pointers API (https://github.com/sebbbi/OffsetAllocator).
      */
-    class MainArena
+    class HBL2_API MainArena
     {
     public:
         MainArena() = default;
+        MainArena(size_t totalBytes, size_t metaBytes);
+
+        ~MainArena();
+
+        void Initialize(size_t totalBytes, size_t metaBytes);
 
         /**
-         * @brief Construct a MainArena with a contiguous buffer.
+         * @brief Returns a reservation of the specified size.
          *
-         * @param totalBytes Total bytes to reserve for META + DATA.
-         * @param metaBytes  Bytes reserved for META (must be >0 and < total_bytes).
-         */
-        MainArena(size_t totalBytes, size_t metaBytes)
-        {
-            Initialize(totalBytes, metaBytes);
-        }
-
-        /**
-         * @brief Destroy MainArena, call destructors for placement-new'd metadata.
-         */
-        ~MainArena()
-        {
-            // Destroy reservations (placement-new)
-            for (auto& kv : m_Reservations)
-            {
-                PoolReservation* r = kv.second;
-                if (r)
-                {
-                    r->~PoolReservation();
-                }
-            }
-            m_Reservations.clear();
-
-            // Destroy chunk structs in global free list (placement-new)
-            {
-                std::lock_guard<std::mutex> lk(m_ChunkFreeListMutex);
-                for (ArenaChunk* ch : m_ChunkFreeList)
-                {
-                    if (ch)
-                    {
-                        ch->~ArenaChunk();
-                    }
-                }
-                m_ChunkFreeList.clear();
-            }
-
-            if (m_Mem)
-            {
-                std::free(m_Mem);
-                m_Mem = nullptr;
-            }
-        }
-
-        /**
-         * @brief Construct a MainArena with a contiguous buffer.
+         * @note Reservations are NOT thread-safe for allocation. Should only be used by one thread.
          *
-         * @param totalBytes Total bytes to reserve for META + DATA.
-         * @param metaBytes  Bytes reserved for META (must be >0 and < totalBytes).
+         * @param name Debug name.
+         * @param bytes Number of bytes that reservation can hold.
+         * @return A pointer to the reservation.
          */
-        void Initialize(size_t totalBytes, size_t metaBytes)
-        {
-            m_TotalBytes = totalBytes;
-
-            if (metaBytes == 0 || metaBytes >= totalBytes)
-            {
-                HBL2_CORE_FATAL("MainArena ERROR: meta bytes must be > 0 and <= than totalBytes.");
-                exit(-1);
-            }
-
-            m_Mem = static_cast<uint8_t*>(std::malloc(m_TotalBytes));
-            if (!m_Mem)
-            {
-                HBL2_CORE_FATAL("MainArena ERROR: could not allocate {} bytes.", m_TotalBytes);
-                exit(-1);
-            }
-
-            m_MetaBase = m_Mem;
-            size_t metaRegionActual = AlignUp(metaBytes, alignof(std::max_align_t));
-            m_DataBase = m_Mem + metaRegionActual;
-            m_MetaSize = metaRegionActual;
-            m_DataSize = m_TotalBytes - metaRegionActual;
-
-            m_MetaOffset = 0;
-            m_DataOffset = 0;
-
-            m_MetaCarved.store(0);
-            m_DataCarved.store(0);
-
-            m_Reservations.max_load_factor(0.75f);
-            m_Reservations.reserve(64);
-
-            m_ChunkFreeList.reserve(512);
-        }
+        PoolReservation* Reserve(std::string_view name, size_t bytes);
 
         /**
-         * @brief Reserve a named slice of the global DATA region.
+         * @brief Releases the memory of the reservation and appends it in the free list.
          *
-         * @param name Human-readable reservation name.
-         * @param bytes Number of bytes to reserve.
-         * @return Pointer to the PoolReservation (placement-new'd in META).
-         */
-        PoolReservation* Reserve(std::string_view name, size_t bytes)
-        {
-            // Lock meta for the entire reservation creation + map insertion.
-            std::unique_lock<std::mutex> lk_meta(m_MetaMutex);
-
-            // Check if it already exists (now safe).
-            auto it = m_Reservations.find(name);
-            if (it != m_Reservations.end())
-            {
-                return it->second;
-            }
-
-            // Intern name into META
-            const char* internedName = InternString(name.data(), name.size());
-            if (!internedName)
-            {
-                HBL2_CORE_ERROR("MainArena ERROR: Could not allocate string in meta region, reservation {} failed.", name.data());
-                return nullptr;
-            }
-
-            void* metaPtr = AllocMetaNoLock(sizeof(PoolReservation), alignof(PoolReservation));
-            if (!metaPtr)
-            {
-                HBL2_CORE_ERROR("MainArena ERROR: Meta region exhausted when creating reservation '{}'", name.data());
-                return nullptr;
-            }
-
-            PoolReservation* r = ::new (metaPtr) PoolReservation();
-            r->Name = internedName;
-
-            // Carve DATA region under data lock.
-            {
-                std::lock_guard<std::mutex> lk_data(m_DataMutex);
-                size_t alignedDataOff = AlignUp(m_DataOffset, alignof(std::max_align_t));
-                if (alignedDataOff + bytes > m_DataSize)
-                {
-                    r->~PoolReservation();
-                    HBL2_CORE_ERROR("MainArena ERROR: Data region insufficient for reservation '{}' ({} bytes)", name.data(), bytes);
-                    return nullptr;
-                }
-
-                r->Start = alignedDataOff;
-                r->Size = bytes;
-                r->Offset = 0;
-
-                m_DataOffset = alignedDataOff + bytes;
-#ifdef ARENA_DEBUG
-                m_DataCarved.fetch_add(bytes);
-#endif
-            }
-
-            // Insert into map while meta lock still held.
-            m_Reservations.emplace(r->Name, r);
-
-#ifdef ARENA_DEBUG
-            m_MetaCarved.fetch_add(sizeof(PoolReservation));
-#endif
-            return r;
-        }
-
-
-        /**
-         * @brief Get an existing reservation by name.
+         * @note Caller must guarantee no live Arenas/chunks still reference this reservation.
          *
-         * @param name Reservation name.
-         * @return PoolReservation* or nullptr if not found.
+         * @param r The reservation to release.
          */
-        PoolReservation* GetReservation(const std::string& name)
-        {
-            std::lock_guard<std::mutex> lk(m_MetaMutex);
-            auto it = m_Reservations.find(name);
-            return (it == m_Reservations.end()) ? nullptr : it->second;
-        }
+        void TryRelease(PoolReservation* r);
 
-        /**
-         * @brief Carve bytes from reservation or global DATA region.
-         *
-         * Thread-safe. Throws std::bad_alloc if not enough space.
-         *
-         * @param bytes Number of bytes requested.
-         * @param r Optional reservation to prefer.
-         * @return Pointer to carved payload in DATA region.
-         */
-        uint8_t* CarveData(size_t bytes, PoolReservation* r = nullptr)
-        {
-            std::lock_guard<std::mutex> lk(m_DataMutex);
+        void Reset();
 
-            if (r)
-            {
-                size_t aligned = AlignUp(r->Offset, alignof(std::max_align_t));
-                if (aligned + bytes <= r->Size)
-                {
-                    uint8_t* p = m_DataBase + r->Start + aligned;
-                    r->Offset = aligned + bytes;
-#ifdef ARENA_DEBUG
-                    m_DataCarved.fetch_add(bytes);
-#endif
-                    return p;
-                }
-                // fall-through to global carve
-            }
+        // Strict reservation carve (used for reservation chunk payloads)
+        uint8_t* CarveData(size_t bytes, PoolReservation* r);
 
-            size_t alignedGlobal = AlignUp(m_DataOffset, alignof(std::max_align_t));
-            if (alignedGlobal + bytes <= m_DataSize)
-            {
-                uint8_t* p = m_DataBase + alignedGlobal;
-                m_DataOffset = alignedGlobal + bytes;
-#ifdef ARENA_DEBUG
-                m_DataCarved.fetch_add(bytes);
-#endif
-                return p;
-            }
+        void* AllocMetaNoLock(size_t bytes, size_t alignment = alignof(std::max_align_t));
 
-            HBL2_CORE_ERROR("GlobalArena ERROR: Data region exhausted (requested {} bytes)", bytes);
-            return nullptr;
-        }
+        void* AllocMeta(size_t bytes, size_t alignment = alignof(std::max_align_t));
 
-        /**
-         * @brief Allocate @p bytes from META region for placement-new use.
-         *
-         * @param bytes Number of bytes to allocate.
-         * @param alignment Required alignment.
-         * @return pointer in META region or nullptr when META exhausted.
-         */
-        void* AllocMetaNoLock(size_t bytes, size_t alignment = alignof(std::max_align_t))
-        {
-            size_t aligned = AlignUp(m_MetaOffset, alignment);
-            if (aligned + bytes <= m_MetaSize)
-            {
-                void* p = m_MetaBase + aligned;
-                m_MetaOffset = aligned + bytes;
-#ifdef ARENA_DEBUG
-                m_MetaCarved.fetch_add(bytes);
-#endif
-                return p;
-            }
-            return nullptr;
-        }
+        ArenaChunk* AllocateChunkStruct(size_t payload_capacity, PoolReservation* reservation);
 
-        /**
-         * @brief Allocate @p bytes from META region for placement-new use.
-         *
-         * @param bytes Number of bytes to allocate.
-         * @param alignment Required alignment.
-         * @return pointer in META region or nullptr when META exhausted.
-         */
-        void* AllocMeta(size_t bytes, size_t alignment = alignof(std::max_align_t))
-        {
-            std::lock_guard<std::mutex> lk(m_MetaMutex);
-            return AllocMetaNoLock(bytes, alignment);
-        }
+        void FreeChunkStruct(ArenaChunk* ch);
 
-        /**
-         * @brief Allocate or reuse an ArenaChunk struct plus payload.
-         *
-         * Preference order:
-         *  1) reservation free list (if reservation provided)
-         *  2) global free list
-         *  3) allocate new chunk struct in META and carve payload in DATA
-         *
-         * @param payload_capacity desired chunk capacity
-         * @param reservation optional reservation to prefer
-         * @return ArenaChunk* (placement-new'd in META)
-         */
-        ArenaChunk* AllocateChunkStruct(size_t payload_capacity, PoolReservation* reservation)
-        {
-            // Reservation-local reuse
-            if (reservation)
-            {
-                std::lock_guard<std::mutex> lkRes(reservation->FreeChunksMutex);
-                for (size_t i = 0; i < reservation->FreeChunks.size(); ++i)
-                {
-                    ArenaChunk* candidate = reservation->FreeChunks[i];
-                    if (candidate->Capacity >= payload_capacity)
-                    {
-                        reservation->FreeChunks[i] = reservation->FreeChunks.back();
-                        reservation->FreeChunks.pop_back();
-                        candidate->Used = 0;
-                        candidate->Reservation = reservation;
-                        return candidate;
-                    }
-                }
-            }
+        bool AllocateReservationBacking(PoolReservation* r, size_t bytes);
 
-            // Global free list reuse
-            {
-                std::lock_guard<std::mutex> lkGlobal(m_ChunkFreeListMutex);
-                for (size_t i = 0; i < m_ChunkFreeList.size(); ++i)
-                {
-                    ArenaChunk* candidate = m_ChunkFreeList[i];
-                    if (candidate->Capacity >= payload_capacity)
-                    {
-                        m_ChunkFreeList[i] = m_ChunkFreeList.back();
-                        m_ChunkFreeList.pop_back();
-                        candidate->Used = 0;
-                        candidate->Reservation = reservation;
-                        return candidate;
-                    }
-                }
-            }
+        // Debug helpers
+        inline size_t MetaCarved() const { return m_MetaCarved.load(std::memory_order_relaxed); }
+        inline size_t DataCarved() const { return m_DataCarved.load(std::memory_order_relaxed); }
+        inline size_t MetaSize() const { return m_MetaSize; }
+        inline size_t DataSize() const { return m_DataSize; }
+        inline size_t DataInUse() const { return m_DataInUse.load(std::memory_order_relaxed); }
+        inline uint8_t* DataBase() const { return m_DataBase; }
+        inline float GetFullPercentage() { const float denom = (float)DataSize(); return denom > 0.0f ? (DataInUse() / denom * 100.f) : 0.0f; }
 
-            // Allocate new chunk struct in META region
-            void* structMem = AllocMeta(sizeof(ArenaChunk), alignof(ArenaChunk));
-            if (!structMem)
-            {
-                HBL2_CORE_ERROR("GlobalArena ERROR: meta region exhausted while allocating ArenaChunk");
-                return nullptr;
-            }
-
-            // Carve payload.
-            uint8_t* payload = CarveData(payload_capacity, reservation);
-
-            if (!payload)
-            {
-                return nullptr;
-            }
-
-            // Construct chunk in META
-            ArenaChunk* ch = ::new (structMem) ArenaChunk(payload, payload_capacity, reservation);
-            return ch;
-        }
-
-        /**
-         * @brief Return a chunk to appropriate free list.
-         *
-         * If the chunk has a Reservation, push into that reservation's FreeChunks,
-         * otherwise push into the global chunk free list.
-         *
-         * @param ch ArenaChunk* to return.
-         */
-        void FreeChunkStruct(ArenaChunk* ch)
-        {
-            if (!ch)
-            {
-                return;
-            }
-
-            ch->Used = 0;
-
-            if (ch->Reservation)
-            {
-                std::lock_guard<std::mutex> lkRes(ch->Reservation->FreeChunksMutex);
-                ch->Reservation->FreeChunks.push_back(ch);
-            }
-            else
-            {
-                std::lock_guard<std::mutex> lkGlobal(m_ChunkFreeListMutex);
-                m_ChunkFreeList.push_back(ch);
-            }
-        }
-
-        /**
-         * @brief META carved bytes (debug).
-         */
-        size_t MetaCarved() const { return m_MetaCarved.load(); }
-
-        /**
-         * @brief DATA carved bytes (debug).
-         */
-        size_t DataCarved() const { return m_DataCarved.load(); }
-
-        /**
-         * @brief META region size (debug).
-         */
-        size_t MetaSize() const { return m_MetaSize; }
-
-        /**
-         * @brief DATA region size (debug).
-         */
-        size_t DataSize() const { return m_DataSize; }
-
-        uint8_t* DataBase() const { return m_DataBase; }
-
-        float GetFullPercentage()
-        {
-            return ((float)m_DataOffset / (float)m_DataSize) * 100.f;
-        }
-
+        StorageReport GetStorageReport() const;
+        StorageReportFull GetStorageReportFull() const;
     private:
-        const char* InternString(const char* str, size_t len)
-        {
-            // +1 for null terminator
-            char* mem = static_cast<char*>(AllocMetaNoLock(len + 1, alignof(char)));
-            if (!mem)
-            {
-                return nullptr;
-            }
-
-            std::memcpy(mem, str, len);
-            mem[len] = '\0';
-            return mem;
-        }
-
-    private:
+        // Raw memory
         uint8_t* m_Mem = nullptr;
+        size_t   m_TotalBytes = 0;
 
-        // META region
+        // META region (monotonic)
         uint8_t* m_MetaBase = nullptr;
-        size_t  m_MetaSize = 0;
-        size_t  m_MetaOffset = 0;
+        size_t   m_MetaSize = 0;
+        size_t   m_MetaOffset = 0;
         std::mutex m_MetaMutex;
 
-        // DATA region
+        // DATA region base/size
         uint8_t* m_DataBase = nullptr;
-        size_t  m_DataSize = 0;
-        size_t  m_DataOffset = 0;
-        std::mutex m_DataMutex;
+        size_t   m_DataSize = 0;
 
-        // Free-lists
-        std::mutex m_ChunkFreeListMutex;
-        std::vector<ArenaChunk*> m_ChunkFreeList;
+        // Reservations array
+        std::vector<PoolReservation*> m_Reservations;
+        std::vector<PoolReservation*> m_FreeReservations;
 
-        // Reservations map (name -> PoolReservation*)
-        std::unordered_map<std::string_view, PoolReservation*> m_Reservations;
-
-        size_t m_TotalBytes = 0;
-
+        // Debug counters (kept consistent in all builds)
         std::atomic<size_t> m_MetaCarved{ 0 };
+        std::atomic<size_t> m_DataInUse{ 0 };
         std::atomic<size_t> m_DataCarved{ 0 };
+
+        // Anonymous reservation counter
+        std::atomic<uint64_t> m_AnonCounter{ 0 };
+
+        // DATA heap metadata/state
+        std::mutex m_DataHeapMutex;
+
+        // 
+        uint32_t InsertNodeIntoBin(uint32_t size, uint32_t dataOffset);
+        void RemoveNodeFromBin(uint32_t nodeIndex);
+        ArenaAllocation IAllocate(uint32_t byteSize);
+        void IFree(ArenaAllocation allocation);
+
+        struct Node
+        {
+            static constexpr NodeIndex Unused = 0xffffffff;
+
+            uint32_t DataOffset = 0;
+            uint32_t DataSize = 0;
+            NodeIndex BinListPrev = Unused;
+            NodeIndex BinListNext = Unused;
+            NodeIndex NeighborPrev = Unused;
+            NodeIndex NeighborNext = Unused;
+            bool Used = false; // TODO: Merge as bit flag
+        };
+
+        uint32_t m_MaxAllocs = 0;
+        uint32_t m_FreeStorage = 0;
+
+        uint32_t m_UsedBinsTop = 0;
+        uint8_t m_UsedBins[NUM_TOP_BINS] = { 0 };
+        NodeIndex m_BinIndices[NUM_LEAF_BINS] = { 0 };
+
+        Node* m_Nodes = nullptr;
+        NodeIndex* m_FreeNodes = nullptr;
+        uint32_t m_FreeOffset = 0;
     };
 }

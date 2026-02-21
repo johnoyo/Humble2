@@ -55,8 +55,12 @@ namespace HBL2
 		void clear()
 		{
 			if constexpr (!std::is_trivially_destructible<T>())
+			{
 				for (T* e = reinterpret_cast<T*>(m_Elements), *end = e + m_Size; e < end; ++e)
+				{
 					e->~T();
+				}
+			}
 			m_Size = 0;
 		}
 

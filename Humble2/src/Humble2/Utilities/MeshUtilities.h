@@ -44,14 +44,15 @@ namespace HBL2
 
 	private:
 		MeshUtilities();
+
 		UFbxLoader* m_UFbxLoader = nullptr;
 		FastGltfLoader* m_FastGltfLoader = nullptr;
 
-		DArray<Handle<Asset>> m_BuiltInMeshAssets = MakeEmptyDArray<Handle<Asset>>();
-		HMap<BuiltInMesh, Handle<Mesh>> m_LoadedBuiltInMeshes = MakeEmptyHMap<BuiltInMesh, Handle<Mesh>>();
-
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_Arena;
+
+		DArray<Handle<Asset>> m_BuiltInMeshAssets = MakeEmptyDArray<Handle<Asset>>();
+		HMap<BuiltInMesh, Handle<Mesh>> m_LoadedBuiltInMeshes = MakeEmptyHMap<BuiltInMesh, Handle<Mesh>>();
 
 		static MeshUtilities* s_Instance;
 	};

@@ -311,11 +311,12 @@ namespace HBL2
 	private:
 		JobContext m_ResourceJobCtx;
 		Pool<Asset, Asset> m_AssetPool;
-		HMap<UUID, Handle<Asset>> m_RegisteredAssetMap = MakeEmptyHMap<UUID, Handle<Asset>>();
-		DArray<Handle<Asset>> m_RegisteredAssets = MakeEmptyDArray<Handle<Asset>>();
 
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_PoolArena;
 		PoolArena m_ResourceTaskPoolArena;
+
+		HMap<UUID, Handle<Asset>> m_RegisteredAssetMap = MakeEmptyHMap<UUID, Handle<Asset>>();
+		DArray<Handle<Asset>> m_RegisteredAssets = MakeEmptyDArray<Handle<Asset>>();
 	};
 }

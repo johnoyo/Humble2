@@ -99,13 +99,13 @@ namespace HBL2
 		ReflectionData Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData, const Span<uint32_t>& computeShaderData);
 
 	private:
+		PoolReservation* m_Reservation = nullptr;
+		Arena m_Arena;
+
 		HMap<std::string, ReflectionData> m_ShaderReflectionData = MakeEmptyHMap<std::string, ReflectionData>();
 		HMap<BuiltInShader, Handle<Shader>> m_Shaders = MakeEmptyHMap<BuiltInShader, Handle<Shader>>();
 		HMap<BuiltInShader, Handle<BindGroupLayout>> m_ShaderLayouts = MakeEmptyHMap<BuiltInShader, Handle<BindGroupLayout>>();
 		DArray<Handle<Asset>> m_ShaderAssets = MakeEmptyDArray<Handle<Asset>>();
-
-		PoolReservation* m_Reservation = nullptr;
-		Arena m_Arena;
 
 		static ShaderUtilities* s_Instance;
 	};

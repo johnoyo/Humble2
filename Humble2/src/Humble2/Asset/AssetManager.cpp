@@ -14,9 +14,11 @@ namespace HBL2
 
 		m_AssetPool.Initialize(m_Spec.Assets);
 
-		uint32_t byteSize = (sizeof(UUID) + 2 * sizeof(Handle<Asset>)) * (2 * m_Spec.Assets);
-		constexpr uint32_t resourceTasksByteSize = 6_B * 1024;
-		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", byteSize + resourceTasksByteSize);
+		uint32_t byteSize = Allocator::CalculateSoAByteSize<UUID, Handle<Asset>, Handle<Asset>>(2 * m_Spec.Assets) * 2;
+		constexpr size_t resourceTasksReserveBytes = 16_KB;
+		constexpr size_t resourceTasksByteSize = 6_B * 1024;
+
+		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", byteSize + resourceTasksReserveBytes);
 		m_PoolArena.Initialize(&Allocator::Arena, byteSize, m_Reservation);
 		m_ResourceTaskPoolArena.Initialize(&Allocator::Arena, resourceTasksByteSize, 6, m_Reservation);
 

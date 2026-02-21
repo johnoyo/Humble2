@@ -40,8 +40,9 @@ namespace HBL2
                 m_Size = 32;
             }
 
-            uint32_t byteSize = (sizeof(THot) + sizeof(TCold) + 2 * sizeof(std::atomic<uint16_t>)) * m_Size;
-            m_Reservation = Allocator::Arena.Reserve(std::string("SplitPool-") + typeid(THot).name() + typeid(TCold).name(), byteSize);
+            size_t byteSize = Allocator::CalculateSoAByteSize<THot, TCold, std::atomic<uint16_t>, std::atomic<uint16_t>>(m_Size);
+
+            m_Reservation = Allocator::Arena.Reserve("SplitPoolReservation", byteSize);
             m_PoolArena.Initialize(&Allocator::Arena, byteSize, m_Reservation);
 
             m_HotData = (THot*)m_PoolArena.Alloc(sizeof(THot) * m_Size, alignof(THot));

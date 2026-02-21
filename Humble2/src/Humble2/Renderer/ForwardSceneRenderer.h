@@ -89,6 +89,9 @@ namespace HBL2
 		void CreateAlignedMatrixArray(SceneRenderData* sceneRenderData, const glm::mat4* matrices, size_t count, uint32_t alignedSize);
 
 	private:
+		PoolReservation* m_Reservation = nullptr;
+		Arena m_Arena;
+
 		ResourceManager* m_ResourceManager = nullptr;
 		UniformRingBuffer* m_UniformRingBuffer = nullptr;
 
@@ -151,8 +154,5 @@ namespace HBL2
 		Handle<Buffer> m_QuadVertexBuffer;
 		Handle<Material> m_QuadMaterial;
 		Handle<Shader> m_PresentShader;		
-
-		PoolReservation* m_Reservation = nullptr;
-		Arena m_Arena;
 	};
 }

@@ -21,16 +21,21 @@ namespace HBL2
 {
     Scene::Scene(const SceneDescriptor&& desc) : m_Name(desc.name)
     {
-        m_CmdBuffer = new StructuralCommandBuffer;
-        m_CmdBuffer->Initialize();
+        m_Reservation = Allocator::Arena.Reserve("ScenePool", 32_MB);
+        m_SceneArena.Initialize(&Allocator::Arena, 16_MB, m_Reservation);
+
+        m_Systems = MakeDArray<ISystem*>(m_SceneArena, 64);
+        m_CoreSystems = MakeDArray<ISystem*>(m_SceneArena, 64);
+        m_RuntimeSystems = MakeDArray<ISystem*>(m_SceneArena, 64);
+        m_EntityMap = MakeHMap<UUID, Entity>(m_SceneArena, 32768);
+
+        m_CmdBuffer = m_SceneArena.AllocConstruct<StructuralCommandBuffer>();
+        m_CmdBuffer->Initialize(m_Reservation);
     }
 
     Scene* Scene::Copy(Scene* other)
     {
         HBL2_FUNC_PROFILE();
-
-        // NOTE: We need to clear the CMD before copy.
-        other->ClearStructuralCommandBuffer();
 
         Scene* newScene = new Scene({ .name = other->m_Name + "(Clone)"});
 
@@ -104,19 +109,17 @@ namespace HBL2
         copy_component(Component::PrefabEntity{});
         copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
-
         // Do not copy the TerrainChunk component
-        // copy_component(Component::TerrainChunk{});
 
         // Clone systems.
-        dst->RegisterSystem(new HierachySystem);
-        dst->RegisterSystem(new CameraSystem, SystemType::Runtime);
-        dst->RegisterSystem(new TerrainSystem);
-        dst->RegisterSystem(new RenderingSystem);
-        dst->RegisterSystem(new SoundSystem, SystemType::Runtime);
-        dst->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
-        dst->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
-        dst->RegisterSystem(new AnimationCurveSystem);
+        dst->RegisterSystem<HierachySystem>();
+        dst->RegisterSystem<CameraSystem>(SystemType::Runtime);
+        dst->RegisterSystem<TerrainSystem>();
+        dst->RegisterSystem<RenderingSystem>();
+        dst->RegisterSystem<SoundSystem>(SystemType::Runtime);
+        dst->RegisterSystem<Physics2dSystem>(SystemType::Runtime);
+        dst->RegisterSystem<Physics3dSystem>(SystemType::Runtime);
+        dst->RegisterSystem<AnimationCurveSystem>();
 
         // Register any user systems to new scene.
         for (ISystem* system : src->m_RuntimeSystems)
@@ -282,7 +285,7 @@ namespace HBL2
         {
             if (system != nullptr)
             {
-                delete system;
+                system->~ISystem();
             }
         }
 
@@ -290,9 +293,11 @@ namespace HBL2
         m_CoreSystems.clear();
         m_RuntimeSystems.clear();
 
-        m_CmdBuffer->ClearAll();
-        delete m_CmdBuffer;
-        m_CmdBuffer = nullptr;
+        m_CmdBuffer->Clear();
+        m_SceneArena.Destruct(m_CmdBuffer);
+
+        m_SceneArena.Destroy();
+        m_Reservation = nullptr;
     }
 
     Entity Scene::CreateEntity()
@@ -416,7 +421,7 @@ namespace HBL2
             }
         }
 
-        delete system;
+        system->~ISystem();
     }
 
     void Scene::RegisterSystem(ISystem* system, SystemType type)
@@ -437,16 +442,6 @@ namespace HBL2
             m_RuntimeSystems.push_back(system);
             break;
         }
-    }
-
-    void Scene::InitializeStructuralCommandBuffer()
-    {
-        m_CmdBuffer->Initialize();
-    }
-
-    void Scene::ClearStructuralCommandBuffer()
-    {
-        m_CmdBuffer->ClearAll();
     }
 
     void Scene::InternalDestroyEntity(Entity entity, bool isRootCall)

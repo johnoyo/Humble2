@@ -24,7 +24,6 @@ namespace HBL2
 			{
 				HBL2_CORE_INFO("EditorPanelSystem::SceneChangeEvent");
 
-				m_ActiveScene = ResourceManager::Instance->GetScene(e.NewScene);
 
 				// Delete temporary play mode scene.
 				Scene* currentScene = ResourceManager::Instance->GetScene(e.OldScene);
@@ -35,15 +34,11 @@ namespace HBL2
 
 					// Delete play mode scene.
 					ResourceManager::Instance->DeleteScene(e.OldScene);
-
-					if (m_ActiveScene != nullptr && m_ActiveScene->GetName().find("(Clone)") == std::string::npos)
-					{
-						m_ActiveScene->InitializeStructuralCommandBuffer();
-					}
 				}
 
 				// Clear selected entity
 				HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
+				m_ActiveScene = ResourceManager::Instance->GetScene(e.NewScene);
 
 				if (Context::Mode == Mode::Runtime)
 				{

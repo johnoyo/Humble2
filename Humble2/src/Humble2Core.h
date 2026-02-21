@@ -29,7 +29,8 @@
 #define REGISTER_HBL2_SYSTEM(TYPE)                                                                                              \
     extern "C" __declspec(dllexport) void RegisterSystem_##TYPE(HBL2::Scene* ctx)                                               \
     {                                                                                                                           \
-        HBL2::ISystem* new##TYPE = new TYPE;                                                                                    \
+        void* mem = ctx->GetArena()->Alloc(sizeof(TYPE), alignof(TYPE));                                                        \
+        TYPE* new##TYPE = ::new (mem) TYPE();                                                                                   \
         new##TYPE->Name = #TYPE;                                                                                                \
         ctx->RegisterSystem(new##TYPE, HBL2::SystemType::User);                                                                 \
     }                                                                                                                           \

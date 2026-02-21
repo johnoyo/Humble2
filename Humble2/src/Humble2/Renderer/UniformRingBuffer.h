@@ -11,8 +11,8 @@ namespace HBL2
 	template<typename T>
 	struct Allocation
 	{
-		T* Data;
-		uint32_t Offset;
+		T* Data = nullptr;
+		uint32_t Offset = 0;
 	};
 
 	class HBL2_API UniformRingBuffer
@@ -27,7 +27,8 @@ namespace HBL2
 
 			if (m_CurrentOffset + alignedStride > m_BufferSize)
 			{
-				ReAllocate();
+				HBL2_CORE_FATAL("UniformRingBuffer ran out of space, consider increasing it through the project settings.");
+				return {};
 			}
 
 			uint32_t blockIndex = m_CurrentOffset;
@@ -47,9 +48,6 @@ namespace HBL2
 		void Free();
 
 		static uint32_t CeilToNextMultiple(uint32_t value, uint32_t step);
-
-	private:
-		void ReAllocate();
 
 	private:
 		Handle<Buffer> m_Buffer;

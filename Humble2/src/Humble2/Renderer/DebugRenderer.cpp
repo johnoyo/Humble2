@@ -17,9 +17,8 @@ namespace HBL2
 
 	void DebugRenderer::Initialize()
 	{
-		// We need 48MB for the vector verticesn since we have 1M max vertices per primitives, each being 16MB.
+		// We need 48MB for the vector verticesn since we have 500K max vertices per primitives, each being 8MB, but with each of them for each frame.
 		// The rest is used for the draw list, which only requires a couple hundred bytes but we round up.
-		// If memory usage becomes a problem, we can shave a couple dozen MBs here.
 		m_Reservation = Allocator::Arena.Reserve("DebugRendererPool", 64_MB);
 		m_Arena.Initialize(&Allocator::Arena, 64_MB, m_Reservation);
 
@@ -340,8 +339,6 @@ namespace HBL2
 
 		s_SphereIndices.clear();
 		s_SphereVerts.clear();
-
-		m_Arena.Reset();
 	}
 
 	void DebugRenderer::DrawLine(const glm::vec3& from, const glm::vec3& to)
@@ -468,7 +465,7 @@ namespace HBL2
 	
 	void DebugRenderer::InitSphereMesh(int segments, int rings)
 	{
-		const float PI = glm::pi<float>();
+		constexpr float PI = glm::pi<float>();
 
 		s_SphereVerts.clear();
 		s_SphereIndices.clear();
