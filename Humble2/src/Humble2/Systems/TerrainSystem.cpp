@@ -854,7 +854,7 @@ namespace HBL2
 		meshComponent.Material = terrain.Material;
 		meshComponent.Mesh = {};
 
-		auto& link = m_Context->AddComponent<Component::Link>(terrainChunk);
+		auto& link = m_Context->GetComponent<Component::Link>(terrainChunk);
 		link.Parent = parent;
 
 		auto& chunk = m_Context->AddComponent<Component::TerrainChunk>(terrainChunk);

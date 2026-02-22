@@ -34,6 +34,7 @@ Entities:
     Component::PrefabInstance:
       Id: 1315481153566395777
       Version: 1
+      Override: true
     Component::Link:
       Parent: 0
       Children:
