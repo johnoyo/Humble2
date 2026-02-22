@@ -394,7 +394,7 @@ namespace HBL2
 		}
 
 		auto& prefabInstance = scene->GetOrAddComponent<Component::PrefabInstance>(entity);
-		prefabInstance.Id = prefab->GetBaseEntityUUID();
+		prefabInstance.Id = prefab->GetUUID();
 		prefabInstance.Version = prefab->GetVersion();
 
 		return true;

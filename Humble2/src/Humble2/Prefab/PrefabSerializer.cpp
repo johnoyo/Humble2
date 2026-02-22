@@ -160,31 +160,34 @@ namespace HBL2
 		// Create the prefab entities and their components.
 		const auto& prefabNode = data["Prefab"];
 
-		auto components = prefabNode[0]["User Components"];
-
-		// If we have user defined scripts but no dll exists, build it.
-		if (components.size() > 0 && !BuildEngine::Instance->Exists())
+		// Register user defined components.
 		{
-			HBL2_CORE_TRACE("No user defined scripts dll found for prefab: {}, building one now...", m_Context->m_UUID);
-			BuildEngine::Instance->Build();
-		}
+			auto components = prefabNode[0]["User Components"];
 
-		if (components)
-		{
-			HBL2_CORE_TRACE("Deserializing user components of prefab: {0}", m_Context->m_UUID);
-
-			for (const auto& componentUUID : components)
+			// If we have user defined scripts but no dll exists, build it.
+			if (components.size() > 0 && !BuildEngine::Instance->Exists())
 			{
-				Handle<Script> componentScriptHandle = AssetManager::Instance->GetAsset<Script>(componentUUID.as<UUID>());
-				if (componentScriptHandle.IsValid())
+				HBL2_CORE_TRACE("No user defined scripts dll found for prefab: {}, building one now...", m_Context->m_UUID);
+				BuildEngine::Instance->Build();
+			}
+
+			if (components)
+			{
+				HBL2_CORE_TRACE("Deserializing user components of prefab: {0}", m_Context->m_UUID);
+
+				for (const auto& componentUUID : components)
 				{
-					Script* componentScript = ResourceManager::Instance->GetScript(componentScriptHandle);
-					BuildEngine::Instance->RegisterComponent(componentScript->Name, prefabSubScene);
-					HBL2_CORE_TRACE("Successfully resgistered user component: {0}", componentScript->Name);
-				}
-				else
-				{
-					HBL2_CORE_ERROR("Could not load component with UUID: {}", componentUUID.as<UUID>());
+					Handle<Script> componentScriptHandle = AssetManager::Instance->GetAsset<Script>(componentUUID.as<UUID>());
+					if (componentScriptHandle.IsValid())
+					{
+						Script* componentScript = ResourceManager::Instance->GetScript(componentScriptHandle);
+						BuildEngine::Instance->RegisterComponent(componentScript->Name, prefabSubScene);
+						HBL2_CORE_TRACE("Successfully resgistered user component: {0}", componentScript->Name);
+					}
+					else
+					{
+						HBL2_CORE_ERROR("Could not load component with UUID: {}", componentUUID.as<UUID>());
+					}
 				}
 			}
 		}

@@ -4,6 +4,7 @@
 #include "Utilities\YamlUtilities.h"
 #include "Utilities\PrefabUtilities.h"
 #include "Utilities\FileDialogs.h"
+#include "Prefab\PrefabSerializer.h"
 
 namespace HBL2
 {
@@ -308,7 +309,23 @@ namespace HBL2
 					// The serialization code will add the PrefabInstance component with the correct values, but in the prefab sub-scene.
 					UUID prefabEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(entity).Identifier;
 					PrefabUtilities::Get().CreateMetadataFile(prefabAssetHandle, prefabEntityUUID);
-					AssetManager::Instance->SaveAsset(prefabAssetHandle);
+
+					// Create the prefab resource.
+					const std::string& prefabName = std::filesystem::path(relativePath).filename().stem().string();
+					Asset* asset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
+
+					auto prefabHandle = ResourceManager::Instance->CreatePrefab({
+						.debugName = prefabName.c_str(),
+						.uuid = asset->UUID,
+						.baseEntityUUID = prefabEntityUUID,
+						.version = 1,
+					});
+
+					Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+					// Serialize the prefab source into a file.
+					PrefabSerializer serializer(prefab);
+					serializer.Serialize(Project::GetAssetFileSystemPath(relativePath));
 
 					// Finish the conversion by adding the PrefabInstance component and setting its values from the prefab source.
 					if (!PrefabUtilities::Get().ConvertEntityToPrefabPhase1(entity, prefabAssetHandle, m_ActiveScene))

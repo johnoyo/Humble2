@@ -21,6 +21,20 @@ namespace HBL2
 {
     Scene::Scene(const SceneDescriptor&& desc) : m_Name(desc.name)
     {
+        // Minimal mode is only used in prefabs, in their sub scenes.
+        if (desc.minimalMode)
+        {
+            m_Reservation = Allocator::Arena.Reserve("ScenePool", 1_MB);
+            m_SceneArena.Initialize(&Allocator::Arena, 1_MB, m_Reservation);
+
+            m_Systems = MakeDArray<ISystem*>(m_SceneArena, 1);
+            m_CoreSystems = MakeDArray<ISystem*>(m_SceneArena, 1);
+            m_RuntimeSystems = MakeDArray<ISystem*>(m_SceneArena, 1);
+            m_EntityMap = MakeHMap<UUID, Entity>(m_SceneArena, 4096);
+
+            return;
+        }
+
         m_Reservation = Allocator::Arena.Reserve("ScenePool", 32_MB);
         m_SceneArena.Initialize(&Allocator::Arena, 16_MB, m_Reservation);
 
@@ -293,8 +307,11 @@ namespace HBL2
         m_CoreSystems.clear();
         m_RuntimeSystems.clear();
 
-        m_CmdBuffer->Clear();
-        m_SceneArena.Destruct(m_CmdBuffer);
+        if (m_CmdBuffer)
+        {
+            m_CmdBuffer->Clear();
+            m_SceneArena.Destruct(m_CmdBuffer);
+        }
 
         m_SceneArena.Destroy();
         m_Reservation = nullptr;
@@ -370,7 +387,7 @@ namespace HBL2
 
     Entity Scene::DuplicateEntityFromScene(Entity entity, Scene* otherScene, EntityDuplicationNaming namingConvention)
     {
-        std::string name = GetComponent<Component::Tag>(entity).Name;
+        std::string name = otherScene->GetComponent<Component::Tag>(entity).Name;
 
         switch (namingConvention)
         {

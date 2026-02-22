@@ -33,6 +33,8 @@ namespace HBL2
 	struct SceneDescriptor
 	{
 		std::string name;
+		uint64_t memory = 32_MB;
+		bool minimalMode = false;
 	};
 
 	enum class EntityDuplicationNaming

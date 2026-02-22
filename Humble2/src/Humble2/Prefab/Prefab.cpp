@@ -22,7 +22,7 @@ namespace HBL2
 		m_Version = desc.version;
 		m_BaseEntityUUID = desc.baseEntityUUID;
 
-		m_SubSceneHandle = ResourceManager::Instance->CreateScene({ .name = desc.debugName });
+		m_SubSceneHandle = ResourceManager::Instance->CreateScene({ .name = desc.debugName, .minimalMode = true });
 
 		m_Loaded = true;
 	}

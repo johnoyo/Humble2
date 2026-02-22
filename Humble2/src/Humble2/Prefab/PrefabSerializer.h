@@ -10,7 +10,7 @@
 
 namespace HBL2
 {
-	class PrefabSerializer
+	class HBL2_API PrefabSerializer
 	{
 	public:
 		PrefabSerializer(Prefab* prefab);
