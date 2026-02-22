@@ -38,7 +38,7 @@ project "Jolt"
         symbols "Off"
         optimize "On"
 		warnings "Extra"
-        fatalwarnings "On"
+        fatalwarnings "All"
 		
         -- Override MSVC's Release CXX flags per CMake's OVERRIDE_CXX_FLAGS:
         buildoptions { "/GS-", "/Gy", "/O2", "/Oi", "/Ot", "/GL" }
@@ -49,7 +49,7 @@ project "Jolt"
         symbols "Off"
         optimize "Full"
 		warnings "Extra"
-        fatalwarnings "On"
+        fatalwarnings "All"
 
         -- Match Release settings (no debug symbols, optimized, LTO)
         buildoptions { "/GS-", "/Gy", "/O2", "/Oi", "/Ot", "/GL" }
