@@ -173,6 +173,9 @@ namespace HBL2
 		m_ResourceManager->DeleteRenderPass(m_RenderPass);
 		m_ResourceManager->DeleteRenderPass(m_RenderingRenderPass);
 		m_ResourceManager->DeleteFrameBuffer(m_MainFrameBuffer);
+
+		delete m_MainCommandBuffer;
+		delete m_UserInterfaceCommandBuffer;
 	}
 
 	void* OpenGLRenderer::GetDepthAttachment()
