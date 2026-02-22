@@ -117,13 +117,28 @@ namespace HBL2
 			}
 
 			ResourceTask<T>* task = m_ResourceTaskPoolArena.AllocConstruct<ResourceTask<T>>();
-			task->m_Finished = false;
+			task->m_Finished.store(false, std::memory_order_release);
 
 			// Do not schedule job if the asset is loaded.
 			if (IsAssetLoaded(assetHandle))
 			{
 				task->ResourceHandle = GetAsset<T>(assetHandle);
-				task->m_Finished = true;
+				task->m_Finished.store(true, std::memory_order_release);
+
+				if (task->m_WorkerThreadCallback)
+				{
+					task->m_WorkerThreadCallback(task->ResourceHandle);
+				}
+
+				if (task->m_MainThreadCallback)
+				{
+					m_MainThreadCallbacks.enqueue(
+						StaticFunction<void(void), 128>([cb = std::move(task->m_MainThreadCallback), handle = task->ResourceHandle]() mutable
+						{
+							cb(handle);
+						}));
+				}
+
 				return task;
 			}
 
@@ -205,9 +220,9 @@ namespace HBL2
 			}
 
 			ResourceTask<T>* task = m_ResourceTaskPoolArena.AllocConstruct<ResourceTask<T>>();
-			task->m_Finished = false;
+			task->m_Finished.store(false, std::memory_order_release);
 
-			// Load from scratch if the asset is loaded.
+			// Load from scratch if the asset is not loaded.
 			if (!IsAssetLoaded(assetHandle))
 			{
 				return GetAssetAsync<T>(assetHandle, customJobCtx);
