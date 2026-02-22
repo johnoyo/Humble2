@@ -135,11 +135,6 @@ namespace HBL2
 			}
 
 			ImGui::SetCurrentContext(nullptr);
-
-			TextureUtilities::Get().DeleteWhiteTexture();
-			ShaderUtilities::Get().DeleteBuiltInShaders();
-			ShaderUtilities::Get().DeleteBuiltInMaterials();
-			MeshUtilities::Get().DeleteBuiltInMeshes();
 		}
 
 		void RuntimeContext::OnDetach()
@@ -185,11 +180,6 @@ namespace HBL2
 
 		void RuntimeContext::LoadProject()
 		{
-			TextureUtilities::Get().LoadWhiteTexture();
-			ShaderUtilities::Get().LoadBuiltInShaders();
-			ShaderUtilities::Get().LoadBuiltInMaterials();
-			MeshUtilities::Get().LoadBuiltInMeshes();
-
 			HBL2::Project::OpenStartingScene(true);
 
 			Project::ApplySettings();

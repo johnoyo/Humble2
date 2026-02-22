@@ -1,18 +1,29 @@
 #pragma once
 
 #include "Entity.h"
-#include "ISystem.h"
 #include "Components.h"
 
 #include "View.h"
 #include "Group.h"
 
 #include "Utilities\Random.h"
+#include "Utilities\Allocators\Arena.h"
+#include "Utilities\Collections\Collections.h"
 
 #include <entt.hpp>
 
 namespace HBL2
 {
+	class ISystem;
+	class StructuralCommandBuffer;
+
+	enum class HBL2_API SystemType
+	{
+		Core = 0,
+		Runtime,
+		User,
+	};
+
 	template <typename... Cs>
 	inline constexpr entt::get_t<Cs...> Get{};
 
@@ -22,6 +33,77 @@ namespace HBL2
 	struct SceneDescriptor
 	{
 		std::string name;
+		uint64_t memory = 32_MB;
+		bool minimalMode = false;
+	};
+
+	enum class EntityDuplicationNaming
+	{
+		APPEND_CLONE_RECURSIVE = 0,
+		APPEND_CLONE_TO_BASE_ONLY = 1,
+		DONT_APPEND_CLONE = 2,
+	};
+
+	class Scene;
+
+	template<class T>
+	struct LookupRO
+	{
+		entt::storage<T>* storage = nullptr;
+		const Scene* scene = nullptr;
+		uint64_t epoch = 0;
+
+		bool Has(Entity e) const
+		{
+#if !DIST
+			if (!scene || scene->Epoch() != epoch)
+			{
+				return false;
+			}
+#endif
+			return scene && scene->Epoch() == epoch && storage->contains(e);
+		}
+
+		const T* TryGet(Entity e) const
+		{
+#if !DIST
+			if (!scene || scene->Epoch() != epoch)
+			{
+				return nullptr;
+			}
+#endif
+			return storage->contains(e) ? &storage->get(e) : nullptr;
+		}
+	};
+
+	template<class T>
+	struct LookupRW
+	{
+		entt::storage<T>* storage = nullptr;
+		Scene* scene = nullptr;
+		uint64_t epoch = 0;
+
+		bool Has(Entity e) const
+		{
+#if !DIST
+			if (!scene || scene->Epoch() != epoch)
+			{
+				return false;
+			}
+#endif
+			return scene && scene->Epoch() == epoch && storage->contains(e);
+		}
+
+		T* TryGet(Entity e) const
+		{
+#if !DIST
+			if (!scene || scene->Epoch() != epoch)
+			{
+				return nullptr;
+			}
+#endif
+			return storage->contains(e) ? &storage->get(e) : nullptr;
+		}
 	};
 
 	class HBL2_API Scene
@@ -35,42 +117,19 @@ namespace HBL2
 
 		void Clear();
 
-		Entity CreateEntity()
-		{
-			return CreateEntityWithUUID(Random::UInt64());
-		}
+		Entity CreateEntity();
 
-		Entity CreateEntity(const std::string& tag)
-		{
-			return CreateEntityWithUUID(Random::UInt64(), tag);
-		}
+		Entity CreateEntity(const std::string& tag);
 
-		Entity CreateEntityWithUUID(UUID uuid, const std::string& tag = "New Entity")
-		{
-			Entity entity = m_Registry.create();
+		Entity CreateEntityWithUUID(UUID uuid, const std::string& tag = "New Entity");
 
-			m_Registry.emplace<Component::Tag>(entity).Name = tag;
-			m_Registry.emplace<Component::ID>(entity).Identifier = uuid;
-			m_Registry.emplace<Component::Transform>(entity);
-
-			m_EntityMap[uuid] = entity;
-
-			return entity;
-		}
-
-		Entity FindEntityByUUID(UUID uuid)
-		{
-			if (m_EntityMap.find(uuid) != m_EntityMap.end())
-			{
-				return m_EntityMap.at(uuid);
-			}
-
-			return Entity::Null;
-		}
+		Entity FindEntityByUUID(UUID uuid);
 
 		void DestroyEntity(Entity entity);
 
-		Entity DuplicateEntity(Entity entity);
+		Entity DuplicateEntity(Entity entity, EntityDuplicationNaming namingConvention = EntityDuplicationNaming::APPEND_CLONE_TO_BASE_ONLY);
+
+		Entity DuplicateEntityFromScene(Entity entity, Scene* otherScene, EntityDuplicationNaming namingConvention = EntityDuplicationNaming::APPEND_CLONE_TO_BASE_ONLY);
 
 		template<typename... T>
 		auto GetAllEntitiesWith()
@@ -125,63 +184,22 @@ namespace HBL2
 			m_Registry.remove<T>(entity);
 		}
 
-		void DeregisterSystem(const std::string& systemName)
-		{
-			ISystem* systemToBeDeleted = nullptr;
-
-			for (ISystem* system : m_Systems)
-			{
-				if (system->Name == systemName)
-				{
-					systemToBeDeleted = system;
-					break;
-				}
-			}
-
-			DeregisterSystem(systemToBeDeleted);
-		}
+		void DeregisterSystem(const std::string& systemName);
 
 		void DeregisterSystem(ISystem* system);
 
-		void RegisterSystem(ISystem* system, SystemType type = SystemType::Core)
+		template<typename T>
+		void RegisterSystem(SystemType type = SystemType::Core)
 		{
-			system->SetType(type);
-			system->SetContext(this);
-			m_Systems.push_back(system);
-
-			switch (type)
-			{
-			case HBL2::SystemType::Core:
-				m_CoreSystems.push_back(system);
-				break;
-			case HBL2::SystemType::Runtime:
-				m_RuntimeSystems.push_back(system);
-				break;
-			case HBL2::SystemType::User:
-				m_RuntimeSystems.push_back(system);
-				break;
-			}
+			RegisterSystem(m_SceneArena.AllocConstruct<T>(), type);
 		}
 
-		const std::vector<ISystem*>& GetSystems() const
-		{
-			return m_Systems;
-		}
+		void RegisterSystem(ISystem* system, SystemType type = SystemType::Core);
 
-		const std::vector<ISystem*>& GetCoreSystems() const
-		{
-			return m_CoreSystems;
-		}
-
-		const std::vector<ISystem*>& GetRuntimeSystems() const
-		{
-			return m_RuntimeSystems;
-		}
-
-		entt::registry& GetRegistry()
-		{
-			return m_Registry;
-		}
+		const DArray<ISystem*>& GetSystems() const { return m_Systems; }
+		const DArray<ISystem*>& GetCoreSystems() const { return m_CoreSystems; }
+		const DArray<ISystem*>& GetRuntimeSystems() const { return m_RuntimeSystems; }
+		entt::registry& GetRegistry() { return m_Registry; }
 
 		[[nodiscard]] inline auto Entities() noexcept
 		{
@@ -233,15 +251,8 @@ namespace HBL2
 			return HBL2::Group{ g };
 		}
 
-		entt::meta_ctx& GetMetaContext()
-		{
-			return m_MetaContext;
-		}
-
-		const std::string& GetName() const
-		{
-			return m_Name;
-		}
+		entt::meta_ctx& GetMetaContext() { return m_MetaContext; }
+		const std::string& GetName() const { return m_Name; }
 
 		template <typename T>
 		static std::vector<std::byte> Serialize(const T& component)
@@ -261,20 +272,41 @@ namespace HBL2
 
 		Entity MainCamera = Entity::Null;
 
-	private:
-		void InternalDestroyEntity(Entity entity, bool isRootCall);
+		StructuralCommandBuffer* Cmd() { return m_CmdBuffer; }
+		uint64_t Epoch() const { return m_Epoch; }
+		Arena* GetArena() { return &m_SceneArena; }
 
 	private:
+		void InternalDestroyEntity(Entity entity, bool isRootCall);
+		Entity InternalDuplicateEntity(Entity entity, Scene* sourceEntityScene, Entity newEntity, bool appendCloneToName);
+
+		Entity DuplicateEntityFromSceneAlt(Entity entity, Scene* sourceEntityScene, std::unordered_map<UUID, Entity>& preservedEntityIDs);
+		Entity InternalDuplicateEntityFromSceneAlt(Entity entity, Scene* sourceEntityScene, Entity newEntity, std::unordered_map<UUID, Entity>& preservedEntityIDs);
+
+		Entity DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(Entity entity, Scene* prefabSourceScene, Entity entityToPreserveFrom);
+		friend class PrefabUtilities;
+		friend class SceneSerializer;
+
+	private:
+		friend class Pool<Scene, Scene>;
+
 		std::string m_Name;
 		entt::registry m_Registry;
 		entt::meta_ctx m_MetaContext;
-		std::vector<ISystem*> m_Systems;
-		std::vector<ISystem*> m_CoreSystems;
-		std::vector<ISystem*> m_RuntimeSystems;
-		std::unordered_map<UUID, Entity> m_EntityMap;
+		DArray<ISystem*> m_Systems = MakeEmptyDArray<ISystem*>();
+		DArray<ISystem*> m_CoreSystems = MakeEmptyDArray<ISystem*>();
+		DArray<ISystem*> m_RuntimeSystems = MakeEmptyDArray<ISystem*>();
+		HMap<UUID, Entity> m_EntityMap = MakeEmptyHMap<UUID, Entity>();
 
-		void operator=(const HBL2::Scene&);
+		Arena m_SceneArena;
+		PoolReservation* m_Reservation = nullptr;
 
-		friend class Pool<Scene, Scene>;
+	private:
+		friend class ISystem;
+
+		uint64_t m_Epoch = 0;
+		StructuralCommandBuffer* m_CmdBuffer = nullptr;
+		void PlaybackStructuralChanges();
+		void AdvanceEpoch();
 	};
 }

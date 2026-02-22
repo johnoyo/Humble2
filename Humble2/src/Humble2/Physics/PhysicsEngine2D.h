@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Scene/Scene.h"
 #include "Scene/Components.h"
 
 #include <glm/glm.hpp>
@@ -13,6 +14,10 @@ namespace HBL2
 
 		PhysicsEngine2D() = default;
 		virtual ~PhysicsEngine2D() = default;
+
+		virtual void Initialize(Scene* ctx) = 0;
+		virtual void Update() = 0;
+		virtual void Shutdown() = 0;
 
 		virtual void OnCollisionEnterEvent(std::function<void(Physics::CollisionEnterEvent*)>&& enterEventFunc) = 0;
 		virtual void OnCollisionStayEvent(std::function<void(Physics::CollisionStayEvent*)>&& stayEventFunc) = 0;

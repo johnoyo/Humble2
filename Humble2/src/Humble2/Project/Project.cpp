@@ -117,12 +117,5 @@ namespace HBL2
 
 	void Project::ApplySettings()
 	{
-		auto& spec = s_ActiveProject->GetSpecification();
-
-		PhysicsEngine2D::Instance->SetDebugDrawEnabled(spec.Settings.EnableDebugDraw2D);
-
-		PhysicsEngine3D::Instance->SetDebugDrawEnabled(spec.Settings.EnableDebugDraw3D);
-		PhysicsEngine3D::Instance->ShowColliders(spec.Settings.ShowColliders3D);
-		PhysicsEngine3D::Instance->ShowBoundingBoxes(spec.Settings.ShowBoundingBoxes3D);
 	}
 }

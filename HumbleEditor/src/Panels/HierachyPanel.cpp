@@ -1,5 +1,7 @@
 #include "Systems\EditorPanelSystem.h"
 
+#include "Utilities\PrefabUtilities.h"
+
 namespace HBL2
 {
 	namespace Editor
@@ -7,6 +9,7 @@ namespace HBL2
 		void EditorPanelSystem::DrawHierachy(Entity entity, const auto& entities)
 		{
 			const auto& tag = m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity);
+			const auto& id = m_ActiveScene->GetComponent<HBL2::Component::ID>(entity);
 
 			bool selectedEntityCondition = HBL2::Component::EditorVisible::Selected && HBL2::Component::EditorVisible::SelectedEntity == entity;
 			bool isPrefab = m_ActiveScene->HasComponent<HBL2::Component::PrefabInstance>(entity);
@@ -19,7 +22,7 @@ namespace HBL2
 				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(IM_COL32(0, 255, 239, 255)));
 			}
 
-			bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.Name.c_str());
+			bool opened = ImGui::TreeNodeEx((void*)(uint64_t)id.Identifier, flags, tag.Name.c_str());
 
 			if (isPrefab)
 			{
@@ -61,9 +64,9 @@ namespace HBL2
 
 					// Set the parent of the child entity to be this entity that it was dragged into.
 					m_ActiveScene->GetComponent<HBL2::Component::Link>(childEntity).Parent = m_ActiveScene->GetComponent<HBL2::Component::ID>(entity).Identifier;
-
-					ImGui::EndDragDropTarget();
 				}
+
+				ImGui::EndDragDropTarget();
 			}
 
 			if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
@@ -96,7 +99,7 @@ namespace HBL2
 				{
 					if (ImGui::MenuItem("Unpack prefab"))
 					{
-						Prefab::Unpack(entity);
+						PrefabUtilities::Get().Unpack(entity);
 					}
 					else if (ImGui::MenuItem("Save prefab"))
 					{
@@ -104,7 +107,15 @@ namespace HBL2
 						HBL2::Component::EditorVisible::Selected = false;
 						HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
 
-						Prefab::Save(entity);
+						PrefabUtilities::Get().Save(entity);
+					}
+					else if (ImGui::MenuItem("Revert prefab"))
+					{
+						// Clear currently selected entity.
+						HBL2::Component::EditorVisible::Selected = false;
+						HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
+
+						PrefabUtilities::Get().Revert(entity);
 					}
 				}
 
@@ -176,7 +187,6 @@ namespace HBL2
 
 					auto mainMeshEntity = m_ActiveScene->CreateEntity(mesh->DebugName);
 					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(mainMeshEntity);
-					m_ActiveScene->AddComponent<HBL2::Component::Link>(mainMeshEntity);
 
 					uint32_t meshIndex = 0;
 					uint32_t subMeshIndex = 0;
@@ -185,7 +195,7 @@ namespace HBL2
 					{
 						auto meshEntity = m_ActiveScene->CreateEntity(meshPart.DebugName);
 						m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(meshEntity);
-						auto& link = m_ActiveScene->AddComponent<HBL2::Component::Link>(meshEntity);
+						auto& link = m_ActiveScene->GetComponent<HBL2::Component::Link>(meshEntity);
 
 						link.Parent = m_ActiveScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
 
@@ -193,7 +203,7 @@ namespace HBL2
 						{
 							auto subMeshEntity = m_ActiveScene->CreateEntity(subMesh.DebugName);
 							m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(subMeshEntity);
-							auto& link = m_ActiveScene->AddComponent<HBL2::Component::Link>(subMeshEntity);
+							auto& link = m_ActiveScene->GetComponent<HBL2::Component::Link>(subMeshEntity);
 							link.Parent = m_ActiveScene->GetComponent<HBL2::Component::ID>(meshEntity).Identifier;
 
 							auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(subMeshEntity);
@@ -213,10 +223,7 @@ namespace HBL2
 						subMeshIndex = 0;
 						meshIndex++;
 					}
-
-					ImGui::EndDragDropTarget();
-				}
-				
+				}				
 				// Drag and drop target for instantiating a prefab into the scene.
 				else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Prefab"))
 				{
@@ -230,9 +237,9 @@ namespace HBL2
 					}
 
 					Prefab::Instantiate(assetHandle);
-
-					ImGui::EndDragDropTarget();
 				}
+
+				ImGui::EndDragDropTarget();
 			}
 		}
 

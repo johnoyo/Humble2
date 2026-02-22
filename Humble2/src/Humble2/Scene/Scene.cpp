@@ -1,12 +1,12 @@
 #include "Scene.h"
 
-#include "Utilities/NativeScriptUtilities.h"
+#include "ISystem.h"
 
+#include "Script\BuildEngine.h"
 #include "Project\Project.h"
 #include "SceneSerializer.h"
 
-#include "Systems\TransformSystem.h"
-#include "Systems\LinkSystem.h"
+#include "Systems\HierachySystem.h"
 #include "Systems\CameraSystem.h"
 #include "Systems\RenderingSystem.h"
 #include "Systems\SoundSystem.h"
@@ -15,10 +15,36 @@
 #include "Systems\TerrainSystem.h"
 #include "Systems\AnimationCurveSystem.h"
 
+#include "StructuralCommandBuffer.h"
+
 namespace HBL2
 {
     Scene::Scene(const SceneDescriptor&& desc) : m_Name(desc.name)
     {
+        // Minimal mode is only used in prefabs, in their sub scenes.
+        if (desc.minimalMode)
+        {
+            m_Reservation = Allocator::Arena.Reserve("ScenePool", 1_MB);
+            m_SceneArena.Initialize(&Allocator::Arena, 1_MB, m_Reservation);
+
+            m_Systems = MakeDArray<ISystem*>(m_SceneArena, 1);
+            m_CoreSystems = MakeDArray<ISystem*>(m_SceneArena, 1);
+            m_RuntimeSystems = MakeDArray<ISystem*>(m_SceneArena, 1);
+            m_EntityMap = MakeHMap<UUID, Entity>(m_SceneArena, 4096);
+
+            return;
+        }
+
+        m_Reservation = Allocator::Arena.Reserve("ScenePool", 32_MB);
+        m_SceneArena.Initialize(&Allocator::Arena, 16_MB, m_Reservation);
+
+        m_Systems = MakeDArray<ISystem*>(m_SceneArena, 64);
+        m_CoreSystems = MakeDArray<ISystem*>(m_SceneArena, 64);
+        m_RuntimeSystems = MakeDArray<ISystem*>(m_SceneArena, 64);
+        m_EntityMap = MakeHMap<UUID, Entity>(m_SceneArena, 32768);
+
+        m_CmdBuffer = m_SceneArena.AllocConstruct<StructuralCommandBuffer>();
+        m_CmdBuffer->Initialize(m_Reservation);
     }
 
     Scene* Scene::Copy(Scene* other)
@@ -76,6 +102,7 @@ namespace HBL2
 
         // Copy components.
         copy_component(Component::Transform{});
+        copy_component(Component::TransformEx{});
         copy_component(Component::Link{});
         copy_component(Component::Camera{});
         copy_component(Component::EditorVisible{});
@@ -93,29 +120,27 @@ namespace HBL2
         copy_component(Component::CapsuleCollider{});
         copy_component(Component::TerrainCollider{});
         copy_component(Component::PrefabInstance{});
+        copy_component(Component::PrefabEntity{});
         copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
-
         // Do not copy the TerrainChunk component
-        // copy_component(Component::TerrainChunk{});
 
         // Clone systems.
-        dst->RegisterSystem(new TransformSystem);
-        dst->RegisterSystem(new LinkSystem);
-        dst->RegisterSystem(new CameraSystem, SystemType::Runtime);
-        dst->RegisterSystem(new TerrainSystem);
-        dst->RegisterSystem(new RenderingSystem);
-        dst->RegisterSystem(new SoundSystem, SystemType::Runtime);
-        dst->RegisterSystem(new Physics2dSystem, SystemType::Runtime);
-        dst->RegisterSystem(new Physics3dSystem, SystemType::Runtime);
-        dst->RegisterSystem(new AnimationCurveSystem);
+        dst->RegisterSystem<HierachySystem>();
+        dst->RegisterSystem<CameraSystem>(SystemType::Runtime);
+        dst->RegisterSystem<TerrainSystem>();
+        dst->RegisterSystem<RenderingSystem>();
+        dst->RegisterSystem<SoundSystem>(SystemType::Runtime);
+        dst->RegisterSystem<Physics2dSystem>(SystemType::Runtime);
+        dst->RegisterSystem<Physics3dSystem>(SystemType::Runtime);
+        dst->RegisterSystem<AnimationCurveSystem>();
 
         // Register any user systems to new scene.
         for (ISystem* system : src->m_RuntimeSystems)
         {
             if (system->GetType() == SystemType::User)
             {
-                NativeScriptUtilities::Get().RegisterSystem(system->Name, dst);
+                BuildEngine::Instance->RegisterSystem(system->Name, dst);
             }
         }
 
@@ -127,16 +152,16 @@ namespace HBL2
         for (auto meta_type : entt::resolve(src->GetMetaContext()))
         {
             std::string componentName = meta_type.second.info().name().data();
-            componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+            componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
             userComponentNames.push_back(componentName);
 
-            NativeScriptUtilities::Get().SerializeComponents(componentName, src, data, false);
+            BuildEngine::Instance->SerializeComponents(componentName, src, data, false);
         }
 
         // Copy the components to the new scene.
         for (const auto& userComponentName : userComponentNames)
         {
-            NativeScriptUtilities::Get().DeserializeComponents(userComponentName, dst, data);
+            BuildEngine::Instance->DeserializeComponents(userComponentName, dst, data);
         }
 
         // Set main camera.
@@ -158,8 +183,8 @@ namespace HBL2
 
             const std::string& componentName = alias.data();
 
-            const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
-            NativeScriptUtilities::Get().ClearComponentStorage(cleanedComponentName, this);
+            const std::string& cleanedComponentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
+            BuildEngine::Instance->ClearComponentStorage(cleanedComponentName, this);
         }
 
         // Clear reflection system.
@@ -181,6 +206,10 @@ namespace HBL2
         m_Registry.clear<Component::Transform>();
         m_Registry.storage<Component::Transform>().clear();
         m_Registry.compact<Component::Transform>();
+
+        m_Registry.clear<Component::TransformEx>();
+        m_Registry.storage<Component::TransformEx>().clear();
+        m_Registry.compact<Component::TransformEx>();
 
         m_Registry.clear<Component::Link>();
         m_Registry.storage<Component::Link>().clear();
@@ -242,6 +271,10 @@ namespace HBL2
         m_Registry.storage<Component::PrefabInstance>().clear();
         m_Registry.compact<Component::PrefabInstance>();
 
+        m_Registry.clear<Component::PrefabEntity>();
+        m_Registry.storage<Component::PrefabEntity>().clear();
+        m_Registry.compact<Component::PrefabEntity>();
+
         m_Registry.clear<Component::AnimationCurve>();
         m_Registry.storage<Component::AnimationCurve>().clear();
         m_Registry.compact<Component::AnimationCurve>();
@@ -266,13 +299,59 @@ namespace HBL2
         {
             if (system != nullptr)
             {
-                delete system;
+                system->~ISystem();
             }
         }
 
         m_Systems.clear();
         m_CoreSystems.clear();
         m_RuntimeSystems.clear();
+
+        if (m_CmdBuffer)
+        {
+            m_CmdBuffer->Clear();
+            m_SceneArena.Destruct(m_CmdBuffer);
+        }
+
+        m_SceneArena.Destroy();
+        m_Reservation = nullptr;
+    }
+
+    Entity Scene::CreateEntity()
+    {
+        return CreateEntityWithUUID(Random::UInt64());
+    }
+
+    Entity Scene::CreateEntity(const std::string& tag)
+    {
+        return CreateEntityWithUUID(Random::UInt64(), tag);
+    }
+
+    Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& tag)
+    {
+        Entity entity = m_Registry.create();
+
+        m_Registry.emplace<Component::Tag>(entity).Name = tag;
+        m_Registry.emplace<Component::ID>(entity).Identifier = uuid;
+        m_Registry.emplace<Component::Transform>(entity);
+        m_Registry.emplace<Component::TransformEx>(entity);
+        m_Registry.emplace<Component::Link>(entity);
+
+        m_EntityMap[uuid] = entity;
+
+        return entity;
+    }
+
+    Entity Scene::FindEntityByUUID(UUID uuid)
+    {
+        auto it = m_EntityMap.find(uuid);
+
+        if (it != m_EntityMap.end())
+        {
+            return it->second;
+        }
+
+        return Entity::Null;
     }
 
     void Scene::DestroyEntity(Entity entity)
@@ -280,86 +359,72 @@ namespace HBL2
         InternalDestroyEntity(entity, true);
     }
 
-    Entity Scene::DuplicateEntity(Entity entity)
+    Entity Scene::DuplicateEntity(Entity entity, EntityDuplicationNaming namingConvention)
     {
         std::string name = GetComponent<Component::Tag>(entity).Name;
-        Entity newEntity = CreateEntity(name + "(Clone)");
-        auto& newLink = AddComponent<HBL2::Component::Link>(newEntity);
 
-        // Helper lamda for component copying
-        auto copy_component = [&](auto component_type)
+        switch (namingConvention)
         {
-            using Component = decltype(component_type);
-
-            if (HasComponent<Component>(entity))
+        case HBL2::EntityDuplicationNaming::APPEND_CLONE_RECURSIVE:
             {
-                auto& component = GetComponent<Component>(entity);
-
-                if (typeid(Component) == typeid(HBL2::Component::Link))
-                {
-                    for (auto child : ((HBL2::Component::Link&)component).Children)
-                    {
-                        Entity childEntity = FindEntityByUUID(child);
-                        Entity newChildEntity = DuplicateEntity(childEntity);
-
-                        // Add the base entity as the parent of this
-                        HBL2::Component::Link& newChildLink = GetComponent<HBL2::Component::Link>(newChildEntity);
-                        newChildLink.Parent = GetComponent<HBL2::Component::ID>(newEntity).Identifier;
-                        newChildLink.PrevParent = newChildLink.Parent;
-
-                        // Add the new child entity to the new base entity
-                        newLink.Children.push_back(GetComponent<HBL2::Component::ID>(newChildEntity).Identifier);
-                    }
-                }
-                else
-                {
-                    m_Registry.emplace_or_replace<Component>(newEntity, component);
-                }
-
+                Entity newEntity = CreateEntity(name + "(Clone)");
+                return InternalDuplicateEntity(entity, this, newEntity, true);
             }
-        };
-
-        // Copy built in components
-        copy_component(Component::Transform{});
-        copy_component(Component::Link{});
-        copy_component(Component::Camera{});
-        copy_component(Component::EditorVisible{});
-        copy_component(Component::Sprite{});
-        copy_component(Component::StaticMesh{});
-        copy_component(Component::Light{});
-        copy_component(Component::SkyLight{});
-        copy_component(Component::AudioListener{});
-        copy_component(Component::AudioSource{});
-        copy_component(Component::Rigidbody2D{});
-        copy_component(Component::BoxCollider2D{});
-        copy_component(Component::Rigidbody{});
-        copy_component(Component::BoxCollider{});
-        copy_component(Component::SphereCollider{});
-        copy_component(Component::CapsuleCollider{});
-        copy_component(Component::TerrainCollider{});
-        copy_component(Component::PrefabInstance{});
-        copy_component(Component::AnimationCurve{});
-        copy_component(Component::Terrain{});
-        copy_component(Component::TerrainChunk{});
-
-        // Copy user defined components.
-        std::vector<std::string> userComponentNames;
-        std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
-
-        for (auto meta_type : entt::resolve(m_MetaContext))
-        {
-            std::string componentName = meta_type.second.info().name().data();
-            componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
-
-            if (NativeScriptUtilities::Get().HasComponent(componentName, this, entity))
+        case HBL2::EntityDuplicationNaming::APPEND_CLONE_TO_BASE_ONLY:
             {
-                auto componentMeta = NativeScriptUtilities::Get().GetComponent(componentName, this, entity);
-                auto newComponentMeta = NativeScriptUtilities::Get().AddComponent(componentName, this, newEntity);
-                newComponentMeta.assign(componentMeta);
+                Entity newEntity = CreateEntity(name + "(Clone)");
+                return InternalDuplicateEntity(entity, this, newEntity, false);
+            }
+        case HBL2::EntityDuplicationNaming::DONT_APPEND_CLONE:
+            {
+                Entity newEntity = CreateEntity(name);
+                return InternalDuplicateEntity(entity, this, newEntity, false);
             }
         }
 
-        return newEntity;
+        return Entity::Null;
+    }
+
+    Entity Scene::DuplicateEntityFromScene(Entity entity, Scene* otherScene, EntityDuplicationNaming namingConvention)
+    {
+        std::string name = otherScene->GetComponent<Component::Tag>(entity).Name;
+
+        switch (namingConvention)
+        {
+        case HBL2::EntityDuplicationNaming::APPEND_CLONE_RECURSIVE:
+            {
+                Entity newEntity = CreateEntity(name + "(Clone)");
+                return InternalDuplicateEntity(entity, otherScene, newEntity, true);
+            }
+        case HBL2::EntityDuplicationNaming::APPEND_CLONE_TO_BASE_ONLY:
+            {
+                Entity newEntity = CreateEntity(name + "(Clone)");
+                return InternalDuplicateEntity(entity, otherScene, newEntity, false);
+            }
+        case HBL2::EntityDuplicationNaming::DONT_APPEND_CLONE:
+            {
+                Entity newEntity = CreateEntity(name);
+                return InternalDuplicateEntity(entity, otherScene, newEntity, false);
+            }
+        }
+
+        return Entity::Null;
+    }
+
+    void Scene::DeregisterSystem(const std::string& systemName)
+    {
+        ISystem* systemToBeDeleted = nullptr;
+
+        for (ISystem* system : m_Systems)
+        {
+            if (system->Name == systemName)
+            {
+                systemToBeDeleted = system;
+                break;
+            }
+        }
+
+        DeregisterSystem(systemToBeDeleted);
     }
 
     void Scene::DeregisterSystem(ISystem* system)
@@ -399,7 +464,27 @@ namespace HBL2
             }
         }
 
-        delete system;
+        system->~ISystem();
+    }
+
+    void Scene::RegisterSystem(ISystem* system, SystemType type)
+    {
+        system->SetType(type);
+        system->SetContext(this);
+        m_Systems.push_back(system);
+
+        switch (type)
+        {
+        case HBL2::SystemType::Core:
+            m_CoreSystems.push_back(system);
+            break;
+        case HBL2::SystemType::Runtime:
+            m_RuntimeSystems.push_back(system);
+            break;
+        case HBL2::SystemType::User:
+            m_RuntimeSystems.push_back(system);
+            break;
+        }
     }
 
     void Scene::InternalDestroyEntity(Entity entity, bool isRootCall)
@@ -451,21 +536,346 @@ namespace HBL2
         m_Registry.destroy(entity);
     }
 
-    void Scene::operator=(const HBL2::Scene& other)
+    Entity Scene::InternalDuplicateEntity(Entity entity, Scene* sourceEntityScene, Entity newEntity, bool appendCloneToName)
     {
-        m_Name = other.m_Name;
+        auto& newLink = GetComponent<HBL2::Component::Link>(newEntity);
 
-        // NOTE: Here ^ we copy only the name of the scene.
-        //       Its only used by the Pool class where the scene is empty
-        //       and we only want to pass the name through.
+        // Helper lamda for component copying
+        auto copy_component = [&](auto component_type)
+        {
+            using Component = decltype(component_type);
 
-        /*
-        m_Systems = other.m_Systems;
-        m_CoreSystems = other.m_CoreSystems;
-        m_RuntimeSystems = other.m_RuntimeSystems;
-        m_EntityMap = other.m_EntityMap;
-        m_MetaContext = other.m_MetaContext;
-        MainCamera = other.MainCamera;
-        */
+            if (sourceEntityScene->HasComponent<Component>(entity))
+            {
+                auto& component = sourceEntityScene->GetComponent<Component>(entity);
+
+                if (typeid(Component) == typeid(HBL2::Component::Link))
+                {
+                    for (auto child : ((HBL2::Component::Link&)component).Children)
+                    {
+                        Entity childEntity = sourceEntityScene->FindEntityByUUID(child);
+                        Entity newChildEntity = DuplicateEntityFromScene(childEntity, sourceEntityScene, appendCloneToName ? EntityDuplicationNaming::APPEND_CLONE_RECURSIVE : EntityDuplicationNaming::DONT_APPEND_CLONE);
+
+                        // Add the base entity as the parent of this
+                        HBL2::Component::Link& newChildLink = GetComponent<HBL2::Component::Link>(newChildEntity);
+                        newChildLink.Parent = GetComponent<HBL2::Component::ID>(newEntity).Identifier;
+                        newChildLink.PrevParent = newChildLink.Parent;
+
+                        // Add the new child entity to the new base entity
+                        newLink.Children.push_back(GetComponent<HBL2::Component::ID>(newChildEntity).Identifier);
+                    }
+                }
+                else
+                {
+                    m_Registry.emplace_or_replace<Component>(newEntity, component);
+                }
+
+            }
+        };
+
+        // Copy built in components
+        copy_component(Component::Transform{});
+        copy_component(Component::TransformEx{});
+        copy_component(Component::Link{});
+        copy_component(Component::Camera{});
+        copy_component(Component::EditorVisible{});
+        copy_component(Component::Sprite{});
+        copy_component(Component::StaticMesh{});
+        copy_component(Component::Light{});
+        copy_component(Component::SkyLight{});
+        copy_component(Component::AudioListener{});
+        copy_component(Component::AudioSource{});
+        copy_component(Component::Rigidbody2D{});
+        copy_component(Component::BoxCollider2D{});
+        copy_component(Component::Rigidbody{});
+        copy_component(Component::BoxCollider{});
+        copy_component(Component::SphereCollider{});
+        copy_component(Component::CapsuleCollider{});
+        copy_component(Component::TerrainCollider{});
+        copy_component(Component::PrefabInstance{});
+        copy_component(Component::PrefabEntity{});
+        copy_component(Component::AnimationCurve{});
+        copy_component(Component::Terrain{});
+        copy_component(Component::TerrainChunk{});
+
+        // Copy user defined components.
+        std::vector<std::string> userComponentNames;
+        std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
+
+        for (auto meta_type : entt::resolve(sourceEntityScene->m_MetaContext))
+        {
+            std::string componentName = meta_type.second.info().name().data();
+            componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
+
+            if (BuildEngine::Instance->HasComponent(componentName, sourceEntityScene, entity))
+            {
+                auto componentMeta = BuildEngine::Instance->GetComponent(componentName, sourceEntityScene, entity);
+                auto newComponentMeta = BuildEngine::Instance->AddComponent(componentName, this, newEntity);
+                newComponentMeta.assign(componentMeta);
+            }
+        }
+
+        return newEntity;
+    }
+
+    Entity Scene::DuplicateEntityFromSceneAlt(Entity entity, Scene* sourceEntityScene, std::unordered_map<UUID, Entity>& preservedEntityIDs)
+    {
+        std::string name = sourceEntityScene->GetComponent<Component::Tag>(entity).Name;
+        UUID uuid = Random::UInt64();
+
+        Entity newEntity;
+
+        if (auto* pe = sourceEntityScene->TryGetComponent<Component::PrefabEntity>(entity))
+        {
+            if (preservedEntityIDs.contains(pe->EntityId))
+            {
+                const Entity oldEntity = preservedEntityIDs.at(pe->EntityId);
+                newEntity = m_Registry.create(oldEntity.Handle);
+            }
+            else
+            {
+                newEntity = m_Registry.create();
+            }
+        }
+        else
+        {
+            newEntity = m_Registry.create();
+        }
+
+        m_Registry.emplace<Component::Tag>(newEntity).Name = name;
+        m_Registry.emplace<Component::ID>(newEntity).Identifier = uuid;
+        m_Registry.emplace<Component::Transform>(newEntity);
+        m_Registry.emplace<Component::TransformEx>(newEntity);
+        m_Registry.emplace<Component::Link>(newEntity);
+
+        m_EntityMap[uuid] = newEntity;
+
+        return InternalDuplicateEntityFromSceneAlt(entity, sourceEntityScene, newEntity, preservedEntityIDs);
+    }
+
+    Entity Scene::InternalDuplicateEntityFromSceneAlt(Entity entity, Scene* sourceEntityScene, Entity newEntity, std::unordered_map<UUID, Entity>& preservedEntityIDs)
+    {
+        auto& newLink = GetComponent<HBL2::Component::Link>(newEntity);
+
+        // Helper lamda for component copying
+        auto copy_component = [&](auto component_type)
+        {
+            using Component = decltype(component_type);
+
+            if (sourceEntityScene->HasComponent<Component>(entity))
+            {
+                auto& component = sourceEntityScene->GetComponent<Component>(entity);
+
+                if (typeid(Component) == typeid(HBL2::Component::Link))
+                {
+                    for (auto child : ((HBL2::Component::Link&)component).Children)
+                    {
+                        Entity childEntity = sourceEntityScene->FindEntityByUUID(child);
+                        Entity newChildEntity = DuplicateEntityFromSceneAlt(childEntity, sourceEntityScene, preservedEntityIDs);
+
+                        // Add the base entity as the parent of this
+                        HBL2::Component::Link& newChildLink = GetComponent<HBL2::Component::Link>(newChildEntity);
+                        newChildLink.Parent = GetComponent<HBL2::Component::ID>(newEntity).Identifier;
+                        newChildLink.PrevParent = newChildLink.Parent;
+
+                        // Add the new child entity to the new base entity
+                        newLink.Children.push_back(GetComponent<HBL2::Component::ID>(newChildEntity).Identifier);
+                    }
+                }
+                else
+                {
+                    m_Registry.emplace_or_replace<Component>(newEntity, component);
+                }
+
+            }
+        };
+
+        // Copy built in components
+        copy_component(Component::Transform{});
+        copy_component(Component::TransformEx{});
+        copy_component(Component::Link{});
+        copy_component(Component::Camera{});
+        copy_component(Component::EditorVisible{});
+        copy_component(Component::Sprite{});
+        copy_component(Component::StaticMesh{});
+        copy_component(Component::Light{});
+        copy_component(Component::SkyLight{});
+        copy_component(Component::AudioListener{});
+        copy_component(Component::AudioSource{});
+        copy_component(Component::Rigidbody2D{});
+        copy_component(Component::BoxCollider2D{});
+        copy_component(Component::Rigidbody{});
+        copy_component(Component::BoxCollider{});
+        copy_component(Component::SphereCollider{});
+        copy_component(Component::CapsuleCollider{});
+        copy_component(Component::TerrainCollider{});
+        copy_component(Component::PrefabInstance{});
+        copy_component(Component::PrefabEntity{});
+        copy_component(Component::AnimationCurve{});
+        copy_component(Component::Terrain{});
+        copy_component(Component::TerrainChunk{});
+
+        // Copy user defined components.
+        std::vector<std::string> userComponentNames;
+        std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
+
+        for (auto meta_type : entt::resolve(sourceEntityScene->m_MetaContext))
+        {
+            std::string componentName = meta_type.second.info().name().data();
+            componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
+
+            if (BuildEngine::Instance->HasComponent(componentName, sourceEntityScene, entity))
+            {
+                auto componentMeta = BuildEngine::Instance->GetComponent(componentName, sourceEntityScene, entity);
+                auto newComponentMeta = BuildEngine::Instance->AddComponent(componentName, this, newEntity);
+                newComponentMeta.assign(componentMeta);
+            }
+        }
+
+        return newEntity;
+    }
+
+    Entity Scene::DuplicateEntityWhilePreservingUUIDsFromEntityAndDestroy(Entity prefabSourceEntity, Scene* prefabSourceScene, Entity entityToPreserveFrom)
+    {
+        // Store the entities of the current instantiated prefab entity.
+        // We need to delete them in the end but we wont have the UUID to Entity mapping so we store them beforehand.
+        std::function<void(Entity, std::vector<Entity>&)> collect = [&](Entity e, std::vector<Entity>& originals)
+        {
+            if (e == Entity::Null)
+            {
+                return;
+            }
+
+            originals.push_back(e);
+
+            auto* link = TryGetComponent<Component::Link>(e);
+            if (!link)
+            {
+                return;
+            }
+
+            for (UUID childUUID : link->Children)
+            {
+                Entity child = FindEntityByUUID(childUUID);
+                if (child != Entity::Null)
+                {
+                    collect(child, originals);
+                }
+            }
+        };
+
+        std::vector<Entity> originals1;
+        originals1.reserve(16);
+        collect(entityToPreserveFrom, originals1);
+
+        // Create a PrefabEntity to entity UUID mapping, so that after the duplication
+        // we can preserve their UUIDs by checking this component in order to find the old matching UUID.
+        std::unordered_map<UUID, UUID> preservedUUIDs;
+        std::unordered_map<UUID, Entity> preservedEntityIDs;
+
+        auto gatherPreservedUUIDs = [&](auto&& self, Entity e) -> void
+        {
+            if (e == Entity::Null)
+            {
+                return;
+            }
+
+            if (HasComponent<Component::PrefabEntity>(e))
+            {
+                const auto& pe = GetComponent<Component::PrefabEntity>(e);
+                const auto& id = GetComponent<Component::ID>(e);
+                preservedUUIDs[pe.EntityId] = id.Identifier;
+                preservedEntityIDs[pe.EntityId] = e;
+            }
+
+            const auto& link = GetComponent<Component::Link>(e);
+            for (UUID childUUID : link.Children)
+            {
+                Entity child = FindEntityByUUID(childUUID);
+                if (child != Entity::Null)
+                {
+                    self(self, child);
+                }
+            }
+        };
+        
+        gatherPreservedUUIDs(gatherPreservedUUIDs, entityToPreserveFrom);
+
+        // Destroy the entity that was instantiated in the scene before from the cached entities we stored above.
+        for (auto it = originals1.rbegin(); it != originals1.rend(); ++it)
+        {
+            Entity oldE = *it;
+            if (oldE == Entity::Null)
+            {
+                continue;
+            }
+
+            if (m_Registry.valid(oldE.Handle))
+            {
+                m_Registry.destroy(oldE.Handle);
+            }
+        }
+
+        // Dupilcate the entity from the prefab source entity.
+        Entity clone = DuplicateEntityFromSceneAlt(prefabSourceEntity, prefabSourceScene, preservedEntityIDs);
+
+        auto updateUUIDsFromPreserved = [&](auto&& self, Entity e, Entity parent) -> void
+        {
+            if (e == Entity::Null)
+            {
+                return;
+            }
+
+            // First restore the UUID in the ID component and update the entity map.
+            if (HasComponent<Component::PrefabEntity>(e))
+            {
+                const auto& pe = GetComponent<Component::PrefabEntity>(e);
+                auto& id = GetComponent<Component::ID>(e);
+                m_EntityMap.erase(id.Identifier);
+
+                if (preservedUUIDs.contains(pe.EntityId))
+                {
+                    id.Identifier = preservedUUIDs[pe.EntityId];
+                }
+
+                m_EntityMap[id.Identifier] = e;
+            }
+
+            auto& link = GetComponent<Component::Link>(e);
+
+            // Then, update the parent UUID in the Link component if applicable.
+            if (parent != Entity::Null)
+            {
+                auto& parentID = GetComponent<Component::ID>(parent);
+                link.Parent = parentID.Identifier;
+                link.PrevParent = parentID.Identifier;
+            }
+
+            // Do the update resursively for each child, while also updating the UUIDs in the child array.
+            for (UUID& childUUID : link.Children)
+            {
+                Entity child = FindEntityByUUID(childUUID);
+                if (child != Entity::Null)
+                {
+                    self(self, child, e);
+                }
+
+                childUUID = GetComponent<Component::ID>(child).Identifier;
+            }
+        };
+
+        updateUUIDsFromPreserved(updateUUIDsFromPreserved, clone, Entity::Null);        
+
+        return clone;
+    }
+    
+    void Scene::PlaybackStructuralChanges()
+    {
+        m_CmdBuffer->Playback(this);
+    }
+
+    void Scene::AdvanceEpoch()
+    {
+        ++m_Epoch;
     }
 }

@@ -19,7 +19,7 @@ namespace HBL2
 
 	constexpr unsigned int FRAME_OVERLAP = 2;
 
-	struct FrameData
+	struct VkFrameData
 	{
 		VkSemaphore ImageAvailableSemaphore; // Signal from swapchain.
 		VkSemaphore MainRenderFinishedSemaphore; // Signal that main render is done.
@@ -58,26 +58,27 @@ namespace HBL2
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
 
 		virtual void* GetDepthAttachment() override { return nullptr; }
-		virtual void* GetColorAttachment() override { return m_ColorAttachmentID; }
+		virtual void* GetColorAttachment() override;		
 
 		virtual void SetViewportAttachment(Handle<Texture> viewportTexture) {}
 		virtual void* GetViewportAttachment() override { return m_ColorAttachmentID; }
 
-		virtual Handle<BindGroup> GetShadowBindings() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].ShadowBindings; }
-		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalBindings2D; }
-		virtual Handle<BindGroup> GetGlobalBindings3D() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalBindings3D; }
-		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].GlobalPresentBindings; }
-		virtual Handle<BindGroup> GetDebugBindings() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP].DebugBindings; }
+		virtual Handle<BindGroup> GetShadowBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].ShadowBindings; }
+		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalBindings2D; }
+		virtual Handle<BindGroup> GetGlobalBindings3D() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalBindings3D; }
+		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalPresentBindings; }
+		virtual Handle<BindGroup> GetDebugBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].DebugBindings; }
 
 		virtual Handle<FrameBuffer> GetMainFrameBuffer() override { return m_FrameBuffers[m_SwapchainImageIndex]; }
 
 		const VmaAllocator& GetAllocator() const { return m_Allocator; } // TODO: Move to VulkanResourceManager
 
-		virtual const uint32_t GetFrameIndex() const override { return m_FrameNumber % FRAME_OVERLAP; }
-		const FrameData& GetCurrentFrame() const { return m_Frames[m_FrameNumber % FRAME_OVERLAP]; }
+		virtual const uint32_t GetFrameIndex() const override { return m_FrameNumber.load() % FRAME_OVERLAP; }
+		const VkFrameData& GetCurrentFrame() const { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP]; }
 		const VkFormat& GetSwapchainImageFormat() const { return m_SwapChainImageFormat; }
 		const VkExtent2D& GetSwapchainExtent() const { return m_SwapChainExtent; }
 
+		std::mutex& GetGraphicsQueueMutex() { return m_GraphicsQueueSubmitMutex; }
 		const VkQueue& GetGraphicsQueue() const { return m_GraphicsQueue; }
 		const VkQueue& GetPresentQueue() const { return m_PresentQueue; }
 
@@ -93,7 +94,7 @@ namespace HBL2
 
 	private:
 		void CreateAllocator();
-		void CreateSwapchain();
+		void CreateSwapchain(VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
 		void CreateImageViews();
 		void CreateSyncStructures();
 		void CreateCommands();
@@ -115,7 +116,7 @@ namespace HBL2
 		VmaAllocator m_Allocator;
 		DeletionQueue m_MainDeletionQueue;
 
-		FrameData m_Frames[FRAME_OVERLAP];
+		VkFrameData m_VkFrames[FRAME_OVERLAP];
 		
 		VulkanCommandBuffer m_MainCommandBuffers[FRAME_OVERLAP];
 		VulkanCommandBuffer m_ImGuiCommandBuffers[FRAME_OVERLAP];
@@ -143,5 +144,8 @@ namespace HBL2
 
 		bool m_Resize = false;
 		glm::uvec2 m_NewSize{};
+
+		std::mutex m_GraphicsQueueSubmitMutex;
+		std::mutex m_DeletionQueueMutex;
 	};
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Base.h"
+#include "BaseTypeDefinitions.h"
 #include "TypeDescriptors.h"
 
 #include <glm/glm.hpp>
@@ -11,15 +12,6 @@
 
 namespace HBL2
 {
-	struct Texture {};
-	struct Buffer {};
-	struct Shader {};
-	struct FrameBuffer;
-	struct BindGroup;
-	struct BindGroupLayout;
-	struct RenderPass;
-	struct RenderPassLayout;
-
 	struct Vertex
 	{
 		glm::vec3 Position;
@@ -89,6 +81,11 @@ namespace HBL2
 			ImportedLocalTransform = std::move(*((LocalTransform*)&desc.importedLocalTransform));
 		}
 
+		bool IsEmpty() const
+		{
+			return SubMeshes.empty();
+		}
+
 		const char* DebugName = "";
 		std::vector<SubMesh> SubMeshes;
 		Handle<Buffer> IndexBuffer;
@@ -106,47 +103,34 @@ namespace HBL2
 	struct Mesh
 	{
 		Mesh() = default;
-		Mesh(const MeshDescriptor&& desc)
-		{
-			DebugName = desc.debugName;
+		Mesh(const MeshDescriptor&& desc);
+		Mesh(const MeshDescriptorEx&& desc);
 
-			for (const MeshPartDescriptor& meshPartDescriptor : desc.meshes)
-			{
-				Meshes.emplace_back(std::forward<const MeshPartDescriptor>(meshPartDescriptor));
-			}
-
-			for (const MeshPart& meshPart : Meshes)
-			{
-				Extents.Min.x = glm::min(meshPart.Extents.Min.x, Extents.Min.x);
-				Extents.Min.y = glm::min(meshPart.Extents.Min.y, Extents.Min.y);
-				Extents.Min.z = glm::min(meshPart.Extents.Min.z, Extents.Min.z);
-
-				Extents.Max.x = glm::max(meshPart.Extents.Max.x, Extents.Max.x);
-				Extents.Max.y = glm::max(meshPart.Extents.Max.y, Extents.Max.y);
-				Extents.Max.z = glm::max(meshPart.Extents.Max.z, Extents.Max.z);
-			}
-		}
+		bool IsEmpty();
+		void MarkAsEmpty();
+		void Reimport(const MeshDescriptor&& desc);
+		void Reimport(const MeshDescriptorEx&& desc);
 
 		const char* DebugName = "";
 		std::vector<MeshPart> Meshes;
 		MeshExtents Extents;
+
+	private:
+		std::atomic<bool> m_HasItems{ false };
 	};
 
 	struct Material
 	{
 		Material() = default;
-		Material(const MaterialDescriptor&& desc)
-		{
-			DebugName = desc.debugName;
-			Shader = desc.shader;
-			BindGroup = desc.bindGroup;
-		}
+		Material(const MaterialDescriptor&& desc);
+
+		void Reimport(const MaterialDescriptor&& desc);
 
 		const char* DebugName = "";
 		Handle<Shader> Shader;
 		Handle<BindGroup> BindGroup;
 
-		ShaderDescriptor::RenderPipeline::Variant VariantDescriptor = {};
+		ShaderDescriptor::RenderPipeline::PackedVariant VariantHash = {};
 
 		glm::vec4 AlbedoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		float Glossiness = 3.0f;

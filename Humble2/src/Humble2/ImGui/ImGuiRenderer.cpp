@@ -1,8 +1,49 @@
 #include "ImGuiRenderer.h"
 
+#include "Core\Context.h"
+
 namespace HBL2
 {
 	ImGuiRenderer* ImGuiRenderer::Instance = nullptr;
+
+	void ImGuiRenderer::Create(const ImGuiRendererSpecification&& spec)
+	{
+		// Setup Dear ImGui context
+		IMGUI_CHECKVERSION();
+		m_ImGuiContext = ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+		if (Context::Mode == Mode::Editor)
+		{
+			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+
+			if (spec.EnableMultiViewports)
+			{
+				io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
+			}
+		}
+
+		const auto& boldFontPath = std::filesystem::path("assets") / "fonts" / "OpenSans-Bold.ttf";
+		const auto& regularFontPath = std::filesystem::path("assets") / "fonts" / "OpenSans-Regular.ttf";
+
+		float fontSize = 18.0f;
+		io.Fonts->AddFontFromFileTTF(boldFontPath.string().c_str(), fontSize);
+		io.FontDefault = io.Fonts->AddFontFromFileTTF(regularFontPath.string().c_str(), fontSize);
+
+		// Setup Dear ImGui style
+		ImGui::StyleColorsDark();
+		SetImGuiStyle();
+
+		// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
+		ImGuiStyle& style = ImGui::GetStyle();
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			style.WindowRounding = 0.0f;
+			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+		}
+	}
 
 	ImGuiContext* ImGuiRenderer::GetContext()
 	{
@@ -46,9 +87,9 @@ namespace HBL2
         // Tabs
         colors[ImGuiCol_Tab] = ImVec4(0.08f, 0.08f, 0.08f, 1.0f);
         colors[ImGuiCol_TabHovered] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);
-        colors[ImGuiCol_TabActive] = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);
-        colors[ImGuiCol_TabUnfocused] = ImVec4(0.07f, 0.07f, 0.07f, 1.0f);
-        colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.12f, 0.12f, 0.12f, 1.0f);
+        colors[ImGuiCol_TabSelected] = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);
+        colors[ImGuiCol_TabDimmed] = ImVec4(0.07f, 0.07f, 0.07f, 1.0f);
+        colors[ImGuiCol_TabDimmedSelected] = ImVec4(0.12f, 0.12f, 0.12f, 1.0f);
 
         // Text
         colors[ImGuiCol_Text] = ImVec4(0.90f, 0.90f, 0.90f, 1.0f);
@@ -65,6 +106,35 @@ namespace HBL2
         style.FramePadding = ImVec2(5.0f, 5.0f);
 
         SetEditorTheme(ImVec4(0.850f, 0.600f, 0.150f, 1.0f));
+	}
+
+    ImDrawData* ImGuiRenderer::DeepCopyImDrawData(const ImDrawData* src)
+	{
+		if (!src)
+		{
+			return nullptr;
+		}
+
+		ImDrawData* dst = IM_NEW(ImDrawData)();
+		dst->Valid = src->Valid;
+		dst->CmdListsCount = src->CmdListsCount;
+		dst->TotalIdxCount = src->TotalIdxCount;
+		dst->TotalVtxCount = src->TotalVtxCount;
+		dst->DisplayPos = src->DisplayPos;
+		dst->DisplaySize = src->DisplaySize;
+		dst->FramebufferScale = src->FramebufferScale;
+		dst->OwnerViewport = src->OwnerViewport;
+
+		if (src->CmdListsCount > 0)
+		{
+			dst->CmdLists.resize(src->CmdListsCount);
+			for (int i = 0; i < src->CmdListsCount; i++)
+			{
+				dst->CmdLists[i] = src->CmdLists[i]->CloneOutput();
+			}
+		}
+
+		return dst;
 	}
 
     void ImGuiRenderer::SetEditorTheme(const ImVec4& accentColor)

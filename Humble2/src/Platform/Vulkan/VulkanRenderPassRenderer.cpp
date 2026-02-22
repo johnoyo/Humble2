@@ -14,16 +14,18 @@ namespace HBL2
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
-		VulkanBindGroup* globalBindGroup = nullptr;
+		VulkanBindGroupHot* globalBindGroupHot = nullptr;
+		VulkanBindGroupCold* globalBindGroupCold = nullptr;
 
 		if (globalDraw.BindGroup.IsValid())
 		{
-			globalBindGroup = rm->GetBindGroup(globalDraw.BindGroup);
+			globalBindGroupHot = rm->GetBindGroupHot(globalDraw.BindGroup);
+			globalBindGroupCold = rm->GetBindGroupCold(globalDraw.BindGroup);
 
 			// Map global buffers per frame data (i.e.: Camera and lighting data)
-			for (const auto& bufferEntry : globalBindGroup->Buffers)
+			for (const auto& bufferEntry : globalBindGroupCold->Buffers)
 			{
-				VulkanBuffer* buffer = rm->GetBuffer(bufferEntry.buffer);
+				VulkanBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
 
 				void* data;
 				vmaMapMemory(renderer->GetAllocator(), buffer->Allocation, &data);
@@ -34,28 +36,35 @@ namespace HBL2
 
 		Handle<Buffer> prevIndexBuffer;
 		Handle<Buffer> prevVertexBuffer;
+		Handle<Shader> prevShader;
+
 		uint64_t prevVariantHash = 0;
+		uint64_t prevPipelineLayoutHash = 0;
 
 		for (const auto& draw : draws.GetDraws())
 		{
-			VulkanShader* shader = rm->GetShader(draw.Shader);
+			VulkanShaderHot* shader = rm->GetShaderHot(draw.Shader);
 
-			if (prevVariantHash != draw.VariantHash)
+			if (prevVariantHash != draw.VariantHandle || prevShader != draw.Shader)
 			{
-				// Get pipeline from cache or create it. 
-				VkPipeline pipeline = shader->GetOrCreateVariant(draw.VariantHash, draw.Material);
-
 				// Bind pipeline
-				vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+				vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)draw.VariantHandle);
 
-				// Bind global descriptor set for per frame data (i.e.: Camera and lighting data).
-				if (globalBindGroup != nullptr)
+				prevVariantHash = draw.VariantHandle;
+				prevShader = draw.Shader;
+
+				if (prevPipelineLayoutHash != shader->PipelineLayoutHash)
 				{
-					uint32_t offsetCount = (globalDraw.GlobalBufferOffset == UINT32_MAX ? 0 : 1);
-					vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 0, 1, &globalBindGroup->DescriptorSet, offsetCount, &globalDraw.GlobalBufferOffset);
-				}
+					// Bind global descriptor set for per frame data (i.e.: Camera and lighting data).
+					if (globalBindGroupHot != nullptr)
+					{
+						uint32_t offsetCount = (globalDraw.GlobalBufferOffset == UINT32_MAX ? 0 : 1);
+						const uint32_t* offset = (globalDraw.GlobalBufferOffset == UINT32_MAX ? nullptr : &globalDraw.GlobalBufferOffset);
+						vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 0, 1, &globalBindGroupHot->DescriptorSet, offsetCount, offset);
+					}
 
-				prevVariantHash = draw.VariantHash;
+					prevPipelineLayoutHash = shader->PipelineLayoutHash;
+				}
 			}
 
 			// Bind the index buffer if needed.
@@ -63,7 +72,7 @@ namespace HBL2
 			{
 				if (draw.IndexBuffer.IsValid())
 				{
-					VulkanBuffer* indexBuffer = rm->GetBuffer(draw.IndexBuffer);
+					VulkanBufferHot* indexBuffer = rm->GetBufferHot(draw.IndexBuffer);
 					vkCmdBindIndexBuffer(m_CommandBuffer, indexBuffer->Buffer, 0, VK_INDEX_TYPE_UINT32);
 
 					prevIndexBuffer = draw.IndexBuffer;
@@ -73,7 +82,7 @@ namespace HBL2
 			// Bind the vertex buffer if needed.
 			if (prevVertexBuffer != draw.VertexBuffer)
 			{
-				VulkanBuffer* vertexBuffer = rm->GetBuffer(draw.VertexBuffer);
+				VulkanBufferHot* vertexBuffer = rm->GetBufferHot(draw.VertexBuffer);
 				VkDeviceSize offsets[] = { 0 };
 				vkCmdBindVertexBuffers(m_CommandBuffer, 0, 1, &vertexBuffer->Buffer, offsets);
 				prevVertexBuffer = draw.VertexBuffer;
@@ -84,8 +93,8 @@ namespace HBL2
 			{
 				uint32_t dynamicOffsetCount = (globalDraw.UsesDynamicOffset ? 1 : 0);
 
-				VulkanBindGroup* drawBindGroup = rm->GetBindGroup(draw.BindGroup);
-				vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 1, 1, &drawBindGroup->DescriptorSet, dynamicOffsetCount, &draw.Offset);
+				VulkanBindGroupHot* drawBindGroupHot = rm->GetBindGroupHot(draw.BindGroup);
+				vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 1, 1, &drawBindGroupHot->DescriptorSet, dynamicOffsetCount, &draw.Offset);
 			}
 
 			// Draw the mesh accordingly

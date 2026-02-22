@@ -51,6 +51,8 @@ namespace HBL2
 {
 	void VulkanDevice::Initialize()
 	{
+		Window::Instance->Setup();
+
 		CreateInstance();
 		SetupDebugMessenger();
 		CreateSurface();

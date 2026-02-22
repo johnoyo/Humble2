@@ -9,6 +9,7 @@
 #include "Renderer\Renderer.h"
 #include "Resources\ResourceManager.h"
 #include "Physics\Physics.h"
+#include "Sound\Sound.h"
 
 #include <string>
 #include <filesystem>
@@ -31,8 +32,14 @@ namespace HBL2
 		bool ShowColliders3D = false;
 		bool ShowBoundingBoxes3D = false;
 
-		uint32_t MaxAppMemory = 1_GB;
-		uint32_t MaxUniformBufferMemory = 64_MB;
+		SoundEngineImpl SoundImpl = SoundEngineImpl::FMOD;
+
+		bool EditorMultipleViewports = true;
+
+		uint32_t MaxAppMemory = 500_MB;
+		uint32_t MaxUniformBufferMemory = 32_MB;
+		ResourceManagerSpecification ResourceManagerSpec = {};
+		AssetManagerSpecification AssetManagerSpec = {};
 	};
 
 	struct HBL2_API ProjectSpecification

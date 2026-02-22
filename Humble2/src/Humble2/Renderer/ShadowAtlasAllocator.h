@@ -3,8 +3,7 @@
 // Inspired by the technique used in doom: https://www.adriancourreges.com/blog/2016/09/09/doom-2016-graphics-study/
 
 #include "Core\Allocators.h"
-#include "Utilities\Collections\DynamicArray.h"
-#include "Utilities\Allocators\BinAllocator.h"
+#include "Utilities\Collections\Collections.h"
 
 #include <glm\glm.hpp>
 
@@ -40,6 +39,9 @@ namespace HBL2
         void Clear();
 
     private:
-        DynamicArray<ShadowTile, BinAllocator> m_FreeTiles = MakeDynamicArray<ShadowTile>(&Allocator::Persistent);
+        PoolReservation* m_Reservation = nullptr;
+        Arena m_Arena;
+
+        DArray<ShadowTile> m_FreeTiles = MakeEmptyDArray<ShadowTile>();
     };
 }

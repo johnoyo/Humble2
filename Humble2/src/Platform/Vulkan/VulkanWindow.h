@@ -11,5 +11,6 @@ namespace HBL2
 		~VulkanWindow() = default;
 
 		virtual void Create() override;
+		virtual void Setup() override;
 	};
 }

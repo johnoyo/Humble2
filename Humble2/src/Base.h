@@ -21,6 +21,7 @@
 		#error "Platform is not supported yet!"
 	#endif
 
+	#define ARENA_DEBUG
 	#define HBL2_ENABLE_ASSERTS
 #elif RELEASE
 	#define HBL2_PROFILE(...) HBL2::ProfilerScope profiler = HBL2::ProfilerScope(__VA_ARGS__);
@@ -35,6 +36,7 @@
 		#error "Platform is not supported yet!"
 	#endif
 
+	#define ARENA_DEBUG
 	#define HBL2_ENABLE_ASSERTS
 #else
 	#define HBL2_PROFILE(...)

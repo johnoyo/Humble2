@@ -191,9 +191,9 @@ namespace HBL2
 							{
 								data.set(componentMeta, AssetManager::Instance->GetAsset<Scene>(assetHandle));
 							}
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}					
 				}
 			}
@@ -216,9 +216,9 @@ namespace HBL2
 							{
 								data.set(componentMeta, AssetManager::Instance->GetAsset<Sound>(assetHandle));
 							}
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				}
 			}
@@ -241,9 +241,9 @@ namespace HBL2
 							{
 								data.set(componentMeta, AssetManager::Instance->GetAsset<Shader>(assetHandle));
 							}
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				}
 			}
@@ -266,9 +266,9 @@ namespace HBL2
 							{
 								data.set(componentMeta, AssetManager::Instance->GetAsset<Material>(assetHandle));
 							}
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				}
 			}
@@ -291,9 +291,9 @@ namespace HBL2
 							{
 								data.set(componentMeta, AssetManager::Instance->GetAsset<Mesh>(assetHandle));
 							}
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				}
 			}
@@ -316,9 +316,9 @@ namespace HBL2
 							{
 								data.set(componentMeta, AssetManager::Instance->GetAsset<Texture>(assetHandle));
 							}
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				}
 			}
@@ -341,9 +341,9 @@ namespace HBL2
 							{
 								data.set(componentMeta, AssetManager::Instance->GetAsset<Prefab>(assetHandle));
 							}
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				}
 			}
@@ -362,8 +362,9 @@ namespace HBL2
 							entt::entity retrievedEntity = ctx->FindEntityByUUID(entityUUID);
 
 							data.set(componentMeta, retrievedEntity);
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				}
 			}
@@ -382,8 +383,9 @@ namespace HBL2
 							Entity retrievedEntity = ctx->FindEntityByUUID(entityUUID);
 
 							data.set(componentMeta, retrievedEntity);
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				}
 			}

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Core\Context.h>
-#include <Resources\ResourceManager.h>
-#include <Utilities\ShaderUtilities.h>
-#include <Utilities\MeshUtilities.h>
+#include "Core\Context.h"
+#include "Resources\ResourceManager.h"
+#include "Utilities\ShaderUtilities.h"
+#include "Utilities\MeshUtilities.h"
 
 #include <entt\include\entt.hpp>
 
@@ -93,7 +93,7 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/plane.obj");
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::PLANE);
 			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
 
 			return entity;
@@ -113,7 +113,7 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/tessellated_plane.obj");
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::TESSELATED_PLANE);
 			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
 
 			return entity;
@@ -133,7 +133,7 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/cube.obj");
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::CUBE);
 			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
 
 			return entity;
@@ -153,7 +153,7 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/sphere.obj");
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::SPHERE);
 			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
 
 			return entity;
@@ -173,7 +173,7 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/capsule.obj");
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::CAPSULE);
 			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
 
 			return entity;
@@ -193,7 +193,7 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/cylinder.obj");
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::CYLINDER);
 			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
 
 			return entity;
@@ -213,7 +213,7 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetLoadedMeshHandle("assets/meshes/torus.obj");
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::TORUS);
 			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
 
 			return entity;
@@ -249,7 +249,6 @@ namespace HBL2
 			auto entity = scene->CreateEntity("Terrain");
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 
-			scene->AddComponent<HBL2::Component::Link>(entity);
 			scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 			scene->AddComponent<HBL2::Component::AnimationCurve>(entity);
 			scene->AddComponent<HBL2::Component::Terrain>(entity);

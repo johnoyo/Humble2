@@ -94,6 +94,7 @@ StyleCopReport.xml
 *.svclog
 *.scc
 *.sln
+*.slnx
 *.vcxproj
 *.filters
 

@@ -249,7 +249,6 @@ void main()
     // Accumulators for diffuse & specular
     vec3 diffuseAcc = vec3(0.0);
     vec3 specularAcc = vec3(0.0);
-    float totalShadow = 0.0;
 
     // Loop over all lights
     for (int i = 0; i < int(u_Light.Count); ++i)
@@ -257,100 +256,84 @@ void main()
         float intensity = u_Light.Metadata[i].x;
         vec3 lightCol = u_Light.Colors[i].xyz;
 
-        if (u_Light.Positions[i].w == 0.0)
-        {
-            // Directional Light
+        float shadow = 0.0;
+
+        if (u_Light.Positions[i].w == 0.0) {
             vec3 L = normalize(-u_Light.Directions[i].xyz);
 
-            // Diffuse
             float diff = max(dot(normal, L), 0.0);
             vec3 D = diff * lightCol * intensity;
 
-            // Specular
             vec3 H = normalize(L + camDir);
             float spec = pow(max(dot(normal, H), 0.0), 32.0) * v_Glossiness;
             vec3 S = lightCol * spec * intensity;
 
-            // Accumulate
-            diffuseAcc  += D;
-            specularAcc += S;
-
-            if (u_Light.ShadowData[i].x == 1.0)
+            if (u_Light.ShadowData[i].x == 1.0 && diff > 0.0)
             {
-                mat4 lightSpaceMatrix = u_Light.LightSpaceMatrices[i];
-                vec4 fragPosLightSpace = lightSpaceMatrix * vec4(v_Position, 1.0);
-
-                totalShadow += ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
+                vec4 fragPosLightSpace = u_Light.LightSpaceMatrices[i] * vec4(v_Position, 1.0);
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
             }
+
+            diffuseAcc  += (1.0 - shadow) * D;
+            specularAcc += (1.0 - shadow) * S;
         }
         else if (u_Light.Positions[i].w == 1.0)
         {
-            // Point Light
-            vec3 L = normalize(u_Light.Positions[i].xyz - v_Position);
-            float dist = length(u_Light.Positions[i].xyz - v_Position);
+            vec3 toLight = u_Light.Positions[i].xyz - v_Position;
+            float dist = length(toLight);
+            vec3 L = toLight / dist;
+
             float att = 1.0 / (u_Light.Metadata[i].y + u_Light.Metadata[i].z * dist + u_Light.Metadata[i].w * dist * dist);
 
-            // Diffuse
             float diff = max(dot(normal, L), 0.0);
             vec3 D = diff * lightCol * intensity * att;
 
-            // Specular
             vec3 H = normalize(L + camDir);
             float spec = pow(max(dot(normal, H), 0.0), 32.0) * v_Glossiness;
             vec3 S = lightCol * spec * intensity * att;
 
-            // Accumulate
-            diffuseAcc  += D;
-            specularAcc += S;
-
-            if (u_Light.ShadowData[i].x == 1.0 && att >= 0.0)
+            if (u_Light.ShadowData[i].x == 1.0 && diff > 0.0)
             {
-                mat4 lightSpaceMatrix = u_Light.LightSpaceMatrices[i];
-                vec4 fragPosLightSpace = lightSpaceMatrix * vec4(v_Position, 1.0);
-
-                totalShadow += ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
+                vec4 fragPosLightSpace = u_Light.LightSpaceMatrices[i] * vec4(v_Position, 1.0);
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
             }
+
+            diffuseAcc  += (1.0 - shadow) * D;
+            specularAcc += (1.0 - shadow) * S;
         }
         else if (u_Light.Positions[i].w == 2.0)
         {
-            // Spot Light
-            vec3 L = normalize(u_Light.Positions[i].xyz - v_Position);
+            vec3 toLight = u_Light.Positions[i].xyz - v_Position;
+            float dist = length(toLight);
+            vec3 L = toLight / dist;
+
             float inner = u_Light.Metadata[i].y;
             float outer = u_Light.Metadata[i].z;
             float theta = dot(L, normalize(-u_Light.Directions[i].xyz));
             float spotFrac = clamp((theta - outer) / (inner - outer), 0.0, 1.0);
 
-            float dist = length(u_Light.Positions[i].xyz - v_Position);
-            float att = 1.0 / (1.0 + 0.09  * dist + 0.032 * dist * dist);
+            float att = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
 
-            // Diffuse
             float diff = max(dot(normal, L), 0.0);
             vec3 D = diff * lightCol * intensity * att * spotFrac;
 
-            // Specular
             vec3 H = normalize(L + camDir);
             float spec = pow(max(dot(normal, H), 0.0), 32.0) * v_Glossiness;
             vec3 S = lightCol * spec * intensity * att * spotFrac;
-
-            // Accumulate
-            diffuseAcc  += D;
-            specularAcc += S;
 
             bool lit = (spotFrac > 0.0) && (diff > 0.0) && (att > 0.0);
 
             if (u_Light.ShadowData[i].x == 1.0 && lit)
             {
-                mat4 lightSpaceMatrix = u_Light.LightSpaceMatrices[i];
-                vec4 fragPosLightSpace = lightSpaceMatrix * vec4(v_Position, 1.0);
-
-                totalShadow += ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
+                vec4 fragPosLightSpace = u_Light.LightSpaceMatrices[i] * vec4(v_Position, 1.0);
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
             }
-        }        
+
+            diffuseAcc  += (1.0 - shadow) * D;
+            specularAcc += (1.0 - shadow) * S;
+        }
     }
 
-    totalShadow = clamp(totalShadow / float(u_Light.Count), 0.0, 1.0);
-
-    // Final color
-    vec3 result = ambient + (1.0 - totalShadow) * (textureColor * diffuseAcc + specularAcc);
+    vec3 result = ambient + (textureColor * diffuseAcc + specularAcc);
     FragColor = vec4(result * v_Color.rgb, 1.0);
 }

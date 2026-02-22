@@ -2,6 +2,7 @@
 
 #include "Renderer\Enums.h"
 #include "Handle.h"
+#include "BaseTypeDefinitions.h"
 
 #include "Utilities\Collections\Span.h"
 #include "Utilities\Collections\BitFlags.h"
@@ -13,15 +14,6 @@
 
 namespace HBL2
 {
-	struct Texture;
-	struct TextureView;
-	struct Buffer;
-	struct Shader;
-	struct Framebuffer;
-	struct BindGroup;
-	struct BindGroupLayout;
-	struct RenderPass;
-	struct RenderPassLayout;
 	struct Material;
 
 	struct TextureDescriptor
@@ -139,59 +131,85 @@ namespace HBL2
 				BlendFactor srcAlphaFactor = BlendFactor::ONE;
 				BlendFactor dstAlphaFactor = BlendFactor::ZERO;
 				bool colorOutput = true;
-				bool enabled = true;
+				bool enabled = false;
 			};
 
 			struct DepthTest
 			{
 				bool enabled = true;
-				bool writeEnabled = true;
+				bool writeEnabled = false;
 				bool stencilEnabled = true;
-				Compare depthTest = Compare::LESS;
+				Compare depthTest = Compare::LESS_OR_EQUAL;
 			};
 
-			struct Variant
+			using packed_size = uint64_t;
+
+			struct PackedVariant
 			{
-				UUID shaderHashKey = 0;
-				BlendState blend{};
-				DepthTest depthTest{};
-				Topology topology = Topology::TRIANGLE_LIST;
-				PolygonMode polygonMode = PolygonMode::FILL;
-				CullMode cullMode = CullMode::BACK;
-				FrontFace frontFace = FrontFace::CLOCKWISE;
+				// Raster
+				packed_size topology : 3 = (packed_size)Topology::TRIANGLE_LIST;
+				packed_size polygonMode : 2 = (packed_size)PolygonMode::FILL;
+				packed_size cullMode : 2 = (packed_size)CullMode::BACK;
+				packed_size frontFace : 1 = (packed_size)FrontFace::CLOCKWISE;
 
-				inline bool operator==(const Variant& other) const
+				// Blend
+				packed_size blendEnabled : 1 = 0; // false
+				packed_size colorOutput : 1 = 1; // true
+				packed_size colorOp : 3 = (packed_size)BlendOperation::ADD;
+				packed_size alphaOp : 3 = (packed_size)BlendOperation::ADD;
+				packed_size srcColorFactor : 2 = (packed_size)BlendFactor::SRC_ALPHA;
+				packed_size dstColorFactor : 2 = (packed_size)BlendFactor::ONE_MINUS_SRC_ALPHA;
+				packed_size srcAlphaFactor : 2 = (packed_size)BlendFactor::ONE;
+				packed_size dstAlphaFactor : 2 = (packed_size)BlendFactor::ZERO;
+
+				// Depth
+				packed_size depthEnabled : 1 = 1; // true
+				packed_size depthWrite : 1 = 0; // false
+				packed_size stencilEnabled : 1 = 1; // true
+				packed_size depthCompare : 3 = (packed_size)Compare::LESS_OR_EQUAL;
+
+				packed_size _padding : 34 = 0;
+
+				constexpr uint64_t Key() const noexcept { return std::bit_cast<uint64_t>(*this); }
+
+				static constexpr PackedVariant FromKey(packed_size key) noexcept
 				{
-					return blend.colorOp == other.blend.colorOp &&
-						blend.srcColorFactor == other.blend.srcColorFactor &&
-						blend.dstColorFactor == other.blend.dstColorFactor &&
-						blend.alphaOp == other.blend.alphaOp &&
-						blend.srcAlphaFactor == other.blend.srcAlphaFactor &&
-						blend.dstAlphaFactor == other.blend.dstAlphaFactor &&
-						blend.colorOutput == other.blend.colorOutput &&
-						blend.enabled == other.blend.enabled &&
+					return std::bit_cast<PackedVariant>(key);
+				}
 
-						depthTest.enabled == other.depthTest.enabled &&
-						depthTest.writeEnabled == other.depthTest.writeEnabled &&
-						depthTest.stencilEnabled == other.depthTest.stencilEnabled &&
-						depthTest.depthTest == other.depthTest.depthTest &&
+				friend constexpr bool operator<(const PackedVariant& a, const PackedVariant& b) noexcept
+				{
+					return std::bit_cast<uint64_t>(a) < std::bit_cast<uint64_t>(b);
+				}
 
-						topology == other.topology &&
-						polygonMode == other.polygonMode &&
-						cullMode == other.cullMode &&
-						frontFace == other.frontFace &&
+				friend constexpr bool operator<(const PackedVariant& a, const uint64_t& b) noexcept
+				{
+					return std::bit_cast<uint64_t>(a) < b;
+				}
 
-						shaderHashKey == other.shaderHashKey;
+				friend constexpr bool operator==(const PackedVariant& a, const PackedVariant& b) noexcept
+				{
+					return std::bit_cast<uint64_t>(a) == std::bit_cast<uint64_t>(b);
+				}
+
+				friend constexpr bool operator==(const PackedVariant& a, const uint64_t& b) noexcept
+				{
+					return std::bit_cast<uint64_t>(a) == b;
 				}
 			};
 
+			static_assert(sizeof(PackedVariant) == sizeof(packed_size));
+			static_assert(std::is_trivially_copyable_v<PackedVariant>);
+
 			std::initializer_list<VertexBufferBinding> vertexBufferBindings;
 
-			Span<const Variant> variants;
+			Span<const PackedVariant> variants;
 		};
 		RenderPipeline renderPipeline;
 		Handle<RenderPass> renderPass;
 	};
+
+	static inline const ShaderDescriptor::RenderPipeline::PackedVariant g_NullVariant = std::bit_cast<ShaderDescriptor::RenderPipeline::PackedVariant>(uint64_t{ 0 });
 
 	struct RenderPassLayoutDescriptor
 	{
@@ -265,10 +283,24 @@ namespace HBL2
 		} importedLocalTransform;
 	};
 
-	struct MeshDescriptor
+	struct MeshDescriptorEx
 	{
 		const char* debugName;
 		std::vector<MeshPartDescriptor> meshes;
+	};
+
+	struct MeshDescriptorSettings
+	{
+		bool recalculateNormals = false;
+		bool recalculateBounds = false;
+	};
+
+	struct MeshDescriptor
+	{
+		const char* debugName;
+		Span<const float> vertices;
+		Span<const uint32_t> indeces;
+		MeshDescriptorSettings settings = {};
 	};
 
 	struct MaterialDescriptor
@@ -276,53 +308,5 @@ namespace HBL2
 		const char* debugName;
 		Handle<Shader> shader;
 		Handle<BindGroup> bindGroup;
-	};
-}
-
-namespace std
-{
-	template<>
-	struct hash<HBL2::ShaderDescriptor::RenderPipeline::Variant>
-	{
-		size_t operator()(const HBL2::ShaderDescriptor::RenderPipeline::Variant& variantDesc) const
-		{
-			size_t h = 0;
-
-			// Helper to combine hashes (standard approach)
-			auto hash_combine = [](size_t& seed, size_t hash)
-			{
-				seed ^= hash + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			};
-
-			// Hash Variant
-			const auto& v = variantDesc;
-
-			// BlendState
-			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.colorOp)));
-			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.srcColorFactor)));
-			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.dstColorFactor)));
-			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.alphaOp)));
-			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.srcAlphaFactor)));
-			hash_combine(h, std::hash<int>()(static_cast<int>(v.blend.dstAlphaFactor)));
-			hash_combine(h, std::hash<bool>()(v.blend.colorOutput));
-			hash_combine(h, std::hash<bool>()(v.blend.enabled));
-
-			// DepthTest
-			hash_combine(h, std::hash<bool>()(v.depthTest.enabled));
-			hash_combine(h, std::hash<bool>()(v.depthTest.writeEnabled));
-			hash_combine(h, std::hash<bool>()(v.depthTest.stencilEnabled));
-			hash_combine(h, std::hash<int>()(static_cast<int>(v.depthTest.depthTest)));
-
-			// Other Variant fields
-			hash_combine(h, std::hash<int>()(static_cast<int>(v.topology)));
-			hash_combine(h, std::hash<int>()(static_cast<int>(v.polygonMode)));
-			hash_combine(h, std::hash<int>()(static_cast<int>(v.cullMode)));
-			hash_combine(h, std::hash<int>()(static_cast<int>(v.frontFace)));
-
-			// Shader hash key
-			hash_combine(h, std::hash<HBL2::UUID>()(static_cast<HBL2::UUID>(v.shaderHashKey)));
-
-			return h;
-		}
 	};
 }

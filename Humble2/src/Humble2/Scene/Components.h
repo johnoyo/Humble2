@@ -3,6 +3,8 @@
 #include "Base.h"
 
 #include "Resources\Handle.h"
+#include "Resources\Types.h"
+#include "Sound\Sound.h"
 #include "Asset\Asset.h"
 
 #include "Physics\Physics.h"
@@ -15,12 +17,6 @@
 
 namespace HBL2
 {
-	struct Mesh;
-	struct Material;
-	struct Sound;
-	struct Texture;
-	struct Buffer;
-
 	namespace Component
 	{
 		struct HBL2_API Tag
@@ -40,9 +36,26 @@ namespace HBL2
 			glm::quat QRotation = glm::quat(Rotation);
 			glm::vec3 Scale = { 1.f, 1.f, 1.f };
 
+			glm::vec3 WorldTranslation = { 0.f, 0.f, 0.f };
+			glm::vec3 WorldRotation = { 0.f, 0.f, 0.f }; // degrees
+			glm::vec3 WorldScale = { 1.f, 1.f, 1.f };
+
 			glm::mat4 LocalMatrix = glm::mat4(1.f);
 			glm::mat4 WorldMatrix = glm::mat4(1.f);
+
 			bool Static = false;
+			bool Dirty = true;
+		};
+
+		struct HBL2_API TransformEx
+		{
+			glm::vec3 PrevTranslation = { 0.f, 0.f, 0.f };
+			glm::vec3 PrevRotation = { 0.f, 0.f, 0.f };
+			glm::vec3 PrevScale = { 1.f, 1.f, 1.f };
+
+			glm::vec3 PrevWorldTranslation = { 0.f, 0.f, 0.f };
+			glm::vec3 PrevWorldRotation = { 0.f, 0.f, 0.f };
+			glm::vec3 PrevWorldScale = { 1.f, 1.f, 1.f };
 		};
 
 		struct HBL2_API Link
@@ -256,6 +269,16 @@ namespace HBL2
 		{
 			UUID Id = 0;
 			uint32_t Version = 0;
+			bool Override = true;
+		};
+
+		/**
+		 * @brief Stable ID inside the prefab, its used to transfer over to the new instance the UUIDs of each entity.
+		 *		  Each entity inside a prefab has this component.
+		 */
+		struct HBL2_API PrefabEntity
+		{
+			UUID EntityId = 0;
 		};
 
 		struct HBL2_API Terrain
@@ -278,6 +301,8 @@ namespace HBL2
 			float SqrViewerMoveThresholdForChunkUpdate = ViewerMoveThresholdForChunkUpdate * ViewerMoveThresholdForChunkUpdate;
 
 			glm::vec3 OldViewerPosition{};
+
+			Handle<Asset> HeightMap;
 
 			float Scale = 1.f;
 			float NoiseScale = 25.f;
@@ -401,9 +426,6 @@ namespace HBL2
 				int32_t Lod = 0;
 				bool HasMesh = false;
 				bool HasRequestedMesh = false;
-
-				Handle<Buffer> VertexBuffer;
-				Handle<Buffer> IndexBuffer;
 				Handle<Mesh> Mesh;
 			};
 

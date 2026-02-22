@@ -2,10 +2,15 @@
 
 #include "Resources\Types.h"
 #include "Resources\Handle.h"
+
 #include "CommandBuffer.h"
 #include "UniformRingBuffer.h"
 #include "RenderPassPool.h"
-#include "Renderer\ShadowAtlasAllocator.h"
+#include "ShadowAtlasAllocator.h"
+#include "SceneRenderer.h"
+
+#include "ImGui\imgui_threaded_rendering.h"
+#include <queue>
 
 namespace HBL2
 {
@@ -81,6 +86,23 @@ namespace HBL2
 		}
 	};
 
+	struct FrameData
+	{
+		SceneRenderer* Renderer = nullptr;
+		void* RenderData = nullptr;
+		void* DebugRenderData = nullptr;
+		int32_t AcquiredIndex = -1;
+
+		ImDrawDataSnapshot ImGuiRenderData;
+	};
+
+	struct RenderCommand
+	{
+		std::function<void()> Fn;
+		std::function<void()> Done;
+	};
+
+
 	class HBL2_API Renderer
 	{
 	public:
@@ -88,11 +110,31 @@ namespace HBL2
 
 		virtual ~Renderer() = default;
 
+		static constexpr uint32_t FrameCount = 2;
+
 		void Initialize();
 		virtual void BeginFrame() = 0;
 		virtual void EndFrame() = 0;
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
+
+		void Render(const FrameData& frameData);
+		FrameData* WaitAndRender();
+		void WaitAndBegin();
+		void MarkAndSubmit();
+		void WaitForRenderThreadIdle();
+		void CollectRenderData(SceneRenderer* renderer, void* renderData);
+		void CollectDebugRenderData(void* renderData);
+		void CollectImGuiRenderData(void* renderData, double currentTime);
+		void ReleaseFrameSlot(int32_t acquiredIndex);
+		void ClearFrameDataBuffer();
+		inline uint32_t GetFrameWriteIndex() const { HBL2_CORE_ASSERT(m_ReservedWriteIndex != UINT32_MAX, "WriteIndex not reserved!"); return m_ReservedWriteIndex; }
+		void ResetForSceneChange();
+		void ShutdownRenderThread();
+
+		void Submit(std::function<void()> fn);
+		void SubmitBlocking(std::function<void()> fn);
+		void ProcessSubmittedCommands();
 
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) = 0;
 
@@ -106,7 +148,9 @@ namespace HBL2
 
 		virtual const uint32_t GetFrameIndex() const = 0;
 		const uint32_t GetFrameNumber() const { return m_FrameNumber; }
-		RendererStats& GetStats() { return m_Stats; }
+		RendererStats& GetStats() { return m_CurrentStats; }
+		RendererStats& GetStatsForDisplay() { return m_PreviousStats; }
+		void SwapAndResetStats() { (m_PreviousStats = m_CurrentStats, m_CurrentStats.Reset()); }
 
 		const Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
 		const Handle<RenderPass> GetRenderingRenderPass() const { return m_RenderingRenderPass; }
@@ -149,9 +193,10 @@ namespace HBL2
 		virtual void PostInitialize() = 0;
 
 	protected:
-		uint32_t m_FrameNumber = 0;
+		std::atomic_int32_t m_FrameNumber = { 0 };
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::NONE;
-		RendererStats m_Stats{};
+		RendererStats m_CurrentStats{};
+		RendererStats m_PreviousStats{};
 		RenderPassPool m_RenderPassPool;
 
 		Handle<BindGroupLayout> m_ShadowBindingsLayout;
@@ -164,5 +209,28 @@ namespace HBL2
 		Handle<RenderPass> m_RenderingRenderPass;
 
 		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
+
+	protected:
+
+		FrameData m_Frames[FrameCount];
+		uint32_t m_UniformRingBufferSize = 32_MB * FrameCount;
+		uint32_t m_UniformRingBufferFrameOffsets[FrameCount];
+
+		bool m_FrameReady[FrameCount];
+		bool m_FrameInUse[FrameCount];
+		uint32_t m_ReservedWriteIndex = UINT32_MAX;
+		uint32_t m_WriteIndex = 0;
+		uint32_t m_ReadIndex = 0;
+
+		std::mutex m_WorkMutex;
+		std::condition_variable m_WorkCV;
+
+		std::queue<RenderCommand> m_SubmitQueue;
+
+		std::atomic<bool> m_Running{ true };
+		std::atomic<bool> m_AcceptSubmits{ true };
+
+		std::condition_variable m_IdleCV;
+		bool m_Busy = true;
 	};
 }

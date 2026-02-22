@@ -28,5 +28,6 @@ namespace HBL2
 		uint16_t m_GenerationalCounter;
 
 		template<typename U, typename H> friend class Pool;
+		template<typename UH, typename UC, typename H> friend class SplitPool;
 	};
 }

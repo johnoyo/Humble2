@@ -11,6 +11,10 @@
 
 namespace HBL2
 {
+    thread_local std::vector<Vertex> UFbxLoader::s_Vertices;
+    thread_local std::vector<uint32_t> UFbxLoader::s_Indeces;
+    thread_local std::unordered_map<std::string, Handle<Material>> UFbxLoader::s_MaterialNameToHandle;
+
     Handle<Mesh> UFbxLoader::Load(const std::filesystem::path& path)
 	{
         HBL2_FUNC_PROFILE();
@@ -28,22 +32,22 @@ namespace HBL2
         loadOptions.target_unit_meters = 1.0f;
 
         ufbx_error error;
-        m_Scene = ufbx_load_file(path.string().c_str(), &loadOptions, &error);
-        if (!m_Scene)
+        ufbx_scene* ufbxScene = ufbx_load_file(path.string().c_str(), &loadOptions, &error);
+        if (!ufbxScene)
         {
             HBL2_CORE_ERROR("Failed to load: {0}\n", error.description.data);
-            ufbx_free_scene(m_Scene);
+            ufbx_free_scene(ufbxScene);
             return Handle<Mesh>();
         }
 
-        LoadMaterials(path);
+        LoadMaterials(ufbxScene, path);
 
         std::vector<MeshPartDescriptor> meshes;
         uint32_t meshIndex = 0;
 
-        for (size_t i = 0; i < m_Scene->nodes.count; i++)
+        for (size_t i = 0; i < ufbxScene->nodes.count; i++)
         {
-            ufbx_node* node = m_Scene->nodes.data[i];
+            ufbx_node* node = ufbxScene->nodes.data[i];
             if (node->is_root)
             {
                 continue;
@@ -61,7 +65,7 @@ namespace HBL2
             }
         }
 
-        ufbx_free_scene(m_Scene);
+        ufbx_free_scene(ufbxScene);
 
         if (meshes.size() == 0)
         {
@@ -76,18 +80,123 @@ namespace HBL2
         return handle;
 	}
 
-    void UFbxLoader::LoadMaterials(const std::filesystem::path& path)
+    void UFbxLoader::Reload(Asset* asset)
     {
-        m_MaterialNameToHandle.clear();
+        HBL2_FUNC_PROFILE();
 
-        uint32_t numMaterials = m_Scene->materials.count;
+        ufbx_load_opts loadOptions{};
+        loadOptions.load_external_files = true;
+        loadOptions.ignore_missing_external_files = true;
+        loadOptions.generate_missing_normals = true;
+        loadOptions.target_axes =
+        {
+            .right = UFBX_COORDINATE_AXIS_POSITIVE_X,
+            .up = UFBX_COORDINATE_AXIS_POSITIVE_Y,
+            .front = UFBX_COORDINATE_AXIS_POSITIVE_Z,
+        };
+        loadOptions.target_unit_meters = 1.0f;
+
+        const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+        const std::filesystem::path& meshPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+
+        ufbx_error error;
+        ufbx_scene* ufbxScene = ufbx_load_file(meshPath.string().c_str(), &loadOptions, &error);
+        if (!ufbxScene)
+        {
+            HBL2_CORE_ERROR("Failed to load: {0}\n", error.description.data);
+            ufbx_free_scene(ufbxScene);
+            return;
+        }
+
+        ReloadMaterials(ufbxScene, meshPath);
+
+        std::vector<MeshPartDescriptor> meshes;
+        uint32_t meshIndex = 0;
+
+        for (size_t i = 0; i < ufbxScene->nodes.count; i++)
+        {
+            ufbx_node* node = ufbxScene->nodes.data[i];
+            if (node->is_root)
+            {
+                continue;
+            }
+
+            HBL2_CORE_TRACE("Object: {0}\n", node->name.data);
+            if (node->mesh)
+            {
+                auto result = LoadMeshData(node, meshIndex++);
+
+                if (result.IsOk())
+                {
+                    meshes.push_back(result.Unwrap());
+                }
+            }
+        }
+
+        ufbx_free_scene(ufbxScene);
+
+        if (meshes.size() == 0)
+        {
+            return;
+        }
+
+        Handle<Mesh> handle = Handle<Mesh>::UnPack(asset->Indentifier);
+        Mesh* mesh = ResourceManager::Instance->GetMesh(handle);
+
+        if (mesh == nullptr)
+        {
+            return;
+        }
+
+        mesh->MarkAsEmpty();
+
+        std::vector<Handle<Buffer>> indexBuffers;
+        std::vector<Handle<Buffer>> vertexBuffers;
+
+        // Collect previous buffers and embeded material.
+        for (const MeshPart& meshPart : mesh->Meshes)
+        {
+            indexBuffers.push_back(meshPart.IndexBuffer);
+
+            for (Handle<Buffer> vb : meshPart.VertexBuffers)
+            {
+                vertexBuffers.push_back(vb);
+            }
+        }
+
+        ResourceManager::Instance->ReimportMesh(handle, {
+            .debugName = _strdup(meshPath.filename().stem().string().c_str()),
+            .meshes = std::move(meshes),
+        });
+
+        // Delete previous buffers and embeded material.
+        for (Handle<Buffer> ib : indexBuffers)
+        {
+            ResourceManager::Instance->DeleteBuffer(ib);
+        }
+        for (Handle<Buffer> vb : vertexBuffers)
+        {
+            ResourceManager::Instance->DeleteBuffer(vb);
+        }
+    }
+
+    void UFbxLoader::LoadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path)
+    {
+        s_MaterialNameToHandle.clear();
+
+        uint32_t numMaterials = ufbxScene->materials.count;
 
         for (uint32_t materialIndex = 0; materialIndex < numMaterials; ++materialIndex)
         {
-            const ufbx_material* fbxMaterial = m_Scene->materials[materialIndex];
+            const ufbx_material* fbxMaterial = ufbxScene->materials[materialIndex];
 
             Handle<Asset> materialAssetHandle;
             Handle<Material> materialHandle;
+
+            ResourceTask<Texture>* albedoMapTask = nullptr;
+            ResourceTask<Texture>* normalMapTask = nullptr;
+            ResourceTask<Texture>* roughnessMapTask = nullptr;
+            ResourceTask<Texture>* metallicMapTask = nullptr;
 
             const auto& relativePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Materials" / (std::string(fbxMaterial->name.data) + ".mat");
 
@@ -97,23 +206,31 @@ namespace HBL2
                     .debugName = "material-asset",
                     .filePath = relativePath,
                     .type = AssetType::Material,
-                });                
+                });
+
+                JobContext ctx;
 
                 glm::vec4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-                Handle<Asset> albedoMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_BASE_COLOR, &albedoColor);
+                Handle<Asset> albedoMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_BASE_COLOR, ctx, albedoMapTask, false, &albedoColor);
 
                 double roughness = 1.0;
-                Handle<Asset> roughnessMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_ROUGHNESS, &roughness);
+                Handle<Asset> roughnessMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_ROUGHNESS, ctx, roughnessMapTask, false, &roughness);
 
                 double metallicness = 1.0;
-                Handle<Asset> metallicMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_METALNESS, &metallicness);
+                Handle<Asset> metallicMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_METALNESS, ctx, metallicMapTask, false, &metallicness);
 
-                Handle<Asset> normalMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_NORMAL_MAP);
+                Handle<Asset> normalMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_NORMAL_MAP, ctx, normalMapTask, false);
 
-                AssetManager::Instance->WaitForAsyncJobs();
+                AssetManager::Instance->WaitForAsyncJobs(&ctx);
 
                 ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
                     .ShaderAssetHandle = {}, // Use built-in shaders depending on material type.
+                    .VariantHash =
+                    {
+                        .blendEnabled = false,
+                        .depthWrite = false,
+                        .depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)Compare::LESS_OR_EQUAL,
+                    },
                     .AlbedoColor = albedoColor,
                     .Glossiness = (float)roughness,
                     .AlbedoMapAssetHandle = albedoMapAssetHandle,
@@ -126,7 +243,6 @@ namespace HBL2
                 {
                     uint32_t type = UINT32_MAX;
 
-                    // TODO: Handle PBR models!
                     switch (fbxMaterial->shader_type)
                     {
                     case UFBX_SHADER_WAVEFRONT_MTL:
@@ -134,9 +250,15 @@ namespace HBL2
                     case UFBX_SHADER_FBX_PHONG:
                         type = 1;
                         break;
+                    case UFBX_SHADER_ARNOLD_STANDARD_SURFACE:
+                    case UFBX_SHADER_OSL_STANDARD_SURFACE:
+                        type = 2;
+                        break;
+                    default:
+                        HBL2_CORE_ASSERT(false, "Error while loading FBX model, fbxMaterial->shader_type not supported. Add supprt if applicable.");
                     }
 
-                    ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, type);
+                    ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, type, true);
                 }
 
                 materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetHandle);
@@ -147,13 +269,127 @@ namespace HBL2
                 materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetUUID);
             }
 
-            CleanUpResourceTasks();
+            CleanUpResourceTasks(albedoMapTask, normalMapTask, roughnessMapTask, metallicMapTask);
 
-            m_MaterialNameToHandle[fbxMaterial->name.data] = materialHandle;
+            s_MaterialNameToHandle[fbxMaterial->name.data] = materialHandle;
         }
     }
 
-    Handle<Asset> UFbxLoader::LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, void* internalData)
+    void UFbxLoader::ReloadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path)
+    {
+        s_MaterialNameToHandle.clear();
+
+        uint32_t numMaterials = ufbxScene->materials.count;
+
+        for (uint32_t materialIndex = 0; materialIndex < numMaterials; ++materialIndex)
+        {
+            const ufbx_material* fbxMaterial = ufbxScene->materials[materialIndex];
+
+            Handle<Asset> materialAssetHandle;
+            Handle<Material> materialHandle;
+
+            ResourceTask<Texture>* albedoMapTask = nullptr;
+            ResourceTask<Texture>* normalMapTask = nullptr;
+            ResourceTask<Texture>* roughnessMapTask = nullptr;
+            ResourceTask<Texture>* metallicMapTask = nullptr;
+
+            const auto& relativePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Materials" / (std::string(fbxMaterial->name.data) + ".mat");
+
+            JobContext ctx;
+
+            glm::vec4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+            Handle<Asset> albedoMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_BASE_COLOR, ctx, albedoMapTask, true, &albedoColor);
+
+            double roughness = 1.0;
+            Handle<Asset> roughnessMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_ROUGHNESS, ctx, roughnessMapTask, true, &roughness);
+
+            double metallicness = 1.0;
+            Handle<Asset> metallicMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_METALNESS, ctx, metallicMapTask, true, &metallicness);
+
+            Handle<Asset> normalMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_NORMAL_MAP, ctx, normalMapTask, true);
+
+            AssetManager::Instance->WaitForAsyncJobs(&ctx);
+
+            if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativePath)))
+            {
+                materialAssetHandle = AssetManager::Instance->CreateAsset({
+                    .debugName = "material-asset",
+                    .filePath = relativePath,
+                    .type = AssetType::Material,
+                });
+
+                ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
+                    .ShaderAssetHandle = {}, // Use built-in shaders depending on material type.
+                    .VariantHash =
+                    {
+                        .blendEnabled = false,
+                        .depthWrite = false,
+                        .depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)Compare::LESS_OR_EQUAL,
+                    },
+                    .AlbedoColor = albedoColor,
+                    .Glossiness = (float)roughness,
+                    .AlbedoMapAssetHandle = albedoMapAssetHandle,
+                    .NormalMapAssetHandle = normalMapAssetHandle,
+                    .RoughnessMapAssetHandle = roughnessMapAssetHandle,
+                    .MetallicMapAssetHandle = metallicMapAssetHandle,
+                });
+
+                if (materialAssetHandle.IsValid())
+                {
+                    uint32_t type = UINT32_MAX;
+
+                    switch (fbxMaterial->shader_type)
+                    {
+                    case UFBX_SHADER_WAVEFRONT_MTL:
+                    case UFBX_SHADER_FBX_LAMBERT:
+                    case UFBX_SHADER_FBX_PHONG:
+                        type = 1;
+                        break;
+                    case UFBX_SHADER_ARNOLD_STANDARD_SURFACE:
+                        type = 2;
+                        break;
+                    default:
+                        HBL2_CORE_ASSERT(false, "Error while loading FBX model, fbxMaterial->shader_type not supported. Add supprt if applicable.");
+                    }
+
+                    ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, type, true);
+                }
+
+                materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetHandle);
+            }
+            else
+            {
+                UUID materialAssetUUID = std::hash<std::string>()(relativePath.string());
+                materialAssetHandle = AssetManager::Instance->GetHandleFromUUID(materialAssetUUID);
+
+                // Recreate material asset file with new data.
+                ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
+                    .ShaderAssetHandle = {}, // Use built-in shaders depending on material type.
+                    .VariantHash =
+                    {
+                        .blendEnabled = false,
+                        .depthWrite = false,
+                        .depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)Compare::LESS_OR_EQUAL,
+                    },
+                    .AlbedoColor = albedoColor,
+                    .Glossiness = (float)roughness,
+                    .AlbedoMapAssetHandle = albedoMapAssetHandle,
+                    .NormalMapAssetHandle = normalMapAssetHandle,
+                    .RoughnessMapAssetHandle = roughnessMapAssetHandle,
+                    .MetallicMapAssetHandle = metallicMapAssetHandle,
+                });
+
+                // Reload material now that we have set the new resourses.
+                materialHandle = AssetManager::Instance->ReloadAsset<Material>(materialAssetUUID);
+            }
+
+            CleanUpResourceTasks(albedoMapTask, normalMapTask, roughnessMapTask, metallicMapTask);
+
+            s_MaterialNameToHandle[fbxMaterial->name.data] = materialHandle;
+        }
+    }
+
+    Handle<Asset> UFbxLoader::LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, JobContext& ctx, ResourceTask<Texture>*& textureTask, bool reload, void* internalData)
     {
         Handle<Asset> textureAssetHandle;
 
@@ -168,7 +404,14 @@ namespace HBL2
                     float baseFactor = baseFactorMaterialMap.has_value ? baseFactorMaterialMap.value_real : 1.0f;
                     if (materialMap.texture)
                     {
-                        textureAssetHandle = LoadTexture(materialMap.texture, m_AlbedoMapTask);
+                        if (reload)
+                        {
+                            textureAssetHandle = ReloadTexture(materialMap.texture, ctx, textureTask);
+                        }
+                        else
+                        {
+                            textureAssetHandle = LoadTexture(materialMap.texture, ctx, textureTask);
+                        }
 
                         (*((glm::vec4*)internalData)).r = baseFactor;
                         (*((glm::vec4*)internalData)).g = baseFactor;
@@ -192,7 +435,14 @@ namespace HBL2
                 {
                     if (materialMap.texture)
                     {
-                        textureAssetHandle = LoadTexture(materialMap.texture, m_RoughnessMapTask);
+                        if (reload)
+                        {
+                            textureAssetHandle = ReloadTexture(materialMap.texture, ctx, textureTask);
+                        }
+                        else
+                        {
+                            textureAssetHandle = LoadTexture(materialMap.texture, ctx, textureTask);
+                        }
 
                         (*((double*)internalData)) = 1.0;
                     }
@@ -210,7 +460,14 @@ namespace HBL2
                 {
                     if (materialMap.texture)
                     {
-                        textureAssetHandle = LoadTexture(materialMap.texture, m_MetallicMapTask);
+                        if (reload)
+                        {
+                            textureAssetHandle = ReloadTexture(materialMap.texture, ctx, textureTask);
+                        }
+                        else
+                        {
+                            textureAssetHandle = LoadTexture(materialMap.texture, ctx, textureTask);
+                        }
 
                         (*((double*)internalData)) = 1.0;
                     }
@@ -226,7 +483,14 @@ namespace HBL2
                 ufbx_material_map const& materialMap = fbxMaterial->pbr.normal_map;
                 if (materialMap.texture)
                 {
-                    textureAssetHandle = LoadTexture(materialMap.texture, m_NormalMapTask);
+                    if (reload)
+                    {
+                        textureAssetHandle = ReloadTexture(materialMap.texture, ctx, textureTask);
+                    }
+                    else
+                    {
+                        textureAssetHandle = LoadTexture(materialMap.texture, ctx, textureTask);
+                    }
                 }
                 break;
             }
@@ -240,7 +504,7 @@ namespace HBL2
         return textureAssetHandle;
     }
 
-    Handle<Asset> UFbxLoader::LoadTexture(const ufbx_texture* texture, ResourceTask<Texture>* resourceTask)
+    Handle<Asset> UFbxLoader::LoadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>*& resourceTask)
     {
         Handle<Asset> textureAssetHandle;
 
@@ -269,7 +533,7 @@ namespace HBL2
                 TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
             }
 
-            resourceTask = AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle);
+            resourceTask = AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
             return textureAssetHandle;
         }
 
@@ -300,7 +564,7 @@ namespace HBL2
                     TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
                 }
 
-                resourceTask = AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle);
+                resourceTask = AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
                 return textureAssetHandle;
             }
         }
@@ -310,37 +574,98 @@ namespace HBL2
         return textureAssetHandle;
     }
 
-    void UFbxLoader::CleanUpResourceTasks()
+    Handle<Asset> UFbxLoader::ReloadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>*& resourceTask)
     {
-        if (m_AlbedoMapTask)
+        Handle<Asset> textureAssetHandle;
+
+        const auto& texturePath = std::filesystem::path(texture->filename.data);
+
+        if (std::filesystem::exists(texturePath))
         {
-            delete m_AlbedoMapTask;
-            m_AlbedoMapTask = nullptr;
+            HBL2_CORE_INFO("UFbxLoader::LoadTexture::AlbedoMap located at: \"{}\".", texturePath);
+
+            const auto& relativeTexturePath = FileUtils::RelativePath(texturePath, Project::GetAssetDirectory());
+
+            UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath);
+            textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
+
+            if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
+            {
+                textureAssetHandle = AssetManager::Instance->CreateAsset({
+                    .debugName = "texture-asset",
+                    .filePath = relativeTexturePath,
+                    .type = AssetType::Texture,
+                });
+
+                if (textureAssetHandle.IsValid())
+                {
+                    TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
+                }
+            }
+            else
+            {
+                // Delete (unload) old texture asset.
+                AssetManager::Instance->DeleteAsset(textureAssetHandle);
+            }
+
+            resourceTask = AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
+            return textureAssetHandle;
         }
 
-        if (m_NormalMapTask)
+        if (texture->absolute_filename.length != 0)
         {
-            delete m_NormalMapTask;
-            m_NormalMapTask = nullptr;
+            const auto& texturePathAlt = Project::GetAssetFileSystemPath(std::filesystem::path(texture->absolute_filename.data));
+
+            if (std::filesystem::exists(texturePathAlt))
+            {
+                HBL2_CORE_INFO("UFbxLoader::LoadTexture::AlbedoMap located at: \"{}\".", texturePathAlt);
+
+                const auto& relativeTexturePath = FileUtils::RelativePath(texturePathAlt, Project::GetAssetDirectory());
+
+                UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath);
+                textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
+
+                if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
+                {
+                    textureAssetHandle = AssetManager::Instance->CreateAsset({
+                        .debugName = "texture-asset",
+                        .filePath = relativeTexturePath,
+                        .type = AssetType::Texture,
+                    });
+
+                    if (textureAssetHandle.IsValid())
+                    {
+                        TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
+                    }
+                }
+                else
+                {
+                    // Delete (unload) old texture asset.
+                    AssetManager::Instance->DeleteAsset(textureAssetHandle);
+                }
+
+                resourceTask = AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
+                return textureAssetHandle;
+            }
         }
 
-        if (m_RoughnessMapTask)
-        {
-            delete m_RoughnessMapTask;
-            m_RoughnessMapTask = nullptr;
-        }
+        HBL2_CORE_ERROR("UFbxLoader::LoadTexture::AlbedoMap located at: \"{}\", not found!.", texture->filename.data);
 
-        if (m_MetallicMapTask)
-        {
-            delete m_MetallicMapTask;
-            m_MetallicMapTask = nullptr;
-        }
+        return textureAssetHandle;
+    }
+
+    void UFbxLoader::CleanUpResourceTasks(ResourceTask<Texture>* albedoMapTask, ResourceTask<Texture>* normalMapTask, ResourceTask<Texture>* roughnessMapTask, ResourceTask<Texture>* metallicMapTask)
+    {
+        AssetManager::Instance->ReleaseResourceTask(albedoMapTask);
+        AssetManager::Instance->ReleaseResourceTask(normalMapTask);
+        AssetManager::Instance->ReleaseResourceTask(roughnessMapTask);
+        AssetManager::Instance->ReleaseResourceTask(metallicMapTask);
     }
 
     Result<MeshPartDescriptor> UFbxLoader::LoadMeshData(const ufbx_node* node, uint32_t meshIndex)
     {
-        m_Vertices.clear();
-        m_Indeces.clear();
+        s_Vertices.clear();
+        s_Indeces.clear();
 
         MeshPartDescriptor meshPartDescriptor{};
 
@@ -350,14 +675,14 @@ namespace HBL2
         if (numSubMeshes)
         {
             meshPartDescriptor.debugName = _strdup(node->name.data);
-            meshPartDescriptor.subMeshes.resize(numSubMeshes);
+            meshPartDescriptor.subMeshes.reserve(numSubMeshes);
             for (uint32_t subMeshIndex = 0; subMeshIndex < numSubMeshes; ++subMeshIndex)
             {
                 auto result = LoadSubMeshVertexData(node, meshIndex, subMeshIndex);
 
                 if (result.IsOk())
                 {
-                    meshPartDescriptor.subMeshes[subMeshIndex] = std::move(result.Unwrap());
+                    meshPartDescriptor.subMeshes.emplace_back(std::move(result.Unwrap()));
                 }
                 else
                 {
@@ -378,20 +703,20 @@ namespace HBL2
                 .debugName = "fbx-mesh-vertex-buffer",
                 .usage = BufferUsage::VERTEX,
                 .memoryUsage = MemoryUsage::GPU_ONLY,
-                .byteSize = (uint32_t)(m_Vertices.size() * sizeof(Vertex)),
-                .initialData = (void*)m_Vertices.data(),
+                .byteSize = (uint32_t)(s_Vertices.size() * sizeof(Vertex)),
+                .initialData = (void*)s_Vertices.data(),
             });
 
             meshPartDescriptor.vertexBuffers = { vertexBuffer };
 
-            if (m_Indeces.size() > 0)
+            if (s_Indeces.size() > 0)
             {
                 meshPartDescriptor.indexBuffer = ResourceManager::Instance->CreateBuffer({
                     .debugName = "fbx-mesh-index-buffer",
                     .usage = BufferUsage::INDEX,
                     .memoryUsage = MemoryUsage::GPU_ONLY,
-                    .byteSize = (uint32_t)(m_Indeces.size() * sizeof(uint32_t)),
-                    .initialData = (void*)m_Indeces.data(),
+                    .byteSize = (uint32_t)(s_Indeces.size() * sizeof(uint32_t)),
+                    .initialData = (void*)s_Indeces.data(),
                 });
             }
         }
@@ -412,7 +737,7 @@ namespace HBL2
 
         if (node->mesh->materials.count > 0)
         {
-            subMeshDescriptor.embededMaterial = m_MaterialNameToHandle[node->mesh->materials.data[subMeshIndex]->name.data];
+            subMeshDescriptor.embededMaterial = s_MaterialNameToHandle[node->mesh->materials.data[subMeshIndex]->name.data];
         }
 
         if (!(fbxSubmesh.num_triangles))
@@ -420,8 +745,8 @@ namespace HBL2
             return Error("UFbxLoader::LoadSubMeshVertexData: only triangle meshes are supported");
         }
 
-        size_t numVerticesBefore = m_Vertices.size();
-        size_t numIndicesBefore = m_Indeces.size();
+        size_t numVerticesBefore = s_Vertices.size();
+        size_t numIndicesBefore = s_Indeces.size();
 
         subMeshDescriptor.vertexOffset = numVerticesBefore;
         subMeshDescriptor.indexOffset = numIndicesBefore;
@@ -524,7 +849,7 @@ namespace HBL2
                 //    vertex.Color = diffuseColor;
                 //}
 
-                m_Vertices.push_back(vertex);
+                s_Vertices.push_back(vertex);
             }
         }
 
@@ -532,21 +857,21 @@ namespace HBL2
         // A face has four vertices, while above loop generates at least six vertices for per face)
         {
             // get number of all vertices created from above (faces * trianglesPerFace * 3)
-            uint32_t submeshAllVertices = m_Vertices.size() - numVerticesBefore;
+            uint32_t submeshAllVertices = s_Vertices.size() - numVerticesBefore;
 
             // create a ufbx vertex stream with data pointing to the first vertex of this submesh
             // (meshData.VertexBuffer is for all submeshes)
             ufbx_vertex_stream streams;
-            streams.data = &m_Vertices[numVerticesBefore];
+            streams.data = &s_Vertices[numVerticesBefore];
             streams.vertex_count = submeshAllVertices;
             streams.vertex_size = sizeof(Vertex);
 
             // index buffer: add space for all new vertices from above
-            m_Indeces.resize(numIndicesBefore + submeshAllVertices);
+            s_Indeces.resize(numIndicesBefore + submeshAllVertices);
 
             // ufbx_generate_indices() will rearrange meshData.VertexBuffer (via streams.data) and fill meshData.IndexBuffer
             ufbx_error ufbxError;
-            size_t numVertices = ufbx_generate_indices(&streams, 1, &m_Indeces[numIndicesBefore], submeshAllVertices, nullptr, &ufbxError);
+            size_t numVertices = ufbx_generate_indices(&streams, 1, &s_Indeces[numIndicesBefore], submeshAllVertices, nullptr, &ufbxError);
 
             // handle error
             if (ufbxError.type != UFBX_ERROR_NONE)
@@ -557,7 +882,7 @@ namespace HBL2
             }
 
             // meshData.VertexBuffer can be downsized now
-            m_Vertices.resize(numVerticesBefore + numVertices);
+            s_Vertices.resize(numVerticesBefore + numVertices);
             subMeshDescriptor.vertexCount = numVertices;
             subMeshDescriptor.indexCount = submeshAllVertices;
         }

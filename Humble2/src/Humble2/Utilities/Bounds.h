@@ -5,7 +5,8 @@
 #include <algorithm>
 #include <limits>
 
-struct Bounds {
+struct Bounds
+{
     glm::vec3 Center{ 0.0f };
     glm::vec3 Extents{ 0.0f };             // half-size (always ≥ 0)
 
@@ -16,8 +17,7 @@ struct Bounds {
     {
     }
 
-    static constexpr Bounds FromMinMax(const glm::vec3& mn,
-        const glm::vec3& mx)
+    static constexpr Bounds FromMinMax(const glm::vec3& mn, const glm::vec3& mx)
     {
         return { (mn + mx) * 0.5f, mx - mn };
     }
@@ -25,10 +25,7 @@ struct Bounds {
     constexpr glm::vec3 size() const { return Extents * 2.0f; }
     constexpr glm::vec3 min() const { return Center - Extents; }
     constexpr glm::vec3 max() const { return Center + Extents; }
-    constexpr float volume() const
-    {
-        glm::vec3 s = size(); return s.x * s.y * s.z;
-    }
+    constexpr float volume() const { glm::vec3 s = size(); return s.x * s.y * s.z; }
 
     void SetMinMax(const glm::vec3& mn, const glm::vec3& mx)
     {

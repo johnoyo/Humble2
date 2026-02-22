@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Window.h"
+#include <Renderer\Renderer.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -8,16 +9,22 @@
 
 namespace HBL2
 {
+	struct ImGuiRendererSpecification
+	{
+		bool EnableMultiViewports = true;
+	};
+
 	class HBL2_API ImGuiRenderer
 	{
 	public:
 		static ImGuiRenderer* Instance;
 
-		virtual void Initialize() = 0;
+		void Create(const ImGuiRendererSpecification&& spec);
 
+		virtual void Initialize() = 0;
 		virtual void BeginFrame() = 0;
 		virtual void EndFrame() = 0;
-
+		virtual void Render(const FrameData& frameData) = 0;
 		virtual void Clean() = 0;
 
 		// Wrapped ImGuizmo functions to work from dll.
@@ -34,6 +41,7 @@ namespace HBL2
 
 	protected:
 		void SetImGuiStyle();
+		ImDrawData* DeepCopyImDrawData(const ImDrawData* src);
 
 	protected:
 		Window* m_Window = nullptr;

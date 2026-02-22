@@ -18,10 +18,13 @@ namespace HBL2
 	{
 	public:
 		Handle<Mesh> Load(const std::filesystem::path& path);
+        void Reload(Asset* asset);
 
 	private:
         void LoadTextures(const std::filesystem::path& path, const fastgltf::Asset& asset);
+        void ReloadTextures(const std::filesystem::path& path, const fastgltf::Asset& asset);
         void LoadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset);
+        void ReloadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset);
 
 		Result<MeshPartDescriptor> LoadMeshData(const fastgltf::Asset& asset, const fastgltf::Node& node, uint32_t meshIndex);
 		Result<SubMeshDescriptor> LoadSubMeshVertexData(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, uint32_t subMeshIndex);
@@ -46,9 +49,9 @@ namespace HBL2
             }
         }
 
-		std::vector<Vertex> m_Vertices;
-		std::vector<uint32_t> m_Indices;
-        std::vector<Handle<Asset>> m_Textures;
-        std::unordered_map<const char*, Handle<Material>> m_MaterialNameToHandle;
+		static thread_local std::vector<Vertex> s_Vertices;
+		static thread_local std::vector<uint32_t> s_Indices;
+        static thread_local std::vector<Handle<Asset>> s_Textures;
+        static thread_local std::unordered_map<const char*, Handle<Material>> s_MaterialNameToHandle;
 	};
 }

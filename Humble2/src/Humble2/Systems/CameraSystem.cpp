@@ -10,7 +10,7 @@ namespace HBL2
 	void CameraSystem::OnAttach()
 	{
 		m_Context->Group<Component::Camera>(Get<Component::Transform>)
-			.Each([&](Entity entity, Component::Camera& camera, Component::Transform& transform)
+			.Each([this](Entity entity, Component::Camera& camera, Component::Transform& transform)
 			{
 				if (camera.Enabled)
 				{
@@ -26,7 +26,7 @@ namespace HBL2
 	void CameraSystem::OnCreate()
 	{
 		m_Context->Group<Component::Camera>(Get<Component::Transform>)
-			.Each([&](Entity entity, Component::Camera& camera, Component::Transform& transform)
+			.Each([](Entity entity, Component::Camera& camera, Component::Transform& transform)
 			{
 				if (camera.Enabled)
 				{
@@ -51,7 +51,7 @@ namespace HBL2
 		BEGIN_PROFILE_SYSTEM();
 
 		m_Context->Group<Component::Camera>(Get<Component::Transform>)
-			.Each([&](Entity entity, Component::Camera& camera, Component::Transform& transform)
+			.Each([this](Entity entity, Component::Camera& camera, Component::Transform& transform)
 			{
 				if (camera.Enabled)
 				{

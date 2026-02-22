@@ -21,6 +21,28 @@ namespace HBL2
 		constexpr uint32_t Magenta = 0xFFFF00FF;
 	}
 
+	struct DebugVertex
+	{
+		glm::vec3 Position;
+		uint32_t Color;
+	};
+
+	struct DebugRenderData
+	{
+		DrawList Draws;
+
+		uint32_t CurrentLineIndex = 0;
+		DArray<DebugVertex> LineVerts = MakeEmptyDArray<DebugVertex>();
+
+		uint32_t CurrentFillIndex = 0;
+		DArray<DebugVertex> FillTrisVerts = MakeEmptyDArray<DebugVertex>();
+		//DArray<uint32_t> FillTrisIndices = MakeEmptyDArray<uint32_t>();
+
+		uint32_t CurrentWireIndex = 0;
+		DArray<DebugVertex> WireTrisVerts = MakeEmptyDArray<DebugVertex>();
+		//DArray<uint32_t> WireTrisIndices = MakeEmptyDArray<uint32_t>();
+	};
+
 	class HBL2_API DebugRenderer
 	{
 	public:
@@ -32,7 +54,7 @@ namespace HBL2
 		virtual void Initialize();
 		virtual void BeginFrame();
 		virtual void EndFrame();
-		virtual void Flush(CommandBuffer* commandBuffer);
+		virtual void Render(CommandBuffer* commandBuffer, void* debugRenderData);
 		virtual void Clean();
 
 		// Public API
@@ -52,26 +74,20 @@ namespace HBL2
 		glm::mat4 GetCameraMVP();
 
 	private:
-		static constexpr uint32_t s_MaxDebugVertices = 1'000'000; // 1 million vertices = ~16MB
-
-		struct DebugVertex
-		{
-			glm::vec3 Position;
-			uint32_t Color;
-		};
-
+		static constexpr uint32_t s_MaxDebugVertices = 500'000; // 500k vertices = ~8MB
+				
 		ResourceManager* m_ResourceManager = nullptr;
 
 		Handle<Shader> m_DebugShader;
 
 		Handle<Material> m_DebugLineMaterial;
-		uint64_t m_DebugLineMaterialVariantHash = UINT64_MAX;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_DebugLineMaterialVariantHash = g_NullVariant;
 
 		Handle<Material> m_DebugFillMaterial;
-		uint64_t m_DebugFillMaterialVariantHash = UINT64_MAX;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_DebugFillMaterialVariantHash = g_NullVariant;
 
 		Handle<Material> m_DebugWireMaterial;
-		uint64_t m_DebugWireMaterialVariantHash = UINT64_MAX;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_DebugWireMaterialVariantHash = g_NullVariant;
 
 		Handle<RenderPass> m_DebugRenderPass;
 		Handle<RenderPassLayout> m_DebugRenderPassLayout;
@@ -81,17 +97,9 @@ namespace HBL2
 		Handle<Buffer> m_DebugFillTriVertexBuffer;
 		Handle<Buffer> m_DebugWireTriVertexBuffer;
 
-		DrawList m_Draws;
+		PoolReservation* m_Reservation = nullptr;
+		Arena m_Arena;
 
-		uint32_t m_CurrentLineIndex = 0;
-		std::vector<DebugVertex> m_LineVerts;
-
-		uint32_t m_CurrentFillIndex = 0;
-		std::vector<DebugVertex> m_FillTrisVerts;
-		std::vector<uint32_t>  m_FillTrisIndices;
-
-		uint32_t m_CurrentWireIndex = 0;
-		std::vector<DebugVertex> m_WireTrisVerts;
-		std::vector<uint32_t>  m_WireTrisIndices;
+		DebugRenderData m_RenderData[Renderer::FrameCount];
 	};
 }

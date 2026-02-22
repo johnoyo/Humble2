@@ -43,7 +43,7 @@ namespace HBL2
 	{
 		Handle<Asset> ShaderAssetHandle;
 
-		ShaderDescriptor::RenderPipeline::Variant VariantDescriptor{};
+		ShaderDescriptor::RenderPipeline::PackedVariant VariantHash{};
 		glm::vec4 AlbedoColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 		float Glossiness = 0.0f;
 
@@ -64,7 +64,7 @@ namespace HBL2
 		static void Shutdown();
 
 		std::string ReadFile(const std::string& filepath);
-		std::vector<std::vector<uint32_t>> Compile(const std::string& shaderFilePath);
+		std::vector<std::vector<uint32_t>> Compile(const std::string& shaderFilePath, bool forceRecompile = false);
 		const ReflectionData& GetReflectionData(const std::string& shaderFilePath) { return m_ShaderReflectionData[shaderFilePath]; }
 
 		void LoadBuiltInShaders();
@@ -75,116 +75,37 @@ namespace HBL2
 
 		Handle<Shader> GetBuiltInShader(BuiltInShader shader) { return m_Shaders[shader]; }
 		Handle<BindGroupLayout> GetBuiltInShaderLayout(BuiltInShader shader) { return m_ShaderLayouts[shader]; }
-		const Span<const Handle<Asset>> GetBuiltInShaderAssets() const { return { m_ShaderAssets.Data(), m_ShaderAssets.Size() }; }
+		const Span<const Handle<Asset>> GetBuiltInShaderAssets() const { return { m_ShaderAssets.data(), m_ShaderAssets.size() }; }
 
 		void CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType);
-		void UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::Variant& newVariant);
+		void UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::PackedVariant& newVariant);
 
-		void CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType);
+		void CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType, bool autoImported = false);
 		void CreateMaterialAssetFile(Handle<Asset> handle, const MaterialDataDescriptor&& desc);
 
 		Handle<Asset> LitMaterialAsset;
 
 	private:
-		ShaderUtilities() = default;
+		ShaderUtilities();
 
-		const char* GetCacheDirectory(GraphicsAPI target)
-		{
-			switch (target)
-			{
-				case GraphicsAPI::OPENGL:
-					return "assets/cache/shader/opengl";
-				case GraphicsAPI::VULKAN:
-					return "assets/cache/shader/vulkan";
-				default:
-					HBL2_CORE_ASSERT(false, "Stage not supported");
-					return "";
-			}
-		}
+		const char* GetCacheDirectory(GraphicsAPI target);
+		void CreateCacheDirectoryIfNeeded(GraphicsAPI target);
+		const char* GLShaderStageCachedVulkanFileExtension(ShaderStage stage);
+		const char* GLShaderStageCachedOpenGLFileExtension(ShaderStage stage);
+		shaderc_shader_kind GLShaderStageToShaderC(ShaderStage stage);
+		const char* GLShaderStageToString(ShaderStage stage);
 
-		void CreateCacheDirectoryIfNeeded(GraphicsAPI target)
-		{
-			std::string cacheDirectory = GetCacheDirectory(target);
-
-			if (!std::filesystem::exists(cacheDirectory))
-			{
-				std::filesystem::create_directories(cacheDirectory);
-			}
-		}
-
-		const char* GLShaderStageCachedVulkanFileExtension(ShaderStage stage)
-		{
-			switch (stage)
-			{
-				case ShaderStage::VERTEX:
-					return ".cached_vulkan.vert";
-				case ShaderStage::FRAGMENT:
-					return ".cached_vulkan.frag";
-				case ShaderStage::COMPUTE:
-					return ".cached_vulkan.comp";
-				default:
-					HBL2_CORE_ASSERT(false, "Stage not supported");
-					return "";
-			}
-		}
-
-		const char* GLShaderStageCachedOpenGLFileExtension(ShaderStage stage)
-		{
-			switch (stage)
-			{
-				case ShaderStage::VERTEX:
-					return ".cached_opengl.vert";
-				case ShaderStage::FRAGMENT:
-					return ".cached_opengl.frag";
-				case ShaderStage::COMPUTE:
-					return ".cached_opengl.comp";
-				default:
-					HBL2_CORE_ASSERT(false, "Stage not supported");
-					return "";
-			}
-		}
-
-		shaderc_shader_kind GLShaderStageToShaderC(ShaderStage stage)
-		{
-			switch (stage)
-			{
-				case ShaderStage::VERTEX:
-					return shaderc_glsl_vertex_shader;
-				case ShaderStage::FRAGMENT:
-					return shaderc_glsl_fragment_shader;
-				case ShaderStage::COMPUTE:
-					return shaderc_glsl_compute_shader;
-				default:
-					HBL2_CORE_ASSERT(false, "Stage not supported");
-					return (shaderc_shader_kind)0;
-			}
-		}
-
-		const char* GLShaderStageToString(ShaderStage stage)
-		{
-			switch (stage)
-			{
-				case ShaderStage::VERTEX:
-					return "ShaderStage::VERTEX";
-				case ShaderStage::FRAGMENT:
-					return "ShaderStage::FRAGMENT";
-				case ShaderStage::COMPUTE:
-					return "ShaderStage::COMPUTE";
-				default:
-					HBL2_CORE_ASSERT(false, "Stage not supported");
-					return "";
-			}
-		}
-
-		std::vector<uint32_t> Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage);
+		std::vector<uint32_t> Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage, bool forceRecompile = false);
 		ReflectionData Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData, const Span<uint32_t>& computeShaderData);
 
 	private:
-		std::unordered_map<std::string, ReflectionData> m_ShaderReflectionData;
-		std::unordered_map<BuiltInShader, Handle<Shader>> m_Shaders;
-		std::unordered_map<BuiltInShader, Handle<BindGroupLayout>> m_ShaderLayouts;
+		PoolReservation* m_Reservation = nullptr;
+		Arena m_Arena;
 
-		DynamicArray<Handle<Asset>, BinAllocator> m_ShaderAssets = MakeDynamicArray<Handle<Asset>>(&Allocator::Persistent);
+		HMap<std::string, ReflectionData> m_ShaderReflectionData = MakeEmptyHMap<std::string, ReflectionData>();
+		HMap<BuiltInShader, Handle<Shader>> m_Shaders = MakeEmptyHMap<BuiltInShader, Handle<Shader>>();
+		HMap<BuiltInShader, Handle<BindGroupLayout>> m_ShaderLayouts = MakeEmptyHMap<BuiltInShader, Handle<BindGroupLayout>>();
+		DArray<Handle<Asset>> m_ShaderAssets = MakeEmptyDArray<Handle<Asset>>();
 
 		static ShaderUtilities* s_Instance;
 	};

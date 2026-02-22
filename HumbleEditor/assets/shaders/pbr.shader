@@ -300,8 +300,8 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 
 void main()
 {
-    vec3 albedo     = pow(texture(u_AlbedoMap, v_TextureCoord).rgb, vec3(2.2));
-    float metallic  = texture(u_MetallicMap, v_TextureCoord).r;
+    vec3 albedo = pow(texture(u_AlbedoMap, v_TextureCoord).rgb, vec3(2.2));
+    float metallic = texture(u_MetallicMap, v_TextureCoord).r;
     float roughness = texture(u_RoughnessMap, v_TextureCoord).r;
 
     vec3 N = getNormalFromMap();
@@ -312,57 +312,57 @@ void main()
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, albedo, metallic);
 
-    float totalShadow = 0.0;
-
     // reflectance equation
     vec3 Lo = vec3(0.0);
-    for(int i = 0; i < int(u_Light.Count); ++i) 
+    for (int i = 0; i < int(u_Light.Count); ++i)
     {
-        float intensity = u_Light.Metadata[i].x;
+        float lightIntensity = u_Light.Metadata[i].x;
+        vec3  lightColor = u_Light.Colors[i].xyz;
 
-        vec3 L;
+        vec3 L = vec3(0.0);
         float attenuation = 1.0;
+
+        bool lit = true;                 // whether this light affects the fragment
+        float shadow = 0.0;              // 0 = lit, 1 = fully shadowed
 
         if (u_Light.Positions[i].w == 0.0)
         {
-            // Directional Light
+            // Directional
             L = normalize(-u_Light.Directions[i].xyz);
+            lit = (max(dot(N, L), 0.0) > 0.0);
 
-            // If it is a shadow casting light.
-            if (u_Light.ShadowData[i].x == 1.0)
+            if (u_Light.ShadowData[i].x == 1.0 && lit)
             {
-                mat4 lightSpaceMatrix = u_Light.LightSpaceMatrices[i];
-                vec4 fragPosLightSpace = lightSpaceMatrix * vec4(v_Position, 1.0);
-
-                totalShadow += ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
+                vec4 fragPosLightSpace = u_Light.LightSpaceMatrices[i] * vec4(v_Position, 1.0);
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
             }
         }
         else if (u_Light.Positions[i].w == 1.0)
         {
-            // Point light
-            vec3 lightPos = u_Light.Positions[i].xyz - v_Position;
-            L = normalize(lightPos);
-            float distance = length(lightPos);
+            // Point
+            vec3 toLight = u_Light.Positions[i].xyz - v_Position;
+            float distance = length(toLight);
+            L = toLight / max(distance, 1e-6);
 
             float constant = u_Light.Metadata[i].y;
             float linear = u_Light.Metadata[i].z;
             float quadratic = u_Light.Metadata[i].w;
             attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
 
-            if (u_Light.ShadowData[i].x == 1.0 && attenuation > 0.0)
-            {
-                mat4 lightSpaceMatrix = u_Light.LightSpaceMatrices[i];
-                vec4 fragPosLightSpace = lightSpaceMatrix * vec4(v_Position, 1.0);
+            lit = (attenuation > 0.0) && (max(dot(N, L), 0.0) > 0.0);
 
-                totalShadow += ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
+            if (u_Light.ShadowData[i].x == 1.0 && lit)
+            {
+                vec4 fragPosLightSpace = u_Light.LightSpaceMatrices[i] * vec4(v_Position, 1.0);
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
             }
         }
         else if (u_Light.Positions[i].w == 2.0)
         {
-            // Spot Light
-            vec3 lightPos = u_Light.Positions[i].xyz - v_Position;
-            L = normalize(lightPos);
-            float distance = length(lightPos);
+            // Spot
+            vec3 toLight = u_Light.Positions[i].xyz - v_Position;
+            float distance = length(toLight);
+            L = toLight / max(distance, 1e-6);
 
             float constant = 1.0;
             float linear = 0.09;
@@ -372,36 +372,44 @@ void main()
             float innerCutoff = u_Light.Metadata[i].y;
             float outerCutoff = u_Light.Metadata[i].z;
             float theta = dot(L, normalize(-u_Light.Directions[i].xyz));
-            float epsilon = innerCutoff - outerCutoff;
-            float intensity = clamp((theta - outerCutoff) / epsilon, 0.0, 1.0);
-            attenuation *= intensity;
+            float epsilon = max(innerCutoff - outerCutoff, 1e-6);
 
-            bool lit = intensity > 0.0;
+            float spotFactor = clamp((theta - outerCutoff) / epsilon, 0.0, 1.0);
+            attenuation *= spotFactor;
+
+            lit = (spotFactor > 0.0) && (attenuation > 0.0) && (max(dot(N, L), 0.0) > 0.0);
 
             if (u_Light.ShadowData[i].x == 1.0 && lit)
             {
-                mat4 lightSpaceMatrix = u_Light.LightSpaceMatrices[i];
-                vec4 fragPosLightSpace = lightSpaceMatrix * vec4(v_Position, 1.0);
-
-                totalShadow += ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
+                vec4 fragPosLightSpace = u_Light.LightSpaceMatrices[i] * vec4(v_Position, 1.0);
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i);
             }
         }
 
-        // Calculate per-light radiance
-        vec3 H = normalize(V + L);
-        vec3 radiance = u_Light.Colors[i].xyz * attenuation * intensity;
+        if (!lit)
+        {
+            continue;
+        }
+
+        // Apply shadow ONLY to this light
+        float visibility = 1.0 - clamp(shadow, 0.0, 1.0);
+
+        // Per-light radiance (shadowed)
+        vec3 radiance = lightColor * attenuation * lightIntensity * visibility;
 
         // Cook-Torrance BRDF
-        float NDF = DistributionGGX(N, H, roughness);   
-        float G   = GeometrySmith(N, V, L, roughness);      
-        vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
-           
-        vec3 numerator    = NDF * G * F; 
-        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
-        vec3 specular = numerator / denominator;
-        
+        vec3 H = normalize(V + L);
+        float NDF = DistributionGGX(N, H, roughness);
+        float G   = GeometrySmith(N, V, L, roughness);
+        vec3  F   = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+        vec3 numerator = NDF * G * F;
+        float denom = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+        vec3 specular = numerator / denom;
+
         // kS is equal to Fresnel
         vec3 kS = F;
+
         // for energy conservation, the diffuse and specular light can't
         // be above 1.0 (unless the surface emits light); to preserve this
         // relationship the diffuse component (kD) should equal 1.0 - kS.
@@ -417,13 +425,11 @@ void main()
         // add to outgoing radiance Lo
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }
-
-    totalShadow = clamp(totalShadow / float(u_Light.Count), 0.0, 1.0);
     
     // ambient lighting (note that the next IBL tutorial will replace this ambient lighting with environment lighting).
     vec3 ambient = vec3(0.015) * albedo;
-    
-    vec3 color = ambient + (1.0 - totalShadow) * Lo;
+
+    vec3 color = ambient + Lo;
 
     // HDR tonemapping
     color = color / (color + vec3(1.0));

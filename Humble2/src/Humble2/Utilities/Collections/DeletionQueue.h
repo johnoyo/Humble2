@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Deque.h"
+#include <deque>
 #include <functional>
 
 namespace HBL2
@@ -11,7 +11,7 @@ namespace HBL2
 		void PushFunction(std::function<void()>&& function)
 		{
 			std::scoped_lock lock(m_Lock);
-			m_Deletors.PushBack(function);
+			m_Deletors.push_back(function);
 		}
 
 		void Flush()
@@ -21,11 +21,11 @@ namespace HBL2
 				(*it)();
 			}
 
-			m_Deletors.Clear();
+			m_Deletors.clear();
 		}
 
 	private:
-		Deque<std::function<void()>> m_Deletors;
+		std::deque<std::function<void()>> m_Deletors;
 		std::mutex m_Lock;
 	};
 }

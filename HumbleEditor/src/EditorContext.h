@@ -4,9 +4,9 @@
 
 #include "Asset\EditorAssetManager.h"
 
-#include "Humble2\Systems\TransformSystem.h"
 #include "Humble2\Systems\CameraSystem.h"
 
+#include "Systems/TransformSystem.h"
 #include "Systems/EditorPanelSystem.h"
 #include "Systems/EditorCameraSystem.h"
 
@@ -29,7 +29,6 @@ namespace HBL2
 		private:
 			bool OpenProject();
 			void LoadProject();
-			void LoadBuiltInAssets();
 			bool IsActiveSceneValid();
 
 		private:

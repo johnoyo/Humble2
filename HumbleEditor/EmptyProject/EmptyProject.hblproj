@@ -1,11 +1,11 @@
 Project:
   Name: EmptyProject
-  StartingScene: Scenes\EmptyScene.humble
+  StartingScene: Scenes\SponzaScene.humble
   AssetDirectory: Assets
   ScriptDirectory: ""
   Renderer:
     Type: 0
-    Editor API: 1
+    Editor API: 2
     Runtime API: 2
   Physics2D:
     Gravity Force: -9.81000042
@@ -17,6 +17,27 @@ Project:
     Show Colliders: true
     Show Bounding Boxes: true
     Implementation: 1
+  Sound:
+    Implementation: 1
+  Editor:
+    Multiple Viewports: false
   Advanced:
-    Max App Memory: 1073741824
-    Max UniformBuffer Memory: 67108864
+    Max App Memory: 500
+    Max UniformBuffer Memory: 32
+    Resource Manager:
+      Textures Pool Size: 128
+      Shaders Pool Size: 64
+      Buffers Pool Size: 512
+      BindGroups Pool Size: 64
+      BindGroupLayouts Pool Size: 32
+      FrameBuffers Pool Size: 32
+      RenderPass Pool Size: 32
+      RenderPassLayouts Pool Size: 32
+      Meshes Pool Size: 256
+      Materials Pool Size: 64
+      Scenes Pool Size: 16
+      Scripts Pool Size: 32
+      Sounds Pool Size: 32
+      Prefabs Pool Size: 64
+    Asset Manager:
+      Assets Pool Size: 1024

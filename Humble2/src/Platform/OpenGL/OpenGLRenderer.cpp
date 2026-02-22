@@ -39,8 +39,7 @@ namespace HBL2
 
 	void OpenGLRenderer::BeginFrame()
 	{
-		m_Stats.Reset();
-		TempUniformRingBuffer->Invalidate();
+		SwapAndResetStats();
 	}
 
 	CommandBuffer* OpenGLRenderer::BeginCommandRecording(CommandBufferType type)
@@ -58,7 +57,7 @@ namespace HBL2
 
 	void OpenGLRenderer::EndFrame()
 	{
-		m_ResourceManager->Flush(m_FrameNumber);
+		m_ResourceManager->Flush(m_FrameNumber.load());
 	}
 
 	void OpenGLRenderer::Present()
@@ -156,6 +155,8 @@ namespace HBL2
 		m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
 
 		TempUniformRingBuffer->Free();
+		delete TempUniformRingBuffer;
+		TempUniformRingBuffer = nullptr;
 
 		m_ResourceManager->DeleteBindGroupLayout(m_ShadowBindingsLayout);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
@@ -172,6 +173,9 @@ namespace HBL2
 		m_ResourceManager->DeleteRenderPass(m_RenderPass);
 		m_ResourceManager->DeleteRenderPass(m_RenderingRenderPass);
 		m_ResourceManager->DeleteFrameBuffer(m_MainFrameBuffer);
+
+		delete m_MainCommandBuffer;
+		delete m_UserInterfaceCommandBuffer;
 	}
 
 	void* OpenGLRenderer::GetDepthAttachment()
@@ -179,6 +183,12 @@ namespace HBL2
 		if (MainDepthTexture.IsValid())
 		{
 			OpenGLTexture* openGLTexture = m_ResourceManager->GetTexture(MainDepthTexture);
+
+			if (openGLTexture == nullptr)
+			{
+				return nullptr;
+			}
+
 			return (void*)(intptr_t)openGLTexture->RendererId;
 		}
 
@@ -190,6 +200,12 @@ namespace HBL2
 		if (MainColorTexture.IsValid())
 		{
 			OpenGLTexture* openGLTexture = m_ResourceManager->GetTexture(MainColorTexture);
+
+			if (openGLTexture == nullptr)
+			{
+				return nullptr;
+			}
+
 			return (void*)(intptr_t)openGLTexture->RendererId;
 		}
 

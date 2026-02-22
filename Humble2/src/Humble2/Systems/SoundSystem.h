@@ -5,8 +5,7 @@
 #include "Scene\Components.h"
 #include "Resources\ResourceManager.h"
 
-#include <fmod.hpp>
-#include <fmod_errors.h>
+#include <Sound\SoundEngine.h>
 
 #include <queue>
 
@@ -23,22 +22,17 @@ namespace HBL2
 		virtual void OnUpdate(float ts) override;
 		virtual void OnDestroy() override;
 
-		static void Play(Component::AudioSource& audioSource);
-		static void Pause(Component::AudioSource& audioSource);
-		static void Resume(Component::AudioSource& audioSource);
-		static void Stop(Component::AudioSource& audioSource);
-
 	private:
 		struct ChannelEntry
 		{
-			FMOD::Channel* channel = nullptr;
+			SoundEngine::ChannelHandle channel = SoundEngine::InvalidChannel;
 			Entity owner = UINT32_MAX;
 		};
 
 		uint32_t AllocateSlot();
 		void FreeSlot(uint32_t idx);
 
-		void StartChannel(Component::AudioSource& src, uint32_t entity, bool paused);
+		void StartChannel(Component::AudioSource& src, Entity entity, bool paused);
 		void StopChannel(ChannelEntry& e, uint32_t slotIndex);
 		void PauseChannel(ChannelEntry& e, bool paused);
 		void UpdateChannelParams(const Component::AudioSource& src, ChannelEntry& e);
@@ -47,8 +41,7 @@ namespace HBL2
 		void UpdateListener();
 
 	private:
-		FMOD::System* m_SoundSystem = nullptr;
-		FMOD::ChannelGroup* m_ChannelGroup = nullptr;
+		bool m_Initialized = false;
 
 		std::vector<ChannelEntry> m_Channels;
 		std::queue<uint32_t>      m_Free;

@@ -14,6 +14,7 @@ namespace HBL2
 
 		virtual void BeginFrame() override;
 		virtual void EndFrame() override;
+		virtual void Render(const FrameData& frameData) override;
 
 		virtual void Clean() override;
 	};

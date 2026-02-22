@@ -4,6 +4,11 @@ namespace HBL2
 {
 	OpenGLShader::OpenGLShader(const ShaderDescriptor&& desc)
 	{
+		Recompile(std::forward<const ShaderDescriptor>(desc));
+	}
+
+	void OpenGLShader::Recompile(const ShaderDescriptor&& desc)
+	{
 		DebugName = desc.debugName;
 
 		Program = glCreateProgram();
@@ -74,10 +79,10 @@ namespace HBL2
 		return shaderID;
 	}
 
-	void OpenGLShader::SetVariantProperties(const ShaderDescriptor::RenderPipeline::Variant& variantDesc)
+	void OpenGLShader::SetVariantProperties(const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc)
 	{
 		// Blend state.
-		if (variantDesc.blend.enabled)
+		if (variantDesc.blendEnabled)
 		{
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -89,17 +94,17 @@ namespace HBL2
 		}
 
 		// Depth test state.
-		if (variantDesc.depthTest.enabled)
+		if (variantDesc.depthEnabled)
 		{
 			glEnable(GL_DEPTH_TEST);
-			glDepthFunc(OpenGLUtils::CompareToGLenum(variantDesc.depthTest.depthTest));
+			glDepthFunc(OpenGLUtils::CompareToGLenum((Compare)variantDesc.depthCompare));
 		}
 		else
 		{
 			glDisable(GL_DEPTH_TEST);
 		}
 
-		if (variantDesc.depthTest.writeEnabled)
+		if (variantDesc.depthWrite)
 		{
 			glDepthMask(GL_TRUE);
 		}
@@ -109,7 +114,7 @@ namespace HBL2
 		}
 
 		// Cull mode.
-		switch (variantDesc.cullMode)
+		switch ((CullMode)variantDesc.cullMode)
 		{
 		case CullMode::NONE:
 			break;
@@ -127,9 +132,9 @@ namespace HBL2
 			break;
 		}
 
-		if (variantDesc.cullMode != CullMode::NONE)
+		if ((CullMode)variantDesc.cullMode != CullMode::NONE)
 		{
-			switch (variantDesc.frontFace)
+			switch ((FrontFace)variantDesc.frontFace)
 			{
 			case FrontFace::COUNTER_CLOCKWISE:
 				glFrontFace(GL_CW); // NOTE: Flipped to match vulkan set up!
@@ -141,13 +146,16 @@ namespace HBL2
 		}
 
 		// Polygon mode.
-		switch (variantDesc.polygonMode)
+		switch ((PolygonMode)variantDesc.polygonMode)
 		{
 		case PolygonMode::FILL:
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			break;
 		case PolygonMode::LINE:
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			break;
+		case PolygonMode::POINT:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
 			break;
 		}
 	}

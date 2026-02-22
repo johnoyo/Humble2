@@ -4,6 +4,8 @@ namespace HBL2
 {
     JobSystem* JobSystem::s_Instance = nullptr;
 
+    static thread_local uint32_t s_WorkerIndex = UINT32_MAX;
+
 	void JobSystem::Initialize()
 	{
         HBL2_CORE_ASSERT(s_Instance == nullptr, "JobSystem::s_Instance is not null! JobSystem::Initialize has been called twice.");
@@ -29,7 +31,7 @@ namespace HBL2
 
     void JobSystem::InternalInitialize()
     {
-        m_NumThreads = std::max(1u, std::thread::hardware_concurrency() - 1);
+        m_NumThreads = std::max(1u, std::thread::hardware_concurrency() - 2);
 
         m_LocalJobQueues.resize(m_NumThreads);
         m_Workers.reserve(m_NumThreads);
@@ -40,8 +42,8 @@ namespace HBL2
 
             auto handle = worker.native_handle();
 
-            // Put threads on increasing cores starting from 2nd.
-            int core = threadID + 1;
+            // Put threads on increasing cores starting from 3rd.
+            int core = threadID + 2;
 #ifdef _WIN32
             // Put each thread on to dedicated core.
             DWORD_PTR affinityMask = 1ull << core;
@@ -156,14 +158,21 @@ namespace HBL2
                 // If we are here, then there are still remaining jobs that this thread couldn't pick up.
                 //	In this case those jobs are not standing by on a queue but currently executing
                 //	on other threads, so they cannot be picked up by this thread.
-                //	Allow to swap out this thread by OS to not spin endlessly for nothing
+                //	Allow to swap out this thread by OS to not spin endlessly for nothing.
                 std::this_thread::yield();
             }
         }
     }
 
+    uint32_t JobSystem::GetWorkerIndex()
+    {
+        return s_WorkerIndex;
+    }
+
     void JobSystem::WorkerThreadFunc(uint32_t threadIndex)
     {
+        s_WorkerIndex = threadIndex;
+
         while (!m_Shutdown.load())
         {
             std::function<void()> job;

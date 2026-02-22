@@ -25,6 +25,13 @@ namespace HBL2
 					glBindBuffer(GL_UNIFORM_BUFFER, buffer->RendererId);
 
 					void* ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+
+					if (ptr == nullptr)
+					{
+						HBL2_CORE_ERROR("An error occured when trying to map data of buffer: {}.", buffer->DebugName);
+						continue;
+					}
+
 					memcpy(ptr, (void*)buffer->Data, buffer->ByteSize);
 					glUnmapBuffer(GL_UNIFORM_BUFFER);
 
@@ -41,6 +48,7 @@ namespace HBL2
 			globalBindGroup->Set();
 		}
 
+		Handle<Shader> prevShader;
 		Handle<Buffer> prevIndexBuffer;
 		Handle<Buffer> prevVertexBuffer;
 		Handle<BindGroup> previouslyUsedBindGroup;
@@ -48,14 +56,14 @@ namespace HBL2
 
 		for (const auto& draw : draws.GetDraws())
 		{
-			Material* material = rm->GetMaterial(draw.Material);
+			ShaderDescriptor::RenderPipeline::PackedVariant variant = ShaderDescriptor::RenderPipeline::PackedVariant::FromKey(draw.VariantHandle);
 
-			if (prevVariantHash != draw.VariantHash)
+			if (prevVariantHash != draw.VariantHandle || prevShader != draw.Shader)
 			{
 				OpenGLShader* shader = rm->GetShader(draw.Shader);
 
 				// Set blend, depth state.
-				shader->SetVariantProperties(material->VariantDescriptor);
+				shader->SetVariantProperties(variant);
 
 				// Bind Vertex Array
 				shader->BindPipeline();
@@ -63,7 +71,8 @@ namespace HBL2
 				// Bind shader
 				shader->Bind();
 
-				prevVariantHash = draw.VariantHash;
+				prevShader = draw.Shader;
+				prevVariantHash = draw.VariantHandle;
 			}
 
 			// Bind Index buffer if applicable
@@ -106,7 +115,7 @@ namespace HBL2
 				}
 			}
 
-			GLenum topology = OpenGLUtils::TopologyToGLenum(material->VariantDescriptor.topology);
+			GLenum topology = OpenGLUtils::TopologyToGLenum((Topology)variant.topology);
 
 			// Draw the mesh accordingly
 			if (draw.IndexBuffer.IsValid())

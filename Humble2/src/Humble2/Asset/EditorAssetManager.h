@@ -5,7 +5,6 @@
 #include "Utilities\ShaderUtilities.h"
 #include "Utilities\TextureUtilities.h"
 #include "Utilities\MeshUtilities.h"
-#include "Utilities\UnityBuild.h"
 
 #include "Scene\SceneSerializer.h"
 #include "Project\Project.h"
@@ -22,13 +21,14 @@ namespace HBL2
 	public:
 		virtual ~EditorAssetManager() = default;
 
-		virtual void UnloadAsset(Handle<Asset> handle) override;
-		virtual void SaveAsset(Handle<Asset> handle) override;
 		virtual bool IsAssetValid(Handle<Asset> handle) override;
 		virtual bool IsAssetLoaded(Handle<Asset> handle) override;
 
 	protected:
 		virtual uint32_t LoadAsset(Handle<Asset> handle) override;
+		virtual uint32_t ReloadAsset(Handle<Asset> handle) override;
+		virtual void UnloadAsset(Handle<Asset> handle) override;
+		virtual void SaveAsset(Handle<Asset> handle) override;
 		virtual bool DestroyAsset(Handle<Asset> handle) override;
 
 	private:
@@ -40,6 +40,11 @@ namespace HBL2
 		Handle<Script> ImportScript(Asset* asset);
 		Handle<Sound> ImportSound(Asset* asset);
 		Handle<Prefab> ImportPrefab(Asset* asset);
+
+		Handle<Shader> ReimportShader(Asset* asset);
+		Handle<Material> ReimportMaterial(Asset* asset);
+		Handle<Mesh> ReimportMesh(Asset* asset);
+		Handle<Prefab> ReimportPrefab(Asset* asset);
 
 		void SaveMaterial(Asset* asset);
 		void SaveScene(Asset* asset);

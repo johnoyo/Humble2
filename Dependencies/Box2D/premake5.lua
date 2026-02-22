@@ -3,8 +3,7 @@ project "Box2D"
 	language "C"
 	cdialect "C11"
 	staticruntime "Off"
-
-    flags { "MultiProcessorCompile" }
+	multiprocessorcompile "On"
 
 	targetdir ("box2d/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("box2d/bin-int/" .. outputdir .. "/%{prj.name}")
@@ -29,11 +28,12 @@ project "Box2D"
 	filter "configurations:Debug"
 		runtime "Debug"
 		symbols "On"
-
+		
 	filter "configurations:Release"
 		runtime "Release"
 		optimize "On"
-
+		
 	filter "configurations:Dist"
 		runtime "Release"
-		optimize "On"
+		symbols "Off"
+		optimize "Full"

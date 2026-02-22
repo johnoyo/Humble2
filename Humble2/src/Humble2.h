@@ -5,6 +5,7 @@
 #include "Core\Events.h"
 #include "Utilities\JobSystem.h"
 
+#include "Scene\ISystem.h"
 #include "Scene\Scene.h"
 #include "Project\Project.h"
 

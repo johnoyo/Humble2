@@ -40,41 +40,6 @@ namespace HBL2
 
 		VK_VALIDATE(vkCreateDescriptorPool(m_Device->Get(), &poolInfo, nullptr, &m_ImGuiPool), "vkCreateDescriptorPool");
 
-		// Setup Dear ImGui context
-		IMGUI_CHECKVERSION();
-		m_ImGuiContext = ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-
-		if (Context::Mode == Mode::Editor)
-		{
-			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
-		}
-
-		//io.ConfigViewportsNoAutoMerge = true;
-		//io.ConfigViewportsNoTaskBarIcon = true;
-
-		const auto& boldFontPath = std::filesystem::path("assets") / "fonts" / "OpenSans-Bold.ttf";
-		const auto& regularFontPath = std::filesystem::path("assets") / "fonts" / "OpenSans-Regular.ttf";
-
-		float fontSize = 18.0f;
-		io.Fonts->AddFontFromFileTTF(boldFontPath.string().c_str(), fontSize);
-		io.FontDefault = io.Fonts->AddFontFromFileTTF(regularFontPath.string().c_str(), fontSize);
-
-		// Setup Dear ImGui style
-		ImGui::StyleColorsDark();
-		SetImGuiStyle();
-
-		// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
-		ImGuiStyle& style = ImGui::GetStyle();
-		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-		{
-			style.WindowRounding = 0.0f;
-			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-		}
-
 		CreateRenderPass();
 
 		VulkanRenderPass* renderPass = m_ResourceManager->GetRenderPass(m_ImGuiRenderPass);
@@ -82,29 +47,25 @@ namespace HBL2
 		// Setup Platform/Renderer backends
 		ImGui_ImplGlfw_InitForVulkan(Window::Instance->GetHandle(), true);
 
-		ImGui_ImplVulkan_InitInfo initInfo =
+		ImGui_ImplVulkan_InitInfo initInfo = { 0 };
+		initInfo.Instance = m_Device->GetInstance();
+		initInfo.PhysicalDevice = m_Device->GetPhysicalDevice();
+		initInfo.Device = m_Device->Get();
+		initInfo.Queue = m_Renderer->GetGraphicsQueue();
+		initInfo.DescriptorPool = m_ImGuiPool;
+		initInfo.MinImageCount = 2l;
+		initInfo.ImageCount = 2;
+		initInfo.PipelineInfoMain =
 		{
-			.Instance = m_Device->GetInstance(),
-			.PhysicalDevice = m_Device->GetPhysicalDevice(),
-			.Device = m_Device->Get(),
-			.Queue = m_Renderer->GetGraphicsQueue(),
-			.DescriptorPool = m_ImGuiPool,
+			.RenderPass = renderPass->RenderPass,
 			.Subpass = 0,
-			.MinImageCount = 3,
-			.ImageCount = 3,
 			.MSAASamples = VK_SAMPLE_COUNT_1_BIT,
 		};
-		ImGui_ImplVulkan_Init(&initInfo, renderPass->RenderPass);
-
-		m_Renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
-		{
-			ImGui_ImplVulkan_CreateFontsTexture(cmd);
-		});
+		ImGui_ImplVulkan_Init(&initInfo);
 	}
 
 	void VulkanImGuiRenderer::BeginFrame()
 	{
-		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
@@ -114,22 +75,69 @@ namespace HBL2
 	{
 		ImGui::Render();
 
+		{
+			ImGuiPlatformIO& pio = ImGui::GetPlatformIO();
+			std::vector<ImTextureData*> pending;
+			pending.reserve(pio.Textures.Size);
+
+			for (ImTextureData* tex : pio.Textures)
+			{
+				if (tex->Status != ImTextureStatus_OK)
+				{
+					pending.push_back(tex);
+				}
+			}
+
+			if (!pending.empty())
+			{
+				m_Renderer->SubmitBlocking([pending = std::move(pending)]() mutable
+				{
+					for (ImTextureData* tex : pending)
+					{
+						// NOTE: This ImGui function causes the validation error: Validation layer: Validation Error: [ VUID-vkDestroyBuffer-buffer-00922 ] |
+						// MessageID = 0xe4549c11 | vkDestroyBuffer():  can't be called on VkBuffer 0x88693900000000c0[] that is currently in use by VkDescriptorSet 0x67dd1700000000e0[].
+						// The Vulkan spec states: All submitted commands that refer to buffer, either directly or via a VkBufferView, must have completed execution
+						// (https://vulkan.lunarg.com/doc/view/1.3.290.0/windows/1.3-extensions/vkspec.html#VUID-vkDestroyBuffer-buffer-00922)
+						// 
+						// UPDATE: Not setting the 'DrawData.Textures = nullptr' as suggested by ImGui fixes this error, it could produce other problems though, keep an eye out.
+						ImGui_ImplVulkan_UpdateTexture(tex);
+					}
+				});
+			}
+		}
+
+		{
+			// Update and Render additional Platform Windows.
+			ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+			// NOTE: If we dont call 'ImGui::UpdatePlatformWindows()' before the next 'ImGui::NewFrame()' call we hit an assert.
+			// So to prevent it we update and render here prematurely.
+			if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+			{
+				ImGui::UpdatePlatformWindows();
+
+				m_Renderer->SubmitBlocking([]()
+				{
+					ImGui::RenderPlatformWindowsDefault();
+				});
+			}
+		}
+
+		m_Renderer->CollectImGuiRenderData(ImGui::GetDrawData(), ImGui::GetTime());
+	}
+
+	void VulkanImGuiRenderer::Render(const FrameData& frameData)
+	{
+		ImDrawData* data = (ImDrawData*)&frameData.ImGuiRenderData.DrawData;
+
+		ImGui_ImplVulkan_NewFrame();
+
 		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI);
 		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_ImGuiRenderPass, m_Renderer->GetMainFrameBuffer());
 
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);
-
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-
-		// Update and Render additional Platform Windows
-		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-		{
-			ImGui::UpdatePlatformWindows();
-			ImGui::RenderPlatformWindowsDefault();
-		}
+		ImGui_ImplVulkan_RenderDrawData(data, m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);
 
 		commandBuffer->EndRenderPass(*renderPassRenderer);
-
 		commandBuffer->EndCommandRecording();
 		commandBuffer->Submit();
 	}
@@ -138,12 +146,15 @@ namespace HBL2
 	{
 		vkDeviceWaitIdle(m_Device->Get());
 
+		m_Renderer->ClearFrameDataBuffer();
+
+		ImGui_ImplVulkan_Shutdown();
+
 		vkDestroyDescriptorPool(m_Device->Get(), m_ImGuiPool, nullptr);
 
 		VulkanRenderPass* renderPass = m_ResourceManager->GetRenderPass(m_ImGuiRenderPass);
 		vkDestroyRenderPass(m_Device->Get(), renderPass->RenderPass, nullptr);
 
-		ImGui_ImplVulkan_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
 	}

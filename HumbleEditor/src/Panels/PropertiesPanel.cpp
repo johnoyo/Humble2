@@ -1,6 +1,6 @@
 ﻿#include "Systems\EditorPanelSystem.h"
 
-#include <Utilities\NativeScriptUtilities.h>
+#include "Script\BuildEngine.h"
 
 #include <UI\UserInterfaceUtilities.h>
 #include <UI\LayoutLib.h>
@@ -13,14 +13,14 @@ namespace HBL2
 		template<typename T>
 		static void DrawComponent(const std::string& name, Scene* ctx, std::function<void(T&)> drawUI)
 		{
-			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowItemOverlap;
+			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
 
 			if (ctx->HasComponent<T>(HBL2::Component::EditorVisible::SelectedEntity))
 			{
 				ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
 
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
-				float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+				float lineHeight = GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
 				bool opened = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, name.c_str());
 				ImGui::PopStyleVar();
 				ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
@@ -65,7 +65,7 @@ namespace HBL2
 
 		void EditorPanelSystem::DrawPropertiesPanel()
 		{
-			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowItemOverlap;
+			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
 
 			if (HBL2::Component::EditorVisible::SelectedEntity != Entity::Null)
 			{
@@ -128,8 +128,9 @@ namespace HBL2
 								{
 									link.Parent = parentEntityUUID;
 								}
-								ImGui::EndDragDropTarget();
 							}
+
+							ImGui::EndDragDropTarget();
 						}
 
 						if (ImGui::BeginPopupContextItem())
@@ -194,9 +195,9 @@ namespace HBL2
 							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
 
 							sprite.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				});
 
@@ -231,9 +232,9 @@ namespace HBL2
 							}
 
 							mesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(assetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 
 					ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
@@ -246,9 +247,9 @@ namespace HBL2
 							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
 
 							mesh.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				});
 
@@ -312,9 +313,9 @@ namespace HBL2
 							}
 
 							skyLight.EquirectangularMap = AssetManager::Instance->GetAsset<Texture>(assetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 
 					if (ImGui::Button("Update"))
@@ -357,9 +358,9 @@ namespace HBL2
 							}
 
 							audioSource.Sound = AssetManager::Instance->GetAsset<Sound>(assetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 
 					ImGui::DragFloat("Volume", &audioSource.Volume, 0.05f, 0.f, 1.f);
@@ -512,12 +513,42 @@ namespace HBL2
 				{
 					// Normalisation mode.
 					{
-						const char* options[] = { "Local", "Global" };
+						const char* options[] = { "Fixed", "Infinite" };
 						int currentItem = (int)t.NormaliseMode;
 
-						if (ImGui::Combo("NormaliseMode", &currentItem, options, IM_ARRAYSIZE(options)))
+						if (ImGui::Combo("Type", &currentItem, options, IM_ARRAYSIZE(options)))
 						{
 							t.NormaliseMode = (HBL2::Component::Terrain::ENormaliseMode)currentItem;
+						}
+					}
+
+					if (t.NormaliseMode == HBL2::Component::Terrain::ENormaliseMode::LOCAL)
+					{
+						uint32_t textureHandle = t.HeightMap.Pack();
+
+						ImGui::InputScalar("Height Map", ImGuiDataType_U32, (void*)(intptr_t*)&textureHandle);
+
+						if (ImGui::BeginDragDropTarget())
+						{
+							if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+							{
+								uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+								Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+								if (assetHandle.IsValid())
+								{
+									Asset* textureAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+									if (!std::filesystem::exists(HBL2::Project::GetAssetFileSystemPath(textureAsset->FilePath).string() + ".hbltexture"))
+									{
+										TextureUtilities::Get().CreateAssetMetadataFile(assetHandle);
+									}
+								}
+
+								t.HeightMap = assetHandle;
+							}
+
+							ImGui::EndDragDropTarget();
 						}
 					}
 
@@ -540,9 +571,9 @@ namespace HBL2
 							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
 
 							t.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 
 					ImGui::Checkbox("AddColliders", &t.AddColliders);
@@ -567,20 +598,25 @@ namespace HBL2
 					}
 				});
 
+				DrawComponent<HBL2::Component::PrefabInstance>("PrefabInstance", m_ActiveScene, [this](HBL2::Component::PrefabInstance& pi)
+				{
+					ImGui::Checkbox("Override From Source", &pi.Override);
+				});
+
 				using namespace entt::literals;
 
 				// Iterate over all registered meta types
 				for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
 				{
 					std::string componentName = meta_type.second.info().name().data();
-					componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+					componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
 
-					if (NativeScriptUtilities::Get().HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
+					if (BuildEngine::Instance->HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
 					{
 						ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
 
 						ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
-						float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+						float lineHeight = GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
 						bool opened = ImGui::TreeNodeEx((void*)meta_type.second.info().hash(), treeNodeFlags, componentName.c_str());
 						ImGui::PopStyleVar();
 						ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
@@ -594,7 +630,7 @@ namespace HBL2
 
 						if (opened)
 						{
-							entt::meta_any componentMeta = HBL2::NativeScriptUtilities::Get().GetComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+							entt::meta_any componentMeta = BuildEngine::Instance->GetComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
 
 							HBL2::EditorUtilities::Get().DrawDefaultEditor(componentMeta);
 
@@ -605,7 +641,7 @@ namespace HBL2
 
 						if (removeComponent)
 						{
-							HBL2::NativeScriptUtilities::Get().RemoveComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+							BuildEngine::Instance->RemoveComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
 						}
 					}
 				}
@@ -638,13 +674,13 @@ namespace HBL2
 					for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
 					{
 						std::string componentName = meta_type.second.info().name().data();
-						componentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+						componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
 
-						if (!HBL2::NativeScriptUtilities::Get().HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
+						if (!BuildEngine::Instance->HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
 						{
 							if (ImGui::MenuItem(componentName.c_str()))
 							{
-								HBL2::NativeScriptUtilities::Get().AddComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+								BuildEngine::Instance->AddComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
 								ImGui::CloseCurrentPopup();
 							}
 						}
@@ -698,36 +734,52 @@ namespace HBL2
 							// Blend mode.
 							{
 								const char* options[] = { "Opaque", "Transparent" };
-								int currentItem = mat->VariantDescriptor.blend.enabled ? 1 : 0;
+								int currentItem = mat->VariantHash.blendEnabled ? 1 : 0;
 
 								if (ImGui::Combo("Blend Mode", &currentItem, options, IM_ARRAYSIZE(options)))
 								{
-									mat->VariantDescriptor.blend.enabled = currentItem == 0 ? false : true;
+									mat->VariantHash.blendEnabled = currentItem == 0 ? false : true;
 								}
 							}
 
 							// Color output.
-							ImGui::Checkbox("Color Output", &mat->VariantDescriptor.blend.colorOutput);
+							bool colorOutput = mat->VariantHash.colorOutput != 0;
+							if (ImGui::Checkbox("Color Output", &colorOutput))
+							{
+								mat->VariantHash.colorOutput = colorOutput ? 1 : 0;
+							}
 							
 							// Depth enabled.
-							ImGui::Checkbox("Depth", &mat->VariantDescriptor.depthTest.enabled);
+							bool depthEnabled = mat->VariantHash.depthEnabled != 0;
+							if (ImGui::Checkbox("Depth", &depthEnabled))
+							{
+								mat->VariantHash.depthEnabled = depthEnabled ? 1 : 0;
+							}
 							
 							// Depth test mode.
 							{
 								const char* options[] = { "Less", "Less Equal", "Greater", "Greater Equal", "Equal", "Not Equal", "Always", "Never" };
-								int currentItem = (int)mat->VariantDescriptor.depthTest.depthTest;
+								int currentItem = (int)mat->VariantHash.depthCompare;
 
 								if (ImGui::Combo("Depth Test", &currentItem, options, IM_ARRAYSIZE(options)))
 								{
-									mat->VariantDescriptor.depthTest.depthTest = (Compare)currentItem;
+									mat->VariantHash.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)(Compare)currentItem;
 								}
 							}
 
 							// Depth write mode.
-							ImGui::Checkbox("Depth Write", &mat->VariantDescriptor.depthTest.writeEnabled);
+							bool depthWrite = mat->VariantHash.depthWrite != 0;
+							if (ImGui::Checkbox("Depth Write", &depthWrite))
+							{
+								mat->VariantHash.depthWrite = depthWrite ? 1 : 0;
+							}
 
 							// Stencil enabled.
-							ImGui::Checkbox("Stencil", &mat->VariantDescriptor.depthTest.stencilEnabled);
+							bool stencil = mat->VariantHash.stencilEnabled != 0;
+							if (ImGui::Checkbox("Stencil", &stencil))
+							{
+								mat->VariantHash.stencilEnabled = stencil ? 1 : 0;
+							}
 
 							ImGui::ColorEdit4("AlbedoColor", glm::value_ptr(mat->AlbedoColor));
 							ImGui::InputFloat("Glossiness", &mat->Glossiness, 0.05f);

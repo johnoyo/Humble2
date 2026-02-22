@@ -5,12 +5,7 @@
 #include "Resources\ResourceManager.h"
 
 #include "Core/Allocators.h"
-
-#include "Utilities/Collections/HashMap.h"
-#include "Utilities/Allocators/BumpAllocator.h"
-
-#include <functional>
-#include <unordered_map>
+#include "Utilities/Collections/Collections.h"
 
 namespace HBL2
 {
@@ -18,7 +13,7 @@ namespace HBL2
 	{
 		Handle<Shader> Shader;
 		Handle<Material> Material;
-		uint64_t VariantHash = 0;
+		uint64_t VariantHandle = 0;
 
 		Handle<Buffer> IndexBuffer;
 		Handle<Buffer> VertexBuffer;
@@ -48,14 +43,22 @@ namespace HBL2
 	class DrawList
 	{
 	public:
+		DrawList() = default;
+		DrawList(Arena& arena, uint32_t reservedDrawCount);
+		DrawList(ScratchArena& arena, uint32_t reservedDrawCount);
+
+		void Initialize(Arena& arena);
+		void Initialize(ScratchArena& arena);
+		void Initialize(Arena& arena, uint32_t reservedDrawCount);
+		void Initialize(ScratchArena& arena, uint32_t reservedDrawCount);
 		void Insert(LocalDrawStream&& draw);
 		void Sort();
 		void Reset();
 
-		const uint32_t GetCount() const { return m_Draws.Size(); }
-		const Span<const LocalDrawStream> GetDraws() const { return { m_Draws.Data(), m_Draws.Size() }; }
+		const uint32_t GetCount() const { return m_Draws.size(); }
+		const Span<const LocalDrawStream> GetDraws() const { return { m_Draws.data(), m_Draws.size() }; }
 
 	private:
-		DynamicArray<LocalDrawStream, BinAllocator> m_Draws = MakeDynamicArray<LocalDrawStream>(&Allocator::Persistent);
+		DArray<LocalDrawStream> m_Draws = MakeEmptyDArray<LocalDrawStream>();
 	};
 }

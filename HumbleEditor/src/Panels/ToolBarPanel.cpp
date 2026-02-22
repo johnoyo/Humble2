@@ -1,7 +1,8 @@
 #include "Systems\EditorPanelSystem.h"
 
-#include <Utilities\FileDialogs.h>
-#include <Physics/PhysicsEngine2D.h>
+#include "Script\BuildEngine.h"
+#include "Utilities\FileDialogs.h"
+#include "Physics\PhysicsEngine2D.h"
 
 namespace HBL2
 {
@@ -31,10 +32,7 @@ namespace HBL2
 							AssetManager::Instance->DeregisterAssets();
 
 							// Free unity build dll.
-							NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
-
-							// Clear the invalid cached mesh handles, since we deregistered all the assets.
-							MeshUtilities::Get().ClearCachedHandles();
+							BuildEngine::Instance->UnloadBuild(m_ActiveScene);
 
 							// Create and open new project
 							HBL2::Project::Create(projectName)->Save(filepath);
@@ -45,7 +43,6 @@ namespace HBL2
 								.type = AssetType::Scene,
 							});
 
-							MeshUtilities::Get().LoadBuiltInMeshes();
 							HBL2::Project::OpenStartingScene();
 
 							m_ProjectChanged = true;
@@ -68,14 +65,10 @@ namespace HBL2
 							AssetManager::Instance->DeregisterAssets();
 
 							// Free unity build dll.
-							NativeScriptUtilities::Get().UnloadUnityBuild(m_ActiveScene);
-
-							// Clear the invalid cached mesh handles, since we deregistered all the assets.
-							MeshUtilities::Get().ClearCachedHandles();
+							BuildEngine::Instance->UnloadBuild(m_ActiveScene);
 
 							if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
 							{
-								MeshUtilities::Get().LoadBuiltInMeshes();
 								HBL2::Project::OpenStartingScene();
 
 								m_ProjectChanged = true;
@@ -143,27 +136,40 @@ namespace HBL2
 
 						AssetManager::Instance->SaveAsset(assetHandle);
 
-						HBL2::SceneManager::Get().LoadScene(assetHandle, false);
-
-						m_EditorScenePath = filepath;
+						if (Context::Mode == Mode::Runtime)
+						{
+							HBL2_WARN("Can not open a scene right now, exit play mode and then open scenes.");
+						}
+						else
+						{
+							HBL2::SceneManager::Get().LoadScene(assetHandle, false);
+							m_EditorScenePath = filepath;
+						}
 					}
 					else if (ImGui::MenuItem("Open Scene"))
 					{
-						std::string filepath = HBL2::FileDialogs::OpenFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
+						if (Context::Mode == Mode::Runtime)
+						{
+							HBL2_WARN("Can not open a scene right now, exit play mode and then open scenes.");
+						}
+						else
+						{
+							std::string filepath = HBL2::FileDialogs::OpenFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
 
-						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
-						UUID sceneUUID = std::hash<std::string>()(relativePath.string());
+							auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
+							UUID sceneUUID = std::hash<std::string>()(relativePath.string());
 
-						HBL2::SceneManager::Get().LoadScene(AssetManager::Instance->GetHandleFromUUID(sceneUUID), false);
+							HBL2::SceneManager::Get().LoadScene(AssetManager::Instance->GetHandleFromUUID(sceneUUID), false);
 
-						m_EditorScenePath = filepath;
+							m_EditorScenePath = filepath;
+						}
 					}
 					else if (ImGui::MenuItem("Build (Windows - Debug)"))
 					{
 						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 						// Build.
-						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Debug");
+						BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Debug);
 
 						// Copy project folder to build folder.
 						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Debug-x86_64\\HumbleApp\\" + projectName);
@@ -176,7 +182,7 @@ namespace HBL2
 						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 						// Build.
-						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
+						BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Release);
 
 						// Copy project folder to build folder.
 						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName);
@@ -189,7 +195,7 @@ namespace HBL2
 						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 						// Build.
-						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Debug");
+						BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Debug);
 
 						// Copy project folder to build folder.
 						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Debug-x86_64\\HumbleApp\\" + projectName);
@@ -198,14 +204,14 @@ namespace HBL2
 						FileUtils::CopyFolder("./assets", "..\\bin\\Debug-x86_64\\HumbleApp\\assets");
 
 						// Run.
-						system("cd ..\\bin\\Debug-x86_64\\HumbleApp && HumbleApp.exe");
+						BuildEngine::Instance->RunRuntime(BuildEngine::Configuration::Debug);
 					}
 					else if (ImGui::MenuItem("Build & Run (Windows - Release)"))
 					{
 						const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 						// Build.
-						system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
+						BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Release);
 
 						// Copy project folder to build folder.
 						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName);
@@ -214,7 +220,7 @@ namespace HBL2
 						FileUtils::CopyFolder("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets");
 
 						// Run.
-						system("cd ..\\bin\\Release-x86_64\\HumbleApp && HumbleApp.exe");
+						BuildEngine::Instance->RunRuntime(BuildEngine::Configuration::Release);
 					}
 					else if (ImGui::MenuItem("Build (Web)"))
 					{
@@ -262,10 +268,14 @@ namespace HBL2
 				ImGui::Begin("Project Settings##Window", &m_ShowProjectSettingsWindow);
 
 				auto& spec = HBL2::Project::GetActive()->GetSpecification();
-
-				ImGui::Text("Renderer Settings");
+				const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
 
 				// Renderer.
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+				bool rOpened = ImGui::TreeNodeEx((void*)69420690, treeNodeFlags, "Renderer Settings");
+				ImGui::PopStyleVar();
+
+				if (rOpened)
 				{
 					{
 						const char* options[] = { "Forward", "ForwardPlus", "Deffered", "Custom" };
@@ -275,6 +285,8 @@ namespace HBL2
 						{
 							spec.Settings.Renderer = (RendererType)currentItem;
 						}
+
+						ImGui::SameLine();
 
 						ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 					}
@@ -288,6 +300,8 @@ namespace HBL2
 							spec.Settings.EditorGraphicsAPI = (GraphicsAPI)currentItem;
 						}
 
+						ImGui::SameLine();
+
 						ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 					}
 
@@ -300,13 +314,16 @@ namespace HBL2
 							spec.Settings.RuntimeGraphicsAPI = (GraphicsAPI)currentItem;
 						}
 					}
+
+					ImGui::TreePop();
 				}
 
-				ImGui::Separator();
-
-				ImGui::Text("Physics2D Settings");
-
 				// Physics 2d.
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+				bool ph2dOpened = ImGui::TreeNodeEx((void*)69420691, treeNodeFlags, "Physics2D Settings");
+				ImGui::PopStyleVar();
+
+				if (ph2dOpened)
 				{
 					if (ImGui::DragFloat("Gravity##2d", &spec.Settings.GravityForce2D, 0.01f))
 					{
@@ -314,25 +331,33 @@ namespace HBL2
 
 					if (ImGui::Checkbox("Enable Debug Draw##2d", &spec.Settings.EnableDebugDraw2D))
 					{
-						PhysicsEngine2D::Instance->SetDebugDrawEnabled(spec.Settings.EnableDebugDraw2D);
+						if (PhysicsEngine2D::Instance != nullptr)
+						{
+							PhysicsEngine2D::Instance->SetDebugDrawEnabled(spec.Settings.EnableDebugDraw2D);
+						}
 					}
 
 					const char* options[] = { "Custom", "Box2D" };
 					int currentItem = (int)spec.Settings.Physics2DImpl;
 
-					if (ImGui::Combo("Implementation", &currentItem, options, IM_ARRAYSIZE(options)))
+					if (ImGui::Combo("Implementation##2d", &currentItem, options, IM_ARRAYSIZE(options)))
 					{
 						spec.Settings.Physics2DImpl = (Physics2DEngineImpl)currentItem;
 					}
 
+					ImGui::SameLine();
+
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					ImGui::TreePop();
 				}
 
-				ImGui::Separator();
-
-				ImGui::Text("Physics3D Settings");
-
 				// Physics 3d.
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+				bool ph3dOpened = ImGui::TreeNodeEx((void*)69420692, treeNodeFlags, "Physics3D Settings");
+				ImGui::PopStyleVar();
+
+				if (ph3dOpened)
 				{
 					if (ImGui::DragFloat("Gravity##3d", &spec.Settings.GravityForce3D, 0.01f))
 					{
@@ -340,52 +365,141 @@ namespace HBL2
 
 					if (ImGui::Checkbox("Enable Debug Draw##3d", &spec.Settings.EnableDebugDraw3D))
 					{
-						PhysicsEngine3D::Instance->SetDebugDrawEnabled(spec.Settings.EnableDebugDraw3D);
+						if (PhysicsEngine3D::Instance != nullptr)
+						{
+							PhysicsEngine3D::Instance->SetDebugDrawEnabled(spec.Settings.EnableDebugDraw3D);
+						}
 					}
 
 					if (spec.Settings.EnableDebugDraw3D)
 					{
 						if (ImGui::Checkbox("Show Colliders", &spec.Settings.ShowColliders3D))
 						{
-							PhysicsEngine3D::Instance->ShowColliders(spec.Settings.ShowColliders3D);
+							if (PhysicsEngine3D::Instance != nullptr)
+							{
+								PhysicsEngine3D::Instance->ShowColliders(spec.Settings.ShowColliders3D);
+							}
 						}
 
 						if (ImGui::Checkbox("Show Bounding Boxes", &spec.Settings.ShowBoundingBoxes3D))
 						{
-							PhysicsEngine3D::Instance->ShowBoundingBoxes(spec.Settings.ShowBoundingBoxes3D);
+							if (PhysicsEngine3D::Instance != nullptr)
+							{
+								PhysicsEngine3D::Instance->ShowBoundingBoxes(spec.Settings.ShowBoundingBoxes3D);
+							}
 						}
 					}
 
 					const char* options[] = { "Custom", "Jolt" };
 					int currentItem = (int)spec.Settings.Physics3DImpl;
 
-					if (ImGui::Combo("Implementation", &currentItem, options, IM_ARRAYSIZE(options)))
+					if (ImGui::Combo("Implementation##3d", &currentItem, options, IM_ARRAYSIZE(options)))
 					{
 						spec.Settings.Physics3DImpl = (Physics3DEngineImpl)currentItem;
 					}
 
+					ImGui::SameLine();
+
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					ImGui::TreePop();
 				}
 
-				ImGui::Separator();
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+				bool edsOpened = ImGui::TreeNodeEx((void*)69420693, treeNodeFlags, "Editor Settings");
+				ImGui::PopStyleVar();
 
-				ImGui::Text("Advanced Settings");
-
+				if (edsOpened)
 				{
-					if (ImGui::InputScalar("Max App Memory", ImGuiDataType_U32, (void*)(intptr_t*)&spec.Settings.MaxAppMemory))
+					if (ImGui::Checkbox("Multiple Viewports", &spec.Settings.EditorMultipleViewports))
 					{
 					}
 
-					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
-
-					if (ImGui::InputScalar("Max UniformBuffer Memory", ImGuiDataType_U32, (void*)(intptr_t*)&spec.Settings.MaxUniformBufferMemory))
-					{
-					}
+					ImGui::SameLine();
 
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					ImGui::TreePop();
 				}
 
-				ImGui::Separator();
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+				bool ausOpened = ImGui::TreeNodeEx((void*)69420694, treeNodeFlags, "Audio Settings");
+				ImGui::PopStyleVar();
+
+				if (ausOpened)
+				{
+					const char* options[] = { "Custom", "FMOD" };
+					int currentItem = (int)spec.Settings.SoundImpl;
+
+					if (ImGui::Combo("Implementation##sound", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						spec.Settings.SoundImpl = (SoundEngineImpl)currentItem;
+					}
+
+					ImGui::SameLine();
+
+					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					ImGui::TreePop();
+				}
+
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+				bool asOpened = ImGui::TreeNodeEx((void*)69420695, treeNodeFlags, "Advanced Settings");
+				ImGui::PopStyleVar();
+
+				if (asOpened)
+				{
+					ImGui::InputInt("Max App Memory (in MB)", (int*)&spec.Settings.MaxAppMemory);
+					ImGui::SameLine();
+					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					ImGui::InputInt("Max UniformBuffer Memory (in MB)", (int*)&spec.Settings.MaxUniformBufferMemory);
+					ImGui::SameLine();
+					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					ImGui::Separator();
+					
+					ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+					bool rmOpened = ImGui::TreeNodeEx((void*)typeid(ResourceManager).hash_code(), treeNodeFlags, "Resource Manager Settings");
+					ImGui::PopStyleVar();
+
+					if (rmOpened)
+					{
+						ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+						ImGui::InputInt("Textures Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Textures);
+						ImGui::InputInt("Shaders Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Shaders);
+						ImGui::InputInt("Buffers Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Buffers);
+						ImGui::InputInt("BindGroups Pool Size", (int*)&spec.Settings.ResourceManagerSpec.BindGroups);
+						ImGui::InputInt("BindGroupLayouts Pool Size", (int*)&spec.Settings.ResourceManagerSpec.BindGroupLayouts);
+						ImGui::InputInt("FrameBuffers Pool Size", (int*)&spec.Settings.ResourceManagerSpec.FrameBuffers);
+						ImGui::InputInt("RenderPass Pool Size", (int*)&spec.Settings.ResourceManagerSpec.RenderPass);
+						ImGui::InputInt("RenderPassLayouts Pool Size", (int*)&spec.Settings.ResourceManagerSpec.RenderPassLayouts);
+						ImGui::InputInt("Meshes Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Meshes);
+						ImGui::InputInt("Materials Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Materials);
+						ImGui::InputInt("Scenes Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Scenes);
+						ImGui::InputInt("Scripts Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Scripts);
+						ImGui::InputInt("Sounds Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Sounds);
+						ImGui::InputInt("Prefabs Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Prefabs);
+
+						ImGui::TreePop();
+					}
+
+					ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+					bool amOpened = ImGui::TreeNodeEx((void*)typeid(AssetManager).hash_code(), treeNodeFlags, "Asset Manager Settings");
+					ImGui::PopStyleVar();
+
+					if (amOpened)
+					{
+						ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+						ImGui::InputInt("Asset Pool Size", (int*)&spec.Settings.AssetManagerSpec.Assets);
+
+						ImGui::TreePop();
+					}
+
+					ImGui::TreePop();
+				}
+
+				ImGui::NewLine();
 
 				if (ImGui::Button("Save Project Settings"))
 				{
@@ -398,6 +512,19 @@ namespace HBL2
 			if (m_ShowEditorSettingsWindow)
 			{
 				ImGui::Begin("Editor Settings##Window", &m_ShowEditorSettingsWindow);
+
+				// Gizmo mode.
+				{
+					const char* options[] = { "Local", "World" };
+					int currentItem = (int)m_GizmoMode;
+
+					if (ImGui::Combo("GizmoMode", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						m_GizmoMode = (ImGuizmo::MODE)currentItem;
+					}
+				}
+
+				ImGui::Separator();
 
 				m_Context->View<Component::EditorCamera>()
 					.Each([&](Entity entity, Component::EditorCamera& editorCamera)

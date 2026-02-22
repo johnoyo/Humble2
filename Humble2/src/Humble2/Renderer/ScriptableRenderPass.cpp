@@ -40,6 +40,7 @@ namespace HBL2
 
 	DrawList ScriptableRenderPass::GetDraws()
 	{
+		// TODO: Fix draw list handling, we need an arena.
 		DrawList drawList;
 
 		drawList.Insert({
@@ -61,9 +62,8 @@ namespace HBL2
 		// Reflect shader.
 		const auto& reflectionData = ShaderUtilities::Get().GetReflectionData(shaderPath);
 
-		ShaderDescriptor::RenderPipeline::Variant variant = {};
-		variant.blend.enabled = false;
-		variant.shaderHashKey = Random::UInt64(); // Create a random UUID since we do not have an asset to retrieve from there the UUID.
+		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
+		variant.blendEnabled = false;
 
 		ctx.Shader = ResourceManager::Instance->CreateShader({
 			.debugName = "srp-shader",
@@ -82,7 +82,7 @@ namespace HBL2
 			.renderPass = renderPass,
 		});
 
-		ResourceManager::Instance->AddShaderVariant(ctx.Shader, variant);
+		ResourceManager::Instance->GetOrAddShaderVariant(ctx.Shader, variant);
 
 		// Create srp material.
 		ctx.Material = ResourceManager::Instance->CreateMaterial({
@@ -91,7 +91,7 @@ namespace HBL2
 		});
 
 		Material* mat = ResourceManager::Instance->GetMaterial(ctx.Material);
-		mat->VariantDescriptor = variant;
+		mat->VariantHash = variant;
 
 		// Set the bindgroup.
 		ctx.GlobalBindGroup = reflectionData.BindGroup;

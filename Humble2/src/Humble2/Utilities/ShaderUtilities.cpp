@@ -1,7 +1,7 @@
 #include "ShaderUtilities.h"
 
-#include <Project\Project.h>
-#include <Utilities\YamlUtilities.h>
+#include "Project\Project.h"
+#include "Utilities\YamlUtilities.h"
 
 namespace HBL2
 {
@@ -20,18 +20,18 @@ namespace HBL2
 		return false;
 	}
 
-	static YAML::Node VariantToYAMLNode(uint64_t newVariantHash, const ShaderDescriptor::RenderPipeline::Variant& variant)
+	static YAML::Node VariantToYAMLNode(uint64_t newVariantHash, const ShaderDescriptor::RenderPipeline::PackedVariant& variant)
 	{
 		YAML::Node baseVariant;
 
 		baseVariant["Variant"] = newVariantHash;
-		baseVariant["BlendState"]["Enabled"] = variant.blend.enabled;
-		baseVariant["BlendState"]["ColorOutputEnabled"] = variant.blend.colorOutput;
+		baseVariant["BlendState"]["Enabled"] = (bool)variant.blendEnabled;
+		baseVariant["BlendState"]["ColorOutputEnabled"] = (bool)variant.colorOutput;
 
-		baseVariant["DepthState"]["Enabled"] = variant.depthTest.enabled;
-		baseVariant["DepthState"]["WriteEnabled"] = variant.depthTest.writeEnabled;
-		baseVariant["DepthState"]["StencilEnabled"] = variant.depthTest.stencilEnabled;
-		baseVariant["DepthState"]["DepthTest"] = (int)variant.depthTest.depthTest;
+		baseVariant["DepthState"]["Enabled"] = (bool)variant.depthEnabled;
+		baseVariant["DepthState"]["WriteEnabled"] = (bool)variant.depthWrite;
+		baseVariant["DepthState"]["StencilEnabled"] = (bool)variant.stencilEnabled;
+		baseVariant["DepthState"]["DepthTest"] = (int)variant.depthCompare;
 
 		return baseVariant;
 	}
@@ -45,7 +45,6 @@ namespace HBL2
 	void ShaderUtilities::Initialize()
 	{
 		HBL2_CORE_ASSERT(s_Instance == nullptr, "ShaderUtilities::s_Instance is not null! ShaderUtilities::Initialize has been called twice.");
-		//s_Instance = Allocator::App.Allocate<ShaderUtilities>();
 		s_Instance = new ShaderUtilities;
 	}
 
@@ -53,9 +52,19 @@ namespace HBL2
 	{
 		HBL2_CORE_ASSERT(s_Instance != nullptr, "ShaderUtilities::s_Instance is null!");
 
-		//Allocator::App.Deallocate(s_Instance);
 		delete s_Instance;
 		s_Instance = nullptr;
+	}
+
+	ShaderUtilities::ShaderUtilities()
+	{
+		m_Reservation = Allocator::Arena.Reserve("ShaderUtilitiesPool", 16_MB);
+		m_Arena.Initialize(&Allocator::Arena, 16_MB, m_Reservation);
+
+		m_ShaderAssets = MakeDArray<Handle<Asset>>(m_Arena, 1024);
+		m_ShaderReflectionData = MakeHMap<std::string, ReflectionData>(m_Arena, 1024);
+		m_Shaders = MakeHMap<BuiltInShader, Handle<Shader>>(m_Arena, 1024);
+		m_ShaderLayouts = MakeHMap<BuiltInShader, Handle<BindGroupLayout>>(m_Arena, 64);
 	}
 
 	std::string ShaderUtilities::ReadFile(const std::string& filepath)
@@ -85,7 +94,7 @@ namespace HBL2
 		return result;
 	}
 
-	std::vector<uint32_t> ShaderUtilities::Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage)
+	std::vector<uint32_t> ShaderUtilities::Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage, bool forceRecompile)
 	{
 		HBL2_FUNC_PROFILE();
 
@@ -118,7 +127,7 @@ namespace HBL2
 			std::filesystem::path cachedPath = cacheDirectory / (shaderPath.filename().string() + GLShaderStageCachedVulkanFileExtension(stage));
 
 			std::ifstream in(cachedPath, std::ios::in | std::ios::binary);
-			if (in.is_open())
+			if (in.is_open() && !forceRecompile)
 			{
 				in.seekg(0, std::ios::end);
 				auto size = in.tellg();
@@ -162,7 +171,7 @@ namespace HBL2
 			std::filesystem::path cachedPath = cacheDirectory / (shaderPath.filename().string() + GLShaderStageCachedOpenGLFileExtension(stage));
 
 			std::ifstream in(cachedPath, std::ios::in | std::ios::binary);
-			if (in.is_open())
+			if (in.is_open() && !forceRecompile)
 			{
 				in.seekg(0, std::ios::end);
 				auto size = in.tellg();
@@ -207,7 +216,7 @@ namespace HBL2
 		}
 	}
 
-	std::vector<std::vector<uint32_t>> ShaderUtilities::Compile(const std::string& shaderFilePath)
+	std::vector<std::vector<uint32_t>> ShaderUtilities::Compile(const std::string& shaderFilePath, bool forceRecompile)
 	{
 		HBL2_FUNC_PROFILE();
 
@@ -255,8 +264,8 @@ namespace HBL2
 
 		if (type != ShaderStage::COMPUTE)
 		{
-			shaderBinaries.push_back(Compile(shaderFilePath, ss[0].str(), ShaderStage::VERTEX));
-			shaderBinaries.push_back(Compile(shaderFilePath, ss[1].str(), ShaderStage::FRAGMENT));
+			shaderBinaries.push_back(Compile(shaderFilePath, ss[0].str(), ShaderStage::VERTEX, forceRecompile));
+			shaderBinaries.push_back(Compile(shaderFilePath, ss[1].str(), ShaderStage::FRAGMENT, forceRecompile));
 
 			if (shaderBinaries[0].empty() || shaderBinaries[1].empty())
 			{
@@ -412,61 +421,64 @@ namespace HBL2
 		});
 		m_ShaderLayouts[BuiltInShader::PBR] = drawBindGroupLayout1;
 
-		// Invalid shader
-		{
-			auto invalidShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "invalid-shader-asset",
-				.filePath = "assets/shaders/invalid.shader",
-				.type = AssetType::Shader,
-			});
+		JobContext ctx;
 
-			CreateShaderMetadataFile(invalidShaderAssetHandle, 0);
-			auto invalidShaderHandle = AssetManager::Instance->GetAsset<Shader>(invalidShaderAssetHandle);
-			m_Shaders[BuiltInShader::INVALID] = invalidShaderHandle;
-			m_ShaderAssets.Add(invalidShaderAssetHandle);
-		}
+		// Invalid shader
+		auto invalidShaderAssetHandle = AssetManager::Instance->CreateAsset({
+			.debugName = "invalid-shader-asset",
+			.filePath = "assets/shaders/invalid.shader",
+			.type = AssetType::Shader,
+		});
+
+		CreateShaderMetadataFile(invalidShaderAssetHandle, 0);
+		auto* invalidShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(invalidShaderAssetHandle, &ctx);
 
 		// Unlit shader
-		{
-			auto unlitShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "unlit-shader-asset",
-				.filePath = "assets/shaders/unlit.shader",
-				.type = AssetType::Shader,
-			});
+		auto unlitShaderAssetHandle = AssetManager::Instance->CreateAsset({
+			.debugName = "unlit-shader-asset",
+			.filePath = "assets/shaders/unlit.shader",
+			.type = AssetType::Shader,
+		});
 
-			CreateShaderMetadataFile(unlitShaderAssetHandle, 0);
-			auto unlitShaderHandle = AssetManager::Instance->GetAsset<Shader>(unlitShaderAssetHandle);
-			m_Shaders[BuiltInShader::UNLIT] = unlitShaderHandle;
-			m_ShaderAssets.Add(unlitShaderAssetHandle);
-		}
+		CreateShaderMetadataFile(unlitShaderAssetHandle, 0);
+		auto* unlitShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(unlitShaderAssetHandle, &ctx);
 
 		// Blinn-Phong shader
-		{
-			auto blinnPhongShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "blinn-phong-shader-asset",
-				.filePath = "assets/shaders/shadow-mapping.shader",
-				.type = AssetType::Shader,
-			});
+		auto blinnPhongShaderAssetHandle = AssetManager::Instance->CreateAsset({
+			.debugName = "blinn-phong-shader-asset",
+			.filePath = "assets/shaders/shadow-mapping.shader",
+			.type = AssetType::Shader,
+		});
 
-			CreateShaderMetadataFile(blinnPhongShaderAssetHandle, 1);
-			auto blinnPhongShaderHandle = AssetManager::Instance->GetAsset<Shader>(blinnPhongShaderAssetHandle);
-			m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderHandle;
-			m_ShaderAssets.Add(blinnPhongShaderAssetHandle);
-		}
+		CreateShaderMetadataFile(blinnPhongShaderAssetHandle, 1);
+		auto* blinnPhongShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(blinnPhongShaderAssetHandle, &ctx);
 
 		// PBR shader
-		{
-			auto pbrShaderAssetHandle = AssetManager::Instance->CreateAsset({
-				.debugName = "pbr-shader-asset",
-				.filePath = "assets/shaders/pbr.shader",
-				.type = AssetType::Shader,
-			});
+		auto pbrShaderAssetHandle = AssetManager::Instance->CreateAsset({
+			.debugName = "pbr-shader-asset",
+			.filePath = "assets/shaders/pbr.shader",
+			.type = AssetType::Shader,
+		});
 
-			CreateShaderMetadataFile(pbrShaderAssetHandle, 2);
-			auto pbrShaderHandle = AssetManager::Instance->GetAsset<Shader>(pbrShaderAssetHandle);
-			m_Shaders[BuiltInShader::PBR] = pbrShaderHandle;
-			m_ShaderAssets.Add(pbrShaderAssetHandle);
-		}
+		CreateShaderMetadataFile(pbrShaderAssetHandle, 2);
+		auto* pbrShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(pbrShaderAssetHandle, &ctx);
+
+		m_ShaderAssets.push_back(invalidShaderAssetHandle);
+		m_ShaderAssets.push_back(unlitShaderAssetHandle);
+		m_ShaderAssets.push_back(blinnPhongShaderAssetHandle);
+		m_ShaderAssets.push_back(pbrShaderAssetHandle);
+
+		AssetManager::Instance->WaitForAsyncJobs(&ctx);
+
+		m_Shaders[BuiltInShader::INVALID] = invalidShaderTask ? invalidShaderTask->ResourceHandle : Handle<Shader>();
+		m_Shaders[BuiltInShader::UNLIT] = unlitShaderTask ? unlitShaderTask->ResourceHandle : Handle<Shader>();
+		m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderTask ? blinnPhongShaderTask->ResourceHandle : Handle<Shader>();
+		m_Shaders[BuiltInShader::PBR] = pbrShaderTask ? pbrShaderTask->ResourceHandle : Handle<Shader>();
+
+		AssetManager::Instance->ReleaseResourceTask(invalidShaderTask);
+		AssetManager::Instance->ReleaseResourceTask(unlitShaderTask);
+		AssetManager::Instance->ReleaseResourceTask(blinnPhongShaderTask);
+		AssetManager::Instance->ReleaseResourceTask(pbrShaderTask);
 	}
 
 	void ShaderUtilities::DeleteBuiltInShaders()
@@ -484,8 +496,7 @@ namespace HBL2
 		}
 
 		m_Shaders.clear();
-
-		m_ShaderAssets.Clear();
+		m_ShaderAssets.clear();
 	}
 
 	void ShaderUtilities::LoadBuiltInMaterials()
@@ -533,7 +544,7 @@ namespace HBL2
 		std::ofstream fout(path.string() + ".hblshader", 0);
 
 		Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(handle);
-		uint64_t variantHash = ResourceManager::Instance->GetShaderVariantHash({});
+		ShaderDescriptor::RenderPipeline::PackedVariant variantHash = {};
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;
@@ -544,7 +555,7 @@ namespace HBL2
 
 		out << YAML::Key << "Variants" << YAML::BeginSeq;
 		out << YAML::BeginMap;
-		out << YAML::Key << "Variant" << YAML::Value << variantHash;
+		out << YAML::Key << "Variant" << YAML::Value << variantHash.Key();
 
 		out << YAML::Key << "BlendState";
 		out << YAML::BeginMap;
@@ -570,7 +581,7 @@ namespace HBL2
 		fout.close();
 	}
 
-	void ShaderUtilities::UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::Variant& newVariant)
+	void ShaderUtilities::UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::PackedVariant& newVariant)
 	{
 		Handle<Asset> shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
 		Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
@@ -588,7 +599,7 @@ namespace HBL2
 		YAML::Node root = YAML::LoadFile(filePath.string() + ".hblshader");
 		YAML::Node variants = root["Shader"]["Variants"];
 
-		uint64_t newVariantHash = ResourceManager::Instance->GetShaderVariantHash(newVariant);
+		uint64_t newVariantHash = newVariant.Key();
 
 		if (!VariantExists(variants, newVariantHash))
 		{
@@ -604,7 +615,7 @@ namespace HBL2
 		}
 	}
 
-	void ShaderUtilities::CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType)
+	void ShaderUtilities::CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType, bool autoImported)
 	{
 		Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
 
@@ -636,6 +647,7 @@ namespace HBL2
 		out << YAML::BeginMap;
 		out << YAML::Key << "UUID" << YAML::Value << asset->UUID;
 		out << YAML::Key << "Type" << YAML::Value << materialType;
+		out << YAML::Key << "AutoImported" << YAML::Value << autoImported;
 		out << YAML::EndMap;
 		out << YAML::EndMap;
 		fout << out.c_str();
@@ -658,7 +670,7 @@ namespace HBL2
 			}
 		}
 
-		std::ofstream fout(path, 0);
+		std::ofstream fout(path, std::ios::out | std::ios::trunc);
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;
@@ -680,16 +692,16 @@ namespace HBL2
 
 		out << YAML::Key << "BlendState";
 		out << YAML::BeginMap;
-		out << YAML::Key << "Enabled" << YAML::Value << desc.VariantDescriptor.blend.enabled;
-		out << YAML::Key << "ColorOutputEnabled" << YAML::Value << desc.VariantDescriptor.blend.colorOutput;
+		out << YAML::Key << "Enabled" << YAML::Value << (bool)desc.VariantHash.blendEnabled;
+		out << YAML::Key << "ColorOutputEnabled" << YAML::Value << (bool)desc.VariantHash.colorOutput;
 		out << YAML::EndMap;
 
 		out << YAML::Key << "DepthState";
 		out << YAML::BeginMap;
-		out << YAML::Key << "Enabled" << YAML::Value << desc.VariantDescriptor.depthTest.enabled;
-		out << YAML::Key << "WriteEnabled" << YAML::Value << desc.VariantDescriptor.depthTest.writeEnabled;
-		out << YAML::Key << "StencilEnabled" << YAML::Value << desc.VariantDescriptor.depthTest.stencilEnabled;
-		out << YAML::Key << "DepthTest" << YAML::Value << (int)desc.VariantDescriptor.depthTest.depthTest;
+		out << YAML::Key << "Enabled" << YAML::Value << (bool)desc.VariantHash.depthEnabled;
+		out << YAML::Key << "WriteEnabled" << YAML::Value << (bool)desc.VariantHash.depthWrite;
+		out << YAML::Key << "StencilEnabled" << YAML::Value << (bool)desc.VariantHash.stencilEnabled;
+		out << YAML::Key << "DepthTest" << YAML::Value << (int)desc.VariantHash.depthCompare;
 		out << YAML::EndMap;
 
 		if (desc.AlbedoMapAssetHandle.IsValid())
@@ -1102,5 +1114,93 @@ namespace HBL2
 		}
 
 		return reflectionData;
+	}
+
+	const char* ShaderUtilities::GetCacheDirectory(GraphicsAPI target)
+	{
+		switch (target)
+		{
+		case GraphicsAPI::OPENGL:
+			return "assets/cache/shader/opengl";
+		case GraphicsAPI::VULKAN:
+			return "assets/cache/shader/vulkan";
+		default:
+			HBL2_CORE_ASSERT(false, "Stage not supported");
+			return "";
+		}
+	}
+
+	void ShaderUtilities::CreateCacheDirectoryIfNeeded(GraphicsAPI target)
+	{
+		std::string cacheDirectory = GetCacheDirectory(target);
+
+		if (!std::filesystem::exists(cacheDirectory))
+		{
+			std::filesystem::create_directories(cacheDirectory);
+		}
+	}
+
+	const char* ShaderUtilities::GLShaderStageCachedVulkanFileExtension(ShaderStage stage)
+	{
+		switch (stage)
+		{
+		case ShaderStage::VERTEX:
+			return ".cached_vulkan.vert";
+		case ShaderStage::FRAGMENT:
+			return ".cached_vulkan.frag";
+		case ShaderStage::COMPUTE:
+			return ".cached_vulkan.comp";
+		default:
+			HBL2_CORE_ASSERT(false, "Stage not supported");
+			return "";
+		}
+	}
+
+	const char* ShaderUtilities::GLShaderStageCachedOpenGLFileExtension(ShaderStage stage)
+	{
+		switch (stage)
+		{
+		case ShaderStage::VERTEX:
+			return ".cached_opengl.vert";
+		case ShaderStage::FRAGMENT:
+			return ".cached_opengl.frag";
+		case ShaderStage::COMPUTE:
+			return ".cached_opengl.comp";
+		default:
+			HBL2_CORE_ASSERT(false, "Stage not supported");
+			return "";
+		}
+	}
+
+	shaderc_shader_kind ShaderUtilities::GLShaderStageToShaderC(ShaderStage stage)
+	{
+		switch (stage)
+		{
+		case ShaderStage::VERTEX:
+			return shaderc_glsl_vertex_shader;
+		case ShaderStage::FRAGMENT:
+			return shaderc_glsl_fragment_shader;
+		case ShaderStage::COMPUTE:
+			return shaderc_glsl_compute_shader;
+		default:
+			HBL2_CORE_ASSERT(false, "Stage not supported");
+			return (shaderc_shader_kind)0;
+		}
+	}
+
+	const char* ShaderUtilities::GLShaderStageToString(ShaderStage stage)
+	{
+		switch (stage)
+		{
+		case ShaderStage::VERTEX:
+			return "ShaderStage::VERTEX";
+		case ShaderStage::FRAGMENT:
+			return "ShaderStage::FRAGMENT";
+		case ShaderStage::COMPUTE:
+			return "ShaderStage::COMPUTE";
+		default:
+			HBL2_CORE_ASSERT(false, "Stage not supported");
+			return "";
+		}
 	}
 }

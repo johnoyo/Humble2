@@ -44,7 +44,7 @@ namespace HBL2
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 		if (status != GL_FRAMEBUFFER_COMPLETE)
 		{
-			assert(false);
+			HBL2_CORE_ASSERT(false, "OpengGL framerbuffer creation failed!");
 		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);

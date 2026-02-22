@@ -1,4 +1,5 @@
 #include "EditorContext.h"
+
 #include <Utilities\FileDialogs.h>
 
 namespace HBL2
@@ -11,7 +12,6 @@ namespace HBL2
 
 			if (!OpenProject())
 			{
-				ActiveScene = EmptyScene;
 				return;
 			}
 		}
@@ -21,7 +21,6 @@ namespace HBL2
 			LoadProject();
 
 			m_EditorScene = ResourceManager::Instance->GetScene(EditorScene);
-			m_EmptyScene = ResourceManager::Instance->GetScene(EmptyScene);
 
 			// Create editor systems.
 			m_EditorScene->RegisterSystem(new EditorPanelSystem);
@@ -137,7 +136,7 @@ namespace HBL2
 
 		void EditorContext::OnGuiRender(float ts)
 		{
-			ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+			ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
 			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
 			{
@@ -222,11 +221,6 @@ namespace HBL2
 			}
 
 			ImGui::SetCurrentContext(nullptr);
-
-			TextureUtilities::Get().DeleteWhiteTexture();
-			ShaderUtilities::Get().DeleteBuiltInShaders();
-			ShaderUtilities::Get().DeleteBuiltInMaterials();
-			MeshUtilities::Get().DeleteBuiltInMeshes();
 		}
 
 		void EditorContext::OnDetach()
@@ -264,19 +258,9 @@ namespace HBL2
 
 		void EditorContext::LoadProject()
 		{
-			LoadBuiltInAssets();
-
 			HBL2::Project::OpenStartingScene();
 
 			Project::ApplySettings();
-		}
-
-		void EditorContext::LoadBuiltInAssets()
-		{
-			TextureUtilities::Get().LoadWhiteTexture();
-			ShaderUtilities::Get().LoadBuiltInShaders();
-			ShaderUtilities::Get().LoadBuiltInMaterials();
-			MeshUtilities::Get().LoadBuiltInMeshes();
 		}
 
 		bool EditorContext::IsActiveSceneValid()

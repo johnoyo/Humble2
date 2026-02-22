@@ -18,28 +18,19 @@
 #include "Physics\PhysicsEngine2D.h"
 #include "Physics\PhysicsEngine3D.h"
 
+#include "Sound\SoundEngine.h"
+
 #include "UI\LayoutLib.h"
 
-#include "Utilities\Allocators\BaseAllocator.h"
-#include "Utilities\Allocators\StandardAllocator.h"
-#include "Utilities\Allocators\BumpAllocator.h"
-#include "Utilities\Allocators\BinAllocator.h"
-#include "Utilities\Allocators\FreeListAllocator.h"
-
 #include "Utilities\Collections\StaticArray.h"
-#include "Utilities\Collections\DynamicArray.h"
-#include "Utilities\Collections\HashMap.h"
-#include "Utilities\Collections\Set.h"
-#include "Utilities\Collections\Stack.h"
-#include "Utilities\Collections\Queue.h"
-#include "Utilities\Collections\Deque.h"
 #include "Utilities\Collections\BitFlags.h"
 
 // Macro to generate system registration factory function
 #define REGISTER_HBL2_SYSTEM(TYPE)                                                                                              \
     extern "C" __declspec(dllexport) void RegisterSystem_##TYPE(HBL2::Scene* ctx)                                               \
     {                                                                                                                           \
-        HBL2::ISystem* new##TYPE = new TYPE;                                                                                    \
+        void* mem = ctx->GetArena()->Alloc(sizeof(TYPE), alignof(TYPE));                                                        \
+        TYPE* new##TYPE = ::new (mem) TYPE();                                                                                   \
         new##TYPE->Name = #TYPE;                                                                                                \
         ctx->RegisterSystem(new##TYPE, HBL2::SystemType::User);                                                                 \
     }                                                                                                                           \
@@ -123,4 +114,4 @@
         }                                                                                                                       \
     }                                                                                                                           \
 
-#define HBL2_COMPONENT_MEMBER(type, member) .data<&##type::##member>(#member##_hs).prop("name"_hs, #member)
+#define HBL2_COMPONENT_MEMBER(type, member) .data<&##type::##member>(#member##_hs).custom<HBL2::MemberNameTag>(HBL2::MemberNameTag{#member})

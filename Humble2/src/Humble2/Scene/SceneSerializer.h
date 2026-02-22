@@ -3,7 +3,6 @@
 #include "Scene.h"
 
 #include "Asset\AssetManager.h"
-#include "Utilities\NativeScriptUtilities.h"
 
 #include <fstream>
 #include <filesystem>

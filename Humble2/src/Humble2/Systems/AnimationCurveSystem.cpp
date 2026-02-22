@@ -53,7 +53,7 @@ namespace HBL2
 	void AnimationCurveSystem::OnCreate()
 	{
 		m_Context->View<Component::AnimationCurve>()
-			.Each([&](Component::AnimationCurve& curve)
+			.Each([this](Component::AnimationCurve& curve)
 			{
 				if (curve.Keys.empty())
 				{
@@ -72,7 +72,7 @@ namespace HBL2
 		BEGIN_PROFILE_SYSTEM();
 
 		m_Context->View<Component::AnimationCurve>()
-			.Each([&](Component::AnimationCurve& curve)
+			.Each([this](Component::AnimationCurve& curve)
 			{
 				if (curve.Keys.empty())
 				{

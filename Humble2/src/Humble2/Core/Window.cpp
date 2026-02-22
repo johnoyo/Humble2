@@ -32,6 +32,16 @@ namespace HBL2
 		EventDispatcher::Get().Post(WindowFocusEvent(focused));
 	}
 
+	static void WindowIconifyCallback(GLFWwindow* window, int iconified)
+	{
+		EventDispatcher::Get().Post(WindowIconifyEvent(iconified));
+	}
+
+	static void WindowMaximizeCallback(GLFWwindow* window, int maximized)
+	{
+		EventDispatcher::Get().Post(WindowMaximizeEvent(maximized));
+	}
+
 	static void WindowRefreshCallback(GLFWwindow* window)
 	{
 		EventDispatcher::Get().Post(WindowRefreshEvent());
@@ -96,9 +106,9 @@ namespace HBL2
 		return m_Window;
 	}
 
-	GLFWwindow* Window::GetWorkerHandle()
+	std::span<GLFWwindow*> Window::GetWorkerHandles()
 	{
-		return m_WorkerWindow;
+		return m_WorkerWindows;
 	}
 
 	void Window::SetTitle(const std::string& title)
@@ -117,11 +127,19 @@ namespace HBL2
 		glfwSetWindowShouldClose(m_Window, GLFW_TRUE);
 	}
 
+	bool Window::ShouldClose() const
+	{
+		return glfwWindowShouldClose(m_Window);
+	}
+
 	void Window::Terminate()
 	{
-		if (m_WorkerWindow)
+		for (int i = 0; i < MAX_WORKERS; ++i)
 		{
-			glfwDestroyWindow(m_WorkerWindow);
+			if (m_WorkerWindows[i])
+			{
+				glfwDestroyWindow(m_WorkerWindows[i]);
+			}
 		}
 
 		glfwDestroyWindow(m_Window);
@@ -135,7 +153,8 @@ namespace HBL2
 		glfwSetWindowPosCallback(m_Window, WindowPositionCallback);
 		glfwSetFramebufferSizeCallback(m_Window, FramebufferSizeCallback);
 		glfwSetWindowFocusCallback(m_Window, WindowFocusCallback);
-		glfwSetWindowRefreshCallback(m_Window, WindowRefreshCallback);
+		glfwSetWindowIconifyCallback(m_Window, WindowIconifyCallback);
+		glfwSetWindowMaximizeCallback(m_Window, WindowMaximizeCallback);
 		glfwSetMouseButtonCallback(m_Window, MouseButtonCallback);
 		glfwSetScrollCallback(m_Window, ScrollCallback);
 		glfwSetCursorPosCallback(m_Window, CursorPosCallback);

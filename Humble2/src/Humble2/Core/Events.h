@@ -71,6 +71,26 @@ namespace HBL2
 		int Focused = 0;
 	};
 
+	class HBL2_API WindowIconifyEvent final : public EventType<WindowIconifyEvent>
+	{
+	public:
+		WindowIconifyEvent(int iconified) : Iconified(iconified)
+		{
+		}
+
+		int Iconified = 0;
+	};
+
+	class HBL2_API WindowMaximizeEvent final : public EventType<WindowMaximizeEvent>
+	{
+	public:
+		WindowMaximizeEvent(int maximized) : Maximized(maximized)
+		{
+		}
+
+		int Maximized = 0;
+	};
+
 	class HBL2_API WindowRefreshEvent final : public EventType<WindowRefreshEvent>
 	{
 	public:

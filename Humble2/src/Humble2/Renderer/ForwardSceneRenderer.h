@@ -5,9 +5,9 @@
 #include "DrawList.h"
 #include "UniformRingBuffer.h"
 
-#include <Scene/Scene.h>
+#include "Scene/Scene.h"
 #include "Renderer/Renderer.h"
-#include <Resources/ResourceManager.h>
+#include "Resources/ResourceManager.h"
 
 namespace HBL2
 {
@@ -25,12 +25,41 @@ namespace HBL2
 		glm::vec4 Color = { 0.0f, 0.0f, 0.0f, 0.0f };
 	};
 
+	struct SceneRenderData
+	{
+		LightData m_LightData{}; // Dup
+		CameraData m_CameraData{}; // Dup
+		CameraSettings m_CameraSettings{}; // Dup
+		Component::Camera::CameraFrustum m_CameraFrustum{}; // Dup
+		glm::mat4 m_OnlyRotationInViewProjection = glm::mat4(1.0f); // Dup
+		glm::mat4 m_CameraProjection = glm::mat4(1.0f); // Dup
+
+		std::vector<uint8_t> m_LightSpaceMatricesData; // Dup
+
+		uint32_t m_UBOStartingOffset = 0; // Dup
+		uint32_t m_UBOEndingOffset = 0; // Dup
+		DrawList m_StaticMeshOpaqueDraws; // Dup
+		DrawList m_StaticMeshTransparentDraws; // Dup
+		DrawList m_PrePassStaticMeshDraws; // Dup
+		DrawList m_ShadowPassStaticMeshDraws; // Dup
+
+		DrawList m_SpriteOpaqueDraws; // Dup
+		DrawList m_SpriteTransparentDraws; // Dup
+		DrawList m_PrePassSpriteDraws; // Dup
+		DrawList m_ShadowPassSpriteDraws; // Dup
+	};
+
 	class HBL2_API ForwardSceneRenderer final : public SceneRenderer
 	{
 	public:
+		virtual ~ForwardSceneRenderer() = default;
+
 		virtual void Initialize(Scene* scene) override;
-		virtual void Render(Entity mainCamera) override;
+		virtual void Gather(Entity mainCamera) override;
+		virtual void Render(void* renderData, void* debugRenderData) override;
 		virtual void CleanUp() override;
+
+		virtual void* GetRenderData() override;
 
 	private:
 		void ShadowPassSetup();
@@ -43,34 +72,32 @@ namespace HBL2
 		void DebugPassSetup();
 		void PresentPassSetup();
 
-		void GatherDraws();
-		void GatherLights();
+		void GatherDraws(SceneRenderData* sceneRenderData);
+		void GatherLights(SceneRenderData* sceneRenderData);
 
-		void ShadowPass(CommandBuffer* commandBuffer);
-		void DepthPrePass(CommandBuffer* commandBuffer);
-		void OpaquePass(CommandBuffer* commandBuffer);
-		void TransparentPass(CommandBuffer* commandBuffer);
-		void SkyboxPass(CommandBuffer* commandBuffer);
-		void PostProcessPass(CommandBuffer* commandBuffer);
-		void DebugPass(CommandBuffer* commandBuffer);
-		void PresentPass(CommandBuffer* commandBuffer);
+		void ShadowPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
+		void DepthPrePass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
+		void OpaquePass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
+		void TransparentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
+		void SkyboxPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
+		void PostProcessPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
+		void DebugPass(CommandBuffer* commandBuffer, void* debugRenderData);
+		void PresentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
 
-		void GetViewProjection(Entity mainCamera);
+		void GetViewProjection(SceneRenderData* sceneRenderData, Entity mainCamera);
 
-		void CreateAlignedMatrixArray(const glm::mat4* matrices, size_t count, uint32_t alignedSize);
+		void CreateAlignedMatrixArray(SceneRenderData* sceneRenderData, const glm::mat4* matrices, size_t count, uint32_t alignedSize);
 
 	private:
+		PoolReservation* m_Reservation = nullptr;
+		Arena m_Arena;
+
 		ResourceManager* m_ResourceManager = nullptr;
 		UniformRingBuffer* m_UniformRingBuffer = nullptr;
 
 		Scene* m_EditorScene = nullptr;
-		LightData m_LightData{};
-		CameraData m_CameraData{};
-		CameraSettings m_CameraSettings{};
-		Component::Camera::CameraFrustum m_CameraFrustum{};
-		glm::mat4 m_OnlyRotationInViewProjection = glm::mat4(1.0f);
-		glm::mat4 m_CameraProjection = glm::mat4(1.0f);
-
+		SceneRenderData m_RenderData[Renderer::FrameCount]{};
+		
 		Handle<RenderPassLayout> m_RenderPassLayout;
 
 		Handle<Texture> m_ShadowDepthTexture;
@@ -78,15 +105,15 @@ namespace HBL2
 		Handle<RenderPass> m_ShadowRenderPass;
 		Handle<Shader> m_ShadowPrePassShader;
 		Handle<Material> m_ShadowPrePassMaterial;
-		uint64_t m_ShadowPrePassMaterialHash;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_ShadowPrePassMaterialHash = g_NullVariant;
 
 		Handle<RenderPassLayout> m_DepthOnlyRenderPassLayout;
 		Handle<RenderPass> m_DepthOnlyRenderPass;
 		Handle<FrameBuffer> m_DepthOnlyFrameBuffer;
 		Handle<Material> m_DepthOnlyMaterial;
-		uint64_t m_DepthOnlyMaterialHash;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_DepthOnlyMaterialHash = g_NullVariant;
 		Handle<Material> m_DepthOnlySpriteMaterial;
-		uint64_t m_DepthOnlySpriteMaterialHash;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_DepthOnlySpriteMaterialHash = g_NullVariant;
 		Handle<BindGroup> m_DepthOnlyMeshBindGroup;
 		Handle<BindGroup> m_DepthOnlySpriteBindGroup;
 		Handle<BindGroupLayout> m_DepthOnlyBindGroupLayout;
@@ -106,8 +133,8 @@ namespace HBL2
 		Handle<Shader> m_SkyboxShader;
 		Handle<BindGroupLayout> m_SkyboxBindGroupLayout;
 		Handle<BindGroup> m_ComputeBindGroup;
-		ShaderDescriptor::RenderPipeline::Variant m_SkyboxVariant{};
-		ShaderDescriptor::RenderPipeline::Variant m_ComputeVariant{};
+		ShaderDescriptor::RenderPipeline::PackedVariant m_SkyboxVariant{};
+		ShaderDescriptor::RenderPipeline::PackedVariant m_ComputeVariant{};
 
 		Handle<RenderPass> m_PostProcessRenderPass;
 		Handle<FrameBuffer> m_PostProcessFrameBuffer;
@@ -126,19 +153,6 @@ namespace HBL2
 
 		Handle<Buffer> m_QuadVertexBuffer;
 		Handle<Material> m_QuadMaterial;
-		Handle<Shader> m_PresentShader;
-
-		uint32_t m_UBOStartingOffset = 0.0f;
-		DrawList m_StaticMeshOpaqueDraws;
-		DrawList m_StaticMeshTransparentDraws;
-		DrawList m_PrePassStaticMeshDraws;
-		DrawList m_ShadowPassStaticMeshDraws;
-
-		DrawList m_SpriteOpaqueDraws;
-		DrawList m_SpriteTransparentDraws;
-		DrawList m_PrePassSpriteDraws;
-		DrawList m_ShadowPassSpriteDraws;
-
-		std::vector<uint8_t> m_LightSpaceMatricesData;
+		Handle<Shader> m_PresentShader;		
 	};
 }

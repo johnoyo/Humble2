@@ -1,7 +1,7 @@
 #pragma once
 
 #include "StaticArray.h"
-#include "DynamicArray.h"
+#include "Collections.h"
 
 #include <vector>
 #include <initializer_list>
@@ -30,11 +30,9 @@ namespace HBL2
 		template<size_t N>
 		Span(std::array<T, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
 
-		Span(DynamicArray<T>& list) : m_Data(list.Data()), m_Size(list.Size()) {}
+		Span(DArray<T>& list) : m_Data(list.data()), m_Size(list.size()) {}
 		template<typename U, typename = std::enable_if_t<std::is_convertible<U*, T*>::value>>
-		Span(const DynamicArray<U>& list) : m_Data(list.Data()), m_Size(list.Size()) {}
-		template<typename TAllocator>
-		Span(DynamicArray<T, TAllocator>& list) : m_Data(list.Data()), m_Size(list.Size()) {}
+		Span(const DArray<U>& list) : m_Data(list.data()), m_Size(list.size()) {}
 
 		template<size_t N>
 		Span(T(&array)[N]) : m_Data(array), m_Size(sizeof(array) / sizeof(T)) {}

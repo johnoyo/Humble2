@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Core\Allocators.h"
+#include "Utilities\Allocators\Arena.h"
+
 #include "Resources\Types.h"
 #include "Resources\Handle.h"
 
@@ -8,8 +11,8 @@ namespace HBL2
 	template<typename T>
 	struct Allocation
 	{
-		T* Data;
-		uint32_t Offset;
+		T* Data = nullptr;
+		uint32_t Offset = 0;
 	};
 
 	class HBL2_API UniformRingBuffer
@@ -24,7 +27,8 @@ namespace HBL2
 
 			if (m_CurrentOffset + alignedStride > m_BufferSize)
 			{
-				ReAllocate();
+				HBL2_CORE_FATAL("UniformRingBuffer ran out of space, consider increasing it through the project settings.");
+				return {};
 			}
 
 			uint32_t blockIndex = m_CurrentOffset;
@@ -34,17 +38,16 @@ namespace HBL2
 		}
 
 		Handle<Buffer> GetBuffer() const { return m_Buffer; }
+		uint32_t GetBufferSize() const { return m_BufferSize; }
+
 		const uint32_t GetCurrentOffset() const { return m_CurrentOffset; }
 		const uint32_t GetAlignedSize(uint32_t byteSize) { return CeilToNextMultiple(byteSize, m_UniformOffset); }
 
-		void Invalidate();
+		void Invalidate(uint32_t startOffset = 0);
 
 		void Free();
 
 		static uint32_t CeilToNextMultiple(uint32_t value, uint32_t step);
-
-	private:
-		void ReAllocate();
 
 	private:
 		Handle<Buffer> m_Buffer;
@@ -52,5 +55,8 @@ namespace HBL2
 		uint32_t m_BufferSize;
 		uint32_t m_CurrentOffset;
 		uint32_t m_UniformOffset;
+
+		PoolReservation* m_Reservation = nullptr;
+		Arena m_Arena;
 	};
 }

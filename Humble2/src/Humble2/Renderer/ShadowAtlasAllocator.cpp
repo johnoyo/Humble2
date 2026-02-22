@@ -36,43 +36,46 @@ namespace HBL2
 
     ShadowAtlasAllocator::ShadowAtlasAllocator()
     {
-        m_FreeTiles.Reserve(g_MaxTiles);
+        m_Reservation = Allocator::Arena.Reserve("ShadowAtlasAllocatorPool", 512);
+        m_Arena.Initialize(&Allocator::Arena, 512, m_Reservation);
 
-        for (uint16_t i = 0; i < g_TilesPerRow; ++i)
+        m_FreeTiles = MakeDArray<ShadowTile>(m_Arena, g_MaxTiles);
+
+        for (uint16_t i = 0; i < g_TilesPerRow; i++)
         {
-            for (uint16_t j = 0; j < g_TilesPerRow; ++j)
+            for (uint16_t j = 0; j < g_TilesPerRow; j++)
             {
-                m_FreeTiles.Add({ i, j });
+                m_FreeTiles.push_back({ i, j });
             }
         }
     }
 
     ShadowTile ShadowAtlasAllocator::AllocateTile()
     {
-        if (m_FreeTiles.Empty())
+        if (m_FreeTiles.empty())
         {
             return ShadowTile::Invalid;
         }
 
-        ShadowTile tile = m_FreeTiles.Back();
-        m_FreeTiles.Pop();
+        ShadowTile tile = m_FreeTiles.back();
+        m_FreeTiles.pop_back();
         return tile;
     }
 
     void ShadowAtlasAllocator::FreeTile(ShadowTile tile)
     {
-        m_FreeTiles.Add(tile);
+        m_FreeTiles.push_back(tile);
     }
 
     void ShadowAtlasAllocator::Clear()
     {
-        m_FreeTiles.Clear();
+        m_FreeTiles.clear();
 
         for (uint16_t i = 0; i < g_TilesPerRow; ++i)
         {
             for (uint16_t j = 0; j < g_TilesPerRow; ++j)
             {
-                m_FreeTiles.Add({ i, j });
+                m_FreeTiles.push_back({ i, j });
             }
         }
     }

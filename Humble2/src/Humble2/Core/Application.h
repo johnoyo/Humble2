@@ -37,11 +37,9 @@
 #include "Utilities\Random.h"
 #include "Utilities\MeshUtilities.h"
 #include "Utilities\ShaderUtilities.h"
-#include "Utilities\NativeScriptUtilities.h"
-#include "Utilities\UnityBuild.h"
+#include "Utilities\PrefabUtilities.h"
 
-#include "Utilities/Allocators/BumpAllocator.h"
-#include "Utilities/Allocators/BinAllocator.h"
+#include "Utilities/Allocators/ArenaAllocator.h"
 
 #include <string>
 #include <sstream>
@@ -69,16 +67,28 @@ namespace HBL2
 
 	struct ApplicationStats
 	{
+		float GameThreadTime = 0.f;
+		float GameThreadWaitTime = 0.f;
 		float DebugDrawTime = 0.f;
 		float AppUpdateTime = 0.f;
 		float AppGuiDrawTime = 0.f;
+
+		float RenderThreadTime = 0.f;
+		float RenderThreadWaitTime = 0.f;
+		float RenderTime = 0.f;
 		float PresentTime = 0.f;
 
 		void Reset()
 		{
+			GameThreadTime = 0.f;
+			GameThreadWaitTime = 0.f;
 			DebugDrawTime = 0.f;
 			AppUpdateTime = 0.f;
 			AppGuiDrawTime = 0.f;
+
+			RenderThreadTime = 0.f;
+			RenderThreadWaitTime = 0.f;
+			RenderTime = 0.f;
 			PresentTime = 0.f;
 		}
 	};
@@ -112,6 +122,19 @@ namespace HBL2
 
 		int m_FixedUpdates = 0;
 
+	private:
+		std::thread m_RenderThread;
+		void DispatchRenderLoop(const std::function<void()>& renderLoop);
+		void WaitForRenderThreadInitialization();
+		void WaitForRenderThreadShutdown();
+		std::atomic_bool m_RenderThreadInitializationFinished = { false };
+
+	private:
+		PoolReservation* m_FrameArenaReservationDummy = nullptr;
+		PoolReservation* m_FrameArenaReservationMT = nullptr;
+		PoolReservation* m_FrameArenaReservationRT = nullptr;
+
+	private:
 		void BeginFrame();
 		void EndFrame();
 		void Shutdown();

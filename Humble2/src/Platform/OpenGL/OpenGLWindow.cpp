@@ -52,6 +52,13 @@ namespace HBL2
 			exit(-1);
 		}
 
+		glfwMakeContextCurrent(nullptr);
+
+		AttachEventCallbacks();
+	}
+
+	void OpenGLWindow::Setup()
+	{
 		glfwMakeContextCurrent(m_Window);
 
 		if (m_Spec.VerticalSync)
@@ -77,17 +84,19 @@ namespace HBL2
 		glGetIntegerv(GL_MINOR_VERSION, &versionMinor);
 		HBL2_CORE_ASSERT(versionMinor >= 6, "Humble2 requires an minimum OpenGL version of 4.6!");
 
-		AttachEventCallbacks();
 
 		// Create worker thread context
-		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-		m_WorkerWindow = glfwCreateWindow(1, 1, "Worker OpenGL Context", nullptr, m_Window);
-		if (!m_WorkerWindow)
+		for (int i = 0; i < MAX_WORKERS; ++i)
 		{
-			HBL2_CORE_ERROR("Failed to create worker OpenGL context!");
-			return;
+			glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // invisible
+			m_WorkerWindows[i] = glfwCreateWindow(1, 1, "Worker OpenGL Context", nullptr, m_Window);
+			if (!m_WorkerWindows[i])
+			{
+				HBL2_CORE_ERROR("Failed to create worker OpenGL context!");
+				continue;
+			}
 		}
 
-		HBL2_CORE_INFO("Worker OpenGL Context Created!");
+		HBL2_CORE_INFO("Worker OpenGL Contexts Created!");
 	}
 }

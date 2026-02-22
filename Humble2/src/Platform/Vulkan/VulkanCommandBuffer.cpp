@@ -144,15 +144,16 @@ namespace HBL2
 
 		for (auto& buffer : m_BuffersWrite)
 		{
-			VulkanBuffer* vkBuffer = rm->GetBuffer(buffer);
+			VulkanBufferHot* vkBufferHot = rm->GetBufferHot(buffer);
+			VulkanBufferCold* vkBufferCold = rm->GetBufferCold(buffer);
 
 			VkBufferMemoryBarrier barrier = {};
 			barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT; // Fix
 			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT; // Fix
-			barrier.buffer = vkBuffer->Buffer;
-			barrier.offset = vkBuffer->ByteOffset;
-			barrier.size = vkBuffer->ByteSize;
+			barrier.buffer = vkBufferHot->Buffer;
+			barrier.offset = vkBufferCold->ByteOffset;
+			barrier.size = vkBufferHot->ByteSize;
 
 			bufferBarriers[index++] = barrier;
 		}
@@ -197,6 +198,9 @@ namespace HBL2
 		};
 
 		// Submit command buffer to the queue and execute it. RenderFence will now block until the graphic commands finish execution.
-		VK_VALIDATE(vkQueueSubmit(renderer->GetGraphicsQueue(), 1, &submitInfo, m_BlockFence), "vkQueueSubmit");
+		{
+			std::lock_guard<std::mutex> lock(renderer->GetGraphicsQueueMutex());
+			VK_VALIDATE(vkQueueSubmit(renderer->GetGraphicsQueue(), 1, &submitInfo, m_BlockFence), "vkQueueSubmit");
+		}
     }
 }

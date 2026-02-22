@@ -1,5 +1,7 @@
 #include "Systems\EditorPanelSystem.h"
 
+#include "Script\BuildEngine.h"
+
 namespace HBL2
 {
 	namespace Editor
@@ -30,7 +32,7 @@ namespace HBL2
 
 								if (script->Type == ScriptType::SYSTEM)
 								{
-									NativeScriptUtilities::Get().RegisterSystem(script->Name, m_ActiveScene);
+									BuildEngine::Instance->RegisterSystem(script->Name, m_ActiveScene);
 								}
 								else
 								{
@@ -42,9 +44,9 @@ namespace HBL2
 								HBL2_WARN("Could not load script - invalid script handle.");
 							}
 						}
-
-						ImGui::EndDragDropTarget();
 					}
+
+					ImGui::EndDragDropTarget();
 				}
 
 				ImGui::TextWrapped(m_ActiveScene->GetName().c_str());
@@ -72,21 +74,21 @@ namespace HBL2
 					switch (system->GetState())
 					{
 					case SystemState::Play:
-						ImGui::Button("Pause", ImVec2(60.f, 30.f));
+						ImGui::Button(("Pause##" + system->Name).c_str(), ImVec2(60.f, 30.f));
 						if (ImGui::IsItemClicked())
 						{
 							system->SetState(SystemState::Pause);
 						}
 						break;
 					case SystemState::Pause:
-						ImGui::Button("Resume", ImVec2(60.f, 30.f));
+						ImGui::Button(("Resume##" + system->Name).c_str(), ImVec2(60.f, 30.f));
 						if (ImGui::IsItemClicked())
 						{
 							system->SetState(SystemState::Play);
 						}
 						break;
 					case SystemState::Idle:
-						ImGui::Button("Idling", ImVec2(60.f, 30.f));
+						ImGui::Button(("Idling##" + system->Name).c_str(), ImVec2(60.f, 30.f));
 						break;
 					}
 					ImGui::Separator();

@@ -1,10 +1,15 @@
 #include "EntitySerializer.h"
 
+#include "Script\BuildEngine.h"
 #include "Utilities\YamlUtilities.h"
 #include "UI\UserInterfaceUtilities.h"
 
 namespace HBL2
 {
+	EntitySerializer::EntitySerializer(Scene* scene)
+		: m_Scene(scene)
+	{
+	}
 	EntitySerializer::EntitySerializer(Scene* scene, Entity entity)
 		: m_Scene(scene), m_Entity(entity)
 	{
@@ -59,6 +64,19 @@ namespace HBL2
 
 			out << YAML::Key << "Id" << YAML::Value << p.Id;
 			out << YAML::Key << "Version" << YAML::Value << p.Version;
+			out << YAML::Key << "Override" << YAML::Value << p.Override;
+
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::PrefabEntity>(m_Entity))
+		{
+			out << YAML::Key << "Component::PrefabEntity";
+			out << YAML::BeginMap;
+
+			auto& pe = m_Scene->GetComponent<Component::PrefabEntity>(m_Entity);
+
+			out << YAML::Key << "EntityId" << YAML::Value << pe.EntityId;
 
 			out << YAML::EndMap;
 		}
@@ -451,11 +469,11 @@ namespace HBL2
 
 			const std::string& componentName = alias.data();
 
-			const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+			const std::string& cleanedComponentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
 
-			if (NativeScriptUtilities::Get().HasComponent(cleanedComponentName, m_Scene, m_Entity))
+			if (BuildEngine::Instance->HasComponent(cleanedComponentName, m_Scene, m_Entity))
 			{
-				auto componentMeta = NativeScriptUtilities::Get().GetComponent(cleanedComponentName, m_Scene, m_Entity);
+				auto componentMeta = BuildEngine::Instance->GetComponent(cleanedComponentName, m_Scene, m_Entity);
 				out << YAML::Key << cleanedComponentName;
 
 				out << YAML::BeginMap;
@@ -515,12 +533,20 @@ namespace HBL2
 			auto& p = m_Scene->AddComponent<Component::PrefabInstance>(m_Entity);
 			p.Id = p_NewComponent["Id"].as<UUID>();
 			p.Version = p_NewComponent["Version"].as<uint32_t>();
+			p.Override = p_NewComponent["Override"].as<bool>();
+		}
+
+		auto pe_NewComponent = entityNode["Component::PrefabEntity"];
+		if (pe_NewComponent)
+		{
+			auto& pe = m_Scene->AddComponent<Component::PrefabEntity>(m_Entity);
+			pe.EntityId = pe_NewComponent["EntityId"].as<UUID>();
 		}
 
 		auto linkComponent = entityNode["Component::Link"];
 		if (linkComponent)
 		{
-			auto& link = m_Scene->AddComponent<Component::Link>(m_Entity);
+			auto& link = m_Scene->GetOrAddComponent<Component::Link>(m_Entity); // TODO: Just do Get in the future.
 			link.Parent = linkComponent["Parent"].as<UUID>();
 			link.PrevParent = link.Parent;
 			if (linkComponent["Children"].IsDefined())
@@ -572,7 +598,6 @@ namespace HBL2
 		{
 			auto& staticMesh = m_Scene->AddComponent<Component::StaticMesh>(m_Entity);
 			staticMesh.Enabled = staticMesh_NewComponent["Enabled"].as<bool>();
-			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
 
 			if (staticMesh_NewComponent["Mesh"].IsDefined())
 			{
@@ -580,6 +605,8 @@ namespace HBL2
 				staticMesh.MeshIndex = staticMesh_NewComponent["Mesh"]["MeshIndex"].as<uint32_t>();
 				staticMesh.SubMeshIndex = staticMesh_NewComponent["Mesh"]["SubMeshIndex"].as<uint32_t>();
 			}
+
+			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
 		}
 
 		auto light_NewComponent = entityNode["Component::Light"];
@@ -772,12 +799,12 @@ namespace HBL2
 			}
 
 			const std::string& componentName = alias.data();
-			const std::string& cleanedComponentName = NativeScriptUtilities::Get().CleanComponentNameO3(componentName);
+			const std::string& cleanedComponentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
 
 			auto userComponent = entityNode[cleanedComponentName];
 			if (userComponent)
 			{
-				auto componentMeta = NativeScriptUtilities::Get().AddComponent(cleanedComponentName, m_Scene, m_Entity);
+				auto componentMeta = BuildEngine::Instance->AddComponent(cleanedComponentName, m_Scene, m_Entity);
 				EditorUtilities::Get().DeserializeComponentFromYAML(userComponent, componentMeta, m_Scene);
 			}
 		}

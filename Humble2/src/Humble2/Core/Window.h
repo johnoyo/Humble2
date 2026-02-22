@@ -8,6 +8,9 @@
 #include <string>
 #include <iostream>
 #include <functional>
+#include <span>
+
+#define MAX_WORKERS 16
 
 namespace HBL2
 {
@@ -30,14 +33,16 @@ namespace HBL2
 		void Initialize(const WindowSpecification&& spec);
 
 		virtual void Create() = 0;
+		virtual void Setup() = 0;
 		void Terminate();
 		void Close();
+		bool ShouldClose() const;
 
 		void DispatchMainLoop(const std::function<void()>& mainLoop);
 		void SetTitle(const std::string& title);
 		double GetTime();
 		GLFWwindow* GetHandle();
-		GLFWwindow* GetWorkerHandle();
+		std::span<GLFWwindow*> GetWorkerHandles();
 
 		glm::i32vec2 GetPosition() const { return m_Position; }
 		void SetPosition(int32_t x, int32_t y) { m_Position.x = x; m_Position.y = y; } // For internal use only.
@@ -52,7 +57,7 @@ namespace HBL2
 
 	protected:
 		GLFWwindow* m_Window = nullptr;
-		GLFWwindow* m_WorkerWindow = nullptr;
+		std::array<GLFWwindow*, MAX_WORKERS> m_WorkerWindows;
 		WindowSpecification m_Spec;
 		glm::i32vec2 m_Position;
 

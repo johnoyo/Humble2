@@ -127,6 +127,11 @@ namespace HBL2
 		glBindTexture(TextureType, 0);
 	}
 
+	void* OpenGLTexture::GetData()
+	{
+		return nullptr;
+	}
+
 	void OpenGLTexture::Destroy()
 	{
 		glDeleteTextures(1, &RendererId);

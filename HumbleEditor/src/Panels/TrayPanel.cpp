@@ -1,5 +1,7 @@
 #include "Systems\EditorPanelSystem.h"
 
+#include "Script\BuildEngine.h"
+
 namespace HBL2
 {
 	namespace Editor
@@ -14,7 +16,7 @@ namespace HBL2
 				}
 				else
 				{
-					UnityBuild::Get().Recompile();
+					BuildEngine::Instance->Recompile();
 				}
 			}
 		}

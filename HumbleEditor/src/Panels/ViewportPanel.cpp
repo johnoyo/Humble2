@@ -38,35 +38,47 @@ namespace HBL2
 					});
 			}
 
-			ImGui::Image(HBL2::Renderer::Instance->GetColorAttachment(), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+			ImTextureID viewportTexture = (ImTextureID)HBL2::Renderer::Instance->GetColorAttachment();
 
-			if (ImGui::BeginDragDropTarget())
+			if (viewportTexture != 0)
 			{
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Scene"))
+				ImGui::Image(viewportTexture, ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+				if (ImGui::BeginDragDropTarget())
 				{
-					uint32_t sceneAssetHandlePacked = *((uint32_t*)payload->Data);
-					Handle<Asset> sceneAssetHandle = Handle<Asset>::UnPack(sceneAssetHandlePacked);
-					Asset* sceneAsset = AssetManager::Instance->GetAssetMetadata(sceneAssetHandle);
-
-					if (sceneAsset == nullptr)
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Scene"))
 					{
-						HBL2_WARN("Could not load scene - invalid asset handle.");
-						ImGui::EndDragDropTarget();
-						return;
+						uint32_t sceneAssetHandlePacked = *((uint32_t*)payload->Data);
+						Handle<Asset> sceneAssetHandle = Handle<Asset>::UnPack(sceneAssetHandlePacked);
+						Asset* sceneAsset = AssetManager::Instance->GetAssetMetadata(sceneAssetHandle);
+
+						if (sceneAsset == nullptr)
+						{
+							HBL2_WARN("Could not load scene - invalid asset handle.");
+							ImGui::EndDragDropTarget();
+							return;
+						}
+
+						auto path = HBL2::Project::GetAssetFileSystemPath(sceneAsset->FilePath);
+
+						if (path.extension().string() != ".humble")
+						{
+							HBL2_WARN("Could not load {0} - not a scene file", path.filename().string());
+							ImGui::EndDragDropTarget();
+							return;
+						}
+
+						if (Context::Mode == Mode::Runtime)
+						{
+							HBL2_WARN("Could not load {0} - exit play mode and then change scenes.", path.filename().string());
+							ImGui::EndDragDropTarget();
+							return;
+						}
+
+						HBL2::SceneManager::Get().LoadScene(sceneAssetHandle, false);
+
+						m_EditorScenePath = path;
 					}
-
-					auto path = HBL2::Project::GetAssetFileSystemPath(sceneAsset->FilePath);
-
-					if (path.extension().string() != ".humble")
-					{
-						HBL2_WARN("Could not load {0} - not a scene file", path.filename().string());
-						ImGui::EndDragDropTarget();
-						return;
-					}
-
-					HBL2::SceneManager::Get().LoadScene(sceneAssetHandle, false);
-
-					m_EditorScenePath = path;
 
 					ImGui::EndDragDropTarget();
 				}
@@ -129,29 +141,54 @@ namespace HBL2
 
 					// Transformation gizmo
 					auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(selectedEntity);
-					bool editedTransformation = ImGuiRenderer::Instance->Gizmos_Manipulate(
+					auto& transformEx = m_ActiveScene->GetComponent<HBL2::Component::TransformEx>(selectedEntity);
+					auto* link = m_ActiveScene->TryGetComponent<HBL2::Component::Link>(selectedEntity);
+
+					glm::mat4 parentW(1.0f);
+					if (link != nullptr && link->Parent != 0)
+					{
+						Entity p = m_ActiveScene->FindEntityByUUID(link->Parent);
+						if (p != Entity::Null)
+						{
+							parentW = m_ActiveScene->GetComponent<HBL2::Component::Transform>(p).WorldMatrix;
+						}
+					}
+
+					bool edited = ImGuiRenderer::Instance->Gizmos_Manipulate(
 						glm::value_ptr(camera.View),
 						glm::value_ptr(camera.Projection),
 						m_GizmoOperation,
 						m_GizmoMode,
-						m_GizmoMode == ImGuizmo::MODE::LOCAL ? glm::value_ptr(transform.LocalMatrix) : glm::value_ptr(transform.WorldMatrix),
+						glm::value_ptr(transform.WorldMatrix),
 						nullptr,
 						snapValuesFinal
 					);
 
-					if (editedTransformation)
+					// NOTE: If we move the gizmo really quickly, the child entities will lag behind a bit.
+					//		 Thats because, the gizmo codes runs after the Hierachy system. Consider fixing this!
+					if (edited && ImGuiRenderer::Instance->Gizmos_IsUsing())
 					{
-						if (ImGuiRenderer::Instance->Gizmos_IsUsing())
-						{
-							glm::vec3 newTranslation;
-							glm::vec3 newRotation;
-							glm::vec3 newScale;
-							const glm::mat4& matrix = (m_GizmoMode == ImGuizmo::MODE::LOCAL ? transform.LocalMatrix : transform.WorldMatrix);
-							ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(matrix), glm::value_ptr(newTranslation), glm::value_ptr(newRotation), glm::value_ptr(newScale));
-							transform.Translation = glm::vec3(newTranslation.x, newTranslation.y, newTranslation.z);
-							transform.Rotation += glm::vec3(newRotation.x - transform.Rotation.x, newRotation.y - transform.Rotation.y, newRotation.z - transform.Rotation.z);
-							transform.Scale = glm::vec3(newScale.x, newScale.y, newScale.z);
-						}
+						// Convert edited world -> local
+						glm::mat4 localM = glm::inverse(parentW) * transform.WorldMatrix;
+
+						glm::vec3 lt, lr, ls;
+						ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(localM), glm::value_ptr(lt), glm::value_ptr(lr), glm::value_ptr(ls));
+
+						transform.Translation = lt;
+						transform.Rotation = lr;  // degrees
+						transform.Scale = ls;
+
+						// Keep world fields in sync.
+						glm::vec3 wt, wr, ws;
+						ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(transform.WorldMatrix), glm::value_ptr(wt), glm::value_ptr(wr), glm::value_ptr(ws));
+
+						transform.WorldTranslation = wt;
+						transform.WorldRotation = wr;
+						transform.WorldScale = ws;
+
+						transformEx.PrevWorldTranslation = wt;
+						transformEx.PrevWorldRotation = wr;
+						transformEx.PrevWorldScale = ws;
 					}
 				}
 

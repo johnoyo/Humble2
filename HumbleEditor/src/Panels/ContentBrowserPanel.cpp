@@ -1,7 +1,10 @@
 #include "Systems\EditorPanelSystem.h"
 
+#include "Script\BuildEngine.h"
 #include "Utilities\YamlUtilities.h"
-#include <Utilities\FileDialogs.h>
+#include "Utilities\PrefabUtilities.h"
+#include "Utilities\FileDialogs.h"
+#include "Prefab\PrefabSerializer.h"
 
 namespace HBL2
 {
@@ -137,6 +140,27 @@ namespace HBL2
 									AssetManager::Instance->GetAsset<Script>(assetHandle);
 									AssetManager::Instance->SaveAsset(assetHandle);				// NOTE: Consider changing this!
 								}
+							}
+						}
+						else if (extension == ".shader")
+						{
+							if (ImGui::MenuItem("Recompile"))
+							{
+								AssetManager::Instance->ReloadAssetAsync<Shader>(assetHandle);
+							}
+						}
+						else if (extension == ".mat")
+						{
+							if (ImGui::MenuItem("Reload"))
+							{
+								AssetManager::Instance->ReloadAssetAsync<Material>(assetHandle);
+							}
+						}
+						else if (asset && asset->Type == AssetType::Mesh)
+						{
+							if (ImGui::MenuItem("Reload"))
+							{
+								AssetManager::Instance->ReloadAssetAsync<Mesh>(assetHandle);
 							}
 						}
 
@@ -279,20 +303,43 @@ namespace HBL2
 						.type = AssetType::Prefab,
 					});
 
-					// Create asset metadata file.
-					Prefab::CreateMetadataFile(prefabAssetHandle, entityUUID);
+					// Adds the PrefabEntity component and sets its values.
+					PrefabUtilities::Get().ConvertEntityToPrefabPhase0(entity, m_ActiveScene);
 
-					// Save asset.
-					AssetManager::Instance->SaveAsset(prefabAssetHandle);
+					// The serialization code will add the PrefabInstance component with the correct values, but in the prefab sub-scene.
+					UUID prefabEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(entity).Identifier;
+					PrefabUtilities::Get().CreateMetadataFile(prefabAssetHandle, prefabEntityUUID);
 
-					// Delete the created prefab entity since we want the asset prefab entity be unique.
-					m_ActiveScene->DestroyEntity(entity);
+					// Create the prefab resource.
+					const std::string& prefabName = std::filesystem::path(relativePath).filename().stem().string();
+					Asset* asset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
 
-					// Instantiate the prefab entity again to get new UUIDs.
-					HBL2::Component::EditorVisible::SelectedEntity = Prefab::Instantiate(prefabAssetHandle);
+					auto prefabHandle = ResourceManager::Instance->CreatePrefab({
+						.debugName = prefabName.c_str(),
+						.uuid = asset->UUID,
+						.baseEntityUUID = prefabEntityUUID,
+						.version = 1,
+					});
 
-					ImGui::EndDragDropTarget();
+					Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+					// Serialize the prefab source into a file.
+					PrefabSerializer serializer(prefab);
+					serializer.Serialize(Project::GetAssetFileSystemPath(relativePath));
+
+					// Finish the conversion by adding the PrefabInstance component and setting its values from the prefab source.
+					if (!PrefabUtilities::Get().ConvertEntityToPrefabPhase1(entity, prefabAssetHandle, m_ActiveScene))
+					{
+						HBL2_CORE_ERROR("Could not convert entity to prefab!");
+						ImGui::EndDragDropTarget();
+						return;
+					}
+
+					// Set it as the currenlty selected entity.
+					HBL2::Component::EditorVisible::SelectedEntity = entity;
 				}
+
+				ImGui::EndDragDropTarget();
 			}
 		}
 
@@ -493,7 +540,7 @@ namespace HBL2
 				if (ImGui::Button("OK"))
 				{
 					// Create .h file with placeholder code.
-					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateSystemFile(m_CurrentDirectory, systemNameBuffer);
+					auto scriptAssetHandle = BuildEngine::Instance->CreateSystemFile(m_CurrentDirectory, systemNameBuffer);
 
 					// Import script.
 					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
@@ -533,7 +580,7 @@ namespace HBL2
 				if (ImGui::Button("OK"))
 				{
 					// Create .h file with placeholder code.
-					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateComponentFile(m_CurrentDirectory, componentNameBuffer);
+					auto scriptAssetHandle = BuildEngine::Instance->CreateComponentFile(m_CurrentDirectory, componentNameBuffer);
 
 					// Import script.
 					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
@@ -573,7 +620,7 @@ namespace HBL2
 				if (ImGui::Button("OK"))
 				{
 					// Create .h file with placeholder code.
-					auto scriptAssetHandle = NativeScriptUtilities::Get().CreateHelperScriptFile(m_CurrentDirectory, scriptNameBuffer);
+					auto scriptAssetHandle = BuildEngine::Instance->CreateHelperScriptFile(m_CurrentDirectory, scriptNameBuffer);
 
 					// Import script.
 					AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
@@ -677,8 +724,9 @@ namespace HBL2
 					{
 						shaderAssetHandlePacked = *((uint32_t*)payload->Data);
 						shaderAssetHandle = Handle<Asset>::UnPack(shaderAssetHandlePacked);
-						ImGui::EndDragDropTarget();
 					}
+
+					ImGui::EndDragDropTarget();
 				}
 
 				Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderAssetHandle);
@@ -762,16 +810,11 @@ namespace HBL2
 							TextureUtilities::Get().CreateAssetMetadataFile(albedoMapAssetHandle);
 						}
 
-						if (g_AlbedoMapTask)
-						{
-							Allocator::Persistent.Deallocate(g_AlbedoMapTask);
-							g_AlbedoMapTask = nullptr;
-						}
-
+						AssetManager::Instance->ReleaseResourceTask(g_AlbedoMapTask);
 						g_AlbedoMapTask = AssetManager::Instance->GetAssetAsync<Texture>(albedoMapAssetHandle);
-
-						ImGui::EndDragDropTarget();
 					}
+
+					ImGui::EndDragDropTarget();
 				}
 
 				Handle<Asset> normalMapAssetHandle;
@@ -810,16 +853,11 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(normalMapAssetHandle);
 							}
 
-							if (g_NormalMapTask)
-							{
-								Allocator::Persistent.Deallocate(g_NormalMapTask);
-								g_NormalMapTask = nullptr;
-							}
-
+							AssetManager::Instance->ReleaseResourceTask(g_NormalMapTask);
 							g_NormalMapTask = AssetManager::Instance->GetAssetAsync<Texture>(normalMapAssetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 
 					// Metalicness map
@@ -852,16 +890,11 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(metallicMapAssetHandle);
 							}
 
-							if (g_MetallicMapTask)
-							{
-								Allocator::Persistent.Deallocate(g_MetallicMapTask);
-								g_MetallicMapTask = nullptr;
-							}
-
+							AssetManager::Instance->ReleaseResourceTask(g_MetallicMapTask);
 							g_MetallicMapTask = AssetManager::Instance->GetAssetAsync<Texture>(metallicMapAssetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 
 					// Roughness map
@@ -894,16 +927,11 @@ namespace HBL2
 								TextureUtilities::Get().CreateAssetMetadataFile(roughnessMapAssetHandle);
 							}
 
-							if (g_RoughnessMapTask)
-							{
-								Allocator::Persistent.Deallocate(g_RoughnessMapTask);
-								g_RoughnessMapTask = nullptr;
-							}
-
+							AssetManager::Instance->ReleaseResourceTask(g_RoughnessMapTask);
 							g_RoughnessMapTask = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapAssetHandle);
-
-							ImGui::EndDragDropTarget();
 						}
+
+						ImGui::EndDragDropTarget();
 					}
 				}
 
@@ -930,17 +958,14 @@ namespace HBL2
 
 						ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
 							.ShaderAssetHandle = shaderAssetHandle,
-							.VariantDescriptor = {
-								.blend = {
-									.colorOutput = colorOutput,
-									.enabled = blendEnabled,
-								},
-								.depthTest = {
-									.enabled = depthEnabled,
-									.writeEnabled = depthWriteEnabled,
-									.stencilEnabled = stencilEnabled,
-									.depthTest = (Compare)depthTest,
-								},
+							.VariantHash =
+							{
+								.blendEnabled = blendEnabled,
+								.colorOutput = colorOutput,
+								.depthEnabled = depthEnabled,
+								.depthWrite = depthWriteEnabled,
+								.stencilEnabled = stencilEnabled,
+								.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)(Compare)depthTest,
 							},
 							.AlbedoColor = { color[0], color[1], color[2], color[3] },
 							.Glossiness = glossiness,
@@ -955,29 +980,14 @@ namespace HBL2
 							ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, m_SelectedMaterialType);
 						}
 
-						if (g_AlbedoMapTask)
-						{
-							Allocator::Persistent.Deallocate(g_AlbedoMapTask);
-							g_AlbedoMapTask = nullptr;
-						}
-
-						if (g_NormalMapTask)
-						{
-							Allocator::Persistent.Deallocate(g_NormalMapTask);
-							g_NormalMapTask = nullptr;
-						}
-
-						if (g_MetallicMapTask)
-						{
-							Allocator::Persistent.Deallocate(g_MetallicMapTask);
-							g_MetallicMapTask = nullptr;
-						}
-
-						if (g_RoughnessMapTask)
-						{
-							Allocator::Persistent.Deallocate(g_RoughnessMapTask);
-							g_RoughnessMapTask = nullptr;
-						}
+						AssetManager::Instance->ReleaseResourceTask(g_AlbedoMapTask);
+						g_AlbedoMapTask = nullptr;
+						AssetManager::Instance->ReleaseResourceTask(g_NormalMapTask);
+						g_NormalMapTask = nullptr;
+						AssetManager::Instance->ReleaseResourceTask(g_MetallicMapTask);
+						g_MetallicMapTask = nullptr;
+						AssetManager::Instance->ReleaseResourceTask(g_RoughnessMapTask);
+						g_RoughnessMapTask = nullptr;
 
 						m_OpenMaterialSetupPopup = false;
 					}
@@ -989,29 +999,14 @@ namespace HBL2
 				{
 					m_OpenMaterialSetupPopup = false;
 
-					if (g_AlbedoMapTask)
-					{
-						Allocator::Persistent.Deallocate(g_AlbedoMapTask);
-						g_AlbedoMapTask = nullptr;
-					}
-
-					if (g_NormalMapTask)
-					{
-						Allocator::Persistent.Deallocate(g_NormalMapTask);
-						g_NormalMapTask = nullptr;
-					}
-
-					if (g_MetallicMapTask)
-					{
-						Allocator::Persistent.Deallocate(g_MetallicMapTask);
-						g_MetallicMapTask = nullptr;
-					}
-
-					if (g_RoughnessMapTask)
-					{
-						Allocator::Persistent.Deallocate(g_RoughnessMapTask);
-						g_RoughnessMapTask = nullptr;
-					}
+					AssetManager::Instance->ReleaseResourceTask(g_AlbedoMapTask);
+					g_AlbedoMapTask = nullptr;
+					AssetManager::Instance->ReleaseResourceTask(g_NormalMapTask);
+					g_NormalMapTask = nullptr;
+					AssetManager::Instance->ReleaseResourceTask(g_MetallicMapTask);
+					g_MetallicMapTask = nullptr;
+					AssetManager::Instance->ReleaseResourceTask(g_RoughnessMapTask);
+					g_RoughnessMapTask = nullptr;
 				}
 
 				ImGui::End();
