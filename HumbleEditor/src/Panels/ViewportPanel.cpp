@@ -164,6 +164,8 @@ namespace HBL2
 						snapValuesFinal
 					);
 
+					// NOTE: If we move the gizmo really quickly, the child entities will lag behind a bit.
+					//		 Thats because, the gizmo codes runs after the Hierachy system. Consider fixing this!
 					if (edited && ImGuiRenderer::Instance->Gizmos_IsUsing())
 					{
 						// Convert edited world -> local
