@@ -3,12 +3,12 @@
 #include "Events.h"
 #include "EventDispatcher.h"
 
-#include <GLFW/glfw3.h>
-
 #include <string>
 #include <iostream>
 #include <functional>
 #include <span>
+
+struct GLFWwindow;
 
 #define MAX_WORKERS 16
 

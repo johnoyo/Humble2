@@ -1,5 +1,7 @@
 #include "Input.h"
 
+#include <GLFW/glfw3.h>
+
 namespace HBL2
 {
     Input* Input::s_Instance = nullptr;

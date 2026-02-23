@@ -190,6 +190,19 @@ namespace HBL2
 						// Copy assets folder to build folder.
 						FileUtils::CopyFolder("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets");
 					}
+					else if (ImGui::MenuItem("Build (Windows - Distribution)"))
+					{
+						const std::string& projectName = HBL2::Project::GetActive()->GetName();
+
+						// Build.
+						BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Distribution);
+
+						// Copy project folder to build folder.
+						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Dist-x86_64\\HumbleApp\\" + projectName);
+
+						// Copy assets folder to build folder.
+						FileUtils::CopyFolder("./assets", "..\\bin\\Dist-x86_64\\HumbleApp\\assets");
+						}
 					else if (ImGui::MenuItem("Build & Run (Windows - Debug)"))
 					{
 						const std::string& projectName = HBL2::Project::GetActive()->GetName();
@@ -218,6 +231,22 @@ namespace HBL2
 
 						// Copy assets folder to build folder.
 						FileUtils::CopyFolder("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets");
+
+						// Run.
+						BuildEngine::Instance->RunRuntime(BuildEngine::Configuration::Release);
+					}
+					else if (ImGui::MenuItem("Build & Run (Windows - Distribution)"))
+					{
+						const std::string& projectName = HBL2::Project::GetActive()->GetName();
+
+						// Build.
+						BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Distribution);
+
+						// Copy project folder to build folder.
+						FileUtils::CopyFolder("./" + projectName, "..\\bin\\Dist-x86_64\\HumbleApp\\" + projectName);
+
+						// Copy assets folder to build folder.
+						FileUtils::CopyFolder("./assets", "..\\bin\\Dist-x86_64\\HumbleApp\\assets");
 
 						// Run.
 						BuildEngine::Instance->RunRuntime(BuildEngine::Configuration::Release);

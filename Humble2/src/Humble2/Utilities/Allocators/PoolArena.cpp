@@ -212,8 +212,11 @@ namespace HBL2
     }
     void PoolArena::UpdateStats(int32_t delta)
     {
+#ifdef ARENA_DEBUG
+
         int32_t cur = m_InUse.fetch_add(delta, std::memory_order_relaxed) + delta;
         int32_t hw = m_HighWater.load(std::memory_order_relaxed);
         while (cur > hw && !m_HighWater.compare_exchange_weak(hw, cur, std::memory_order_relaxed)) {}
+#endif
     }
 }

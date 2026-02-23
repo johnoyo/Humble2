@@ -4,10 +4,11 @@
 #include "Window.h"
 #include "InputCodes.h"
 
-#include <GLFW/glfw3.h>
+struct GLFWwindow;
 
 namespace HBL2
 {
+
     class HBL2_API Input
     {
     public:
@@ -31,7 +32,7 @@ namespace HBL2
          * @param key The keyboard key code to check for release.
          * @return True if the key was released during this frame, false otherwise.
          */
-        static bool GetKeyUp(KeyCode key) { return Get().IGetKeyDown((int)key, GLFW_RELEASE); }
+        static bool GetKeyUp(KeyCode key) { return Get().IGetKeyDown((int)key, 0); }
 
         /**
          * @brief Checks if the specified key was pressed during the current frame.
@@ -39,7 +40,7 @@ namespace HBL2
          * @param key The keyboard key code to check for press.
          * @return True if the key was pressed during this frame, false otherwise.
          */
-        static bool GetKeyDown(KeyCode key) { return Get().IGetKeyDown((int)key, GLFW_PRESS); }
+        static bool GetKeyDown(KeyCode key) { return Get().IGetKeyDown((int)key, 1); }
 
         /**
          * @brief Checks if the specified key was pressed during the current frame.
@@ -100,8 +101,8 @@ namespace HBL2
 
         Input() {}
 
-        int m_LastReleasedState[512] = { GLFW_RELEASE };
-        int m_LastPressedState[512] = { GLFW_RELEASE };
+        int m_LastReleasedState[512] = { 0 };
+        int m_LastPressedState[512] = { 0 };
         bool m_LastGamepadState[16][15] = {};
         glm::vec2 m_MousePosition = {};
 

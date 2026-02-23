@@ -1,6 +1,7 @@
 #include "ImGuiRenderer.h"
 
 #include "Core\Context.h"
+#include <imgui_internal.h>
 
 namespace HBL2
 {

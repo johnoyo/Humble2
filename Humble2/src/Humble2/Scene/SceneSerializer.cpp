@@ -141,8 +141,10 @@ namespace HBL2
 		auto helperScripts = data["User Helper Scripts"];
 		auto systems = data["User Systems"];
 
+		BuildEngine::Configuration currentConfiguration = BuildEngine::Instance->GetActiveConfiguration();
+
 		// If we have user defined scripts but no dll exists, build it.
-		if ((components.size() > 0 || systems.size() > 0 || helperScripts.size() > 0) && !BuildEngine::Instance->Exists())
+		if ((components.size() > 0 || systems.size() > 0 || helperScripts.size() > 0) && !BuildEngine::Instance->Exists(currentConfiguration))
 		{
 			HBL2_CORE_TRACE("No user defined scripts dll found for scene: {}, building one now...", m_Scene->GetName());
 			BuildEngine::Instance->Build();

@@ -173,10 +173,12 @@ project "Humble2"
             -- Ensure the GLEW and FMOD DLLs are copied to HumbleEditor
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleEditor"),
 
             -- Ensure the GLEW and FMOD DLLs are copied to HumbleApp
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleApp"),
         }
         
     filter "configurations:Emscripten"

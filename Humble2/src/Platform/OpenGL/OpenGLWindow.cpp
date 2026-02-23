@@ -1,5 +1,7 @@
 #include "OpenGLWindow.h"
 
+#include <GLFW/glfw3.h>
+
 namespace HBL2
 {
 	static void ErrorCallback(int error, const char* description)

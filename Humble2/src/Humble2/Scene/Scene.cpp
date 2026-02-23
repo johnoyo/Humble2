@@ -161,6 +161,7 @@ namespace HBL2
         // Copy the components to the new scene.
         for (const auto& userComponentName : userComponentNames)
         {
+            BuildEngine::Instance->RegisterComponent(userComponentName, dst);
             BuildEngine::Instance->DeserializeComponents(userComponentName, dst, data);
         }
 

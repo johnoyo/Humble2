@@ -62,13 +62,18 @@ namespace HBL2
 		{
 		case Mode::Editor:
 			AssetManager::Instance = new EditorAssetManager;
+			Log::SetOutputs({ LogContexts::TERMINAL, LogContexts::FILE });
 			gfxAPI = projectSettings.EditorGraphicsAPI;
 			break;
 		case Mode::Runtime:
 			AssetManager::Instance = new EditorAssetManager; // TODO: Change to RuntimeAssetManager when implemented.
+			Log::SetOutputs({ LogContexts::FILE });
 			gfxAPI = projectSettings.RuntimeGraphicsAPI;
 			break;
 		}
+
+		Console::Instance = new Console;
+		Console::Instance->Initialize();
 
 		EventDispatcher::Initialize();
 		JobSystem::Initialize();
@@ -226,6 +231,9 @@ namespace HBL2
 
 	void Application::Start()
 	{
+		Console::Instance->AddMessage(MessageInfo::MessageContext::ENGINE, MessageInfo::MessageType::EINFO, "Test", "Hello World!");
+		Console::Instance->AddMessage(MessageInfo::MessageContext::ENGINE, MessageInfo::MessageType::EINFO, "Test", "Hello World1!");
+
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
 		BuildEngine::Instance->Initialize();
@@ -370,11 +378,17 @@ namespace HBL2
 		delete BuildEngine::Instance;
 		BuildEngine::Instance = nullptr;
 
+		Console::Instance->ShutDown();
+		delete Console::Instance;
+		Console::Instance = nullptr;
+
 		Input::ShutDown();
 		ShaderUtilities::Shutdown();
 		MeshUtilities::Shutdown();
 		PrefabUtilities::Shutdown();
 		EventDispatcher::Shutdown();
 		JobSystem::Shutdown();
+
+		Log::Shutdown();
 	}
 }

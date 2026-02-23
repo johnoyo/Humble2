@@ -67,6 +67,9 @@ namespace HBL2
 			Handle<Scene> m_ActiveSceneTemp;
 			bool m_ProjectChanged = false;
 
+			bool m_HotReloadedDLL = false;
+			std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> m_SerializedUserComponents;
+
 			ImGuizmo::OPERATION m_GizmoOperation = ImGuizmo::OPERATION::BOUNDS;
 			ImGuizmo::MODE m_GizmoMode = ImGuizmo::MODE::LOCAL;
 			float m_CameraPivotDistance = 5.0f;

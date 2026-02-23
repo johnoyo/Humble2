@@ -1,5 +1,7 @@
 #include "OpenGLRenderer.h"
 
+#include <GLFW/glfw3.h>
+
 namespace HBL2
 {
 	void OpenGLRenderer::PreInitialize()
