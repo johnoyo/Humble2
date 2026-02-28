@@ -231,9 +231,6 @@ namespace HBL2
 
 	void Application::Start()
 	{
-		Console::Instance->AddMessage(MessageInfo::MessageContext::ENGINE, MessageInfo::MessageType::EINFO, "Test", "Hello World!");
-		Console::Instance->AddMessage(MessageInfo::MessageContext::ENGINE, MessageInfo::MessageType::EINFO, "Test", "Hello World1!");
-
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
 		BuildEngine::Instance->Initialize();

@@ -12,31 +12,29 @@ namespace HBL2
 
 	void Log::Initialize()
 	{
-		// Async thread pool (do this ONCE in the app lifetime)
+		// Async thread pool initialization.
 		spdlog::init_thread_pool(8192, 1);
 
-		// Create sinks
+		// Create sinks.
 		s_ConsoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-		s_ConsoleSink->set_pattern("%^[%T] %n: %v%$");
+		s_ConsoleSink->set_pattern("%^[%T] [%l] [%s:%#] %v%$");
 
 		s_FileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("Console.log", 5_MB, 3);
-		s_FileSink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] %v");
+		s_FileSink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%s:%#] %v");
 
-		// Default: console on, file on (adjust to taste)
 		s_ConsoleSink->set_level(spdlog::level::trace);
 		s_FileSink->set_level(spdlog::level::trace);
 
-		// Each logger has BOTH sinks
+		// Each logger has BOTH sinks.
 		spdlog::sinks_init_list sinks{ s_ConsoleSink, s_FileSink };
 
 		s_CoreLogger = std::make_shared<spdlog::async_logger>("HUMBLE2", sinks, spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
-
 		s_ClientLogger = std::make_shared<spdlog::async_logger>("APP", sinks, spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
 
 		s_CoreLogger->set_level(spdlog::level::trace);
 		s_ClientLogger->set_level(spdlog::level::trace);
 
-		// Flush policy (common)
+		// Flush policy on error.
 		s_CoreLogger->flush_on(spdlog::level::err);
 		s_ClientLogger->flush_on(spdlog::level::err);
 
@@ -49,13 +47,27 @@ namespace HBL2
 		if (s_CoreLogger)
 		{
 			s_CoreLogger->flush();
+			s_CoreLogger->set_level(spdlog::level::off);
 		}
 
 		if (s_ClientLogger)
 		{
 			s_ClientLogger->flush();
+			s_ClientLogger->set_level(spdlog::level::off); 
 		}
 
+		// Disable sink logging before shutdown.
+		if (s_ConsoleSink)
+		{
+			s_ConsoleSink->set_level(spdlog::level::off);
+		}
+
+		if (s_FileSink)
+		{
+			s_FileSink->set_level(spdlog::level::off);
+		}
+
+		spdlog::set_level(spdlog::level::off);
 		spdlog::shutdown();
 
 		s_CoreLogger.reset();

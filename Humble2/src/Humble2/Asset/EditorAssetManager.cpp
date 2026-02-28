@@ -3,7 +3,7 @@
 #include "Script\BuildEngine.h"
 #include "Utilities\YamlUtilities.h"
 #include "Utilities\Collections\Collections.h"
-#include "Utilities\Collections\StackDArray.h"
+#include "Utilities\Collections\StaticDArray.h"
 
 #include "Systems\HierachySystem.h"
 #include "Systems\CameraSystem.h"
@@ -311,7 +311,7 @@ namespace HBL2
 		Handle<BindGroupLayout> globalBindGroupLayout;
 		Handle<BindGroupLayout> drawBindGroupLayout;
 
-		StackDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> shaderVariants;
+		StaticDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> shaderVariants;
 
 		const auto& shaderProperties = data["Shader"];
 		if (shaderProperties)
@@ -842,7 +842,7 @@ namespace HBL2
 		Handle<BindGroupLayout> globalBindGroupLayout;
 		Handle<BindGroupLayout> drawBindGroupLayout;
 
-		StackDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> shaderVariants;
+		StaticDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> shaderVariants;
 
 		const auto& shaderProperties = data["Shader"];
 		if (shaderProperties)

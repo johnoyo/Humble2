@@ -32,7 +32,9 @@ namespace HBL2
 	void Console::ClearLog()
 	{
 		for (uint32_t i = 0; i < s_MaxMessageHistoryLength; ++i)
+		{
 			m_Slots[i].Stamp.store(0, std::memory_order_release);
+		}
 
 		m_NextSeq.store(0, std::memory_order_release);
 		m_CommittedEndSeq.store(0, std::memory_order_release);
@@ -41,9 +43,7 @@ namespace HBL2
 	ConsoleSnapshot Console::GetSnapshot() const
 	{
 		const uint64_t end = m_CommittedEndSeq.load(std::memory_order_acquire);
-		const uint32_t count = (end > s_MaxMessageHistoryLength)
-			? s_MaxMessageHistoryLength
-			: static_cast<uint32_t>(end);
+		const uint32_t count = (end > s_MaxMessageHistoryLength) ? s_MaxMessageHistoryLength : static_cast<uint32_t>(end);
 
 		return ConsoleSnapshot{
 			.Slots = std::span<const MessageSlot>(m_Slots.data(), s_MaxMessageHistoryLength),
@@ -55,7 +55,10 @@ namespace HBL2
 
 	bool Console::TryReadMessageAtSequence(uint64_t sequence, MessageInfo& out) const
 	{
-		if (sequence == 0) return false;
+		if (sequence == 0)
+		{
+			return false;
+		}
 
 		const uint32_t idx = static_cast<uint32_t>((sequence - 1) % s_MaxMessageHistoryLength);
 		const MessageSlot& slot = m_Slots[idx];
@@ -67,11 +70,15 @@ namespace HBL2
 
 			// writing?
 			if (stampA & 1ull)
+			{
 				continue;
+			}
 
 			// committed seq must match requested
 			if ((stampA >> 1) != sequence)
+			{
 				return false;
+			}
 
 			MessageInfo tmp = slot.Payload;
 
@@ -88,15 +95,27 @@ namespace HBL2
 
 	void Console::RenderTerminalConsole(const MessageInfo& msgInfo)
 	{
-		spdlog::logger* logger = (msgInfo.Context == MessageInfo::MessageContext::ENGINE) ? Log::GetCoreLogger().get() : Log::GetClientLogger().get();
+		if (msgInfo.Context == MessageInfo::MessageContext::ENGINE)
+		{
+			switch (msgInfo.Type)
+			{
+			case MessageInfo::MessageType::ETRACE: HBL2_CORE_TRACE("[{}] {}", msgInfo.Tag.view(), msgInfo.Message.view()); break;
+			case MessageInfo::MessageType::EINFO:  HBL2_CORE_INFO("[{}] {}", msgInfo.Tag.view(), msgInfo.Message.view());  break;
+			case MessageInfo::MessageType::EWARN:  HBL2_CORE_WARN("[{}] {}", msgInfo.Tag.view(), msgInfo.Message.view());  break;
+			case MessageInfo::MessageType::EERROR: HBL2_CORE_ERROR("[{}] {}", msgInfo.Tag.view(), msgInfo.Message.view()); break;
+			case MessageInfo::MessageType::EFATAL: HBL2_CORE_FATAL("[{}] {}", msgInfo.Tag.view(), msgInfo.Message.view()); break;
+			}
+
+			return;
+		}
 
 		switch (msgInfo.Type)
 		{
-		case MessageInfo::MessageType::ETRACE:    logger->trace("[{}] {}", msgInfo.TagView(), msgInfo.MsgView()); break;
-		case MessageInfo::MessageType::EINFO:     logger->info("[{}] {}", msgInfo.TagView(), msgInfo.MsgView()); break;
-		case MessageInfo::MessageType::EWARN:     logger->warn("[{}] {}", msgInfo.TagView(), msgInfo.MsgView()); break;
-		case MessageInfo::MessageType::EERROR:    logger->error("[{}] {}", msgInfo.TagView(), msgInfo.MsgView()); break;
-		case MessageInfo::MessageType::ECRITICAL: logger->critical("[{}] {}", msgInfo.TagView(), msgInfo.MsgView()); break;
+		case MessageInfo::MessageType::ETRACE: HBL2_TRACE("[{}] {}", msgInfo.Tag.view(), msgInfo.Message.view()); break;
+		case MessageInfo::MessageType::EINFO:  HBL2_INFO("[{}] {}", msgInfo.Tag.view(), msgInfo.Message.view());  break;
+		case MessageInfo::MessageType::EWARN:  HBL2_WARN("[{}] {}", msgInfo.Tag.view(), msgInfo.Message.view());  break;
+		case MessageInfo::MessageType::EERROR: HBL2_ERROR("[{}] {}", msgInfo.Tag.view(), msgInfo.Message.view()); break;
+		case MessageInfo::MessageType::EFATAL: HBL2_FATAL("[{}] {}", msgInfo.Tag.view(), msgInfo.Message.view()); break;
 		}
 	}
 }

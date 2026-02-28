@@ -9,7 +9,7 @@ namespace HBL2
 {
 	/// Simple variable length array backed by a fixed size buffer (Adapted from Jolt StaticArray)
 	template <class T, uint32_t N>
-	class StackDArray
+	class StaticDArray
 	{
 	public:
 		using value_type = T;
@@ -17,10 +17,10 @@ namespace HBL2
 		static constexpr uint32_t Capacity = N;
 
 		/// Default constructor
-		StackDArray() = default;
+		StaticDArray() = default;
 
 		/// Constructor from initializer list
-		explicit StackDArray(std::initializer_list<T> inList)
+		explicit StaticDArray(std::initializer_list<T> inList)
 		{
 			HBL2_CORE_ASSERT(inList.size() <= N, "");
 			for (const T& v : inList)
@@ -30,7 +30,7 @@ namespace HBL2
 		}
 
 		/// Copy constructor
-		StackDArray(const StackDArray<T, N>& inRHS)
+		StaticDArray(const StaticDArray<T, N>& inRHS)
 		{
 			while (m_Size < inRHS.m_Size)
 			{
@@ -40,7 +40,7 @@ namespace HBL2
 		}
 
 		/// Destruct all elements
-		~StackDArray()
+		~StaticDArray()
 		{
 			if constexpr (!std::is_trivially_destructible<T>())
 			{
@@ -246,7 +246,7 @@ namespace HBL2
 		}
 
 		/// Assignment operator
-		StackDArray<T, N>& operator=(const StackDArray<T, N>& inRHS)
+		StaticDArray<T, N>& operator=(const StaticDArray<T, N>& inRHS)
 		{
 			size_type rhs_size = inRHS.size();
 
@@ -266,7 +266,7 @@ namespace HBL2
 
 		/// Assignment operator with static array of different max length
 		template <uint32_t M>
-		StackDArray<T, N>& operator=(const StackDArray<T, M>& inRHS)
+		StaticDArray<T, N>& operator=(const StaticDArray<T, M>& inRHS)
 		{
 			size_type rhs_size = inRHS.size();
 			HBL2_CORE_ASSERT(rhs_size <= N, "");
@@ -286,7 +286,7 @@ namespace HBL2
 		}
 
 		/// Comparing arrays
-		bool operator==(const StackDArray<T, N>& inRHS) const
+		bool operator==(const StaticDArray<T, N>& inRHS) const
 		{
 			if (m_Size != inRHS.m_Size)
 			{
@@ -304,7 +304,7 @@ namespace HBL2
 			return true;
 		}
 
-		bool operator!=(const StackDArray<T, N>& inRHS) const
+		bool operator!=(const StaticDArray<T, N>& inRHS) const
 		{
 			if (m_Size != inRHS.m_Size)
 			{

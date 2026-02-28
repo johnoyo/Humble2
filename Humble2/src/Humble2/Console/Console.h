@@ -3,33 +3,47 @@
 #include "Humble2API.h"
 #include "Core/Allocators.h"
 #include "Utilities/Collections/Collections.h"
+#include "Utilities/Collections/StaticString.h"
 
 #include <atomic>
 #include <span>
 #include <string_view>
 #include <cstring>
 #include <algorithm>
+#include <source_location>
+
+#ifndef DIST
+	#define CONSOLE_LOG(...)				Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EINFO, std::source_location::current(), "SCRIPT", __VA_ARGS__)
+	#define CONSOLE_LOG_TAG(tag, ...)       Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EINFO, std::source_location::current(), tag, __VA_ARGS__)
+	#define CONSOLE_LOG_WARN(...)			Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EWARN, std::source_location::current(), "SCRIPT", __VA_ARGS__)
+	#define CONSOLE_LOG_WARN_TAG(tag, ...)  Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EWARN, std::source_location::current(), tag, __VA_ARGS__)
+	#define CONSOLE_LOG_ERROR(...)			Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EERROR, std::source_location::current(), "SCRIPT", __VA_ARGS__)
+	#define CONSOLE_LOG_ERROR_TAG(tag, ...) Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EERROR, std::source_location::current(), tag, __VA_ARGS__)
+	#define CONSOLE_LOG_FATAL(...)			Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EFATAL, std::source_location::current(), "SCRIPT", __VA_ARGS__)
+	#define CONSOLE_LOG_FATAL_TAG(tag, ...) Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EFATAL, std::source_location::current(), tag, __VA_ARGS__)
+#else
+	#define CONSOLE_LOG(...)
+	#define CONSOLE_LOG_WARN(...)
+	#define CONSOLE_LOG_ERROR(...)
+	#define CONSOLE_LOG_FATAL(...)
+#endif
 
 namespace HBL2
 {
 	struct MessageInfo
 	{
 		enum class MessageContext { ENGINE, APP };
-		enum class MessageType { ETRACE, EINFO, EWARN, EERROR, ECRITICAL };
+		enum class MessageType { ETRACE, EINFO, EWARN, EERROR, EFATAL };
 
 		MessageContext Context = MessageContext::ENGINE;
 		MessageType Type = MessageType::ETRACE;
 
-		static constexpr uint32_t TagCap = 64;
-		static constexpr uint32_t MsgCap = 512;
+		StaticString<64>  Tag;
+		StaticString<512> Message;
 
-		char Tag[TagCap]{};
-		char Message[MsgCap]{};
-		uint16_t TagLen = 0;
-		uint16_t MsgLen = 0;
-
-		std::string_view TagView() const { return { Tag, TagLen }; }
-		std::string_view MsgView() const { return { Message, MsgLen }; }
+		StaticString<128>  File;
+		StaticString<128> Function;
+		uint32_t Line = 0;
 	};
 
 	struct MessageSlot
@@ -40,7 +54,6 @@ namespace HBL2
 
 		MessageSlot() = default;
 
-		// Needed if your DArray copies elements during init/resizing
 		MessageSlot(const MessageSlot& other)
 		{
 			Stamp.store(other.Stamp.load(std::memory_order_relaxed), std::memory_order_relaxed);
@@ -76,16 +89,11 @@ namespace HBL2
 
 		ConsoleSnapshot GetSnapshot() const;
 
-		// Reads the message with exact logical sequence number `sequence`
-		// from the ring, if still present and stable.
+		// Reads the message with exact logical sequence number `sequence` from the ring, if still present and stable.
 		bool TryReadMessageAtSequence(uint64_t sequence, MessageInfo& out) const;
 
 		template<typename... Args>
-		void AddMessage(MessageInfo::MessageContext ctx,
-			MessageInfo::MessageType type,
-			std::string_view tag,
-			fmt::format_string<Args...> fmtStr,
-			Args&&... args)
+		void AddMessage(MessageInfo::MessageContext ctx, MessageInfo::MessageType type, const std::source_location& loc, std::string_view tag, fmt::format_string<Args...> fmtStr, Args&&... args)
 		{
 			const uint64_t seq = m_NextSeq.fetch_add(1, std::memory_order_relaxed) + 1;
 			const uint32_t idx = static_cast<uint32_t>((seq - 1) % s_MaxMessageHistoryLength);
@@ -99,12 +107,11 @@ namespace HBL2
 			MessageInfo mi{};
 			mi.Context = ctx;
 			mi.Type = type;
-
-			CopyTrunc(mi.Tag, MessageInfo::TagCap, mi.TagLen, tag);
-
-			auto res = fmt::format_to_n(mi.Message, MessageInfo::MsgCap - 1, fmtStr, std::forward<Args>(args)...);
-			mi.MsgLen = static_cast<uint16_t>(std::min<size_t>(res.size, MessageInfo::MsgCap - 1));
-			mi.Message[mi.MsgLen] = '\0';
+			mi.Tag.assign(tag);
+			mi.Message.format(fmtStr, std::forward<Args>(args)...);
+			mi.File.assign(loc.file_name());
+			mi.Function.assign(loc.function_name());
+			mi.Line = loc.line();
 
 			slot.Payload = mi;
 
@@ -118,21 +125,13 @@ namespace HBL2
 		}
 
 	private:
-		static inline void CopyTrunc(char* dst, size_t cap, uint16_t& outLen, std::string_view src)
-		{
-			const size_t n = (cap == 0) ? 0 : std::min(src.size(), cap - 1);
-			if (n) std::memcpy(dst, src.data(), n);
-			dst[n] = '\0';
-			outLen = static_cast<uint16_t>(n);
-		}
-
 		void RenderTerminalConsole(const MessageInfo& msgInfo);
 
 	private:
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_Arena;
 
-		static constexpr uint32_t s_MaxMessageHistoryLength = 1024;
+		static constexpr uint32_t s_MaxMessageHistoryLength = 4096;
 		DArray<MessageSlot> m_Slots = MakeEmptyDArray<MessageSlot>();
 
 		// Issued sequences (monotonic)
