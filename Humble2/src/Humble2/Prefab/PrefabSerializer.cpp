@@ -164,8 +164,10 @@ namespace HBL2
 		{
 			auto components = prefabNode[0]["User Components"];
 
+			BuildEngine::Configuration currentConfiguration = BuildEngine::Instance->GetActiveConfiguration();
+
 			// If we have user defined scripts but no dll exists, build it.
-			if (components.size() > 0 && !BuildEngine::Instance->Exists())
+			if (components.size() > 0 && !BuildEngine::Instance->Exists(currentConfiguration))
 			{
 				HBL2_CORE_TRACE("No user defined scripts dll found for prefab: {}, building one now...", m_Context->m_UUID);
 				BuildEngine::Instance->Build();

@@ -1,5 +1,7 @@
 #include "Window.h"
 
+#include <GLFW/glfw3.h>
+
 namespace HBL2
 {
 	Window* Window::Instance = nullptr;

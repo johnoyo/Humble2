@@ -3,6 +3,7 @@
 #include "VulkanDevice.h"
 #include "VulkanResourceManager.h"
 #include <imgui_impl_vulkan.h>
+#include <GLFW/glfw3.h>
 
 #include "Utilities\TextureUtilities.h"
 #include "Utilities\ShaderUtilities.h"

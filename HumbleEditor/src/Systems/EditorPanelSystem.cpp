@@ -24,11 +24,39 @@ namespace HBL2
 			{
 				HBL2_CORE_INFO("EditorPanelSystem::SceneChangeEvent");
 
+				std::vector<std::string> userSystemNames;
+				std::vector<std::string> userComponentNames;
 
 				// Delete temporary play mode scene.
 				Scene* currentScene = ResourceManager::Instance->GetScene(e.OldScene);
 				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != std::string::npos)
 				{
+					if (m_HotReloadedDLL)
+					{
+						// Store all registered meta types.
+						for (auto meta_type : entt::resolve(currentScene->GetMetaContext()))
+						{
+							const auto& alias = meta_type.second.info().name();
+
+							if (alias.size() == 0 || alias.size() >= UINT32_MAX || alias.data() == nullptr)
+							{
+								HBL2_CORE_ERROR("Empty meta type registered on scene {}!", currentScene->GetName());
+								continue;
+							}
+
+							const std::string& cleanName = BuildEngine::Instance->CleanComponentNameO3(alias.data());
+							userComponentNames.push_back(cleanName);
+						}
+
+						for (ISystem* userSystem : currentScene->GetRuntimeSystems())
+						{
+							if (userSystem->GetType() == SystemType::User)
+							{
+								userSystemNames.push_back(userSystem->Name);
+							}
+						}
+					}
+
 					// Clear entire scene
 					currentScene->Clear();
 
@@ -65,6 +93,12 @@ namespace HBL2
 								camera.AspectRatio = m_ViewportSize.x / m_ViewportSize.y;
 							}
 						});
+				}
+
+				if (m_HotReloadedDLL)
+				{
+					BuildEngine::Instance->HotReload(e.NewScene, userComponentNames, userSystemNames, m_SerializedUserComponents);
+					m_HotReloadedDLL = false;
 				}
 			});
 

@@ -60,7 +60,15 @@ namespace HBL2
 		// Store all registered meta types.
 		for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
 		{
-			std::string componentName = meta_type.second.info().name().data();
+			const auto& alias = meta_type.second.info().name();
+
+			if (alias.size() == 0 || alias.size() >= UINT32_MAX || alias.data() == nullptr)
+			{
+				HBL2_CORE_ERROR("Empty meta type registered on scene {}!", activeScene->GetName());
+				continue;
+			}
+
+			std::string componentName = alias.data();
 			componentName = CleanComponentNameO3(componentName);
 			userComponentNames.push_back(componentName);
 
@@ -79,6 +87,17 @@ namespace HBL2
 			RegisterSystem(userSystemName, activeScene);
 		}
 
+		if (Context::Mode == Mode::Runtime)
+		{
+			for (ISystem* userSystem : activeScene->GetRuntimeSystems())
+			{
+				if (userSystem->GetType() == SystemType::User)
+				{
+					userSystem->SetState(SystemState::Play);
+				}
+			}
+		}
+
 		// Re-register the components.
 		for (const auto& userComponentName : userComponentNames)
 		{
@@ -87,10 +106,53 @@ namespace HBL2
 		}
 	}
 
-	bool BuildEngine::Exists()
+	void BuildEngine::HotReload(Handle<Scene> sceneHandle, const std::vector<std::string>& userComponentNames, const std::vector<std::string>& userSystemNames, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& serializedUserComponents)
 	{
-		const auto& path = GetUnityBuildPath();
+		Scene* activeScene = ResourceManager::Instance->GetScene(sceneHandle);
+
+		// Unload unity build dll.
+		UnloadBuild(activeScene);
+
+		// Load new dll.
+		LoadBuild(m_CurrentConfiguration);
+
+		// Re-register systems.
+		for (const auto& userSystemName : userSystemNames)
+		{
+			RegisterSystem(userSystemName, activeScene);
+		}
+
+		// Start user systems, since by default they start at idle.
+		for (ISystem* userSystem : activeScene->GetRuntimeSystems())
+		{
+			if (userSystem->GetType() == SystemType::User)
+			{
+				userSystem->SetState(SystemState::Play);
+			}
+		}
+
+		// Re-register the components.
+		for (const auto& userComponentName : userComponentNames)
+		{
+			RegisterComponent(userComponentName, activeScene);
+			DeserializeComponents(userComponentName, activeScene, serializedUserComponents);
+		}
+	}
+
+	bool BuildEngine::Exists(Configuration configuration)
+	{
+		const auto& path = GetUnityBuildPath(configuration);
 		return std::filesystem::exists(path);
+	}
+
+	void BuildEngine::SetActiveConfiguration(Configuration configuration)
+	{
+		m_CurrentConfiguration = configuration;
+	}
+
+	BuildEngine::Configuration BuildEngine::GetActiveConfiguration() const
+	{
+		return m_CurrentConfiguration;
 	}
 
 	Handle<Asset> BuildEngine::CreateSystemFile(const std::filesystem::path& currentDir, const std::string& systemName)
@@ -165,7 +227,7 @@ namespace HBL2
 			.debugName = "script-asset",
 			.filePath = relativePath,
 			.type = AssetType::Script,
-			});
+		});
 
 		if (scriptAssetHandle.IsValid())
 		{
@@ -189,15 +251,20 @@ namespace HBL2
 		return scriptAssetHandle;
 	}
 
-	const std::filesystem::path BuildEngine::GetUnityBuildPath() const
+	const std::filesystem::path BuildEngine::GetUnityBuildPath(Configuration config) const
 	{
 		const std::string& projectName = Project::GetActive()->GetName();
 
-#ifdef DEBUG
-		return std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-#else
-		return std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-#endif
+		switch (config)
+		{
+		case Configuration::Debug: 
+			return std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
+		case Configuration::Release: 
+		case Configuration::Distribution: 
+			return std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
+		}
+
+		return std::filesystem::path("");
 	}
 
 	std::string BuildEngine::GetDefaultSystemCode(const std::string& systemName)
@@ -290,7 +357,7 @@ class {ScriptName}
 
 	void BuildEngine::RegisterSystem(const std::string& name, Scene* ctx)
 	{
-		const auto& path = GetUnityBuildPath();
+		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
 
 		// Retrieve if dll is not loaded.
 		if (!m_DynamicLibrary.IsLoaded())
@@ -307,7 +374,7 @@ class {ScriptName}
 
 	void BuildEngine::RegisterComponent(const std::string& name, Scene* ctx)
 	{
-		const auto& path = GetUnityBuildPath();
+		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
 
 		// Retrieve if dll is not loaded.
 		if (!m_DynamicLibrary.IsLoaded())
@@ -322,9 +389,9 @@ class {ScriptName}
 		const char* properName = registerComponent(ctx);
 	}
 
-	void BuildEngine::LoadBuild()
+	void BuildEngine::LoadBuild(Configuration config)
 	{
-		const auto& path = GetUnityBuildPath();
+		const auto& path = GetUnityBuildPath(config);
 		LoadBuild(path.string());
 	}
 
@@ -383,7 +450,7 @@ class {ScriptName}
 
 	entt::meta_any BuildEngine::AddComponent(const std::string& name, Scene* ctx, Entity entity)
 	{
-		const auto& path = GetUnityBuildPath();
+		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
 
 		// Retrieve function that registers the component from the dll.
 		auto addComponent = m_DynamicLibrary.GetFunction<AddComponentFunc>("AddComponent_" + name);
@@ -394,7 +461,7 @@ class {ScriptName}
 
 	entt::meta_any BuildEngine::GetComponent(const std::string& name, Scene* ctx, Entity entity)
 	{
-		const auto& path = GetUnityBuildPath();
+		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
 
 		// Retrieve function that gets the component from the dll.
 		auto getComponent = m_DynamicLibrary.GetFunction<GetComponentFunc>("GetComponent_" + name);
@@ -405,7 +472,7 @@ class {ScriptName}
 
 	void BuildEngine::RemoveComponent(const std::string& name, Scene* ctx, Entity entity)
 	{
-		const auto& path = GetUnityBuildPath();
+		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
 
 		// Retrieve function that removes the component from the dll.
 		auto removeComponent = m_DynamicLibrary.GetFunction<RemoveComponentFunc>("RemoveComponent_" + name);
@@ -416,7 +483,7 @@ class {ScriptName}
 
 	bool BuildEngine::HasComponent(const std::string& name, Scene* ctx, Entity entity)
 	{
-		const auto& path = GetUnityBuildPath();
+		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
 
 		// Retrieve function that checks if the entity has the component from the dll.
 		auto hasComponent = m_DynamicLibrary.GetFunction<HasComponentFunc>("HasComponent_" + name);
@@ -427,7 +494,7 @@ class {ScriptName}
 
 	void BuildEngine::ClearComponentStorage(const std::string& name, Scene* ctx)
 	{
-		const auto& path = GetUnityBuildPath();
+		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
 
 		// Retrieve function that checks if the entity has the component from the dll.
 		auto clearComponentStorage = m_DynamicLibrary.GetFunction<ClearComponentStorageFunc>("ClearComponentStorage_" + name);
@@ -438,7 +505,7 @@ class {ScriptName}
 
 	void BuildEngine::SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data, bool cleanRegistry)
 	{
-		const auto& path = GetUnityBuildPath();
+		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
 
 		// Retrieve if dll is not loaded.
 		if (!m_DynamicLibrary.IsLoaded())
@@ -453,7 +520,7 @@ class {ScriptName}
 
 	void BuildEngine::DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data)
 	{
-		const auto& path = GetUnityBuildPath();
+		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
 
 		// Retrieve if dll is not loaded.
 		if (!m_DynamicLibrary.IsLoaded())

@@ -35,16 +35,25 @@ namespace HBL2
 		// Build
 		const auto& projectFilesPath = Project::GetAssetDirectory().parent_path() / "ProjectFiles";
 
-		// Build the solution					
-#ifdef DEBUG
-		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / "UnityBuild.sln").string() + R"( /t:)" + "UnityBuild" + R"( /p:Configuration=Debug")";
-#else
-		const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / "UnityBuild.sln").string() + R"( /t:)" + "UnityBuild" + R"( /p:Configuration=Release")";
-#endif // DEBUG
+		// Build the solution
+		switch (m_CurrentConfiguration)
+		{
+		case Configuration::Debug:
+			{
+				const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / "UnityBuild.sln").string() + R"( /t:)" + "UnityBuild" + R"( /p:Configuration=Debug")";
+				system(command.c_str());
+				break;
+			}
+		case Configuration::Release:
+		case Configuration::Distribution:
+			{
+				const std::string& command = R"(""C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\msbuild.exe" )" + std::filesystem::path(projectFilesPath / "UnityBuild.sln").string() + R"( /t:)" + "UnityBuild" + R"( /p:Configuration=Release")";
+				system(command.c_str());
+				break;
+			}
+		}
 
-		system(command.c_str());
-
-		LoadBuild();
+		LoadBuild(m_CurrentConfiguration);
 
 		return true;
 	}
@@ -59,6 +68,9 @@ namespace HBL2
 		case HBL2::BuildEngine::Configuration::Release:
 			system("cd ..\\bin\\Release-x86_64\\HumbleApp && HumbleApp.exe");
 			return true;
+		case HBL2::BuildEngine::Configuration::Distribution:
+			system("cd ..\\bin\\Dist-x86_64\\HumbleApp && HumbleApp.exe");
+			return true;
 		}
 
 		return false;
@@ -69,10 +81,13 @@ namespace HBL2
 		switch (configuration)
 		{
 		case HBL2::BuildEngine::Configuration::Debug:
-			system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Debug");
+			system("\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.slnx /t:HumbleApp /p:Configuration=Debug");
 			return true;
 		case HBL2::BuildEngine::Configuration::Release:
-			system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.sln /t:HumbleApp /p:Configuration=Release");
+			system("\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.slnx /t:HumbleApp /p:Configuration=Release");
+			return true;
+		case HBL2::BuildEngine::Configuration::Distribution:
+			system("\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.slnx /t:HumbleApp /p:Configuration=Dist");
 			return true;
 		}
 
@@ -200,7 +215,7 @@ namespace HBL2
 	{
 		const std::string& solutionText = R"(
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
+# Visual Studio Version 18
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnityBuild", "UnityBuild.vcxproj", "{0EF03882-FAA7-7ACF-63AF-532B4F8615C0}"
 EndProject
 Global
@@ -218,7 +233,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
-		)";
+)";
 
 		return solutionText;
 	}
@@ -235,6 +250,17 @@ EndGlobal
 
 		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
+#ifdef DEBUG
+		const std::string& useDebugLibraries = "true";
+		const std::string& additionalLibraryDirectories = "Debug";
+		const std::string& preprocessorDefinitions = "DEBUG";
+		const std::string& multiThreadedDLL = "MultiThreadedDebugDLL";
+#else
+		const std::string& useDebugLibraries = "false";
+		const std::string& additionalLibraryDirectories = "Release";
+		const std::string& preprocessorDefinitions = "RELEASE;_ITERATOR_DEBUG_LEVEL=0;_HAS_ITERATOR_DEBUGGING=0";
+		const std::string& multiThreadedDLL = "MultiThreadedDLL";
+#endif
 		const std::string& projectText = R"(<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
@@ -257,15 +283,15 @@ EndGlobal
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
+    <UseDebugLibraries>)" + useDebugLibraries + R"(</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -284,6 +310,7 @@ EndGlobal
     <TargetName>UnityBuild</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>..\..\assets\dlls\Release-x86_64\{Project}\</OutDir>
@@ -291,16 +318,17 @@ EndGlobal
     <TargetName>UnityBuild</TargetName>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
+
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;COMPONENT_NAME_HASH={Hash};HBL2_PLATFORM_WINDOWS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;COMPONENT_NAME_HASH={Hash};HBL2_PLATFORM_WINDOWS;)" + preprocessorDefinitions + R"(;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\Assets;..\..\..\Humble2\src;..\..\..\Humble2\src\Humble2;..\..\..\Humble2\src\Vendor;..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\Humble2\src\Vendor\entt\include;..\..\..\Humble2\src\Vendor\fastgltf\include;..\..\..\Dependencies\GLFW\include;..\..\..\Dependencies\GLEW\include;..\..\..\Dependencies\ImGui\imgui;..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\Dependencies\ImGuizmo;..\..\..\Dependencies\GLM;..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;..\..\..\Dependencies\PortableFileDialogs;..\..\..\Dependencies\FMOD\core\include;..\..\..\Dependencies\Box2D\box2d\include;..\..\..\Dependencies\Box2D\box2d\src;..\..\..\Dependencies\Emscripten\emsdk\upstream\emscripten\system\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>)" + multiThreadedDLL + R"(</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
@@ -309,7 +337,7 @@ EndGlobal
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Humble2.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\bin\Debug-x86_64\Humble2;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\bin\)" + additionalLibraryDirectories + R"(-x86_64\Humble2;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ImportLibrary>..\..\assets\dlls\Debug-x86_64\{Project}\UnityBuild.lib</ImportLibrary>
       <ProgramDatabaseFile>..\..\assets\dlls\Debug-x86_64\{Project}\{randomPDB}.pdb</ProgramDatabaseFile>
     </Link>
@@ -350,8 +378,7 @@ EndGlobal
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
-		)";
-
+)";
 		// Fill in project includes
 		size_t pos = projectText.find(placeholderIncludes);
 

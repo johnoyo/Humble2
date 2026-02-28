@@ -10,6 +10,8 @@
 #include "Context.h"
 #include "EventDispatcher.h"
 
+#include "Console\Console.h"
+
 #include "ImGui\ImGuiRenderer.h"
 #include "Renderer\Device.h"
 #include "Renderer\Renderer.h"

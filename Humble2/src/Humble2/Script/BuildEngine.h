@@ -17,6 +17,7 @@ namespace HBL2
 		{
 			Debug,
 			Release,
+			Distribution,
 		};
 
 		static BuildEngine* Instance;
@@ -28,7 +29,10 @@ namespace HBL2
 		virtual bool RunRuntime(Configuration configuration) = 0;
 		virtual bool BuildRuntime(Configuration configuration) = 0;
 		void Recompile();
-		bool Exists();
+		void HotReload(Handle<Scene> sceneHandle, const std::vector<std::string>& userComponentNames, const std::vector<std::string>& userSystemNames, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& serializedUserComponents);
+		bool Exists(Configuration configuration);
+		void SetActiveConfiguration(Configuration configuration);
+		Configuration GetActiveConfiguration() const;
 
 		Handle<Asset> CreateSystemFile(const std::filesystem::path& currentDir, const std::string& systemName);
 		Handle<Asset> CreateComponentFile(const std::filesystem::path& currentDir, const std::string& componentName);
@@ -37,11 +41,11 @@ namespace HBL2
 		void RegisterSystem(const std::string& name, Scene* ctx);
 		void RegisterComponent(const std::string& name, Scene* ctx);
 
-		void LoadBuild();
+		void LoadBuild(Configuration config);
 		void LoadBuild(const std::string& path);
 		void UnloadBuild(Scene* ctx);
 
-		const std::filesystem::path GetUnityBuildPath() const;
+		const std::filesystem::path GetUnityBuildPath(Configuration config) const;
 		std::string GetDefaultSystemCode(const std::string& systemName);
 		std::string GetDefaultComponentCode(const std::string& componentName);
 		std::string GetDefaultHelperScriptCode(const std::string& scriptName);
@@ -60,6 +64,12 @@ namespace HBL2
 
 	protected:
 		DynamicLibrary m_DynamicLibrary;
+#ifdef DEBUG
+		Configuration m_CurrentConfiguration = Configuration::Debug;
+#else
+		Configuration m_CurrentConfiguration = Configuration::Release;
+#endif
+		uint64_t m_RecompileCounter = 0;
 		const std::string m_UnityBuildSource = R"({ComponentIncludes}
 
 {HelperScriptIncludes}
