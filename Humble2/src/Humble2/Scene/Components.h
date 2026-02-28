@@ -325,10 +325,7 @@ namespace HBL2
 			{
 				Entity Chunk = Entity::Null;
 				int32_t Lod = -1;
-				float* VertexBuffer = nullptr;
-				uint32_t VertexCount = 0;
-				uint32_t* IndexBuffer = nullptr;
-				uint32_t IndexCount = 0;
+				Handle<Mesh> ChunkMeshHandle;
 			};
 
 			JobContext ChunkDataContext{};

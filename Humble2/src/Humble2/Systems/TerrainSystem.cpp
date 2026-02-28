@@ -130,7 +130,7 @@ namespace HBL2
 					Component::Terrain::TerrainChunkMeshData chunkMeshData;
 					if (terrain.ChunkMeshDataQueue.PopFront(chunkMeshData))
 					{
-						CreateChunkMesh(chunkMeshData);
+						AssignChunkMesh(chunkMeshData);
 						UpdateTerrainChunk(chunkMeshData.Chunk, terrain, curve, viewer);
 					}
 				}
@@ -572,10 +572,10 @@ namespace HBL2
 				// Build two triangles per quad (if not on last row/col)
 				if (x < width - 1 && y < height - 1)
 				{
-					int a = vi;
-					int b = vi + verticesPerLine + 1;
-					int c = vi + verticesPerLine;
-					int d = vi + 1;
+					uint32_t a = vi;
+					uint32_t b = vi + verticesPerLine + 1;
+					uint32_t c = vi + verticesPerLine;
+					uint32_t d = vi + 1;
 
 					// tri 1: a, b, c
 					indexBuffer[ii++] = a;
@@ -591,7 +591,7 @@ namespace HBL2
 		}
 
 		// Compute normals by accumulating face normals
-		for (int t = 0; t < indexCount; t += 3)
+		for (uint32_t t = 0; t < indexCount; t += 3)
 		{
 			uint32_t i0 = indexBuffer[t + 0];
 			uint32_t i1 = indexBuffer[t + 1];
@@ -632,10 +632,13 @@ namespace HBL2
 			vertexBuffer[dst++] = uvs[i].y;
 		}
 
-		outChunkData.VertexBuffer = vertexBuffer;
-		outChunkData.VertexCount = vertexCount;
-		outChunkData.IndexBuffer = indexBuffer;
-		outChunkData.IndexCount = indexCount;
+		Handle<Mesh> chunkMesh = m_ResourceManager->CreateMesh({
+			.debugName = "terrain-mesh",
+			.vertices = { vertexBuffer, vertexCount },
+			.indeces = { indexBuffer, indexCount },
+		});
+
+		outChunkData.ChunkMeshHandle = chunkMesh;
 	}
 
 	void TerrainSystem::UpdateTerrainChunk(Entity chunk, Component::Terrain& terrain, Component::AnimationCurve& curve, const Component::Transform& viewer)
@@ -709,7 +712,7 @@ namespace HBL2
 	{
 		glm::vec3 scaledViewerPosition = viewer.Translation / terrain.Scale;
 
-		float maxDistanceForChunkToStayLoaded = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold * 4;
+		float maxDistanceForChunkToStayLoaded = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold * 2;
 
 		ScratchArena scratch(Allocator::FrameArenaMT);
 		DArray<Entity> chunks = MakeDArray<Entity>(scratch, 512);
@@ -881,24 +884,18 @@ namespace HBL2
 		return terrainChunk;
 	}
 
-	void TerrainSystem::CreateChunkMesh(Component::Terrain::TerrainChunkMeshData& chunkMeshData)
+	void TerrainSystem::AssignChunkMesh(const Component::Terrain::TerrainChunkMeshData& chunkMeshData)
 	{
 		HBL2_FUNC_PROFILE()
 
-		Handle<Mesh> chunkMesh = m_ResourceManager->CreateMesh({
-			.debugName = "terrain-mesh",
-			.vertices = { chunkMeshData.VertexBuffer, chunkMeshData.VertexCount },
-			.indeces = { chunkMeshData.IndexBuffer, chunkMeshData.IndexCount },
-		});		
-
 		auto& chunkMeshComponent = m_Context->GetComponent<Component::StaticMesh>(chunkMeshData.Chunk);
-		chunkMeshComponent.Mesh = chunkMesh;
+		chunkMeshComponent.Mesh = chunkMeshData.ChunkMeshHandle;
 
 		auto& chunkComponent = m_Context->GetComponent<Component::TerrainChunk>(chunkMeshData.Chunk);
 		chunkComponent.LevelOfDetail = chunkMeshData.Lod;
 
 		auto& lodMesh = chunkComponent.LodMeshes[chunkMeshData.Lod];
-		lodMesh.Mesh = chunkMesh;
+		lodMesh.Mesh = chunkMeshData.ChunkMeshHandle;
 
 		lodMesh.HasMesh = true;
 	}
@@ -966,7 +963,7 @@ namespace HBL2
 		//		 When exiting play mode, we unload and destroy the cloned scene and the we load the initial one.
 		//		 We want to preserve any unsaved changes made to that scene before entering play mode, so we dont completely delete and reload from disk.
 		//		 So we have to carefully clean up the scene, so when it gets loaded again after exiting play mode, it has a valid state.
-		//		 In this system its more complicated since we have to reinstantiate the terrain chunks each time from scratch, they are not serialized.
+		//		 In this system, its more complicated since we have to reinstantiate the terrain chunks each time from scratch, since they are not serialized.
 
 		// Destroy chunk entities.
 		for (auto chunk : chunks)

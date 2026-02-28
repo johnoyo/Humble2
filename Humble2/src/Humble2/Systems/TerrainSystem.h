@@ -33,7 +33,7 @@ namespace HBL2
 		void UpdateVisibleChunks(Component::Terrain& terrain, Component::AnimationCurve& curve, const Component::Transform& viewer);
 
 		Entity CreateEmptyChunk(const Component::Terrain& terrain, Component::Terrain::TerrainChunkData& chunkData, int32_t chunkSize, UUID parent);
-		void CreateChunkMesh(Component::Terrain::TerrainChunkMeshData& chunkMeshData);
+		void AssignChunkMesh(const Component::Terrain::TerrainChunkMeshData& chunkMeshData);
 		Entity GetMainCamera();
 
 		void CleanUpChunks();
