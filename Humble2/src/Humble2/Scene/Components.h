@@ -303,6 +303,10 @@ namespace HBL2
 			glm::vec3 OldViewerPosition{};
 
 			Handle<Asset> HeightMap;
+			std::vector<float> FixedNoiseMap;
+			int32_t NumberOfChunks = 1;
+			int32_t NumberOfChunksInternal = 1;
+			int32_t Size = 241;
 
 			float Scale = 1.f;
 			float NoiseScale = 25.f;
@@ -340,7 +344,7 @@ namespace HBL2
 				float VisibleDstThreshold;
 			};
 
-			StaticArray<LodInfo, 3> DetailLevels;
+			StaticArray<LodInfo, 3> DetailLevels{};
 
 			Handle<Material> Material;
 

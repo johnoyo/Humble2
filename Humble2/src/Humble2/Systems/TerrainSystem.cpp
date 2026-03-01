@@ -6,6 +6,72 @@
 
 namespace HBL2
 {
+	static inline int32_t CeilDiv(int32_t a, int32_t b)
+	{
+		return (a + b - 1) / b;
+	}
+
+	static std::vector<float> GetChunkNoise(const std::vector<float>& src, int32_t srcW, int32_t srcH, int32_t chunkQuads, int32_t chunkX, int32_t chunkY)
+	{
+		if (srcW <= 0 || srcH <= 0 || chunkQuads <= 0)
+		{
+			return {};
+		}
+
+		if ((int64_t)srcW * (int64_t)srcH != (int64_t)src.size())
+		{
+			return {};
+		}
+
+		// vertex resolution per chunk side
+		const int32_t chunkVerts = chunkQuads + 1;
+
+		// How many chunks fit if the source map was made as:
+		// srcW = chunksAcross * chunkQuads + 1
+		// srcH = chunksDown   * chunkQuads + 1
+		const int32_t chunksAcross = (srcW - 1) / chunkQuads;
+		const int32_t chunksDown = (srcH - 1) / chunkQuads;
+		if (chunksAcross <= 0 || chunksDown <= 0)
+		{
+			return {};
+		}
+
+		const int32_t originChunkX = chunksAcross / 2;
+		const int32_t originChunkY = chunksDown / 2;
+
+		const int32_t idxX = chunkX + originChunkX;
+		const int32_t idxY = chunkY + originChunkY;
+
+		if (idxX < 0 || idxX >= chunksAcross || idxY < 0 || idxY >= chunksDown)
+		{
+			return {};
+		}
+
+		// Start in "quad space" (overlap by 1 vertex naturally because we copy chunkVerts)
+		const int32_t startX = idxX * chunkQuads;
+		const int32_t startY = idxY * chunkQuads;
+
+		// Bounds check for the chunkVerts footprint
+		if (startX + chunkVerts > srcW || startY + chunkVerts > srcH)
+		{
+			return {};
+		}
+
+		std::vector<float> out(chunkVerts * chunkVerts);
+
+		for (int32_t y = 0; y < chunkVerts; ++y)
+		{
+			const int32_t srcRow = (startY + y) * srcW;
+			const int32_t dstRow = y * chunkVerts;
+			for (int32_t x = 0; x < chunkVerts; ++x)
+			{
+				out[dstRow + x] = src[srcRow + (startX + x)];
+			}
+		}
+
+		return out;
+	}
+
 	void TerrainSystem::OnCreate()
 	{
 		m_ResourceManager = ResourceManager::Instance;
@@ -14,12 +80,37 @@ namespace HBL2
 		m_Context->Group<Component::Terrain>(Get<Component::StaticMesh, Component::AnimationCurve>)
 			.Each([this](Entity entity, Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
 			{
-				// Create and set up the preview mesh of terrain.
-				const auto& noiseMap = GenerateNoiseMap(terrain, glm::vec2(0.f));
-				GenerateTerrainMeshData(noiseMap, terrain.ChunkSize, terrain.ChunkSize, terrain.HeightMultiplier, curve, terrain.InEditorPreviewLevelOfDetail);
-				staticMesh.Mesh = m_Mesh;
-
 				InitializeTerrain(terrain);
+
+				m_Context->GetComponent<Component::Transform>(entity).Scale = { terrain.Scale, terrain.Scale, terrain.Scale };
+
+				if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::LOCAL)
+				{
+					Asset* heightMapAsset = AssetManager::Instance->GetAssetMetadata(terrain.HeightMap);
+
+					int32_t gridSize = (int32_t)std::sqrt((double)terrain.NumberOfChunks);
+
+					int32_t totalQuads = terrain.Size - 1;
+					int32_t chunkQuads = CeilDiv(totalQuads, gridSize);
+
+					// Force Size to match chunking perfectly
+					terrain.Size = gridSize * chunkQuads + 1;
+
+					// Store quads per chunk
+					terrain.ChunkSize = chunkQuads;
+
+					std::vector<float> noiseMap;
+					if (heightMapAsset == nullptr)
+					{
+						terrain.FixedNoiseMap = GenerateNoiseMap(terrain, terrain.Size, glm::vec2(0.f));
+					}
+					else
+					{
+						int w, h;
+						terrain.FixedNoiseMap = LoadHeightmap(Project::GetAssetFileSystemPath(heightMapAsset->FilePath).string(), w, h, true); // TODO: Fix heightmap loading.
+						terrain.Size = h;
+					}
+				}
 
 				// Clear the serialized chunks.
 				if (m_Context->HasComponent<Component::Link>(entity))
@@ -62,53 +153,9 @@ namespace HBL2
 					terrain.NoiseScale = 0.0001f;
 				}
 
-				if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::LOCAL)
-				{
-					staticMesh.Enabled = true;
-
-					m_Context->Group<Component::TerrainChunk>(Get<Component::Transform, Component::StaticMesh>)
-						.Each([](Component::TerrainChunk& terrainChunk, Component::Transform& tr, Component::StaticMesh& chunkMesh)
-						{
-							// Disable all the chunks visible last update.
-							if (terrainChunk.VisibleLastUpdate)
-							{
-								chunkMesh.Enabled = false;
-								terrainChunk.Visible = false;
-								terrainChunk.VisibleLastUpdate = false;
-							}
-						});
-
-					if (terrain.Regenerate)
-					{
-						Asset* heightMapAsset = AssetManager::Instance->GetAssetMetadata(terrain.HeightMap);
-
-						if (heightMapAsset == nullptr)
-						{
-							const auto& noiseMap = GenerateNoiseMap(terrain, glm::vec2(0.f));
-							GenerateTerrainMeshData(noiseMap, terrain.ChunkSize, terrain.ChunkSize, terrain.HeightMultiplier, curve, terrain.InEditorPreviewLevelOfDetail);
-						}
-						else
-						{
-							int w, h;
-							const auto& noiseMap = LoadHeightmap(Project::GetAssetFileSystemPath(heightMapAsset->FilePath).string(), w, h, true); // TODO: Fix heightmap loading.
-							GenerateTerrainMeshData(noiseMap, w, h, terrain.HeightMultiplier, curve, terrain.InEditorPreviewLevelOfDetail);
-							terrain.ChunkSize = h;
-						}
-
-						staticMesh.Mesh = m_Mesh;
-
-						terrain.MaxViewDst = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold;
-						terrain.ChunksVisibleInViewDst = (int32_t)(terrain.MaxViewDst / terrain.ChunkSize);
-						m_Context->GetComponent<Component::Transform>(e).Scale = {terrain.Scale, terrain.Scale, terrain.Scale};
-
-						terrain.Regenerate = false;
-					}
-
-					return;
-				}
-
-				staticMesh.Enabled = false;
-				m_Context->GetComponent<Component::Transform>(e).Scale = { 1.f, 1.f, 1.f };
+				terrain.MaxViewDst = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold;
+				terrain.ChunksVisibleInViewDst = (int32_t)(terrain.MaxViewDst / terrain.ChunkSize);
+				m_Context->GetComponent<Component::Transform>(e).Scale = { terrain.Scale, terrain.Scale, terrain.Scale };
 
 				// Process chunck data (from job #JOB1).
 				while (!terrain.ChunkDataQueue.IsEmpty())
@@ -137,6 +184,35 @@ namespace HBL2
 
 				if (terrain.Regenerate)
 				{
+					if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::LOCAL)
+					{
+						Asset* heightMapAsset = AssetManager::Instance->GetAssetMetadata(terrain.HeightMap);
+
+						int32_t gridSize = (int32_t)std::sqrt((double)terrain.NumberOfChunks);
+
+						int32_t totalQuads = terrain.Size - 1;
+						int32_t chunkQuads = CeilDiv(totalQuads, gridSize);
+
+						// Force Size to match chunking perfectly
+						terrain.Size = gridSize * chunkQuads + 1;
+
+						// Store quads per chunk
+						terrain.ChunkSize = chunkQuads;
+
+						std::vector<float> noiseMap;
+
+						if (heightMapAsset == nullptr)
+						{
+							terrain.FixedNoiseMap = GenerateNoiseMap(terrain, terrain.Size, glm::vec2(0.f));
+						}
+						else
+						{
+							int w, h;
+							terrain.FixedNoiseMap = LoadHeightmap(Project::GetAssetFileSystemPath(heightMapAsset->FilePath).string(), w, h, true); // TODO: Fix heightmap loading.
+							terrain.Size = h;
+						}
+					}
+
 					CleanUpChunks();
 					UpdateVisibleChunks(terrain, curve, viewer);
 
@@ -189,6 +265,138 @@ namespace HBL2
 		// Calculate chunk visibility and max view distance
 		terrain.MaxViewDst = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold;
 		terrain.ChunksVisibleInViewDst = (int32_t)(terrain.MaxViewDst / terrain.ChunkSize);
+
+		terrain.Size = 723;
+		terrain.NumberOfChunks = 9;
+	}
+
+	void TerrainSystem::UpdateFixedTerrainChunks(const Component::Transform& viewer, Component::Terrain& terrain, Component::AnimationCurve& curve)
+	{
+		glm::vec3 scaledViewerPosition = viewer.Translation / terrain.Scale;
+
+		// Use floor so negatives behave correctly
+		int32_t currentChunkCoordX = (int32_t)std::floor(scaledViewerPosition.x / terrain.ChunkSize);
+		int32_t currentChunkCoordY = (int32_t)std::floor(scaledViewerPosition.z / terrain.ChunkSize);
+
+		// Fixed mode config
+		uint32_t numberOfChunks = terrain.NumberOfChunks; // 1, 9, 16, 25, ...
+		int32_t gridSize = (int32_t)std::sqrt((double)numberOfChunks);
+		HBL2_CORE_ASSERT((uint32_t)(gridSize * gridSize) == numberOfChunks, "numberOfChunks must be a perfect square");
+
+		// Center chunk coordinate is the terrain position.
+		const glm::vec3& terrainTransform = { 0, 0, 0 }; // m_Context->GetComponent<Component::Transform>(e).Translation; // TODO: FIX!
+		glm::ivec2 centerCoord = { terrainTransform.x, terrainTransform.z };
+
+		// Compute fixed-terrain bounds in chunk coords
+		int32_t half = gridSize / 2;
+
+		// GridSize: min=center-half, max=center+half-1
+		int32_t minCoordX = centerCoord.x - half;
+		int32_t maxCoordX = centerCoord.x + ((gridSize % 2 == 0) ? (half - 1) : half);
+
+		int32_t minCoordY = centerCoord.y - half;
+		int32_t maxCoordY = centerCoord.y + ((gridSize % 2 == 0) ? (half - 1) : half);
+
+		// Now clamp the viewer-visible range to those bounds
+		int32_t minX = std::max(minCoordX, currentChunkCoordX - terrain.ChunksVisibleInViewDst);
+		int32_t maxX = std::min(maxCoordX, currentChunkCoordX + terrain.ChunksVisibleInViewDst);
+		int32_t minY = std::max(minCoordY, currentChunkCoordY - terrain.ChunksVisibleInViewDst);
+		int32_t maxY = std::min(maxCoordY, currentChunkCoordY + terrain.ChunksVisibleInViewDst);
+
+		// Iterate only within valid fixed-terrain bounds
+		for (int32_t y = minY; y <= maxY; ++y)
+		{
+			for (int32_t x = minX; x <= maxX; ++x)
+			{
+				glm::ivec2 viewedChunkCoord(x, y);
+
+				if (terrain.ChunksCache.contains(viewedChunkCoord))
+				{
+					Entity chunk = terrain.ChunksCache[viewedChunkCoord];
+
+					// If the chunk exists in the cache but the entity is Null,
+					// it means that the job (#JOB1) that generates the chunk data has not finished yet, so skip.
+					if (chunk == Entity::Null)
+					{
+						continue;
+					}
+
+					// Configure lod mesh or load if not yet loaded.
+					UpdateTerrainChunk(chunk, terrain, curve, viewer);
+				}
+				else
+				{
+					terrain.ChunksCache[viewedChunkCoord] = Entity::Null;
+
+					// Prepare chunk data (mainly generate the noise map). (#JOB1)
+					JobSystem::Get().Execute(terrain.ChunkDataContext, [&terrain, &curve, viewedChunkCoord, this, x, y]()
+					{
+						HBL2_PROFILE("Create new chunk data")
+
+						Component::Terrain::TerrainChunkData chunkData =
+						{
+							.ViewedCoord = viewedChunkCoord,
+						};
+
+						chunkData.NoiseMap = GetChunkNoise(terrain.FixedNoiseMap, terrain.Size, terrain.Size, terrain.ChunkSize, x, -y);
+
+						terrain.ChunkDataQueue.PushBack(chunkData);
+					});
+				}
+			}
+		}
+	}
+
+	void TerrainSystem::UpdateInfiniteTerrainChunks(const Component::Transform& viewer, Component::Terrain& terrain, Component::AnimationCurve& curve)
+	{
+		glm::vec3 scaledViewerPosition = viewer.Translation / terrain.Scale;
+
+		int32_t currentChunkCoordX = (int32_t)(scaledViewerPosition.x / (terrain.ChunkSize - 1));
+		int32_t currentChunkCoordY = (int32_t)(scaledViewerPosition.z / (terrain.ChunkSize - 1));
+
+		// Iterate over the visible chunks around the viewer position.
+		for (int yOffset = -terrain.ChunksVisibleInViewDst; yOffset <= terrain.ChunksVisibleInViewDst; yOffset++)
+		{
+			for (int xOffset = -terrain.ChunksVisibleInViewDst; xOffset <= terrain.ChunksVisibleInViewDst; xOffset++)
+			{
+				// Get the chunk coord in [-1, 1] space around the viewer.
+				glm::ivec2 viewedChunkCoord(currentChunkCoordX + xOffset, currentChunkCoordY + yOffset);
+
+				if (terrain.ChunksCache.contains(viewedChunkCoord))
+				{
+					Entity chunk = terrain.ChunksCache[viewedChunkCoord];
+
+					// If the chunk exists in the cache but the entity is Null,
+					// it means that the job (#JOB1) that generates the chunk data has not finished yet, so skip.
+					if (chunk == Entity::Null)
+					{
+						continue;
+					}
+
+					UpdateTerrainChunk(chunk, terrain, curve, viewer);
+				}
+				else
+				{
+					// Set placeholder entity for this chunk coord.
+					terrain.ChunksCache[viewedChunkCoord] = Entity::Null;
+
+					// Prepare chunk data (mainly generate the noise map). (#JOB1)
+					JobSystem::Get().Execute(terrain.ChunkDataContext, [&terrain, &curve, viewedChunkCoord, this]()
+					{
+						HBL2_PROFILE("Create new chunk data")
+
+							Component::Terrain::TerrainChunkData chunkData =
+						{
+							.ViewedCoord = viewedChunkCoord,
+						};
+
+						chunkData.NoiseMap = GenerateNoiseMap(terrain, terrain.ChunkSize, viewedChunkCoord * (terrain.ChunkSize - 1));
+
+						terrain.ChunkDataQueue.PushBack(chunkData);
+					});
+				}
+			}
+		}
 	}
 
 	std::vector<float> TerrainSystem::LoadHeightmap(const std::string& path, int& outWidth, int& outHeight, bool flipVertically, bool useRedChannelIfRGB)
@@ -311,10 +519,9 @@ namespace HBL2
 		return heights;
 	}
 
-	std::vector<float> TerrainSystem::GenerateNoiseMap(const Component::Terrain& terrain, const glm::vec2& center)
+	std::vector<float> TerrainSystem::GenerateNoiseMap(const Component::Terrain& terrain, int32_t size, const glm::vec2& center)
 	{
-		std::vector<float> noiseMap(terrain.ChunkSize * terrain.ChunkSize);
-
+		std::vector<float> noiseMap(size * size);
 		std::vector<glm::vec2> octaveOffsets(terrain.Octaves);
 
 		float maxPossibleHeight = 0;
@@ -325,8 +532,8 @@ namespace HBL2
 
 		for (int i = 0; i < terrain.Octaves; i++)
 		{
-			float offsetX = Random::Float(-100000, 100000) - (terrain.Offset.x + center.y);
-			float offsetY = Random::Float(-100000, 100000) + (terrain.Offset.y + center.x);
+			float offsetX = Random::Float(-100000, 100000) + terrain.Offset.x + center.x;
+			float offsetY = Random::Float(-100000, 100000) - terrain.Offset.y - center.y;
 			octaveOffsets[i] = { offsetX, offsetY };
 
 			maxPossibleHeight += amplitude;
@@ -336,12 +543,12 @@ namespace HBL2
 		float maxLocalNoiseHeight = std::numeric_limits<float>::min();
 		float minLocalNoiseHeight = std::numeric_limits<float>::max();
 
-		float halfWidth = terrain.ChunkSize / 2.f;
-		float halfHeight = terrain.ChunkSize / 2.f;
+		float halfWidth = size / 2.f;
+		float halfHeight = size / 2.f;
 
-		for (int y = 0; y < terrain.ChunkSize; y++)
+		for (int y = 0; y < size; y++)
 		{
-			for (int x = 0; x < terrain.ChunkSize; x++)
+			for (int x = 0; x < size; x++)
 			{
 				amplitude = 1;
 				frequency = 1;
@@ -368,23 +575,25 @@ namespace HBL2
 					minLocalNoiseHeight = noiseHeight;
 				}
 
-				noiseMap[x * terrain.ChunkSize + y] = noiseHeight;
+				noiseMap[x + y * size] = noiseHeight;
+
+				// Normalise noise map values.
+				if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::GLOBAL)
+				{
+					float normalizedHeight = (noiseMap[x + y * size] + 1) / (maxPossibleHeight / 0.9f);
+					noiseMap[x + y * size] = glm::clamp(normalizedHeight, 0.f, std::numeric_limits<float>::max());
+				}
 			}
 		}
 
 		// Normalise noise map values.
-		for (int y = 0; y < terrain.ChunkSize; y++)
+		if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::LOCAL)
 		{
-			for (int x = 0; x < terrain.ChunkSize; x++)
+			for (int y = 0; y < size; y++)
 			{
-				if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::LOCAL)
+				for (int x = 0; x < size; x++)
 				{
-					noiseMap[x * terrain.ChunkSize + y] = Math::InverseLerp(minLocalNoiseHeight, maxLocalNoiseHeight, noiseMap[x * terrain.ChunkSize + y]);
-				}
-				else
-				{
-					float normalizedHeight = (noiseMap[x * terrain.ChunkSize + y] + 1) / (maxPossibleHeight / 0.9f);
-					noiseMap[x * terrain.ChunkSize + y] = glm::clamp(normalizedHeight, 0.f, std::numeric_limits<float>::max());
+					noiseMap[x + y * size] = Math::InverseLerp(minLocalNoiseHeight, maxLocalNoiseHeight, noiseMap[x + y * size]);
 				}
 			}
 		}
@@ -543,9 +752,12 @@ namespace HBL2
 		uint32_t quadCount = (verticesPerLine - 1) * (verticesPerLine - 1);
 		uint32_t indexCount = quadCount * 6;
 
-		// Allocate GPU-side buffers
-		float* vertexBuffer = new float[vertexCount * 8]; // 3 pos + 3 norm + 2 uv
-		uint32_t* indexBuffer = new uint32_t[indexCount];
+		// Allocate CPU-side buffers
+		std::vector<float> vertexBuffer;
+		vertexBuffer.resize(vertexCount * 8); // 3 pos + 3 norm + 2 uv
+
+		std::vector<uint32_t> indexBuffer;
+		indexBuffer.resize(indexCount);
 
 		// Temp storage for positions, uvs, and accumulating normals:
 		std::vector<glm::vec3> positions(vertexCount);
@@ -563,14 +775,14 @@ namespace HBL2
 			for (uint32_t x = 0; x < width; x += meshSimplificationIncrement, vi++)
 			{
 				// Position
-				float heightY = AnimationCurveSystem::Evaluate(curve, heightMap[y * width + x]) * heightMultiplier;
+				float heightY = AnimationCurveSystem::Evaluate(curve, heightMap[x + y * width]) * heightMultiplier;
 				positions[vi] = glm::vec3(topLeftX + x, heightY, topLeftZ - y);
 
 				// UV
 				uvs[vi] = glm::vec2(x / float(width), y / float(height));
 
 				// Build two triangles per quad (if not on last row/col)
-				if (x < width - 1 && y < height - 1)
+				if (x + meshSimplificationIncrement < width && y + meshSimplificationIncrement < height)
 				{
 					uint32_t a = vi;
 					uint32_t b = vi + verticesPerLine + 1;
@@ -634,8 +846,8 @@ namespace HBL2
 
 		Handle<Mesh> chunkMesh = m_ResourceManager->CreateMesh({
 			.debugName = "terrain-mesh",
-			.vertices = { vertexBuffer, vertexCount },
-			.indeces = { indexBuffer, indexCount },
+			.vertices = { vertexBuffer.data(), vertexBuffer.size()},
+			.indeces = { indexBuffer.data(), indexBuffer.size() },
 		});
 
 		outChunkData.ChunkMeshHandle = chunkMesh;
@@ -695,7 +907,23 @@ namespace HBL2
 							.Lod = lodMesh.Lod,
 						};
 
-						GenerateTerrainChunkMesh(terrainChunk.NoiseMap, terrain.ChunkSize, terrain.ChunkSize, terrain.HeightMultiplier, curve, chunkMeshData);
+						int32_t size = INT32_MAX;
+						switch (terrain.NormaliseMode)
+						{
+						case Component::Terrain::ENormaliseMode::LOCAL:
+							// We need the +1 because N quads require N+1 vertices.
+							// Adjacent chunks must share their border vertices,
+							// so the global terrain size must be: totalSize = chunksPerSide * chunkQuads + 1
+							// Without the +1, chunks would not share the edge vertex line,
+							// which causes visible gaps between them.
+							size = terrain.ChunkSize + 1;
+							break;
+						case Component::Terrain::ENormaliseMode::GLOBAL:
+							size = terrain.ChunkSize;
+							break;
+						}
+
+						GenerateTerrainChunkMesh(terrainChunk.NoiseMap, size, size, terrain.HeightMultiplier, curve, chunkMeshData);
 						terrain.ChunkMeshDataQueue.PushBack(chunkMeshData);
 					});
 
@@ -793,51 +1021,14 @@ namespace HBL2
 			m_Context->DestroyEntity(chunk);
 		}
 
-		int32_t currentChunkCoordX = (int32_t)(scaledViewerPosition.x / terrain.ChunkSize);
-		int32_t currentChunkCoordY = (int32_t)(scaledViewerPosition.z / terrain.ChunkSize);
-
-		// Iterate over the visible chunks around the viewer position.
-		for (int yOffset = -terrain.ChunksVisibleInViewDst; yOffset <= terrain.ChunksVisibleInViewDst; yOffset++)
+		switch (terrain.NormaliseMode)
 		{
-			for (int xOffset = -terrain.ChunksVisibleInViewDst; xOffset <= terrain.ChunksVisibleInViewDst; xOffset++)
-			{
-				// Get the chunk coord in [-1, 1] space around the viewer.
-				glm::ivec2 viewedChunkCoord(currentChunkCoordX + xOffset, currentChunkCoordY + yOffset);
-
-				if (terrain.ChunksCache.contains(viewedChunkCoord))
-				{
-					Entity chunk = terrain.ChunksCache[viewedChunkCoord];
-
-					// If the chunk exists in the cache but the entity is Null,
-					// it means that the job (#JOB1) that generates the chunk data has not finished yet, so skip.
-					if (chunk == Entity::Null)
-					{
-						continue;
-					}
-
-					UpdateTerrainChunk(chunk, terrain, curve, viewer);
-				}
-				else
-				{
-					// Set placeholder entity for this chunk coord.
-					terrain.ChunksCache[viewedChunkCoord] = Entity::Null;
-
-					// Prepare chunk data (mainly generate the noise map). (#JOB1)
-					JobSystem::Get().Execute(terrain.ChunkDataContext, [&terrain, &curve, viewedChunkCoord, this]()
-					{
-						HBL2_PROFILE("Create new chunk data")
-
-						Component::Terrain::TerrainChunkData chunkData =
-						{
-							.ViewedCoord = viewedChunkCoord,
-						};
-
-						chunkData.NoiseMap = GenerateNoiseMap(terrain, viewedChunkCoord * (terrain.ChunkSize - 1));
-
-						terrain.ChunkDataQueue.PushBack(chunkData);
-					});
-				}
-			}
+			case Component::Terrain::ENormaliseMode::LOCAL:
+				UpdateFixedTerrainChunks(viewer, terrain, curve);
+				break;
+			case Component::Terrain::ENormaliseMode::GLOBAL:
+				UpdateInfiniteTerrainChunks(viewer, terrain, curve);
+				break;
 		}
 	}
 

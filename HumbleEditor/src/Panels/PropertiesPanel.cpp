@@ -550,6 +550,18 @@ namespace HBL2
 
 							ImGui::EndDragDropTarget();
 						}
+
+						static int gridSize = 3;
+
+						if (ImGui::SliderInt("Grid Size", &gridSize, 1, 9))
+						{
+							if (gridSize % 2 == 0)
+							{
+								gridSize++;
+							}
+
+							t.NumberOfChunks = gridSize * gridSize;
+						}
 					}
 
 					ImGui::DragInt("Seed", (int*)& t.Seed);
