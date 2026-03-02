@@ -11,6 +11,11 @@ namespace HBL2
 		return (a + b - 1) / b;
 	}
 
+	static int32_t Gcd(int32_t a, int32_t b) { while (b) { int32_t t = a % b; a = b; b = t; } return a; }
+	static int32_t Lcm(int32_t a, int32_t b) { return (a / Gcd(a, b)) * b; }
+
+	static int32_t LodIncrement(int32_t lod) { return (lod == 0) ? 1 : lod * 2; }
+
 	static std::vector<float> GetChunkNoise(const std::vector<float>& src, int32_t srcW, int32_t srcH, int32_t chunkQuads, int32_t chunkX, int32_t chunkY)
 	{
 		if (srcW <= 0 || srcH <= 0 || chunkQuads <= 0)
@@ -23,42 +28,35 @@ namespace HBL2
 			return {};
 		}
 
-		// vertex resolution per chunk side
 		const int32_t chunkVerts = chunkQuads + 1;
 
-		// How many chunks fit if the source map was made as:
-		// srcW = chunksAcross * chunkQuads + 1
-		// srcH = chunksDown   * chunkQuads + 1
+		// Source must be built as: srcW = gridSize * chunkQuads + 1
 		const int32_t chunksAcross = (srcW - 1) / chunkQuads;
 		const int32_t chunksDown = (srcH - 1) / chunkQuads;
-		if (chunksAcross <= 0 || chunksDown <= 0)
-		{
-			return {};
-		}
 
-		const int32_t originChunkX = chunksAcross / 2;
-		const int32_t originChunkY = chunksDown / 2;
+		const int32_t originX = chunksAcross / 2;
+		const int32_t originY = chunksDown / 2;
 
-		const int32_t idxX = chunkX + originChunkX;
-		const int32_t idxY = chunkY + originChunkY;
+		// Flip Y because heightMap y increases toward -Z in the mesh.
+		const int32_t chunkY_src = -chunkY;
+
+		const int32_t idxX = chunkX + originX;
+		const int32_t idxY = chunkY_src + originY;
 
 		if (idxX < 0 || idxX >= chunksAcross || idxY < 0 || idxY >= chunksDown)
 		{
 			return {};
 		}
 
-		// Start in "quad space" (overlap by 1 vertex naturally because we copy chunkVerts)
 		const int32_t startX = idxX * chunkQuads;
 		const int32_t startY = idxY * chunkQuads;
 
-		// Bounds check for the chunkVerts footprint
 		if (startX + chunkVerts > srcW || startY + chunkVerts > srcH)
 		{
 			return {};
 		}
 
 		std::vector<float> out(chunkVerts * chunkVerts);
-
 		for (int32_t y = 0; y < chunkVerts; ++y)
 		{
 			const int32_t srcRow = (startY + y) * srcW;
@@ -68,7 +66,6 @@ namespace HBL2
 				out[dstRow + x] = src[srcRow + (startX + x)];
 			}
 		}
-
 		return out;
 	}
 
@@ -93,11 +90,23 @@ namespace HBL2
 					int32_t totalQuads = terrain.Size - 1;
 					int32_t chunkQuads = CeilDiv(totalQuads, gridSize);
 
-					// Force Size to match chunking perfectly
-					terrain.Size = gridSize * chunkQuads + 1;
+					// Compute required alignment so every LOD hits the border vertex exactly.
+					int32_t align = 1;
+					for (uint32_t i = 0; i < terrain.DetailLevels.Size(); ++i)
+					{
+						align = Lcm(align, LodIncrement(terrain.DetailLevels[i].Lod));
+					}
 
-					// Store quads per chunk
-					terrain.ChunkSize = chunkQuads;
+					// Snap up to that alignment.
+					int32_t rem = chunkQuads % align;
+					if (rem != 0)
+					{
+						chunkQuads += (align - rem);
+					}
+
+					// Force Size to match chunking perfectly (shared-edge rule).
+					terrain.ChunkSize = chunkQuads;                  // quads per chunk (world stride)
+					terrain.Size = gridSize * chunkQuads + 1;   // vertices/samples per side
 
 					std::vector<float> noiseMap;
 					if (heightMapAsset == nullptr)
@@ -164,7 +173,17 @@ namespace HBL2
 					if (terrain.ChunkDataQueue.PopFront(chunkData))
 					{
 						UUID terrainUUID = m_Context->GetComponent<Component::ID>(e).Identifier;
-						terrain.ChunksCache[chunkData.ViewedCoord] = CreateEmptyChunk(terrain, chunkData, terrain.ChunkSize - 1, terrainUUID);
+
+						int32_t size = INT32_MAX;
+						switch (terrain.NormaliseMode)
+						{
+						case Component::Terrain::ENormaliseMode::LOCAL:
+							terrain.ChunksCache[chunkData.ViewedCoord] = CreateEmptyChunk(terrain, chunkData, terrain.ChunkSize, terrainUUID);
+							break;
+						case Component::Terrain::ENormaliseMode::GLOBAL:
+							terrain.ChunksCache[chunkData.ViewedCoord] = CreateEmptyChunk(terrain, chunkData, terrain.ChunkSize - 1, terrainUUID);
+							break;
+						}
 
 						Entity chunk = terrain.ChunksCache[chunkData.ViewedCoord];
 						UpdateTerrainChunk(chunk, terrain, curve, viewer);
@@ -193,11 +212,23 @@ namespace HBL2
 						int32_t totalQuads = terrain.Size - 1;
 						int32_t chunkQuads = CeilDiv(totalQuads, gridSize);
 
-						// Force Size to match chunking perfectly
-						terrain.Size = gridSize * chunkQuads + 1;
+						// Compute required alignment so every LOD hits the border vertex exactly.
+						int32_t align = 1;
+						for (uint32_t i = 0; i < terrain.DetailLevels.Size(); ++i)
+						{
+							align = Lcm(align, LodIncrement(terrain.DetailLevels[i].Lod));
+						}
 
-						// Store quads per chunk
-						terrain.ChunkSize = chunkQuads;
+						// Snap up to that alignment.
+						int32_t rem = chunkQuads % align;
+						if (rem != 0)
+						{
+							chunkQuads += (align - rem);
+						}
+
+						// Force Size to match chunking perfectly (shared-edge rule).
+						terrain.ChunkSize = chunkQuads;                  // quads per chunk (world stride)
+						terrain.Size = gridSize * chunkQuads + 1;   // vertices/samples per side
 
 						std::vector<float> noiseMap;
 
@@ -266,7 +297,7 @@ namespace HBL2
 		terrain.MaxViewDst = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold;
 		terrain.ChunksVisibleInViewDst = (int32_t)(terrain.MaxViewDst / terrain.ChunkSize);
 
-		terrain.Size = 723;
+		terrain.Size = 724;
 		terrain.NumberOfChunks = 9;
 	}
 
@@ -338,7 +369,7 @@ namespace HBL2
 							.ViewedCoord = viewedChunkCoord,
 						};
 
-						chunkData.NoiseMap = GetChunkNoise(terrain.FixedNoiseMap, terrain.Size, terrain.Size, terrain.ChunkSize, x, -y);
+						chunkData.NoiseMap = GetChunkNoise(terrain.FixedNoiseMap, terrain.Size, terrain.Size, terrain.ChunkSize, x, y);
 
 						terrain.ChunkDataQueue.PushBack(chunkData);
 					});
@@ -779,7 +810,7 @@ namespace HBL2
 				positions[vi] = glm::vec3(topLeftX + x, heightY, topLeftZ - y);
 
 				// UV
-				uvs[vi] = glm::vec2(x / float(width), y / float(height));
+				uvs[vi] = glm::vec2(x / float(width - 1), y / float(height - 1));
 
 				// Build two triangles per quad (if not on last row/col)
 				if (x + meshSimplificationIncrement < width && y + meshSimplificationIncrement < height)
