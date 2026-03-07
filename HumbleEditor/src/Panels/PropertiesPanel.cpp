@@ -562,6 +562,8 @@ namespace HBL2
 
 							t.NumberOfChunks = gridSize * gridSize;
 						}
+
+						ImGui::Checkbox("Use Falloff Map", &t.UseFalloffMap);
 					}
 
 					ImGui::DragInt("Seed", (int*)& t.Seed);

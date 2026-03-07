@@ -90,6 +90,26 @@ namespace HBL2
          * @param args Arguments to forward to ctor of type.
          * @return Pointer to allocated and constructed memory.
          */
+        template<typename T>
+        T* AllocConstruct()
+        {
+            void* mem = Alloc(sizeof(T), alignof(T));
+
+            if (!mem)
+            {
+                return nullptr;
+            }
+
+            T* obj = ::new (mem) T;
+            return obj;
+        }
+
+        /**
+         * @brief Allocate and construct object of type T in scratch area.
+         *
+         * @param args Arguments to forward to ctor of type.
+         * @return Pointer to allocated and constructed memory.
+         */
         template<typename T, typename... Args>
         T* AllocConstruct(Args&&... args)
         {

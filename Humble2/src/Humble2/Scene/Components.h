@@ -304,9 +304,11 @@ namespace HBL2
 
 			Handle<Asset> HeightMap;
 			std::vector<float> FixedNoiseMap;
+			std::vector<float> FalloffMap;
 			int32_t NumberOfChunks = 1;
 			int32_t NumberOfChunksInternal = 1;
 			int32_t Size = 241;
+			bool UseFalloffMap = false;
 
 			float Scale = 1.f;
 			float NoiseScale = 25.f;
@@ -333,10 +335,10 @@ namespace HBL2
 			};
 
 			JobContext ChunkDataContext{};
-			ThreadSafeDeque<TerrainChunkData> ChunkDataQueue;
+			moodycamel::ConcurrentQueue<TerrainChunkData> ChunkDataQueue;
 
 			JobContext ChunkMeshDataContext{};
-			ThreadSafeDeque<TerrainChunkMeshData> ChunkMeshDataQueue;
+			moodycamel::ConcurrentQueue<TerrainChunkMeshData> ChunkMeshDataQueue;
 
 			struct LodInfo
 			{
