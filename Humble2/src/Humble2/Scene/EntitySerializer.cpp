@@ -410,7 +410,17 @@ namespace HBL2
 			out << YAML::Key << "Scale" << YAML::Value << t.Scale;
 			out << YAML::Key << "NoiseScale" << YAML::Value << t.NoiseScale;
 			out << YAML::Key << "AddColliders" << YAML::Value << t.AddColliders;
+			out << YAML::Key << "NumberOfChunks" << YAML::Value << t.NumberOfChunks;
+			out << YAML::Key << "UseFalloffMap" << YAML::Value << t.UseFalloffMap;
 			out << YAML::Key << "Regenerate" << YAML::Value << t.Regenerate;
+
+			out << YAML::Key << "Lods";
+			out << YAML::BeginSeq;
+			for (auto& dl : t.DetailLevels)
+			{
+				out << glm::vec2(dl.Lod, dl.VisibleDstThreshold);
+			}
+			out << YAML::EndSeq;
 
 			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
 
@@ -745,25 +755,22 @@ namespace HBL2
 			t.NormaliseMode = (Component::Terrain::ENormaliseMode)t_NewComponent["NormaliseMode"].as<uint32_t>();
 			t.Seed = t_NewComponent["Seed"].as<uint64_t>();
 			t.HeightMultiplier = t_NewComponent["HeightMultiplier"].as<float>();
+			t.Scale = t_NewComponent["Scale"].as<float>();
+			t.NoiseScale = t_NewComponent["NoiseScale"].as<float>();
+			t.Material = AssetManager::Instance->GetAsset<Material>(t_NewComponent["Material"].as<UUID>());
+			t.AddColliders = t_NewComponent["AddColliders"].as<bool>();
+			t.UseFalloffMap = t_NewComponent["UseFalloffMap"].as<bool>();
+			t.NumberOfChunks = t_NewComponent["NumberOfChunks"].as<int32_t>();
 
-			if (t_NewComponent["Scale"].IsDefined()) // TODO: Remove if.
+			t.DetailLevels.clear();
+			const YAML::Node lods = t_NewComponent["Lods"];
+			if (lods && lods.IsSequence())
 			{
-				t.Scale = t_NewComponent["Scale"].as<float>();
-			}
-
-			if (t_NewComponent["NoiseScale"].IsDefined()) // TODO: Remove if.
-			{
-				t.NoiseScale = t_NewComponent["NoiseScale"].as<float>();
-			}
-
-			if (t_NewComponent["Material"].IsDefined()) // TODO: Remove if.
-			{
-				t.Material = AssetManager::Instance->GetAsset<Material>(t_NewComponent["Material"].as<UUID>());
-			}
-
-			if (t_NewComponent["AddColliders"].IsDefined()) // TODO: Remove if.
-			{
-				t.AddColliders = t_NewComponent["AddColliders"].as<bool>();
+				for (const auto& ld : lods)
+				{
+					glm::vec2 kv = ld.as<glm::vec2>();
+					t.DetailLevels.push_back({ (int32_t)kv.x, kv.y });
+				}
 			}
 
 			t.Regenerate = t_NewComponent["Regenerate"].as<bool>();

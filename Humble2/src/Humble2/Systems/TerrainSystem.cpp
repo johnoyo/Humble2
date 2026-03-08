@@ -29,54 +29,16 @@ namespace HBL2
 		m_ResourceManager = ResourceManager::Instance;
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 
-		m_Context->Group<Component::Terrain>(Get<Component::StaticMesh, Component::AnimationCurve>)
-			.Each([this](Entity entity, Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
+		m_Context->Group<Component::Terrain>(Get<Component::AnimationCurve>)
+			.Each([this](Entity entity, Component::Terrain& terrain, Component::AnimationCurve& curve)
 			{
-				InitializeTerrain(terrain);
+				// Calculate chunk visibility and max view distance
+				terrain.MaxViewDst = terrain.DetailLevels[terrain.DetailLevels.size() - 1].VisibleDstThreshold;
+				terrain.ChunksVisibleInViewDst = std::max(1, (int32_t)(terrain.MaxViewDst / terrain.ChunkSize));
 
 				m_Context->GetComponent<Component::Transform>(entity).Scale = { terrain.Scale, terrain.Scale, terrain.Scale };
 
-				if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::LOCAL)
-				{
-					Asset* heightMapAsset = AssetManager::Instance->GetAssetMetadata(terrain.HeightMap);
-
-					int32_t gridSize = (int32_t)std::sqrt((double)terrain.NumberOfChunks);
-
-					int32_t totalQuads = terrain.Size - 1;
-					int32_t chunkQuads = CeilDiv(totalQuads, gridSize);
-
-					// Compute required alignment so every LOD hits the border vertex exactly.
-					int32_t align = 1;
-					for (uint32_t i = 0; i < terrain.DetailLevels.Size(); ++i)
-					{
-						align = Lcm(align, LodIncrement(terrain.DetailLevels[i].Lod));
-					}
-
-					// Snap up to that alignment.
-					int32_t rem = chunkQuads % align;
-					if (rem != 0)
-					{
-						chunkQuads += (align - rem);
-					}
-
-					// Force Size to match chunking perfectly (shared-edge rule).
-					terrain.ChunkSize = chunkQuads; // quads per chunk (world stride)
-					terrain.Size = gridSize * chunkQuads + 1; // vertices/samples per side
-
-					terrain.FalloffMap = GenerateFallofMap(terrain, terrain.Size);
-
-					std::vector<float> noiseMap;
-					if (heightMapAsset == nullptr)
-					{
-						terrain.FixedNoiseMap = GenerateNoiseMap(terrain, terrain.Size, glm::vec2(0.f));
-					}
-					else
-					{
-						int w, h;
-						terrain.FixedNoiseMap = LoadHeightmap(Project::GetAssetFileSystemPath(heightMapAsset->FilePath).string(), w, h, true); // TODO: Fix heightmap loading.
-						terrain.Size = h;
-					}
-				}
+				RegenerateTerrainSettings(terrain);
 
 				// Clear the serialized chunks.
 				if (m_Context->HasComponent<Component::Link>(entity))
@@ -90,8 +52,8 @@ namespace HBL2
 		Scene* scene = (Context::Mode == Mode::Editor ? m_EditorScene : m_Context);
 		const Component::Transform& viewer = scene->GetComponent<Component::Transform>(GetMainCamera());
 
-		m_Context->Group<Component::Terrain>(Get<Component::StaticMesh, Component::AnimationCurve>)
-			.Each([this, &viewer](Entity e, Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
+		m_Context->Group<Component::Terrain>(Get<Component::AnimationCurve>)
+			.Each([this, &viewer](Entity e, Component::Terrain& terrain, Component::AnimationCurve& curve)
 			{
 				UpdateVisibleChunks(e, terrain, curve, viewer);
 			});
@@ -105,21 +67,15 @@ namespace HBL2
 
 		const Component::Transform& viewer = scene->GetComponent<Component::Transform>(GetMainCamera());
 
-		m_Context->Group<Component::Terrain>(Get<Component::StaticMesh, Component::AnimationCurve>)
-			.Each([this, &viewer](Entity e, Component::Terrain& terrain, Component::StaticMesh& staticMesh, Component::AnimationCurve& curve)
+		m_Context->Group<Component::Terrain>(Get<Component::AnimationCurve>)
+			.Each([this, &viewer](Entity e, Component::Terrain& terrain, Component::AnimationCurve& curve)
 			{
-				if (!terrain.Initialized)
-				{
-					InitializeTerrain(terrain);
-					terrain.Initialized = true;
-				}
-
 				if (terrain.NoiseScale <= 0)
 				{
 					terrain.NoiseScale = 0.0001f;
 				}
 
-				terrain.MaxViewDst = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold;
+				terrain.MaxViewDst = terrain.DetailLevels[terrain.DetailLevels.size() - 1].VisibleDstThreshold;
 				terrain.ChunksVisibleInViewDst = std::max(1, (int32_t)(terrain.MaxViewDst / terrain.ChunkSize));
 				m_Context->GetComponent<Component::Transform>(e).Scale = { terrain.Scale, terrain.Scale, terrain.Scale };
 
@@ -154,48 +110,9 @@ namespace HBL2
 
 				if (terrain.Regenerate)
 				{
-					if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::LOCAL)
-					{
-						Asset* heightMapAsset = AssetManager::Instance->GetAssetMetadata(terrain.HeightMap);
+					RegenerateTerrainSettings(terrain);
 
-						int32_t gridSize = (int32_t)std::sqrt((double)terrain.NumberOfChunks);
-
-						int32_t totalQuads = terrain.Size - 1;
-						int32_t chunkQuads = CeilDiv(totalQuads, gridSize);
-
-						// Compute required alignment so every LOD hits the border vertex exactly.
-						int32_t align = 1;
-						for (uint32_t i = 0; i < terrain.DetailLevels.Size(); ++i)
-						{
-							align = Lcm(align, LodIncrement(terrain.DetailLevels[i].Lod));
-						}
-
-						// Snap up to that alignment.
-						int32_t rem = chunkQuads % align;
-						if (rem != 0)
-						{
-							chunkQuads += (align - rem);
-						}
-
-						// Force Size to match chunking perfectly (shared-edge rule).
-						terrain.ChunkSize = chunkQuads; // quads per chunk (world stride)
-						terrain.Size = gridSize * chunkQuads + 1; // vertices/samples per side
-
-						terrain.FalloffMap = GenerateFallofMap(terrain, terrain.Size);
-
-						if (heightMapAsset == nullptr)
-						{
-							terrain.FixedNoiseMap = GenerateNoiseMap(terrain, terrain.Size, glm::vec2(0.f));
-						}
-						else
-						{
-							int w, h;
-							terrain.FixedNoiseMap = LoadHeightmap(Project::GetAssetFileSystemPath(heightMapAsset->FilePath).string(), w, h, true); // TODO: Fix heightmap loading.
-							terrain.Size = h;
-						}
-					}
-
-					CleanUpChunks();
+					CleanUpChunks(e);
 					UpdateVisibleChunks(e, terrain, curve, viewer);
 
 					terrain.Regenerate = false;
@@ -226,27 +143,59 @@ namespace HBL2
 			return;
 		}
 
-		CleanUpChunks();
+		CleanUpChunks(Entity::Null);
 	}
 
-	void TerrainSystem::InitializeTerrain(Component::Terrain& terrain)
+	void TerrainSystem::RegenerateTerrainSettings(Component::Terrain& terrain)
 	{
-		// Set the detail levels
-		terrain.DetailLevels[0].Lod = 0;
-		terrain.DetailLevels[0].VisibleDstThreshold = 200;
+		if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::LOCAL)
+		{
+			Asset* heightMapAsset = AssetManager::Instance->GetAssetMetadata(terrain.HeightMap);
 
-		terrain.DetailLevels[1].Lod = 2;
-		terrain.DetailLevels[1].VisibleDstThreshold = 400;
+			if (heightMapAsset == nullptr)
+			{
+				terrain.Size = 841;
 
-		terrain.DetailLevels[2].Lod = 5;
-		terrain.DetailLevels[2].VisibleDstThreshold = 600;
+				int32_t gridSize = (int32_t)std::sqrt((double)terrain.NumberOfChunks);
 
-		// Calculate chunk visibility and max view distance
-		terrain.MaxViewDst = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold;
-		terrain.ChunksVisibleInViewDst = std::max(1, (int32_t)(terrain.MaxViewDst / terrain.ChunkSize));
+				int32_t totalQuads = terrain.Size - 1;
+				int32_t chunkQuads = CeilDiv(totalQuads, gridSize);
 
-		terrain.Size = 724;
-		terrain.NumberOfChunks = 9;
+				// Compute required alignment so every LOD hits the border vertex exactly.
+				int32_t align = 1;
+				for (uint32_t i = 0; i < terrain.DetailLevels.size(); ++i)
+				{
+					align = Lcm(align, LodIncrement(terrain.DetailLevels[i].Lod));
+				}
+
+				// Snap up to that alignment.
+				int32_t rem = chunkQuads % align;
+				if (rem != 0)
+				{
+					chunkQuads += (align - rem);
+				}
+
+				// Force Size to match chunking perfectly (shared-edge rule).
+				terrain.ChunkSize = chunkQuads; // quads per chunk (world stride)
+				terrain.Size = gridSize * chunkQuads + 1; // vertices/samples per side
+
+				terrain.FalloffMap = GenerateFallofMap(terrain, terrain.Size);
+				terrain.FixedNoiseMap = GenerateNoiseMap(terrain, terrain.Size, glm::vec2(0.f));
+			}
+			else
+			{
+				terrain.FalloffMap = GenerateFallofMap(terrain, terrain.Size);
+
+				int w, h;
+				terrain.FixedNoiseMap = LoadHeightmap(Project::GetAssetFileSystemPath(heightMapAsset->FilePath).string(), w, h, true); // TODO: Fix heightmap loading.
+				terrain.Size = h;
+			}
+		}
+		else
+		{
+			terrain.Size = 241;
+			terrain.ChunkSize = 241;
+		}		
 	}
 
 	void TerrainSystem::UpdateFixedTerrainChunks(Entity terrainEntity, const Component::Transform& viewer, Component::Terrain& terrain, Component::AnimationCurve& curve)
@@ -786,7 +735,7 @@ namespace HBL2
 			// Find which lod to use for the chunk.
 			int32_t lodIndex = 0;
 
-			for (uint32_t i = 0; i < terrain.DetailLevels.Size() - 1; i++)
+			for (uint32_t i = 0; i < terrain.DetailLevels.size() - 1; i++)
 			{
 				if (viewerDstFromNearestEdge > terrain.DetailLevels[i].VisibleDstThreshold)
 				{
@@ -855,7 +804,7 @@ namespace HBL2
 	{
 		glm::vec3 scaledViewerPosition = viewer.Translation / terrain.Scale;
 
-		float maxDistanceForChunkToStayLoaded = terrain.DetailLevels[terrain.DetailLevels.Size() - 1].VisibleDstThreshold * 2;
+		float maxDistanceForChunkToStayLoaded = terrain.DetailLevels[terrain.DetailLevels.size() - 1].VisibleDstThreshold * 2;
 
 		ScratchArena scratch(Allocator::FrameArenaMT);
 		DArray<Entity> chunks = MakeDArray<Entity>(scratch, 512);
@@ -969,7 +918,7 @@ namespace HBL2
 		chunk.VisibleLastUpdate = false;
 		chunk.ChunkBounds = Bounds({ chunkData.ViewedCoord.x * chunkSize, 0, chunkData.ViewedCoord.y * chunkSize }, glm::vec3(1.f, 0.0f, 1.0f) * (float)chunkSize);
 
-		for (uint32_t i = 0; i < terrain.DetailLevels.Size(); i++)
+		for (uint32_t i = 0; i < terrain.DetailLevels.size(); i++)
 		{
 			chunk.LodMeshes[terrain.DetailLevels[i].Lod] = { terrain.DetailLevels[i].Lod };
 		}
@@ -984,6 +933,8 @@ namespace HBL2
 			auto& chunkCollider = m_Context->AddComponent<Component::TerrainCollider>(terrainChunk);
 			chunkCollider.ViewedCoord = chunkData.ViewedCoord;
 		}
+
+		chunk.Owner = parent;
 
 		return terrainChunk;
 	}
@@ -1028,15 +979,27 @@ namespace HBL2
 		return Entity::Null;
 	}
 	
-	void TerrainSystem::CleanUpChunks()
+	void TerrainSystem::CleanUpChunks(Entity owner)
 	{
+		UUID ownerUUID = 0;
+		
+		if (owner != Entity::Null)
+		{
+			ownerUUID = m_Context->GetComponent<Component::ID>(owner).Identifier;
+		}
+
 		// Clean up resources of terrain chunks.
 		ScratchArena scratch(Allocator::FrameArenaMT);
 		DArray<Entity> chunks = MakeDArray<Entity>(scratch, 512);
 
 		m_Context->View<Component::TerrainChunk>()
-			.Each([this, &chunks](Entity chunk, Component::TerrainChunk& terrainChunk)
+			.Each([this, ownerUUID, &chunks](Entity chunk, Component::TerrainChunk& terrainChunk)
 			{
+				if (ownerUUID != terrainChunk.Owner && ownerUUID != 0)
+				{
+					return;
+				}
+
 				for (auto& lodMesh : terrainChunk.LodMeshes)
 				{
 					Mesh* mesh = m_ResourceManager->GetMesh(lodMesh.Mesh);

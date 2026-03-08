@@ -553,7 +553,7 @@ namespace HBL2
 
 						static int gridSize = 3;
 
-						if (ImGui::SliderInt("Grid Size", &gridSize, 1, 9))
+						if (ImGui::SliderInt("Grid Size", &gridSize, 1, 7))
 						{
 							if (gridSize % 2 == 0)
 							{
@@ -567,7 +567,6 @@ namespace HBL2
 					}
 
 					ImGui::DragInt("Seed", (int*)& t.Seed);
-					ImGui::DragInt("InEditorPreviewLevelOfDetail", (int*)& t.InEditorPreviewLevelOfDetail, 1.f, 0, 6);
 					ImGui::DragFloat("HeightMultiplier", &t.HeightMultiplier);
 					ImGui::DragFloat("Scale", &t.Scale);
 					ImGui::DragFloat("NoiseScale", &t.NoiseScale);
@@ -591,6 +590,106 @@ namespace HBL2
 					}
 
 					ImGui::Checkbox("AddColliders", &t.AddColliders);
+
+					{
+						bool changed = false;
+
+						if (ImGui::CollapsingHeader("Terrain LOD"))
+						{
+							ImGui::TextUnformatted("Detail Levels");
+							ImGui::Separator();
+
+							// Keep at least one LOD level.
+							for (size_t i = 0; i < t.DetailLevels.size(); ++i)
+							{
+								ImGui::PushID((int)i);
+
+								auto& level = t.DetailLevels[i];
+
+								ImGui::BeginGroup();
+								ImGui::Text("LOD %zu", i);
+
+								changed |= ImGui::SliderInt("Mesh LOD", &level.Lod, 0, 5);
+								changed |= ImGui::DragFloat("Visible Distance", &level.VisibleDstThreshold, 1.0f, 0.0f, 100000.0f, "%.1f");
+
+								// Remove button for all but the last remaining item.
+								if (t.DetailLevels.size() > 1)
+								{
+									if (ImGui::Button("Remove"))
+									{
+										t.DetailLevels.erase(t.DetailLevels.begin() + (ptrdiff_t)i);
+										changed = true;
+										ImGui::EndGroup();
+										ImGui::PopID();
+										break;
+									}
+								}
+
+								ImGui::EndGroup();
+								ImGui::Separator();
+								ImGui::PopID();
+							}
+
+							if (t.DetailLevels.size() < 6)
+							{
+								if (ImGui::Button("Add Detail Level"))
+								{
+									int32_t nextLod = 0;
+									float nextDistance = 200.0f;
+
+									if (!t.DetailLevels.empty())
+									{
+										nextLod = std::min(t.DetailLevels.back().Lod + 1, 5);
+										nextDistance = t.DetailLevels.back().VisibleDstThreshold + 200.0f;
+									}
+
+									t.DetailLevels.push_back({
+										.Lod = nextLod,
+										.VisibleDstThreshold = nextDistance,
+									});
+
+									changed = true;
+								}
+							}
+
+							ImGui::SameLine();
+							if (ImGui::Button("Reset Defaults"))
+							{
+								t.DetailLevels.clear();
+								t.DetailLevels.push_back({ .Lod = 0, .VisibleDstThreshold = 200.0f });
+								t.DetailLevels.push_back({ .Lod = 2, .VisibleDstThreshold = 400.0f });
+								t.DetailLevels.push_back({ .Lod = 5, .VisibleDstThreshold = 600.0f });
+								changed = true;
+							}
+
+							// Sort by distance.
+							if (changed)
+							{
+								std::sort(t.DetailLevels.begin(), t.DetailLevels.end(), [](const auto& a, const auto& b)
+								{
+									return a.VisibleDstThreshold < b.VisibleDstThreshold;
+								});
+
+								// Clamp LODs and enforce non-decreasing distances.
+								for (size_t i = 0; i < t.DetailLevels.size(); ++i)
+								{
+									t.DetailLevels[i].Lod = std::max(0, t.DetailLevels[i].Lod);
+
+									if (i > 0)
+									{
+										t.DetailLevels[i].VisibleDstThreshold = std::max(t.DetailLevels[i].VisibleDstThreshold, t.DetailLevels[i - 1].VisibleDstThreshold);
+									}
+								}
+
+								t.MaxViewDst = t.DetailLevels.back().VisibleDstThreshold;
+								t.ChunksVisibleInViewDst = std::max(1, (int32_t)(t.MaxViewDst / t.ChunkSize));
+							}
+
+							ImGui::Spacing();
+							ImGui::Text("Max View Distance: %.1f", t.MaxViewDst);
+							ImGui::Text("Chunks Visible In View Distance: %d", t.ChunksVisibleInViewDst);
+						}
+					}
 
 					if (ImGui::Button("Regenerate"))
 					{

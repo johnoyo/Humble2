@@ -22,7 +22,7 @@ namespace HBL2
 		virtual void OnDestroy() override;
 
 	private:
-		void InitializeTerrain(Component::Terrain& terrain);
+		void RegenerateTerrainSettings(Component::Terrain& terrain);
 		void UpdateFixedTerrainChunks(Entity terrainEntity, const Component::Transform& viewer, Component::Terrain& terrain, Component::AnimationCurve& curve);
 		void UpdateInfiniteTerrainChunks(const Component::Transform& viewer, Component::Terrain& terrain, Component::AnimationCurve& curve);
 
@@ -39,7 +39,7 @@ namespace HBL2
 		void AssignChunkMesh(const Component::Terrain::TerrainChunkMeshData& chunkMeshData);
 		Entity GetMainCamera();
 
-		void CleanUpChunks();
+		void CleanUpChunks(Entity owner);
 
 	private:
 		ResourceManager* m_ResourceManager = nullptr;
