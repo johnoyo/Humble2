@@ -46,7 +46,7 @@ namespace HBL2
 		Handle<Buffer> vertexBufferHandle = ResourceManager::Instance->CreateBuffer({
 			.debugName = "terrain-vertex-buffer",
 			.usage = BufferUsage::VERTEX,
-			.byteSize = (uint32_t)sizeof(float) * verticesCount * 8, // <- 8 because we have 3 pos, 3 normal, 2 uv in the vb.
+			.byteSize = (uint32_t)sizeof(float) * verticesCount,
 			.initialData = vertices,
 		});
 
@@ -75,10 +75,6 @@ namespace HBL2
 		}
 
 		m_HasItems.store(true, std::memory_order_release);
-
-		// Free cpu side buffer data.
-		delete[] vertices;
-		delete[] indeces;
 	}
 
 	void Mesh::Reimport(const MeshDescriptorEx&& desc)

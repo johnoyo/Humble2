@@ -5,6 +5,7 @@ namespace HBL2
     JobSystem* JobSystem::s_Instance = nullptr;
 
     static thread_local uint32_t s_WorkerIndex = UINT32_MAX;
+    static thread_local std::thread::id s_WorkerId;
 
 	void JobSystem::Initialize()
 	{
@@ -33,8 +34,19 @@ namespace HBL2
     {
         m_NumThreads = std::max(1u, std::thread::hardware_concurrency() - 2);
 
-        m_LocalJobQueues.resize(m_NumThreads);
-        m_Workers.reserve(m_NumThreads);
+        m_Reservation = Allocator::Arena.Reserve("JobSystemPool", (1_MB * m_NumThreads) + 100_KB);
+        m_JobSystemArena.Initialize(&Allocator::Arena, 100_KB, m_Reservation);
+
+        m_WorkerArenas = MakeDArrayResized<Arena*>(m_JobSystemArena, m_NumThreads);
+        m_LocalJobQueues = MakeDArrayResized<moodycamel::ConcurrentQueue<std::function<void()>>>(m_JobSystemArena, m_NumThreads);
+
+        for (int i = 0; i < m_NumThreads; i++)
+        {
+            m_WorkerArenas[i] = m_JobSystemArena.AllocConstruct<Arena>();
+            m_WorkerArenas[i]->Initialize(&Allocator::Arena, 1_MB, m_Reservation);
+        }
+
+        m_Workers = MakeDArray<std::thread>(m_JobSystemArena, m_NumThreads);
 
         for (uint32_t threadID = 0; threadID < m_NumThreads; ++threadID)
         {
@@ -92,7 +104,7 @@ namespace HBL2
         };
 
         uint32_t threadID = m_NextQueue.fetch_add(1, std::memory_order_relaxed) % m_NumThreads;
-        m_LocalJobQueues[threadID].PushBack(wrappedJob);
+        m_LocalJobQueues[threadID].enqueue(wrappedJob);
 
         m_WakeCondition.notify_one();
     }
@@ -122,7 +134,7 @@ namespace HBL2
             };
 
             uint32_t threadID = i % m_NumThreads;
-            m_LocalJobQueues[threadID].PushBack(task);
+            m_LocalJobQueues[threadID].enqueue(task);
         }
 
         // Wake up all worker threads to start processing the work.
@@ -146,7 +158,7 @@ namespace HBL2
             // Try to pick up jobs from other threads while waiting.
             for (uint32_t i = 0; i < m_NumThreads; ++i)
             {
-                while (m_LocalJobQueues[i].PopFront(job))
+                while (m_LocalJobQueues[i].try_dequeue(job))
                 {
                     job();
                 }
@@ -169,9 +181,16 @@ namespace HBL2
         return s_WorkerIndex;
     }
 
+    Arena* JobSystem::GetWorkerArena()
+    {
+        HBL2_CORE_ASSERT(s_WorkerId == std::this_thread::get_id(), "Worker arena can only be used from within a valid JobSystem worker thread!");
+        return m_WorkerArenas[s_WorkerIndex];
+    }
+
     void JobSystem::WorkerThreadFunc(uint32_t threadIndex)
     {
         s_WorkerIndex = threadIndex;
+        s_WorkerId = std::this_thread::get_id();
 
         while (!m_Shutdown.load())
         {
@@ -179,7 +198,7 @@ namespace HBL2
             bool jobFound = false;
 
             // 1️. First, try to pop from the local queue
-            if (m_LocalJobQueues[threadIndex].PopFront(job))
+            if (m_LocalJobQueues[threadIndex].try_dequeue(job))
             {
                 jobFound = true;
             }
@@ -189,7 +208,7 @@ namespace HBL2
                 for (uint32_t i = 0; i < m_NumThreads; ++i)
                 {
                     uint32_t victimThread = (threadIndex + i + 1) % m_NumThreads;
-                    if (m_LocalJobQueues[victimThread].PopFront(job))
+                    if (m_LocalJobQueues[victimThread].try_dequeue(job))
                     {
                         jobFound = true;
                         break;

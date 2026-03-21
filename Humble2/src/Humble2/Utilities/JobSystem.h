@@ -5,6 +5,12 @@
 
 #include "Base.h"
 
+#include "Core\Allocators.h"
+#include "Allocators\Arena.h"
+#include "Collections\Collections.h"
+
+#include "moodycamel/concurrentqueue.h"
+
 #include <deque>
 #include <mutex>
 #include <atomic>
@@ -15,66 +21,6 @@
 
 namespace HBL2
 {
-    template <typename T>
-    class ThreadSafeDeque
-    {
-    public:
-        ThreadSafeDeque() {}
-        ThreadSafeDeque(const ThreadSafeDeque<T>& other) : m_Data(other.m_Data) {}
-
-        ThreadSafeDeque& operator=(const ThreadSafeDeque<T>& other)
-        {
-            if (this == &other)
-            {
-                return *this;
-            }
-
-            m_Data = other.m_Data;
-
-            return *this;
-        }
-
-        inline void PushBack(const T& item)
-        {
-            std::scoped_lock lock(m_Lock);
-            m_Data.push_back(item);
-        }
-
-        inline bool PopFront(T& item)
-        {
-            std::scoped_lock lock(m_Lock);
-
-            if (m_Data.empty())
-            {
-                return false;
-            }
-
-            item = std::move(m_Data.front());
-            m_Data.pop_front();
-            return true;
-        }
-
-        inline void Reset()
-        {
-            std::scoped_lock lock(m_Lock);
-            m_Data.clear();
-        }
-
-        inline uint32_t Size() const
-        {
-            return m_Data.size();
-        }
-
-        inline bool IsEmpty() const
-        {
-            return m_Data.empty();
-        }
-
-    private:
-        std::deque<T> m_Data;
-        std::mutex m_Lock;
-    };
-
     struct HBL2_API JobDispatchArgs
     {
         uint32_t jobIndex;
@@ -108,6 +54,7 @@ namespace HBL2
 
         inline uint32_t GetThreadCount() const { return m_NumThreads; }
         uint32_t GetWorkerIndex();
+        Arena* GetWorkerArena();
 
     private:
         JobSystem() {}
@@ -116,10 +63,15 @@ namespace HBL2
         void InternalShutdown();
         void WorkerThreadFunc(uint32_t threadIndex);
 
-        uint32_t m_NumThreads = 0;
-        std::vector<std::thread> m_Workers;
+        PoolReservation* m_Reservation = nullptr;
+        Arena m_JobSystemArena;
 
-        std::vector<ThreadSafeDeque<std::function<void()>>> m_LocalJobQueues;
+        uint32_t m_NumThreads = 0;
+
+        DArray<std::thread> m_Workers = MakeEmptyDArray<std::thread>();
+        DArray<Arena*> m_WorkerArenas = MakeEmptyDArray<Arena*>();
+        DArray<moodycamel::ConcurrentQueue<std::function<void()>>> m_LocalJobQueues = MakeEmptyDArray<moodycamel::ConcurrentQueue<std::function<void()>>>();
+
         std::condition_variable m_WakeCondition;
         std::mutex m_WakeMutex;
         std::atomic<bool> m_Shutdown = false;

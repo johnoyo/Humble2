@@ -11,6 +11,7 @@
 #include "Utilities\Bounds.h"
 #include "Utilities\JobSystem.h"
 #include "Utilities\Collections\StaticArray.h"
+#include "Utilities\Collections\StaticDArray.h"
 
 #include <entt.hpp>
 #include <glm\gtx\hash.hpp>
@@ -292,7 +293,6 @@ namespace HBL2
 			int32_t ChunkSize = 241;
 			float MaxViewDst = 450.f;
 			int32_t ChunksVisibleInViewDst = 0;
-			uint32_t InEditorPreviewLevelOfDetail = 0;
 
 			ENormaliseMode NormaliseMode = ENormaliseMode::GLOBAL;
 			uint64_t Seed = 5;
@@ -303,6 +303,11 @@ namespace HBL2
 			glm::vec3 OldViewerPosition{};
 
 			Handle<Asset> HeightMap;
+			std::vector<float> FixedNoiseMap;
+			std::vector<float> FalloffMap;
+			int32_t NumberOfChunks = 9;
+			int32_t Size = 241;
+			bool UseFalloffMap = false;
 
 			float Scale = 1.f;
 			float NoiseScale = 25.f;
@@ -325,17 +330,14 @@ namespace HBL2
 			{
 				Entity Chunk = Entity::Null;
 				int32_t Lod = -1;
-				float* VertexBuffer = nullptr;
-				uint32_t VertexCount = 0;
-				uint32_t* IndexBuffer = nullptr;
-				uint32_t IndexCount = 0;
+				Handle<Mesh> ChunkMeshHandle;
 			};
 
 			JobContext ChunkDataContext{};
-			ThreadSafeDeque<TerrainChunkData> ChunkDataQueue;
+			moodycamel::ConcurrentQueue<TerrainChunkData> ChunkDataQueue;
 
 			JobContext ChunkMeshDataContext{};
-			ThreadSafeDeque<TerrainChunkMeshData> ChunkMeshDataQueue;
+			moodycamel::ConcurrentQueue<TerrainChunkMeshData> ChunkMeshDataQueue;
 
 			struct LodInfo
 			{
@@ -343,7 +345,7 @@ namespace HBL2
 				float VisibleDstThreshold;
 			};
 
-			StaticArray<LodInfo, 3> DetailLevels;
+			StaticDArray<LodInfo, 6> DetailLevels{};
 
 			Handle<Material> Material;
 
@@ -355,9 +357,10 @@ namespace HBL2
 
 			Terrain(const Terrain& other)
 				: ChunkSize(other.ChunkSize),
+				  UseFalloffMap(other.UseFalloffMap),
+				  NumberOfChunks(other.NumberOfChunks),
 				  MaxViewDst(other.MaxViewDst),
 				  ChunksVisibleInViewDst(other.ChunksVisibleInViewDst),
-				  InEditorPreviewLevelOfDetail(other.InEditorPreviewLevelOfDetail),
 				  NormaliseMode(other.NormaliseMode),
 				  Seed(other.Seed),
 				  Scale(other.Scale),
@@ -387,9 +390,11 @@ namespace HBL2
 				}
 
 				ChunkSize = other.ChunkSize;
+				Size = other.Size;
+				UseFalloffMap = other.UseFalloffMap;
+				NumberOfChunks = other.NumberOfChunks;
 				MaxViewDst = other.MaxViewDst;
 				ChunksVisibleInViewDst = other.ChunksVisibleInViewDst;
-				InEditorPreviewLevelOfDetail = other.InEditorPreviewLevelOfDetail;
 
 				NormaliseMode = other.NormaliseMode;
 				Seed = other.Seed;
@@ -435,6 +440,8 @@ namespace HBL2
 			bool VisibleLastUpdate = false;
 			uint32_t LevelOfDetail = 0;
 			int32_t PreviousLodIndex = -1;
+
+			UUID Owner = 0;
 
 			StaticArray<LodMesh, 6> LodMeshes;
 		};

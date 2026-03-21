@@ -126,24 +126,28 @@ namespace HBL2
 					else if (ImGui::MenuItem("New Scene"))
 					{
 						std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
-						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
 
-						auto assetHandle = AssetManager::Instance->CreateAsset({
-							.debugName = "New Scene",
-							.filePath = relativePath,
-							.type = AssetType::Scene,
-						});
-
-						AssetManager::Instance->SaveAsset(assetHandle);
-
-						if (Context::Mode == Mode::Runtime)
+						if (!filepath.empty())
 						{
-							HBL2_WARN("Can not open a scene right now, exit play mode and then open scenes.");
-						}
-						else
-						{
-							HBL2::SceneManager::Get().LoadScene(assetHandle, false);
-							m_EditorScenePath = filepath;
+							auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
+
+							auto assetHandle = AssetManager::Instance->CreateAsset({
+								.debugName = "New Scene",
+								.filePath = relativePath,
+								.type = AssetType::Scene,
+							});
+
+							AssetManager::Instance->SaveAsset(assetHandle);
+
+							if (Context::Mode == Mode::Runtime)
+							{
+								HBL2_WARN("Can not open a scene right now, exit play mode and then open scenes.");
+							}
+							else
+							{
+								HBL2::SceneManager::Get().LoadScene(assetHandle, false);
+								m_EditorScenePath = filepath;
+							}
 						}
 					}
 					else if (ImGui::MenuItem("Open Scene"))

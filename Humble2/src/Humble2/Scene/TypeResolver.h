@@ -10,7 +10,7 @@ namespace HBL2
 	{
 	public:
 		template<typename T>
-		std::uint32_t Resolve() const
+		uint32_t Resolve() const
 		{
 			using U = std::remove_cv_t<std::remove_reference_t<T>>;
 			auto it = m_TypeMap.find(std::type_index(typeid(U)));
@@ -25,7 +25,7 @@ namespace HBL2
 		}
 
 		template<typename T>
-		std::uint32_t Register()
+		uint32_t Register()
 		{
 			using U = std::remove_cv_t<std::remove_reference_t<T>>;
 			std::type_index key(typeid(U));
@@ -33,15 +33,15 @@ namespace HBL2
 			{
 				return it->second;
 			}
-			const auto id = m_Next++;
+			const uint32_t id = m_Next++;
 			m_TypeMap.emplace(key, id);
 			return id;
 		}
 
-		std::uint32_t Count() const { return m_Next; }
+		uint32_t Count() const { return m_Next.load(); }
 
 	private:
-		std::unordered_map<std::type_index, std::uint32_t> m_TypeMap{};
-		std::uint32_t m_Next = 0;
+		std::unordered_map<std::type_index, uint32_t> m_TypeMap{};
+		std::atomic<uint32_t> m_Next = 0;
 	};
 }
