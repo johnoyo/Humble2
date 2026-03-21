@@ -1,7 +1,5 @@
 #pragma once
 
-#include <entt.hpp>
-
 #include <utility>
 
 namespace HBL2
