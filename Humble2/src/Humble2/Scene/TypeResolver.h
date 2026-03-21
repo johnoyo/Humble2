@@ -1,14 +1,27 @@
 #pragma once
 
+#include "Utilities\Collections\Collections.h"
+
 #include <cstdint>
 #include <typeindex>
-#include <unordered_map>
 
 namespace HBL2
 {
 	struct TypeResolver
 	{
 	public:
+		TypeResolver() = default;
+
+		void Initialize(Arena* arena, uint32_t maxComponents)
+		{
+			m_TypeMap = MakeHMap<std::type_index, uint32_t>(*arena, maxComponents);
+		}
+
+		void Clear()
+		{
+			m_TypeMap.clear();
+		}
+
 		template<typename T>
 		uint32_t Resolve() const
 		{
@@ -41,7 +54,7 @@ namespace HBL2
 		uint32_t Count() const { return m_Next.load(); }
 
 	private:
-		std::unordered_map<std::type_index, uint32_t> m_TypeMap{};
+		HMap<std::type_index, uint32_t> m_TypeMap = MakeEmptyHMap<std::type_index, uint32_t>();
 		std::atomic<uint32_t> m_Next = 0;
 	};
 }
