@@ -46,9 +46,10 @@ namespace HBL2
 		virtual void OnDestroy()			 {}
 		virtual void OnDetach()				 {}
 
-		void SetContext(Scene* context)
+		void SetContext(Scene* context, uint32_t maxComponents)
 		{
 			m_Context = context;
+			m_MaxComponents = maxComponents;
 		}
 
 		const Scene* GetContext() const
@@ -84,21 +85,21 @@ namespace HBL2
 
 	protected:
 		template<typename T>
-		void AppendJob(Scene* ctx)
+		void AppendJob()
 		{
-			IJob* job = Allocator::FrameArenaMT.AllocConstruct<T>();
+			IJob* job = Allocator::FrameArenaMT.AllocConstruct<T>(m_MaxComponents);
 			m_Jobs.push_back(job);
 
-			job->SetContext(ctx);
-			job->Resolve(m_TypeResolver);
+			job->SetContext(m_Context);
+			job->Resolve(m_Context->GetRegistry().GetTypeResolver());
 		}
 
 		void ScheduleJobs()
 		{
 			std::vector<std::vector<JobEntry>> batches;
 
-			ComponentMaskType batchReadMask;
-			ComponentMaskType batchWriteMask;
+			FixedBitset batchReadMask(&Allocator::FrameArenaMT, m_MaxComponents);
+			FixedBitset batchWriteMask(&Allocator::FrameArenaMT, m_MaxComponents);
 
 			batches.emplace_back();
 			std::vector<JobEntry>* currentBatch = &batches.back();
@@ -117,8 +118,8 @@ namespace HBL2
 				{
 					// Start new batch
 					batches.emplace_back();
-					batchReadMask.reset();
-					batchWriteMask.reset();
+					batchReadMask.clearAll();
+					batchWriteMask.clearAll();
 					currentBatch = &batches.back();
 				}
 
@@ -159,7 +160,7 @@ namespace HBL2
 		Scene* m_Context = nullptr;
 		SystemType m_Type = SystemType::Core;
 		SystemState m_State = SystemState::Idle;
-		TypeResolver m_TypeResolver;
+		uint32_t m_MaxComponents = 0;
 		std::vector<IJob*> m_Jobs;
 	};	
 }

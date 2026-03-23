@@ -12,10 +12,10 @@ namespace HBL2
     public:
         virtual ~IComponentStorage() = default;
 
-        virtual void* Add(EntityRef e) = 0;
-        virtual void Remove(EntityRef e) = 0;
-        virtual void* Get(EntityRef e) = 0;
-        virtual bool Has(EntityRef e) const = 0;
+        virtual void* Add(Entity e) = 0;
+        virtual void Remove(Entity e) = 0;
+        virtual void* Get(Entity e) = 0;
+        virtual bool Has(Entity e) const = 0;
         virtual void Iterate(StaticFunction<void(void*), 128>&& func) = 0;
         virtual void Clear() = 0;
 

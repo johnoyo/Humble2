@@ -106,7 +106,7 @@ namespace HBL2
 		UINT32x4 = 11,
 	};
 
-	enum class Filter
+	enum class TextureFilter
 	{
 		NEAREST = 0,
 		LINEAR = 1,

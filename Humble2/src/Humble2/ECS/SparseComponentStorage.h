@@ -15,7 +15,7 @@ namespace HBL2
 
 			size_t bytes = 0;
 			bytes += maxEntities * sizeof(uint32_t);
-			bytes += maxEntities * sizeof(EntityRef);
+			bytes += maxEntities * sizeof(Entity);
 			bytes += maxEntities * sizeof(T);
 
 			m_Arena.Initialize(&Allocator::Arena, bytes, reservation);
@@ -23,11 +23,11 @@ namespace HBL2
 			m_EntityToIndex = MakeDArrayResized<uint32_t>(m_Arena, maxEntities);
 			std::fill(m_EntityToIndex.begin(), m_EntityToIndex.end(), uint32_t(-1));
 
-			m_Entities = MakeDArray<EntityRef>(m_Arena, maxEntities);
+			m_Entities = MakeDArray<Entity>(m_Arena, maxEntities);
 			m_Packed = MakeDArray<T>(m_Arena, maxEntities);
 		}
 
-		virtual void* Add(EntityRef e) override
+		virtual void* Add(Entity e) override
 		{
 			uint32_t idx = m_Packed.size();
 			m_Packed.push_back(T{});
@@ -38,7 +38,7 @@ namespace HBL2
 			return &m_Packed[idx];
 		}
 
-		virtual void Remove(EntityRef e) override
+		virtual void Remove(Entity e) override
 		{
 			uint32_t idx = m_EntityToIndex[e.Idx];
 			uint32_t last = m_Packed.size() - 1;
@@ -64,12 +64,12 @@ namespace HBL2
 			m_Mask.clear(e.Idx);
 		}
 
-		virtual void* Get(EntityRef e) override
+		virtual void* Get(Entity e) override
 		{
 			return &m_Packed[m_EntityToIndex[e.Idx]];
 		}
 
-		virtual bool Has(EntityRef e) const override
+		virtual bool Has(Entity e) const override
 		{
 			return m_Mask.test(e.Idx);
 		}
@@ -114,7 +114,7 @@ namespace HBL2
 		Arena m_Arena;
 
 		DArray<T> m_Packed = MakeEmptyDArray<T>();
-		DArray<EntityRef> m_Entities = MakeEmptyDArray<EntityRef>();
+		DArray<Entity> m_Entities = MakeEmptyDArray<Entity>();
 		DArray<uint32_t> m_EntityToIndex = MakeEmptyDArray<uint32_t>();
 	};
 }

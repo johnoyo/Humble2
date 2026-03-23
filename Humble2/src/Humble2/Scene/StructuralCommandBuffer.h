@@ -32,12 +32,12 @@ namespace HBL2
 				op.add = [](Scene* scene, Entity e, const void* payload)
 				{
 					const T& value = *reinterpret_cast<const T*>(payload);
-					scene->GetRegistry().emplace_or_replace<T>(e, value);
+					scene->GetRegistry().AddOrReplaceComponent<T>(e, value);
 				};
 
 				op.remove = [](Scene* scene, Entity e)
 				{
-					scene->GetRegistry().remove<T>(e);
+					scene->GetRegistry().RemoveComponent<T>(e);
 				};
 
 				return op;
@@ -65,7 +65,7 @@ namespace HBL2
 			DArray<Command> Commands = MakeEmptyDArray<Command>();
 		};
 
-		void Initialize(PoolReservation* reservation);
+		void Initialize(PoolReservation* reservation, uint32_t mainArenaByteSize, uint32_t maxStructuralCommandsPerFramePerThread);
 
 		template<class T>
 		void Add(Entity e, T value = {})
@@ -73,6 +73,11 @@ namespace HBL2
 			uint32_t workerIndex = JobSystem::Get().GetWorkerIndex();
 
 			auto& command = m_ChunkCommands[workerIndex];
+
+			if (command.Commands.size() == m_MaxStructuralCommandsPerFramePerThread)
+			{
+				return;
+			}
 
 			void* payload = command.Arena->Alloc(sizeof(T), alignof(T));
 			std::memcpy(payload, &value, sizeof(T));
@@ -91,6 +96,12 @@ namespace HBL2
 			uint32_t workerIndex = JobSystem::Get().GetWorkerIndex();
 
 			auto& command = m_ChunkCommands[workerIndex];
+
+			if (command.Commands.size() == m_MaxStructuralCommandsPerFramePerThread)
+			{
+				return;
+			}
+
 			command.Commands.emplace_back(Command{
 				.type = Command::Type::Remove,
 				.operation = Operation::Construct<T>(),
@@ -105,5 +116,6 @@ namespace HBL2
 	private:
 		Arena m_Arena;
 		DArray<ChunkCommands> m_ChunkCommands = MakeEmptyDArray<ChunkCommands>();
+		uint32_t m_MaxStructuralCommandsPerFramePerThread = 0;
 	};
 }

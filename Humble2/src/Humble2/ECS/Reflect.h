@@ -13,14 +13,46 @@
 
 namespace HBL2::Reflect
 {
+    namespace Detail
+    {
+        template<typename T>
+        constexpr std::string_view TypeName() noexcept
+        {
+#if defined(_MSC_VER)
+            std::string_view sig = __FUNCSIG__;
+            auto start = sig.find("TypeName<") + 9;
+            auto end = sig.rfind(">(");
+#elif defined(__clang__)
+            std::string_view sig = __PRETTY_FUNCTION__;
+            auto start = sig.find("T = ") + 4;
+            auto end = sig.rfind("]");
+#elif defined(__GNUC__)
+            std::string_view sig = __PRETTY_FUNCTION__;
+            auto start = sig.find("T = ") + 4;
+            auto end = sig.rfind("]");
+#else
+            #error "Unsupported compiler"
+#endif
+            return sig.substr(start, end - start);
+        }
+
+        constexpr std::size_t FNV1a(std::string_view str) noexcept
+        {
+            std::size_t hash = 14695981039346656037ULL;
+            for (char c : str)
+            {
+                hash ^= static_cast<std::size_t>(c);
+                hash *= 1099511628211ULL;
+            }
+            return hash;
+        }
+    }
+
     template<typename T>
     struct TypeIndex
     {
-        static const std::size_t value;
+        static constexpr std::size_t value = Detail::FNV1a(Detail::TypeName<T>());
     };
-
-    template<typename T>
-    const std::size_t TypeIndex<T>::value = reinterpret_cast<std::size_t>(&TypeIndex<T>::value);
 
     struct Any
     {
@@ -50,7 +82,8 @@ namespace HBL2::Reflect
         template<typename T>
         T* TryGetAs() noexcept
         {
-            if (TypeId == TypeIndex<std::remove_const_t<T>>::value)
+            size_t typeIndex = TypeIndex<std::remove_const_t<T>>::value;
+            if (TypeId == typeIndex)
             {
                 return static_cast<T*>(Ptr);
             }
@@ -61,7 +94,8 @@ namespace HBL2::Reflect
         template<typename T>
         const T* TryGetAs() const noexcept
         {
-            if (TypeId == TypeIndex<std::remove_const_t<T>>::value)
+            size_t typeIndex = TypeIndex<std::remove_const_t<T>>::value;
+            if (TypeId == typeIndex)
             {
                 return static_cast<const T*>(Ptr);
             }
@@ -72,13 +106,23 @@ namespace HBL2::Reflect
         template<typename T>
         bool Is() const noexcept
         {
-            return TypeId == TypeIndex<std::remove_const_t<T>>::value;
+            size_t typeIndex = TypeIndex<std::remove_const_t<T>>::value;
+            return TypeId == typeIndex;
+        }
+
+        template<typename T>
+        bool Set(const T& newValue)
+        {
+            if (!Is<T>())
+            {
+                return false;
+            }
+
+            *static_cast<T*>(Ptr) = newValue;
+            return true;
         }
 
         bool IsValid() const noexcept { return Ptr != nullptr; }
-
-        void Assign(const Any& other) noexcept { Ptr = other.Ptr; TypeId = other.TypeId; }
-        void Assign(void* ptr, std::size_t typeId) noexcept { Ptr = ptr; TypeId = typeId; }
     };
 
     // Field — compile-time descriptor for one member
@@ -100,10 +144,25 @@ namespace HBL2::Reflect
             return std::apply(
                 [&](auto... accs) -> decltype(auto)
                 {
-                    return (std::forward<U>(obj) .* ... .* accs);
+                    return Chain(std::forward<U>(obj), accs...);
                 },
                 m_Accessors
             );
+        }
+
+    private:
+        // Single accessor — base case
+        template<typename U, typename A>
+        static constexpr decltype(auto) Chain(U&& obj, A acc) noexcept
+        {
+            return std::forward<U>(obj).*acc;
+        }
+
+        // Multiple accessors — recurse, forwarding the intermediate reference
+        template<typename U, typename A, typename... As>
+        static constexpr decltype(auto) Chain(U&& obj, A acc, As... rest) noexcept
+        {
+            return Chain(std::forward<U>(obj).*acc, rest...);
         }
 
     private:
@@ -295,19 +354,20 @@ namespace HBL2::Reflect
         std::size_t alignment = 0;
         std::vector<FieldEntry> fields;
 
-        using ByteStorage = std::unordered_map<std::string, std::unordered_map<HBL2::EntityRef, std::vector<std::byte>>>;
+        using ByteStorage = std::unordered_map<std::string, std::unordered_map<HBL2::Entity, std::vector<std::byte>>>;
 
         Any  (*get)                (void* obj, std::string_view name)                                               = nullptr;
         bool (*setFromAny)         (void* obj, std::string_view name, const Any&)                                   = nullptr;
         bool (*setFromPtr)         (void* obj, std::string_view name, const void* value, std::size_t valueTypeId)   = nullptr;
-        Any  (*addToRegistry)      (Registry* r, EntityRef e)                                                       = nullptr;
-        Any  (*getFromRegistry)    (Registry* r, EntityRef e)                                                       = nullptr;
-        void (*removeFromRegistry) (Registry* r, EntityRef e)                                                       = nullptr;
-        bool (*hasInRegistry)      (Registry* r, EntityRef e)                                                       = nullptr;
+        Any  (*addToRegistry)      (Registry* r, Entity e)                                                          = nullptr;
+        Any  (*getFromRegistry)    (Registry* r, Entity e)                                                          = nullptr;
+        void (*removeFromRegistry) (Registry* r, Entity e)                                                          = nullptr;
+        bool (*hasInRegistry)      (Registry* r, Entity e)                                                          = nullptr;
         void (*clearStorage)       (Registry* r)                                                                    = nullptr;
         void (*serialize)          (Registry* r, ByteStorage& data, bool clearAfter)                                = nullptr;
         void (*deserialize)        (Registry* r, ByteStorage& data)                                                 = nullptr;
         void (*cloneToRegistry)    (Registry* src, Registry* dst)                                                   = nullptr;
+        void (*copy)               (void* dst, const void* src)                                                     = nullptr;
 
         // Iterates all fields — invoke(userdata, name, Any-wrapped-field) per field
         void (*forEach)(void* obj, void* userdata, FieldCallback invoke)                                            = nullptr;
@@ -405,24 +465,24 @@ namespace HBL2::Reflect
             return found;
         };
 
-        entry.addToRegistry = [](Registry* r, EntityRef e) -> Any
+        entry.addToRegistry = [](Registry* r, Entity e) -> Any
         {
             T& c = r->AddComponent<T>(e);
             return ForwardAsMeta(c);
         };
 
-        entry.getFromRegistry = [](Registry* r, EntityRef e) -> Any
+        entry.getFromRegistry = [](Registry* r, Entity e) -> Any
         {
             T& c = r->GetComponent<T>(e);
             return ForwardAsMeta(c);
         };
 
-        entry.removeFromRegistry = [](Registry* r, EntityRef e)
+        entry.removeFromRegistry = [](Registry* r, Entity e)
         {
             r->RemoveComponent<T>(e);
         };
 
-        entry.hasInRegistry = [](Registry* r, EntityRef e) -> bool
+        entry.hasInRegistry = [](Registry* r, Entity e) -> bool
         {
             return r->HasComponent<T>(e);
         };
@@ -432,11 +492,11 @@ namespace HBL2::Reflect
             r->GetStorage<T>()->Clear();
         };
 
-        using ByteStorage = std::unordered_map<std::string, std::unordered_map<HBL2::EntityRef, std::vector<std::byte>>>;
+        using ByteStorage = std::unordered_map<std::string, std::unordered_map<HBL2::Entity, std::vector<std::byte>>>;
 
         entry.serialize = [](Registry* r, ByteStorage& data, bool clearAfter)
         {
-            r->Filter<T>().ForEach([&](EntityRef e, T& component)
+            r->Filter<T>().ForEach([&](Entity e, T& component)
             {
                 data[typeid(T).name()][e] = Registry::Serialize(component);
             });
@@ -459,10 +519,15 @@ namespace HBL2::Reflect
 
         entry.cloneToRegistry = [](Registry* src, Registry* dst)
         {
-            src->Filter<T>().ForEach([&](EntityRef e, T& component)
+            src->Filter<T>().ForEach([&](Entity e, T& component)
             {
                 dst->AddComponent<T>(e, T(component));
             });
+        };
+
+        entry.copy = [](void* dst, const void* src)
+        {
+            *static_cast<T*>(dst) = *static_cast<const T*>(src);
         };
 
         entry.forEach = [](void* obj, void* userdata, FieldCallback invoke)
@@ -478,12 +543,31 @@ namespace HBL2::Reflect
         GetRegistry().push_back(std::move(entry));
         return true;
     }
+
+    template<typename T>
+    void Unregister()
+    {
+        const std::size_t id = TypeIndex<T>::value;
+        auto& reg = GetRegistry();
+        reg.erase(std::remove_if(reg.begin(), reg.end(), [id](const TypeEntry& e) { return e.typeId == id; }), reg.end());
+    }
+
+    inline void Unregister(TypeEntry* entryToRemove)
+    {
+        auto& reg = GetRegistry();
+        reg.erase(std::remove_if(reg.begin(), reg.end(), [entryToRemove](const TypeEntry& e) { return e.typeId == entryToRemove->typeId; }), reg.end());
+    }
+
+    inline void Unregister(std::string_view typeName)
+    {
+        auto& reg = GetRegistry();
+        reg.erase(std::remove_if(reg.begin(), reg.end(), [typeName](const TypeEntry& e) { return e.typeName == typeName; }), reg.end());
+    }
 }
 
-#define REGISTER_COMPONENT(Type)            \
+#define REGISTER_HBL2_COMPONENT(Type)       \
     extern "C" __declspec(dllexport)        \
-    const char* RegisterComponent_##Type()  \
+    void RegisterComponent_##Type()         \
     {                                       \
         HBL2::Reflect::Register<Type>();    \
-        return typeid(Type).name();         \
     }

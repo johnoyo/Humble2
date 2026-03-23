@@ -21,6 +21,32 @@ namespace HBL2
 
 			if (ImGui::Button("Recompile Scripts"))
 			{
+				// Flow when a HotReload happens:
+				// 
+				// [Event: Enter Play Mode]
+				//		- Clone scene and load clone as the currently active scene.
+				// [Event: Hot Reload]
+				//		- Serialize User Components of Original scene.
+				//		- Serialize User Components of Cloned scene.
+				//		- Clear Reflection Registry.
+				//		- Unload script DLL.
+				//		- Build the script DLL.
+				//		- Register Systems to Cloned scene.
+				//			- Set their state to Play.
+				//		- Register User Components (to Reflection).
+				//		- Deserialize User Components to Cloned scene.
+				// [Event: Exit Play Mode]
+				//		- Cache User Component and User System names.
+				//		- Clear and delete Cloned scene.
+				//		- Clear User Components and Reflection Registry.
+				//		- Deregister Systems.
+				//		- Unload scripts DLL.
+				//		- Load scripts DLL.
+				//		- Register Systems to Original scene.
+				//			- Set their state to Play.
+				//		- Register User Components (to Reflection).
+				//		- Deserialize User Components to Original scene.
+
 				if (Context::Mode == Mode::Runtime)
 				{
 					HBL2_WARN("Hot reloading is experimental still, use with your own responsibility.");
@@ -34,19 +60,13 @@ namespace HBL2
 						m_SerializedUserComponents.clear();
 
 						// Store all registered meta types.
-						for (auto meta_type : entt::resolve(originalScene->GetMetaContext()))
+						Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 						{
-							const auto& alias = meta_type.second.info().name();
-
-							if (alias.size() == 0 || alias.size() >= UINT32_MAX || alias.data() == nullptr)
+							if (entry.serialize)
 							{
-								HBL2_CORE_ERROR("Empty meta type registered on scene {}!", originalScene->GetName());
-								continue;
+								entry.serialize(&originalScene->GetRegistry(), m_SerializedUserComponents, true);
 							}
-
-							const std::string& cleanName = BuildEngine::Instance->CleanComponentNameO3(alias.data());
-							BuildEngine::Instance->SerializeComponents(cleanName, originalScene, m_SerializedUserComponents);
-						}
+						});
 					}
 
 					m_HotReloadedDLL = true;

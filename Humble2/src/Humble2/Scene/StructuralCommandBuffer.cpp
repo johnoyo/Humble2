@@ -2,22 +2,22 @@
 
 namespace HBL2
 {
-	void StructuralCommandBuffer::Initialize(PoolReservation* reservation)
+	void StructuralCommandBuffer::Initialize(PoolReservation* reservation, uint32_t mainArenaByteSize, uint32_t maxStructuralCommandsPerFramePerThread)
 	{
 		uint32_t workerThreadCount = JobSystem::Get().GetThreadCount();
-		uint32_t mainArenaByteSize = (uint32_t)Allocator::CalculateInterleavedByteSize<StructuralCommandBuffer::ChunkCommands, Arena>(workerThreadCount);
 		m_Arena.Initialize(&Allocator::Arena, mainArenaByteSize, reservation);
 
 		m_ChunkCommands = MakeDArrayResized<StructuralCommandBuffer::ChunkCommands>(m_Arena, workerThreadCount);
 
-		constexpr uint32_t byteSize = 100_KB;
+		// Reserve memory for the Command struct and for the component (we use 128_B as a average worst case for component size).
+		const uint32_t workerArenaByteSize = maxStructuralCommandsPerFramePerThread * (sizeof(StructuralCommandBuffer::Command) + 128_B);
 
 		for (int i = 0; i < workerThreadCount; i++)
 		{
 			m_ChunkCommands[i].Arena = m_Arena.AllocConstruct<Arena>();
-			m_ChunkCommands[i].Arena->Initialize(&Allocator::Arena, byteSize, reservation);
+			m_ChunkCommands[i].Arena->Initialize(&Allocator::Arena, workerArenaByteSize, reservation);
 
-			m_ChunkCommands[i].Commands = MakeDArray<StructuralCommandBuffer::Command>(*m_ChunkCommands[i].Arena, 64);
+			m_ChunkCommands[i].Commands = MakeDArray<StructuralCommandBuffer::Command>(*m_ChunkCommands[i].Arena, maxStructuralCommandsPerFramePerThread);
 		}
 	}
 
@@ -40,8 +40,11 @@ namespace HBL2
 				}
 			}
 
+			m_ChunkCommands[i].Commands.clear();
 			m_ChunkCommands[i].Arena->Reset();
 		}
+
+		m_ChunkCommands.clear();
 	}
 
 	void StructuralCommandBuffer::Reset()

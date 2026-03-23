@@ -265,7 +265,7 @@ namespace HBL2
 				.internalFormat = textureSettings.PixelFormat,
 				.usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },
 				.aspect = TextureAspect::COLOR,
-				.sampler = { .filter = Filter::LINEAR },
+				.sampler = { .filter = TextureFilter::LINEAR },
 				.initialData = textureData,
 			});
 
@@ -1366,17 +1366,13 @@ namespace HBL2
 		}
 
 		std::vector<std::string> userComponentNames;
-		std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
+		Reflect::TypeEntry::ByteStorage data;
 
 		// Store all registered meta types.
-		for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
+		Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 		{
-			std::string componentName = meta_type.second.info().name().data();
-			componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-			userComponentNames.push_back(componentName);
-
-			BuildEngine::Instance->SerializeComponents(componentName, activeScene, data);
-		}
+			entry.serialize(&activeScene->GetRegistry(), data, true);
+		});
 
 		// Unload unity build dll.
 		BuildEngine::Instance->UnloadBuild(activeScene);
@@ -1404,9 +1400,12 @@ namespace HBL2
 			}
 
 			BuildEngine::Instance->RegisterComponent(userComponentName, activeScene);
-
-			BuildEngine::Instance->DeserializeComponents(userComponentName, activeScene, data);
 		}
+
+		Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
+		{
+			entry.deserialize(&activeScene->GetRegistry(), data);
+		});
 
 		if (newComponentTobeRegistered && script->Type == ScriptType::COMPONENT)
 		{
@@ -2021,17 +2020,22 @@ namespace HBL2
 				}
 
 				// Remove component from all the entities of the source scene.
-				for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
+				Reflect::TypeEntry* entryToRemove = nullptr;
+				Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 				{
-					std::string componentName = meta_type.second.info().name().data();
-					componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
+					std::string componentName = BuildEngine::Instance->CleanComponentNameO3(std::string(entry.typeName));
 
 					if (script->Name == componentName)
 					{
-						BuildEngine::Instance->ClearComponentStorage(componentName, activeScene);
-						entt::meta_reset(activeScene->GetMetaContext(), meta_type.first);
-						break;
+						entry.clearStorage(&activeScene->GetRegistry());
+						entryToRemove = (Reflect::TypeEntry*)&entry;
+						return;
 					}
+				});
+
+				if (entryToRemove)
+				{
+					Reflect::Unregister(entryToRemove);
 				}
 			}
 			break;

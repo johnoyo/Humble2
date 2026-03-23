@@ -12,21 +12,7 @@ namespace HBL2
 	{
 		typedef void (*RegisterSystemFunc)(Scene*);
 
-		typedef const char* (*RegisterComponentFunc)(Scene*);
-
-		typedef entt::meta_any(*AddComponentFunc)(Scene*, Entity);
-
-		typedef entt::meta_any(*GetComponentFunc)(Scene*, Entity);
-
-		typedef void (*RemoveComponentFunc)(Scene*, Entity);
-
-		typedef bool (*HasComponentFunc)(Scene*, Entity);
-
-		typedef void (*ClearComponentStorageFunc)(Scene*);
-
-		typedef void (*SerializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>&, bool);
-
-		typedef void (*DeserializeComponentsFunc)(Scene*, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>&);
+		typedef void (*RegisterComponentFunc)();
 	}
 
 	void BuildEngine::Initialize()
@@ -54,26 +40,18 @@ namespace HBL2
 			}
 		}
 
+		Reflect::TypeEntry::ByteStorage data;
 		std::vector<std::string> userComponentNames;
-		std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
 
 		// Store all registered meta types.
-		for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
+		Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 		{
-			const auto& alias = meta_type.second.info().name();
-
-			if (alias.size() == 0 || alias.size() >= UINT32_MAX || alias.data() == nullptr)
+			if (entry.serialize)
 			{
-				HBL2_CORE_ERROR("Empty meta type registered on scene {}!", activeScene->GetName());
-				continue;
+				userComponentNames.push_back(CleanComponentNameO3(std::string(entry.typeName)));
+				entry.serialize(&activeScene->GetRegistry(), data, true);
 			}
-
-			std::string componentName = alias.data();
-			componentName = CleanComponentNameO3(componentName);
-			userComponentNames.push_back(componentName);
-
-			SerializeComponents(componentName, activeScene, data);
-		}
+		});
 
 		// Unload unity build dll.
 		UnloadBuild(activeScene);
@@ -102,11 +80,19 @@ namespace HBL2
 		for (const auto& userComponentName : userComponentNames)
 		{
 			RegisterComponent(userComponentName, activeScene);
-			DeserializeComponents(userComponentName, activeScene, data);
 		}
+
+		// Deserialize component data.
+		Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
+		{
+			if (entry.deserialize)
+			{
+				entry.deserialize(&activeScene->GetRegistry(), data);
+			}
+		});
 	}
 
-	void BuildEngine::HotReload(Handle<Scene> sceneHandle, const std::vector<std::string>& userComponentNames, const std::vector<std::string>& userSystemNames, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& serializedUserComponents)
+	void BuildEngine::HotReload(Handle<Scene> sceneHandle, const std::vector<std::string>& userComponentNames, const std::vector<std::string>& userSystemNames, Reflect::TypeEntry::ByteStorage& serializedUserComponents)
 	{
 		Scene* activeScene = ResourceManager::Instance->GetScene(sceneHandle);
 
@@ -135,8 +121,16 @@ namespace HBL2
 		for (const auto& userComponentName : userComponentNames)
 		{
 			RegisterComponent(userComponentName, activeScene);
-			DeserializeComponents(userComponentName, activeScene, serializedUserComponents);
 		}
+
+		// Deserialize component data.
+		Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
+		{
+			if (entry.deserialize)
+			{
+				entry.deserialize(&activeScene->GetRegistry(), serializedUserComponents);
+			}
+		});
 	}
 
 	bool BuildEngine::Exists(Configuration configuration)
@@ -195,7 +189,7 @@ namespace HBL2
 			.debugName = "script-asset",
 			.filePath = relativePath,
 			.type = AssetType::Script,
-			});
+		});
 
 		if (scriptAssetHandle.IsValid())
 		{
@@ -309,15 +303,19 @@ REGISTER_HBL2_SYSTEM({SystemName})
 #include "Humble2Core.h"
 
 // Just a POD struct
-HBL2_COMPONENT({ComponentName},
+struct {ComponentName}
 {
     int Value = 1;
-})
 
-// Register members
-REGISTER_HBL2_COMPONENT({ComponentName},
-	HBL2_COMPONENT_MEMBER({ComponentName}, Value)
-)
+	// Member registration.
+	static constexpr auto schema = HBL2::Reflect::Schema
+	{
+        HBL2::Reflect::Field{"Value", &{ComponentName}::Value}
+    };
+};
+
+// Register component
+REGISTER_HBL2_COMPONENT({ComponentName})
 )";
 		size_t pos = componentCode.find(placeholder);
 
@@ -386,7 +384,7 @@ class {ScriptName}
 		auto registerComponent = m_DynamicLibrary.GetFunction<RegisterComponentFunc>("RegisterComponent_" + name);
 
 		// Register the component.
-		const char* properName = registerComponent(ctx);
+		registerComponent();
 	}
 
 	void BuildEngine::LoadBuild(Configuration config)
@@ -403,29 +401,9 @@ class {ScriptName}
 
 	void BuildEngine::UnloadBuild(Scene* ctx)
 	{
-		// Clear user defined components.
-		for (auto meta_type : entt::resolve(ctx->GetMetaContext()))
-		{
-			const auto& alias = meta_type.second.info().name();
-
-			if (alias.size() == 0 || alias.size() >= UINT32_MAX || alias.data() == nullptr)
-			{
-				continue;
-			}
-
-			const std::string& componentName = alias.data();
-
-			const std::string& cleanedComponentName = CleanComponentNameO3(componentName);
-			ClearComponentStorage(cleanedComponentName, ctx);
-		}
-
-		// Reset reflection system.
-		entt::meta_reset(ctx->GetMetaContext());
-		ctx->GetRegistry().compact();
-
+		// Deregister systems.
 		std::vector<ISystem*> systemsToBeDeregistered;
 
-		// Deregister systems.
 		for (ISystem* userSystem : ctx->GetRuntimeSystems())
 		{
 			if (userSystem->GetType() == SystemType::User)
@@ -440,97 +418,27 @@ class {ScriptName}
 		}
 
 		systemsToBeDeregistered.clear();
+		
+		// Clear user defined components.
+		Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
+		{
+			if (entry.clearStorage)
+			{
+				entry.clearStorage(&ctx->GetRegistry());
+			}
+
+			// Deregister type from type resolver, since the dll will get freed and it will contain garbage.
+			ctx->GetRegistry().GetTypeResolver().Deregister(entry.typeName);
+		});
+
+		// Clear reflection system.
+		Reflect::GetRegistry().clear();
 
 		// Free dll.
 		if (m_DynamicLibrary.IsLoaded())
 		{
 			m_DynamicLibrary.Free();
 		}
-	}
-
-	entt::meta_any BuildEngine::AddComponent(const std::string& name, Scene* ctx, Entity entity)
-	{
-		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
-
-		// Retrieve function that registers the component from the dll.
-		auto addComponent = m_DynamicLibrary.GetFunction<AddComponentFunc>("AddComponent_" + name);
-
-		// Register the component.
-		return addComponent(ctx, entity);
-	}
-
-	entt::meta_any BuildEngine::GetComponent(const std::string& name, Scene* ctx, Entity entity)
-	{
-		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
-
-		// Retrieve function that gets the component from the dll.
-		auto getComponent = m_DynamicLibrary.GetFunction<GetComponentFunc>("GetComponent_" + name);
-
-		// Register the component.
-		return getComponent(ctx, entity);
-	}
-
-	void BuildEngine::RemoveComponent(const std::string& name, Scene* ctx, Entity entity)
-	{
-		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
-
-		// Retrieve function that removes the component from the dll.
-		auto removeComponent = m_DynamicLibrary.GetFunction<RemoveComponentFunc>("RemoveComponent_" + name);
-
-		// Remove the component.
-		removeComponent(ctx, entity);
-	}
-
-	bool BuildEngine::HasComponent(const std::string& name, Scene* ctx, Entity entity)
-	{
-		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
-
-		// Retrieve function that checks if the entity has the component from the dll.
-		auto hasComponent = m_DynamicLibrary.GetFunction<HasComponentFunc>("HasComponent_" + name);
-
-		// Register the component.
-		return hasComponent(ctx, entity);
-	}
-
-	void BuildEngine::ClearComponentStorage(const std::string& name, Scene* ctx)
-	{
-		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
-
-		// Retrieve function that checks if the entity has the component from the dll.
-		auto clearComponentStorage = m_DynamicLibrary.GetFunction<ClearComponentStorageFunc>("ClearComponentStorage_" + name);
-
-		// Register the component.
-		clearComponentStorage(ctx);
-	}
-
-	void BuildEngine::SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data, bool cleanRegistry)
-	{
-		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
-
-		// Retrieve if dll is not loaded.
-		if (!m_DynamicLibrary.IsLoaded())
-		{
-			m_DynamicLibrary = DynamicLibrary(path.string());
-		}
-
-		auto serializeComponents = m_DynamicLibrary.GetFunction<SerializeComponentsFunc>("SerializeComponents_" + name);
-
-		serializeComponents(ctx, data, cleanRegistry);
-	}
-
-	void BuildEngine::DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data)
-	{
-		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
-
-		// Retrieve if dll is not loaded.
-		if (!m_DynamicLibrary.IsLoaded())
-		{
-			m_DynamicLibrary = DynamicLibrary(path.string());
-		}
-
-		auto deserializeComponents = m_DynamicLibrary.GetFunction<DeserializeComponentsFunc>("DeserializeComponents_" + name);
-
-		deserializeComponents(ctx, data);
 	}
 
 	std::string BuildEngine::CleanComponentNameO1(const std::string& input)

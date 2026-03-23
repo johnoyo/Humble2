@@ -17,13 +17,6 @@
 
 namespace HBL2
 {
-	struct MemberNameTag
-	{
-		std::string Value;
-	};
-
-	HBL2_API void RegisterComponentToReflection(const std::string& structCode);
-
 	namespace UI
 	{
 		namespace Utils
@@ -43,94 +36,134 @@ namespace HBL2
 
 		static EditorUtilities& Get();
 
-		void DrawDefaultEditor(entt::meta_any& componentMeta)
+		void DrawDefaultEditor(Reflect::Any& componentMeta)
 		{
-			using namespace entt::literals;
-
 			Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
-			// List all members
-			for (auto [id, data] : entt::resolve(activeScene->GetMetaContext(), componentMeta.type().info().hash()).data())
+			if (activeScene == nullptr)
 			{
-				// Retrieve the name property of the member
-				if (auto* name = static_cast<MemberNameTag*>(data.custom()))
-				{
-					std::string typeName = componentMeta.type().info().name().data();
+				return;
+			}
 
-					typeName = BuildEngine::Instance->CleanComponentNameO1(typeName);
+			const Reflect::TypeEntry* typeEntry = Reflect::FindType(componentMeta.TypeId);
 
-					const char* typeNameClean = typeName.c_str();
-					const char* memberName = name->Value.c_str();
-
-					DrawComponent(activeScene, componentMeta, typeNameClean, memberName);
-				}
-			}			
-		}
-
-		void SerializeComponentToYAML(YAML::Emitter& out, entt::meta_any& componentMeta, Scene* ctx)
-		{
-			using namespace entt::literals;
-
-			// List all members
-			for (auto [id, data] : entt::resolve(ctx->GetMetaContext(), componentMeta.type().info().hash()).data())
+			if (typeEntry != nullptr)
 			{
-				// Retrieve the name property of the member
-				if (auto* name = static_cast<MemberNameTag*>(data.custom()))
+				struct FieldCallbackData
 				{
-					std::string typeName = componentMeta.type().info().name().data();
+					Scene* activeScene = nullptr;
+					EditorUtilities* editorUtilities = nullptr;
+				};
 
-					typeName = BuildEngine::Instance->CleanComponentNameO1(typeName);
+				FieldCallbackData fieldCallbackData =
+				{
+					.activeScene = activeScene,
+					.editorUtilities = this,
+				};
 
-					const char* typeNameClean = typeName.c_str();
-					const char* memberName = name->Value.c_str();
-
-					SerializeComponent(out, ctx, componentMeta, typeNameClean, memberName);
-				}
+				// List all members.
+				typeEntry->forEach(componentMeta.Ptr, &fieldCallbackData, [](void* userdata, std::string_view name, Reflect::Any value)
+				{
+					FieldCallbackData* fieldCallbackData = (FieldCallbackData*)userdata;
+					fieldCallbackData->editorUtilities->DrawComponent(fieldCallbackData->activeScene, value, name.data());
+				});
 			}
 		}
 
-		void DeserializeComponentFromYAML(YAML::Node& node, entt::meta_any& componentMeta, Scene* ctx)
+		void SerializeComponentToYAML(YAML::Emitter& out, Reflect::Any& componentMeta, Scene* ctx)
 		{
-			using namespace entt::literals;
+			const Reflect::TypeEntry* typeEntry = Reflect::FindType(componentMeta.TypeId);
 
-			// List all members
-			for (auto [id, data] : entt::resolve(ctx->GetMetaContext(), componentMeta.type().info().hash()).data())
+			if (typeEntry != nullptr)
 			{
-				// Retrieve the name property of the member
-				if (auto* name = static_cast<MemberNameTag*>(data.custom()))
+				struct FieldCallbackData
 				{
-					std::string typeName = componentMeta.type().info().name().data();
+					Scene* activeScene = nullptr;
+					EditorUtilities* editorUtilities = nullptr;
+					YAML::Emitter* out = nullptr;
+				};
 
-					typeName = BuildEngine::Instance->CleanComponentNameO1(typeName);
+				FieldCallbackData fieldCallbackData =
+				{
+					.activeScene = ctx,
+					.editorUtilities = this,
+					.out = &out,
+				};
 
-					const char* typeNameClean = typeName.c_str();
-					const char* memberName = name->Value.c_str();
+				// List all members.
+				typeEntry->forEach(componentMeta.Ptr, &fieldCallbackData, [](void* userdata, std::string_view name, Reflect::Any value)
+				{
+					FieldCallbackData* fieldCallbackData = (FieldCallbackData*)userdata;
+					fieldCallbackData->editorUtilities->SerializeComponent(*fieldCallbackData->out, fieldCallbackData->activeScene, value, name.data());
+				});
+			}
+		}
 
-					DeserializeComponent(node, ctx, componentMeta, typeNameClean, memberName);
-				}
+		void DeserializeComponentFromYAML(YAML::Node& node, Reflect::Any& componentMeta, Scene* ctx)
+		{
+			const Reflect::TypeEntry* typeEntry = Reflect::FindType(componentMeta.TypeId);
+
+			if (typeEntry != nullptr)
+			{
+				struct FieldCallbackData
+				{
+					Scene* activeScene = nullptr;
+					EditorUtilities* editorUtilities = nullptr;
+					YAML::Node* node = nullptr;
+				};
+
+				FieldCallbackData fieldCallbackData =
+				{
+					.activeScene = ctx,
+					.editorUtilities = this,
+					.node = &node,
+				};
+
+				// List all members.
+				typeEntry->forEach(componentMeta.Ptr, &fieldCallbackData, [](void* userdata, std::string_view name, Reflect::Any value)
+				{
+					FieldCallbackData* fieldCallbackData = (FieldCallbackData*)userdata;
+					fieldCallbackData->editorUtilities->DeserializeComponent(*fieldCallbackData->node, fieldCallbackData->activeScene, value, name.data());
+				});
 			}
 		}
 
 		template<typename C>
 		void DrawDefaultEditor(C& component)
 		{
-			using namespace entt::literals;
-
 			Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
-			entt::meta_any componentMeta = entt::forward_as_meta(activeScene->GetMetaContext(), component);
-
-			// List all members
-			for (auto [id, data] : entt::resolve<C>(activeScene->GetMetaContext()).data())
+			if (activeScene == nullptr)
 			{
-				// Retrieve the name property of the member
-				if (auto* name = static_cast<MemberNameTag*>(data.custom()))
-				{
-					const char* typeName = typeid(C).name();
-					const char* memberName = name->Value.c_str();
+				return;
+			}
 
-					DrawComponent(activeScene, componentMeta, typeName, memberName);
-				}
+			Reflect::Any componentMeta = Reflect::ForwardAsMeta(component);
+
+			const Reflect::TypeEntry* typeEntry = Reflect::FindType(componentMeta.TypeId);
+
+			if (typeEntry != nullptr)
+			{
+				struct FieldCallbackData
+				{
+					Scene* activeScene = nullptr;
+					EditorUtilities* editorUtilities = nullptr;
+					const Reflect::TypeEntry* typeEntry = nullptr;
+				};
+
+				FieldCallbackData fieldCallbackData =
+				{
+					.activeScene = activeScene,
+					.editorUtilities = this,
+					.typeEntry = typeEntry,
+				};
+
+				// List all members.
+				typeEntry->forEach(componentMeta.Ptr, &fieldCallbackData, [](void* userdata, std::string_view name, Reflect::Any value)
+				{
+					FieldCallbackData* fieldCallbackData = (FieldCallbackData*)userdata;
+					fieldCallbackData->editorUtilities->DrawComponent(fieldCallbackData->activeScene, value, fieldCallbackData->typeEntry, name.data());
+				});
 			}
 		}
 
@@ -162,11 +195,9 @@ namespace HBL2
 		}
 
 	private:
-		void DrawComponent(Scene* ctx, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
-
-		void SerializeComponent(YAML::Emitter& out, Scene* ctx, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
-
-		void DeserializeComponent(YAML::Node& node, Scene* ctx, entt::meta_any& componentMeta, const char* typeName, const char* memberName);
+		void DrawComponent(Scene* ctx, Reflect::Any& fieldMeta, const char* memberName);
+		void SerializeComponent(YAML::Emitter& out, Scene* ctx, Reflect::Any& fieldMeta, const char* memberName);
+		void DeserializeComponent(YAML::Node& node, Scene* ctx, Reflect::Any& fieldMeta, const char* memberName);
 
 	private:
 		EditorUtilities() = default;

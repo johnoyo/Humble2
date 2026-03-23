@@ -718,19 +718,17 @@ namespace HBL2
 
 				using namespace entt::literals;
 
-				// Iterate over all registered meta types
-				for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
+				// Iterate over all registered meta types.
+				Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 				{
-					std::string componentName = meta_type.second.info().name().data();
-					componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-
-					if (BuildEngine::Instance->HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
+					if (entry.hasInRegistry(&m_ActiveScene->GetRegistry(), HBL2::Component::EditorVisible::SelectedEntity))
 					{
+						std::string componentName = BuildEngine::Instance->CleanComponentNameO3(std::string(entry.typeName));
 						ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
 
 						ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
 						float lineHeight = GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
-						bool opened = ImGui::TreeNodeEx((void*)meta_type.second.info().hash(), treeNodeFlags, componentName.c_str());
+						bool opened = ImGui::TreeNodeEx((void*)entry.typeId, treeNodeFlags, componentName.c_str());
 						ImGui::PopStyleVar();
 						ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
 
@@ -743,8 +741,7 @@ namespace HBL2
 
 						if (opened)
 						{
-							entt::meta_any componentMeta = BuildEngine::Instance->GetComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
-
+							Reflect::Any componentMeta = entry.getFromRegistry(&m_ActiveScene->GetRegistry(), HBL2::Component::EditorVisible::SelectedEntity);
 							HBL2::EditorUtilities::Get().DrawDefaultEditor(componentMeta);
 
 							ImGui::TreePop();
@@ -754,10 +751,10 @@ namespace HBL2
 
 						if (removeComponent)
 						{
-							BuildEngine::Instance->RemoveComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+							entry.removeFromRegistry(&m_ActiveScene->GetRegistry(), HBL2::Component::EditorVisible::SelectedEntity);
 						}
 					}
-				}
+				});
 
 				// Add component button.
 				if (ImGui::Button("Add Component"))
@@ -783,21 +780,19 @@ namespace HBL2
 					AddComponentButton<HBL2::Component::Terrain>("Terrain", m_ActiveScene);
 					AddComponentButton<HBL2::Component::AnimationCurve>("AnimationCurve", m_ActiveScene);
 
-					// Iterate over all registered meta types
-					for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
+					// Iterate over all registered meta types.
+					Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 					{
-						std::string componentName = meta_type.second.info().name().data();
-						componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-
-						if (!BuildEngine::Instance->HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
+						if (!entry.hasInRegistry(&m_ActiveScene->GetRegistry(), HBL2::Component::EditorVisible::SelectedEntity))
 						{
+							std::string componentName = BuildEngine::Instance->CleanComponentNameO3(std::string(entry.typeName));
 							if (ImGui::MenuItem(componentName.c_str()))
 							{
-								BuildEngine::Instance->AddComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+								entry.addToRegistry(&m_ActiveScene->GetRegistry(), HBL2::Component::EditorVisible::SelectedEntity);
 								ImGui::CloseCurrentPopup();
 							}
 						}
-					}
+					});
 
 					ImGui::EndPopup();
 				}

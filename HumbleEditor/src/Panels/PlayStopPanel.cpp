@@ -18,7 +18,17 @@ namespace HBL2
 				if (!m_ActiveSceneTemp.IsValid())
 				{
 					m_ActiveSceneTemp = Context::ActiveScene;
-					auto playSceneHandle = ResourceManager::Instance->CreateScene({ .name = m_ActiveScene->GetName() + "(Clone)" });
+
+					auto playSceneHandle = ResourceManager::Instance->CreateScene({
+						.name = m_ActiveScene->GetName() + "(Clone)",
+						.maxEntities = m_ActiveScene->GetDescriptor().maxEntities,
+						.maxComponents = m_ActiveScene->GetDescriptor().maxComponents,
+						.maxSystems = m_ActiveScene->GetDescriptor().maxSystems,
+						.maxStructuralCommandsPerFramePerThread = m_ActiveScene->GetDescriptor().maxStructuralCommandsPerFramePerThread,
+						.maxJobsPerSystem = m_ActiveScene->GetDescriptor().maxJobsPerSystem,
+						.useStructuralCommandBuffer = m_ActiveScene->GetDescriptor().useStructuralCommandBuffer,
+					});
+
 					Scene* playScene = ResourceManager::Instance->GetScene(playSceneHandle);
 					Scene::Copy(m_ActiveScene, playScene);
 					SceneManager::Get().LoadPlaymodeScene(playSceneHandle, true);

@@ -131,15 +131,15 @@ struct Outer
 };
 
 // =============================================================================
-// EntityRef
+// Entity
 // =============================================================================
 
-bool test_entityref_equality()
+bool test_Entity_equality()
 {
-    EntityRef a{ 1, 1 };
-    EntityRef b{ 1, 1 };
-    EntityRef c{ 1, 2 };
-    EntityRef d{ 2, 1 };
+    Entity a{ 1, 1 };
+    Entity b{ 1, 1 };
+    Entity c{ 1, 2 };
+    Entity d{ 2, 1 };
 
     TEST_ASSERT(a == b);
     TEST_ASSERT(!(a == c));
@@ -148,9 +148,9 @@ bool test_entityref_equality()
     return true;
 }
 
-bool test_entityref_nill()
+bool test_Entity_nill()
 {
-    EntityRef nill = EntityRef::Null;
+    Entity nill = Entity::Null;
     TEST_ASSERT(nill.Idx == 0);
     TEST_ASSERT(nill.Gen == 0);
     return true;
@@ -164,8 +164,8 @@ bool test_registry_create_entity()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
-    TEST_ASSERT(e != EntityRef::Null);
+    Entity e = r.CreateEntity();
+    TEST_ASSERT(e != Entity::Null);
     TEST_ASSERT(e.Idx > 0);
     TEST_ASSERT(e.Gen > 0);
     TEST_ASSERT(r.IsValid(e));
@@ -181,8 +181,8 @@ bool test_registry_create_multiple_entities_unique()
     std::unordered_set<int32_t> indices;
     for (int i = 0; i < 100; ++i)
     {
-        EntityRef e = r.CreateEntity();
-        TEST_ASSERT(e != EntityRef::Null);
+        Entity e = r.CreateEntity();
+        TEST_ASSERT(e != Entity::Null);
         TEST_ASSERT(indices.find(e.Idx) == indices.end());
         indices.insert(e.Idx);
     }
@@ -195,7 +195,7 @@ bool test_registry_destroy_entity_invalidates()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     TEST_ASSERT(r.IsValid(e));
     r.DestroyEntity(e);
     TEST_ASSERT(!r.IsValid(e));
@@ -208,8 +208,8 @@ bool test_registry_create_entity_with_hint()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef hint{ 5, 0 };
-    EntityRef e = r.CreateEntity(hint);
+    Entity hint{ 5, 0 };
+    Entity e = r.CreateEntity(hint);
     TEST_ASSERT(e.Idx == 5);
     TEST_ASSERT(r.IsValid(e));
 
@@ -221,11 +221,11 @@ bool test_registry_slot_reuse_after_destroy()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e1 = r.CreateEntity();
+    Entity e1 = r.CreateEntity();
     int32_t   slot = e1.Idx;
     r.DestroyEntity(e1);
 
-    EntityRef e2 = r.CreateEntity();
+    Entity e2 = r.CreateEntity();
     TEST_ASSERT(e2.Idx == slot);
     TEST_ASSERT(e2.Gen != e1.Gen);
     TEST_ASSERT(!r.IsValid(e1));
@@ -243,7 +243,7 @@ bool test_registry_add_and_get_component()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     Position& p = r.AddComponent<Position>(e);
     p.x = 1.f; p.y = 2.f; p.z = 3.f;
 
@@ -260,7 +260,7 @@ bool test_registry_has_component()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     TEST_ASSERT(!r.HasComponent<Position>(e));
     r.AddComponent<Position>(e);
     TEST_ASSERT(r.HasComponent<Position>(e));
@@ -273,7 +273,7 @@ bool test_registry_remove_component()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     r.AddComponent<Position>(e);
     TEST_ASSERT(r.HasComponent<Position>(e));
     r.RemoveComponent<Position>(e);
@@ -287,7 +287,7 @@ bool test_registry_try_add_invalid_entity_returns_null()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef invalid = EntityRef::Null;
+    Entity invalid = Entity::Null;
     Position* p = r.TryAddComponent<Position>(invalid);
     TEST_ASSERT(p == nullptr);
 
@@ -299,7 +299,7 @@ bool test_registry_try_get_missing_component_returns_null()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     Position* p = r.TryGetComponent<Position>(e);
     TEST_ASSERT(p == nullptr);
 
@@ -311,7 +311,7 @@ bool test_registry_emplace_component()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     Health& h = r.EmplaceComponent<Health>(e);
     h.hp = 50;
     TEST_ASSERT(r.GetComponent<Health>(e).hp == 50);
@@ -324,7 +324,7 @@ bool test_registry_add_component_with_value()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     Position init{ 7.f, 8.f, 9.f };
     r.AddComponent<Position>(e, std::move(init));
 
@@ -341,7 +341,7 @@ bool test_registry_multiple_components_on_entity()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     r.AddComponent<Position>(e).x = 1.f;
     r.AddComponent<Velocity>(e).vx = 5.f;
     r.AddComponent<Health>(e).hp = 75;
@@ -361,8 +361,8 @@ bool test_registry_components_independent_across_entities()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e1 = r.CreateEntity();
-    EntityRef e2 = r.CreateEntity();
+    Entity e1 = r.CreateEntity();
+    Entity e2 = r.CreateEntity();
     r.AddComponent<Position>(e1).x = 1.f;
     r.AddComponent<Position>(e2).x = 2.f;
 
@@ -381,7 +381,7 @@ bool test_registry_dense_storage()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     Transform& t = r.AddComponent<Transform>(e);
     t.m[0] = 1.f;
 
@@ -396,8 +396,8 @@ bool test_registry_singleton_only_one_instance()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e1 = r.CreateEntity();
-    EntityRef e2 = r.CreateEntity();
+    Entity e1 = r.CreateEntity();
+    Entity e2 = r.CreateEntity();
 
     GameConfig& cfg = r.AddComponent<GameConfig>(e1);
     cfg.maxPlayers = 8;
@@ -416,7 +416,7 @@ bool test_registry_small_storage()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     RareMarker& m = r.AddComponent<RareMarker>(e);
     m.id = 42;
 
@@ -433,13 +433,13 @@ bool test_registry_small_storage_respects_max()
 
     for (int i = 0; i < 16; ++i)
     {
-        EntityRef e = r.CreateEntity();
+        Entity e = r.CreateEntity();
         RareMarker* m = r.TryAddComponent<RareMarker>(e);
         TEST_ASSERT(m != nullptr);
     }
 
     // 17th add must fail
-    EntityRef extra = r.CreateEntity();
+    Entity extra = r.CreateEntity();
     RareMarker* overflow = r.TryAddComponent<RareMarker>(extra);
     TEST_ASSERT(overflow == nullptr);
 
@@ -455,9 +455,9 @@ bool test_sparse_remove_preserves_others()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e1 = r.CreateEntity();
-    EntityRef e2 = r.CreateEntity();
-    EntityRef e3 = r.CreateEntity();
+    Entity e1 = r.CreateEntity();
+    Entity e2 = r.CreateEntity();
+    Entity e3 = r.CreateEntity();
 
     r.AddComponent<Position>(e1).x = 1.f;
     r.AddComponent<Position>(e2).x = 2.f;
@@ -479,7 +479,7 @@ bool test_sparse_re_add_after_remove()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     r.AddComponent<Position>(e).x = 10.f;
     r.RemoveComponent<Position>(e);
     TEST_ASSERT(!r.HasComponent<Position>(e));
@@ -500,9 +500,9 @@ bool test_view_query_iterates_all()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e1 = r.CreateEntity();
-    EntityRef e2 = r.CreateEntity();
-    EntityRef e3 = r.CreateEntity();
+    Entity e1 = r.CreateEntity();
+    Entity e2 = r.CreateEntity();
+    Entity e3 = r.CreateEntity();
 
     r.AddComponent<Position>(e1).x = 1.f;
     r.AddComponent<Position>(e2).x = 2.f;
@@ -520,9 +520,9 @@ bool test_view_query_skips_entities_without_component()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e1 = r.CreateEntity();
-    EntityRef e2 = r.CreateEntity(); // no Position
-    EntityRef e3 = r.CreateEntity();
+    Entity e1 = r.CreateEntity();
+    Entity e2 = r.CreateEntity(); // no Position
+    Entity e3 = r.CreateEntity();
 
     r.AddComponent<Position>(e1).x = 1.f;
     r.AddComponent<Position>(e3).x = 3.f;
@@ -539,11 +539,11 @@ bool test_view_query_with_entity_ref()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     r.AddComponent<Position>(e).x = 99.f;
 
     bool found = false;
-    r.Filter<Position>().ForEach([&](EntityRef ref, Position& p)
+    r.Filter<Position>().ForEach([&](Entity ref, Position& p)
     {
         TEST_ASSERT(ref == e);
         TEST_ASSERT(p.x == 99.f);
@@ -559,7 +559,7 @@ bool test_view_query_mutation_visible()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     r.AddComponent<Position>(e).x = 0.f;
 
     r.Filter<Position>().ForEach([](Position& p) { p.x = 42.f; });
@@ -589,9 +589,9 @@ bool test_filter_query_two_components()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e1 = r.CreateEntity();
-    EntityRef e2 = r.CreateEntity();
-    EntityRef e3 = r.CreateEntity();
+    Entity e1 = r.CreateEntity();
+    Entity e2 = r.CreateEntity();
+    Entity e3 = r.CreateEntity();
 
     r.AddComponent<Position>(e1).x = 1.f;
     r.AddComponent<Velocity>(e1);
@@ -618,8 +618,8 @@ bool test_filter_query_three_components()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e1 = r.CreateEntity();
-    EntityRef e2 = r.CreateEntity();
+    Entity e1 = r.CreateEntity();
+    Entity e2 = r.CreateEntity();
 
     r.AddComponent<Position>(e1);
     r.AddComponent<Velocity>(e1);
@@ -641,12 +641,12 @@ bool test_filter_query_with_entity_ref()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     r.AddComponent<Position>(e).x = 5.f;
     r.AddComponent<Velocity>(e).vx = 3.f;
 
     bool found = false;
-    r.Filter<Position, Velocity>().ForEach([&](EntityRef ref, Position& p, Velocity& v)
+    r.Filter<Position, Velocity>().ForEach([&](Entity ref, Position& p, Velocity& v)
     {
         TEST_ASSERT(ref == e);
         TEST_ASSERT(p.x == 5.f);
@@ -663,7 +663,7 @@ bool test_filter_query_mutation_visible()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     r.AddComponent<Position>(e).x = 0.f;
     r.AddComponent<Velocity>(e).vx = 5.f;
 
@@ -681,7 +681,7 @@ bool test_filter_query_no_false_positives()
     // i = 0, 3, 6, 9 get Velocity → 4 entities have both
     for (int i = 0; i < 10; ++i)
     {
-        EntityRef e = r.CreateEntity();
+        Entity e = r.CreateEntity();
         r.AddComponent<Position>(e).x = (float)i;
         if (i % 3 == 0)
             r.AddComponent<Velocity>(e);
@@ -703,9 +703,9 @@ bool test_exclude_query_basic()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e1 = r.CreateEntity();
-    EntityRef e2 = r.CreateEntity();
-    EntityRef e3 = r.CreateEntity();
+    Entity e1 = r.CreateEntity();
+    Entity e2 = r.CreateEntity();
+    Entity e3 = r.CreateEntity();
 
     r.AddComponent<Position>(e1); r.AddComponent<Velocity>(e1);
     r.AddComponent<Position>(e2); r.AddComponent<Velocity>(e2); r.AddComponent<Tag>(e2);
@@ -728,7 +728,7 @@ bool test_exclude_query_no_tagged_entities()
 
     for (int i = 0; i < 5; ++i)
     {
-        EntityRef e = r.CreateEntity();
+        Entity e = r.CreateEntity();
         r.AddComponent<Position>(e);
         r.AddComponent<Velocity>(e);
     }
@@ -751,7 +751,7 @@ bool test_exclude_query_no_tagged_entities()
 bool test_bitset_set_and_test()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     r.AddComponent<Position>(e);
     TEST_ASSERT(r.GetStorage<Position>()->Mask().test(e.Idx));
     r.Clear();
@@ -761,7 +761,7 @@ bool test_bitset_set_and_test()
 bool test_bitset_clear_after_remove()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     r.AddComponent<Position>(e);
     r.RemoveComponent<Position>(e);
     TEST_ASSERT(!r.GetStorage<Position>()->Mask().test(e.Idx));
@@ -773,9 +773,9 @@ bool test_bitset_foreach_visits_correct_count()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e1 = r.CreateEntity();
-    EntityRef e2 = r.CreateEntity();
-    EntityRef e3 = r.CreateEntity();
+    Entity e1 = r.CreateEntity();
+    Entity e2 = r.CreateEntity();
+    Entity e3 = r.CreateEntity();
 
     r.AddComponent<Position>(e1);
     r.AddComponent<Position>(e2);
@@ -796,7 +796,7 @@ bool test_bitset_foreach_visits_correct_count()
 bool test_type_info_correct()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     r.AddComponent<Position>(e);
     TEST_ASSERT(r.GetStorage<Position>()->TypeInfo() == typeid(Position));
     r.Clear();
@@ -1061,7 +1061,7 @@ bool test_reflect_registry_ops_add_get_has_remove()
     TEST_ASSERT(entry != nullptr);
 
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
 
     Reflect::Any added = entry->addToRegistry(&r, e);
     TEST_ASSERT(added.IsValid());
@@ -1086,7 +1086,7 @@ bool test_reflect_clone_to_registry()
     Registry src(MAX_ENTITIES / 2, MAX_COMPONENTS);
     Registry dst(MAX_ENTITIES / 2, MAX_COMPONENTS);
 
-    EntityRef e = src.CreateEntity();
+    Entity e = src.CreateEntity();
     dst.CreateEntity(e); // same slot in dst
 
     src.AddComponent<Position>(e).x = 42.f;
@@ -1109,12 +1109,12 @@ bool test_many_entities_add_remove_cycle()
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
     const int N = 500;
-    std::vector<EntityRef> entities;
+    std::vector<Entity> entities;
     entities.reserve(N);
 
     for (int i = 0; i < N; ++i)
     {
-        EntityRef e = r.CreateEntity();
+        Entity e = r.CreateEntity();
         entities.push_back(e);
         r.AddComponent<Position>(e).x = (float)i;
         r.AddComponent<Velocity>(e).vx = (float)(i * 2);
@@ -1139,9 +1139,9 @@ bool test_filter_query_values_correct_after_removes()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e1 = r.CreateEntity();
-    EntityRef e2 = r.CreateEntity();
-    EntityRef e3 = r.CreateEntity();
+    Entity e1 = r.CreateEntity();
+    Entity e2 = r.CreateEntity();
+    Entity e3 = r.CreateEntity();
 
     r.AddComponent<Position>(e1).x = 1.f; r.AddComponent<Velocity>(e1);
     r.AddComponent<Position>(e2).x = 2.f; r.AddComponent<Velocity>(e2);
@@ -1161,11 +1161,11 @@ bool test_entity_generation_invalidates_stale_refs()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
-    EntityRef e = r.CreateEntity();
+    Entity e = r.CreateEntity();
     r.AddComponent<Position>(e);
     r.DestroyEntity(e);
 
-    EntityRef e2 = r.CreateEntity();
+    Entity e2 = r.CreateEntity();
     TEST_ASSERT(e2.Idx == e.Idx);
     TEST_ASSERT(e2.Gen != e.Gen);
     TEST_ASSERT(!r.IsValid(e));
@@ -1183,10 +1183,10 @@ bool test_filter_query_consistent_after_swap_remove()
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
 
     // Add 5 entities, remove the middle one (triggers swap-and-pop)
-    std::vector<EntityRef> entities;
+    std::vector<Entity> entities;
     for (int i = 0; i < 5; ++i)
     {
-        EntityRef e = r.CreateEntity();
+        Entity e = r.CreateEntity();
         entities.push_back(e);
         r.AddComponent<Position>(e).x = (float)(i + 1);
         r.AddComponent<Velocity>(e);
@@ -1225,9 +1225,9 @@ int TestECS()
 
     std::cout << "\n=== ECS Tests ===\n\n";
 
-    std::cout << "-- EntityRef --\n";
-    RUN_TEST(test_entityref_equality);
-    RUN_TEST(test_entityref_nill);
+    std::cout << "-- Entity --\n";
+    RUN_TEST(test_Entity_equality);
+    RUN_TEST(test_Entity_nill);
 
     std::cout << "\n-- Registry: Entity Lifecycle --\n";
     RUN_TEST(test_registry_create_entity);

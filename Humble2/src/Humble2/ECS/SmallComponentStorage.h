@@ -17,17 +17,17 @@ namespace HBL2
             m_Mask.Initialize(maxEntities, reservation);
 
             size_t bytes = 0;
-            bytes += N * sizeof(EntityRef);
+            bytes += N * sizeof(Entity);
             bytes += N * sizeof(T);
 
             m_Arena.Initialize(&Allocator::Arena, bytes, reservation);
 
-            m_Entities = (EntityRef*)m_Arena.Alloc(N * sizeof(EntityRef));
+            m_Entities = (Entity*)m_Arena.Alloc(N * sizeof(Entity));
             m_Components = (T*)m_Arena.Alloc(N * sizeof(T));
             m_Size = 0;
         }
 
-        virtual void* Add(EntityRef e) override
+        virtual void* Add(Entity e) override
         {
             if (m_Size < N)
             {
@@ -39,7 +39,7 @@ namespace HBL2
             return nullptr;
         }
 
-        virtual void Remove(EntityRef e) override
+        virtual void Remove(Entity e) override
         {
             for (uint32_t i = 0; i < m_Size; ++i)
             {
@@ -65,7 +65,7 @@ namespace HBL2
             }
         }
 
-        virtual void* Get(EntityRef e) override
+        virtual void* Get(Entity e) override
         {
             for (uint32_t i = 0; i < m_Size; ++i)
             {
@@ -78,7 +78,7 @@ namespace HBL2
             return nullptr;
         }
 
-        virtual bool Has(EntityRef e) const override
+        virtual bool Has(Entity e) const override
         {
             return m_Mask.test(e.Idx);
         }
@@ -125,7 +125,7 @@ namespace HBL2
     private:
         Arena m_Arena;
         T* m_Components = nullptr;
-        EntityRef* m_Entities = nullptr;
+        Entity* m_Entities = nullptr;
         uint32_t m_MaxEntities = 0;
         uint32_t m_Size = 0;
     };

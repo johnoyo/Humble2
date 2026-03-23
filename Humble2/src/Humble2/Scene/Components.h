@@ -13,7 +13,6 @@
 #include "Utilities\Collections\StaticArray.h"
 #include "Utilities\Collections\StaticDArray.h"
 
-#include <entt.hpp>
 #include <glm\gtx\hash.hpp>
 
 namespace HBL2

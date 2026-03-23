@@ -13,9 +13,9 @@ namespace HBL2
 			m_Mask.Initialize(maxEntities, reservation);
 		}
 
-		virtual void* Add(EntityRef e) override
+		virtual void* Add(Entity e) override
 		{
-			if (m_Entity == EntityRef::Null)
+			if (m_Entity == Entity::Null)
 			{
 				m_Entity = e;
 				m_Component = T{};
@@ -26,7 +26,7 @@ namespace HBL2
 			return nullptr;
 		}
 
-		virtual void Remove(EntityRef e) override
+		virtual void Remove(Entity e) override
 		{
 			if (m_Entity == e)
 			{
@@ -36,11 +36,11 @@ namespace HBL2
 				}
 
 				m_Mask.clear(e.Idx);
-				m_Entity = EntityRef::Null;
+				m_Entity = Entity::Null;
 			}
 		}
 
-		virtual void* Get(EntityRef e) override
+		virtual void* Get(Entity e) override
 		{
 			if (m_Entity == e)
 			{
@@ -50,7 +50,7 @@ namespace HBL2
 			return nullptr;
 		}
 
-		virtual bool Has(EntityRef e) const override
+		virtual bool Has(Entity e) const override
 		{
 			if (m_Entity == e)
 			{
@@ -61,7 +61,7 @@ namespace HBL2
 
 		virtual void Iterate(StaticFunction<void(void*), 128>&& func) override
 		{
-			if (m_Entity != EntityRef::Null)
+			if (m_Entity != Entity::Null)
 			{
 				func((void*)&m_Component);
 			}
@@ -70,7 +70,7 @@ namespace HBL2
 		virtual void Clear() override
 		{
 			m_Mask.destroy();
-			m_Entity = EntityRef::Null;
+			m_Entity = Entity::Null;
 		}
 
 		virtual const std::type_info& TypeInfo() const override
@@ -85,6 +85,6 @@ namespace HBL2
 
 	private:
 		T m_Component;
-		EntityRef m_Entity = EntityRef::Null;
+		Entity m_Entity = Entity::Null;
 	};
 }

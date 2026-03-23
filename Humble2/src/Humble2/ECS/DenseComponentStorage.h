@@ -18,7 +18,7 @@ namespace HBL2
 			m_Components = (T*)m_Arena.Alloc(m_MaxEntities * sizeof(T));
 		}
 
-		virtual void* Add(EntityRef e) override
+		virtual void* Add(Entity e) override
 		{
 			m_Components[e.Idx] = T{};
 			m_Mask.set(e.Idx);
@@ -26,7 +26,7 @@ namespace HBL2
 			return &m_Components[e.Idx];
 		}
 
-		virtual void Remove(EntityRef e) override
+		virtual void Remove(Entity e) override
 		{
 			if constexpr (!std::is_trivially_destructible_v<T>)
 			{
@@ -36,12 +36,12 @@ namespace HBL2
 			m_Mask.clear(e.Idx);
 		}
 
-		virtual void* Get(EntityRef e) override
+		virtual void* Get(Entity e) override
 		{
 			return &m_Components[e.Idx];
 		}
 
-		virtual bool Has(EntityRef e) const override
+		virtual bool Has(Entity e) const override
 		{
 			return m_Mask.test(e.Idx);
 		}

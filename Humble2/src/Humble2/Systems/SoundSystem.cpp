@@ -37,8 +37,8 @@ namespace HBL2
         m_Channels.reserve(256);
 
         // Pre-load sounds referenced by existing AudioSource components.
-        m_Context->View<Component::AudioSource>()
-            .Each([&](Component::AudioSource& audioSource)
+        m_Context->Filter<Component::AudioSource>()
+            .ForEach([&](Component::AudioSource& audioSource)
             {
                 if (!audioSource.Sound.IsValid())
                 {
@@ -74,8 +74,8 @@ namespace HBL2
 
         UpdateListener();
 
-        m_Context->View<Component::AudioSource>()
-            .Each([&](Entity entity, Component::AudioSource& audioSource)
+        m_Context->Filter<Component::AudioSource>()
+            .ForEach([&](Entity entity, Component::AudioSource& audioSource)
             {
                 if (!audioSource.Sound.IsValid())
                 {
@@ -211,8 +211,8 @@ namespace HBL2
         // Release sounds referenced by AudioSources.
         std::unordered_set<SoundID> released;
 
-        m_Context->View<Component::AudioSource>()
-            .Each([&](Component::AudioSource& audioSource)
+        m_Context->Filter<Component::AudioSource>()
+            .ForEach([&](Component::AudioSource& audioSource)
             {
                 Sound* sound = ResourceManager::Instance->GetSound(audioSource.Sound);
                 if (!sound)

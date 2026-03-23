@@ -2,5 +2,5 @@
 
 namespace HBL2
 {
-	constexpr EntityRef EntityRef::Null = { 0, 0 };
+	constexpr Entity Entity::Null = { 0, 0 };
 }

@@ -283,8 +283,8 @@ namespace HBL2
 
 				if (ImGui::BeginMenu("View"))
 				{
-					m_Context->View<Component::EditorPanel>()
-						.Each([&](Component::EditorPanel& panel)
+					m_Context->Filter<Component::EditorPanel>()
+						.ForEach([&](Component::EditorPanel& panel)
 						{
 							ImGui::Checkbox(panel.Name.c_str(), &panel.Enabled);
 						});
@@ -559,8 +559,8 @@ namespace HBL2
 
 				ImGui::Separator();
 
-				m_Context->View<Component::EditorCamera>()
-					.Each([&](Entity entity, Component::EditorCamera& editorCamera)
+				m_Context->Filter<Component::EditorCamera>()
+					.ForEach([&](Entity entity, Component::EditorCamera& editorCamera)
 					{
 						ImGui::Text("Camera Transform:");
 

@@ -37,12 +37,12 @@ namespace HBL2
         {
             using FuncT = std::decay_t<Func>;
 
-            if constexpr (std::is_invocable_v<FuncT, EntityRef, Components&...>)
+            if constexpr (std::is_invocable_v<FuncT, Entity, Components&...>)
             {
                 TwoLevelBitset::forEachN(
                     [&](uint32_t idx)
                     {
-                        EntityRef e{ (int32_t)idx, m_Generations[idx] };
+                        Entity e{ (int32_t)idx, m_Generations[idx] };
                         func(e, std::get<Indices>(m_Storages)->GetDirect(idx)...);
                     },
                     std::get<Indices>(m_Storages)->Mask()...

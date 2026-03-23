@@ -124,19 +124,19 @@ namespace HBL2
 
 			if (opened)
 			{
-				for (const auto e : entities)
+				entities.ForEach([&](Entity e)
 				{
 					if (m_ActiveScene->HasComponent<HBL2::Component::Link>(e))
 					{
-						const auto parentEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::Link>(e).Parent;
-						auto parentEntity = m_ActiveScene->FindEntityByUUID(parentEntityUUID);
+						UUID parentEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::Link>(e).Parent;
+						Entity parentEntity = m_ActiveScene->FindEntityByUUID(parentEntityUUID);
 
 						if (parentEntity == entity)
 						{
 							DrawHierachy(e, entities);
 						}
 					}
-				}
+				});
 
 				ImGui::TreePop();
 			}
@@ -368,7 +368,7 @@ namespace HBL2
 			{
 				HandleHierachyPanelDragAndDrop();
 
-				for (const auto entity : entities)
+				entities.ForEach([&](Entity entity)
 				{
 					// Only display entities that have no parent (i.e., true root entities)
 					// The child nodes will be displayed recursively in the DrawHierachy method.
@@ -384,7 +384,7 @@ namespace HBL2
 					{
 						DrawHierachy(entity, entities);
 					}
-				}
+				});
 			}
 
 			if (m_EntityToBeDeleted != Entity::Null)

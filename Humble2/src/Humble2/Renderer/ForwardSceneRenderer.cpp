@@ -310,9 +310,8 @@ namespace HBL2
 			m_ResourceManager->DeleteMesh(m_CubeMesh);
 
 			m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
-			m_Scene->GetRegistry()
-				.view<Component::SkyLight>()
-				.each([&](Component::SkyLight& skyLight)
+			m_Scene->Filter<Component::SkyLight>()
+				.ForEach([&](Component::SkyLight& skyLight)
 				{
 					m_ResourceManager->DeleteTexture(skyLight.CubeMap);
 					skyLight.CubeMap = {};
@@ -835,9 +834,8 @@ namespace HBL2
 			}
 		});
 
-		m_Scene->GetRegistry()
-			.view<Component::SkyLight>()
-			.each([&](Component::SkyLight& skyLight)
+		m_Scene->Filter<Component::SkyLight>()
+			.ForEach([&](Component::SkyLight& skyLight)
 			{
 				skyLight.CubeMapMaterial = {};
 				skyLight.CubeMap = {};
@@ -1087,8 +1085,8 @@ namespace HBL2
 			sceneRenderData->m_PrePassStaticMeshDraws.Reset();
 			sceneRenderData->m_ShadowPassStaticMeshDraws.Reset();
 
-			m_Scene->Group<Component::StaticMesh>(Get<Component::Transform>)
-				.Each([&](Component::StaticMesh& staticMesh, Component::Transform& transform)
+			m_Scene->Filter<Component::StaticMesh, Component::Transform>()
+				.ForEach([&](Component::StaticMesh& staticMesh, Component::Transform& transform)
 				{
 					if (staticMesh.Enabled)
 					{
@@ -1213,8 +1211,8 @@ namespace HBL2
 			sceneRenderData->m_SpriteTransparentDraws.Reset();
 			sceneRenderData->m_PrePassSpriteDraws.Reset();
 
-			m_Scene->Group<Component::Sprite>(Get<Component::Transform>)
-				.Each([&](Component::Sprite& sprite, Component::Transform& transform)
+			m_Scene->Filter<Component::Sprite, Component::Transform>()
+				.ForEach([&](Component::Sprite& sprite, Component::Transform& transform)
 				{
 					if (sprite.Enabled)
 					{
@@ -1299,8 +1297,8 @@ namespace HBL2
 	{
 		sceneRenderData->m_LightData.LightCount = 0;
 
-		m_Scene->Group<Component::Light>(Get<Component::Transform>)
-			.Each([&](Component::Light& light, Component::Transform& transform)
+		m_Scene->Filter<Component::Light, Component::Transform>()
+			.ForEach([&](Component::Light& light, Component::Transform& transform)
 			{
 				if (light.Enabled)
 				{
@@ -1394,8 +1392,8 @@ namespace HBL2
 		Handle<BindGroup> globalBindings = Renderer::Instance->GetShadowBindings();
 		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)sceneRenderData->m_LightSpaceMatricesData.data());
 
-		m_Scene->Group<Component::Light>(Get<Component::Transform>)
-			.Each([&](Component::Light& light, Component::Transform& transform)
+		m_Scene->Filter<Component::Light, Component::Transform>()
+			.ForEach([&](Component::Light& light, Component::Transform& transform)
 			{
 				if (light.Enabled)
 				{
@@ -1529,8 +1527,8 @@ namespace HBL2
 
 		uint64_t skyboxVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_EquirectToSkyboxShader, m_ComputeVariant);
 
-		m_Scene->View<Component::SkyLight>()
-			.Each([&](Component::SkyLight& skyLight)
+		m_Scene->Filter<Component::SkyLight>()
+			.ForEach([&](Component::SkyLight& skyLight)
 			{
 				if (skyLight.Enabled)
 				{
@@ -1567,7 +1565,7 @@ namespace HBL2
 							.usage = { TextureUsage::TEXTURE_BINDING, TextureUsage::SAMPLED, TextureUsage::STORAGE_BINDING },
 							.type = TextureType::CUBE,
 							.aspect = TextureAspect::COLOR,
-							.sampler = {.filter = Filter::LINEAR, .wrap = Wrap::CLAMP_TO_EDGE, },
+							.sampler = {.filter = TextureFilter::LINEAR, .wrap = Wrap::CLAMP_TO_EDGE, },
 							.initialLayout = TextureLayout::GENERAL,
 						});
 

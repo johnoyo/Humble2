@@ -275,8 +275,8 @@ namespace HBL2
 		// Update the instantiated prefab entities that exist in the scene.
 		std::vector<PrefabInfo> instantiatedPrefabEntitiesInfo;
 
-		activeScene->View<Component::ID, Component::PrefabInstance, Component::Transform, Component::Tag>()
-			.Each([&](Entity entity, Component::ID& id, Component::PrefabInstance& prefab, Component::Transform& tr, Component::Tag& tag)
+		activeScene->Filter<Component::ID, Component::PrefabInstance, Component::Transform, Component::Tag>()
+			.ForEach([&](Entity entity, Component::ID& id, Component::PrefabInstance& prefab, Component::Transform& tr, Component::Tag& tag)
 			{
 				if (prefab.Id == prefabAsset->UUID && prefab.Override)
 				{

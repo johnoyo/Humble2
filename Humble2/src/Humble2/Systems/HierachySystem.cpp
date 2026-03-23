@@ -35,8 +35,8 @@ namespace HBL2
 
 	void HierachySystem::OnCreate()
 	{
-		m_Context->Group<Component::Transform, Component::TransformEx, Component::Link>()
-			.Each([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
+		m_Context->Filter<Component::Transform, Component::TransformEx, Component::Link>()
+			.ForEach([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
 			{
 				// Calculate initial matrices.
 				glm::mat4 T = glm::translate(glm::mat4(1.0f), transform.Translation);
@@ -50,8 +50,8 @@ namespace HBL2
 				link.Children.clear();
 			});
 
-		m_Context->Group<Component::Transform, Component::TransformEx, Component::Link>()
-			.Each([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
+		m_Context->Filter<Component::Transform, Component::TransformEx, Component::Link>()
+			.ForEach([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
 			{
 				transform.WorldMatrix = GetWorldSpaceTransform(entity, link);
 				AddChildren(entity, link);
@@ -63,8 +63,8 @@ namespace HBL2
 		BEGIN_PROFILE_SYSTEM();
 
 		// Handle world edits (world TRS -> local TRS).
-		m_Context->Group<Component::Transform, Component::TransformEx, Component::Link>()
-			.Each([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
+		m_Context->Filter<Component::Transform, Component::TransformEx, Component::Link>()
+			.ForEach([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
 			{
 				if (transform.Static)
 				{
@@ -109,8 +109,8 @@ namespace HBL2
 			});
 
 		// Update children lists only when parent changes.
-		m_Context->Group<Component::Transform, Component::TransformEx, Component::Link>()
-			.Each([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
+		m_Context->Filter<Component::Transform, Component::TransformEx, Component::Link>()
+			.ForEach([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
 			{
 				const UUID before = link.PrevParent;
 				UpdateChildren(entity, link);
@@ -123,8 +123,8 @@ namespace HBL2
 			});
 
 		// Rebuild local matrices only for dirty nodes.
-		m_Context->Group<Component::Transform, Component::TransformEx, Component::Link>()
-			.Each([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
+		m_Context->Filter<Component::Transform, Component::TransformEx, Component::Link>()
+			.ForEach([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
 			{
 				if (transform.Static)
 				{
@@ -160,8 +160,8 @@ namespace HBL2
 		ComputeWorldFromDirtyRoots();
 
 		// Update world TRS.
-		m_Context->Group<Component::Transform, Component::TransformEx, Component::Link>()
-			.Each([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
+		m_Context->Filter<Component::Transform, Component::TransformEx, Component::Link>()
+			.ForEach([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
 			{
 				if (transform.Static || !transform.Dirty)
 				{
@@ -195,8 +195,8 @@ namespace HBL2
 		DArray<Entity> dirtyRoots = MakeDArray<Entity>(scratch, 512);
 
 		// Find "dirty roots" (dirty nodes whose parent is not dirty, or no/invalid parent)
-		m_Context->Group<Component::Transform, Component::TransformEx, Component::Link>()
-			.Each([&](Entity e, Component::Transform& t, Component::TransformEx& tEx, Component::Link& l)
+		m_Context->Filter<Component::Transform, Component::TransformEx, Component::Link>()
+			.ForEach([&](Entity e, Component::Transform& t, Component::TransformEx& tEx, Component::Link& l)
 			{
 				if (t.Static || !t.Dirty)
 				{
@@ -309,8 +309,8 @@ namespace HBL2
 	{
 		BEGIN_PROFILE_SYSTEM();
 
-		m_Context->Group<Component::Transform, Component::TransformEx, Component::Link>()
-			.Each([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
+		m_Context->Filter<Component::Transform, Component::TransformEx, Component::Link>()
+			.ForEach([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
 			{
 				const bool worldTChanged = (transformEx.PrevWorldTranslation != transform.WorldTranslation);
 				const bool worldRChanged = (transformEx.PrevWorldRotation != transform.WorldRotation);
@@ -356,8 +356,8 @@ namespace HBL2
 			});
 
 		// Calculate world matrices.
-		m_Context->Group<Component::Transform, Component::TransformEx, Component::Link>()
-			.Each([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
+		m_Context->Filter<Component::Transform, Component::TransformEx, Component::Link>()
+			.ForEach([&](Entity entity, Component::Transform& transform, Component::TransformEx& transformEx, Component::Link& link)
 				{
 				if (!transform.Static)
 				{

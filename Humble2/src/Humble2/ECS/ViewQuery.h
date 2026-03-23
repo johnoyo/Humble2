@@ -33,11 +33,11 @@ namespace HBL2
         {
             using FuncT = std::decay_t<Func>;
 
-            if constexpr (std::is_invocable_v<FuncT, EntityRef, Component&>)
+            if constexpr (std::is_invocable_v<FuncT, Entity, Component&>)
             {
                 m_Storage->Mask().forEach([&](uint32_t idx)
                 {
-                    EntityRef e{ (int32_t)idx, m_Generations[idx] };
+                    Entity e{ (int32_t)idx, m_Generations[idx] };
                     func(e, m_Storage->GetDirect(idx));
                 });
             }

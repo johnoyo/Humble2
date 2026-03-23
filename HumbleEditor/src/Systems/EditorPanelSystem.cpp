@@ -2,6 +2,7 @@
 
 #include "Humble2\Utilities\FileDialogs.h"
 #include "Humble2\Utilities\YamlUtilities.h"
+#include "Humble2\Utilities\Collections\StaticString.h"
 #include "EditorCameraSystem.h"
 
 #include "Resources\Handle.h"
@@ -29,24 +30,16 @@ namespace HBL2
 
 				// Delete temporary play mode scene.
 				Scene* currentScene = ResourceManager::Instance->GetScene(e.OldScene);
-				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != std::string::npos)
+				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != StaticString<64>::npos)
 				{
 					if (m_HotReloadedDLL)
 					{
 						// Store all registered meta types.
-						for (auto meta_type : entt::resolve(currentScene->GetMetaContext()))
+						Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 						{
-							const auto& alias = meta_type.second.info().name();
-
-							if (alias.size() == 0 || alias.size() >= UINT32_MAX || alias.data() == nullptr)
-							{
-								HBL2_CORE_ERROR("Empty meta type registered on scene {}!", currentScene->GetName());
-								continue;
-							}
-
-							const std::string& cleanName = BuildEngine::Instance->CleanComponentNameO3(alias.data());
+							const std::string& cleanName = BuildEngine::Instance->CleanComponentNameO3(std::string(entry.typeName));
 							userComponentNames.push_back(cleanName);
-						}
+						});
 
 						for (ISystem* userSystem : currentScene->GetRuntimeSystems())
 						{
@@ -85,8 +78,8 @@ namespace HBL2
 
 				if (m_ActiveScene != nullptr)
 				{
-					m_ActiveScene->View<HBL2::Component::Camera>()
-						.Each([&](HBL2::Component::Camera& camera)
+					m_ActiveScene->Filter<HBL2::Component::Camera>()
+						.ForEach([&](HBL2::Component::Camera& camera)
 						{
 							if (camera.Enabled)
 							{
@@ -222,8 +215,8 @@ namespace HBL2
 
 		void EditorPanelSystem::OnGuiRender(float ts)
 		{
-			m_Context->View<Component::EditorPanel>()
-				.Each([&](Component::EditorPanel& panel)
+			m_Context->Filter<Component::EditorPanel>()
+				.ForEach([&](Component::EditorPanel& panel)
 				{
 					if (panel.Enabled)
 					{

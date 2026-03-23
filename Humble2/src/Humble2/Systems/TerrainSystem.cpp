@@ -29,8 +29,8 @@ namespace HBL2
 		m_ResourceManager = ResourceManager::Instance;
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 
-		m_Context->Group<Component::Terrain>(Get<Component::AnimationCurve>)
-			.Each([this](Entity entity, Component::Terrain& terrain, Component::AnimationCurve& curve)
+		m_Context->Filter<Component::Terrain, Component::AnimationCurve>()
+			.ForEach([this](Entity entity, Component::Terrain& terrain, Component::AnimationCurve& curve)
 			{
 				// Calculate chunk visibility and max view distance
 				terrain.MaxViewDst = terrain.DetailLevels[terrain.DetailLevels.size() - 1].VisibleDstThreshold;
@@ -52,8 +52,8 @@ namespace HBL2
 		Scene* scene = (Context::Mode == Mode::Editor ? m_EditorScene : m_Context);
 		const Component::Transform& viewer = scene->GetComponent<Component::Transform>(GetMainCamera());
 
-		m_Context->Group<Component::Terrain>(Get<Component::AnimationCurve>)
-			.Each([this, &viewer](Entity e, Component::Terrain& terrain, Component::AnimationCurve& curve)
+		m_Context->Filter<Component::Terrain, Component::AnimationCurve>()
+			.ForEach([this, &viewer](Entity e, Component::Terrain& terrain, Component::AnimationCurve& curve)
 			{
 				UpdateVisibleChunks(e, terrain, curve, viewer);
 			});
@@ -67,8 +67,8 @@ namespace HBL2
 
 		const Component::Transform& viewer = scene->GetComponent<Component::Transform>(GetMainCamera());
 
-		m_Context->Group<Component::Terrain>(Get<Component::AnimationCurve>)
-			.Each([this, &viewer](Entity e, Component::Terrain& terrain, Component::AnimationCurve& curve)
+		m_Context->Filter<Component::Terrain, Component::AnimationCurve>()
+			.ForEach([this, &viewer](Entity e, Component::Terrain& terrain, Component::AnimationCurve& curve)
 			{
 				if (terrain.NoiseScale <= 0)
 				{
@@ -809,8 +809,8 @@ namespace HBL2
 		ScratchArena scratch(Allocator::FrameArenaMT);
 		DArray<Entity> chunks = MakeDArray<Entity>(scratch, 512);
 
-		m_Context->Group<Component::TerrainChunk>(Get<Component::Transform, Component::StaticMesh>)
-			.Each([&](Entity chunk, Component::TerrainChunk& terrainChunk, Component::Transform& tr, Component::StaticMesh& chunkMesh)
+		m_Context->Filter<Component::TerrainChunk, Component::Transform, Component::StaticMesh>()
+			.ForEach([&](Entity chunk, Component::TerrainChunk& terrainChunk, Component::Transform& tr, Component::StaticMesh& chunkMesh)
 			{
 				// Disable all the chunks visible last update.
 				if (terrainChunk.VisibleLastUpdate)
@@ -992,8 +992,8 @@ namespace HBL2
 		ScratchArena scratch(Allocator::FrameArenaMT);
 		DArray<Entity> chunks = MakeDArray<Entity>(scratch, 512);
 
-		m_Context->View<Component::TerrainChunk>()
-			.Each([this, ownerUUID, &chunks](Entity chunk, Component::TerrainChunk& terrainChunk)
+		m_Context->Filter<Component::TerrainChunk>()
+			.ForEach([this, ownerUUID, &chunks](Entity chunk, Component::TerrainChunk& terrainChunk)
 			{
 				if (ownerUUID != terrainChunk.Owner && ownerUUID != 0)
 				{
@@ -1039,8 +1039,8 @@ namespace HBL2
 		}
 
 		// Clear the chunk cache stored in terrains.
-		m_Context->View<Component::Terrain>()
-			.Each([](Component::Terrain& terrain)
+		m_Context->Filter<Component::Terrain>()
+			.ForEach([](Component::Terrain& terrain)
 			{
 				terrain.ChunksCache.clear();
 

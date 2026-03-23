@@ -6,12 +6,14 @@ namespace HBL2
 {
 	static Entity GetEntityFromBodyId(Physics::ID body)
 	{
-		return static_cast<uint32_t>(reinterpret_cast<intptr_t>(b2Body_GetUserData(b2LoadBodyId(body))));
+		intptr_t packedEntity = reinterpret_cast<intptr_t>(b2Body_GetUserData(b2LoadBodyId(body)));
+		return Entity{ static_cast<int32_t>(packedEntity & 0xFFFFFFFF), static_cast<int32_t>((packedEntity >> 32) & 0xFFFFFFFF) };
 	}
 
 	static Entity GetEntityFromShapeId(Physics::ID shape)
 	{
-		return static_cast<uint32_t>(reinterpret_cast<intptr_t>(b2Shape_GetUserData(b2LoadShapeId(shape))));
+		intptr_t packedEntity = reinterpret_cast<intptr_t>(b2Shape_GetUserData(b2LoadShapeId(shape)));
+		return Entity{ static_cast<int32_t>(packedEntity & 0xFFFFFFFF), static_cast<int32_t>((packedEntity >> 32) & 0xFFFFFFFF) };
 	}
 
 	static b2BodyType BodyTypeTob2BodyType(Physics::BodyType bodyType)
@@ -40,8 +42,8 @@ namespace HBL2
 		m_DebugDraw = b2DefaultDebugDraw();
 		// TODO: Attach debug draw methods to function pointers.
 
-		m_Context->Group<Component::Rigidbody2D>(Get<Component::Transform>)
-			.Each([this](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
+		m_Context->Filter<Component::Rigidbody2D, Component::Transform>()
+			.ForEach([this](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
 			{
 				rb2d.BodyId = CreateRigidbody(entity, rb2d, transform);
 
@@ -56,57 +58,57 @@ namespace HBL2
 	void Box2DPhysicsEngine::Update()
 	{
 		// Handle runtime creations and properties update.
-		m_Context->Group<Component::Rigidbody2D>(Get<Component::Transform>)
-			.Each([this](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
+		m_Context->Filter<Component::Rigidbody2D, Component::Transform>()
+			.ForEach([this](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
+			{
+				// Create rigidbody if it was added and is uninitialized.
+				if (rb2d.BodyId == Physics::InvalidID)
 				{
-					// Create rigidbody if it was added and is uninitialized.
-					if (rb2d.BodyId == Physics::InvalidID)
+					rb2d.BodyId = CreateRigidbody(entity, rb2d, transform);
+				}
+
+				// Update body type if its marked dirty.
+				b2BodyId bodyId = b2LoadBodyId(rb2d.BodyId);
+				if (rb2d.Dirty)
+				{
+					b2Body_SetType(bodyId, BodyTypeTob2BodyType(rb2d.Type));
+					b2Body_SetAwake(bodyId, true);
+					rb2d.Dirty = false;
+				}
+
+				if (m_Context->HasComponent<Component::BoxCollider2D>(entity))
+				{
+					Component::BoxCollider2D& bc2d = m_Context->GetComponent<Component::BoxCollider2D>(entity);
+
+					// Create collider if it was added and is uninitialized.
+					if (bc2d.ShapeId == Physics::InvalidID)
 					{
-						rb2d.BodyId = CreateRigidbody(entity, rb2d, transform);
+						bc2d.ShapeId = CreateBoxCollider(entity, bc2d, rb2d, transform);
 					}
 
-					// Update body type if its marked dirty.
-					b2BodyId bodyId = b2LoadBodyId(rb2d.BodyId);
-					if (rb2d.Dirty)
+					// Update shape properties.
+					b2ShapeId shapeId = b2LoadShapeId(bc2d.ShapeId);
+
+					b2Shape_SetFriction(shapeId, bc2d.Friction);
+					b2Shape_SetRestitution(shapeId, bc2d.Restitution);
+					b2Shape_SetDensity(shapeId, bc2d.Density, true);
+
+					// Update shape polygon (collider) if its marked dirty.
+					if (bc2d.Dirty)
 					{
-						b2Body_SetType(bodyId, BodyTypeTob2BodyType(rb2d.Type));
-						b2Body_SetAwake(bodyId, true);
-						rb2d.Dirty = false;
+						const b2Polygon& polygon = b2MakeBox(bc2d.Size.x * transform.Scale.x, bc2d.Size.y * transform.Scale.y);
+						b2Shape_SetPolygon(shapeId, &polygon);
+						bc2d.Dirty = false;
 					}
-
-					if (m_Context->HasComponent<Component::BoxCollider2D>(entity))
-					{
-						Component::BoxCollider2D& bc2d = m_Context->GetComponent<Component::BoxCollider2D>(entity);
-
-						// Create collider if it was added and is uninitialized.
-						if (bc2d.ShapeId == Physics::InvalidID)
-						{
-							bc2d.ShapeId = CreateBoxCollider(entity, bc2d, rb2d, transform);
-						}
-
-						// Update shape properties.
-						b2ShapeId shapeId = b2LoadShapeId(bc2d.ShapeId);
-
-						b2Shape_SetFriction(shapeId, bc2d.Friction);
-						b2Shape_SetRestitution(shapeId, bc2d.Restitution);
-						b2Shape_SetDensity(shapeId, bc2d.Density, true);
-
-						// Update shape polygon (collider) if its marked dirty.
-						if (bc2d.Dirty)
-						{
-							const b2Polygon& polygon = b2MakeBox(bc2d.Size.x * transform.Scale.x, bc2d.Size.y * transform.Scale.y);
-							b2Shape_SetPolygon(shapeId, &polygon);
-							bc2d.Dirty = false;
-						}
-					}
-				});
+				}
+			});
 
 		// Progress the simulation.
 		b2World_Step(m_PhysicsWorld, Time::FixedTimeStep, m_SubStepCount);
 
 		// Update the transform of rigidbodies. Consider using b2World_GetBodyEvents.
-		m_Context->Group<Component::Rigidbody2D>(Get<Component::Transform>)
-			.Each([](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
+		m_Context->Filter<Component::Rigidbody2D, Component::Transform>()
+			.ForEach([](Entity entity, Component::Rigidbody2D& rb2d, Component::Transform& transform)
 			{
 				b2BodyId bodyId = b2LoadBodyId(rb2d.BodyId);
 
@@ -374,7 +376,9 @@ namespace HBL2
 		bodyDef.position = { transform.Translation.x, transform.Translation.y };
 		bodyDef.rotation = b2MakeRot(glm::radians(transform.Rotation.z));
 		bodyDef.fixedRotation = rb2d.FixedRotation; // bodyDef.motionLocks.angularZ = rb2d.FixedRotation;
-		bodyDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>((uint64_t)entity));
+
+		uint64_t packedEntity = (static_cast<uint64_t>(static_cast<uint32_t>(entity.Gen)) << 32) | static_cast<uint64_t>(static_cast<uint32_t>(entity.Idx));
+		bodyDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>(packedEntity));
 
 		b2BodyId bodyId = b2CreateBody(m_PhysicsWorld, &bodyDef);
 		return b2StoreBodyId(bodyId);
@@ -389,7 +393,9 @@ namespace HBL2
 		shapeDef.enableContactEvents = !bc2d.Trigger;
 		shapeDef.enableSensorEvents = bc2d.Trigger;
 		shapeDef.isSensor = bc2d.Trigger;
-		shapeDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>((uint64_t)entity));
+
+		uint64_t packedEntity = (static_cast<uint64_t>(static_cast<uint32_t>(entity.Gen)) << 32) | static_cast<uint64_t>(static_cast<uint32_t>(entity.Idx));
+		shapeDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>(packedEntity));
 
 		const b2Polygon polygon = b2MakeBox(bc2d.Size.x * transform.Scale.x, bc2d.Size.y * transform.Scale.y);
 

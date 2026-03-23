@@ -18,8 +18,8 @@ namespace HBL2
 
 				if (m_ActiveScene != nullptr)
 				{
-					m_ActiveScene->View<HBL2::Component::Camera>()
-						.Each([&](HBL2::Component::Camera& camera)
+					m_ActiveScene->Filter<HBL2::Component::Camera>()
+						.ForEach([&](HBL2::Component::Camera& camera)
 						{
 							if (camera.Enabled)
 							{
@@ -28,8 +28,8 @@ namespace HBL2
 						});
 				}
 
-				m_Context->View<Component::EditorCamera, HBL2::Component::Camera>()
-					.Each([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera)
+				m_Context->Filter<Component::EditorCamera, HBL2::Component::Camera>()
+					.ForEach([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera)
 					{
 						if (editorCamera.Enabled)
 						{
