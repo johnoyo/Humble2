@@ -5,8 +5,6 @@
 
 #include <future>
 
-#define MULTITHREADING 1
-
 namespace HBL2
 {
 	Renderer* Renderer::Instance = nullptr;
@@ -105,7 +103,6 @@ namespace HBL2
 
 	FrameData* Renderer::WaitAndRender()
 	{
-#if MULTITHREADING
 		for (;;)
 		{
 			std::unique_lock<std::mutex> lock(m_WorkMutex);
@@ -180,21 +177,10 @@ namespace HBL2
 				return frame;
 			}
 		}
-#else
-		// Consume frame
-		FrameData2* frame = &m_Frames[m_ReadIndex];
-		m_FrameReady[m_ReadIndex] = false;
-
-		// Advance read index
-		m_ReadIndex = (m_ReadIndex + 1) % FrameCount;
-
-		return frame;
-#endif
 	}
 
 	void Renderer::WaitAndBegin()
 	{
-#if MULTITHREADING
 		std::unique_lock<std::mutex> lock(m_WorkMutex);
 
 		// Wait until the write slot is free.
@@ -202,15 +188,14 @@ namespace HBL2
 		{
 			return !m_FrameReady[m_WriteIndex] && !m_FrameInUse[m_WriteIndex];
 		});
-#endif
+
 		m_ReservedWriteIndex = m_WriteIndex;
 	}
 
 	void Renderer::MarkAndSubmit()
 	{
-#if MULTITHREADING
 		std::unique_lock<std::mutex> lock(m_WorkMutex);
-#endif
+
 		HBL2_CORE_ASSERT(m_ReservedWriteIndex != UINT32_MAX, "m_ReservedWriteIndex != UINT32_MAX");
 		HBL2_CORE_ASSERT(!m_FrameReady[m_ReservedWriteIndex], "!m_FrameReady[m_ReservedWriteIndex]");
 		HBL2_CORE_ASSERT(!m_FrameInUse[m_ReservedWriteIndex], "!m_FrameInUse[m_ReservedWriteIndex]");
@@ -225,22 +210,18 @@ namespace HBL2
 		// Reset temp uniform buffer to new offset.
 		TempUniformRingBuffer->Invalidate(m_UniformRingBufferFrameOffsets[m_WriteIndex]);
 
-#if MULTITHREADING
 		lock.unlock();
 		m_WorkCV.notify_one(); // wake render thread
-#endif
 	}
 
 	void Renderer::WaitForRenderThreadIdle()
 	{
-#if MULTITHREADING
 		std::unique_lock<std::mutex> lock(m_WorkMutex);
 
 		m_IdleCV.wait(lock, [&]
 		{
 			return !m_Busy && m_SubmitQueue.empty() && !m_FrameReady[m_ReadIndex];
 		});
-#endif
 	}
 
 	void Renderer::CollectRenderData(SceneRenderer* renderer, void* renderData)
@@ -310,7 +291,6 @@ namespace HBL2
 
 	void Renderer::Submit(std::function<void()> fn)
 	{
-#if MULTITHREADING
 		if (!m_AcceptSubmits.load(std::memory_order_acquire))
 		{
 			return;
@@ -321,14 +301,10 @@ namespace HBL2
 			m_SubmitQueue.push(RenderCommand{ .Fn = std::move(fn) });
 		}
 		m_WorkCV.notify_one();
-#else
-		fn();
-#endif
 	}
 
 	void Renderer::SubmitBlocking(std::function<void()> fn)
 	{
-#if MULTITHREADING
 		// HBL2_CORE_ASSERT(!IsRenderThread(), "SubmitBlocking called from render thread!");
 
 		if (!m_AcceptSubmits.load(std::memory_order_acquire))
@@ -349,9 +325,6 @@ namespace HBL2
 
 		m_WorkCV.notify_one();
 		future.wait(); // blocks game thread
-#else
-		fn();
-#endif
 	}
 
 	void Renderer::ProcessSubmittedCommands()

@@ -12,8 +12,6 @@
 #include "Utilities\Collections\HashMap.h"
 #include "Utilities\Collections\StaticString.h"
 
-#include <entt.hpp>
-
 namespace HBL2
 {
 	class ISystem;

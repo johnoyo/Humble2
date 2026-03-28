@@ -3,6 +3,8 @@
 #include <Project\Project.h>
 #include <Sound\FmodSoundEngine.h>
 
+#include <unordered_set>
+
 namespace HBL2
 {
     static constexpr uint32_t InvalidIndex = UINT32_MAX;

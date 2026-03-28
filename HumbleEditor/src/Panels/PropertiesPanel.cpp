@@ -745,8 +745,6 @@ namespace HBL2
 					ImGui::Checkbox("Override From Source", &pi.Override);
 				});
 
-				using namespace entt::literals;
-
 				// Iterate over all registered meta types.
 				Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 				{

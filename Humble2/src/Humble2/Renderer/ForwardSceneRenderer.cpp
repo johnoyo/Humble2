@@ -84,7 +84,7 @@ namespace HBL2
 
 	void ForwardSceneRenderer::Initialize(Scene* scene)
 	{
-		// Each draw list is pre allocated with ~2MB of space (~32K draws), we have 16, 2 per renderData in flight.
+		// Each draw list is pre allocated with ~2MB of space (~32K draws), we have 16 draw lists, 8 for each renderData in flight.
 		// So, for the draw lists we need ~32MB.
 		m_Reservation = Allocator::Arena.Reserve("ForwardSceneRendererPool", 64_MB);
 		m_Arena.Initialize(&Allocator::Arena, 64_MB, m_Reservation);

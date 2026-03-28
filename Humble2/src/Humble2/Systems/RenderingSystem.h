@@ -6,8 +6,6 @@
 #include "Resources\ResourceManager.h"
 #include "Renderer\ForwardSceneRenderer.h"
 
-#include <entt.hpp>
-
 namespace HBL2
 {
 	class RenderingSystem final : public ISystem

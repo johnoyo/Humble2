@@ -3,8 +3,6 @@
 #include "Base.h"
 #include "Scene/Scene.h"
 
-#include <entt.hpp>
-
 namespace HBL2
 {
 	class HBL2_API SceneRenderer

@@ -7,7 +7,6 @@
 #include "Script/BuildEngine.h"
 #include "Utilities\YamlUtilities.h"
 
-#include "entt.hpp"
 #include "imgui.h"
 
 #include <iostream>
