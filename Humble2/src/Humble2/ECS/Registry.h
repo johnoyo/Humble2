@@ -121,7 +121,11 @@ namespace HBL2
                 {
                     m_Used[slot] = true;
                     m_Gen[slot] += 1;
-                    m_FirstFree = m_NextFree[slot];
+
+                    if (slot == m_FirstFree)
+                    {
+                        m_FirstFree = m_NextFree[slot];
+                    }
 
                     return { slot, m_Gen[slot] };
                 }
@@ -524,8 +528,13 @@ namespace HBL2
             m_MaxEntities = 0;
         }
 
-        int32_t FindEmptyEntity() const
+        int32_t FindEmptyEntity()
         {
+            if (m_Used[m_FirstFree])
+            {
+                m_FirstFree = m_NextFree[m_FirstFree];
+            }
+
             return m_FirstFree;
         }
 
