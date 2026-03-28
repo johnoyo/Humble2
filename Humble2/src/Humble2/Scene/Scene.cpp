@@ -31,8 +31,7 @@ namespace HBL2
         totalBytes += desc.maxSystems * sizeof(ISystem*);
         totalBytes += desc.maxSystems * sizeof(ISystem*);
         totalBytes += desc.maxSystems * sizeof(ISystem*);
-        totalBytes += desc.maxEntities * sizeof(UUID) * 2;
-        totalBytes += desc.maxEntities * sizeof(Entity) * 2;
+        totalBytes += desc.maxEntities * sizeof(std::pair<UUID, Entity>) * 2;
         totalBytes += desc.maxEntities * sizeof(uint64_t) * 2;
         totalBytes += sizeof(StructuralCommandBuffer);
         totalBytes += 100_KB;
@@ -253,9 +252,11 @@ namespace HBL2
 
     Entity Scene::FindEntityByUUID(UUID uuid)
     {
-        if (Entity* entity = m_EntityMap.find(uuid))
+        auto it = m_EntityMap.find(uuid);
+
+        if (it != m_EntityMap.end())
         {
-            return *entity;
+            return it->second;
         }
 
         return Entity::Null;
