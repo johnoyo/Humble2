@@ -1,2 +1,8 @@
 Scene:
   UUID: 5188170662770700796
+  MaxEntities: 4096
+  MaxComponents: 64
+  MaxSystems: 64
+  MaxJobsPerSystem: 16
+  MaxStructuralCommandsPerFramePerThread: 256
+  UseStructuralCommandBuffer: true

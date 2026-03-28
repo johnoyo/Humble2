@@ -2,9 +2,9 @@
 
 #include "Scene.h"
 #include "Components.h"
-#include "TypeResolver.h"
 #include "StructuralCommandBuffer.h"
 
+#include "ECS\TypeResolver.h"
 #include "Utilities\JobSystem.h"
 #include "Utilities\Collections\FixedBitset.h"
 
@@ -95,13 +95,13 @@ namespace HBL2
 		template<class T>
 		LookupRO<T> LookupRead() const
 		{
-			return LookupRO<T>{ &m_Context->GetRegistry().storage<T>(), m_Context, m_Context->Epoch() };
+			return LookupRO<T>{ &m_Context->GetRegistry().GetStorage<T>(), m_Context, m_Context->Epoch() };
 		}
 
 		template<class T>
 		LookupRW<T> LookupWrite()
 		{
-			return LookupRW<T>{ &m_Context->GetRegistry().storage<T>(), m_Context, m_Context->Epoch() };
+			return LookupRW<T>{ &m_Context->GetRegistry().GetStorage<T>(), m_Context, m_Context->Epoch() };
 		}
 
 		StructuralCommandBuffer* StructuralCmdBuffer = nullptr;

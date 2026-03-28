@@ -1,3 +1,4 @@
+#pragma once
 
 #include "Entity.h"
 #include "IComponentStorage.h"
@@ -21,10 +22,7 @@
 
 using namespace HBL2;
 
-// =============================================================================
 // Test infrastructure
-// =============================================================================
-
 #define TEST_ASSERT(cond) \
     do { \
         if (!(cond)) { \
@@ -40,10 +38,7 @@ using namespace HBL2;
         else std::cout << "FAILED\n"; \
     } while (0)
 
-// =============================================================================
 // Test components
-// =============================================================================
-
 constexpr uint32_t MAX_ENTITIES = 16384;
 constexpr uint32_t MAX_COMPONENTS = 128;
 
@@ -130,10 +125,7 @@ struct Outer
     };
 };
 
-// =============================================================================
 // Entity
-// =============================================================================
-
 bool test_Entity_equality()
 {
     Entity a{ 1, 1 };
@@ -156,10 +148,7 @@ bool test_Entity_nill()
     return true;
 }
 
-// =============================================================================
 // Registry — entity lifecycle
-// =============================================================================
-
 bool test_registry_create_entity()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
@@ -235,10 +224,7 @@ bool test_registry_slot_reuse_after_destroy()
     return true;
 }
 
-// =============================================================================
 // Registry — component add / get / has / remove
-// =============================================================================
-
 bool test_registry_add_and_get_component()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
@@ -373,10 +359,7 @@ bool test_registry_components_independent_across_entities()
     return true;
 }
 
-// =============================================================================
 // Registry — storage types
-// =============================================================================
-
 bool test_registry_dense_storage()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
@@ -447,10 +430,7 @@ bool test_registry_small_storage_respects_max()
     return true;
 }
 
-// =============================================================================
 // SparseComponentStorage
-// =============================================================================
-
 bool test_sparse_remove_preserves_others()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
@@ -492,10 +472,7 @@ bool test_sparse_re_add_after_remove()
     return true;
 }
 
-// =============================================================================
 // ViewQuery
-// =============================================================================
-
 bool test_view_query_iterates_all()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
@@ -581,10 +558,7 @@ bool test_view_query_empty_storage()
     return true;
 }
 
-// =============================================================================
 // FilterQuery
-// =============================================================================
-
 bool test_filter_query_two_components()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
@@ -695,10 +669,7 @@ bool test_filter_query_no_false_positives()
     return true;
 }
 
-// =============================================================================
 // ExcludeQuery
-// =============================================================================
-
 bool test_exclude_query_basic()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
@@ -744,10 +715,7 @@ bool test_exclude_query_no_tagged_entities()
     return true;
 }
 
-// =============================================================================
 // TwoLevelBitset
-// =============================================================================
-
 bool test_bitset_set_and_test()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
@@ -789,10 +757,7 @@ bool test_bitset_foreach_visits_correct_count()
     return true;
 }
 
-// =============================================================================
 // TypeInfo
-// =============================================================================
-
 bool test_type_info_correct()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
@@ -803,10 +768,7 @@ bool test_type_info_correct()
     return true;
 }
 
-// =============================================================================
 // StorageFor — compile-time selection
-// =============================================================================
-
 bool test_storage_for_defaults_to_sparse()
 {
     TEST_ASSERT((std::is_same_v<StorageFor<Position>, SparseComponentStorage<Position>>));
@@ -831,10 +793,7 @@ bool test_storage_for_small()
     return true;
 }
 
-// =============================================================================
 // Reflect — Schema / Field / Any
-// =============================================================================
-
 bool test_reflect_foreach_visits_all_fields()
 {
     Position p{ 1.f, 2.f, 3.f };
@@ -959,10 +918,7 @@ bool test_reflect_chained_field_accessor()
     return true;
 }
 
-// =============================================================================
 // Reflect — Runtime registry
-// =============================================================================
-
 bool test_reflect_register_populates_registry()
 {
     Reflect::Register<Position>();
@@ -1100,10 +1056,7 @@ bool test_reflect_clone_to_registry()
     return true;
 }
 
-// =============================================================================
 // Stress / correctness at scale
-// =============================================================================
-
 bool test_many_entities_add_remove_cycle()
 {
     Registry r(MAX_ENTITIES, MAX_COMPONENTS);
@@ -1210,10 +1163,7 @@ bool test_filter_query_consistent_after_swap_remove()
     return true;
 }
 
-// =============================================================================
 // Entry point
-// =============================================================================
-
 int TestECS()
 {
     Log::Initialize();

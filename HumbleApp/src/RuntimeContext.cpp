@@ -36,9 +36,8 @@ namespace HBL2
 					return;
 				}
 
-				m_ActiveScene->GetRegistry()
-					.view<HBL2::Component::Camera>()
-					.each([&](HBL2::Component::Camera& camera)
+				m_ActiveScene->Filter<HBL2::Component::Camera>()
+					.ForEach([&](HBL2::Component::Camera& camera)
 					{
 						if (camera.Enabled)
 						{
@@ -61,9 +60,8 @@ namespace HBL2
 
 			if (m_FirstFrame)
 			{
-				m_ActiveScene->GetRegistry()
-					.view<HBL2::Component::Camera>()
-					.each([&](HBL2::Component::Camera& camera)
+				m_ActiveScene->Filter<HBL2::Component::Camera>()
+					.ForEach([&](HBL2::Component::Camera& camera)
 					{
 						if (camera.Enabled)
 						{

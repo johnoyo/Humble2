@@ -12,9 +12,19 @@ namespace HBL2
 
     public:
         SmallComponentStorage(uint32_t maxEntities, PoolReservation* reservation)
-            : m_MaxEntities(maxEntities)
         {
-            m_Mask.Initialize(maxEntities, reservation);
+            Initialize(maxEntities, reservation);
+        }
+
+        virtual void Initialize(uint32_t maxEntities, PoolReservation* reservation) override
+        {
+            if (m_IsInitialized)
+            {
+                return;
+            }
+
+            m_MaxEntities = maxEntities;
+            m_Mask.Initialize(m_MaxEntities, reservation);
 
             size_t bytes = 0;
             bytes += N * sizeof(Entity);
@@ -25,6 +35,25 @@ namespace HBL2
             m_Entities = (Entity*)m_Arena.Alloc(N * sizeof(Entity));
             m_Components = (T*)m_Arena.Alloc(N * sizeof(T));
             m_Size = 0;
+
+            m_IsInitialized = true;
+        }
+
+        virtual void Clear() override
+        {
+            if constexpr (!std::is_trivially_destructible_v<T>)
+            {
+                for (uint32_t i = 0; i < m_Size; ++i)
+                {
+                    m_Components[i].~T();
+                }
+            }
+
+            m_Size = 0;
+            m_Mask.destroy();
+            m_Arena.Destroy();
+
+            m_IsInitialized = false;
         }
 
         virtual void* Add(Entity e) override
@@ -89,21 +118,6 @@ namespace HBL2
             {
                 func((void*)&m_Components[i]);
             }
-        }
-
-        virtual void Clear() override
-        {
-            if constexpr (!std::is_trivially_destructible_v<T>)
-            {
-                for (uint32_t i = 0; i < m_Size; ++i)
-                {
-                    m_Components[i].~T();
-                }
-            }
-
-            m_Size = 0;
-            m_Mask.destroy();
-            m_Arena.Destroy();
         }
 
         virtual const std::type_info& TypeInfo() const override

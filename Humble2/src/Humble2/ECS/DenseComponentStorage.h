@@ -9,18 +9,51 @@ namespace HBL2
 	{
 	public:
 		DenseComponentStorage(uint32_t maxEntities, PoolReservation* reservation)
-			: m_MaxEntities(maxEntities)
 		{
+			Initialize(maxEntities, reservation);
+		}
+
+		virtual void Initialize(uint32_t maxEntities, PoolReservation* reservation) override
+		{
+			if (m_IsInitialized)
+			{
+				return;
+			}
+
+			m_MaxEntities = maxEntities;
 			m_Mask.Initialize(maxEntities, reservation);
 
 			size_t bytes = maxEntities * sizeof(T);
 			m_Arena.Initialize(&Allocator::Arena, bytes, reservation);
 			m_Components = (T*)m_Arena.Alloc(m_MaxEntities * sizeof(T));
+
+			m_IsInitialized = true;
+		}
+
+		virtual void Clear() override
+		{
+			if constexpr (!std::is_trivially_destructible_v<T>)
+			{
+				for (uint32_t i = 0; i < m_MaxEntities; ++i)
+				{
+					if (m_Mask.test(i))
+					{
+						m_Components[i].~T();
+					}
+				}
+			}
+
+			m_Mask.destroy();
+			m_Components = nullptr;
+
+			m_Arena.Destroy();
+
+			m_IsInitialized = false;
 		}
 
 		virtual void* Add(Entity e) override
 		{
-			m_Components[e.Idx] = T{};
+			new (&m_Components[e.Idx]) T();
 			m_Mask.set(e.Idx);
 
 			return &m_Components[e.Idx];
@@ -50,24 +83,11 @@ namespace HBL2
 		{
 			for (uint32_t i = 0; i < m_MaxEntities; ++i)
 			{
-				func((void*)&m_Components[i]);
-			}
-		}
-
-		virtual void Clear() override
-		{
-			if constexpr (!std::is_trivially_destructible_v<T>)
-			{
-				for (uint32_t i = 0; i < m_MaxEntities; ++i)
+				if (m_Mask.test(i))
 				{
-					m_Components[i].~T();
+					func((void*)&m_Components[i]);
 				}
 			}
-
-			m_Mask.destroy();
-			m_Components = nullptr;
-
-			m_Arena.Destroy();
 		}
 
 		virtual const std::type_info& TypeInfo() const override

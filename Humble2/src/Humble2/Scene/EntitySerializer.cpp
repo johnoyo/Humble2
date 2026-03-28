@@ -29,7 +29,7 @@ namespace HBL2
 		{
 			out << YAML::Key << "Component::Tag";
 			out << YAML::BeginMap;
-			out << YAML::Key << "Tag" << YAML::Value << m_Scene->GetComponent<Component::Tag>(m_Entity).Name;
+			out << YAML::Key << "Tag" << YAML::Value << std::string(m_Scene->GetComponent<Component::Tag>(m_Entity).Name.c_str());
 			out << YAML::EndMap;
 		}
 

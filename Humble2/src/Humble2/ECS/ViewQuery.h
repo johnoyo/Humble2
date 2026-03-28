@@ -2,8 +2,8 @@
 
 #include "StorageInfo.h"
 #include "ExcludeQuery.h"
+#include "TypeResolver.h"
 
-#include "Scene\TypeResolver.h"
 #include "Utilities\Collections\StaticFunction.h"
 
 namespace HBL2

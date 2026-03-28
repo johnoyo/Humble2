@@ -63,6 +63,35 @@ namespace HBL2
 			}
 		}
 
+		static void UpdateAssetMetadataFile(Handle<Asset> handle, SceneDescriptor& desc)
+		{
+			if (!AssetManager::Instance->IsAssetValid(handle))
+			{
+				return;
+			}
+
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+			const std::filesystem::path& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscene";
+
+			std::ofstream fout(filePath, 0);
+
+			YAML::Emitter out;
+			out << YAML::BeginMap;
+			out << YAML::Key << "Scene" << YAML::Value;
+			out << YAML::BeginMap;
+			out << YAML::Key << "UUID" << YAML::Value << asset->UUID;
+			out << YAML::Key << "MaxEntities" << YAML::Value << desc.maxEntities;
+			out << YAML::Key << "MaxComponents" << YAML::Value << desc.maxComponents;
+			out << YAML::Key << "MaxSystems" << YAML::Value << desc.maxSystems;
+			out << YAML::Key << "MaxJobsPerSystem" << YAML::Value << desc.maxJobsPerSystem;
+			out << YAML::Key << "MaxStructuralCommandsPerFramePerThread" << YAML::Value << desc.maxStructuralCommandsPerFramePerThread;
+			out << YAML::Key << "UseStructuralCommandBuffer" << YAML::Value << desc.useStructuralCommandBuffer;
+			out << YAML::EndMap;
+			out << YAML::EndMap;
+			fout << out.c_str();
+			fout.close();
+		}
+
 		void EditorPanelSystem::DrawPropertiesPanel()
 		{
 			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
@@ -909,7 +938,26 @@ namespace HBL2
 						}
 						break;
 					case AssetType::Scene:
-						break;
+						{
+							Handle<Scene> handle = AssetManager::Instance->GetAsset<Scene>(m_SelectedAsset);
+							Scene* scene = ResourceManager::Instance->GetScene(handle);
+
+							SceneDescriptor& desc = scene->GetDescriptor();
+
+							bool dirty = false;
+							dirty |= ImGui::InputInt("MaxEntities", (int*)&desc.maxEntities, 4096);
+							dirty |= ImGui::InputInt("MaxComponents", (int*)&desc.maxComponents);
+							dirty |= ImGui::InputInt("MaxSystems", (int*)&desc.maxSystems);
+							dirty |= ImGui::InputInt("MaxJobsPerSystem", (int*)&desc.maxJobsPerSystem);
+							dirty |= ImGui::InputInt("MaxStructuralCommandsPerFramePerThread", (int*)&desc.maxStructuralCommandsPerFramePerThread);
+							dirty |= ImGui::Checkbox("UseStructuralCommandBuffer", &desc.useStructuralCommandBuffer);
+
+							if (dirty)
+							{
+								UpdateAssetMetadataFile(m_SelectedAsset, desc);
+							}
+							break;
+						}
 					case AssetType::Script:
 						break;
 					default:

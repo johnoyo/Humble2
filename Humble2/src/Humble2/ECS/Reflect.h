@@ -489,7 +489,7 @@ namespace HBL2::Reflect
 
         entry.clearStorage = [](Registry* r)
         {
-            r->GetStorage<T>()->Clear();
+            r->ClearStorage<T>();
         };
 
         using ByteStorage = std::unordered_map<std::string, std::unordered_map<HBL2::Entity, std::vector<std::byte>>>;
@@ -503,7 +503,7 @@ namespace HBL2::Reflect
 
             if (clearAfter)
             {
-                r->GetStorage<T>()->Clear();
+                r->ClearStorage<T>();
             }
         };
 

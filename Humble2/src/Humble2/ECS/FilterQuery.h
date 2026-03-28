@@ -4,8 +4,8 @@
 #include "ExcludeQuery.h"
 #include "TwoLevelBitset.h"
 #include "StorageInfo.h"
+#include "TypeResolver.h"
 
-#include "Scene\TypeResolver.h"
 #include "Utilities\Collections\Span.h"
 
 namespace HBL2

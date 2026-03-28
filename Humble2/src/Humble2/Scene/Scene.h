@@ -9,6 +9,7 @@
 #include "Utilities\Random.h"
 #include "Utilities\Allocators\Arena.h"
 #include "Utilities\Collections\Collections.h"
+#include "Utilities\Collections\HashMap.h"
 #include "Utilities\Collections\StaticString.h"
 
 #include <entt.hpp>
@@ -120,9 +121,9 @@ namespace HBL2
 
 		Entity CreateEntity();
 
-		Entity CreateEntity(const std::string& tag);
+		Entity CreateEntity(const StaticString<64>& tag);
 
-		Entity CreateEntityWithUUID(UUID uuid, const std::string& tag = "New Entity");
+		Entity CreateEntityWithUUID(UUID uuid, const StaticString<64>& tag = "New Entity");
 
 		Entity FindEntityByUUID(UUID uuid);
 
@@ -218,6 +219,7 @@ namespace HBL2
 
 		const StaticString<64>& GetName() const { return m_Descriptor.name; }
 		const SceneDescriptor& GetDescriptor() const { return m_Descriptor; }
+		SceneDescriptor& GetDescriptor() { return m_Descriptor; }
 
 		Entity MainCamera = Entity::Null;
 
@@ -244,7 +246,7 @@ namespace HBL2
 		DArray<ISystem*> m_Systems = MakeEmptyDArray<ISystem*>();
 		DArray<ISystem*> m_CoreSystems = MakeEmptyDArray<ISystem*>();
 		DArray<ISystem*> m_RuntimeSystems = MakeEmptyDArray<ISystem*>();
-		HMap<UUID, Entity> m_EntityMap = MakeEmptyHMap<UUID, Entity>();
+		HashMap<UUID, Entity> m_EntityMap;
 
 		Arena m_SceneArena;
 		PoolReservation* m_Reservation = nullptr;

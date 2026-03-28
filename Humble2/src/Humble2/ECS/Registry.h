@@ -8,9 +8,9 @@
 #include "FilterQuery.h"
 #include "EntityQuery.h"
 #include "StorageInfo.h"
+#include "TypeResolver.h"
 
 #include "Core\Allocators.h"
-#include "Scene\TypeResolver.h"
 
 namespace HBL2
 {
@@ -39,11 +39,12 @@ namespace HBL2
             // Bytes for array for component storages.
             bytes += m_MaxComponents * sizeof(IComponentStorage*);
             bytes += m_MaxComponents * sizeof(void*);
+            bytes += m_MaxComponents * sizeof(512_B) * 16; // Reserve space for allocating the storages (in the EnsureArray method).
 
             // Bytes for type resolver.
             bytes += m_MaxComponents * sizeof(std::type_index);
-            bytes += m_MaxComponents * sizeof(std::uint32_t);
-            bytes += m_MaxComponents * sizeof(std::uint32_t);
+            bytes += m_MaxComponents * sizeof(uint32_t);
+            bytes += m_MaxComponents * sizeof(uint32_t);
 
             uint64_t registryArenaBytes = bytes;
 
@@ -83,6 +84,9 @@ namespace HBL2
                 if (m_ComponentStorages[i])
                 {
                     m_ComponentStorages[i]->Clear();
+
+                    m_ComponentStorages[i] = nullptr;
+                    m_ConcreteStorages[i] = nullptr;
                 }
             }
 
@@ -125,20 +129,32 @@ namespace HBL2
             return CreateEntity();
         }
 
-        void DestroyEntity(Entity ref)
+        void DestroyEntity(Entity e)
         {
-            if (int32_t slot = DereferenceEntity(ref))
+            if (int32_t slot = DereferenceEntity(e))
             {
+                // Mark entity as unused and add it to the free list.
                 m_Used[slot] = false;
-
                 m_NextFree[slot] = m_FirstFree;
                 m_FirstFree = slot;
+
+                // Remove the entity from all the component storages.
+                for (uint32_t i = 0; i < m_MaxComponents; ++i)
+                {
+                    if (m_ComponentStorages[i])
+                    {
+                        if (m_ComponentStorages[i]->Has(e))
+                        {
+                            m_ComponentStorages[i]->Remove(e);
+                        }
+                    }
+                }
             }
         }
 
-        bool IsValid(Entity ref)
+        bool IsValid(Entity e)
         {
-            return DereferenceEntity(ref) != 0;
+            return DereferenceEntity(e) != 0;
         }
 
         template<typename T>
@@ -146,6 +162,20 @@ namespace HBL2
         {
             uint32_t id = m_TypeResolver.Resolve<T>();
             return m_ComponentStorages[id];
+        }
+
+        template<typename T>
+        void ClearStorage()
+        {
+            uint32_t id = m_TypeResolver.Resolve<T>();
+
+            if (m_ComponentStorages[id])
+            {
+                m_ComponentStorages[id]->Clear();
+
+                m_ComponentStorages[id] = nullptr;
+                m_ConcreteStorages[id] = nullptr;
+            }
         }
 
         TypeResolver& GetTypeResolver()
@@ -381,7 +411,7 @@ namespace HBL2
             uint32_t fieldCount = 0;
             std::memcpy(&fieldCount, buffer.data(), sizeof(uint32_t));
 
-            // Build a lookup table: nameHash → (offset into buffer, size)
+            // Build a lookup table: nameHash -> (offset into buffer, size)
             struct FieldRecord { size_t offset; uint32_t size; };
             std::unordered_map<uint64_t, FieldRecord> records;
             records.reserve(fieldCount);
@@ -437,6 +467,8 @@ namespace HBL2
 
             if (!m_ComponentStorages[id])
             {
+                // NOTE: If this allocation fails it means we ran out of memory due to many
+                // component array clearings and re-allocations. (caused by script recompilations)
                 auto* storage = m_Arena.AllocConstruct<StorageFor<T>>(m_MaxEntities, m_Reservation);
 
                 m_ComponentStorages[id] = storage;
@@ -483,7 +515,7 @@ namespace HBL2
             m_Used = nullptr;
             m_Gen = nullptr;
 
-            m_FirstFree = 0;
+            m_FirstFree = 1;
             m_NextFree = nullptr;
 
             m_MaxEntities = 0;

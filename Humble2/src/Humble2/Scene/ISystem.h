@@ -3,9 +3,9 @@
 #include "Base.h"
 
 #include "Scene.h"
-#include "TypeResolver.h"
 #include "IJob.h"
 
+#include "ECS\TypeResolver.h"
 #include "Core\Events.h"
 
 #include <vector>

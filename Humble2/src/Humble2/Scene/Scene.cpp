@@ -31,8 +31,9 @@ namespace HBL2
         totalBytes += desc.maxSystems * sizeof(ISystem*);
         totalBytes += desc.maxSystems * sizeof(ISystem*);
         totalBytes += desc.maxSystems * sizeof(ISystem*);
-        totalBytes += desc.maxEntities * sizeof(UUID);
-        totalBytes += desc.maxEntities * sizeof(Entity);
+        totalBytes += desc.maxEntities * sizeof(UUID) * 2;
+        totalBytes += desc.maxEntities * sizeof(Entity) * 2;
+        totalBytes += desc.maxEntities * sizeof(uint64_t) * 2;
         totalBytes += sizeof(StructuralCommandBuffer);
         totalBytes += 100_KB;
 
@@ -59,7 +60,8 @@ namespace HBL2
         m_Systems = MakeDArray<ISystem*>(m_SceneArena, desc.maxSystems);
         m_CoreSystems = MakeDArray<ISystem*>(m_SceneArena, desc.maxSystems);
         m_RuntimeSystems = MakeDArray<ISystem*>(m_SceneArena, desc.maxSystems);
-        m_EntityMap = MakeHMap<UUID, Entity>(m_SceneArena, desc.maxEntities);
+
+        m_EntityMap = HashMap<UUID, Entity>(&m_SceneArena, desc.maxEntities * 2);
 
         // Create the StructuralCommandBuffer if is requested.
         // (This is optional since for example in prefabs, which have subscenes embeded in them, we dont need it)
@@ -99,6 +101,12 @@ namespace HBL2
         src->Filter<Component::ID>()
             .ForEach([&](Entity entity, Component::ID& id)
             {
+                // Skip entities that are a terrain chunk.
+                if (src->m_Registry.HasComponent<Component::TerrainChunk>(entity))
+                {
+                    return;
+                }
+
                 const auto& name = src->m_Registry.GetComponent<Component::Tag>(entity).Name;
 
                 Entity newEntity = dst->m_Registry.CreateEntity(entity);
@@ -117,6 +125,12 @@ namespace HBL2
             src->Filter<Component>()
                 .ForEach([&](Entity entity, Component& component)
                 {
+                    // Skip entities that are a terrain chunk.
+                    if (src->m_Registry.HasComponent<HBL2::Component::TerrainChunk>(entity))
+                    {
+                        return;
+                    }
+
                     dst->m_Registry.AddOrReplaceComponent<Component>(entity, std::forward<Component>(component));
                 });
         };
@@ -180,13 +194,7 @@ namespace HBL2
 
     void Scene::Clear()
     {
-        // Destroy all entities.
-        for (auto& [uuid, entity] : m_EntityMap)
-        {
-            m_Registry.DestroyEntity(entity);
-        }
-
-        // Clear registry (clears components also).
+        // Clear registry (clears components and entities).
         m_Registry.Clear();
 
         // Clear entity to uuid mapping.
@@ -223,12 +231,12 @@ namespace HBL2
         return CreateEntityWithUUID(Random::UInt64());
     }
 
-    Entity Scene::CreateEntity(const std::string& tag)
+    Entity Scene::CreateEntity(const StaticString<64>& tag)
     {
         return CreateEntityWithUUID(Random::UInt64(), tag);
     }
 
-    Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& tag)
+    Entity Scene::CreateEntityWithUUID(UUID uuid, const StaticString<64>& tag)
     {
         Entity entity = m_Registry.CreateEntity();
 
@@ -245,11 +253,9 @@ namespace HBL2
 
     Entity Scene::FindEntityByUUID(UUID uuid)
     {
-        auto it = m_EntityMap.find(uuid);
-
-        if (it != m_EntityMap.end())
+        if (Entity* entity = m_EntityMap.find(uuid))
         {
-            return it->second;
+            return *entity;
         }
 
         return Entity::Null;
@@ -262,7 +268,7 @@ namespace HBL2
 
     Entity Scene::DuplicateEntity(Entity entity, EntityDuplicationNaming namingConvention)
     {
-        std::string name = GetComponent<Component::Tag>(entity).Name;
+        const auto& name = GetComponent<Component::Tag>(entity).Name;
 
         switch (namingConvention)
         {
@@ -288,7 +294,7 @@ namespace HBL2
 
     Entity Scene::DuplicateEntityFromScene(Entity entity, Scene* otherScene, EntityDuplicationNaming namingConvention)
     {
-        std::string name = otherScene->GetComponent<Component::Tag>(entity).Name;
+        const auto& name = otherScene->GetComponent<Component::Tag>(entity).Name;
 
         switch (namingConvention)
         {
@@ -433,7 +439,7 @@ namespace HBL2
             return;
         }
 
-        m_EntityMap.erase(id->Identifier);
+        m_EntityMap.remove(id->Identifier);
         m_Registry.DestroyEntity(entity);
     }
 
@@ -515,7 +521,7 @@ namespace HBL2
 
     Entity Scene::DuplicateEntityFromSceneAlt(Entity entity, Scene* sourceEntityScene, std::unordered_map<UUID, Entity>& preservedEntityIDs)
     {
-        std::string name = sourceEntityScene->GetComponent<Component::Tag>(entity).Name;
+        const auto& name = sourceEntityScene->GetComponent<Component::Tag>(entity).Name;
         UUID uuid = Random::UInt64();
 
         Entity newEntity;
@@ -720,7 +726,7 @@ namespace HBL2
             {
                 const auto& pe = GetComponent<Component::PrefabEntity>(e);
                 auto& id = GetComponent<Component::ID>(e);
-                m_EntityMap.erase(id.Identifier);
+                m_EntityMap.remove(id.Identifier);
 
                 if (preservedUUIDs.contains(pe.EntityId))
                 {

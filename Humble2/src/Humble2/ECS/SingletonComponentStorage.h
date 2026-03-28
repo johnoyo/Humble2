@@ -10,7 +10,27 @@ namespace HBL2
 	public:
 		SingletonComponentStorage(uint32_t maxEntities, PoolReservation* reservation)
 		{
+			Initialize(maxEntities, reservation);
+		}
+
+		virtual void Initialize(uint32_t maxEntities, PoolReservation* reservation) override
+		{
+			if (m_IsInitialized)
+			{
+				return;
+			}
+
 			m_Mask.Initialize(maxEntities, reservation);
+
+			m_IsInitialized = true;
+		}
+
+		virtual void Clear() override
+		{
+			m_Mask.destroy();
+			m_Entity = Entity::Null;
+
+			m_IsInitialized = false;
 		}
 
 		virtual void* Add(Entity e) override
@@ -65,12 +85,6 @@ namespace HBL2
 			{
 				func((void*)&m_Component);
 			}
-		}
-
-		virtual void Clear() override
-		{
-			m_Mask.destroy();
-			m_Entity = Entity::Null;
 		}
 
 		virtual const std::type_info& TypeInfo() const override

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IComponentStorage.h"
-#include "Utilities\Collections\Collections.h"
+#include "Utilities\Collections\FixedArray.h"
 
 namespace HBL2
 {
@@ -11,6 +11,16 @@ namespace HBL2
 	public:
 		SparseComponentStorage(uint32_t maxEntities, PoolReservation* reservation)
 		{
+			Initialize(maxEntities, reservation);
+		}
+
+		virtual void Initialize(uint32_t maxEntities, PoolReservation* reservation) override
+		{
+			if (m_IsInitialized)
+			{
+				return;
+			}
+
 			m_Mask.Initialize(maxEntities, reservation);
 
 			size_t bytes = 0;
@@ -20,11 +30,27 @@ namespace HBL2
 
 			m_Arena.Initialize(&Allocator::Arena, bytes, reservation);
 
-			m_EntityToIndex = MakeDArrayResized<uint32_t>(m_Arena, maxEntities);
+			m_EntityToIndex = FixedArray<uint32_t>(&m_Arena, maxEntities);
+			m_EntityToIndex.resize(maxEntities);
+
 			std::fill(m_EntityToIndex.begin(), m_EntityToIndex.end(), uint32_t(-1));
 
-			m_Entities = MakeDArray<Entity>(m_Arena, maxEntities);
-			m_Packed = MakeDArray<T>(m_Arena, maxEntities);
+			m_Entities = FixedArray<Entity>(&m_Arena, maxEntities);
+			m_Packed = FixedArray<T>(&m_Arena, maxEntities);
+
+			m_IsInitialized = true;
+		}
+
+		virtual void Clear() override
+		{
+			m_Mask.destroy();
+			m_Packed.clear();
+			m_Entities.clear();
+			std::fill(m_EntityToIndex.begin(), m_EntityToIndex.end(), uint32_t(-1));
+
+			m_Arena.Destroy();
+
+			m_IsInitialized = false;
 		}
 
 		virtual void* Add(Entity e) override
@@ -46,12 +72,6 @@ namespace HBL2
 			// Swap the entity that we want to remove with the last one.
 			std::swap(m_Packed[idx], m_Packed[last]);
 			std::swap(m_Entities[idx], m_Entities[last]);
-
-			// Call destructor if is not triavially destructible.
-			if constexpr (!std::is_trivially_destructible_v<T>)
-			{
-				m_Packed[last].~T();
-			}
 
 			// Update the index.
 			m_EntityToIndex[m_Entities[idx].Idx] = idx;
@@ -80,25 +100,7 @@ namespace HBL2
 			{
 				func((void*)&m_Packed[i]);
 			}
-		}
-
-		virtual void Clear() override
-		{
-			if constexpr (!std::is_trivially_destructible_v<T>)
-			{
-				for (uint32_t i = 0; i < m_Packed.size(); ++i)
-				{
-					m_Packed[i].~T();
-				}
-			}
-
-			m_Mask.destroy();
-			m_Packed.clear();
-			m_Entities.clear();
-			std::fill(m_EntityToIndex.begin(), m_EntityToIndex.end(), uint32_t(-1));
-
-			m_Arena.Destroy();
-		}
+		}	
 
 		virtual const std::type_info& TypeInfo() const override
 		{
@@ -113,8 +115,8 @@ namespace HBL2
 	private:
 		Arena m_Arena;
 
-		DArray<T> m_Packed = MakeEmptyDArray<T>();
-		DArray<Entity> m_Entities = MakeEmptyDArray<Entity>();
-		DArray<uint32_t> m_EntityToIndex = MakeEmptyDArray<uint32_t>();
+		FixedArray<T> m_Packed;
+		FixedArray<Entity> m_Entities;
+		FixedArray<uint32_t> m_EntityToIndex;
 	};
 }
