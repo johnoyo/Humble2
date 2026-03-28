@@ -958,6 +958,23 @@ namespace HBL2
 							}
 							break;
 						}
+					case AssetType::Prefab:
+						{
+							Handle<Prefab> handle = AssetManager::Instance->GetAsset<Prefab>(m_SelectedAsset);
+							Prefab* prefab = ResourceManager::Instance->GetPrefab(handle);
+
+							PrefabDescriptor& desc = prefab->GetDescriptor();
+
+							bool dirty = false;
+							dirty |= ImGui::InputInt("MaxEntities", (int*)&desc.maxEntities, 4096);
+							dirty |= ImGui::InputInt("MaxComponents", (int*)&desc.maxComponents);
+
+							if (dirty)
+							{
+								PrefabUtilities::Get().UpdateMetadataFile(m_SelectedAsset, desc);
+							}
+							break;
+						}
 					case AssetType::Script:
 						break;
 					default:

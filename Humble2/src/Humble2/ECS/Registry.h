@@ -121,6 +121,7 @@ namespace HBL2
                 {
                     m_Used[slot] = true;
                     m_Gen[slot] += 1;
+                    m_FirstFree = m_NextFree[slot];
 
                     return { slot, m_Gen[slot] };
                 }
@@ -464,6 +465,8 @@ namespace HBL2
         IComponentStorage* EnsureStorage()
         {
             uint32_t id = m_TypeResolver.Resolve<T>();
+
+            HBL2_CORE_ASSERT(id < m_MaxComponents, "Exceeded maximum number of components, consider increasing the max allowed!");
 
             if (!m_ComponentStorages[id])
             {

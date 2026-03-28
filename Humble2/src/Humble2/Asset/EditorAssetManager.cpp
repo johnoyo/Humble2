@@ -768,12 +768,16 @@ namespace HBL2
 			const std::string& prefabName = asset->FilePath.filename().stem().string();
 			UUID baseEntityUUID = prefabProperties["BaseEntityUUID"].as<UUID>();
 			uint32_t version = prefabProperties["Version"].as<uint32_t>();
+			uint32_t maxEntities = prefabProperties["MaxEntities"].as<uint32_t>();
+			uint32_t maxComponents = prefabProperties["MaxComponents"].as<uint32_t>();
 
 			auto prefabHandle = ResourceManager::Instance->CreatePrefab({
 				.debugName = prefabName.c_str(),
 				.uuid = asset->UUID,
 				.baseEntityUUID = baseEntityUUID,
 				.version = version,
+				.maxEntities = maxEntities,
+				.maxComponents = maxComponents,
 			});
 
 			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);

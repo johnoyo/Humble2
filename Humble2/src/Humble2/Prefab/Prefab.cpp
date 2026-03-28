@@ -18,14 +18,12 @@ namespace HBL2
 			return;
 		}
 
-		m_UUID = desc.uuid;
-		m_Version = desc.version;
-		m_BaseEntityUUID = desc.baseEntityUUID;
+		m_Descriptor = std::move(desc);
 
 		m_SubSceneHandle = ResourceManager::Instance->CreateScene({
-			.name = desc.debugName,
-			.maxEntities = 4096,
-			.maxComponents = 16,
+			.name = m_Descriptor.debugName,
+			.maxEntities = m_Descriptor.maxEntities,
+			.maxComponents = m_Descriptor.maxComponents,
 			.maxSystems = 1,
 			.useStructuralCommandBuffer = false,
 		});
@@ -40,7 +38,7 @@ namespace HBL2
 			return;
 		}
 
-		m_BaseEntityUUID = 0;
+		m_Descriptor.baseEntityUUID = 0;
 
 		Scene* prefabSubScene = ResourceManager::Instance->GetScene(m_SubSceneHandle);
 
@@ -139,7 +137,7 @@ namespace HBL2
 
 			if (auto* pi = activeScene->TryGetComponent<Component::PrefabInstance>(e))
 			{
-				if (prefab->m_UUID != pi->Id)
+				if (prefab->m_Descriptor.uuid != pi->Id)
 				{
 					nestedPrefabs[pi->Id] = e;
 				}
@@ -250,7 +248,7 @@ namespace HBL2
 		}
 
 		// Retrieve the base entity of the source instantiated prefab.
-		UUID baseEntityUUID = prefab->GetBaseEntityUUID();
+		UUID baseEntityUUID = prefab->GetDescriptor().baseEntityUUID;
 		Scene* prefabSubScene = ResourceManager::Instance->GetScene(prefab->m_SubSceneHandle);
 		Entity baseEntity = prefabSubScene->FindEntityByUUID(baseEntityUUID);
 

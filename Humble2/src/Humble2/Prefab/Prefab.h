@@ -13,6 +13,8 @@ namespace HBL2
 		UUID uuid;
 		UUID baseEntityUUID;
 		uint32_t version;
+		uint32_t maxEntities = 4096;
+		uint32_t maxComponents = 32;
 	};
 
 	class HBL2_API Prefab
@@ -32,22 +34,17 @@ namespace HBL2
 
 		static void Destroy(Entity instantiatedPrefabEntity);
 
-		inline const UUID GetUUID() const { return m_UUID; }
-		inline const uint32_t GetVersion() const { return m_Version; }
-		inline const UUID GetBaseEntityUUID() const { return m_BaseEntityUUID; }
+		inline PrefabDescriptor& GetDescriptor() { return m_Descriptor; }
+		inline const PrefabDescriptor& GetDescriptor() const { return m_Descriptor; }
 		inline const Handle<Scene> GetSubSceneHandle() const { return m_SubSceneHandle; }
 
 	private:
 		static Entity CloneSourcePrefab(Prefab* prefab, Scene* activeScene);
 
 	private:
-		UUID m_UUID = 0;
-		uint32_t m_Version = 0;
-		UUID m_BaseEntityUUID = 0;
+		PrefabDescriptor m_Descriptor;
+
 		Handle<Scene> m_SubSceneHandle;
 		bool m_Loaded = false;
-
-		friend class PrefabSerializer;
-		friend class SceneSerializer;
 	};
 }
