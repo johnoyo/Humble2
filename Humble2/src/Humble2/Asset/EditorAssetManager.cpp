@@ -265,7 +265,7 @@ namespace HBL2
 				.internalFormat = textureSettings.PixelFormat,
 				.usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },
 				.aspect = TextureAspect::COLOR,
-				.sampler = { .filter = Filter::LINEAR },
+				.sampler = { .filter = TextureFilter::LINEAR },
 				.initialData = textureData,
 			});
 
@@ -627,9 +627,31 @@ namespace HBL2
 			return Handle<Scene>();
 		}
 
-		auto sceneHandle = ResourceManager::Instance->CreateScene({
-			.name = asset->FilePath.filename().stem().string()
-		});
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Scene"].IsDefined())
+		{
+			HBL2_CORE_TRACE("Scene not found: {0}", ss.str());
+			return Handle<Scene>();
+		}
+
+		SceneDescriptor desc = {};
+
+		auto sceneProperties = data["Scene"];
+		if (sceneProperties)
+		{
+			desc.name = asset->FilePath.filename().stem().string();
+			desc.maxEntities = sceneProperties["MaxEntities"].as<uint32_t>();
+			desc.maxComponents = sceneProperties["MaxComponents"].as<uint32_t>();
+			desc.maxSystems = sceneProperties["MaxSystems"].as<uint32_t>();
+			desc.maxJobsPerSystem = sceneProperties["MaxJobsPerSystem"].as<uint32_t>();
+			desc.maxStructuralCommandsPerFramePerThread = sceneProperties["MaxStructuralCommandsPerFramePerThread"].as<uint32_t>();
+			desc.useStructuralCommandBuffer = sceneProperties["UseStructuralCommandBuffer"].as<bool>();
+		}
+
+		auto sceneHandle = ResourceManager::Instance->CreateScene(std::move(desc));
 
 		Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
 
@@ -746,12 +768,16 @@ namespace HBL2
 			const std::string& prefabName = asset->FilePath.filename().stem().string();
 			UUID baseEntityUUID = prefabProperties["BaseEntityUUID"].as<UUID>();
 			uint32_t version = prefabProperties["Version"].as<uint32_t>();
+			uint32_t maxEntities = prefabProperties["MaxEntities"].as<uint32_t>();
+			uint32_t maxComponents = prefabProperties["MaxComponents"].as<uint32_t>();
 
 			auto prefabHandle = ResourceManager::Instance->CreatePrefab({
 				.debugName = prefabName.c_str(),
 				.uuid = asset->UUID,
 				.baseEntityUUID = baseEntityUUID,
 				.version = version,
+				.maxEntities = maxEntities,
+				.maxComponents = maxComponents,
 			});
 
 			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
@@ -1240,6 +1266,11 @@ namespace HBL2
 				HBL2_ERROR("Project directory creation failed: {0}", e.what());
 			}
 
+			SceneDescriptor desc =
+			{
+				.name = asset->FilePath.filename().stem().string(),
+			};
+
 			std::ofstream fout(filePath.string() + ".hblscene", 0);
 
 			YAML::Emitter out;
@@ -1247,14 +1278,18 @@ namespace HBL2
 			out << YAML::Key << "Scene" << YAML::Value;
 			out << YAML::BeginMap;
 			out << YAML::Key << "UUID" << YAML::Value << asset->UUID;
+			out << YAML::Key << "MaxEntities" << YAML::Value << desc.maxEntities;
+			out << YAML::Key << "MaxComponents" << YAML::Value << desc.maxComponents;
+			out << YAML::Key << "MaxSystems" << YAML::Value << desc.maxSystems;
+			out << YAML::Key << "MaxJobsPerSystem" << YAML::Value << desc.maxJobsPerSystem;
+			out << YAML::Key << "MaxStructuralCommandsPerFramePerThread" << YAML::Value << desc.maxStructuralCommandsPerFramePerThread;
+			out << YAML::Key << "UseStructuralCommandBuffer" << YAML::Value << desc.useStructuralCommandBuffer;
 			out << YAML::EndMap;
 			out << YAML::EndMap;
 			fout << out.c_str();
 			fout.close();
 
-			auto sceneHandle = ResourceManager::Instance->CreateScene({
-				.name = asset->FilePath.filename().stem().string()
-			});
+			auto sceneHandle = ResourceManager::Instance->CreateScene(std::move(desc));
 
 			Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
 
@@ -1366,17 +1401,13 @@ namespace HBL2
 		}
 
 		std::vector<std::string> userComponentNames;
-		std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
+		Reflect::TypeEntry::ByteStorage data;
 
 		// Store all registered meta types.
-		for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
+		Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 		{
-			std::string componentName = meta_type.second.info().name().data();
-			componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-			userComponentNames.push_back(componentName);
-
-			BuildEngine::Instance->SerializeComponents(componentName, activeScene, data);
-		}
+			entry.serialize(&activeScene->GetRegistry(), data, true);
+		});
 
 		// Unload unity build dll.
 		BuildEngine::Instance->UnloadBuild(activeScene);
@@ -1404,9 +1435,12 @@ namespace HBL2
 			}
 
 			BuildEngine::Instance->RegisterComponent(userComponentName, activeScene);
-
-			BuildEngine::Instance->DeserializeComponents(userComponentName, activeScene, data);
 		}
+
+		Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
+		{
+			entry.deserialize(&activeScene->GetRegistry(), data);
+		});
 
 		if (newComponentTobeRegistered && script->Type == ScriptType::COMPONENT)
 		{
@@ -2021,17 +2055,22 @@ namespace HBL2
 				}
 
 				// Remove component from all the entities of the source scene.
-				for (auto meta_type : entt::resolve(activeScene->GetMetaContext()))
+				Reflect::TypeEntry* entryToRemove = nullptr;
+				Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 				{
-					std::string componentName = meta_type.second.info().name().data();
-					componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
+					std::string componentName = BuildEngine::Instance->CleanComponentNameO3(std::string(entry.typeName));
 
 					if (script->Name == componentName)
 					{
-						BuildEngine::Instance->ClearComponentStorage(componentName, activeScene);
-						entt::meta_reset(activeScene->GetMetaContext(), meta_type.first);
-						break;
+						entry.clearStorage(&activeScene->GetRegistry());
+						entryToRemove = (Reflect::TypeEntry*)&entry;
+						return;
 					}
+				});
+
+				if (entryToRemove)
+				{
+					Reflect::Unregister(entryToRemove);
 				}
 			}
 			break;

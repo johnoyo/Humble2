@@ -2,6 +2,8 @@
 
 #include "Base.h"
 
+#include "ECS\DenseComponentStorage.h"
+
 #include "Resources\Handle.h"
 #include "Resources\Types.h"
 #include "Sound\Sound.h"
@@ -12,8 +14,8 @@
 #include "Utilities\JobSystem.h"
 #include "Utilities\Collections\StaticArray.h"
 #include "Utilities\Collections\StaticDArray.h"
+#include "Utilities\Collections\StaticString.h"
 
-#include <entt.hpp>
 #include <glm\gtx\hash.hpp>
 
 namespace HBL2
@@ -22,16 +24,22 @@ namespace HBL2
 	{
 		struct HBL2_API Tag
 		{
-			std::string Name = "Unnamed Entity";
+			using storage_type = DenseComponentStorage<Tag>;
+
+			StaticString<64> Name = "Unnamed Entity";
 		};
 
 		struct HBL2_API ID
 		{
+			using storage_type = DenseComponentStorage<ID>;
+
 			UUID Identifier = 0;
 		};
 
 		struct HBL2_API Transform
 		{
+			using storage_type = DenseComponentStorage<Transform>;
+
 			glm::vec3 Translation = { 0.f, 0.f, 0.f };
 			glm::vec3 Rotation = { 0.f, 0.f, 0.f };
 			glm::quat QRotation = glm::quat(Rotation);
@@ -50,6 +58,8 @@ namespace HBL2
 
 		struct HBL2_API TransformEx
 		{
+			using storage_type = DenseComponentStorage<TransformEx>;
+
 			glm::vec3 PrevTranslation = { 0.f, 0.f, 0.f };
 			glm::vec3 PrevRotation = { 0.f, 0.f, 0.f };
 			glm::vec3 PrevScale = { 1.f, 1.f, 1.f };
@@ -61,6 +71,8 @@ namespace HBL2
 
 		struct HBL2_API Link
 		{
+			using storage_type = DenseComponentStorage<Link>;
+
 			UUID Parent = 0;
 			UUID PrevParent = 0;
 			std::vector<UUID> Children;

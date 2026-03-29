@@ -19,39 +19,73 @@
 
 namespace HBL2
 {
-    Scene::Scene(const SceneDescriptor&& desc) : m_Name(desc.name)
+    Scene::Scene(const SceneDescriptor&& desc)
     {
-        // Minimal mode is only used in prefabs, in their sub scenes.
-        if (desc.minimalMode)
+        m_Descriptor = desc;
+
+        m_Registry.Initialize(desc.maxEntities, desc.maxComponents);
+
+        // Memory requirements for scene arena.
+        uint64_t totalBytes = 0;
+
+        totalBytes += desc.maxSystems * sizeof(ISystem*);
+        totalBytes += desc.maxSystems * sizeof(ISystem*);
+        totalBytes += desc.maxSystems * sizeof(ISystem*);
+        totalBytes += desc.maxEntities * sizeof(std::pair<UUID, Entity>) * 2;
+        totalBytes += desc.maxEntities * sizeof(uint64_t) * 2;
+        totalBytes += sizeof(StructuralCommandBuffer);
+        totalBytes += 100_KB;
+
+        uint64_t sceneArenaBytes = totalBytes;
+
+        // Calculate and add StructuralCommandBuffer memory requirements.
+        uint32_t mainStructuralCommandBufferArenaByteSize = 0;
+        if (desc.useStructuralCommandBuffer)
         {
-            m_Reservation = Allocator::Arena.Reserve("ScenePool", 1_MB);
-            m_SceneArena.Initialize(&Allocator::Arena, 1_MB, m_Reservation);
+            uint32_t workerThreadCount = JobSystem::Get().GetThreadCount();
 
-            m_Systems = MakeDArray<ISystem*>(m_SceneArena, 1);
-            m_CoreSystems = MakeDArray<ISystem*>(m_SceneArena, 1);
-            m_RuntimeSystems = MakeDArray<ISystem*>(m_SceneArena, 1);
-            m_EntityMap = MakeHMap<UUID, Entity>(m_SceneArena, 4096);
+            mainStructuralCommandBufferArenaByteSize = (uint32_t)Allocator::CalculateInterleavedByteSize<StructuralCommandBuffer::ChunkCommands, Arena>(workerThreadCount);
+            totalBytes += mainStructuralCommandBufferArenaByteSize;
 
-            return;
+            totalBytes += (desc.maxStructuralCommandsPerFramePerThread * (sizeof(StructuralCommandBuffer::Command) + 128_B)) * workerThreadCount;
+            totalBytes += 100_KB;
         }
 
-        m_Reservation = Allocator::Arena.Reserve("ScenePool", 32_MB);
-        m_SceneArena.Initialize(&Allocator::Arena, 16_MB, m_Reservation);
+        // Allocate memory for scene.
+        m_Reservation = Allocator::Arena.Reserve("ScenePool", totalBytes);
+        m_SceneArena.Initialize(&Allocator::Arena, sceneArenaBytes, m_Reservation);
 
-        m_Systems = MakeDArray<ISystem*>(m_SceneArena, 64);
-        m_CoreSystems = MakeDArray<ISystem*>(m_SceneArena, 64);
-        m_RuntimeSystems = MakeDArray<ISystem*>(m_SceneArena, 64);
-        m_EntityMap = MakeHMap<UUID, Entity>(m_SceneArena, 32768);
+        // Create scene data structures from arena.
+        m_Systems = MakeDArray<ISystem*>(m_SceneArena, desc.maxSystems);
+        m_CoreSystems = MakeDArray<ISystem*>(m_SceneArena, desc.maxSystems);
+        m_RuntimeSystems = MakeDArray<ISystem*>(m_SceneArena, desc.maxSystems);
 
-        m_CmdBuffer = m_SceneArena.AllocConstruct<StructuralCommandBuffer>();
-        m_CmdBuffer->Initialize(m_Reservation);
+        m_EntityMap = HashMap<UUID, Entity>(&m_SceneArena, desc.maxEntities * 2);
+
+        // Create the StructuralCommandBuffer if is requested.
+        // (This is optional since for example in prefabs, which have subscenes embeded in them, we dont need it)
+        if (desc.useStructuralCommandBuffer)
+        {
+            m_CmdBuffer = m_SceneArena.AllocConstruct<StructuralCommandBuffer>();
+            m_CmdBuffer->Initialize(m_Reservation, mainStructuralCommandBufferArenaByteSize, desc.maxStructuralCommandsPerFramePerThread);
+        }
     }
 
     Scene* Scene::Copy(Scene* other)
     {
         HBL2_FUNC_PROFILE();
 
-        Scene* newScene = new Scene({ .name = other->m_Name + "(Clone)"});
+        auto newSceneHandle = ResourceManager::Instance->CreateScene({
+            .name = other->m_Descriptor.name + "(Clone)",
+            .maxEntities = other->m_Descriptor.maxEntities,
+            .maxComponents = other->m_Descriptor.maxComponents,
+            .maxSystems = other->m_Descriptor.maxSystems,
+            .maxStructuralCommandsPerFramePerThread = other->m_Descriptor.maxStructuralCommandsPerFramePerThread,
+            .maxJobsPerSystem = other->m_Descriptor.maxJobsPerSystem,
+            .useStructuralCommandBuffer = other->m_Descriptor.useStructuralCommandBuffer,
+        });
+
+        Scene* newScene = ResourceManager::Instance->GetScene(newSceneHandle);
 
         Scene::Copy(other, newScene);
 
@@ -63,21 +97,21 @@ namespace HBL2
         HBL2_FUNC_PROFILE();
 
         // Copy entites
-        src->View<Component::ID>()
-            .Each([&](Entity entity, Component::ID& id)
+        src->Filter<Component::ID>()
+            .ForEach([&](Entity entity, Component::ID& id)
             {
                 // Skip entities that are a terrain chunk.
-                if (src->m_Registry.any_of<Component::TerrainChunk>(entity))
+                if (src->m_Registry.HasComponent<Component::TerrainChunk>(entity))
                 {
                     return;
                 }
 
-                const auto& name = src->m_Registry.get<Component::Tag>(entity).Name;
+                const auto& name = src->m_Registry.GetComponent<Component::Tag>(entity).Name;
 
-                Entity newEntity = dst->m_Registry.create(entity);
+                Entity newEntity = dst->m_Registry.CreateEntity(entity);
 
-                dst->m_Registry.emplace<Component::Tag>(newEntity).Name = name;
-                dst->m_Registry.emplace<Component::ID>(newEntity).Identifier = id.Identifier;
+                dst->m_Registry.AddComponent<Component::Tag>(newEntity).Name = name;
+                dst->m_Registry.AddComponent<Component::ID>(newEntity).Identifier = id.Identifier;
 
                 dst->m_EntityMap[id.Identifier] = newEntity;
             });
@@ -87,16 +121,16 @@ namespace HBL2
         {
             using Component = decltype(component_type);
 
-            src->View<Component>()
-                .Each([&](auto entity, const auto& component)
+            src->Filter<Component>()
+                .ForEach([&](Entity entity, Component& component)
                 {
                     // Skip entities that are a terrain chunk.
-                    if (src->m_Registry.any_of<HBL2::Component::TerrainChunk>(entity))
+                    if (src->m_Registry.HasComponent<HBL2::Component::TerrainChunk>(entity))
                     {
                         return;
                     }
 
-                    dst->m_Registry.emplace_or_replace<Component>(entity, component);
+                    dst->m_Registry.AddOrReplaceComponent<Component>(entity, std::forward<Component>(component));
                 });
         };
 
@@ -145,157 +179,27 @@ namespace HBL2
         }
 
         // Clone user defined components.
-        std::vector<std::string> userComponentNames;
-        std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
-
-        // Store all registered meta types of the source scene.
-        for (auto meta_type : entt::resolve(src->GetMetaContext()))
+        Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
         {
-            std::string componentName = meta_type.second.info().name().data();
-            componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-            userComponentNames.push_back(componentName);
-
-            BuildEngine::Instance->SerializeComponents(componentName, src, data, false);
-        }
-
-        // Copy the components to the new scene.
-        for (const auto& userComponentName : userComponentNames)
-        {
-            BuildEngine::Instance->RegisterComponent(userComponentName, dst);
-            BuildEngine::Instance->DeserializeComponents(userComponentName, dst, data);
-        }
+            if (entry.cloneToRegistry)
+            {
+                entry.cloneToRegistry(&src->m_Registry, &dst->m_Registry);
+            }
+        });
 
         // Set main camera.
         dst->MainCamera = src->MainCamera;
-        dst->m_MetaContext = src->m_MetaContext;
     }
 
     void Scene::Clear()
     {
-        // Clear user defined components.
-        for (auto meta_type : entt::resolve(m_MetaContext))
-        {
-            const auto& alias = meta_type.second.info().name();
+        // Clear registry (clears components and entities).
+        m_Registry.Clear();
 
-            if (alias.size() == 0 || alias.size() >= UINT32_MAX || alias.data() == nullptr)
-            {
-                continue;
-            }
-
-            const std::string& componentName = alias.data();
-
-            const std::string& cleanedComponentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-            BuildEngine::Instance->ClearComponentStorage(cleanedComponentName, this);
-        }
-
-        // Clear reflection system.
-        entt::meta_reset(m_MetaContext);
-
-        // Clear built in components.
-        m_Registry.clear<Component::ID>();
-        m_Registry.storage<Component::ID>().clear();
-        m_Registry.compact<Component::ID>();
-
-        m_Registry.clear<Component::Tag>();
-        m_Registry.storage<Component::Tag>().clear();
-        m_Registry.compact<Component::Tag>();
-
-        m_Registry.clear<Component::EditorVisible>();
-        m_Registry.storage<Component::EditorVisible>().clear();
-        m_Registry.compact<Component::EditorVisible>();
-
-        m_Registry.clear<Component::Transform>();
-        m_Registry.storage<Component::Transform>().clear();
-        m_Registry.compact<Component::Transform>();
-
-        m_Registry.clear<Component::TransformEx>();
-        m_Registry.storage<Component::TransformEx>().clear();
-        m_Registry.compact<Component::TransformEx>();
-
-        m_Registry.clear<Component::Link>();
-        m_Registry.storage<Component::Link>().clear();
-        m_Registry.compact<Component::Link>();
-
-        m_Registry.clear<Component::Camera>();
-        m_Registry.storage<Component::Camera>().clear();
-        m_Registry.compact<Component::Camera>();
-
-        m_Registry.clear<Component::Sprite>();
-        m_Registry.storage<Component::Sprite>().clear();
-        m_Registry.compact<Component::Sprite>();
-
-        m_Registry.clear<Component::StaticMesh>();
-        m_Registry.storage<Component::StaticMesh>().clear();
-        m_Registry.compact<Component::StaticMesh>();
-
-        m_Registry.clear<Component::Light>();
-        m_Registry.storage<Component::Light>().clear();
-        m_Registry.compact<Component::Light>();
-
-        m_Registry.clear<Component::AudioSource>();
-        m_Registry.storage<Component::AudioSource>().clear();
-        m_Registry.compact<Component::AudioSource>();
-
-        m_Registry.clear<Component::AudioListener>();
-        m_Registry.storage<Component::AudioListener>().clear();
-        m_Registry.compact<Component::AudioListener>();
-
-        m_Registry.clear<Component::Rigidbody2D>();
-        m_Registry.storage<Component::Rigidbody2D>().clear();
-        m_Registry.compact<Component::Rigidbody2D>();
-
-        m_Registry.clear<Component::BoxCollider2D>();
-        m_Registry.storage<Component::BoxCollider2D>().clear();
-        m_Registry.compact<Component::BoxCollider2D>();
-
-        m_Registry.clear<Component::Rigidbody>();
-        m_Registry.storage<Component::Rigidbody>().clear();
-        m_Registry.compact<Component::Rigidbody>();
-
-        m_Registry.clear<Component::BoxCollider>();
-        m_Registry.storage<Component::BoxCollider>().clear();
-        m_Registry.compact<Component::BoxCollider>();
-
-        m_Registry.clear<Component::SphereCollider>();
-        m_Registry.storage<Component::SphereCollider>().clear();
-        m_Registry.compact<Component::SphereCollider>();
-
-        m_Registry.clear<Component::CapsuleCollider>();
-        m_Registry.storage<Component::CapsuleCollider>().clear();
-        m_Registry.compact<Component::CapsuleCollider>();
-
-        m_Registry.clear<Component::TerrainCollider>();
-        m_Registry.storage<Component::TerrainCollider>().clear();
-        m_Registry.compact<Component::TerrainCollider>();
-
-        m_Registry.clear<Component::PrefabInstance>();
-        m_Registry.storage<Component::PrefabInstance>().clear();
-        m_Registry.compact<Component::PrefabInstance>();
-
-        m_Registry.clear<Component::PrefabEntity>();
-        m_Registry.storage<Component::PrefabEntity>().clear();
-        m_Registry.compact<Component::PrefabEntity>();
-
-        m_Registry.clear<Component::AnimationCurve>();
-        m_Registry.storage<Component::AnimationCurve>().clear();
-        m_Registry.compact<Component::AnimationCurve>();
-
-        m_Registry.clear<Component::Terrain>();
-        m_Registry.storage<Component::Terrain>().clear();
-        m_Registry.compact<Component::Terrain>();
-
-        m_Registry.clear<Component::TerrainChunk>();
-        m_Registry.storage<Component::TerrainChunk>().clear();
-        m_Registry.compact<Component::TerrainChunk>();
-
-        // Destroy all entities.
-        for (auto& [uuid, entity] : m_EntityMap)
-        {
-            m_Registry.destroy(entity);
-        }
-
+        // Clear entity to uuid mapping.
         m_EntityMap.clear();
 
+        // Destruct systems.
         for (ISystem* system : m_Systems)
         {
             if (system != nullptr)
@@ -304,16 +208,19 @@ namespace HBL2
             }
         }
 
+        // Clear systems arrays.
         m_Systems.clear();
         m_CoreSystems.clear();
         m_RuntimeSystems.clear();
 
+        // Clear and destruct structural command buffer.
         if (m_CmdBuffer)
         {
             m_CmdBuffer->Clear();
             m_SceneArena.Destruct(m_CmdBuffer);
         }
 
+        // Finally, destroy scene arena.
         m_SceneArena.Destroy();
         m_Reservation = nullptr;
     }
@@ -323,20 +230,20 @@ namespace HBL2
         return CreateEntityWithUUID(Random::UInt64());
     }
 
-    Entity Scene::CreateEntity(const std::string& tag)
+    Entity Scene::CreateEntity(const StaticString<64>& tag)
     {
         return CreateEntityWithUUID(Random::UInt64(), tag);
     }
 
-    Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& tag)
+    Entity Scene::CreateEntityWithUUID(UUID uuid, const StaticString<64>& tag)
     {
-        Entity entity = m_Registry.create();
+        Entity entity = m_Registry.CreateEntity();
 
-        m_Registry.emplace<Component::Tag>(entity).Name = tag;
-        m_Registry.emplace<Component::ID>(entity).Identifier = uuid;
-        m_Registry.emplace<Component::Transform>(entity);
-        m_Registry.emplace<Component::TransformEx>(entity);
-        m_Registry.emplace<Component::Link>(entity);
+        m_Registry.AddComponent<Component::Tag>(entity).Name = tag;
+        m_Registry.AddComponent<Component::ID>(entity).Identifier = uuid;
+        m_Registry.AddComponent<Component::Transform>(entity);
+        m_Registry.AddComponent<Component::TransformEx>(entity);
+        m_Registry.AddComponent<Component::Link>(entity);
 
         m_EntityMap[uuid] = entity;
 
@@ -362,7 +269,7 @@ namespace HBL2
 
     Entity Scene::DuplicateEntity(Entity entity, EntityDuplicationNaming namingConvention)
     {
-        std::string name = GetComponent<Component::Tag>(entity).Name;
+        const auto& name = GetComponent<Component::Tag>(entity).Name;
 
         switch (namingConvention)
         {
@@ -388,7 +295,7 @@ namespace HBL2
 
     Entity Scene::DuplicateEntityFromScene(Entity entity, Scene* otherScene, EntityDuplicationNaming namingConvention)
     {
-        std::string name = otherScene->GetComponent<Component::Tag>(entity).Name;
+        const auto& name = otherScene->GetComponent<Component::Tag>(entity).Name;
 
         switch (namingConvention)
         {
@@ -471,7 +378,7 @@ namespace HBL2
     void Scene::RegisterSystem(ISystem* system, SystemType type)
     {
         system->SetType(type);
-        system->SetContext(this);
+        system->SetContext(this, m_Descriptor.maxComponents);
         m_Systems.push_back(system);
 
         switch (type)
@@ -529,12 +436,12 @@ namespace HBL2
 
         if (id == nullptr)
         {
-            HBL2_CORE_ERROR("Error while trying to destroy entity {0}. It is either invalid or does not have the built in required components.", (uint32_t)entity.Handle);
+            HBL2_CORE_ERROR("Error while trying to destroy entity {0}. It is either invalid or does not have the built in required components.", (uint32_t)entity.Idx);
             return;
         }
 
-        m_EntityMap.erase(id->Identifier);
-        m_Registry.destroy(entity);
+        m_EntityMap.remove(id->Identifier);
+        m_Registry.DestroyEntity(entity);
     }
 
     Entity Scene::InternalDuplicateEntity(Entity entity, Scene* sourceEntityScene, Entity newEntity, bool appendCloneToName)
@@ -568,7 +475,7 @@ namespace HBL2
                 }
                 else
                 {
-                    m_Registry.emplace_or_replace<Component>(newEntity, component);
+                    m_Registry.AddOrReplaceComponent<Component>(newEntity, std::forward<Component>(component));
                 }
 
             }
@@ -600,28 +507,22 @@ namespace HBL2
         copy_component(Component::TerrainChunk{});
 
         // Copy user defined components.
-        std::vector<std::string> userComponentNames;
-        std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
-
-        for (auto meta_type : entt::resolve(sourceEntityScene->m_MetaContext))
+        Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
         {
-            std::string componentName = meta_type.second.info().name().data();
-            componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-
-            if (BuildEngine::Instance->HasComponent(componentName, sourceEntityScene, entity))
+            if (entry.hasInRegistry(&sourceEntityScene->m_Registry, entity))
             {
-                auto componentMeta = BuildEngine::Instance->GetComponent(componentName, sourceEntityScene, entity);
-                auto newComponentMeta = BuildEngine::Instance->AddComponent(componentName, this, newEntity);
-                newComponentMeta.assign(componentMeta);
+                auto componentMeta = entry.getFromRegistry(&sourceEntityScene->m_Registry, entity);
+                auto newComponentMeta = entry.addToRegistry(&this->m_Registry, newEntity);
+                entry.copy(newComponentMeta.Ptr, componentMeta.Ptr);
             }
-        }
+        });
 
         return newEntity;
     }
 
     Entity Scene::DuplicateEntityFromSceneAlt(Entity entity, Scene* sourceEntityScene, std::unordered_map<UUID, Entity>& preservedEntityIDs)
     {
-        std::string name = sourceEntityScene->GetComponent<Component::Tag>(entity).Name;
+        const auto& name = sourceEntityScene->GetComponent<Component::Tag>(entity).Name;
         UUID uuid = Random::UInt64();
 
         Entity newEntity;
@@ -631,23 +532,23 @@ namespace HBL2
             if (preservedEntityIDs.contains(pe->EntityId))
             {
                 const Entity oldEntity = preservedEntityIDs.at(pe->EntityId);
-                newEntity = m_Registry.create(oldEntity.Handle);
+                newEntity = m_Registry.CreateEntity(oldEntity);
             }
             else
             {
-                newEntity = m_Registry.create();
+                newEntity = m_Registry.CreateEntity();
             }
         }
         else
         {
-            newEntity = m_Registry.create();
+            newEntity = m_Registry.CreateEntity();
         }
 
-        m_Registry.emplace<Component::Tag>(newEntity).Name = name;
-        m_Registry.emplace<Component::ID>(newEntity).Identifier = uuid;
-        m_Registry.emplace<Component::Transform>(newEntity);
-        m_Registry.emplace<Component::TransformEx>(newEntity);
-        m_Registry.emplace<Component::Link>(newEntity);
+        m_Registry.AddComponent<Component::Tag>(newEntity).Name = name;
+        m_Registry.AddComponent<Component::ID>(newEntity).Identifier = uuid;
+        m_Registry.AddComponent<Component::Transform>(newEntity);
+        m_Registry.AddComponent<Component::TransformEx>(newEntity);
+        m_Registry.AddComponent<Component::Link>(newEntity);
 
         m_EntityMap[uuid] = newEntity;
 
@@ -685,7 +586,7 @@ namespace HBL2
                 }
                 else
                 {
-                    m_Registry.emplace_or_replace<Component>(newEntity, component);
+                    m_Registry.AddOrReplaceComponent<Component>(newEntity, std::forward<Component>(component));
                 }
 
             }
@@ -717,21 +618,15 @@ namespace HBL2
         copy_component(Component::TerrainChunk{});
 
         // Copy user defined components.
-        std::vector<std::string> userComponentNames;
-        std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> data;
-
-        for (auto meta_type : entt::resolve(sourceEntityScene->m_MetaContext))
+        Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
         {
-            std::string componentName = meta_type.second.info().name().data();
-            componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-
-            if (BuildEngine::Instance->HasComponent(componentName, sourceEntityScene, entity))
+            if (entry.hasInRegistry(&sourceEntityScene->m_Registry, entity))
             {
-                auto componentMeta = BuildEngine::Instance->GetComponent(componentName, sourceEntityScene, entity);
-                auto newComponentMeta = BuildEngine::Instance->AddComponent(componentName, this, newEntity);
-                newComponentMeta.assign(componentMeta);
+                auto componentMeta = entry.getFromRegistry(&sourceEntityScene->m_Registry, entity);
+                auto newComponentMeta = entry.addToRegistry(&this->m_Registry, newEntity);
+                entry.copy(newComponentMeta.Ptr, componentMeta.Ptr);
             }
-        }
+        });
 
         return newEntity;
     }
@@ -811,9 +706,9 @@ namespace HBL2
                 continue;
             }
 
-            if (m_Registry.valid(oldE.Handle))
+            if (m_Registry.IsValid(oldE))
             {
-                m_Registry.destroy(oldE.Handle);
+                m_Registry.DestroyEntity(oldE);
             }
         }
 
@@ -832,7 +727,7 @@ namespace HBL2
             {
                 const auto& pe = GetComponent<Component::PrefabEntity>(e);
                 auto& id = GetComponent<Component::ID>(e);
-                m_EntityMap.erase(id.Identifier);
+                m_EntityMap.remove(id.Identifier);
 
                 if (preservedUUIDs.contains(pe.EntityId))
                 {

@@ -19,10 +19,10 @@ namespace HBL2
 	{
 		YAML::Emitter out;
 		out << YAML::BeginMap;
-		out << YAML::Key << "Scene" << YAML::Value << m_Scene->GetName();
+		out << YAML::Key << "Scene" << YAML::Value << m_Scene->GetName().c_str();
 		out << YAML::Key << "Entities" << YAML::BeginSeq;
 		m_Scene->Entities()
-			.Each([&](Entity entity)
+			.ForEach([&](Entity entity)
 			{
 				if (entity == Entity::Null)
 				{
@@ -146,7 +146,7 @@ namespace HBL2
 		// If we have user defined scripts but no dll exists, build it.
 		if ((components.size() > 0 || systems.size() > 0 || helperScripts.size() > 0) && !BuildEngine::Instance->Exists(currentConfiguration))
 		{
-			HBL2_CORE_TRACE("No user defined scripts dll found for scene: {}, building one now...", m_Scene->GetName());
+			HBL2_CORE_TRACE("No user defined scripts dll found for scene: {}, building one now...", m_Scene->GetName().c_str());
 			BuildEngine::Instance->Build();
 		}
 
@@ -229,8 +229,8 @@ namespace HBL2
 		// Gather all prefab entities and their prefab uuid.
 		std::unordered_map<UUID, Entity> handledPrefabInstances;
 
-		m_Scene->View<Component::PrefabInstance>()
-			.Each([&](Entity entity, Component::PrefabInstance& prefabInstance)
+		m_Scene->Filter<Component::PrefabInstance>()
+			.ForEach([&](Entity entity, Component::PrefabInstance& prefabInstance)
 			{
 				if (handledPrefabInstances.find(prefabInstance.Id) == handledPrefabInstances.end())
 				{

@@ -27,26 +27,26 @@ namespace HBL2
 
 	struct SceneRenderData
 	{
-		LightData m_LightData{}; // Dup
-		CameraData m_CameraData{}; // Dup
-		CameraSettings m_CameraSettings{}; // Dup
-		Component::Camera::CameraFrustum m_CameraFrustum{}; // Dup
-		glm::mat4 m_OnlyRotationInViewProjection = glm::mat4(1.0f); // Dup
-		glm::mat4 m_CameraProjection = glm::mat4(1.0f); // Dup
+		LightData m_LightData{};
+		CameraData m_CameraData{};
+		CameraSettings m_CameraSettings{};
+		Component::Camera::CameraFrustum m_CameraFrustum{};
+		glm::mat4 m_OnlyRotationInViewProjection = glm::mat4(1.0f);
+		glm::mat4 m_CameraProjection = glm::mat4(1.0f);
 
-		std::vector<uint8_t> m_LightSpaceMatricesData; // Dup
+		std::vector<uint8_t> m_LightSpaceMatricesData;
 
-		uint32_t m_UBOStartingOffset = 0; // Dup
-		uint32_t m_UBOEndingOffset = 0; // Dup
-		DrawList m_StaticMeshOpaqueDraws; // Dup
-		DrawList m_StaticMeshTransparentDraws; // Dup
-		DrawList m_PrePassStaticMeshDraws; // Dup
-		DrawList m_ShadowPassStaticMeshDraws; // Dup
+		uint32_t m_UBOStartingOffset = 0;
+		uint32_t m_UBOEndingOffset = 0;
+		DrawList m_StaticMeshOpaqueDraws;
+		DrawList m_StaticMeshTransparentDraws;
+		DrawList m_PrePassStaticMeshDraws;
+		DrawList m_ShadowPassStaticMeshDraws;
 
-		DrawList m_SpriteOpaqueDraws; // Dup
-		DrawList m_SpriteTransparentDraws; // Dup
-		DrawList m_PrePassSpriteDraws; // Dup
-		DrawList m_ShadowPassSpriteDraws; // Dup
+		DrawList m_SpriteOpaqueDraws;
+		DrawList m_SpriteTransparentDraws;
+		DrawList m_PrePassSpriteDraws;
+		DrawList m_ShadowPassSpriteDraws;
 	};
 
 	class HBL2_API ForwardSceneRenderer final : public SceneRenderer

@@ -29,7 +29,7 @@ namespace HBL2
 
 		struct Sampler
 		{
-			Filter filter = Filter::NEAREST;
+			TextureFilter filter = TextureFilter::NEAREST;
 			Compare compare = Compare::LESS_OR_EQUAL;
 			Wrap wrap = Wrap::REPEAT;
 			bool compareEnable = false;

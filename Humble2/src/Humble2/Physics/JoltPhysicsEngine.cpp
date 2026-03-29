@@ -157,8 +157,8 @@ namespace HBL2
 		ScratchArena scratch(Allocator::FrameArenaMT);
 		DArray<JPH::BodyID> bulkAddBuffer = MakeDArray<JPH::BodyID>(scratch, 512);
 
-		m_Context->Group<Component::Rigidbody>(Get<Component::Transform>)
-			.Each([this, &bodyInterface, &bulkAddBuffer](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
+		m_Context->Filter<Component::Rigidbody, Component::Transform>()
+			.ForEach([this, &bodyInterface, &bulkAddBuffer](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
 			{
 				AddRigidBody(entity, rb, transform, bodyInterface);
 				bulkAddBuffer.push_back(GetBodyIDFromPhysicsID(rb.BodyID));
@@ -171,8 +171,8 @@ namespace HBL2
 	void JoltPhysicsEngine::Update()
 	{
 		// Handle runtime creations and properties update.
-		m_Context->Group<Component::Rigidbody>(Get<Component::Transform>)
-			.Each([this](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
+		m_Context->Filter<Component::Rigidbody, Component::Transform>()
+			.ForEach([this](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
 			{
 				JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
 				if (rb.BodyID == Physics::InvalidID)
@@ -249,8 +249,8 @@ namespace HBL2
 		m_PhysicsSystem->Update(cDeltaTime, cCollisionSteps, m_TempAllocator, m_JobSystem);
 
 		// Apply physics changes to transforms.
-		m_Context->Group<Component::Rigidbody>(Get<Component::Transform>)
-			.Each([this, &bodyInterface](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
+		m_Context->Filter<Component::Rigidbody, Component::Transform>()
+			.ForEach([this, &bodyInterface](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
 			{
 				glm::vec3 originalScale = transform.Scale;
 
@@ -648,7 +648,8 @@ namespace HBL2
 		}
 
 		// Maybe use the entity ID here?
-		body->SetUserData((JPH::uint64)entity);
+		uint64_t packedEntity = (static_cast<uint64_t>(static_cast<uint32_t>(entity.Gen)) << 32) | static_cast<uint64_t>(static_cast<uint32_t>(entity.Idx));
+		body->SetUserData((JPH::uint64)packedEntity);
 		rb.BodyID = GetPhysicsIDFromBodyID(body->GetID());
 	}
 

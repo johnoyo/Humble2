@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Scene/Entity.h>
+#include <ECS/Entity.h>
 
 #include <stdint.h>
 

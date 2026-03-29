@@ -17,8 +17,6 @@
 #define SKIP_MT_FRAME() if (skipMTFrame.load() <= 0) { if (skipMTFrame.load() == 0) { skipMTFrame = 1; } EndFrame(); return; }
 #define SKIP_RT_FRAME() if (skipRTFrame.load() <= 0) { if (skipRTFrame.load() == 0) { skipRTFrame = 1; } continue; }
 
-#define MULTITHREADING 1
-
 namespace HBL2
 {
 	Application* Application::s_Instance = nullptr;
@@ -45,7 +43,7 @@ namespace HBL2
 
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
-		Allocator::Arena.Initialize(500_MB, 16_MB);
+		Allocator::Arena.Initialize(750_MB, 32_MB);
 
 		m_FrameArenaReservationDummy = Allocator::Arena.Reserve("FrameArenaReservationDummy", 8_KB);
 		Allocator::DummyArena.Initialize(&Allocator::Arena, 8_KB, m_FrameArenaReservationDummy);

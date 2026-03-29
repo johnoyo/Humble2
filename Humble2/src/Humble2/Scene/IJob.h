@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Scene.h"
-#include "Entity.h"
 #include "Components.h"
-#include "TypeResolver.h"
 #include "StructuralCommandBuffer.h"
 
+#include "ECS\TypeResolver.h"
 #include "Utilities\JobSystem.h"
+#include "Utilities\Collections\FixedBitset.h"
 
 #include <vector>
 #include <bitset>
@@ -25,15 +25,20 @@ namespace HBL2
 
 	struct JobEntry
 	{
-		ComponentMaskType ReadMask{};
-		ComponentMaskType WriteMask{};
+		FixedBitset ReadMask;
+		FixedBitset WriteMask;
 		IJob* Job;
 	};
 
 	class IJob
 	{
 	public:
-		IJob() : m_Entry({ .Job = this }) {}
+		IJob(uint32_t maxComponents)
+		{
+			m_Entry.ReadMask = FixedBitset(&Allocator::FrameArenaMT, maxComponents);
+			m_Entry.WriteMask = FixedBitset(&Allocator::FrameArenaMT, maxComponents);
+			m_Entry.Job = this;
+		}
 
 		virtual void Resolve(TypeResolver& resolver) = 0;
 		virtual void Execute() = 0;
@@ -72,7 +77,6 @@ namespace HBL2
 			};
 
 			apply(typename TQuery::IncTypes{}); // Owned/View components
-			apply(typename TQuery::GetTypes{}); // get<T...>
 			apply(typename TQuery::ExTypes{});  // excluded always treated as read-only
 		}
 
@@ -91,13 +95,13 @@ namespace HBL2
 		template<class T>
 		LookupRO<T> LookupRead() const
 		{
-			return LookupRO<T>{ &m_Context->GetRegistry().storage<T>(), m_Context, m_Context->Epoch() };
+			return LookupRO<T>{ &m_Context->GetRegistry().GetStorage<T>(), m_Context, m_Context->Epoch() };
 		}
 
 		template<class T>
 		LookupRW<T> LookupWrite()
 		{
-			return LookupRW<T>{ &m_Context->GetRegistry().storage<T>(), m_Context, m_Context->Epoch() };
+			return LookupRW<T>{ &m_Context->GetRegistry().GetStorage<T>(), m_Context, m_Context->Epoch() };
 		}
 
 		StructuralCommandBuffer* StructuralCmdBuffer = nullptr;
@@ -152,85 +156,51 @@ namespace HBL2
 	};
 
 	template<typename... Ts>
-	struct IncT {};
+	struct IncludeT {};
 
 	template<typename... Ts>
-	struct GetT {};
+	struct ExcludeT {};
 
-	template<typename... Ts>
-	struct ExT {};
+	template<typename IncPack, typename ExPack>
+	struct Filter;
 
-	template<typename IncPack, typename GetPack, typename ExPack>
-	struct Query;
-
-	template<typename... Inc, typename... Get, typename... Ex>
-	struct Query<IncT<Inc...>, GetT<Get...>, ExT<Ex...>>
+	template<typename... Inc, typename... Ex>
+	struct Filter<IncludeT<Inc...>, ExcludeT<Ex...>>
 	{
 		using IncTypes = std::tuple<Inc...>;
-		using GetTypes = std::tuple<Get...>;
 		using ExTypes = std::tuple<Ex...>;
 
-		// Runtime execution adaptor (calls Scene API correctly)
-		auto operator()(Scene* ctx) const
+		auto operator()(Scene* scene) const
 		{
-			if constexpr (sizeof...(Get) == 0 && sizeof...(Ex) == 0)
+			if constexpr (sizeof...(Ex) == 0)
 			{
-				return ctx->template View<Inc...>(); // View<Inc...>()
-			}
-			else if constexpr (sizeof...(Get) == 0)
-			{
-				return ctx->template View<Inc...>(entt::exclude<Ex...>); // View<Inc...>(exclude)
-			}
-			else if constexpr (sizeof...(Ex) == 0)
-			{
-				return ctx->template Group<Inc...>(entt::get<Get...>); // Group<Owned...>(get)
+				return scene->Filter<Inc...>();
 			}
 			else
 			{
-				return ctx->template Group<Inc...>(entt::get<Get...>, entt::exclude<Ex...>); // Group<Owned...>(get, exclude)
+				return scene->Filter<Inc...>().template Exclude<Ex...>();
 			}
 		}
 	};
 
+
+	// Include only
 	template<typename... Inc>
-	consteval auto MakeView()
+	consteval auto MakeFilter()
 	{
-		return Query<IncT<Inc...>, GetT<>, ExT<>>{};
+		return Filter<IncludeT<Inc...>, ExcludeT<>>{};
 	}
 
+	// Include + Exclude
 	template<typename... Inc, typename... Ex>
-	consteval auto MakeView(entt::exclude_t<Ex...>)
+	consteval auto MakeFilter(ExcludeT<Ex...>)
 	{
-		return Query<IncT<Inc...>, GetT<>, ExT<Ex...>>{};
-	}
-
-	template<typename... Owned>
-	consteval auto MakeGroup()
-	{
-		return Query<IncT<Owned...>, GetT<>, ExT<>>{};
-	}
-
-	template<typename... Owned, typename... Get>
-	consteval auto MakeGroup(entt::get_t<Get...>)
-	{
-		return Query<IncT<Owned...>, GetT<Get...>, ExT<>>{};
-	}
-
-	template<typename... Owned, typename... Ex>
-	consteval auto MakeGroup(entt::exclude_t<Ex...>)
-	{
-		return Query<IncT<Owned...>, GetT<>, ExT<Ex...>>{};
-	}
-
-	template<typename... Owned, typename... Get, typename... Ex>
-	consteval auto MakeGroup(entt::get_t<Get...>, entt::exclude_t<Ex...>)
-	{
-		return Query<IncT<Owned...>, GetT<Get...>, ExT<Ex...>>{};
+		return Filter<IncludeT<Inc...>, ExcludeT<Ex...>>{};
 	}
 
 	/*class Physics2dJob final : public IJob
 	{
-		static constexpr auto G = MakeGroup<Component::Rigidbody2D>(entt::get<Component::Transform>);
+		static constexpr auto G = MakeFilter<Component::Rigidbody2D, Component::Transform>();
 
 	public:
 		virtual void Resolve()
@@ -251,7 +221,7 @@ namespace HBL2
 	
 	class Physics3dJob final : public IJob
 	{
-		static constexpr auto G = MakeGroup<Component::Rigidbody>(entt::get<Component::Transform>);
+		static constexpr auto G = MakeFilter<Component::Rigidbody2D, Component::Transform>();
 
 		virtual void Resolve(TypeResolver& resolver)
 		{
@@ -275,7 +245,7 @@ namespace HBL2
 
 	class CustomPhysicsJob final : public IJobDispatch
 	{
-		static constexpr auto G = MakeGroup<Component::Rigidbody>(entt::get<Component::Transform>);
+		static constexpr auto G = MakeFilter<Component::Rigidbody2D, Component::Transform>();
 
 		virtual void Resolve(TypeResolver& resolver)
 		{

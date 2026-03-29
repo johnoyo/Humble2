@@ -52,6 +52,8 @@ namespace HBL2
 		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 		Entity baseEntity;
 
+		PrefabDescriptor& prefabDesc = m_Context->GetDescriptor();
+
 		if (m_InstantiatedPrefabEntity != Entity::Null)
 		{
 			baseEntity = m_InstantiatedPrefabEntity;
@@ -60,15 +62,15 @@ namespace HBL2
 		{
 			// NOTE: This branch is only hit when we drag and drop an entity from the hierachy panel
 			//		 to the content browser to create a new prefab.
-			baseEntity = activeScene->FindEntityByUUID(m_Context->GetBaseEntityUUID());
+			baseEntity = activeScene->FindEntityByUUID(prefabDesc.baseEntityUUID);
 		}
 
 		// Add the prefab component if the base entity does not have it.
 		if (!activeScene->HasComponent<Component::PrefabInstance>(baseEntity))
 		{
 			auto& prefab = activeScene->AddComponent<Component::PrefabInstance>(baseEntity);
-			prefab.Id = m_Context->m_UUID;
-			prefab.Version = m_Context->m_Version;
+			prefab.Id = prefabDesc.uuid;
+			prefab.Version = prefabDesc.version;
 		}
 
 		SerializePrefab(activeScene, baseEntity, out);
@@ -129,7 +131,7 @@ namespace HBL2
 		fOut << out.c_str();
 		fOut.close();
 
-		m_Context->m_Version++;
+		prefabDesc.version++;
 	}
 
 	bool PrefabSerializer::Deserialize(const std::filesystem::path& path)
@@ -155,7 +157,8 @@ namespace HBL2
 
 		HBL2_CORE_TRACE("Deserializing Prefab at path: {0}", path);
 
-		Scene* prefabSubScene = ResourceManager::Instance->GetScene(m_Context->m_SubSceneHandle);
+		Scene* prefabSubScene = ResourceManager::Instance->GetScene(m_Context->GetSubSceneHandle());
+		PrefabDescriptor& prefabDesc = m_Context->GetDescriptor();
 
 		// Create the prefab entities and their components.
 		const auto& prefabNode = data["Prefab"];
@@ -169,13 +172,13 @@ namespace HBL2
 			// If we have user defined scripts but no dll exists, build it.
 			if (components.size() > 0 && !BuildEngine::Instance->Exists(currentConfiguration))
 			{
-				HBL2_CORE_TRACE("No user defined scripts dll found for prefab: {}, building one now...", m_Context->m_UUID);
+				HBL2_CORE_TRACE("No user defined scripts dll found for prefab: {}, building one now...", prefabDesc.uuid);
 				BuildEngine::Instance->Build();
 			}
 
 			if (components)
 			{
-				HBL2_CORE_TRACE("Deserializing user components of prefab: {0}", m_Context->m_UUID);
+				HBL2_CORE_TRACE("Deserializing user components of prefab: {0}", prefabDesc.uuid);
 
 				for (const auto& componentUUID : components)
 				{

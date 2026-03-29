@@ -23,13 +23,13 @@ namespace HBL2
 		}
 
 		out << YAML::BeginMap;
-		out << YAML::Key << "Entity" << YAML::Value << (uint32_t)m_Entity;
+		out << YAML::Key << "Entity" << YAML::Value << (uint32_t)m_Entity.Idx;
 
 		if (m_Scene->HasComponent<Component::Tag>(m_Entity))
 		{
 			out << YAML::Key << "Component::Tag";
 			out << YAML::BeginMap;
-			out << YAML::Key << "Tag" << YAML::Value << m_Scene->GetComponent<Component::Tag>(m_Entity).Name;
+			out << YAML::Key << "Tag" << YAML::Value << std::string(m_Scene->GetComponent<Component::Tag>(m_Entity).Name.c_str());
 			out << YAML::EndMap;
 		}
 
@@ -468,29 +468,20 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
-		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
+		Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 		{
-			const auto& alias = meta_type.second.info().name();
+			const std::string& cleanedComponentName = BuildEngine::Instance->CleanComponentNameO3(std::string(entry.typeName));
 
-			if (alias.size() == 0 || alias.size() >= UINT32_MAX || alias.data() == nullptr)
+			if (entry.hasInRegistry(&m_Scene->GetRegistry(), m_Entity))
 			{
-				continue;
-			}
-
-			const std::string& componentName = alias.data();
-
-			const std::string& cleanedComponentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-
-			if (BuildEngine::Instance->HasComponent(cleanedComponentName, m_Scene, m_Entity))
-			{
-				auto componentMeta = BuildEngine::Instance->GetComponent(cleanedComponentName, m_Scene, m_Entity);
+				auto componentMeta = entry.getFromRegistry(&m_Scene->GetRegistry(), m_Entity);
 				out << YAML::Key << cleanedComponentName;
 
 				out << YAML::BeginMap;
 				EditorUtilities::Get().SerializeComponentToYAML(out, componentMeta, m_Scene);
 				out << YAML::EndMap;
 			}
-		}
+		});
 
 		out << YAML::EndMap;
 	}
@@ -796,25 +787,17 @@ namespace HBL2
 			}
 		}
 
-		for (auto meta_type : entt::resolve(m_Scene->GetMetaContext()))
+		Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 		{
-			const auto& alias = meta_type.second.info().name();
-
-			if (alias.size() == 0)
-			{
-				continue;
-			}
-
-			const std::string& componentName = alias.data();
-			const std::string& cleanedComponentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-
+			const std::string& cleanedComponentName = BuildEngine::Instance->CleanComponentNameO3(std::string(entry.typeName));
 			auto userComponent = entityNode[cleanedComponentName];
+
 			if (userComponent)
 			{
-				auto componentMeta = BuildEngine::Instance->AddComponent(cleanedComponentName, m_Scene, m_Entity);
+				auto componentMeta = entry.addToRegistry(&m_Scene->GetRegistry(), m_Entity);
 				EditorUtilities::Get().DeserializeComponentFromYAML(userComponent, componentMeta, m_Scene);
 			}
-		}
+		});
 
 		return true;
 	}

@@ -85,6 +85,27 @@ namespace HBL2
         }
 
         /**
+         * @brief Destruct an array of objects of type T by explicitly invoking their destructors.
+         *        Does NOT free the underlying memory.
+         *
+         * @tparam T Type of object to destruct.
+         *
+         * @param ptr   Pointer to the first object in the array (as returned by ConstructArray).
+         * @param count Number of objects to destruct.
+         */
+        template<typename T>
+        void DestructArray(T* ptr, size_t count)
+        {
+            if constexpr (!std::is_trivially_destructible_v<T>)
+            {
+                for (size_t i = 0; i < count; ++i)
+                {
+                    ptr[i].~T();
+                }
+            }
+        }
+
+        /**
          * @brief Allocate and construct object of type T in scratch area.
          *
          * @param args Arguments to forward to ctor of type.

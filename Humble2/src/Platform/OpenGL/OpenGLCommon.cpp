@@ -53,15 +53,15 @@ namespace HBL2
 			return 0;
 		}
 
-		GLenum FilterToGLenum(Filter filter)
+		GLenum FilterToGLenum(TextureFilter filter)
 		{
 			switch (filter)
 			{
-			case HBL2::Filter::NEAREST:
+			case HBL2::TextureFilter::NEAREST:
 				return GL_NEAREST;
-			case HBL2::Filter::LINEAR:
+			case HBL2::TextureFilter::LINEAR:
 				return GL_LINEAR;
-			case HBL2::Filter::CUBIC:
+			case HBL2::TextureFilter::CUBIC:
 				return -1; // TODO: Fix!
 			}
 

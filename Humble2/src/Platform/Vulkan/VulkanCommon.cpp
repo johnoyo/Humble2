@@ -95,15 +95,15 @@ namespace HBL2
 			return VK_COMPARE_OP_MAX_ENUM;
 		}
 
-		VkFilter FilterToVkFilter(Filter filter)
+		VkFilter FilterToVkFilter(TextureFilter filter)
 		{
 			switch (filter)
 			{
-			case HBL2::Filter::NEAREST:
+			case HBL2::TextureFilter::NEAREST:
 				return VK_FILTER_NEAREST;
-			case HBL2::Filter::LINEAR:
+			case HBL2::TextureFilter::LINEAR:
 				return VK_FILTER_LINEAR;
-			case HBL2::Filter::CUBIC:
+			case HBL2::TextureFilter::CUBIC:
 				return VK_FILTER_CUBIC_EXT;
 			}
 

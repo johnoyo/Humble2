@@ -2,7 +2,6 @@
 
 #include "Scene.h"
 
-#include <entt.hpp>
 #include <yaml-cpp\yaml.h>
 
 namespace HBL2

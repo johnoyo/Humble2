@@ -96,7 +96,7 @@ namespace HBL2
 			.aspect = TextureAspect::COLOR,
 			.sampler =
 			{
-				.filter = Filter::LINEAR,
+				.filter = TextureFilter::LINEAR,
 				.wrap = Wrap::CLAMP_TO_EDGE,
 			}
 		});
@@ -110,7 +110,7 @@ namespace HBL2
 			.aspect = TextureAspect::COLOR,
 			.sampler =
 			{
-				.filter = Filter::LINEAR,
+				.filter = TextureFilter::LINEAR,
 				.wrap = Wrap::CLAMP_TO_EDGE,
 			}
 		});
@@ -125,7 +125,7 @@ namespace HBL2
 			.createSampler = true,
 			.sampler =
 			{
-				.filter = Filter::NEAREST,
+				.filter = TextureFilter::NEAREST,
 				.wrap = Wrap::CLAMP_TO_EDGE,
 			}
 		});

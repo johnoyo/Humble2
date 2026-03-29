@@ -29,7 +29,7 @@ namespace HBL2
 		virtual bool RunRuntime(Configuration configuration) = 0;
 		virtual bool BuildRuntime(Configuration configuration) = 0;
 		void Recompile();
-		void HotReload(Handle<Scene> sceneHandle, const std::vector<std::string>& userComponentNames, const std::vector<std::string>& userSystemNames, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& serializedUserComponents);
+		void HotReload(Handle<Scene> sceneHandle, const std::vector<std::string>& userComponentNames, const std::vector<std::string>& userSystemNames, Reflect::TypeEntry::ByteStorage& serializedUserComponents);
 		bool Exists(Configuration configuration);
 		void SetActiveConfiguration(Configuration configuration);
 		Configuration GetActiveConfiguration() const;
@@ -49,15 +49,6 @@ namespace HBL2
 		std::string GetDefaultSystemCode(const std::string& systemName);
 		std::string GetDefaultComponentCode(const std::string& componentName);
 		std::string GetDefaultHelperScriptCode(const std::string& scriptName);
-
-		entt::meta_any AddComponent(const std::string& name, Scene* ctx, Entity entity);
-		entt::meta_any GetComponent(const std::string& name, Scene* ctx, Entity entity);
-		void RemoveComponent(const std::string& name, Scene* ctx, Entity entity);
-		bool HasComponent(const std::string& name, Scene* ctx, Entity entity);
-		void ClearComponentStorage(const std::string& name, Scene* ctx);
-
-		void SerializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data, bool cleanRegistry = true);
-		void DeserializeComponents(const std::string& name, Scene* ctx, std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>>& data);
 
 		std::string CleanComponentNameO1(const std::string& input);
 		std::string CleanComponentNameO3(const std::string& input);

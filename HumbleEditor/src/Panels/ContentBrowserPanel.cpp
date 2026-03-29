@@ -293,7 +293,7 @@ namespace HBL2
 
 					auto& tag = m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity).Name;
 
-					const auto& prefabPath = m_CurrentDirectory / (tag + ".prefab");
+					const auto& prefabPath = m_CurrentDirectory / (tag + ".prefab").c_str();
 					const auto& relativePath = FileUtils::RelativePath(prefabPath, HBL2::Project::GetAssetDirectory());
 
 					// Create and register asset.

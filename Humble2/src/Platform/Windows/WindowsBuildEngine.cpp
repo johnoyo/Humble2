@@ -188,7 +188,7 @@ namespace HBL2
 
 		const auto& projectFilesPath = HBL2::Project::GetAssetDirectory().parent_path() / "ProjectFiles";
 
-		// Create solution file for new system
+		// Create solution file for project,
 		std::ofstream solutionFile(projectFilesPath / "UnityBuild.sln");
 
 		if (!solutionFile.is_open())
@@ -199,7 +199,7 @@ namespace HBL2
 		solutionFile << GetDefaultSolutionText();
 		solutionFile.close();
 
-		// Create vcxproj file for new system
+		// Create vcxproj file for project.
 		std::ofstream projectFile(projectFilesPath / "UnityBuild.vcxproj");
 
 		if (!projectFile.is_open())
@@ -246,7 +246,6 @@ EndGlobal
 		const std::string& placeholderPDB = "{randomPDB}";
 		const std::string& placeholderVulkan = "{VULKAN_SDK}";
 		const std::string& placeholderProject = "{Project}";
-		const std::string& placeholderHash = "{Hash}";
 
 		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
@@ -323,8 +322,8 @@ EndGlobal
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;COMPONENT_NAME_HASH={Hash};HBL2_PLATFORM_WINDOWS;)" + preprocessorDefinitions + R"(;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\Assets;..\..\..\Humble2\src;..\..\..\Humble2\src\Humble2;..\..\..\Humble2\src\Vendor;..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\Humble2\src\Vendor\entt\include;..\..\..\Humble2\src\Vendor\fastgltf\include;..\..\..\Dependencies\GLFW\include;..\..\..\Dependencies\GLEW\include;..\..\..\Dependencies\ImGui\imgui;..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\Dependencies\ImGuizmo;..\..\..\Dependencies\GLM;..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;..\..\..\Dependencies\PortableFileDialogs;..\..\..\Dependencies\FMOD\core\include;..\..\..\Dependencies\Box2D\box2d\include;..\..\..\Dependencies\Box2D\box2d\src;..\..\..\Dependencies\Emscripten\emsdk\upstream\emscripten\system\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;)" + preprocessorDefinitions + R"(;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\Assets;..\..\..\Humble2\src;..\..\..\Humble2\src\Humble2;..\..\..\Humble2\src\Vendor;..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\Humble2\src\Vendor\fastgltf\include;..\..\..\Dependencies\GLFW\include;..\..\..\Dependencies\GLEW\include;..\..\..\Dependencies\ImGui\imgui;..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\Dependencies\ImGuizmo;..\..\..\Dependencies\GLM;..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;..\..\..\Dependencies\PortableFileDialogs;..\..\..\Dependencies\FMOD\core\include;..\..\..\Dependencies\Box2D\box2d\include;..\..\..\Dependencies\Box2D\box2d\src;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
@@ -346,8 +345,8 @@ EndGlobal
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;COMPONENT_NAME_HASH={Hash};HBL2_PLATFORM_WINDOWS;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\Assets;..\..\..\Humble2\src;..\..\..\Humble2\src\Humble2;..\..\..\Humble2\src\Vendor;..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\Humble2\src\Vendor\entt\include;..\..\..\Humble2\src\Vendor\fastgltf\include;..\..\..\Dependencies\GLFW\include;..\..\..\Dependencies\GLEW\include;..\..\..\Dependencies\ImGui\imgui;..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\Dependencies\ImGuizmo;..\..\..\Dependencies\GLM;..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;..\..\..\Dependencies\PortableFileDialogs;..\..\..\Dependencies\FMOD\core\include;..\..\..\Dependencies\Box2D\box2d\include;..\..\..\Dependencies\Box2D\box2d\src;..\..\..\Dependencies\Emscripten\emsdk\upstream\emscripten\system\include;{VULKAN_SDK}\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;YAML_CPP_STATIC_DEFINE;HBL2_PLATFORM_WINDOWS;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\Assets;..\..\..\Humble2\src;..\..\..\Humble2\src\Humble2;..\..\..\Humble2\src\Vendor;..\..\..\Humble2\src\Vendor\spdlog-1.x\include;..\..\..\Humble2\src\Vendor\fastgltf\include;..\..\..\Dependencies\GLFW\include;..\..\..\Dependencies\GLEW\include;..\..\..\Dependencies\ImGui\imgui;..\..\..\Dependencies\ImGui\imgui\backends;..\..\..\Dependencies\ImGuizmo;..\..\..\Dependencies\GLM;..\..\..\Dependencies\YAML-Cpp\yaml-cpp\include;..\..\..\Dependencies\PortableFileDialogs;..\..\..\Dependencies\FMOD\core\include;..\..\..\Dependencies\Box2D\box2d\include;..\..\..\Dependencies\Box2D\box2d\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -415,16 +414,6 @@ EndGlobal
 		{
 			((std::string&)projectText).replace(pos, placeholderVulkan.length(), vulkanSDK);
 			pos = projectText.find(placeholderVulkan, pos + vulkanSDK.length());
-		}
-
-		// Fill in hash
-		pos = projectText.find(placeholderHash);
-		const std::string& componentNameHash = std::to_string(Random::UInt64());
-
-		while (pos != std::string::npos)
-		{
-			((std::string&)projectText).replace(pos, placeholderHash.length(), componentNameHash);
-			pos = projectText.find(placeholderHash, pos + componentNameHash.length());
 		}
 
 		return projectText;

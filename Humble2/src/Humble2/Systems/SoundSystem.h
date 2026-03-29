@@ -26,7 +26,7 @@ namespace HBL2
 		struct ChannelEntry
 		{
 			SoundEngine::ChannelHandle channel = SoundEngine::InvalidChannel;
-			Entity owner = UINT32_MAX;
+			Entity owner = Entity::Null;
 		};
 
 		uint32_t AllocateSlot();

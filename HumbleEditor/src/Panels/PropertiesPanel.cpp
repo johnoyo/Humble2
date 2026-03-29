@@ -63,6 +63,35 @@ namespace HBL2
 			}
 		}
 
+		static void UpdateAssetMetadataFile(Handle<Asset> handle, SceneDescriptor& desc)
+		{
+			if (!AssetManager::Instance->IsAssetValid(handle))
+			{
+				return;
+			}
+
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+			const std::filesystem::path& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscene";
+
+			std::ofstream fout(filePath, 0);
+
+			YAML::Emitter out;
+			out << YAML::BeginMap;
+			out << YAML::Key << "Scene" << YAML::Value;
+			out << YAML::BeginMap;
+			out << YAML::Key << "UUID" << YAML::Value << asset->UUID;
+			out << YAML::Key << "MaxEntities" << YAML::Value << desc.maxEntities;
+			out << YAML::Key << "MaxComponents" << YAML::Value << desc.maxComponents;
+			out << YAML::Key << "MaxSystems" << YAML::Value << desc.maxSystems;
+			out << YAML::Key << "MaxJobsPerSystem" << YAML::Value << desc.maxJobsPerSystem;
+			out << YAML::Key << "MaxStructuralCommandsPerFramePerThread" << YAML::Value << desc.maxStructuralCommandsPerFramePerThread;
+			out << YAML::Key << "UseStructuralCommandBuffer" << YAML::Value << desc.useStructuralCommandBuffer;
+			out << YAML::EndMap;
+			out << YAML::EndMap;
+			fout << out.c_str();
+			fout.close();
+		}
+
 		void EditorPanelSystem::DrawPropertiesPanel()
 		{
 			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
@@ -716,21 +745,17 @@ namespace HBL2
 					ImGui::Checkbox("Override From Source", &pi.Override);
 				});
 
-				using namespace entt::literals;
-
-				// Iterate over all registered meta types
-				for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
+				// Iterate over all registered meta types.
+				Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 				{
-					std::string componentName = meta_type.second.info().name().data();
-					componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-
-					if (BuildEngine::Instance->HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
+					if (entry.hasInRegistry(&m_ActiveScene->GetRegistry(), HBL2::Component::EditorVisible::SelectedEntity))
 					{
+						std::string componentName = BuildEngine::Instance->CleanComponentNameO3(std::string(entry.typeName));
 						ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
 
 						ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
 						float lineHeight = GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
-						bool opened = ImGui::TreeNodeEx((void*)meta_type.second.info().hash(), treeNodeFlags, componentName.c_str());
+						bool opened = ImGui::TreeNodeEx((void*)entry.typeId, treeNodeFlags, componentName.c_str());
 						ImGui::PopStyleVar();
 						ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
 
@@ -743,8 +768,7 @@ namespace HBL2
 
 						if (opened)
 						{
-							entt::meta_any componentMeta = BuildEngine::Instance->GetComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
-
+							Reflect::Any componentMeta = entry.getFromRegistry(&m_ActiveScene->GetRegistry(), HBL2::Component::EditorVisible::SelectedEntity);
 							HBL2::EditorUtilities::Get().DrawDefaultEditor(componentMeta);
 
 							ImGui::TreePop();
@@ -754,10 +778,10 @@ namespace HBL2
 
 						if (removeComponent)
 						{
-							BuildEngine::Instance->RemoveComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+							entry.removeFromRegistry(&m_ActiveScene->GetRegistry(), HBL2::Component::EditorVisible::SelectedEntity);
 						}
 					}
-				}
+				});
 
 				// Add component button.
 				if (ImGui::Button("Add Component"))
@@ -783,21 +807,19 @@ namespace HBL2
 					AddComponentButton<HBL2::Component::Terrain>("Terrain", m_ActiveScene);
 					AddComponentButton<HBL2::Component::AnimationCurve>("AnimationCurve", m_ActiveScene);
 
-					// Iterate over all registered meta types
-					for (auto meta_type : entt::resolve(m_ActiveScene->GetMetaContext()))
+					// Iterate over all registered meta types.
+					Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
 					{
-						std::string componentName = meta_type.second.info().name().data();
-						componentName = BuildEngine::Instance->CleanComponentNameO3(componentName);
-
-						if (!BuildEngine::Instance->HasComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity))
+						if (!entry.hasInRegistry(&m_ActiveScene->GetRegistry(), HBL2::Component::EditorVisible::SelectedEntity))
 						{
+							std::string componentName = BuildEngine::Instance->CleanComponentNameO3(std::string(entry.typeName));
 							if (ImGui::MenuItem(componentName.c_str()))
 							{
-								BuildEngine::Instance->AddComponent(componentName, m_ActiveScene, HBL2::Component::EditorVisible::SelectedEntity);
+								entry.addToRegistry(&m_ActiveScene->GetRegistry(), HBL2::Component::EditorVisible::SelectedEntity);
 								ImGui::CloseCurrentPopup();
 							}
 						}
-					}
+					});
 
 					ImGui::EndPopup();
 				}
@@ -914,7 +936,43 @@ namespace HBL2
 						}
 						break;
 					case AssetType::Scene:
-						break;
+						{
+							Handle<Scene> handle = AssetManager::Instance->GetAsset<Scene>(m_SelectedAsset);
+							Scene* scene = ResourceManager::Instance->GetScene(handle);
+
+							SceneDescriptor& desc = scene->GetDescriptor();
+
+							bool dirty = false;
+							dirty |= ImGui::InputInt("MaxEntities", (int*)&desc.maxEntities, 4096);
+							dirty |= ImGui::InputInt("MaxComponents", (int*)&desc.maxComponents);
+							dirty |= ImGui::InputInt("MaxSystems", (int*)&desc.maxSystems);
+							dirty |= ImGui::InputInt("MaxJobsPerSystem", (int*)&desc.maxJobsPerSystem);
+							dirty |= ImGui::InputInt("MaxStructuralCommandsPerFramePerThread", (int*)&desc.maxStructuralCommandsPerFramePerThread);
+							dirty |= ImGui::Checkbox("UseStructuralCommandBuffer", &desc.useStructuralCommandBuffer);
+
+							if (dirty)
+							{
+								UpdateAssetMetadataFile(m_SelectedAsset, desc);
+							}
+							break;
+						}
+					case AssetType::Prefab:
+						{
+							Handle<Prefab> handle = AssetManager::Instance->GetAsset<Prefab>(m_SelectedAsset);
+							Prefab* prefab = ResourceManager::Instance->GetPrefab(handle);
+
+							PrefabDescriptor& desc = prefab->GetDescriptor();
+
+							bool dirty = false;
+							dirty |= ImGui::InputInt("MaxEntities", (int*)&desc.maxEntities, 4096);
+							dirty |= ImGui::InputInt("MaxComponents", (int*)&desc.maxComponents);
+
+							if (dirty)
+							{
+								PrefabUtilities::Get().UpdateMetadataFile(m_SelectedAsset, desc);
+							}
+							break;
+						}
 					case AssetType::Script:
 						break;
 					default:

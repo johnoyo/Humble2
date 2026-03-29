@@ -26,8 +26,9 @@ namespace HBL2
 		void ConvertEntityToPrefabPhase0(Entity entity, Scene* scene);
 		bool ConvertEntityToPrefabPhase1(Entity entity, Handle<Asset> assetHandle, Scene* scene);
 
-		void CreateMetadataFile(Handle<Asset> assetHandle, UUID baseEntityUUID, uint32_t version = 1);
-		void CreateMetadataFile(Asset* prefabAsset, UUID baseEntityUUID, uint32_t version = 1);
+		void CreateMetadataFile(Handle<Asset> assetHandle, UUID baseEntityUUID, uint32_t version = 1, uint32_t maxEntities = 4096, uint32_t maxComponents = 32);
+		void CreateMetadataFile(Asset* prefabAsset, UUID baseEntityUUID, uint32_t version = 1, uint32_t maxEntities = 4096, uint32_t maxComponents = 32);
+		void UpdateMetadataFile(Handle<Asset> handle, PrefabDescriptor& desc);
 
 	private:
 		PrefabUtilities() = default;

@@ -188,11 +188,13 @@ namespace HBL2
 		UUID newBaseEntityUUID = activeScene->GetComponent<Component::ID>(instantiatedPrefabEntity).Identifier;
 		prefab->Load({
 			.debugName = "PrefabScene",
-			.uuid = prefab->GetUUID(),
+			.uuid = prefab->GetDescriptor().uuid,
 			.baseEntityUUID = newBaseEntityUUID,
-			.version = prefab->GetVersion(),
+			.version = prefab->GetDescriptor().version,
+			.maxEntities = prefab->GetDescriptor().maxEntities,
+			.maxComponents = prefab->GetDescriptor().maxComponents,
 		});
-		CreateMetadataFile(prefabAsset, prefab->GetBaseEntityUUID(), prefab->GetVersion());
+		CreateMetadataFile(prefabAsset, prefab->GetDescriptor().baseEntityUUID, prefab->GetDescriptor().version, prefab->GetDescriptor().maxEntities, prefab->GetDescriptor().maxComponents);
 
 		// Reload prefab contents.
 		PrefabSerializer prefabDeserializer(prefab);
@@ -246,7 +248,7 @@ namespace HBL2
 		Component::Link link = activeScene->GetComponent<Component::Link>(instantiatedPrefabEntity);
 
 		// Retrieve the base entity of the source instantiated prefab.
-		UUID baseEntityUUID = prefab->GetBaseEntityUUID();
+		UUID baseEntityUUID = prefab->GetDescriptor().baseEntityUUID;
 		Scene* prefabSubScene = ResourceManager::Instance->GetScene(prefab->GetSubSceneHandle());
 		Entity baseEntity = prefabSubScene->FindEntityByUUID(baseEntityUUID);
 
@@ -266,7 +268,7 @@ namespace HBL2
 			tr.Static = transform.Static;
 
 			auto& prefabComponent = activeScene->GetComponent<Component::PrefabInstance>(clone);
-			prefabComponent.Version = prefab->GetVersion();
+			prefabComponent.Version = prefab->GetDescriptor().version;
 		}
     }
 
@@ -275,8 +277,8 @@ namespace HBL2
 		// Update the instantiated prefab entities that exist in the scene.
 		std::vector<PrefabInfo> instantiatedPrefabEntitiesInfo;
 
-		activeScene->View<Component::ID, Component::PrefabInstance, Component::Transform, Component::Tag>()
-			.Each([&](Entity entity, Component::ID& id, Component::PrefabInstance& prefab, Component::Transform& tr, Component::Tag& tag)
+		activeScene->Filter<Component::ID, Component::PrefabInstance, Component::Transform, Component::Tag>()
+			.ForEach([&](Entity entity, Component::ID& id, Component::PrefabInstance& prefab, Component::Transform& tr, Component::Tag& tag)
 			{
 				if (prefab.Id == prefabAsset->UUID && prefab.Override)
 				{
@@ -291,7 +293,7 @@ namespace HBL2
 			});
 
 		// Retrieve the base entity of the source instantiated prefab.
-		UUID baseEntityUUID = prefab->GetBaseEntityUUID();
+		UUID baseEntityUUID = prefab->GetDescriptor().baseEntityUUID;
 		Scene* prefabSubScene = ResourceManager::Instance->GetScene(prefab->GetSubSceneHandle());
 		Entity baseEntity = prefabSubScene->FindEntityByUUID(baseEntityUUID);
 
@@ -300,7 +302,7 @@ namespace HBL2
 			const auto entity = instantiatedPrefabEntitiesInfo[i].entity;
 			const auto& transform = instantiatedPrefabEntitiesInfo[i].transform;
 
-			if (prefab->GetVersion() == instantiatedPrefabEntitiesInfo[i].prefab.Version && checkVersion)
+			if (prefab->GetDescriptor().version == instantiatedPrefabEntitiesInfo[i].prefab.Version && checkVersion)
 			{
 				continue;
 			}
@@ -327,7 +329,7 @@ namespace HBL2
 				}
 
 				auto& prefabComponent = activeScene->GetComponent<Component::PrefabInstance>(clone);
-				prefabComponent.Version = prefab->GetVersion();
+				prefabComponent.Version = prefab->GetDescriptor().version;
 			}
 		}
 	}
@@ -394,19 +396,19 @@ namespace HBL2
 		}
 
 		auto& prefabInstance = scene->GetOrAddComponent<Component::PrefabInstance>(entity);
-		prefabInstance.Id = prefab->GetUUID();
-		prefabInstance.Version = prefab->GetVersion();
+		prefabInstance.Id = prefab->GetDescriptor().uuid;
+		prefabInstance.Version = prefab->GetDescriptor().version;
 
 		return true;
     }
 
-    void PrefabUtilities::CreateMetadataFile(Handle<Asset> assetHandle, UUID baseEntityUUID, uint32_t version)
+    void PrefabUtilities::CreateMetadataFile(Handle<Asset> assetHandle, UUID baseEntityUUID, uint32_t version, uint32_t maxEntities, uint32_t maxComponents)
     {
 		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 		CreateMetadataFile(prefabAsset, baseEntityUUID, version);
     }
 
-    void PrefabUtilities::CreateMetadataFile(Asset* prefabAsset, UUID baseEntityUUID, uint32_t version)
+    void PrefabUtilities::CreateMetadataFile(Asset* prefabAsset, UUID baseEntityUUID, uint32_t version, uint32_t maxEntities, uint32_t maxComponents)
     {
 		if (prefabAsset == nullptr)
 		{
@@ -423,9 +425,38 @@ namespace HBL2
 		out << YAML::Key << "UUID" << YAML::Value << prefabAsset->UUID;
 		out << YAML::Key << "BaseEntityUUID" << YAML::Value << baseEntityUUID;
 		out << YAML::Key << "Version" << YAML::Value << version;
+		out << YAML::Key << "MaxEntities" << YAML::Value << maxEntities;
+		out << YAML::Key << "MaxComponents" << YAML::Value << maxComponents;
 		out << YAML::EndMap;
 		out << YAML::EndMap;
 		fout << out.c_str();
 		fout.close();
     }
+
+	void PrefabUtilities::UpdateMetadataFile(Handle<Asset> handle, PrefabDescriptor& desc)
+	{
+		if (!AssetManager::Instance->IsAssetValid(handle))
+		{
+			return;
+		}
+
+		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(handle);
+		const std::filesystem::path& filePath = HBL2::Project::GetAssetFileSystemPath(prefabAsset->FilePath).string() + ".hblprefab";
+
+		std::ofstream fout(filePath, 0);
+
+		YAML::Emitter out;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Prefab" << YAML::Value;
+		out << YAML::BeginMap;
+		out << YAML::Key << "UUID" << YAML::Value << prefabAsset->UUID;
+		out << YAML::Key << "BaseEntityUUID" << YAML::Value << desc.baseEntityUUID;
+		out << YAML::Key << "Version" << YAML::Value << desc.version;
+		out << YAML::Key << "MaxEntities" << YAML::Value << desc.maxEntities;
+		out << YAML::Key << "MaxComponents" << YAML::Value << desc.maxComponents;
+		out << YAML::EndMap;
+		out << YAML::EndMap;
+		fout << out.c_str();
+		fout.close();
+	}
 }

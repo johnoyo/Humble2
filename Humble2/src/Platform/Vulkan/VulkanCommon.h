@@ -31,7 +31,7 @@ namespace HBL2
 
 		VkCompareOp CompareToVkCompareOp(Compare compare);
 
-		VkFilter FilterToVkFilter(Filter filter);
+		VkFilter FilterToVkFilter(TextureFilter filter);
 
 		VkSamplerAddressMode WrapToVkSamplerAddressMode(Wrap wrap);
 

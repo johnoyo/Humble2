@@ -20,7 +20,7 @@ namespace HBL2
 		GLenum VertexFormatToGLenum(VertexFormat vertexFormat);
 		uint32_t VertexFormatSize(VertexFormat vertexFormat);
 		GLenum FormatToGLenum(Format format);
-		GLenum FilterToGLenum(Filter filter);
+		GLenum FilterToGLenum(TextureFilter filter);
 		GLenum WrapToGLenum(Wrap wrap);
 		GLenum CompareToGLenum(Compare compare);
 		GLenum TextureTypeToGLenum(TextureType textureType);

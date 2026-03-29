@@ -7,12 +7,17 @@ using namespace HBL2;
 class NewSystem final : public HBL2::ISystem
 {
 public:
+	virtual ~NewSystem()
+	{
+		// HBL2_FATAL("NewSystem dtor\n");
+	}
+
 	virtual void OnCreate() override
 	{
 		PhysicsEngine2D::Instance->OnCollisionEnterEvent([this](Physics::CollisionEnterEvent* beginTouchEvent)
 		{
-			auto& tagA = m_Context->GetComponent<Component::Tag>(beginTouchEvent->entityA).Name;
-			auto& tagB = m_Context->GetComponent<Component::Tag>(beginTouchEvent->entityB).Name;
+			auto tagA = m_Context->GetComponent<Component::Tag>(beginTouchEvent->entityA).Name.view();
+			auto tagB = m_Context->GetComponent<Component::Tag>(beginTouchEvent->entityB).Name.view();
 
 			HBL2_INFO("{} -> {}\n", tagA, tagB);
 
@@ -21,8 +26,8 @@ public:
 
 		PhysicsEngine3D::Instance->OnCollisionEnterEvent([this](Physics::CollisionEnterEvent* collisionEnterEvent)
 		{
-			auto& tagA = m_Context->GetComponent<Component::Tag>(collisionEnterEvent->entityA).Name;
-			auto& tagB = m_Context->GetComponent<Component::Tag>(collisionEnterEvent->entityB).Name;
+			auto tagA = m_Context->GetComponent<Component::Tag>(collisionEnterEvent->entityA).Name.view();
+			auto tagB = m_Context->GetComponent<Component::Tag>(collisionEnterEvent->entityB).Name.view();
 
 			HBL2_INFO("[COLLISION] Entered {} -> {}\n", tagA, tagB);
 
@@ -33,24 +38,24 @@ public:
 
 		PhysicsEngine3D::Instance->OnTriggerEnterEvent([this](Physics::TriggerEnterEvent* triggerEnterEvent)
 		{
-			auto& tagA = m_Context->GetComponent<Component::Tag>(triggerEnterEvent->entityA).Name;
-			auto& tagB = m_Context->GetComponent<Component::Tag>(triggerEnterEvent->entityB).Name;
+			auto tagA = m_Context->GetComponent<Component::Tag>(triggerEnterEvent->entityA).Name.view();
+			auto tagB = m_Context->GetComponent<Component::Tag>(triggerEnterEvent->entityB).Name.view();
 
 			HBL2_INFO("[TRIGGER] Entered {} -> {}\n", tagA, tagB);
 		});
 
 		PhysicsEngine3D::Instance->OnCollisionExitEvent([this](Physics::CollisionExitEvent* collisionExitEvent)
 		{
-			auto& tagA = m_Context->GetComponent<Component::Tag>(collisionExitEvent->entityA).Name;
-			auto& tagB = m_Context->GetComponent<Component::Tag>(collisionExitEvent->entityB).Name;
+			auto tagA = m_Context->GetComponent<Component::Tag>(collisionExitEvent->entityA).Name.view();
+			auto tagB = m_Context->GetComponent<Component::Tag>(collisionExitEvent->entityB).Name.view();
 
 			HBL2_INFO("[COLLISION] Exited {} -> {}\n", tagA, tagB);
 		});
 
 		PhysicsEngine3D::Instance->OnTriggerExitEvent([this](Physics::TriggerExitEvent* triggerExitEvent)
 		{
-			auto& tagA = m_Context->GetComponent<Component::Tag>(triggerExitEvent->entityA).Name;
-			auto& tagB = m_Context->GetComponent<Component::Tag>(triggerExitEvent->entityB).Name;
+			auto tagA = m_Context->GetComponent<Component::Tag>(triggerExitEvent->entityA).Name.view();
+			auto tagB = m_Context->GetComponent<Component::Tag>(triggerExitEvent->entityB).Name.view();
 
 			HBL2_INFO("[TRIGGER] Exited {} -> {}\n", tagA, tagB);
 		});
@@ -58,8 +63,32 @@ public:
 
 	virtual void OnUpdate(float ts) override
 	{
-		m_Context->View<NewComponent>()
-			.Each([&](NewComponent& newComponent)
+		m_Context->Filter<Component::AudioSource>()
+			.ForEach([&](Component::AudioSource& as)
+			{
+				if (HBL2::Input::GetKeyPress(KeyCode::P))
+				{
+					SoundEngine::Instance->Play(as);
+				}
+
+				if (HBL2::Input::GetKeyPress(KeyCode::L))
+				{
+					SoundEngine::Instance->Pause(as);
+				}
+
+				if (HBL2::Input::GetKeyPress(KeyCode::R))
+				{
+					SoundEngine::Instance->Resume(as);
+				}
+
+				if (HBL2::Input::GetKeyPress(KeyCode::S))
+				{
+					SoundEngine::Instance->Stop(as);
+				}
+			});
+
+		m_Context->Filter<NewComponent>()
+			.ForEach([&](NewComponent& newComponent)
 			{
 				if (HBL2::Input::GetKeyPress(KeyCode::C))
 				{
@@ -69,18 +98,18 @@ public:
 					}
 					else
 					{
-						HBL2_INFO("Hello {}!", m_Context->GetComponent<Component::Tag>(newComponent.Mario).Name);
+						HBL2_INFO("Hello - {}!", m_Context->GetComponent<Component::Tag>(newComponent.Mario).Name.view());
 					}
 
-					HBL2::SceneManager::Get().LoadScene(newComponent.SceneHandle);
+					// HBL2::SceneManager::Get().LoadScene(newComponent.SceneHandle);
 				}
 			});		
 	}
 
 	virtual void OnFixedUpdate() override
 	{
-		m_Context->View<Component::Rigidbody2D>()
-			.Each([this](Entity entity, Component::Rigidbody2D& rb2d)
+		m_Context->Filter<Component::Rigidbody2D>()
+			.ForEach([this](Entity entity, Component::Rigidbody2D& rb2d)
 			{
 				if (rb2d.Type == Physics::BodyType::Dynamic)
 				{

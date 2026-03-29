@@ -11,7 +11,6 @@
 
 #include "moodycamel/concurrentqueue.h"
 
-#include <deque>
 #include <mutex>
 #include <atomic>
 #include <thread>

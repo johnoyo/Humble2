@@ -21,6 +21,16 @@ namespace HBL2
             assign(str);
         }
 
+        constexpr StaticString(const char* str) noexcept
+        {
+            assign(std::string_view(str, str ? std::char_traits<char>::length(str) : 0));
+        }
+
+        StaticString(const std::string& str) noexcept
+        {
+            assign(std::string_view(str));
+        }
+
         constexpr void clear() noexcept
         {
             m_Size = 0;
@@ -51,6 +61,89 @@ namespace HBL2
             m_Size = static_cast<uint16_t>(len);
         }
 
+        constexpr void assign(const char* str) noexcept
+        {
+            assign(std::string_view(str, str ? std::char_traits<char>::length(str) : 0));
+        }
+
+        void assign(const std::string& str) noexcept
+        {
+            assign(std::string_view(str));
+        }
+
+        constexpr void append(std::string_view str) noexcept
+        {
+            const size_t remaining = capacity() - m_Size;
+            const size_t len = std::min(str.size(), remaining);
+
+            if (len > 0)
+            {
+                std::memcpy(m_Data + m_Size, str.data(), len);
+            }
+
+            m_Size += static_cast<uint16_t>(len);
+            m_Data[m_Size] = '\0';
+        }
+
+        constexpr void append(const char* str) noexcept
+        {
+            append(std::string_view(str, str ? std::char_traits<char>::length(str) : 0));
+        }
+
+        void append(const std::string& str) noexcept
+        {
+            append(std::string_view(str));
+        }
+
+        static constexpr size_t npos = size_t(-1);
+
+        [[nodiscard]] constexpr size_t find(std::string_view str, size_t pos = 0) const noexcept
+        {
+            if (str.empty())
+            {
+                return pos;
+            }
+
+            if (pos >= m_Size || str.size() > m_Size - pos)
+            {
+                return npos;
+            }
+
+            const size_t end = m_Size - str.size();
+            for (size_t i = pos; i <= end; ++i)
+            {
+                if (std::string_view(m_Data + i, str.size()) == str)
+                {
+                    return i;
+                }
+            }
+
+            return npos;
+        }
+
+        [[nodiscard]] constexpr size_t find(const char* str, size_t pos = 0) const noexcept
+        {
+            return find(std::string_view(str, str ? std::char_traits<char>::length(str) : 0), pos);
+        }
+
+        [[nodiscard]] size_t find(const std::string& str, size_t pos = 0) const noexcept
+        {
+            return find(std::string_view(str), pos);
+        }
+
+        [[nodiscard]] constexpr size_t find(char c, size_t pos = 0) const noexcept
+        {
+            for (size_t i = pos; i < m_Size; ++i)
+            {
+                if (m_Data[i] == c)
+                {
+                    return i;
+                }
+            }
+
+            return npos;
+        }
+
         template<typename... Args>
         void format(fmt::format_string<Args...> fmtStr, Args&&... args)
         {
@@ -63,6 +156,53 @@ namespace HBL2
         constexpr char operator[](size_t i) const noexcept
         {
             return m_Data[i];
+        }
+
+        constexpr bool operator==(std::string_view other) const noexcept { return view() == other; }
+        constexpr bool operator==(const char* other) const noexcept { return view() == std::string_view(other); }
+        bool operator==(const std::string& other) const noexcept { return view() == std::string_view(other); }
+
+        constexpr bool operator!=(std::string_view other) const noexcept { return !(*this == other); }
+        constexpr bool operator!=(const char* other) const noexcept { return !(*this == other); }
+        bool operator!=(const std::string& other) const noexcept { return !(*this == other); }
+
+        constexpr StaticString<Capacity>& operator+=(std::string_view str) noexcept { append(str); return *this; }
+        constexpr StaticString<Capacity>& operator+=(const char* str) noexcept { append(str); return *this; }
+        StaticString<Capacity>& operator+=(const std::string& str) noexcept { append(str); return *this; }
+        constexpr StaticString<Capacity>& operator+=(char c) noexcept
+        {
+            if (m_Size < capacity())
+            {
+                m_Data[m_Size++] = c;
+                m_Data[m_Size] = '\0';
+            }
+            return *this;
+        }
+
+        [[nodiscard]] constexpr StaticString<Capacity> operator+(std::string_view str) const noexcept
+        {
+            StaticString<Capacity> result(*this);
+            result.append(str);
+            return result;
+        }
+
+        [[nodiscard]] constexpr StaticString<Capacity> operator+(const char* str) const noexcept
+        {
+            return *this + std::string_view(str, str ? std::char_traits<char>::length(str) : 0);
+        }
+
+        [[nodiscard]] StaticString<Capacity> operator+(const std::string& str) const noexcept
+        {
+            StaticString<Capacity> result(*this);
+            result.append(std::string_view(str));
+            return result;
+        }
+
+        [[nodiscard]] constexpr StaticString<Capacity> operator+(char c) const noexcept
+        {
+            StaticString<Capacity> result(*this);
+            result += c;
+            return result;
         }
 
     private:

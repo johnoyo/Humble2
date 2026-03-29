@@ -1,16 +1,16 @@
 #pragma once
 
-#include "Entity.h"
 #include "Components.h"
 
-#include "View.h"
-#include "Group.h"
+#include "ECS\Entity.h"
+#include "ECS\Registry.h"
+#include "ECS\Reflect.h"
 
 #include "Utilities\Random.h"
 #include "Utilities\Allocators\Arena.h"
 #include "Utilities\Collections\Collections.h"
-
-#include <entt.hpp>
+#include "Utilities\Collections\HashMap.h"
+#include "Utilities\Collections\StaticString.h"
 
 namespace HBL2
 {
@@ -24,17 +24,17 @@ namespace HBL2
 		User,
 	};
 
-	template <typename... Cs>
-	inline constexpr entt::get_t<Cs...> Get{};
-
-	template <typename... Cs>
-	inline constexpr entt::exclude_t<Cs...> Exclude{};
-
 	struct SceneDescriptor
 	{
-		std::string name;
-		uint64_t memory = 32_MB;
-		bool minimalMode = false;
+		StaticString<64> name;
+
+		uint32_t maxEntities = 4096;
+		uint32_t maxComponents = 64;
+		uint32_t maxSystems = 64;
+		uint32_t maxStructuralCommandsPerFramePerThread = 256;
+		uint32_t maxJobsPerSystem = 16;
+
+		bool useStructuralCommandBuffer = true;
 	};
 
 	enum class EntityDuplicationNaming
@@ -49,7 +49,7 @@ namespace HBL2
 	template<class T>
 	struct LookupRO
 	{
-		entt::storage<T>* storage = nullptr;
+		IComponentStorage* storage = nullptr;
 		const Scene* scene = nullptr;
 		uint64_t epoch = 0;
 
@@ -61,7 +61,7 @@ namespace HBL2
 				return false;
 			}
 #endif
-			return scene && scene->Epoch() == epoch && storage->contains(e);
+			return scene && scene->Epoch() == epoch && storage->Has(e);
 		}
 
 		const T* TryGet(Entity e) const
@@ -72,14 +72,14 @@ namespace HBL2
 				return nullptr;
 			}
 #endif
-			return storage->contains(e) ? &storage->get(e) : nullptr;
+			return storage->Has(e) ? (T*)storage->Get(e) : nullptr;
 		}
 	};
 
 	template<class T>
 	struct LookupRW
 	{
-		entt::storage<T>* storage = nullptr;
+		IComponentStorage* storage = nullptr;
 		Scene* scene = nullptr;
 		uint64_t epoch = 0;
 
@@ -91,7 +91,7 @@ namespace HBL2
 				return false;
 			}
 #endif
-			return scene && scene->Epoch() == epoch && storage->contains(e);
+			return scene && scene->Epoch() == epoch && storage->Has(e);
 		}
 
 		T* TryGet(Entity e) const
@@ -102,7 +102,7 @@ namespace HBL2
 				return nullptr;
 			}
 #endif
-			return storage->contains(e) ? &storage->get(e) : nullptr;
+			return storage->Has(e) ? (T*)storage->Get(e) : nullptr;
 		}
 	};
 
@@ -119,9 +119,9 @@ namespace HBL2
 
 		Entity CreateEntity();
 
-		Entity CreateEntity(const std::string& tag);
+		Entity CreateEntity(const StaticString<64>& tag);
 
-		Entity CreateEntityWithUUID(UUID uuid, const std::string& tag = "New Entity");
+		Entity CreateEntityWithUUID(UUID uuid, const StaticString<64>& tag = "New Entity");
 
 		Entity FindEntityByUUID(UUID uuid);
 
@@ -131,12 +131,6 @@ namespace HBL2
 
 		Entity DuplicateEntityFromScene(Entity entity, Scene* otherScene, EntityDuplicationNaming namingConvention = EntityDuplicationNaming::APPEND_CLONE_TO_BASE_ONLY);
 
-		template<typename... T>
-		auto GetAllEntitiesWith()
-		{
-			return m_Registry.view<T...>();
-		}
-
 		const uint32_t GetEntityCount() const
 		{
 			return m_EntityMap.size();
@@ -145,47 +139,52 @@ namespace HBL2
 		template<typename T>
 		T& GetComponent(Entity entity)
 		{
-			return m_Registry.get<T>(entity);
+			return m_Registry.GetComponent<T>(entity);
 		}
 
 		template<typename T>
 		T* TryGetComponent(Entity entity)
 		{
-			return m_Registry.try_get<T>(entity);
-		}
-
-		template<typename T>
-		T& GetOrAddComponent(Entity entity)
-		{
-			return m_Registry.get_or_emplace<T>(entity);
+			return m_Registry.TryGetComponent<T>(entity);
 		}
 
 		template<typename T>
 		bool HasComponent(Entity entity)
 		{
-			return m_Registry.any_of<T>(entity);
+			return m_Registry.HasComponent<T>(entity);
 		}
 
 		template<typename T>
 		T& AddComponent(Entity entity)
 		{
-			return m_Registry.emplace<T>(entity);
+			return m_Registry.AddComponent<T>(entity);
 		}
 
 		template<typename T>
-		T& AddOrReplaceComponent(Entity entity)
+		T* TryAddComponent(Entity entity)
 		{
-			return m_Registry.emplace_or_replace<T>(entity);
+			return m_Registry.TryAddComponent<T>(entity);
 		}
 
 		template<typename T>
 		void RemoveComponent(Entity entity)
 		{
-			m_Registry.remove<T>(entity);
+			m_Registry.RemoveComponent<T>(entity);
+		}
+
+		template<typename T>
+		T& GetOrAddComponent(Entity e)
+		{
+			return m_Registry.GetOrAddComponent<T>(e);
+		}
+
+		template<typename T>
+		T& AddOrReplaceComponent(Entity e, T&& comp = {})
+		{
+			return m_Registry.AddOrReplaceComponent<T>(e, std::forward<T>(comp));
 		}
 
 		void DeregisterSystem(const std::string& systemName);
-
 		void DeregisterSystem(ISystem* system);
 
 		template<typename T>
@@ -193,82 +192,32 @@ namespace HBL2
 		{
 			RegisterSystem(m_SceneArena.AllocConstruct<T>(), type);
 		}
-
 		void RegisterSystem(ISystem* system, SystemType type = SystemType::Core);
 
 		const DArray<ISystem*>& GetSystems() const { return m_Systems; }
 		const DArray<ISystem*>& GetCoreSystems() const { return m_CoreSystems; }
 		const DArray<ISystem*>& GetRuntimeSystems() const { return m_RuntimeSystems; }
-		entt::registry& GetRegistry() { return m_Registry; }
+		Registry& GetRegistry() { return m_Registry; }
 
 		[[nodiscard]] inline auto Entities() noexcept
 		{
-			return HBL2::View{ m_Registry.view<entt::entity>() };
+			return m_Registry.Entities();
 		}
 
 		[[nodiscard]] inline auto Entities() const noexcept
 		{
-			return HBL2::View{ m_Registry.view<entt::entity>() };
+			return m_Registry.Entities();
 		}
 
 		template <typename... Inc>
-		[[nodiscard]] constexpr auto View() noexcept
+		[[nodiscard]] inline auto Filter() noexcept
 		{
-			return HBL2::View{ m_Registry.view<Inc...>() };
+			return m_Registry.Filter<Inc...>();
 		}
 
-		template <typename... Inc, typename... Exc>
-		[[nodiscard]] constexpr auto View(entt::exclude_t<Exc...> ex) noexcept
-		{
-			return HBL2::View{ m_Registry.view<Inc...>(ex) };
-		}
-
-		template <typename... Owned>
-		[[nodiscard]] constexpr auto Group() noexcept
-		{
-			auto g = m_Registry.template group<Owned...>();
-			return HBL2::Group{ g };
-		}
-
-		template <typename... Owned, typename... Get>
-		[[nodiscard]] constexpr auto Group(entt::get_t<Get...> getter) noexcept
-		{
-			auto g = m_Registry.template group<Owned...>(getter);
-			return HBL2::Group{ g };
-		}
-
-		template <typename... Owned, typename... Get, typename... Ex>
-		[[nodiscard]] constexpr auto Group(entt::get_t<Get...> getter, entt::exclude_t<Ex...> excl) noexcept
-		{
-			auto g = m_Registry.template group<Owned...>(getter, excl);
-			return HBL2::Group{ g };
-		}
-
-		template <typename... Owned, typename... Ex>
-		[[nodiscard]] constexpr auto Group(entt::exclude_t<Ex...> excl) noexcept
-		{
-			auto g = m_Registry.template group<Owned...>(excl);
-			return HBL2::Group{ g };
-		}
-
-		entt::meta_ctx& GetMetaContext() { return m_MetaContext; }
-		const std::string& GetName() const { return m_Name; }
-
-		template <typename T>
-		static std::vector<std::byte> Serialize(const T& component)
-		{
-			std::vector<std::byte> data(sizeof(T));
-			std::memcpy(data.data(), &component, sizeof(T));
-			return data;
-		}
-
-		template <typename T>
-		static T Deserialize(const std::vector<std::byte>& data)
-		{
-			T component;
-			std::memcpy(&component, data.data(), sizeof(T));
-			return component;
-		}
+		const StaticString<64>& GetName() const { return m_Descriptor.name; }
+		const SceneDescriptor& GetDescriptor() const { return m_Descriptor; }
+		SceneDescriptor& GetDescriptor() { return m_Descriptor; }
 
 		Entity MainCamera = Entity::Null;
 
@@ -290,13 +239,12 @@ namespace HBL2
 	private:
 		friend class Pool<Scene, Scene>;
 
-		std::string m_Name;
-		entt::registry m_Registry;
-		entt::meta_ctx m_MetaContext;
+		SceneDescriptor m_Descriptor;
+		Registry m_Registry;
 		DArray<ISystem*> m_Systems = MakeEmptyDArray<ISystem*>();
 		DArray<ISystem*> m_CoreSystems = MakeEmptyDArray<ISystem*>();
 		DArray<ISystem*> m_RuntimeSystems = MakeEmptyDArray<ISystem*>();
-		HMap<UUID, Entity> m_EntityMap = MakeEmptyHMap<UUID, Entity>();
+		HashMap<UUID, Entity> m_EntityMap;
 
 		Arena m_SceneArena;
 		PoolReservation* m_Reservation = nullptr;
