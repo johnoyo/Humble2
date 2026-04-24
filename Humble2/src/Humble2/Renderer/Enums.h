@@ -104,6 +104,7 @@ namespace HBL2
 		UINT32x2 = 9,
 		UINT32x3 = 10,
 		UINT32x4 = 11,
+		NONE,
 	};
 
 	enum class TextureFilter

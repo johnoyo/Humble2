@@ -72,6 +72,9 @@ namespace HBL2
             assert(SUCCEEDED(hr));
 #endif
         }
+
+        // Set the worker id for the main thread.
+        s_WorkerIndex = m_NumThreads;
     }
 
     void JobSystem::InternalShutdown()

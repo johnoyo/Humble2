@@ -48,6 +48,7 @@ project "Humble2"
         "../Dependencies/Box2D/box2d/include",
         "../Dependencies/Jolt/jolt",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
+        "../Dependencies/SLang/include",
         "%{VULKAN_SDK}/Include"
     }
     
@@ -56,6 +57,7 @@ project "Humble2"
         "../Dependencies/GLFW/lib-vc2022",
         "../Dependencies/GLEW/lib/Release/x64",
         "../Dependencies/FMOD/core/lib/x64",
+        "../Dependencies/SLang/lib",
         "%{VULKAN_SDK}/Lib"
     }
     
@@ -67,6 +69,9 @@ project "Humble2"
 
         "vulkan-1.lib",
 
+        "slang.lib",
+        "slang-compiler.lib",
+
         "ImGui",
         "YAML-Cpp",
         "Box2D",
@@ -74,6 +79,19 @@ project "Humble2"
     }
     
     defines (JoltDefines)
+
+    postbuildcommands
+    {
+        -- Ensure the SLang DLLs are copied to HumbleEditor
+        ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+        ("{COPY} ../Dependencies/SLang/bin/slang.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+        ("{COPY} ../Dependencies/SLang/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+
+        -- Ensure the SLang DLLs are copied to HumbleApp
+        ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+        ("{COPY} ../Dependencies/SLang/bin/slang.dll ../bin/" .. outputdir .. "/HumbleApp"),
+        ("{COPY} ../Dependencies/SLang/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleApp"),
+    }
 
     filter "system:windows"
         systemversion "latest"    

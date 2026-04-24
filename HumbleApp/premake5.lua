@@ -35,6 +35,7 @@ project "HumbleApp"
         "../Dependencies/Box2D/box2d/include",
         "../Dependencies/Jolt/jolt",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
+        "../Dependencies/SLang/include",
         "%{VULKAN_SDK}/Include"
     }
 
