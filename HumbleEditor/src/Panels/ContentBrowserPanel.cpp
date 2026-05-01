@@ -409,6 +409,12 @@ namespace HBL2
 							m_OpenShaderSetupPopup = true;
 						}
 
+						if (ImGui::MenuItem("Custom"))
+						{
+							m_SelectedShaderType = 3;
+							m_OpenShaderSetupPopup = true;
+						}
+
 						ImGui::EndMenu();
 					}
 
@@ -429,6 +435,12 @@ namespace HBL2
 						if (ImGui::MenuItem("PBR"))
 						{
 							m_SelectedMaterialType = 2;
+							m_OpenMaterialSetupPopup = true;
+						}
+
+						if (ImGui::MenuItem("Custom"))
+						{
+							m_SelectedMaterialType = 3;
 							m_OpenMaterialSetupPopup = true;
 						}
 
@@ -659,7 +671,7 @@ namespace HBL2
 
 				if (ImGui::Button("OK"))
 				{
-					const auto& relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), HBL2::Project::GetAssetDirectory());
+					const auto& relativePath = std::filesystem::relative(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".slang"), HBL2::Project::GetAssetDirectory());
 
 					auto shaderAssetHandle = AssetManager::Instance->CreateAsset({
 						.debugName = "shader-asset",
@@ -672,17 +684,17 @@ namespace HBL2
 					switch (m_SelectedShaderType)
 					{
 					case 0:
-						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/unlit.shader");
+						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/unlit.slang");
 						break;
 					case 1:
-						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/blinn-phong.shader");
+						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/blinn-phong.slang");
 						break;
 					case 2:
-						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/pbr.shader");
+						shaderSource = ShaderUtilities::Get().ReadFile("assets/shaders/pbr.slang");
 						break;
 					}
 
-					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".shader"), 0);
+					std::ofstream fout(m_CurrentDirectory / (std::string(shaderNameBuffer) + ".slang"), 0);
 					fout << shaderSource;
 					fout.close();
 
@@ -779,6 +791,12 @@ namespace HBL2
 
 				static float glossiness = 1.0f;
 				ImGui::InputFloat("Glossiness", &glossiness, 0.05f);
+
+				// Custom material, get resources from shader reflection.
+				if (m_SelectedMaterialType == 3)
+				{
+					// TODO: ...
+				}
 
 				static uint32_t albedoMapHandlePacked = 0;
 

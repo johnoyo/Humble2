@@ -57,26 +57,19 @@ namespace HBL2
 		RenderPassContext ctx = {};
 
 		// Create srp shaders.
-		const auto& shaderCode = ShaderUtilities::Get().Compile(shaderPath);
-
-		// Reflect shader.
-		const auto& reflectionData = ShaderUtilities::Get().GetReflectionData(shaderPath);
+		ShaderReflectionData outReflectionData;
+		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath, &outReflectionData);
 
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.blendEnabled = false;
 
 		ctx.Shader = ResourceManager::Instance->CreateShader({
 			.debugName = "srp-shader",
-			.VS { .code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
-			.FS { .code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
-			.bindGroups = { reflectionData.BindGroupLayout },
+			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
+			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
+			.bindGroups = { {}/*reflectionData.BindGroupLayout*/ },
 			.renderPipeline {
-				.vertexBufferBindings = {
-					{
-						.byteStride = reflectionData.ByteStride,
-						.attributes = reflectionData.Attributes,
-					},
-				},
+				.vertexBufferBindings = outReflectionData.vertexBufferBindings,
 				.variants = { variant },
 			},
 			.renderPass = renderPass,
@@ -94,7 +87,7 @@ namespace HBL2
 		mat->VariantHash = variant;
 
 		// Set the bindgroup.
-		ctx.GlobalBindGroup = reflectionData.BindGroup;
+		ctx.GlobalBindGroup = {}/*reflectionData.BindGroup*/;
 
 		return ctx;
 	}

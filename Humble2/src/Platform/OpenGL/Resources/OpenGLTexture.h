@@ -16,6 +16,7 @@ namespace HBL2
 
 		void Bind(uint32_t slot);
 		void Update(const Span<const std::byte>& bytes);
+		void ChangeTextureView(const TextureViewDescriptor&& desc);
 		void* GetData();
 		void Destroy();
 
@@ -26,8 +27,14 @@ namespace HBL2
 		GLenum Type = UINT32_MAX;
 		GLenum Format = UINT32_MAX;
 		GLenum InternalFormat = UINT32_MAX;
+		uint32_t LayerCount = 1;
 		GLenum MinFilter = UINT32_MAX;
 		GLenum MagFilter = UINT32_MAX;
 		GLenum WrapMode = UINT32_MAX;
+
+		GLuint ViewRendererId = 0;
+
+	private:
+		void CreateView(GLenum viewTarget, GLenum viewFormat, GLuint layerCount);
 	};
 }

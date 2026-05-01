@@ -26,6 +26,7 @@ namespace HBL2
 		BitFlags<TextureUsage> usage = TextureUsage::TEXTURE_BINDING;
 		TextureType type = TextureType::D2;
 		TextureAspect aspect = TextureAspect::COLOR;
+		uint32_t layerCount = 1;
 
 		struct Sampler
 		{
@@ -39,6 +40,14 @@ namespace HBL2
 		Sampler sampler;
 		TextureLayout initialLayout = TextureLayout::SHADER_READ_ONLY;
 		void* initialData = nullptr;
+	};
+
+	struct TextureViewDescriptor
+	{
+		TextureType type = TextureType::D2;
+		Format format = Format::RGBA8_RGB;
+		TextureAspect aspect = TextureAspect::COLOR;
+		uint32_t layerCount = 1;
 	};
 
 	struct BufferDescriptor
@@ -118,6 +127,7 @@ namespace HBL2
 					VertexFormat format = VertexFormat::FLOAT32;
 				};
 
+				uint32_t bufferBinding = 0;
 				uint32_t byteStride = 12;
 				std::vector<Attribute> attributes;
 			};
@@ -201,7 +211,7 @@ namespace HBL2
 			static_assert(sizeof(PackedVariant) == sizeof(packed_size));
 			static_assert(std::is_trivially_copyable_v<PackedVariant>);
 
-			std::initializer_list<VertexBufferBinding> vertexBufferBindings;
+			Span<const VertexBufferBinding> vertexBufferBindings;
 
 			Span<const PackedVariant> variants;
 		};

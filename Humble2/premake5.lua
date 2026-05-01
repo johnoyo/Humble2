@@ -86,11 +86,13 @@ project "Humble2"
         ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
         ("{COPY} ../Dependencies/SLang/bin/slang.dll ../bin/" .. outputdir .. "/HumbleEditor"),
         ("{COPY} ../Dependencies/SLang/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+        ("{COPY} ../Dependencies/SLang/bin/slang-glslang.dll ../bin/" .. outputdir .. "/HumbleEditor"),
 
         -- Ensure the SLang DLLs are copied to HumbleApp
         ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
         ("{COPY} ../Dependencies/SLang/bin/slang.dll ../bin/" .. outputdir .. "/HumbleApp"),
         ("{COPY} ../Dependencies/SLang/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleApp"),
+        ("{COPY} ../Dependencies/SLang/bin/slang-glslang.dll ../bin/" .. outputdir .. "/HumbleApp"),
     }
 
     filter "system:windows"

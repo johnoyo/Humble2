@@ -133,7 +133,7 @@ namespace HBL2
 			barrier.subresourceRange.baseMipLevel = 0;
 			barrier.subresourceRange.levelCount = 1;
 			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = (vkTexture->ImageType == TextureType::CUBE ? 6 : 1);
+			barrier.subresourceRange.layerCount = (vkTexture->ImageType == TextureType::CUBE ? 6 : vkTexture->LayerCount);
 
 			imageBarriers[index++] = barrier;
 

@@ -163,7 +163,7 @@ namespace HBL2
 				.type = AssetType::Material,
 			});
 		}
-		else if (extension == ".shader")
+		else if (extension == ".slang")
 		{
 			assetHandle = AssetManager::Instance->CreateAsset({
 				.debugName = "shader-asset",

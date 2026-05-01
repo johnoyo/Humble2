@@ -1,12 +1,16 @@
 #pragma once
 
 #include "Base.h"
-#include "SlangReflection.h"
+#include "ShaderUtilities.h"
 
 #include "Renderer\Renderer.h"
 #include "Renderer\Enums.h"
 
 #include "Asset\AssetManager.h"
+
+#include <shaderc/shaderc.hpp>
+#include <spirv_cross/spirv_cross.hpp>
+#include <spirv_cross/spirv_glsl.hpp>
 
 #include <fstream>
 #include <filesystem>
@@ -15,66 +19,31 @@
 
 namespace HBL2
 {
-	enum class HBL2_API BuiltInShader
+	struct HBL2_API ReflectionData
 	{
-		INVALID = 0,
-		PRESENT,
-		UNLIT,
-		BLINN_PHONG,
-		PBR,
+		std::string VertexEntryPoint;
+		std::string FragmentEntryPoint;
+		std::string ComputeEntryPoint;
+		uint32_t VertexBindingCount = 0;
+		uint32_t ByteStride = 0;
+		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding::Attribute> Attributes;
+		Handle<BindGroupLayout> BindGroupLayout;
+		Handle<BindGroup> BindGroup;
 	};
 
-	struct HBL2_API CompilationResultData
-	{
-		struct ShaderCode
-		{
-			uint32_t* ptr = nullptr;
-			uint32_t size = 0;
-
-			Span<const uint32_t> AsSpan() const
-			{
-				return { ptr, size };
-			}
-		};
-
-		ShaderCode vertexShaderCode;
-		ShaderCode fragmentShaderCode;
-		ShaderCode computeShaderCode;
-
-		bool IsValid() const
-		{
-			return (vertexShaderCode.ptr != nullptr && fragmentShaderCode.ptr) || computeShaderCode.ptr != nullptr;
-		}
-
-	};
-
-	struct HBL2_API MaterialDataDescriptor
-	{
-		Handle<Asset> ShaderAssetHandle;
-
-		ShaderDescriptor::RenderPipeline::PackedVariant VariantHash{};
-		glm::vec4 AlbedoColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-		float Glossiness = 0.0f;
-
-		Handle<Asset> AlbedoMapAssetHandle;
-		Handle<Asset> NormalMapAssetHandle;
-		Handle<Asset> RoughnessMapAssetHandle;
-		Handle<Asset> MetallicMapAssetHandle;
-	};
-
-	class HBL2_API ShaderUtilities
+	class HBL2_API ShaderUtilitiesOld
 	{
 	public:
-		ShaderUtilities(const ShaderUtilities&) = delete;
+		ShaderUtilitiesOld(const ShaderUtilitiesOld&) = delete;
 
-		static ShaderUtilities& Get();
+		static ShaderUtilitiesOld& Get();
 
 		static void Initialize();
 		static void Shutdown();
 
 		std::string ReadFile(const std::string& filepath);
-		CompilationResultData Compile(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool forceRecompile = false);
-		std::vector<uint32_t> CompileAlt(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool forceRecompile = false);
+		std::vector<std::vector<uint32_t>> Compile(const std::string& shaderFilePath, bool forceRecompile = false);
+		const ReflectionData& GetReflectionData(const std::string& shaderFilePath) { return m_ShaderReflectionData[shaderFilePath]; }
 
 		void LoadBuiltInShaders();
 		void DeleteBuiltInShaders();
@@ -95,23 +64,27 @@ namespace HBL2
 		Handle<Asset> LitMaterialAsset;
 
 	private:
-		ShaderUtilities();
+		ShaderUtilitiesOld();
 
 		const char* GetCacheDirectory(GraphicsAPI target);
 		void CreateCacheDirectoryIfNeeded(GraphicsAPI target);
+		const char* GLShaderStageCachedVulkanFileExtension(ShaderStage stage);
+		const char* GLShaderStageCachedOpenGLFileExtension(ShaderStage stage);
+		shaderc_shader_kind GLShaderStageToShaderC(ShaderStage stage);
+		const char* GLShaderStageToString(ShaderStage stage);
 
-		bool IsVertexStage(int64_t entryPointIndex, int32_t entryPointCount);
-		bool IsFragmentStage(int64_t entryPointIndex, int32_t entryPointCount);
-		bool IsComputeStage(int64_t entryPointIndex, int32_t entryPointCount);
+		std::vector<uint32_t> Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage, bool forceRecompile = false);
+		ReflectionData Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData, const Span<uint32_t>& computeShaderData);
 
 	private:
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_Arena;
 
+		HMap<std::string, ReflectionData> m_ShaderReflectionData = MakeEmptyHMap<std::string, ReflectionData>();
 		HMap<BuiltInShader, Handle<Shader>> m_Shaders = MakeEmptyHMap<BuiltInShader, Handle<Shader>>();
 		HMap<BuiltInShader, Handle<BindGroupLayout>> m_ShaderLayouts = MakeEmptyHMap<BuiltInShader, Handle<BindGroupLayout>>();
 		DArray<Handle<Asset>> m_ShaderAssets = MakeEmptyDArray<Handle<Asset>>();
 
-		static ShaderUtilities* s_Instance;
+		static ShaderUtilitiesOld* s_Instance;
 	};
 }

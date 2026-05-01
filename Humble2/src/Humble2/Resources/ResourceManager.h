@@ -45,6 +45,7 @@ namespace HBL2
 		virtual ~ResourceManager() = default;
 
 		const ResourceManagerSpecification& GetSpec() const;
+		ResourceDeletionQueue& GetDeletionQueue();
 		void Flush(uint32_t currentFrame);
 		void FlushAll();
 
@@ -56,6 +57,7 @@ namespace HBL2
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) = 0;
 		virtual void DeleteTexture(Handle<Texture> handle) = 0;
 		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) = 0;
+		virtual void ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc) = 0;
 		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle) = 0;
 		virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) = 0;
 		virtual void* GetTextureData(Handle<Texture> handle) = 0;

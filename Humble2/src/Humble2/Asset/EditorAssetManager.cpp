@@ -312,11 +312,12 @@ namespace HBL2
 		Handle<BindGroupLayout> drawBindGroupLayout;
 
 		StaticDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> shaderVariants;
+		uint32_t type = 0;
 
 		const auto& shaderProperties = data["Shader"];
 		if (shaderProperties)
 		{
-			uint32_t type = shaderProperties["Type"].as<uint32_t>();
+			type = shaderProperties["Type"].as<uint32_t>();
 
 			switch (type)
 			{
@@ -373,34 +374,27 @@ namespace HBL2
 		}
 
 		// Compile Shader.
-		const auto& shaderCode = ShaderUtilities::Get().Compile(shaderPath.string());
+		ShaderReflectionData outReflectionData;
+		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath.string(), &outReflectionData);
 
-		if (shaderCode.empty())
+		if (!compilationData.IsValid())
 		{
 			HBL2_CORE_ERROR("Shader asset: {0}, at path: {1}, could not be compiled. Returning invalid shader.", asset->DebugName, shaderPath.string());
 			stream.close();
 			return ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::INVALID);
 		}
 
-		// Reflect shader.
-		const auto& reflectionData = ShaderUtilities::Get().GetReflectionData(shaderPath.string());
-
 		// Create resource.
 		auto shader = ResourceManager::Instance->CreateShader({
 			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
-			.VS { .code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
-			.FS { .code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
+			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
+			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
 			.bindGroups {
 				globalBindGroupLayout,	// Global bind group (0)
 				drawBindGroupLayout,	// Material bind group (1)
 			},
 			.renderPipeline {
-				.vertexBufferBindings = {
-					{
-						.byteStride = reflectionData.ByteStride,
-						.attributes = reflectionData.Attributes,
-					},
-				},
+				.vertexBufferBindings = outReflectionData.vertexBufferBindings,
 				.variants = { shaderVariants.data(), shaderVariants.size() },
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
@@ -930,34 +924,27 @@ namespace HBL2
 		}
 
 		// Compile Shader.
-		const auto& shaderCode = ShaderUtilities::Get().Compile(shaderPath.string(), true);
+		ShaderReflectionData outReflectionData;
+		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath.string(), &outReflectionData, true);
 
-		if (shaderCode.empty())
+		if (!compilationData.IsValid())
 		{
 			HBL2_CORE_ERROR("Shader asset: {0}, at path: {1}, could not be compiled. Returning invalid shader.", asset->DebugName, shaderPath.string());
 			stream.close();
 			return ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::INVALID);
 		}
 
-		// Reflect shader.
-		const auto& reflectionData = ShaderUtilities::Get().GetReflectionData(shaderPath.string());
-
 		// Create resource.
-		ResourceManager::Instance->RecompileShader(shaderHandle, {
+		auto shader = ResourceManager::Instance->CreateShader({
 			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
-			.VS { .code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
-			.FS { .code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
+			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
+			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
 			.bindGroups {
 				globalBindGroupLayout,	// Global bind group (0)
 				drawBindGroupLayout,	// Material bind group (1)
 			},
 			.renderPipeline {
-				.vertexBufferBindings = {
-					{
-						.byteStride = reflectionData.ByteStride,
-						.attributes = reflectionData.Attributes,
-					},
-				},
+				.vertexBufferBindings = outReflectionData.vertexBufferBindings,
 				.variants = { shaderVariants.data(), shaderVariants.size() },
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),

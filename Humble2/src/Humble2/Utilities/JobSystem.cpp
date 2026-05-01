@@ -34,16 +34,21 @@ namespace HBL2
     {
         m_NumThreads = std::max(1u, std::thread::hardware_concurrency() - 2);
 
-        m_Reservation = Allocator::Arena.Reserve("JobSystemPool", (1_MB * m_NumThreads) + 100_KB);
+        constexpr size_t ThreadArenaSize = 2_MB;
+
+        // NOTE: The '+2' is to accomondate the worker arena of the render and game thread.
+        //       We need one for the, also for seamless behaviour and simple logic.
+
+        m_Reservation = Allocator::Arena.Reserve("JobSystemPool", (ThreadArenaSize * (m_NumThreads + 2)) + 100_KB);
         m_JobSystemArena.Initialize(&Allocator::Arena, 100_KB, m_Reservation);
 
-        m_WorkerArenas = MakeDArrayResized<Arena*>(m_JobSystemArena, m_NumThreads);
+        m_WorkerArenas = MakeDArrayResized<Arena*>(m_JobSystemArena, m_NumThreads + 2);
         m_LocalJobQueues = MakeDArrayResized<moodycamel::ConcurrentQueue<std::function<void()>>>(m_JobSystemArena, m_NumThreads);
 
-        for (int i = 0; i < m_NumThreads; i++)
+        for (int i = 0; i < m_NumThreads + 2; i++)
         {
             m_WorkerArenas[i] = m_JobSystemArena.AllocConstruct<Arena>();
-            m_WorkerArenas[i]->Initialize(&Allocator::Arena, 1_MB, m_Reservation);
+            m_WorkerArenas[i]->Initialize(&Allocator::Arena, ThreadArenaSize, m_Reservation);
         }
 
         m_Workers = MakeDArray<std::thread>(m_JobSystemArena, m_NumThreads);
@@ -75,6 +80,7 @@ namespace HBL2
 
         // Set the worker id for the main thread.
         s_WorkerIndex = m_NumThreads;
+        s_WorkerId = std::this_thread::get_id();
     }
 
     void JobSystem::InternalShutdown()
@@ -100,9 +106,12 @@ namespace HBL2
     {
         ctx.counter.fetch_add(1, std::memory_order_relaxed);
 
-        auto wrappedJob = [job, &ctx]()
+        auto wrappedJob = [this, job, &ctx]()
         {
             job();
+
+            GetWorkerArena()->Reset();
+
             ctx.counter.fetch_sub(1, std::memory_order_release);
         };
 
@@ -132,6 +141,8 @@ namespace HBL2
                 {
                     job(JobDispatchArgs{ j, i });
                 }
+
+                GetWorkerArena()->Reset();
 
                 ctx.counter.fetch_sub(1, std::memory_order_acq_rel);
             };
@@ -177,6 +188,12 @@ namespace HBL2
                 std::this_thread::yield();
             }
         }
+    }
+
+    void JobSystem::SetupWorkerRT()
+    {
+        s_WorkerIndex = m_NumThreads + 1;
+        s_WorkerId = std::this_thread::get_id();
     }
 
     uint32_t JobSystem::GetWorkerIndex()

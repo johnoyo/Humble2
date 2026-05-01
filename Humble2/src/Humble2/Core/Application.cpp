@@ -240,6 +240,8 @@ namespace HBL2
 
 		DispatchRenderLoop([this]()
 		{
+			JobSystem::Get().SetupWorkerRT();
+
 			Device::Instance->Initialize();
 			Renderer::Instance->Initialize();
 			ImGuiRenderer::Instance->Initialize();

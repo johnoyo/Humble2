@@ -68,6 +68,14 @@ namespace HBL2
 			texture->Update(bytes);
 		}
 	}
+	void VulkanResourceManager::ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc)
+	{
+		VulkanTexture* texture = GetTexture(handle);
+		if (texture != nullptr)
+		{
+			texture->ChangeTextureView(std::forward<const TextureViewDescriptor>(desc));
+		}
+	}
 	void VulkanResourceManager::TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle)
 	{
 		VulkanTexture* texture = GetTexture(handle);

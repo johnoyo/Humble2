@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Renderer\Enums.h"
+#include "Resources\TypeDescriptors.h"
 
 #include <slang.h>
 #include <slang-com-ptr.h>
@@ -65,6 +66,7 @@ namespace HBL2
         std::string                         sourcePath;
         std::vector<EntryPoint>             entryPoints;
         std::vector<VertexAttribute>        vertexAttributes;   // ordered by location
+        std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding> vertexBufferBindings; // one per VSInput struct parameter
         std::vector<DescriptorSetLayout>    descriptorSets;     // ordered by set index
 
         // Returns nullptr if not found
@@ -73,6 +75,7 @@ namespace HBL2
         const DescriptorBinding*   findBinding(const std::string& name) const;
         const VertexAttribute*     findAttribute(const std::string& name) const;
         const VertexAttribute*     findAttributeByLocation(uint32_t location) const;
+        const ShaderDescriptor::RenderPipeline::VertexBufferBinding* findVertexBufferBinding(uint32_t bufferBinding) const;
 
         // True if any descriptor binding exists with this name
         bool hasBinding(const std::string& name) const;

@@ -28,7 +28,11 @@ namespace HBL2
 
 				glGenVertexArrays(1, &RenderPipeline);
 				glBindVertexArray(RenderPipeline);
-				VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
+
+				for (auto& vbb : desc.renderPipeline.vertexBufferBindings)
+				{
+					VertexBufferBindings.push_back(vbb);
+				}
 			}
 			break;
 		case ShaderType::COMPUTE:

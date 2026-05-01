@@ -90,6 +90,18 @@ namespace HBL2
         return nullptr;
     }
 
+    const ShaderDescriptor::RenderPipeline::VertexBufferBinding* ShaderReflectionData::findVertexBufferBinding(uint32_t bufferBinding) const
+    {
+        for (const auto& vbb : vertexBufferBindings)
+        {
+            if (vbb.bufferBinding == bufferBinding)
+            {
+                return &vbb;
+            }
+        }
+        return nullptr;
+    }
+
     bool ShaderReflectionData::hasBinding(const std::string& name) const
     {
         return findBinding(name) != nullptr;
@@ -115,6 +127,22 @@ namespace HBL2
                 ShaderReflector::VertexFormatToString(a.format),
                 a.componentCount,
                 a.sizeBytes);
+        }
+        printf("\n");
+
+        // --- Vertex buffer bindings ---
+        printf("Vertex Buffer Bindings (%zu):\n", vertexBufferBindings.size());
+        for (const auto& vbb : vertexBufferBindings)
+        {
+            printf("  Buffer binding=%u  stride=%u bytes\n", vbb.bufferBinding, vbb.byteStride);
+            for (uint32_t i = 0; i < static_cast<uint32_t>(vbb.attributes.size()); ++i)
+            {
+                const auto& attr = vbb.attributes[i];
+                printf("    [%u]  byteOffset=%-4u  %s\n",
+                    i,
+                    attr.byteOffset,
+                    ShaderReflector::VertexFormatToString(attr.format));
+            }
         }
         printf("\n");
 
@@ -173,16 +201,14 @@ namespace HBL2
 
     void ShaderReflector::ReflectVertexAttributes(slang::ProgramLayout* layout, ShaderReflectionData& out)
     {
-        // Vertex attributes live on the vertex entry point's varying parameters
+        // Find the vertex entry point
         slang::EntryPointReflection* vertexEP = nullptr;
-
         for (uint32_t i = 0; i < layout->getEntryPointCount(); ++i)
         {
             slang::EntryPointReflection* ep = layout->getEntryPointByIndex(i);
             if (ep->getStage() == SLANG_STAGE_VERTEX)
             {
-                vertexEP = ep;
-                break;
+                vertexEP = ep; break;
             }
         }
 
@@ -191,8 +217,9 @@ namespace HBL2
             return;
         }
 
-        // Each parameter of the vertex entry point may be a scalar or a struct.
-        // We flatten structs so every leaf varying input becomes one VertexAttribute.
+        // Each top-level parameter of the vertex entry point maps to one vertex
+        // buffer binding slot. Parameters that are structs get flattened into
+        // individual VertexAttributes; scalar/vector parameters become one each.
         const uint32_t paramCount = static_cast<uint32_t>(vertexEP->getParameterCount());
 
         for (uint32_t i = 0; i < paramCount; ++i)
@@ -201,21 +228,21 @@ namespace HBL2
             slang::TypeLayoutReflection* typeLayout = param->getTypeLayout();
             slang::TypeReflection* type = typeLayout->getType();
 
+            // Collect the attributes that belong to this buffer binding slot
+            // into a temporary list so we can sort and compute offsets cleanly.
+            std::vector<VertexAttribute> bindingAttribs;
+
             if (type->getKind() == slang::TypeReflection::Kind::Struct)
             {
-                // Flatten struct fields into individual attributes
                 const uint32_t fieldCount = static_cast<uint32_t>(type->getFieldCount());
-
                 for (uint32_t f = 0; f < fieldCount; ++f)
                 {
                     slang::VariableReflection* field = type->getFieldByIndex(f);
                     slang::VariableLayoutReflection* fieldLayout = typeLayout->getFieldByIndex(f);
 
-                    // Only include varyings that have an explicit location
                     int32_t location = static_cast<int32_t>(fieldLayout->getOffset(SLANG_PARAMETER_CATEGORY_VARYING_INPUT));
 
-                    // Slang returns ~0u if no varying semantic is bound
-                    if (location == ~0u || location < 0)
+                    if (location < 0 || static_cast<uint32_t>(location) == ~0u)
                     {
                         continue;
                     }
@@ -229,33 +256,67 @@ namespace HBL2
                     attr.componentCount = ComponentCount(fmt);
                     attr.sizeBytes = FormatSizeBytes(fmt);
 
-                    out.vertexAttributes.push_back(std::move(attr));
+                    bindingAttribs.push_back(std::move(attr));
                 }
             }
             else
             {
-                // Direct scalar/vector input (uncommon but valid)
+                // Bare scalar/vector input — treat the parameter itself as one attribute
                 int32_t location = static_cast<int32_t>(param->getOffset(SLANG_PARAMETER_CATEGORY_VARYING_INPUT));
 
-                if (location == ~0u || location < 0)
+                if (location >= 0 && static_cast<uint32_t>(location) != ~0u)
                 {
-                    continue;
+                    VertexFormat fmt = ToVertexFormat(type);
+
+                    VertexAttribute attr;
+                    attr.name = param->getName();
+                    attr.location = static_cast<uint32_t>(location);
+                    attr.format = fmt;
+                    attr.componentCount = ComponentCount(fmt);
+                    attr.sizeBytes = FormatSizeBytes(fmt);
+
+                    bindingAttribs.push_back(std::move(attr));
                 }
+            }
 
-                VertexFormat fmt = ToVertexFormat(type);
+            if (bindingAttribs.empty())
+            {
+                continue;
+            }
 
-                VertexAttribute attr;
-                attr.name = param->getName();
-                attr.location = static_cast<uint32_t>(location);
-                attr.format = fmt;
-                attr.componentCount = ComponentCount(fmt);
-                attr.sizeBytes = FormatSizeBytes(fmt);
+            // Sort by location so byte offsets are computed in the right order
+            std::sort(bindingAttribs.begin(), bindingAttribs.end(),
+                [](const VertexAttribute& a, const VertexAttribute& b)
+                {
+                    return a.location < b.location;
+                });
 
+            // Build the VertexBufferBinding: compute per-attribute byte offsets
+            // and accumulate the total stride.
+            ShaderDescriptor::RenderPipeline::VertexBufferBinding vbb;
+            vbb.bufferBinding = i;
+            vbb.byteStride = 0;
+
+            for (const auto& attr : bindingAttribs)
+            {
+                ShaderDescriptor::RenderPipeline::VertexBufferBinding::Attribute bindingAttr;
+                bindingAttr.byteOffset = vbb.byteStride;
+                bindingAttr.format = attr.format;
+
+                vbb.attributes.push_back(bindingAttr);
+                vbb.byteStride += attr.sizeBytes;
+            }
+
+            out.vertexBufferBindings.push_back(std::move(vbb));
+
+            // Also append to the flat global list for location-based lookups
+            for (auto& attr : bindingAttribs)
+            {
                 out.vertexAttributes.push_back(std::move(attr));
             }
         }
 
-        // Sort attributes by location for deterministic ordering
+        // Keep the global flat list sorted by location
         std::sort(out.vertexAttributes.begin(), out.vertexAttributes.end(),
             [](const VertexAttribute& a, const VertexAttribute& b)
             {

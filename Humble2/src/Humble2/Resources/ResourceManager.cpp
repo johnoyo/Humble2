@@ -19,6 +19,11 @@ namespace HBL2
 		return m_Spec;
 	}
 
+	ResourceDeletionQueue& ResourceManager::GetDeletionQueue()
+	{
+		return m_DeletionQueue;
+	}
+
 	void ResourceManager::Flush(uint32_t currentFrame)
 	{
 		m_DeletionQueue.Flush(currentFrame);

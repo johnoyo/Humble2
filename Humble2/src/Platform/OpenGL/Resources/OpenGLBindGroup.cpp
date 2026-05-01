@@ -55,7 +55,7 @@ namespace HBL2
 			OpenGLTexture* openGLTexture = rm->GetTexture(Textures[i]);
 
 			glActiveTexture(openGLBindGroupLayout->TextureBindings[i].slot + GL_TEXTURE0);
-			glBindTexture(openGLTexture->TextureType, openGLTexture->RendererId);
+			glBindTexture(openGLTexture->TextureType, openGLTexture->ViewRendererId);
 		}
 	}
 

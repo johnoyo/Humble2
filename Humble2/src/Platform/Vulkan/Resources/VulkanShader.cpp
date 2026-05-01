@@ -373,7 +373,7 @@ namespace HBL2
 			.pNext = nullptr,
 			.stage = VK_SHADER_STAGE_COMPUTE_BIT,
 			.module = config.shaderModules[0],
-			.pName = "main",
+			.pName = config.entryPoints[0],
 		};
 
 		VkComputePipelineCreateInfo pipelineInfo =
@@ -411,15 +411,20 @@ namespace HBL2
 			return VK_NULL_HANDLE;
 		}
 
-		return Cold->GetOrCreatePipeline({
-			.shaderModules = { Cold->VertexShaderModule, Cold->FragmentShaderModule },
-			.entryPoints = { "main", "main" },
-			.shaderModuleCount = 2,
-			.variantDesc = key,
-			.pipelineLayout = Hot->PipelineLayout,
-			.renderPass = Cold->RenderPass,
-			.vertexBufferBindings = Cold->VertexBufferBindings,
-		});
+		if (Cold->ComputeShaderModule == VK_NULL_HANDLE)
+		{
+			return Cold->GetOrCreatePipeline({
+				.shaderModules = { Cold->VertexShaderModule, Cold->FragmentShaderModule },
+				.entryPoints = { "mainVS", "mainPS" }, // TODO: fix me!
+				.shaderModuleCount = 2,
+				.variantDesc = key,
+				.pipelineLayout = Hot->PipelineLayout,
+				.renderPass = Cold->RenderPass,
+				.vertexBufferBindings = Cold->VertexBufferBindings,
+			});
+		}
+
+		return GetOrCreateComputeVariant(key);
 	}
 
 	VkPipeline VulkanShader::GetOrCreateComputeVariant(ShaderDescriptor::RenderPipeline::PackedVariant key)
@@ -431,7 +436,7 @@ namespace HBL2
 
 		return Cold->GetOrCreatePipeline({
 			.shaderModules = { Cold->ComputeShaderModule, VK_NULL_HANDLE },
-			.entryPoints = { "main", "" },
+			.entryPoints = { "mainCS", "" }, // TODO: fix me!
 			.shaderModuleCount = 1,
 			.variantDesc = key,
 			.pipelineLayout = Hot->PipelineLayout,
@@ -456,8 +461,17 @@ namespace HBL2
 		Cold->m_OldComputeShaderModule = Cold->ComputeShaderModule;
 		Cold->m_OldPipelineLayout = Hot->PipelineLayout;
 
+		Cold->VertexShaderModule = VK_NULL_HANDLE;
+		Cold->FragmentShaderModule = VK_NULL_HANDLE;
+		Cold->ComputeShaderModule = VK_NULL_HANDLE;
+
 		Cold->DebugName = desc.debugName;
-		Cold->VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
+
+		for (auto& vbb : desc.renderPipeline.vertexBufferBindings)
+		{
+			Cold->VertexBufferBindings.push_back(vbb);
+		}
+
 		Cold->RenderPass = rm->GetRenderPass(desc.renderPass)->RenderPass;
 
 		std::array<VkShaderModule, 2> shaderModules{};

@@ -65,6 +65,14 @@ namespace HBL2
 			texture->Update(bytes);
 		}
 	}
+	void OpenGLResourceManager::ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc)
+	{
+		OpenGLTexture* texture = GetTexture(handle);
+		if (texture != nullptr)
+		{
+			return texture->ChangeTextureView(std::forward<const TextureViewDescriptor>(desc));
+		}
+	}
 	void OpenGLResourceManager::TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle)
 	{
 	}

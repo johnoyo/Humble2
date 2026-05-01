@@ -210,7 +210,7 @@ namespace HBL2
 			case HBL2::TextureType::CUBE:
 				return VK_IMAGE_TYPE_2D;
 			case HBL2::TextureType::D2_ARRAY:
-				return VK_IMAGE_TYPE_3D;
+				return VK_IMAGE_TYPE_2D;
 			}
 
 			return VK_IMAGE_TYPE_MAX_ENUM;

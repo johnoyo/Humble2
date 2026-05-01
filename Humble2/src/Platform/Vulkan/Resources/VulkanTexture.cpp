@@ -11,6 +11,7 @@ namespace HBL2
 
 		ImageLayout = VkUtils::TextureLayoutToVkImageLayout(desc.initialLayout);
 		ImageType = desc.type;
+		LayerCount = desc.layerCount;
 		Extent = { desc.dimensions.x, desc.dimensions.y, desc.dimensions.z };
 		Aspect = VkUtils::TextureAspectToVkImageAspectFlags(desc.aspect);
 
@@ -42,12 +43,12 @@ namespace HBL2
 		{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 			.pNext = nullptr,
-			.flags = (VkImageCreateFlags)(desc.type == TextureType::CUBE ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0),
+			.flags = (VkImageCreateFlags)(desc.type == TextureType::CUBE || desc.type == TextureType::D2_ARRAY ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0),
 			.imageType = VkUtils::TextureTypeToVkImageType(desc.type),
 			.format = VkUtils::FormatToVkFormat(desc.format),
 			.extent = Extent,
 			.mipLevels = 1,
-			.arrayLayers = (uint32_t)(desc.type == TextureType::CUBE ? 6 : 1),
+			.arrayLayers = (uint32_t)(desc.type == TextureType::CUBE ? 6 : LayerCount),
 			.samples = VK_SAMPLE_COUNT_1_BIT,
 			.tiling = VK_IMAGE_TILING_OPTIMAL,
 			.usage = usage,
@@ -91,7 +92,7 @@ namespace HBL2
 			CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation);
 
 			VkDeviceSize faceSize = Extent.width * Extent.height * m_PixelByteSize;
-			VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : 1);
+			VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : LayerCount);
 
 			// Transfer initiaData to staging buffer
 			void* mappedData;
@@ -120,7 +121,7 @@ namespace HBL2
 				.baseMipLevel = 0,
 				.levelCount = 1,
 				.baseArrayLayer = 0,
-				.layerCount = (uint32_t)(desc.type == TextureType::CUBE ? 6 : 1),
+				.layerCount = (uint32_t)(desc.type == TextureType::CUBE ? 6 : LayerCount),
 			},
 		};
 
@@ -156,6 +157,7 @@ namespace HBL2
 		ImageView = other.ImageView;
 		Extent = other.Extent;
 		Aspect = other.Aspect;
+		LayerCount = other.LayerCount;
 	}
 
 	void VulkanTexture::Update(const Span<const std::byte>& bytes)
@@ -169,7 +171,7 @@ namespace HBL2
 		CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation);
 
 		VkDeviceSize faceSize = Extent.width * Extent.height * m_PixelByteSize;
-		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : 1);
+		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : LayerCount);
 
 		// Transfer initiaData to staging buffer
 		void* mappedData;
@@ -182,10 +184,43 @@ namespace HBL2
 		vmaDestroyBuffer(renderer->GetAllocator(), stagingBuffer, stagingBufferAllocation);
 	}
 
+	void VulkanTexture::ChangeTextureView(const TextureViewDescriptor&& desc)
+	{
+		VulkanDevice* device = (VulkanDevice*)Device::Instance;
+
+		// Destroy old ImageView
+		VkImageView oldImageView = ImageView;
+		auto& deletionQueue = ResourceManager::Instance->GetDeletionQueue();
+		deletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+		{
+			vkDestroyImageView(device->Get(), oldImageView, nullptr);
+		});
+
+		// Allocate ImageView
+		VkImageViewCreateInfo imageViewCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			.pNext = nullptr,
+			.image = Image,
+			.viewType = VkUtils::TextureTypeToVkVkImageViewType(desc.type),
+			.format = VkUtils::FormatToVkFormat(desc.format),
+			.subresourceRange =
+			{
+				.aspectMask = VkUtils::TextureAspectToVkImageAspectFlags(desc.aspect),
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = desc.layerCount,
+			},
+		};
+
+		VK_VALIDATE(vkCreateImageView(device->Get(), &imageViewCreateInfo, nullptr, &ImageView), "vkCreateImageView");
+	}
+
 	void VulkanTexture::TrasitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout, VulkanBindGroup* bindGroup)
 	{
 		// NOTE: Vulkan validation layers do not automatically track the layout state across command buffers unless you properly synchronize them.
-		//		 That's way we do not use here the helper function ImmediateSubmit of the renderer class here.
+		//		 That's why we do not use here the helper function ImmediateSubmit of the renderer class here.
 
 		VkCommandBuffer cmd = commandBuffer->CommandBuffer;
 
@@ -200,7 +235,7 @@ namespace HBL2
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = (ImageType == TextureType::CUBE ? 6 : 1);
+		barrier.subresourceRange.layerCount = (ImageType == TextureType::CUBE ? 6 : LayerCount);
 		barrier.srcAccessMask = VkUtils::CurrentTextureLayoutToVkAccessFlags(currentLayout);
 		barrier.dstAccessMask = VkUtils::NewTextureLayoutToVkAccessFlags(newLayout);
 
@@ -249,7 +284,7 @@ namespace HBL2
 	{
 		// Allocate staging buffer
 		VkDeviceSize faceSize = Extent.width * Extent.height * m_PixelByteSize;
-		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : 1);
+		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : LayerCount);
 
 		VkBufferCreateInfo stagingBufferCreateInfo =
 		{
@@ -274,7 +309,7 @@ namespace HBL2
 		// Copy the data of the staging buffer to the GPU memory of Image
 		renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
 		{
-			uint32_t faceCount = (ImageType == TextureType::CUBE ? 6 : 1);
+			uint32_t faceCount = (ImageType == TextureType::CUBE ? 6 : LayerCount);
 
 			VkImageSubresourceRange range =
 			{
