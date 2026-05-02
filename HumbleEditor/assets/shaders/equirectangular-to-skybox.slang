@@ -35,7 +35,10 @@ void mainCS(uint3 dispatchThreadID : SV_DispatchThreadID)
     int face = int(dispatchThreadID.z);
     int N = int(u_CaptureMatrices.faceSize);
 
-    if (pix.x >= N || pix.y >= N) return;
+    if (pix.x >= N || pix.y >= N)
+    {
+        return;
+    }
 
     // Compute a [-1,1] screen coordinate.
     float2 uv = (float2(pix) / float(N - 1)) * 2.0 - 1.0;

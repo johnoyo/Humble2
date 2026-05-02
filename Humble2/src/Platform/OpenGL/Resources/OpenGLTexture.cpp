@@ -92,7 +92,7 @@ namespace HBL2
 			glBindTexture(GL_TEXTURE_2D, ViewRendererId);
 			break;
 		case GL_TEXTURE_2D_ARRAY:
-			glBindImageTexture(slot, ViewRendererId, 0, GL_TRUE, 0, GL_WRITE_ONLY, Format);
+			glBindImageTexture(slot, RendererId, 0, GL_TRUE, 0, GL_WRITE_ONLY, Format);
 			break;
 		case GL_TEXTURE_CUBE_MAP:
 			glActiveTexture(slot + GL_TEXTURE0);
@@ -167,6 +167,8 @@ namespace HBL2
 
 		glGenTextures(1, &ViewRendererId);
 		glTextureView(ViewRendererId, viewTarget, RendererId, viewFormat, 0, 1, 0, layerCount);
+
+		glFinish(); // NOTE: force driver to complete view creation before setting params
 
 		glBindTexture(viewTarget, ViewRendererId);
 		glTexParameteri(viewTarget, GL_TEXTURE_MIN_FILTER, MinFilter);
