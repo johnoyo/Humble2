@@ -56,6 +56,10 @@ namespace HBL2
         uint32_t GetWorkerIndex();
         Arena* GetWorkerArena();
 
+        bool IsMainThread();
+        bool IsRenderThread();
+        bool IsWorkerThread();
+
     private:
         JobSystem() {}
 
@@ -76,6 +80,9 @@ namespace HBL2
         std::mutex m_WakeMutex;
         std::atomic<bool> m_Shutdown = false;
         std::atomic<uint32_t> m_NextQueue{0};
+
+        std::thread::id m_MainThreadId;
+        std::thread::id m_RenderThreadId;
 
         static JobSystem* s_Instance;
     };

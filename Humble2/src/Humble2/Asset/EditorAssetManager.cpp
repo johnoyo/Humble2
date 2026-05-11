@@ -1215,12 +1215,12 @@ namespace HBL2
 			materialProperties["AlbedoColor"] = mat->AlbedoColor;
 			materialProperties["Glossiness"] = mat->Glossiness;
 
-			materialProperties["BlendState"]["Enabled"] = mat->VariantHash.blendEnabled;
-			materialProperties["BlendState"]["ColorOutputEnabled"] = mat->VariantHash.colorOutput;
+			materialProperties["BlendState"]["Enabled"] = (bool)mat->VariantHash.blendEnabled;
+			materialProperties["BlendState"]["ColorOutputEnabled"] = (bool)mat->VariantHash.colorOutput;
 
-			materialProperties["DepthState"]["Enabled"] = mat->VariantHash.depthEnabled;
-			materialProperties["DepthState"]["WriteEnabled"] = mat->VariantHash.depthWrite;
-			materialProperties["DepthState"]["StencilEnabled"] = mat->VariantHash.stencilEnabled;
+			materialProperties["DepthState"]["Enabled"] = (bool)mat->VariantHash.depthEnabled;
+			materialProperties["DepthState"]["WriteEnabled"] = (bool)mat->VariantHash.depthWrite;
+			materialProperties["DepthState"]["StencilEnabled"] = (bool)mat->VariantHash.stencilEnabled;
 			materialProperties["DepthState"]["DepthTest"] = (int)mat->VariantHash.depthCompare;
 
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();

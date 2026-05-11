@@ -40,12 +40,12 @@ namespace HBL2
 
 			if (ioSettings.mIsSensor)
 			{
-				Physics::TriggerEnterEvent triggerEnterEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
+				Physics::TriggerEnterEvent triggerEnterEvent = { Entity::UnPack(inBody1.GetUserData()), Entity::UnPack(inBody2.GetUserData()) };
 				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Enter, &triggerEnterEvent);
 			}
 			else
 			{
-				Physics::CollisionEnterEvent collisionEnterEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
+				Physics::CollisionEnterEvent collisionEnterEvent = { Entity::UnPack(inBody1.GetUserData()), Entity::UnPack(inBody2.GetUserData()) };
 				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Enter, &collisionEnterEvent);
 			}
 		}
@@ -54,12 +54,12 @@ namespace HBL2
 		{
 			if (ioSettings.mIsSensor)
 			{
-				Physics::TriggerStayEvent triggerStayEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
+				Physics::TriggerStayEvent triggerStayEvent = { Entity::UnPack(inBody1.GetUserData()), Entity::UnPack(inBody2.GetUserData()) };
 				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Stay, &triggerStayEvent);
 			}
 			else
 			{
-				Physics::CollisionEnterEvent collisionEnterEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
+				Physics::CollisionEnterEvent collisionEnterEvent = { Entity::UnPack(inBody1.GetUserData()), Entity::UnPack(inBody2.GetUserData()) };
 				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Stay, &collisionEnterEvent);
 			}
 		}
@@ -78,12 +78,13 @@ namespace HBL2
 
 			if (bodyIterface.GetObjectLayer(body1ID) == Layers::TRIGGER || bodyIterface.GetObjectLayer(body2ID) == Layers::TRIGGER)
 			{
-				Physics::TriggerExitEvent triggerExitEvent = { (Entity)bodyIterface.GetUserData(body1ID), (Entity)bodyIterface.GetUserData(body2ID) };
+
+				Physics::TriggerExitEvent triggerExitEvent = { Entity::UnPack(bodyIterface.GetUserData(body1ID)), Entity::UnPack(bodyIterface.GetUserData(body2ID)) };
 				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Exit, &triggerExitEvent);
 			}
 			else
 			{
-				Physics::CollisionExitEvent collisionExitEvent = { (Entity)bodyIterface.GetUserData(body1ID), (Entity)bodyIterface.GetUserData(body2ID) };
+				Physics::CollisionExitEvent collisionExitEvent = { Entity::UnPack(bodyIterface.GetUserData(body1ID)), Entity::UnPack(bodyIterface.GetUserData(body2ID)) };
 				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Exit, &collisionExitEvent);
 			}
 		}
@@ -648,7 +649,7 @@ namespace HBL2
 		}
 
 		// Maybe use the entity ID here?
-		uint64_t packedEntity = (static_cast<uint64_t>(static_cast<uint32_t>(entity.Gen)) << 32) | static_cast<uint64_t>(static_cast<uint32_t>(entity.Idx));
+		uint64_t packedEntity = entity.Pack();
 		body->SetUserData((JPH::uint64)packedEntity);
 		rb.BodyID = GetPhysicsIDFromBodyID(body->GetID());
 	}

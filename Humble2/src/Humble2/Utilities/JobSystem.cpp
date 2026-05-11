@@ -81,6 +81,7 @@ namespace HBL2
         // Set the worker id for the main thread.
         s_WorkerIndex = m_NumThreads;
         s_WorkerId = std::this_thread::get_id();
+        m_MainThreadId = s_WorkerId;
     }
 
     void JobSystem::InternalShutdown()
@@ -194,6 +195,7 @@ namespace HBL2
     {
         s_WorkerIndex = m_NumThreads + 1;
         s_WorkerId = std::this_thread::get_id();
+        m_RenderThreadId = s_WorkerId;
     }
 
     uint32_t JobSystem::GetWorkerIndex()
@@ -205,6 +207,21 @@ namespace HBL2
     {
         HBL2_CORE_ASSERT(s_WorkerId == std::this_thread::get_id(), "Worker arena can only be used from within a valid JobSystem worker thread!");
         return m_WorkerArenas[s_WorkerIndex];
+    }
+
+    bool JobSystem::IsMainThread()
+    {
+        return std::this_thread::get_id() == m_MainThreadId;
+    }
+
+    bool JobSystem::IsRenderThread()
+    {
+        return std::this_thread::get_id() == m_RenderThreadId;
+    }
+
+    bool JobSystem::IsWorkerThread()
+    {
+        return !IsMainThread() && !IsRenderThread();
     }
 
     void JobSystem::WorkerThreadFunc(uint32_t threadIndex)

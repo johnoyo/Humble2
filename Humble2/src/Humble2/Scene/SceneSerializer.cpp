@@ -245,6 +245,12 @@ namespace HBL2
 			Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
 			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
 
+			if (prefabAsset == nullptr || prefab == nullptr)
+			{
+				HBL2_CORE_ERROR("Could not load prefab with UUID: {}", prefabUUID);
+				continue;
+			}
+
 			PrefabUtilities::Get().Update(prefabAsset, prefab, m_Scene, entity, true, true);
 		}
 
