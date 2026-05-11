@@ -454,7 +454,13 @@ Entities:
       Scale: 1
       NoiseScale: 25
       AddColliders: true
+      NumberOfChunks: 9
+      UseFalloffMap: false
       Regenerate: false
+      Lods:
+        - [0, 200]
+        - [2, 400]
+        - [5, 600]
       Material: 8028564448814204329
     Component::AnimationCurve:
       Preset: 1

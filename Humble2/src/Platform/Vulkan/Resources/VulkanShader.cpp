@@ -11,7 +11,7 @@ namespace HBL2
 		vkDestroyPipelineLayout(device->Get(), PipelineLayout, nullptr);
 	}
 
-	VkPipeline VulkanShaderCold::Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex, bool forceCreateNewAndRemoveOld)
+	VkPipeline VulkanShaderCold::Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex)
 	{
 		uint32_t n = m_Count.load(std::memory_order_acquire);
 
@@ -63,7 +63,7 @@ namespace HBL2
 		uint32_t pipelineIndex = UINT32_MAX;
 
 		// Fast path with a lock-free read.
-		if (p = Find(config.variantDesc, &pipelineIndex, forceCreateNewAndRemoveOld); p != VK_NULL_HANDLE && !forceCreateNewAndRemoveOld)
+		if (p = Find(config.variantDesc, &pipelineIndex); p != VK_NULL_HANDLE && !forceCreateNewAndRemoveOld)
 		{
 			return p;
 		}
@@ -74,7 +74,7 @@ namespace HBL2
 		// Re-check after acquiring lock (another thread may have inserted).
 		if (p == VK_NULL_HANDLE)
 		{
-			if (p = Find(config.variantDesc, &pipelineIndex, forceCreateNewAndRemoveOld); p != VK_NULL_HANDLE && !forceCreateNewAndRemoveOld)
+			if (p = Find(config.variantDesc, &pipelineIndex); p != VK_NULL_HANDLE && !forceCreateNewAndRemoveOld)
 			{
 				return p;
 			}
@@ -145,6 +145,7 @@ namespace HBL2
 				.stage = VK_SHADER_STAGE_VERTEX_BIT,
 				.module = config.shaderModules[0],
 				.pName = config.entryPoints[0],
+				.pSpecializationInfo = (m_SpecializationData.specializationData0.data.empty() ? NULL : &m_SpecializationData.specializationData0.info),
 			},
 			{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -152,6 +153,7 @@ namespace HBL2
 				.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
 				.module = config.shaderModules[1],
 				.pName = config.entryPoints[1],
+				.pSpecializationInfo = (m_SpecializationData.specializationData1.data.empty() ? NULL : &m_SpecializationData.specializationData1.info),
 			}
 		};
 
@@ -374,6 +376,7 @@ namespace HBL2
 			.stage = VK_SHADER_STAGE_COMPUTE_BIT,
 			.module = config.shaderModules[0],
 			.pName = config.entryPoints[0],
+			.pSpecializationInfo = (m_SpecializationData.specializationData0.data.empty() ? NULL : &m_SpecializationData.specializationData0.info),
 		};
 
 		VkComputePipelineCreateInfo pipelineInfo =
@@ -394,6 +397,75 @@ namespace HBL2
 		return computePipeline;
 	}
 
+	void VulkanShaderCold::BuildSpecializationInfo(ShaderStage stage, SpecializationDataStage& specializationData, Span<const ShaderConstant> constants)
+	{
+		specializationData.data.clear();
+		specializationData.entries.clear();
+		specializationData.info = {};
+		
+		if (constants.Size() == 0)
+		{
+			return;
+		}
+
+		uint32_t offset = 0;
+		uint32_t constantID = 0;
+
+		for (const auto& constant : constants)
+		{
+			if (constant.stage != stage)
+			{
+				continue;
+			}
+
+			VkSpecializationMapEntry entry{};
+			entry.constantID = constantID++;
+			entry.offset = offset;
+
+			auto append = [&](const void* src, size_t size)
+			{
+				entry.size = size;
+
+				const size_t oldSize = specializationData.data.size();
+				specializationData.data.resize(oldSize + size);
+
+				std::memcpy(specializationData.data.data() + oldSize, src, size);
+
+				offset += static_cast<uint32_t>(size);
+			};
+
+			switch (constant.type)
+			{
+			case ShaderConstantType::Bool:
+			{
+				// Vulkan bool spec constants are typically uint32_t
+				const uint32_t value = constant.value.b ? 1u : 0u;
+				append(&value, sizeof(value));
+				break;
+			}
+
+			case ShaderConstantType::Int:
+				append(&constant.value.i, sizeof(int32_t));
+				break;
+
+			case ShaderConstantType::UInt:
+				append(&constant.value.u, sizeof(uint32_t));
+				break;
+
+			case ShaderConstantType::Float:
+				append(&constant.value.f, sizeof(float));
+				break;
+			}
+
+			specializationData.entries.push_back(entry);
+		}
+
+		specializationData.info.mapEntryCount = static_cast<uint32_t>(specializationData.entries.size());
+		specializationData.info.pMapEntries = specializationData.entries.data();
+		specializationData.info.dataSize = specializationData.data.size();
+		specializationData.info.pData = specializationData.data.data();
+	}
+	
 	bool VulkanShader::IsValid() const
 	{
 		return Cold != nullptr && Hot != nullptr;
@@ -509,6 +581,9 @@ namespace HBL2
 			entryPoints[1] = desc.FS.entryPoint;
 			shaderModules[1] = Cold->FragmentShaderModule;
 			shaderModuleCount = 2;
+
+			Cold->BuildSpecializationInfo(ShaderStage::VERTEX, Cold->m_SpecializationData.specializationData0, desc.renderPipeline.specializationConstants);
+			Cold->BuildSpecializationInfo(ShaderStage::FRAGMENT, Cold->m_SpecializationData.specializationData1, desc.renderPipeline.specializationConstants);
 		}
 		else
 		{
@@ -526,6 +601,8 @@ namespace HBL2
 			entryPoints[1] = "";
 			shaderModules[1] = VK_NULL_HANDLE;
 			shaderModuleCount = 1;
+
+			Cold->BuildSpecializationInfo(ShaderStage::COMPUTE, Cold->m_SpecializationData.specializationData0, desc.renderPipeline.specializationConstants);
 		}
 
 		// Pipeline layout.

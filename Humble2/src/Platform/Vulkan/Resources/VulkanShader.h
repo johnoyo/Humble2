@@ -20,7 +20,7 @@ namespace HBL2
 
 	struct VulkanShaderCold
 	{
-		VkPipeline Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex, bool forceCreateNewAndRemoveOld = false);
+		VkPipeline Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex);
 		void Destroy();
 		void DestroyOld();
 
@@ -48,6 +48,23 @@ namespace HBL2
 		VkPipeline GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld = false);
 		VkPipeline CreatePipeline(const PipelineConfig& config);
 		VkPipeline CreateComputePipeline(const PipelineConfig& config);
+
+		struct SpecializationDataStage
+		{
+			StaticDArray<VkSpecializationMapEntry, 8> entries;
+			StaticDArray<uint8_t, 64> data;
+			VkSpecializationInfo info{};
+		};
+
+		struct SpecializationData
+		{
+			SpecializationDataStage specializationData0; // For VS, CS
+			SpecializationDataStage specializationData1; // For FS
+		};
+
+		SpecializationData m_SpecializationData;
+
+		void BuildSpecializationInfo(ShaderStage stage, SpecializationDataStage& specializationData, Span<const ShaderConstant> constants);
 
 		VkPipelineLayout m_OldPipelineLayout = VK_NULL_HANDLE;
 		VkShaderModule m_OldVertexShaderModule = VK_NULL_HANDLE;

@@ -1,6 +1,7 @@
 #include "OpenGLBindGroup.h"
 
-#include "../OpenGLResourceManager.h"
+#include "Platform\OpenGL\OpenGLResourceManager.h"
+#include "Utilities\JobSystem.h"
 
 namespace HBL2
 {
@@ -42,6 +43,11 @@ namespace HBL2
 
 			// TODO: Handle textures.
 			// ...
+		}
+
+		if (!JobSystem::Get().IsRenderThread())
+		{
+			glFlush();
 		}
 	}
 

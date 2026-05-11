@@ -16,6 +16,7 @@ namespace HBL2
 
 		virtual void Initialize() override;
 		virtual void Destroy() override;
+		virtual bool HasContext() override;
 		virtual void SetContext(ContextType ctxType);
 
 	private:

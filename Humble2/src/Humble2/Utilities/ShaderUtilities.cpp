@@ -77,14 +77,15 @@ namespace HBL2
         g_SLangGlobalSessions = (Slang::ComPtr<slang::IGlobalSession>*)m_Arena.Alloc(globalSessionNum * sizeof(Slang::ComPtr<slang::IGlobalSession>));
         g_SLangGlobalSessions = m_Arena.ConstructArray<Slang::ComPtr<slang::IGlobalSession>>(g_SLangGlobalSessions, globalSessionNum);
 
-        // NOTE: Maybe parallelize global session creation?
         {
             HBL2_PROFILE("SLang Global Sessions Creation");
 
-            for (uint32_t i = 0; i < globalSessionNum; i++)
+            JobContext ctx;
+            JobSystem::Get().Dispatch(ctx, globalSessionNum, 1, [](JobDispatchArgs args)
             {
-                slang::createGlobalSession(g_SLangGlobalSessions[i].writeRef());
-            }
+                slang::createGlobalSession(g_SLangGlobalSessions[args.jobIndex].writeRef());
+            });
+            JobSystem::Get().Wait(ctx);
         }
     }    
 
@@ -152,7 +153,7 @@ namespace HBL2
 
         // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/08-compiling.html
 
-        std::array<slang::CompilerOptionEntry, 3> options =
+        std::array<slang::CompilerOptionEntry, 4> options =
         {
             slang::CompilerOptionEntry
             {
@@ -163,6 +164,11 @@ namespace HBL2
             {
                 .name = slang::CompilerOptionName::VulkanUseEntryPointName,
                 .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
+            },
+            slang::CompilerOptionEntry
+            {
+                .name = slang::CompilerOptionName::MatrixLayoutColumn,
+                .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
             },
             slang::CompilerOptionEntry
             {

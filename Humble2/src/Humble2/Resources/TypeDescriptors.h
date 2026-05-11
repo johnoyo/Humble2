@@ -104,6 +104,64 @@ namespace HBL2
 		std::initializer_list<BufferEntry> buffers;
 	};
 
+	enum class ShaderConstantType : uint16_t
+	{
+		Bool,
+		Int,
+		UInt,
+		Float
+	};
+
+	struct ShaderConstant
+	{
+		ShaderConstantType type;
+		ShaderStage stage;
+
+		union
+		{
+			bool b;
+			int32_t i;
+			uint32_t u;
+			float f;
+		} value;
+	};
+
+	inline ShaderConstant ShaderConstantBool(ShaderStage stage, bool v)
+	{
+		ShaderConstant c{};
+		c.type = ShaderConstantType::Bool;
+		c.stage = stage;
+		c.value.b = v;
+		return c;
+	}
+
+	inline ShaderConstant ShaderConstantInt(ShaderStage stage, int32_t v)
+	{
+		ShaderConstant c{};
+		c.type = ShaderConstantType::Int;
+		c.stage = stage;
+		c.value.i = v;
+		return c;
+	}
+
+	inline ShaderConstant ShaderConstantUInt(ShaderStage stage, uint32_t v)
+	{
+		ShaderConstant c{};
+		c.type = ShaderConstantType::UInt;
+		c.stage = stage;
+		c.value.u = v;
+		return c;
+	}
+
+	inline ShaderConstant ShaderConstantFloat(ShaderStage stage, float v)
+	{
+		ShaderConstant c{};
+		c.type = ShaderConstantType::Float;
+		c.stage = stage;
+		c.value.f = v;
+		return c;
+	}
+
 	struct ShaderDescriptor
 	{
 		const char* debugName;
@@ -214,6 +272,7 @@ namespace HBL2
 			Span<const VertexBufferBinding> vertexBufferBindings;
 
 			Span<const PackedVariant> variants;
+			Span<const ShaderConstant> specializationConstants;
 		};
 		RenderPipeline renderPipeline;
 		Handle<RenderPass> renderPass;

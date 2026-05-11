@@ -1,5 +1,7 @@
 #include "OpenGLTexture.h"
 
+#include "Utilities\JobSystem.h"
+
 namespace HBL2
 {
 	OpenGLTexture::OpenGLTexture(const TextureDescriptor&& desc)
@@ -81,6 +83,11 @@ namespace HBL2
 		glBindTexture(TextureType, 0);
 
 		CreateView(TextureType, Format, LayerCount);
+
+		if (!JobSystem::Get().IsRenderThread())
+		{
+			glFlush();
+		}
 	}
 
 	void OpenGLTexture::Bind(uint32_t slot)

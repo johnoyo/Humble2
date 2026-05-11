@@ -36,6 +36,7 @@ namespace HBL2
 
 		virtual void Initialize() override;
 		virtual void Destroy() override;
+		virtual bool HasContext() override { return true; }
 		virtual void SetContext(ContextType ctxType) override {}
 
 		const VkDevice Get() const { return m_Device; }

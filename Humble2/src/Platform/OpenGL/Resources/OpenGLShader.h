@@ -3,8 +3,10 @@
 #include "Base.h"
 #include "Resources\TypeDescriptors.h"
 
-#include "Utilities\Collections\Span.h"
 #include "Platform\OpenGL\OpenGLCommon.h"
+
+#include "Utilities\Collections\Span.h"
+#include "Utilities\Collections\StaticDArray.h"
 
 #include <string>
 #include <fstream>
@@ -19,7 +21,7 @@ namespace HBL2
 		OpenGLShader(const ShaderDescriptor&& desc);
 
 		void Recompile(const ShaderDescriptor&& desc);
-		GLuint Compile(GLuint type, const char* entryPoint, const Span<const uint32_t>& binaryCode);
+		GLuint Compile(GLuint type, const char* entryPoint, const Span<const uint32_t>& binaryCode, const Span<const ShaderConstant>& constants);
 		void SetVariantProperties(const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc);
 		void Bind();
 		void BindPipeline();
@@ -29,5 +31,16 @@ namespace HBL2
 		GLuint Program = 0;
 		GLuint RenderPipeline = 0;
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding> VertexBufferBindings;
+
+	private:
+		struct SpecializationData
+		{
+			StaticDArray<GLuint, 8> indices;
+			StaticDArray<GLuint, 8> values;
+		};
+
+		void BuildSpecializationInfo(ShaderStage stage, SpecializationData& specializationData, Span<const ShaderConstant> constants);
+
+		bool m_NeedRenderPipelineCreation = false;
 	};
 }

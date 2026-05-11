@@ -1,6 +1,7 @@
 #include "OpenGLBuffer.h"
 
 #include "Platform\OpenGL\OpenGLResourceManager.h"
+#include "Utilities\JobSystem.h"
 
 namespace HBL2
 {
@@ -55,6 +56,11 @@ namespace HBL2
 			break;
 		default:
 			break;
+		}
+
+		if (!JobSystem::Get().IsRenderThread())
+		{
+			glFlush();
 		}
 	}
 

@@ -36,6 +36,11 @@ namespace HBL2
 	{
 	}
 
+	bool OpenGLDevice::HasContext()
+	{
+		return glfwGetCurrentContext() != nullptr;
+	}
+
 	void OpenGLDevice::SetContext(ContextType ctxType)
 	{
 		static thread_local int localWorkerIndex = -1;

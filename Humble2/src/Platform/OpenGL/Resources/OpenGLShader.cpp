@@ -1,5 +1,7 @@
 #include "OpenGLShader.h"
 
+#include "Utilities\JobSystem.h"
+
 namespace HBL2
 {
 	OpenGLShader::OpenGLShader(const ShaderDescriptor&& desc)
@@ -17,8 +19,8 @@ namespace HBL2
 		{
 		case ShaderType::RASTERIZATION:
 			{
-				GLuint vs = Compile(GL_VERTEX_SHADER, desc.VS.entryPoint, desc.VS.code);
-				GLuint fs = Compile(GL_FRAGMENT_SHADER, desc.FS.entryPoint, desc.FS.code);
+				GLuint vs = Compile(GL_VERTEX_SHADER, desc.VS.entryPoint, desc.VS.code, desc.renderPipeline.specializationConstants);
+				GLuint fs = Compile(GL_FRAGMENT_SHADER, desc.FS.entryPoint, desc.FS.code, desc.renderPipeline.specializationConstants);
 				glAttachShader(Program, vs);
 				glAttachShader(Program, fs);
 				glLinkProgram(Program);
@@ -26,8 +28,9 @@ namespace HBL2
 				glDeleteShader(vs);
 				glDeleteShader(fs);
 
-				glGenVertexArrays(1, &RenderPipeline);
-				glBindVertexArray(RenderPipeline);
+				// NOTE: We mark to create VAO at bind time which ensures will be called from the render thread.
+				// Since VAOs are not shared between opengl contexts.
+				m_NeedRenderPipelineCreation = true;
 
 				for (auto& vbb : desc.renderPipeline.vertexBufferBindings)
 				{
@@ -37,7 +40,7 @@ namespace HBL2
 			break;
 		case ShaderType::COMPUTE:
 			{
-				GLuint cs = Compile(GL_COMPUTE_SHADER, desc.CS.entryPoint, desc.CS.code);
+				GLuint cs = Compile(GL_COMPUTE_SHADER, desc.CS.entryPoint, desc.CS.code, desc.renderPipeline.specializationConstants);
 				glAttachShader(Program, cs);
 				glLinkProgram(Program);
 				glValidateProgram(Program);
@@ -54,11 +57,16 @@ namespace HBL2
 			glGetProgramiv(Program, GL_INFO_LOG_LENGTH, &logLength);
 			std::vector<GLchar> log(logLength);
 			glGetProgramInfoLog(Program, logLength, &logLength, log.data());
-			HBL2_CORE_ERROR("Shader Program linking failed!");
+			HBL2_CORE_ERROR("Shader Program linking failed: {}", log.data());
+		}
+
+		if (!JobSystem::Get().IsRenderThread())
+		{
+			glFlush();
 		}
 	}
 
-	GLuint OpenGLShader::Compile(GLuint type, const char* entryPoint, const Span<const uint32_t>& binaryCode)
+	GLuint OpenGLShader::Compile(GLuint type, const char* entryPoint, const Span<const uint32_t>& binaryCode, const Span<const ShaderConstant>& constants)
 	{
 		if (binaryCode.Size() == 0)
 		{
@@ -67,7 +75,24 @@ namespace HBL2
 
 		GLuint shaderID = glCreateShader(type);
 		glShaderBinary(1, &shaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, binaryCode.Data(), (GLuint)binaryCode.Size() * sizeof(uint32_t));
-		glSpecializeShader(shaderID, entryPoint, 0, nullptr, nullptr);
+
+		SpecializationData specializationData;
+
+		switch (type)
+		{
+		case GL_VERTEX_SHADER:
+			BuildSpecializationInfo(ShaderStage::VERTEX, specializationData, constants);
+			glSpecializeShader(shaderID, entryPoint, (GLuint)specializationData.indices.size(), specializationData.indices.data(), specializationData.values.data());
+			break;
+		case GL_FRAGMENT_SHADER:
+			BuildSpecializationInfo(ShaderStage::FRAGMENT, specializationData, constants);
+			glSpecializeShader(shaderID, entryPoint, (GLuint)specializationData.indices.size(), specializationData.indices.data(), specializationData.values.data());
+			break;
+		case GL_COMPUTE_SHADER:
+			BuildSpecializationInfo(ShaderStage::COMPUTE, specializationData, constants);
+			glSpecializeShader(shaderID, entryPoint, (GLuint)specializationData.indices.size(), specializationData.indices.data(), specializationData.values.data());
+			break;
+		}
 
 		GLint compileStatus;
 		glGetShaderiv(shaderID, GL_COMPILE_STATUS, &compileStatus);
@@ -77,7 +102,7 @@ namespace HBL2
 			glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &logLength);
 			std::vector<GLchar> log(logLength);
 			glGetShaderInfoLog(shaderID, logLength, &logLength, log.data());
-			HBL2_CORE_ERROR("Shader compilation failed!");
+			HBL2_CORE_ERROR("Shader compilation failed: {}", log.data());
 		}
 
 		return shaderID;
@@ -171,6 +196,12 @@ namespace HBL2
 
 	void OpenGLShader::BindPipeline()
 	{
+		if (m_NeedRenderPipelineCreation)
+		{
+			glGenVertexArrays(1, &RenderPipeline);
+			m_NeedRenderPipelineCreation = false;
+		}
+
 		glBindVertexArray(RenderPipeline);
 	}
 
@@ -178,6 +209,53 @@ namespace HBL2
 	{
 		glDeleteProgram(Program);
 		glDeleteVertexArrays(1, &RenderPipeline);
+	}
+
+	void OpenGLShader::BuildSpecializationInfo(ShaderStage stage, SpecializationData& specializationData, Span<const ShaderConstant> constants)
+	{
+		specializationData.indices.clear();
+		specializationData.values.clear();
+
+		if (constants.Size() == 0)
+		{
+			return;
+		}
+
+		GLuint constantID = 0;
+
+		for (const auto& constant : constants)
+		{
+			if (constant.stage != stage)
+			{
+				continue;
+			}
+
+			specializationData.indices.push_back(constantID++);
+
+			GLuint value = 0;
+
+			switch (constant.type)
+			{
+			case ShaderConstantType::Bool:
+				value = constant.value.b ? 1u : 0u;
+				break;
+
+			case ShaderConstantType::Int:
+				value = static_cast<GLuint>(constant.value.i);
+				break;
+
+			case ShaderConstantType::UInt:
+				value = constant.value.u;
+				break;
+
+			case ShaderConstantType::Float:
+				static_assert(sizeof(float) == sizeof(uint32_t));
+				std::memcpy(&value, &constant.value.f, sizeof(float));
+				break;
+			}
+
+			specializationData.values.push_back(value);
+		}
 	}
 }
 
