@@ -66,7 +66,6 @@ namespace HBL2
         std::string name;
         uint32_t constantId;   // Vulkan constant_id / SPIR-V specialization index
         ShaderConstantType type;
-        ShaderStage stage;
     };
 
     struct ShaderReflectionData

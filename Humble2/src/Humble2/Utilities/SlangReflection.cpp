@@ -196,8 +196,7 @@ namespace HBL2
             printf("  constant_id=%-2u  %-24s  %-8s  stage=%s\n",
                 sc.constantId,
                 sc.name.c_str(),
-                ShaderReflector::ConstantTypeToString(sc.type),
-                ShaderReflector::ShaderStageToString(sc.stage));
+                ShaderReflector::ConstantTypeToString(sc.type));
         }
         printf("\n");
     }
@@ -475,36 +474,10 @@ namespace HBL2
                 continue;
             }
 
-            ShaderConstantType constType = ToConstantType(type);
-
-            // Determine which stage uses this constant (same pattern as descriptor sets)
-            ShaderStage usedInStage = ShaderStage::NONE;
-            for (uint32_t ep = 0; ep < layout->getEntryPointCount(); ++ep)
-            {
-                slang::EntryPointReflection* entry = layout->getEntryPointByIndex(ep);
-                const uint32_t epParamCount = static_cast<uint32_t>(entry->getParameterCount());
-
-                for (uint32_t p = 0; p < epParamCount; ++p)
-                {
-                    slang::VariableLayoutReflection* epParam = entry->getParameterByIndex(p);
-                    if (std::string(epParam->getName()) == param->getName())
-                    {
-                        usedInStage = ToShaderStage(entry->getStage());
-                        break;
-                    }
-                }
-
-                if (usedInStage != ShaderStage::NONE)
-                {
-                    break;
-                }
-            }
-
             ReflectedSpecializationConstant sc;
             sc.name = param->getName();
             sc.constantId = static_cast<uint32_t>(constantId);
-            sc.type = constType;
-            sc.stage = usedInStage;
+            sc.type = ToConstantType(type);
             
             out.specializationConstants.push_back(std::move(sc));
         }

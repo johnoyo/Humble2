@@ -227,6 +227,7 @@ namespace HBL2
 		{
 			if (constant.stage != stage)
 			{
+				constantID++;
 				continue;
 			}
 
