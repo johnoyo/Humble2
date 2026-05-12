@@ -26,32 +26,32 @@ namespace HBL2
 
     struct VertexAttribute
     {
-        std::string  name;
-        uint32_t     location;
+        std::string name;
+        uint32_t location;
         VertexFormat format;
-        uint32_t     componentCount;
-        uint32_t     sizeBytes;       // total size of the attribute in bytes
+        uint32_t componentCount;
+        uint32_t sizeBytes;       // total size of the attribute in bytes
     };
 
     struct DescriptorBinding
     {
-        std::string  name;
-        uint32_t     binding;
-        uint32_t     set;
+        std::string name;
+        uint32_t binding;
+        uint32_t set;
         ResourceType type;
-        uint32_t     count;           // array size, 1 for non-arrays
-        ShaderStage  stage;           // which stage declared this binding
+        uint32_t count;           // array size, 1 for non-arrays
+        ShaderStage stage;        // which stage declared this binding
     };
 
     struct DescriptorSetLayout
     {
-        uint32_t                       set;
+        uint32_t set;
         std::vector<DescriptorBinding> bindings;
 
-        // Convenience: find a binding by name
+        // Find a binding by name
         const DescriptorBinding* find(const std::string& name) const;
 
-        // Convenience: find a binding by index
+        // Find a binding by index
         const DescriptorBinding* findByBinding(uint32_t binding) const;
     };
 
@@ -61,21 +61,32 @@ namespace HBL2
         ShaderStage stage;
     };
 
+    struct ReflectedSpecializationConstant
+    {
+        std::string name;
+        uint32_t constantId;   // Vulkan constant_id / SPIR-V specialization index
+        ShaderConstantType type;
+        ShaderStage stage;
+    };
+
     struct ShaderReflectionData
     {
-        std::string                         sourcePath;
-        std::vector<EntryPoint>             entryPoints;
-        std::vector<VertexAttribute>        vertexAttributes;   // ordered by location
+        std::string sourcePath;
+        std::vector<EntryPoint> entryPoints;
+        std::vector<VertexAttribute> vertexAttributes;   // ordered by location
         std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding> vertexBufferBindings; // one per VSInput struct parameter
-        std::vector<DescriptorSetLayout>    descriptorSets;     // ordered by set index
+        std::vector<DescriptorSetLayout> descriptorSets;     // ordered by set index
+        std::vector<ReflectedSpecializationConstant> specializationConstants; // ordered by constantId
 
         // Returns nullptr if not found
-        const EntryPoint*          findEntryPoint(ShaderStage stage) const;
+        const EntryPoint* findEntryPoint(ShaderStage stage) const;
         const DescriptorSetLayout* findSet(uint32_t set) const;
-        const DescriptorBinding*   findBinding(const std::string& name) const;
-        const VertexAttribute*     findAttribute(const std::string& name) const;
-        const VertexAttribute*     findAttributeByLocation(uint32_t location) const;
+        const DescriptorBinding* findBinding(const std::string& name) const;
+        const VertexAttribute* findAttribute(const std::string& name) const;
+        const VertexAttribute* findAttributeByLocation(uint32_t location) const;
         const ShaderDescriptor::RenderPipeline::VertexBufferBinding* findVertexBufferBinding(uint32_t bufferBinding) const;
+        const ReflectedSpecializationConstant* findSpecializationConstant(const std::string& name) const;
+        const ReflectedSpecializationConstant* findSpecializationConstantById(uint32_t constantId) const;
 
         // True if any descriptor binding exists with this name
         bool hasBinding(const std::string& name) const;
@@ -94,18 +105,21 @@ namespace HBL2
         static void ReflectEntryPoints(slang::ProgramLayout* layout, ShaderReflectionData&  out);
         static void ReflectVertexAttributes(slang::ProgramLayout* layout, ShaderReflectionData&  out);
         static void ReflectDescriptorSets(slang::ProgramLayout* layout, ShaderReflectionData&  out);
+        static void ReflectSpecializationConstants(slang::ProgramLayout* layout, ShaderReflectionData& out);
 
-        // --- Type helpers ---
+        // Type helpers
         friend class ShaderReflectionData;
 
-        static ShaderStage   ToShaderStage(SlangStage stage);
-        static ResourceType  ToResourceType(slang::TypeReflection* type);
-        static VertexFormat  ToVertexFormat(slang::TypeReflection* type);
-        static uint32_t      ComponentCount(VertexFormat format);
-        static uint32_t      FormatSizeBytes(VertexFormat format);
-        static const char*   VertexFormatToString(VertexFormat format);
-        static const char*   ResourceTypeToString(ResourceType type);
-        static const char*   ShaderStageToString(ShaderStage stage);
+        static ShaderStage ToShaderStage(SlangStage stage);
+        static ResourceType ToResourceType(slang::TypeReflection* type);
+        static VertexFormat ToVertexFormat(slang::TypeReflection* type);
+        static uint32_t ComponentCount(VertexFormat format);
+        static uint32_t FormatSizeBytes(VertexFormat format);
+        static const char* VertexFormatToString(VertexFormat format);
+        static const char* ResourceTypeToString(ResourceType type);
+        static const char* ShaderStageToString(ShaderStage stage);
+        static ShaderConstantType ToConstantType(slang::TypeReflection* type);
+        static const char* ConstantTypeToString(ShaderConstantType type);
     };
 
 } // namespace HBL2

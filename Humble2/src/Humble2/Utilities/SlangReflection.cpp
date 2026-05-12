@@ -102,6 +102,30 @@ namespace HBL2
         return nullptr;
     }
 
+    const ReflectedSpecializationConstant* ShaderReflectionData::findSpecializationConstant(const std::string& name) const
+    {
+        for (const auto& sc : specializationConstants)
+        {
+            if (sc.name == name)
+            {
+                return &sc;
+            }
+        }
+        return nullptr;
+    }
+
+    const ReflectedSpecializationConstant* ShaderReflectionData::findSpecializationConstantById(uint32_t constantId) const
+    {
+        for (const auto& sc : specializationConstants)
+        {
+            if (sc.constantId == constantId)
+            {
+                return &sc;
+            }
+        }
+        return nullptr;
+    }
+
     bool ShaderReflectionData::hasBinding(const std::string& name) const
     {
         return findBinding(name) != nullptr;
@@ -111,13 +135,15 @@ namespace HBL2
     {
         printf("=== Shader Reflection: %s ===\n\n", sourcePath.c_str());
 
-        // --- Entry points ---
+        // Entry points
         printf("Entry Points (%zu):\n", entryPoints.size());
         for (const auto& ep : entryPoints)
+        {
             printf("  [%s]  %s\n", ShaderReflector::ShaderStageToString(ep.stage), ep.name.c_str());
+        }
         printf("\n");
 
-        // --- Vertex attributes ---
+        // Vertex attributes
         printf("Vertex Attributes (%zu):\n", vertexAttributes.size());
         for (const auto& a : vertexAttributes)
         {
@@ -130,7 +156,7 @@ namespace HBL2
         }
         printf("\n");
 
-        // --- Vertex buffer bindings ---
+        // Vertex buffer bindings
         printf("Vertex Buffer Bindings (%zu):\n", vertexBufferBindings.size());
         for (const auto& vbb : vertexBufferBindings)
         {
@@ -146,7 +172,7 @@ namespace HBL2
         }
         printf("\n");
 
-        // --- Descriptor sets ---
+        // Descriptor sets
         printf("Descriptor Sets (%zu):\n", descriptorSets.size());
         for (const auto& set : descriptorSets)
         {
@@ -160,6 +186,18 @@ namespace HBL2
                     ShaderReflector::ShaderStageToString(b.stage),
                     b.count);
             }
+        }
+        printf("\n");
+
+        // Specialization Constants
+        printf("Specialization Constants (%zu):\n", specializationConstants.size());
+        for (const auto& sc : specializationConstants)
+        {
+            printf("  constant_id=%-2u  %-24s  %-8s  stage=%s\n",
+                sc.constantId,
+                sc.name.c_str(),
+                ShaderReflector::ConstantTypeToString(sc.type),
+                ShaderReflector::ShaderStageToString(sc.stage));
         }
         printf("\n");
     }
@@ -177,6 +215,7 @@ namespace HBL2
         ReflectEntryPoints(layout, data);
         ReflectVertexAttributes(layout, data);
         ReflectDescriptorSets(layout, data);
+        ReflectSpecializationConstants(layout, data);
 
         return data;
     }
@@ -412,6 +451,72 @@ namespace HBL2
             });
     }
 
+    void ShaderReflector::ReflectSpecializationConstants(slang::ProgramLayout* layout, ShaderReflectionData& out)
+    {
+        const uint32_t paramCount = static_cast<uint32_t>(layout->getParameterCount());
+
+        for (uint32_t i = 0; i < paramCount; ++i)
+        {
+            slang::VariableLayoutReflection* param = layout->getParameterByIndex(i);
+
+            // A parameter is a specialization constant only if it has a valid
+            // offset in the SPECIALIZATION_CONSTANT category.
+            const SlangUInt constantId = param->getOffset(SLANG_PARAMETER_CATEGORY_SPECIALIZATION_CONSTANT);
+            if (constantId == SLANG_UNBOUNDED_SIZE)
+            {
+                continue;
+            }
+
+            slang::TypeReflection* type = param->getType();
+
+            // Only scalars are valid specialization constants in Vulkan/SPIR-V
+            if (type->getKind() != slang::TypeReflection::Kind::Scalar)
+            {
+                continue;
+            }
+
+            ShaderConstantType constType = ToConstantType(type);
+
+            // Determine which stage uses this constant (same pattern as descriptor sets)
+            ShaderStage usedInStage = ShaderStage::NONE;
+            for (uint32_t ep = 0; ep < layout->getEntryPointCount(); ++ep)
+            {
+                slang::EntryPointReflection* entry = layout->getEntryPointByIndex(ep);
+                const uint32_t epParamCount = static_cast<uint32_t>(entry->getParameterCount());
+
+                for (uint32_t p = 0; p < epParamCount; ++p)
+                {
+                    slang::VariableLayoutReflection* epParam = entry->getParameterByIndex(p);
+                    if (std::string(epParam->getName()) == param->getName())
+                    {
+                        usedInStage = ToShaderStage(entry->getStage());
+                        break;
+                    }
+                }
+
+                if (usedInStage != ShaderStage::NONE)
+                {
+                    break;
+                }
+            }
+
+            ReflectedSpecializationConstant sc;
+            sc.name = param->getName();
+            sc.constantId = static_cast<uint32_t>(constantId);
+            sc.type = constType;
+            sc.stage = usedInStage;
+            
+            out.specializationConstants.push_back(std::move(sc));
+        }
+
+        // Keep sorted by constant_id for deterministic output
+        std::sort(out.specializationConstants.begin(), out.specializationConstants.end(),
+            [](const ReflectedSpecializationConstant& a, const ReflectedSpecializationConstant& b)
+            {
+                return a.constantId < b.constantId;
+            });
+    }
+
     ShaderStage ShaderReflector::ToShaderStage(SlangStage stage)
     {
         switch (stage)
@@ -588,6 +693,30 @@ namespace HBL2
         case ShaderStage::FRAGMENT: return "Fragment";
         case ShaderStage::COMPUTE:  return "Compute";
         default:                    return "Unknown";
+        }
+    }
+
+    ShaderConstantType ShaderReflector::ToConstantType(slang::TypeReflection* type)
+    {
+        switch (type->getScalarType())
+        {
+        case SLANG_SCALAR_TYPE_BOOL:    return ShaderConstantType::Bool;
+        case SLANG_SCALAR_TYPE_INT32:   return ShaderConstantType::Int;
+        case SLANG_SCALAR_TYPE_UINT32:  return ShaderConstantType::UInt;
+        case SLANG_SCALAR_TYPE_FLOAT32: return ShaderConstantType::Float;
+        default:                        return ShaderConstantType::Float; // best-effort fallback
+        }
+    }
+
+    const char* ShaderReflector::ConstantTypeToString(ShaderConstantType type)
+    {
+        switch (type)
+        {
+        case ShaderConstantType::Bool:  return "bool";
+        case ShaderConstantType::Int:   return "int";
+        case ShaderConstantType::UInt:  return "uint";
+        case ShaderConstantType::Float: return "float";
+        default:                        return "unknown";
         }
     }
 
