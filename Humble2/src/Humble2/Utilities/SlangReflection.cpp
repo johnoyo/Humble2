@@ -30,6 +30,56 @@ namespace HBL2
         return nullptr;
     }
 
+    Span<const Span<const ShaderConstant>> ShaderReflectionData::GetSpecializationConstantsPerVariant(Span<const ShaderDescriptor::RenderPipeline::PackedVariant> variants)
+    {
+        // Only bool spec constants participate in PSO selection.
+        // specializationConstants is already sorted by constantId from ReflectSpecializationConstants,
+        // so positional index here matches shaderConstantBool0..7 order.
+        std::vector<const ReflectedSpecializationConstant*> boolConstants;
+        for (const auto& sc : specializationConstants)
+        {
+            if (sc.type == ShaderConstantType::Bool)
+            {
+                boolConstants.push_back(&sc);
+            }
+        }
+
+        HBL2_CORE_ASSERT(boolConstants.size() <= 8, "PackedVariant only supports up to 8 bool shader constants");
+
+        m_SpecConstantStorage.clear();
+        m_SpecConstantStorage.reserve(variants.Size() * boolConstants.size());
+        m_SpecConstantsPerVariant.clear();
+        m_SpecConstantsPerVariant.reserve(variants.Size());
+
+        for (const auto& variant : variants)
+        {
+            const size_t startIndex = m_SpecConstantStorage.size();
+
+            for (uint32_t i = 0; i < (uint32_t)boolConstants.size(); ++i)
+            {
+                bool extractedBool;
+
+                switch (i)
+                {
+                case 0: extractedBool = (bool)variant.shaderConstantBool0; break;
+                case 1: extractedBool = (bool)variant.shaderConstantBool1; break;
+                case 2: extractedBool = (bool)variant.shaderConstantBool2; break;
+                case 3: extractedBool = (bool)variant.shaderConstantBool3; break;
+                case 4: extractedBool = (bool)variant.shaderConstantBool4; break;
+                case 5: extractedBool = (bool)variant.shaderConstantBool5; break;
+                case 6: extractedBool = (bool)variant.shaderConstantBool6; break;
+                case 7: extractedBool = (bool)variant.shaderConstantBool7; break;
+                }
+
+                m_SpecConstantStorage.push_back(ShaderConstantBool(boolConstants[i]->stageMask, extractedBool));
+            }
+
+            m_SpecConstantsPerVariant.push_back({m_SpecConstantStorage.data() + startIndex, boolConstants.size() });
+        }
+
+        return { m_SpecConstantsPerVariant.data(), m_SpecConstantsPerVariant.size() };
+    }
+
     const EntryPoint* ShaderReflectionData::findEntryPoint(ShaderStage stage) const
     {
         for (const auto& ep : entryPoints)
@@ -214,7 +264,7 @@ namespace HBL2
         ReflectEntryPoints(layout, data);
         ReflectVertexAttributes(layout, data);
         ReflectDescriptorSets(layout, data);
-        ReflectSpecializationConstants(layout, data);
+        ReflectSpecializationConstants(linkedProgram, layout, data);
 
         return data;
     }
@@ -450,36 +500,65 @@ namespace HBL2
             });
     }
 
-    void ShaderReflector::ReflectSpecializationConstants(slang::ProgramLayout* layout, ShaderReflectionData& out)
+    void ShaderReflector::ReflectSpecializationConstants(slang::IComponentType* linkedProgram, slang::ProgramLayout* layout, ShaderReflectionData& out)
     {
-        const uint32_t paramCount = static_cast<uint32_t>(layout->getParameterCount());
+        slang::ProgramLayout* programLayout = linkedProgram->getLayout();
 
-        for (uint32_t i = 0; i < paramCount; ++i)
+        for (SlangUInt i = 0; i < layout->getParameterCount(); ++i)
         {
-            slang::VariableLayoutReflection* param = layout->getParameterByIndex(i);
+            auto param = layout->getParameterByIndex(i);
 
-            // A parameter is a specialization constant only if it has a valid
-            // offset in the SPECIALIZATION_CONSTANT category.
-            const SlangUInt constantId = param->getOffset(SLANG_PARAMETER_CATEGORY_SPECIALIZATION_CONSTANT);
-            if (constantId == SLANG_UNBOUNDED_SIZE)
+            if (param->getCategory() == slang::ParameterCategory::SpecializationConstant)
             {
-                continue;
+                printf("Specialization constant: %s\n", param->getName());
+
+                ReflectedSpecializationConstant sc;
+                sc.name = param->getName();
+                sc.constantId = param->getBindingIndex();
+                sc.type = ToConstantType(param->getType());
+
+                // See where it's visible/used
+                for (SlangUInt ep = 0; ep < layout->getEntryPointCount(); ++ep)
+                {
+                    Slang::ComPtr<slang::IMetadata> metadata;
+                    Slang::ComPtr<slang::IBlob> diagnostics;
+
+                    if (SLANG_FAILED(linkedProgram->getEntryPointMetadata(ep, 0, metadata.writeRef(), diagnostics.writeRef())))
+                    {
+                        HBL2_CORE_ERROR("Slang: Failed to get entry point metadata");
+                        continue;
+                    }
+
+                    SlangStage stage = programLayout->getEntryPointByIndex(ep)->getStage();
+
+                    bool used = false;
+                    if (SLANG_FAILED(metadata->isParameterLocationUsed(SLANG_PARAMETER_CATEGORY_SPECIALIZATION_CONSTANT, 0, sc.constantId, used)))
+                    {
+                        HBL2_CORE_ERROR("Slang: Failed to check if spetialization constant is being used");
+                        continue;
+                    }
+
+                    if (used)
+                    {
+                        HBL2_CORE_INFO("Stage {}: uses spec constant '{}' (id={})", (int)stage, sc.name, sc.constantId);
+
+                        switch (stage)
+                        {
+                        case SLANG_STAGE_VERTEX:
+                            sc.stageMask.Set(ShaderStage::VERTEX);
+                            break;
+                        case SLANG_STAGE_FRAGMENT:
+                            sc.stageMask.Set(ShaderStage::FRAGMENT);
+                            break;
+                        case SLANG_STAGE_COMPUTE:
+                            sc.stageMask.Set(ShaderStage::COMPUTE);
+                            break;
+                        }
+                    }
+                }
+
+                out.specializationConstants.push_back(std::move(sc));
             }
-
-            slang::TypeReflection* type = param->getType();
-
-            // Only scalars are valid specialization constants in Vulkan/SPIR-V
-            if (type->getKind() != slang::TypeReflection::Kind::Scalar)
-            {
-                continue;
-            }
-
-            ReflectedSpecializationConstant sc;
-            sc.name = param->getName();
-            sc.constantId = static_cast<uint32_t>(constantId);
-            sc.type = ToConstantType(type);
-            
-            out.specializationConstants.push_back(std::move(sc));
         }
 
         // Keep sorted by constant_id for deterministic output

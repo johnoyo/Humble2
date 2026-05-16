@@ -136,6 +136,12 @@ namespace HBL2
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
+		SpecializationData vertexSpecializationData;
+		BuildSpecializationInfo(ShaderStage::VERTEX, vertexSpecializationData, config);
+
+		SpecializationData fragmentSpecializationData;
+		BuildSpecializationInfo(ShaderStage::FRAGMENT, fragmentSpecializationData, config);
+
 		// Shader stages.
 		VkPipelineShaderStageCreateInfo shaderStages[2] =
 		{
@@ -145,7 +151,7 @@ namespace HBL2
 				.stage = VK_SHADER_STAGE_VERTEX_BIT,
 				.module = config.shaderModules[0],
 				.pName = config.entryPoints[0],
-				.pSpecializationInfo = (m_SpecializationData.specializationData0.data.empty() ? NULL : &m_SpecializationData.specializationData0.info),
+				.pSpecializationInfo = (vertexSpecializationData.data.empty() ? NULL : &vertexSpecializationData.info),
 			},
 			{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -153,7 +159,7 @@ namespace HBL2
 				.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
 				.module = config.shaderModules[1],
 				.pName = config.entryPoints[1],
-				.pSpecializationInfo = (m_SpecializationData.specializationData1.data.empty() ? NULL : &m_SpecializationData.specializationData1.info),
+				.pSpecializationInfo = (fragmentSpecializationData.data.empty() ? NULL : &fragmentSpecializationData.info),
 			}
 		};
 
@@ -369,6 +375,9 @@ namespace HBL2
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 
+		SpecializationData computeSpecializationData;
+		BuildSpecializationInfo(ShaderStage::COMPUTE, computeSpecializationData, config);
+
 		VkPipelineShaderStageCreateInfo stageInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -376,7 +385,7 @@ namespace HBL2
 			.stage = VK_SHADER_STAGE_COMPUTE_BIT,
 			.module = config.shaderModules[0],
 			.pName = config.entryPoints[0],
-			.pSpecializationInfo = (m_SpecializationData.specializationData0.data.empty() ? NULL : &m_SpecializationData.specializationData0.info),
+			.pSpecializationInfo = (computeSpecializationData.data.empty() ? NULL : &computeSpecializationData.info),
 		};
 
 		VkComputePipelineCreateInfo pipelineInfo =
@@ -397,13 +406,23 @@ namespace HBL2
 		return computePipeline;
 	}
 
-	void VulkanShaderCold::BuildSpecializationInfo(ShaderStage stage, SpecializationDataStage& specializationData, Span<const ShaderConstant> constants)
+	static bool GetVariantShaderConstantValueFromIndex(const ShaderDescriptor::RenderPipeline::PackedVariant& variant, uint32_t i)
 	{
-		specializationData.data.clear();
-		specializationData.entries.clear();
-		specializationData.info = {};
-		
-		if (constants.Size() == 0)
+		if (i == 0) { return variant.shaderConstantBool0; }
+		if (i == 1) { return variant.shaderConstantBool1; }
+		if (i == 2) { return variant.shaderConstantBool2; }
+		if (i == 3) { return variant.shaderConstantBool3; }
+		if (i == 4) { return variant.shaderConstantBool4; }
+		if (i == 5) { return variant.shaderConstantBool5; }
+		if (i == 6) { return variant.shaderConstantBool6; }
+		if (i == 7) { return variant.shaderConstantBool7; }
+	}
+
+	void VulkanShaderCold::BuildSpecializationInfo(ShaderStage stage, SpecializationData& specializationData, const PipelineConfig& config)
+	{
+		const auto& constantStages = config.specializationConstantStages;
+
+		if (constantStages.Size() == 0)
 		{
 			return;
 		}
@@ -411,9 +430,9 @@ namespace HBL2
 		uint32_t offset = 0;
 		uint32_t constantID = 0;
 
-		for (const auto& constant : constants)
+		for (uint32_t i = 0; i < constantStages.Size(); i++)
 		{
-			if (constant.stage != stage)
+			if (!constantStages[i].IsSet(stage))
 			{
 				constantID++;
 				continue;
@@ -423,39 +442,18 @@ namespace HBL2
 			entry.constantID = constantID++;
 			entry.offset = offset;
 
-			auto append = [&](const void* src, size_t size)
-			{
-				entry.size = size;
-
-				const size_t oldSize = specializationData.data.size();
-				specializationData.data.resize(oldSize + size);
-
-				std::memcpy(specializationData.data.data() + oldSize, src, size);
-
-				offset += static_cast<uint32_t>(size);
-			};
-
-			switch (constant.type)
-			{
-			case ShaderConstantType::Bool:
 			{
 				// Vulkan bool spec constants are typically uint32_t
-				const uint32_t value = constant.value.b ? 1u : 0u;
-				append(&value, sizeof(value));
-				break;
-			}
+				const uint32_t value = GetVariantShaderConstantValueFromIndex(config.variantDesc, i) ? 1u : 0u;
 
-			case ShaderConstantType::Int:
-				append(&constant.value.i, sizeof(int32_t));
-				break;
+				const void* src = &value;
+				size_t size = sizeof(value);
 
-			case ShaderConstantType::UInt:
-				append(&constant.value.u, sizeof(uint32_t));
-				break;
-
-			case ShaderConstantType::Float:
-				append(&constant.value.f, sizeof(float));
-				break;
+				entry.size = size;
+				const size_t oldSize = specializationData.data.size();
+				specializationData.data.resize(oldSize + size);
+				std::memcpy(specializationData.data.data() + oldSize, src, size);
+				offset += static_cast<uint32_t>(size);
 			}
 
 			specializationData.entries.push_back(entry);
@@ -494,6 +492,7 @@ namespace HBL2
 				.pipelineLayout = Hot->PipelineLayout,
 				.renderPass = Cold->RenderPass,
 				.vertexBufferBindings = Cold->VertexBufferBindings,
+				.specializationConstantStages = Cold->m_SpecializationConstantStages,
 			});
 		}
 
@@ -515,9 +514,22 @@ namespace HBL2
 			.pipelineLayout = Hot->PipelineLayout,
 			.renderPass = Cold->RenderPass,
 			.vertexBufferBindings = Cold->VertexBufferBindings,
+			.specializationConstantStages = Cold->m_SpecializationConstantStages,
 		});
 	}
 	
+	static void SyncVariantWithSpecializationConstant(uint32_t i, const ShaderConstant& specializationConstant, ShaderDescriptor::RenderPipeline::PackedVariant& variant)
+	{
+		if (i == 0) { variant.shaderConstantBool0 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 1) { variant.shaderConstantBool1 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 2) { variant.shaderConstantBool2 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 3) { variant.shaderConstantBool3 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 4) { variant.shaderConstantBool4 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 5) { variant.shaderConstantBool5 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 6) { variant.shaderConstantBool6 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 7) { variant.shaderConstantBool7 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+	}
+
 	void VulkanShader::Recompile(const ShaderDescriptor&& desc, bool removeVariants)
 	{
 		if (!IsValid())
@@ -540,9 +552,33 @@ namespace HBL2
 
 		Cold->DebugName = desc.debugName;
 
+		// Clear VertexBufferBindings.
+		Cold->VertexBufferBindings.clear();
+
+		// Fill with new ones.
 		for (auto& vbb : desc.renderPipeline.vertexBufferBindings)
 		{
 			Cold->VertexBufferBindings.push_back(vbb);
+		}
+
+		// Clear m_SpecializationConstantStages.
+		for (uint32_t i = 0; i < Cold->m_SpecializationConstantStages.size(); i++)
+		{
+			Cold->m_SpecializationConstantStages[i].Clear();
+		}
+
+		// Fill with new ones.
+		for (uint32_t i = 0; i < desc.renderPipeline.specializationConstantsPerVariant.Size(); i++)
+		{
+			for (uint32_t j = 0; j < desc.renderPipeline.specializationConstantsPerVariant[i].Size(); j++)
+			{
+				auto& variant = *((ShaderDescriptor::RenderPipeline::PackedVariant*)&desc.renderPipeline.variants[i]);
+				const auto& specializationConstant = desc.renderPipeline.specializationConstantsPerVariant[i][j];
+
+				SyncVariantWithSpecializationConstant(j, specializationConstant, variant);
+
+				Cold->m_SpecializationConstantStages[j] = specializationConstant.stage;
+			}
 		}
 
 		Cold->RenderPass = rm->GetRenderPass(desc.renderPass)->RenderPass;
@@ -582,9 +618,6 @@ namespace HBL2
 			entryPoints[1] = desc.FS.entryPoint;
 			shaderModules[1] = Cold->FragmentShaderModule;
 			shaderModuleCount = 2;
-
-			Cold->BuildSpecializationInfo(ShaderStage::VERTEX, Cold->m_SpecializationData.specializationData0, desc.renderPipeline.specializationConstants);
-			Cold->BuildSpecializationInfo(ShaderStage::FRAGMENT, Cold->m_SpecializationData.specializationData1, desc.renderPipeline.specializationConstants);
 		}
 		else
 		{
@@ -602,8 +635,6 @@ namespace HBL2
 			entryPoints[1] = "";
 			shaderModules[1] = VK_NULL_HANDLE;
 			shaderModuleCount = 1;
-
-			Cold->BuildSpecializationInfo(ShaderStage::COMPUTE, Cold->m_SpecializationData.specializationData0, desc.renderPipeline.specializationConstants);
 		}
 
 		// Pipeline layout.
@@ -637,8 +668,10 @@ namespace HBL2
 		VK_VALIDATE(vkCreatePipelineLayout(device->Get(), &pipelineLayoutCreateInfo, nullptr, &Hot->PipelineLayout), "vkCreatePipelineLayout");
 
 		// Create shader variants.
-		for (const auto& variant : desc.renderPipeline.variants)
+		for (int i = 0; i < desc.renderPipeline.variants.Size(); i++)
 		{
+			const auto& variant = desc.renderPipeline.variants[i];
+
 			const VulkanShaderCold::PipelineConfig pipelineConfig =
 			{
 				.shaderModules = shaderModules,
@@ -648,6 +681,7 @@ namespace HBL2
 				.pipelineLayout = Hot->PipelineLayout,
 				.renderPass = Cold->RenderPass,
 				.vertexBufferBindings = Cold->VertexBufferBindings,
+				.specializationConstantStages = Cold->m_SpecializationConstantStages,
 			};
 
 			Cold->GetOrCreatePipeline(pipelineConfig, removeVariants);

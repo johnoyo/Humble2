@@ -21,26 +21,49 @@ namespace HBL2
 		OpenGLShader(const ShaderDescriptor&& desc);
 
 		void Recompile(const ShaderDescriptor&& desc);
-		GLuint Compile(GLuint type, const char* entryPoint, const Span<const uint32_t>& binaryCode, const Span<const ShaderConstant>& constants);
+
+		uint64_t GetOrCreateVariant(const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc, bool flush = true);
+
+		GLuint Compile(GLuint type, const char* entryPoint, const Span<const uint32_t>& binaryCode, const ShaderDescriptor::RenderPipeline::PackedVariant& variant);
 		void SetVariantProperties(const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc);
-		void Bind();
+		void Bind(const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc);
 		void BindPipeline();
 		void Destroy();
 
 		const char* DebugName = "";
-		GLuint Program = 0;
 		GLuint RenderPipeline = 0;
 		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding> VertexBufferBindings;
 
 	private:
+		static constexpr uint32_t MaxVariants = 8;
+		static constexpr uint32_t MaxSpecializationConstants = 8;
+		
 		struct SpecializationData
 		{
-			StaticDArray<GLuint, 8> indices;
-			StaticDArray<GLuint, 8> values;
+			StaticDArray<GLuint, MaxSpecializationConstants> indices;
+			StaticDArray<GLuint, MaxSpecializationConstants> values;
+
+			bool IsEmpty()
+			{
+				return indices.empty() && values.empty();
+			}
 		};
 
-		void BuildSpecializationInfo(ShaderStage stage, SpecializationData& specializationData, Span<const ShaderConstant> constants);
+		struct Variant
+		{
+			ShaderDescriptor::RenderPipeline::PackedVariant Key;
+			GLuint Program;
+		};
 
+		void BuildSpecializationInfo(ShaderStage stage, SpecializationData& specializationData, const ShaderDescriptor::RenderPipeline::PackedVariant& variant);
+
+		StaticDArray<Variant, MaxVariants> m_Variants;
+		std::array<BitFlags<ShaderStage>, MaxSpecializationConstants> m_SpecializationConstantStages;
+
+		std::array<const char*, 2> m_EntryPoints;
+		std::array<std::vector<uint32_t>, 2> m_ShaderCode;
+
+		ShaderType m_Type = ShaderType::RASTERIZATION;
 		bool m_NeedRenderPipelineCreation = false;
 	};
 }

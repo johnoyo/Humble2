@@ -66,6 +66,7 @@ namespace HBL2
         std::string name;
         uint32_t constantId;   // Vulkan constant_id / SPIR-V specialization index
         ShaderConstantType type;
+        BitFlags<ShaderStage> stageMask;
     };
 
     struct ShaderReflectionData
@@ -76,6 +77,8 @@ namespace HBL2
         std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding> vertexBufferBindings; // one per VSInput struct parameter
         std::vector<DescriptorSetLayout> descriptorSets;     // ordered by set index
         std::vector<ReflectedSpecializationConstant> specializationConstants; // ordered by constantId
+
+        Span<const Span<const ShaderConstant>> GetSpecializationConstantsPerVariant(Span<const ShaderDescriptor::RenderPipeline::PackedVariant> variants);
 
         // Returns nullptr if not found
         const EntryPoint* findEntryPoint(ShaderStage stage) const;
@@ -91,6 +94,11 @@ namespace HBL2
         bool hasBinding(const std::string& name) const;
 
         void print() const; // dumps a human-readable summary to stdout
+
+    private:
+        // Backing storage for RetrieveSpecializationConstantsPerVariant
+        std::vector<ShaderConstant> m_SpecConstantStorage;
+        std::vector<Span<const ShaderConstant>> m_SpecConstantsPerVariant;
     };
 
     class ShaderReflector
@@ -104,7 +112,7 @@ namespace HBL2
         static void ReflectEntryPoints(slang::ProgramLayout* layout, ShaderReflectionData&  out);
         static void ReflectVertexAttributes(slang::ProgramLayout* layout, ShaderReflectionData&  out);
         static void ReflectDescriptorSets(slang::ProgramLayout* layout, ShaderReflectionData&  out);
-        static void ReflectSpecializationConstants(slang::ProgramLayout* layout, ShaderReflectionData& out);
+        static void ReflectSpecializationConstants(slang::IComponentType* linkedProgram, slang::ProgramLayout* layout, ShaderReflectionData& out);
 
         // Type helpers
         friend class ShaderReflectionData;

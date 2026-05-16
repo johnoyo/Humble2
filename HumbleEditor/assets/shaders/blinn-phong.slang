@@ -9,21 +9,21 @@ struct Object
 {
     float4x4 Model;
     float4x4 InverseModel;
-    float4   Color;
-    float    Glossiness;
+    float4 Color;
+    float Glossiness;
 };
 
 struct Light
 {
-    float4   ViewPosition;
-    float4   Positions[16];
-    float4   Directions[16];
-    float4   Colors[16];
-    float4   Metadata[16];
-    float4   ShadowData[16];
+    float4 ViewPosition;
+    float4 Positions[16];
+    float4 Directions[16];
+    float4 Colors[16];
+    float4 Metadata[16];
+    float4 ShadowData[16];
     float4x4 LightSpaceMatrices[16];
-    float4   TileUVRange[16];
-    float    Count;
+    float4 TileUVRange[16];
+    float Count;
 };
 
 [[vk::binding(0, 0)]]
@@ -41,6 +41,12 @@ Sampler2D u_AlbedoMap;
 [[vk::binding(3, 1)]]
 Sampler2D u_ShadowAltasMap;
 
+[vk::constant_id(0)]
+const bool s_MyConstV = false;
+
+[vk::constant_id(1)]
+const bool s_MyConst = false;
+
 // Vertex Shader
 
 struct VSInput
@@ -54,16 +60,30 @@ struct VSOutput
 {
     float4 position : SV_Position;
 
-    [[vk::location(0)]] float4   v_Color;
-    [[vk::location(1)]] float3   v_Position;
-    [[vk::location(2)]] float3   v_Normal;
-    [[vk::location(3)]] float2   v_TextureCoord;
-    [[vk::location(4)]] float    v_Glossiness;
+    [[vk::location(0)]] float4 v_Color;
+    [[vk::location(1)]] float3 v_Position;
+    [[vk::location(2)]] float3 v_Normal;
+    [[vk::location(3)]] float2 v_TextureCoord;
+    [[vk::location(4)]] float v_Glossiness;
 };
 
 [shader("vertex")]
 VSOutput mainVS(VSInput input)
 {
+    if (s_MyConstV)
+    {
+        VSOutput output;
+
+        output.v_Position = mul(u_Object.Model, float4(input.a_Position, 1.0)).xyz;
+        output.v_Color = float4(1.0, 0.0, 1.0, 1.0);
+        output.v_Glossiness = u_Object.Glossiness;
+        output.v_TextureCoord = input.a_TextureCoord;
+        output.v_Normal = normalize(mul(u_Object.InverseModel, float4(input.a_Normal, 0.0)).xyz);
+        output.position = mul(u_Camera.ViewProjection, mul(u_Object.Model, float4(input.a_Position, 1.0)));
+
+        return output;
+    }
+
     VSOutput output;
 
     output.v_Position = mul(u_Object.Model, float4(input.a_Position, 1.0)).xyz;
@@ -80,11 +100,11 @@ VSOutput mainVS(VSInput input)
 
 struct PSInput
 {
-    [[vk::location(0)]] float4   v_Color;
-    [[vk::location(1)]] float3   v_Position;
-    [[vk::location(2)]] float3   v_Normal;
-    [[vk::location(3)]] float2   v_TextureCoord;
-    [[vk::location(4)]] float    v_Glossiness;
+    [[vk::location(0)]] float4 v_Color;
+    [[vk::location(1)]] float3 v_Position;
+    [[vk::location(2)]] float3 v_Normal;
+    [[vk::location(3)]] float2 v_TextureCoord;
+    [[vk::location(4)]] float v_Glossiness;
 };
 
 static const float2 poissonDisk[16] =
@@ -103,9 +123,9 @@ float CalculateAdaptiveNormalOffset(float3 normal, float3 lightDir, float baseOf
 {
     float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
 
-    float angleAttenuation    = smoothstep(0.0, 0.3, NdotL);
+    float angleAttenuation = smoothstep(0.0, 0.3, NdotL);
     float distanceAttenuation = clamp(1.0 - lightDistance * 0.01, 0.1, 1.0);
-    float adaptiveOffset      = baseOffset * angleAttenuation * distanceAttenuation;
+    float adaptiveOffset = baseOffset * angleAttenuation * distanceAttenuation;
 
     return adaptiveOffset;
 }
@@ -138,10 +158,10 @@ float PoissonPCF(float2 atlasUV, float2 texelSize, float currentDepth, float bia
 float ShadowCalculation(float4 fragPosLightSpace, float4 tileUVRange, int index, PSInput input)
 {
     float4 lightClip = fragPosLightSpace;
-    float3 ndc       = lightClip.xyz / lightClip.w;
+    float3 ndc = lightClip.xyz / lightClip.w;
 
-    float u     = ndc.x * 0.5 + 0.5;
-    float v     = 1.0 - (ndc.y * 0.5 + 0.5);
+    float u = ndc.x * 0.5 + 0.5;
+    float v = 1.0 - (ndc.y * 0.5 + 0.5);
     float depth = ndc.z;
 
     float3 projCoords = float3(u, v, depth);
@@ -151,22 +171,22 @@ float ShadowCalculation(float4 fragPosLightSpace, float4 tileUVRange, int index,
         return 0.0;
     }
 
-    float3 normal       = normalize(input.v_Normal);
-    float3 lightPos     = u_Light.Positions[index].xyz;
-    float3 lightDir     = normalize(lightPos - input.v_Position);
-    float  lightDistance = length(lightPos - input.v_Position);
+    float3 normal = normalize(input.v_Normal);
+    float3 lightPos = u_Light.Positions[index].xyz;
+    float3 lightDir = normalize(lightPos - input.v_Position);
+    float lightDistance = length(lightPos - input.v_Position);
 
-    float constantBias      = u_Light.ShadowData[index].y;
-    float slopeBias         = u_Light.ShadowData[index].z;
-    float baseNormalOffset  = u_Light.ShadowData[index].w;
+    float constantBias = u_Light.ShadowData[index].y;
+    float slopeBias = u_Light.ShadowData[index].z;
+    float baseNormalOffset = u_Light.ShadowData[index].w;
 
     float adaptiveNormalOffset = CalculateAdaptiveNormalOffset(normal, lightDir, baseNormalOffset, lightDistance);
 
-    float NdotL       = clamp(dot(normal, lightDir), 0.0, 1.0);
+    float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
     float offsetWeight = smoothstep(0.2, 0.6, NdotL);
 
     float2 tileOffset = tileUVRange.xy;
-    float2 tileScale  = tileUVRange.zw;
+    float2 tileScale = tileUVRange.zw;
 
     uint atlasSizeWidth;
     uint atlasSizeHeight;
@@ -176,26 +196,26 @@ float ShadowCalculation(float4 fragPosLightSpace, float4 tileUVRange, int index,
     float2 atlasSize = float2(atlasSizeWidth, atlasSizeHeight);
 
     float2 texelSize = abs(tileScale) / atlasSize;
-    float  avgTexelSize = (texelSize.x + texelSize.y) * 0.5;
+    float avgTexelSize = (texelSize.x + texelSize.y) * 0.5;
 
     float2 atlasUV;
-    float  finalBias;
+    float finalBias;
 
     if (offsetWeight > 0.3)
     {
         float3 offsetWorldPos  = input.v_Position + normal * adaptiveNormalOffset;
         float4 offsetLightSpace = mul(u_Light.LightSpaceMatrices[index], float4(offsetWorldPos, 1.0));
-        float3 offsetNDC       = offsetLightSpace.xyz / offsetLightSpace.w;
+        float3 offsetNDC = offsetLightSpace.xyz / offsetLightSpace.w;
 
         float offsetU = offsetNDC.x * 0.5 + 0.5;
         float offsetV = 1.0 - (offsetNDC.y * 0.5 + 0.5);
 
-        atlasUV   = tileOffset + float2(offsetU, offsetV) * tileScale;
+        atlasUV = tileOffset + float2(offsetU, offsetV) * tileScale;
         finalBias = CalculateHybridBias(normal, lightDir, avgTexelSize, constantBias * 0.1, slopeBias * 0.1);
     }
     else
     {
-        atlasUV   = tileOffset + projCoords.xy * tileScale;
+        atlasUV = tileOffset + projCoords.xy * tileScale;
         finalBias = CalculateHybridBias(normal, lightDir, avgTexelSize, constantBias, slopeBias);
     }
 
@@ -225,8 +245,8 @@ float ShadowCalculation(float4 fragPosLightSpace, float4 tileUVRange, int index,
     atlasUV = clamp(atlasUV, tileMin, tileMax);
 
     float currentDepth = projCoords.z;
-    float pcfRadius    = clamp(1.0 + lightDistance * 0.005, 0.8, 2.0);
-    float shadow       = PoissonPCF(atlasUV, texelSize, currentDepth, finalBias, pcfRadius);
+    float pcfRadius = clamp(1.0 + lightDistance * 0.005, 0.8, 2.0);
+    float shadow = PoissonPCF(atlasUV, texelSize, currentDepth, finalBias, pcfRadius);
 
     return shadow;
 }
@@ -234,18 +254,23 @@ float ShadowCalculation(float4 fragPosLightSpace, float4 tileUVRange, int index,
 [shader("fragment")]
 float4 mainPS(PSInput input) : SV_Target0
 {
-    float3 textureColor = u_AlbedoMap.Sample(input.v_TextureCoord).rgb;
-    float3 normal       = normalize(input.v_Normal);
-    float3 camDir       = normalize(u_Light.ViewPosition.xyz - input.v_Position);
+    if (s_MyConst)
+    {
+        return float4(input.v_Color.rgb, 1.0);
+    }
 
-    float3 ambient     = 0.1 * textureColor;
-    float3 diffuseAcc  = float3(0.0, 0.0, 0.0);
+    float3 textureColor = u_AlbedoMap.Sample(input.v_TextureCoord).rgb;
+    float3 normal = normalize(input.v_Normal);
+    float3 camDir = normalize(u_Light.ViewPosition.xyz - input.v_Position);
+
+    float3 ambient = 0.1 * textureColor;
+    float3 diffuseAcc = float3(0.0, 0.0, 0.0);
     float3 specularAcc = float3(0.0, 0.0, 0.0);
 
     for (int i = 0; i < int(u_Light.Count); ++i)
     {
-        float  intensity = u_Light.Metadata[i].x;
-        float3 lightCol  = u_Light.Colors[i].xyz;
+        float intensity = u_Light.Metadata[i].x;
+        float3 lightCol = u_Light.Colors[i].xyz;
 
         float shadow = 0.0;
 
@@ -253,12 +278,12 @@ float4 mainPS(PSInput input) : SV_Target0
         {
             float3 L = normalize(-u_Light.Directions[i].xyz);
 
-            float  diff = max(dot(normal, L), 0.0);
-            float3 D    = diff * lightCol * intensity;
+            float diff = max(dot(normal, L), 0.0);
+            float3 D = diff * lightCol * intensity;
 
-            float3 H    = normalize(L + camDir);
-            float  spec = pow(max(dot(normal, H), 0.0), 32.0) * input.v_Glossiness;
-            float3 S    = lightCol * spec * intensity;
+            float3 H = normalize(L + camDir);
+            float spec = pow(max(dot(normal, H), 0.0), 32.0) * input.v_Glossiness;
+            float3 S = lightCol * spec * intensity;
 
             if (u_Light.ShadowData[i].x == 1.0 && diff > 0.0)
             {
@@ -266,23 +291,23 @@ float4 mainPS(PSInput input) : SV_Target0
                 shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i, input);
             }
 
-            diffuseAcc  += (1.0 - shadow) * D;
+            diffuseAcc += (1.0 - shadow) * D;
             specularAcc += (1.0 - shadow) * S;
         }
         else if (u_Light.Positions[i].w == 1.0)
         {
             float3 toLight = u_Light.Positions[i].xyz - input.v_Position;
-            float  dist    = length(toLight);
-            float3 L       = toLight / dist;
+            float dist = length(toLight);
+            float3 L = toLight / dist;
 
-            float att  = 1.0 / (u_Light.Metadata[i].y + u_Light.Metadata[i].z * dist + u_Light.Metadata[i].w * dist * dist);
+            float att = 1.0 / (u_Light.Metadata[i].y + u_Light.Metadata[i].z * dist + u_Light.Metadata[i].w * dist * dist);
 
-            float  diff = max(dot(normal, L), 0.0);
-            float3 D    = diff * lightCol * intensity * att;
+            float diff = max(dot(normal, L), 0.0);
+            float3 D = diff * lightCol * intensity * att;
 
-            float3 H    = normalize(L + camDir);
-            float  spec = pow(max(dot(normal, H), 0.0), 32.0) * input.v_Glossiness;
-            float3 S    = lightCol * spec * intensity * att;
+            float3 H = normalize(L + camDir);
+            float spec = pow(max(dot(normal, H), 0.0), 32.0) * input.v_Glossiness;
+            float3 S = lightCol * spec * intensity * att;
 
             if (u_Light.ShadowData[i].x == 1.0 && diff > 0.0)
             {
@@ -290,28 +315,28 @@ float4 mainPS(PSInput input) : SV_Target0
                 shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i, input);
             }
 
-            diffuseAcc  += (1.0 - shadow) * D;
+            diffuseAcc += (1.0 - shadow) * D;
             specularAcc += (1.0 - shadow) * S;
         }
         else if (u_Light.Positions[i].w == 2.0)
         {
             float3 toLight = u_Light.Positions[i].xyz - input.v_Position;
-            float  dist    = length(toLight);
-            float3 L       = toLight / dist;
+            float dist = length(toLight);
+            float3 L = toLight / dist;
 
-            float inner    = u_Light.Metadata[i].y;
-            float outer    = u_Light.Metadata[i].z;
-            float theta    = dot(L, normalize(-u_Light.Directions[i].xyz));
+            float inner = u_Light.Metadata[i].y;
+            float outer = u_Light.Metadata[i].z;
+            float theta = dot(L, normalize(-u_Light.Directions[i].xyz));
             float spotFrac = clamp((theta - outer) / (inner - outer), 0.0, 1.0);
 
-            float att  = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+            float att = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
 
-            float  diff = max(dot(normal, L), 0.0);
-            float3 D    = diff * lightCol * intensity * att * spotFrac;
+            float diff = max(dot(normal, L), 0.0);
+            float3 D = diff * lightCol * intensity * att * spotFrac;
 
-            float3 H    = normalize(L + camDir);
-            float  spec = pow(max(dot(normal, H), 0.0), 32.0) * input.v_Glossiness;
-            float3 S    = lightCol * spec * intensity * att * spotFrac;
+            float3 H = normalize(L + camDir);
+            float spec = pow(max(dot(normal, H), 0.0), 32.0) * input.v_Glossiness;
+            float3 S = lightCol * spec * intensity * att * spotFrac;
 
             bool lit = (spotFrac > 0.0) && (diff > 0.0) && (att > 0.0);
 
@@ -321,7 +346,7 @@ float4 mainPS(PSInput input) : SV_Target0
                 shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i, input);
             }
 
-            diffuseAcc  += (1.0 - shadow) * D;
+            diffuseAcc += (1.0 - shadow) * D;
             specularAcc += (1.0 - shadow) * S;
         }
     }

@@ -43,28 +43,21 @@ namespace HBL2
 			VkPipelineLayout pipelineLayout;
 			VkRenderPass renderPass;
 			Span<const ShaderDescriptor::RenderPipeline::VertexBufferBinding> vertexBufferBindings;
+			Span<const BitFlags<ShaderStage>> specializationConstantStages;
 		};
 
 		VkPipeline GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld = false);
 		VkPipeline CreatePipeline(const PipelineConfig& config);
 		VkPipeline CreateComputePipeline(const PipelineConfig& config);
 
-		struct SpecializationDataStage
+		struct SpecializationData
 		{
 			StaticDArray<VkSpecializationMapEntry, 8> entries;
 			StaticDArray<uint8_t, 64> data;
 			VkSpecializationInfo info{};
 		};
 
-		struct SpecializationData
-		{
-			SpecializationDataStage specializationData0; // For VS, CS
-			SpecializationDataStage specializationData1; // For FS
-		};
-
-		SpecializationData m_SpecializationData;
-
-		void BuildSpecializationInfo(ShaderStage stage, SpecializationDataStage& specializationData, Span<const ShaderConstant> constants);
+		void BuildSpecializationInfo(ShaderStage stage, SpecializationData& specializationData, const PipelineConfig& config);
 
 		VkPipelineLayout m_OldPipelineLayout = VK_NULL_HANDLE;
 		VkShaderModule m_OldVertexShaderModule = VK_NULL_HANDLE;
@@ -82,8 +75,10 @@ namespace HBL2
 		};
 
 		static constexpr uint32_t MaxVariants = 8;
+		static constexpr uint32_t MaxSpecializationConstants = 8;
 
 		alignas(64) std::array<VariantEntry, MaxVariants> m_Entries;
+		std::array<BitFlags<ShaderStage>, MaxSpecializationConstants> m_SpecializationConstantStages;
 
 		friend class VulkanShader;
 	};
@@ -104,6 +99,6 @@ namespace HBL2
 		void DestroyOld();
 
 		VulkanShaderHot* Hot = nullptr;
-		VulkanShaderCold* Cold = nullptr;	
+		VulkanShaderCold* Cold = nullptr;
 	};
 }

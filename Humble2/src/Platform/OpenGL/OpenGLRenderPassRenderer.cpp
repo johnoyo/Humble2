@@ -69,7 +69,7 @@ namespace HBL2
 				shader->BindPipeline();
 
 				// Bind shader
-				shader->Bind();
+				shader->Bind(variant);
 
 				prevShader = draw.Shader;
 				prevVariantHash = draw.VariantHandle;

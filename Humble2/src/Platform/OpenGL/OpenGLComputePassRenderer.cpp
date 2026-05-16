@@ -28,7 +28,7 @@ namespace HBL2
 				glBindBufferBase(GL_UNIFORM_BUFFER, bindGroupLayout->BufferBindings[i].slot, buffer->RendererId);
 			}
 
-			glUseProgram(shader->Program);
+			shader->Bind(ShaderDescriptor::RenderPipeline::PackedVariant::FromKey(dispatch.VariantHandle));
 			glDispatchCompute(dispatch.ThreadGroupCount.x, dispatch.ThreadGroupCount.y, dispatch.ThreadGroupCount.z);
 		}
 	}

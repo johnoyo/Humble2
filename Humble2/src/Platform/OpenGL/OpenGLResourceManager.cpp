@@ -220,7 +220,11 @@ namespace HBL2
 	}
 	uint64_t OpenGLResourceManager::GetOrAddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc)
 	{
-		return variantDesc.Key();
+		OpenGLShader* shader = GetShader(handle);
+		if (shader != nullptr)
+		{
+			return shader->GetOrCreateVariant(variantDesc);
+		}
 	}
 	OpenGLShader* OpenGLResourceManager::GetShader(Handle<Shader> handle) const
 	{

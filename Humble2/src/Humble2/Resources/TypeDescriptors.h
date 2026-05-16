@@ -115,7 +115,7 @@ namespace HBL2
 	struct ShaderConstant
 	{
 		ShaderConstantType type;
-		ShaderStage stage;
+		BitFlags<ShaderStage> stage;
 
 		union
 		{
@@ -126,39 +126,12 @@ namespace HBL2
 		} value;
 	};
 
-	inline ShaderConstant ShaderConstantBool(ShaderStage stage, bool v)
+	inline ShaderConstant ShaderConstantBool(BitFlags<ShaderStage> stage, bool v)
 	{
 		ShaderConstant c{};
 		c.type = ShaderConstantType::Bool;
 		c.stage = stage;
 		c.value.b = v;
-		return c;
-	}
-
-	inline ShaderConstant ShaderConstantInt(ShaderStage stage, int32_t v)
-	{
-		ShaderConstant c{};
-		c.type = ShaderConstantType::Int;
-		c.stage = stage;
-		c.value.i = v;
-		return c;
-	}
-
-	inline ShaderConstant ShaderConstantUInt(ShaderStage stage, uint32_t v)
-	{
-		ShaderConstant c{};
-		c.type = ShaderConstantType::UInt;
-		c.stage = stage;
-		c.value.u = v;
-		return c;
-	}
-
-	inline ShaderConstant ShaderConstantFloat(ShaderStage stage, float v)
-	{
-		ShaderConstant c{};
-		c.type = ShaderConstantType::Float;
-		c.stage = stage;
-		c.value.f = v;
 		return c;
 	}
 
@@ -236,7 +209,17 @@ namespace HBL2
 				packed_size stencilEnabled : 1 = 1; // true
 				packed_size depthCompare : 3 = (packed_size)Compare::LESS_OR_EQUAL;
 
-				packed_size _padding : 34 = 0;
+				// Shader constants (Only bools are allowed in the PSO)
+				packed_size shaderConstantBool0 : 1 = 0;
+				packed_size shaderConstantBool1 : 1 = 0;
+				packed_size shaderConstantBool2 : 1 = 0;
+				packed_size shaderConstantBool3 : 1 = 0;
+				packed_size shaderConstantBool4 : 1 = 0;
+				packed_size shaderConstantBool5 : 1 = 0;
+				packed_size shaderConstantBool6 : 1 = 0;
+				packed_size shaderConstantBool7 : 1 = 0;
+
+				packed_size _padding : 26 = 0;
 
 				constexpr uint64_t Key() const noexcept { return std::bit_cast<uint64_t>(*this); }
 
@@ -272,7 +255,7 @@ namespace HBL2
 			Span<const VertexBufferBinding> vertexBufferBindings;
 
 			Span<const PackedVariant> variants;
-			Span<const ShaderConstant> specializationConstants;
+			Span<const Span<const ShaderConstant>> specializationConstantsPerVariant;
 		};
 		RenderPipeline renderPipeline;
 		Handle<RenderPass> renderPass;

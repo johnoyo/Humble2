@@ -348,6 +348,17 @@ namespace HBL2
 				{
 					ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 
+					// Retrieve raster state.
+					const auto& rasterStateProp = variantNode["RasterState"];
+
+					if (rasterStateProp)
+					{
+						variant.topology = (packed_size)(Topology)rasterStateProp["topology"].as<int>();
+						variant.polygonMode = (packed_size)(PolygonMode)rasterStateProp["PolygonMode"].as<int>();
+						variant.cullMode = (packed_size)(CullMode)rasterStateProp["CullMode"].as<int>();
+						variant.frontFace = (packed_size)(FrontFace)rasterStateProp["FrontFace"].as<int>();
+					}
+
 					// Retrieve blend state.
 					const auto& blendStateProp = variantNode["BlendState"];
 
@@ -355,6 +366,14 @@ namespace HBL2
 					{
 						variant.colorOutput = blendStateProp["ColorOutputEnabled"].as<bool>();
 						variant.blendEnabled = blendStateProp["Enabled"].as<bool>();
+
+						// TODO: Remove if statements in the future.
+						if (blendStateProp["ColorOp"].IsDefined())			variant.colorOp = (packed_size)(BlendOperation)blendStateProp["ColorOp"].as<int>();
+						if (blendStateProp["AlphaOp"].IsDefined())			variant.alphaOp = (packed_size)(BlendOperation)blendStateProp["AlphaOp"].as<int>();
+						if (blendStateProp["SrcColorFactor"].IsDefined())	variant.srcColorFactor = (packed_size)(BlendFactor)blendStateProp["SrcColorFactor"].as<int>();
+						if (blendStateProp["DstColorFactor"].IsDefined())	variant.dstColorFactor = (packed_size)(BlendFactor)blendStateProp["DstColorFactor"].as<int>();
+						if (blendStateProp["SrcAlphaFactor"].IsDefined())	variant.srcAlphaFactor = (packed_size)(BlendFactor)blendStateProp["SrcAlphaFactor"].as<int>();
+						if (blendStateProp["DstAlphaFactor"].IsDefined())	variant.dstAlphaFactor = (packed_size)(BlendFactor)blendStateProp["DstAlphaFactor"].as<int>();
 					}
 
 					// Retrieve depth state.
@@ -366,6 +385,21 @@ namespace HBL2
 						variant.depthWrite = depthStateProp["WriteEnabled"].as<bool>();
 						variant.stencilEnabled = depthStateProp["StencilEnabled"].as<bool>();
 						variant.depthCompare = (packed_size)(Compare)depthStateProp["DepthTest"].as<int>();
+					}
+
+					// Retrieve shader constants
+					const auto& shaderConstantsStateProp = variantNode["ShaderConstantsState"];
+
+					if (shaderConstantsStateProp)
+					{
+						variant.shaderConstantBool0 = shaderConstantsStateProp["ShaderConstantBool0"].as<bool>();
+						variant.shaderConstantBool1 = shaderConstantsStateProp["ShaderConstantBool1"].as<bool>();
+						variant.shaderConstantBool2 = shaderConstantsStateProp["ShaderConstantBool2"].as<bool>();
+						variant.shaderConstantBool3 = shaderConstantsStateProp["ShaderConstantBool3"].as<bool>();
+						variant.shaderConstantBool4 = shaderConstantsStateProp["ShaderConstantBool4"].as<bool>();
+						variant.shaderConstantBool5 = shaderConstantsStateProp["ShaderConstantBool5"].as<bool>();
+						variant.shaderConstantBool6 = shaderConstantsStateProp["ShaderConstantBool6"].as<bool>();
+						variant.shaderConstantBool7 = shaderConstantsStateProp["ShaderConstantBool7"].as<bool>();
 					}
 
 					shaderVariants.push_back(variant);
@@ -396,6 +430,7 @@ namespace HBL2
 			.renderPipeline {
 				.vertexBufferBindings = outReflectionData.vertexBufferBindings,
 				.variants = { shaderVariants.data(), shaderVariants.size() },
+				.specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant(shaderVariants),
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
 		});
@@ -481,6 +516,18 @@ namespace HBL2
 				variantDesc.depthWrite = materialProperties["DepthState"]["WriteEnabled"].as<bool>();
 				variantDesc.stencilEnabled = materialProperties["DepthState"]["StencilEnabled"].as<bool>();
 				variantDesc.depthCompare = (packed_size)(Compare)materialProperties["DepthState"]["DepthTest"].as<int>();
+			}
+
+			if (materialProperties["ShaderConstantsState"].IsDefined())
+			{
+				variantDesc.shaderConstantBool0 = materialProperties["ShaderConstantsState"]["ShaderConstantBool0"].as<bool>();
+				variantDesc.shaderConstantBool1 = materialProperties["ShaderConstantsState"]["ShaderConstantBool1"].as<bool>();
+				variantDesc.shaderConstantBool2 = materialProperties["ShaderConstantsState"]["ShaderConstantBool2"].as<bool>();
+				variantDesc.shaderConstantBool3 = materialProperties["ShaderConstantsState"]["ShaderConstantBool3"].as<bool>();
+				variantDesc.shaderConstantBool4 = materialProperties["ShaderConstantsState"]["ShaderConstantBool4"].as<bool>();
+				variantDesc.shaderConstantBool5 = materialProperties["ShaderConstantsState"]["ShaderConstantBool5"].as<bool>();
+				variantDesc.shaderConstantBool6 = materialProperties["ShaderConstantsState"]["ShaderConstantBool6"].as<bool>();
+				variantDesc.shaderConstantBool7 = materialProperties["ShaderConstantsState"]["ShaderConstantBool7"].as<bool>();
 			}
 
 			UUID albedoMapUUID = materialProperties["AlbedoMap"].as<UUID>();

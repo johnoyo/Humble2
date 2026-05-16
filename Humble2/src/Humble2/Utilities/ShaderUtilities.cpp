@@ -38,6 +38,15 @@ namespace HBL2
         baseVariant["DepthState"]["StencilEnabled"] = (bool)variant.stencilEnabled;
         baseVariant["DepthState"]["DepthTest"] = (int)variant.depthCompare;
 
+        baseVariant["ShaderConstantsState"]["ShaderConstantBool0"] = (bool)variant.shaderConstantBool0;
+        baseVariant["ShaderConstantsState"]["ShaderConstantBool1"] = (bool)variant.shaderConstantBool1;
+        baseVariant["ShaderConstantsState"]["ShaderConstantBool2"] = (bool)variant.shaderConstantBool2;
+        baseVariant["ShaderConstantsState"]["ShaderConstantBool3"] = (bool)variant.shaderConstantBool3;
+        baseVariant["ShaderConstantsState"]["ShaderConstantBool4"] = (bool)variant.shaderConstantBool4;
+        baseVariant["ShaderConstantsState"]["ShaderConstantBool5"] = (bool)variant.shaderConstantBool5;
+        baseVariant["ShaderConstantsState"]["ShaderConstantBool6"] = (bool)variant.shaderConstantBool6;
+        baseVariant["ShaderConstantsState"]["ShaderConstantBool7"] = (bool)variant.shaderConstantBool7;
+
         return baseVariant;
     }
 
@@ -784,7 +793,6 @@ namespace HBL2
 
         std::ofstream fout(path.string() + ".hblshader", 0);
 
-        Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(handle);
         ShaderDescriptor::RenderPipeline::PackedVariant variantHash = {};
 
         YAML::Emitter out;
@@ -800,16 +808,28 @@ namespace HBL2
 
         out << YAML::Key << "BlendState";
         out << YAML::BeginMap;
-        out << YAML::Key << "Enabled" << YAML::Value << true;
+        out << YAML::Key << "Enabled" << YAML::Value << false;
         out << YAML::Key << "ColorOutputEnabled" << YAML::Value << true;
         out << YAML::EndMap;
 
         out << YAML::Key << "DepthState";
         out << YAML::BeginMap;
         out << YAML::Key << "Enabled" << YAML::Value << true;
-        out << YAML::Key << "WriteEnabled" << YAML::Value << true;
+        out << YAML::Key << "WriteEnabled" << YAML::Value << false;
         out << YAML::Key << "StencilEnabled" << YAML::Value << true;
-        out << YAML::Key << "DepthTest" << YAML::Value << (int)Compare::LESS;
+        out << YAML::Key << "DepthTest" << YAML::Value << (int)Compare::LESS_OR_EQUAL;
+        out << YAML::EndMap;
+
+        out << YAML::Key << "ShaderConstantsState";
+        out << YAML::BeginMap;
+        out << YAML::Key << "ShaderConstantBool0" << YAML::Value << false;
+        out << YAML::Key << "ShaderConstantBool1" << YAML::Value << false;
+        out << YAML::Key << "ShaderConstantBool2" << YAML::Value << false;
+        out << YAML::Key << "ShaderConstantBool3" << YAML::Value << false;
+        out << YAML::Key << "ShaderConstantBool4" << YAML::Value << false;
+        out << YAML::Key << "ShaderConstantBool5" << YAML::Value << false;
+        out << YAML::Key << "ShaderConstantBool6" << YAML::Value << false;
+        out << YAML::Key << "ShaderConstantBool7" << YAML::Value << false;
         out << YAML::EndMap;
 
         out << YAML::EndMap;
@@ -943,6 +963,18 @@ namespace HBL2
         out << YAML::Key << "WriteEnabled" << YAML::Value << (bool)desc.VariantHash.depthWrite;
         out << YAML::Key << "StencilEnabled" << YAML::Value << (bool)desc.VariantHash.stencilEnabled;
         out << YAML::Key << "DepthTest" << YAML::Value << (int)desc.VariantHash.depthCompare;
+        out << YAML::EndMap;
+
+        out << YAML::Key << "ShaderConstantsState";
+        out << YAML::BeginMap;
+        out << YAML::Key << "ShaderConstantBool0" << YAML::Value << (bool)desc.VariantHash.shaderConstantBool0;
+        out << YAML::Key << "ShaderConstantBool1" << YAML::Value << (bool)desc.VariantHash.shaderConstantBool1;
+        out << YAML::Key << "ShaderConstantBool2" << YAML::Value << (bool)desc.VariantHash.shaderConstantBool2;
+        out << YAML::Key << "ShaderConstantBool3" << YAML::Value << (bool)desc.VariantHash.shaderConstantBool3;
+        out << YAML::Key << "ShaderConstantBool4" << YAML::Value << (bool)desc.VariantHash.shaderConstantBool4;
+        out << YAML::Key << "ShaderConstantBool5" << YAML::Value << (bool)desc.VariantHash.shaderConstantBool5;
+        out << YAML::Key << "ShaderConstantBool6" << YAML::Value << (bool)desc.VariantHash.shaderConstantBool6;
+        out << YAML::Key << "ShaderConstantBool7" << YAML::Value << (bool)desc.VariantHash.shaderConstantBool7;
         out << YAML::EndMap;
 
         if (desc.AlbedoMapAssetHandle.IsValid())
