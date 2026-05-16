@@ -301,7 +301,7 @@ namespace HBL2
 				ImGui::Begin("Project Settings##Window", &m_ShowProjectSettingsWindow);
 
 				auto& spec = HBL2::Project::GetActive()->GetSpecification();
-				const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
+				const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
 
 				// Renderer.
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
@@ -358,7 +358,7 @@ namespace HBL2
 
 				if (ph2dOpened)
 				{
-					if (ImGui::DragFloat("Gravity##2d", &spec.Settings.GravityForce2D, 0.01f))
+					if (ImGui::DragFloat2("Gravity##2d", glm::value_ptr(spec.Settings.PhysicsEngine2DSpec.GravityForce), 0.01f))
 					{
 					}
 
@@ -378,10 +378,6 @@ namespace HBL2
 						spec.Settings.Physics2DImpl = (Physics2DEngineImpl)currentItem;
 					}
 
-					ImGui::SameLine();
-
-					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
-
 					ImGui::TreePop();
 				}
 
@@ -392,7 +388,19 @@ namespace HBL2
 
 				if (ph3dOpened)
 				{
-					if (ImGui::DragFloat("Gravity##3d", &spec.Settings.GravityForce3D, 0.01f))
+					if (ImGui::DragFloat3("Gravity##3d", glm::value_ptr(spec.Settings.PhysicsEngine3DSpec.GravityForce), 0.01f))
+					{
+					}
+
+					if (ImGui::InputInt("Max Bodies", (int*)&spec.Settings.PhysicsEngine3DSpec.MaxBodies))
+					{
+					}
+
+					if (ImGui::InputInt("Max Body Pairs", (int*)&spec.Settings.PhysicsEngine3DSpec.MaxBodyPairs))
+					{
+					}
+
+					if (ImGui::InputInt("Max Contact Constraints", (int*)&spec.Settings.PhysicsEngine3DSpec.MaxContactConstraints))
 					{
 					}
 
@@ -431,10 +439,6 @@ namespace HBL2
 						spec.Settings.Physics3DImpl = (Physics3DEngineImpl)currentItem;
 					}
 
-					ImGui::SameLine();
-
-					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
-
 					ImGui::TreePop();
 				}
 
@@ -451,6 +455,59 @@ namespace HBL2
 					ImGui::SameLine();
 
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					m_Context->Filter<Component::EditorCamera>()
+						.ForEach([&](Entity entity, Component::EditorCamera& editorCamera)
+						{
+							ImGui::Text("Camera Transform:");
+
+							auto& transform = m_Context->GetComponent<HBL2::Component::Transform>(entity);
+
+							ImGui::DragFloat3("Translation##ed", glm::value_ptr(transform.Translation), 0.25f);
+							ImGui::DragFloat3("Rotation##ed", glm::value_ptr(transform.Rotation), 0.25f);
+
+							ImGui::Separator();
+
+							ImGui::Text("Camera View:");
+
+							auto& camera = m_Context->GetComponent<HBL2::Component::Camera>(entity);
+
+							ImGui::SliderFloat("Near##ed", &camera.Near, 0, 10);
+							ImGui::SliderFloat("Far##ed", &camera.Far, 100, 2500);
+							ImGui::SliderFloat("FOV##ed", &camera.Fov, 0, 120);
+							ImGui::SliderFloat("Aspect Ratio##ed", &camera.AspectRatio, 0, 3);
+							ImGui::SliderFloat("Exposure##ed", &camera.Exposure, 0, 50);
+							ImGui::SliderFloat("Gamma##ed", &camera.Gamma, 0, 4);
+							ImGui::SliderFloat("Zoom Level##ed", &camera.ZoomLevel, 0, 500);
+
+							ImGui::Separator();
+
+							ImGui::Text("Camera Controls:");
+
+							ImGui::SliderFloat("MovementSpeed##ed", &editorCamera.MovementSpeed, 0, 150);
+							ImGui::SliderFloat("MouseSensitivity##ed", &editorCamera.MouseSensitivity, 0, 100);
+							ImGui::SliderFloat("PanSpeed##ed", &editorCamera.PanSpeed, 0, 200);
+							ImGui::SliderFloat("ZoomSpeed##ed", &editorCamera.ZoomSpeed, 0, 15);
+							ImGui::SliderFloat("ScrollZoomSpeed##ed", &editorCamera.ScrollZoomSpeed, 0, 200);
+
+							// Sync component/editor state back into spec.
+							spec.Settings.EditorCameraTranslation = transform.Translation;
+							spec.Settings.EditorCameraRotation = transform.Rotation;
+
+							spec.Settings.EditorCameraNear = camera.Near;
+							spec.Settings.EditorCameraFar = camera.Far;
+							spec.Settings.EditorCameraFov = camera.Fov;
+							spec.Settings.EditorCameraAspectRatio = camera.AspectRatio;
+							spec.Settings.EditorCameraExposure = camera.Exposure;
+							spec.Settings.EditorCameraGamma = camera.Gamma;
+							spec.Settings.EditorCameraZoomLevel = camera.ZoomLevel;
+
+							spec.Settings.EditorCameraMovementSpeed = editorCamera.MovementSpeed;
+							spec.Settings.EditorCameraMouseSensitivity = editorCamera.MouseSensitivity;
+							spec.Settings.EditorCameraPanSpeed = editorCamera.PanSpeed;
+							spec.Settings.EditorCameraZoomSpeed = editorCamera.ZoomSpeed;
+							spec.Settings.EditorCameraScrollZoomSpeed = editorCamera.ScrollZoomSpeed;
+						});
 
 					ImGui::TreePop();
 				}
@@ -483,6 +540,14 @@ namespace HBL2
 				if (asOpened)
 				{
 					ImGui::InputInt("Max App Memory (in MB)", (int*)&spec.Settings.MaxAppMemory);
+					ImGui::SameLine();
+					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					ImGui::InputInt("Max Main Thread Frame Arena Memory (in MB)", (int*)&spec.Settings.MaxMainThreadFrameArenaMemory);
+					ImGui::SameLine();
+					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
+
+					ImGui::InputInt("Max Render Thread Frame Arena Memory (in MB)", (int*)&spec.Settings.MaxRenderThreadFrameArenaMemory);
 					ImGui::SameLine();
 					ImGui::TextColored({ 1.0f, 1.0f, 0.f, 1.0f }, "*Requires restart to take effect");
 

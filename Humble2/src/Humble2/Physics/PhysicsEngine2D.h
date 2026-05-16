@@ -7,6 +7,11 @@
 
 namespace HBL2
 {
+	struct PhysicsEngine2DSpecification
+	{
+		glm::vec2 GravityForce = { 0.f, -9.81f };
+	};
+
 	class HBL2_API PhysicsEngine2D
 	{
 	public:
@@ -15,7 +20,7 @@ namespace HBL2
 		PhysicsEngine2D() = default;
 		virtual ~PhysicsEngine2D() = default;
 
-		virtual void Initialize(Scene* ctx) = 0;
+		virtual void Initialize(Scene* ctx, const PhysicsEngine2DSpecification& spec) = 0;
 		virtual void Update() = 0;
 		virtual void Shutdown() = 0;
 

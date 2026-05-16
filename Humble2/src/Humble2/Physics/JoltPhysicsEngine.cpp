@@ -120,7 +120,7 @@ namespace HBL2
 		HBL2_CORE_TRACE(buffer);
 	}
 
-	void JoltPhysicsEngine::Initialize(Scene* ctx)
+	void JoltPhysicsEngine::Initialize(Scene* ctx, const PhysicsEngine3DSpecification& spec)
 	{
 		m_Context = ctx;
 
@@ -129,20 +129,17 @@ namespace HBL2
 		JPH::Factory::sInstance = new JPH::Factory();
 		JPH::RegisterTypes();
 
-		m_TempAllocator = new JPH::TempAllocatorImpl(50_MB);
+		m_TempAllocator = new JPH::TempAllocatorImpl(MB(spec.MaxScratchMemory));
 		m_JobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, -1);
 
-		const uint32_t cMaxBodies = 65536;
 		const uint32_t cNumBodyMutexes = 0;
-		const uint32_t cMaxBodyPairs = 65536;
-		const uint32_t cMaxContactConstraints = 10240;
 
 		m_PhysicsSystem = new JPH::PhysicsSystem;
 
-		m_PhysicsSystem->Init(cMaxBodies,
+		m_PhysicsSystem->Init(spec.MaxBodies,
 			cNumBodyMutexes,
-			cMaxBodyPairs,
-			cMaxContactConstraints,
+			spec.MaxBodyPairs,
+			spec.MaxContactConstraints,
 			m_BroadPhaseLayerInterface,
 			m_ObjectVsBroadPhaseLayerFilter,
 			m_ObjectVsObjectLayerFilter);
@@ -151,6 +148,7 @@ namespace HBL2
 
 		// Register collision listener to dispatch events.
 		m_PhysicsSystem->SetContactListener(new HumbleContactListener(this, m_PhysicsSystem));
+		m_PhysicsSystem->SetGravity({ spec.GravityForce.x, spec.GravityForce.y, spec.GravityForce.z });
 
 		// The main way to interact with the bodies in the physics system is through the body interface.
 		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();

@@ -6,6 +6,36 @@ namespace HBL2
 	{
 		void EditorCameraSystem::OnCreate()
 		{
+			// Retrieve project settings.
+			const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
+
+			// Initialize editor camera settings.
+			m_Context->Filter<Component::EditorCamera>()
+				.ForEach([&](Entity entity, Component::EditorCamera& editorCamera)
+				{
+					auto& transform = m_Context->GetComponent<HBL2::Component::Transform>(entity);
+
+					transform.Translation = projectSettings.EditorCameraTranslation;
+					transform.Rotation = projectSettings.EditorCameraRotation;
+
+					auto& camera = m_Context->GetComponent<HBL2::Component::Camera>(entity);
+
+					camera.Near = projectSettings.EditorCameraNear;
+					camera.Far = projectSettings.EditorCameraFar;
+					camera.Fov = projectSettings.EditorCameraFov;
+					camera.AspectRatio = projectSettings.EditorCameraAspectRatio;
+					camera.Exposure = projectSettings.EditorCameraExposure;
+					camera.Gamma = projectSettings.EditorCameraGamma;
+					camera.ZoomLevel = projectSettings.EditorCameraZoomLevel;
+
+					editorCamera.MovementSpeed = projectSettings.EditorCameraMovementSpeed;
+					editorCamera.MouseSensitivity = projectSettings.EditorCameraMouseSensitivity;
+					editorCamera.PanSpeed = projectSettings.EditorCameraPanSpeed;
+					editorCamera.ZoomSpeed = projectSettings.EditorCameraZoomSpeed;
+					editorCamera.ScrollZoomSpeed = projectSettings.EditorCameraScrollZoomSpeed;
+				});
+
+			// Calculate editor camera vectors, yaw and pitch.
 			m_Context->Filter<Component::EditorCamera, HBL2::Component::Transform>()
 				.ForEach([&](Component::EditorCamera& editorCamera, HBL2::Component::Transform& transform)
 				{

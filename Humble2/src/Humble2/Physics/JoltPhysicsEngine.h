@@ -123,7 +123,7 @@ namespace HBL2
 	public:
 		virtual ~JoltPhysicsEngine() = default;
 
-		virtual void Initialize(Scene* ctx) override;
+		virtual void Initialize(Scene* ctx, const PhysicsEngine3DSpecification& spec) override;
 		virtual void Update() override;
 		virtual void Shutdown() override;
 

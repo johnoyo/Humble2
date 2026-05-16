@@ -66,7 +66,11 @@ namespace HBL2
 	using UUID = uint64_t;
 
 	constexpr size_t operator""_B (unsigned long long value) { return value; }
+	constexpr size_t B (unsigned long long value) { return value; }
 	constexpr size_t operator""_KB(unsigned long long value) { return value * 1024; }
+	constexpr size_t KB(unsigned long long value) { return value * 1024; }
 	constexpr size_t operator""_MB(unsigned long long value) { return value * 1024 * 1024; }
+	constexpr size_t MB(unsigned long long value) { return value * 1024 * 1024; }
 	constexpr size_t operator""_GB(unsigned long long value) { return value * 1024 * 1024 * 1024; }
+	constexpr size_t GB(unsigned long long value) { return value * 1024 * 1024 * 1024; }
 }

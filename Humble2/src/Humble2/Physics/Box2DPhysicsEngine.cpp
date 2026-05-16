@@ -29,12 +29,12 @@ namespace HBL2
 		return b2BodyType::b2_staticBody;
 	}
 
-	void Box2DPhysicsEngine::Initialize(Scene* ctx)
+	void Box2DPhysicsEngine::Initialize(Scene* ctx, const PhysicsEngine2DSpecification& spec)
 	{
 		m_Context = ctx;
 
 		b2WorldDef worldDef = b2DefaultWorldDef();
-		worldDef.gravity = { 0, m_GravityForce };
+		worldDef.gravity = { spec.GravityForce.x, spec.GravityForce.y };
 		worldDef.restitutionThreshold = 0.5f;
 
 		m_PhysicsWorld = b2CreateWorld(&worldDef);

@@ -1,18 +1,22 @@
 Project:
   Name: EmptyProject
-  StartingScene: Scenes\SponzaScene.humble
+  StartingScene: Scenes\Physics3D.humble
   AssetDirectory: Assets
   ScriptDirectory: ""
   Renderer:
     Type: 0
-    Editor API: 2
+    Editor API: 1
     Runtime API: 2
   Physics2D:
-    Gravity Force: -9.81000042
+    Gravity Force: [0, -9.81000042]
     Enable Debug Draw: false
     Implementation: 1
   Physics3D:
-    Gravity Force: -9.81000042
+    Max Scratch Memory (MB): 50
+    Gravity Force: [0, -9.81000042, 0]
+    Max Bodies: 65536
+    Max Body Pairs: 65536
+    Max Contact Constraints: 10240
     Enable Debug Draw: false
     Show Colliders: true
     Show Bounding Boxes: true
@@ -20,14 +24,31 @@ Project:
   Sound:
     Implementation: 1
   Editor:
-    Multiple Viewports: false
+    Multiple Viewports: true
+    Camera Near: 0.100000001
+    Camera Far: 1000
+    Camera Fov: 30
+    Camera Aspect Ratio: 1.778
+    Camera Exposure: 1
+    Camera Gamma: 2.20000005
+    Camera Zoom Level: 300
+    Camera Translation: [0, 1, 0]
+    Camera Rotation: [0, 0, 0]
+    Camera Movement Speed: 24
+    Camera Mouse Sensitivity: 0.100000001
+    Camera Pan Speed: 0.25
+    Camera Zoom Speed: 1
+    Camera Scroll Zoom Speed: 10
   Advanced:
-    Max App Memory: 500
-    Max UniformBuffer Memory: 32
+    Max App Memory (MB): 750
+    Max Main Thread Frame Arena Memory (MB): 32
+    Max Render Thread Frame Arena Memory (MB): 8
+    Max Worker Memory (MB): 2
+    Max UniformBuffer Memory (MB): 32
     Resource Manager:
       Textures Pool Size: 128
       Shaders Pool Size: 64
-      Buffers Pool Size: 512
+      Buffers Pool Size: 1024
       BindGroups Pool Size: 64
       BindGroupLayouts Pool Size: 32
       FrameBuffers Pool Size: 32

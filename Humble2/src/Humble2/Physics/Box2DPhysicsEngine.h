@@ -9,7 +9,7 @@ namespace HBL2
 	class Box2DPhysicsEngine final : public PhysicsEngine2D
 	{
 	public:
-		virtual void Initialize(Scene* ctx) override;
+		virtual void Initialize(Scene* ctx, const PhysicsEngine2DSpecification& spec) override;
 		virtual void Update() override;
 		virtual void Shutdown() override;
 

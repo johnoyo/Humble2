@@ -1,7 +1,8 @@
 #include "Renderer.h"
 
 #include "Device.h"
-#include "Core/Window.h"
+#include "Core\Window.h"
+#include "Project\Project.h"
 
 #include <future>
 
@@ -11,6 +12,11 @@ namespace HBL2
 
 	void Renderer::Initialize()
 	{
+		// Retrieve project settings.
+		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
+
+		m_UniformRingBufferSize = MB(projectSettings.MaxUniformBufferMemory) * FrameCount;
+
 		uint32_t offset = 0;
 		uint32_t singleUBSize = m_UniformRingBufferSize / FrameCount;
 

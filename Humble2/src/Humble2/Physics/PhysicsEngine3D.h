@@ -7,6 +7,15 @@
 
 namespace HBL2
 {
+	struct PhysicsEngine3DSpecification
+	{
+		uint32_t MaxScratchMemory = 50; // In MB
+		uint32_t MaxBodies = 65536;
+		uint32_t MaxBodyPairs = 65536;
+		uint32_t MaxContactConstraints = 10240;
+		glm::vec3 GravityForce = { 0.f, -9.81f, 0.f };
+	};
+
 	class HBL2_API PhysicsEngine3D
 	{
 	public:
@@ -15,7 +24,7 @@ namespace HBL2
 		PhysicsEngine3D() = default;
 		virtual ~PhysicsEngine3D() = default;
 
-		virtual void Initialize(Scene* ctx) = 0;
+		virtual void Initialize(Scene* ctx, const PhysicsEngine3DSpecification& spec) = 0;
 		virtual void Update() = 0;
 		virtual void Shutdown() = 0;
 

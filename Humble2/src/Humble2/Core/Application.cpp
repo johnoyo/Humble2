@@ -43,16 +43,16 @@ namespace HBL2
 
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
-		Allocator::Arena.Initialize(750_MB, 32_MB);
+		Allocator::Arena.Initialize(MB(projectSettings.MaxAppMemory), 32_MB);
 
 		m_FrameArenaReservationDummy = Allocator::Arena.Reserve("FrameArenaReservationDummy", 8_KB);
 		Allocator::DummyArena.Initialize(&Allocator::Arena, 8_KB, m_FrameArenaReservationDummy);
 
-		m_FrameArenaReservationMT = Allocator::Arena.Reserve("FrameArenaReservationMT", 32_MB);
-		Allocator::FrameArenaMT.Initialize(&Allocator::Arena, 32_MB, m_FrameArenaReservationMT);
+		m_FrameArenaReservationMT = Allocator::Arena.Reserve("FrameArenaReservationMT", MB(projectSettings.MaxMainThreadFrameArenaMemory));
+		Allocator::FrameArenaMT.Initialize(&Allocator::Arena, MB(projectSettings.MaxMainThreadFrameArenaMemory), m_FrameArenaReservationMT);
 
-		m_FrameArenaReservationRT = Allocator::Arena.Reserve("FrameArenaReservationRT", 8_MB);
-		Allocator::FrameArenaRT.Initialize(&Allocator::Arena, 8_MB, m_FrameArenaReservationRT);
+		m_FrameArenaReservationRT = Allocator::Arena.Reserve("FrameArenaReservationRT", MB(projectSettings.MaxRenderThreadFrameArenaMemory));
+		Allocator::FrameArenaRT.Initialize(&Allocator::Arena, MB(projectSettings.MaxRenderThreadFrameArenaMemory), m_FrameArenaReservationRT);
 
 		GraphicsAPI gfxAPI = GraphicsAPI::NONE;
 
@@ -74,7 +74,7 @@ namespace HBL2
 		Console::Instance->Initialize();
 
 		EventDispatcher::Initialize();
-		JobSystem::Initialize();
+		JobSystem::Initialize({ projectSettings.MaxWorkerMemory });
 		MeshUtilities::Initialize();
 		PrefabUtilities::Initialize();
 		ShaderUtilities::Initialize();

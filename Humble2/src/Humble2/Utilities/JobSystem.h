@@ -20,6 +20,11 @@
 
 namespace HBL2
 {
+    struct JobSystemSpecification
+    {
+        uint32_t MaxWorkerMemory = 2; // In MB
+    };
+
     struct HBL2_API JobDispatchArgs
     {
         uint32_t jobIndex;
@@ -42,7 +47,7 @@ namespace HBL2
             return *s_Instance;
         }
 
-        static void Initialize();
+        static void Initialize(const JobSystemSpecification&& spec);
         static void Shutdown();
         static bool IsShuttingDown();
 
@@ -63,7 +68,7 @@ namespace HBL2
     private:
         JobSystem() {}
 
-        void InternalInitialize();
+        void InternalInitialize(const JobSystemSpecification&& spec);
         void InternalShutdown();
         void WorkerThreadFunc(uint32_t threadIndex);
 

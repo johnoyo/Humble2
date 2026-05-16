@@ -7,12 +7,12 @@ namespace HBL2
     static thread_local uint32_t s_WorkerIndex = UINT32_MAX;
     static thread_local std::thread::id s_WorkerId;
 
-	void JobSystem::Initialize()
+	void JobSystem::Initialize(const JobSystemSpecification&& spec)
 	{
         HBL2_CORE_ASSERT(s_Instance == nullptr, "JobSystem::s_Instance is not null! JobSystem::Initialize has been called twice.");
         s_Instance = new JobSystem;
 
-        Get().InternalInitialize();
+        Get().InternalInitialize(std::forward<const JobSystemSpecification>(spec));
 	}
 
     void JobSystem::Shutdown()
@@ -30,11 +30,11 @@ namespace HBL2
         return Get().m_Shutdown.load() == true;
     }
 
-    void JobSystem::InternalInitialize()
+    void JobSystem::InternalInitialize(const JobSystemSpecification&& spec)
     {
         m_NumThreads = std::max(1u, std::thread::hardware_concurrency() - 2);
 
-        constexpr size_t ThreadArenaSize = 2_MB;
+        const size_t ThreadArenaSize = MB(spec.MaxWorkerMemory);
 
         // NOTE: The '+2' is to accomondate the worker arena of the render and game thread.
         //       We need one for the, also for seamless behaviour and simple logic.

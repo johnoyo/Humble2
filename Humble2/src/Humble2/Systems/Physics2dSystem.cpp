@@ -22,7 +22,7 @@ namespace HBL2
 		// Apply physics settings.
 		PhysicsEngine2D::Instance->SetDebugDrawEnabled(projectSettings.EnableDebugDraw2D);
 
-		PhysicsEngine2D::Instance->Initialize(m_Context);
+		PhysicsEngine2D::Instance->Initialize(m_Context, projectSettings.PhysicsEngine2DSpec);
 		m_Initialized = true;
 	}
 
@@ -44,6 +44,8 @@ namespace HBL2
 		}
 
 		PhysicsEngine2D::Instance->Shutdown();
+		delete PhysicsEngine2D::Instance;
+		PhysicsEngine2D::Instance = nullptr;
 
 		m_Initialized = false;
 	}

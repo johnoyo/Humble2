@@ -23,7 +23,7 @@ namespace HBL2
 		PhysicsEngine3D::Instance->ShowColliders(projectSettings.ShowColliders3D);
 		PhysicsEngine3D::Instance->ShowBoundingBoxes(projectSettings.ShowBoundingBoxes3D);
 
-		PhysicsEngine3D::Instance->Initialize(m_Context);
+		PhysicsEngine3D::Instance->Initialize(m_Context, projectSettings.PhysicsEngine3DSpec);
 		m_Initialized = true;
 	}
 
@@ -48,6 +48,8 @@ namespace HBL2
 		}
 
 		PhysicsEngine3D::Instance->Shutdown();
+		delete PhysicsEngine3D::Instance;
+		PhysicsEngine3D::Instance = nullptr;
 
 		m_Initialized = false;
 	}
