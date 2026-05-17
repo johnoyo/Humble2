@@ -52,15 +52,12 @@ namespace HBL2
 			glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
 			glDeleteSync(fence);
 
-			glfwMakeContextCurrent(nullptr);
-
 			return;
 		}
 
 		if (ctxType == ContextType::CLEAR)
 		{
 			glFlush();
-			glfwMakeContextCurrent(nullptr);
 
 			return;
 		}
@@ -78,8 +75,8 @@ namespace HBL2
 				return;
 			}
 			localWorkerIndex = index;
-		}
 
-		glfwMakeContextCurrent(windowContexts[localWorkerIndex]);
+			glfwMakeContextCurrent(windowContexts[localWorkerIndex]);
+		}
 	}
 }

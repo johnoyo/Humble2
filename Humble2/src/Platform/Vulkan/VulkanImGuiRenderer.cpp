@@ -135,7 +135,10 @@ namespace HBL2
 		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI);
 		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_ImGuiRenderPass, m_Renderer->GetMainFrameBuffer());
 
-		ImGui_ImplVulkan_RenderDrawData(data, m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);
+		{
+			std::lock_guard<std::mutex> lock(m_Renderer->GetGraphicsQueueMutex());
+			ImGui_ImplVulkan_RenderDrawData(data, m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);
+		}
 
 		commandBuffer->EndRenderPass(*renderPassRenderer);
 		commandBuffer->EndCommandRecording();

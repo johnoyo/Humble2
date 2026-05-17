@@ -1,52 +1,6 @@
 Scene: EmptyScene
 Entities:
-  - Entity: 14
-    Component::Tag:
-      Tag: Ring(Clone)
-    Component::ID:
-      ID: 6495733203423464448
-    Component::Transform:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-      Static: false
-    Component::Link:
-      Parent: 13940555529839964160
-      Children:
-        []
-    Component::StaticMesh:
-      Enabled: true
-      Material: 7648240370554952727
-      Mesh:
-        UUID: 6460534838780001801
-        MeshIndex: 0
-        SubMeshIndex: 0
-  - Entity: 13
-    Component::Tag:
-      Tag: Saturn(Clone)
-    Component::ID:
-      ID: 13940555529839964160
-    Component::Transform:
-      Translation: [-2, 6.64509201, 3.54206562]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-      Static: false
-    Component::PrefabInstance:
-      Id: 1315481153566395777
-      Version: 1
-      Override: true
-    Component::Link:
-      Parent: 0
-      Children:
-        - 6495733203423464448
-    Component::StaticMesh:
-      Enabled: true
-      Material: 7648240370554952727
-      Mesh:
-        UUID: 17024591911543769407
-        MeshIndex: 0
-        SubMeshIndex: 0
-  - Entity: 12
+  - Entity: 3
     Component::Tag:
       Tag: Camera
     Component::ID:
@@ -66,12 +20,12 @@ Entities:
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 2.19753075
+      Aspect Ratio: 2.21354175
       Exposure: 1
       Gamma: 2.20000005
       Zoom Level: 300
       Type: 0
-  - Entity: 11
+  - Entity: 4
     Component::Tag:
       Tag: Monkeh
     Component::ID:
@@ -100,8 +54,9 @@ Entities:
       Flags: 0
     NewComponent:
       Value: 1
+      Mario: 0
       SceneHandle: 0
-  - Entity: 10
+  - Entity: 5
     Component::Tag:
       Tag: Sprite
     Component::ID:
@@ -118,7 +73,7 @@ Entities:
     Component::Sprite:
       Enabled: true
       Material: 5092745295480585008
-  - Entity: 9
+  - Entity: 6
     Component::Tag:
       Tag: Light
     Component::ID:
@@ -145,7 +100,7 @@ Entities:
       SlopeBias: 1
       NormalOffsetScale: 0.00200000009
       FieldOfView: 117.477997
-  - Entity: 8
+  - Entity: 7
     Component::Tag:
       Tag: Ground
     Component::ID:
@@ -155,6 +110,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [4.17900562, 0.300000012, 4.02072144]
       Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
     Component::StaticMesh:
       Enabled: true
       Material: 6805961995243789723
@@ -176,7 +135,7 @@ Entities:
     Component::BoxCollider:
       Enabled: true
       Size: [1, 1, 1]
-  - Entity: 7
+  - Entity: 8
     Component::Tag:
       Tag: Sky
     Component::ID:
@@ -186,10 +145,14 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
       Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
     Component::SkyLight:
       Enabled: true
       EquirectangularMap: 6203812838040720333
-  - Entity: 6
+  - Entity: 9
     Component::Tag:
       Tag: Cube
     Component::ID:
@@ -199,6 +162,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
       Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
     Component::StaticMesh:
       Enabled: true
       Material: 7648240370554952727
@@ -220,7 +187,7 @@ Entities:
     Component::BoxCollider:
       Enabled: true
       Size: [1, 1, 1]
-  - Entity: 5
+  - Entity: 10
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
@@ -255,7 +222,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 4
+  - Entity: 11
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
@@ -290,7 +257,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 3
+  - Entity: 12
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
@@ -325,7 +292,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 2
+  - Entity: 13
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
@@ -360,7 +327,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 1
+  - Entity: 14
     Component::Tag:
       Tag: Sphere
     Component::ID:
@@ -370,6 +337,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
       Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
     Component::StaticMesh:
       Enabled: true
       Material: 7648240370554952727
@@ -391,7 +362,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 0
+  - Entity: 15
     Component::Tag:
       Tag: Terrain
     Component::ID:
@@ -404,42 +375,31 @@ Entities:
     Component::Link:
       Parent: 0
       Children:
-        - 8675240613028304896
-        - 13137835562790387712
-        - 3006783348510936064
-        - 16253911986195834880
-        - 570724661358613504
-        - 6838479700167508992
-        - 9873467753000574976
-        - 14314450728761202688
-        - 14966630048903839744
-        - 8280200650230909952
-        - 11339069528491845632
-        - 17003781643746719744
-        - 14903428682739277824
-        - 2216637692226959872
-        - 11557516256813682688
-        - 5535794014844431360
-        - 2594758400841209344
-        - 1568819558027868928
-        - 7772898624235381760
-        - 18299731041913401344
-        - 18152999403217080320
-        - 2071601679255804928
-        - 14218768276917164032
-        - 15285010771555735552
-        - 16249338135204108288
-        - 6527053282714031104
-        - 8762443201554740224
-        - 15313124846714664
-        - 12480881165492099072
-        - 13546468775884587008
-        - 12230800311041708032
-        - 12820509422350673920
-        - 17942500544465575936
-        - 3258366973587432448
-        - 11835406511110117376
-        - 9173225474781306880
+        - 4766569755888021504
+        - 16789835254644498432
+        - 13315211609159237632
+        - 17549175002752782336
+        - 15436091309392453632
+        - 6812842882363560960
+        - 3116656939392694272
+        - 16126305100829296640
+        - 18366965452537448448
+        - 14170671959376480256
+        - 2215245219889512192
+        - 16761103941682100224
+        - 13171533278966521856
+        - 5077875255781972992
+        - 430013210046705664
+        - 6582236683997824000
+        - 9215981275121835008
+        - 15923987318840164352
+        - 11412469501440444416
+        - 11208953418756388864
+        - 11725302087750486016
+        - 6136292862937326592
+        - 11805292855638136832
+        - 5987397851385912320
+        - 7867173618474244096
     Component::StaticMesh:
       Enabled: false
       Material: 2424841968117342138

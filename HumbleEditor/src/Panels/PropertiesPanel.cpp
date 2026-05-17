@@ -63,7 +63,7 @@ namespace HBL2
 			}
 		}
 
-		static void UpdateAssetMetadataFile(Handle<Asset> handle, SceneDescriptor& desc)
+		static void UpdateSceneAssetMetadataFile(Handle<Asset> handle, SceneDescriptor& desc)
 		{
 			if (!AssetManager::Instance->IsAssetValid(handle))
 			{
@@ -1047,7 +1047,7 @@ namespace HBL2
 
 							if (dirty)
 							{
-								UpdateAssetMetadataFile(m_SelectedAsset, desc);
+								UpdateSceneAssetMetadataFile(m_SelectedAsset, desc);
 							}
 							break;
 						}

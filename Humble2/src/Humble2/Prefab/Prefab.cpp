@@ -231,8 +231,7 @@ namespace HBL2
 
 		if (prefab == nullptr)
 		{
-			HBL2_CORE_ERROR("Error while trying to unpack prefab, cannot retrieve source prefab asset!");
-			return;
+			HBL2_CORE_ERROR("Error while trying to destroy prefab, cannot retrieve source prefab asset!");
 		}
 
 		activeScene->DestroyEntity(instantiatedPrefabEntity);

@@ -117,7 +117,22 @@ namespace HBL2
 		glBufferSubData(Usage, offset, size, Data);
 	}
 
-	void OpenGLBuffer::Bind(Handle<Material> material, uint32_t bufferIndex, intptr_t offset, uint32_t size)
+	void OpenGLBuffer::Bind()
+	{
+		Bind({}, {}, 0, 0, 0);
+	}
+
+	void OpenGLBuffer::Bind(Handle<Shader> shader, uint32_t bufferIndex)
+	{
+		Bind(shader, {}, bufferIndex, 0, 0);
+	}
+
+	void OpenGLBuffer::Bind(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset, uint32_t size)
+	{
+		Bind({}, bindGroup, bufferIndex, offset, size);
+	}
+
+	void OpenGLBuffer::Bind(Handle<Shader> shader, Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset, uint32_t size)
 	{
 		switch (Usage)
 		{
@@ -125,13 +140,13 @@ namespace HBL2
 			BindIndexBuffer();
 			break;
 		case GL_ARRAY_BUFFER:
-			BindVertexBuffer(material, bufferIndex);
+			BindVertexBuffer(shader, bufferIndex);
 			break;
 		case GL_UNIFORM_BUFFER:
-			BindUniformBuffer(material, bufferIndex, offset, size);
+			BindUniformBuffer(bindGroup, bufferIndex, offset, size);
 			break;
 		case GL_SHADER_STORAGE_BUFFER:
-			BindStorageBuffer(material, bufferIndex);
+			BindStorageBuffer(bindGroup, bufferIndex);
 			break;
 		}
 	}
@@ -146,17 +161,14 @@ namespace HBL2
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RendererId);
 	}
 
-	void OpenGLBuffer::BindVertexBuffer(Handle<Material> material, uint32_t bufferIndex)
+	void OpenGLBuffer::BindVertexBuffer(Handle<Shader> shader, uint32_t bufferIndex)
 	{
 		OpenGLResourceManager* rm = (OpenGLResourceManager*)ResourceManager::Instance;
-		Material* mat = rm->GetMaterial(material);
 
-		HBL2_CORE_ASSERT(mat != nullptr, "Material handle is invalid.");
+		OpenGLShader* openGLShader = rm->GetShader(shader);
+		HBL2_CORE_ASSERT(openGLShader != nullptr, "Shader \"" + std::string(openGLShader->DebugName) + "\" is invalid.");
 
-		OpenGLShader* shader = rm->GetShader(mat->Shader);
-		HBL2_CORE_ASSERT(shader != nullptr, "Shader handle for material \"" + std::string(mat->DebugName) + "\" is invalid.");
-
-		const auto& binding = shader->VertexBufferBindings[bufferIndex];
+		const auto& binding = openGLShader->VertexBufferBindings[bufferIndex];
 
 		for (int j = 0; j < binding.attributes.size(); j++)
 		{
@@ -180,14 +192,12 @@ namespace HBL2
 		}
 	}
 
-	void OpenGLBuffer::BindUniformBuffer(Handle<Material> material, uint32_t bufferIndex, intptr_t offset, uint32_t size)
+	void OpenGLBuffer::BindUniformBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset, uint32_t size)
 	{
 		OpenGLResourceManager* rm = (OpenGLResourceManager*)ResourceManager::Instance;
-		Material* mat = rm->GetMaterial(material);
 
-		HBL2_CORE_ASSERT(mat != nullptr, "Material handle is invalid.");
-
-		OpenGLBindGroup* openGLBindGroup = rm->GetBindGroup(mat->BindGroup);
+		OpenGLBindGroup* openGLBindGroup = rm->GetBindGroup(bindGroup);
+		HBL2_CORE_ASSERT(openGLBindGroup != nullptr, "Shader \"" + std::string(openGLBindGroup->DebugName) + "\" is invalid.");
 		OpenGLBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(openGLBindGroup->BindGroupLayout);
 
 		if (bufferIndex < openGLBindGroup->Buffers.size())
@@ -203,7 +213,7 @@ namespace HBL2
 		}
 	}
 
-	void OpenGLBuffer::BindStorageBuffer(Handle<Material> material, uint32_t bufferIndex)
+	void OpenGLBuffer::BindStorageBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex)
 	{
 		OpenGLResourceManager* rm = (OpenGLResourceManager*)ResourceManager::Instance;
 	}

@@ -475,7 +475,14 @@ namespace HBL2
 		else if (auto* v = fieldMeta.TryGetAs<Entity>())
 		{
 			auto* id = ctx->TryGetComponent<Component::ID>(*v);
-			out << YAML::Key << memberName << YAML::Value << id->Identifier;
+			if (id != nullptr)
+			{
+				out << YAML::Key << memberName << YAML::Value << id->Identifier;
+			}
+			else
+			{
+				out << YAML::Key << memberName << YAML::Value << (UUID)0;
+			}
 		}
 	}
 

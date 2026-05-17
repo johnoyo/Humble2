@@ -1,0 +1,27 @@
+Shader:
+  UUID: 17012696883391400132
+  Type: 2
+  Variants:
+    - Variant: 233046723
+      RasterState:
+        Topology: 3
+        PolygonMode: 0
+        CullMode: 2
+        FrontFace: 1
+      BlendState:
+        Enabled: false
+        ColorOutputEnabled: true
+      DepthState:
+        Enabled: true
+        WriteEnabled: false
+        StencilEnabled: true
+        DepthTest: 1
+      ShaderConstantsState:
+        ShaderConstantBool0: false
+        ShaderConstantBool1: false
+        ShaderConstantBool2: false
+        ShaderConstantBool3: false
+        ShaderConstantBool4: false
+        ShaderConstantBool5: false
+        ShaderConstantBool6: false
+        ShaderConstantBool7: false

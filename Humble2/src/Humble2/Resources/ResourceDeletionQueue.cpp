@@ -16,7 +16,12 @@ namespace HBL2
             Resize();
         }
 
-        m_Buffer[m_Tail] = { frame, std::move(deletor) };
+        // We mark the item to be deleted on frame ahead to ensure the GPU will be done with it.
+        // Thats because of the double buffering set up, on Renderer::BeginFrame we only wait for the new
+        // frame fence to be done, no the one that was just rendering.
+        uint32_t itemFrame = frame + 1;
+
+        m_Buffer[m_Tail] = { itemFrame, std::move(deletor) };
         m_Tail = (m_Tail + 1) % m_Capacity;
         ++m_Size;
     }

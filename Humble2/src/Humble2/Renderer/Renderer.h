@@ -147,7 +147,7 @@ namespace HBL2
 		RenderPassPool& GetRenderPassPool() { return m_RenderPassPool; }
 
 		virtual const uint32_t GetFrameIndex() const = 0;
-		const uint32_t GetFrameNumber() const { return m_FrameNumber; }
+		const uint32_t GetFrameNumber() const { return m_FrameNumber.load(); }
 		RendererStats& GetStats() { return m_CurrentStats; }
 		RendererStats& GetStatsForDisplay() { return m_PreviousStats; }
 		void SwapAndResetStats() { (m_PreviousStats = m_CurrentStats, m_CurrentStats.Reset()); }

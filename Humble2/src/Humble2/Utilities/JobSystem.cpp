@@ -1,5 +1,7 @@
 ﻿#include "JobSystem.h"
 
+#include "Renderer\Device.h"
+
 namespace HBL2
 {
     JobSystem* JobSystem::s_Instance = nullptr;
@@ -109,6 +111,8 @@ namespace HBL2
 
         auto wrappedJob = [this, job, &ctx]()
         {
+            Device::Instance->SetContext(ContextType::FETCH);
+
             job();
 
             GetWorkerArena()->Reset();
@@ -136,6 +140,11 @@ namespace HBL2
         {
             auto task = [=, &ctx]()
             {
+                if (Device::Instance != nullptr)
+                {
+                    Device::Instance->SetContext(ContextType::FETCH);
+                }
+
                 uint32_t start = i * groupSize;
                 uint32_t end = std::min(start + groupSize, jobCount);
                 for (uint32_t j = start; j < end; ++j)

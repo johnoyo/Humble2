@@ -1,5 +1,7 @@
 #include "OpenGLResourceManager.h"
 
+#include "Renderer\Renderer.h"
+
 namespace HBL2
 {
 	void OpenGLResourceManager::Initialize(const ResourceManagerSpecification& spec)
@@ -50,12 +52,15 @@ namespace HBL2
 	}
 	void OpenGLResourceManager::DeleteTexture(Handle<Texture> handle)
 	{
-		OpenGLTexture* texture = GetTexture(handle);
-		if (texture != nullptr)
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 		{
-			texture->Destroy();
-			m_TexturePool.Remove(handle);
-		}
+			OpenGLTexture* texture = GetTexture(handle);
+			if (texture != nullptr)
+			{
+				texture->Destroy();
+				m_TexturePool.Remove(handle);
+			}
+		});
 	}
 	void OpenGLResourceManager::UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes)
 	{
@@ -108,12 +113,15 @@ namespace HBL2
 	}
 	void OpenGLResourceManager::DeleteBuffer(Handle<Buffer> handle)
 	{
-		OpenGLBuffer* buffer = GetBuffer(handle);
-		if (buffer != nullptr)
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 		{
-			buffer->Destroy();
-			m_BufferPool.Remove(handle);
-		}
+			OpenGLBuffer* buffer = GetBuffer(handle);
+			if (buffer != nullptr)
+			{
+				buffer->Destroy();
+				m_BufferPool.Remove(handle);
+			}
+		});
 	}
 	void OpenGLResourceManager::ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset)
 	{
@@ -173,12 +181,15 @@ namespace HBL2
 	}
 	void OpenGLResourceManager::DeleteFrameBuffer(Handle<FrameBuffer> handle)
 	{
-		OpenGLFrameBuffer* framebuffer = GetFrameBuffer(handle);
-		if (framebuffer != nullptr)
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 		{
-			framebuffer->Destroy();
-			m_FrameBufferPool.Remove(handle);
-		}
+			OpenGLFrameBuffer* framebuffer = GetFrameBuffer(handle);
+			if (framebuffer != nullptr)
+			{
+				framebuffer->Destroy();
+				m_FrameBufferPool.Remove(handle);
+			}
+		});
 	}
 	void OpenGLResourceManager::ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height)
 	{
@@ -211,12 +222,15 @@ namespace HBL2
 	}
 	void OpenGLResourceManager::DeleteShader(Handle<Shader> handle)
 	{
-		OpenGLShader* shader = GetShader(handle);
-		if (shader != nullptr)
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 		{
-			shader->Destroy();
-			m_ShaderPool.Remove(handle);
-		}
+			OpenGLShader* shader = GetShader(handle);
+			if (shader != nullptr)
+			{
+				shader->Destroy();
+				m_ShaderPool.Remove(handle);
+			}
+		});
 	}
 	uint64_t OpenGLResourceManager::GetOrAddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc)
 	{
@@ -257,12 +271,15 @@ namespace HBL2
 	}
 	void OpenGLResourceManager::DeleteBindGroup(Handle<BindGroup> handle)
 	{
-		OpenGLBindGroup* bindGroup = GetBindGroup(handle);
-		if (bindGroup != nullptr)
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 		{
-			bindGroup->Destroy();
-			m_BindGroupPool.Remove(handle);
-		}
+			OpenGLBindGroup* bindGroup = GetBindGroup(handle);
+			if (bindGroup != nullptr)
+			{
+				bindGroup->Destroy();
+				m_BindGroupPool.Remove(handle);
+			}
+		});
 	}
 	void OpenGLResourceManager::UpdateBindGroup(Handle<BindGroup> handle) {}
 	uint64_t OpenGLResourceManager::GetBindGroupHash(Handle<BindGroup> handle)

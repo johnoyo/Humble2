@@ -41,6 +41,9 @@ namespace HBL2
 
 	void OpenGLRenderer::BeginFrame()
 	{
+		// Flush any pending deletions that occured in the frames before the current one.
+		m_ResourceManager->Flush(m_FrameNumber.load());
+
 		SwapAndResetStats();
 	}
 
@@ -178,6 +181,8 @@ namespace HBL2
 
 		delete m_MainCommandBuffer;
 		delete m_UserInterfaceCommandBuffer;
+
+		m_ResourceManager->FlushAll();
 	}
 
 	void* OpenGLRenderer::GetDepthAttachment()

@@ -45,7 +45,6 @@ namespace HBL2
 		{
 			return (vertexShaderCode.ptr != nullptr && fragmentShaderCode.ptr) || computeShaderCode.ptr != nullptr;
 		}
-
 	};
 
 	struct HBL2_API MaterialDataDescriptor

@@ -91,7 +91,7 @@ namespace HBL2
 			if (prevVertexBuffer != draw.VertexBuffer)
 			{
 				OpenGLBuffer* vertexBuffer = rm->GetBuffer(draw.VertexBuffer);
-				vertexBuffer->Bind(draw.Material, 0);
+				vertexBuffer->Bind(draw.Shader, 0);
 
 				prevVertexBuffer = draw.VertexBuffer;
 			}
@@ -111,7 +111,7 @@ namespace HBL2
 				if (globalDraw.UsesDynamicOffset)
 				{
 					OpenGLBuffer* dynamicUniformBuffer = rm->GetBuffer(drawBindGroup->Buffers[0].buffer);
-					dynamicUniformBuffer->Bind(draw.Material, 0, draw.Offset, draw.Size);
+					dynamicUniformBuffer->Bind(draw.BindGroup, 0, draw.Offset, draw.Size);
 				}
 			}
 

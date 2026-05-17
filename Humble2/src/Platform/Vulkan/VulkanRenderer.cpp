@@ -54,25 +54,30 @@ namespace HBL2
 
 	void VulkanRenderer::BeginFrame()
 	{
-		if (m_Resize)
-		{
-			for (uint32_t i = 0; i < FRAME_OVERLAP; ++i)
-			{
-				VK_VALIDATE(vkWaitForFences(m_Device->Get(), 1, &m_VkFrames[i].InFlightFence, VK_TRUE, UINT64_MAX), "vkWaitForFences");
-			}
-
-			Resize(m_NewSize.x, m_NewSize.y);
-			m_Resize = false;
-		}
-
 		// Wait until the GPU has finished rendering the last frame. Timeout of 1 second
 		VK_VALIDATE(vkWaitForFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence, VK_TRUE, UINT64_MAX), "vkWaitForFences");
-		
+		VK_VALIDATE(vkResetFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence), "vkResetFences");		
+
 		// Flush any pending deletions that occured in the frames before the current one.
 		m_ResourceManager->Flush(m_FrameNumber.load());
 
-		VK_VALIDATE(vkResetFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence), "vkResetFences");
-		VK_VALIDATE(vkAcquireNextImageKHR(m_Device->Get(), m_SwapChain, UINT64_MAX, GetCurrentFrame().ImageAvailableSemaphore, nullptr, &m_SwapchainImageIndex), "vkAcquireNextImageKHR");
+		// Get the next swap chain image from the implementation.
+		// Note that the implementation is free to return the images in any order, so we must use the acquire function and can't just cycle through the images/imageIndex on our own.
+		VkResult result = vkAcquireNextImageKHR(m_Device->Get(), m_SwapChain, UINT64_MAX, GetCurrentFrame().ImageAvailableSemaphore, nullptr, &m_SwapchainImageIndex);
+
+		// Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE)
+		// If no longer optimal (VK_SUBOPTIMAL_KHR), wait until Present() in case number of swapchain images will change on resize.
+		if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR))
+		{
+			if (result == VK_ERROR_OUT_OF_DATE_KHR)
+			{
+				Resize(m_NewSize.x, m_NewSize.y);
+			}
+		}
+		else
+		{
+			VK_VALIDATE(result, "vkAcquireNextImageKHR");
+		}
 
 		SwapAndResetStats();
 	}
@@ -91,8 +96,8 @@ namespace HBL2
 	void VulkanRenderer::Present()
 	{
 		// This will put the image we just rendered into the visible window.
-		// We want to wait on the ImGuiRenderFinishedSemaphore for that, as it's necessary that drawing commands have finished before the image is displayed to the user
-		
+		// We want to wait on the ImGuiRenderFinishedSemaphore for that,
+		// as it's necessary that drawing commands have finished before the image is displayed to the user.		
 		VkPresentInfoKHR presentInfo = 
 		{
 			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -113,9 +118,10 @@ namespace HBL2
 
 		m_FrameNumber++;
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+		// Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE) or no longer optimal for presentation (SUBOPTIMAL)
+		if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR))
 		{
-			m_Resize = true;
+			Resize(m_NewSize.x, m_NewSize.y);
 		}
 		else
 		{
@@ -299,6 +305,7 @@ namespace HBL2
 	{
 		if (width == 0 || height == 0)
 		{
+			m_Resize = false;
 			return;
 		}
 
@@ -331,13 +338,9 @@ namespace HBL2
 		m_ResourceManager->DeleteTexture(m_DepthImage);
 
 		// Destroy old offscreen textures.
-		m_FrameNumber++;
-		m_FrameNumber++;
 		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
-		m_FrameNumber--;
-		m_FrameNumber--;
 
 		m_Device->UpdateSwapChainSupportDetails();
 
@@ -413,6 +416,8 @@ namespace HBL2
 		{
 			callback(width, height);
 		}
+
+		m_Resize = false;
 	}
 
 	void VulkanRenderer::CreateAllocator()
