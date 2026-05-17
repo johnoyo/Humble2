@@ -353,7 +353,7 @@ namespace HBL2
 
 					if (rasterStateProp)
 					{
-						variant.topology = (packed_size)(Topology)rasterStateProp["topology"].as<int>();
+						variant.topology = (packed_size)(Topology)rasterStateProp["Topology"].as<int>();
 						variant.polygonMode = (packed_size)(PolygonMode)rasterStateProp["PolygonMode"].as<int>();
 						variant.cullMode = (packed_size)(CullMode)rasterStateProp["CullMode"].as<int>();
 						variant.frontFace = (packed_size)(FrontFace)rasterStateProp["FrontFace"].as<int>();
@@ -945,6 +945,17 @@ namespace HBL2
 				{
 					ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 
+					// Retrieve raster state.
+					const auto& rasterStateProp = variantNode["RasterState"];
+
+					if (rasterStateProp)
+					{
+						variant.topology = (packed_size)(Topology)rasterStateProp["Topology"].as<int>();
+						variant.polygonMode = (packed_size)(PolygonMode)rasterStateProp["PolygonMode"].as<int>();
+						variant.cullMode = (packed_size)(CullMode)rasterStateProp["CullMode"].as<int>();
+						variant.frontFace = (packed_size)(FrontFace)rasterStateProp["FrontFace"].as<int>();
+					}
+
 					// Retrieve blend state.
 					const auto& blendStateProp = variantNode["BlendState"];
 
@@ -952,6 +963,14 @@ namespace HBL2
 					{
 						variant.colorOutput = blendStateProp["ColorOutputEnabled"].as<bool>();
 						variant.blendEnabled = blendStateProp["Enabled"].as<bool>();
+
+						// TODO: Remove if statements in the future.
+						if (blendStateProp["ColorOp"].IsDefined())			variant.colorOp = (packed_size)(BlendOperation)blendStateProp["ColorOp"].as<int>();
+						if (blendStateProp["AlphaOp"].IsDefined())			variant.alphaOp = (packed_size)(BlendOperation)blendStateProp["AlphaOp"].as<int>();
+						if (blendStateProp["SrcColorFactor"].IsDefined())	variant.srcColorFactor = (packed_size)(BlendFactor)blendStateProp["SrcColorFactor"].as<int>();
+						if (blendStateProp["DstColorFactor"].IsDefined())	variant.dstColorFactor = (packed_size)(BlendFactor)blendStateProp["DstColorFactor"].as<int>();
+						if (blendStateProp["SrcAlphaFactor"].IsDefined())	variant.srcAlphaFactor = (packed_size)(BlendFactor)blendStateProp["SrcAlphaFactor"].as<int>();
+						if (blendStateProp["DstAlphaFactor"].IsDefined())	variant.dstAlphaFactor = (packed_size)(BlendFactor)blendStateProp["DstAlphaFactor"].as<int>();
 					}
 
 					// Retrieve depth state.
@@ -963,6 +982,21 @@ namespace HBL2
 						variant.depthWrite = depthStateProp["WriteEnabled"].as<bool>();
 						variant.stencilEnabled = depthStateProp["StencilEnabled"].as<bool>();
 						variant.depthCompare = (packed_size)(Compare)depthStateProp["DepthTest"].as<int>();
+					}
+
+					// Retrieve shader constants
+					const auto& shaderConstantsStateProp = variantNode["ShaderConstantsState"];
+
+					if (shaderConstantsStateProp)
+					{
+						variant.shaderConstantBool0 = shaderConstantsStateProp["ShaderConstantBool0"].as<bool>();
+						variant.shaderConstantBool1 = shaderConstantsStateProp["ShaderConstantBool1"].as<bool>();
+						variant.shaderConstantBool2 = shaderConstantsStateProp["ShaderConstantBool2"].as<bool>();
+						variant.shaderConstantBool3 = shaderConstantsStateProp["ShaderConstantBool3"].as<bool>();
+						variant.shaderConstantBool4 = shaderConstantsStateProp["ShaderConstantBool4"].as<bool>();
+						variant.shaderConstantBool5 = shaderConstantsStateProp["ShaderConstantBool5"].as<bool>();
+						variant.shaderConstantBool6 = shaderConstantsStateProp["ShaderConstantBool6"].as<bool>();
+						variant.shaderConstantBool7 = shaderConstantsStateProp["ShaderConstantBool7"].as<bool>();
 					}
 
 					shaderVariants.push_back(variant);
@@ -982,7 +1016,7 @@ namespace HBL2
 		}
 
 		// Create resource.
-		auto shader = ResourceManager::Instance->CreateShader({
+		ResourceManager::Instance->RecompileShader(shaderHandle, {
 			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
 			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
 			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
@@ -993,6 +1027,7 @@ namespace HBL2
 			.renderPipeline {
 				.vertexBufferBindings = outReflectionData.vertexBufferBindings,
 				.variants = { shaderVariants.data(), shaderVariants.size() },
+				.specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant(shaderVariants),
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
 		});
@@ -1048,10 +1083,12 @@ namespace HBL2
 
 			if (shaderHandle == mat->Shader)
 			{
+				// If the shader is the same, just reload it.
 				AssetManager::Instance->ReloadAsset<Shader>(shaderUUID);
 			}
 			else
 			{
+				// If the shader has changed, we need to reimport the material.
 				uint32_t type = UINT32_MAX;
 				bool autoImported = false;
 
@@ -1262,6 +1299,14 @@ namespace HBL2
 			materialProperties["AlbedoColor"] = mat->AlbedoColor;
 			materialProperties["Glossiness"] = mat->Glossiness;
 
+			if (materialProperties["RasterState"].IsDefined())
+			{
+				materialProperties["RasterState"]["Topology"] = (int)mat->VariantHash.topology;
+				materialProperties["RasterState"]["PolygonMode"] = (int)mat->VariantHash.polygonMode;
+				materialProperties["RasterState"]["CullMode"] = (int)mat->VariantHash.cullMode;
+				materialProperties["RasterState"]["FrontFace"] = (int)mat->VariantHash.frontFace;
+			}
+
 			materialProperties["BlendState"]["Enabled"] = (bool)mat->VariantHash.blendEnabled;
 			materialProperties["BlendState"]["ColorOutputEnabled"] = (bool)mat->VariantHash.colorOutput;
 
@@ -1269,6 +1314,18 @@ namespace HBL2
 			materialProperties["DepthState"]["WriteEnabled"] = (bool)mat->VariantHash.depthWrite;
 			materialProperties["DepthState"]["StencilEnabled"] = (bool)mat->VariantHash.stencilEnabled;
 			materialProperties["DepthState"]["DepthTest"] = (int)mat->VariantHash.depthCompare;
+
+			if (materialProperties["ShaderConstantsState"].IsDefined())
+			{
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool0"] = (bool)mat->VariantHash.shaderConstantBool0;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool1"] = (bool)mat->VariantHash.shaderConstantBool1;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool2"] = (bool)mat->VariantHash.shaderConstantBool2;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool3"] = (bool)mat->VariantHash.shaderConstantBool3;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool4"] = (bool)mat->VariantHash.shaderConstantBool4;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool5"] = (bool)mat->VariantHash.shaderConstantBool5;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool6"] = (bool)mat->VariantHash.shaderConstantBool6;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool7"] = (bool)mat->VariantHash.shaderConstantBool7;
+			}
 
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
 			Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);

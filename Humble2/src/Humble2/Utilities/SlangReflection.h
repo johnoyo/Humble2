@@ -96,7 +96,7 @@ namespace HBL2
         void print() const; // dumps a human-readable summary to stdout
 
     private:
-        // Backing storage for RetrieveSpecializationConstantsPerVariant
+        // Backing storage for GetSpecializationConstantsPerVariant
         std::vector<ShaderConstant> m_SpecConstantStorage;
         std::vector<Span<const ShaderConstant>> m_SpecConstantsPerVariant;
     };

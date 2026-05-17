@@ -30,6 +30,12 @@ namespace HBL2
         YAML::Node baseVariant;
 
         baseVariant["Variant"] = newVariantHash;
+
+        baseVariant["RasterState"]["Topology"] = (int)variant.topology;
+        baseVariant["RasterState"]["PolygonMode"] = (int)variant.polygonMode;
+        baseVariant["RasterState"]["CullMode"] = (int)variant.cullMode;
+        baseVariant["RasterState"]["FrontFace"] = (int)variant.frontFace;
+
         baseVariant["BlendState"]["Enabled"] = (bool)variant.blendEnabled;
         baseVariant["BlendState"]["ColorOutputEnabled"] = (bool)variant.colorOutput;
 
@@ -402,193 +408,6 @@ namespace HBL2
         return compilationResultData;
     }
 
-    std::vector<uint32_t> ShaderUtilities::CompileAlt(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool forceRecompile)
-    {
-        HBL2_FUNC_PROFILE();
-
-        GraphicsAPI target = Renderer::Instance->GetAPI();
-        CreateCacheDirectoryIfNeeded(target);
-
-        std::filesystem::path shaderPath = shaderFilePath;
-        std::filesystem::path cacheDirectory = GetCacheDirectory(target);
-        std::filesystem::path cachedPath = cacheDirectory / (shaderPath.filename().string() + ".cached.spv");
-
-        // Check cache for hit.
-        {
-            std::ifstream in(cachedPath, std::ios::in | std::ios::binary);
-            if (in.is_open() && !forceRecompile)
-            {
-                in.seekg(0, std::ios::end);
-                auto size = in.tellg();
-                in.seekg(0, std::ios::beg);
-
-                std::vector<uint32_t> cached(size / sizeof(uint32_t));
-                in.read(reinterpret_cast<char*>(cached.data()), size);
-                return cached;
-            }
-        }
-
-        std::string shaderSource = ReadFile(shaderFilePath);
-
-        uint32_t workerIndex = JobSystem::Get().GetWorkerIndex();
-
-        // Target description.
-        slang::TargetDesc targetDesc = {};
-        targetDesc.format = SLANG_SPIRV;
-        targetDesc.flags = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY | SLANG_TARGET_FLAG_GENERATE_WHOLE_PROGRAM;
-
-        switch (target)
-        {
-        case GraphicsAPI::OPENGL:
-            targetDesc.profile = g_SLangGlobalSessions[workerIndex]->findProfile("glsl_460");
-            break;
-        case GraphicsAPI::VULKAN:
-            targetDesc.profile = g_SLangGlobalSessions[workerIndex]->findProfile("spirv_1_3");
-            break;
-        }
-
-        // Session description.
-        slang::SessionDesc sessionDesc = {};
-        sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR;
-
-        std::array<slang::CompilerOptionEntry, 2> options =
-        {
-            slang::CompilerOptionEntry
-            {
-                .name = slang::CompilerOptionName::EmitSpirvDirectly,
-                .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-            },
-            slang::CompilerOptionEntry
-            {
-                .name = slang::CompilerOptionName::GenerateWholeProgram,
-                .value = {.kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-            },
-            /*slang::CompilerOptionEntry
-            {
-                .name = slang::CompilerOptionName::Optimization,
-                .value = {.kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
-            }*/
-        };
-
-        sessionDesc.compilerOptionEntries = options.data();
-        sessionDesc.compilerOptionEntryCount = options.size();
-
-        sessionDesc.targets = &targetDesc;
-        sessionDesc.targetCount = 1;
-
-        Slang::ComPtr<slang::ISession> session;
-        {
-            if (SLANG_FAILED(g_SLangGlobalSessions[workerIndex]->createSession(sessionDesc, session.writeRef())))
-            {
-                HBL2_CORE_ERROR("Slang: Failed to create session");
-                return std::vector<uint32_t>();
-            }
-        }
-
-        // SLang module creation.
-        Slang::ComPtr<slang::IBlob> diagnostics;
-        Slang::ComPtr<slang::IModule> slangModule;
-        slangModule = session->loadModuleFromSourceString(shaderPath.filename().stem().string().c_str(), shaderFilePath.c_str(), shaderSource.c_str(), diagnostics.writeRef());
-
-        if (diagnostics)
-        {
-            HBL2_CORE_WARN("Slang diagnostics: {}", (const char*)diagnostics->getBufferPointer());
-            diagnostics = nullptr;
-        }
-
-        if (!slangModule)
-        {
-            HBL2_CORE_ERROR("Slang: Failed to load shader module");
-            return std::vector<uint32_t>();
-        }
-
-        // Entry points.
-        StaticDArray<Slang::ComPtr<slang::IEntryPoint>, 6> entryPoints;
-        SlangInt32 entryPointCount = slangModule->getDefinedEntryPointCount();
-        if (entryPointCount == 0)
-        {
-            HBL2_CORE_ERROR("Slang: No entry points found in shader source");
-            return std::vector<uint32_t>();
-        }
-
-        for (SlangInt32 i = 0; i < entryPointCount; ++i)
-        {
-            Slang::ComPtr<slang::IEntryPoint> ep;
-            slangModule->getDefinedEntryPoint(i, ep.writeRef());
-            entryPoints.push_back(std::move(ep));
-        }
-
-        // Components.
-        StaticDArray<slang::IComponentType*, 6> components;
-        components.push_back(slangModule);
-        for (auto& ep : entryPoints)
-        {
-            components.push_back(ep.get());
-        }
-
-        // Link program.
-        Slang::ComPtr<slang::IComponentType> linkedProgram;
-        if (SLANG_FAILED(session->createCompositeComponentType(components.data(), (SlangInt)components.size(), linkedProgram.writeRef(), diagnostics.writeRef())))
-        {
-            if (diagnostics)
-            {
-                HBL2_CORE_ERROR("Slang link error: {}", (const char*)diagnostics->getBufferPointer());
-            }
-            HBL2_CORE_ERROR("Slang: Failed to link shader program");
-            return std::vector<uint32_t>();
-        }
-
-        // Get binary code.
-        std::vector<uint32_t> binaries;
-        for (SlangInt i = 0; i < (SlangInt)entryPoints.size(); ++i)
-        {
-            Slang::ComPtr<slang::IBlob> code;
-            diagnostics = nullptr;
-
-            if (SLANG_FAILED(linkedProgram->getEntryPointCode(i, 0, code.writeRef(), diagnostics.writeRef())))
-            {
-                if (diagnostics)
-                {
-                    HBL2_CORE_ERROR("Slang compile error: {}", (const char*)diagnostics->getBufferPointer());
-                }
-
-                HBL2_CORE_ERROR("Slang: Failed to get SPIR-V for entry point {}", i);
-                return std::vector<uint32_t>();
-            }
-
-            if (diagnostics)
-            {
-                HBL2_CORE_WARN("Slang: {}", (const char*)diagnostics->getBufferPointer());
-            }
-
-            const uint32_t* SpirvData = static_cast<const uint32_t*>(code->getBufferPointer());
-            size_t SpirvSize = code->getBufferSize() / sizeof(uint32_t);
-            binaries.insert(binaries.end(), SpirvData, SpirvData + SpirvSize);
-        }
-
-        if (binaries.empty())
-        {
-            HBL2_CORE_ERROR("Slang: Shader compiled to empty SPIR-V");
-            return std::vector<uint32_t>();
-        }               
-
-        std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
-        if (out.is_open())
-        {
-            out.write((char*)binaries.data(), binaries.size() * sizeof(uint32_t));
-            out.flush();
-            out.close();
-        }
-
-        // Reflection
-        if (outReflectionData != nullptr)
-        {
-            *outReflectionData = ShaderReflector::Reflect(linkedProgram, shaderFilePath);
-        }
-
-        return binaries;
-    }
-
     void ShaderUtilities::LoadBuiltInShaders()
     {
         auto drawBindGroupLayout0 = ResourceManager::Instance->CreateBindGroupLayout({
@@ -806,6 +625,14 @@ namespace HBL2
         out << YAML::BeginMap;
         out << YAML::Key << "Variant" << YAML::Value << variantHash.Key();
 
+        out << YAML::Key << "RasterState";
+        out << YAML::BeginMap;
+        out << YAML::Key << "Topology" << YAML::Value << (int)Topology::TRIANGLE_LIST;
+        out << YAML::Key << "PolygonMode" << YAML::Value << (int)PolygonMode::FILL;
+        out << YAML::Key << "CullMode" << YAML::Value << (int)CullMode::BACK;
+        out << YAML::Key << "FrontFace" << YAML::Value << (int)FrontFace::CLOCKWISE;
+        out << YAML::EndMap;
+
         out << YAML::Key << "BlendState";
         out << YAML::BeginMap;
         out << YAML::Key << "Enabled" << YAML::Value << false;
@@ -950,6 +777,14 @@ namespace HBL2
 
         out << YAML::Key << "AlbedoColor" << YAML::Value << desc.AlbedoColor;
         out << YAML::Key << "Glossiness" << YAML::Value << desc.Glossiness;
+
+        out << YAML::Key << "RasterState";
+        out << YAML::BeginMap;
+        out << YAML::Key << "Topology" << YAML::Value << (int)desc.VariantHash.topology;
+        out << YAML::Key << "PolygonMode" << YAML::Value << (int)desc.VariantHash.polygonMode;
+        out << YAML::Key << "CullMode" << YAML::Value << (int)desc.VariantHash.cullMode;
+        out << YAML::Key << "FrontFace" << YAML::Value << (int)desc.VariantHash.frontFace;
+        out << YAML::EndMap;
 
         out << YAML::Key << "BlendState";
         out << YAML::BeginMap;

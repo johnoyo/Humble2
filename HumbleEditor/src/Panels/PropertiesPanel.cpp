@@ -866,6 +866,50 @@ namespace HBL2
 
 							ImGui::Text(std::format("Name: {}", mat->DebugName).c_str());
 
+							// Topology.
+							{
+								const char* options[] = { "Point List", "Line List", "Line Strip", "Triangle List", "Triangle Strip", "Triangle fan", "Patch List" };
+								int currentItem = (int)mat->VariantHash.topology;
+
+								if (ImGui::Combo("Topology", &currentItem, options, IM_ARRAYSIZE(options)))
+								{
+									mat->VariantHash.topology = (ShaderDescriptor::RenderPipeline::packed_size)(Topology)currentItem;
+								}
+							}
+
+							// Polygon mode.
+							{
+								const char* options[] = { "Fill", "Line", "Point" };
+								int currentItem = (int)mat->VariantHash.polygonMode;
+
+								if (ImGui::Combo("Polygon Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+								{
+									mat->VariantHash.polygonMode = (ShaderDescriptor::RenderPipeline::packed_size)(PolygonMode)currentItem;
+								}
+							}
+
+							// Cull mode.
+							{
+								const char* options[] = { "None", "Front", "Back", "Front and Back"};
+								int currentItem = (int)mat->VariantHash.cullMode;
+
+								if (ImGui::Combo("Cull Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+								{
+									mat->VariantHash.cullMode = (ShaderDescriptor::RenderPipeline::packed_size)(CullMode)currentItem;
+								}
+							}
+
+							// Front face.
+							{
+								const char* options[] = { "Clockwise", "Counter Clockwise" };
+								int currentItem = (int)mat->VariantHash.frontFace;
+
+								if (ImGui::Combo("Front Face", &currentItem, options, IM_ARRAYSIZE(options)))
+								{
+									mat->VariantHash.frontFace = (ShaderDescriptor::RenderPipeline::packed_size)(FrontFace)currentItem;
+								}
+							}
+
 							// Blend mode.
 							{
 								const char* options[] = { "Opaque", "Transparent" };
@@ -918,6 +962,57 @@ namespace HBL2
 
 							ImGui::ColorEdit4("AlbedoColor", glm::value_ptr(mat->AlbedoColor));
 							ImGui::InputFloat("Glossiness", &mat->Glossiness, 0.05f);
+
+							// Shader Constants.
+							ImGui::NewLine();
+							ImGui::Text("Shader Specialization Constants");
+							bool shaderConstantBool0 = mat->VariantHash.shaderConstantBool0 != 0;
+							if (ImGui::Checkbox("ShaderConstantBool0", &shaderConstantBool0))
+							{
+								mat->VariantHash.shaderConstantBool0 = shaderConstantBool0 ? 1 : 0;
+							}
+
+							bool shaderConstantBool1 = mat->VariantHash.shaderConstantBool1 != 0;
+							if (ImGui::Checkbox("ShaderConstantBool1", &shaderConstantBool1))
+							{
+								mat->VariantHash.shaderConstantBool1 = shaderConstantBool1 ? 1 : 0;
+							}
+
+							bool shaderConstantBool2 = mat->VariantHash.shaderConstantBool2 != 0;
+							if (ImGui::Checkbox("ShaderConstantBool2", &shaderConstantBool2))
+							{
+								mat->VariantHash.shaderConstantBool2 = shaderConstantBool2 ? 1 : 0;
+							}
+
+							bool shaderConstantBool3 = mat->VariantHash.shaderConstantBool3 != 0;
+							if (ImGui::Checkbox("ShaderConstantBool3", &shaderConstantBool3))
+							{
+								mat->VariantHash.shaderConstantBool3 = shaderConstantBool3 ? 1 : 0;
+							}
+
+							bool shaderConstantBool4 = mat->VariantHash.shaderConstantBool4 != 0;
+							if (ImGui::Checkbox("ShaderConstantBool4", &shaderConstantBool4))
+							{
+								mat->VariantHash.shaderConstantBool4 = shaderConstantBool4 ? 1 : 0;
+							}
+
+							bool shaderConstantBool5 = mat->VariantHash.shaderConstantBool5 != 0;
+							if (ImGui::Checkbox("ShaderConstantBool5", &shaderConstantBool5))
+							{
+								mat->VariantHash.shaderConstantBool5 = shaderConstantBool5 ? 1 : 0;
+							}
+
+							bool shaderConstantBool6 = mat->VariantHash.shaderConstantBool6 != 0;
+							if (ImGui::Checkbox("ShaderConstantBool6", &shaderConstantBool6))
+							{
+								mat->VariantHash.shaderConstantBool6 = shaderConstantBool6 ? 1 : 0;
+							}
+
+							bool shaderConstantBool7 = mat->VariantHash.shaderConstantBool7 != 0;
+							if (ImGui::Checkbox("ShaderConstantBool7", &shaderConstantBool7))
+							{
+								mat->VariantHash.shaderConstantBool7 = shaderConstantBool7 ? 1 : 0;
+							}
 						}
 						break;
 					case AssetType::Mesh:

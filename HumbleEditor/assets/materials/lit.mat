@@ -6,6 +6,11 @@ Material:
   NormalMap: 0
   MetallicMap: 0
   RoughnessMap: 0
+  RasterState:
+    Topology: 3
+    PolygonMode: 0
+    CullMode: 2
+    FrontFace: 1
   BlendState:
     Enabled: false
     ColorOutputEnabled: true

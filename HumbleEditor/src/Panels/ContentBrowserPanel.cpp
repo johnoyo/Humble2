@@ -142,7 +142,7 @@ namespace HBL2
 								}
 							}
 						}
-						else if (extension == ".shader")
+						else if (extension == ".slang")
 						{
 							if (ImGui::MenuItem("Recompile"))
 							{
@@ -745,12 +745,60 @@ namespace HBL2
 
 				ImGui::NewLine();
 
-				static bool blendEnabled = true;
+				static int topology = 3;
+				static int polygonMode = 0;
+				static int cullMode = 2;
+				static int frontFace = 1;
+				static bool blendEnabled = false;
 				static bool colorOutput = true;
 				static bool depthEnabled = true;
-				static bool depthWriteEnabled = true;
-				static int depthTest = 0;
+				static bool depthWriteEnabled = false;
+				static int depthTest = 1;
 				static bool stencilEnabled = true;
+
+				// Topology.
+				{
+					const char* options[] = { "Point List", "Line List", "Line Strip", "Triangle List", "Triangle Strip", "Triangle fan", "Patch List" };
+					int currentItem = topology;
+
+					if (ImGui::Combo("Topology", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						topology = (ShaderDescriptor::RenderPipeline::packed_size)(Topology)currentItem;
+					}
+				}
+
+				// Polygon mode.
+				{
+					const char* options[] = { "Fill", "Line", "Point" };
+					int currentItem = polygonMode;
+
+					if (ImGui::Combo("Polygon Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						polygonMode = (ShaderDescriptor::RenderPipeline::packed_size)(PolygonMode)currentItem;
+					}
+				}
+
+				// Cull mode.
+				{
+					const char* options[] = { "None", "Front", "Back", "Front and Back" };
+					int currentItem = cullMode;
+
+					if (ImGui::Combo("Cull Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						cullMode = (ShaderDescriptor::RenderPipeline::packed_size)(CullMode)currentItem;
+					}
+				}
+
+				// Front face.
+				{
+					const char* options[] = { "Clockwise", "Counter Clockwise" };
+					int currentItem = frontFace;
+
+					if (ImGui::Combo("Front Face", &currentItem, options, IM_ARRAYSIZE(options)))
+					{
+						frontFace = (ShaderDescriptor::RenderPipeline::packed_size)(FrontFace)currentItem;
+					}
+				}
 
 				// Blend mode.
 				{
@@ -978,6 +1026,10 @@ namespace HBL2
 							.ShaderAssetHandle = shaderAssetHandle,
 							.VariantHash =
 							{
+								.topology = (ShaderDescriptor::RenderPipeline::packed_size)(Topology)topology,
+								.polygonMode = (ShaderDescriptor::RenderPipeline::packed_size)(PolygonMode)polygonMode,
+								.cullMode = (ShaderDescriptor::RenderPipeline::packed_size)(CullMode)cullMode,
+								.frontFace = (ShaderDescriptor::RenderPipeline::packed_size)(FrontFace)frontFace,
 								.blendEnabled = blendEnabled,
 								.colorOutput = colorOutput,
 								.depthEnabled = depthEnabled,

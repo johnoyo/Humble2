@@ -1,11 +1,16 @@
 Material:
-  Shader: 0
+  Shader: 10231128649318566348
   AlbedoColor: [0.303688318, 0.892156839, 0.0918396562, 1]
   Glossiness: 1
   AlbedoMap: 0
   NormalMap: 0
   MetallicMap: 0
   RoughnessMap: 0
+  RasterState:
+    Topology: 3
+    PolygonMode: 0
+    CullMode: 2
+    FrontFace: 1
   BlendState:
     Enabled: false
     ColorOutputEnabled: true
@@ -14,3 +19,12 @@ Material:
     WriteEnabled: false
     StencilEnabled: true
     DepthTest: 1
+  ShaderConstantsState:
+    ShaderConstantBool0: true
+    ShaderConstantBool1: false
+    ShaderConstantBool2: false
+    ShaderConstantBool3: false
+    ShaderConstantBool4: false
+    ShaderConstantBool5: false
+    ShaderConstantBool6: false
+    ShaderConstantBool7: false

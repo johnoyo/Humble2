@@ -74,7 +74,6 @@ namespace HBL2
 
 		std::string ReadFile(const std::string& filepath);
 		CompilationResultData Compile(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool forceRecompile = false);
-		std::vector<uint32_t> CompileAlt(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool forceRecompile = false);
 
 		void LoadBuiltInShaders();
 		void DeleteBuiltInShaders();

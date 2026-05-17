@@ -191,7 +191,7 @@ namespace HBL2
 		// Destroy old ImageView
 		VkImageView oldImageView = ImageView;
 		auto& deletionQueue = ResourceManager::Instance->GetDeletionQueue();
-		deletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+		deletionQueue.Push(Renderer::Instance->GetFrameNumber() + 1, [=]()
 		{
 			vkDestroyImageView(device->Get(), oldImageView, nullptr);
 		});
