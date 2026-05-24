@@ -56,6 +56,15 @@ namespace HBL2
 				return a.VariantHandle < b.VariantHandle;
 			}
 
+			// If they have same variant key, then sort by material (bind group).
+			const uint32_t materialA = a.MaterialBindGroup.HashKey();
+			const uint32_t materialB = b.MaterialBindGroup.HashKey();
+
+			if (materialA != materialB)
+			{
+				return materialA < materialB;
+			}
+
 			// Then, order by index buffer.
 			const uint32_t ibA = a.IndexBuffer.HashKey();
 			const uint32_t ibB = b.IndexBuffer.HashKey();

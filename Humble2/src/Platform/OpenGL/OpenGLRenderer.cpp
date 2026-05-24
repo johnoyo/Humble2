@@ -26,6 +26,36 @@ namespace HBL2
 
 	void OpenGLRenderer::PostInitialize()
 	{
+		// Global bindings for the 3D rendering.
+		auto cameraBuffer3D = m_ResourceManager->CreateBuffer({
+			.debugName = "camera-uniform-buffer",
+			.usage = BufferUsage::UNIFORM,
+			.usageHint = BufferUsageHint::DYNAMIC,
+			.memoryUsage = MemoryUsage::GPU_CPU,
+			.byteSize = sizeof(CameraData),
+			.initialData = nullptr,
+		});
+
+		auto lightBuffer = m_ResourceManager->CreateBuffer({
+			.debugName = "light-uniform-buffer",
+			.usage = BufferUsage::UNIFORM,
+			.usageHint = BufferUsageHint::DYNAMIC,
+			.memoryUsage = MemoryUsage::GPU_CPU,
+			.byteSize = sizeof(LightData),
+			.initialData = nullptr,
+		});
+
+		m_GlobalBindings3D = m_ResourceManager->CreateBindGroup({
+			.debugName = "global-bind-group",
+			.layout = m_GlobalBindingsLayout3D,
+			.textures = { ShadowAtlasTexture },
+			.buffers = {
+				{ .buffer = cameraBuffer3D },
+				{ .buffer = lightBuffer },
+			}
+		});
+
+		// Global bindings for presenting.
 		m_GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
 			.debugName = "global-present-bind-group",
 			.layout = GetGlobalPresentBindingsLayout(),
@@ -167,7 +197,6 @@ namespace HBL2
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
-		m_ResourceManager->DeleteBindGroupLayout(m_DebugBindingsLayout);
 
 		m_ResourceManager->DeleteBindGroup(m_ShadowBindings);
 		m_ResourceManager->DeleteBindGroup(m_GlobalBindings2D);
@@ -222,17 +251,6 @@ namespace HBL2
 	void OpenGLRenderer::CreateBindings()
 	{
 		// Global bindings for the 2D rendering.
-		m_GlobalBindingsLayout2D = m_ResourceManager->CreateBindGroupLayout({
-			.debugName = "unlit-colored-layout",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
 		auto cameraBuffer2D = m_ResourceManager->CreateBuffer({
 			.debugName = "camera-uniform-buffer",
 			.usage = BufferUsage::UNIFORM,
@@ -245,25 +263,12 @@ namespace HBL2
 		m_GlobalBindings2D = m_ResourceManager->CreateBindGroup({
 			.debugName = "unlit-colored-bind-group",
 			.layout = m_GlobalBindingsLayout2D,
-			.buffers = {
-				{ .buffer = cameraBuffer2D },
-			}
+			.buffers = { { .buffer = cameraBuffer2D } }
 		});
 
-		// Bindings for shadow rendering.
-		m_ShadowBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
-			.debugName = "shadow-bindings-layout",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
-				},
-			},
-		});
-
+		// Bindings layout for shadow rendering.
 		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
-		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(64, uniformOffset);
+		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), uniformOffset);
 
 		auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "light-space-buffer",
@@ -278,77 +283,11 @@ namespace HBL2
 			.debugName = "shadow-bind-group",
 			.layout = m_ShadowBindingsLayout,
 			.buffers = {
-				{ .buffer = lightSpaceBuffer },
+				{ .buffer = lightSpaceBuffer/*, .range = 64*/ },
 			}
-		});
-
-		// Global bindings for the 3D rendering.
-		m_GlobalBindingsLayout3D = m_ResourceManager->CreateBindGroupLayout({
-			.debugName = "global-bind-group-layout",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM,
-				},
-				{
-					.slot = 1,
-					.visibility = ShaderStage::FRAGMENT,
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
-		auto cameraBuffer3D = m_ResourceManager->CreateBuffer({
-			.debugName = "camera-uniform-buffer",
-			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
-			.memoryUsage = MemoryUsage::GPU_CPU,
-			.byteSize = sizeof(CameraData),
-			.initialData = nullptr
-		});
-
-		auto lightBuffer = m_ResourceManager->CreateBuffer({
-			.debugName = "light-uniform-buffer",
-			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
-			.memoryUsage = MemoryUsage::GPU_CPU,
-			.byteSize = sizeof(LightData),
-			.initialData = nullptr,
-		});
-
-		m_GlobalBindings3D = m_ResourceManager->CreateBindGroup({
-			.debugName = "global-bind-group",
-			.layout = m_GlobalBindingsLayout3D,
-			.buffers = {
-				{ .buffer = cameraBuffer3D },
-				{ .buffer = lightBuffer },
-			}
-		});
-
-		// Global bindings for presenting to offscreen texture
-		m_GlobalPresentBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
-			.debugName = "global-present-bind-group-layout",
-			.textureBindings = {
-				{
-					.slot = 0,
-					.visibility = ShaderStage::FRAGMENT,
-				},
-			},
 		});
 
 		// Bindings for debug rendering.
-		m_DebugBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
-			.debugName = "debug-draw-bind-group-layout",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
 		auto cameraBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "debug-draw-camera-uniform-buffer",
 			.usage = BufferUsage::UNIFORM,
@@ -360,7 +299,7 @@ namespace HBL2
 
 		m_DebugBindings = m_ResourceManager->CreateBindGroup({
 			.debugName = "debug-draw-bind-group",
-			.layout = m_DebugBindingsLayout,
+			.layout = m_GlobalBindingsLayout2D,
 			.buffers = { { .buffer = cameraBuffer } }
 		});
 	}

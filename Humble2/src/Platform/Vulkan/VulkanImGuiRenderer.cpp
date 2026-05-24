@@ -136,6 +136,7 @@ namespace HBL2
 		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_ImGuiRenderPass, m_Renderer->GetMainFrameBuffer());
 
 		{
+			// Lock the queue here since the imgui function may mess with it.
 			std::lock_guard<std::mutex> lock(m_Renderer->GetGraphicsQueueMutex());
 			ImGui_ImplVulkan_RenderDrawData(data, m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);
 		}

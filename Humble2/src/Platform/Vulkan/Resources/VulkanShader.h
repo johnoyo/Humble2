@@ -12,7 +12,8 @@ namespace HBL2
 {
 	struct VulkanShaderHot
 	{
-		uint64_t PipelineLayoutHash = UINT64_MAX;
+		uint32_t BindGroupLayoutHash0 = 0;
+		uint32_t BindGroupLayoutHash1 = 0;
 		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
 
 		void Destroy();
@@ -79,6 +80,8 @@ namespace HBL2
 
 		alignas(64) std::array<VariantEntry, MaxVariants> m_Entries;
 		std::array<BitFlags<ShaderStage>, MaxSpecializationConstants> m_SpecializationConstantStages;
+
+		StaticDArray<Handle<BindGroupLayout>, 4> m_ReflectedBindGroupLayouts;
 
 		friend class VulkanShader;
 	};

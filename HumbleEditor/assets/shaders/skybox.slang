@@ -8,7 +8,7 @@ struct Camera
 [[vk::binding(0, 0)]]
 ConstantBuffer<Camera> u_Camera;
 
-[[vk::binding(1, 1)]]
+[[vk::binding(1, 2)]]
 SamplerCube u_EnvironmentMap;
 
 // Vertex Shader

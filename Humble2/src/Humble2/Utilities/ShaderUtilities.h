@@ -15,6 +15,12 @@
 
 namespace HBL2
 {
+	enum class HBL2_API ShaderType2
+	{
+		D2 = 0,
+		D3 = 1,
+	};
+
 	enum class HBL2_API BuiltInShader
 	{
 		INVALID = 0,
@@ -52,13 +58,10 @@ namespace HBL2
 		Handle<Asset> ShaderAssetHandle;
 
 		ShaderDescriptor::RenderPipeline::PackedVariant VariantHash{};
-		glm::vec4 AlbedoColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-		float Glossiness = 0.0f;
 
-		Handle<Asset> AlbedoMapAssetHandle;
-		Handle<Asset> NormalMapAssetHandle;
-		Handle<Asset> RoughnessMapAssetHandle;
-		Handle<Asset> MetallicMapAssetHandle;
+		ShaderReflectionData* ReflectionData;
+		Span<const std::vector<uint8_t>> Buffers;
+		Span<const uint32_t> TextureAssets;
 	};
 
 	class HBL2_API ShaderUtilities
@@ -73,6 +76,7 @@ namespace HBL2
 
 		std::string ReadFile(const std::string& filepath);
 		CompilationResultData Compile(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool forceRecompile = false);
+		ShaderReflectionData Reflect(const std::string& shaderFilePath);
 
 		void LoadBuiltInShaders();
 		void DeleteBuiltInShaders();
@@ -81,7 +85,6 @@ namespace HBL2
 		void DeleteBuiltInMaterials();
 
 		Handle<Shader> GetBuiltInShader(BuiltInShader shader) { return m_Shaders[shader]; }
-		Handle<BindGroupLayout> GetBuiltInShaderLayout(BuiltInShader shader) { return m_ShaderLayouts[shader]; }
 		const Span<const Handle<Asset>> GetBuiltInShaderAssets() const { return { m_ShaderAssets.data(), m_ShaderAssets.size() }; }
 
 		void CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType);
@@ -107,7 +110,6 @@ namespace HBL2
 		Arena m_Arena;
 
 		HMap<BuiltInShader, Handle<Shader>> m_Shaders = MakeEmptyHMap<BuiltInShader, Handle<Shader>>();
-		HMap<BuiltInShader, Handle<BindGroupLayout>> m_ShaderLayouts = MakeEmptyHMap<BuiltInShader, Handle<BindGroupLayout>>();
 		DArray<Handle<Asset>> m_ShaderAssets = MakeEmptyDArray<Handle<Asset>>();
 
 		static ShaderUtilities* s_Instance;

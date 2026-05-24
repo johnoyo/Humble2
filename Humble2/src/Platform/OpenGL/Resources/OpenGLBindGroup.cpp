@@ -8,8 +8,8 @@ namespace HBL2
 	OpenGLBindGroup::OpenGLBindGroup(const BindGroupDescriptor&& desc)
 	{
 		DebugName = desc.debugName;
-		Buffers = desc.buffers;
-		Textures = desc.textures;
+		Buffers = { desc.buffers.begin(), desc.buffers.end() };
+		Textures = { desc.textures.begin(), desc.textures.end() };
 		BindGroupLayout = desc.layout;
 
 		auto* rm = (OpenGLResourceManager*)ResourceManager::Instance;

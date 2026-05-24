@@ -10,8 +10,6 @@ struct Object
     float4x4 Model;
     float4x4 InverseModel;
     float4 Color;
-    float Metalicness;
-    float Roughness;
 };
 
 struct Light
@@ -27,29 +25,58 @@ struct Light
     float Count;
 };
 
+struct Material
+{
+    float4 Color;
+    float Roughness;
+    float Metalicness;
+};
+
+/*
+
+- set 0: Global - per frame
+    - Binding 0: ConstantBuffer<Camera>
+    - Binding 1: ConstantBuffer<Light>
+    - Binding 2: Sampler2D u_ShadowAltasMap;
+- set 1: User Global - per frame
+    - ...
+- set 2: Object - per draw
+    - Binding 2: ConstantBuffer<Object>
+- set 3: User / Material - per material
+    - Binding 3: ConstantBuffer<Material>
+    - Binding 4: Sampler2D u_AlbedoMap
+    - Binding 5: Sampler2D u_NormalMap
+    - Binding 6: Sampler2D u_MetallicMap
+    - Binding 7: Sampler2D u_RoughnessMap
+
+*/
+
 [[vk::binding(0, 0)]]
 ConstantBuffer<Camera> u_Camera;
 
 [[vk::binding(1, 0)]]
 ConstantBuffer<Light> u_Light;
 
-[[vk::binding(5, 1)]]
-ConstantBuffer<Object> u_Object;
+[[vk::binding(2, 0)]]
+Sampler2D u_ShadowAltasMap;
 
-[[vk::binding(0, 1)]]
+[[vk::binding(0, 2)]]
 Sampler2D u_AlbedoMap;
 
-[[vk::binding(1, 1)]]
+[[vk::binding(1, 2)]]
 Sampler2D u_NormalMap;
 
-[[vk::binding(2, 1)]]
+[[vk::binding(2, 2)]]
+ConstantBuffer<Material> u_Material;
+
+[[vk::binding(3, 2)]]
 Sampler2D u_MetallicMap;
 
-[[vk::binding(3, 1)]]
+[[vk::binding(4, 2)]]
 Sampler2D u_RoughnessMap;
 
-[[vk::binding(4, 1)]]
-Sampler2D u_ShadowAltasMap;
+[[vk::binding(4, 3)]]
+ConstantBuffer<Object> u_Object;
 
 // Vertex Shader
 
@@ -76,7 +103,7 @@ VSOutput mainVS(VSInput input)
     VSOutput output;
 
     output.v_Position = mul(u_Object.Model, float4(input.a_Position, 1.0)).xyz;
-    output.v_Color = u_Object.Color;
+    output.v_Color = u_Material.Color * u_Object.Color;
     output.v_TextureCoord = input.a_TextureCoord;
     output.v_Normal = mul(u_Object.InverseModel, float4(input.a_Normal, 0.0)).xyz;
     output.position = mul(u_Camera.ViewProjection, mul(u_Object.Model, float4(input.a_Position, 1.0)));

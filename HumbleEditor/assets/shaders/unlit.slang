@@ -14,14 +14,11 @@ struct Object
 [[vk::binding(0, 0)]]
 ConstantBuffer<Camera> u_Camera;
 
-[[vk::binding(2, 1)]]
-ConstantBuffer<Object> u_Object;
-
-[[vk::binding(0, 1)]]
+[[vk::binding(0, 2)]]
 Sampler2D u_AlbedoMap;
 
-[[vk::binding(3, 1)]]
-Sampler2D u_ShadowAltasMap;
+[[vk::binding(4, 3)]]
+ConstantBuffer<Object> u_Object;
 
 // Vertex Shader
 

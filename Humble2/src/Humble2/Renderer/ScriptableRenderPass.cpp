@@ -46,7 +46,6 @@ namespace HBL2
 		drawList.Insert({
 			.Shader = m_RenderPassContext.Shader,
 			// .Mesh = GetOrCreateFullScreenQuad(),
-			.Material = m_RenderPassContext.Material,
 		});
 
 		return drawList;

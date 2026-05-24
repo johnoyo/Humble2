@@ -426,21 +426,9 @@ namespace HBL2
 							m_OpenMaterialSetupPopup = true;
 						}
 
-						if (ImGui::MenuItem("Blinn-Phong"))
+						if (ImGui::MenuItem("Lit"))
 						{
 							m_SelectedMaterialType = 1;
-							m_OpenMaterialSetupPopup = true;
-						}
-
-						if (ImGui::MenuItem("PBR"))
-						{
-							m_SelectedMaterialType = 2;
-							m_OpenMaterialSetupPopup = true;
-						}
-
-						if (ImGui::MenuItem("Custom"))
-						{
-							m_SelectedMaterialType = 3;
 							m_OpenMaterialSetupPopup = true;
 						}
 
@@ -736,6 +724,21 @@ namespace HBL2
 					{
 						shaderAssetHandlePacked = *((uint32_t*)payload->Data);
 						shaderAssetHandle = Handle<Asset>::UnPack(shaderAssetHandlePacked);
+
+						Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+						const auto& filesystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+						const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : shaderAsset->FilePath;
+
+						// Reflect Shader.
+						m_ShaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
+
+						for (auto& data : m_ShaderUniformBufferData)
+						{
+							data.clear();
+						}
+
+						std::memset(m_ShaderUniformTextureData.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.Size());
 					}
 
 					ImGui::EndDragDropTarget();
@@ -834,170 +837,88 @@ namespace HBL2
 				// Stencil enabled.
 				ImGui::Checkbox("Stencil", &stencilEnabled);
 
-				static float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-				ImGui::ColorEdit4("AlbedoColor", color);
-
-				static float glossiness = 1.0f;
-				ImGui::InputFloat("Glossiness", &glossiness, 0.05f);
-
-				// Custom material, get resources from shader reflection.
-				if (m_SelectedMaterialType == 3)
+				if (shaderAssetHandle.IsValid())
 				{
-					// TODO: ...
-				}
+					ImGui::Text("Uniforms:");
 
-				static uint32_t albedoMapHandlePacked = 0;
-
-				if (g_AlbedoMapTask && g_AlbedoMapTask->Finished())
-				{
-					ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
-				}
-				else if (g_AlbedoMapTask && !g_AlbedoMapTask->Finished())
-				{
-					ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
-				}
-				ImGui::InputScalar("AlbedoMap", ImGuiDataType_U32, (void*)(intptr_t*)&albedoMapHandlePacked);
-				if (g_AlbedoMapTask)
-				{
-					ImGui::PopStyleColor();
-				}
-
-				Handle<Asset> albedoMapAssetHandle = Handle<Asset>::UnPack(albedoMapHandlePacked);
-
-				if (ImGui::BeginDragDropTarget())
-				{
-					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+					for (const auto& descriptorSet : m_ShaderReflectionData.descriptorSets)
 					{
-						albedoMapHandlePacked = *((uint32_t*)payload->Data);
-						albedoMapAssetHandle = Handle<Asset>::UnPack(albedoMapHandlePacked);
-
-						if (albedoMapAssetHandle.IsValid())
+						if (descriptorSet.set != 2)
 						{
-							TextureUtilities::Get().CreateAssetMetadataFile(albedoMapAssetHandle);
+							continue;
 						}
 
-						AssetManager::Instance->ReleaseResourceTask(g_AlbedoMapTask);
-						g_AlbedoMapTask = AssetManager::Instance->GetAssetAsync<Texture>(albedoMapAssetHandle);
-					}
+						m_ShaderUniformBufferSize = 0;
+						m_ShaderUniformTextureSize = 0;
 
-					ImGui::EndDragDropTarget();
-				}
-
-				Handle<Asset> normalMapAssetHandle;
-				Handle<Asset> metallicMapAssetHandle;
-				Handle<Asset> roughnessMapAssetHandle;
-
-				if (m_SelectedMaterialType == 2)
-				{
-					// Normal map
-					static uint32_t normalMapHandlePacked = 0;
-					if (g_NormalMapTask && g_NormalMapTask->Finished())
-					{
-						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
-					}
-					else if (g_NormalMapTask && !g_NormalMapTask->Finished())
-					{
-						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
-					}
-					ImGui::InputScalar("NormalMap", ImGuiDataType_U32, (void*)(intptr_t*)&normalMapHandlePacked);
-					if (g_NormalMapTask)
-					{
-						ImGui::PopStyleColor();
-					}
-
-					normalMapAssetHandle = Handle<Asset>::UnPack(normalMapHandlePacked);
-
-					if (ImGui::BeginDragDropTarget())
-					{
-						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+						for (const auto& b : descriptorSet.bindings)
 						{
-							normalMapHandlePacked = *((uint32_t*)payload->Data);
-							normalMapAssetHandle = Handle<Asset>::UnPack(normalMapHandlePacked);
-
-							if (normalMapAssetHandle.IsValid())
+							if (b.type == ResourceType::UniformBuffer)
 							{
-								TextureUtilities::Get().CreateAssetMetadataFile(normalMapAssetHandle);
+								auto& uniformBufferBytes =  m_ShaderUniformBufferData[m_ShaderUniformBufferSize++];
+								uniformBufferBytes.resize(b.size);
+
+								ImGui::Text(b.name.c_str());
+
+								for (const auto& m : b.members)
+								{
+									uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+									switch (m.typeInfo.base)
+									{
+										case MemberBaseType::Float:
+										{
+											float* f = reinterpret_cast<float*>(memberPtr);
+
+											if (m.typeInfo.cols == 1)
+											{
+												ImGui::InputFloat(m.name.c_str(), f, 0.f, 0.f, "%.5f");
+											}
+											else if (m.typeInfo.cols == 2)
+											{
+												ImGui::InputFloat2(m.name.c_str(), f, "%.5f");
+											}
+											else if (m.typeInfo.cols == 3)
+											{
+												ImGui::InputFloat3(m.name.c_str(), f, "%.5f");
+											}
+											else if (m.typeInfo.cols == 4)
+											{
+												ImGui::InputFloat4(m.name.c_str(), f, "%.5f");
+											}
+											break;
+										}
+									}
+								}
 							}
-
-							AssetManager::Instance->ReleaseResourceTask(g_NormalMapTask);
-							g_NormalMapTask = AssetManager::Instance->GetAssetAsync<Texture>(normalMapAssetHandle);
-						}
-
-						ImGui::EndDragDropTarget();
-					}
-
-					// Metalicness map
-					static uint32_t metallicMapHandlePacked = 0;
-					if (g_MetallicMapTask && g_MetallicMapTask->Finished())
-					{
-						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
-					}
-					else if (g_MetallicMapTask && !g_MetallicMapTask->Finished())
-					{
-						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
-					}
-					ImGui::InputScalar("MetallicMap", ImGuiDataType_U32, (void*)(intptr_t*)&metallicMapHandlePacked);
-					if (g_MetallicMapTask)
-					{
-						ImGui::PopStyleColor();
-					}
-
-					metallicMapAssetHandle = Handle<Asset>::UnPack(metallicMapHandlePacked);
-
-					if (ImGui::BeginDragDropTarget())
-					{
-						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
-						{
-							metallicMapHandlePacked = *((uint32_t*)payload->Data);
-							metallicMapAssetHandle = Handle<Asset>::UnPack(metallicMapHandlePacked);
-
-							if (metallicMapAssetHandle.IsValid())
+							else if (b.type == ResourceType::SampledTexture)
 							{
-								TextureUtilities::Get().CreateAssetMetadataFile(metallicMapAssetHandle);
+								auto& userMapHandlePacked = m_ShaderUniformTextureData[m_ShaderUniformTextureSize++];
+
+								ImGui::InputScalar(b.name.c_str(), ImGuiDataType_U32, (void*)(intptr_t*)&userMapHandlePacked);
+
+								Handle<Asset> userMapAssetHandle = Handle<Asset>::UnPack(userMapHandlePacked);
+								Handle<Texture> userMapHandle = AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
+
+								if (ImGui::BeginDragDropTarget())
+								{
+									if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+									{
+										userMapHandlePacked = *((uint32_t*)payload->Data);
+										userMapAssetHandle = Handle<Asset>::UnPack(userMapHandlePacked);
+
+										if (userMapAssetHandle.IsValid())
+										{
+											TextureUtilities::Get().CreateAssetMetadataFile(userMapAssetHandle);
+										}
+
+										userMapHandle = AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
+									}
+
+									ImGui::EndDragDropTarget();
+								}
 							}
-
-							AssetManager::Instance->ReleaseResourceTask(g_MetallicMapTask);
-							g_MetallicMapTask = AssetManager::Instance->GetAssetAsync<Texture>(metallicMapAssetHandle);
 						}
-
-						ImGui::EndDragDropTarget();
-					}
-
-					// Roughness map
-					static uint32_t roughnessMapHandlePacked = 0;
-					if (g_RoughnessMapTask && g_RoughnessMapTask->Finished())
-					{
-						ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
-					}
-					else if (g_RoughnessMapTask && !g_RoughnessMapTask->Finished())
-					{
-						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
-					}
-					ImGui::InputScalar("RoughnessMap", ImGuiDataType_U32, (void*)(intptr_t*)&roughnessMapHandlePacked);
-					if (g_RoughnessMapTask)
-					{
-						ImGui::PopStyleColor();
-					}
-
-					roughnessMapAssetHandle = Handle<Asset>::UnPack(roughnessMapHandlePacked);
-
-					if (ImGui::BeginDragDropTarget())
-					{
-						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
-						{
-							roughnessMapHandlePacked = *((uint32_t*)payload->Data);
-							roughnessMapAssetHandle = Handle<Asset>::UnPack(roughnessMapHandlePacked);
-
-							if (roughnessMapAssetHandle.IsValid())
-							{
-								TextureUtilities::Get().CreateAssetMetadataFile(roughnessMapAssetHandle);
-							}
-
-							AssetManager::Instance->ReleaseResourceTask(g_RoughnessMapTask);
-							g_RoughnessMapTask = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapAssetHandle);
-						}
-
-						ImGui::EndDragDropTarget();
 					}
 				}
 
@@ -1037,12 +958,8 @@ namespace HBL2
 								.stencilEnabled = stencilEnabled,
 								.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)(Compare)depthTest,
 							},
-							.AlbedoColor = { color[0], color[1], color[2], color[3] },
-							.Glossiness = glossiness,
-							.AlbedoMapAssetHandle = albedoMapAssetHandle,
-							.NormalMapAssetHandle = normalMapAssetHandle,
-							.RoughnessMapAssetHandle = roughnessMapAssetHandle,
-							.MetallicMapAssetHandle = metallicMapAssetHandle,
+							.Buffers = { m_ShaderUniformBufferData.Data(), m_ShaderUniformBufferSize },
+							.TextureAssets = { m_ShaderUniformTextureData.Data(), m_ShaderUniformTextureSize },
 						});
 
 						if (materialAssetHandle.IsValid())

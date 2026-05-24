@@ -309,7 +309,6 @@ namespace HBL2
 		const std::string& shaderName = asset->FilePath.filename().stem().string();
 
 		Handle<BindGroupLayout> globalBindGroupLayout;
-		Handle<BindGroupLayout> drawBindGroupLayout;
 
 		StaticDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> shaderVariants;
 		uint32_t type = 0;
@@ -323,15 +322,10 @@ namespace HBL2
 			{
 			case 0:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout2D();
-				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::UNLIT);
 				break;
 			case 1:
-				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
-				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG);
-				break;
 			case 2:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
-				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR);
 				break;
 			default:
 				HBL2_CORE_ERROR("Unknown Shader type: {0}", asset->DebugName);
@@ -424,8 +418,10 @@ namespace HBL2
 			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
 			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
 			.bindGroups {
-				globalBindGroupLayout,	// Global bind group (0)
-				drawBindGroupLayout,	// Material bind group (1)
+				globalBindGroupLayout,							// Global bind group			(0)
+				outReflectionData.GetBindGroupLayout(1),		// Global user bind group		(1)
+				outReflectionData.GetBindGroupLayout(2),		// Material / user bind group	(2)
+				Renderer::Instance->GetDynamicBindingsLayout(),	// Draw bind group				(3)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = outReflectionData.vertexBufferBindings,
@@ -504,6 +500,14 @@ namespace HBL2
 
 			ShaderDescriptor::RenderPipeline::PackedVariant variantDesc = {};
 
+			if (materialProperties["RasterState"].IsDefined())
+			{
+				variantDesc.topology = (packed_size)(Topology)materialProperties["RasterState"]["Topology"].as<int>();
+				variantDesc.polygonMode = (packed_size)(PolygonMode)materialProperties["RasterState"]["PolygonMode"].as<int>();
+				variantDesc.cullMode = (packed_size)(CullMode)materialProperties["RasterState"]["CullMode"].as<int>();
+				variantDesc.frontFace = (packed_size)(FrontFace)materialProperties["RasterState"]["FrontFace"].as<int>();
+			}
+
 			if (materialProperties["BlendState"].IsDefined())
 			{
 				variantDesc.colorOutput = materialProperties["BlendState"]["ColorOutputEnabled"].as<bool>();
@@ -530,57 +534,141 @@ namespace HBL2
 				variantDesc.shaderConstantBool7 = materialProperties["ShaderConstantsState"]["ShaderConstantBool7"].as<bool>();
 			}
 
-			UUID albedoMapUUID = materialProperties["AlbedoMap"].as<UUID>();
-			UUID normalMapUUID = materialProperties["NormalMap"].as<UUID>();
-			UUID metallicMapUUID = materialProperties["MetallicMap"].as<UUID>();
-			UUID roughnessMapUUID = materialProperties["RoughnessMap"].as<UUID>();
+			auto shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
+			Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
 
-			glm::vec4 albedoColor = materialProperties["AlbedoColor"].as<glm::vec4>();
-			float glossiness = materialProperties["Glossiness"].as<float>();
+			auto shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
 
-			JobContext materialJobsCtx;
+			const auto& filesystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+			const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : shaderAsset->FilePath;
 
-			auto shaderJobHandle = AssetManager::Instance->GetAssetAsync<Shader>(shaderUUID, &materialJobsCtx);
-			auto albedoMapJobHandle = AssetManager::Instance->GetAssetAsync<Texture>(albedoMapUUID, &materialJobsCtx);
-			auto normalMapJobHandle = AssetManager::Instance->GetAssetAsync<Texture>(normalMapUUID, &materialJobsCtx);
-			auto metallicMapJobHandle = AssetManager::Instance->GetAssetAsync<Texture>(metallicMapUUID, &materialJobsCtx);
-			auto roughnessMapJobHandle = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapUUID, &materialJobsCtx);
+			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
 
-			AssetManager::Instance->WaitForAsyncJobs(&materialJobsCtx);
+			Handle<BindGroup> materialBindGroup;
 
-			Handle<Shader> shaderHandle = (shaderJobHandle ? shaderJobHandle->ResourceHandle : Handle<Shader>{});
-			Handle<Texture> albedoMapHandle = (albedoMapJobHandle ? albedoMapJobHandle->ResourceHandle : Handle<Texture>{});
-			Handle<Texture> normalMapHandle = (normalMapJobHandle ? normalMapJobHandle->ResourceHandle : Handle<Texture>{});
-			Handle<Texture> metallicMapHandle = (metallicMapJobHandle ? metallicMapJobHandle->ResourceHandle : Handle<Texture>{});
-			Handle<Texture> roughnessMapHandle = (roughnessMapJobHandle ? roughnessMapJobHandle->ResourceHandle : Handle<Texture>{});
-
-			// If shader is not set, get the built in shader depending on material type.
-			if (!shaderHandle.IsValid())
+			for (const auto& descriptorSet : shaderReflectionData.descriptorSets)
 			{
-				if (type == 0)
+				if (descriptorSet.set != 2)
 				{
-					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::UNLIT);
-				}
-				else if (type == 1)
-				{
-					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::BLINN_PHONG);
-				}
-				else if (type == 2)
-				{
-					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PBR);
+					continue;
 				}
 
-				const auto& builtInShaderAssets = ShaderUtilities::Get().GetBuiltInShaderAssets();
+				StaticDArray<Handle<Texture>, 8> textureBindings;
+				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
 
-				for (const auto shaderAssetHandle : builtInShaderAssets)
+				for (const auto& b : descriptorSet.bindings)
 				{
-					Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
-
-					if (shaderHandle.Pack() == shaderAsset->Indentifier)
+					if (b.type == ResourceType::UniformBuffer)
 					{
-						shaderUUID = shaderAsset->UUID;
-						break;
+						std::vector<uint8_t> uniformBufferBytes(b.size);
+
+						const auto& bufferProp = materialProperties[b.name];
+
+						if (bufferProp.IsDefined())
+						{
+							for (const auto& m : b.members)
+							{
+								const auto& memberProp = bufferProp[m.name];
+
+								if (!memberProp.IsDefined())
+								{
+									continue;
+								}
+
+								uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+								switch (m.typeInfo.base)
+								{
+								case MemberBaseType::Float:
+									{
+										float* f = reinterpret_cast<float*>(memberPtr);
+
+										if (m.typeInfo.cols == 1)
+										{
+											*f = memberProp.as<float>();
+										}
+										else if (m.typeInfo.cols == 2)
+										{
+											const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+
+											f[0] = vec2.x;
+											f[1] = vec2.y;
+										}
+										else if (m.typeInfo.cols == 3)
+										{
+											const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+
+											f[0] = vec3.x;
+											f[1] = vec3.y;
+											f[2] = vec3.z;
+										}
+										else if (m.typeInfo.cols == 4)
+										{
+											const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+											f[0] = vec4.x;
+											f[1] = vec4.y;
+											f[2] = vec4.z;
+											f[3] = vec4.w;
+										}
+										break;
+									}
+								}
+							}
+
+							auto userBuffer = ResourceManager::Instance->CreateBuffer({
+								.debugName = "user-uniform-buffer",
+								.usage = BufferUsage::UNIFORM,
+								.usageHint = BufferUsageHint::DYNAMIC,
+								.memoryUsage = MemoryUsage::GPU_CPU,
+								.byteSize = (uint32_t)b.size,
+								.initialData = (void*)uniformBufferBytes.data(),
+							});
+
+							bufferBindings.push_back({ .buffer = userBuffer, });
+						}
 					}
+					else if (b.type == ResourceType::SampledTexture)
+					{
+						const auto& textureProp = materialProperties[b.name];
+
+						if (textureProp.IsDefined())
+						{
+							UUID textureMapUUID = textureProp.as<UUID>();
+
+							auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
+							textureBindings.push_back(handle);
+						}
+					}
+				}
+
+				// If there is only one texture and is not set, use the built in white texture.
+				if (textureBindings.size() == 1)
+				{
+					if (!textureBindings[0].IsValid())
+					{
+						textureBindings[0] = TextureUtilities::Get().WhiteTexture;
+					}
+				}
+
+				materialBindGroup = ResourceManager::Instance->CreateBindGroup({
+					.debugName = "user-bind-group",
+					.layout = shaderReflectionData.GetBindGroupLayout(2),
+					.textures = textureBindings,
+					.buffers = bufferBindings,
+				});
+			}
+
+			const auto& builtInShaderAssets = ShaderUtilities::Get().GetBuiltInShaderAssets();
+
+			for (const auto shaderAssetHandle : builtInShaderAssets)
+			{
+				Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+				if (shaderHandle.Pack() == shaderAsset->Indentifier)
+				{
+					shaderUUID = shaderAsset->UUID;
+					break;
 				}
 			}
 
@@ -590,68 +678,29 @@ namespace HBL2
 			ResourceManager::Instance->GetOrAddShaderVariant(shaderHandle, variantDesc);
 			ShaderUtilities::Get().UpdateShaderVariantMetadataFile(shaderUUID, variantDesc);
 
-			// If albedo map is not set use the built in white texture.
-			if (!albedoMapHandle.IsValid())
-			{
-				albedoMapHandle = TextureUtilities::Get().WhiteTexture;
-			}
-
 			const std::string& materialName = asset->FilePath.filename().stem().string();
-
-			Handle<BindGroup> drawBindings;
 			uint32_t dynamicUniformBufferRange = (type == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData));
 
-			if (type == 2) // PBR
-			{
-				if (!normalMapHandle.IsValid())
-				{
-					normalMapHandle = TextureUtilities::Get().WhiteTexture;
-				}
-
-				if (!metallicMapHandle.IsValid())
-				{
-					metallicMapHandle = TextureUtilities::Get().WhiteTexture;
-				}
-
-				if (!roughnessMapHandle.IsValid())
-				{
-					roughnessMapHandle = TextureUtilities::Get().WhiteTexture;
-				}
-
-				drawBindings = ResourceManager::Instance->CreateBindGroup({
-					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
-					.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle, Renderer::Instance->ShadowAtlasTexture },
-					.buffers = {
-						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
-					}
-				});
-			}
-			else
-			{
-				drawBindings = ResourceManager::Instance->CreateBindGroup({
-					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
-					.textures = { albedoMapHandle, Renderer::Instance->ShadowAtlasTexture },
-					.buffers = {
-						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
-					}
-				});
-			}
+			auto drawBindings = ResourceManager::Instance->CreateBindGroup({
+				.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
+				.layout = Renderer::Instance->GetDynamicBindingsLayout(),
+				.buffers = { { .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange }, }
+			});
 
 			auto material = ResourceManager::Instance->CreateMaterial({
 				.debugName = _strdup(std::format("{}-material", materialName).c_str()),
 				.shader = shaderHandle,
-				.bindGroup = drawBindings,
+				.drawBindGroup = drawBindings,
+				.materialBindGroup = materialBindGroup,
 			});
 
 			Material* mat = ResourceManager::Instance->GetMaterial(material);
-			mat->AlbedoColor = albedoColor;
-			mat->Glossiness = glossiness;
+			/*mat->AlbedoColor = albedoColor;
+			mat->Glossiness = glossiness;*/
 			mat->VariantHash = variantDesc;
 
 			stream.close();
-			return material;
+			return material;			
 		}
 
 		stream.close();
@@ -920,15 +969,10 @@ namespace HBL2
 			{
 			case 0:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout2D();
-				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::UNLIT);
 				break;
 			case 1:
-				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
-				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG);
-				break;
 			case 2:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
-				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR);
 				break;
 			default:
 				HBL2_CORE_ERROR("Unknown Shader type: {0}", asset->DebugName);
@@ -1021,8 +1065,10 @@ namespace HBL2
 			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
 			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
 			.bindGroups {
-				globalBindGroupLayout,	// Global bind group (0)
-				drawBindGroupLayout,	// Material bind group (1)
+				globalBindGroupLayout,							// Global bind group			(0)
+				outReflectionData.GetBindGroupLayout(1),		// Global user bind group		(1)
+				outReflectionData.GetBindGroupLayout(2),		// Material / user bind group	(2)
+				Renderer::Instance->GetDynamicBindingsLayout(),	// Draw bind group				(3)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = outReflectionData.vertexBufferBindings,
@@ -1033,7 +1079,6 @@ namespace HBL2
 		});
 
 		stream.close();
-
 		return shaderHandle;
 	}
 
@@ -1054,6 +1099,7 @@ namespace HBL2
 		}
 
 		Material* mat = ResourceManager::Instance->GetMaterial(materialHandle);
+		const std::string& materialName = asset->FilePath.filename().stem().string();
 
 		std::fstream ioStream(Project::GetAssetFileSystemPath(asset->FilePath), std::ios::in | std::ios::out);
 
@@ -1081,136 +1127,182 @@ namespace HBL2
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
 			Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
 
+			// If the shader is the same, reload it first.
 			if (shaderHandle == mat->Shader)
 			{
-				// If the shader is the same, just reload it.
-				AssetManager::Instance->ReloadAsset<Shader>(shaderUUID);
+				shaderHandle = AssetManager::Instance->ReloadAsset<Shader>(shaderUUID);
 			}
-			else
+
+			// Now that we have the up to date shader, do a full reimport of the material.
+			uint32_t type = UINT32_MAX;
+			bool autoImported = false;
+
+			// Gather metadata.
 			{
-				// If the shader has changed, we need to reimport the material.
-				uint32_t type = UINT32_MAX;
-				bool autoImported = false;
+				std::ifstream metaDataStream(materialPath.string() + ".hblmat");
 
-				// Gather metadata.
+				if (!metaDataStream.is_open())
 				{
-					std::ifstream metaDataStream(materialPath.string() + ".hblmat");
+					HBL2_CORE_ERROR("Material metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmat");
+					return Handle<Material>();
+				}
 
-					if (!metaDataStream.is_open())
-					{
-						HBL2_CORE_ERROR("Material metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmat");
-						return Handle<Material>();
-					}
+				std::stringstream ssMetadata;
+				ssMetadata << metaDataStream.rdbuf();
 
-					std::stringstream ssMetadata;
-					ssMetadata << metaDataStream.rdbuf();
-
-					YAML::Node dataMetadata = YAML::Load(ssMetadata.str());
-					if (!dataMetadata["Material"].IsDefined())
-					{
-						HBL2_CORE_TRACE("Material not found in metadata file: {0}", ssMetadata.str());
-						metaDataStream.close();
-						return Handle<Material>();
-					}
-
-					auto materialMetadataProperties = dataMetadata["Material"];
-					if (materialMetadataProperties)
-					{
-						type = materialMetadataProperties["Type"].as<uint32_t>();
-						autoImported = materialMetadataProperties["AutoImported"].as<bool>();
-					}
-
+				YAML::Node dataMetadata = YAML::Load(ssMetadata.str());
+				if (!dataMetadata["Material"].IsDefined())
+				{
+					HBL2_CORE_TRACE("Material not found in metadata file: {0}", ssMetadata.str());
 					metaDataStream.close();
+					return Handle<Material>();
 				}
 
-				// If shader is not set, get the built in shader depending on material type.
-				if (!shaderHandle.IsValid())
+				auto materialMetadataProperties = dataMetadata["Material"];
+				if (materialMetadataProperties)
 				{
-					if (type == 0)
-					{
-						shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::UNLIT);
-					}
-					else if (type == 1)
-					{
-						shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::BLINN_PHONG);
-					}
-					else if (type == 2)
-					{
-						shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PBR);
-					}
+					type = materialMetadataProperties["Type"].as<uint32_t>();
+					autoImported = materialMetadataProperties["AutoImported"].as<bool>();
 				}
 
-				// Get textures.
-				UUID albedoMapUUID = materialProperties["AlbedoMap"].as<UUID>();
-				Handle<Texture> albedoMapHandle = AssetManager::Instance->GetAsset<Texture>(albedoMapUUID);
-
-				UUID normalMapUUID = materialProperties["NormalMap"].as<UUID>();
-				Handle<Texture> normalMapHandle = AssetManager::Instance->GetAsset<Texture>(normalMapUUID);
-
-				UUID metallicMapUUID = materialProperties["MetallicMap"].as<UUID>();
-				Handle<Texture> metallicMapHandle = AssetManager::Instance->GetAsset<Texture>(metallicMapUUID);
-
-				UUID roughnessMapUUID = materialProperties["RoughnessMap"].as<UUID>();
-				Handle<Texture> roughnessMapHandle = AssetManager::Instance->GetAsset<Texture>(roughnessMapUUID);
-
-				// If albedo map is not set use the built in white texture.
-				if (!albedoMapHandle.IsValid())
-				{
-					albedoMapHandle = TextureUtilities::Get().WhiteTexture;
-				}
-
-				const std::string& materialName = asset->FilePath.filename().stem().string();
-
-				Handle<BindGroup> drawBindings;
-				uint32_t dynamicUniformBufferRange = (type == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData));
-
-				if (type == 2) // PBR
-				{
-					if (!normalMapHandle.IsValid())
-					{
-						normalMapHandle = TextureUtilities::Get().WhiteTexture;
-					}
-
-					drawBindings = ResourceManager::Instance->CreateBindGroup({
-						.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-						.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
-						.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle, Renderer::Instance->ShadowAtlasTexture },
-						.buffers = {
-							{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
-						}
-					});
-				}
-				else
-				{
-					drawBindings = ResourceManager::Instance->CreateBindGroup({
-						.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-						.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
-						.textures = { albedoMapHandle, Renderer::Instance->ShadowAtlasTexture },
-						.buffers = {
-							{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
-						}
-					});
-				}
-
-				// Delete old bind group.
-				ResourceManager::Instance->DeleteBindGroup(mat->BindGroup);
-
-				ResourceManager::Instance->ReimportMaterial(materialHandle, {
-					.debugName = _strdup(std::format("{}-material", materialName).c_str()),
-					.shader = shaderHandle,
-					.bindGroup = drawBindings,
-				});
-
-				glm::vec4 albedoColor = materialProperties["AlbedoColor"].as<glm::vec4>();
-				float glossiness = materialProperties["Glossiness"].as<float>();
-
-				mat->AlbedoColor = albedoColor;
-				mat->Glossiness = glossiness;
+				metaDataStream.close();
 			}
+
+			auto shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
+			Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+			const auto& filesystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+			const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : shaderAsset->FilePath;
+
+			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
+
+			Handle<BindGroup> materialBindGroup;
+
+			for (const auto& descriptorSet : shaderReflectionData.descriptorSets)
+			{
+				if (descriptorSet.set != 2)
+				{
+					continue;
+				}
+
+				StaticDArray<Handle<Texture>, 8> textureBindings;
+				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
+
+				for (const auto& b : descriptorSet.bindings)
+				{
+					if (b.type == ResourceType::UniformBuffer)
+					{
+						std::vector<uint8_t> uniformBufferBytes(b.size);
+
+						const auto& bufferProp = materialProperties[b.name];
+
+						if (bufferProp.IsDefined())
+						{
+							for (const auto& m : b.members)
+							{
+								const auto& memberProp = bufferProp[m.name];
+
+								if (!memberProp.IsDefined())
+								{
+									continue;
+								}
+
+								uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+								switch (m.typeInfo.base)
+								{
+								case MemberBaseType::Float:
+								{
+									float* f = reinterpret_cast<float*>(memberPtr);
+
+									if (m.typeInfo.cols == 1)
+									{
+										*f = memberProp.as<float>();
+									}
+									else if (m.typeInfo.cols == 2)
+									{
+										const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+
+										f[0] = vec2.x;
+										f[1] = vec2.y;
+									}
+									else if (m.typeInfo.cols == 3)
+									{
+										const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+
+										f[0] = vec3.x;
+										f[1] = vec3.y;
+										f[2] = vec3.z;
+									}
+									else if (m.typeInfo.cols == 4)
+									{
+										const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+										f[0] = vec4.x;
+										f[1] = vec4.y;
+										f[2] = vec4.z;
+										f[3] = vec4.w;
+									}
+									break;
+								}
+								}
+							}
+
+							auto userBuffer = ResourceManager::Instance->CreateBuffer({
+								.debugName = "user-uniform-buffer",
+								.usage = BufferUsage::UNIFORM,
+								.usageHint = BufferUsageHint::DYNAMIC,
+								.memoryUsage = MemoryUsage::GPU_CPU,
+								.byteSize = (uint32_t)b.size,
+								.initialData = (void*)uniformBufferBytes.data(),
+							});
+
+							bufferBindings.push_back({ .buffer = userBuffer, });
+						}
+					}
+					else if (b.type == ResourceType::SampledTexture)
+					{
+						const auto& textureProp = materialProperties[b.name];
+
+						if (textureProp.IsDefined())
+						{
+							UUID textureMapUUID = textureProp.as<UUID>();
+
+							auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
+							textureBindings.push_back(handle);
+						}
+					}
+				}
+
+				// If there is only one texture and is not set, use the built in white texture.
+				if (textureBindings.size() == 1)
+				{
+					if (!textureBindings[0].IsValid())
+					{
+						textureBindings[0] = TextureUtilities::Get().WhiteTexture;
+					}
+				}
+
+				materialBindGroup = ResourceManager::Instance->CreateBindGroup({
+					.debugName = "user-bind-group",
+					.layout = shaderReflectionData.GetBindGroupLayout(2),
+					.textures = textureBindings,
+					.buffers = bufferBindings,
+				});
+			}
+
+			// Delete old bind group.
+			ResourceManager::Instance->DeleteBindGroup(mat->MaterialBindGroup);
+
+			ResourceManager::Instance->ReimportMaterial(materialHandle, {
+				.debugName = _strdup(std::format("{}-material", materialName).c_str()),
+				.shader = shaderHandle,
+				.drawBindGroup = mat->DrawBindGroup,
+				.materialBindGroup = materialBindGroup,
+			});
 		}
 
 		ioStream.close();
-
 		return materialHandle;
 	}
 
@@ -1296,9 +1388,6 @@ namespace HBL2
 		auto materialProperties = data["Material"];
 		if (materialProperties)
 		{
-			materialProperties["AlbedoColor"] = mat->AlbedoColor;
-			materialProperties["Glossiness"] = mat->Glossiness;
-
 			if (materialProperties["RasterState"].IsDefined())
 			{
 				materialProperties["RasterState"]["Topology"] = (int)mat->VariantHash.topology;
@@ -2085,6 +2174,12 @@ namespace HBL2
 		}
 
 		Material* material = ResourceManager::Instance->GetMaterial(materialAssetHandle);
+
+		if (material != nullptr)
+		{
+			ResourceManager::Instance->DeleteBindGroup(material->DrawBindGroup);
+			ResourceManager::Instance->DeleteBindGroup(material->MaterialBindGroup);
+		}
 
 		ResourceManager::Instance->DeleteMaterial(materialAssetHandle);
 

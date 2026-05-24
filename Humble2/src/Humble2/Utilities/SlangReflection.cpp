@@ -1,11 +1,68 @@
 #include "SlangReflection.h"
 
+#include "Renderer\Renderer.h"
+#include "Resources\ResourceManager.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
 
 namespace HBL2
 {
+    static MemberBaseType ToMemberBaseType(slang::TypeReflection::ScalarType scalar)
+    {
+        switch (scalar)
+        {
+        case slang::TypeReflection::ScalarType::Bool:   return MemberBaseType::Bool;
+        case slang::TypeReflection::ScalarType::Int32:  return MemberBaseType::Int;
+        case slang::TypeReflection::ScalarType::UInt32: return MemberBaseType::UInt;
+        case slang::TypeReflection::ScalarType::Float32:return MemberBaseType::Float;
+        case slang::TypeReflection::ScalarType::Float64:return MemberBaseType::Double;
+        default:                                        return MemberBaseType::Unknown;
+        }
+    }
+
+    static MemberTypeInfo ReflectMemberType(slang::TypeLayoutReflection* fieldLayout)
+    {
+        MemberTypeInfo info;
+        slang::TypeReflection* type = fieldLayout->getType();
+
+        // Unwrap arrays first
+        if (type->getKind() == slang::TypeReflection::Kind::Array)
+        {
+            info.isArray = true;
+            info.arrayCount = static_cast<uint32_t>(type->getElementCount());
+            fieldLayout = fieldLayout->getElementTypeLayout();
+            type = fieldLayout->getType();
+        }
+
+        switch (type->getKind())
+        {
+        case slang::TypeReflection::Kind::Scalar:
+            info.base = ToMemberBaseType(type->getScalarType());
+            info.rows = 1;
+            info.cols = 1;
+            break;
+
+        case slang::TypeReflection::Kind::Vector:
+            info.base = ToMemberBaseType(type->getElementType()->getScalarType());
+            info.rows = 1;
+            info.cols = static_cast<uint32_t>(type->getElementCount()); // float3 → cols=3
+            break;
+
+        case slang::TypeReflection::Kind::Matrix:
+            info.base = ToMemberBaseType(type->getElementType()->getScalarType());
+            info.rows = static_cast<uint32_t>(type->getRowCount());
+            info.cols = static_cast<uint32_t>(type->getColumnCount());
+            break;
+
+        default:
+            break; // nested structs etc. — extend recursively if needed
+        }
+
+        return info;
+    }
+
     const DescriptorBinding* DescriptorSetLayout::find(const std::string& name) const
     {
         for (const auto& b : bindings)
@@ -176,6 +233,66 @@ namespace HBL2
         return nullptr;
     }
 
+    Handle<BindGroupLayout> ShaderReflectionData::GetBindGroupLayout(uint32_t set)
+    {
+        for (const auto& descriptorSet : descriptorSets)
+        {
+            if (descriptorSet.set != set)
+            {
+                continue;
+            }
+
+            StaticDArray<BindGroupLayoutDescriptor::TextureBinding, 8> textureBindings;
+            StaticDArray<BindGroupLayoutDescriptor::BufferBinding, 8> bufferBindings;
+
+            for (const auto& b : descriptorSet.bindings)
+            {
+                ShaderStage shaderStage = ShaderStage::NONE;
+
+                if (b.stageMask.IsSet(ShaderStage::VERTEX))
+                {
+                    shaderStage = ShaderStage::VERTEX;
+                }
+                else if (b.stageMask.IsSet(ShaderStage::FRAGMENT))
+                {
+                    shaderStage = ShaderStage::FRAGMENT;
+                }
+                else if (b.stageMask.IsSet(ShaderStage::COMPUTE))
+                {
+                    shaderStage = ShaderStage::COMPUTE;
+                }
+
+                if (b.type == ResourceType::SampledTexture || b.type == ResourceType::StorageTexture)
+                {
+                    textureBindings.push_back({
+                        .slot = b.binding,
+                        .visibility = shaderStage,
+                        .type = b.type == ResourceType::SampledTexture ? TextureBindingType::IMAGE_SAMPLER : TextureBindingType::STORAGE_IMAGE,
+                    });
+                }
+                else if (b.type == ResourceType::UniformBuffer || b.type == ResourceType::StorageBuffer)
+                {
+                    bufferBindings.push_back({
+                        .slot = b.binding,
+                        .visibility = shaderStage,
+                        .type = b.type == ResourceType::UniformBuffer ? BufferBindingType::UNIFORM : BufferBindingType::STORAGE,
+                    });
+                }
+            }
+
+            auto bindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
+                .debugName = "reflected-bind-group-layout",
+                .textureBindings = textureBindings,
+                .bufferBindings = bufferBindings,
+                .createdFromReflection = true,
+            });
+
+            return bindGroupLayout;
+        }
+
+        return Renderer::Instance->GetEmptyBindingsLayout();
+    }
+
     bool ShaderReflectionData::hasBinding(const std::string& name) const
     {
         return findBinding(name) != nullptr;
@@ -233,7 +350,7 @@ namespace HBL2
                     b.binding,
                     b.name.c_str(),
                     ShaderReflector::ResourceTypeToString(b.type),
-                    ShaderReflector::ShaderStageToString(b.stage),
+                    ShaderReflector::ShaderStageToString(b.stageMask),
                     b.count);
             }
         }
@@ -251,6 +368,18 @@ namespace HBL2
         printf("\n");
     }
 
+    void ShaderReflectionData::Clear()
+    {
+        entryPoints.clear();
+        vertexAttributes.clear();
+        vertexBufferBindings.clear();
+        descriptorSets.clear();
+        specializationConstants.clear();
+
+        m_SpecConstantStorage.clear();
+        m_SpecConstantsPerVariant.clear();
+    }
+
     ShaderReflectionData ShaderReflector::Reflect(slang::IComponentType* linkedProgram, const std::string& sourcePath)
     {
         assert(linkedProgram && "linkedProgram must not be null");
@@ -263,7 +392,7 @@ namespace HBL2
 
         ReflectEntryPoints(layout, data);
         ReflectVertexAttributes(layout, data);
-        ReflectDescriptorSets(layout, data);
+        ReflectDescriptorSets(linkedProgram, layout, data);
         ReflectSpecializationConstants(linkedProgram, layout, data);
 
         return data;
@@ -412,7 +541,7 @@ namespace HBL2
             });
     }
 
-    void ShaderReflector::ReflectDescriptorSets(slang::ProgramLayout* layout, ShaderReflectionData& out)
+    void ShaderReflector::ReflectDescriptorSets(slang::IComponentType* linkedProgram, slang::ProgramLayout* layout, ShaderReflectionData& out)
     {
         // Global parameters hold all descriptor resources (UBOs, textures, etc.)
         const uint32_t paramCount = static_cast<uint32_t>(layout->getParameterCount());
@@ -428,6 +557,7 @@ namespace HBL2
             const uint32_t set = static_cast<uint32_t>(param->getBindingSpace());
 
             slang::TypeReflection* type = param->getType();
+            slang::TypeLayoutReflection* typeLayout = param->getTypeLayout();
 
             // Array resources: unwrap to get the element type and count
             uint32_t arrayCount = 1;
@@ -443,37 +573,82 @@ namespace HBL2
                 continue; // skip push constants, plain structs, etc.
             }
 
-            // Determine which stage this binding is used in by checking
-            // if it appears in any entry point's parameter list
-            ShaderStage usedInStage = ShaderStage::NONE;
-            for (uint32_t ep = 0; ep < layout->getEntryPointCount(); ++ep)
+            DescriptorBinding descBinding;
+
+            uint64_t bindingSize = 0;
+            if (resourceType == ResourceType::UniformBuffer || resourceType == ResourceType::StorageBuffer || resourceType == ResourceType::StorageBufferReadOnly)
             {
-                slang::EntryPointReflection* entry = layout->getEntryPointByIndex(ep);
-                const uint32_t epParamCount = static_cast<uint32_t>(entry->getParameterCount());
-
-                for (uint32_t p = 0; p < epParamCount; ++p)
+                // getElementTypeLayout() peels off the ConstantBuffer<> / StructuredBuffer<> wrapper to reach the inner T.
+                slang::TypeLayoutReflection* elementLayout = typeLayout->getElementTypeLayout();
+                if (elementLayout)
                 {
-                    slang::VariableLayoutReflection* epParam = entry->getParameterByIndex(p);
-                    if (std::string(epParam->getName()) == param->getName())
+                    bindingSize = static_cast<uint64_t>(elementLayout->getSize(SLANG_PARAMETER_CATEGORY_UNIFORM));
+
+                    const uint32_t fieldCount = static_cast<uint32_t>(elementLayout->getFieldCount());
+                    descBinding.members.reserve(fieldCount);
+
+                    for (uint32_t f = 0; f < fieldCount; ++f)
                     {
-                        usedInStage = ToShaderStage(entry->getStage());
-                        break;
-                    }
-                }
+                        slang::VariableLayoutReflection* field = elementLayout->getFieldByIndex(f);
 
-                if (usedInStage != ShaderStage::NONE)
-                {
-                    break;
+                        UniformMember member;
+                        member.name = field->getName();
+                        member.offset = static_cast<uint32_t>(field->getOffset(SLANG_PARAMETER_CATEGORY_UNIFORM));
+                        member.size = static_cast<uint32_t>(field->getTypeLayout()->getSize(SLANG_PARAMETER_CATEGORY_UNIFORM));
+                        member.typeInfo = ReflectMemberType(field->getTypeLayout());
+
+                        descBinding.members.push_back(std::move(member));
+                    }
                 }
             }
 
-            DescriptorBinding descBinding;
+            // Determine which stage this binding is used in.
+            ShaderStage usedInStage = ShaderStage::NONE;
+            BitFlags<ShaderStage> stageMask = { ShaderStage::NONE };
+            for (uint32_t ep = 0; ep < layout->getEntryPointCount(); ++ep)
+            {
+                Slang::ComPtr<slang::IMetadata> metadata;
+                Slang::ComPtr<slang::IBlob> diagnostics;
+
+                if (SLANG_FAILED(linkedProgram->getEntryPointMetadata(ep, 0, metadata.writeRef(), diagnostics.writeRef())))
+                {
+                    HBL2_CORE_ERROR("Slang: Failed to get entry point metadata");
+                    continue;
+                }
+
+                SlangStage stage = layout->getEntryPointByIndex(ep)->getStage();
+
+                bool used = false;
+                if (SLANG_FAILED(metadata->isParameterLocationUsed((SlangParameterCategory)param->getCategory(), set, binding, used)))
+                {
+                    HBL2_CORE_ERROR("Slang: Failed to check if descriptor set is being used");
+                    continue;
+                }
+
+                if (used)
+                {
+                    switch (stage)
+                    {
+                    case SLANG_STAGE_VERTEX:
+                        stageMask.Set(ShaderStage::VERTEX);
+                        break;
+                    case SLANG_STAGE_FRAGMENT:
+                        stageMask.Set(ShaderStage::FRAGMENT);
+                        break;
+                    case SLANG_STAGE_COMPUTE:
+                        stageMask.Set(ShaderStage::COMPUTE);
+                        break;
+                    }
+                }
+            }
+
             descBinding.name = param->getName();
             descBinding.binding = binding;
             descBinding.set = set;
             descBinding.type = resourceType;
+            descBinding.size = bindingSize;
             descBinding.count = arrayCount;
-            descBinding.stage = usedInStage;
+            descBinding.stageMask = stageMask;
 
             setMap[set].set = set;
             setMap[set].bindings.push_back(std::move(descBinding));
@@ -540,8 +715,6 @@ namespace HBL2
 
                     if (used)
                     {
-                        HBL2_CORE_INFO("Stage {}: uses spec constant '{}' (id={})", (int)stage, sc.name, sc.constantId);
-
                         switch (stage)
                         {
                         case SLANG_STAGE_VERTEX:
@@ -613,6 +786,11 @@ namespace HBL2
 
             if (shape == SLANG_STRUCTURED_BUFFER || shape == SLANG_BYTE_ADDRESS_BUFFER)
             {
+                if (access == SLANG_RESOURCE_ACCESS_READ)
+                {
+                    return ResourceType::StorageBufferReadOnly;
+                }
+
                 return ResourceType::StorageBuffer;
             }
 
@@ -737,15 +915,29 @@ namespace HBL2
         }
     }
 
-    const char* ShaderReflector::ShaderStageToString(ShaderStage stage)
+    const char* ShaderReflector::ShaderStageToString(BitFlags<ShaderStage> stageMask)
     {
-        switch (stage)
+        if (stageMask.IsSet(ShaderStage::VERTEX) && stageMask.IsSet(ShaderStage::FRAGMENT))
         {
-        case ShaderStage::VERTEX:   return "Vertex";
-        case ShaderStage::FRAGMENT: return "Fragment";
-        case ShaderStage::COMPUTE:  return "Compute";
-        default:                    return "Unknown";
+            return "Vertex | Fragment";
         }
+
+        if (stageMask.IsSet(ShaderStage::VERTEX))
+        {
+            return "Vertex";
+        }
+
+        if (stageMask.IsSet(ShaderStage::FRAGMENT))
+        {
+            return "Fragment";
+        }
+
+        if (stageMask.IsSet(ShaderStage::COMPUTE))
+        {
+            return "Compute";
+        }
+
+        return "Unknown";
     }
 
     ShaderConstantType ShaderReflector::ToConstantType(slang::TypeReflection* type)

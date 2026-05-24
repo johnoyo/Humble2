@@ -70,6 +70,7 @@ namespace HBL2
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) = 0;
 		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) = 0;
 		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) = 0;
+		virtual void MapBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset = 0, intptr_t size = 0) = 0;
 
 		// FrameBuffers
 		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) = 0;
@@ -87,30 +88,13 @@ namespace HBL2
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) = 0;
 		virtual void UpdateBindGroup(Handle<BindGroup> handle) = 0;
 		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) = 0;
-		uint64_t GetBindGroupHash(const BindGroupDescriptor& desc)
-		{
-			uint64_t hash = 0;
-
-			for (const auto& bufferEntry : desc.buffers)
-			{
-				hash += bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code();
-				hash += bufferEntry.byteOffset;
-				hash += bufferEntry.range;
-			}
-
-			for (const auto texture : desc.textures)
-			{
-				hash += texture.HashKey() + typeid(Texture).hash_code();
-			}
-
-			hash += desc.layout.HashKey() + typeid(BindGroupLayout).hash_code();
-
-			return hash;
-		}
+		uint64_t GetBindGroupHash(const BindGroupDescriptor&& desc);
 
 		// BindGroupLayouts
 		virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) = 0;
 		virtual void DeleteBindGroupLayout(Handle<BindGroupLayout> handle) = 0;
+		virtual uint64_t GetBindGroupLayoutHash(Handle<BindGroupLayout> handle) = 0;
+		uint64_t GetBindGroupLayoutHash(const BindGroupLayoutDescriptor&& desc);
 
 		// RenderPass
 		virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) = 0;
@@ -156,6 +140,7 @@ namespace HBL2
 
 	protected:
 		void InternalInitialize();
+		void HashCombine(uint64_t& hash, uint64_t value);
 
 		ResourceDeletionQueue m_DeletionQueue;
 		ResourceManagerSpecification m_Spec;

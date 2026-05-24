@@ -161,12 +161,14 @@ namespace HBL2
 		virtual Handle<BindGroup> GetGlobalBindings3D() = 0;
 		virtual Handle<BindGroup> GetGlobalPresentBindings() = 0;
 		virtual Handle<BindGroup> GetDebugBindings() = 0;
+		const Handle<BindGroup> GetEmptyBindings() const { return m_EmptyBindings; }
 
 		const Handle<BindGroupLayout> GetShadowBindingsLayout() const { return m_ShadowBindingsLayout; }
 		const Handle<BindGroupLayout> GetGlobalBindingsLayout2D() const { return m_GlobalBindingsLayout2D; }
 		const Handle<BindGroupLayout> GetGlobalBindingsLayout3D() const { return m_GlobalBindingsLayout3D; }
+		const Handle<BindGroupLayout> GetDynamicBindingsLayout() const { return m_DynamicBindingsLayout; }
 		const Handle<BindGroupLayout> GetGlobalPresentBindingsLayout() const { return m_GlobalPresentBindingsLayout; }
-		const Handle<BindGroupLayout> GetDebugBindingsLayout() const { return m_DebugBindingsLayout; }
+		const Handle<BindGroupLayout> GetEmptyBindingsLayout() const { return m_EmptyBindingsLayout; }
 
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
 
@@ -202,8 +204,11 @@ namespace HBL2
 		Handle<BindGroupLayout> m_ShadowBindingsLayout;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout2D;
 		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
+		Handle<BindGroupLayout> m_DynamicBindingsLayout;
 		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
-		Handle<BindGroupLayout> m_DebugBindingsLayout;
+		Handle<BindGroupLayout> m_EmptyBindingsLayout;
+
+		Handle<BindGroup> m_EmptyBindings;
 
 		Handle<RenderPass> m_RenderPass;
 		Handle<RenderPass> m_RenderingRenderPass;

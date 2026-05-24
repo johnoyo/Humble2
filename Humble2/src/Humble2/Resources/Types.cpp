@@ -110,6 +110,18 @@ namespace HBL2
 	{
 		DebugName = desc.debugName;
 		Shader = desc.shader;
-		BindGroup = desc.bindGroup;
+		DrawBindGroup = desc.drawBindGroup;
+		MaterialBindGroup = desc.materialBindGroup;
+	}
+
+	void Material::SetGlobalBuffer(uint32_t index, void* userData)
+	{
+		// ResourceManager::Instance->SetBufferData(UserBindGroup, index, userData);
+	}
+
+	void Material::SetBuffer(uint32_t index, void* userData)
+	{
+		ResourceManager::Instance->SetBufferData(MaterialBindGroup, index, userData);
+		Dirty.store(true);
 	}
 }

@@ -21,6 +21,13 @@ namespace HBL2
 			m_ActiveScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 			m_EditorScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
 
+			for (auto& data : m_ShaderUniformBufferData)
+			{
+				data.clear();
+			}
+
+			std::memset(m_ShaderUniformTextureData.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.Size());
+
 			EventDispatcher::Get().Register<SceneChangeEvent>([&](const HBL2::SceneChangeEvent& e)
 			{
 				HBL2_CORE_INFO("EditorPanelSystem::SceneChangeEvent");

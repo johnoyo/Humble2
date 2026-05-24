@@ -10,13 +10,12 @@ struct Object
     float4x4 Model;
     float4x4 InverseModel;
     float4 Color;
-    float Glossiness;
 };
 
 [[vk::binding(0, 0)]]
 ConstantBuffer<Camera> u_Camera;
 
-[[vk::binding(2, 1)]]
+[[vk::binding(4, 3)]]
 ConstantBuffer<Object> u_Object;
 
 // Vertex Shader

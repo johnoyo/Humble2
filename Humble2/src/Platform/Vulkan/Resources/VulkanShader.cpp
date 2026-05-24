@@ -44,6 +44,15 @@ namespace HBL2
 		{
 			vkDestroyPipeline(device->Get(), pipeline, nullptr);
 		}
+
+		m_RetiredPipelines.clear();
+
+		for (auto bindGroupLayout : m_ReflectedBindGroupLayouts)
+		{
+			ResourceManager::Instance->DeleteBindGroupLayout(bindGroupLayout);
+		}
+
+		m_ReflectedBindGroupLayouts.clear();
 	}
 
 	void VulkanShaderCold::DestroyOld()
@@ -638,20 +647,54 @@ namespace HBL2
 		}
 
 		// Pipeline layout.
-		std::vector<VkDescriptorSetLayout> setLayouts;
+		StaticDArray<VkDescriptorSetLayout, 8> setLayouts;
+		uint32_t bindGroupLayoutIndex = 0;
+
+		// Release and clear old cache reflected bind group layouts.
+		for (auto bindGroupLayout : Cold->m_ReflectedBindGroupLayouts)
+		{
+			ResourceManager::Instance->DeleteBindGroupLayout(bindGroupLayout);
+		}
+		Cold->m_ReflectedBindGroupLayouts.clear();
 
 		for (const auto& bindGroup : desc.bindGroups)
 		{
 			if (bindGroup.IsValid())
 			{
+				if (bindGroupLayoutIndex == 0)
+				{
+					Hot->BindGroupLayoutHash0 = bindGroup.HashKey();
+				}
+
+				if (bindGroupLayoutIndex == 1)
+				{
+					// Keep reference to the reflected bind group layout of set 1,
+					// since reflection increases the ref count of the layout obj and
+					// we need to release it on shader destroy for proper clean up.
+					if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout() && desc.bindGroups.size() == 4)
+					{
+						Cold->m_ReflectedBindGroupLayouts.push_back(bindGroup);
+					}
+
+					Hot->BindGroupLayoutHash1 = bindGroup.HashKey();
+				}
+
+				if (bindGroupLayoutIndex == 2 && desc.bindGroups.size() == 4)
+				{
+					// Keep reference to the reflected bind group layout of set 2,
+					// since reflection increases the ref count of the layout obj and
+					// we need to release it on shader destroy for proper clean up.
+					if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout())
+					{
+						Cold->m_ReflectedBindGroupLayouts.push_back(bindGroup);
+					}
+				}
+
 				VulkanBindGroupLayout* vkBindGroupLayout = rm->GetBindGroupLayout(bindGroup);
 				setLayouts.push_back(vkBindGroupLayout->DescriptorSetLayout);
 			}
-		}
 
-		if (!setLayouts.empty())
-		{
-			Hot->PipelineLayoutHash = (uint64_t)setLayouts[0];
+			bindGroupLayoutIndex++;
 		}
 
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =

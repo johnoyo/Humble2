@@ -79,7 +79,7 @@ namespace HBL2
 			ShaderStage visibility = ShaderStage::VERTEX;
 			TextureBindingType type = TextureBindingType::IMAGE_SAMPLER;
 		};
-		std::initializer_list<TextureBinding> textureBindings;
+		Span<const TextureBinding> textureBindings;
 
 		struct BufferBinding
 		{
@@ -87,21 +87,23 @@ namespace HBL2
 			ShaderStage visibility = ShaderStage::VERTEX;
 			BufferBindingType type = BufferBindingType::UNIFORM;
 		};
-		std::initializer_list<BufferBinding> bufferBindings;
+		Span<const BufferBinding> bufferBindings;
+
+		bool createdFromReflection = false;
 	};
 
 	struct BindGroupDescriptor
 	{
 		const char* debugName;
 		Handle<BindGroupLayout> layout;
-		std::initializer_list<Handle<Texture>> textures;
+		Span<const Handle<Texture>> textures;
 		struct BufferEntry
 		{
 			Handle<Buffer> buffer;
 			uint32_t byteOffset = 0;
 			uint32_t range = 0;
 		};
-		std::initializer_list<BufferEntry> buffers;
+		Span<const BufferEntry> buffers;
 	};
 
 	enum class ShaderConstantType : uint16_t
@@ -359,6 +361,7 @@ namespace HBL2
 	{
 		const char* debugName;
 		Handle<Shader> shader;
-		Handle<BindGroup> bindGroup;
+		Handle<BindGroup> drawBindGroup;
+		Handle<BindGroup> materialBindGroup;
 	};
 }

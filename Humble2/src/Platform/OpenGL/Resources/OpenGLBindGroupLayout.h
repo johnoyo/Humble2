@@ -24,8 +24,8 @@ namespace HBL2
 		OpenGLBindGroupLayout(const BindGroupLayoutDescriptor&& desc)
 		{
 			DebugName = desc.debugName;
-			BufferBindings = desc.bufferBindings;
-			TextureBindings = desc.textureBindings;
+			BufferBindings = { desc.bufferBindings.begin(), desc.bufferBindings.end() };
+			TextureBindings = { desc.textureBindings.begin(), desc.textureBindings.end() };
 		}
 
 		const char* DebugName = "";

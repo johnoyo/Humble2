@@ -44,6 +44,7 @@ namespace HBL2
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override;
 		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
 		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) override;
+		virtual void MapBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset = 0, intptr_t size = 0) override;
 		OpenGLBuffer* GetBuffer(Handle<Buffer> handle) const;
 
 		// Framebuffers
@@ -69,6 +70,7 @@ namespace HBL2
 		// BindGroupsLayouts
 		virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) override;
 		virtual void DeleteBindGroupLayout(Handle<BindGroupLayout> handle) override;
+		virtual uint64_t GetBindGroupLayoutHash(Handle<BindGroupLayout> handle) override;
 		OpenGLBindGroupLayout* GetBindGroupLayout(Handle<BindGroupLayout> handle) const;
 
 		// RenderPass
@@ -93,5 +95,6 @@ namespace HBL2
 
 	private:
 		uint64_t CalculateBindGroupHash(const OpenGLBindGroup* bindGroup);
+		uint64_t CalculateBindGroupLayoutHash(const OpenGLBindGroupLayout* bindGroupLayout);
 	};
 }

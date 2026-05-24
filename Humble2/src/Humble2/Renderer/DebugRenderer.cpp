@@ -153,7 +153,7 @@ namespace HBL2
 			.VS { .code = debugShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = debugShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				Renderer::Instance->GetDebugBindingsLayout(),	// Global bind group (0)
+				Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = {
@@ -237,7 +237,6 @@ namespace HBL2
 			// Gather line draws.
 			renderData->Draws.Insert({
 				.Shader = m_DebugShader,
-				.Material = m_DebugLineMaterial,
 				.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DebugShader, m_DebugLineMaterialVariantHash),
 				.VertexBuffer = m_DebugLineVertexBuffer,
 				.VertexCount = renderData->CurrentLineIndex,
@@ -250,7 +249,6 @@ namespace HBL2
 			// Gather fill draws.
 			renderData->Draws.Insert({
 				.Shader = m_DebugShader,
-				.Material = m_DebugFillMaterial,
 				.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DebugShader, m_DebugFillMaterialVariantHash),
 				.VertexBuffer = m_DebugFillTriVertexBuffer,
 				.VertexCount = renderData->CurrentFillIndex,
@@ -263,7 +261,6 @@ namespace HBL2
 			// Gather wire draws.
 			renderData->Draws.Insert({
 				.Shader = m_DebugShader,
-				.Material = m_DebugWireMaterial,
 				.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DebugShader, m_DebugWireMaterialVariantHash),
 				.VertexBuffer = m_DebugWireTriVertexBuffer,
 				.VertexCount = renderData->CurrentWireIndex,

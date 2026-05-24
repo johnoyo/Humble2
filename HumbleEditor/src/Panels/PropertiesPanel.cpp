@@ -92,6 +92,30 @@ namespace HBL2
 			fout.close();
 		}
 
+		static bool GetVariantShaderConstantValueFromIndex(const ShaderDescriptor::RenderPipeline::PackedVariant& variant, uint32_t i)
+		{
+			if (i == 0) { return variant.shaderConstantBool0; }
+			if (i == 1) { return variant.shaderConstantBool1; }
+			if (i == 2) { return variant.shaderConstantBool2; }
+			if (i == 3) { return variant.shaderConstantBool3; }
+			if (i == 4) { return variant.shaderConstantBool4; }
+			if (i == 5) { return variant.shaderConstantBool5; }
+			if (i == 6) { return variant.shaderConstantBool6; }
+			if (i == 7) { return variant.shaderConstantBool7; }
+		}
+
+		static void SyncVariantWithSpecializationConstant(uint32_t i, bool value, ShaderDescriptor::RenderPipeline::PackedVariant& variant)
+		{
+			if (i == 0) { variant.shaderConstantBool0 = (ShaderDescriptor::RenderPipeline::packed_size)value; return; }
+			if (i == 1) { variant.shaderConstantBool1 = (ShaderDescriptor::RenderPipeline::packed_size)value; return; }
+			if (i == 2) { variant.shaderConstantBool2 = (ShaderDescriptor::RenderPipeline::packed_size)value; return; }
+			if (i == 3) { variant.shaderConstantBool3 = (ShaderDescriptor::RenderPipeline::packed_size)value; return; }
+			if (i == 4) { variant.shaderConstantBool4 = (ShaderDescriptor::RenderPipeline::packed_size)value; return; }
+			if (i == 5) { variant.shaderConstantBool5 = (ShaderDescriptor::RenderPipeline::packed_size)value; return; }
+			if (i == 6) { variant.shaderConstantBool6 = (ShaderDescriptor::RenderPipeline::packed_size)value; return; }
+			if (i == 7) { variant.shaderConstantBool7 = (ShaderDescriptor::RenderPipeline::packed_size)value; return; }
+		}
+
 		void EditorPanelSystem::DrawPropertiesPanel()
 		{
 			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
@@ -865,6 +889,7 @@ namespace HBL2
 							}
 
 							ImGui::Text(std::format("Name: {}", mat->DebugName).c_str());
+							ImGui::NewLine();
 
 							// Topology.
 							{
@@ -960,58 +985,315 @@ namespace HBL2
 								mat->VariantHash.stencilEnabled = stencil ? 1 : 0;
 							}
 
-							ImGui::ColorEdit4("AlbedoColor", glm::value_ptr(mat->AlbedoColor));
-							ImGui::InputFloat("Glossiness", &mat->Glossiness, 0.05f);
-
-							// Shader Constants.
 							ImGui::NewLine();
-							ImGui::Text("Shader Specialization Constants");
-							bool shaderConstantBool0 = mat->VariantHash.shaderConstantBool0 != 0;
-							if (ImGui::Checkbox("ShaderConstantBool0", &shaderConstantBool0))
+							ImGui::Text("Uniforms:");
+
+							static bool materialNeedsReimport = false;
+							static Handle<Asset> shaderAssetHandle = {};
+
+							if (m_SelectedAsset != m_PreviouslySelectedAsset)
 							{
-								mat->VariantHash.shaderConstantBool0 = shaderConstantBool0 ? 1 : 0;
+								m_ShaderReflectionData2.Clear();
+
+								JobSystem::Get().Execute(m_MaterialShaderReflectionCtx, [this, asset]()
+								{
+									Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(m_SelectedAsset);
+
+									const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+									const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+
+									// Open material file.
+									std::ifstream stream(materialPath);
+
+									if (!stream.is_open())
+									{
+										HBL2_CORE_ERROR("Material file not found: {0}", materialPath);
+									}
+									else
+									{
+										std::stringstream ss;
+										ss << stream.rdbuf();
+
+										YAML::Node data = YAML::Load(ss.str());
+										if (!data["Material"].IsDefined())
+										{
+											HBL2_CORE_TRACE("Material not found: {0}", ss.str());
+											stream.close();
+										}
+										else
+										{
+											auto materialProperties = data["Material"];
+											if (materialProperties)
+											{
+												UUID shaderUUID = materialProperties["Shader"].as<UUID>();
+
+												Handle<Asset> shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
+												Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+												const auto& shaderFileSystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+												const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
+
+												m_ShaderReflectionData2 = ShaderUtilities::Get().Reflect(shaderPath.string());
+
+												// Clear uniform buffer data.
+												for (auto& data : m_ShaderUniformBufferData2)
+												{
+													data.clear();
+												}
+												std::memset(m_ShaderUniformTextureData2.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData2.Size());
+
+												// Retrieve new uniform buffer data.
+												for (const auto& descriptorSet : m_ShaderReflectionData2.descriptorSets)
+												{
+													if (descriptorSet.set != 2)
+													{
+														continue;
+													}
+
+													m_ShaderUniformBufferSize2 = 0;
+													m_ShaderUniformTextureSize2 = 0;
+
+													for (const auto& b : descriptorSet.bindings)
+													{
+														if (b.type == ResourceType::UniformBuffer)
+														{
+															auto& uniformBufferBytes = m_ShaderUniformBufferData2[m_ShaderUniformBufferSize2++];
+															uniformBufferBytes.resize(b.size);
+
+															const auto& bufferProp = materialProperties[b.name];
+
+															if (bufferProp.IsDefined())
+															{
+																for (const auto& m : b.members)
+																{
+																	const auto& memberProp = bufferProp[m.name];
+
+																	if (!memberProp.IsDefined())
+																	{
+																		continue;
+																	}
+
+																	uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+																	switch (m.typeInfo.base)
+																	{
+																		case MemberBaseType::Float:
+																		{
+																			float* f = reinterpret_cast<float*>(memberPtr);
+
+																			if (m.typeInfo.cols == 1)
+																			{
+																				*f = memberProp.as<float>();
+																			}
+																			else if (m.typeInfo.cols == 2)
+																			{
+																				const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+
+																				f[0] = vec2.x;
+																				f[1] = vec2.y;
+																			}
+																			else if (m.typeInfo.cols == 3)
+																			{
+																				const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+
+																				f[0] = vec3.x;
+																				f[1] = vec3.y;
+																				f[2] = vec3.z;
+																			}
+																			else if (m.typeInfo.cols == 4)
+																			{
+																				const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+																				f[0] = vec4.x;
+																				f[1] = vec4.y;
+																				f[2] = vec4.z;
+																				f[3] = vec4.w;
+																			}
+																			break;
+																		}
+																	}
+																}
+															}
+														}
+														else if (b.type == ResourceType::SampledTexture)
+														{
+															const auto& textureProp = materialProperties[b.name];
+
+															if (textureProp.IsDefined())
+															{
+																UUID textureMapUUID = textureProp.as<UUID>();
+
+																auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
+																auto assetHandle = AssetManager::Instance->GetHandleFromUUID(textureMapUUID);
+
+																m_ShaderUniformTextureData2[m_ShaderUniformTextureSize2++] = assetHandle.Pack();
+															}
+														}
+													}
+												}
+											}
+										}
+
+										stream.close();
+									}
+								});								
 							}
 
-							bool shaderConstantBool1 = mat->VariantHash.shaderConstantBool1 != 0;
-							if (ImGui::Checkbox("ShaderConstantBool1", &shaderConstantBool1))
+							if (!JobSystem::Get().Busy(m_MaterialShaderReflectionCtx))
 							{
-								mat->VariantHash.shaderConstantBool1 = shaderConstantBool1 ? 1 : 0;
-							}
+								for (const auto& descriptorSet : m_ShaderReflectionData2.descriptorSets)
+								{
+									if (descriptorSet.set != 2)
+									{
+										continue;
+									}
 
-							bool shaderConstantBool2 = mat->VariantHash.shaderConstantBool2 != 0;
-							if (ImGui::Checkbox("ShaderConstantBool2", &shaderConstantBool2))
-							{
-								mat->VariantHash.shaderConstantBool2 = shaderConstantBool2 ? 1 : 0;
-							}
+									m_ShaderUniformBufferSize2 = 0;
+									m_ShaderUniformTextureSize2 = 0;
 
-							bool shaderConstantBool3 = mat->VariantHash.shaderConstantBool3 != 0;
-							if (ImGui::Checkbox("ShaderConstantBool3", &shaderConstantBool3))
-							{
-								mat->VariantHash.shaderConstantBool3 = shaderConstantBool3 ? 1 : 0;
-							}
+									for (const auto& b : descriptorSet.bindings)
+									{
+										if (b.type == ResourceType::UniformBuffer)
+										{
+											auto& uniformBufferBytes = m_ShaderUniformBufferData2[m_ShaderUniformBufferSize2];
+											uniformBufferBytes.resize(b.size);
 
-							bool shaderConstantBool4 = mat->VariantHash.shaderConstantBool4 != 0;
-							if (ImGui::Checkbox("ShaderConstantBool4", &shaderConstantBool4))
-							{
-								mat->VariantHash.shaderConstantBool4 = shaderConstantBool4 ? 1 : 0;
-							}
+											ImGui::Text(b.name.c_str());
 
-							bool shaderConstantBool5 = mat->VariantHash.shaderConstantBool5 != 0;
-							if (ImGui::Checkbox("ShaderConstantBool5", &shaderConstantBool5))
-							{
-								mat->VariantHash.shaderConstantBool5 = shaderConstantBool5 ? 1 : 0;
-							}
+											bool dirty = false;
+											uint32_t memberIndex = 0;
 
-							bool shaderConstantBool6 = mat->VariantHash.shaderConstantBool6 != 0;
-							if (ImGui::Checkbox("ShaderConstantBool6", &shaderConstantBool6))
-							{
-								mat->VariantHash.shaderConstantBool6 = shaderConstantBool6 ? 1 : 0;
-							}
+											for (const auto& m : b.members)
+											{
+												uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+												static std::vector<uint32_t> enableColorEdit(b.members.size(), 0);
 
-							bool shaderConstantBool7 = mat->VariantHash.shaderConstantBool7 != 0;
-							if (ImGui::Checkbox("ShaderConstantBool7", &shaderConstantBool7))
-							{
-								mat->VariantHash.shaderConstantBool7 = shaderConstantBool7 ? 1 : 0;
+												switch (m.typeInfo.base)
+												{
+													case MemberBaseType::Float:
+													{
+														float* f = reinterpret_cast<float*>(memberPtr);
+
+														if (m.typeInfo.cols == 1)
+														{
+															dirty |= ImGui::InputFloat(m.name.c_str(), f, 0.f, 0.f, "%.5f");
+														}
+														else if (m.typeInfo.cols == 2)
+														{
+															dirty |= ImGui::InputFloat2(m.name.c_str(), f, "%.5f");
+														}
+														else if (m.typeInfo.cols == 3)
+														{
+															if (enableColorEdit[memberIndex])
+															{
+																dirty |= ImGui::ColorEdit3(m.name.c_str(), f, ImGuiColorEditFlags_DefaultOptions_);
+															}
+															else
+															{
+																dirty |= ImGui::InputFloat3(m.name.c_str(), f, "%.5f");
+															}
+															ImGui::SameLine();
+															ImGui::Checkbox(std::string("##" + m.name).c_str(), (bool*)&enableColorEdit[memberIndex]);
+															if (ImGui::BeginItemTooltip())
+															{
+																ImGui::Text("Enable / Disable color edit mode");
+																ImGui::EndTooltip();
+															}
+														}
+														else if (m.typeInfo.cols == 4)
+														{
+															if (enableColorEdit[memberIndex])
+															{
+																dirty |= ImGui::ColorEdit4(m.name.c_str(), f, ImGuiColorEditFlags_DefaultOptions_);
+															}
+															else
+															{
+																dirty |= ImGui::InputFloat4(m.name.c_str(), f, "%.5f");
+															}
+															ImGui::SameLine();
+															ImGui::Checkbox(std::string("##" + m.name).c_str(), (bool*)&enableColorEdit[memberIndex]);
+															if (ImGui::BeginItemTooltip())
+															{
+																ImGui::Text("Enable / Disable color edit mode");
+																ImGui::EndTooltip();
+															}
+														}
+														break;
+													}
+												}
+
+												memberIndex++;
+											}
+
+											if (dirty)
+											{
+												mat->SetBuffer(m_ShaderUniformBufferSize2, uniformBufferBytes.data());
+											}
+
+											m_ShaderUniformBufferSize2++;
+										}
+										else if (b.type == ResourceType::SampledTexture)
+										{
+											auto& userMapHandlePacked = m_ShaderUniformTextureData2[m_ShaderUniformTextureSize2++];
+
+											ImGui::InputScalar(b.name.c_str(), ImGuiDataType_U32, (void*)(intptr_t*)&userMapHandlePacked);
+
+											Handle<Asset> userMapAssetHandle = Handle<Asset>::UnPack(userMapHandlePacked);
+											AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
+
+											if (ImGui::BeginDragDropTarget())
+											{
+												if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+												{
+													userMapHandlePacked = *((uint32_t*)payload->Data);
+													userMapAssetHandle = Handle<Asset>::UnPack(userMapHandlePacked);
+
+													if (userMapAssetHandle.IsValid())
+													{
+														TextureUtilities::Get().CreateAssetMetadataFile(userMapAssetHandle);
+													}
+
+													AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
+
+													materialNeedsReimport = true;
+												}
+
+												ImGui::EndDragDropTarget();
+											}
+										}
+									}
+								}
+							
+								if (materialNeedsReimport)
+								{
+									ShaderUtilities::Get().CreateMaterialAssetFile(m_SelectedAsset, {
+										.ShaderAssetHandle = shaderAssetHandle,
+										.VariantHash = mat->VariantHash,
+										.ReflectionData = &m_ShaderReflectionData2,
+										.Buffers = m_ShaderUniformBufferData2,
+										.TextureAssets = m_ShaderUniformTextureData2,
+									});
+
+									AssetManager::Instance->ReloadAsset<Material>(m_SelectedAsset);
+
+									materialNeedsReimport = false;
+								}
+
+								// Shader Constants.
+								ImGui::NewLine();
+								ImGui::Text("Shader Specialization Constants:");
+
+								uint32_t specializationConstantId = 0;
+
+								for (auto& sc : m_ShaderReflectionData2.specializationConstants)
+								{
+									bool shaderConstantBool = GetVariantShaderConstantValueFromIndex(mat->VariantHash, specializationConstantId) != 0;
+									if (ImGui::Checkbox(sc.name.c_str(), &shaderConstantBool))
+									{
+										SyncVariantWithSpecializationConstant(specializationConstantId, shaderConstantBool, mat->VariantHash);
+									}
+									specializationConstantId++;
+								}
 							}
 						}
 						break;
@@ -1080,6 +1362,8 @@ namespace HBL2
 					{
 						AssetManager::Instance->SaveAsset(m_SelectedAsset);
 					}
+
+					m_PreviouslySelectedAsset = m_SelectedAsset;
 				}
 			}
 		}

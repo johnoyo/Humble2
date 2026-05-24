@@ -12,6 +12,8 @@ namespace HBL2
 {
     ShaderUtilities* ShaderUtilities::s_Instance = nullptr;
 
+    static Slang::ComPtr<slang::IGlobalSession>* g_SLangGlobalSessions;
+
     static bool VariantExists(const YAML::Node& existingVariants, uint64_t newVariantHash)
     {
         for (const auto& variant : existingVariants)
@@ -76,8 +78,6 @@ namespace HBL2
         s_Instance = nullptr;
     }
 
-    static Slang::ComPtr<slang::IGlobalSession>* g_SLangGlobalSessions;
-
     ShaderUtilities::ShaderUtilities()
     {
         m_Reservation = Allocator::Arena.Reserve("ShaderUtilitiesPool", 16_MB);
@@ -85,7 +85,7 @@ namespace HBL2
 
         m_ShaderAssets = MakeDArray<Handle<Asset>>(m_Arena, 1024);
         m_Shaders = MakeHMap<BuiltInShader, Handle<Shader>>(m_Arena, 1024);
-        m_ShaderLayouts = MakeHMap<BuiltInShader, Handle<BindGroupLayout>>(m_Arena, 64);
+        // m_ShaderLayouts = MakeHMap<BuiltInShader, Handle<BindGroupLayout>>(m_Arena, 64);
 
         uint32_t globalSessionNum = std::thread::hardware_concurrency();
 
@@ -408,88 +408,139 @@ namespace HBL2
         return compilationResultData;
     }
 
+    ShaderReflectionData ShaderUtilities::Reflect(const std::string& shaderFilePath)
+    {
+        HBL2_FUNC_PROFILE();
+
+        // https://docs.shader-slang.org/en/stable/coming-from-glsl.html
+
+        GraphicsAPI target = Renderer::Instance->GetAPI();
+        CreateCacheDirectoryIfNeeded(target);
+
+        std::filesystem::path shaderPath = shaderFilePath;
+        std::filesystem::path cacheDirectory = GetCacheDirectory(target);
+
+        uint32_t workerIndex = JobSystem::Get().GetWorkerIndex();
+
+        // Target description.
+        // NOTE: No GENERATE_WHOLE_PROGRAM — we want one SPIR-V binary per entry point.
+        slang::TargetDesc targetDesc = {};
+        targetDesc.format = SLANG_SPIRV; // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/a2-01-spirv-target-specific.html
+        targetDesc.flags = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY;
+
+        switch (target)
+        {
+        case GraphicsAPI::OPENGL:
+            targetDesc.profile = g_SLangGlobalSessions[workerIndex]->findProfile("glsl_460");
+            break;
+        case GraphicsAPI::VULKAN:
+            targetDesc.profile = g_SLangGlobalSessions[workerIndex]->findProfile("spirv_1_3");
+            break;
+        }
+
+        // Session description.
+        slang::SessionDesc sessionDesc = {};
+        sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR;
+
+        // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/08-compiling.html
+
+        std::array<slang::CompilerOptionEntry, 4> options =
+        {
+            slang::CompilerOptionEntry
+            {
+                .name = slang::CompilerOptionName::EmitSpirvDirectly,
+                .value = {.kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
+            },
+            slang::CompilerOptionEntry
+            {
+                .name = slang::CompilerOptionName::VulkanUseEntryPointName,
+                .value = {.kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
+            },
+            slang::CompilerOptionEntry
+            {
+                .name = slang::CompilerOptionName::MatrixLayoutColumn,
+                .value = {.kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
+            },
+            slang::CompilerOptionEntry
+            {
+                .name = slang::CompilerOptionName::Optimization,
+                .value = {.kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+            }
+        };
+
+        sessionDesc.compilerOptionEntries = options.data();
+        sessionDesc.compilerOptionEntryCount = options.size();
+
+        sessionDesc.targets = &targetDesc;
+        sessionDesc.targetCount = 1;
+
+        Slang::ComPtr<slang::ISession> session;
+        if (SLANG_FAILED(g_SLangGlobalSessions[workerIndex]->createSession(sessionDesc, session.writeRef())))
+        {
+            HBL2_CORE_ERROR("Slang: Failed to create session");
+            return {};
+        }
+
+        // Module.
+        std::string shaderSource = ReadFile(shaderFilePath);
+
+        Slang::ComPtr<slang::IBlob> diagnostics;
+        Slang::ComPtr<slang::IModule> slangModule;
+        slangModule = session->loadModuleFromSourceString(shaderPath.filename().stem().string().c_str(), shaderFilePath.c_str(), shaderSource.c_str(), diagnostics.writeRef());
+
+        if (diagnostics)
+        {
+            HBL2_CORE_WARN("Slang diagnostics: {}", (const char*)diagnostics->getBufferPointer());
+            diagnostics = nullptr;
+        }
+
+        if (!slangModule)
+        {
+            HBL2_CORE_ERROR("Slang: Failed to load shader module");
+            return {};
+        }
+
+        // Entry points.
+        SlangInt32 entryPointCount = slangModule->getDefinedEntryPointCount();
+        if (entryPointCount == 0)
+        {
+            HBL2_CORE_ERROR("Slang: No entry points found in shader source");
+            return {};
+        }
+
+        StaticDArray<Slang::ComPtr<slang::IEntryPoint>, 6> entryPoints;
+        for (SlangInt32 i = 0; i < entryPointCount; ++i)
+        {
+            Slang::ComPtr<slang::IEntryPoint> ep;
+            slangModule->getDefinedEntryPoint(i, ep.writeRef());
+            entryPoints.push_back(std::move(ep));
+        }
+
+        // Composite + link.
+        StaticDArray<slang::IComponentType*, 6> components;
+        components.push_back(slangModule);
+        for (auto& ep : entryPoints)
+        {
+            components.push_back(ep.get());
+        }
+
+        Slang::ComPtr<slang::IComponentType> linkedProgram;
+        if (SLANG_FAILED(session->createCompositeComponentType(components.data(), (SlangInt)components.size(), linkedProgram.writeRef(), diagnostics.writeRef())))
+        {
+            if (diagnostics)
+            {
+                HBL2_CORE_ERROR("Slang link error: {}", (const char*)diagnostics->getBufferPointer());
+            }
+
+            HBL2_CORE_ERROR("Slang: Failed to link shader program");
+            return {};
+        }
+
+        return ShaderReflector::Reflect(linkedProgram, shaderFilePath);
+    }
+
     void ShaderUtilities::LoadBuiltInShaders()
     {
-        auto drawBindGroupLayout0 = ResourceManager::Instance->CreateBindGroupLayout({
-            .debugName = "built-in-simple-lit-bind-group-layout",
-            .textureBindings = {
-                /*
-                * Here we start the texture binds from zero despite having already buffers bound there.
-                * Thats because in a set each type (buffer, image, etc) has unique binding points.
-                * This also comes in handy in openGL when binding textures.
-                */
-                {
-                    .slot = 0,
-                    .visibility = ShaderStage::FRAGMENT,
-                },
-                {
-                    .slot = 3,
-                    .visibility = ShaderStage::FRAGMENT,
-                },
-            },
-            .bufferBindings = {
-                {
-                    /*
-                    * We use binding 2 since despite being in another bind group with no other bindings,
-                    * for compatibility with opengl we must have unique bindings for buffers,
-                    * so since 0 and 1 are used in the global bind group we must use the slot 2 here.
-                    */
-                    .slot = 2,
-                    .visibility = ShaderStage::VERTEX,
-                    .type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
-                },
-            },
-        });
-        m_ShaderLayouts[BuiltInShader::INVALID] = drawBindGroupLayout0;
-        m_ShaderLayouts[BuiltInShader::PRESENT] = {};
-        m_ShaderLayouts[BuiltInShader::UNLIT] = drawBindGroupLayout0;
-        m_ShaderLayouts[BuiltInShader::BLINN_PHONG] = drawBindGroupLayout0;
-
-        auto drawBindGroupLayout1 = ResourceManager::Instance->CreateBindGroupLayout({
-            .debugName = "built-in-lit-bind-group-layout",
-            .textureBindings = {
-                /*
-                * Here we start the texture binds from zero despite having already buffers bound there.
-                * Thats because in a set each type (buffer, image, etc) has unique binding points.
-                * This also comes in handy in openGL when binding textures.
-                */
-                {
-                    .slot = 0,
-                    .visibility = ShaderStage::FRAGMENT,
-                },
-                {
-                    .slot = 1,
-                    .visibility = ShaderStage::FRAGMENT,
-                },
-                {
-                    .slot = 2,
-                    .visibility = ShaderStage::FRAGMENT,
-                },
-                {
-                    .slot = 3,
-                    .visibility = ShaderStage::FRAGMENT,
-                },
-                {
-                    .slot = 4,
-                    .visibility = ShaderStage::FRAGMENT,
-                },
-            },
-            .bufferBindings = {
-                {
-                    /*
-                    * We use binding 5 since despite being a different type of resource,
-                    * each binding within a descriptor set must be unique, so since we have 0, 1, 2, 3, 4
-                    * used by textures, the next empty is 5.
-                    *
-                    */
-                    .slot = 5,
-                    .visibility = ShaderStage::VERTEX,
-                    .type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
-                },
-            },
-        });
-        m_ShaderLayouts[BuiltInShader::PBR] = drawBindGroupLayout1;
-
         JobContext ctx;
 
         // Invalid shader
@@ -529,7 +580,7 @@ namespace HBL2
             .type = AssetType::Shader,
         });
 
-        CreateShaderMetadataFile(pbrShaderAssetHandle, 2);
+        CreateShaderMetadataFile(pbrShaderAssetHandle, 1);
         auto* pbrShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(pbrShaderAssetHandle, &ctx);
 
         m_ShaderAssets.push_back(invalidShaderAssetHandle);
@@ -552,13 +603,6 @@ namespace HBL2
 
     void ShaderUtilities::DeleteBuiltInShaders()
     {
-        for (auto& [shaderType, layoutHandle] : m_ShaderLayouts)
-        {
-            ResourceManager::Instance->DeleteBindGroupLayout(layoutHandle);
-        }
-
-        m_ShaderLayouts.clear();
-
         for (auto& [shaderType, shaderHandle] : m_Shaders)
         {
             ResourceManager::Instance->DeleteShader(shaderHandle);
@@ -775,8 +819,74 @@ namespace HBL2
             out << YAML::Key << "Shader" << YAML::Value << (UUID)0;
         }
 
-        out << YAML::Key << "AlbedoColor" << YAML::Value << desc.AlbedoColor;
-        out << YAML::Key << "Glossiness" << YAML::Value << desc.Glossiness;
+        for (auto& descriptorSet : desc.ReflectionData->descriptorSets)
+        {
+            if (descriptorSet.set != 2)
+            {
+                continue;
+            }
+
+            uint32_t bufferIndex = 0;
+            uint32_t textureIndex = 0;
+
+            for (const auto& b : descriptorSet.bindings)
+            {
+                if (b.type == ResourceType::UniformBuffer)
+                {
+                    const std::vector<uint8_t>& uniformBufferBytes = desc.Buffers[bufferIndex++];
+
+                    out << YAML::Key << b.name.c_str();
+                    out << YAML::BeginMap;
+
+                    for (const auto& m : b.members)
+                    {
+                        const uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+                        switch (m.typeInfo.base)
+                        {
+                            case MemberBaseType::Float:
+                            {
+                                const float* f = reinterpret_cast<const float*>(memberPtr);
+
+                                if (m.typeInfo.cols == 1)
+                                {
+                                    out << YAML::Key << m.name.c_str() << YAML::Value << *f;
+                                }
+                                else if (m.typeInfo.cols == 2)
+                                {
+                                    out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec2(f[0], f[1]);
+                                }
+                                else if (m.typeInfo.cols == 3)
+                                {
+                                    out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec3(f[0], f[1], f[2]);
+                                }
+                                else if (m.typeInfo.cols == 4)
+                                {
+                                    out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec4(f[0], f[1], f[2], f[3]);
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    out << YAML::EndMap;
+                }
+                else if (b.type == ResourceType::SampledTexture)
+                {
+                    Handle<Asset> textureAssetHandle = Handle<Asset>::UnPack(desc.TextureAssets[textureIndex++]);
+
+                    if (textureAssetHandle.IsValid())
+                    {
+                        Asset* asset = AssetManager::Instance->GetAssetMetadata(textureAssetHandle);
+                        out << YAML::Key << b.name.c_str() << YAML::Value << asset->UUID;
+                    }
+                    else
+                    {
+                        out << YAML::Key << b.name.c_str() << YAML::Value << (UUID)0;
+                    }
+                }
+            }
+        }
 
         out << YAML::Key << "RasterState";
         out << YAML::BeginMap;
@@ -811,46 +921,6 @@ namespace HBL2
         out << YAML::Key << "ShaderConstantBool6" << YAML::Value << (bool)desc.VariantHash.shaderConstantBool6;
         out << YAML::Key << "ShaderConstantBool7" << YAML::Value << (bool)desc.VariantHash.shaderConstantBool7;
         out << YAML::EndMap;
-
-        if (desc.AlbedoMapAssetHandle.IsValid())
-        {
-            Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.AlbedoMapAssetHandle);
-            out << YAML::Key << "AlbedoMap" << YAML::Value << asset->UUID;
-        }
-        else
-        {
-            out << YAML::Key << "AlbedoMap" << YAML::Value << (UUID)0;
-        }
-
-        if (desc.NormalMapAssetHandle.IsValid())
-        {
-            Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.NormalMapAssetHandle);
-            out << YAML::Key << "NormalMap" << YAML::Value << asset->UUID;
-        }
-        else
-        {
-            out << YAML::Key << "NormalMap" << YAML::Value << (UUID)0;
-        }
-
-        if (desc.MetallicMapAssetHandle.IsValid())
-        {
-            Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.MetallicMapAssetHandle);
-            out << YAML::Key << "MetallicMap" << YAML::Value << asset->UUID;
-        }
-        else
-        {
-            out << YAML::Key << "MetallicMap" << YAML::Value << (UUID)0;
-        }
-
-        if (desc.RoughnessMapAssetHandle.IsValid())
-        {
-            Asset* asset = AssetManager::Instance->GetAssetMetadata(desc.RoughnessMapAssetHandle);
-            out << YAML::Key << "RoughnessMap" << YAML::Value << asset->UUID;
-        }
-        else
-        {
-            out << YAML::Key << "RoughnessMap" << YAML::Value << (UUID)0;
-        }
 
         out << YAML::EndMap;
         out << YAML::EndMap;

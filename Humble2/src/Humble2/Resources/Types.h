@@ -119,21 +119,25 @@ namespace HBL2
 		std::atomic<bool> m_HasItems{ false };
 	};
 
-	struct Material
+	struct HBL2_API Material
 	{
+		static constexpr uint32_t MaxBufferBindings = 4;
+
 		Material() = default;
 		Material(const MaterialDescriptor&& desc);
 
 		void Reimport(const MaterialDescriptor&& desc);
+		void SetGlobalBuffer(uint32_t index, void* userData);
+		void SetBuffer(uint32_t index, void* userData);
 
 		const char* DebugName = "";
 		Handle<Shader> Shader;
-		Handle<BindGroup> BindGroup;
+		Handle<BindGroup> DrawBindGroup;
+		Handle<BindGroup> MaterialBindGroup;
 
 		ShaderDescriptor::RenderPipeline::PackedVariant VariantHash = {};
-
-		glm::vec4 AlbedoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		float Glossiness = 3.0f;
 		bool ReceiveShadows = true;
+
+		std::atomic<bool> Dirty { false };
 	};
 }

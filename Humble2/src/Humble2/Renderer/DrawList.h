@@ -12,12 +12,12 @@ namespace HBL2
 	struct LocalDrawStream
 	{
 		Handle<Shader> Shader;
-		Handle<Material> Material;
 		uint64_t VariantHandle = 0;
 
 		Handle<Buffer> IndexBuffer;
 		Handle<Buffer> VertexBuffer;
 
+		Handle<BindGroup> MaterialBindGroup;
 		Handle<BindGroup> BindGroup;
 		uint32_t Offset = 0;
 		uint32_t Size = 0;
@@ -32,6 +32,7 @@ namespace HBL2
 
 	struct GlobalDrawStream
 	{
+		Handle<BindGroup> UserBindGroup;
 		Handle<BindGroup> BindGroup;
 
 		uint32_t GlobalBufferSize = UINT32_MAX;

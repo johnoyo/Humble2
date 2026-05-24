@@ -18,6 +18,7 @@ namespace HBL2
     {
         UniformBuffer,   // ConstantBuffer<T>
         StorageBuffer,   // RWStructuredBuffer / StructuredBuffer
+        StorageBufferReadOnly,   // RWStructuredBuffer / StructuredBuffer
         SampledTexture,  // Texture2D / Sampler2D (combined)
         StorageTexture,  // RWTexture2D
         Sampler,         // SamplerState
@@ -33,6 +34,25 @@ namespace HBL2
         uint32_t sizeBytes;       // total size of the attribute in bytes
     };
 
+    enum class MemberBaseType { Unknown, Bool, Int, UInt, Float, Double };
+
+    struct MemberTypeInfo
+    {
+        MemberBaseType base = MemberBaseType::Unknown;
+        uint32_t       rows = 1;   // 1 for scalars/vectors
+        uint32_t       cols = 1;   // >1 for vectors/matrices
+        bool           isArray = false;
+        uint32_t       arrayCount = 0;
+    };
+
+    struct UniformMember
+    {
+        std::string    name;
+        uint32_t       offset;     // byte offset within the struct
+        uint32_t       size;       // byte size
+        MemberTypeInfo typeInfo;
+    };
+
     struct DescriptorBinding
     {
         std::string name;
@@ -40,7 +60,9 @@ namespace HBL2
         uint32_t set;
         ResourceType type;
         uint32_t count;           // array size, 1 for non-arrays
-        ShaderStage stage;        // which stage declared this binding
+        uint64_t size;       // byte size of the underlying type; 0 for opaque resources
+        std::vector<UniformMember> members;
+        BitFlags<ShaderStage> stageMask; // which stages declared this binding
     };
 
     struct DescriptorSetLayout
@@ -69,7 +91,7 @@ namespace HBL2
         BitFlags<ShaderStage> stageMask;
     };
 
-    struct ShaderReflectionData
+    struct HBL2_API ShaderReflectionData
     {
         std::string sourcePath;
         std::vector<EntryPoint> entryPoints;
@@ -90,10 +112,14 @@ namespace HBL2
         const ReflectedSpecializationConstant* findSpecializationConstant(const std::string& name) const;
         const ReflectedSpecializationConstant* findSpecializationConstantById(uint32_t constantId) const;
 
+        Handle<BindGroupLayout> GetBindGroupLayout(uint32_t set);
+
         // True if any descriptor binding exists with this name
         bool hasBinding(const std::string& name) const;
 
         void print() const; // dumps a human-readable summary to stdout
+
+        void Clear();
 
     private:
         // Backing storage for GetSpecializationConstantsPerVariant
@@ -111,7 +137,7 @@ namespace HBL2
     private:
         static void ReflectEntryPoints(slang::ProgramLayout* layout, ShaderReflectionData&  out);
         static void ReflectVertexAttributes(slang::ProgramLayout* layout, ShaderReflectionData&  out);
-        static void ReflectDescriptorSets(slang::ProgramLayout* layout, ShaderReflectionData&  out);
+        static void ReflectDescriptorSets(slang::IComponentType* linkedProgram, slang::ProgramLayout* layout, ShaderReflectionData&  out);
         static void ReflectSpecializationConstants(slang::IComponentType* linkedProgram, slang::ProgramLayout* layout, ShaderReflectionData& out);
 
         // Type helpers
@@ -124,7 +150,7 @@ namespace HBL2
         static uint32_t FormatSizeBytes(VertexFormat format);
         static const char* VertexFormatToString(VertexFormat format);
         static const char* ResourceTypeToString(ResourceType type);
-        static const char* ShaderStageToString(ShaderStage stage);
+        static const char* ShaderStageToString(BitFlags<ShaderStage> stageMask);
         static ShaderConstantType ToConstantType(slang::TypeReflection* type);
         static const char* ConstantTypeToString(ShaderConstantType type);
     };

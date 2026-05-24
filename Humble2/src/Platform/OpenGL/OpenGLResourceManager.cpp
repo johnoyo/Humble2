@@ -169,6 +169,25 @@ namespace HBL2
 
 		glBindBuffer(openGLBuffer->Usage, 0);
 	}
+	void OpenGLResourceManager::MapBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset, intptr_t size)
+	{
+		OpenGLBindGroup* openGLBindGroup = GetBindGroup(bindGroup);
+		if (openGLBindGroup != nullptr && bufferIndex < openGLBindGroup->Buffers.size())
+		{
+			if (size == 0)
+			{
+				MapBufferData(openGLBindGroup->Buffers[bufferIndex].buffer, offset, size);
+				return;
+			}
+
+			OpenGLBuffer* openGLBuffer = GetBuffer(openGLBindGroup->Buffers[bufferIndex].buffer);
+
+			if (openGLBuffer != nullptr)
+			{
+				MapBufferData(openGLBindGroup->Buffers[bufferIndex].buffer, offset, openGLBuffer->ByteSize);
+			}
+		}
+	}
 	OpenGLBuffer* OpenGLResourceManager::GetBuffer(Handle<Buffer> handle) const
 	{
 		return m_BufferPool.Get(handle);
@@ -249,8 +268,8 @@ namespace HBL2
 	Handle<BindGroup> OpenGLResourceManager::CreateBindGroup(const BindGroupDescriptor&& desc)
 	{
 		// FIXME: When shared between multiple bindgroups and we delete it once, the other references become invalid!
-		#if 0
-					// Caching mechanism so that materials with the same resources, use the same bind group.
+#if 0
+		// Caching mechanism so that materials with the same resources, use the same bind group.
 		uint16_t index = 0;
 
 		for (const auto& bindGroup : m_BindGroupPool.GetDataPool())
@@ -266,7 +285,7 @@ namespace HBL2
 
 			index++;
 		}
-		#endif
+#endif
 		return m_BindGroupPool.Insert(std::forward<const BindGroupDescriptor>(desc));
 	}
 	void OpenGLResourceManager::DeleteBindGroup(Handle<BindGroup> handle)
@@ -325,9 +344,44 @@ namespace HBL2
 	{
 		m_BindGroupLayoutPool.Remove(handle);
 	}
+	uint64_t OpenGLResourceManager::GetBindGroupLayoutHash(Handle<BindGroupLayout> handle)
+	{
+		return CalculateBindGroupLayoutHash(GetBindGroupLayout(handle));
+	}
 	OpenGLBindGroupLayout* OpenGLResourceManager::GetBindGroupLayout(Handle<BindGroupLayout> handle) const
 	{
 		return m_BindGroupLayoutPool.Get(handle);
+	}
+	uint64_t OpenGLResourceManager::CalculateBindGroupLayoutHash(const OpenGLBindGroupLayout* bindGroupLayout)
+	{
+		if (bindGroupLayout == nullptr)
+		{
+			return 0;
+		}
+
+		uint64_t hash = 0;
+
+		uint64_t bufferHash = 0x517cc1b727220a95ULL;
+		uint64_t textureHash = 0x9e3779b97f4a7c15ULL;
+
+		for (const auto& bufferEntry : bindGroupLayout->BufferBindings)
+		{
+			HashCombine(bufferHash, bufferEntry.slot);
+			HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.type));
+			HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.visibility));
+		}
+
+		for (const auto& texture : bindGroupLayout->TextureBindings)
+		{
+			HashCombine(textureHash, texture.slot);
+			HashCombine(textureHash, static_cast<uint64_t>(texture.type));
+			HashCombine(textureHash, static_cast<uint64_t>(texture.visibility));
+		}
+
+		HashCombine(hash, bufferHash);
+		HashCombine(hash, textureHash);
+
+		return hash;
 	}
 
 	// RenderPass

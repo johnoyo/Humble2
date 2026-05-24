@@ -14,6 +14,12 @@ namespace HBL2
 		m_PrefabPool.Initialize(m_Spec.Prefabs);
 	}
 
+	void ResourceManager::HashCombine(uint64_t& hash, uint64_t value)
+	{
+		// Golden ratio constant — spreads bits and breaks commutativity
+		hash ^= value + 0x9e3779b97f4a7c15ULL + (hash << 6) + (hash >> 2);
+	}
+
 	const ResourceManagerSpecification& ResourceManager::GetSpec() const
 	{
 		return m_Spec;
@@ -144,5 +150,51 @@ namespace HBL2
 	Prefab* ResourceManager::GetPrefab(Handle<Prefab> handle) const
 	{
 		return m_PrefabPool.Get(handle);
+	}
+	uint64_t ResourceManager::GetBindGroupHash(const BindGroupDescriptor&& desc)
+	{
+		uint64_t hash = 0;
+
+		for (const auto& bufferEntry : desc.buffers)
+		{
+			hash += bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code();
+			hash += bufferEntry.byteOffset;
+			hash += bufferEntry.range;
+		}
+
+		for (const auto texture : desc.textures)
+		{
+			hash += texture.HashKey() + typeid(Texture).hash_code();
+		}
+
+		hash += desc.layout.HashKey() + typeid(BindGroupLayout).hash_code();
+
+		return hash;
+	}
+	uint64_t ResourceManager::GetBindGroupLayoutHash(const BindGroupLayoutDescriptor&& desc)
+	{
+		uint64_t hash = 0;
+
+		uint64_t bufferHash = 0x517cc1b727220a95ULL;
+		uint64_t textureHash = 0x9e3779b97f4a7c15ULL;
+
+		for (const auto& bufferEntry : desc.bufferBindings)
+		{
+			HashCombine(bufferHash, bufferEntry.slot);
+			HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.type));
+			HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.visibility));
+		}
+
+		for (const auto& texture : desc.textureBindings)
+		{
+			HashCombine(textureHash, texture.slot);
+			HashCombine(textureHash, static_cast<uint64_t>(texture.type));
+			HashCombine(textureHash, static_cast<uint64_t>(texture.visibility));
+		}
+
+		HashCombine(hash, bufferHash);
+		HashCombine(hash, textureHash);
+
+		return hash;
 	}
 }

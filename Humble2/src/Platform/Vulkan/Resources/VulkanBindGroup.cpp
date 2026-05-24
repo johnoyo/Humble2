@@ -22,9 +22,6 @@ namespace HBL2
 			// NOTE(John): Do not delete texture since we might use it else where.
 			// rm->DeleteTexture(Textures[i]);
 		}
-
-		// NOTE: Maybe do not delete this as well, since it might be shared.
-		// rm->DeleteBindGroupLayout(BindGroupLayout);
 	}
 
 	bool VulkanBindGroup::IsValid() const
@@ -41,8 +38,8 @@ namespace HBL2
 
 		Cold->DebugName = desc.debugName;
 
-		Cold->Buffers = desc.buffers;
-		Cold->Textures = desc.textures;
+		Cold->Buffers = { desc.buffers.begin(), desc.buffers.end() };
+		Cold->Textures = { desc.textures.begin(), desc.textures.end() };
 		Cold->BindGroupLayout = desc.layout;
 
 		auto* rm = (VulkanResourceManager*)ResourceManager::Instance;
@@ -76,6 +73,11 @@ namespace HBL2
 		auto* device = (VulkanDevice*)Device::Instance;
 
 		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(Cold->BindGroupLayout);
+
+		if (Cold->Buffers.size() + Cold->Textures.size() == 0)
+		{
+			vkUpdateDescriptorSets(device->Get(), 0, nullptr, 0, nullptr);
+		}
 
 		std::vector<VkWriteDescriptorSet> writeDescriptorSet(Cold->Buffers.size() + Cold->Textures.size());
 		std::vector<VkDescriptorBufferInfo> descriptorBufferInfo(Cold->Buffers.size());

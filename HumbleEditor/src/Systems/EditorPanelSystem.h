@@ -53,8 +53,15 @@ namespace HBL2
 			bool m_OpenSceneSetupPopup = false;
 			bool m_OpenShaderSetupPopup = false;
 			uint32_t m_SelectedShaderType = 0;
+
 			bool m_OpenMaterialSetupPopup = false;
+			ShaderReflectionData m_ShaderReflectionData;
+			StaticArray<std::vector<uint8_t>, 8> m_ShaderUniformBufferData;
+			uint32_t m_ShaderUniformBufferSize;
+			StaticArray<uint32_t, 8> m_ShaderUniformTextureData;
+			uint32_t m_ShaderUniformTextureSize;
 			uint32_t m_SelectedMaterialType = 0;
+
 			bool m_OpenScriptSetupPopup = false;
 			bool m_OpenComponentSetupPopup = false;
 			bool m_OpenHelperScriptSetupPopup = false;
@@ -62,6 +69,13 @@ namespace HBL2
 			bool m_OpenDeleteConfirmationWindow = false;
 			Handle<Asset> m_AssetToBeDeleted;
 			Handle<Asset> m_SelectedAsset;
+			Handle<Asset> m_PreviouslySelectedAsset;
+			JobContext m_MaterialShaderReflectionCtx;
+			ShaderReflectionData m_ShaderReflectionData2;
+			StaticArray<std::vector<uint8_t>, 8> m_ShaderUniformBufferData2;
+			uint32_t m_ShaderUniformBufferSize2;
+			StaticArray<uint32_t, 8> m_ShaderUniformTextureData2;
+			uint32_t m_ShaderUniformTextureSize2;
 
 			Scene* m_ActiveScene = nullptr;
 			Handle<Scene> m_ActiveSceneTemp;
