@@ -412,6 +412,128 @@ namespace HBL2
 			return ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::INVALID);
 		}
 
+		// Retrieve shader bind group.
+		Handle<BindGroup> shaderBindGroup;
+		if (shaderProperties && shaderProperties["BindGroup"].IsDefined())
+		{
+			for (const auto& descriptorSet : outReflectionData.descriptorSets)
+			{
+				if (descriptorSet.set != 1)
+				{
+					continue;
+				}
+
+				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
+				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
+
+				for (const auto& b : descriptorSet.bindings)
+				{
+					if (b.type == ResourceType::UniformBuffer)
+					{
+						std::vector<uint8_t> uniformBufferBytes(b.size);
+
+						const auto& bufferProp = shaderProperties["BindGroup"][b.name];
+
+						if (bufferProp.IsDefined())
+						{
+							for (const auto& m : b.members)
+							{
+								const auto& memberProp = bufferProp[m.name];
+
+								if (!memberProp.IsDefined())
+								{
+									continue;
+								}
+
+								uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+								switch (m.typeInfo.base)
+								{
+								case MemberBaseType::Float:
+								{
+									float* f = reinterpret_cast<float*>(memberPtr);
+
+									if (m.typeInfo.cols == 1)
+									{
+										*f = memberProp.as<float>();
+									}
+									else if (m.typeInfo.cols == 2)
+									{
+										const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+
+										f[0] = vec2.x;
+										f[1] = vec2.y;
+									}
+									else if (m.typeInfo.cols == 3)
+									{
+										const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+
+										f[0] = vec3.x;
+										f[1] = vec3.y;
+										f[2] = vec3.z;
+									}
+									else if (m.typeInfo.cols == 4)
+									{
+										const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+										f[0] = vec4.x;
+										f[1] = vec4.y;
+										f[2] = vec4.z;
+										f[3] = vec4.w;
+									}
+									break;
+								}
+								}
+							}
+
+							auto userBuffer = ResourceManager::Instance->CreateBuffer({
+								.debugName = "shader-uniform-buffer",
+								.usage = BufferUsage::UNIFORM,
+								.usageHint = BufferUsageHint::DYNAMIC,
+								.memoryUsage = MemoryUsage::GPU_CPU,
+								.byteSize = (uint32_t)b.size,
+								.initialData = (void*)uniformBufferBytes.data(),
+							});
+
+							bufferBindings.push_back({ .buffer = userBuffer, });
+						}
+					}
+					else if (b.type == ResourceType::SampledTexture)
+					{
+						const auto& textureProp = shaderProperties["BindGroup"][b.name];
+
+						if (textureProp.IsDefined())
+						{
+							UUID textureMapUUID = textureProp.as<UUID>();
+
+							auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
+							textureBindings.push_back({ handle });
+						}
+					}
+				}
+
+				// If there is only one texture and is not set, use the built in white texture.
+				if (textureBindings.size() == 1)
+				{
+					if (!textureBindings[0].texture.IsValid())
+					{
+						textureBindings[0].texture = TextureUtilities::Get().WhiteTexture;
+					}
+				}
+
+				shaderBindGroup = ResourceManager::Instance->CreateBindGroup({
+					.debugName = "shader-bind-group",
+					.layout = outReflectionData.GetBindGroupLayout(1),
+					.textures = textureBindings,
+					.buffers = bufferBindings,
+				});
+			}
+		}
+		else
+		{
+			HBL2_CORE_TRACE("Shader {0} has an ill-formed metadata file.", shaderPath);
+		}
+
 		// Create resource.
 		auto shader = ResourceManager::Instance->CreateShader({
 			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
@@ -429,6 +551,7 @@ namespace HBL2
 				.specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant(shaderVariants),
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
+			.shaderBindGroup = shaderBindGroup,
 		});
 
 		stream.close();
@@ -537,6 +660,14 @@ namespace HBL2
 			auto shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
 			Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
 
+			if (shaderAsset == nullptr)
+			{
+				HBL2_CORE_ERROR("Shader with UUID: {0}, of material: {1}, not found!", shaderUUID, materialPath);
+				stream.close();
+
+				return Handle<Material>();
+			}
+
 			auto shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
 
 			const auto& filesystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
@@ -553,7 +684,7 @@ namespace HBL2
 					continue;
 				}
 
-				StaticDArray<Handle<Texture>, 8> textureBindings;
+				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
 				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
 
 				for (const auto& b : descriptorSet.bindings)
@@ -617,7 +748,7 @@ namespace HBL2
 							}
 
 							auto userBuffer = ResourceManager::Instance->CreateBuffer({
-								.debugName = "user-uniform-buffer",
+								.debugName = "material-uniform-buffer",
 								.usage = BufferUsage::UNIFORM,
 								.usageHint = BufferUsageHint::DYNAMIC,
 								.memoryUsage = MemoryUsage::GPU_CPU,
@@ -637,7 +768,7 @@ namespace HBL2
 							UUID textureMapUUID = textureProp.as<UUID>();
 
 							auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
-							textureBindings.push_back(handle);
+							textureBindings.push_back({ handle });
 						}
 					}
 				}
@@ -645,14 +776,14 @@ namespace HBL2
 				// If there is only one texture and is not set, use the built in white texture.
 				if (textureBindings.size() == 1)
 				{
-					if (!textureBindings[0].IsValid())
+					if (!textureBindings[0].texture.IsValid())
 					{
-						textureBindings[0] = TextureUtilities::Get().WhiteTexture;
+						textureBindings[0].texture = TextureUtilities::Get().WhiteTexture;
 					}
 				}
 
 				materialBindGroup = ResourceManager::Instance->CreateBindGroup({
-					.debugName = "user-bind-group",
+					.debugName = "material-bind-group",
 					.layout = shaderReflectionData.GetBindGroupLayout(2),
 					.textures = textureBindings,
 					.buffers = bufferBindings,
@@ -695,8 +826,6 @@ namespace HBL2
 			});
 
 			Material* mat = ResourceManager::Instance->GetMaterial(material);
-			/*mat->AlbedoColor = albedoColor;
-			mat->Glossiness = glossiness;*/
 			mat->VariantHash = variantDesc;
 
 			stream.close();
@@ -1059,6 +1188,128 @@ namespace HBL2
 			return ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::INVALID);
 		}
 
+		// Retrieve shader bind group.
+		Handle<BindGroup> shaderBindGroup;
+		if (shaderProperties && shaderProperties["BindGroup"].IsDefined())
+		{
+			for (const auto& descriptorSet : outReflectionData.descriptorSets)
+			{
+				if (descriptorSet.set != 1)
+				{
+					continue;
+				}
+
+				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
+				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
+
+				for (const auto& b : descriptorSet.bindings)
+				{
+					if (b.type == ResourceType::UniformBuffer)
+					{
+						std::vector<uint8_t> uniformBufferBytes(b.size);
+
+						const auto& bufferProp = shaderProperties["BindGroup"][b.name];
+
+						if (bufferProp.IsDefined())
+						{
+							for (const auto& m : b.members)
+							{
+								const auto& memberProp = bufferProp[m.name];
+
+								if (!memberProp.IsDefined())
+								{
+									continue;
+								}
+
+								uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+								switch (m.typeInfo.base)
+								{
+								case MemberBaseType::Float:
+								{
+									float* f = reinterpret_cast<float*>(memberPtr);
+
+									if (m.typeInfo.cols == 1)
+									{
+										*f = memberProp.as<float>();
+									}
+									else if (m.typeInfo.cols == 2)
+									{
+										const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+
+										f[0] = vec2.x;
+										f[1] = vec2.y;
+									}
+									else if (m.typeInfo.cols == 3)
+									{
+										const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+
+										f[0] = vec3.x;
+										f[1] = vec3.y;
+										f[2] = vec3.z;
+									}
+									else if (m.typeInfo.cols == 4)
+									{
+										const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+										f[0] = vec4.x;
+										f[1] = vec4.y;
+										f[2] = vec4.z;
+										f[3] = vec4.w;
+									}
+									break;
+								}
+								}
+							}
+
+							auto userBuffer = ResourceManager::Instance->CreateBuffer({
+								.debugName = "shader-uniform-buffer",
+								.usage = BufferUsage::UNIFORM,
+								.usageHint = BufferUsageHint::DYNAMIC,
+								.memoryUsage = MemoryUsage::GPU_CPU,
+								.byteSize = (uint32_t)b.size,
+								.initialData = (void*)uniformBufferBytes.data(),
+							});
+
+							bufferBindings.push_back({ .buffer = userBuffer, });
+						}
+					}
+					else if (b.type == ResourceType::SampledTexture)
+					{
+						const auto& textureProp = shaderProperties["BindGroup"][b.name];
+
+						if (textureProp.IsDefined())
+						{
+							UUID textureMapUUID = textureProp.as<UUID>();
+
+							auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
+							textureBindings.push_back({ handle });
+						}
+					}
+				}
+
+				// If there is only one texture and is not set, use the built in white texture.
+				if (textureBindings.size() == 1)
+				{
+					if (!textureBindings[0].texture.IsValid())
+					{
+						textureBindings[0].texture = TextureUtilities::Get().WhiteTexture;
+					}
+				}
+
+				shaderBindGroup = ResourceManager::Instance->CreateBindGroup({
+					.debugName = "shader-bind-group",
+					.layout = outReflectionData.GetBindGroupLayout(1),
+					.textures = textureBindings,
+					.buffers = bufferBindings,
+				});
+			}
+		}
+		else
+		{
+			HBL2_CORE_TRACE("Shader {0} has an ill-formed metadata file.", shaderPath);
+		}
+
 		// Create resource.
 		ResourceManager::Instance->RecompileShader(shaderHandle, {
 			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
@@ -1076,6 +1327,7 @@ namespace HBL2
 				.specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant(shaderVariants),
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
+			.shaderBindGroup = shaderBindGroup,
 		});
 
 		stream.close();
@@ -1185,7 +1437,7 @@ namespace HBL2
 					continue;
 				}
 
-				StaticDArray<Handle<Texture>, 8> textureBindings;
+				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
 				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
 
 				for (const auto& b : descriptorSet.bindings)
@@ -1212,39 +1464,39 @@ namespace HBL2
 								switch (m.typeInfo.base)
 								{
 								case MemberBaseType::Float:
-								{
-									float* f = reinterpret_cast<float*>(memberPtr);
-
-									if (m.typeInfo.cols == 1)
 									{
-										*f = memberProp.as<float>();
-									}
-									else if (m.typeInfo.cols == 2)
-									{
-										const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+										float* f = reinterpret_cast<float*>(memberPtr);
 
-										f[0] = vec2.x;
-										f[1] = vec2.y;
-									}
-									else if (m.typeInfo.cols == 3)
-									{
-										const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+										if (m.typeInfo.cols == 1)
+										{
+											*f = memberProp.as<float>();
+										}
+										else if (m.typeInfo.cols == 2)
+										{
+											const glm::vec2& vec2 = memberProp.as<glm::vec2>();
 
-										f[0] = vec3.x;
-										f[1] = vec3.y;
-										f[2] = vec3.z;
-									}
-									else if (m.typeInfo.cols == 4)
-									{
-										const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+											f[0] = vec2.x;
+											f[1] = vec2.y;
+										}
+										else if (m.typeInfo.cols == 3)
+										{
+											const glm::vec3& vec3 = memberProp.as<glm::vec3>();
 
-										f[0] = vec4.x;
-										f[1] = vec4.y;
-										f[2] = vec4.z;
-										f[3] = vec4.w;
+											f[0] = vec3.x;
+											f[1] = vec3.y;
+											f[2] = vec3.z;
+										}
+										else if (m.typeInfo.cols == 4)
+										{
+											const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+											f[0] = vec4.x;
+											f[1] = vec4.y;
+											f[2] = vec4.z;
+											f[3] = vec4.w;
+										}
+										break;
 									}
-									break;
-								}
 								}
 							}
 
@@ -1269,7 +1521,7 @@ namespace HBL2
 							UUID textureMapUUID = textureProp.as<UUID>();
 
 							auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
-							textureBindings.push_back(handle);
+							textureBindings.push_back({ handle });
 						}
 					}
 				}
@@ -1277,9 +1529,9 @@ namespace HBL2
 				// If there is only one texture and is not set, use the built in white texture.
 				if (textureBindings.size() == 1)
 				{
-					if (!textureBindings[0].IsValid())
+					if (!textureBindings[0].texture.IsValid())
 					{
-						textureBindings[0] = TextureUtilities::Get().WhiteTexture;
+						textureBindings[0].texture = TextureUtilities::Get().WhiteTexture;
 					}
 				}
 

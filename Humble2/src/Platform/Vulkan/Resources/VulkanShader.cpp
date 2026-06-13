@@ -9,6 +9,8 @@ namespace HBL2
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		vkDestroyPipelineLayout(device->Get(), PipelineLayout, nullptr);
+
+		ResourceManager::Instance->DeleteBindGroup(ShaderBindGroup);
 	}
 
 	VkPipeline VulkanShaderCold::Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex)
@@ -561,6 +563,14 @@ namespace HBL2
 
 		Cold->DebugName = desc.debugName;
 
+		// BindGroups use a reference counting system, so if there are other objects
+		// referencing the bindgroup, it will not be deleted, just the ref count will be decreased.
+		if (Hot->ShaderBindGroup.IsValid())
+		{
+			ResourceManager::Instance->DeleteBindGroup(Hot->ShaderBindGroup);
+		}
+		Hot->ShaderBindGroup = desc.shaderBindGroup;
+
 		// Clear VertexBufferBindings.
 		Cold->VertexBufferBindings.clear();
 
@@ -663,7 +673,7 @@ namespace HBL2
 			{
 				if (bindGroupLayoutIndex == 0)
 				{
-					Hot->BindGroupLayoutHash0 = bindGroup.HashKey();
+					Hot->GlobalBindGroupLayoutHash = bindGroup.HashKey();
 				}
 
 				if (bindGroupLayoutIndex == 1)
@@ -675,8 +685,6 @@ namespace HBL2
 					{
 						Cold->m_ReflectedBindGroupLayouts.push_back(bindGroup);
 					}
-
-					Hot->BindGroupLayoutHash1 = bindGroup.HashKey();
 				}
 
 				if (bindGroupLayoutIndex == 2 && desc.bindGroups.size() == 4)

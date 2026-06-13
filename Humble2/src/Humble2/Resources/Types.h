@@ -127,7 +127,7 @@ namespace HBL2
 		Material(const MaterialDescriptor&& desc);
 
 		void Reimport(const MaterialDescriptor&& desc);
-		void SetGlobalBuffer(uint32_t index, void* userData);
+		void SetGlobalShaderBuffer(uint32_t index, void* userData);
 		void SetBuffer(uint32_t index, void* userData);
 
 		const char* DebugName = "";
@@ -139,5 +139,6 @@ namespace HBL2
 		bool ReceiveShadows = true;
 
 		std::atomic<bool> Dirty { false };
+		std::atomic<bool> ShaderDirty { false };
 	};
 }

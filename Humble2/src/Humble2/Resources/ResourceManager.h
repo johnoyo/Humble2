@@ -82,6 +82,8 @@ namespace HBL2
 		virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) = 0;
 		virtual void DeleteShader(Handle<Shader> handle) = 0;
 		virtual uint64_t GetOrAddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc) = 0;
+		virtual void SetShaderGlobalBindGroup(Handle<Shader> handle, Handle<BindGroup> bindGroupHandle) = 0;
+		virtual Handle<BindGroup> GetShaderGlobalBindGroup(Handle<Shader> handle) = 0;
 
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) = 0;

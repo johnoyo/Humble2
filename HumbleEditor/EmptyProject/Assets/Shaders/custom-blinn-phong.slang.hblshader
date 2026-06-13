@@ -1,6 +1,12 @@
 Shader:
   UUID: 10231128649318566348
   Type: 1
+  BindGroup:
+    - u_Fog:
+        Intensity: 0
+        Falloff: 0
+        Bias: [0, 0]
+        Color: [0, 0, 0, 0]
   Variants:
     - Variant: 233046723
       BlendState:

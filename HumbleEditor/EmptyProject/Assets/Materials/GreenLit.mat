@@ -1,11 +1,10 @@
 Material:
-  Shader: 10231128649318566348
-  AlbedoColor: [0.303688318, 0.892156839, 0.0918396562, 1]
-  Glossiness: 1
-  AlbedoMap: 0
-  NormalMap: 0
-  MetallicMap: 0
-  RoughnessMap: 0
+  Shader: 17370062664359595275
+  u_AlbedoMap: 0
+  u_Material:
+    Color: [0.303688318, 0.892156839, 0.0918396562, 1]
+    Glossiness: 1
+    _Unused: 0
   RasterState:
     Topology: 3
     PolygonMode: 0

@@ -877,7 +877,311 @@ namespace HBL2
 						}
 						break;
 					case AssetType::Shader:
-						break;
+						{
+							Handle<Shader> handle = AssetManager::Instance->GetAsset<Shader>(m_SelectedAsset);
+
+							static bool shaderNeedsReimport = false;
+							static bool shaderBindGroupNeedsReimport = false;
+
+							if (m_SelectedAsset != m_PreviouslySelectedAsset)
+							{
+								shaderNeedsReimport = true;
+
+								m_ShaderReflectionData2.Clear();
+
+								JobSystem::Get().Execute(m_MaterialShaderReflectionCtx, [this, asset]()
+								{
+									Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(m_SelectedAsset);
+
+									const auto& shaderFileSystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+									const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
+
+									m_ShaderReflectionData2 = ShaderUtilities::Get().Reflect(shaderPath.string());
+
+									// Clear uniform buffer data.
+									for (auto& data : m_ShaderUniformBufferData2)
+									{
+										data.clear();
+									}
+									std::memset(m_ShaderUniformTextureData2.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData2.Size());
+
+									// Open shader metadata file.
+									std::ifstream stream(shaderPath.string() + ".hblshader");
+
+									if (!stream.is_open())
+									{
+										HBL2_CORE_ERROR("Shader metadata file not found: {0}", shaderPath);
+									}
+									else
+									{
+										std::stringstream ss;
+										ss << stream.rdbuf();
+
+										YAML::Node data = YAML::Load(ss.str());
+										if (!data["Shader"].IsDefined())
+										{
+											HBL2_CORE_TRACE("Shader not found: {0}", ss.str());
+											stream.close();
+										}
+										else
+										{
+											auto shaderProperties = data["Shader"];
+											if (shaderProperties && shaderProperties["BindGroup"].IsDefined())
+											{
+												// Retrieve new uniform buffer data.
+												for (const auto& descriptorSet : m_ShaderReflectionData2.descriptorSets)
+												{
+													if (descriptorSet.set != 1)
+													{
+														continue;
+													}
+
+													m_ShaderUniformBufferSize2 = 0;
+													m_ShaderUniformTextureSize2 = 0;
+
+													for (const auto& b : descriptorSet.bindings)
+													{
+														if (b.type == ResourceType::UniformBuffer)
+														{
+															auto& uniformBufferBytes = m_ShaderUniformBufferData2[m_ShaderUniformBufferSize2++];
+															uniformBufferBytes.resize(b.size);
+
+															const auto& bufferProp = shaderProperties["BindGroup"][b.name];
+
+															if (bufferProp.IsDefined())
+															{
+																for (const auto& m : b.members)
+																{
+																	const auto& memberProp = bufferProp[m.name];
+
+																	if (!memberProp.IsDefined())
+																	{
+																		continue;
+																	}
+
+																	uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+																	switch (m.typeInfo.base)
+																	{
+																	case MemberBaseType::Float:
+																	{
+																		float* f = reinterpret_cast<float*>(memberPtr);
+
+																		if (m.typeInfo.cols == 1)
+																		{
+																			*f = memberProp.as<float>();
+																		}
+																		else if (m.typeInfo.cols == 2)
+																		{
+																			const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+
+																			f[0] = vec2.x;
+																			f[1] = vec2.y;
+																		}
+																		else if (m.typeInfo.cols == 3)
+																		{
+																			const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+
+																			f[0] = vec3.x;
+																			f[1] = vec3.y;
+																			f[2] = vec3.z;
+																		}
+																		else if (m.typeInfo.cols == 4)
+																		{
+																			const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+																			f[0] = vec4.x;
+																			f[1] = vec4.y;
+																			f[2] = vec4.z;
+																			f[3] = vec4.w;
+																		}
+																		break;
+																	}
+																	}
+																}
+															}
+														}
+														else if (b.type == ResourceType::SampledTexture)
+														{
+															const auto& textureProp = shaderProperties["BindGroup"][b.name];
+
+															if (textureProp.IsDefined())
+															{
+																UUID textureMapUUID = textureProp.as<UUID>();
+
+																auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
+																auto assetHandle = AssetManager::Instance->GetHandleFromUUID(textureMapUUID);
+
+																m_ShaderUniformTextureData2[m_ShaderUniformTextureSize2++] = assetHandle.Pack();
+															}
+														}
+													}
+												}
+											}
+											else
+											{
+												HBL2_CORE_TRACE("Shader {0} has an ill-formed metadata file.", shaderPath);
+											}
+										}
+
+										stream.close();
+									}									
+								});
+							}
+
+							if (!JobSystem::Get().Busy(m_MaterialShaderReflectionCtx))
+							{
+								for (const auto& descriptorSet : m_ShaderReflectionData2.descriptorSets)
+								{
+									if (descriptorSet.set != 1)
+									{
+										continue;
+									}
+
+									m_ShaderUniformBufferSize2 = 0;
+									m_ShaderUniformTextureSize2 = 0;
+
+									for (const auto& b : descriptorSet.bindings)
+									{
+										if (b.type == ResourceType::UniformBuffer)
+										{
+											auto& uniformBufferBytes = m_ShaderUniformBufferData2[m_ShaderUniformBufferSize2];
+											uniformBufferBytes.resize(b.size);
+
+											ImGui::Text(b.name.c_str());
+
+											bool dirty = false;
+											uint32_t memberIndex = 0;
+
+											for (const auto& m : b.members)
+											{
+												uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+												static std::vector<uint32_t> enableColorEdit(b.members.size(), 0);
+
+												switch (m.typeInfo.base)
+												{
+												case MemberBaseType::Float:
+													{
+														float* f = reinterpret_cast<float*>(memberPtr);
+
+														if (m.typeInfo.cols == 1)
+														{
+															dirty |= ImGui::InputFloat(m.name.c_str(), f, 0.f, 0.f, "%.5f");
+														}
+														else if (m.typeInfo.cols == 2)
+														{
+															dirty |= ImGui::InputFloat2(m.name.c_str(), f, "%.5f");
+														}
+														else if (m.typeInfo.cols == 3)
+														{
+															if (enableColorEdit[memberIndex])
+															{
+																dirty |= ImGui::ColorEdit3(m.name.c_str(), f, ImGuiColorEditFlags_DefaultOptions_);
+															}
+															else
+															{
+																dirty |= ImGui::InputFloat3(m.name.c_str(), f, "%.5f");
+															}
+															ImGui::SameLine();
+															ImGui::Checkbox(std::string("##" + m.name).c_str(), (bool*)&enableColorEdit[memberIndex]);
+															if (ImGui::BeginItemTooltip())
+															{
+																ImGui::Text("Enable / Disable color edit mode");
+																ImGui::EndTooltip();
+															}
+														}
+														else if (m.typeInfo.cols == 4)
+														{
+															if (enableColorEdit[memberIndex])
+															{
+																dirty |= ImGui::ColorEdit4(m.name.c_str(), f, ImGuiColorEditFlags_DefaultOptions_);
+															}
+															else
+															{
+																dirty |= ImGui::InputFloat4(m.name.c_str(), f, "%.5f");
+															}
+															ImGui::SameLine();
+															ImGui::Checkbox(std::string("##" + m.name).c_str(), (bool*)&enableColorEdit[memberIndex]);
+															if (ImGui::BeginItemTooltip())
+															{
+																ImGui::Text("Enable / Disable color edit mode");
+																ImGui::EndTooltip();
+															}
+														}
+														break;
+													}
+												}
+
+												memberIndex++;
+											}
+
+											if (dirty)
+											{
+												Handle<BindGroup> shaderBindGroup = ResourceManager::Instance->GetShaderGlobalBindGroup(handle);
+												ResourceManager::Instance->SetBufferData(shaderBindGroup, m_ShaderUniformBufferSize2, uniformBufferBytes.data());
+
+												// Submit map to render thread, to avoid modifying the data while the render thread renders the previous frame.
+												Renderer::Instance->Submit([index = m_ShaderUniformBufferSize2, handle]()
+												{
+													Handle<BindGroup> shaderBindGroup = ResourceManager::Instance->GetShaderGlobalBindGroup(handle);
+													ResourceManager::Instance->MapBufferData(shaderBindGroup, index);
+												});
+											}
+
+											m_ShaderUniformBufferSize2++;
+										}
+										else if (b.type == ResourceType::SampledTexture)
+										{
+											auto& userMapHandlePacked = m_ShaderUniformTextureData2[m_ShaderUniformTextureSize2++];
+
+											ImGui::InputScalar(b.name.c_str(), ImGuiDataType_U32, (void*)(intptr_t*)&userMapHandlePacked);
+
+											Handle<Asset> userMapAssetHandle = Handle<Asset>::UnPack(userMapHandlePacked);
+											AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
+
+											if (ImGui::BeginDragDropTarget())
+											{
+												if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+												{
+													userMapHandlePacked = *((uint32_t*)payload->Data);
+													userMapAssetHandle = Handle<Asset>::UnPack(userMapHandlePacked);
+
+													if (userMapAssetHandle.IsValid())
+													{
+														TextureUtilities::Get().CreateAssetMetadataFile(userMapAssetHandle);
+													}
+
+													AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
+
+													shaderBindGroupNeedsReimport = true;
+												}
+
+												ImGui::EndDragDropTarget();
+											}
+										}
+									}
+								}
+
+								if (shaderNeedsReimport || shaderBindGroupNeedsReimport)
+								{
+									ShaderUtilities::Get().UpdateShaderBindGroupResourcesAssetFile(m_SelectedAsset, {
+										.ReflectionData = &m_ShaderReflectionData2,
+										.Buffers = m_ShaderUniformBufferData2,
+										.TextureAssets = m_ShaderUniformTextureData2,
+									});
+
+									shaderNeedsReimport = false;
+								}
+
+								if (shaderBindGroupNeedsReimport)
+								{
+									AssetManager::Instance->ReloadAsset<Shader>(m_SelectedAsset);
+									shaderBindGroupNeedsReimport = false;
+								}
+							}
+
+							break;
+						}
 					case AssetType::Material:
 						{
 							Handle<Material> handle = AssetManager::Instance->GetAsset<Material>(m_SelectedAsset);
@@ -989,10 +1293,13 @@ namespace HBL2
 							ImGui::Text("Uniforms:");
 
 							static bool materialNeedsReimport = false;
+							static bool materialBindGroupNeedsReimport = false;
 							static Handle<Asset> shaderAssetHandle = {};
 
 							if (m_SelectedAsset != m_PreviouslySelectedAsset)
 							{
+								materialNeedsReimport = true;
+
 								m_ShaderReflectionData2.Clear();
 
 								JobSystem::Get().Execute(m_MaterialShaderReflectionCtx, [this, asset]()
@@ -1025,22 +1332,31 @@ namespace HBL2
 											auto materialProperties = data["Material"];
 											if (materialProperties)
 											{
-												UUID shaderUUID = materialProperties["Shader"].as<UUID>();
-
-												Handle<Asset> shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
-												Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
-
-												const auto& shaderFileSystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
-												const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
-
-												m_ShaderReflectionData2 = ShaderUtilities::Get().Reflect(shaderPath.string());
-
 												// Clear uniform buffer data.
 												for (auto& data : m_ShaderUniformBufferData2)
 												{
 													data.clear();
 												}
 												std::memset(m_ShaderUniformTextureData2.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData2.Size());
+
+												// Get the shader path of the material in order to reflect on it.
+												UUID shaderUUID = materialProperties["Shader"].as<UUID>();
+
+												shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
+												Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+												if (shaderAsset == nullptr)
+												{
+													HBL2_CORE_ERROR("Shader with UUID: {0}, of material: {1}, not found!", shaderUUID, materialPath);
+													stream.close();
+													return;
+												}
+
+												const auto& shaderFileSystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+												const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
+												
+												// Reflect.
+												m_ShaderReflectionData2 = ShaderUtilities::Get().Reflect(shaderPath.string());
 
 												// Retrieve new uniform buffer data.
 												for (const auto& descriptorSet : m_ShaderReflectionData2.descriptorSets)
@@ -1255,7 +1571,7 @@ namespace HBL2
 
 													AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
 
-													materialNeedsReimport = true;
+													materialBindGroupNeedsReimport = true;
 												}
 
 												ImGui::EndDragDropTarget();
@@ -1264,7 +1580,7 @@ namespace HBL2
 									}
 								}
 							
-								if (materialNeedsReimport)
+								if (materialNeedsReimport || materialBindGroupNeedsReimport)
 								{
 									ShaderUtilities::Get().CreateMaterialAssetFile(m_SelectedAsset, {
 										.ShaderAssetHandle = shaderAssetHandle,
@@ -1274,9 +1590,13 @@ namespace HBL2
 										.TextureAssets = m_ShaderUniformTextureData2,
 									});
 
-									AssetManager::Instance->ReloadAsset<Material>(m_SelectedAsset);
-
 									materialNeedsReimport = false;
+								}
+
+								if (materialBindGroupNeedsReimport)
+								{
+									AssetManager::Instance->ReloadAsset<Material>(m_SelectedAsset);
+									materialBindGroupNeedsReimport = false;
 								}
 
 								// Shader Constants.

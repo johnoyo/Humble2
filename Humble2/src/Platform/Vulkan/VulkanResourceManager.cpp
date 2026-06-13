@@ -268,6 +268,26 @@ namespace HBL2
 		VulkanShader shader = GetShader(handle);
 		return (uint64_t)shader.GetOrCreateVariant(variantDesc);
 	}
+	void VulkanResourceManager::SetShaderGlobalBindGroup(Handle<Shader> handle, Handle<BindGroup> bindGroupHandle)
+	{
+		VulkanShaderHot* shader = GetShaderHot(handle);
+
+		if (shader != nullptr)
+		{
+			shader->ShaderBindGroup = bindGroupHandle;
+		}
+	}
+	Handle<BindGroup> VulkanResourceManager::GetShaderGlobalBindGroup(Handle<Shader> handle)
+	{
+		VulkanShaderHot* shader = GetShaderHot(handle);
+
+		if (shader != nullptr)
+		{
+			return shader->ShaderBindGroup;
+		}
+
+		return Renderer::Instance->GetEmptyBindings();
+	}
 	VulkanShader VulkanResourceManager::GetShader(Handle<Shader> handle) const
 	{
 		VulkanShader shader;
@@ -386,19 +406,25 @@ namespace HBL2
 
 		uint64_t hash = 0;
 
+		uint64_t bufferHash = 0x517cc1b727220a95ULL;
+		uint64_t textureHash = 0x9e3779b97f4a7c15ULL;
+
 		for (const auto& bufferEntry : bindGroupCold->Buffers)
 		{
-			hash += bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code();
-			hash += bufferEntry.byteOffset;
-			hash += bufferEntry.range;
+			HashCombine(bufferHash, bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code());
+			HashCombine(bufferHash, bufferEntry.byteOffset);
+			HashCombine(bufferHash, bufferEntry.range);
 		}
 
-		for (const auto texture : bindGroupCold->Textures)
+		for (const auto& textureEntry : bindGroupCold->Textures)
 		{
-			hash += texture.HashKey() + typeid(Texture).hash_code();
+			HashCombine(textureHash, textureEntry.texture.HashKey() + typeid(Texture).hash_code());
+			HashCombine(textureHash, static_cast<uint64_t>(textureEntry.desiredLayout));
 		}
 
-		hash += bindGroupCold->BindGroupLayout.HashKey() + typeid(BindGroupLayout).hash_code();
+		HashCombine(hash, bufferHash);
+		HashCombine(hash, textureHash);
+		HashCombine(hash, bindGroupCold->BindGroupLayout.HashKey());
 
 		return hash;
 	}

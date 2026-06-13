@@ -259,6 +259,13 @@ namespace HBL2
 			return shader->GetOrCreateVariant(variantDesc);
 		}
 	}
+	void OpenGLResourceManager::SetShaderGlobalBindGroup(Handle<Shader> handle, Handle<BindGroup> bindGroupHandle)
+	{
+	}
+	Handle<BindGroup> OpenGLResourceManager::GetShaderGlobalBindGroup(Handle<Shader> handle)
+	{
+		return Handle<BindGroup>();
+	}
 	OpenGLShader* OpenGLResourceManager::GetShader(Handle<Shader> handle) const
 	{
 		return m_ShaderPool.Get(handle);
@@ -318,19 +325,25 @@ namespace HBL2
 
 		uint64_t hash = 0;
 
+		uint64_t bufferHash = 0x517cc1b727220a95ULL;
+		uint64_t textureHash = 0x9e3779b97f4a7c15ULL;
+
 		for (const auto& bufferEntry : bindGroup->Buffers)
 		{
-			hash += bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code();;
-			hash += bufferEntry.byteOffset;
-			hash += bufferEntry.range;
+			HashCombine(bufferHash, bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code());
+			HashCombine(bufferHash, bufferEntry.byteOffset);
+			HashCombine(bufferHash, bufferEntry.range);
 		}
 
-		for (const auto texture : bindGroup->Textures)
+		for (const auto& textureEntry : bindGroup->Textures)
 		{
-			hash += texture.HashKey() + typeid(Texture).hash_code();
+			HashCombine(textureHash, textureEntry.texture.HashKey() + typeid(Texture).hash_code());
+			HashCombine(textureHash, static_cast<uint64_t>(textureEntry.desiredLayout));
 		}
 
-		hash += bindGroup->BindGroupLayout.HashKey() + typeid(BindGroupLayout).hash_code();
+		HashCombine(hash, bufferHash);
+		HashCombine(hash, textureHash);
+		HashCombine(hash, bindGroup->BindGroupLayout.HashKey());
 
 		return hash;
 	}

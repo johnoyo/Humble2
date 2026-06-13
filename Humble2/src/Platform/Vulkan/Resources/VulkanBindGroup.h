@@ -20,7 +20,7 @@ namespace HBL2
 	{
 		const char* DebugName = "";
 		Handle<BindGroupLayout> BindGroupLayout;
-		std::vector<Handle<Texture>> Textures;
+		std::vector<BindGroupDescriptor::TextureEntry> Textures;
 		std::vector<BindGroupDescriptor::BufferEntry> Buffers;
 
 		void Destroy();

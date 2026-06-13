@@ -114,9 +114,11 @@ namespace HBL2
 		MaterialBindGroup = desc.materialBindGroup;
 	}
 
-	void Material::SetGlobalBuffer(uint32_t index, void* userData)
+	void Material::SetGlobalShaderBuffer(uint32_t index, void* userData)
 	{
-		// ResourceManager::Instance->SetBufferData(UserBindGroup, index, userData);
+		Handle<BindGroup> shaderBindGroup = ResourceManager::Instance->GetShaderGlobalBindGroup(Shader);
+		ResourceManager::Instance->SetBufferData(shaderBindGroup, index, userData);
+		ShaderDirty.store(true);
 	}
 
 	void Material::SetBuffer(uint32_t index, void* userData)

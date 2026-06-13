@@ -39,7 +39,7 @@ namespace HBL2
 
 		for (int i = 0; i < Textures.size(); i++)
 		{
-			OpenGLTexture* texture = rm->GetTexture(Textures[i]);
+			OpenGLTexture* texture = rm->GetTexture(Textures[i].texture);
 
 			// TODO: Handle textures.
 			// ...
@@ -58,7 +58,7 @@ namespace HBL2
 
 		for (int i = 0; i < Textures.size(); i++)
 		{
-			OpenGLTexture* openGLTexture = rm->GetTexture(Textures[i]);
+			OpenGLTexture* openGLTexture = rm->GetTexture(Textures[i].texture);
 
 			glActiveTexture(openGLBindGroupLayout->TextureBindings[i].slot + GL_TEXTURE0);
 			glBindTexture(openGLTexture->TextureType, openGLTexture->ViewRendererId);

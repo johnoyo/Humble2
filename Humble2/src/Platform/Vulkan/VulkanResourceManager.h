@@ -61,6 +61,8 @@ namespace HBL2
 		virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) override;
 		virtual void DeleteShader(Handle<Shader> handle) override;
 		virtual uint64_t GetOrAddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc) override;
+		virtual void SetShaderGlobalBindGroup(Handle<Shader> handle, Handle<BindGroup> bindGroupHandle) override;
+		virtual Handle<BindGroup> GetShaderGlobalBindGroup(Handle<Shader> handle) override;
 		VulkanShader GetShader(Handle<Shader> handle) const;
 		VulkanShaderHot* GetShaderHot(Handle<Shader> handle) const;
 		VulkanShaderCold* GetShaderCold(Handle<Shader> handle) const;

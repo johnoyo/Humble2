@@ -58,6 +58,8 @@ namespace HBL2
 		virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) override;
 		virtual void DeleteShader(Handle<Shader> handle) override;
 		virtual uint64_t GetOrAddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc) override;
+		virtual void SetShaderGlobalBindGroup(Handle<Shader> handle, Handle<BindGroup> bindGroupHandle) override;
+		virtual Handle<BindGroup> GetShaderGlobalBindGroup(Handle<Shader> handle) override;
 		OpenGLShader* GetShader(Handle<Shader> handle) const;
 
 		// BindGroups

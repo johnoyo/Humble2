@@ -665,6 +665,66 @@ namespace HBL2
         out << YAML::Key << "UUID" << YAML::Value << asset->UUID;
         out << YAML::Key << "Type" << YAML::Value << shaderType;
 
+        out << YAML::Key << "BindGroup" << YAML::BeginSeq;
+        out << YAML::BeginMap;
+
+        const auto& reflectionData = Reflect(path.string());
+
+        for (const auto& descriptorSet : reflectionData.descriptorSets)
+        {
+            if (descriptorSet.set != 2)
+            {
+                continue;
+            }
+
+            uint32_t bufferIndex = 0;
+            uint32_t textureIndex = 0;
+
+            for (const auto& b : descriptorSet.bindings)
+            {
+                if (b.type == ResourceType::UniformBuffer)
+                {
+                    out << YAML::Key << b.name.c_str();
+                    out << YAML::BeginMap;
+
+                    for (const auto& m : b.members)
+                    {
+                        switch (m.typeInfo.base)
+                        {
+                        case MemberBaseType::Float:
+                            {
+                                if (m.typeInfo.cols == 1)
+                                {
+                                    out << YAML::Key << m.name.c_str() << YAML::Value << 0.0f;
+                                }
+                                else if (m.typeInfo.cols == 2)
+                                {
+                                    out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec2(0.0f);
+                                }
+                                else if (m.typeInfo.cols == 3)
+                                {
+                                    out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec3(0.0f);
+                                }
+                                else if (m.typeInfo.cols == 4)
+                                {
+                                    out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec4(0.0f);
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    out << YAML::EndMap;
+                }
+                else if (b.type == ResourceType::SampledTexture)
+                {
+                    out << YAML::Key << b.name.c_str() << YAML::Value << (UUID)0;
+                }
+            }
+        }
+        out << YAML::EndMap;
+        out << YAML::EndSeq;
+
         out << YAML::Key << "Variants" << YAML::BeginSeq;
         out << YAML::BeginMap;
         out << YAML::Key << "Variant" << YAML::Value << variantHash.Key();
@@ -710,6 +770,103 @@ namespace HBL2
         out << YAML::EndMap;
 
         fout << out.c_str();
+        fout.close();
+    }
+
+    void ShaderUtilities::UpdateShaderBindGroupResourcesAssetFile(Handle<Asset> handle, const ShaderDataDescriptor&& desc)
+    {
+        Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(handle);
+
+        if (shaderAsset == nullptr)
+        {
+            return;
+        }
+
+        Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(handle);
+
+        const auto& filesystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+        const auto& filePath = std::filesystem::exists(filesystemPath) ? filesystemPath : shaderAsset->FilePath;
+
+        YAML::Node root = YAML::LoadFile(filePath.string() + ".hblshader");
+
+        // Clear previous entries.
+        root["Shader"]["BindGroup"] = YAML::Node(YAML::NodeType::Sequence);
+        YAML::Node bindGroup = root["Shader"]["BindGroup"];
+
+        // Get reflection data.
+        const auto& reflectionData = Reflect(filePath.string());
+
+        for (const auto& descriptorSet : reflectionData.descriptorSets)
+        {
+            if (descriptorSet.set != 1)
+            {
+                continue;
+            }
+
+            uint32_t bufferIndex = 0;
+            uint32_t textureIndex = 0;
+
+            const std::vector<uint8_t>& uniformBufferBytes = desc.Buffers[bufferIndex++];
+
+            for (const auto& b : descriptorSet.bindings)
+            {
+                YAML::Node out;
+
+                if (b.type == ResourceType::UniformBuffer)
+                {
+                    for (const auto& m : b.members)
+                    {
+                        const uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+                        switch (m.typeInfo.base)
+                        {
+                        case MemberBaseType::Float:
+                            {
+                                const float* f = reinterpret_cast<const float*>(memberPtr);
+
+                                if (m.typeInfo.cols == 1)
+                                {
+                                    out[b.name.c_str()][m.name.c_str()] = *f;
+                                }
+                                else if (m.typeInfo.cols == 2)
+                                {
+                                    out[b.name.c_str()][m.name.c_str()] = glm::vec2(f[0], f[1]);
+                                }
+                                else if (m.typeInfo.cols == 3)
+                                {
+                                    out[b.name.c_str()][m.name.c_str()] = glm::vec3(f[0], f[1], f[2]);
+                                }
+                                else if (m.typeInfo.cols == 4)
+                                {
+                                    out[b.name.c_str()][m.name.c_str()] = glm::vec4(f[0], f[1], f[2], f[3]);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                else if (b.type == ResourceType::SampledTexture)
+                {
+                    Handle<Asset> textureAssetHandle = Handle<Asset>::UnPack(desc.TextureAssets[textureIndex++]);
+
+                    if (textureAssetHandle.IsValid())
+                    {
+                        Asset* asset = AssetManager::Instance->GetAssetMetadata(textureAssetHandle);
+                        out[b.name.c_str()] = asset->UUID;
+                    }
+                    else
+                    {
+                        out[b.name.c_str()] = (UUID)0;
+                    }
+
+                }
+
+                bindGroup.push_back(out);
+            }
+        }
+
+        std::ofstream fout(filePath.string() + ".hblshader");
+        fout << root;
         fout.close();
     }
 

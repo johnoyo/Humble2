@@ -96,7 +96,13 @@ namespace HBL2
 	{
 		const char* debugName;
 		Handle<BindGroupLayout> layout;
-		Span<const Handle<Texture>> textures;
+
+		struct TextureEntry
+		{
+			Handle<Texture> texture;
+			TextureLayout desiredLayout = TextureLayout::UNDEFINED;
+		};
+		Span<const TextureEntry> textures;
 		struct BufferEntry
 		{
 			Handle<Buffer> buffer;
@@ -261,6 +267,7 @@ namespace HBL2
 		};
 		RenderPipeline renderPipeline;
 		Handle<RenderPass> renderPass;
+		Handle<BindGroup> shaderBindGroup;
 	};
 
 	static inline const ShaderDescriptor::RenderPipeline::PackedVariant g_NullVariant = std::bit_cast<ShaderDescriptor::RenderPipeline::PackedVariant>(uint64_t{ 0 });

@@ -909,7 +909,7 @@ namespace HBL2
 			.debugName = "post-process-bind-group",
 			.layout = m_PostProcessBindGroupLayout,
 			.textures = {
-				Renderer::Instance->IntermediateColorTexture
+				{ Renderer::Instance->IntermediateColorTexture, TextureLayout::SHADER_READ_ONLY }
 			},
 			.buffers = {
 				{ .buffer = m_PostProcessBuffer },
@@ -973,7 +973,7 @@ namespace HBL2
 				.debugName = "post-process-bind-group",
 				.layout = m_PostProcessBindGroupLayout,
 				.textures = {
-					Renderer::Instance->IntermediateColorTexture
+					{ Renderer::Instance->IntermediateColorTexture, TextureLayout::SHADER_READ_ONLY }
 				},
 				.buffers = {
 					{ .buffer = m_PostProcessBuffer },
@@ -1128,13 +1128,33 @@ namespace HBL2
 							return;
 						}
 
+						// Map shader bind group buffer data if dirty.
+						if (material->ShaderDirty.load())
+						{
+							// Submit map to render thread, to avoid modifying the data while the render thread renders the previous frame.
+							Renderer::Instance->Submit([material]()
+							{
+								for (int i = 0; i < Material::MaxBufferBindings; i++)
+								{
+									Handle<BindGroup> shaderBindGroup = ResourceManager::Instance->GetShaderGlobalBindGroup(material->Shader);
+									ResourceManager::Instance->MapBufferData(shaderBindGroup, i);
+								}
+							});
+
+							material->ShaderDirty.store(false);
+						}
+
 						// Map material bind group buffer data if dirty.
 						if (material->Dirty.load())
 						{
-							for (int i = 0; i < Material::MaxBufferBindings; i++)
+							// Submit map to render thread, to avoid modifying the data while the render thread renders the previous frame.
+							Renderer::Instance->Submit([material]()
 							{
-								ResourceManager::Instance->MapBufferData(material->MaterialBindGroup, i);
-							}
+								for (int i = 0; i < Material::MaxBufferBindings; i++)
+								{
+									ResourceManager::Instance->MapBufferData(material->MaterialBindGroup, i);
+								}
+							});
 
 							material->Dirty.store(false);
 						}
@@ -1155,8 +1175,8 @@ namespace HBL2
 								.VertexBuffer = meshPart.VertexBuffers[0],
 								.MaterialBindGroup = material->MaterialBindGroup,
 								.BindGroup = material->DrawBindGroup,
-								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
 								.IndexCount = subMesh.IndexCount,
 								.IndexOffset = subMesh.IndexOffset,
 								.VertexCount = subMesh.VertexCount,
@@ -1173,8 +1193,8 @@ namespace HBL2
 								.VertexBuffer = meshPart.VertexBuffers[0],
 								.MaterialBindGroup = Renderer::Instance->GetEmptyBindings(),
 								.BindGroup = m_DepthOnlyMeshBindGroup,
-								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
 								.IndexCount = subMesh.IndexCount,
 								.IndexOffset = subMesh.IndexOffset,
 								.VertexCount = subMesh.VertexCount,
@@ -1192,8 +1212,8 @@ namespace HBL2
 								.VertexBuffer = meshPart.VertexBuffers[0],
 								.MaterialBindGroup = material->MaterialBindGroup,
 								.BindGroup = material->DrawBindGroup,
-								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
 								.IndexCount = subMesh.IndexCount,
 								.IndexOffset = subMesh.IndexOffset,
 								.VertexCount = subMesh.VertexCount,
@@ -1212,8 +1232,8 @@ namespace HBL2
 								.VertexBuffer = meshPart.VertexBuffers[0],
 								.MaterialBindGroup = Renderer::Instance->GetEmptyBindings(),
 								.BindGroup = m_DepthOnlyMeshBindGroup,
-								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
 								.IndexCount = subMesh.IndexCount,
 								.IndexOffset = subMesh.IndexOffset,
 								.VertexCount = subMesh.VertexCount,
@@ -1251,13 +1271,33 @@ namespace HBL2
 							return;
 						}
 
+						// Map shader bind group buffer data if dirty.
+						if (material->ShaderDirty.load())
+						{
+							// Submit map to render thread, to avoid modifying the data while the render thread renders the previous frame.
+							Renderer::Instance->Submit([material]()
+							{
+								for (int i = 0; i < Material::MaxBufferBindings; i++)
+								{
+									Handle<BindGroup> shaderBindGroup = ResourceManager::Instance->GetShaderGlobalBindGroup(material->Shader);
+									ResourceManager::Instance->MapBufferData(shaderBindGroup, i);
+								}
+							});
+
+							material->ShaderDirty.store(false);
+						}
+
 						// Map material bind group buffer data if dirty.
 						if (material->Dirty.load())
 						{
-							for (int i = 0; i < Material::MaxBufferBindings; i++)
+							// Submit map to render thread, to avoid modifying the data while the render thread renders the previous frame.
+							Renderer::Instance->Submit([material]()
 							{
-								ResourceManager::Instance->MapBufferData(material->MaterialBindGroup, i);
-							}
+								for (int i = 0; i < Material::MaxBufferBindings; i++)
+								{
+									ResourceManager::Instance->MapBufferData(material->MaterialBindGroup, i);
+								}
+							});
 
 							material->Dirty.store(false);
 						}
@@ -1276,8 +1316,8 @@ namespace HBL2
 								.VertexBuffer = m_VertexBuffer,
 								.MaterialBindGroup = material->MaterialBindGroup,
 								.BindGroup = material->DrawBindGroup,
-								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawDataSprite),
+								.Offset = alloc.Offset,
 								.VertexCount = 6,
 							});
 
@@ -1288,8 +1328,8 @@ namespace HBL2
 								.VertexBuffer = m_VertexBuffer,
 								.MaterialBindGroup = Renderer::Instance->GetEmptyBindings(),
 								.BindGroup = m_DepthOnlySpriteBindGroup,
-								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawDataSprite),
+								.Offset = alloc.Offset,
 								.VertexCount = 6,
 							});
 						}
@@ -1301,8 +1341,8 @@ namespace HBL2
 								.VertexBuffer = m_VertexBuffer,
 								.MaterialBindGroup = material->MaterialBindGroup,
 								.BindGroup = material->DrawBindGroup,
-								.Offset = alloc.Offset,
 								.Size = sizeof(PerDrawDataSprite),
+								.Offset = alloc.Offset,
 								.VertexCount = 6,
 							});
 						}
@@ -1451,7 +1491,6 @@ namespace HBL2
 
 						GlobalDrawStream globalDrawStream =
 						{
-							.UserBindGroup = Renderer::Instance->GetEmptyBindings(),
 							.BindGroup = globalBindings,
 							.GlobalBufferSize = alignedSize,
 							.GlobalBufferOffset = index * alignedSize,
@@ -1482,14 +1521,14 @@ namespace HBL2
 		// Depth only pre pass for opaque static meshes.
 		{
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
-			GlobalDrawStream globalDrawStream = { .UserBindGroup = Renderer::Instance->GetEmptyBindings(), .BindGroup = globalBindings, .UsesDynamicOffset = true };
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassStaticMeshDraws);
 		}
 
 		// Depth only pre pass for opaque sprites.
 		{
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
-			GlobalDrawStream globalDrawStream = { .UserBindGroup = Renderer::Instance->GetEmptyBindings(), .BindGroup = globalBindings, .UsesDynamicOffset = true };
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassSpriteDraws);
 		}
 
@@ -1509,7 +1548,7 @@ namespace HBL2
 			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData);
 			ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&sceneRenderData->m_LightData);
-			GlobalDrawStream globalDrawStream = { .UserBindGroup = Renderer::Instance->GetEmptyBindings(), .BindGroup = globalBindings, .UsesDynamicOffset = true };
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshOpaqueDraws);
 		}
 
@@ -1517,7 +1556,7 @@ namespace HBL2
 		{
 			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
-			GlobalDrawStream globalDrawStream = { .UserBindGroup = Renderer::Instance->GetEmptyBindings(), .BindGroup = globalBindings, .UsesDynamicOffset = true };
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_SpriteOpaqueDraws);
 		}
 
@@ -1537,7 +1576,7 @@ namespace HBL2
 			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData);
 			ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&sceneRenderData->m_LightData);
-			GlobalDrawStream globalDrawStream = { .UserBindGroup = Renderer::Instance->GetEmptyBindings(), .BindGroup = globalBindings, .UsesDynamicOffset = true };
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshTransparentDraws);
 		}
 
@@ -1545,7 +1584,7 @@ namespace HBL2
 		{
 			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
-			GlobalDrawStream globalDrawStream = { .UserBindGroup = Renderer::Instance->GetEmptyBindings(), .BindGroup = globalBindings, .UsesDynamicOffset = true };
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_SpriteTransparentDraws);
 		}
 
@@ -1620,7 +1659,7 @@ namespace HBL2
 						m_ComputeBindGroup = m_ResourceManager->CreateBindGroup({
 							.debugName = "compute-bind-group",
 							.layout = m_EquirectToSkyboxBindGroupLayout,
-							.textures = { skyLight.EquirectangularMap, skyLight.CubeMap },
+							.textures = { { skyLight.EquirectangularMap }, { skyLight.CubeMap } },
 							.buffers = { { .buffer = m_CaptureMatricesBuffer, } }
 						});
 
@@ -1646,7 +1685,7 @@ namespace HBL2
 						auto skyboxBindGroup = m_ResourceManager->CreateBindGroup({
 							.debugName = "skybox-bind-group",
 							.layout = m_SkyboxBindGroupLayout,
-							.textures = { skyLight.CubeMap }
+							.textures = { { skyLight.CubeMap } }
 						});
 
 						// Create skybox material.
@@ -1688,7 +1727,7 @@ namespace HBL2
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass, m_TransparentFrameBuffer);
 
 		ResourceManager::Instance->SetBufferData(m_SkyboxGlobalBindGroup, 0, (void*)&sceneRenderData->m_OnlyRotationInViewProjection);
-		GlobalDrawStream globalDrawStream = { .UserBindGroup = Renderer::Instance->GetEmptyBindings(), .BindGroup = m_SkyboxGlobalBindGroup };
+		GlobalDrawStream globalDrawStream = { .BindGroup = m_SkyboxGlobalBindGroup };
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 
 		commandBuffer->EndRenderPass(*passRenderer);
@@ -1706,7 +1745,8 @@ namespace HBL2
 			Renderer::Instance->IntermediateColorTexture,
 			TextureLayout::RENDER_ATTACHMENT,
 			TextureLayout::SHADER_READ_ONLY,
-			m_PostProcessBindGroup);
+			{}
+		);
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass, m_PostProcessFrameBuffer);
 
@@ -1748,7 +1788,8 @@ namespace HBL2
 			Renderer::Instance->MainColorTexture,
 			TextureLayout::RENDER_ATTACHMENT,
 			TextureLayout::SHADER_READ_ONLY,
-			Renderer::Instance->GetGlobalPresentBindings());
+			{}
+		);
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
 

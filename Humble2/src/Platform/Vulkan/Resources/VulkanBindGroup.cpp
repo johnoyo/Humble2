@@ -77,6 +77,7 @@ namespace HBL2
 		if (Cold->Buffers.size() + Cold->Textures.size() == 0)
 		{
 			vkUpdateDescriptorSets(device->Get(), 0, nullptr, 0, nullptr);
+			return;
 		}
 
 		std::vector<VkWriteDescriptorSet> writeDescriptorSet(Cold->Buffers.size() + Cold->Textures.size());
@@ -126,7 +127,7 @@ namespace HBL2
 
 		for (int i = 0; i < Cold->Textures.size(); i++)
 		{
-			VulkanTexture* texture = rm->GetTexture(Cold->Textures[i]);
+			VulkanTexture* texture = rm->GetTexture(Cold->Textures[i].texture);
 
 			VkDescriptorType type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
 
@@ -140,11 +141,22 @@ namespace HBL2
 				break;
 			}
 
+			VkImageLayout layout;
+
+			if (Cold->Textures[i].desiredLayout == TextureLayout::UNDEFINED)
+			{
+				layout = texture->ImageLayout;
+			}
+			else
+			{
+				layout = VkUtils::TextureLayoutToVkImageLayout(Cold->Textures[i].desiredLayout);
+			}
+
 			descriptorImageInfo[i] =
 			{
 				.sampler = texture->Sampler,
 				.imageView = texture->ImageView,
-				.imageLayout = texture->ImageLayout,
+				.imageLayout = layout,
 			};
 
 			writeDescriptorSet[Cold->Buffers.size() + i] =

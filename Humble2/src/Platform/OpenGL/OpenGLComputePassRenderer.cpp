@@ -17,7 +17,7 @@ namespace HBL2
 
 			for (int i = 0; i < bindGroup->Textures.size(); i++)
 			{
-				OpenGLTexture* openGLTexture = rm->GetTexture(bindGroup->Textures[i]);
+				OpenGLTexture* openGLTexture = rm->GetTexture(bindGroup->Textures[i].texture);
 				openGLTexture->Bind(bindGroupLayout->TextureBindings[i].slot);
 			}
 

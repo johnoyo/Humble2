@@ -60,7 +60,7 @@ namespace HBL2
 			m_VkFrames[i].GlobalBindings3D = m_ResourceManager->CreateBindGroup({
 				.debugName = "global-bind-group",
 				.layout = m_GlobalBindingsLayout3D,
-				.textures = { ShadowAtlasTexture },
+				.textures = { { ShadowAtlasTexture } },
 				.buffers = {
 					{ .buffer = cameraBuffer3D },
 					{ .buffer = lightBuffer },
@@ -74,7 +74,7 @@ namespace HBL2
 			m_VkFrames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "global-present-bind-group",
 				.layout = GetGlobalPresentBindingsLayout(),
-				.textures = { MainColorTexture },
+				.textures = { { MainColorTexture, TextureLayout::SHADER_READ_ONLY } },
 			});
 		}
 
@@ -440,7 +440,7 @@ namespace HBL2
 			m_VkFrames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "global-present-bind-group",
 				.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
-				.textures = { MainColorTexture },  // Updated with new size
+				.textures = { { MainColorTexture, TextureLayout::SHADER_READ_ONLY } },  // Updated with new size
 			});
 
 			VulkanBindGroup vkGlobalPresentBindings = m_ResourceManager->GetBindGroup(m_VkFrames[i].GlobalPresentBindings);

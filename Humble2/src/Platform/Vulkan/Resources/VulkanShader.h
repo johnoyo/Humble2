@@ -12,8 +12,8 @@ namespace HBL2
 {
 	struct VulkanShaderHot
 	{
-		uint32_t BindGroupLayoutHash0 = 0;
-		uint32_t BindGroupLayoutHash1 = 0;
+		uint32_t GlobalBindGroupLayoutHash = 0;
+		Handle<BindGroup> ShaderBindGroup = {};
 		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
 
 		void Destroy();

@@ -64,6 +64,13 @@ namespace HBL2
 		Span<const uint32_t> TextureAssets;
 	};
 
+	struct HBL2_API ShaderDataDescriptor
+	{
+		ShaderReflectionData* ReflectionData;
+		Span<const std::vector<uint8_t>> Buffers;
+		Span<const uint32_t> TextureAssets;
+	};
+
 	class HBL2_API ShaderUtilities
 	{
 	public:
@@ -88,6 +95,7 @@ namespace HBL2
 		const Span<const Handle<Asset>> GetBuiltInShaderAssets() const { return { m_ShaderAssets.data(), m_ShaderAssets.size() }; }
 
 		void CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType);
+		void UpdateShaderBindGroupResourcesAssetFile(Handle<Asset> handle, const ShaderDataDescriptor&& desc);
 		void UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::PackedVariant& newVariant);
 
 		void CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType, bool autoImported = false);
