@@ -531,7 +531,7 @@ namespace HBL2
 		}
 		else
 		{
-			HBL2_CORE_TRACE("Shader {0} has an ill-formed metadata file.", shaderPath);
+			HBL2_CORE_ERROR("Shader {0} has an ill-formed metadata file.", shaderPath);
 		}
 
 		// Create resource.
@@ -581,7 +581,7 @@ namespace HBL2
 		YAML::Node dataMetadata = YAML::Load(ssMetadata.str());
 		if (!dataMetadata["Material"].IsDefined())
 		{
-			HBL2_CORE_TRACE("Material not found in metadata file: {0}", ssMetadata.str());
+			HBL2_CORE_ERROR("Material not found in metadata file: {0}", ssMetadata.str());
 			metaDataStream.close();
 			return Handle<Material>();
 		}
@@ -611,7 +611,7 @@ namespace HBL2
 		YAML::Node data = YAML::Load(ss.str());
 		if (!data["Material"].IsDefined())
 		{
-			HBL2_CORE_TRACE("Material not found: {0}", ss.str());
+			HBL2_CORE_ERROR("Material not found: {0}", ss.str());
 			stream.close();
 			return Handle<Material>();
 		}

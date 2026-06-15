@@ -242,7 +242,9 @@ namespace HBL2
 		PostProcessPass(commandBuffer, sceneRenderData);
 		renderPassPool.Execute(RenderPassEvent::AfterRenderingPostProcess);
 
+		renderPassPool.Execute(RenderPassEvent::BeforeDebugRendering);
 		DebugPass(commandBuffer, debugRenderData);
+		renderPassPool.Execute(RenderPassEvent::AfterDebugRendering);
 
 		renderPassPool.Execute(RenderPassEvent::BeforePresenting);
 		PresentPass(commandBuffer, sceneRenderData);

@@ -67,7 +67,7 @@ namespace HBL2
 
 		virtual void* GetRenderData() override;
 
-	private:
+	protected:
 		void ShadowPassSetup();
 		void DepthPrePassSetup();
 		void OpaquePassSetup();

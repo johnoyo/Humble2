@@ -17,6 +17,8 @@ namespace HBL2
 		AfterRenderingTransparents,
 		BeforeRenderingPostProcess,
 		AfterRenderingPostProcess,
+		BeforeDebugRendering,
+		AfterDebugRendering,
 		BeforePresenting,
 		AfterRendering,
 	};

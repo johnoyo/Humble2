@@ -76,6 +76,11 @@ namespace HBL2
 			uint32_t m_ShaderUniformBufferSize2;
 			StaticArray<uint32_t, 8> m_ShaderUniformTextureData2;
 			uint32_t m_ShaderUniformTextureSize2;
+			JobContext m_MaterialShaderResourceCtx;
+			UUID m_PrevShaderUUID = UINT64_MAX;
+			UUID m_CurrentShaderUUID = 0;
+			bool m_MaterialNeedsReimport = false;
+			bool m_MaterialBindGroupNeedsReimport = false;
 
 			Scene* m_ActiveScene = nullptr;
 			Handle<Scene> m_ActiveSceneTemp;

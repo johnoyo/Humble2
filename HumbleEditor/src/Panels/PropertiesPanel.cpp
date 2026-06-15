@@ -1195,110 +1195,189 @@ namespace HBL2
 							ImGui::Text(std::format("Name: {}", mat->DebugName).c_str());
 							ImGui::NewLine();
 
-							// Topology.
+							// Shader resource.
 							{
-								const char* options[] = { "Point List", "Line List", "Line Strip", "Triangle List", "Triangle Strip", "Triangle fan", "Patch List" };
-								int currentItem = (int)mat->VariantHash.topology;
-
-								if (ImGui::Combo("Topology", &currentItem, options, IM_ARRAYSIZE(options)))
+								if (m_PrevShaderUUID != m_CurrentShaderUUID)
 								{
-									mat->VariantHash.topology = (ShaderDescriptor::RenderPipeline::packed_size)(Topology)currentItem;
+									JobSystem::Get().Execute(m_MaterialShaderResourceCtx, [this, asset]()
+									{
+										Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(m_SelectedAsset);
+
+										const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+										const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+
+										// Open material file.
+										std::ifstream stream(materialPath);
+
+										if (!stream.is_open())
+										{
+											HBL2_CORE_ERROR("Material file not found: {0}", materialPath);
+										}
+										else
+										{
+											std::stringstream ss;
+											ss << stream.rdbuf();
+
+											YAML::Node data = YAML::Load(ss.str());
+											if (!data["Material"].IsDefined())
+											{
+												HBL2_CORE_TRACE("Material not found: {0}", ss.str());
+											}
+											else
+											{
+												auto materialProperties = data["Material"];
+												if (materialProperties)
+												{
+													// Get the shader path of the material in order to reflect on it.
+													m_CurrentShaderUUID = materialProperties["Shader"].as<UUID>();
+													m_PrevShaderUUID = m_CurrentShaderUUID;
+												}
+											}
+
+											stream.close();
+										}
+									});
+								}
+
+								if (!JobSystem::Get().Busy(m_MaterialShaderResourceCtx))
+								{
+									static uint32_t shaderAssetHandlePacked = AssetManager::Instance->GetHandleFromUUID(m_CurrentShaderUUID).Pack();
+									ImGui::InputScalar("Shader", ImGuiDataType_U32, (void*)(intptr_t*)&shaderAssetHandlePacked);
+
+									Handle<Asset> shaderAssetHandle = Handle<Asset>::UnPack(shaderAssetHandlePacked);
+
+									if (ImGui::BeginDragDropTarget())
+									{
+										if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Shader"))
+										{
+											shaderAssetHandlePacked = *((uint32_t*)payload->Data);
+											shaderAssetHandle = Handle<Asset>::UnPack(shaderAssetHandlePacked);
+
+											Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+											if (shaderAsset != nullptr)
+											{
+												m_CurrentShaderUUID = shaderAsset->UUID;
+												m_MaterialBindGroupNeedsReimport = true;
+
+												ShaderUtilities::Get().UpdateMaterialShaderResourceAssetFile(m_SelectedAsset, shaderAssetHandle);
+											}
+										}
+
+										ImGui::EndDragDropTarget();
+									}
 								}
 							}
 
-							// Polygon mode.
+							// Shader variant properties.
 							{
-								const char* options[] = { "Fill", "Line", "Point" };
-								int currentItem = (int)mat->VariantHash.polygonMode;
+								ImGui::NewLine();
+								ImGui::Text("Shader Variant Properties:");
 
-								if (ImGui::Combo("Polygon Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+								// Topology.
 								{
-									mat->VariantHash.polygonMode = (ShaderDescriptor::RenderPipeline::packed_size)(PolygonMode)currentItem;
+									const char* options[] = { "Point List", "Line List", "Line Strip", "Triangle List", "Triangle Strip", "Triangle fan", "Patch List" };
+									int currentItem = (int)mat->VariantHash.topology;
+
+									if (ImGui::Combo("Topology", &currentItem, options, IM_ARRAYSIZE(options)))
+									{
+										mat->VariantHash.topology = (ShaderDescriptor::RenderPipeline::packed_size)(Topology)currentItem;
+									}
 								}
-							}
 
-							// Cull mode.
-							{
-								const char* options[] = { "None", "Front", "Back", "Front and Back"};
-								int currentItem = (int)mat->VariantHash.cullMode;
-
-								if (ImGui::Combo("Cull Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+								// Polygon mode.
 								{
-									mat->VariantHash.cullMode = (ShaderDescriptor::RenderPipeline::packed_size)(CullMode)currentItem;
+									const char* options[] = { "Fill", "Line", "Point" };
+									int currentItem = (int)mat->VariantHash.polygonMode;
+
+									if (ImGui::Combo("Polygon Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+									{
+										mat->VariantHash.polygonMode = (ShaderDescriptor::RenderPipeline::packed_size)(PolygonMode)currentItem;
+									}
 								}
-							}
 
-							// Front face.
-							{
-								const char* options[] = { "Clockwise", "Counter Clockwise" };
-								int currentItem = (int)mat->VariantHash.frontFace;
-
-								if (ImGui::Combo("Front Face", &currentItem, options, IM_ARRAYSIZE(options)))
+								// Cull mode.
 								{
-									mat->VariantHash.frontFace = (ShaderDescriptor::RenderPipeline::packed_size)(FrontFace)currentItem;
+									const char* options[] = { "None", "Front", "Back", "Front and Back"};
+									int currentItem = (int)mat->VariantHash.cullMode;
+
+									if (ImGui::Combo("Cull Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+									{
+										mat->VariantHash.cullMode = (ShaderDescriptor::RenderPipeline::packed_size)(CullMode)currentItem;
+									}
 								}
-							}
 
-							// Blend mode.
-							{
-								const char* options[] = { "Opaque", "Transparent" };
-								int currentItem = mat->VariantHash.blendEnabled ? 1 : 0;
-
-								if (ImGui::Combo("Blend Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+								// Front face.
 								{
-									mat->VariantHash.blendEnabled = currentItem == 0 ? false : true;
-								}
-							}
+									const char* options[] = { "Clockwise", "Counter Clockwise" };
+									int currentItem = (int)mat->VariantHash.frontFace;
 
-							// Color output.
-							bool colorOutput = mat->VariantHash.colorOutput != 0;
-							if (ImGui::Checkbox("Color Output", &colorOutput))
-							{
-								mat->VariantHash.colorOutput = colorOutput ? 1 : 0;
-							}
+									if (ImGui::Combo("Front Face", &currentItem, options, IM_ARRAYSIZE(options)))
+									{
+										mat->VariantHash.frontFace = (ShaderDescriptor::RenderPipeline::packed_size)(FrontFace)currentItem;
+									}
+								}
+
+								// Blend mode.
+								{
+									const char* options[] = { "Opaque", "Transparent" };
+									int currentItem = mat->VariantHash.blendEnabled ? 1 : 0;
+
+									if (ImGui::Combo("Blend Mode", &currentItem, options, IM_ARRAYSIZE(options)))
+									{
+										mat->VariantHash.blendEnabled = currentItem == 0 ? false : true;
+									}
+								}
+
+								// Color output.
+								bool colorOutput = mat->VariantHash.colorOutput != 0;
+								if (ImGui::Checkbox("Color Output", &colorOutput))
+								{
+									mat->VariantHash.colorOutput = colorOutput ? 1 : 0;
+								}
 							
-							// Depth enabled.
-							bool depthEnabled = mat->VariantHash.depthEnabled != 0;
-							if (ImGui::Checkbox("Depth", &depthEnabled))
-							{
-								mat->VariantHash.depthEnabled = depthEnabled ? 1 : 0;
-							}
-							
-							// Depth test mode.
-							{
-								const char* options[] = { "Less", "Less Equal", "Greater", "Greater Equal", "Equal", "Not Equal", "Always", "Never" };
-								int currentItem = (int)mat->VariantHash.depthCompare;
-
-								if (ImGui::Combo("Depth Test", &currentItem, options, IM_ARRAYSIZE(options)))
+								// Depth enabled.
+								bool depthEnabled = mat->VariantHash.depthEnabled != 0;
+								if (ImGui::Checkbox("Depth", &depthEnabled))
 								{
-									mat->VariantHash.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)(Compare)currentItem;
+									mat->VariantHash.depthEnabled = depthEnabled ? 1 : 0;
+								}
+							
+								// Depth test mode.
+								{
+									const char* options[] = { "Less", "Less Equal", "Greater", "Greater Equal", "Equal", "Not Equal", "Always", "Never" };
+									int currentItem = (int)mat->VariantHash.depthCompare;
+
+									if (ImGui::Combo("Depth Test", &currentItem, options, IM_ARRAYSIZE(options)))
+									{
+										mat->VariantHash.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)(Compare)currentItem;
+									}
+								}
+
+								// Depth write mode.
+								bool depthWrite = mat->VariantHash.depthWrite != 0;
+								if (ImGui::Checkbox("Depth Write", &depthWrite))
+								{
+									mat->VariantHash.depthWrite = depthWrite ? 1 : 0;
+								}
+
+								// Stencil enabled.
+								bool stencil = mat->VariantHash.stencilEnabled != 0;
+								if (ImGui::Checkbox("Stencil", &stencil))
+								{
+									mat->VariantHash.stencilEnabled = stencil ? 1 : 0;
 								}
 							}
 
-							// Depth write mode.
-							bool depthWrite = mat->VariantHash.depthWrite != 0;
-							if (ImGui::Checkbox("Depth Write", &depthWrite))
-							{
-								mat->VariantHash.depthWrite = depthWrite ? 1 : 0;
-							}
-
-							// Stencil enabled.
-							bool stencil = mat->VariantHash.stencilEnabled != 0;
-							if (ImGui::Checkbox("Stencil", &stencil))
-							{
-								mat->VariantHash.stencilEnabled = stencil ? 1 : 0;
-							}
-
+							// Shader uniform properties.
 							ImGui::NewLine();
 							ImGui::Text("Uniforms:");
 
-							static bool materialNeedsReimport = false;
-							static bool materialBindGroupNeedsReimport = false;
 							static Handle<Asset> shaderAssetHandle = {};
 
-							if (m_SelectedAsset != m_PreviouslySelectedAsset)
+							if (m_SelectedAsset != m_PreviouslySelectedAsset || m_PrevShaderUUID != m_CurrentShaderUUID)
 							{
-								materialNeedsReimport = true;
+								m_MaterialNeedsReimport = true;
 
 								m_ShaderReflectionData2.Clear();
 
@@ -1315,6 +1394,7 @@ namespace HBL2
 									if (!stream.is_open())
 									{
 										HBL2_CORE_ERROR("Material file not found: {0}", materialPath);
+										return;
 									}
 									else
 									{
@@ -1326,6 +1406,7 @@ namespace HBL2
 										{
 											HBL2_CORE_TRACE("Material not found: {0}", ss.str());
 											stream.close();
+											return;
 										}
 										else
 										{
@@ -1347,7 +1428,7 @@ namespace HBL2
 
 												if (shaderAsset == nullptr)
 												{
-													HBL2_CORE_ERROR("Shader with UUID: {0}, of material: {1}, not found!", shaderUUID, materialPath);
+													HBL2_CORE_WARN("Shader with UUID: {0}, of material: {1}, not found!", shaderUUID, materialPath);
 													stream.close();
 													return;
 												}
@@ -1571,7 +1652,7 @@ namespace HBL2
 
 													AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
 
-													materialBindGroupNeedsReimport = true;
+													m_MaterialBindGroupNeedsReimport = true;
 												}
 
 												ImGui::EndDragDropTarget();
@@ -1580,7 +1661,7 @@ namespace HBL2
 									}
 								}
 							
-								if (materialNeedsReimport || materialBindGroupNeedsReimport)
+								if (m_MaterialNeedsReimport || m_MaterialBindGroupNeedsReimport)
 								{
 									ShaderUtilities::Get().CreateMaterialAssetFile(m_SelectedAsset, {
 										.ShaderAssetHandle = shaderAssetHandle,
@@ -1590,29 +1671,36 @@ namespace HBL2
 										.TextureAssets = m_ShaderUniformTextureData2,
 									});
 
-									materialNeedsReimport = false;
+									m_MaterialNeedsReimport = false;
 								}
 
-								if (materialBindGroupNeedsReimport)
+								if (m_MaterialBindGroupNeedsReimport)
 								{
 									AssetManager::Instance->ReloadAsset<Material>(m_SelectedAsset);
-									materialBindGroupNeedsReimport = false;
+									m_MaterialBindGroupNeedsReimport = false;
 								}
 
 								// Shader Constants.
 								ImGui::NewLine();
 								ImGui::Text("Shader Specialization Constants:");
 
-								uint32_t specializationConstantId = 0;
-
-								for (auto& sc : m_ShaderReflectionData2.specializationConstants)
+								if (m_ShaderReflectionData2.specializationConstants.size() == 0)
 								{
-									bool shaderConstantBool = GetVariantShaderConstantValueFromIndex(mat->VariantHash, specializationConstantId) != 0;
-									if (ImGui::Checkbox(sc.name.c_str(), &shaderConstantBool))
+									ImGui::Text(" - ");
+								}
+								else
+								{
+									uint32_t specializationConstantId = 0;
+
+									for (auto& sc : m_ShaderReflectionData2.specializationConstants)
 									{
-										SyncVariantWithSpecializationConstant(specializationConstantId, shaderConstantBool, mat->VariantHash);
+										bool shaderConstantBool = GetVariantShaderConstantValueFromIndex(mat->VariantHash, specializationConstantId) != 0;
+										if (ImGui::Checkbox(sc.name.c_str(), &shaderConstantBool))
+										{
+											SyncVariantWithSpecializationConstant(specializationConstantId, shaderConstantBool, mat->VariantHash);
+										}
+										specializationConstantId++;
 									}
-									specializationConstantId++;
 								}
 							}
 						}

@@ -100,6 +100,7 @@ namespace HBL2
 
 		void CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType, bool autoImported = false);
 		void CreateMaterialAssetFile(Handle<Asset> handle, const MaterialDataDescriptor&& desc);
+		void UpdateMaterialShaderResourceAssetFile(Handle<Asset> handle, Handle<Asset> shaderAssetHandle);
 
 		Handle<Asset> LitMaterialAsset;
 

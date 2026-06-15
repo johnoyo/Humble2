@@ -1086,6 +1086,55 @@ namespace HBL2
         fout.close();
     }
 
+    void ShaderUtilities::UpdateMaterialShaderResourceAssetFile(Handle<Asset> handle, Handle<Asset> shaderAssetHandle)
+    {
+        Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+        Handle<Material> materialHandle = Handle<Material>::UnPack(asset->Indentifier);
+
+        if (!materialHandle.IsValid())
+        {
+            HBL2_CORE_ERROR("Could not save asset {0} at path: {1}, because the handle is invalid.", asset->DebugName, asset->FilePath.string());
+            return;
+        }
+
+        Material* mat = ResourceManager::Instance->GetMaterial(materialHandle);
+
+        std::fstream ioStream(Project::GetAssetFileSystemPath(asset->FilePath), std::ios::in | std::ios::out);
+
+        if (!ioStream.is_open())
+        {
+            HBL2_CORE_ERROR("Material file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath));
+            return;
+        }
+
+        std::stringstream ss;
+        ss << ioStream.rdbuf();
+
+        YAML::Node data = YAML::Load(ss.str());
+        if (!data["Material"].IsDefined())
+        {
+            HBL2_CORE_TRACE("Material file: {0}, is not in correct format!", ss.str());
+            ioStream.close();
+            return;
+        }
+
+        auto materialProperties = data["Material"];
+        if (materialProperties)
+        {
+            Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+            if (shaderAsset != nullptr)
+            {
+                materialProperties["Shader"] = shaderAsset->UUID;
+            }
+        }
+
+        ioStream.seekg(0, std::ios::beg);
+        ioStream << data;
+
+        ioStream.close();
+    }
+
     const char* ShaderUtilities::GetCacheDirectory(GraphicsAPI target)
     {
         switch (target)
