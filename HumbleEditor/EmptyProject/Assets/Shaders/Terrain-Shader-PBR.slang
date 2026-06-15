@@ -10,8 +10,6 @@ struct Object
     float4x4 Model;
     float4x4 InverseModel;
     float4 Color;
-    float Metalicness;
-    float Roughness;
 };
 
 struct Light
@@ -27,29 +25,70 @@ struct Light
     float Count;
 };
 
+struct Material
+{
+    float4 Color;
+    float Roughness;
+    float Metalicness;
+};
+
+// static const float3 baseColors[3] =
+//     {
+//         float3(0.16, 0.2, 0.6),
+//         float3(0.5, 0.59, 0.28),
+//         float3(0.31, 0.23, 0.19)
+//     };
+
+// static const float baseStartHeights[3] =
+//     {
+//         0.01,
+//         0.15,
+//         0.65
+//     };
+
+// static const float baseBlends[3] =
+//     {
+//         0.0,
+//         0.0,
+//         0.25
+//     };
+
+struct Terrain
+{
+    float3 baseColors[3];
+    float baseStartHeights[3];
+    float baseBlends[3];
+};
+
 [[vk::binding(0, 0)]]
 ConstantBuffer<Camera> u_Camera;
 
 [[vk::binding(1, 0)]]
 ConstantBuffer<Light> u_Light;
 
-[[vk::binding(5, 1)]]
-ConstantBuffer<Object> u_Object;
+[[vk::binding(2, 0)]]
+Sampler2D u_ShadowAltasMap;
 
-[[vk::binding(0, 1)]]
+[[vk::binding(0, 2)]]
 Sampler2D u_AlbedoMap;
 
-[[vk::binding(1, 1)]]
+[[vk::binding(1, 2)]]
 Sampler2D u_NormalMap;
 
-[[vk::binding(2, 1)]]
+[[vk::binding(2, 2)]]
+ConstantBuffer<Material> u_Material;
+
+[[vk::binding(3, 2)]]
 Sampler2D u_MetallicMap;
 
-[[vk::binding(3, 1)]]
+[[vk::binding(4, 2)]]
 Sampler2D u_RoughnessMap;
 
-[[vk::binding(4, 1)]]
-Sampler2D u_ShadowAltasMap;
+[[vk::binding(5, 2)]]
+ConstantBuffer<Terrain> u_Terrain;
+
+[[vk::binding(4, 3)]]
+ConstantBuffer<Object> u_Object;
 
 // Vertex Shader
 
@@ -76,7 +115,7 @@ VSOutput mainVS(VSInput input)
     VSOutput output;
 
     output.v_Position = mul(u_Object.Model, float4(input.a_Position, 1.0)).xyz;
-    output.v_Color = u_Object.Color;
+    output.v_Color = u_Material.Color * u_Object.Color;
     output.v_TextureCoord = input.a_TextureCoord;
     output.v_Normal = mul(u_Object.InverseModel, float4(input.a_Normal, 0.0)).xyz;
     output.position = mul(u_Camera.ViewProjection, mul(u_Object.Model, float4(input.a_Position, 1.0)));
@@ -300,27 +339,6 @@ float InverseLerp(float a, float b, float value)
     return clamp((value - a) / (b - a), 0.0, 1.0);
 }
 
-static const float3 baseColors[3] =
-{
-    float3(0.16, 0.2, 0.6),
-    float3(0.5, 0.59, 0.28),
-    float3(0.31, 0.23, 0.19)
-};
-
-static const float baseStartHeights[3] = 
-{
-    0.01,
-    0.15,
-    0.65
-};
-
-static const float baseBlends[3] =
-{
-    0.0,
-    0.0,
-    0.25
-};
-
 static const float epsilon = 0.00001;
 
 [shader("fragment")]
@@ -443,8 +461,8 @@ float4 mainPS(PSInput input) : SV_Target0
     for (int i = 0; i < 3; i++)
     {
         // float drawStrenght = clamp(sign(heightPercent - baseStartHeights[i]), 0.0, 1.0);
-        float drawStrenght = InverseLerp(-baseBlends[i] / 2 - epsilon, baseBlends[i] / 2, heightPercent - baseStartHeights[i]);
-        terrainColor = terrainColor * float3(1.0 - drawStrenght) + baseColors[i] * float3(drawStrenght);
+        float drawStrenght = InverseLerp(-u_Terrain.baseBlends[i] / 2 - epsilon, u_Terrain.baseBlends[i] / 2, heightPercent - u_Terrain.baseStartHeights[i]);
+        terrainColor = terrainColor * float3(1.0 - drawStrenght) + u_Terrain.baseColors[i] * float3(drawStrenght);
     }
 
     color = color * terrainColor;

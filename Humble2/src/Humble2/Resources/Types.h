@@ -121,8 +121,6 @@ namespace HBL2
 
 	struct HBL2_API Material
 	{
-		static constexpr uint32_t MaxBufferBindings = 4;
-
 		Material() = default;
 		Material(const MaterialDescriptor&& desc);
 
@@ -137,8 +135,5 @@ namespace HBL2
 
 		ShaderDescriptor::RenderPipeline::PackedVariant VariantHash = {};
 		bool ReceiveShadows = true;
-
-		std::atomic<bool> Dirty { false };
-		std::atomic<bool> ShaderDirty { false };
 	};
 }

@@ -451,35 +451,81 @@ namespace HBL2
 								{
 								case MemberBaseType::Float:
 								{
-									float* f = reinterpret_cast<float*>(memberPtr);
-
-									if (m.typeInfo.cols == 1)
+									if (m.typeInfo.isArray)
 									{
-										*f = memberProp.as<float>();
+										const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
+
+										for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+										{
+											if (!memberProp[i].IsDefined())
+											{
+												continue;
+											}
+
+											float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+
+											if (m.typeInfo.cols == 1)
+											{
+												*f = memberProp[i].as<float>();
+											}
+											else if (m.typeInfo.cols == 2)
+											{
+												const glm::vec2& vec2 = memberProp[i].as<glm::vec2>();
+
+												f[0] = vec2.x;
+												f[1] = vec2.y;
+											}
+											else if (m.typeInfo.cols == 3)
+											{
+												const glm::vec3& vec3 = memberProp[i].as<glm::vec3>();
+
+												f[0] = vec3.x;
+												f[1] = vec3.y;
+												f[2] = vec3.z;
+											}
+											else if (m.typeInfo.cols == 4)
+											{
+												const glm::vec4& vec4 = memberProp[i].as<glm::vec4>();
+
+												f[0] = vec4.x;
+												f[1] = vec4.y;
+												f[2] = vec4.z;
+												f[3] = vec4.w;
+											}
+										}
 									}
-									else if (m.typeInfo.cols == 2)
+									else
 									{
-										const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+										float* f = reinterpret_cast<float*>(memberPtr);
 
-										f[0] = vec2.x;
-										f[1] = vec2.y;
-									}
-									else if (m.typeInfo.cols == 3)
-									{
-										const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+										if (m.typeInfo.cols == 1)
+										{
+											*f = memberProp.as<float>();
+										}
+										else if (m.typeInfo.cols == 2)
+										{
+											const glm::vec2& vec2 = memberProp.as<glm::vec2>();
 
-										f[0] = vec3.x;
-										f[1] = vec3.y;
-										f[2] = vec3.z;
-									}
-									else if (m.typeInfo.cols == 4)
-									{
-										const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+											f[0] = vec2.x;
+											f[1] = vec2.y;
+										}
+										else if (m.typeInfo.cols == 3)
+										{
+											const glm::vec3& vec3 = memberProp.as<glm::vec3>();
 
-										f[0] = vec4.x;
-										f[1] = vec4.y;
-										f[2] = vec4.z;
-										f[3] = vec4.w;
+											f[0] = vec3.x;
+											f[1] = vec3.y;
+											f[2] = vec3.z;
+										}
+										else if (m.typeInfo.cols == 4)
+										{
+											const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+											f[0] = vec4.x;
+											f[1] = vec4.y;
+											f[2] = vec4.z;
+											f[3] = vec4.w;
+										}
 									}
 									break;
 								}
@@ -712,35 +758,81 @@ namespace HBL2
 								{
 								case MemberBaseType::Float:
 									{
-										float* f = reinterpret_cast<float*>(memberPtr);
-
-										if (m.typeInfo.cols == 1)
+										if (m.typeInfo.isArray)
 										{
-											*f = memberProp.as<float>();
+											const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
+
+											for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+											{
+												if (!memberProp[i].IsDefined())
+												{
+													continue;
+												}
+
+												float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+
+												if (m.typeInfo.cols == 1)
+												{
+													*f = memberProp[i].as<float>();
+												}
+												else if (m.typeInfo.cols == 2)
+												{
+													const glm::vec2& vec2 = memberProp[i].as<glm::vec2>();
+
+													f[0] = vec2.x;
+													f[1] = vec2.y;
+												}
+												else if (m.typeInfo.cols == 3)
+												{
+													const glm::vec3& vec3 = memberProp[i].as<glm::vec3>();
+
+													f[0] = vec3.x;
+													f[1] = vec3.y;
+													f[2] = vec3.z;
+												}
+												else if (m.typeInfo.cols == 4)
+												{
+													const glm::vec4& vec4 = memberProp[i].as<glm::vec4>();
+
+													f[0] = vec4.x;
+													f[1] = vec4.y;
+													f[2] = vec4.z;
+													f[3] = vec4.w;
+												}
+											}
 										}
-										else if (m.typeInfo.cols == 2)
+										else
 										{
-											const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+											float* f = reinterpret_cast<float*>(memberPtr);
 
-											f[0] = vec2.x;
-											f[1] = vec2.y;
-										}
-										else if (m.typeInfo.cols == 3)
-										{
-											const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+											if (m.typeInfo.cols == 1)
+											{
+												*f = memberProp.as<float>();
+											}
+											else if (m.typeInfo.cols == 2)
+											{
+												const glm::vec2& vec2 = memberProp.as<glm::vec2>();
 
-											f[0] = vec3.x;
-											f[1] = vec3.y;
-											f[2] = vec3.z;
-										}
-										else if (m.typeInfo.cols == 4)
-										{
-											const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+												f[0] = vec2.x;
+												f[1] = vec2.y;
+											}
+											else if (m.typeInfo.cols == 3)
+											{
+												const glm::vec3& vec3 = memberProp.as<glm::vec3>();
 
-											f[0] = vec4.x;
-											f[1] = vec4.y;
-											f[2] = vec4.z;
-											f[3] = vec4.w;
+												f[0] = vec3.x;
+												f[1] = vec3.y;
+												f[2] = vec3.z;
+											}
+											else if (m.typeInfo.cols == 4)
+											{
+												const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+												f[0] = vec4.x;
+												f[1] = vec4.y;
+												f[2] = vec4.z;
+												f[3] = vec4.w;
+											}
 										}
 										break;
 									}
@@ -1227,35 +1319,82 @@ namespace HBL2
 								{
 								case MemberBaseType::Float:
 								{
-									float* f = reinterpret_cast<float*>(memberPtr);
-
-									if (m.typeInfo.cols == 1)
+									if (m.typeInfo.isArray)
 									{
-										*f = memberProp.as<float>();
+										const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
+
+										for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+										{
+											if (!memberProp[i].IsDefined())
+											{
+												continue;
+											}
+
+											float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+
+											if (m.typeInfo.cols == 1)
+											{
+												*f = memberProp[i].as<float>();
+											}
+											else if (m.typeInfo.cols == 2)
+											{
+												const glm::vec2& vec2 = memberProp[i].as<glm::vec2>();
+
+
+												f[0] = vec2.x;
+												f[1] = vec2.y;
+											}
+											else if (m.typeInfo.cols == 3)
+											{
+												const glm::vec3& vec3 = memberProp[i].as<glm::vec3>();
+
+												f[0] = vec3.x;
+												f[1] = vec3.y;
+												f[2] = vec3.z;
+											}
+											else if (m.typeInfo.cols == 4)
+											{
+												const glm::vec4& vec4 = memberProp[i].as<glm::vec4>();
+
+												f[0] = vec4.x;
+												f[1] = vec4.y;
+												f[2] = vec4.z;
+												f[3] = vec4.w;
+											}
+										}
 									}
-									else if (m.typeInfo.cols == 2)
+									else
 									{
-										const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+										float* f = reinterpret_cast<float*>(memberPtr);
 
-										f[0] = vec2.x;
-										f[1] = vec2.y;
-									}
-									else if (m.typeInfo.cols == 3)
-									{
-										const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+										if (m.typeInfo.cols == 1)
+										{
+											*f = memberProp.as<float>();
+										}
+										else if (m.typeInfo.cols == 2)
+										{
+											const glm::vec2& vec2 = memberProp.as<glm::vec2>();
 
-										f[0] = vec3.x;
-										f[1] = vec3.y;
-										f[2] = vec3.z;
-									}
-									else if (m.typeInfo.cols == 4)
-									{
-										const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+											f[0] = vec2.x;
+											f[1] = vec2.y;
+										}
+										else if (m.typeInfo.cols == 3)
+										{
+											const glm::vec3& vec3 = memberProp.as<glm::vec3>();
 
-										f[0] = vec4.x;
-										f[1] = vec4.y;
-										f[2] = vec4.z;
-										f[3] = vec4.w;
+											f[0] = vec3.x;
+											f[1] = vec3.y;
+											f[2] = vec3.z;
+										}
+										else if (m.typeInfo.cols == 4)
+										{
+											const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+											f[0] = vec4.x;
+											f[1] = vec4.y;
+											f[2] = vec4.z;
+											f[3] = vec4.w;
+										}
 									}
 									break;
 								}
@@ -1465,35 +1604,81 @@ namespace HBL2
 								{
 								case MemberBaseType::Float:
 									{
-										float* f = reinterpret_cast<float*>(memberPtr);
-
-										if (m.typeInfo.cols == 1)
+										if (m.typeInfo.isArray)
 										{
-											*f = memberProp.as<float>();
+											const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
+
+											for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+											{
+												if (!memberProp[i].IsDefined())
+												{
+													continue;
+												}
+
+												float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+
+												if (m.typeInfo.cols == 1)
+												{
+													*f = memberProp[i].as<float>();
+												}
+												else if (m.typeInfo.cols == 2)
+												{
+													const glm::vec2& vec2 = memberProp[i].as<glm::vec2>();
+
+													f[0] = vec2.x;
+													f[1] = vec2.y;
+												}
+												else if (m.typeInfo.cols == 3)
+												{
+													const glm::vec3& vec3 = memberProp[i].as<glm::vec3>();
+
+													f[0] = vec3.x;
+													f[1] = vec3.y;
+													f[2] = vec3.z;
+												}
+												else if (m.typeInfo.cols == 4)
+												{
+													const glm::vec4& vec4 = memberProp[i].as<glm::vec4>();
+
+													f[0] = vec4.x;
+													f[1] = vec4.y;
+													f[2] = vec4.z;
+													f[3] = vec4.w;
+												}
+											}
 										}
-										else if (m.typeInfo.cols == 2)
+										else
 										{
-											const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+											float* f = reinterpret_cast<float*>(memberPtr);
 
-											f[0] = vec2.x;
-											f[1] = vec2.y;
-										}
-										else if (m.typeInfo.cols == 3)
-										{
-											const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+											if (m.typeInfo.cols == 1)
+											{
+												*f = memberProp.as<float>();
+											}
+											else if (m.typeInfo.cols == 2)
+											{
+												const glm::vec2& vec2 = memberProp.as<glm::vec2>();
 
-											f[0] = vec3.x;
-											f[1] = vec3.y;
-											f[2] = vec3.z;
-										}
-										else if (m.typeInfo.cols == 4)
-										{
-											const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+												f[0] = vec2.x;
+												f[1] = vec2.y;
+											}
+											else if (m.typeInfo.cols == 3)
+											{
+												const glm::vec3& vec3 = memberProp.as<glm::vec3>();
 
-											f[0] = vec4.x;
-											f[1] = vec4.y;
-											f[2] = vec4.z;
-											f[3] = vec4.w;
+												f[0] = vec3.x;
+												f[1] = vec3.y;
+												f[2] = vec3.z;
+											}
+											else if (m.typeInfo.cols == 4)
+											{
+												const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+												f[0] = vec4.x;
+												f[1] = vec4.y;
+												f[2] = vec4.z;
+												f[3] = vec4.w;
+											}
 										}
 										break;
 									}

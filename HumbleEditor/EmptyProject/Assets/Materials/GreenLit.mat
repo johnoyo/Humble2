@@ -1,10 +1,10 @@
 Material:
-  Shader: 17370062664359595275
+  Shader: 17369231906593984518
   u_AlbedoMap: 0
   u_Material:
     Color: [0.303688318, 0.892156839, 0.0918396562, 1]
     Glossiness: 1
-    _Unused: 0
+    _UnusedCustomAlt: 0
   RasterState:
     Topology: 3
     PolygonMode: 0
@@ -19,7 +19,7 @@ Material:
     StencilEnabled: true
     DepthTest: 1
   ShaderConstantsState:
-    ShaderConstantBool0: true
+    ShaderConstantBool0: false
     ShaderConstantBool1: false
     ShaderConstantBool2: false
     ShaderConstantBool3: false

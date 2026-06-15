@@ -1017,35 +1017,81 @@ namespace HBL2
 																	{
 																	case MemberBaseType::Float:
 																	{
-																		float* f = reinterpret_cast<float*>(memberPtr);
-
-																		if (m.typeInfo.cols == 1)
+																		if (m.typeInfo.isArray)
 																		{
-																			*f = memberProp.as<float>();
+																			const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
+
+																			for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+																			{
+																				if (!memberProp[i].IsDefined())
+																				{
+																					continue;
+																				}
+
+																				float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+
+																				if (m.typeInfo.cols == 1)
+																				{
+																					*f = memberProp[i].as<float>();
+																				}
+																				else if (m.typeInfo.cols == 2)
+																				{
+																					const glm::vec2& vec2 = memberProp[i].as<glm::vec2>();
+
+																					f[0] = vec2.x;
+																					f[1] = vec2.y;
+																				}
+																				else if (m.typeInfo.cols == 3)
+																				{
+																					const glm::vec3& vec3 = memberProp[i].as<glm::vec3>();
+
+																					f[0] = vec3.x;
+																					f[1] = vec3.y;
+																					f[2] = vec3.z;
+																				}
+																				else if (m.typeInfo.cols == 4)
+																				{
+																					const glm::vec4& vec4 = memberProp[i].as<glm::vec4>();
+
+																					f[0] = vec4.x;
+																					f[1] = vec4.y;
+																					f[2] = vec4.z;
+																					f[3] = vec4.w;
+																				}
+																			}
 																		}
-																		else if (m.typeInfo.cols == 2)
+																		else
 																		{
-																			const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+																			float* f = reinterpret_cast<float*>(memberPtr);
 
-																			f[0] = vec2.x;
-																			f[1] = vec2.y;
-																		}
-																		else if (m.typeInfo.cols == 3)
-																		{
-																			const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+																			if (m.typeInfo.cols == 1)
+																			{
+																				*f = memberProp.as<float>();
+																			}
+																			else if (m.typeInfo.cols == 2)
+																			{
+																				const glm::vec2& vec2 = memberProp.as<glm::vec2>();
 
-																			f[0] = vec3.x;
-																			f[1] = vec3.y;
-																			f[2] = vec3.z;
-																		}
-																		else if (m.typeInfo.cols == 4)
-																		{
-																			const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+																				f[0] = vec2.x;
+																				f[1] = vec2.y;
+																			}
+																			else if (m.typeInfo.cols == 3)
+																			{
+																				const glm::vec3& vec3 = memberProp.as<glm::vec3>();
 
-																			f[0] = vec4.x;
-																			f[1] = vec4.y;
-																			f[2] = vec4.z;
-																			f[3] = vec4.w;
+																				f[0] = vec3.x;
+																				f[1] = vec3.y;
+																				f[2] = vec3.z;
+																			}
+																			else if (m.typeInfo.cols == 4)
+																			{
+																				const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+																				f[0] = vec4.x;
+																				f[1] = vec4.y;
+																				f[2] = vec4.z;
+																				f[3] = vec4.w;
+																			}
 																		}
 																		break;
 																	}
@@ -1113,6 +1159,63 @@ namespace HBL2
 												switch (m.typeInfo.base)
 												{
 												case MemberBaseType::Float:
+												{
+													if (m.typeInfo.isArray)
+													{
+														const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
+
+														for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+														{
+															float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+															const std::string label = m.name + "[" + std::to_string(i) + "]";
+
+															if (m.typeInfo.cols == 1)
+															{
+																dirty |= ImGui::InputFloat(label.c_str(), f, 0.f, 0.f, "%.5f");
+															}
+															else if (m.typeInfo.cols == 2)
+															{
+																dirty |= ImGui::InputFloat2(label.c_str(), f, "%.5f");
+															}
+															else if (m.typeInfo.cols == 3)
+															{
+																if (enableColorEdit[memberIndex])
+																{
+																	dirty |= ImGui::ColorEdit3(label.c_str(), f, ImGuiColorEditFlags_DefaultOptions_);
+																}
+																else
+																{
+																	dirty |= ImGui::InputFloat3(label.c_str(), f, "%.5f");
+																}
+																ImGui::SameLine();
+																ImGui::Checkbox(std::string("##" + label).c_str(), (bool*)&enableColorEdit[memberIndex]);
+																if (ImGui::BeginItemTooltip())
+																{
+																	ImGui::Text("Enable / Disable color edit mode");
+																	ImGui::EndTooltip();
+																}
+															}
+															else if (m.typeInfo.cols == 4)
+															{
+																if (enableColorEdit[memberIndex])
+																{
+																	dirty |= ImGui::ColorEdit4(label.c_str(), f, ImGuiColorEditFlags_DefaultOptions_);
+																}
+																else
+																{
+																	dirty |= ImGui::InputFloat4(label.c_str(), f, "%.5f");
+																}
+																ImGui::SameLine();
+																ImGui::Checkbox(std::string("##" + label).c_str(), (bool*)&enableColorEdit[memberIndex]);
+																if (ImGui::BeginItemTooltip())
+																{
+																	ImGui::Text("Enable / Disable color edit mode");
+																	ImGui::EndTooltip();
+																}
+															}
+														}
+													}
+													else
 													{
 														float* f = reinterpret_cast<float*>(memberPtr);
 
@@ -1160,8 +1263,9 @@ namespace HBL2
 																ImGui::EndTooltip();
 															}
 														}
-														break;
 													}
+														break;
+												}
 												}
 
 												memberIndex++;
@@ -1566,6 +1670,7 @@ namespace HBL2
 														if (b.type == ResourceType::UniformBuffer)
 														{
 															auto& uniformBufferBytes = m_ShaderUniformBufferData2[m_ShaderUniformBufferSize2++];
+															uniformBufferBytes.clear();
 															uniformBufferBytes.resize(b.size);
 
 															const auto& bufferProp = materialProperties[b.name];
@@ -1587,35 +1692,81 @@ namespace HBL2
 																	{
 																		case MemberBaseType::Float:
 																		{
-																			float* f = reinterpret_cast<float*>(memberPtr);
-
-																			if (m.typeInfo.cols == 1)
+																			if (m.typeInfo.isArray)
 																			{
-																				*f = memberProp.as<float>();
+																				const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
+
+																				for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+																				{
+																					if (!memberProp[i].IsDefined())
+																					{
+																						continue;
+																					}
+
+																					float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+
+																					if (m.typeInfo.cols == 1)
+																					{
+																						*f = memberProp[i].as<float>();
+																					}
+																					else if (m.typeInfo.cols == 2)
+																					{
+																						const glm::vec2& vec2 = memberProp[i].as<glm::vec2>();
+
+																						f[0] = vec2.x;
+																						f[1] = vec2.y;
+																					}
+																					else if (m.typeInfo.cols == 3)
+																					{
+																						const glm::vec3& vec3 = memberProp[i].as<glm::vec3>();
+
+																						f[0] = vec3.x;
+																						f[1] = vec3.y;
+																						f[2] = vec3.z;
+																					}
+																					else if (m.typeInfo.cols == 4)
+																					{
+																						const glm::vec4& vec4 = memberProp[i].as<glm::vec4>();
+
+																						f[0] = vec4.x;
+																						f[1] = vec4.y;
+																						f[2] = vec4.z;
+																						f[3] = vec4.w;
+																					}
+																				}
 																			}
-																			else if (m.typeInfo.cols == 2)
+																			else
 																			{
-																				const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+																				float* f = reinterpret_cast<float*>(memberPtr);
 
-																				f[0] = vec2.x;
-																				f[1] = vec2.y;
-																			}
-																			else if (m.typeInfo.cols == 3)
-																			{
-																				const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+																				if (m.typeInfo.cols == 1)
+																				{
+																					*f = memberProp.as<float>();
+																				}
+																				else if (m.typeInfo.cols == 2)
+																				{
+																					const glm::vec2& vec2 = memberProp.as<glm::vec2>();
 
-																				f[0] = vec3.x;
-																				f[1] = vec3.y;
-																				f[2] = vec3.z;
-																			}
-																			else if (m.typeInfo.cols == 4)
-																			{
-																				const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+																					f[0] = vec2.x;
+																					f[1] = vec2.y;
+																				}
+																				else if (m.typeInfo.cols == 3)
+																				{
+																					const glm::vec3& vec3 = memberProp.as<glm::vec3>();
 
-																				f[0] = vec4.x;
-																				f[1] = vec4.y;
-																				f[2] = vec4.z;
-																				f[3] = vec4.w;
+																					f[0] = vec3.x;
+																					f[1] = vec3.y;
+																					f[2] = vec3.z;
+																				}
+																				else if (m.typeInfo.cols == 4)
+																				{
+																					const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+																					f[0] = vec4.x;
+																					f[1] = vec4.y;
+																					f[2] = vec4.z;
+																					f[3] = vec4.w;
+																				}
 																			}
 																			break;
 																		}
@@ -1664,7 +1815,6 @@ namespace HBL2
 										if (b.type == ResourceType::UniformBuffer)
 										{
 											auto& uniformBufferBytes = m_ShaderUniformBufferData2[m_ShaderUniformBufferSize2];
-											uniformBufferBytes.resize(b.size);
 
 											ImGui::Text(b.name.c_str());
 
@@ -1680,50 +1830,108 @@ namespace HBL2
 												{
 													case MemberBaseType::Float:
 													{
-														float* f = reinterpret_cast<float*>(memberPtr);
+														if (m.typeInfo.isArray)
+														{
+															const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
 
-														if (m.typeInfo.cols == 1)
-														{
-															dirty |= ImGui::InputFloat(m.name.c_str(), f, 0.f, 0.f, "%.5f");
+															for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+															{
+																float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+																const std::string label = m.name + "[" + std::to_string(i) + "]";
+
+																if (m.typeInfo.cols == 1)
+																{
+																	dirty |= ImGui::InputFloat(label.c_str(), f, 0.f, 0.f, "%.5f");
+																}
+																else if (m.typeInfo.cols == 2)
+																{
+																	dirty |= ImGui::InputFloat2(label.c_str(), f, "%.5f");
+																}
+																else if (m.typeInfo.cols == 3)
+																{
+																	if (enableColorEdit[memberIndex])
+																	{
+																		dirty |= ImGui::ColorEdit3(label.c_str(), f, ImGuiColorEditFlags_DefaultOptions_);
+																	}
+																	else
+																	{
+																		dirty |= ImGui::InputFloat3(label.c_str(), f, "%.5f");
+																	}
+																	ImGui::SameLine();
+																	ImGui::Checkbox(std::string("##" + label).c_str(), (bool*)&enableColorEdit[memberIndex]);
+																	if (ImGui::BeginItemTooltip())
+																	{
+																		ImGui::Text("Enable / Disable color edit mode");
+																		ImGui::EndTooltip();
+																	}
+																}
+																else if (m.typeInfo.cols == 4)
+																{
+																	if (enableColorEdit[memberIndex])
+																	{
+																		dirty |= ImGui::ColorEdit4(label.c_str(), f, ImGuiColorEditFlags_DefaultOptions_);
+																	}
+																	else
+																	{
+																		dirty |= ImGui::InputFloat4(label.c_str(), f, "%.5f");
+																	}
+																	ImGui::SameLine();
+																	ImGui::Checkbox(std::string("##" + label).c_str(), (bool*)&enableColorEdit[memberIndex]);
+																	if (ImGui::BeginItemTooltip())
+																	{
+																		ImGui::Text("Enable / Disable color edit mode");
+																		ImGui::EndTooltip();
+																	}
+																}
+															}
 														}
-														else if (m.typeInfo.cols == 2)
+														else
 														{
-															dirty |= ImGui::InputFloat2(m.name.c_str(), f, "%.5f");
-														}
-														else if (m.typeInfo.cols == 3)
-														{
-															if (enableColorEdit[memberIndex])
+															float* f = reinterpret_cast<float*>(memberPtr);
+
+															if (m.typeInfo.cols == 1)
 															{
-																dirty |= ImGui::ColorEdit3(m.name.c_str(), f, ImGuiColorEditFlags_DefaultOptions_);
+																dirty |= ImGui::InputFloat(m.name.c_str(), f, 0.f, 0.f, "%.5f");
 															}
-															else
+															else if (m.typeInfo.cols == 2)
 															{
-																dirty |= ImGui::InputFloat3(m.name.c_str(), f, "%.5f");
+																dirty |= ImGui::InputFloat2(m.name.c_str(), f, "%.5f");
 															}
-															ImGui::SameLine();
-															ImGui::Checkbox(std::string("##" + m.name).c_str(), (bool*)&enableColorEdit[memberIndex]);
-															if (ImGui::BeginItemTooltip())
+															else if (m.typeInfo.cols == 3)
 															{
-																ImGui::Text("Enable / Disable color edit mode");
-																ImGui::EndTooltip();
+																if (enableColorEdit[memberIndex])
+																{
+																	dirty |= ImGui::ColorEdit3(m.name.c_str(), f, ImGuiColorEditFlags_DefaultOptions_);
+																}
+																else
+																{
+																	dirty |= ImGui::InputFloat3(m.name.c_str(), f, "%.5f");
+																}
+																ImGui::SameLine();
+																ImGui::Checkbox(std::string("##" + m.name).c_str(), (bool*)&enableColorEdit[memberIndex]);
+																if (ImGui::BeginItemTooltip())
+																{
+																	ImGui::Text("Enable / Disable color edit mode");
+																	ImGui::EndTooltip();
+																}
 															}
-														}
-														else if (m.typeInfo.cols == 4)
-														{
-															if (enableColorEdit[memberIndex])
+															else if (m.typeInfo.cols == 4)
 															{
-																dirty |= ImGui::ColorEdit4(m.name.c_str(), f, ImGuiColorEditFlags_DefaultOptions_);
-															}
-															else
-															{
-																dirty |= ImGui::InputFloat4(m.name.c_str(), f, "%.5f");
-															}
-															ImGui::SameLine();
-															ImGui::Checkbox(std::string("##" + m.name).c_str(), (bool*)&enableColorEdit[memberIndex]);
-															if (ImGui::BeginItemTooltip())
-															{
-																ImGui::Text("Enable / Disable color edit mode");
-																ImGui::EndTooltip();
+																if (enableColorEdit[memberIndex])
+																{
+																	dirty |= ImGui::ColorEdit4(m.name.c_str(), f, ImGuiColorEditFlags_DefaultOptions_);
+																}
+																else
+																{
+																	dirty |= ImGui::InputFloat4(m.name.c_str(), f, "%.5f");
+																}
+																ImGui::SameLine();
+																ImGui::Checkbox(std::string("##" + m.name).c_str(), (bool*)&enableColorEdit[memberIndex]);
+																if (ImGui::BeginItemTooltip())
+																{
+																	ImGui::Text("Enable / Disable color edit mode");
+																	ImGui::EndTooltip();
+																}
 															}
 														}
 														break;
@@ -1736,6 +1944,7 @@ namespace HBL2
 											if (dirty)
 											{
 												mat->SetBuffer(m_ShaderUniformBufferSize2, uniformBufferBytes.data());
+												m_MaterialNeedsReimport = true;
 											}
 
 											m_ShaderUniformBufferSize2++;

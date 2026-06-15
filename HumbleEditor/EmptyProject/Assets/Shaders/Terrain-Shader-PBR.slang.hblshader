@@ -1,6 +1,8 @@
 Shader:
   UUID: 17012696883391400132
   Type: 2
+  BindGroup:
+    []
   Variants:
     - Variant: 233046723
       RasterState:

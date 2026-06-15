@@ -868,23 +868,53 @@ namespace HBL2
 									{
 										case MemberBaseType::Float:
 										{
-											float* f = reinterpret_cast<float*>(memberPtr);
+											if (m.typeInfo.isArray)
+											{
+												const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
 
-											if (m.typeInfo.cols == 1)
-											{
-												ImGui::InputFloat(m.name.c_str(), f, 0.f, 0.f, "%.5f");
+												for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+												{
+													float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+													const std::string label = m.name + "[" + std::to_string(i) + "]";
+
+													if (m.typeInfo.cols == 1)
+													{
+														ImGui::InputFloat(label.c_str(), f, 0.f, 0.f, "%.5f");
+													}
+													else if (m.typeInfo.cols == 2)
+													{
+														ImGui::InputFloat2(label.c_str(), f, "%.5f");
+													}
+													else if (m.typeInfo.cols == 3)
+													{
+														ImGui::InputFloat3(label.c_str(), f, "%.5f");
+													}
+													else if (m.typeInfo.cols == 4)
+													{
+														ImGui::InputFloat4(label.c_str(), f, "%.5f");
+													}
+												}
 											}
-											else if (m.typeInfo.cols == 2)
+											else
 											{
-												ImGui::InputFloat2(m.name.c_str(), f, "%.5f");
-											}
-											else if (m.typeInfo.cols == 3)
-											{
-												ImGui::InputFloat3(m.name.c_str(), f, "%.5f");
-											}
-											else if (m.typeInfo.cols == 4)
-											{
-												ImGui::InputFloat4(m.name.c_str(), f, "%.5f");
+												float* f = reinterpret_cast<float*>(memberPtr);
+
+												if (m.typeInfo.cols == 1)
+												{
+													ImGui::InputFloat(m.name.c_str(), f, 0.f, 0.f, "%.5f");
+												}
+												else if (m.typeInfo.cols == 2)
+												{
+													ImGui::InputFloat2(m.name.c_str(), f, "%.5f");
+												}
+												else if (m.typeInfo.cols == 3)
+												{
+													ImGui::InputFloat3(m.name.c_str(), f, "%.5f");
+												}
+												else if (m.typeInfo.cols == 4)
+												{
+													ImGui::InputFloat4(m.name.c_str(), f, "%.5f");
+												}
 											}
 											break;
 										}

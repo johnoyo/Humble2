@@ -1123,37 +1123,6 @@ namespace HBL2
 							return;
 						}
 
-						// Map shader bind group buffer data if dirty.
-						if (material->ShaderDirty.load())
-						{
-							// Submit to render thread, to avoid modifying the data while the render thread renders the previous frame.
-							Renderer::Instance->Submit([material]()
-							{
-								for (int i = 0; i < Material::MaxBufferBindings; i++)
-								{
-									Handle<BindGroup> shaderBindGroup = ResourceManager::Instance->GetShaderGlobalBindGroup(material->Shader);
-									ResourceManager::Instance->MapBufferData(shaderBindGroup, i);
-								}
-							});
-
-							material->ShaderDirty.store(false);
-						}
-
-						// Map material bind group buffer data if dirty.
-						if (material->Dirty.load())
-						{
-							// Submit to render thread, to avoid modifying the data while the render thread renders the previous frame.
-							Renderer::Instance->Submit([material]()
-							{
-								for (int i = 0; i < Material::MaxBufferBindings; i++)
-								{
-									ResourceManager::Instance->MapBufferData(material->MaterialBindGroup, i);
-								}
-							});
-
-							material->Dirty.store(false);
-						}
-
 						// Bump allocate and set per draw data.
 						auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawData>();
 						alloc.Data->Model = transform.WorldMatrix;
@@ -1265,37 +1234,6 @@ namespace HBL2
 						if (material == nullptr)
 						{
 							return;
-						}
-
-						// Map shader bind group buffer data if dirty.
-						if (material->ShaderDirty.load())
-						{
-							// Submit map to render thread, to avoid modifying the data while the render thread renders the previous frame.
-							Renderer::Instance->Submit([material]()
-							{
-								for (int i = 0; i < Material::MaxBufferBindings; i++)
-								{
-									Handle<BindGroup> shaderBindGroup = ResourceManager::Instance->GetShaderGlobalBindGroup(material->Shader);
-									ResourceManager::Instance->MapBufferData(shaderBindGroup, i);
-								}
-							});
-
-							material->ShaderDirty.store(false);
-						}
-
-						// Map material bind group buffer data if dirty.
-						if (material->Dirty.load())
-						{
-							// Submit map to render thread, to avoid modifying the data while the render thread renders the previous frame.
-							Renderer::Instance->Submit([material]()
-							{
-								for (int i = 0; i < Material::MaxBufferBindings; i++)
-								{
-									ResourceManager::Instance->MapBufferData(material->MaterialBindGroup, i);
-								}
-							});
-
-							material->Dirty.store(false);
 						}
 
 						// Bump allocate and set per draw data.

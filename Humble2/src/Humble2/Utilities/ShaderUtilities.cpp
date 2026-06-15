@@ -693,21 +693,50 @@ namespace HBL2
                         {
                         case MemberBaseType::Float:
                             {
-                                if (m.typeInfo.cols == 1)
+                                if (m.typeInfo.isArray)
                                 {
-                                    out << YAML::Key << m.name.c_str() << YAML::Value << 0.0f;
+                                    out << YAML::Key << m.name.c_str() << YAML::Value << YAML::BeginSeq;
+
+                                    for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+                                    {
+                                        if (m.typeInfo.cols == 1)
+                                        {
+                                            out << 0.0f;
+                                        }
+                                        else if (m.typeInfo.cols == 2)
+                                        {
+                                            out << glm::vec2(0.0f);
+                                        }
+                                        else if (m.typeInfo.cols == 3)
+                                        {
+                                            out << glm::vec3(0.0f);
+                                        }
+                                        else if (m.typeInfo.cols == 4)
+                                        {
+                                            out << glm::vec4(0.0f);
+                                        }
+                                    }
+
+                                    out << YAML::EndSeq;
                                 }
-                                else if (m.typeInfo.cols == 2)
+                                else
                                 {
-                                    out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec2(0.0f);
-                                }
-                                else if (m.typeInfo.cols == 3)
-                                {
-                                    out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec3(0.0f);
-                                }
-                                else if (m.typeInfo.cols == 4)
-                                {
-                                    out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec4(0.0f);
+                                    if (m.typeInfo.cols == 1)
+                                    {
+                                        out << YAML::Key << m.name.c_str() << YAML::Value << 0.0f;
+                                    }
+                                    else if (m.typeInfo.cols == 2)
+                                    {
+                                        out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec2(0.0f);
+                                    }
+                                    else if (m.typeInfo.cols == 3)
+                                    {
+                                        out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec3(0.0f);
+                                    }
+                                    else if (m.typeInfo.cols == 4)
+                                    {
+                                        out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec4(0.0f);
+                                    }
                                 }
                                 break;
                             }
@@ -822,23 +851,52 @@ namespace HBL2
                         {
                         case MemberBaseType::Float:
                             {
-                                const float* f = reinterpret_cast<const float*>(memberPtr);
+                                if (m.typeInfo.isArray)
+                                {
+                                    const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
 
-                                if (m.typeInfo.cols == 1)
-                                {
-                                    out[b.name.c_str()][m.name.c_str()] = *f;
+                                    for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+                                    {
+                                        const float* f = reinterpret_cast<const float*>(memberPtr + i * stride);
+
+                                        if (m.typeInfo.cols == 1)
+                                        {
+                                            out[b.name.c_str()][m.name.c_str()].push_back(*f);
+                                        }
+                                        else if (m.typeInfo.cols == 2)
+                                        {
+                                            out[b.name.c_str()][m.name.c_str()].push_back(glm::vec2(f[0], f[1]));
+                                        }
+                                        else if (m.typeInfo.cols == 3)
+                                        {
+                                            out[b.name.c_str()][m.name.c_str()].push_back(glm::vec3(f[0], f[1], f[2]));
+                                        }
+                                        else if (m.typeInfo.cols == 4)
+                                        {
+                                            out[b.name.c_str()][m.name.c_str()].push_back(glm::vec4(f[0], f[1], f[2], f[3]));
+                                        }
+                                    }
                                 }
-                                else if (m.typeInfo.cols == 2)
+                                else
                                 {
-                                    out[b.name.c_str()][m.name.c_str()] = glm::vec2(f[0], f[1]);
-                                }
-                                else if (m.typeInfo.cols == 3)
-                                {
-                                    out[b.name.c_str()][m.name.c_str()] = glm::vec3(f[0], f[1], f[2]);
-                                }
-                                else if (m.typeInfo.cols == 4)
-                                {
-                                    out[b.name.c_str()][m.name.c_str()] = glm::vec4(f[0], f[1], f[2], f[3]);
+                                    const float* f = reinterpret_cast<const float*>(memberPtr);
+
+                                    if (m.typeInfo.cols == 1)
+                                    {
+                                        out[b.name.c_str()][m.name.c_str()] = *f;
+                                    }
+                                    else if (m.typeInfo.cols == 2)
+                                    {
+                                        out[b.name.c_str()][m.name.c_str()] = glm::vec2(f[0], f[1]);
+                                    }
+                                    else if (m.typeInfo.cols == 3)
+                                    {
+                                        out[b.name.c_str()][m.name.c_str()] = glm::vec3(f[0], f[1], f[2]);
+                                    }
+                                    else if (m.typeInfo.cols == 4)
+                                    {
+                                        out[b.name.c_str()][m.name.c_str()] = glm::vec4(f[0], f[1], f[2], f[3]);
+                                    }
                                 }
                                 break;
                             }
@@ -1003,23 +1061,56 @@ namespace HBL2
                         {
                             case MemberBaseType::Float:
                             {
-                                const float* f = reinterpret_cast<const float*>(memberPtr);
+                                if (m.typeInfo.isArray)
+                                {
+                                    const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
 
-                                if (m.typeInfo.cols == 1)
-                                {
-                                    out << YAML::Key << m.name.c_str() << YAML::Value << *f;
+                                    out << YAML::Key << m.name.c_str() << YAML::Value << YAML::BeginSeq;
+
+                                    for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+                                    {
+                                        const float* f = reinterpret_cast<const float*>(memberPtr + i * stride);
+
+                                        if (m.typeInfo.cols == 1)
+                                        {
+                                            out << *f;
+                                        }
+                                        else if (m.typeInfo.cols == 2)
+                                        {
+                                            out << glm::vec2(f[0], f[1]);
+                                        }
+                                        else if (m.typeInfo.cols == 3)
+                                        {
+                                            out << glm::vec3(f[0], f[1], f[2]);
+                                        }
+                                        else if (m.typeInfo.cols == 4)
+                                        {
+                                            out << glm::vec4(f[0], f[1], f[2], f[3]);
+                                        }
+                                    }
+
+                                    out << YAML::EndSeq;
                                 }
-                                else if (m.typeInfo.cols == 2)
+                                else
                                 {
-                                    out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec2(f[0], f[1]);
-                                }
-                                else if (m.typeInfo.cols == 3)
-                                {
-                                    out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec3(f[0], f[1], f[2]);
-                                }
-                                else if (m.typeInfo.cols == 4)
-                                {
-                                    out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec4(f[0], f[1], f[2], f[3]);
+                                    const float* f = reinterpret_cast<const float*>(memberPtr);
+
+                                    if (m.typeInfo.cols == 1)
+                                    {
+                                        out << YAML::Key << m.name.c_str() << YAML::Value << *f;
+                                    }
+                                    else if (m.typeInfo.cols == 2)
+                                    {
+                                        out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec2(f[0], f[1]);
+                                    }
+                                    else if (m.typeInfo.cols == 3)
+                                    {
+                                        out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec3(f[0], f[1], f[2]);
+                                    }
+                                    else if (m.typeInfo.cols == 4)
+                                    {
+                                        out << YAML::Key << m.name.c_str() << YAML::Value << glm::vec4(f[0], f[1], f[2], f[3]);
+                                    }
                                 }
                                 break;
                             }
