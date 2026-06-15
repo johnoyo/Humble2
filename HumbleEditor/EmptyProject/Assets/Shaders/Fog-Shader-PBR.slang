@@ -10,8 +10,6 @@ struct Object
     float4x4 Model;
     float4x4 InverseModel;
     float4 Color;
-    float Metalicness;
-    float Roughness;
 };
 
 struct Light
@@ -27,29 +25,75 @@ struct Light
     float Count;
 };
 
+// static const float3 FOG_COLOR = float3(0.55, 0.65, 0.75); // linear RGB
+// static const float FOG_START = 500.0;                     // begin blending (linear mode)
+// static const float FOG_END = 1500.0;                      // fully opaque   (linear mode)
+// static const float FOG_DENSITY = 0.00075;                 // used by EXP / EXP2
+// static const int FOG_MODE = 2;                            // 0 = LINEAR, 1 = EXP, 2 = EXP2
+
+// // Height-fog limits (world Y coordinates)
+// static const float FOG_TOP_Y = 50.0;     // height where fog starts (clear above)
+// static const float FOG_BOTTOM_Y = -30.0; // height that is 100 % fogged
+
+struct Fog
+{
+    float3 FOG_COLOR;   // linear RGB
+    float FOG_START;    // begin blending (linear mode)
+    float FOG_END;      // fully opaque   (linear mode)
+    float FOG_DENSITY;  // used by EXP / EXP2
+    float FOG_MODE;       // 0 = LINEAR, 1 = EXP, 2 = EXP2
+
+    // Height-fog limits (world Y coordinates)
+    float FOG_TOP_Y;    // height where fog starts (clear above)
+    float FOG_BOTTOM_Y; // height that is 100 % fogged
+};
+
+struct Material
+{
+    float4 Color;
+    float Roughness;
+    float Metalicness;
+};
+
+struct Terrain
+{
+    float3 baseColors[3];
+    float baseStartHeights[3];
+    float baseBlends[3];
+};
+
 [[vk::binding(0, 0)]]
 ConstantBuffer<Camera> u_Camera;
 
 [[vk::binding(1, 0)]]
 ConstantBuffer<Light> u_Light;
 
-[[vk::binding(5, 1)]]
-ConstantBuffer<Object> u_Object;
-
-[[vk::binding(0, 1)]]
-Sampler2D u_AlbedoMap;
-
-[[vk::binding(1, 1)]]
-Sampler2D u_NormalMap;
-
-[[vk::binding(2, 1)]]
-Sampler2D u_MetallicMap;
+[[vk::binding(2, 0)]]
+Sampler2D u_ShadowAltasMap;
 
 [[vk::binding(3, 1)]]
+ConstantBuffer<Fog> u_Fog;
+
+[[vk::binding(0, 2)]]
+Sampler2D u_AlbedoMap;
+
+[[vk::binding(1, 2)]]
+Sampler2D u_NormalMap;
+
+[[vk::binding(2, 2)]]
+ConstantBuffer<Material> u_Material;
+
+[[vk::binding(3, 2)]]
+Sampler2D u_MetallicMap;
+
+[[vk::binding(4, 2)]]
 Sampler2D u_RoughnessMap;
 
-[[vk::binding(4, 1)]]
-Sampler2D u_ShadowAltasMap;
+[[vk::binding(5, 2)]]
+ConstantBuffer<Terrain> u_Terrain;
+
+[[vk::binding(4, 3)]]
+ConstantBuffer<Object> u_Object;
 
 // Vertex Shader
 
@@ -76,7 +120,7 @@ VSOutput mainVS(VSInput input)
     VSOutput output;
 
     output.v_Position = mul(u_Object.Model, float4(input.a_Position, 1.0)).xyz;
-    output.v_Color = u_Object.Color;
+    output.v_Color = u_Material.Color * u_Object.Color;
     output.v_TextureCoord = input.a_TextureCoord;
     output.v_Normal = mul(u_Object.InverseModel, float4(input.a_Normal, 0.0)).xyz;
     output.position = mul(u_Camera.ViewProjection, mul(u_Object.Model, float4(input.a_Position, 1.0)));
@@ -295,60 +339,29 @@ float3 fresnelSchlick(float cosTheta, float3 F0)
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-static const float epsilon = 0.00001;
-
 float InverseLerp(float a, float b, float value)
 {
     return clamp((value - a) / (b - a), 0.0, 1.0);
 }
 
-static const float3 baseColors[3] =
-    {
-        float3(0.16, 0.2, 0.6),
-        float3(0.5, 0.59, 0.28),
-        float3(0.31, 0.23, 0.19)
-    };
-
-static const float baseStartHeights[3] =
-    {
-        0.01,
-        0.15,
-        0.65
-    };
-
-static const float baseBlends[3] =
-    {
-        0.0,
-        0.0,
-        0.25
-    };
-
-static const float3 FOG_COLOR = float3(0.55, 0.65, 0.75); // linear RGB
-static const float FOG_START = 500.0;                     // begin blending (linear mode)
-static const float FOG_END = 1500.0;                      // fully opaque   (linear mode)
-static const float FOG_DENSITY = 0.00075;                 // used by EXP / EXP2
-static const int FOG_MODE = 2;                        // 0 = LINEAR, 1 = EXP, 2 = EXP2
-
-// Height-fog limits (world Y coordinates)
-static const float FOG_TOP_Y = 50.0;     // height where fog starts (clear above)
-static const float FOG_BOTTOM_Y = -30.0; // height that is 100 % fogged
+static const float epsilon = 0.00001;
 
 float ComputeFogFactor(float dist)
 {
     // linear
-    if (FOG_MODE == 0)
+    if (u_Fog.FOG_MODE == 0.0)
     {
-        return clamp((FOG_END - dist) / (FOG_END - FOG_START), 0.0, 1.0);
+        return clamp((u_Fog.FOG_END - dist) / (u_Fog.FOG_END - u_Fog.FOG_START), 0.0, 1.0);
     }
 
     // exp
-    if (FOG_MODE == 1)
+    if (u_Fog.FOG_MODE == 1.0)
     {
-        return exp(-FOG_DENSITY * dist);
+        return exp(-u_Fog.FOG_DENSITY * dist);
     }
 
     // exp2
-    float d = FOG_DENSITY * dist;
+    float d = u_Fog.FOG_DENSITY * dist;
     return exp(-(d * d));
 }
 
@@ -472,8 +485,8 @@ float4 mainPS(PSInput input) : SV_Target0
     for (int i = 0; i < 3; i++)
     {
         // float drawStrenght = clamp(sign(heightPercent - baseStartHeights[i]), 0.0, 1.0);
-        float drawStrenght = InverseLerp(-baseBlends[i] / 2 - epsilon, baseBlends[i] / 2, heightPercent - baseStartHeights[i]);
-        terrainColor = terrainColor * float3(1.0 - drawStrenght) + baseColors[i] * float3(drawStrenght);
+        float drawStrenght = InverseLerp(-u_Terrain.baseBlends[i] / 2 - epsilon, u_Terrain.baseBlends[i] / 2, heightPercent - u_Terrain.baseStartHeights[i]);
+        terrainColor = terrainColor * float3(1.0 - drawStrenght) + u_Terrain.baseColors[i] * float3(drawStrenght);
     }
 
     color = color * terrainColor;
@@ -483,12 +496,12 @@ float4 mainPS(PSInput input) : SV_Target0
     float distFactor = ComputeFogFactor(camDist); // 1 = no fog
 
     // height weight 0..1
-    float heightWeight = clamp((FOG_TOP_Y - input.v_Position.y) / (FOG_TOP_Y - FOG_BOTTOM_Y), 0.0, 1.0);
+    float heightWeight = clamp((u_Fog.FOG_TOP_Y - input.v_Position.y) / (u_Fog.FOG_TOP_Y - u_Fog.FOG_BOTTOM_Y), 0.0, 1.0);
 
     // final factor: clear above FOG_TOP_Y, distance-fog below
     float fogFactor = lerp(1.0, distFactor, heightWeight);
 
-    color = lerp(FOG_COLOR, color, fogFactor);
+    color = lerp(u_Fog.FOG_COLOR, color, fogFactor);
 
     // HDR tonemapping
     color = color / (color + float3(1.0, 1.0, 1.0));

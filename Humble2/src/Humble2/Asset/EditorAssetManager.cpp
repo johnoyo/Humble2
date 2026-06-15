@@ -426,19 +426,21 @@ namespace HBL2
 				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
 				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
 
+				uint32_t bindingIndex = 0;
+
 				for (const auto& b : descriptorSet.bindings)
 				{
 					if (b.type == ResourceType::UniformBuffer)
 					{
 						std::vector<uint8_t> uniformBufferBytes(b.size);
 
-						const auto& bufferProp = shaderProperties["BindGroup"][b.name];
+						const auto& bufferProp = shaderProperties["BindGroup"][bindingIndex];
 
 						if (bufferProp.IsDefined())
 						{
 							for (const auto& m : b.members)
 							{
-								const auto& memberProp = bufferProp[m.name];
+								const auto& memberProp = bufferProp[b.name][m.name];
 
 								if (!memberProp.IsDefined())
 								{
@@ -546,16 +548,18 @@ namespace HBL2
 					}
 					else if (b.type == ResourceType::SampledTexture)
 					{
-						const auto& textureProp = shaderProperties["BindGroup"][b.name];
+						const auto& textureProp = shaderProperties["BindGroup"][bindingIndex];
 
 						if (textureProp.IsDefined())
 						{
-							UUID textureMapUUID = textureProp.as<UUID>();
+							UUID textureMapUUID = textureProp[b.name].as<UUID>();
 
 							auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
 							textureBindings.push_back({ handle });
 						}
 					}
+
+					bindingIndex++;
 				}
 
 				// If there is only one texture and is not set, use the built in white texture.
@@ -1294,19 +1298,21 @@ namespace HBL2
 				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
 				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
 
+				uint32_t bindingIndex = 0;
+
 				for (const auto& b : descriptorSet.bindings)
 				{
 					if (b.type == ResourceType::UniformBuffer)
 					{
 						std::vector<uint8_t> uniformBufferBytes(b.size);
 
-						const auto& bufferProp = shaderProperties["BindGroup"][b.name];
+						const auto& bufferProp = shaderProperties["BindGroup"][bindingIndex];
 
 						if (bufferProp.IsDefined())
 						{
 							for (const auto& m : b.members)
 							{
-								const auto& memberProp = bufferProp[m.name];
+								const auto& memberProp = bufferProp[b.name][m.name];
 
 								if (!memberProp.IsDefined())
 								{
@@ -1415,16 +1421,18 @@ namespace HBL2
 					}
 					else if (b.type == ResourceType::SampledTexture)
 					{
-						const auto& textureProp = shaderProperties["BindGroup"][b.name];
+						const auto& textureProp = shaderProperties["BindGroup"][bindingIndex];
 
 						if (textureProp.IsDefined())
 						{
-							UUID textureMapUUID = textureProp.as<UUID>();
+							UUID textureMapUUID = textureProp[b.name].as<UUID>();
 
 							auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
 							textureBindings.push_back({ handle });
 						}
 					}
+
+					bindingIndex++;
 				}
 
 				// If there is only one texture and is not set, use the built in white texture.

@@ -991,20 +991,23 @@ namespace HBL2
 													m_ShaderUniformBufferSize2 = 0;
 													m_ShaderUniformTextureSize2 = 0;
 
+													uint32_t bindingIndex = 0;
+
 													for (const auto& b : descriptorSet.bindings)
 													{
 														if (b.type == ResourceType::UniformBuffer)
 														{
 															auto& uniformBufferBytes = m_ShaderUniformBufferData2[m_ShaderUniformBufferSize2++];
+															uniformBufferBytes.clear();
 															uniformBufferBytes.resize(b.size);
 
-															const auto& bufferProp = shaderProperties["BindGroup"][b.name];
+															const auto& bufferProp = shaderProperties["BindGroup"][bindingIndex];
 
 															if (bufferProp.IsDefined())
 															{
 																for (const auto& m : b.members)
 																{
-																	const auto& memberProp = bufferProp[m.name];
+																	const auto& memberProp = bufferProp[b.name][m.name];
 
 																	if (!memberProp.IsDefined())
 																	{
@@ -1101,11 +1104,11 @@ namespace HBL2
 														}
 														else if (b.type == ResourceType::SampledTexture)
 														{
-															const auto& textureProp = shaderProperties["BindGroup"][b.name];
+															const auto& textureProp = shaderProperties["BindGroup"][bindingIndex];
 
 															if (textureProp.IsDefined())
 															{
-																UUID textureMapUUID = textureProp.as<UUID>();
+																UUID textureMapUUID = textureProp[b.name].as<UUID>();
 
 																auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
 																auto assetHandle = AssetManager::Instance->GetHandleFromUUID(textureMapUUID);
@@ -1113,6 +1116,8 @@ namespace HBL2
 																m_ShaderUniformTextureData2[m_ShaderUniformTextureSize2++] = assetHandle.Pack();
 															}
 														}
+
+														bindingIndex++;
 													}
 												}
 											}
@@ -1144,7 +1149,6 @@ namespace HBL2
 										if (b.type == ResourceType::UniformBuffer)
 										{
 											auto& uniformBufferBytes = m_ShaderUniformBufferData2[m_ShaderUniformBufferSize2];
-											uniformBufferBytes.resize(b.size);
 
 											ImGui::Text(b.name.c_str());
 
@@ -1282,6 +1286,8 @@ namespace HBL2
 													Handle<BindGroup> shaderBindGroup = ResourceManager::Instance->GetShaderGlobalBindGroup(handle);
 													ResourceManager::Instance->MapBufferData(shaderBindGroup, index);
 												});
+
+												shaderNeedsReimport = true;
 											}
 
 											m_ShaderUniformBufferSize2++;

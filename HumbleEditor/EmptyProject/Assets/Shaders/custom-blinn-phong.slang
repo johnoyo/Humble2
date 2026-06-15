@@ -29,7 +29,7 @@ struct Material
 {
     float4 Color;
     float Glossiness;
-    float _Unused;
+    float _UnusedCustom;
 };
 
 struct Fog
