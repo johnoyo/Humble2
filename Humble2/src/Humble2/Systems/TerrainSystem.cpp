@@ -756,7 +756,10 @@ namespace HBL2
 				{
 					terrainChunk.LevelOfDetail = lodMesh.Lod;
 					terrainChunk.PreviousLodIndex = lodIndex;
-					chunkMesh.Mesh = lodMesh.Mesh;
+
+					Asset* chunkMeshAsset = AssetManager::Instance->GetAssetMetadata(chunkMesh.Mesh);
+					chunkMeshAsset->Indentifier = lodMesh.Mesh.Pack();
+					chunkMeshAsset->Loaded = true;
 				}
 				else if (!lodMesh.HasRequestedMesh)
 				{
@@ -908,7 +911,7 @@ namespace HBL2
 		auto& meshComponent = m_Context->AddComponent<Component::StaticMesh>(terrainChunk);
 		meshComponent.Enabled = false;
 		meshComponent.Material = terrain.Material;
-		meshComponent.Mesh = {};
+		meshComponent.Mesh = AssetManager::Instance->CreateMemoryOnlyAsset({ "terrain-chunk-mesh-asset", AssetType::Mesh, Handle<Mesh>().Pack() });
 
 		auto& link = m_Context->GetComponent<Component::Link>(terrainChunk);
 		link.Parent = parent;
@@ -944,7 +947,9 @@ namespace HBL2
 		HBL2_FUNC_PROFILE()
 
 		auto& chunkMeshComponent = m_Context->GetComponent<Component::StaticMesh>(chunkMeshData.Chunk);
-		chunkMeshComponent.Mesh = chunkMeshData.ChunkMeshHandle;
+		Asset* chunkMeshAsset = AssetManager::Instance->GetAssetMetadata(chunkMeshComponent.Mesh);
+		chunkMeshAsset->Indentifier = chunkMeshData.ChunkMeshHandle.Pack();
+		chunkMeshAsset->Loaded = true;
 
 		auto& chunkComponent = m_Context->GetComponent<Component::TerrainChunk>(chunkMeshData.Chunk);
 		chunkComponent.LevelOfDetail = chunkMeshData.Lod;

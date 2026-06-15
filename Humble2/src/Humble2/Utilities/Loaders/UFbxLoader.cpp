@@ -13,7 +13,7 @@ namespace HBL2
 {
     thread_local std::vector<Vertex> UFbxLoader::s_Vertices;
     thread_local std::vector<uint32_t> UFbxLoader::s_Indeces;
-    thread_local std::unordered_map<std::string, Handle<Material>> UFbxLoader::s_MaterialNameToHandle;
+    thread_local std::unordered_map<std::string, Handle<Asset>> UFbxLoader::s_MaterialNameToAssetHandle;
 
     static void GetShaderAssetHandleAndReflectionData(Handle<Asset>& shaderAssetHandle, ShaderReflectionData& shaderReflectionData, bool isPBR)
     {
@@ -226,7 +226,7 @@ namespace HBL2
 
     void UFbxLoader::LoadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path)
     {
-        s_MaterialNameToHandle.clear();
+        s_MaterialNameToAssetHandle.clear();
 
         uint32_t numMaterials = ufbxScene->materials.count;
 
@@ -326,13 +326,13 @@ namespace HBL2
 
             CleanUpResourceTasks(albedoMapTask, normalMapTask, roughnessMapTask, metallicMapTask);
 
-            s_MaterialNameToHandle[fbxMaterial->name.data] = materialHandle;
+            s_MaterialNameToAssetHandle[fbxMaterial->name.data] = materialAssetHandle;
         }
     }
 
     void UFbxLoader::ReloadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path)
     {
-        s_MaterialNameToHandle.clear();
+        s_MaterialNameToAssetHandle.clear();
 
         uint32_t numMaterials = ufbxScene->materials.count;
 
@@ -448,7 +448,7 @@ namespace HBL2
 
             CleanUpResourceTasks(albedoMapTask, normalMapTask, roughnessMapTask, metallicMapTask);
 
-            s_MaterialNameToHandle[fbxMaterial->name.data] = materialHandle;
+            s_MaterialNameToAssetHandle[fbxMaterial->name.data] = materialAssetHandle;
         }
     }
 
@@ -800,7 +800,7 @@ namespace HBL2
 
         if (node->mesh->materials.count > 0)
         {
-            subMeshDescriptor.embededMaterial = s_MaterialNameToHandle[node->mesh->materials.data[subMeshIndex]->name.data];
+            subMeshDescriptor.embededMaterial = s_MaterialNameToAssetHandle[node->mesh->materials.data[subMeshIndex]->name.data];
         }
 
         if (!(fbxSubmesh.num_triangles))

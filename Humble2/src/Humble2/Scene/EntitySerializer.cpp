@@ -591,7 +591,8 @@ namespace HBL2
 		{
 			auto& sprite = m_Scene->AddComponent<Component::Sprite>(m_Entity);
 			sprite.Enabled = sprite_NewComponent["Enabled"].as<bool>();
-			sprite.Material = AssetManager::Instance->GetAsset<Material>(sprite_NewComponent["Material"].as<UUID>());
+			sprite.Material = AssetManager::Instance->GetHandleFromUUID(sprite_NewComponent["Material"].as<UUID>());
+			AssetManager::Instance->GetAsset<Material>(sprite.Material);
 		}
 
 		auto staticMesh_NewComponent = entityNode["Component::StaticMesh"];
@@ -602,12 +603,14 @@ namespace HBL2
 
 			if (staticMesh_NewComponent["Mesh"].IsDefined())
 			{
-				staticMesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(staticMesh_NewComponent["Mesh"]["UUID"].as<UUID>());
+				staticMesh.Mesh = AssetManager::Instance->GetHandleFromUUID(staticMesh_NewComponent["Mesh"]["UUID"].as<UUID>());
+				AssetManager::Instance->GetAsset<Mesh>(staticMesh.Mesh);
 				staticMesh.MeshIndex = staticMesh_NewComponent["Mesh"]["MeshIndex"].as<uint32_t>();
 				staticMesh.SubMeshIndex = staticMesh_NewComponent["Mesh"]["SubMeshIndex"].as<uint32_t>();
 			}
 
-			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(staticMesh_NewComponent["Material"].as<UUID>());
+			staticMesh.Material = AssetManager::Instance->GetHandleFromUUID(staticMesh_NewComponent["Material"].as<UUID>());
+			AssetManager::Instance->GetAsset<Material>(staticMesh.Material);
 		}
 
 		auto light_NewComponent = entityNode["Component::Light"];
@@ -649,7 +652,8 @@ namespace HBL2
 		{
 			auto& skyLight = m_Scene->AddComponent<Component::SkyLight>(m_Entity);
 			skyLight.Enabled = skyLight_NewComponent["Enabled"].as<bool>();
-			skyLight.EquirectangularMap = AssetManager::Instance->GetAsset<Texture>(skyLight_NewComponent["EquirectangularMap"].as<UUID>());
+			skyLight.EquirectangularMap = AssetManager::Instance->GetHandleFromUUID(skyLight_NewComponent["EquirectangularMap"].as<UUID>());
+			AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap);
 		}
 
 		auto soundSource_NewComponent = entityNode["Component::AudioSource"];
@@ -748,7 +752,10 @@ namespace HBL2
 			t.HeightMultiplier = t_NewComponent["HeightMultiplier"].as<float>();
 			t.Scale = t_NewComponent["Scale"].as<float>();
 			t.NoiseScale = t_NewComponent["NoiseScale"].as<float>();
-			t.Material = AssetManager::Instance->GetAsset<Material>(t_NewComponent["Material"].as<UUID>());
+
+			t.Material = AssetManager::Instance->GetHandleFromUUID(t_NewComponent["Material"].as<UUID>());
+			AssetManager::Instance->GetAsset<Material>(t.Material);
+
 			t.AddColliders = t_NewComponent["AddColliders"].as<bool>();
 			t.UseFalloffMap = t_NewComponent["UseFalloffMap"].as<bool>();
 			t.NumberOfChunks = t_NewComponent["NumberOfChunks"].as<int32_t>();

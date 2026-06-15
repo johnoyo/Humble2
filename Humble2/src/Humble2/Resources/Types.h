@@ -50,7 +50,7 @@ namespace HBL2
 		uint32_t InstanceCount = 1;
 		MeshExtents Extents;
 
-		Handle<Material> EmbededMaterial;
+		Handle<Asset> EmbededMaterial;
 	};
 
 	struct MeshPart

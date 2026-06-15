@@ -91,8 +91,8 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::PLANE);
-			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshAssetHandle(BuiltInMesh::PLANE);
+			staticMesh.Material = ShaderUtilities::Get().LitMaterialAsset;
 
 			return entity;
 		}
@@ -111,8 +111,8 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::TESSELATED_PLANE);
-			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshAssetHandle(BuiltInMesh::TESSELATED_PLANE);
+			staticMesh.Material = ShaderUtilities::Get().LitMaterialAsset;
 
 			return entity;
 		}
@@ -131,8 +131,8 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::CUBE);
-			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshAssetHandle(BuiltInMesh::CUBE);
+			staticMesh.Material = ShaderUtilities::Get().LitMaterialAsset;
 
 			return entity;
 		}
@@ -151,8 +151,8 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::SPHERE);
-			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshAssetHandle(BuiltInMesh::SPHERE);
+			staticMesh.Material = ShaderUtilities::Get().LitMaterialAsset;
 
 			return entity;
 		}
@@ -171,8 +171,8 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::CAPSULE);
-			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshAssetHandle(BuiltInMesh::CAPSULE);
+			staticMesh.Material = ShaderUtilities::Get().LitMaterialAsset;
 
 			return entity;
 		}
@@ -191,8 +191,8 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::CYLINDER);
-			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshAssetHandle(BuiltInMesh::CYLINDER);
+			staticMesh.Material = ShaderUtilities::Get().LitMaterialAsset;
 
 			return entity;
 		}
@@ -211,8 +211,8 @@ namespace HBL2
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
 			auto& staticMesh = scene->AddComponent<HBL2::Component::StaticMesh>(entity);
 
-			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshHandle(BuiltInMesh::TORUS);
-			staticMesh.Material = AssetManager::Instance->GetAsset<Material>(ShaderUtilities::Get().LitMaterialAsset);
+			staticMesh.Mesh = MeshUtilities::Get().GetBuiltInLoadedMeshAssetHandle(BuiltInMesh::TORUS);
+			staticMesh.Material = ShaderUtilities::Get().LitMaterialAsset;
 
 			return entity;
 		}

@@ -80,16 +80,18 @@ namespace HBL2
 
 		struct HBL2_API Sprite
 		{
-			Handle<Material> Material;
+			Handle<Asset> Material;
 			bool Enabled = true;
 		};
 
 		struct HBL2_API StaticMesh
 		{
-			Handle<Mesh> Mesh;
+			Handle<Asset> Mesh;
 			uint32_t MeshIndex = 0;
 			uint32_t SubMeshIndex = 0;
-			Handle<Material> Material;
+
+			Handle<Asset> Material;
+
 			bool Enabled = true;
 		};
 
@@ -169,7 +171,7 @@ namespace HBL2
 		{
 			Handle<Texture> CubeMap;
 			Handle<Material> CubeMapMaterial;
-			Handle<Texture> EquirectangularMap;
+			Handle<Asset> EquirectangularMap;
 			bool Converted = false;
 			bool Enabled = true;
 		};
@@ -359,7 +361,7 @@ namespace HBL2
 
 			StaticDArray<LodInfo, 6> DetailLevels{};
 
-			Handle<Material> Material;
+			Handle<Asset> Material;
 
 			bool AddColliders = true;
 			bool Initialized = false;

@@ -15,7 +15,7 @@ namespace HBL2
 	thread_local std::vector<Vertex> FastGltfLoader::s_Vertices;
 	thread_local std::vector<uint32_t> FastGltfLoader::s_Indices;
 	thread_local std::vector<Handle<Asset>> FastGltfLoader::s_Textures;
-	thread_local std::unordered_map<const char*, Handle<Material>> FastGltfLoader::s_MaterialNameToHandle;
+	thread_local std::unordered_map<const char*, Handle<Asset>> FastGltfLoader::s_MaterialNameToAssetHandle;
 
 	static void GetShaderAssetHandleAndReflectionData(Handle<Asset>& shaderAssetHandle, ShaderReflectionData& shaderReflectionData, bool isPBR)
 	{
@@ -541,7 +541,7 @@ namespace HBL2
 
 	void FastGltfLoader::LoadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset)
 	{
-		s_MaterialNameToHandle.clear();
+		s_MaterialNameToAssetHandle.clear();
 
 		size_t numMaterials = asset.materials.size();
 
@@ -655,13 +655,13 @@ namespace HBL2
 				materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetUUID);
 			}
 
-			s_MaterialNameToHandle[glTFMaterial.name.c_str()] = materialHandle;
+			s_MaterialNameToAssetHandle[glTFMaterial.name.c_str()] = materialAssetHandle;
 		}
 	}
 
 	void FastGltfLoader::ReloadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset)
 	{
-		s_MaterialNameToHandle.clear();
+		s_MaterialNameToAssetHandle.clear();
 
 		size_t numMaterials = asset.materials.size();
 
@@ -790,7 +790,7 @@ namespace HBL2
 				materialHandle = AssetManager::Instance->ReloadAsset<Material>(materialAssetUUID);
 			}
 
-			s_MaterialNameToHandle[glTFMaterial.name.c_str()] = materialHandle;
+			s_MaterialNameToAssetHandle[glTFMaterial.name.c_str()] = materialAssetHandle;
 		}
 	}
 
@@ -884,7 +884,7 @@ namespace HBL2
 
 		const fastgltf::Primitive& primitive = mesh.primitives[subMeshIndex];
 
-		subMeshDescriptor.embededMaterial = s_MaterialNameToHandle[asset.materials[mesh.primitives[subMeshIndex].materialIndex.value_or(0)].name.c_str()];
+		subMeshDescriptor.embededMaterial = s_MaterialNameToAssetHandle[asset.materials[mesh.primitives[subMeshIndex].materialIndex.value_or(0)].name.c_str()];
 
 		size_t vertexCount = 0;
 		size_t indexCount = 0;

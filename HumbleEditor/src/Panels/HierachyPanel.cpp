@@ -212,7 +212,7 @@ namespace HBL2
 							transform.Scale = meshPart.ImportedLocalTransform.scale;
 
 							auto& staticMesh = m_ActiveScene->AddComponent<HBL2::Component::StaticMesh>(subMeshEntity);
-							staticMesh.Mesh = meshHandle;
+							staticMesh.Mesh = assetHandle;
 							staticMesh.MeshIndex = meshIndex;
 							staticMesh.SubMeshIndex = subMeshIndex;
 							staticMesh.Material = subMesh.EmbededMaterial;

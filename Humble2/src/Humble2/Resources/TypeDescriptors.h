@@ -3,6 +3,7 @@
 #include "Renderer\Enums.h"
 #include "Handle.h"
 #include "BaseTypeDefinitions.h"
+#include "Asset\Asset.h"
 
 #include "Utilities\Collections\Span.h"
 #include "Utilities\Collections\BitFlags.h"
@@ -326,7 +327,7 @@ namespace HBL2
 		glm::vec3 minVertex;
 		glm::vec3 maxVertex;
 
-		Handle<Material> embededMaterial;
+		Handle<Asset> embededMaterial;
 	};
 
 	struct MeshPartDescriptor

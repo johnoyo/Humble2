@@ -66,6 +66,7 @@ namespace HBL2
 		const AssetManagerSpecification& GetUsageStats();
 
 		Handle<Asset> CreateAsset(const AssetDescriptor&& desc);
+		Handle<Asset> CreateMemoryOnlyAsset(const MemoryOnlyAssetDescriptor&& desc);
 		void DeleteAsset(Handle<Asset> handle, bool destroy = false);
 		Asset* GetAssetMetadata(Handle<Asset> handle) const;
 

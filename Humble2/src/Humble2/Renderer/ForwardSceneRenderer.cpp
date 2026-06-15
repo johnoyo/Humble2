@@ -316,33 +316,23 @@ namespace HBL2
 					m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
 					skyLight.CubeMapMaterial = {};
 
+					// TODO: Investigate if we need to delete EquirectangularMap.
+					// AssetManager::Instance->DeleteAsset(skyLight.EquirectangularMap);
+					// skyLight.EquirectangularMap = {};
+
 					skyLight.Converted = false;
 				});
 
 			m_Scene->Filter<Component::StaticMesh>()
 				.ForEach([&](Component::StaticMesh& staticMesh)
 				{
-					Material* mat = m_ResourceManager->GetMaterial(staticMesh.Material);
-					if (mat != nullptr)
-					{
-						m_ResourceManager->DeleteBindGroup(mat->DrawBindGroup);
-						m_ResourceManager->DeleteBindGroup(mat->MaterialBindGroup);
-					}
-
-					m_ResourceManager->DeleteMaterial(staticMesh.Material);
+					AssetManager::Instance->DeleteAsset(staticMesh.Material);
 				});
 
 			m_Scene->Filter<Component::Sprite>()
 				.ForEach([&](Component::Sprite& sprite)
 				{
-					Material* mat = m_ResourceManager->GetMaterial(sprite.Material);
-					if (mat != nullptr)
-					{
-						m_ResourceManager->DeleteBindGroup(mat->DrawBindGroup);
-						m_ResourceManager->DeleteBindGroup(mat->MaterialBindGroup);
-					}
-
-					m_ResourceManager->DeleteMaterial(sprite.Material);
+					AssetManager::Instance->DeleteAsset(sprite.Material);
 				});
 
 			m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
@@ -1108,10 +1098,13 @@ namespace HBL2
 							return;
 						}
 
-						Material* material = ResourceManager::Instance->GetMaterial(staticMesh.Material);
-						Mesh* mesh = ResourceManager::Instance->GetMesh(staticMesh.Mesh);
+						Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(staticMesh.Material);
+						Material* material = ResourceManager::Instance->GetMaterial(materialHandle);
 
-						if (mesh->IsEmpty())
+						Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(staticMesh.Mesh);
+						Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
+
+						if (mesh == nullptr || mesh->IsEmpty())
 						{
 							return;
 						}
@@ -1133,7 +1126,7 @@ namespace HBL2
 						// Map shader bind group buffer data if dirty.
 						if (material->ShaderDirty.load())
 						{
-							// Submit map to render thread, to avoid modifying the data while the render thread renders the previous frame.
+							// Submit to render thread, to avoid modifying the data while the render thread renders the previous frame.
 							Renderer::Instance->Submit([material]()
 							{
 								for (int i = 0; i < Material::MaxBufferBindings; i++)
@@ -1149,7 +1142,7 @@ namespace HBL2
 						// Map material bind group buffer data if dirty.
 						if (material->Dirty.load())
 						{
-							// Submit map to render thread, to avoid modifying the data while the render thread renders the previous frame.
+							// Submit to render thread, to avoid modifying the data while the render thread renders the previous frame.
 							Renderer::Instance->Submit([material]()
 							{
 								for (int i = 0; i < Material::MaxBufferBindings; i++)
@@ -1266,7 +1259,8 @@ namespace HBL2
 							return;
 						}
 
-						Material* material = ResourceManager::Instance->GetMaterial(sprite.Material);
+						Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(sprite.Material);
+						Material* material = ResourceManager::Instance->GetMaterial(materialHandle);
 
 						if (material == nullptr)
 						{
@@ -1622,8 +1616,11 @@ namespace HBL2
 							m_ResourceManager->DeleteTexture(skyLight.CubeMap);
 
 							Material* mat = m_ResourceManager->GetMaterial(skyLight.CubeMapMaterial);
-							m_ResourceManager->DeleteBindGroup(mat->DrawBindGroup);
-							m_ResourceManager->DeleteBindGroup(mat->MaterialBindGroup);
+							if (mat != nullptr)
+							{
+								m_ResourceManager->DeleteBindGroup(mat->DrawBindGroup);
+								m_ResourceManager->DeleteBindGroup(mat->MaterialBindGroup);
+							}
 
 							m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
 
@@ -1657,11 +1654,13 @@ namespace HBL2
 							{}
 						);
 
+						Handle<Texture> equirectangularMapHandle = AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap);
+
 						// FIXME: When entering the playmode multiple times in the session we create new descriptor sets in vk, so it exceeds the max in the pool.
 						m_ComputeBindGroup = m_ResourceManager->CreateBindGroup({
 							.debugName = "compute-bind-group",
 							.layout = m_EquirectToSkyboxBindGroupLayout,
-							.textures = { { skyLight.EquirectangularMap }, { skyLight.CubeMap } },
+							.textures = { { equirectangularMapHandle }, { skyLight.CubeMap } },
 							.buffers = { { .buffer = m_CaptureMatricesBuffer, } }
 						});
 

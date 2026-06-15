@@ -68,6 +68,18 @@ namespace HBL2
 		return handle;
 	}
 
+	Handle<Asset> AssetManager::CreateMemoryOnlyAsset(const MemoryOnlyAssetDescriptor&& desc)
+	{
+		Handle<Asset> handle = m_AssetPool.Insert(Asset(std::forward<const MemoryOnlyAssetDescriptor>(desc)));
+
+		m_RegisteredAssets.push_back(handle);
+
+		Asset* asset = GetAssetMetadata(handle);
+		m_RegisteredAssetMap[asset->UUID] = handle;
+
+		return handle;
+	}
+
 	void AssetManager::DeleteAsset(Handle<Asset> handle, bool destroy)
 	{
 		if (destroy)

@@ -40,10 +40,11 @@ namespace HBL2
 
 	MeshUtilities::MeshUtilities()
 	{
-		m_Reservation = Allocator::Arena.Reserve("MeshUtilitiesPool", 100_KB);
-		m_Arena.Initialize(&Allocator::Arena, 100_KB, m_Reservation);
+		m_Reservation = Allocator::Arena.Reserve("MeshUtilitiesPool", 128_KB);
+		m_Arena.Initialize(&Allocator::Arena, 128_KB, m_Reservation);
 
 		m_BuiltInMeshAssets = MakeDArray<Handle<Asset>>(m_Arena, 1024);
+		m_LoadedBuiltInMeshAssets = MakeHMap<BuiltInMesh, Handle<Asset>>(m_Arena, 1024);
 		m_LoadedBuiltInMeshes = MakeHMap<BuiltInMesh, Handle<Mesh>>(m_Arena, 1024);
 	}
 
@@ -89,6 +90,7 @@ namespace HBL2
 		});
 		CreateMeshMetadataFile(planeAssetHandle);
 		m_BuiltInMeshAssets.push_back(planeAssetHandle);
+		m_LoadedBuiltInMeshAssets[BuiltInMesh::PLANE] = planeAssetHandle;
 		auto* planeTask = AssetManager::Instance->GetAssetAsync<Mesh>(planeAssetHandle, &ctx);
 
 		// Tessellated Plane
@@ -99,6 +101,7 @@ namespace HBL2
 		});
 		CreateMeshMetadataFile(tessellatedPlaneAssetHandle);
 		m_BuiltInMeshAssets.push_back(tessellatedPlaneAssetHandle);
+		m_LoadedBuiltInMeshAssets[BuiltInMesh::TESSELATED_PLANE] = tessellatedPlaneAssetHandle;
 		auto* tesselatedPlaneTask = AssetManager::Instance->GetAssetAsync<Mesh>(tessellatedPlaneAssetHandle, &ctx);
 
 		// Cube
@@ -109,6 +112,7 @@ namespace HBL2
 		});
 		CreateMeshMetadataFile(cubeAssetHandle);
 		m_BuiltInMeshAssets.push_back(cubeAssetHandle);
+		m_LoadedBuiltInMeshAssets[BuiltInMesh::CUBE] = cubeAssetHandle;
 		auto* cubeTask = AssetManager::Instance->GetAssetAsync<Mesh>(cubeAssetHandle, &ctx);
 
 		// Sphere
@@ -119,6 +123,7 @@ namespace HBL2
 		});
 		CreateMeshMetadataFile(sphereAssetHandle);
 		m_BuiltInMeshAssets.push_back(sphereAssetHandle);
+		m_LoadedBuiltInMeshAssets[BuiltInMesh::SPHERE] = sphereAssetHandle;
 		auto* sphereTask = AssetManager::Instance->GetAssetAsync<Mesh>(sphereAssetHandle, &ctx);
 
 		// Cylinder
@@ -129,6 +134,7 @@ namespace HBL2
 		});
 		CreateMeshMetadataFile(cylinderAssetHandle);
 		m_BuiltInMeshAssets.push_back(cylinderAssetHandle);
+		m_LoadedBuiltInMeshAssets[BuiltInMesh::CYLINDER] = cylinderAssetHandle;
 		auto* cylinderTask = AssetManager::Instance->GetAssetAsync<Mesh>(cylinderAssetHandle, &ctx);
 
 		// Capsule
@@ -139,6 +145,7 @@ namespace HBL2
 		});
 		CreateMeshMetadataFile(capsuleAssetHandle);
 		m_BuiltInMeshAssets.push_back(capsuleAssetHandle);
+		m_LoadedBuiltInMeshAssets[BuiltInMesh::CAPSULE] = capsuleAssetHandle;
 		auto* capsuleTask = AssetManager::Instance->GetAssetAsync<Mesh>(capsuleAssetHandle, &ctx);
 
 		// Torus
@@ -149,6 +156,7 @@ namespace HBL2
 		});
 		CreateMeshMetadataFile(torusAssetHandle);
 		m_BuiltInMeshAssets.push_back(torusAssetHandle);
+		m_LoadedBuiltInMeshAssets[BuiltInMesh::TORUS] = torusAssetHandle;
 		auto* torusTask = AssetManager::Instance->GetAssetAsync<Mesh>(torusAssetHandle, &ctx);
 
 		AssetManager::Instance->WaitForAsyncJobs(&ctx);
@@ -192,6 +200,7 @@ namespace HBL2
 		}
 
 		m_BuiltInMeshAssets.clear();
+		m_LoadedBuiltInMeshAssets.clear();
 		m_LoadedBuiltInMeshes.clear();
 	}
 
@@ -199,6 +208,17 @@ namespace HBL2
 	{
 		auto it = m_LoadedBuiltInMeshes.find(builtInMesh);
 		if (it == m_LoadedBuiltInMeshes.end())
+		{
+			return {};
+		}
+
+		return it->second;
+	}
+
+	Handle<Asset> MeshUtilities::GetBuiltInLoadedMeshAssetHandle(BuiltInMesh builtInMesh)
+	{
+		auto it = m_LoadedBuiltInMeshAssets.find(builtInMesh);
+		if (it == m_LoadedBuiltInMeshAssets.end())
 		{
 			return {};
 		}

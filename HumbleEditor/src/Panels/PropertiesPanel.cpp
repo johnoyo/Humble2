@@ -247,7 +247,8 @@ namespace HBL2
 							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
 							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
 
-							sprite.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
+							sprite.Material = assetHandle;
+							AssetManager::Instance->GetAsset<Material>(assetHandle);
 						}
 
 						ImGui::EndDragDropTarget();
@@ -284,7 +285,8 @@ namespace HBL2
 								fout.close();
 							}
 
-							mesh.Mesh = AssetManager::Instance->GetAsset<Mesh>(assetHandle);
+							mesh.Mesh = assetHandle;
+							AssetManager::Instance->GetAsset<Mesh>(assetHandle);
 						}
 
 						ImGui::EndDragDropTarget();
@@ -299,7 +301,8 @@ namespace HBL2
 							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
 							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
 
-							mesh.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
+							mesh.Material = assetHandle;
+							AssetManager::Instance->GetAsset<Material>(assetHandle);
 						}
 
 						ImGui::EndDragDropTarget();
@@ -365,7 +368,8 @@ namespace HBL2
 								}
 							}
 
-							skyLight.EquirectangularMap = AssetManager::Instance->GetAsset<Texture>(assetHandle);
+							skyLight.EquirectangularMap = assetHandle;
+							AssetManager::Instance->GetAsset<Texture>(assetHandle);
 						}
 
 						ImGui::EndDragDropTarget();
@@ -636,7 +640,8 @@ namespace HBL2
 							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
 							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
 
-							t.Material = AssetManager::Instance->GetAsset<Material>(assetHandle);
+							t.Material = assetHandle;
+							AssetManager::Instance->GetAsset<Material>(assetHandle);
 						}
 
 						ImGui::EndDragDropTarget();
@@ -878,13 +883,60 @@ namespace HBL2
 						break;
 					case AssetType::Shader:
 						{
-							Handle<Shader> handle = AssetManager::Instance->GetAsset<Shader>(m_SelectedAsset);
+							if (m_SelectedAsset != m_PreviouslySelectedAsset)
+							{
+								m_ShaderNeedsReimport = true;
+							}
+
+							if (m_ShaderTask != nullptr)
+							{
+								if (!m_ShaderTask->Finished())
+								{
+									ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
+									ImGui::Text("Loading shader asset...");
+									ImGui::PopStyleColor();
+									break;
+								}
+
+								AssetManager::Instance->ReleaseResourceTask(m_ShaderTask);
+								m_ShaderTask = nullptr;
+							}
+
+							if (m_ShaderTask == nullptr)
+							{
+								m_ShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(m_SelectedAsset);
+							}
+
+							if (m_ShaderTask == nullptr)
+							{
+								HBL2_CORE_ERROR("Failed to load shader asset!");
+								ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
+								ImGui::Text("Failed to load shader asset!");
+								ImGui::PopStyleColor();
+								break;
+							}
+
+							if (!m_ShaderTask->Finished())
+							{
+								ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
+								ImGui::Text("Loading shader asset...");
+								ImGui::PopStyleColor(); 
+								break;
+							}
+
+							Handle<Shader> handle = m_ShaderTask->ResourceHandle;
+
+							AssetManager::Instance->ReleaseResourceTask(m_ShaderTask);
+							m_ShaderTask = nullptr;
 
 							static bool shaderNeedsReimport = false;
 							static bool shaderBindGroupNeedsReimport = false;
 
-							if (m_SelectedAsset != m_PreviouslySelectedAsset)
+							if (m_ShaderNeedsReimport)
 							{
+								HBL2_CORE_ERROR("Shader reimport");
+
+								m_ShaderNeedsReimport = false;
 								shaderNeedsReimport = true;
 
 								m_ShaderReflectionData2.Clear();
@@ -1179,13 +1231,62 @@ namespace HBL2
 									shaderBindGroupNeedsReimport = false;
 								}
 							}
+							else
+							{
+								ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
+								ImGui::Text("Retrieving shader properties...");
+								ImGui::PopStyleColor();
+							}
 
 							break;
 						}
 					case AssetType::Material:
 						{
-							Handle<Material> handle = AssetManager::Instance->GetAsset<Material>(m_SelectedAsset);
-							Material* mat = ResourceManager::Instance->GetMaterial(handle);
+							if (m_SelectedAsset != m_PreviouslySelectedAsset)
+							{
+								m_MaterialShaderNeedsReimport = true;
+							}
+
+							if (m_MaterialTask != nullptr)
+							{
+								if (!m_MaterialTask->Finished())
+								{
+									ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
+									ImGui::Text("Loading material asset...");
+									ImGui::PopStyleColor();
+									break;
+								}
+
+								AssetManager::Instance->ReleaseResourceTask(m_MaterialTask);
+								m_MaterialTask = nullptr;
+							}
+
+							if (m_MaterialTask == nullptr)
+							{
+								m_MaterialTask = AssetManager::Instance->GetAssetAsync<Material>(m_SelectedAsset);
+							}
+
+							if (m_MaterialTask == nullptr)
+							{
+								HBL2_CORE_ERROR("Failed to load material asset!");
+								ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
+								ImGui::Text("Failed to load material asset!");
+								ImGui::PopStyleColor();
+								break;
+							}
+
+							if (!m_MaterialTask->Finished())
+							{
+								ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
+								ImGui::Text("Loading material asset...");
+								ImGui::PopStyleColor();
+								break;
+							}
+
+							Material* mat = ResourceManager::Instance->GetMaterial(m_MaterialTask->ResourceHandle);
+
+							AssetManager::Instance->ReleaseResourceTask(m_MaterialTask);
+							m_MaterialTask = nullptr;
 
 							if (mat == nullptr)
 							{
@@ -1197,8 +1298,12 @@ namespace HBL2
 
 							// Shader resource.
 							{
-								if (m_PrevShaderUUID != m_CurrentShaderUUID)
+								if (m_MaterialShaderNeedsReimport)
 								{
+									HBL2_CORE_ERROR("Shader reimport");
+
+									m_MaterialShaderNeedsReimport = false;
+
 									JobSystem::Get().Execute(m_MaterialShaderResourceCtx, [this, asset]()
 									{
 										Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(m_SelectedAsset);
@@ -1230,7 +1335,8 @@ namespace HBL2
 												{
 													// Get the shader path of the material in order to reflect on it.
 													m_CurrentShaderUUID = materialProperties["Shader"].as<UUID>();
-													m_PrevShaderUUID = m_CurrentShaderUUID;
+
+													m_MaterialShaderChanged = true;
 												}
 											}
 
@@ -1241,7 +1347,8 @@ namespace HBL2
 
 								if (!JobSystem::Get().Busy(m_MaterialShaderResourceCtx))
 								{
-									static uint32_t shaderAssetHandlePacked = AssetManager::Instance->GetHandleFromUUID(m_CurrentShaderUUID).Pack();
+									static uint32_t shaderAssetHandlePacked = 0;
+									shaderAssetHandlePacked = AssetManager::Instance->GetHandleFromUUID(m_CurrentShaderUUID).Pack();
 									ImGui::InputScalar("Shader", ImGuiDataType_U32, (void*)(intptr_t*)&shaderAssetHandlePacked);
 
 									Handle<Asset> shaderAssetHandle = Handle<Asset>::UnPack(shaderAssetHandlePacked);
@@ -1259,6 +1366,7 @@ namespace HBL2
 											{
 												m_CurrentShaderUUID = shaderAsset->UUID;
 												m_MaterialBindGroupNeedsReimport = true;
+												m_MaterialShaderChanged = true;
 
 												ShaderUtilities::Get().UpdateMaterialShaderResourceAssetFile(m_SelectedAsset, shaderAssetHandle);
 											}
@@ -1375,8 +1483,11 @@ namespace HBL2
 
 							static Handle<Asset> shaderAssetHandle = {};
 
-							if (m_SelectedAsset != m_PreviouslySelectedAsset || m_PrevShaderUUID != m_CurrentShaderUUID)
+							if (m_MaterialShaderChanged)
 							{
+								HBL2_CORE_ERROR("Material reimport");
+
+								m_MaterialShaderChanged = false;
 								m_MaterialNeedsReimport = true;
 
 								m_ShaderReflectionData2.Clear();

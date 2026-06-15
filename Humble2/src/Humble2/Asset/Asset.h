@@ -28,17 +28,18 @@ namespace HBL2
 		AssetType type = AssetType::None;
 	};
 
+	struct HBL2_API MemoryOnlyAssetDescriptor
+	{
+		const char* debugName = "";
+		AssetType type = AssetType::None;
+		uint32_t PackedAssetResourceHandle = 0;
+	};
+
 	struct HBL2_API Asset
 	{
 		Asset() = default;
-		Asset(const AssetDescriptor&& desc)
-		{
-			DebugName = desc.debugName;
-			FilePath = desc.filePath;
-			Type = desc.type;
-
-			UUID = std::hash<std::string>()(FilePath.string());
-		}
+		Asset(const AssetDescriptor&& desc);
+		Asset(const MemoryOnlyAssetDescriptor&& desc);
 
 		const char* DebugName = "";
 		UUID UUID = 0;

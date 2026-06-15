@@ -37,6 +37,7 @@ namespace HBL2
 		void LoadBuiltInMeshes();
 		void DeleteBuiltInMeshes();
 		Handle<Mesh> GetBuiltInLoadedMeshHandle(BuiltInMesh builtInMesh);
+		Handle<Asset> GetBuiltInLoadedMeshAssetHandle(BuiltInMesh builtInMesh);
 		Span<const Handle<Asset>> GetBuiltInMeshAssets();
 
 	private:
@@ -52,6 +53,7 @@ namespace HBL2
 		Arena m_Arena;
 
 		DArray<Handle<Asset>> m_BuiltInMeshAssets = MakeEmptyDArray<Handle<Asset>>();
+		HMap<BuiltInMesh, Handle<Asset>> m_LoadedBuiltInMeshAssets = MakeEmptyHMap<BuiltInMesh, Handle<Asset>>();
 		HMap<BuiltInMesh, Handle<Mesh>> m_LoadedBuiltInMeshes = MakeEmptyHMap<BuiltInMesh, Handle<Mesh>>();
 
 		static MeshUtilities* s_Instance;
