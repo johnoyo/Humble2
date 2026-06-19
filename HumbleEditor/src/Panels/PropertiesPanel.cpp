@@ -1355,6 +1355,7 @@ namespace HBL2
 							if (m_SelectedAsset != m_PreviouslySelectedAsset)
 							{
 								m_MaterialShaderNeedsReimport = true;
+								m_MaterialShaderReflectionStarted = false;
 							}
 
 							if (m_MaterialTask != nullptr)
@@ -1477,6 +1478,7 @@ namespace HBL2
 												m_CurrentShaderUUID = shaderAsset->UUID;
 												m_MaterialBindGroupNeedsReimport = true;
 												m_MaterialShaderChanged = true;
+												m_MaterialShaderReflectionStarted = false;
 
 												ShaderUtilities::Get().UpdateMaterialShaderResourceAssetFile(m_SelectedAsset, shaderAssetHandle);
 											}
@@ -1599,6 +1601,7 @@ namespace HBL2
 
 								m_MaterialShaderChanged = false;
 								m_MaterialNeedsReimport = true;
+								m_MaterialShaderReflectionStarted = true;
 
 								m_ShaderReflectionData2.Clear();
 
@@ -1676,7 +1679,6 @@ namespace HBL2
 														if (b.type == ResourceType::UniformBuffer)
 														{
 															auto& uniformBufferBytes = m_ShaderUniformBufferData2[m_ShaderUniformBufferSize2++];
-															uniformBufferBytes.clear();
 															uniformBufferBytes.resize(b.size);
 
 															const auto& bufferProp = materialProperties[b.name];
@@ -1804,7 +1806,7 @@ namespace HBL2
 								});								
 							}
 
-							if (!JobSystem::Get().Busy(m_MaterialShaderReflectionCtx))
+							if (!JobSystem::Get().Busy(m_MaterialShaderReflectionCtx) && m_MaterialShaderReflectionStarted)
 							{
 								for (const auto& descriptorSet : m_ShaderReflectionData2.descriptorSets)
 								{
@@ -1821,6 +1823,12 @@ namespace HBL2
 										if (b.type == ResourceType::UniformBuffer)
 										{
 											auto& uniformBufferBytes = m_ShaderUniformBufferData2[m_ShaderUniformBufferSize2];
+
+											if (uniformBufferBytes.size() == 0)
+											{
+												m_ShaderUniformBufferSize2++;
+												continue;
+											}
 
 											ImGui::Text(b.name.c_str());
 

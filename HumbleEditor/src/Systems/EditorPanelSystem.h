@@ -81,6 +81,7 @@ namespace HBL2
 			bool m_MaterialShaderChanged = false;
 			bool m_MaterialShaderNeedsReimport = false;
 			bool m_MaterialNeedsReimport = false;
+			bool m_MaterialShaderReflectionStarted = false;
 			bool m_MaterialBindGroupNeedsReimport = false;
 			ResourceTask<Material>* m_MaterialTask = nullptr;
 
