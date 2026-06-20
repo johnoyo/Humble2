@@ -1,424 +1,459 @@
-#include "Systems\EditorPanelSystem.h"
+#include "HierachyPanel.h"
 
+#include "ImGui\ImGuiRenderer.h"
+#include "Systems\EditorPanelSystem.h"
 #include "Utilities\PrefabUtilities.h"
 
-namespace HBL2
+namespace HBL2::Editor
 {
-	namespace Editor
+	HierachyPanel::HierachyPanel(const std::string& name, EditorPanelSystem* owner)
 	{
-		void EditorPanelSystem::DrawHierachy(Entity entity, const auto& entities)
+		m_Owner = owner;
+		Name = name;
+	}
+
+	void HierachyPanel::OnAttach()
+	{
+	}
+
+	void HierachyPanel::OnCreate()
+	{
+	}
+
+	void HierachyPanel::OnOpen()
+	{
+	}
+
+	void HierachyPanel::OnRender(float ts)
+	{
+		Scene* activeScene = m_Owner->m_ActiveScene;
+
+		if (activeScene == nullptr)
 		{
-			const auto& tag = m_ActiveScene->GetComponent<HBL2::Component::Tag>(entity);
-			const auto& id = m_ActiveScene->GetComponent<HBL2::Component::ID>(entity);
+			return;
+		}
 
-			bool selectedEntityCondition = HBL2::Component::EditorVisible::Selected && HBL2::Component::EditorVisible::SelectedEntity == entity;
-			bool isPrefab = m_ActiveScene->HasComponent<HBL2::Component::PrefabInstance>(entity);
+		ImGui::Begin(Name.c_str(), &m_CloseState);
 
-			ImGuiTreeNodeFlags flags = (selectedEntityCondition ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
-			flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
-
-			if (isPrefab)
+		// Pop up menu when right clicking on an empty space inside the hierachy panel.
+		if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
+		{
+			if (ImGui::MenuItem("Create Empty"))
 			{
-				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(IM_COL32(0, 255, 239, 255)));
-			}
+				auto entity = HBL2::EntityPreset::CreateEmpty();
 
-			bool opened = ImGui::TreeNodeEx((void*)(uint64_t)id.Identifier, flags, tag.Name.c_str());
-
-			if (isPrefab)
-			{
-				ImGui::PopStyleColor();
-			}
-
-			if (ImGui::BeginDragDropSource())
-			{
-				UUID entityUUID = m_ActiveScene->GetComponent<HBL2::Component::ID>(entity).Identifier;
-
-				if (!m_ActiveScene->HasComponent<HBL2::Component::Link>(entity))
-				{
-					m_ActiveScene->AddComponent<HBL2::Component::Link>(entity);
-				}
-
-				ImGui::SetDragDropPayload("Entity_UUID", (void*)(UUID*)&entityUUID, sizeof(UUID));
-				ImGui::EndDragDropSource();
-			}
-
-			if (ImGui::BeginDragDropTarget())
-			{
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
-				{
-					UUID entityUUID = *((UUID*)payload->Data);
-
-					auto childEntity = m_ActiveScene->FindEntityByUUID(entityUUID);
-
-					// Add Link component to child entity if it does not have one.
-					if (!m_ActiveScene->HasComponent<HBL2::Component::Link>(childEntity))
-					{
-						m_ActiveScene->AddComponent<HBL2::Component::Link>(childEntity);
-					}
-
-					// Add Link component to this entity (parent of child entity) if it does not have one.
-					if (!m_ActiveScene->HasComponent<HBL2::Component::Link>(entity))
-					{
-						m_ActiveScene->AddComponent<HBL2::Component::Link>(entity);
-					}
-
-					// Set the parent of the child entity to be this entity that it was dragged into.
-					m_ActiveScene->GetComponent<HBL2::Component::Link>(childEntity).Parent = m_ActiveScene->GetComponent<HBL2::Component::ID>(entity).Identifier;
-				}
-
-				ImGui::EndDragDropTarget();
-			}
-
-			if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
-			{
-				HBL2::Component::EditorVisible::Selected = true;
 				HBL2::Component::EditorVisible::SelectedEntity = entity;
+				HBL2::Component::EditorVisible::Selected = true;
 			}
 
-			if (ImGui::BeginPopupContextItem())
+			if (ImGui::MenuItem("Create Camera"))
 			{
-				if (ImGui::MenuItem("Unparent"))
-				{
-					if (m_ActiveScene->HasComponent<HBL2::Component::Link>(entity))
-					{
-						m_ActiveScene->GetComponent<HBL2::Component::Link>(entity).Parent = 0;
-					}
-				}
-				else if (ImGui::MenuItem("Destroy"))
-				{
-					// Defer the deletion at the end of the function, for now just mark the entity.
-					m_EntityToBeDeleted = entity;
-				}
-				else if (ImGui::MenuItem("Duplicate"))
-				{
-					// Defer the duplication at the end of the function, for now just mark the entity.
-					m_EntityToBeDuplicated = entity;
-				}
+				auto entity = HBL2::EntityPreset::CreateCamera();
 
-				if (m_ActiveScene->HasComponent<HBL2::Component::PrefabInstance>(entity))
-				{
-					if (ImGui::MenuItem("Unpack prefab"))
-					{
-						PrefabUtilities::Get().Unpack(entity);
-					}
-					else if (ImGui::MenuItem("Save prefab"))
-					{
-						// Clear currently selected entity.
-						HBL2::Component::EditorVisible::Selected = false;
-						HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
-
-						PrefabUtilities::Get().Save(entity);
-					}
-					else if (ImGui::MenuItem("Revert prefab"))
-					{
-						// Clear currently selected entity.
-						HBL2::Component::EditorVisible::Selected = false;
-						HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
-
-						PrefabUtilities::Get().Revert(entity);
-					}
-				}
-
-				ImGui::EndPopup();
+				HBL2::Component::EditorVisible::SelectedEntity = entity;
+				HBL2::Component::EditorVisible::Selected = true;
 			}
 
-			if (opened)
+			if (ImGui::MenuItem("Create Sprite"))
 			{
-				entities.ForEach([&](Entity e)
-				{
-					if (m_ActiveScene->HasComponent<HBL2::Component::Link>(e))
-					{
-						UUID parentEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::Link>(e).Parent;
-						Entity parentEntity = m_ActiveScene->FindEntityByUUID(parentEntityUUID);
+				auto entity = HBL2::EntityPreset::CreateSprite();
 
-						if (parentEntity == entity)
-						{
-							DrawHierachy(e, entities);
-						}
-					}
-				});
-
-				ImGui::TreePop();
+				HBL2::Component::EditorVisible::SelectedEntity = entity;
+				HBL2::Component::EditorVisible::Selected = true;
 			}
+
+			if (ImGui::MenuItem("Create Plane"))
+			{
+				auto entity = HBL2::EntityPreset::CreatePlane();
+
+				HBL2::Component::EditorVisible::SelectedEntity = entity;
+				HBL2::Component::EditorVisible::Selected = true;
+			}
+
+			if (ImGui::MenuItem("Create Tessellated Plane"))
+			{
+				auto entity = HBL2::EntityPreset::CreateTessellatedPlane();
+
+				HBL2::Component::EditorVisible::SelectedEntity = entity;
+				HBL2::Component::EditorVisible::Selected = true;
+			}
+
+			if (ImGui::MenuItem("Create Cube"))
+			{
+				auto entity = HBL2::EntityPreset::CreateCube();
+
+				HBL2::Component::EditorVisible::SelectedEntity = entity;
+				HBL2::Component::EditorVisible::Selected = true;
+			}
+
+			if (ImGui::MenuItem("Create Sphere"))
+			{
+				auto entity = HBL2::EntityPreset::CreateSphere();
+
+				HBL2::Component::EditorVisible::SelectedEntity = entity;
+				HBL2::Component::EditorVisible::Selected = true;
+			}
+
+			if (ImGui::MenuItem("Create Capsule"))
+			{
+				auto entity = HBL2::EntityPreset::CreateCapsule();
+
+				HBL2::Component::EditorVisible::SelectedEntity = entity;
+				HBL2::Component::EditorVisible::Selected = true;
+			}
+
+			if (ImGui::MenuItem("Create Cylinder"))
+			{
+				auto entity = HBL2::EntityPreset::CreateCylinder();
+
+				HBL2::Component::EditorVisible::SelectedEntity = entity;
+				HBL2::Component::EditorVisible::Selected = true;
+			}
+
+			if (ImGui::MenuItem("Create Torus"))
+			{
+				auto entity = HBL2::EntityPreset::CreateTorus();
+
+				HBL2::Component::EditorVisible::SelectedEntity = entity;
+				HBL2::Component::EditorVisible::Selected = true;
+			}
+
+			if (ImGui::MenuItem("Create Light"))
+			{
+				auto entity = HBL2::EntityPreset::CreateLight();
+
+				HBL2::Component::EditorVisible::SelectedEntity = entity;
+				HBL2::Component::EditorVisible::Selected = true;
+			}
+
+			if (ImGui::MenuItem("Create SkyLight"))
+			{
+				auto entity = HBL2::EntityPreset::CreateSkyLight();
+
+				HBL2::Component::EditorVisible::SelectedEntity = entity;
+				HBL2::Component::EditorVisible::Selected = true;
+			}
+
+			if (ImGui::MenuItem("Create Terrain"))
+			{
+				auto entity = HBL2::EntityPreset::CreateTerrain();
+
+				HBL2::Component::EditorVisible::SelectedEntity = entity;
+				HBL2::Component::EditorVisible::Selected = true;
+			}
+
+			ImGui::EndPopup();
 		}
 
-		void EditorPanelSystem::HandleHierachyPanelDragAndDrop()
+		m_EntityToBeDeleted = Entity::Null;
+
+		const auto& entities = activeScene->Entities();
+
+		if (ImGui::CollapsingHeader("Entity Hierarchy", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			if (ImGui::BeginDragDropTarget())
+			HandleHierachyPanelDragAndDrop();
+
+			entities.ForEach([&](Entity entity)
 			{
-				// Drag and drop target for instantiating a mesh into the scene.
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
+				// Only display entities that have no parent (i.e., true root entities)
+				// The child nodes will be displayed recursively in the DrawHierachy method.
+				if (activeScene->HasComponent<HBL2::Component::Link>(entity))
 				{
-					uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-					Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
-
-					if (!assetHandle.IsValid())
+					const auto parentEntityUUID = activeScene->GetComponent<HBL2::Component::Link>(entity).Parent;
+					if (parentEntityUUID == 0)
 					{
-						ImGui::EndDragDropTarget();
-						return;
+						DrawHierachy(entity, entities);
 					}
-
-					const std::filesystem::path& metadataPath = HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(assetHandle)->FilePath).string() + ".hblmesh";
-					
-					if (!std::filesystem::exists(metadataPath))
-					{
-						std::ofstream fout(metadataPath, 0);
-
-						YAML::Emitter out;
-						out << YAML::BeginMap;
-						out << YAML::Key << "Mesh" << YAML::Value;
-						out << YAML::BeginMap;
-						out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(assetHandle)->UUID;
-						out << YAML::EndMap;
-						out << YAML::EndMap;
-						fout << out.c_str();
-						fout.close();
-					}
-
-					Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(assetHandle);
-
-					if (!meshHandle.IsValid())
-					{
-						ImGui::EndDragDropTarget();
-						return;
-					}
-
-					Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
-
-					auto mainMeshEntity = m_ActiveScene->CreateEntity(mesh->DebugName);
-					m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(mainMeshEntity);
-
-					uint32_t meshIndex = 0;
-					uint32_t subMeshIndex = 0;
-
-					for (auto& meshPart : mesh->Meshes)
-					{
-						auto meshEntity = m_ActiveScene->CreateEntity(meshPart.DebugName);
-						m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(meshEntity);
-						auto& link = m_ActiveScene->GetComponent<HBL2::Component::Link>(meshEntity);
-
-						link.Parent = m_ActiveScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
-
-						for (auto& subMesh : meshPart.SubMeshes)
-						{
-							auto subMeshEntity = m_ActiveScene->CreateEntity(subMesh.DebugName);
-							m_ActiveScene->AddComponent<HBL2::Component::EditorVisible>(subMeshEntity);
-							auto& link = m_ActiveScene->GetComponent<HBL2::Component::Link>(subMeshEntity);
-							link.Parent = m_ActiveScene->GetComponent<HBL2::Component::ID>(meshEntity).Identifier;
-
-							auto& transform = m_ActiveScene->GetComponent<HBL2::Component::Transform>(subMeshEntity);
-							transform.Translation = meshPart.ImportedLocalTransform.translation;
-							transform.Rotation = meshPart.ImportedLocalTransform.rotation;
-							transform.Scale = meshPart.ImportedLocalTransform.scale;
-
-							auto& staticMesh = m_ActiveScene->AddComponent<HBL2::Component::StaticMesh>(subMeshEntity);
-							staticMesh.Mesh = assetHandle;
-							staticMesh.MeshIndex = meshIndex;
-							staticMesh.SubMeshIndex = subMeshIndex;
-							staticMesh.Material = subMesh.EmbededMaterial;
-
-							subMeshIndex++;
-						}
-
-						subMeshIndex = 0;
-						meshIndex++;
-					}
-				}				
-				// Drag and drop target for instantiating a prefab into the scene.
-				else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Prefab"))
-				{
-					uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-					Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
-
-					if (!assetHandle.IsValid())
-					{
-						ImGui::EndDragDropTarget();
-						return;
-					}
-
-					Prefab::Instantiate(assetHandle);
 				}
-
-				ImGui::EndDragDropTarget();
-			}
+				else
+				{
+					DrawHierachy(entity, entities);
+				}
+			});
 		}
 
-		void EditorPanelSystem::DrawHierachyPanel()
+		if (m_EntityToBeDeleted != Entity::Null)
 		{
-			if (m_ActiveScene == nullptr)
+			// Destroy entity and clear entityToBeDeleted value.
+			if (activeScene->HasComponent<HBL2::Component::PrefabInstance>(m_EntityToBeDeleted))
 			{
-				return;
+				Prefab::Destroy(m_EntityToBeDeleted);
 			}
-
-			// Pop up menu when right clicking on an empty space inside the hierachy panel.
-			if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
+			else
 			{
-				if (ImGui::MenuItem("Create Empty"))
-				{
-					auto entity = HBL2::EntityPreset::CreateEmpty();
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				if (ImGui::MenuItem("Create Camera"))
-				{
-					auto entity = HBL2::EntityPreset::CreateCamera();
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				if (ImGui::MenuItem("Create Sprite"))
-				{
-					auto entity = HBL2::EntityPreset::CreateSprite();
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				if (ImGui::MenuItem("Create Plane"))
-				{
-					auto entity = HBL2::EntityPreset::CreatePlane();
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				if (ImGui::MenuItem("Create Tessellated Plane"))
-				{
-					auto entity = HBL2::EntityPreset::CreateTessellatedPlane();
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				if (ImGui::MenuItem("Create Cube"))
-				{
-					auto entity = HBL2::EntityPreset::CreateCube();
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				if (ImGui::MenuItem("Create Sphere"))
-				{
-					auto entity = HBL2::EntityPreset::CreateSphere();
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				if (ImGui::MenuItem("Create Capsule"))
-				{
-					auto entity = HBL2::EntityPreset::CreateCapsule();
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				if (ImGui::MenuItem("Create Cylinder"))
-				{
-					auto entity = HBL2::EntityPreset::CreateCylinder();
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				if (ImGui::MenuItem("Create Torus"))
-				{
-					auto entity = HBL2::EntityPreset::CreateTorus();
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				if (ImGui::MenuItem("Create Light"))
-				{
-					auto entity = HBL2::EntityPreset::CreateLight();
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				if (ImGui::MenuItem("Create SkyLight"))
-				{
-					auto entity = HBL2::EntityPreset::CreateSkyLight();
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				if (ImGui::MenuItem("Create Terrain"))
-				{
-					auto entity = HBL2::EntityPreset::CreateTerrain();
-
-					HBL2::Component::EditorVisible::SelectedEntity = entity;
-					HBL2::Component::EditorVisible::Selected = true;
-				}
-
-				ImGui::EndPopup();
+				activeScene->DestroyEntity(m_EntityToBeDeleted);
 			}
 
 			m_EntityToBeDeleted = Entity::Null;
 
-			const auto& entities = m_ActiveScene->Entities();
+			// Clear currently selected entity.
+			HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
+			HBL2::Component::EditorVisible::Selected = false;
+		}
 
-			if (ImGui::CollapsingHeader("Entity Hierarchy", ImGuiTreeNodeFlags_DefaultOpen))
+		if (m_EntityToBeDuplicated != Entity::Null)
+		{
+			// Duplicate entity and clear entityToBeDuplicated value.
+			activeScene->DuplicateEntity(m_EntityToBeDuplicated);
+			m_EntityToBeDuplicated = Entity::Null;
+		}
+
+		// Clear selection if clicked on empty space inside hierachy panel.
+		if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+		{
+			HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
+			HBL2::Component::EditorVisible::Selected = false;
+		}
+
+		ImGui::End();
+	}
+
+	void HierachyPanel::OnClose()
+	{
+	}
+
+	void HierachyPanel::OnDestroy()
+	{
+	}
+
+	void HierachyPanel::DrawHierachy(Entity entity, const auto& entities)
+	{
+		Scene* activeScene = m_Owner->m_ActiveScene;
+
+		const auto& tag = activeScene->GetComponent<HBL2::Component::Tag>(entity);
+		const auto& id = activeScene->GetComponent<HBL2::Component::ID>(entity);
+
+		bool selectedEntityCondition = HBL2::Component::EditorVisible::Selected && HBL2::Component::EditorVisible::SelectedEntity == entity;
+		bool isPrefab = activeScene->HasComponent<HBL2::Component::PrefabInstance>(entity);
+
+		ImGuiTreeNodeFlags flags = (selectedEntityCondition ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
+
+		if (isPrefab)
+		{
+			ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(IM_COL32(0, 255, 239, 255)));
+		}
+
+		bool opened = ImGui::TreeNodeEx((void*)(uint64_t)id.Identifier, flags, tag.Name.c_str());
+
+		if (isPrefab)
+		{
+			ImGui::PopStyleColor();
+		}
+
+		if (ImGui::BeginDragDropSource())
+		{
+			UUID entityUUID = activeScene->GetComponent<HBL2::Component::ID>(entity).Identifier;
+
+			if (!activeScene->HasComponent<HBL2::Component::Link>(entity))
 			{
-				HandleHierachyPanelDragAndDrop();
-
-				entities.ForEach([&](Entity entity)
-				{
-					// Only display entities that have no parent (i.e., true root entities)
-					// The child nodes will be displayed recursively in the DrawHierachy method.
-					if (m_ActiveScene->HasComponent<HBL2::Component::Link>(entity))
-					{
-						const auto parentEntityUUID = m_ActiveScene->GetComponent<HBL2::Component::Link>(entity).Parent;
-						if (parentEntityUUID == 0)
-						{
-							DrawHierachy(entity, entities);
-						}
-					}
-					else
-					{
-						DrawHierachy(entity, entities);
-					}
-				});
+				activeScene->AddComponent<HBL2::Component::Link>(entity);
 			}
 
-			if (m_EntityToBeDeleted != Entity::Null)
+			ImGui::SetDragDropPayload("Entity_UUID", (void*)(UUID*)&entityUUID, sizeof(UUID));
+			ImGui::EndDragDropSource();
+		}
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
 			{
-				// Destroy entity and clear entityToBeDeleted value.
-				if (m_ActiveScene->HasComponent<HBL2::Component::PrefabInstance>(m_EntityToBeDeleted))
+				UUID entityUUID = *((UUID*)payload->Data);
+
+				auto childEntity = activeScene->FindEntityByUUID(entityUUID);
+
+				// Add Link component to child entity if it does not have one.
+				if (!activeScene->HasComponent<HBL2::Component::Link>(childEntity))
 				{
-					Prefab::Destroy(m_EntityToBeDeleted);
+					activeScene->AddComponent<HBL2::Component::Link>(childEntity);
 				}
-				else
+
+				// Add Link component to this entity (parent of child entity) if it does not have one.
+				if (!activeScene->HasComponent<HBL2::Component::Link>(entity))
 				{
-					m_ActiveScene->DestroyEntity(m_EntityToBeDeleted);
+					activeScene->AddComponent<HBL2::Component::Link>(entity);
 				}
 
-				m_EntityToBeDeleted = Entity::Null;
-
-				// Clear currently selected entity.
-				HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
-				HBL2::Component::EditorVisible::Selected = false;
+				// Set the parent of the child entity to be this entity that it was dragged into.
+				activeScene->GetComponent<HBL2::Component::Link>(childEntity).Parent = activeScene->GetComponent<HBL2::Component::ID>(entity).Identifier;
 			}
 
-			if (m_EntityToBeDuplicated != Entity::Null)
+			ImGui::EndDragDropTarget();
+		}
+
+		if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+		{
+			HBL2::Component::EditorVisible::Selected = true;
+			HBL2::Component::EditorVisible::SelectedEntity = entity;
+		}
+
+		if (ImGui::BeginPopupContextItem())
+		{
+			if (ImGui::MenuItem("Unparent"))
 			{
-				// Duplicate entity and clear entityToBeDuplicated value.
-				m_ActiveScene->DuplicateEntity(m_EntityToBeDuplicated);
-				m_EntityToBeDuplicated = Entity::Null;
+				if (activeScene->HasComponent<HBL2::Component::Link>(entity))
+				{
+					activeScene->GetComponent<HBL2::Component::Link>(entity).Parent = 0;
+				}
+			}
+			else if (ImGui::MenuItem("Destroy"))
+			{
+				// Defer the deletion at the end of the function, for now just mark the entity.
+				m_EntityToBeDeleted = entity;
+			}
+			else if (ImGui::MenuItem("Duplicate"))
+			{
+				// Defer the duplication at the end of the function, for now just mark the entity.
+				m_EntityToBeDuplicated = entity;
 			}
 
-			// Clear selection if clicked on empty space inside hierachy panel.
-			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+			if (activeScene->HasComponent<HBL2::Component::PrefabInstance>(entity))
 			{
-				HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
-				HBL2::Component::EditorVisible::Selected = false;
+				if (ImGui::MenuItem("Unpack prefab"))
+				{
+					PrefabUtilities::Get().Unpack(entity);
+				}
+				else if (ImGui::MenuItem("Save prefab"))
+				{
+					// Clear currently selected entity.
+					HBL2::Component::EditorVisible::Selected = false;
+					HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
+
+					PrefabUtilities::Get().Save(entity);
+				}
+				else if (ImGui::MenuItem("Revert prefab"))
+				{
+					// Clear currently selected entity.
+					HBL2::Component::EditorVisible::Selected = false;
+					HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
+
+					PrefabUtilities::Get().Revert(entity);
+				}
 			}
+
+			ImGui::EndPopup();
+		}
+
+		if (opened)
+		{
+			entities.ForEach([&](Entity e)
+			{
+				if (activeScene->HasComponent<HBL2::Component::Link>(e))
+				{
+					UUID parentEntityUUID = activeScene->GetComponent<HBL2::Component::Link>(e).Parent;
+					Entity parentEntity = activeScene->FindEntityByUUID(parentEntityUUID);
+
+					if (parentEntity == entity)
+					{
+						DrawHierachy(e, entities);
+					}
+				}
+			});
+
+			ImGui::TreePop();
+		}
+	}
+
+	void HierachyPanel::HandleHierachyPanelDragAndDrop()
+	{
+		Scene* activeScene = m_Owner->m_ActiveScene;
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			// Drag and drop target for instantiating a mesh into the scene.
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
+			{
+				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+				if (!assetHandle.IsValid())
+				{
+					ImGui::EndDragDropTarget();
+					return;
+				}
+
+				const std::filesystem::path& metadataPath = HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(assetHandle)->FilePath).string() + ".hblmesh";
+
+				if (!std::filesystem::exists(metadataPath))
+				{
+					std::ofstream fout(metadataPath, 0);
+
+					YAML::Emitter out;
+					out << YAML::BeginMap;
+					out << YAML::Key << "Mesh" << YAML::Value;
+					out << YAML::BeginMap;
+					out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(assetHandle)->UUID;
+					out << YAML::EndMap;
+					out << YAML::EndMap;
+					fout << out.c_str();
+					fout.close();
+				}
+
+				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(assetHandle);
+
+				if (!meshHandle.IsValid())
+				{
+					ImGui::EndDragDropTarget();
+					return;
+				}
+
+				Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
+
+				auto mainMeshEntity = activeScene->CreateEntity(mesh->DebugName);
+				activeScene->AddComponent<HBL2::Component::EditorVisible>(mainMeshEntity);
+
+				uint32_t meshIndex = 0;
+				uint32_t subMeshIndex = 0;
+
+				for (auto& meshPart : mesh->Meshes)
+				{
+					auto meshEntity = activeScene->CreateEntity(meshPart.DebugName);
+					activeScene->AddComponent<HBL2::Component::EditorVisible>(meshEntity);
+					auto& link = activeScene->GetComponent<HBL2::Component::Link>(meshEntity);
+
+					link.Parent = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
+
+					for (auto& subMesh : meshPart.SubMeshes)
+					{
+						auto subMeshEntity = activeScene->CreateEntity(subMesh.DebugName);
+						activeScene->AddComponent<HBL2::Component::EditorVisible>(subMeshEntity);
+						auto& link = activeScene->GetComponent<HBL2::Component::Link>(subMeshEntity);
+						link.Parent = activeScene->GetComponent<HBL2::Component::ID>(meshEntity).Identifier;
+
+						auto& transform = activeScene->GetComponent<HBL2::Component::Transform>(subMeshEntity);
+						transform.Translation = meshPart.ImportedLocalTransform.translation;
+						transform.Rotation = meshPart.ImportedLocalTransform.rotation;
+						transform.Scale = meshPart.ImportedLocalTransform.scale;
+
+						auto& staticMesh = activeScene->AddComponent<HBL2::Component::StaticMesh>(subMeshEntity);
+						staticMesh.Mesh = assetHandle;
+						staticMesh.MeshIndex = meshIndex;
+						staticMesh.SubMeshIndex = subMeshIndex;
+						staticMesh.Material = subMesh.EmbededMaterial;
+
+						subMeshIndex++;
+					}
+
+					subMeshIndex = 0;
+					meshIndex++;
+				}
+			}
+			// Drag and drop target for instantiating a prefab into the scene.
+			else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Prefab"))
+			{
+				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+				if (!assetHandle.IsValid())
+				{
+					ImGui::EndDragDropTarget();
+					return;
+				}
+
+				Prefab::Instantiate(assetHandle);
+			}
+
+			ImGui::EndDragDropTarget();
 		}
 	}
 }

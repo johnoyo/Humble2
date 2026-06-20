@@ -14,6 +14,10 @@ namespace HBL2
 	namespace Editor
 	{
 		class EditorPanelSystem;
+		class PlayStopPanel;
+		class ViewportPanel;
+		class TopBarPanel;
+		class ContentBrowserPanel;
 	}
 
 	class HBL2_API SceneManager
@@ -63,5 +67,9 @@ namespace HBL2
 		friend class Project;
 		friend class Application;
 		friend class Editor::EditorPanelSystem;
+		friend class Editor::PlayStopPanel;
+		friend class Editor::ViewportPanel;
+		friend class Editor::TopBarPanel;
+		friend class Editor::ContentBrowserPanel;
 	};
 }

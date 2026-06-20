@@ -6,44 +6,6 @@ namespace HBL2
 	{
 		namespace Component
 		{
-			struct EditorPanel
-			{
-				std::string Name = "New Panel";
-				ImGuiWindowFlags Flags = 0;
-				bool Closeable = false;
-				bool UseBeginEnd = true;
-
-				struct Style
-				{
-					ImGuiStyleVar StyleVar;
-					ImVec2 VectorValue;
-					float FloatValue;
-					bool UseFloat;
-				};
-
-				std::vector<Style> Styles;
-
-				enum class Panel
-				{
-					None,
-					Hierachy,
-					Properties,
-					ContentBrowser,
-					Viewport,
-					Console,
-					Menubar,
-					Stats,
-					PlayStop,
-					Systems,
-					Tray,
-					Custom
-				} Type = Panel::None;
-
-				std::function<void(float)> Render;
-
-				bool Enabled = true;
-			};
-
 			struct EditorCamera
 			{
 				float Yaw = -90.f;
