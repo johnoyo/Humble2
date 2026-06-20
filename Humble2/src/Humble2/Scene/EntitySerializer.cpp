@@ -123,26 +123,7 @@ namespace HBL2
 
 			out << YAML::Key << "Enabled" << YAML::Value << sprite.Enabled;
 
-			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
-
-			Asset* materialAsset = nullptr;
-
-			bool materialFound = false;
-
-			for (auto handle : assetHandles)
-			{
-				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-				if (asset->Type == AssetType::Material && asset->Indentifier != 0 && asset->Indentifier == sprite.Material.Pack() && !materialFound)
-				{
-					materialFound = true;
-					materialAsset = asset;
-				}
-
-				if (materialFound)
-				{
-					break;
-				}
-			}
+			Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(sprite.Material);
 
 			out << YAML::Key << "Material" << YAML::Value << (materialAsset != nullptr ? materialAsset->UUID : (UUID)0);
 
@@ -158,33 +139,8 @@ namespace HBL2
 
 			out << YAML::Key << "Enabled" << YAML::Value << staticMesh.Enabled;
 
-			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
-
-			Asset* materialAsset = nullptr;
-			Asset* meshAsset = nullptr;
-
-			bool meshFound = false;
-			bool materialFound = false;
-
-			for (auto handle : assetHandles)
-			{
-				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-				if (asset->Type == AssetType::Material && asset->Indentifier != 0 && asset->Indentifier == staticMesh.Material.Pack() && !materialFound)
-				{
-					materialFound = true;
-					materialAsset = asset;
-				}
-				if (asset->Type == AssetType::Mesh && asset->Indentifier != 0 && asset->Indentifier == staticMesh.Mesh.Pack() && !meshFound)
-				{
-					meshFound = true;
-					meshAsset = asset;
-				}
-
-				if (materialFound && meshFound)
-				{
-					break;
-				}
-			}
+			Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(staticMesh.Material);
+			Asset* meshAsset = AssetManager::Instance->GetAssetMetadata(staticMesh.Mesh);
 
 			out << YAML::Key << "Material" << YAML::Value << (materialAsset != nullptr ? materialAsset->UUID : (UUID)0);
 
@@ -234,23 +190,7 @@ namespace HBL2
 
 			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
 
-			Asset* textureAsset = nullptr;
-			bool textureFound = false;
-
-			for (auto handle : assetHandles)
-			{
-				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-				if (asset->Type == AssetType::Texture && asset->Indentifier != 0 && asset->Indentifier == light.EquirectangularMap.Pack() && !textureFound)
-				{
-					textureFound = true;
-					textureAsset = asset;
-				}
-
-				if (textureFound)
-				{
-					break;
-				}
-			}
+			Asset* textureAsset = AssetManager::Instance->GetAssetMetadata(light.EquirectangularMap);
 
 			out << YAML::Key << "EquirectangularMap" << YAML::Value << (textureAsset != nullptr ? textureAsset->UUID : (UUID)0);
 
@@ -422,26 +362,7 @@ namespace HBL2
 			}
 			out << YAML::EndSeq;
 
-			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
-
-			Asset* materialAsset = nullptr;
-
-			bool materialFound = false;
-
-			for (auto handle : assetHandles)
-			{
-				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
-				if (asset->Type == AssetType::Material && asset->Indentifier != 0 && asset->Indentifier == t.Material.Pack() && !materialFound)
-				{
-					materialFound = true;
-					materialAsset = asset;
-				}
-
-				if (materialFound)
-				{
-					break;
-				}
-			}
+			Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(t.Material);
 
 			out << YAML::Key << "Material" << YAML::Value << (materialAsset != nullptr ? materialAsset->UUID : (UUID)0);
 
