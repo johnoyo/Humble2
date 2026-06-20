@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Core\Context.h"
-#include "EditorInspector.h"
 
 #include "Resources/ResourceManager.h"
 #include "Script/BuildEngine.h"
@@ -166,33 +165,6 @@ namespace HBL2
 			}
 		}
 
-		template<typename C>
-		bool HasCustomEditor()
-		{
-			return m_CustomEditors.find(typeid(C).hash_code()) != m_CustomEditors.end();
-		}
-
-		template<typename C, typename E>
-		bool DrawCustomEditor(const C& component)
-		{
-			E* customEditor = (E*)m_CustomEditors[typeid(C).hash_code()];
-			customEditor->OnUpdate(component);
-			return customEditor->GetRenderBaseEditor();
-		}
-
-		template<typename C, typename E>
-		void InitCustomEditor()
-		{
-			E* customEditor = (E*)m_CustomEditors[typeid(C).hash_code()];
-			customEditor->OnCreate();
-		}
-
-		template<typename C, typename E>
-		void RegisterCustomEditor()
-		{
-			m_CustomEditors[typeid(C).hash_code()] = new E;
-		}
-
 	private:
 		void DrawComponent(Scene* ctx, Reflect::Any& fieldMeta, const char* memberName);
 		void SerializeComponent(YAML::Emitter& out, Scene* ctx, Reflect::Any& fieldMeta, const char* memberName);
@@ -200,7 +172,5 @@ namespace HBL2
 
 	private:
 		EditorUtilities() = default;
-
-		std::unordered_map<size_t, void*> m_CustomEditors;
 	};
 }

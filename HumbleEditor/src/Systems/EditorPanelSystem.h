@@ -23,9 +23,37 @@ namespace HBL2
 			virtual void OnGuiRender(float ts) override;
 			virtual void OnDestroy() override;
 
+			template<typename C>
+			bool HasCustomEditor()
+			{
+				return m_CustomEditors.find(typeid(C).hash_code()) != m_CustomEditors.end();
+			}
+
+			template<typename C, typename E>
+			bool DrawCustomEditor(const C& component)
+			{
+				E* customEditor = (E*)m_CustomEditors[typeid(C).hash_code()];
+				customEditor->OnUpdate(component);
+				return customEditor->GetRenderBaseEditor();
+			}
+
+			template<typename C, typename E>
+			void InitCustomEditor()
+			{
+				E* customEditor = (E*)m_CustomEditors[typeid(C).hash_code()];
+				customEditor->OnCreate();
+			}
+
+			template<typename C, typename E>
+			void RegisterCustomEditor()
+			{
+				m_CustomEditors[typeid(C).hash_code()] = new E;
+			}
+
 		private:
 			std::vector<EditorPanel*> m_EditorPanels;
-						
+			std::unordered_map<size_t, void*> m_CustomEditors;
+
 			Handle<Asset> m_PreviouslySelectedAsset;
 			JobContext m_MaterialShaderReflectionCtx;
 			ShaderReflectionData m_ShaderReflectionData2;

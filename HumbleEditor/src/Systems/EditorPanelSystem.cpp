@@ -10,7 +10,9 @@
 #include "Resources\Types.h"
 #include "Resources\TypeDescriptors.h"
 
-#include "UI/LayoutLib.h"
+#include "Inspectors\LinkEditor.h"
+#include "Inspectors\CameraEditor.h"
+#include "Inspectors\AnimationCurveEditor.h"
 
 #include "Panels\PlayStopPanel.h"
 #include "Panels\SystemsPanel.h"
@@ -106,11 +108,14 @@ namespace HBL2
 
 			// TODO: Remove from here!
 
-			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Link, LinkEditor>();
-			HBL2::EditorUtilities::Get().InitCustomEditor<HBL2::Component::Link, LinkEditor>();
+			RegisterCustomEditor<HBL2::Component::Link, LinkEditor>();
+			InitCustomEditor<HBL2::Component::Link, LinkEditor>();
 
-			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Camera, CameraEditor>();
-			HBL2::EditorUtilities::Get().InitCustomEditor<HBL2::Component::Camera, CameraEditor>();
+			RegisterCustomEditor<HBL2::Component::Camera, CameraEditor>();
+			InitCustomEditor<HBL2::Component::Camera, CameraEditor>();
+
+			RegisterCustomEditor<HBL2::Component::AnimationCurve, AnimationCurveEditor>();
+			InitCustomEditor<HBL2::Component::AnimationCurve, AnimationCurveEditor>();
 		}
 
 		void EditorPanelSystem::OnUpdate(float ts)
@@ -150,8 +155,9 @@ namespace HBL2
 			{
 				editorPanel->OnDestroy();
 			}
-
 			m_EditorPanels.clear();
+
+			m_CustomEditors.clear();
 		}
 	}
 }

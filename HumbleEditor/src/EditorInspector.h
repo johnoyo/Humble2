@@ -2,7 +2,7 @@
 
 #include "Base.h"
 
-namespace HBL2
+namespace HBL2::Editor
 {
 	template<typename T, typename C>
 	class EditorInspector

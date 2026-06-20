@@ -1,8 +1,5 @@
 #include "AnimationCurveSystem.h"
 
-#include <UI\UserInterfaceUtilities.h>
-#include <UI\AnimationCurveEditor.h>
-
 namespace HBL2
 {
 	static inline float Hermite(float p0, float m0, float p1, float m1, float u)
@@ -62,9 +59,6 @@ namespace HBL2
 
 				RecalculateTangents(curve);
 			});
-
-		EditorUtilities::Get().RegisterCustomEditor<Component::AnimationCurve, AnimationCurveEditor>();
-		EditorUtilities::Get().InitCustomEditor<Component::AnimationCurve, AnimationCurveEditor>();
 	}
 
 	void AnimationCurveSystem::OnUpdate(float ts)

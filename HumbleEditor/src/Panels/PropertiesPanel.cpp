@@ -5,8 +5,10 @@
 #include "Systems\EditorPanelSystem.h"
 
 #include <UI\UserInterfaceUtilities.h>
-#include <UI\LayoutLib.h>
-#include <UI\AnimationCurveEditor.h>
+
+#include "Inspectors\LinkEditor.h"
+#include "Inspectors\CameraEditor.h"
+#include <Inspectors\AnimationCurveEditor.h>
 
 #include <glm\glm.hpp>
 #include <glm\gtc\type_ptr.hpp>
@@ -173,7 +175,7 @@ namespace HBL2::Editor
 				{
 					auto& transform = activeScene->GetComponent<HBL2::Component::Transform>(HBL2::Component::EditorVisible::SelectedEntity);
 
-					// HBL2::EditorUtilities::Get().DrawDefaultEditor<HBL2::Component::Transform>(transform);
+					// m_Owner->DrawDefaultEditor<HBL2::Component::Transform>(transform);
 
 					ImGui::DragFloat3("Translation", glm::value_ptr(transform.Translation), 0.25f);
 					ImGui::DragFloat3("Rotation", glm::value_ptr(transform.Rotation), 0.25f);
@@ -189,9 +191,9 @@ namespace HBL2::Editor
 			{
 				bool renderBaseEditor = true;
 
-				if (HBL2::EditorUtilities::Get().HasCustomEditor<HBL2::Component::Link>())
+				if (m_Owner->HasCustomEditor<HBL2::Component::Link>())
 				{
-					renderBaseEditor = HBL2::EditorUtilities::Get().DrawCustomEditor<HBL2::Component::Link, LinkEditor>(link);
+					renderBaseEditor = m_Owner->DrawCustomEditor<HBL2::Component::Link, LinkEditor>(link);
 				}
 
 				if (renderBaseEditor)
@@ -229,9 +231,9 @@ namespace HBL2::Editor
 			{
 				bool renderBaseEditor = true;
 
-				if (HBL2::EditorUtilities::Get().HasCustomEditor<HBL2::Component::Camera>())
+				if (m_Owner->HasCustomEditor<HBL2::Component::Camera>())
 				{
-					renderBaseEditor = HBL2::EditorUtilities::Get().DrawCustomEditor<HBL2::Component::Camera, CameraEditor>(camera);
+					renderBaseEditor = m_Owner->DrawCustomEditor<HBL2::Component::Camera, CameraEditor>(camera);
 				}
 
 				if (renderBaseEditor)
@@ -790,9 +792,9 @@ namespace HBL2::Editor
 
 			DrawComponent<HBL2::Component::AnimationCurve>("AnimationCurve", activeScene, [this](HBL2::Component::AnimationCurve& curve)
 			{
-				if (HBL2::EditorUtilities::Get().HasCustomEditor<HBL2::Component::AnimationCurve>())
+				if (m_Owner->HasCustomEditor<HBL2::Component::AnimationCurve>())
 				{
-					HBL2::EditorUtilities::Get().DrawCustomEditor<HBL2::Component::AnimationCurve, AnimationCurveEditor>(curve);
+					m_Owner->DrawCustomEditor<HBL2::Component::AnimationCurve, AnimationCurveEditor>(curve);
 				}
 			});
 

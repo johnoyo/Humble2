@@ -4,7 +4,7 @@
 
 #include <imgui_internal.h>
 
-namespace HBL2
+namespace HBL2::Editor
 {
 	void AnimationCurveEditor::ShowCurveEditor(HBL2::Component::AnimationCurve& curve, const char* label)
 	{

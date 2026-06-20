@@ -1,14 +1,15 @@
 #pragma once
 
-#include "Panel.h"
 #include "EditorInspector.h"
 
 #include "Scene\Components.h"
-#include "Elements.h"
 
-namespace HBL2
+#include "UI\Panel.h"
+#include "UI\Elements.h"
+
+namespace HBL2::Editor
 {
-	class HBL2_API AnimationCurveEditor : public EditorInspector<AnimationCurveEditor, HBL2::Component::AnimationCurve>
+	class AnimationCurveEditor : public EditorInspector<AnimationCurveEditor, HBL2::Component::AnimationCurve>
 	{
 	public:
 		void OnCreate()
