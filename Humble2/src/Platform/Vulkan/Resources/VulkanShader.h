@@ -75,7 +75,7 @@ namespace HBL2
 			VkPipeline Pipeline = VK_NULL_HANDLE;
 		};
 
-		static constexpr uint32_t MaxVariants = 8;
+		static constexpr uint32_t MaxVariants = 16;
 		static constexpr uint32_t MaxSpecializationConstants = 8;
 
 		alignas(64) std::array<VariantEntry, MaxVariants> m_Entries;

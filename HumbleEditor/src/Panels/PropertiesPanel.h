@@ -29,6 +29,8 @@ namespace HBL2::Editor
 		StaticArray<uint32_t, 8> m_ShaderUniformTextureData;
 		uint32_t m_ShaderUniformTextureSize;
 		JobContext m_MaterialShaderResourceCtx;
+		JobContext m_MaterialTextureLoadingCtx;
+		JobContext m_ShaderTextureLoadingCtx;
 		UUID m_CurrentShaderUUID = 0;
 		bool m_MaterialShaderChanged = false;
 		bool m_MaterialShaderNeedsReimport = false;

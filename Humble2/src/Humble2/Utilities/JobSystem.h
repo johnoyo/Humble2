@@ -59,6 +59,11 @@ namespace HBL2
         void SetupWorkerRT();
         inline uint32_t GetThreadCount() const { return m_NumThreads; }
         uint32_t GetWorkerIndex();
+
+        // Returns the arena of the worker thread.
+        // Should only be used within a job system worker.
+        // Allocations are only valid for the duration of the job.
+        // They get automotically freed when the job ends.
         Arena* GetWorkerArena();
 
         bool IsMainThread();

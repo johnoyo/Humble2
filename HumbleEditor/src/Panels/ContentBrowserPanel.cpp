@@ -983,10 +983,13 @@ namespace HBL2::Editor
 									}
 
 									auto* task = AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_MaterialTextureLoadingCtx);
-									task->ThenOnMainThread([task](Handle<Texture> handle)
+									if (task != nullptr)
 									{
-										AssetManager::Instance->ReleaseResourceTask(task);
-									});
+										task->ThenOnMainThread([task](Handle<Texture> handle)
+										{
+											AssetManager::Instance->ReleaseResourceTask(task);
+										});
+									}
 								}
 
 								ImGui::EndDragDropTarget();

@@ -39,7 +39,7 @@ namespace HBL2
         const size_t ThreadArenaSize = MB(spec.MaxWorkerMemory);
 
         // NOTE: The '+2' is to accomondate the worker arena of the render and game thread.
-        //       We need one for the, also for seamless behaviour and simple logic.
+        //       We need one for them for seamless behaviour and simple logic.
 
         m_Reservation = Allocator::Arena.Reserve("JobSystemPool", (ThreadArenaSize * (m_NumThreads + 2)) + 100_KB);
         m_JobSystemArena.Initialize(&Allocator::Arena, 100_KB, m_Reservation);

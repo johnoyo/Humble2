@@ -1330,6 +1330,18 @@ namespace HBL2::Editor
 									Handle<Asset> userMapAssetHandle = Handle<Asset>::UnPack(userMapHandlePacked);
 									AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
 
+									if (!shaderBindGroupNeedsReimport && !AssetManager::Instance->IsAssetLoaded(userMapAssetHandle))
+									{
+										auto* task = AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_MaterialTextureLoadingCtx);
+										if (task != nullptr)
+										{
+											task->Then([task](auto handle)
+											{
+												AssetManager::Instance->ReleaseResourceTask(task);
+											});
+										}
+									}
+
 									if (ImGui::BeginDragDropTarget())
 									{
 										if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
@@ -1342,7 +1354,14 @@ namespace HBL2::Editor
 												TextureUtilities::Get().CreateAssetMetadataFile(userMapAssetHandle);
 											}
 
-											AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
+											auto* task = AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_ShaderTextureLoadingCtx);
+											if (task != nullptr)
+											{
+												task->ThenOnMainThread([task](auto handle)
+												{
+													AssetManager::Instance->ReleaseResourceTask(task);
+												});
+											}
 
 											shaderBindGroupNeedsReimport = true;
 										}
@@ -1353,21 +1372,24 @@ namespace HBL2::Editor
 							}
 						}
 
-						if (shaderNeedsReimport || shaderBindGroupNeedsReimport)
+						if (!JobSystem::Get().Busy(m_ShaderTextureLoadingCtx))
 						{
-							ShaderUtilities::Get().UpdateShaderBindGroupResourcesAssetFile(m_Owner->m_SelectedAsset, {
-								.ReflectionData = &m_ShaderReflectionData,
-								.Buffers = m_ShaderUniformBufferData,
-								.TextureAssets = m_ShaderUniformTextureData,
-							});
+							if (shaderNeedsReimport || shaderBindGroupNeedsReimport)
+							{
+								ShaderUtilities::Get().UpdateShaderBindGroupResourcesAssetFile(m_Owner->m_SelectedAsset, {
+									.ReflectionData = &m_ShaderReflectionData,
+									.Buffers = m_ShaderUniformBufferData,
+									.TextureAssets = m_ShaderUniformTextureData,
+								});
 
-							shaderNeedsReimport = false;
-						}
+								shaderNeedsReimport = false;
+							}
 
-						if (shaderBindGroupNeedsReimport)
-						{
-							AssetManager::Instance->ReloadAsset<Shader>(m_Owner->m_SelectedAsset);
-							shaderBindGroupNeedsReimport = false;
+							if (shaderBindGroupNeedsReimport)
+							{
+								m_ShaderTask = AssetManager::Instance->ReloadAssetAsync<Shader>(m_Owner->m_SelectedAsset);
+								shaderBindGroupNeedsReimport = false;
+							}
 						}
 					}
 					else
@@ -1635,161 +1657,127 @@ namespace HBL2::Editor
 						m_ShaderReflectionData.Clear();
 
 						JobSystem::Get().Execute(m_MaterialShaderReflectionCtx, [this, asset]()
+						{
+							Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(m_Owner->m_SelectedAsset);
+
+							const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+							const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+
+							// Open material file.
+							std::ifstream stream(materialPath);
+
+							if (!stream.is_open())
 							{
-								Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(m_Owner->m_SelectedAsset);
+								HBL2_CORE_ERROR("Material file not found: {0}", materialPath);
+								return;
+							}
+							else
+							{
+								std::stringstream ss;
+								ss << stream.rdbuf();
 
-								const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-								const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
-
-								// Open material file.
-								std::ifstream stream(materialPath);
-
-								if (!stream.is_open())
+								YAML::Node data = YAML::Load(ss.str());
+								if (!data["Material"].IsDefined())
 								{
-									HBL2_CORE_ERROR("Material file not found: {0}", materialPath);
+									HBL2_CORE_TRACE("Material not found: {0}", ss.str());
+									stream.close();
 									return;
 								}
 								else
 								{
-									std::stringstream ss;
-									ss << stream.rdbuf();
-
-									YAML::Node data = YAML::Load(ss.str());
-									if (!data["Material"].IsDefined())
+									auto materialProperties = data["Material"];
+									if (materialProperties)
 									{
-										HBL2_CORE_TRACE("Material not found: {0}", ss.str());
-										stream.close();
-										return;
-									}
-									else
-									{
-										auto materialProperties = data["Material"];
-										if (materialProperties)
+										// Clear uniform buffer data.
+										for (auto& data : m_ShaderUniformBufferData)
 										{
-											// Clear uniform buffer data.
-											for (auto& data : m_ShaderUniformBufferData)
+											data.clear();
+										}
+										std::memset(m_ShaderUniformTextureData.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.Size());
+
+										// Get the shader path of the material in order to reflect on it.
+										UUID shaderUUID = materialProperties["Shader"].as<UUID>();
+
+										shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
+										Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+										if (shaderAsset == nullptr)
+										{
+											HBL2_CORE_WARN("Shader with UUID: {0}, of material: {1}, not found!", shaderUUID, materialPath);
+											stream.close();
+											return;
+										}
+
+										const auto& shaderFileSystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+										const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
+
+										// Reflect.
+										m_ShaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
+
+										// Retrieve new uniform buffer data.
+										for (const auto& descriptorSet : m_ShaderReflectionData.descriptorSets)
+										{
+											if (descriptorSet.set != 2)
 											{
-												data.clear();
+												continue;
 											}
-											std::memset(m_ShaderUniformTextureData.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.Size());
 
-											// Get the shader path of the material in order to reflect on it.
-											UUID shaderUUID = materialProperties["Shader"].as<UUID>();
+											m_ShaderUniformBufferSize = 0;
+											m_ShaderUniformTextureSize = 0;
 
-											shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
-											Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
-
-											if (shaderAsset == nullptr)
+											for (const auto& b : descriptorSet.bindings)
 											{
-												HBL2_CORE_WARN("Shader with UUID: {0}, of material: {1}, not found!", shaderUUID, materialPath);
-												stream.close();
-												return;
-											}
-
-											const auto& shaderFileSystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
-											const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
-
-											// Reflect.
-											m_ShaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
-
-											// Retrieve new uniform buffer data.
-											for (const auto& descriptorSet : m_ShaderReflectionData.descriptorSets)
-											{
-												if (descriptorSet.set != 2)
+												if (b.type == ResourceType::UniformBuffer)
 												{
-													continue;
-												}
+													auto& uniformBufferBytes = m_ShaderUniformBufferData[m_ShaderUniformBufferSize++];
+													uniformBufferBytes.resize(b.size);
 
-												m_ShaderUniformBufferSize = 0;
-												m_ShaderUniformTextureSize = 0;
+													const auto& bufferProp = materialProperties[b.name];
 
-												for (const auto& b : descriptorSet.bindings)
-												{
-													if (b.type == ResourceType::UniformBuffer)
+													if (bufferProp.IsDefined())
 													{
-														auto& uniformBufferBytes = m_ShaderUniformBufferData[m_ShaderUniformBufferSize++];
-														uniformBufferBytes.resize(b.size);
-
-														const auto& bufferProp = materialProperties[b.name];
-
-														if (bufferProp.IsDefined())
+														for (const auto& m : b.members)
 														{
-															for (const auto& m : b.members)
+															const auto& memberProp = bufferProp[m.name];
+
+															if (!memberProp.IsDefined())
 															{
-																const auto& memberProp = bufferProp[m.name];
+																continue;
+															}
 
-																if (!memberProp.IsDefined())
-																{
-																	continue;
-																}
+															uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
 
-																uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+															switch (m.typeInfo.base)
+															{
+															case MemberBaseType::Float:
+															{
+																if (m.typeInfo.isArray)
+																{
+																	const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
 
-																switch (m.typeInfo.base)
-																{
-																case MemberBaseType::Float:
-																{
-																	if (m.typeInfo.isArray)
+																	for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
 																	{
-																		const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
-
-																		for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+																		if (!memberProp[i].IsDefined())
 																		{
-																			if (!memberProp[i].IsDefined())
-																			{
-																				continue;
-																			}
-
-																			float* f = reinterpret_cast<float*>(memberPtr + i * stride);
-
-																			if (m.typeInfo.cols == 1)
-																			{
-																				*f = memberProp[i].as<float>();
-																			}
-																			else if (m.typeInfo.cols == 2)
-																			{
-																				const glm::vec2& vec2 = memberProp[i].as<glm::vec2>();
-
-																				f[0] = vec2.x;
-																				f[1] = vec2.y;
-																			}
-																			else if (m.typeInfo.cols == 3)
-																			{
-																				const glm::vec3& vec3 = memberProp[i].as<glm::vec3>();
-
-																				f[0] = vec3.x;
-																				f[1] = vec3.y;
-																				f[2] = vec3.z;
-																			}
-																			else if (m.typeInfo.cols == 4)
-																			{
-																				const glm::vec4& vec4 = memberProp[i].as<glm::vec4>();
-
-																				f[0] = vec4.x;
-																				f[1] = vec4.y;
-																				f[2] = vec4.z;
-																				f[3] = vec4.w;
-																			}
+																			continue;
 																		}
-																	}
-																	else
-																	{
-																		float* f = reinterpret_cast<float*>(memberPtr);
+
+																		float* f = reinterpret_cast<float*>(memberPtr + i * stride);
 
 																		if (m.typeInfo.cols == 1)
 																		{
-																			*f = memberProp.as<float>();
+																			*f = memberProp[i].as<float>();
 																		}
 																		else if (m.typeInfo.cols == 2)
 																		{
-																			const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+																			const glm::vec2& vec2 = memberProp[i].as<glm::vec2>();
 
 																			f[0] = vec2.x;
 																			f[1] = vec2.y;
 																		}
 																		else if (m.typeInfo.cols == 3)
 																		{
-																			const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+																			const glm::vec3& vec3 = memberProp[i].as<glm::vec3>();
 
 																			f[0] = vec3.x;
 																			f[1] = vec3.y;
@@ -1797,7 +1785,7 @@ namespace HBL2::Editor
 																		}
 																		else if (m.typeInfo.cols == 4)
 																		{
-																			const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+																			const glm::vec4& vec4 = memberProp[i].as<glm::vec4>();
 
 																			f[0] = vec4.x;
 																			f[1] = vec4.y;
@@ -1805,34 +1793,68 @@ namespace HBL2::Editor
 																			f[3] = vec4.w;
 																		}
 																	}
-																	break;
 																}
+																else
+																{
+																	float* f = reinterpret_cast<float*>(memberPtr);
+
+																	if (m.typeInfo.cols == 1)
+																	{
+																		*f = memberProp.as<float>();
+																	}
+																	else if (m.typeInfo.cols == 2)
+																	{
+																		const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+
+																		f[0] = vec2.x;
+																		f[1] = vec2.y;
+																	}
+																	else if (m.typeInfo.cols == 3)
+																	{
+																		const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+
+																		f[0] = vec3.x;
+																		f[1] = vec3.y;
+																		f[2] = vec3.z;
+																	}
+																	else if (m.typeInfo.cols == 4)
+																	{
+																		const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+																		f[0] = vec4.x;
+																		f[1] = vec4.y;
+																		f[2] = vec4.z;
+																		f[3] = vec4.w;
+																	}
 																}
+																break;
+															}
 															}
 														}
 													}
-													else if (b.type == ResourceType::SampledTexture)
+												}
+												else if (b.type == ResourceType::SampledTexture)
+												{
+													const auto& textureProp = materialProperties[b.name];
+
+													if (textureProp.IsDefined())
 													{
-														const auto& textureProp = materialProperties[b.name];
+														UUID textureMapUUID = textureProp.as<UUID>();
 
-														if (textureProp.IsDefined())
-														{
-															UUID textureMapUUID = textureProp.as<UUID>();
+														auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
+														auto assetHandle = AssetManager::Instance->GetHandleFromUUID(textureMapUUID);
 
-															auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
-															auto assetHandle = AssetManager::Instance->GetHandleFromUUID(textureMapUUID);
-
-															m_ShaderUniformTextureData[m_ShaderUniformTextureSize++] = assetHandle.Pack();
-														}
+														m_ShaderUniformTextureData[m_ShaderUniformTextureSize++] = assetHandle.Pack();
 													}
 												}
 											}
 										}
 									}
-
-									stream.close();
 								}
-							});
+
+								stream.close();
+							}
+						});
 					}
 
 					if (!JobSystem::Get().Busy(m_MaterialShaderReflectionCtx) && m_MaterialShaderReflectionStarted)
@@ -1999,7 +2021,18 @@ namespace HBL2::Editor
 									ImGui::InputScalar(b.name.c_str(), ImGuiDataType_U32, (void*)(intptr_t*)&userMapHandlePacked);
 
 									Handle<Asset> userMapAssetHandle = Handle<Asset>::UnPack(userMapHandlePacked);
-									AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
+
+									if (!m_MaterialBindGroupNeedsReimport && !AssetManager::Instance->IsAssetLoaded(userMapAssetHandle))
+									{
+										auto* task = AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_MaterialTextureLoadingCtx);
+										if (task != nullptr)
+										{
+											task->Then([task](auto handle)
+											{
+												AssetManager::Instance->ReleaseResourceTask(task);
+											});
+										}
+									}
 
 									if (ImGui::BeginDragDropTarget())
 									{
@@ -2013,7 +2046,14 @@ namespace HBL2::Editor
 												TextureUtilities::Get().CreateAssetMetadataFile(userMapAssetHandle);
 											}
 
-											AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
+											auto* task = AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_MaterialTextureLoadingCtx);
+											if (task != nullptr)
+											{
+												task->Then([task](auto handle)
+												{
+													AssetManager::Instance->ReleaseResourceTask(task);
+												});
+											}
 
 											m_MaterialBindGroupNeedsReimport = true;
 										}
@@ -2024,23 +2064,26 @@ namespace HBL2::Editor
 							}
 						}
 
-						if (m_MaterialNeedsReimport || m_MaterialBindGroupNeedsReimport)
+						if (!JobSystem::Get().Busy(m_MaterialTextureLoadingCtx))
 						{
-							ShaderUtilities::Get().CreateMaterialAssetFile(m_Owner->m_SelectedAsset, {
-								.ShaderAssetHandle = shaderAssetHandle,
-								.VariantHash = mat->VariantHash,
-								.ReflectionData = &m_ShaderReflectionData,
-								.Buffers = m_ShaderUniformBufferData,
-								.TextureAssets = m_ShaderUniformTextureData,
-							});
+							if (m_MaterialNeedsReimport || m_MaterialBindGroupNeedsReimport)
+							{
+								ShaderUtilities::Get().CreateMaterialAssetFile(m_Owner->m_SelectedAsset, {
+									.ShaderAssetHandle = shaderAssetHandle,
+									.VariantHash = mat->VariantHash,
+									.ReflectionData = &m_ShaderReflectionData,
+									.Buffers = m_ShaderUniformBufferData,
+									.TextureAssets = m_ShaderUniformTextureData,
+								});
 
-							m_MaterialNeedsReimport = false;
-						}
+								m_MaterialNeedsReimport = false;
+							}
 
-						if (m_MaterialBindGroupNeedsReimport)
-						{
-							AssetManager::Instance->ReloadAsset<Material>(m_Owner->m_SelectedAsset);
-							m_MaterialBindGroupNeedsReimport = false;
+							if (m_MaterialBindGroupNeedsReimport)
+							{
+								m_MaterialTask = AssetManager::Instance->ReloadAssetAsync<Material>(m_Owner->m_SelectedAsset);
+								m_MaterialBindGroupNeedsReimport = false;
+							}
 						}
 
 						// Shader Constants.
