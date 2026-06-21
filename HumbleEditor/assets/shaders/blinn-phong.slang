@@ -29,7 +29,6 @@ struct Material
 {
     float4 Color;
     float Glossiness;
-    float _Unused;
 };
 
 [[vk::binding(0, 0)]]
@@ -49,12 +48,6 @@ ConstantBuffer<Material> u_Material;
 
 [[vk::binding(4, 3)]]
 ConstantBuffer<Object> u_Object;
-
-[vk::constant_id(0)]
-const bool s_MyConstV = false;
-
-[vk::constant_id(1)]
-const bool s_MyConst = false;
 
 // Vertex Shader
 
@@ -79,20 +72,6 @@ struct VSOutput
 [shader("vertex")]
 VSOutput mainVS(VSInput input)
 {
-    if (s_MyConstV)
-    {
-        VSOutput output;
-
-        output.v_Position = mul(u_Object.Model, float4(input.a_Position, 1.0)).xyz;
-        output.v_Color = float4(1.0, 0.0, 0.0, 1.0);
-        output.v_Glossiness = u_Material.Glossiness;
-        output.v_TextureCoord = input.a_TextureCoord;
-        output.v_Normal = normalize(mul(u_Object.InverseModel, float4(input.a_Normal, 0.0)).xyz);
-        output.position = mul(u_Camera.ViewProjection, mul(u_Object.Model, float4(input.a_Position, 1.0)));
-
-        return output;
-    }
-
     VSOutput output;
 
     output.v_Position = mul(u_Object.Model, float4(input.a_Position, 1.0)).xyz;
@@ -263,11 +242,6 @@ float ShadowCalculation(float4 fragPosLightSpace, float4 tileUVRange, int index,
 [shader("fragment")]
 float4 mainPS(PSInput input) : SV_Target0
 {
-    if (s_MyConst)
-    {
-        return float4(input.v_Color.rgb, 1.0);
-    }
-
     float3 textureColor = u_AlbedoMap.Sample(input.v_TextureCoord).rgb;
     float3 normal = normalize(input.v_Normal);
     float3 camDir = normalize(u_Light.ViewPosition.xyz - input.v_Position);

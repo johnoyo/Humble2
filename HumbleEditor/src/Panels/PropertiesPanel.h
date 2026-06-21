@@ -24,10 +24,10 @@ namespace HBL2::Editor
 		Handle<Asset> m_PreviouslySelectedAsset;
 		JobContext m_MaterialShaderReflectionCtx;
 		ShaderReflectionData m_ShaderReflectionData;
-		StaticArray<std::vector<uint8_t>, 8> m_ShaderUniformBufferData;
-		uint32_t m_ShaderUniformBufferSize;
-		StaticArray<uint32_t, 8> m_ShaderUniformTextureData;
-		uint32_t m_ShaderUniformTextureSize;
+		StaticArray<std::vector<uint8_t>, 8> m_ShaderUniformBufferData = {};
+		uint32_t m_ShaderUniformBufferSize = 0;
+		StaticArray<uint32_t, 8> m_ShaderUniformTextureData = {};
+		uint32_t m_ShaderUniformTextureSize = 0;
 		JobContext m_MaterialShaderResourceCtx;
 		JobContext m_MaterialTextureLoadingCtx;
 		JobContext m_ShaderTextureLoadingCtx;

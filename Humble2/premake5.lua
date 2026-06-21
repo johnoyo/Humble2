@@ -126,9 +126,6 @@ project "Humble2"
         links
         {
             "fmodL_vc.lib",
-            "shaderc_sharedd.lib",
-            "spirv-cross-cored.lib",
-            "spirv-cross-glsld.lib",
         }
 
         postbuildcommands
@@ -154,9 +151,6 @@ project "Humble2"
         links
         {
             "fmod_vc.lib",
-            "shaderc_shared.lib",
-            "spirv-cross-core.lib",
-            "spirv-cross-glsl.lib",
         }
 
         postbuildcommands
@@ -183,9 +177,6 @@ project "Humble2"
         links
         {
             "fmod_vc.lib",
-            "shaderc_shared.lib",
-            "spirv-cross-core.lib",
-            "spirv-cross-glsl.lib",
         }
 
         postbuildcommands
@@ -209,9 +200,6 @@ project "Humble2"
         links
         {
             "fmod_vc.lib",
-            "shaderc_shared.lib",
-            "spirv-cross-core.lib",
-            "spirv-cross-glsl.lib",
         }
 
         postbuildcommands

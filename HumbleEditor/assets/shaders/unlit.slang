@@ -11,11 +11,19 @@ struct Object
     float4 Color;
 };
 
+struct Material
+{
+    float4 Color;
+};
+
 [[vk::binding(0, 0)]]
 ConstantBuffer<Camera> u_Camera;
 
 [[vk::binding(0, 2)]]
 Sampler2D u_AlbedoMap;
+
+[[vk::binding(1, 2)]]
+ConstantBuffer<Material> u_Material;
 
 [[vk::binding(4, 3)]]
 ConstantBuffer<Object> u_Object;
@@ -41,7 +49,7 @@ VSOutput mainVS(VSInput input)
 {
     VSOutput output;
 
-    output.v_Color = u_Object.Color;
+    output.v_Color = u_Material.Color * u_Object.Color;
     output.v_TextureCoord = input.a_TextureCoord;
 
     // GLSL-style multiplication order preserved
