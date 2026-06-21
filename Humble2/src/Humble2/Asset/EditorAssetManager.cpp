@@ -423,6 +423,9 @@ namespace HBL2
 					continue;
 				}
 
+				JobContext shaderTextureCtx;
+
+				StaticDArray<ResourceTask<Texture>*, 8> textureTasks;
 				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
 				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
 
@@ -554,12 +557,27 @@ namespace HBL2
 						{
 							UUID textureMapUUID = textureProp[b.name].as<UUID>();
 
-							auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
-							textureBindings.push_back({ handle });
+							auto* task = AssetManager::Instance->GetAssetAsync<Texture>(textureMapUUID, &shaderTextureCtx);
+							textureTasks.push_back(task);
 						}
 					}
 
 					bindingIndex++;
+				}
+
+				AssetManager::Instance->WaitForAsyncJobs(&shaderTextureCtx);
+
+				for (auto* task : textureTasks)
+				{
+					if (task != nullptr)
+					{
+						textureBindings.push_back({ task->ResourceHandle });
+						AssetManager::Instance->ReleaseResourceTask(task);
+					}
+					else
+					{
+						textureBindings.push_back({ Handle<Texture>() });
+					}
 				}
 
 				// If there is only one texture and is not set, use the built in white texture.
@@ -734,6 +752,9 @@ namespace HBL2
 					continue;
 				}
 
+				JobContext materialTextureCtx;
+
+				StaticDArray<ResourceTask<Texture>*, 8> textureTasks;
 				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
 				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
 
@@ -863,9 +884,24 @@ namespace HBL2
 						{
 							UUID textureMapUUID = textureProp.as<UUID>();
 
-							auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
-							textureBindings.push_back({ handle });
+							auto* task = AssetManager::Instance->GetAssetAsync<Texture>(textureMapUUID, &materialTextureCtx);
+							textureTasks.push_back(task);
 						}
+					}
+				}
+
+				AssetManager::Instance->WaitForAsyncJobs(&materialTextureCtx);
+
+				for (auto* task : textureTasks)
+				{
+					if (task != nullptr)
+					{
+						textureBindings.push_back({ task->ResourceHandle });
+						AssetManager::Instance->ReleaseResourceTask(task);
+					}
+					else
+					{
+						textureBindings.push_back({ Handle<Texture>() });
 					}
 				}
 

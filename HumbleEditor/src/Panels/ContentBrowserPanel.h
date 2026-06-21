@@ -27,6 +27,8 @@ namespace HBL2::Editor
 		void DrawDirectoryRecursive(const std::filesystem::path& path);
 		void DrawContentBrowserContextMenu();
 
+		void ClearMaterialContextMenuData();
+
 	private:
 		bool m_OpenNewFolderSetupPopup = false;
 		bool m_OpenSceneSetupPopup = false;
@@ -34,12 +36,22 @@ namespace HBL2::Editor
 		uint32_t m_SelectedShaderType = 0;
 
 		bool m_OpenMaterialSetupPopup = false;
-		ShaderReflectionData m_ShaderReflectionData;
-		StaticArray<std::vector<uint8_t>, 8> m_ShaderUniformBufferData;
-		uint32_t m_ShaderUniformBufferSize;
-		StaticArray<uint32_t, 8> m_ShaderUniformTextureData;
-		uint32_t m_ShaderUniformTextureSize;
+		ShaderReflectionData m_ShaderReflectionData{};
+		StaticArray<std::vector<uint8_t>, 8> m_ShaderUniformBufferData = {};
+		uint32_t m_ShaderUniformBufferSize = 0;
+		StaticArray<uint32_t, 8> m_ShaderUniformTextureData = {};
+		uint32_t m_ShaderUniformTextureSize = 0;
 		uint32_t m_SelectedMaterialType = 0;
+
+		std::string m_ShaderNameBuffer = "New-Shader";
+		std::string m_ScriptNameBuffer = "NewHelperScript";
+		std::string m_ComponentNameBuffer = "NewComponent";
+		std::string m_SystemNameBuffer = "NewSystem";
+		std::string m_SceneNameBuffer = "NewScene";
+		std::string m_FolderNameBuffer = "NewFolder";
+
+		uint32_t m_ShaderAssetHandlePacked = 0;
+		std::string m_MaterialNameBuffer = "New-Material";
 
 		bool m_OpenScriptSetupPopup = false;
 		bool m_OpenComponentSetupPopup = false;
@@ -60,6 +72,8 @@ namespace HBL2::Editor
 		bool m_DepthWriteEnabled = false;
 		int m_DepthTest = 1;
 		bool m_StencilEnabled = true;
+
+		JobContext m_MaterialTextureLoadingCtx;
 
 		ResourceTask<Texture>* m_AlbedoMapTask = nullptr;
 		ResourceTask<Texture>* m_NormalMapTask = nullptr;

@@ -495,8 +495,7 @@ namespace HBL2::Editor
 		{
 			ImGui::Begin("New Folder", &m_OpenNewFolderSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-			static char folderNameBuffer[256] = "NewFolder";
-			ImGui::InputText("Folder Name", folderNameBuffer, 256);
+			ImGui::InputText("Folder Name", m_FolderNameBuffer.data(), 256);
 
 			ImGui::NewLine();
 
@@ -504,7 +503,7 @@ namespace HBL2::Editor
 			{
 				try
 				{
-					std::filesystem::create_directory(m_Owner->m_CurrentDirectory / folderNameBuffer);
+					std::filesystem::create_directory(m_Owner->m_CurrentDirectory / m_FolderNameBuffer);
 				}
 				catch (std::exception& e)
 				{
@@ -512,6 +511,7 @@ namespace HBL2::Editor
 				}
 
 				m_OpenNewFolderSetupPopup = false;
+				m_FolderNameBuffer = "NewFolder";
 			}
 
 			ImGui::SameLine();
@@ -519,6 +519,7 @@ namespace HBL2::Editor
 			if (ImGui::Button("Cancel"))
 			{
 				m_OpenNewFolderSetupPopup = false;
+				m_FolderNameBuffer = "NewFolder";
 			}
 
 			ImGui::End();
@@ -528,14 +529,13 @@ namespace HBL2::Editor
 		{
 			ImGui::Begin("New Scene", &m_OpenSceneSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-			static char sceneNameBuffer[256] = "NewScene";
-			ImGui::InputText("Scene Name", sceneNameBuffer, 256);
+			ImGui::InputText("Scene Name", m_SceneNameBuffer.data(), 256);
 
 			ImGui::NewLine();
 
 			if (ImGui::Button("OK"))
 			{
-				auto filepath = m_Owner->m_CurrentDirectory / (std::string(sceneNameBuffer) + ".humble");
+				auto filepath = m_Owner->m_CurrentDirectory / (m_SceneNameBuffer + ".humble");
 				const auto& relativePath = std::filesystem::relative(filepath, HBL2::Project::GetAssetDirectory());
 
 				auto assetHandle = AssetManager::Instance->CreateAsset({
@@ -551,6 +551,7 @@ namespace HBL2::Editor
 				m_Owner->m_EditorScenePath = filepath;
 
 				m_OpenSceneSetupPopup = false;
+				m_SceneNameBuffer = "NewScene";
 			}
 
 			ImGui::SameLine();
@@ -558,6 +559,7 @@ namespace HBL2::Editor
 			if (ImGui::Button("Cancel"))
 			{
 				m_OpenSceneSetupPopup = false;
+				m_SceneNameBuffer = "NewScene";
 			}
 
 			ImGui::End();
@@ -567,15 +569,14 @@ namespace HBL2::Editor
 		{
 			ImGui::Begin("System Setup", &m_OpenScriptSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-			static char systemNameBuffer[256] = "NewSystem";
-			ImGui::InputText("System Name", systemNameBuffer, 256);
+			ImGui::InputText("System Name", m_SystemNameBuffer.data(), 256);
 
 			ImGui::NewLine();
 
 			if (ImGui::Button("OK"))
 			{
 				// Create .h file with placeholder code.
-				auto scriptAssetHandle = BuildEngine::Instance->CreateSystemFile(m_Owner->m_CurrentDirectory, systemNameBuffer);
+				auto scriptAssetHandle = BuildEngine::Instance->CreateSystemFile(m_Owner->m_CurrentDirectory, m_SystemNameBuffer);
 
 				// Import script.
 				AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
@@ -591,6 +592,7 @@ namespace HBL2::Editor
 				}
 
 				m_OpenScriptSetupPopup = false;
+				m_SystemNameBuffer = "NewScript";
 			}
 
 			ImGui::SameLine();
@@ -598,6 +600,7 @@ namespace HBL2::Editor
 			if (ImGui::Button("Cancel"))
 			{
 				m_OpenScriptSetupPopup = false;
+				m_SystemNameBuffer = "NewScript";
 			}
 
 			ImGui::End();
@@ -607,15 +610,14 @@ namespace HBL2::Editor
 		{
 			ImGui::Begin("Component Setup", &m_OpenComponentSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-			static char componentNameBuffer[256] = "NewComponent";
-			ImGui::InputText("Component Name", componentNameBuffer, 256);
+			ImGui::InputText("Component Name", m_ComponentNameBuffer.data(), 256);
 
 			ImGui::NewLine();
 
 			if (ImGui::Button("OK"))
 			{
 				// Create .h file with placeholder code.
-				auto scriptAssetHandle = BuildEngine::Instance->CreateComponentFile(m_Owner->m_CurrentDirectory, componentNameBuffer);
+				auto scriptAssetHandle = BuildEngine::Instance->CreateComponentFile(m_Owner->m_CurrentDirectory, m_ComponentNameBuffer);
 
 				// Import script.
 				AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
@@ -631,6 +633,7 @@ namespace HBL2::Editor
 				}
 
 				m_OpenComponentSetupPopup = false;
+				m_ComponentNameBuffer = "NewComponent";
 			}
 
 			ImGui::SameLine();
@@ -638,6 +641,7 @@ namespace HBL2::Editor
 			if (ImGui::Button("Cancel"))
 			{
 				m_OpenComponentSetupPopup = false;
+				m_ComponentNameBuffer = "NewComponent";
 			}
 
 			ImGui::End();
@@ -647,15 +651,14 @@ namespace HBL2::Editor
 		{
 			ImGui::Begin("Helper Script Setup", &m_OpenHelperScriptSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-			static char scriptNameBuffer[256] = "NewHelperScript";
-			ImGui::InputText("Script Name", scriptNameBuffer, 256);
+			ImGui::InputText("Script Name", m_ScriptNameBuffer.data(), 256);
 
 			ImGui::NewLine();
 
 			if (ImGui::Button("OK"))
 			{
 				// Create .h file with placeholder code.
-				auto scriptAssetHandle = BuildEngine::Instance->CreateHelperScriptFile(m_Owner->m_CurrentDirectory, scriptNameBuffer);
+				auto scriptAssetHandle = BuildEngine::Instance->CreateHelperScriptFile(m_Owner->m_CurrentDirectory, m_ScriptNameBuffer);
 
 				// Import script.
 				AssetManager::Instance->GetAsset<Script>(scriptAssetHandle);
@@ -671,6 +674,7 @@ namespace HBL2::Editor
 				}
 
 				m_OpenHelperScriptSetupPopup = false;
+				m_ScriptNameBuffer = "NewHelperScript";
 			}
 
 			ImGui::SameLine();
@@ -678,6 +682,7 @@ namespace HBL2::Editor
 			if (ImGui::Button("Cancel"))
 			{
 				m_OpenHelperScriptSetupPopup = false;
+				m_ScriptNameBuffer = "NewHelperScript";
 			}
 
 			ImGui::End();
@@ -687,14 +692,13 @@ namespace HBL2::Editor
 		{
 			ImGui::Begin("Shader Setup", &m_OpenShaderSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-			static char shaderNameBuffer[256] = "New-Shader";
-			ImGui::InputText("Shader Name", shaderNameBuffer, 256);
+			ImGui::InputText("Shader Name", m_ShaderNameBuffer.data(), 256);
 
 			ImGui::NewLine();
 
 			if (ImGui::Button("OK"))
 			{
-				const auto& relativePath = std::filesystem::relative(m_Owner->m_CurrentDirectory / (std::string(shaderNameBuffer) + ".slang"), HBL2::Project::GetAssetDirectory());
+				const auto& relativePath = std::filesystem::relative(m_Owner->m_CurrentDirectory / (m_ShaderNameBuffer + ".slang"), HBL2::Project::GetAssetDirectory());
 
 				auto shaderAssetHandle = AssetManager::Instance->CreateAsset({
 					.debugName = "shader-asset",
@@ -717,7 +721,7 @@ namespace HBL2::Editor
 					break;
 				}
 
-				std::ofstream fout(m_Owner->m_CurrentDirectory / (std::string(shaderNameBuffer) + ".slang"), 0);
+				std::ofstream fout(m_Owner->m_CurrentDirectory / (m_ShaderNameBuffer + ".slang"), 0);
 				fout << shaderSource;
 				fout.close();
 
@@ -727,6 +731,7 @@ namespace HBL2::Editor
 				}
 
 				m_OpenShaderSetupPopup = false;
+				m_ShaderNameBuffer = "New-Shader";
 			}
 
 			ImGui::SameLine();
@@ -734,6 +739,7 @@ namespace HBL2::Editor
 			if (ImGui::Button("Cancel"))
 			{
 				m_OpenShaderSetupPopup = false;
+				m_ShaderNameBuffer = "New-Shader";
 			}
 
 			ImGui::End();
@@ -743,22 +749,20 @@ namespace HBL2::Editor
 		{
 			ImGui::Begin("Material Setup", &m_OpenMaterialSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-			static char materialNameBuffer[256] = "New-Material";
-			ImGui::InputText("Material Name", materialNameBuffer, 256);
+			ImGui::InputText("Material Name", m_MaterialNameBuffer.data(), 256);
 
 			ImGui::NewLine();
 
-			static uint32_t shaderAssetHandlePacked = 0;
-			ImGui::InputScalar("Shader", ImGuiDataType_U32, (void*)(intptr_t*)&shaderAssetHandlePacked);
+			ImGui::InputScalar("Shader", ImGuiDataType_U32, (void*)(intptr_t*)&m_ShaderAssetHandlePacked);
 
-			Handle<Asset> shaderAssetHandle = Handle<Asset>::UnPack(shaderAssetHandlePacked);
+			Handle<Asset> shaderAssetHandle = Handle<Asset>::UnPack(m_ShaderAssetHandlePacked);
 
 			if (ImGui::BeginDragDropTarget())
 			{
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Shader"))
 				{
-					shaderAssetHandlePacked = *((uint32_t*)payload->Data);
-					shaderAssetHandle = Handle<Asset>::UnPack(shaderAssetHandlePacked);
+					m_ShaderAssetHandlePacked = *((uint32_t*)payload->Data);
+					shaderAssetHandle = Handle<Asset>::UnPack(m_ShaderAssetHandlePacked);
 
 					Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
 
@@ -768,11 +772,11 @@ namespace HBL2::Editor
 					// Reflect Shader.
 					m_ShaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
 
+					// Clear reflection data.
 					for (auto& data : m_ShaderUniformBufferData)
 					{
 						data.clear();
 					}
-
 					std::memset(m_ShaderUniformTextureData.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.Size());
 				}
 
@@ -949,24 +953,40 @@ namespace HBL2::Editor
 						{
 							auto& userMapHandlePacked = m_ShaderUniformTextureData[m_ShaderUniformTextureSize++];
 
+							ImVec4 color{ 1.0f, 1.0f, 1.0f, 1.0f };
+
+							if (JobSystem::Get().Busy(m_MaterialTextureLoadingCtx))
+							{
+								color = { 1.0f, 1.0f, 0.0f, 1.0f };
+							}
+							else if (userMapHandlePacked != 0 && !JobSystem::Get().Busy(m_MaterialTextureLoadingCtx))
+							{
+								color = { 0.0f, 1.0f, 0.0f, 1.0f };
+							}
+
+							ImGui::PushStyleColor(ImGuiCol_Text, color);
+
 							ImGui::InputScalar(b.name.c_str(), ImGuiDataType_U32, (void*)(intptr_t*)&userMapHandlePacked);
 
-							Handle<Asset> userMapAssetHandle = Handle<Asset>::UnPack(userMapHandlePacked);
-							Handle<Texture> userMapHandle = AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
+							ImGui::PopStyleColor();
 
 							if (ImGui::BeginDragDropTarget())
 							{
 								if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
 								{
 									userMapHandlePacked = *((uint32_t*)payload->Data);
-									userMapAssetHandle = Handle<Asset>::UnPack(userMapHandlePacked);
+									Handle<Asset> userMapAssetHandle = Handle<Asset>::UnPack(userMapHandlePacked);
 
 									if (userMapAssetHandle.IsValid())
 									{
 										TextureUtilities::Get().CreateAssetMetadataFile(userMapAssetHandle);
 									}
 
-									userMapHandle = AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
+									auto* task = AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_MaterialTextureLoadingCtx);
+									task->ThenOnMainThread([task](Handle<Texture> handle)
+									{
+										AssetManager::Instance->ReleaseResourceTask(task);
+									});
 								}
 
 								ImGui::EndDragDropTarget();
@@ -980,16 +1000,13 @@ namespace HBL2::Editor
 
 			if (ImGui::Button("OK"))
 			{
-				if ((m_AlbedoMapTask != nullptr && !m_AlbedoMapTask->Finished()) ||
-					(m_NormalMapTask != nullptr && !m_NormalMapTask->Finished()) ||
-					(m_MetallicMapTask != nullptr && !m_MetallicMapTask->Finished()) ||
-					(m_RoughnessMapTask != nullptr && !m_RoughnessMapTask->Finished()))
+				if (JobSystem::Get().Busy(m_MaterialTextureLoadingCtx))
 				{
 					HBL2_CORE_WARN("Please wait until the textures have finished loading.");
 				}
 				else
 				{
-					const auto& relativePath = std::filesystem::relative(m_Owner->m_CurrentDirectory / (std::string(materialNameBuffer) + ".mat"), HBL2::Project::GetAssetDirectory());
+					const auto& relativePath = std::filesystem::relative(m_Owner->m_CurrentDirectory / (m_MaterialNameBuffer + ".mat"), HBL2::Project::GetAssetDirectory());
 
 					auto materialAssetHandle = AssetManager::Instance->CreateAsset({
 						.debugName = "material-asset",
@@ -1021,16 +1038,9 @@ namespace HBL2::Editor
 						ShaderUtilities::Get().CreateMaterialMetadataFile(materialAssetHandle, m_SelectedMaterialType);
 					}
 
-					AssetManager::Instance->ReleaseResourceTask(m_AlbedoMapTask);
-					m_AlbedoMapTask = nullptr;
-					AssetManager::Instance->ReleaseResourceTask(m_NormalMapTask);
-					m_NormalMapTask = nullptr;
-					AssetManager::Instance->ReleaseResourceTask(m_MetallicMapTask);
-					m_MetallicMapTask = nullptr;
-					AssetManager::Instance->ReleaseResourceTask(m_RoughnessMapTask);
-					m_RoughnessMapTask = nullptr;
-
 					m_OpenMaterialSetupPopup = false;
+
+					ClearMaterialContextMenuData();
 				}
 			}
 
@@ -1040,17 +1050,34 @@ namespace HBL2::Editor
 			{
 				m_OpenMaterialSetupPopup = false;
 
-				AssetManager::Instance->ReleaseResourceTask(m_AlbedoMapTask);
-				m_AlbedoMapTask = nullptr;
-				AssetManager::Instance->ReleaseResourceTask(m_NormalMapTask);
-				m_NormalMapTask = nullptr;
-				AssetManager::Instance->ReleaseResourceTask(m_MetallicMapTask);
-				m_MetallicMapTask = nullptr;
-				AssetManager::Instance->ReleaseResourceTask(m_RoughnessMapTask);
-				m_RoughnessMapTask = nullptr;
+				ClearMaterialContextMenuData();
 			}
 
 			ImGui::End();
 		}
+	}
+
+	void ContentBrowserPanel::ClearMaterialContextMenuData()
+	{
+		m_ShaderAssetHandlePacked = 0;
+
+		m_MaterialNameBuffer = "New-Material";
+
+		for (auto& data : m_ShaderUniformBufferData)
+		{
+			data.clear();
+		}
+		std::memset(m_ShaderUniformTextureData.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.Size());
+
+		m_Topology = 3;
+		m_PolygonMode = 0;
+		m_CullMode = 2;
+		m_FrontFace = 1;
+		m_BlendEnabled = false;
+		m_ColorOutput = true;
+		m_DepthEnabled = true;
+		m_DepthWriteEnabled = false;
+		m_DepthTest = 1;
+		m_StencilEnabled = true;
 	}
 }
