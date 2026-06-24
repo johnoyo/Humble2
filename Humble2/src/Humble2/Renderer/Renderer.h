@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Resources\Types.h"
-#include "Resources\Handle.h"
+#include "Resources/Types.h"
+#include "Resources/Handle.h"
 
 #include "CommandBuffer.h"
 #include "UniformRingBuffer.h"
@@ -9,7 +9,7 @@
 #include "ShadowAtlasAllocator.h"
 #include "SceneRenderer.h"
 
-#include "ImGui\imgui_threaded_rendering.h"
+#include "ImGui/imgui_threaded_rendering.h"
 #include <queue>
 
 namespace HBL2

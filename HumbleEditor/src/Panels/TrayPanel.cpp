@@ -1,13 +1,13 @@
 #include "TrayPanel.h"
 
-#include "Core\Context.h"
-#include "Core\Events.h"
+#include "Core/Context.h"
+#include "Core/Events.h"
 
-#include "Scene\ISystem.h"
-#include "Resources\ResourceManager.h"
-#include "Script\BuildEngine.h"
-#include "ImGui\ImGuiRenderer.h"
-#include "Systems\EditorPanelSystem.h"
+#include "Scene/ISystem.h"
+#include "Resources/ResourceManager.h"
+#include "Script/BuildEngine.h"
+#include "ImGui/ImGuiRenderer.h"
+#include "Systems/EditorPanelSystem.h"
 
 namespace HBL2::Editor
 {

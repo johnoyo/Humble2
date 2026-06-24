@@ -2,9 +2,9 @@
 
 #include "Humble2.h"
 
-#include "Asset\EditorAssetManager.h"
+#include "Asset/EditorAssetManager.h"
 
-#include "Humble2\Systems\CameraSystem.h"
+#include "Humble2/Systems/CameraSystem.h"
 
 #include "Systems/TransformSystem.h"
 #include "Systems/EditorPanelSystem.h"

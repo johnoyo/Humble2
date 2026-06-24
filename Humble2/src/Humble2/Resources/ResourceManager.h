@@ -6,10 +6,10 @@
 #include "TypeDescriptors.h"
 #include "ResourceDeletionQueue.h"
 
-#include "Scene\Scene.h"
-#include "Sound\Sound.h"
-#include "Script\Script.h"
-#include "Prefab\Prefab.h"
+#include "Scene/Scene.h"
+#include "Sound/Sound.h"
+#include "Script/Script.h"
+#include "Prefab/Prefab.h"
 
 #include <cstring>
 #include <stdint.h>

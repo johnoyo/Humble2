@@ -1,9 +1,9 @@
 #include "ProjectSerializer.h"
 
-#include "Utilities\YamlUtilities.h"
+#include "Utilities/YamlUtilities.h"
 
 #include <fstream>
-#include <yaml-cpp\yaml.h>
+#include <yaml-cpp/yaml.h>
 
 namespace HBL2
 {

@@ -22,8 +22,6 @@ project "Humble2"
         "YAML_CPP_STATIC_DEFINE",
 
         "HBL2_BUILD_DLL",
-
-        table.unpack(JoltDefines)
 	}
     
     -- Include directories.
@@ -31,10 +29,13 @@ project "Humble2"
     {
         "src",
         "src/Humble2",
+    }
+    
+    externalincludedirs
+    {
         "src/Vendor",
-        "src/Vendor/spdlog-1.x/include",
-        "src/Vendor/entt/include",
-        "src/Vendor/fastgltf/include",
+        "../Humble2/src/Vendor/spdlog-1.x/include",
+        "../Humble2/src/Vendor/fastgltf/include",
         "../Dependencies/GLFW/include",
         "../Dependencies/GLEW/include",
         "../Dependencies/ImGui/imgui",
@@ -43,61 +44,48 @@ project "Humble2"
         "../Dependencies/GLM",
         "../Dependencies/YAML-Cpp/yaml-cpp/include",
         "../Dependencies/PortableFileDialogs",
-        "../Dependencies/FMOD/core/include",
+        "../Dependencies/FMOD/include",
         "../Dependencies/Box2D/box2d/src",
         "../Dependencies/Box2D/box2d/include",
         "../Dependencies/Jolt/jolt",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "../Dependencies/SLang/include",
-        "%{VULKAN_SDK}/Include"
-    }
-    
-    libdirs
-    {
-        "../Dependencies/GLFW/lib-vc2022",
-        "../Dependencies/GLEW/lib/Release/x64",
-        "../Dependencies/FMOD/core/lib/x64",
-        "../Dependencies/SLang/lib",
-        "%{VULKAN_SDK}/Lib"
+        "%{VULKAN_SDK}/Include",
+        "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS/include",
     }
     
     links
     {
-        "glew32.lib",
-        "glfw3.lib",
-        "opengl32.lib",
-
-        "vulkan-1.lib",
-
-        "slang.lib",
-        "slang-compiler.lib",
-
         "ImGui",
         "YAML-Cpp",
         "Box2D",
         "Jolt",
     }
     
-    defines (JoltDefines)
-
-    postbuildcommands
-    {
-        -- Ensure the SLang DLLs are copied to HumbleEditor
-        ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
-        ("{COPY} ../Dependencies/SLang/bin/slang.dll ../bin/" .. outputdir .. "/HumbleEditor"),
-        ("{COPY} ../Dependencies/SLang/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleEditor"),
-        ("{COPY} ../Dependencies/SLang/bin/slang-glslang.dll ../bin/" .. outputdir .. "/HumbleEditor"),
-
-        -- Ensure the SLang DLLs are copied to HumbleApp
-        ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
-        ("{COPY} ../Dependencies/SLang/bin/slang.dll ../bin/" .. outputdir .. "/HumbleApp"),
-        ("{COPY} ../Dependencies/SLang/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleApp"),
-        ("{COPY} ../Dependencies/SLang/bin/slang-glslang.dll ../bin/" .. outputdir .. "/HumbleApp"),
-    }
-
     filter "system:windows"
         systemversion "latest"    
-        defines { "HBL2_PLATFORM_WINDOWS" }
+        defines { "HBL2_PLATFORM_WINDOWS", table.unpack(JoltDefines) }
+
+        libdirs
+        {
+            "../Dependencies/GLFW/glfw-3.4.bin.WIN64/lib-vc2022",
+            "../Dependencies/GLEW/lib/Release/x64",
+            "../Dependencies/FMOD/Windows/core/lib/x64",
+            "../Dependencies/SLang/slang-2026.11-windows-x86_64/lib",
+            "%{VULKAN_SDK}/Lib"
+        }
+
+        links
+        {
+            "glew32.lib",
+            "glfw3.lib",
+            "opengl32.lib",
+
+            "vulkan-1.lib",
+
+            "slang.lib",
+            "slang-compiler.lib",
+        }
 
         postbuildcommands
         {
@@ -109,106 +97,249 @@ project "Humble2"
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleApp"),
             
-            -- Ensure the GLEW and FMOD DLLs are copied to HumbleEditor
+            -- Ensure the GLEW and SLang DLLs are copied to HumbleEditor
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/GLEW/bin/Release/x64/glew32.dll ../bin/" .. outputdir .. "/HumbleEditor"),
-
-            -- Ensure the GLEW and FMOD DLLs are copied to HumbleApp
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-windows-x86_64/bin/slang.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-windows-x86_64/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-windows-x86_64/bin/slang-glslang.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+            
+            -- Ensure the GLEW and SLang DLLs are copied to HumbleApp
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} ../Dependencies/GLEW/bin/Release/x64/glew32.dll ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-windows-x86_64/bin/slang.dll ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-windows-x86_64/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-windows-x86_64/bin/slang-glslang.dll ../bin/" .. outputdir .. "/HumbleApp"),
         }
 
-    filter "configurations:Debug"
-        defines { "DEBUG" }
-        runtime "Debug"
-        symbols "On"
+        filter { "system:windows", "configurations:Debug" }
+            defines { "DEBUG" }
+            runtime "Debug"
+            symbols "On"
+
+            links
+            {
+                "fmodL_vc.lib",
+            }
+
+            postbuildcommands
+            {
+                -- Ensure the Humble and FMOD DLLs are copied to HumbleEditor
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} ../Dependencies/FMOD/Windows/core/lib/x64/fmodL.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} %{cfg.buildtarget.directory}/Humble2.pdb ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+
+                -- Ensure the Humble and FMOD DLLs are copied to HumbleApp
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} ../Dependencies/FMOD/Windows/core/lib/x64/fmodL.dll ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} %{cfg.buildtarget.directory}/Humble2.pdb ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleApp"),
+            }
+            
+        filter { "system:windows", "configurations:Release" }
+            defines { "RELEASE" }
+            runtime "Release"
+            optimize "On"
+            
+            links
+            {
+                "fmod_vc.lib",
+            }
+
+            postbuildcommands
+            {
+                -- Ensure the Humble and FMOD DLLs are copied to HumbleEditor
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} ../Dependencies/FMOD/Windows/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} %{cfg.buildtarget.directory}/Humble2.pdb ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+
+                -- Ensure the Humble and FMOD DLLs are copied to HumbleApp
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} ../Dependencies/FMOD/Windows/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} %{cfg.buildtarget.directory}/Humble2.pdb ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleApp"),
+            }
+
+        filter { "system:windows", "configurations:Dist" }
+            defines { "DIST" }
+            runtime "Release"
+            optimize "Full"
+            symbols "Off"
+            
+            links
+            {
+                "fmod_vc.lib",
+            }
+
+            postbuildcommands
+            {
+                -- Ensure the FMOD DLL is copied to HumbleEditor
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} ../Dependencies/FMOD/Windows/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+
+                -- Ensure the FMOD DLL is copied to HumbleApp
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} ../Dependencies/FMOD/Windows/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleApp"),
+            }
+            
+        filter { "system:windows", "configurations:Emscripten" }
+            defines { "EMSCRIPTEN" }
+            runtime "Release"
+            optimize "On"
+            
+            links
+            {
+                "fmod_vc.lib",
+            }
+
+            postbuildcommands
+            {
+                -- Ensure the FMOD DLL is copied to HumbleEditor
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} ../Dependencies/FMOD/Windows/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+
+                -- Ensure the FMOD DLL is copied to HumbleApp
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} ../Dependencies/FMOD/Windows/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleApp"),
+            }
+
+    filter "system:macosx"
+        systemversion "latest"    
+        defines { "HBL2_PLATFORM_MACOS", table.unpack(JoltDefinesArm) }
+
+        removefiles
+        {
+            "src/Platform/OpenGL/**.h",
+            "src/Platform/OpenGL/**.cpp"
+        }
+
+        linkoptions
+        {
+            "-rpath @executable_path",
+            "-rpath /Users/johnpetr/VulkanSDK/1.4.350.1/macOS/lib",
+        }
+
+        libdirs
+        {
+            "../Dependencies/GLFW/glfw-3.4.bin.MACOS/lib-arm64",
+            "../Dependencies/FMOD/MacOS/core/lib",
+            "../Dependencies/SLang/slang-2026.11-macos-aarch64/lib",
+            "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS/lib",
+        }
 
         links
         {
-            "fmodL_vc.lib",
+            "glfw3",
+
+            -- Vulkan / MoltenVK
+            "vulkan",
+
+            -- Slang
+            "slang",
+            "slang-compiler.0.2026.11",
+
+            -- Required Apple frameworks
+            "Cocoa.framework",
+            "IOKit.framework",
+            "CoreVideo.framework",
+            "QuartzCore.framework",
+            "Metal.framework",
+            "Foundation.framework"
         }
 
         postbuildcommands
         {
-            -- Ensure the GLEW and FMOD DLLs are copied to HumbleEditor
+            -- HumbleEditor
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmodL.dll ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} %{cfg.buildtarget.directory}/Humble2.pdb ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleEditor"),
 
-            -- Ensure the GLEW and FMOD DLLs are copied to HumbleApp
+            -- HumbleApp
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmodL.dll ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} %{cfg.buildtarget.directory}/Humble2.pdb ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleApp"),
-        }
-        
-    filter "configurations:Release"
-        defines { "RELEASE" }
-        runtime "Release"
-        optimize "On"
-        
-        links
-        {
-            "fmod_vc.lib",
-        }
+            ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleApp"),
 
-        postbuildcommands
-        {
-            -- Ensure the GLEW and FMOD DLLs are copied to HumbleEditor
-            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} %{cfg.buildtarget.directory}/Humble2.pdb ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+            -- Slang dylibs -> HumbleEditor
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.0.2026.11.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-glslang-2026.11.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
 
-            -- Ensure the GLEW and FMOD DLLs are copied to HumbleApp
-            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} %{cfg.buildtarget.directory}/Humble2.pdb ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleApp"),
+            -- Slang dylibs -> HumbleApp
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang.dylib ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.0.2026.11.dylib ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-glslang-2026.11.dylib ../bin/" .. outputdir .. "/HumbleApp"),
+
+            ("xattr -dr com.apple.quarantine ../bin"),
         }
 
-    filter "configurations:Dist"
-        defines { "DIST" }
-        runtime "Release"
-        optimize "Full"
-        symbols "Off"
-        
-        links
-        {
-            "fmod_vc.lib",
-        }
+        filter { "system:macosx", "configurations:Debug" }
+            defines { "DEBUG" }
+            runtime "Debug"
+            symbols "On"
 
-        postbuildcommands
-        {
-            -- Ensure the GLEW and FMOD DLLs are copied to HumbleEditor
-            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+            links
+            {
+                "fmodL",
+            }
 
-            -- Ensure the GLEW and FMOD DLLs are copied to HumbleApp
-            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} %{cfg.buildtarget.directory}/Humble2.dll ../bin/" .. outputdir .. "/HumbleApp"),
-        }
-        
-    filter "configurations:Emscripten"
-        defines { "EMSCRIPTEN" }
-        runtime "Release"
-        optimize "On"
-        
-        links
-        {
-            "fmod_vc.lib",
-        }
+            postbuildcommands
+            {
+                -- HumbleEditor
+                ("{COPY} ../Dependencies/FMOD/MacOS/core/lib/libfmodL.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
 
-        postbuildcommands
-        {
-            -- Ensure the GLEW and FMOD DLLs are copied to HumbleEditor
-            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+                -- HumbleApp
+                ("{COPY} ../Dependencies/FMOD/MacOS/core/lib/libfmodL.dylib ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.dylib ../bin/" .. outputdir .. "/HumbleApp"),
 
-            -- Ensure the GLEW and FMOD DLLs are copied to HumbleApp
-            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/FMOD/core/lib/x64/fmod.dll ../bin/" .. outputdir .. "/HumbleApp"),
-        }
+                ("xattr -dr com.apple.quarantine ../bin"),
+            }
+            
+        filter { "system:macosx", "configurations:Release" }
+            defines { "RELEASE" }
+            runtime "Release"
+            optimize "On"
+            
+            links
+            {
+                "fmod",
+            }
+
+            postbuildcommands
+            {
+                -- HumbleEditor
+                ("{COPY} ../Dependencies/FMOD/MacOS/core/lib/libfmod.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
+
+                -- HumbleApp
+                ("{COPY} ../Dependencies/FMOD/MacOS/core/lib/libfmod.dylib ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.dylib ../bin/" .. outputdir .. "/HumbleApp"),
+
+                ("xattr -dr com.apple.quarantine ../bin"),
+            }
+
+        filter { "system:macosx", "configurations:Dist" }
+            defines { "DIST" }
+            runtime "Release"
+            optimize "Full"
+            symbols "Off"
+            
+            links
+            {
+                "fmod",
+            }
+
+            postbuildcommands
+            {
+                -- HumbleEditor
+                ("{COPY} ../Dependencies/FMOD/MacOS/core/lib/libfmod.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
+
+                -- HumbleApp
+                ("{COPY} ../Dependencies/FMOD/MacOS/core/lib/libfmod.dylib ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.dylib ../bin/" .. outputdir .. "/HumbleApp"),
+
+                ("xattr -dr com.apple.quarantine ../bin"),
+            }

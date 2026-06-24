@@ -2,17 +2,17 @@
 
 #include "AssetManager.h"
 
-#include "Utilities\ShaderUtilities.h"
-#include "Utilities\TextureUtilities.h"
-#include "Utilities\MeshUtilities.h"
+#include "Utilities/ShaderUtilities.h"
+#include "Utilities/TextureUtilities.h"
+#include "Utilities/MeshUtilities.h"
 
-#include "Scene\SceneSerializer.h"
-#include "Project\Project.h"
-#include "Prefab\Prefab.h"
+#include "Scene/SceneSerializer.h"
+#include "Project/Project.h"
+#include "Prefab/Prefab.h"
 
-#include "Utilities\Collections\Span.h"
+#include "Utilities/Collections/Span.h"
 
-#include <yaml-cpp\yaml.h>
+#include <yaml-cpp/yaml.h>
 
 namespace HBL2
 {

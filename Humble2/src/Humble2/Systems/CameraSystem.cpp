@@ -1,6 +1,6 @@
 #include "CameraSystem.h"
 
-#include "Renderer\Renderer.h"
+#include "Renderer/Renderer.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>

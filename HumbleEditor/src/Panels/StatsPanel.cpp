@@ -1,8 +1,8 @@
 #include "StatsPanel.h"
 
-#include "Core\Application.h"
-#include "ImGui\ImGuiRenderer.h"
-#include "Systems\EditorPanelSystem.h"
+#include "Core/Application.h"
+#include "ImGui/ImGuiRenderer.h"
+#include "Systems/EditorPanelSystem.h"
 
 namespace HBL2::Editor
 {

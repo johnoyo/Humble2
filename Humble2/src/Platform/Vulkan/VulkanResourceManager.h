@@ -1,20 +1,20 @@
 #pragma once
 
-#include "Resources\ResourceManager.h"
+#include "Resources/ResourceManager.h"
 
-#include "Resources\Pool.h"
-#include "Resources\SplitPool.h"
-#include "Resources\Types.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/Pool.h"
+#include "Resources/SplitPool.h"
+#include "Resources/Types.h"
+#include "Resources/TypeDescriptors.h"
 
-#include "Resources\VulkanBuffer.h"
-#include "Resources\VulkanShader.h"
-#include "Resources\VulkanTexture.h"
-#include "Resources\VulkanFrameBuffer.h"
-#include "Resources\VulkanBindGroup.h"
-#include "Resources\VulkanBindGroupLayout.h"
-#include "Resources\VulkanRenderPass.h"
-#include "Resources\VulkanRenderPassLayout.h"
+#include "Resources/VulkanBuffer.h"
+#include "Resources/VulkanShader.h"
+#include "Resources/VulkanTexture.h"
+#include "Resources/VulkanFrameBuffer.h"
+#include "Resources/VulkanBindGroup.h"
+#include "Resources/VulkanBindGroupLayout.h"
+#include "Resources/VulkanRenderPass.h"
+#include "Resources/VulkanRenderPassLayout.h"
 
 namespace HBL2
 {

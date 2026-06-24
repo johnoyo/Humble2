@@ -1,8 +1,8 @@
 #include "Renderer.h"
 
 #include "Device.h"
-#include "Core\Window.h"
-#include "Project\Project.h"
+#include "Core/Window.h"
+#include "Project/Project.h"
 
 #include <future>
 

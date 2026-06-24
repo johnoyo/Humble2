@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Scene.h"
-#include "Utilities\Allocators\Arena.h"
-#include "Utilities\Collections\Collections.h"
+#include "Utilities/Allocators/Arena.h"
+#include "Utilities/Collections/Collections.h"
 
 #include <format>
 

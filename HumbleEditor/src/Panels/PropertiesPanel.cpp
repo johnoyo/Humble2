@@ -1,17 +1,17 @@
 #include "PropertiesPanel.h"
 
-#include "Script\BuildEngine.h"
-#include "ImGui\ImGuiRenderer.h"
-#include "Systems\EditorPanelSystem.h"
+#include "Script/BuildEngine.h"
+#include "ImGui/ImGuiRenderer.h"
+#include "Systems/EditorPanelSystem.h"
 
-#include <UI\UserInterfaceUtilities.h>
+#include "UI/UserInterfaceUtilities.h"
 
-#include "Inspectors\LinkEditor.h"
-#include "Inspectors\CameraEditor.h"
-#include <Inspectors\AnimationCurveEditor.h>
+#include "Inspectors/LinkEditor.h"
+#include "Inspectors/CameraEditor.h"
+#include "Inspectors/AnimationCurveEditor.h"
 
-#include <glm\glm.hpp>
-#include <glm\gtc\type_ptr.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace HBL2::Editor
 {
@@ -157,8 +157,8 @@ namespace HBL2::Editor
 				auto& tag = activeScene->GetComponent<HBL2::Component::Tag>(HBL2::Component::EditorVisible::SelectedEntity).Name;
 
 				char buffer[256];
-				memset(buffer, 0, sizeof(buffer));
-				strcpy_s(buffer, sizeof(buffer), tag.c_str());
+				std::memset(buffer, 0, sizeof(buffer));
+				std::strcpy(buffer, tag.c_str());
 
 				if (ImGui::InputText("Tag", buffer, sizeof(buffer)))
 				{
@@ -1378,8 +1378,8 @@ namespace HBL2::Editor
 							{
 								ShaderUtilities::Get().UpdateShaderBindGroupResourcesAssetFile(m_Owner->m_SelectedAsset, {
 									.ReflectionData = &m_ShaderReflectionData,
-									.Buffers = m_ShaderUniformBufferData,
-									.TextureAssets = m_ShaderUniformTextureData,
+                                    .Buffers = { m_ShaderUniformBufferData.Data(), m_ShaderUniformBufferData.Size() },
+                                    .TextureAssets = { m_ShaderUniformTextureData.Data(), m_ShaderUniformTextureData.Size() },
 								});
 
 								shaderNeedsReimport = false;
@@ -2072,8 +2072,8 @@ namespace HBL2::Editor
 									.ShaderAssetHandle = shaderAssetHandle,
 									.VariantHash = mat->VariantHash,
 									.ReflectionData = &m_ShaderReflectionData,
-									.Buffers = m_ShaderUniformBufferData,
-									.TextureAssets = m_ShaderUniformTextureData,
+                                    .Buffers = { m_ShaderUniformBufferData.Data(), m_ShaderUniformBufferData.Size() },
+                                    .TextureAssets = { m_ShaderUniformTextureData.Data(), m_ShaderUniformTextureData.Size() },
 								});
 
 								m_MaterialNeedsReimport = false;

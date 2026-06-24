@@ -4,9 +4,9 @@
 #include "Components.h"
 #include "StructuralCommandBuffer.h"
 
-#include "ECS\TypeResolver.h"
-#include "Utilities\JobSystem.h"
-#include "Utilities\Collections\FixedBitset.h"
+#include "ECS/TypeResolver.h"
+#include "Utilities/JobSystem.h"
+#include "Utilities/Collections/FixedBitset.h"
 
 #include <vector>
 #include <bitset>

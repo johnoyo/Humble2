@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Humble2API.h"
-#include "Scene\Scene.h"
-#include "Utilities\DynamicLibrary.h"
+#include "Scene/Scene.h"
+#include "Utilities/DynamicLibrary.h"
 
 #include <string>
 #include <filesystem>

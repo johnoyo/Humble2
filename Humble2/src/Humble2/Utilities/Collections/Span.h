@@ -26,30 +26,30 @@ namespace HBL2
 		Span(T* data, size_t size) : m_Data(data), m_Size(size) {}
 
 		Span(std::vector<T>& list) : m_Data(list.data()), m_Size(list.size()) {}
-		template<typename U, typename = std::enable_if_t<std::is_convertible<U*, T*>::value>>
-		Span(const std::vector<U>& list) : m_Data(list.data()), m_Size(list.size()) {}
+        template<typename U>
+        Span(std::vector<U>& list) : m_Data(list.data()), m_Size(list.size()) {}
 
 		template<size_t N>
 		Span(std::array<T, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
-		template<typename U, typename = std::enable_if_t<std::is_convertible<U*, T*>::value>, size_t N>
-		Span(std::array<U, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
+        template<typename U, size_t N>
+        Span(std::array<U, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
 
 		Span(DArray<T>& list) : m_Data(list.data()), m_Size(list.size()) {}
-		template<typename U, typename = std::enable_if_t<std::is_convertible<U*, T*>::value>>
-		Span(const DArray<U>& list) : m_Data(list.data()), m_Size(list.size()) {}
+        template<typename U>
+        Span(DArray<U>& list) : m_Data(list.data()), m_Size(list.size()) {}
 
 		template<size_t N>
 		Span(T(&array)[N]) : m_Data(array), m_Size(sizeof(array) / sizeof(T)) {}
 
 		template<size_t N>
 		Span(StaticArray<T, N>& array) : m_Data(array.Data()), m_Size(array.Size()) {}
-		template<typename U, typename = std::enable_if_t<std::is_convertible<U*, T*>::value>, size_t N>
-		Span(StaticArray<U, N>& array) : m_Data(array.Data()), m_Size(array.Size()) {}
+        template<typename U, size_t N>
+        Span(StaticArray<U, N>& array) : m_Data(array.Data()), m_Size(array.Size()) {}
 
 		template<size_t N>
 		Span(StaticDArray<T, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
-		template<typename U, typename = std::enable_if_t<std::is_convertible<U*, T*>::value>, size_t N>
-		Span(const StaticDArray<U, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
+        template<typename U, size_t N>
+		Span(StaticDArray<U, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
 
 		explicit Span(T* data) : m_Data(data), m_Size(1) {}
 		explicit Span(T& data) : m_Data(&data), m_Size(1) {}

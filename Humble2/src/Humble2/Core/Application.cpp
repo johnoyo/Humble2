@@ -1,8 +1,8 @@
 #include "Application.h"
 
-#include "Asset\EditorAssetManager.h"
-#include "Script\BuildEngine.h"
-#include "Platform\Windows\WindowsBuildEngine.h"
+#include "Asset/EditorAssetManager.h"
+#include "Script/BuildEngine.h"
+#include "Platform/Windows/WindowsBuildEngine.h"
 
 #ifdef DIST
 	#define BEGIN_APP_PROFILE(tag)
@@ -83,6 +83,7 @@ namespace HBL2
 
 		switch (gfxAPI)
 		{
+#ifndef HBL2_PLATFORM_MACOS
 		case GraphicsAPI::OPENGL:
 			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
 			g_GfxAPI = "OpenGL";
@@ -92,6 +93,7 @@ namespace HBL2
 			Renderer::Instance = new OpenGLRenderer;
 			ImGuiRenderer::Instance = new OpenGLImGuiRenderer;
 			break;
+#endif
 		case GraphicsAPI::VULKAN:
 			HBL2_CORE_INFO("Vulkan is selected as the renderer API.");
 			g_GfxAPI = "Vulkan";
@@ -102,6 +104,7 @@ namespace HBL2
 			ImGuiRenderer::Instance = new VulkanImGuiRenderer;
 			break;
 		case GraphicsAPI::NONE:
+        default:
 			HBL2_CORE_ERROR("No RendererAPI specified. Please choose between OpenGL, or Vulkan depending on your target platform.");
 			exit(-1);
 			break;

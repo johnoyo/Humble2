@@ -2,8 +2,8 @@
 
 #include "Humble2API.h"
 
-#include "Resources\Handle.h"
-#include "Scene\Scene.h"
+#include "Resources/Handle.h"
+#include "Scene/Scene.h"
 
 namespace HBL2
 {

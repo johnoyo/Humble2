@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\Handle.h"
-#include "Resources\Types.h"
-#include "Loaders\UFbxLoader.h"
-#include "Loaders\FastGltfLoader.h"
+#include "Resources/Handle.h"
+#include "Resources/Types.h"
+#include "Loaders/UFbxLoader.h"
+#include "Loaders/FastGltfLoader.h"
 
 #include <filesystem>
 

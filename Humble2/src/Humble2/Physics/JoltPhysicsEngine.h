@@ -2,7 +2,7 @@
 
 #include "PhysicsEngine3D.h"
 
-#include "Scene\Scene.h"
+#include "Scene/Scene.h"
 
 // Jolt includes
 #include <Jolt/Jolt.h>

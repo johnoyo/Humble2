@@ -1,6 +1,6 @@
-﻿#include "JobSystem.h"
+#include "JobSystem.h"
 
-#include "Renderer\Device.h"
+#include "Renderer/Device.h"
 
 namespace HBL2
 {

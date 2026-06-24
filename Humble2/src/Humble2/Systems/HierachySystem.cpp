@@ -1,7 +1,7 @@
 #include "HierachySystem.h"
 
-#include "Core\Allocators.h"
-#include "Utilities\Collections\Collections.h"
+#include "Core/Allocators.h"
+#include "Utilities/Collections/Collections.h"
 
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/euler_angles.hpp>

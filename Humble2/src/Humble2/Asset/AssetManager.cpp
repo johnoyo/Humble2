@@ -1,6 +1,6 @@
 #include "AssetManager.h"
 
-#include "Project\Project.h"
+#include "Project/Project.h"
 #include "Utilities/ShaderUtilities.h"
 #include "Utilities/MeshUtilities.h"
 

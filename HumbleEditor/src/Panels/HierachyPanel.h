@@ -2,7 +2,7 @@
 
 #include "EditorPanel.h"
 
-#include "ECS\Entity.h"
+#include "ECS/Entity.h"
 
 namespace HBL2::Editor
 {

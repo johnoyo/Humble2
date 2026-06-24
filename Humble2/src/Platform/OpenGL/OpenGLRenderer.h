@@ -1,25 +1,25 @@
 #pragma once
 
 #include "Base.h"
-#include "Core\Context.h"
+#include "Core/Context.h"
 
-#include "Scene\Components.h"
-#include "Renderer\Renderer.h"
-#include "Resources\ResourceManager.h"
+#include "Scene/Components.h"
+#include "Renderer/Renderer.h"
+#include "Resources/ResourceManager.h"
 
 #include "OpenGLCommandBuffer.h"
 #include "OpenGLDevice.h"
 #include "OpenGLResourceManager.h"
 
-#include "Resources\OpenGLBuffer.h"
-#include "Resources\OpenGLShader.h"
-#include "Resources\OpenGLTexture.h"
-#include "Resources\OpenGLFrameBuffer.h"
+#include "Resources/OpenGLBuffer.h"
+#include "Resources/OpenGLShader.h"
+#include "Resources/OpenGLTexture.h"
+#include "Resources/OpenGLFrameBuffer.h"
 
 #include "OpenGLWindow.h"
 #include "OpenGLCommon.h"
 
-#include "Utilities\TextureUtilities.h"
+#include "Utilities/TextureUtilities.h"
 
 namespace HBL2
 {

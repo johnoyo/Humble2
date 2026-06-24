@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Physics/JoltPhysicsEngine.h"
-#include "Scene\Scene.h"
-#include "Scene\ISystem.h"
-#include "Scene\Components.h"
+#include "Scene/Scene.h"
+#include "Scene/ISystem.h"
+#include "Scene/Components.h"
 
 namespace HBL2
 {

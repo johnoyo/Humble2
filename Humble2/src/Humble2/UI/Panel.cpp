@@ -1,7 +1,9 @@
 #include "Panel.h"
 
-#include <Platform\OpenGL\OpenGLResourceManager.h>
-#include <Platform\Vulkan\VulkanResourceManager.h>
+#ifndef HBL2_PLATFORM_MACOS
+    #include "Platform/OpenGL/OpenGLResourceManager.h"
+    #include "Platform/Vulkan/VulkanResourceManager.h"
+#endif
 
 #include <imgui_impl_vulkan.h>
 

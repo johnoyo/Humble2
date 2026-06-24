@@ -1,15 +1,15 @@
 #pragma once
 
 #include "Humble2.h"
-#include "Scene\ISystem.h"
+#include "Scene/ISystem.h"
 
 #include "EditorPanel.h"
 #include "EditorComponents.h"
 
-#include "Asset\AssetManager.h"
-#include "Scene\SceneManager.h"
-#include "Utilities\EntityPresets.h"
-#include "ImGui\ImGuiRenderer.h"
+#include "Asset/AssetManager.h"
+#include "Scene/SceneManager.h"
+#include "Utilities/EntityPresets.h"
+#include "ImGui/ImGuiRenderer.h"
 
 namespace HBL2
 {

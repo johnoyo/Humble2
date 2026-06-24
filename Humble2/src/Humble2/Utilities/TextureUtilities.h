@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\Handle.h"
-#include "Resources\Types.h"
-#include "Resources\ResourceManager.h"
+#include "Resources/Handle.h"
+#include "Resources/Types.h"
+#include "Resources/ResourceManager.h"
 
 namespace HBL2
 {

@@ -2,21 +2,22 @@
 
 #include "Base.h"
 
-#include "ECS\DenseComponentStorage.h"
+#include "ECS/DenseComponentStorage.h"
 
-#include "Resources\Handle.h"
-#include "Resources\Types.h"
-#include "Sound\Sound.h"
-#include "Asset\Asset.h"
+#include "Resources/Handle.h"
+#include "Resources/Types.h"
+#include "Sound/Sound.h"
+#include "Asset/Asset.h"
 
-#include "Physics\Physics.h"
-#include "Utilities\Bounds.h"
-#include "Utilities\JobSystem.h"
-#include "Utilities\Collections\StaticArray.h"
-#include "Utilities\Collections\StaticDArray.h"
-#include "Utilities\Collections\StaticString.h"
+#include "Physics/Physics.h"
+#include "Utilities/Bounds.h"
+#include "Utilities/JobSystem.h"
+#include "Utilities/Collections/StaticArray.h"
+#include "Utilities/Collections/StaticDArray.h"
+#include "Utilities/Collections/StaticString.h"
 
-#include <glm\gtx\hash.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 
 namespace HBL2
 {

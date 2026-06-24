@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Core\Context.h"
-#include "Core\Events.h"
-#include "Scene\Scene.h"
-#include "Scene\SceneSerializer.h"
-#include "Resources\Handle.h"
+#include "Core/Context.h"
+#include "Core/Events.h"
+#include "Scene/Scene.h"
+#include "Scene/SceneSerializer.h"
+#include "Resources/Handle.h"
 
-#include "Asset\AssetManager.h"
-#include "Resources\ResourceManager.h"
+#include "Asset/AssetManager.h"
+#include "Resources/ResourceManager.h"
 
 namespace HBL2
 {

@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Base.h"
-#include "Asset\Asset.h"
-#include "Resources\Types.h"
-#include "Utilities\Result.h"
-#include "Utilities\Collections\Span.h"
+#include "Asset/Asset.h"
+#include "Resources/Types.h"
+#include "Utilities/Result.h"
+#include "Utilities/Collections/Span.h"
 
 #include <fastgltf/core.hpp>
 #include <fastgltf/types.hpp>

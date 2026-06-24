@@ -440,7 +440,7 @@ namespace HBL2
 		{
 			uint64_t hash = CalculateBindGroupLayoutHash(&bindGroupLayout);
 
-			if (layoutHash == hash)
+			if (layoutHash == hash && bindGroupLayout.DebugName != nullptr)
 			{
 				VulkanBindGroupLayout* mutBindGroupLayout = (VulkanBindGroupLayout*)&bindGroupLayout;
 				if (mutBindGroupLayout->TryAddRef())

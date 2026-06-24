@@ -19,10 +19,13 @@ project "HumbleEditor"
         "src",
         "../Humble2/src",
         "../Humble2/src/Humble2",
-        "../Humble2/src/Vendor",
-        "../Humble2/src/Vendor/entt/include",
+    }
+    
+    externalincludedirs
+    {
         "../Humble2/src/Vendor/spdlog-1.x/include",
         "../Humble2/src/Vendor/fastgltf/include",
+        "../Humble2/src/Vendor",
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
         "../Dependencies/ImGuizmo",
@@ -38,7 +41,8 @@ project "HumbleEditor"
         "../Dependencies/Jolt/jolt",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "../Dependencies/SLang/include",
-        "%{VULKAN_SDK}/Include"
+        "%{VULKAN_SDK}/Include",
+        "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS/include",
     }
 
     links
@@ -53,12 +57,20 @@ project "HumbleEditor"
     defines
     {
         "YAML_CPP_STATIC_DEFINE",
-        table.unpack(JoltDefines)
     }
 
     filter "system:windows"
         systemversion "latest"
-        defines { "HBL2_PLATFORM_WINDOWS" }
+        defines { "HBL2_PLATFORM_WINDOWS", table.unpack(JoltDefines) }
+
+    filter "system:macosx"
+        systemversion "latest"
+        defines { "HBL2_PLATFORM_MACOS", table.unpack(JoltDefinesArm) }
+
+        linkoptions
+        {
+            "-rpath @executable_path"
+        }
 
     filter "configurations:Debug"
         defines { "DEBUG" }

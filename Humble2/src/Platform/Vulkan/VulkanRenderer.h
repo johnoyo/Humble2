@@ -1,16 +1,16 @@
 #pragma once
 
 #include "Base.h"
-#include "Core\Context.h"
+#include "Core/Context.h"
 
-#include "Scene\Components.h"
-#include "Renderer\Renderer.h"
+#include "Scene/Components.h"
+#include "Renderer/Renderer.h"
 
 #include "VulkanCommandBuffer.h"
 
 #include "VulkanCommon.h"
 
-#include "Utilities\Collections\DeletionQueue.h"
+#include "Utilities/Collections/DeletionQueue.h"
 
 namespace HBL2
 {

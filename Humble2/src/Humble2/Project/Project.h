@@ -2,16 +2,16 @@
 
 #include "Base.h"
 
-#include "Scene\Scene.h"
-#include "Scene\SceneSerializer.h"
-#include "Scene\SceneManager.h"
+#include "Scene/Scene.h"
+#include "Scene/SceneSerializer.h"
+#include "Scene/SceneManager.h"
 
-#include "Renderer\Renderer.h"
-#include "Resources\ResourceManager.h"
-#include "Physics\Physics.h"
-#include "Physics\PhysicsEngine2D.h"
-#include "Physics\PhysicsEngine3D.h"
-#include "Sound\Sound.h"
+#include "Renderer/Renderer.h"
+#include "Resources/ResourceManager.h"
+#include "Physics/Physics.h"
+#include "Physics/PhysicsEngine2D.h"
+#include "Physics/PhysicsEngine3D.h"
+#include "Sound/Sound.h"
 
 #include <string>
 #include <filesystem>

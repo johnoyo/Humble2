@@ -1,10 +1,10 @@
 #include "SceneSerializer.h"
 
-#include "Script\Script.h"
-#include "Script\BuildEngine.h"
-#include "Resources\ResourceManager.h"
-#include "Utilities\YamlUtilities.h"
-#include "Utilities\PrefabUtilities.h"
+#include "Script/Script.h"
+#include "Script/BuildEngine.h"
+#include "Resources/ResourceManager.h"
+#include "Utilities/YamlUtilities.h"
+#include "Utilities/PrefabUtilities.h"
 
 #include "EntitySerializer.h"
 

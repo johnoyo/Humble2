@@ -355,3 +355,12 @@ MigrationBackup/
 .ionide/
 *.tlog
 *.idb
+
+# MacOSX
+.DS_Store
+*.plist
+*.pbxproj
+*.xcbkptlist
+*.xcuserstate
+*.xcworkspacedata
+

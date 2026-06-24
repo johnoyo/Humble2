@@ -1,13 +1,12 @@
 #include "UFbxLoader.h"
 
-#include <Project\Project.h>
+#include "Project/Project.h"
 
-#include <Resources\ResourceManager.h>
+#include "Resources/ResourceManager.h"
 
-#include <Utilities\ShaderUtilities.h>
-#include <Utilities\TextureUtilities.h>
-
-#include <Utilities\FileDialogs.h>
+#include "Utilities/ShaderUtilities.h"
+#include "Utilities/TextureUtilities.h"
+#include "Utilities/FileDialogs.h"
 
 namespace HBL2
 {
@@ -117,7 +116,7 @@ namespace HBL2
         }
 
         Handle<Mesh> handle = HBL2::ResourceManager::Instance->CreateMesh({
-            .debugName = _strdup(path.filename().stem().string().c_str()),
+            .debugName = strdup(path.filename().stem().string().c_str()),
             .meshes = std::move(meshes),
         });
 
@@ -209,7 +208,7 @@ namespace HBL2
         }
 
         ResourceManager::Instance->ReimportMesh(handle, {
-            .debugName = _strdup(meshPath.filename().stem().string().c_str()),
+            .debugName = strdup(meshPath.filename().stem().string().c_str()),
             .meshes = std::move(meshes),
         });
 
@@ -737,7 +736,7 @@ namespace HBL2
         uint32_t numSubMeshes = fbxMesh.material_parts.count;
         if (numSubMeshes)
         {
-            meshPartDescriptor.debugName = _strdup(node->name.data);
+            meshPartDescriptor.debugName = strdup(node->name.data);
             meshPartDescriptor.subMeshes.reserve(numSubMeshes);
             for (uint32_t subMeshIndex = 0; subMeshIndex < numSubMeshes; ++subMeshIndex)
             {
@@ -790,7 +789,7 @@ namespace HBL2
     Result<SubMeshDescriptor> UFbxLoader::LoadSubMeshVertexData(const ufbx_node* node, uint32_t meshIndex, uint32_t subMeshIndex)
     {
         SubMeshDescriptor subMeshDescriptor{};
-        subMeshDescriptor.debugName = node->materials.count > 0 ? _strdup(node->materials[subMeshIndex]->name.data) : _strdup(node->name.data);
+        subMeshDescriptor.debugName = node->materials.count > 0 ? strdup(node->materials[subMeshIndex]->name.data) : strdup(node->name.data);
         subMeshDescriptor.minVertex = { (std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)() };
         subMeshDescriptor.maxVertex = { (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::min)(), (std::numeric_limits<float>::min)() };
 

@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/TypeDescriptors.h"
 
-#include "Platform\OpenGL\OpenGLCommon.h"
+#include "Platform/OpenGL/OpenGLCommon.h"
 
 #include <string>
 #include <fstream>

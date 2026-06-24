@@ -1,11 +1,11 @@
 Project:
   Name: EmptyProject
-  StartingScene: Scenes\Physics3D.humble
+  StartingScene: Scenes/Physics3D.humble
   AssetDirectory: Assets
   ScriptDirectory: ""
   Renderer:
     Type: 0
-    Editor API: 1
+    Editor API: 2
     Runtime API: 2
   Physics2D:
     Gravity Force: [0, -9.81000042]
@@ -24,7 +24,7 @@ Project:
   Sound:
     Implementation: 1
   Editor:
-    Multiple Viewports: true
+    Multiple Viewports: false
     Camera Near: 0.100000001
     Camera Far: 1000
     Camera Fov: 30

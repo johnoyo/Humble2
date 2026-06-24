@@ -3,10 +3,10 @@
 #include "Base.h"
 #include "SlangReflection.h"
 
-#include "Renderer\Renderer.h"
-#include "Renderer\Enums.h"
+#include "Renderer/Renderer.h"
+#include "Renderer/Enums.h"
 
-#include "Asset\AssetManager.h"
+#include "Asset/AssetManager.h"
 
 #include <fstream>
 #include <filesystem>

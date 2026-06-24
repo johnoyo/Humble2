@@ -1,7 +1,7 @@
 #include "VulkanShader.h"
 
-#include "Platform\Vulkan\VulkanResourceManager.h"
-#include "Platform\Vulkan\Resources\VulkanRenderPass.h"
+#include "Platform/Vulkan/VulkanResourceManager.h"
+#include "Platform/Vulkan/Resources/VulkanRenderPass.h"
 
 namespace HBL2
 {

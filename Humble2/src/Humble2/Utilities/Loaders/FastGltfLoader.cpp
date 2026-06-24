@@ -1,14 +1,13 @@
 #include "FastGltfLoader.h"
 
-#include <Project\Project.h>
+#include "Project/Project.h"
 
-#include <Asset\AssetManager.h>
-#include <Resources\ResourceManager.h>
+#include "Asset/AssetManager.h"
+#include "Resources/ResourceManager.h"
 
-#include <Utilities\ShaderUtilities.h>
-#include <Utilities\TextureUtilities.h>
-
-#include <Utilities\FileDialogs.h>
+#include "Utilities/ShaderUtilities.h"
+#include "Utilities/TextureUtilities.h"
+#include "Utilities/FileDialogs.h"
 
 namespace HBL2
 {
@@ -119,7 +118,7 @@ namespace HBL2
 		}
 
 		Handle<Mesh> handle = ResourceManager::Instance->CreateMesh({
-			.debugName = _strdup(path.filename().stem().string().c_str()),
+			.debugName = strdup(path.filename().stem().string().c_str()),
 			.meshes = std::move(meshes),
 		});
 
@@ -211,7 +210,7 @@ namespace HBL2
 		}
 
 		HBL2::ResourceManager::Instance->ReimportMesh(handle, {
-			.debugName = _strdup(meshPath.filename().stem().string().c_str()),
+			.debugName = strdup(meshPath.filename().stem().string().c_str()),
 			.meshes = std::move(meshes),
 		});
 
@@ -805,7 +804,7 @@ namespace HBL2
 		uint32_t numSubMeshes = mesh.primitives.size();
 		if (numSubMeshes)
 		{
-			meshPartDescriptor.debugName = _strdup(node.name.c_str());
+			meshPartDescriptor.debugName = strdup(node.name.c_str());
 			meshPartDescriptor.subMeshes.resize(numSubMeshes);
 
 			for (uint32_t subMeshIndex = 0; subMeshIndex < numSubMeshes; ++subMeshIndex)
@@ -880,7 +879,7 @@ namespace HBL2
 	Result<SubMeshDescriptor> FastGltfLoader::LoadSubMeshVertexData(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, uint32_t subMeshIndex)
 	{
 		SubMeshDescriptor subMeshDescriptor{};
-		subMeshDescriptor.debugName = _strdup(mesh.name.c_str());
+		subMeshDescriptor.debugName = strdup(mesh.name.c_str());
 
 		const fastgltf::Primitive& primitive = mesh.primitives[subMeshIndex];
 

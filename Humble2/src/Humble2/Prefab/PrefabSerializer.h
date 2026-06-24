@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Prefab.h"
-#include "Scene\Scene.h"
+#include "Scene/Scene.h"
 
-#include <yaml-cpp\yaml.h>
+#include <yaml-cpp/yaml.h>
 
 #include <fstream>
 #include <filesystem>

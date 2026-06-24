@@ -2,7 +2,7 @@
 
 #include "Humble2API.h"
 
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 
 #include <random>
 #include <assert.h>

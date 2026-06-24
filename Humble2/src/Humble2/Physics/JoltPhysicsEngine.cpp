@@ -2,11 +2,11 @@
 
 #include "JoltDebugRenderer.h"
 
-#include "Core\Time.h"
-#include "Core\Allocators.h"
-#include "Resources\ResourceManager.h"
-#include "Systems\AnimationCurveSystem.h"
-#include "Utilities\Collections\Collections.h"
+#include "Core/Time.h"
+#include "Core/Allocators.h"
+#include "Resources/ResourceManager.h"
+#include "Systems/AnimationCurveSystem.h"
+#include "Utilities/Collections/Collections.h"
 
 namespace HBL2
 {

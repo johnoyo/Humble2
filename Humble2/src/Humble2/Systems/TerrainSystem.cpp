@@ -1,8 +1,8 @@
 #include "TerrainSystem.h"
 
 #include "AnimationCurveSystem.h"
-#include "Utilities\EntityPresets.h"
-#include "Project\Project.h"
+#include "Utilities/EntityPresets.h"
+#include "Project/Project.h"
 
 namespace HBL2
 {

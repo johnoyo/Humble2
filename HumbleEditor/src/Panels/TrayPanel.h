@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EditorPanel.h"
-#include "ECS\Entity.h"
+#include "ECS/Entity.h"
 
 #include <vector>
 #include <unordered_map>

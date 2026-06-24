@@ -1,20 +1,20 @@
 #include "EditorAssetManager.h"
 
-#include "Script\BuildEngine.h"
-#include "Utilities\YamlUtilities.h"
-#include "Utilities\Collections\Collections.h"
-#include "Utilities\Collections\StaticDArray.h"
+#include "Script/BuildEngine.h"
+#include "Utilities/YamlUtilities.h"
+#include "Utilities/Collections/Collections.h"
+#include "Utilities/Collections/StaticDArray.h"
 
-#include "Systems\HierachySystem.h"
-#include "Systems\CameraSystem.h"
-#include "Systems\RenderingSystem.h"
-#include "Systems\SoundSystem.h"
-#include "Systems\Physics2dSystem.h"
-#include "Systems\Physics3dSystem.h"
-#include "Systems\TerrainSystem.h"
-#include "Systems\AnimationCurveSystem.h"
+#include "Systems/HierachySystem.h"
+#include "Systems/CameraSystem.h"
+#include "Systems/RenderingSystem.h"
+#include "Systems/SoundSystem.h"
+#include "Systems/Physics2dSystem.h"
+#include "Systems/Physics3dSystem.h"
+#include "Systems/TerrainSystem.h"
+#include "Systems/AnimationCurveSystem.h"
 
-#include <Prefab/PrefabSerializer.h>
+#include "Prefab/PrefabSerializer.h"
 
 namespace HBL2
 {
@@ -259,7 +259,7 @@ namespace HBL2
 
 			// Create the texture
 			auto texture = ResourceManager::Instance->CreateTexture({
-				.debugName = _strdup(std::format("{}-texture", textureName).c_str()),
+				.debugName = strdup(std::format("{}-texture", textureName).c_str()),
 				.dimensions = { textureSettings.Width, textureSettings.Height, 1 },
 				.format = textureSettings.PixelFormat,
 				.internalFormat = textureSettings.PixelFormat,
@@ -592,8 +592,8 @@ namespace HBL2
 				shaderBindGroup = ResourceManager::Instance->CreateBindGroup({
 					.debugName = "shader-bind-group",
 					.layout = outReflectionData.GetBindGroupLayout(1),
-					.textures = textureBindings,
-					.buffers = bufferBindings,
+                    .textures = { textureBindings.data(), textureBindings.size() },
+                    .buffers = { bufferBindings.data(), bufferBindings.size() },
 				});
 			}
 		}
@@ -604,7 +604,7 @@ namespace HBL2
 
 		// Create resource.
 		auto shader = ResourceManager::Instance->CreateShader({
-			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
+			.debugName = strdup(std::format("{}-shader", shaderName).c_str()),
 			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
 			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
 			.bindGroups {
@@ -616,7 +616,7 @@ namespace HBL2
 			.renderPipeline {
 				.vertexBufferBindings = outReflectionData.vertexBufferBindings,
 				.variants = { shaderVariants.data(), shaderVariants.size() },
-				.specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant(shaderVariants),
+                .specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant({ shaderVariants.data(), shaderVariants.size() }),
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
 			.shaderBindGroup = shaderBindGroup,
@@ -917,8 +917,8 @@ namespace HBL2
 				materialBindGroup = ResourceManager::Instance->CreateBindGroup({
 					.debugName = "material-bind-group",
 					.layout = shaderReflectionData.GetBindGroupLayout(2),
-					.textures = textureBindings,
-					.buffers = bufferBindings,
+                    .textures = { textureBindings.data(), textureBindings.size() },
+                    .buffers = { bufferBindings.data(), bufferBindings.size() },
 				});
 			}
 
@@ -945,13 +945,13 @@ namespace HBL2
 			uint32_t dynamicUniformBufferRange = (type == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData));
 
 			auto drawBindings = ResourceManager::Instance->CreateBindGroup({
-				.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
+				.debugName = strdup(std::format("{}-bind-group", materialName).c_str()),
 				.layout = Renderer::Instance->GetDynamicBindingsLayout(),
 				.buffers = { { .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange }, }
 			});
 
 			auto material = ResourceManager::Instance->CreateMaterial({
-				.debugName = _strdup(std::format("{}-material", materialName).c_str()),
+				.debugName = strdup(std::format("{}-material", materialName).c_str()),
 				.shader = shaderHandle,
 				.drawBindGroup = drawBindings,
 				.materialBindGroup = materialBindGroup,
@@ -1086,7 +1086,7 @@ namespace HBL2
 
 			// Create the texture
 			auto sound = ResourceManager::Instance->CreateSound({
-				.debugName = _strdup(std::format("{}-sound", soundName).c_str()),
+				.debugName = strdup(std::format("{}-sound", soundName).c_str()),
 				.path = asset->FilePath,
 			});
 
@@ -1483,8 +1483,8 @@ namespace HBL2
 				shaderBindGroup = ResourceManager::Instance->CreateBindGroup({
 					.debugName = "shader-bind-group",
 					.layout = outReflectionData.GetBindGroupLayout(1),
-					.textures = textureBindings,
-					.buffers = bufferBindings,
+                    .textures = { textureBindings.data(), textureBindings.size() },
+                    .buffers = { bufferBindings.data(), bufferBindings.size() },
 				});
 			}
 		}
@@ -1495,7 +1495,7 @@ namespace HBL2
 
 		// Create resource.
 		ResourceManager::Instance->RecompileShader(shaderHandle, {
-			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
+			.debugName = strdup(std::format("{}-shader", shaderName).c_str()),
 			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
 			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
 			.bindGroups {
@@ -1507,7 +1507,7 @@ namespace HBL2
 			.renderPipeline {
 				.vertexBufferBindings = outReflectionData.vertexBufferBindings,
 				.variants = { shaderVariants.data(), shaderVariants.size() },
-				.specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant(shaderVariants),
+                .specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant({ shaderVariants.data(), shaderVariants.size() }),
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
 			.shaderBindGroup = shaderBindGroup,
@@ -1767,8 +1767,8 @@ namespace HBL2
 				materialBindGroup = ResourceManager::Instance->CreateBindGroup({
 					.debugName = "user-bind-group",
 					.layout = shaderReflectionData.GetBindGroupLayout(2),
-					.textures = textureBindings,
-					.buffers = bufferBindings,
+                    .textures = { textureBindings.data(), textureBindings.size() },
+                    .buffers = { bufferBindings.data(), bufferBindings.size() },
 				});
 			}
 
@@ -1776,7 +1776,7 @@ namespace HBL2
 			ResourceManager::Instance->DeleteBindGroup(mat->MaterialBindGroup);
 
 			ResourceManager::Instance->ReimportMaterial(materialHandle, {
-				.debugName = _strdup(std::format("{}-material", materialName).c_str()),
+				.debugName = strdup(std::format("{}-material", materialName).c_str()),
 				.shader = shaderHandle,
 				.drawBindGroup = mat->DrawBindGroup,
 				.materialBindGroup = materialBindGroup,

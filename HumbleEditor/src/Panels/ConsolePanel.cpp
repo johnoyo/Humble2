@@ -1,6 +1,6 @@
 #include "ConsolePanel.h"
 
-#include "Systems\EditorPanelSystem.h"
+#include "Systems/EditorPanelSystem.h"
 
 namespace HBL2::Editor
 {

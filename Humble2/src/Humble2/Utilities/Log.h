@@ -1,19 +1,19 @@
 #pragma once
 
 #include "Humble2API.h"
-#include "Utilities\Collections\BitFlags.h"
+#include "Utilities/Collections/BitFlags.h"
 
 #define FMT_UNICODE 0
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
 // Ignore all warnings raised inside those headers
 #pragma warning(push, 0)
-#include <spdlog\spdlog.h>
-#include <spdlog\fmt\ostr.h>
-#include <spdlog\sinks\stdout_color_sinks.h>
-#include <spdlog\sinks\rotating_file_sink.h>
-#include <spdlog\async.h>
-#include <spdlog\fmt\std.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/async.h>
+#include <spdlog/fmt/std.h>
 #pragma warning(pop)
 
 #include <memory>

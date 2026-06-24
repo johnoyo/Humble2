@@ -1,7 +1,7 @@
 #include "EditorSettingsPanel.h"
 
-#include "ImGui\ImGuiRenderer.h"
-#include "Systems\EditorPanelSystem.h"
+#include "ImGui/ImGuiRenderer.h"
+#include "Systems/EditorPanelSystem.h"
 
 namespace HBL2::Editor
 {

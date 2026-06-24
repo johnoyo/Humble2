@@ -1,9 +1,9 @@
 #pragma once
 
 #include "EditorPanel.h"
-#include "ImGui\ImGuiRenderer.h"
+#include "ImGui/ImGuiRenderer.h"
 
-#include <glm\glm.hpp>
+#include <glm/glm.hpp>
 
 namespace HBL2::Editor
 {

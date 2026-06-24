@@ -2,9 +2,9 @@
 
 #include "EditorPanel.h"
 
-#include "Asset\AssetManager.h"
-#include "Utilities\SlangReflection.h"
-#include "Utilities\Collections\StaticArray.h"
+#include "Asset/AssetManager.h"
+#include "Utilities/SlangReflection.h"
+#include "Utilities/Collections/StaticArray.h"
 
 #include <filesystem>
 

@@ -1,7 +1,8 @@
 #include "MeshUtilities.h"
 
-#include <yaml-cpp\yaml.h>
-#include <Project\Project.h>
+#include "Project/Project.h"
+
+#include <yaml-cpp/yaml.h>
 
 namespace HBL2
 {

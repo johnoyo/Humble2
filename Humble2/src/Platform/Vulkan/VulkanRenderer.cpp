@@ -5,8 +5,8 @@
 #include <imgui_impl_vulkan.h>
 #include <GLFW/glfw3.h>
 
-#include "Utilities\TextureUtilities.h"
-#include "Utilities\ShaderUtilities.h"
+#include "Utilities/TextureUtilities.h"
+#include "Utilities/ShaderUtilities.h"
 
 namespace HBL2
 {

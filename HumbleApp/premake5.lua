@@ -9,7 +9,7 @@ project "HumbleApp"
     objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
 
     files 
-    { 
+    {
         "src/**.h", 
         "src/**.cpp",
     }
@@ -18,10 +18,13 @@ project "HumbleApp"
     {
         "../Humble2/src",
         "../Humble2/src/Humble2",
-        "../Humble2/src/Vendor",
+    }
+    
+    externalincludedirs
+    {
         "../Humble2/src/Vendor/spdlog-1.x/include",
-        "../Humble2/src/Vendor/entt/include",
         "../Humble2/src/Vendor/fastgltf/include",
+        "../Humble2/src/Vendor",
         "../Dependencies/GLFW/include",
         "../Dependencies/GLEW/include",
         "../Dependencies/ImGui/imgui",
@@ -36,7 +39,8 @@ project "HumbleApp"
         "../Dependencies/Jolt/jolt",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "../Dependencies/SLang/include",
-        "%{VULKAN_SDK}/Include"
+        "%{VULKAN_SDK}/Include",
+        "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS/include",
     }
 
     links
@@ -51,12 +55,20 @@ project "HumbleApp"
     defines
     {
         "YAML_CPP_STATIC_DEFINE",
-        table.unpack(JoltDefines)
     }
 
     filter "system:windows"
         systemversion "latest"
-        defines { "HBL2_PLATFORM_WINDOWS" }
+        defines { "HBL2_PLATFORM_WINDOWS", table.unpack(JoltDefines) }
+
+    filter "system:macosx"
+        systemversion "latest"
+        defines { "HBL2_PLATFORM_MACOS", table.unpack(JoltDefinesArm) }
+
+        linkoptions
+        {
+            "-rpath @executable_path"
+        }
 
     filter "configurations:Debug"
         defines { "DEBUG" }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Base.h"
-#include "Renderer\Renderer.h"
+#include "Renderer/Renderer.h"
 #include "UserInterfaceUtilities.h"
 
 #include <vector>
@@ -179,7 +179,7 @@ namespace HBL2
 			float m_OffsetX = 0.0f;
 			float m_OffsetY = 0.0f;
 			bool m_Editor = false;
-			const std::string& m_PanelName;
+			std::string m_PanelName;
 		};
 	}
 }

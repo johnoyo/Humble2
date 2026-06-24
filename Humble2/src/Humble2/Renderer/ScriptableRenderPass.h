@@ -3,8 +3,8 @@
 #include "Humble2API.h"
 
 #include "Enums.h"
-#include "Resources\Types.h"
-#include "Resources\Handle.h"
+#include "Resources/Types.h"
+#include "Resources/Handle.h"
 #include "DrawList.h"
 
 namespace HBL2

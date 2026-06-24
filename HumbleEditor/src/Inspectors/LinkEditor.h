@@ -2,9 +2,9 @@
 
 #include "EditorInspector.h"
 
-#include "UI\Panel.h"
-#include "UI\Elements.h"
-#include "Scene\Components.h"
+#include "UI/Panel.h"
+#include "UI/Elements.h"
+#include "Scene/Components.h"
 
 namespace HBL2::Editor
 {

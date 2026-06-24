@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Base.h>
-#include <Renderer\Enums.h>
+#include "Base.h"
+#include "Renderer/Enums.h"
 
-#include <Utilities/Collections/BitFlags.h>
+#include "Utilities/Collections/BitFlags.h"
 
-#include "vulkan\vulkan.h"
-#include "vma\vk_mem_alloc.h"
+#include <vulkan/vulkan.h>
+#include <vma/vk_mem_alloc.h>
 
 #include <string>
 #include <format>

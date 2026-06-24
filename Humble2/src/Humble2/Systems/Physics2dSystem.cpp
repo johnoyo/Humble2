@@ -1,7 +1,7 @@
 #include "Physics2dSystem.h"
 
-#include "Core\Time.h"
-#include "Project\Project.h"
+#include "Core/Time.h"
+#include "Project/Project.h"
 
 namespace HBL2
 {

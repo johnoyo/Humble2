@@ -1,8 +1,8 @@
 #include "HierachyPanel.h"
 
-#include "ImGui\ImGuiRenderer.h"
-#include "Systems\EditorPanelSystem.h"
-#include "Utilities\PrefabUtilities.h"
+#include "ImGui/ImGuiRenderer.h"
+#include "Systems/EditorPanelSystem.h"
+#include "Utilities/PrefabUtilities.h"
 
 namespace HBL2::Editor
 {

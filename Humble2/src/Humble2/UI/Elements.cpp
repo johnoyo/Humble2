@@ -44,7 +44,7 @@ namespace HBL2
 		{
 			parent->AddChild(UI::Panel{
 				UI::Config{
-					.id = _strdup(path.c_str()),
+					.id = strdup(path.c_str()),
 					.parent = parent,
 					.mode = Rectagle{
 						.color = { 0, 0, 0, 0 },

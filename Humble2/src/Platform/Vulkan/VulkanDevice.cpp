@@ -62,9 +62,9 @@ namespace HBL2
 		CreateLogicalDevice();
 
 		// Set GPU properties
-		m_GPUProperties.vendorID = _strdup(std::to_string(m_VkGPUProperties.vendorID).c_str());
+		m_GPUProperties.vendorID = strdup(std::to_string(m_VkGPUProperties.vendorID).c_str());
 		m_GPUProperties.deviceName = m_VkGPUProperties.deviceName;
-		m_GPUProperties.driverVersion = _strdup(std::to_string(m_VkGPUProperties.driverVersion).c_str());
+		m_GPUProperties.driverVersion = strdup(std::to_string(m_VkGPUProperties.driverVersion).c_str());
 
 		m_GPUProperties.limits.minUniformBufferOffsetAlignment = m_VkGPUProperties.limits.minUniformBufferOffsetAlignment;
 
@@ -271,16 +271,7 @@ namespace HBL2
 		createInfo.pEnabledFeatures = &enabledFeatures;
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(m_DeviceExtensions.size());
 		createInfo.ppEnabledExtensionNames = m_DeviceExtensions.data();
-
-		if (m_EnableValidationLayers)
-		{
-			createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
-			createInfo.ppEnabledLayerNames = m_ValidationLayers.data();
-		}
-		else
-		{
-			createInfo.enabledLayerCount = 0;
-		}
+        createInfo.enabledLayerCount = 0;
 
 		VK_VALIDATE(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device), "vkCreateDevice");
 	}

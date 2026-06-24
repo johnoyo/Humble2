@@ -1,13 +1,13 @@
 #include "ContentBrowserPanel.h"
 
-#include "ImGui\ImGuiRenderer.h"
-#include "Systems\EditorPanelSystem.h"
+#include "ImGui/ImGuiRenderer.h"
+#include "Systems/EditorPanelSystem.h"
 
-#include "Script\BuildEngine.h"
-#include "Utilities\YamlUtilities.h"
-#include "Utilities\PrefabUtilities.h"
-#include "Utilities\FileDialogs.h"
-#include "Prefab\PrefabSerializer.h"
+#include "Script/BuildEngine.h"
+#include "Utilities/YamlUtilities.h"
+#include "Utilities/PrefabUtilities.h"
+#include "Utilities/FileDialogs.h"
+#include "Prefab/PrefabSerializer.h"
 
 namespace HBL2::Editor
 {

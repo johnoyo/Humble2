@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Physics\Box2DPhysicsEngine.h"
+#include "Physics/Box2DPhysicsEngine.h"
 
-#include "Scene\Scene.h"
-#include "Scene\ISystem.h"
-#include "Scene\Components.h"
+#include "Scene/Scene.h"
+#include "Scene/ISystem.h"
+#include "Scene/Components.h"
 
-#include <box2d\box2d.h>
+#include <box2d/box2d.h>
 
 namespace HBL2
 {

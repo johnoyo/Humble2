@@ -10,7 +10,7 @@
 #include "StorageInfo.h"
 #include "TypeResolver.h"
 
-#include "Core\Allocators.h"
+#include "Core/Allocators.h"
 
 namespace HBL2
 {

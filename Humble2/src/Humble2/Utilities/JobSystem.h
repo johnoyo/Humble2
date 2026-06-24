@@ -5,9 +5,9 @@
 
 #include "Base.h"
 
-#include "Core\Allocators.h"
-#include "Allocators\Arena.h"
-#include "Collections\Collections.h"
+#include "Core/Allocators.h"
+#include "Allocators/Arena.h"
+#include "Collections/Collections.h"
 
 #include "moodycamel/concurrentqueue.h"
 

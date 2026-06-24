@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Base.h"
-#include "Asset\AssetManager.h"
-#include "Resources\Types.h"
+#include "Asset/AssetManager.h"
+#include "Resources/Types.h"
 
-#include "Utilities\Result.h"
+#include "Utilities/Result.h"
 
-#include "ufbx\ufbx.h"
+#include "ufbx/ufbx.h"
 
 #include <filesystem>
 

@@ -1,6 +1,6 @@
 #include "OpenGLComputePassRenderer.h"
 
-#include "Resources\OpenGLShader.h"
+#include "Resources/OpenGLShader.h"
 #include "OpenGLResourceManager.h"
 
 namespace HBL2

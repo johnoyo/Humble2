@@ -2,7 +2,7 @@
 
 #include "EditorPanel.h"
 
-#include "ImGui\ImGuiRenderer.h"
+#include "ImGui/ImGuiRenderer.h"
 
 namespace HBL2::Editor
 {

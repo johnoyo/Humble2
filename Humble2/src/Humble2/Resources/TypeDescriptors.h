@@ -1,14 +1,14 @@
 #pragma once
 
-#include "Renderer\Enums.h"
+#include "Renderer/Enums.h"
 #include "Handle.h"
 #include "BaseTypeDefinitions.h"
-#include "Asset\Asset.h"
+#include "Asset/Asset.h"
 
-#include "Utilities\Collections\Span.h"
-#include "Utilities\Collections\BitFlags.h"
+#include "Utilities/Collections/Span.h"
+#include "Utilities/Collections/BitFlags.h"
 
-#include <glm\glm.hpp>
+#include <glm/glm.hpp>
 
 #include <vector>
 #include <initializer_list>

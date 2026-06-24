@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/TypeDescriptors.h"
 
 #ifdef EMSCRIPTEN
 	#define GLFW_INCLUDE_ES3

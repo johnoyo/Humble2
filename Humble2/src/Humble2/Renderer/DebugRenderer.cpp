@@ -1,4 +1,4 @@
-﻿#include "DebugRenderer.h"
+#include "DebugRenderer.h"
 
 #include "Core/Context.h"
 #include "Core/Window.h"
@@ -553,9 +553,11 @@ namespace HBL2
 		switch (Renderer::Instance->GetAPI())
 		{
 		case GraphicsAPI::OPENGL:
-			auto proj = camera.Projection;
-			proj[1][1] *= -1.0f;
-			return proj * camera.View;
+            {
+                auto proj = camera.Projection;
+                proj[1][1] *= -1.0f;
+                return proj * camera.View;
+            }
 		case GraphicsAPI::VULKAN:
 			return camera.ViewProjectionMatrix;
 		}

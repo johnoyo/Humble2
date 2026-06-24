@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Base.h"
-#include "Renderer\Device.h"
+#include "Renderer/Device.h"
 
-#include <GL\glew.h>
+#include <GL/glew.h>
 
 #include <cstdint>
 

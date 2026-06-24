@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/TypeDescriptors.h"
 
-#include "Platform\OpenGL\OpenGLCommon.h"
+#include "Platform/OpenGL/OpenGLCommon.h"
 
-#include "Utilities\Collections\Span.h"
-#include "Utilities\Collections\StaticDArray.h"
+#include "Utilities/Collections/Span.h"
+#include "Utilities/Collections/StaticDArray.h"
 
 #include <string>
 #include <fstream>

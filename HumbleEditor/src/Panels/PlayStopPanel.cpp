@@ -1,9 +1,9 @@
 #include "PlayStopPanel.h"
 
-#include "Core\Context.h"
-#include "Scene\SceneManager.h"
-#include "ImGui\ImGuiRenderer.h"
-#include "Systems\EditorPanelSystem.h"
+#include "Core/Context.h"
+#include "Scene/SceneManager.h"
+#include "ImGui/ImGuiRenderer.h"
+#include "Systems/EditorPanelSystem.h"
 
 namespace HBL2::Editor
 {

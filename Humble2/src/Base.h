@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Humble2\Utilities\Log.h"
-#include "Humble2\Utilities\ProfilerScope.h"
-#include "Humble2\Utilities\Math.h"
+#include "Humble2/Utilities/Log.h"
+#include "Humble2/Utilities/ProfilerScope.h"
+#include "Humble2/Utilities/Math.h"
 
-#include "Core\Timer.h"
+#include "Core/Timer.h"
 
 #include "Humble2API.h"
 
@@ -16,7 +16,9 @@
 		#define HBL2_DEBUGBREAK() __debugbreak()
 	#elif HBL2_PLATFORM_LINUX
 		#include <signal.h>
-		#define HBL_DEBUGBREAK() raise(SIGTRAP)
+		#define HBL2_DEBUGBREAK() raise(SIGTRAP)
+    #elif HBL2_PLATFORM_MACOS
+		#define HBL2_DEBUGBREAK() __builtin_debugtrap()
 	#else
 		#error "Platform is not supported yet!"
 	#endif
@@ -31,8 +33,10 @@
 		#define HBL2_DEBUGBREAK() __debugbreak()
 	#elif HBL2_PLATFORM_LINUX
 		#include <signal.h>
-		#define HBL_DEBUGBREAK() raise(SIGTRAP)
-	#else
+		#define HBL2_DEBUGBREAK() raise(SIGTRAP)
+    #elif HBL2_PLATFORM_MACOS
+		#define HBL2_DEBUGBREAK() __builtin_debugtrap()
+    #else
 		#error "Platform is not supported yet!"
 	#endif
 
@@ -55,11 +59,11 @@
 	#define HBL2_CORE_ASSERT(x, ...)
 #endif
 
-#include <glm\glm.hpp>
-#include <glm\gtc\type_ptr.hpp>
-#include <glm\gtc\matrix_transform.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
-#include <stb_image\stb_image.h>
+#include <stb_image/stb_image.h>
 
 namespace HBL2
 {

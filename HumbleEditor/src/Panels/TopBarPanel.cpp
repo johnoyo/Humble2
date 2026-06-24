@@ -1,10 +1,10 @@
 #include "TopBarPanel.h"
 
-#include "Script\BuildEngine.h"
-#include "Utilities\FileDialogs.h"
-#include "Physics\PhysicsEngine2D.h"
-#include "ImGui\ImGuiRenderer.h"
-#include "Systems\EditorPanelSystem.h"
+#include "Script/BuildEngine.h"
+#include "Utilities/FileDialogs.h"
+#include "Physics/PhysicsEngine2D.h"
+#include "ImGui/ImGuiRenderer.h"
+#include "Systems/EditorPanelSystem.h"
 
 #include "EditorSettingsPanel.h"
 #include "ProjectSettingsPanel.h"
@@ -129,7 +129,7 @@ namespace HBL2::Editor
 					auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
 
 					auto assetHandle = AssetManager::Instance->CreateAsset({
-						.debugName = _strdup(relativePath.filename().stem().string().c_str()),
+						.debugName = strdup(relativePath.filename().stem().string().c_str()),
 						.filePath = relativePath,
 						.type = AssetType::Scene,
 					});

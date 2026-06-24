@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Resources\Types.h"
-#include "Resources\Handle.h"
-#include "Resources\ResourceManager.h"
+#include "Resources/Types.h"
+#include "Resources/Handle.h"
+#include "Resources/ResourceManager.h"
 
 #include "Core/Allocators.h"
 #include "Utilities/Collections/Collections.h"

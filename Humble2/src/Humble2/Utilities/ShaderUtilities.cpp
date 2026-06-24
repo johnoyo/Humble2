@@ -3,10 +3,10 @@
 #include "YamlUtilities.h"
 #include "Collections/StaticDArray.h"
 
-#include "Project\Project.h"
+#include "Project/Project.h"
 
-#include "slang-com-ptr.h"
-#include "slang.h"
+#include <slang-com-ptr.h>
+#include <slang.h>
 
 namespace HBL2
 {

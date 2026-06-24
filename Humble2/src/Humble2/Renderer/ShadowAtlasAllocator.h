@@ -2,10 +2,10 @@
 
 // Inspired by the technique used in doom: https://www.adriancourreges.com/blog/2016/09/09/doom-2016-graphics-study/
 
-#include "Core\Allocators.h"
-#include "Utilities\Collections\Collections.h"
+#include "Core/Allocators.h"
+#include "Utilities/Collections/Collections.h"
 
-#include <glm\glm.hpp>
+#include <glm/glm.hpp>
 
 namespace HBL2
 {

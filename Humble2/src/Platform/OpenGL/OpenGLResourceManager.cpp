@@ -1,6 +1,6 @@
 #include "OpenGLResourceManager.h"
 
-#include "Renderer\Renderer.h"
+#include "Renderer/Renderer.h"
 
 namespace HBL2
 {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Renderer\Enums.h"
-#include "Resources\TypeDescriptors.h"
+#include "Renderer/Enums.h"
+#include "Resources/TypeDescriptors.h"
 
 #include <slang.h>
 #include <slang-com-ptr.h>

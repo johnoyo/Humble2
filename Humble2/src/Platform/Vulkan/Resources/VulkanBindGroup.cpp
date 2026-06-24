@@ -1,6 +1,6 @@
 #include "VulkanBindGroup.h"
 
-#include "Platform\Vulkan\VulkanResourceManager.h"
+#include "Platform/Vulkan/VulkanResourceManager.h"
 
 namespace HBL2
 {

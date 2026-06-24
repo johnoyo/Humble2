@@ -1,8 +1,8 @@
 #include "RenderingSystem.h"
 
-#include "Project\Project.h"
-#include "Core\Application.h"
-#include "Renderer\DebugRenderer.h"
+#include "Project/Project.h"
+#include "Core/Application.h"
+#include "Renderer/DebugRenderer.h"
 
 namespace HBL2
 {

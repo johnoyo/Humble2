@@ -1,7 +1,7 @@
 #include "OpenGLBuffer.h"
 
-#include "Platform\OpenGL\OpenGLResourceManager.h"
-#include "Utilities\JobSystem.h"
+#include "Platform/OpenGL/OpenGLResourceManager.h"
+#include "Utilities/JobSystem.h"
 
 namespace HBL2
 {

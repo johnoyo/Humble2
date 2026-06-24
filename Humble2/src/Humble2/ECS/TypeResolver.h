@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Utilities\Collections\Collections.h"
+#include "Utilities/Collections/Collections.h"
 
 #include <cstdint>
 #include <typeindex>

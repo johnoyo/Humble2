@@ -1,14 +1,14 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\Handle.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/Handle.h"
+#include "Resources/TypeDescriptors.h"
 
 #include "OpenGLBuffer.h"
 #include "OpenGLTexture.h"
 #include "OpenGLBindGroupLayout.h"
 
-#include "Platform\OpenGL\OpenGLCommon.h"
+#include "Platform/OpenGL/OpenGLCommon.h"
 
 namespace HBL2
 {

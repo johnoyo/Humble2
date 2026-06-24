@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Base.h"
-#include "Scene\ISystem.h"
-#include "Core\Context.h"
-#include "Resources\ResourceManager.h"
-#include "Renderer\ForwardSceneRenderer.h"
+#include "Scene/ISystem.h"
+#include "Core/Context.h"
+#include "Resources/ResourceManager.h"
+#include "Renderer/ForwardSceneRenderer.h"
 
 namespace HBL2
 {

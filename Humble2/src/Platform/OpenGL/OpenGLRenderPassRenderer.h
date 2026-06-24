@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Renderer\Renderer.h"
-#include "Renderer\RenderPassRenderer.h"
+#include "Renderer/Renderer.h"
+#include "Renderer/RenderPassRenderer.h"
 
-#include "Resources\ResourceManager.h"
+#include "Resources/ResourceManager.h"
 #include "OpenGLResourceManager.h"
 
-#include "Resources\OpenGLBuffer.h"
-#include "Resources\OpenGLBindGroup.h"
+#include "Resources/OpenGLBuffer.h"
+#include "Resources/OpenGLBindGroup.h"
 
 namespace HBL2
 {

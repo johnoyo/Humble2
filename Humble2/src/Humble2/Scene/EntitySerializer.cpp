@@ -1,8 +1,8 @@
 #include "EntitySerializer.h"
 
-#include "Script\BuildEngine.h"
-#include "Utilities\YamlUtilities.h"
-#include "UI\UserInterfaceUtilities.h"
+#include "Script/BuildEngine.h"
+#include "Utilities/YamlUtilities.h"
+#include "UI/UserInterfaceUtilities.h"
 
 namespace HBL2
 {

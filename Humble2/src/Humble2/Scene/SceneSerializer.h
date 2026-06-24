@@ -2,11 +2,11 @@
 
 #include "Scene.h"
 
-#include "Asset\AssetManager.h"
+#include "Asset/AssetManager.h"
 
 #include <fstream>
 #include <filesystem>
-#include <yaml-cpp\yaml.h>
+#include <yaml-cpp/yaml.h>
 
 namespace HBL2
 {

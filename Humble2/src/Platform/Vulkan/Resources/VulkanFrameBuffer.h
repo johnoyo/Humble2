@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/TypeDescriptors.h"
 
-#include "Platform\Vulkan\VulkanDevice.h"
+#include "Platform/Vulkan/VulkanDevice.h"
 
-#include "Platform\Vulkan\VulkanCommon.h"
+#include "Platform/Vulkan/VulkanCommon.h"
 
 #include "VulkanTexture.h"
 #include "VulkanRenderPass.h"

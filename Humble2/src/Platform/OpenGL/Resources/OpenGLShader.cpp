@@ -1,6 +1,6 @@
 #include "OpenGLShader.h"
 
-#include "Utilities\JobSystem.h"
+#include "Utilities/JobSystem.h"
 
 namespace HBL2
 {
@@ -26,6 +26,8 @@ namespace HBL2
 		if (i == 5) { return variant.shaderConstantBool5; }
 		if (i == 6) { return variant.shaderConstantBool6; }
 		if (i == 7) { return variant.shaderConstantBool7; }
+        
+        return false;
 	}
 
 	OpenGLShader::OpenGLShader(const ShaderDescriptor&& desc)

@@ -3,7 +3,7 @@
 #include "Entity.h"
 #include "TwoLevelBitset.h"
 
-#include "Utilities\Collections\StaticFunction.h"
+#include "Utilities/Collections/StaticFunction.h"
 
 namespace HBL2
 {

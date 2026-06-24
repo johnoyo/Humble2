@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Core\Context.h"
+#include "Core/Context.h"
 
 #include "Resources/ResourceManager.h"
 #include "Script/BuildEngine.h"
-#include "Utilities\YamlUtilities.h"
+#include "Utilities/YamlUtilities.h"
 
 #include "imgui.h"
 

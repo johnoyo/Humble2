@@ -1,7 +1,7 @@
 #include "Types.h"
 
 #include "ResourceManager.h"
-#include "Renderer\Renderer.h"
+#include "Renderer/Renderer.h"
 
 namespace HBL2
 {

@@ -1,7 +1,7 @@
 #include "SlangReflection.h"
 
-#include "Renderer\Renderer.h"
-#include "Resources\ResourceManager.h"
+#include "Renderer/Renderer.h"
+#include "Resources/ResourceManager.h"
 
 #include <algorithm>
 #include <cassert>
@@ -282,8 +282,8 @@ namespace HBL2
 
             auto bindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
                 .debugName = "reflected-bind-group-layout",
-                .textureBindings = textureBindings,
-                .bufferBindings = bufferBindings,
+                .textureBindings = { textureBindings.data(), textureBindings.size() },
+                .bufferBindings = { bufferBindings.data(), bufferBindings.size() },
                 .createdFromReflection = true,
             });
 
