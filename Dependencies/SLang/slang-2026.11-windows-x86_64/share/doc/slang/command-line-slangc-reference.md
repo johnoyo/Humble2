@@ -62,6 +62,10 @@ The space between - D and &lt;name&gt; is optional. If no &lt;value&gt; is speci
 
 Save the source file dependency list in a file. 
 
+Uses Makefile dependency syntax: &lt;output&gt;: &lt;dep&gt; &lt;dep...&gt; 
+
+When no [-o](#o) is given, - is used as the make target (output goes to stdout). 
+
 
 <a id="entry"></a>
 ### -entry
@@ -121,7 +125,7 @@ Add a path to be used in resolving '#include' and 'import' operations.
 
 **-lang &lt;[language](#language)&gt;**
 
-Set the language for the following input files. 
+Set the language for the following input files. Required when an input is '-' (standard input), because stdin has no file extension. 
 
 
 <a id="matrix-layout-column-major"></a>
@@ -277,7 +281,7 @@ Dump to output list of warning diagnostic numeric and name ids.
 
 <a id="id"></a>
 ### --
-Treat the rest of the command line as input files. 
+Treat the rest of the command line as input files. Use '-' once to read from standard input; [-lang](#lang) is required, stdin is limited to 256 MiB, and diagnostics use `&lt;stdin&gt;`. 
 
 
 <a id="report-downstream-time"></a>
@@ -298,6 +302,58 @@ Reports compiler performance benchmark results for each intermediate pass (impli
 <a id="report-checkpoint-intermediates"></a>
 ### -report-checkpoint-intermediates
 Reports information about checkpoint contexts used for reverse-mode automatic differentiation. 
+
+
+<a id="trace-coverage"></a>
+### -trace-coverage
+Instrument the shader with per-statement line coverage counters. When writing compiled output to a file, slangc also emits `&lt;output&gt;.coverage-manifest.json` mapping source coverage entries to counters. 
+
+
+<a id="trace-function-coverage"></a>
+### -trace-function-coverage
+Instrument the shader with per-function-entry coverage counters. Shares the synthesized `__slang_coverage` buffer and coverage metadata path. 
+
+
+<a id="trace-branch-coverage"></a>
+### -trace-branch-coverage
+Instrument the shader with per-branch-arm coverage counters for if/else, loop-condition, switch case/default arms, and switch no-match default paths. Expression-level short-circuit and ternary branches are not instrumented by this mode yet. Shares the synthesized `__slang_coverage` buffer and coverage metadata path. 
+
+
+<a id="trace-coverage-boolean"></a>
+### -trace-coverage-boolean
+Record boolean coverage instead of exact execution counts: each counter slot is written with 1 (via a plain non-atomic store) whenever its entry executes, rather than atomically incremented per execution. This removes all atomic contention, so coverage is dramatically faster and avoids the GPU watchdog timeouts that heavy per-execution counting can trigger, at the cost of exact counts (the counter is 0 or non-zero). Off by default. Ignored when no coverage mode is enabled. 
+
+
+<a id="trace-coverage-binding"></a>
+### -trace-coverage-binding
+
+**-trace-coverage-binding &lt;index&gt; &lt;space&gt;**
+
+Bind the synthesized `__slang_coverage` buffer at an explicit (register index, space) instead of auto-allocating a slot. Useful when the host needs the binding fixed at compile time before any host metadata reads run. Implies `-trace-coverage`. 
+
+
+<a id="trace-coverage-reserved-space"></a>
+### -trace-coverage-reserved-space
+
+**-trace-coverage-reserved-space &lt;space&gt;**
+
+Reserve a descriptor set when auto-allocating the synthesized `__slang_coverage` buffer. Use this when the host pipeline layout owns descriptor sets that are not visible in the compiled shader IR. Repeat for multiple spaces; duplicates are idempotent. Applies to Khronos descriptor-set targets. 
+
+
+<a id="coverage-manifest-output"></a>
+### -coverage-manifest-output
+
+**-coverage-manifest-output &lt;path&gt;**
+
+Write shader coverage manifest metadata to an explicit JSON sidecar path. Use this when compiled output is written to stdout or when the build needs a stable manifest path instead of the default `&lt;output&gt;.coverage-manifest.json` sidecar. Requires at least one coverage tracing mode, is not supported for container outputs, and is valid only when exactly one compiled artifact carries coverage metadata. The path must not overlap any emitted artifact path. 
+
+
+<a id="trace-coverage-counter-width"></a>
+### -trace-coverage-counter-width
+
+**-trace-coverage-counter-width &lt;bits&gt;**
+
+Per-slot bit width of the synthesized `__slang_coverage` buffer. Accepts `64` (default) or `32`. uint64 counters effectively cannot wrap within any practical run; uint32 counters wrap silently at 2^32 hits per slot. Use `32` when targeting a runtime driver that does not support 64-bit shader atomic add (notably MoltenVK on Apple Silicon, which exposes `shaderBufferInt64Atomics = false`). Implies `-trace-coverage` is meaningful; ignored when no coverage mode is enabled. 
 
 
 <a id="report-dynamic-dispatch-sites"></a>
@@ -347,7 +403,7 @@ Disable short-circuiting for "&amp;&amp;" and "||" operations
 
 <a id="unscoped-enum"></a>
 ### -unscoped-enum
-Treat enums types as unscoped by default. 
+Treat enum types as unscoped by default. (Note: enum class remains scoped.) 
 
 
 <a id="preserve-params"></a>
@@ -900,7 +956,7 @@ Embed downstream IR into emitted slang IR
 
 <a id="experimental-feature"></a>
 ### -experimental-feature
-Enable experimental features (loading builtin neural module) 
+Enable experimental language and module features 
 
 
 <a id="enable-experimental-rich-diagnostics"></a>
@@ -1400,7 +1456,9 @@ A capability describes an optional feature that a target may or may not support.
 * `cpp_cuda_spirv` 
 * `cpp_cuda_spirv_llvm` 
 * `cpp_cuda_metal_spirv` 
+* `cpp_cuda_metal_spirv_llvm` 
 * `cuda_spirv` 
+* `cuda_metal_spirv` 
 * `cpp_cuda_glsl_spirv` 
 * `cpp_cuda_glsl_hlsl` 
 * `cpp_cuda_glsl_hlsl_llvm` 
@@ -1422,6 +1480,7 @@ A capability describes an optional feature that a target may or may not support.
 * `cpp_glsl_hlsl_metal_spirv_wgsl` 
 * `cpp_hlsl` 
 * `cuda_glsl_hlsl` 
+* `cuda_glsl_nvapi` 
 * `cuda_hlsl_metal_spirv` 
 * `cuda_glsl_hlsl_spirv` 
 * `cuda_glsl_hlsl_spirv_llvm` 
@@ -1655,6 +1714,7 @@ A capability describes an optional feature that a target may or may not support.
 * `cuda_sm_6_0` 
 * `cuda_sm_7_0` 
 * `cuda_sm_8_0` 
+* `cuda_sm_8_9` 
 * `cuda_sm_9_0` 
 * `atomic_reduce` 
 * `atomic_bfloat16` 
@@ -1691,6 +1751,7 @@ A capability describes an optional feature that a target may or may not support.
 * `texture_querylod` 
 * `texture_querylevels` 
 * `texture_shadowlod` 
+* `texture_shadowlod_ext` 
 * `texture_shadowgrad` 
 * `atomic_glsl_float1` 
 * `atomic_glsl_float2` 
