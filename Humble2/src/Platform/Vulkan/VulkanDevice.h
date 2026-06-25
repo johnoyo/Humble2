@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Base.h"
-#include "Renderer\Device.h"
-#include "Platform\Vulkan\VulkanWindow.h"
+#include "Renderer/Device.h"
+#include "Platform/Vulkan/VulkanWindow.h"
 
 #include "VulkanCommon.h"
 
@@ -36,6 +36,7 @@ namespace HBL2
 
 		virtual void Initialize() override;
 		virtual void Destroy() override;
+		virtual bool HasContext() override { return true; }
 		virtual void SetContext(ContextType ctxType) override {}
 
 		const VkDevice Get() const { return m_Device; }
@@ -80,7 +81,6 @@ namespace HBL2
 		const std::vector<const char*> m_DeviceExtensions =
 		{
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-			VK_EXT_HDR_METADATA_EXTENSION_NAME,
 		};
 
 		const std::vector<const char*> m_ValidationLayers =

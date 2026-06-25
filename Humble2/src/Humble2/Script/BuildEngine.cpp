@@ -1,8 +1,8 @@
 #include "BuildEngine.h"
 
-#include "Asset\AssetManager.h"
-#include "Project\Project.h"
-#include "Scene\ISystem.h"
+#include "Asset/AssetManager.h"
+#include "Project/Project.h"
+#include "Scene/ISystem.h"
 
 namespace HBL2
 {

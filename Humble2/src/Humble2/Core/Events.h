@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EventDispatcher.h"
-#include "Resources\Handle.h"
+#include "Resources/Handle.h"
 
 namespace HBL2
 {

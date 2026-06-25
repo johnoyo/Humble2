@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Core\Context.h"
-#include "Scene\ISystem.h"
-#include "Scene\Components.h"
+#include "Core/Context.h"
+#include "Scene/ISystem.h"
+#include "Scene/Components.h"
 
 namespace HBL2
 {

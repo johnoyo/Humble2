@@ -1,7 +1,7 @@
 #pragma once
 
-#include "vulkan\vulkan.h"
-#include "Core\Window.h"
+#include <vulkan/vulkan.h>
+#include "Core/Window.h"
 
 namespace HBL2
 {

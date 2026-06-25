@@ -4,7 +4,7 @@
 #include "ExcludeQuery.h"
 #include "TypeResolver.h"
 
-#include "Utilities\Collections\StaticFunction.h"
+#include "Utilities/Collections/StaticFunction.h"
 
 namespace HBL2
 {

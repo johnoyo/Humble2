@@ -1,20 +1,20 @@
 #include "EditorAssetManager.h"
 
-#include "Script\BuildEngine.h"
-#include "Utilities\YamlUtilities.h"
-#include "Utilities\Collections\Collections.h"
-#include "Utilities\Collections\StaticDArray.h"
+#include "Script/BuildEngine.h"
+#include "Utilities/YamlUtilities.h"
+#include "Utilities/Collections/Collections.h"
+#include "Utilities/Collections/StaticDArray.h"
 
-#include "Systems\HierachySystem.h"
-#include "Systems\CameraSystem.h"
-#include "Systems\RenderingSystem.h"
-#include "Systems\SoundSystem.h"
-#include "Systems\Physics2dSystem.h"
-#include "Systems\Physics3dSystem.h"
-#include "Systems\TerrainSystem.h"
-#include "Systems\AnimationCurveSystem.h"
+#include "Systems/HierachySystem.h"
+#include "Systems/CameraSystem.h"
+#include "Systems/RenderingSystem.h"
+#include "Systems/SoundSystem.h"
+#include "Systems/Physics2dSystem.h"
+#include "Systems/Physics3dSystem.h"
+#include "Systems/TerrainSystem.h"
+#include "Systems/AnimationCurveSystem.h"
 
-#include <Prefab/PrefabSerializer.h>
+#include "Prefab/PrefabSerializer.h"
 
 namespace HBL2
 {
@@ -259,7 +259,7 @@ namespace HBL2
 
 			// Create the texture
 			auto texture = ResourceManager::Instance->CreateTexture({
-				.debugName = _strdup(std::format("{}-texture", textureName).c_str()),
+				.debugName = strdup(std::format("{}-texture", textureName).c_str()),
 				.dimensions = { textureSettings.Width, textureSettings.Height, 1 },
 				.format = textureSettings.PixelFormat,
 				.internalFormat = textureSettings.PixelFormat,
@@ -309,28 +309,23 @@ namespace HBL2
 		const std::string& shaderName = asset->FilePath.filename().stem().string();
 
 		Handle<BindGroupLayout> globalBindGroupLayout;
-		Handle<BindGroupLayout> drawBindGroupLayout;
 
 		StaticDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> shaderVariants;
+		uint32_t type = 0;
 
 		const auto& shaderProperties = data["Shader"];
 		if (shaderProperties)
 		{
-			uint32_t type = shaderProperties["Type"].as<uint32_t>();
+			type = shaderProperties["Type"].as<uint32_t>();
 
 			switch (type)
 			{
 			case 0:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout2D();
-				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::UNLIT);
 				break;
 			case 1:
-				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
-				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG);
-				break;
 			case 2:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
-				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR);
 				break;
 			default:
 				HBL2_CORE_ERROR("Unknown Shader type: {0}", asset->DebugName);
@@ -347,6 +342,17 @@ namespace HBL2
 				{
 					ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 
+					// Retrieve raster state.
+					const auto& rasterStateProp = variantNode["RasterState"];
+
+					if (rasterStateProp)
+					{
+						variant.topology = (packed_size)(Topology)rasterStateProp["Topology"].as<int>();
+						variant.polygonMode = (packed_size)(PolygonMode)rasterStateProp["PolygonMode"].as<int>();
+						variant.cullMode = (packed_size)(CullMode)rasterStateProp["CullMode"].as<int>();
+						variant.frontFace = (packed_size)(FrontFace)rasterStateProp["FrontFace"].as<int>();
+					}
+
 					// Retrieve blend state.
 					const auto& blendStateProp = variantNode["BlendState"];
 
@@ -354,6 +360,14 @@ namespace HBL2
 					{
 						variant.colorOutput = blendStateProp["ColorOutputEnabled"].as<bool>();
 						variant.blendEnabled = blendStateProp["Enabled"].as<bool>();
+
+						// TODO: Remove if statements in the future.
+						if (blendStateProp["ColorOp"].IsDefined())			variant.colorOp = (packed_size)(BlendOperation)blendStateProp["ColorOp"].as<int>();
+						if (blendStateProp["AlphaOp"].IsDefined())			variant.alphaOp = (packed_size)(BlendOperation)blendStateProp["AlphaOp"].as<int>();
+						if (blendStateProp["SrcColorFactor"].IsDefined())	variant.srcColorFactor = (packed_size)(BlendFactor)blendStateProp["SrcColorFactor"].as<int>();
+						if (blendStateProp["DstColorFactor"].IsDefined())	variant.dstColorFactor = (packed_size)(BlendFactor)blendStateProp["DstColorFactor"].as<int>();
+						if (blendStateProp["SrcAlphaFactor"].IsDefined())	variant.srcAlphaFactor = (packed_size)(BlendFactor)blendStateProp["SrcAlphaFactor"].as<int>();
+						if (blendStateProp["DstAlphaFactor"].IsDefined())	variant.dstAlphaFactor = (packed_size)(BlendFactor)blendStateProp["DstAlphaFactor"].as<int>();
 					}
 
 					// Retrieve depth state.
@@ -367,43 +381,245 @@ namespace HBL2
 						variant.depthCompare = (packed_size)(Compare)depthStateProp["DepthTest"].as<int>();
 					}
 
+					// Retrieve shader constants
+					const auto& shaderConstantsStateProp = variantNode["ShaderConstantsState"];
+
+					if (shaderConstantsStateProp)
+					{
+						variant.shaderConstantBool0 = shaderConstantsStateProp["ShaderConstantBool0"].as<bool>();
+						variant.shaderConstantBool1 = shaderConstantsStateProp["ShaderConstantBool1"].as<bool>();
+						variant.shaderConstantBool2 = shaderConstantsStateProp["ShaderConstantBool2"].as<bool>();
+						variant.shaderConstantBool3 = shaderConstantsStateProp["ShaderConstantBool3"].as<bool>();
+						variant.shaderConstantBool4 = shaderConstantsStateProp["ShaderConstantBool4"].as<bool>();
+						variant.shaderConstantBool5 = shaderConstantsStateProp["ShaderConstantBool5"].as<bool>();
+						variant.shaderConstantBool6 = shaderConstantsStateProp["ShaderConstantBool6"].as<bool>();
+						variant.shaderConstantBool7 = shaderConstantsStateProp["ShaderConstantBool7"].as<bool>();
+					}
+
 					shaderVariants.push_back(variant);
 				}
 			}
 		}
 
 		// Compile Shader.
-		const auto& shaderCode = ShaderUtilities::Get().Compile(shaderPath.string());
+		ShaderReflectionData outReflectionData;
+		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath.string(), &outReflectionData);
 
-		if (shaderCode.empty())
+		if (!compilationData.IsValid())
 		{
 			HBL2_CORE_ERROR("Shader asset: {0}, at path: {1}, could not be compiled. Returning invalid shader.", asset->DebugName, shaderPath.string());
 			stream.close();
 			return ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::INVALID);
 		}
 
-		// Reflect shader.
-		const auto& reflectionData = ShaderUtilities::Get().GetReflectionData(shaderPath.string());
+		// Retrieve shader bind group.
+		Handle<BindGroup> shaderBindGroup;
+		if (shaderProperties && shaderProperties["BindGroup"].IsDefined())
+		{
+			for (const auto& descriptorSet : outReflectionData.descriptorSets)
+			{
+				if (descriptorSet.set != 1)
+				{
+					continue;
+				}
+
+				JobContext shaderTextureCtx;
+
+				StaticDArray<ResourceTask<Texture>*, 8> textureTasks;
+				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
+				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
+
+				uint32_t bindingIndex = 0;
+
+				for (const auto& b : descriptorSet.bindings)
+				{
+					if (b.type == ResourceType::UniformBuffer)
+					{
+						std::vector<uint8_t> uniformBufferBytes(b.size);
+
+						const auto& bufferProp = shaderProperties["BindGroup"][bindingIndex];
+
+						if (bufferProp.IsDefined())
+						{
+							for (const auto& m : b.members)
+							{
+								const auto& memberProp = bufferProp[b.name][m.name];
+
+								if (!memberProp.IsDefined())
+								{
+									continue;
+								}
+
+								uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+								switch (m.typeInfo.base)
+								{
+								case MemberBaseType::Float:
+								{
+									if (m.typeInfo.isArray)
+									{
+										const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
+
+										for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+										{
+											if (!memberProp[i].IsDefined())
+											{
+												continue;
+											}
+
+											float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+
+											if (m.typeInfo.cols == 1)
+											{
+												*f = memberProp[i].as<float>();
+											}
+											else if (m.typeInfo.cols == 2)
+											{
+												const glm::vec2& vec2 = memberProp[i].as<glm::vec2>();
+
+												f[0] = vec2.x;
+												f[1] = vec2.y;
+											}
+											else if (m.typeInfo.cols == 3)
+											{
+												const glm::vec3& vec3 = memberProp[i].as<glm::vec3>();
+
+												f[0] = vec3.x;
+												f[1] = vec3.y;
+												f[2] = vec3.z;
+											}
+											else if (m.typeInfo.cols == 4)
+											{
+												const glm::vec4& vec4 = memberProp[i].as<glm::vec4>();
+
+												f[0] = vec4.x;
+												f[1] = vec4.y;
+												f[2] = vec4.z;
+												f[3] = vec4.w;
+											}
+										}
+									}
+									else
+									{
+										float* f = reinterpret_cast<float*>(memberPtr);
+
+										if (m.typeInfo.cols == 1)
+										{
+											*f = memberProp.as<float>();
+										}
+										else if (m.typeInfo.cols == 2)
+										{
+											const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+
+											f[0] = vec2.x;
+											f[1] = vec2.y;
+										}
+										else if (m.typeInfo.cols == 3)
+										{
+											const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+
+											f[0] = vec3.x;
+											f[1] = vec3.y;
+											f[2] = vec3.z;
+										}
+										else if (m.typeInfo.cols == 4)
+										{
+											const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+											f[0] = vec4.x;
+											f[1] = vec4.y;
+											f[2] = vec4.z;
+											f[3] = vec4.w;
+										}
+									}
+									break;
+								}
+								}
+							}
+
+							auto userBuffer = ResourceManager::Instance->CreateBuffer({
+								.debugName = "shader-uniform-buffer",
+								.usage = BufferUsage::UNIFORM,
+								.usageHint = BufferUsageHint::DYNAMIC,
+								.memoryUsage = MemoryUsage::GPU_CPU,
+								.byteSize = (uint32_t)b.size,
+								.initialData = (void*)uniformBufferBytes.data(),
+							});
+
+							bufferBindings.push_back({ .buffer = userBuffer, });
+						}
+					}
+					else if (b.type == ResourceType::SampledTexture)
+					{
+						const auto& textureProp = shaderProperties["BindGroup"][bindingIndex];
+
+						if (textureProp.IsDefined())
+						{
+							UUID textureMapUUID = textureProp[b.name].as<UUID>();
+
+							auto* task = AssetManager::Instance->GetAssetAsync<Texture>(textureMapUUID, &shaderTextureCtx);
+							textureTasks.push_back(task);
+						}
+					}
+
+					bindingIndex++;
+				}
+
+				AssetManager::Instance->WaitForAsyncJobs(&shaderTextureCtx);
+
+				for (auto* task : textureTasks)
+				{
+					if (task != nullptr)
+					{
+						textureBindings.push_back({ task->ResourceHandle });
+						AssetManager::Instance->ReleaseResourceTask(task);
+					}
+					else
+					{
+						textureBindings.push_back({ Handle<Texture>() });
+					}
+				}
+
+				// If there is only one texture and is not set, use the built in white texture.
+				if (textureBindings.size() == 1)
+				{
+					if (!textureBindings[0].texture.IsValid())
+					{
+						textureBindings[0].texture = TextureUtilities::Get().WhiteTexture;
+					}
+				}
+
+				shaderBindGroup = ResourceManager::Instance->CreateBindGroup({
+					.debugName = "shader-bind-group",
+					.layout = outReflectionData.GetBindGroupLayout(1),
+                    .textures = { textureBindings.data(), textureBindings.size() },
+                    .buffers = { bufferBindings.data(), bufferBindings.size() },
+				});
+			}
+		}
+		else
+		{
+			HBL2_CORE_ERROR("Shader {0} has an ill-formed metadata file.", shaderPath);
+		}
 
 		// Create resource.
 		auto shader = ResourceManager::Instance->CreateShader({
-			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
-			.VS { .code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
-			.FS { .code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
+			.debugName = strdup(std::format("{}-shader", shaderName).c_str()),
+			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
+			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
 			.bindGroups {
-				globalBindGroupLayout,	// Global bind group (0)
-				drawBindGroupLayout,	// Material bind group (1)
+				globalBindGroupLayout,							// Global bind group			(0)
+				outReflectionData.GetBindGroupLayout(1),		// Global user bind group		(1)
+				outReflectionData.GetBindGroupLayout(2),		// Material / user bind group	(2)
+				Renderer::Instance->GetDynamicBindingsLayout(),	// Draw bind group				(3)
 			},
 			.renderPipeline {
-				.vertexBufferBindings = {
-					{
-						.byteStride = reflectionData.ByteStride,
-						.attributes = reflectionData.Attributes,
-					},
-				},
+				.vertexBufferBindings = outReflectionData.vertexBufferBindings,
 				.variants = { shaderVariants.data(), shaderVariants.size() },
+                .specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant({ shaderVariants.data(), shaderVariants.size() }),
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
+			.shaderBindGroup = shaderBindGroup,
 		});
 
 		stream.close();
@@ -433,7 +649,7 @@ namespace HBL2
 		YAML::Node dataMetadata = YAML::Load(ssMetadata.str());
 		if (!dataMetadata["Material"].IsDefined())
 		{
-			HBL2_CORE_TRACE("Material not found in metadata file: {0}", ssMetadata.str());
+			HBL2_CORE_ERROR("Material not found in metadata file: {0}", ssMetadata.str());
 			metaDataStream.close();
 			return Handle<Material>();
 		}
@@ -463,7 +679,7 @@ namespace HBL2
 		YAML::Node data = YAML::Load(ss.str());
 		if (!data["Material"].IsDefined())
 		{
-			HBL2_CORE_TRACE("Material not found: {0}", ss.str());
+			HBL2_CORE_ERROR("Material not found: {0}", ss.str());
 			stream.close();
 			return Handle<Material>();
 		}
@@ -474,6 +690,14 @@ namespace HBL2
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
 
 			ShaderDescriptor::RenderPipeline::PackedVariant variantDesc = {};
+
+			if (materialProperties["RasterState"].IsDefined())
+			{
+				variantDesc.topology = (packed_size)(Topology)materialProperties["RasterState"]["Topology"].as<int>();
+				variantDesc.polygonMode = (packed_size)(PolygonMode)materialProperties["RasterState"]["PolygonMode"].as<int>();
+				variantDesc.cullMode = (packed_size)(CullMode)materialProperties["RasterState"]["CullMode"].as<int>();
+				variantDesc.frontFace = (packed_size)(FrontFace)materialProperties["RasterState"]["FrontFace"].as<int>();
+			}
 
 			if (materialProperties["BlendState"].IsDefined())
 			{
@@ -489,57 +713,225 @@ namespace HBL2
 				variantDesc.depthCompare = (packed_size)(Compare)materialProperties["DepthState"]["DepthTest"].as<int>();
 			}
 
-			UUID albedoMapUUID = materialProperties["AlbedoMap"].as<UUID>();
-			UUID normalMapUUID = materialProperties["NormalMap"].as<UUID>();
-			UUID metallicMapUUID = materialProperties["MetallicMap"].as<UUID>();
-			UUID roughnessMapUUID = materialProperties["RoughnessMap"].as<UUID>();
-
-			glm::vec4 albedoColor = materialProperties["AlbedoColor"].as<glm::vec4>();
-			float glossiness = materialProperties["Glossiness"].as<float>();
-
-			JobContext materialJobsCtx;
-
-			auto shaderJobHandle = AssetManager::Instance->GetAssetAsync<Shader>(shaderUUID, &materialJobsCtx);
-			auto albedoMapJobHandle = AssetManager::Instance->GetAssetAsync<Texture>(albedoMapUUID, &materialJobsCtx);
-			auto normalMapJobHandle = AssetManager::Instance->GetAssetAsync<Texture>(normalMapUUID, &materialJobsCtx);
-			auto metallicMapJobHandle = AssetManager::Instance->GetAssetAsync<Texture>(metallicMapUUID, &materialJobsCtx);
-			auto roughnessMapJobHandle = AssetManager::Instance->GetAssetAsync<Texture>(roughnessMapUUID, &materialJobsCtx);
-
-			AssetManager::Instance->WaitForAsyncJobs(&materialJobsCtx);
-
-			Handle<Shader> shaderHandle = (shaderJobHandle ? shaderJobHandle->ResourceHandle : Handle<Shader>{});
-			Handle<Texture> albedoMapHandle = (albedoMapJobHandle ? albedoMapJobHandle->ResourceHandle : Handle<Texture>{});
-			Handle<Texture> normalMapHandle = (normalMapJobHandle ? normalMapJobHandle->ResourceHandle : Handle<Texture>{});
-			Handle<Texture> metallicMapHandle = (metallicMapJobHandle ? metallicMapJobHandle->ResourceHandle : Handle<Texture>{});
-			Handle<Texture> roughnessMapHandle = (roughnessMapJobHandle ? roughnessMapJobHandle->ResourceHandle : Handle<Texture>{});
-
-			// If shader is not set, get the built in shader depending on material type.
-			if (!shaderHandle.IsValid())
+			if (materialProperties["ShaderConstantsState"].IsDefined())
 			{
-				if (type == 0)
+				variantDesc.shaderConstantBool0 = materialProperties["ShaderConstantsState"]["ShaderConstantBool0"].as<bool>();
+				variantDesc.shaderConstantBool1 = materialProperties["ShaderConstantsState"]["ShaderConstantBool1"].as<bool>();
+				variantDesc.shaderConstantBool2 = materialProperties["ShaderConstantsState"]["ShaderConstantBool2"].as<bool>();
+				variantDesc.shaderConstantBool3 = materialProperties["ShaderConstantsState"]["ShaderConstantBool3"].as<bool>();
+				variantDesc.shaderConstantBool4 = materialProperties["ShaderConstantsState"]["ShaderConstantBool4"].as<bool>();
+				variantDesc.shaderConstantBool5 = materialProperties["ShaderConstantsState"]["ShaderConstantBool5"].as<bool>();
+				variantDesc.shaderConstantBool6 = materialProperties["ShaderConstantsState"]["ShaderConstantBool6"].as<bool>();
+				variantDesc.shaderConstantBool7 = materialProperties["ShaderConstantsState"]["ShaderConstantBool7"].as<bool>();
+			}
+
+			auto shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
+			Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+			if (shaderAsset == nullptr)
+			{
+				HBL2_CORE_ERROR("Shader with UUID: {0}, of material: {1}, not found!", shaderUUID, materialPath);
+				stream.close();
+
+				return Handle<Material>();
+			}
+
+			auto shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
+
+			const auto& filesystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+			const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : shaderAsset->FilePath;
+
+			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
+
+			Handle<BindGroup> materialBindGroup;
+
+			for (const auto& descriptorSet : shaderReflectionData.descriptorSets)
+			{
+				if (descriptorSet.set != 2)
 				{
-					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::UNLIT);
-				}
-				else if (type == 1)
-				{
-					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::BLINN_PHONG);
-				}
-				else if (type == 2)
-				{
-					shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PBR);
+					continue;
 				}
 
-				const auto& builtInShaderAssets = ShaderUtilities::Get().GetBuiltInShaderAssets();
+				JobContext materialTextureCtx;
 
-				for (const auto shaderAssetHandle : builtInShaderAssets)
+				StaticDArray<ResourceTask<Texture>*, 8> textureTasks;
+				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
+				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
+
+				for (const auto& b : descriptorSet.bindings)
 				{
-					Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
-
-					if (shaderHandle.Pack() == shaderAsset->Indentifier)
+					if (b.type == ResourceType::UniformBuffer)
 					{
-						shaderUUID = shaderAsset->UUID;
-						break;
+						std::vector<uint8_t> uniformBufferBytes(b.size);
+
+						const auto& bufferProp = materialProperties[b.name];
+
+						if (bufferProp.IsDefined())
+						{
+							for (const auto& m : b.members)
+							{
+								const auto& memberProp = bufferProp[m.name];
+
+								if (!memberProp.IsDefined())
+								{
+									continue;
+								}
+
+								uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+								switch (m.typeInfo.base)
+								{
+								case MemberBaseType::Float:
+									{
+										if (m.typeInfo.isArray)
+										{
+											const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
+
+											for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+											{
+												if (!memberProp[i].IsDefined())
+												{
+													continue;
+												}
+
+												float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+
+												if (m.typeInfo.cols == 1)
+												{
+													*f = memberProp[i].as<float>();
+												}
+												else if (m.typeInfo.cols == 2)
+												{
+													const glm::vec2& vec2 = memberProp[i].as<glm::vec2>();
+
+													f[0] = vec2.x;
+													f[1] = vec2.y;
+												}
+												else if (m.typeInfo.cols == 3)
+												{
+													const glm::vec3& vec3 = memberProp[i].as<glm::vec3>();
+
+													f[0] = vec3.x;
+													f[1] = vec3.y;
+													f[2] = vec3.z;
+												}
+												else if (m.typeInfo.cols == 4)
+												{
+													const glm::vec4& vec4 = memberProp[i].as<glm::vec4>();
+
+													f[0] = vec4.x;
+													f[1] = vec4.y;
+													f[2] = vec4.z;
+													f[3] = vec4.w;
+												}
+											}
+										}
+										else
+										{
+											float* f = reinterpret_cast<float*>(memberPtr);
+
+											if (m.typeInfo.cols == 1)
+											{
+												*f = memberProp.as<float>();
+											}
+											else if (m.typeInfo.cols == 2)
+											{
+												const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+
+												f[0] = vec2.x;
+												f[1] = vec2.y;
+											}
+											else if (m.typeInfo.cols == 3)
+											{
+												const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+
+												f[0] = vec3.x;
+												f[1] = vec3.y;
+												f[2] = vec3.z;
+											}
+											else if (m.typeInfo.cols == 4)
+											{
+												const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+												f[0] = vec4.x;
+												f[1] = vec4.y;
+												f[2] = vec4.z;
+												f[3] = vec4.w;
+											}
+										}
+										break;
+									}
+								}
+							}
+
+							auto userBuffer = ResourceManager::Instance->CreateBuffer({
+								.debugName = "material-uniform-buffer",
+								.usage = BufferUsage::UNIFORM,
+								.usageHint = BufferUsageHint::DYNAMIC,
+								.memoryUsage = MemoryUsage::GPU_CPU,
+								.byteSize = (uint32_t)b.size,
+								.initialData = (void*)uniformBufferBytes.data(),
+							});
+
+							bufferBindings.push_back({ .buffer = userBuffer, });
+						}
 					}
+					else if (b.type == ResourceType::SampledTexture)
+					{
+						const auto& textureProp = materialProperties[b.name];
+
+						if (textureProp.IsDefined())
+						{
+							UUID textureMapUUID = textureProp.as<UUID>();
+
+							auto* task = AssetManager::Instance->GetAssetAsync<Texture>(textureMapUUID, &materialTextureCtx);
+							textureTasks.push_back(task);
+						}
+					}
+				}
+
+				AssetManager::Instance->WaitForAsyncJobs(&materialTextureCtx);
+
+				for (auto* task : textureTasks)
+				{
+					if (task != nullptr)
+					{
+						textureBindings.push_back({ task->ResourceHandle });
+						AssetManager::Instance->ReleaseResourceTask(task);
+					}
+					else
+					{
+						textureBindings.push_back({ Handle<Texture>() });
+					}
+				}
+
+				// If there is only one texture and is not set, use the built in white texture.
+				if (textureBindings.size() == 1)
+				{
+					if (!textureBindings[0].texture.IsValid())
+					{
+						textureBindings[0].texture = TextureUtilities::Get().WhiteTexture;
+					}
+				}
+
+				materialBindGroup = ResourceManager::Instance->CreateBindGroup({
+					.debugName = "material-bind-group",
+					.layout = shaderReflectionData.GetBindGroupLayout(2),
+                    .textures = { textureBindings.data(), textureBindings.size() },
+                    .buffers = { bufferBindings.data(), bufferBindings.size() },
+				});
+			}
+
+			const auto& builtInShaderAssets = ShaderUtilities::Get().GetBuiltInShaderAssets();
+
+			for (const auto shaderAssetHandle : builtInShaderAssets)
+			{
+				Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+				if (shaderHandle.Pack() == shaderAsset->Indentifier)
+				{
+					shaderUUID = shaderAsset->UUID;
+					break;
 				}
 			}
 
@@ -549,68 +941,27 @@ namespace HBL2
 			ResourceManager::Instance->GetOrAddShaderVariant(shaderHandle, variantDesc);
 			ShaderUtilities::Get().UpdateShaderVariantMetadataFile(shaderUUID, variantDesc);
 
-			// If albedo map is not set use the built in white texture.
-			if (!albedoMapHandle.IsValid())
-			{
-				albedoMapHandle = TextureUtilities::Get().WhiteTexture;
-			}
-
 			const std::string& materialName = asset->FilePath.filename().stem().string();
-
-			Handle<BindGroup> drawBindings;
 			uint32_t dynamicUniformBufferRange = (type == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData));
 
-			if (type == 2) // PBR
-			{
-				if (!normalMapHandle.IsValid())
-				{
-					normalMapHandle = TextureUtilities::Get().WhiteTexture;
-				}
-
-				if (!metallicMapHandle.IsValid())
-				{
-					metallicMapHandle = TextureUtilities::Get().WhiteTexture;
-				}
-
-				if (!roughnessMapHandle.IsValid())
-				{
-					roughnessMapHandle = TextureUtilities::Get().WhiteTexture;
-				}
-
-				drawBindings = ResourceManager::Instance->CreateBindGroup({
-					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
-					.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle, Renderer::Instance->ShadowAtlasTexture },
-					.buffers = {
-						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
-					}
-				});
-			}
-			else
-			{
-				drawBindings = ResourceManager::Instance->CreateBindGroup({
-					.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-					.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
-					.textures = { albedoMapHandle, Renderer::Instance->ShadowAtlasTexture },
-					.buffers = {
-						{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
-					}
-				});
-			}
+			auto drawBindings = ResourceManager::Instance->CreateBindGroup({
+				.debugName = strdup(std::format("{}-bind-group", materialName).c_str()),
+				.layout = Renderer::Instance->GetDynamicBindingsLayout(),
+				.buffers = { { .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange }, }
+			});
 
 			auto material = ResourceManager::Instance->CreateMaterial({
-				.debugName = _strdup(std::format("{}-material", materialName).c_str()),
+				.debugName = strdup(std::format("{}-material", materialName).c_str()),
 				.shader = shaderHandle,
-				.bindGroup = drawBindings,
+				.drawBindGroup = drawBindings,
+				.materialBindGroup = materialBindGroup,
 			});
 
 			Material* mat = ResourceManager::Instance->GetMaterial(material);
-			mat->AlbedoColor = albedoColor;
-			mat->Glossiness = glossiness;
 			mat->VariantHash = variantDesc;
 
 			stream.close();
-			return material;
+			return material;			
 		}
 
 		stream.close();
@@ -735,7 +1086,7 @@ namespace HBL2
 
 			// Create the texture
 			auto sound = ResourceManager::Instance->CreateSound({
-				.debugName = _strdup(std::format("{}-sound", soundName).c_str()),
+				.debugName = strdup(std::format("{}-sound", soundName).c_str()),
 				.path = asset->FilePath,
 			});
 
@@ -879,15 +1230,10 @@ namespace HBL2
 			{
 			case 0:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout2D();
-				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::UNLIT);
 				break;
 			case 1:
-				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
-				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG);
-				break;
 			case 2:
 				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
-				drawBindGroupLayout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR);
 				break;
 			default:
 				HBL2_CORE_ERROR("Unknown Shader type: {0}", asset->DebugName);
@@ -904,6 +1250,17 @@ namespace HBL2
 				{
 					ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 
+					// Retrieve raster state.
+					const auto& rasterStateProp = variantNode["RasterState"];
+
+					if (rasterStateProp)
+					{
+						variant.topology = (packed_size)(Topology)rasterStateProp["Topology"].as<int>();
+						variant.polygonMode = (packed_size)(PolygonMode)rasterStateProp["PolygonMode"].as<int>();
+						variant.cullMode = (packed_size)(CullMode)rasterStateProp["CullMode"].as<int>();
+						variant.frontFace = (packed_size)(FrontFace)rasterStateProp["FrontFace"].as<int>();
+					}
+
 					// Retrieve blend state.
 					const auto& blendStateProp = variantNode["BlendState"];
 
@@ -911,6 +1268,14 @@ namespace HBL2
 					{
 						variant.colorOutput = blendStateProp["ColorOutputEnabled"].as<bool>();
 						variant.blendEnabled = blendStateProp["Enabled"].as<bool>();
+
+						// TODO: Remove if statements in the future.
+						if (blendStateProp["ColorOp"].IsDefined())			variant.colorOp = (packed_size)(BlendOperation)blendStateProp["ColorOp"].as<int>();
+						if (blendStateProp["AlphaOp"].IsDefined())			variant.alphaOp = (packed_size)(BlendOperation)blendStateProp["AlphaOp"].as<int>();
+						if (blendStateProp["SrcColorFactor"].IsDefined())	variant.srcColorFactor = (packed_size)(BlendFactor)blendStateProp["SrcColorFactor"].as<int>();
+						if (blendStateProp["DstColorFactor"].IsDefined())	variant.dstColorFactor = (packed_size)(BlendFactor)blendStateProp["DstColorFactor"].as<int>();
+						if (blendStateProp["SrcAlphaFactor"].IsDefined())	variant.srcAlphaFactor = (packed_size)(BlendFactor)blendStateProp["SrcAlphaFactor"].as<int>();
+						if (blendStateProp["DstAlphaFactor"].IsDefined())	variant.dstAlphaFactor = (packed_size)(BlendFactor)blendStateProp["DstAlphaFactor"].as<int>();
 					}
 
 					// Retrieve depth state.
@@ -924,47 +1289,231 @@ namespace HBL2
 						variant.depthCompare = (packed_size)(Compare)depthStateProp["DepthTest"].as<int>();
 					}
 
+					// Retrieve shader constants
+					const auto& shaderConstantsStateProp = variantNode["ShaderConstantsState"];
+
+					if (shaderConstantsStateProp)
+					{
+						variant.shaderConstantBool0 = shaderConstantsStateProp["ShaderConstantBool0"].as<bool>();
+						variant.shaderConstantBool1 = shaderConstantsStateProp["ShaderConstantBool1"].as<bool>();
+						variant.shaderConstantBool2 = shaderConstantsStateProp["ShaderConstantBool2"].as<bool>();
+						variant.shaderConstantBool3 = shaderConstantsStateProp["ShaderConstantBool3"].as<bool>();
+						variant.shaderConstantBool4 = shaderConstantsStateProp["ShaderConstantBool4"].as<bool>();
+						variant.shaderConstantBool5 = shaderConstantsStateProp["ShaderConstantBool5"].as<bool>();
+						variant.shaderConstantBool6 = shaderConstantsStateProp["ShaderConstantBool6"].as<bool>();
+						variant.shaderConstantBool7 = shaderConstantsStateProp["ShaderConstantBool7"].as<bool>();
+					}
+
 					shaderVariants.push_back(variant);
 				}
 			}
 		}
 
 		// Compile Shader.
-		const auto& shaderCode = ShaderUtilities::Get().Compile(shaderPath.string(), true);
+		ShaderReflectionData outReflectionData;
+		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath.string(), &outReflectionData, true);
 
-		if (shaderCode.empty())
+		if (!compilationData.IsValid())
 		{
 			HBL2_CORE_ERROR("Shader asset: {0}, at path: {1}, could not be compiled. Returning invalid shader.", asset->DebugName, shaderPath.string());
 			stream.close();
 			return ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::INVALID);
 		}
 
-		// Reflect shader.
-		const auto& reflectionData = ShaderUtilities::Get().GetReflectionData(shaderPath.string());
+		// Retrieve shader bind group.
+		Handle<BindGroup> shaderBindGroup;
+		if (shaderProperties && shaderProperties["BindGroup"].IsDefined())
+		{
+			for (const auto& descriptorSet : outReflectionData.descriptorSets)
+			{
+				if (descriptorSet.set != 1)
+				{
+					continue;
+				}
+
+				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
+				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
+
+				uint32_t bindingIndex = 0;
+
+				for (const auto& b : descriptorSet.bindings)
+				{
+					if (b.type == ResourceType::UniformBuffer)
+					{
+						std::vector<uint8_t> uniformBufferBytes(b.size);
+
+						const auto& bufferProp = shaderProperties["BindGroup"][bindingIndex];
+
+						if (bufferProp.IsDefined())
+						{
+							for (const auto& m : b.members)
+							{
+								const auto& memberProp = bufferProp[b.name][m.name];
+
+								if (!memberProp.IsDefined())
+								{
+									continue;
+								}
+
+								uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+								switch (m.typeInfo.base)
+								{
+								case MemberBaseType::Float:
+								{
+									if (m.typeInfo.isArray)
+									{
+										const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
+
+										for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+										{
+											if (!memberProp[i].IsDefined())
+											{
+												continue;
+											}
+
+											float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+
+											if (m.typeInfo.cols == 1)
+											{
+												*f = memberProp[i].as<float>();
+											}
+											else if (m.typeInfo.cols == 2)
+											{
+												const glm::vec2& vec2 = memberProp[i].as<glm::vec2>();
+
+
+												f[0] = vec2.x;
+												f[1] = vec2.y;
+											}
+											else if (m.typeInfo.cols == 3)
+											{
+												const glm::vec3& vec3 = memberProp[i].as<glm::vec3>();
+
+												f[0] = vec3.x;
+												f[1] = vec3.y;
+												f[2] = vec3.z;
+											}
+											else if (m.typeInfo.cols == 4)
+											{
+												const glm::vec4& vec4 = memberProp[i].as<glm::vec4>();
+
+												f[0] = vec4.x;
+												f[1] = vec4.y;
+												f[2] = vec4.z;
+												f[3] = vec4.w;
+											}
+										}
+									}
+									else
+									{
+										float* f = reinterpret_cast<float*>(memberPtr);
+
+										if (m.typeInfo.cols == 1)
+										{
+											*f = memberProp.as<float>();
+										}
+										else if (m.typeInfo.cols == 2)
+										{
+											const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+
+											f[0] = vec2.x;
+											f[1] = vec2.y;
+										}
+										else if (m.typeInfo.cols == 3)
+										{
+											const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+
+											f[0] = vec3.x;
+											f[1] = vec3.y;
+											f[2] = vec3.z;
+										}
+										else if (m.typeInfo.cols == 4)
+										{
+											const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+											f[0] = vec4.x;
+											f[1] = vec4.y;
+											f[2] = vec4.z;
+											f[3] = vec4.w;
+										}
+									}
+									break;
+								}
+								}
+							}
+
+							auto userBuffer = ResourceManager::Instance->CreateBuffer({
+								.debugName = "shader-uniform-buffer",
+								.usage = BufferUsage::UNIFORM,
+								.usageHint = BufferUsageHint::DYNAMIC,
+								.memoryUsage = MemoryUsage::GPU_CPU,
+								.byteSize = (uint32_t)b.size,
+								.initialData = (void*)uniformBufferBytes.data(),
+							});
+
+							bufferBindings.push_back({ .buffer = userBuffer, });
+						}
+					}
+					else if (b.type == ResourceType::SampledTexture)
+					{
+						const auto& textureProp = shaderProperties["BindGroup"][bindingIndex];
+
+						if (textureProp.IsDefined())
+						{
+							UUID textureMapUUID = textureProp[b.name].as<UUID>();
+
+							auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
+							textureBindings.push_back({ handle });
+						}
+					}
+
+					bindingIndex++;
+				}
+
+				// If there is only one texture and is not set, use the built in white texture.
+				if (textureBindings.size() == 1)
+				{
+					if (!textureBindings[0].texture.IsValid())
+					{
+						textureBindings[0].texture = TextureUtilities::Get().WhiteTexture;
+					}
+				}
+
+				shaderBindGroup = ResourceManager::Instance->CreateBindGroup({
+					.debugName = "shader-bind-group",
+					.layout = outReflectionData.GetBindGroupLayout(1),
+                    .textures = { textureBindings.data(), textureBindings.size() },
+                    .buffers = { bufferBindings.data(), bufferBindings.size() },
+				});
+			}
+		}
+		else
+		{
+			HBL2_CORE_TRACE("Shader {0} has an ill-formed metadata file.", shaderPath);
+		}
 
 		// Create resource.
 		ResourceManager::Instance->RecompileShader(shaderHandle, {
-			.debugName = _strdup(std::format("{}-shader", shaderName).c_str()),
-			.VS { .code = shaderCode[0], .entryPoint = reflectionData.VertexEntryPoint.c_str() },
-			.FS { .code = shaderCode[1], .entryPoint = reflectionData.FragmentEntryPoint.c_str() },
+			.debugName = strdup(std::format("{}-shader", shaderName).c_str()),
+			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
+			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
 			.bindGroups {
-				globalBindGroupLayout,	// Global bind group (0)
-				drawBindGroupLayout,	// Material bind group (1)
+				globalBindGroupLayout,							// Global bind group			(0)
+				outReflectionData.GetBindGroupLayout(1),		// Global user bind group		(1)
+				outReflectionData.GetBindGroupLayout(2),		// Material / user bind group	(2)
+				Renderer::Instance->GetDynamicBindingsLayout(),	// Draw bind group				(3)
 			},
 			.renderPipeline {
-				.vertexBufferBindings = {
-					{
-						.byteStride = reflectionData.ByteStride,
-						.attributes = reflectionData.Attributes,
-					},
-				},
+				.vertexBufferBindings = outReflectionData.vertexBufferBindings,
 				.variants = { shaderVariants.data(), shaderVariants.size() },
+                .specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant({ shaderVariants.data(), shaderVariants.size() }),
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
+			.shaderBindGroup = shaderBindGroup,
 		});
 
 		stream.close();
-
 		return shaderHandle;
 	}
 
@@ -985,6 +1534,7 @@ namespace HBL2
 		}
 
 		Material* mat = ResourceManager::Instance->GetMaterial(materialHandle);
+		const std::string& materialName = asset->FilePath.filename().stem().string();
 
 		std::fstream ioStream(Project::GetAssetFileSystemPath(asset->FilePath), std::ios::in | std::ios::out);
 
@@ -1012,134 +1562,228 @@ namespace HBL2
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
 			Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
 
+			// If the shader is the same, reload it first.
 			if (shaderHandle == mat->Shader)
 			{
-				AssetManager::Instance->ReloadAsset<Shader>(shaderUUID);
+				shaderHandle = AssetManager::Instance->ReloadAsset<Shader>(shaderUUID);
 			}
-			else
+
+			// Now that we have the up to date shader, do a full reimport of the material.
+			uint32_t type = UINT32_MAX;
+			bool autoImported = false;
+
+			// Gather metadata.
 			{
-				uint32_t type = UINT32_MAX;
-				bool autoImported = false;
+				std::ifstream metaDataStream(materialPath.string() + ".hblmat");
 
-				// Gather metadata.
+				if (!metaDataStream.is_open())
 				{
-					std::ifstream metaDataStream(materialPath.string() + ".hblmat");
+					HBL2_CORE_ERROR("Material metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmat");
+					return Handle<Material>();
+				}
 
-					if (!metaDataStream.is_open())
-					{
-						HBL2_CORE_ERROR("Material metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmat");
-						return Handle<Material>();
-					}
+				std::stringstream ssMetadata;
+				ssMetadata << metaDataStream.rdbuf();
 
-					std::stringstream ssMetadata;
-					ssMetadata << metaDataStream.rdbuf();
-
-					YAML::Node dataMetadata = YAML::Load(ssMetadata.str());
-					if (!dataMetadata["Material"].IsDefined())
-					{
-						HBL2_CORE_TRACE("Material not found in metadata file: {0}", ssMetadata.str());
-						metaDataStream.close();
-						return Handle<Material>();
-					}
-
-					auto materialMetadataProperties = dataMetadata["Material"];
-					if (materialMetadataProperties)
-					{
-						type = materialMetadataProperties["Type"].as<uint32_t>();
-						autoImported = materialMetadataProperties["AutoImported"].as<bool>();
-					}
-
+				YAML::Node dataMetadata = YAML::Load(ssMetadata.str());
+				if (!dataMetadata["Material"].IsDefined())
+				{
+					HBL2_CORE_TRACE("Material not found in metadata file: {0}", ssMetadata.str());
 					metaDataStream.close();
+					return Handle<Material>();
 				}
 
-				// If shader is not set, get the built in shader depending on material type.
-				if (!shaderHandle.IsValid())
+				auto materialMetadataProperties = dataMetadata["Material"];
+				if (materialMetadataProperties)
 				{
-					if (type == 0)
-					{
-						shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::UNLIT);
-					}
-					else if (type == 1)
-					{
-						shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::BLINN_PHONG);
-					}
-					else if (type == 2)
-					{
-						shaderHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PBR);
-					}
+					type = materialMetadataProperties["Type"].as<uint32_t>();
+					autoImported = materialMetadataProperties["AutoImported"].as<bool>();
 				}
 
-				// Get textures.
-				UUID albedoMapUUID = materialProperties["AlbedoMap"].as<UUID>();
-				Handle<Texture> albedoMapHandle = AssetManager::Instance->GetAsset<Texture>(albedoMapUUID);
-
-				UUID normalMapUUID = materialProperties["NormalMap"].as<UUID>();
-				Handle<Texture> normalMapHandle = AssetManager::Instance->GetAsset<Texture>(normalMapUUID);
-
-				UUID metallicMapUUID = materialProperties["MetallicMap"].as<UUID>();
-				Handle<Texture> metallicMapHandle = AssetManager::Instance->GetAsset<Texture>(metallicMapUUID);
-
-				UUID roughnessMapUUID = materialProperties["RoughnessMap"].as<UUID>();
-				Handle<Texture> roughnessMapHandle = AssetManager::Instance->GetAsset<Texture>(roughnessMapUUID);
-
-				// If albedo map is not set use the built in white texture.
-				if (!albedoMapHandle.IsValid())
-				{
-					albedoMapHandle = TextureUtilities::Get().WhiteTexture;
-				}
-
-				const std::string& materialName = asset->FilePath.filename().stem().string();
-
-				Handle<BindGroup> drawBindings;
-				uint32_t dynamicUniformBufferRange = (type == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData));
-
-				if (type == 2) // PBR
-				{
-					if (!normalMapHandle.IsValid())
-					{
-						normalMapHandle = TextureUtilities::Get().WhiteTexture;
-					}
-
-					drawBindings = ResourceManager::Instance->CreateBindGroup({
-						.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-						.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::PBR),
-						.textures = { albedoMapHandle, normalMapHandle, metallicMapHandle, roughnessMapHandle, Renderer::Instance->ShadowAtlasTexture },
-						.buffers = {
-							{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
-						}
-					});
-				}
-				else
-				{
-					drawBindings = ResourceManager::Instance->CreateBindGroup({
-						.debugName = _strdup(std::format("{}-bind-group", materialName).c_str()),
-						.layout = ShaderUtilities::Get().GetBuiltInShaderLayout(BuiltInShader::BLINN_PHONG), // BuiltInShader::BLINN_PHONG, UNLIT, INVALID have the same bindgroup layout.
-						.textures = { albedoMapHandle, Renderer::Instance->ShadowAtlasTexture },
-						.buffers = {
-							{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange },
-						}
-					});
-				}
-
-				// Delete old bind group.
-				ResourceManager::Instance->DeleteBindGroup(mat->BindGroup);
-
-				ResourceManager::Instance->ReimportMaterial(materialHandle, {
-					.debugName = _strdup(std::format("{}-material", materialName).c_str()),
-					.shader = shaderHandle,
-					.bindGroup = drawBindings,
-				});
-
-				glm::vec4 albedoColor = materialProperties["AlbedoColor"].as<glm::vec4>();
-				float glossiness = materialProperties["Glossiness"].as<float>();
-
-				mat->AlbedoColor = albedoColor;
-				mat->Glossiness = glossiness;
+				metaDataStream.close();
 			}
+
+			auto shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(shaderUUID);
+			Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+			const auto& filesystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+			const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : shaderAsset->FilePath;
+
+			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
+
+			Handle<BindGroup> materialBindGroup;
+
+			for (const auto& descriptorSet : shaderReflectionData.descriptorSets)
+			{
+				if (descriptorSet.set != 2)
+				{
+					continue;
+				}
+
+				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
+				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
+
+				for (const auto& b : descriptorSet.bindings)
+				{
+					if (b.type == ResourceType::UniformBuffer)
+					{
+						std::vector<uint8_t> uniformBufferBytes(b.size);
+
+						const auto& bufferProp = materialProperties[b.name];
+
+						if (bufferProp.IsDefined())
+						{
+							for (const auto& m : b.members)
+							{
+								const auto& memberProp = bufferProp[m.name];
+
+								if (!memberProp.IsDefined())
+								{
+									continue;
+								}
+
+								uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+								switch (m.typeInfo.base)
+								{
+								case MemberBaseType::Float:
+									{
+										if (m.typeInfo.isArray)
+										{
+											const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
+
+											for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+											{
+												if (!memberProp[i].IsDefined())
+												{
+													continue;
+												}
+
+												float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+
+												if (m.typeInfo.cols == 1)
+												{
+													*f = memberProp[i].as<float>();
+												}
+												else if (m.typeInfo.cols == 2)
+												{
+													const glm::vec2& vec2 = memberProp[i].as<glm::vec2>();
+
+													f[0] = vec2.x;
+													f[1] = vec2.y;
+												}
+												else if (m.typeInfo.cols == 3)
+												{
+													const glm::vec3& vec3 = memberProp[i].as<glm::vec3>();
+
+													f[0] = vec3.x;
+													f[1] = vec3.y;
+													f[2] = vec3.z;
+												}
+												else if (m.typeInfo.cols == 4)
+												{
+													const glm::vec4& vec4 = memberProp[i].as<glm::vec4>();
+
+													f[0] = vec4.x;
+													f[1] = vec4.y;
+													f[2] = vec4.z;
+													f[3] = vec4.w;
+												}
+											}
+										}
+										else
+										{
+											float* f = reinterpret_cast<float*>(memberPtr);
+
+											if (m.typeInfo.cols == 1)
+											{
+												*f = memberProp.as<float>();
+											}
+											else if (m.typeInfo.cols == 2)
+											{
+												const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+
+												f[0] = vec2.x;
+												f[1] = vec2.y;
+											}
+											else if (m.typeInfo.cols == 3)
+											{
+												const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+
+												f[0] = vec3.x;
+												f[1] = vec3.y;
+												f[2] = vec3.z;
+											}
+											else if (m.typeInfo.cols == 4)
+											{
+												const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+												f[0] = vec4.x;
+												f[1] = vec4.y;
+												f[2] = vec4.z;
+												f[3] = vec4.w;
+											}
+										}
+										break;
+									}
+								}
+							}
+
+							auto userBuffer = ResourceManager::Instance->CreateBuffer({
+								.debugName = "user-uniform-buffer",
+								.usage = BufferUsage::UNIFORM,
+								.usageHint = BufferUsageHint::DYNAMIC,
+								.memoryUsage = MemoryUsage::GPU_CPU,
+								.byteSize = (uint32_t)b.size,
+								.initialData = (void*)uniformBufferBytes.data(),
+							});
+
+							bufferBindings.push_back({ .buffer = userBuffer, });
+						}
+					}
+					else if (b.type == ResourceType::SampledTexture)
+					{
+						const auto& textureProp = materialProperties[b.name];
+
+						if (textureProp.IsDefined())
+						{
+							UUID textureMapUUID = textureProp.as<UUID>();
+
+							auto handle = AssetManager::Instance->GetAsset<Texture>(textureMapUUID);
+							textureBindings.push_back({ handle });
+						}
+					}
+				}
+
+				// If there is only one texture and is not set, use the built in white texture.
+				if (textureBindings.size() == 1)
+				{
+					if (!textureBindings[0].texture.IsValid())
+					{
+						textureBindings[0].texture = TextureUtilities::Get().WhiteTexture;
+					}
+				}
+
+				materialBindGroup = ResourceManager::Instance->CreateBindGroup({
+					.debugName = "user-bind-group",
+					.layout = shaderReflectionData.GetBindGroupLayout(2),
+                    .textures = { textureBindings.data(), textureBindings.size() },
+                    .buffers = { bufferBindings.data(), bufferBindings.size() },
+				});
+			}
+
+			// Delete old bind group.
+			ResourceManager::Instance->DeleteBindGroup(mat->MaterialBindGroup);
+
+			ResourceManager::Instance->ReimportMaterial(materialHandle, {
+				.debugName = strdup(std::format("{}-material", materialName).c_str()),
+				.shader = shaderHandle,
+				.drawBindGroup = mat->DrawBindGroup,
+				.materialBindGroup = materialBindGroup,
+			});
 		}
 
 		ioStream.close();
-
 		return materialHandle;
 	}
 
@@ -1225,16 +1869,33 @@ namespace HBL2
 		auto materialProperties = data["Material"];
 		if (materialProperties)
 		{
-			materialProperties["AlbedoColor"] = mat->AlbedoColor;
-			materialProperties["Glossiness"] = mat->Glossiness;
+			if (materialProperties["RasterState"].IsDefined())
+			{
+				materialProperties["RasterState"]["Topology"] = (int)mat->VariantHash.topology;
+				materialProperties["RasterState"]["PolygonMode"] = (int)mat->VariantHash.polygonMode;
+				materialProperties["RasterState"]["CullMode"] = (int)mat->VariantHash.cullMode;
+				materialProperties["RasterState"]["FrontFace"] = (int)mat->VariantHash.frontFace;
+			}
 
-			materialProperties["BlendState"]["Enabled"] = mat->VariantHash.blendEnabled;
-			materialProperties["BlendState"]["ColorOutputEnabled"] = mat->VariantHash.colorOutput;
+			materialProperties["BlendState"]["Enabled"] = (bool)mat->VariantHash.blendEnabled;
+			materialProperties["BlendState"]["ColorOutputEnabled"] = (bool)mat->VariantHash.colorOutput;
 
-			materialProperties["DepthState"]["Enabled"] = mat->VariantHash.depthEnabled;
-			materialProperties["DepthState"]["WriteEnabled"] = mat->VariantHash.depthWrite;
-			materialProperties["DepthState"]["StencilEnabled"] = mat->VariantHash.stencilEnabled;
+			materialProperties["DepthState"]["Enabled"] = (bool)mat->VariantHash.depthEnabled;
+			materialProperties["DepthState"]["WriteEnabled"] = (bool)mat->VariantHash.depthWrite;
+			materialProperties["DepthState"]["StencilEnabled"] = (bool)mat->VariantHash.stencilEnabled;
 			materialProperties["DepthState"]["DepthTest"] = (int)mat->VariantHash.depthCompare;
+
+			if (materialProperties["ShaderConstantsState"].IsDefined())
+			{
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool0"] = (bool)mat->VariantHash.shaderConstantBool0;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool1"] = (bool)mat->VariantHash.shaderConstantBool1;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool2"] = (bool)mat->VariantHash.shaderConstantBool2;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool3"] = (bool)mat->VariantHash.shaderConstantBool3;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool4"] = (bool)mat->VariantHash.shaderConstantBool4;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool5"] = (bool)mat->VariantHash.shaderConstantBool5;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool6"] = (bool)mat->VariantHash.shaderConstantBool6;
+				materialProperties["ShaderConstantsState"]["ShaderConstantBool7"] = (bool)mat->VariantHash.shaderConstantBool7;
+			}
 
 			UUID shaderUUID = materialProperties["Shader"].as<UUID>();
 			Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
@@ -1994,6 +2655,12 @@ namespace HBL2
 		}
 
 		Material* material = ResourceManager::Instance->GetMaterial(materialAssetHandle);
+
+		if (material != nullptr)
+		{
+			ResourceManager::Instance->DeleteBindGroup(material->DrawBindGroup);
+			ResourceManager::Instance->DeleteBindGroup(material->MaterialBindGroup);
+		}
 
 		ResourceManager::Instance->DeleteMaterial(materialAssetHandle);
 

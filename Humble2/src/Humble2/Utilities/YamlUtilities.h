@@ -2,7 +2,7 @@
 
 #include "Base.h"
 
-#include <yaml-cpp\yaml.h>
+#include <yaml-cpp/yaml.h>
 
 namespace YAML
 {

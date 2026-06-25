@@ -35,6 +35,7 @@ namespace HBL2
 
 		virtual void Initialize() = 0;
 		virtual void Destroy() = 0;
+		virtual bool HasContext() = 0;
 		virtual void SetContext(ContextType ctxType) = 0;
 
 		const GPUProperties& GetGPUProperties() const { return m_GPUProperties; }

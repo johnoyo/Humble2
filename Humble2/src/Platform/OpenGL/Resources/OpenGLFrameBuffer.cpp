@@ -1,6 +1,7 @@
 #include "OpenGLFrameBuffer.h"
 
-#include "Platform\OpenGL\OpenGLResourceManager.h"
+#include "Platform/OpenGL/OpenGLResourceManager.h"
+#include "Utilities/JobSystem.h"
 
 namespace HBL2
 {
@@ -48,6 +49,11 @@ namespace HBL2
 		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		if (!JobSystem::Get().IsRenderThread())
+		{
+			glFlush();
+		}
 	}
 
 	void OpenGLFrameBuffer::Resize(uint32_t width, uint32_t height)

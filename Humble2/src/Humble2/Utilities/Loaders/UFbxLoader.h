@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Base.h"
-#include "Asset\AssetManager.h"
-#include "Resources\Types.h"
+#include "Asset/AssetManager.h"
+#include "Resources/Types.h"
 
-#include "Utilities\Result.h"
+#include "Utilities/Result.h"
 
-#include "ufbx\ufbx.h"
+#include "ufbx/ufbx.h"
 
 #include <filesystem>
 
@@ -32,6 +32,6 @@ namespace HBL2
 	private:
 		static thread_local std::vector<Vertex> s_Vertices;
 		static thread_local std::vector<uint32_t> s_Indeces;
-		static thread_local std::unordered_map<std::string, Handle<Material>> s_MaterialNameToHandle;
+		static thread_local std::unordered_map<std::string, Handle<Asset>> s_MaterialNameToAssetHandle;
 	};
 }

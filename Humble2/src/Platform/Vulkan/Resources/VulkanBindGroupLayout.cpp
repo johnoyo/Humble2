@@ -5,8 +5,9 @@ namespace HBL2
 	VulkanBindGroupLayout::VulkanBindGroupLayout(const BindGroupLayoutDescriptor&& desc)
 	{
 		DebugName = desc.debugName;
-		BufferBindings = desc.bufferBindings;
-		TextureBindings = desc.textureBindings;
+		CreatedFromReflection = desc.createdFromReflection;
+		BufferBindings = { desc.bufferBindings.begin(), desc.bufferBindings.end() };
+		TextureBindings = { desc.textureBindings.begin(), desc.textureBindings.end() };
 
 		auto* device = (VulkanDevice*)Device::Instance;
 
@@ -105,7 +106,7 @@ namespace HBL2
 			.pNext = nullptr,
 			.flags = 0,
 			.bindingCount = (uint32_t)bindings.size(),
-			.pBindings = bindings.data(),
+			.pBindings = bindings.size() == 0 ? nullptr : bindings.data(),
 		};
 
 		VK_VALIDATE(vkCreateDescriptorSetLayout(device->Get(), &descriptorSetLayoutCreateInfo, nullptr, &DescriptorSetLayout), "vkCreateDescriptorSetLayout");

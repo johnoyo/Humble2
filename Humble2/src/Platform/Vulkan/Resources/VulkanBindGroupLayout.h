@@ -1,15 +1,16 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/RefCounted.h"
+#include "Resources/TypeDescriptors.h"
 
-#include "Platform\Vulkan\VulkanDevice.h"
+#include "Platform/Vulkan/VulkanDevice.h"
 
-#include "Platform\Vulkan\VulkanCommon.h"
+#include "Platform/Vulkan/VulkanCommon.h"
 
 namespace HBL2
 {
-	struct VulkanBindGroupLayout
+	struct VulkanBindGroupLayout : RefCounted
 	{
 		VulkanBindGroupLayout() = default;
 		VulkanBindGroupLayout(const BindGroupLayoutDescriptor&& desc);
@@ -20,5 +21,6 @@ namespace HBL2
 		VkDescriptorSetLayout DescriptorSetLayout = VK_NULL_HANDLE;
 		std::vector<BindGroupLayoutDescriptor::BufferBinding> BufferBindings;
 		std::vector<BindGroupLayoutDescriptor::TextureBinding> TextureBindings;
+		bool CreatedFromReflection = false;
 	};
 }

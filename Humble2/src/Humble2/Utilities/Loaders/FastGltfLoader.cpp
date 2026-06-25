@@ -1,21 +1,64 @@
 #include "FastGltfLoader.h"
 
-#include <Project\Project.h>
+#include "Project/Project.h"
 
-#include <Asset\AssetManager.h>
-#include <Resources\ResourceManager.h>
+#include "Asset/AssetManager.h"
+#include "Resources/ResourceManager.h"
 
-#include <Utilities\ShaderUtilities.h>
-#include <Utilities\TextureUtilities.h>
-
-#include <Utilities\FileDialogs.h>
+#include "Utilities/ShaderUtilities.h"
+#include "Utilities/TextureUtilities.h"
+#include "Utilities/FileDialogs.h"
 
 namespace HBL2
 {
 	thread_local std::vector<Vertex> FastGltfLoader::s_Vertices;
 	thread_local std::vector<uint32_t> FastGltfLoader::s_Indices;
 	thread_local std::vector<Handle<Asset>> FastGltfLoader::s_Textures;
-	thread_local std::unordered_map<const char*, Handle<Material>> FastGltfLoader::s_MaterialNameToHandle;
+	thread_local std::unordered_map<const char*, Handle<Asset>> FastGltfLoader::s_MaterialNameToAssetHandle;
+
+	static void GetShaderAssetHandleAndReflectionData(Handle<Asset>& shaderAssetHandle, ShaderReflectionData& shaderReflectionData, bool isPBR)
+	{
+		if (!isPBR)
+		{
+			auto shaderAssetHandles = ShaderUtilities::Get().GetBuiltInShaderAssets();
+			auto blinnPhongHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::BLINN_PHONG);
+
+			for (auto h : shaderAssetHandles)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(h);
+				if (asset != nullptr && asset->Indentifier == blinnPhongHandle.Pack())
+				{
+					shaderAssetHandle = h;
+					break;
+				}
+			}
+		}
+		else
+		{
+			auto shaderAssetHandles = ShaderUtilities::Get().GetBuiltInShaderAssets();
+			auto pbrHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PBR);
+
+			for (auto h : shaderAssetHandles)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(h);
+				if (asset != nullptr && asset->Indentifier == pbrHandle.Pack())
+				{
+					shaderAssetHandle = h;
+					break;
+				}
+			}
+		}
+
+		if (shaderAssetHandle.IsValid())
+		{
+			Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+			const auto& shaderFileSystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+			const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
+
+			shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
+		}
+	}
 
 	Handle<Mesh> FastGltfLoader::Load(const std::filesystem::path& path)
 	{
@@ -75,7 +118,7 @@ namespace HBL2
 		}
 
 		Handle<Mesh> handle = ResourceManager::Instance->CreateMesh({
-			.debugName = _strdup(path.filename().stem().string().c_str()),
+			.debugName = strdup(path.filename().stem().string().c_str()),
 			.meshes = std::move(meshes),
 		});
 
@@ -167,7 +210,7 @@ namespace HBL2
 		}
 
 		HBL2::ResourceManager::Instance->ReimportMesh(handle, {
-			.debugName = _strdup(meshPath.filename().stem().string().c_str()),
+			.debugName = strdup(meshPath.filename().stem().string().c_str()),
 			.meshes = std::move(meshes),
 		});
 
@@ -497,7 +540,7 @@ namespace HBL2
 
 	void FastGltfLoader::LoadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset)
 	{
-		s_MaterialNameToHandle.clear();
+		s_MaterialNameToAssetHandle.clear();
 
 		size_t numMaterials = asset.materials.size();
 
@@ -556,20 +599,31 @@ namespace HBL2
 
 				AssetManager::Instance->WaitForAsyncJobs();
 
+				// Get material uniform buffer data.
+				std::vector<uint8_t> uniformBufferBytes(24, 0);
+				float* colorOffset = (float*)uniformBufferBytes.data();
+				colorOffset[0] = albedoColor[0]; colorOffset[1] = albedoColor[1];
+				colorOffset[2] = albedoColor[2]; colorOffset[3] = albedoColor[3];
+				float* glossinessOffset = (float*)uniformBufferBytes.data() + 16;
+				*glossinessOffset = roughness;
+
+				Handle<Asset> shaderAssetHandle;
+				ShaderReflectionData shaderReflectionData;
+				bool isPBR = normalMapAssetHandle.IsValid() && metallicRoughnessMapAssetHandle.IsValid() && metallicRoughnessMapAssetHandle.IsValid();
+
+				GetShaderAssetHandleAndReflectionData(shaderAssetHandle, shaderReflectionData, isPBR);
+
 				ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
-					.ShaderAssetHandle = {}, // Use built-in shaders depending on material type.
+					.ShaderAssetHandle = shaderAssetHandle,
 					.VariantHash =
 					{
 						.blendEnabled = false,
 						.depthWrite = false,
 						.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)Compare::LESS_OR_EQUAL,
 					},
-					.AlbedoColor = albedoColor,
-					.Glossiness = (float)roughness,
-					.AlbedoMapAssetHandle = albedoMapAssetHandle,
-					.NormalMapAssetHandle = normalMapAssetHandle,
-					.RoughnessMapAssetHandle = metallicRoughnessMapAssetHandle,
-					.MetallicMapAssetHandle = metallicRoughnessMapAssetHandle,
+					.ReflectionData = &shaderReflectionData,
+					.Buffers = { uniformBufferBytes },
+					.TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), metallicRoughnessMapAssetHandle.Pack(), metallicRoughnessMapAssetHandle.Pack() },
 				});
 
 				if (materialAssetHandle.IsValid())
@@ -600,13 +654,13 @@ namespace HBL2
 				materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetUUID);
 			}
 
-			s_MaterialNameToHandle[glTFMaterial.name.c_str()] = materialHandle;
+			s_MaterialNameToAssetHandle[glTFMaterial.name.c_str()] = materialAssetHandle;
 		}
 	}
 
 	void FastGltfLoader::ReloadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset)
 	{
-		s_MaterialNameToHandle.clear();
+		s_MaterialNameToAssetHandle.clear();
 
 		size_t numMaterials = asset.materials.size();
 
@@ -655,6 +709,20 @@ namespace HBL2
 				metallicRoughnessMapAssetHandle = s_Textures[imageIndex];
 			}
 
+			// Get material uniform buffer data.
+			std::vector<uint8_t> uniformBufferBytes(24, 0);
+			float* colorOffset = (float*)uniformBufferBytes.data();
+			colorOffset[0] = albedoColor[0]; colorOffset[1] = albedoColor[1];
+			colorOffset[2] = albedoColor[2]; colorOffset[3] = albedoColor[3];
+			float* glossinessOffset = (float*)uniformBufferBytes.data() + 16;
+			*glossinessOffset = roughness;
+
+			Handle<Asset> shaderAssetHandle;
+			ShaderReflectionData shaderReflectionData;
+			bool isPBR = normalMapAssetHandle.IsValid() && metallicRoughnessMapAssetHandle.IsValid() && metallicRoughnessMapAssetHandle.IsValid();
+				
+			GetShaderAssetHandleAndReflectionData(shaderAssetHandle, shaderReflectionData, isPBR);
+
 			if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativePath)))
 			{
 				materialAssetHandle = AssetManager::Instance->CreateAsset({
@@ -664,19 +732,16 @@ namespace HBL2
 				});
 
 				ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
-					.ShaderAssetHandle = {}, // Use built-in shaders depending on material type.
+					.ShaderAssetHandle = shaderAssetHandle,
 					.VariantHash =
 					{
 						.blendEnabled = false,
 						.depthWrite = false,
 						.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)Compare::LESS_OR_EQUAL,
 					},
-					.AlbedoColor = albedoColor,
-					.Glossiness = (float)roughness,
-					.AlbedoMapAssetHandle = albedoMapAssetHandle,
-					.NormalMapAssetHandle = normalMapAssetHandle,
-					.RoughnessMapAssetHandle = metallicRoughnessMapAssetHandle,
-					.MetallicMapAssetHandle = metallicRoughnessMapAssetHandle,
+					.ReflectionData = &shaderReflectionData,
+					.Buffers = { uniformBufferBytes },
+					.TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), metallicRoughnessMapAssetHandle.Pack(), metallicRoughnessMapAssetHandle.Pack() },
 				});
 
 				if (materialAssetHandle.IsValid())
@@ -708,26 +773,23 @@ namespace HBL2
 
 				// Recreate material asset file with new data.
 				ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
-					.ShaderAssetHandle = {}, // Use built-in shaders depending on material type.
+					.ShaderAssetHandle = shaderAssetHandle,
 					.VariantHash =
 					{
 						.blendEnabled = false,
 						.depthWrite = false,
 						.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)Compare::LESS_OR_EQUAL,
 					},
-					.AlbedoColor = albedoColor,
-					.Glossiness = (float)roughness,
-					.AlbedoMapAssetHandle = albedoMapAssetHandle,
-					.NormalMapAssetHandle = normalMapAssetHandle,
-					.RoughnessMapAssetHandle = metallicRoughnessMapAssetHandle,
-					.MetallicMapAssetHandle = metallicRoughnessMapAssetHandle,
+					.ReflectionData = &shaderReflectionData,
+					.Buffers = { uniformBufferBytes },
+					.TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), metallicRoughnessMapAssetHandle.Pack(), metallicRoughnessMapAssetHandle.Pack() },
 				});
 
 				// Reload material now that we have set the new resourses.
 				materialHandle = AssetManager::Instance->ReloadAsset<Material>(materialAssetUUID);
 			}
 
-			s_MaterialNameToHandle[glTFMaterial.name.c_str()] = materialHandle;
+			s_MaterialNameToAssetHandle[glTFMaterial.name.c_str()] = materialAssetHandle;
 		}
 	}
 
@@ -742,7 +804,7 @@ namespace HBL2
 		uint32_t numSubMeshes = mesh.primitives.size();
 		if (numSubMeshes)
 		{
-			meshPartDescriptor.debugName = _strdup(node.name.c_str());
+			meshPartDescriptor.debugName = strdup(node.name.c_str());
 			meshPartDescriptor.subMeshes.resize(numSubMeshes);
 
 			for (uint32_t subMeshIndex = 0; subMeshIndex < numSubMeshes; ++subMeshIndex)
@@ -817,11 +879,11 @@ namespace HBL2
 	Result<SubMeshDescriptor> FastGltfLoader::LoadSubMeshVertexData(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, uint32_t subMeshIndex)
 	{
 		SubMeshDescriptor subMeshDescriptor{};
-		subMeshDescriptor.debugName = _strdup(mesh.name.c_str());
+		subMeshDescriptor.debugName = strdup(mesh.name.c_str());
 
 		const fastgltf::Primitive& primitive = mesh.primitives[subMeshIndex];
 
-		subMeshDescriptor.embededMaterial = s_MaterialNameToHandle[asset.materials[mesh.primitives[subMeshIndex].materialIndex.value_or(0)].name.c_str()];
+		subMeshDescriptor.embededMaterial = s_MaterialNameToAssetHandle[asset.materials[mesh.primitives[subMeshIndex].materialIndex.value_or(0)].name.c_str()];
 
 		size_t vertexCount = 0;
 		size_t indexCount = 0;

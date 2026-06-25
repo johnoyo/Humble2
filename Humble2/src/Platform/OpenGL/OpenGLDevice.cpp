@@ -1,6 +1,6 @@
 #include "OpenGLDevice.h"
 
-#include "Core\Window.h"
+#include "Core/Window.h"
 
 #include <GLFW/glfw3.h>
 #include <span>
@@ -36,6 +36,11 @@ namespace HBL2
 	{
 	}
 
+	bool OpenGLDevice::HasContext()
+	{
+		return glfwGetCurrentContext() != nullptr;
+	}
+
 	void OpenGLDevice::SetContext(ContextType ctxType)
 	{
 		static thread_local int localWorkerIndex = -1;
@@ -47,15 +52,12 @@ namespace HBL2
 			glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
 			glDeleteSync(fence);
 
-			glfwMakeContextCurrent(nullptr);
-
 			return;
 		}
 
 		if (ctxType == ContextType::CLEAR)
 		{
 			glFlush();
-			glfwMakeContextCurrent(nullptr);
 
 			return;
 		}
@@ -73,8 +75,8 @@ namespace HBL2
 				return;
 			}
 			localWorkerIndex = index;
-		}
 
-		glfwMakeContextCurrent(windowContexts[localWorkerIndex]);
+			glfwMakeContextCurrent(windowContexts[localWorkerIndex]);
+		}
 	}
 }

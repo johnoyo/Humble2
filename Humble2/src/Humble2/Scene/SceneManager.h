@@ -1,19 +1,23 @@
 #pragma once
 
-#include "Core\Context.h"
-#include "Core\Events.h"
-#include "Scene\Scene.h"
-#include "Scene\SceneSerializer.h"
-#include "Resources\Handle.h"
+#include "Core/Context.h"
+#include "Core/Events.h"
+#include "Scene/Scene.h"
+#include "Scene/SceneSerializer.h"
+#include "Resources/Handle.h"
 
-#include "Asset\AssetManager.h"
-#include "Resources\ResourceManager.h"
+#include "Asset/AssetManager.h"
+#include "Resources/ResourceManager.h"
 
 namespace HBL2
 {
 	namespace Editor
 	{
 		class EditorPanelSystem;
+		class PlayStopPanel;
+		class ViewportPanel;
+		class TopBarPanel;
+		class ContentBrowserPanel;
 	}
 
 	class HBL2_API SceneManager
@@ -63,5 +67,9 @@ namespace HBL2
 		friend class Project;
 		friend class Application;
 		friend class Editor::EditorPanelSystem;
+		friend class Editor::PlayStopPanel;
+		friend class Editor::ViewportPanel;
+		friend class Editor::TopBarPanel;
+		friend class Editor::ContentBrowserPanel;
 	};
 }

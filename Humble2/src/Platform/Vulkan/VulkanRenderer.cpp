@@ -5,8 +5,8 @@
 #include <imgui_impl_vulkan.h>
 #include <GLFW/glfw3.h>
 
-#include "Utilities\TextureUtilities.h"
-#include "Utilities\ShaderUtilities.h"
+#include "Utilities/TextureUtilities.h"
+#include "Utilities/ShaderUtilities.h"
 
 namespace HBL2
 {
@@ -36,12 +36,45 @@ namespace HBL2
 
 	void VulkanRenderer::PostInitialize()
 	{
+		// Global bindings for the 3D rendering.
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			auto cameraBuffer3D = m_ResourceManager->CreateBuffer({
+				.debugName = "camera-uniform-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.usageHint = BufferUsageHint::DYNAMIC,
+				.memoryUsage = MemoryUsage::GPU_CPU,
+				.byteSize = sizeof(CameraData),
+				.initialData = nullptr,
+			});
+
+			auto lightBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "light-uniform-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.usageHint = BufferUsageHint::DYNAMIC,
+				.memoryUsage = MemoryUsage::GPU_CPU,
+				.byteSize = sizeof(LightData),
+				.initialData = nullptr,
+			});
+
+			m_VkFrames[i].GlobalBindings3D = m_ResourceManager->CreateBindGroup({
+				.debugName = "global-bind-group",
+				.layout = m_GlobalBindingsLayout3D,
+				.textures = { { ShadowAtlasTexture } },
+				.buffers = {
+					{ .buffer = cameraBuffer3D },
+					{ .buffer = lightBuffer },
+				}
+			});
+		}
+
+		// Global bindings for presenting.
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
 			m_VkFrames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "global-present-bind-group",
 				.layout = GetGlobalPresentBindingsLayout(),
-				.textures = { MainColorTexture },
+				.textures = { { MainColorTexture, TextureLayout::SHADER_READ_ONLY } },
 			});
 		}
 
@@ -54,25 +87,30 @@ namespace HBL2
 
 	void VulkanRenderer::BeginFrame()
 	{
-		if (m_Resize)
-		{
-			for (uint32_t i = 0; i < FRAME_OVERLAP; ++i)
-			{
-				VK_VALIDATE(vkWaitForFences(m_Device->Get(), 1, &m_VkFrames[i].InFlightFence, VK_TRUE, UINT64_MAX), "vkWaitForFences");
-			}
-
-			Resize(m_NewSize.x, m_NewSize.y);
-			m_Resize = false;
-		}
-
 		// Wait until the GPU has finished rendering the last frame. Timeout of 1 second
 		VK_VALIDATE(vkWaitForFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence, VK_TRUE, UINT64_MAX), "vkWaitForFences");
-		
+		VK_VALIDATE(vkResetFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence), "vkResetFences");		
+
 		// Flush any pending deletions that occured in the frames before the current one.
 		m_ResourceManager->Flush(m_FrameNumber.load());
 
-		VK_VALIDATE(vkResetFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence), "vkResetFences");
-		VK_VALIDATE(vkAcquireNextImageKHR(m_Device->Get(), m_SwapChain, UINT64_MAX, GetCurrentFrame().ImageAvailableSemaphore, nullptr, &m_SwapchainImageIndex), "vkAcquireNextImageKHR");
+		// Get the next swap chain image from the implementation.
+		// Note that the implementation is free to return the images in any order, so we must use the acquire function and can't just cycle through the images/imageIndex on our own.
+		VkResult result = vkAcquireNextImageKHR(m_Device->Get(), m_SwapChain, UINT64_MAX, GetCurrentFrame().ImageAvailableSemaphore, nullptr, &m_SwapchainImageIndex);
+
+		// Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE)
+		// If no longer optimal (VK_SUBOPTIMAL_KHR), wait until Present() in case number of swapchain images will change on resize.
+		if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR))
+		{
+			if (result == VK_ERROR_OUT_OF_DATE_KHR)
+			{
+				Resize(m_NewSize.x, m_NewSize.y);
+			}
+		}
+		else
+		{
+			VK_VALIDATE(result, "vkAcquireNextImageKHR");
+		}
 
 		SwapAndResetStats();
 	}
@@ -91,8 +129,8 @@ namespace HBL2
 	void VulkanRenderer::Present()
 	{
 		// This will put the image we just rendered into the visible window.
-		// We want to wait on the ImGuiRenderFinishedSemaphore for that, as it's necessary that drawing commands have finished before the image is displayed to the user
-		
+		// We want to wait on the ImGuiRenderFinishedSemaphore for that,
+		// as it's necessary that drawing commands have finished before the image is displayed to the user.		
 		VkPresentInfoKHR presentInfo = 
 		{
 			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -113,9 +151,10 @@ namespace HBL2
 
 		m_FrameNumber++;
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+		// Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE) or no longer optimal for presentation (SUBOPTIMAL)
+		if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR))
 		{
-			m_Resize = true;
+			Resize(m_NewSize.x, m_NewSize.y);
 		}
 		else
 		{
@@ -146,7 +185,10 @@ namespace HBL2
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
-		m_ResourceManager->DeleteBindGroupLayout(m_DebugBindingsLayout);
+		m_ResourceManager->DeleteBindGroupLayout(m_EmptyBindingsLayout);
+		m_ResourceManager->DeleteBindGroupLayout(m_DynamicBindingsLayout);
+
+		m_ResourceManager->DeleteBindGroup(m_EmptyBindings);
 
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
@@ -299,6 +341,7 @@ namespace HBL2
 	{
 		if (width == 0 || height == 0)
 		{
+			m_Resize = false;
 			return;
 		}
 
@@ -331,13 +374,9 @@ namespace HBL2
 		m_ResourceManager->DeleteTexture(m_DepthImage);
 
 		// Destroy old offscreen textures.
-		m_FrameNumber++;
-		m_FrameNumber++;
 		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
-		m_FrameNumber--;
-		m_FrameNumber--;
 
 		m_Device->UpdateSwapChainSupportDetails();
 
@@ -401,7 +440,7 @@ namespace HBL2
 			m_VkFrames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "global-present-bind-group",
 				.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
-				.textures = { MainColorTexture },  // Updated with new size
+				.textures = { { MainColorTexture, TextureLayout::SHADER_READ_ONLY } },  // Updated with new size
 			});
 
 			VulkanBindGroup vkGlobalPresentBindings = m_ResourceManager->GetBindGroup(m_VkFrames[i].GlobalPresentBindings);
@@ -413,6 +452,8 @@ namespace HBL2
 		{
 			callback(width, height);
 		}
+
+		m_Resize = false;
 	}
 
 	void VulkanRenderer::CreateAllocator()
@@ -801,17 +842,6 @@ namespace HBL2
 	void VulkanRenderer::CreateDescriptorSets()
 	{
 		// Global bindings for the 2D rendering.
-		m_GlobalBindingsLayout2D = m_ResourceManager->CreateBindGroupLayout({
-			.debugName = "unlit-colored-layout",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
 			auto cameraBuffer2D = m_ResourceManager->CreateBuffer({
@@ -833,17 +863,6 @@ namespace HBL2
 		}
 
 		// Bindings for shadow rendering.
-		m_ShadowBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
-			.debugName = "shadow-bindings-layout",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
-				},
-			},
-		});
-
 		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
 		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), uniformOffset);
 
@@ -865,78 +884,9 @@ namespace HBL2
 					{ .buffer = lightSpaceBuffer, .range = 64 }, // TODO: Investigate if '.range' should be alignedSize! 
 				}
 			});
-		}
-
-		// Global bindings for the 3D rendering.
-		m_GlobalBindingsLayout3D = m_ResourceManager->CreateBindGroupLayout({
-			.debugName = "global-bind-group-layout",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM,
-				},
-				{
-					.slot = 1,
-					.visibility = ShaderStage::FRAGMENT,
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
-		for (int i = 0; i < FRAME_OVERLAP; i++)
-		{
-			auto cameraBuffer3D = m_ResourceManager->CreateBuffer({
-				.debugName = "camera-uniform-buffer",
-				.usage = BufferUsage::UNIFORM,
-				.usageHint = BufferUsageHint::DYNAMIC,
-				.memoryUsage = MemoryUsage::GPU_CPU,
-				.byteSize = sizeof(CameraData),
-				.initialData = nullptr,
-			});
-
-			auto lightBuffer = m_ResourceManager->CreateBuffer({
-				.debugName = "light-uniform-buffer",
-				.usage = BufferUsage::UNIFORM,
-				.usageHint = BufferUsageHint::DYNAMIC,
-				.memoryUsage = MemoryUsage::GPU_CPU,
-				.byteSize = sizeof(LightData),
-				.initialData = nullptr,
-			});
-
-			m_VkFrames[i].GlobalBindings3D = m_ResourceManager->CreateBindGroup({
-				.debugName = "global-bind-group",
-				.layout = m_GlobalBindingsLayout3D,
-				.buffers = {
-					{ .buffer = cameraBuffer3D },
-					{ .buffer = lightBuffer },
-				}
-			});
-		}
-
-		// Global bindings for presenting to offscreen texture
-		m_GlobalPresentBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
-			.debugName = "global-present-bind-group-layout",
-			.textureBindings = {
-				{
-					.slot = 0,
-					.visibility = ShaderStage::FRAGMENT,
-				},
-			},
-		});
+		}		
 
 		// Bindings for debug rendering.
-		m_DebugBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
-			.debugName = "debug-draw-bind-group-layout",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
 			auto cameraBuffer = m_ResourceManager->CreateBuffer({
@@ -950,7 +900,7 @@ namespace HBL2
 
 			m_VkFrames[i].DebugBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "debug-draw-bind-group",
-				.layout = m_DebugBindingsLayout,
+				.layout = m_GlobalBindingsLayout2D,
 				.buffers = { { .buffer = cameraBuffer } }
 			});
 		}
@@ -1015,7 +965,7 @@ namespace HBL2
 	{
 		for (const auto& availableFormat : availableFormats)
 		{
-			// Chose VK_FORMAT_B8G8R8A8_UNORM over VK_FORMAT_B8G8R8A8_SRGB since ingui was rendered with washed out colors with SRGB, since it uses UNORM internally.
+			// Chose VK_FORMAT_B8G8R8A8_UNORM over VK_FORMAT_B8G8R8A8_SRGB since imgui was rendered with washed out colors with SRGB, since it uses UNORM internally.
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 			// if (availableFormat.format == VK_FORMAT_A2B10G10R10_UNORM_PACK32 && availableFormat.colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
 			{

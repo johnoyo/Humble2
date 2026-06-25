@@ -1,5 +1,7 @@
 #include "OpenGLResourceManager.h"
 
+#include "Renderer/Renderer.h"
+
 namespace HBL2
 {
 	void OpenGLResourceManager::Initialize(const ResourceManagerSpecification& spec)
@@ -50,12 +52,15 @@ namespace HBL2
 	}
 	void OpenGLResourceManager::DeleteTexture(Handle<Texture> handle)
 	{
-		OpenGLTexture* texture = GetTexture(handle);
-		if (texture != nullptr)
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 		{
-			texture->Destroy();
-			m_TexturePool.Remove(handle);
-		}
+			OpenGLTexture* texture = GetTexture(handle);
+			if (texture != nullptr)
+			{
+				texture->Destroy();
+				m_TexturePool.Remove(handle);
+			}
+		});
 	}
 	void OpenGLResourceManager::UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes)
 	{
@@ -63,6 +68,14 @@ namespace HBL2
 		if (texture != nullptr)
 		{
 			texture->Update(bytes);
+		}
+	}
+	void OpenGLResourceManager::ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc)
+	{
+		OpenGLTexture* texture = GetTexture(handle);
+		if (texture != nullptr)
+		{
+			return texture->ChangeTextureView(std::forward<const TextureViewDescriptor>(desc));
 		}
 	}
 	void OpenGLResourceManager::TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle)
@@ -100,12 +113,15 @@ namespace HBL2
 	}
 	void OpenGLResourceManager::DeleteBuffer(Handle<Buffer> handle)
 	{
-		OpenGLBuffer* buffer = GetBuffer(handle);
-		if (buffer != nullptr)
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 		{
-			buffer->Destroy();
-			m_BufferPool.Remove(handle);
-		}
+			OpenGLBuffer* buffer = GetBuffer(handle);
+			if (buffer != nullptr)
+			{
+				buffer->Destroy();
+				m_BufferPool.Remove(handle);
+			}
+		});
 	}
 	void OpenGLResourceManager::ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset)
 	{
@@ -153,6 +169,25 @@ namespace HBL2
 
 		glBindBuffer(openGLBuffer->Usage, 0);
 	}
+	void OpenGLResourceManager::MapBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset, intptr_t size)
+	{
+		OpenGLBindGroup* openGLBindGroup = GetBindGroup(bindGroup);
+		if (openGLBindGroup != nullptr && bufferIndex < openGLBindGroup->Buffers.size())
+		{
+			if (size == 0)
+			{
+				MapBufferData(openGLBindGroup->Buffers[bufferIndex].buffer, offset, size);
+				return;
+			}
+
+			OpenGLBuffer* openGLBuffer = GetBuffer(openGLBindGroup->Buffers[bufferIndex].buffer);
+
+			if (openGLBuffer != nullptr)
+			{
+				MapBufferData(openGLBindGroup->Buffers[bufferIndex].buffer, offset, openGLBuffer->ByteSize);
+			}
+		}
+	}
 	OpenGLBuffer* OpenGLResourceManager::GetBuffer(Handle<Buffer> handle) const
 	{
 		return m_BufferPool.Get(handle);
@@ -165,12 +200,15 @@ namespace HBL2
 	}
 	void OpenGLResourceManager::DeleteFrameBuffer(Handle<FrameBuffer> handle)
 	{
-		OpenGLFrameBuffer* framebuffer = GetFrameBuffer(handle);
-		if (framebuffer != nullptr)
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 		{
-			framebuffer->Destroy();
-			m_FrameBufferPool.Remove(handle);
-		}
+			OpenGLFrameBuffer* framebuffer = GetFrameBuffer(handle);
+			if (framebuffer != nullptr)
+			{
+				framebuffer->Destroy();
+				m_FrameBufferPool.Remove(handle);
+			}
+		});
 	}
 	void OpenGLResourceManager::ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height)
 	{
@@ -203,16 +241,30 @@ namespace HBL2
 	}
 	void OpenGLResourceManager::DeleteShader(Handle<Shader> handle)
 	{
-		OpenGLShader* shader = GetShader(handle);
-		if (shader != nullptr)
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 		{
-			shader->Destroy();
-			m_ShaderPool.Remove(handle);
-		}
+			OpenGLShader* shader = GetShader(handle);
+			if (shader != nullptr)
+			{
+				shader->Destroy();
+				m_ShaderPool.Remove(handle);
+			}
+		});
 	}
 	uint64_t OpenGLResourceManager::GetOrAddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc)
 	{
-		return variantDesc.Key();
+		OpenGLShader* shader = GetShader(handle);
+		if (shader != nullptr)
+		{
+			return shader->GetOrCreateVariant(variantDesc);
+		}
+	}
+	void OpenGLResourceManager::SetShaderGlobalBindGroup(Handle<Shader> handle, Handle<BindGroup> bindGroupHandle)
+	{
+	}
+	Handle<BindGroup> OpenGLResourceManager::GetShaderGlobalBindGroup(Handle<Shader> handle)
+	{
+		return Handle<BindGroup>();
 	}
 	OpenGLShader* OpenGLResourceManager::GetShader(Handle<Shader> handle) const
 	{
@@ -223,8 +275,8 @@ namespace HBL2
 	Handle<BindGroup> OpenGLResourceManager::CreateBindGroup(const BindGroupDescriptor&& desc)
 	{
 		// FIXME: When shared between multiple bindgroups and we delete it once, the other references become invalid!
-		#if 0
-					// Caching mechanism so that materials with the same resources, use the same bind group.
+#if 0
+		// Caching mechanism so that materials with the same resources, use the same bind group.
 		uint16_t index = 0;
 
 		for (const auto& bindGroup : m_BindGroupPool.GetDataPool())
@@ -240,17 +292,20 @@ namespace HBL2
 
 			index++;
 		}
-		#endif
+#endif
 		return m_BindGroupPool.Insert(std::forward<const BindGroupDescriptor>(desc));
 	}
 	void OpenGLResourceManager::DeleteBindGroup(Handle<BindGroup> handle)
 	{
-		OpenGLBindGroup* bindGroup = GetBindGroup(handle);
-		if (bindGroup != nullptr)
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 		{
-			bindGroup->Destroy();
-			m_BindGroupPool.Remove(handle);
-		}
+			OpenGLBindGroup* bindGroup = GetBindGroup(handle);
+			if (bindGroup != nullptr)
+			{
+				bindGroup->Destroy();
+				m_BindGroupPool.Remove(handle);
+			}
+		});
 	}
 	void OpenGLResourceManager::UpdateBindGroup(Handle<BindGroup> handle) {}
 	uint64_t OpenGLResourceManager::GetBindGroupHash(Handle<BindGroup> handle)
@@ -270,19 +325,25 @@ namespace HBL2
 
 		uint64_t hash = 0;
 
+		uint64_t bufferHash = 0x517cc1b727220a95ULL;
+		uint64_t textureHash = 0x9e3779b97f4a7c15ULL;
+
 		for (const auto& bufferEntry : bindGroup->Buffers)
 		{
-			hash += bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code();;
-			hash += bufferEntry.byteOffset;
-			hash += bufferEntry.range;
+			HashCombine(bufferHash, bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code());
+			HashCombine(bufferHash, bufferEntry.byteOffset);
+			HashCombine(bufferHash, bufferEntry.range);
 		}
 
-		for (const auto texture : bindGroup->Textures)
+		for (const auto& textureEntry : bindGroup->Textures)
 		{
-			hash += texture.HashKey() + typeid(Texture).hash_code();
+			HashCombine(textureHash, textureEntry.texture.HashKey() + typeid(Texture).hash_code());
+			HashCombine(textureHash, static_cast<uint64_t>(textureEntry.desiredLayout));
 		}
 
-		hash += bindGroup->BindGroupLayout.HashKey() + typeid(BindGroupLayout).hash_code();
+		HashCombine(hash, bufferHash);
+		HashCombine(hash, textureHash);
+		HashCombine(hash, bindGroup->BindGroupLayout.HashKey());
 
 		return hash;
 	}
@@ -296,9 +357,44 @@ namespace HBL2
 	{
 		m_BindGroupLayoutPool.Remove(handle);
 	}
+	uint64_t OpenGLResourceManager::GetBindGroupLayoutHash(Handle<BindGroupLayout> handle)
+	{
+		return CalculateBindGroupLayoutHash(GetBindGroupLayout(handle));
+	}
 	OpenGLBindGroupLayout* OpenGLResourceManager::GetBindGroupLayout(Handle<BindGroupLayout> handle) const
 	{
 		return m_BindGroupLayoutPool.Get(handle);
+	}
+	uint64_t OpenGLResourceManager::CalculateBindGroupLayoutHash(const OpenGLBindGroupLayout* bindGroupLayout)
+	{
+		if (bindGroupLayout == nullptr)
+		{
+			return 0;
+		}
+
+		uint64_t hash = 0;
+
+		uint64_t bufferHash = 0x517cc1b727220a95ULL;
+		uint64_t textureHash = 0x9e3779b97f4a7c15ULL;
+
+		for (const auto& bufferEntry : bindGroupLayout->BufferBindings)
+		{
+			HashCombine(bufferHash, bufferEntry.slot);
+			HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.type));
+			HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.visibility));
+		}
+
+		for (const auto& texture : bindGroupLayout->TextureBindings)
+		{
+			HashCombine(textureHash, texture.slot);
+			HashCombine(textureHash, static_cast<uint64_t>(texture.type));
+			HashCombine(textureHash, static_cast<uint64_t>(texture.visibility));
+		}
+
+		HashCombine(hash, bufferHash);
+		HashCombine(hash, textureHash);
+
+		return hash;
 	}
 
 	// RenderPass

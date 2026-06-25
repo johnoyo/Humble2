@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Base.h"
-#include "Utilities\Allocators\Arena.h"
+#include "Utilities/Allocators/Arena.h"
 
 #include <cstdint>
 #include <initializer_list>

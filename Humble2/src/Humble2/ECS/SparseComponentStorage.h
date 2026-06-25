@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IComponentStorage.h"
-#include "Utilities\Collections\FixedArray.h"
+#include "Utilities/Collections/FixedArray.h"
 
 namespace HBL2
 {

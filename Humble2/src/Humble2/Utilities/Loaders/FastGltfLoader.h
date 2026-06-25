@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Base.h"
-#include "Asset\Asset.h"
-#include "Resources\Types.h"
-#include "Utilities\Result.h"
-#include "Utilities\Collections\Span.h"
+#include "Asset/Asset.h"
+#include "Resources/Types.h"
+#include "Utilities/Result.h"
+#include "Utilities/Collections/Span.h"
 
 #include <fastgltf/core.hpp>
 #include <fastgltf/types.hpp>
@@ -52,6 +52,6 @@ namespace HBL2
 		static thread_local std::vector<Vertex> s_Vertices;
 		static thread_local std::vector<uint32_t> s_Indices;
         static thread_local std::vector<Handle<Asset>> s_Textures;
-        static thread_local std::unordered_map<const char*, Handle<Material>> s_MaterialNameToHandle;
+        static thread_local std::unordered_map<const char*, Handle<Asset>> s_MaterialNameToAssetHandle;
 	};
 }

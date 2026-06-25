@@ -50,7 +50,7 @@ namespace HBL2
 		uint32_t InstanceCount = 1;
 		MeshExtents Extents;
 
-		Handle<Material> EmbededMaterial;
+		Handle<Asset> EmbededMaterial;
 	};
 
 	struct MeshPart
@@ -119,21 +119,21 @@ namespace HBL2
 		std::atomic<bool> m_HasItems{ false };
 	};
 
-	struct Material
+	struct HBL2_API Material
 	{
 		Material() = default;
 		Material(const MaterialDescriptor&& desc);
 
 		void Reimport(const MaterialDescriptor&& desc);
+		void SetGlobalShaderBuffer(uint32_t index, void* userData);
+		void SetBuffer(uint32_t index, void* userData);
 
 		const char* DebugName = "";
 		Handle<Shader> Shader;
-		Handle<BindGroup> BindGroup;
+		Handle<BindGroup> DrawBindGroup;
+		Handle<BindGroup> MaterialBindGroup;
 
 		ShaderDescriptor::RenderPipeline::PackedVariant VariantHash = {};
-
-		glm::vec4 AlbedoColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		float Glossiness = 3.0f;
 		bool ReceiveShadows = true;
 	};
 }

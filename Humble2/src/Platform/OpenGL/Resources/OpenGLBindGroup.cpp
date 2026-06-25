@@ -1,14 +1,15 @@
 #include "OpenGLBindGroup.h"
 
-#include "../OpenGLResourceManager.h"
+#include "Platform/OpenGL/OpenGLResourceManager.h"
+#include "Utilities/JobSystem.h"
 
 namespace HBL2
 {
 	OpenGLBindGroup::OpenGLBindGroup(const BindGroupDescriptor&& desc)
 	{
 		DebugName = desc.debugName;
-		Buffers = desc.buffers;
-		Textures = desc.textures;
+		Buffers = { desc.buffers.begin(), desc.buffers.end() };
+		Textures = { desc.textures.begin(), desc.textures.end() };
 		BindGroupLayout = desc.layout;
 
 		auto* rm = (OpenGLResourceManager*)ResourceManager::Instance;
@@ -38,10 +39,15 @@ namespace HBL2
 
 		for (int i = 0; i < Textures.size(); i++)
 		{
-			OpenGLTexture* texture = rm->GetTexture(Textures[i]);
+			OpenGLTexture* texture = rm->GetTexture(Textures[i].texture);
 
 			// TODO: Handle textures.
 			// ...
+		}
+
+		if (!JobSystem::Get().IsRenderThread())
+		{
+			glFlush();
 		}
 	}
 
@@ -52,10 +58,10 @@ namespace HBL2
 
 		for (int i = 0; i < Textures.size(); i++)
 		{
-			OpenGLTexture* openGLTexture = rm->GetTexture(Textures[i]);
+			OpenGLTexture* openGLTexture = rm->GetTexture(Textures[i].texture);
 
 			glActiveTexture(openGLBindGroupLayout->TextureBindings[i].slot + GL_TEXTURE0);
-			glBindTexture(openGLTexture->TextureType, openGLTexture->RendererId);
+			glBindTexture(openGLTexture->TextureType, openGLTexture->ViewRendererId);
 		}
 	}
 

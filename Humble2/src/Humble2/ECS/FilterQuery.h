@@ -6,7 +6,7 @@
 #include "StorageInfo.h"
 #include "TypeResolver.h"
 
-#include "Utilities\Collections\Span.h"
+#include "Utilities/Collections/Span.h"
 
 namespace HBL2
 {

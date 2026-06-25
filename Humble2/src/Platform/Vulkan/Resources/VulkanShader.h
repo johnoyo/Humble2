@@ -1,18 +1,19 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/TypeDescriptors.h"
 
-#include "Platform\Vulkan\VulkanDevice.h"
-#include "Platform\Vulkan\VulkanRenderer.h"
+#include "Platform/Vulkan/VulkanDevice.h"
+#include "Platform/Vulkan/VulkanRenderer.h"
 
-#include "Platform\Vulkan\VulkanCommon.h"
+#include "Platform/Vulkan/VulkanCommon.h"
 
 namespace HBL2
 {
 	struct VulkanShaderHot
 	{
-		uint64_t PipelineLayoutHash = UINT64_MAX;
+		uint32_t GlobalBindGroupLayoutHash = 0;
+		Handle<BindGroup> ShaderBindGroup = {};
 		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
 
 		void Destroy();
@@ -20,7 +21,7 @@ namespace HBL2
 
 	struct VulkanShaderCold
 	{
-		VkPipeline Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex, bool forceCreateNewAndRemoveOld = false);
+		VkPipeline Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex);
 		void Destroy();
 		void DestroyOld();
 
@@ -43,11 +44,21 @@ namespace HBL2
 			VkPipelineLayout pipelineLayout;
 			VkRenderPass renderPass;
 			Span<const ShaderDescriptor::RenderPipeline::VertexBufferBinding> vertexBufferBindings;
+			Span<const BitFlags<ShaderStage>> specializationConstantStages;
 		};
 
 		VkPipeline GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld = false);
 		VkPipeline CreatePipeline(const PipelineConfig& config);
 		VkPipeline CreateComputePipeline(const PipelineConfig& config);
+
+		struct SpecializationData
+		{
+			StaticDArray<VkSpecializationMapEntry, 8> entries;
+			StaticDArray<uint8_t, 64> data;
+			VkSpecializationInfo info{};
+		};
+
+		void BuildSpecializationInfo(ShaderStage stage, SpecializationData& specializationData, const PipelineConfig& config);
 
 		VkPipelineLayout m_OldPipelineLayout = VK_NULL_HANDLE;
 		VkShaderModule m_OldVertexShaderModule = VK_NULL_HANDLE;
@@ -64,9 +75,13 @@ namespace HBL2
 			VkPipeline Pipeline = VK_NULL_HANDLE;
 		};
 
-		static constexpr uint32_t MaxVariants = 8;
+		static constexpr uint32_t MaxVariants = 16;
+		static constexpr uint32_t MaxSpecializationConstants = 8;
 
 		alignas(64) std::array<VariantEntry, MaxVariants> m_Entries;
+		std::array<BitFlags<ShaderStage>, MaxSpecializationConstants> m_SpecializationConstantStages;
+
+		StaticDArray<Handle<BindGroupLayout>, 4> m_ReflectedBindGroupLayouts;
 
 		friend class VulkanShader;
 	};
@@ -87,6 +102,6 @@ namespace HBL2
 		void DestroyOld();
 
 		VulkanShaderHot* Hot = nullptr;
-		VulkanShaderCold* Cold = nullptr;	
+		VulkanShaderCold* Cold = nullptr;
 	};
 }

@@ -14,9 +14,20 @@ namespace HBL2
 		m_PrefabPool.Initialize(m_Spec.Prefabs);
 	}
 
+	void ResourceManager::HashCombine(uint64_t& hash, uint64_t value)
+	{
+		// Golden ratio constant — spreads bits and breaks commutativity
+		hash ^= value + 0x9e3779b97f4a7c15ULL + (hash << 6) + (hash >> 2);
+	}
+
 	const ResourceManagerSpecification& ResourceManager::GetSpec() const
 	{
 		return m_Spec;
+	}
+
+	ResourceDeletionQueue& ResourceManager::GetDeletionQueue()
+	{
+		return m_DeletionQueue;
 	}
 
 	void ResourceManager::Flush(uint32_t currentFrame)
@@ -139,5 +150,57 @@ namespace HBL2
 	Prefab* ResourceManager::GetPrefab(Handle<Prefab> handle) const
 	{
 		return m_PrefabPool.Get(handle);
+	}
+	uint64_t ResourceManager::GetBindGroupHash(const BindGroupDescriptor&& desc)
+	{
+		uint64_t hash = 0;
+
+		uint64_t bufferHash = 0x517cc1b727220a95ULL;
+		uint64_t textureHash = 0x9e3779b97f4a7c15ULL;
+
+		for (const auto& bufferEntry : desc.buffers)
+		{
+			HashCombine(bufferHash, bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code());
+			HashCombine(bufferHash, bufferEntry.byteOffset);
+			HashCombine(bufferHash, bufferEntry.range);
+		}
+
+		for (const auto& textureEntry : desc.textures)
+		{
+			HashCombine(textureHash, textureEntry.texture.HashKey() + typeid(Texture).hash_code());
+			HashCombine(textureHash, static_cast<uint64_t>(textureEntry.desiredLayout));
+		}
+
+		HashCombine(hash, bufferHash);
+		HashCombine(hash, textureHash);
+		HashCombine(hash, desc.layout.HashKey());
+
+		return hash;
+	}
+	uint64_t ResourceManager::GetBindGroupLayoutHash(const BindGroupLayoutDescriptor&& desc)
+	{
+		uint64_t hash = 0;
+
+		uint64_t bufferHash = 0x517cc1b727220a95ULL;
+		uint64_t textureHash = 0x9e3779b97f4a7c15ULL;
+
+		for (const auto& bufferEntry : desc.bufferBindings)
+		{
+			HashCombine(bufferHash, bufferEntry.slot);
+			HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.type));
+			HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.visibility));
+		}
+
+		for (const auto& texture : desc.textureBindings)
+		{
+			HashCombine(textureHash, texture.slot);
+			HashCombine(textureHash, static_cast<uint64_t>(texture.type));
+			HashCombine(textureHash, static_cast<uint64_t>(texture.visibility));
+		}
+
+		HashCombine(hash, bufferHash);
+		HashCombine(hash, textureHash);
+
+		return hash;
 	}
 }

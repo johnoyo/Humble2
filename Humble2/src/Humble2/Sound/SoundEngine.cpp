@@ -1,6 +1,6 @@
 #include "SoundEngine.h"
 
-#include "Resources\ResourceManager.h"
+#include "Resources/ResourceManager.h"
 
 namespace HBL2
 {

@@ -1,6 +1,6 @@
 #include "AssetManager.h"
 
-#include "Project\Project.h"
+#include "Project/Project.h"
 #include "Utilities/ShaderUtilities.h"
 #include "Utilities/MeshUtilities.h"
 
@@ -60,6 +60,18 @@ namespace HBL2
 		}
 
 		handle = m_AssetPool.Insert(Asset(std::forward<const AssetDescriptor>(desc)));
+		m_RegisteredAssets.push_back(handle);
+
+		Asset* asset = GetAssetMetadata(handle);
+		m_RegisteredAssetMap[asset->UUID] = handle;
+
+		return handle;
+	}
+
+	Handle<Asset> AssetManager::CreateMemoryOnlyAsset(const MemoryOnlyAssetDescriptor&& desc)
+	{
+		Handle<Asset> handle = m_AssetPool.Insert(Asset(std::forward<const MemoryOnlyAssetDescriptor>(desc)));
+
 		m_RegisteredAssets.push_back(handle);
 
 		Asset* asset = GetAssetMetadata(handle);
@@ -163,7 +175,7 @@ namespace HBL2
 				.type = AssetType::Material,
 			});
 		}
-		else if (extension == ".shader")
+		else if (extension == ".slang")
 		{
 			assetHandle = AssetManager::Instance->CreateAsset({
 				.debugName = "shader-asset",

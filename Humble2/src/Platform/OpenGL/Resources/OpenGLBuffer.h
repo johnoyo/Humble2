@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/TypeDescriptors.h"
 
-#include "Platform\OpenGL\OpenGLCommon.h"
+#include "Platform/OpenGL/OpenGLCommon.h"
 
 #include <string>
 #include <fstream>
@@ -22,7 +22,12 @@ namespace HBL2
 		void ReAllocate(uint32_t currentOffset);
 		void SetData(void* newData, intptr_t offset = 0);
 		void Write(intptr_t offset = 0, GLsizeiptr size = 0);
-		void Bind(Handle<Material> material = {}, uint32_t bufferIndex = 0, intptr_t offset = 0, uint32_t size = 0);
+
+		void Bind();
+		void Bind(Handle<Shader> shader, uint32_t bufferIndex);
+		void Bind(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset, uint32_t size);
+		void Bind(Handle<Shader> shader, Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset, uint32_t size);
+
 		void Destroy();
 
 		const char* DebugName = "";
@@ -34,8 +39,8 @@ namespace HBL2
 
 	private:
 		void BindIndexBuffer();
-		void BindVertexBuffer(Handle<Material> material, uint32_t bufferIndex);
-		void BindUniformBuffer(Handle<Material> material, uint32_t bufferIndex, intptr_t offset, uint32_t size);
-		void BindStorageBuffer(Handle<Material> material, uint32_t bufferIndex);
+		void BindVertexBuffer(Handle<Shader> shader, uint32_t bufferIndex);
+		void BindUniformBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset, uint32_t size);
+		void BindStorageBuffer(Handle<BindGroup> bindGroup, uint32_t bufferIndex);
 	};
 }

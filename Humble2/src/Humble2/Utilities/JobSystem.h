@@ -5,9 +5,9 @@
 
 #include "Base.h"
 
-#include "Core\Allocators.h"
-#include "Allocators\Arena.h"
-#include "Collections\Collections.h"
+#include "Core/Allocators.h"
+#include "Allocators/Arena.h"
+#include "Collections/Collections.h"
 
 #include "moodycamel/concurrentqueue.h"
 
@@ -20,6 +20,11 @@
 
 namespace HBL2
 {
+    struct JobSystemSpecification
+    {
+        uint32_t MaxWorkerMemory = 2; // In MB
+    };
+
     struct HBL2_API JobDispatchArgs
     {
         uint32_t jobIndex;
@@ -42,7 +47,7 @@ namespace HBL2
             return *s_Instance;
         }
 
-        static void Initialize();
+        static void Initialize(const JobSystemSpecification&& spec);
         static void Shutdown();
         static bool IsShuttingDown();
 
@@ -51,14 +56,24 @@ namespace HBL2
         bool Busy(const JobContext& ctx);
         void Wait(const JobContext& ctx);
 
+        void SetupWorkerRT();
         inline uint32_t GetThreadCount() const { return m_NumThreads; }
         uint32_t GetWorkerIndex();
+
+        // Returns the arena of the worker thread.
+        // Should only be used within a job system worker.
+        // Allocations are only valid for the duration of the job.
+        // They get automotically freed when the job ends.
         Arena* GetWorkerArena();
+
+        bool IsMainThread();
+        bool IsRenderThread();
+        bool IsWorkerThread();
 
     private:
         JobSystem() {}
 
-        void InternalInitialize();
+        void InternalInitialize(const JobSystemSpecification&& spec);
         void InternalShutdown();
         void WorkerThreadFunc(uint32_t threadIndex);
 
@@ -75,6 +90,9 @@ namespace HBL2
         std::mutex m_WakeMutex;
         std::atomic<bool> m_Shutdown = false;
         std::atomic<uint32_t> m_NextQueue{0};
+
+        std::thread::id m_MainThreadId;
+        std::thread::id m_RenderThreadId;
 
         static JobSystem* s_Instance;
     };

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core\Allocators.h"
-#include "Utilities\Allocators\ArenaAllocator.h"
+#include "Core/Allocators.h"
+#include "Utilities/Allocators/ArenaAllocator.h"
 
 #include <vector>
 #include <stack>

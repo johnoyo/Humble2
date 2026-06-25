@@ -1,7 +1,7 @@
 #include "Project.h"
 
 #include "ProjectSerializer.h"
-#include <Core\Context.h>
+#include "Core/Context.h"
 
 #include "Physics/PhysicsEngine2D.h"
 #include "Physics/PhysicsEngine3D.h"

@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Base.h"
-#include "Asset\Asset.h"
-#include "Scene\Scene.h"
-#include "Resources\Handle.h"
-#include "Prefab\Prefab.h"
+#include "Asset/Asset.h"
+#include "Scene/Scene.h"
+#include "Resources/Handle.h"
+#include "Prefab/Prefab.h"
 
 namespace HBL2
 {

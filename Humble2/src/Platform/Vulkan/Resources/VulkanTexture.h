@@ -1,14 +1,14 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/TypeDescriptors.h"
 
 #include "VulkanBindGroup.h"
 
-#include "Platform\Vulkan\VulkanDevice.h"
-#include "Platform\Vulkan\VulkanRenderer.h"
+#include "Platform/Vulkan/VulkanDevice.h"
+#include "Platform/Vulkan/VulkanRenderer.h"
 
-#include "Platform\Vulkan\VulkanCommon.h"
+#include "Platform/Vulkan/VulkanCommon.h"
 
 namespace HBL2
 {
@@ -18,6 +18,7 @@ namespace HBL2
 		VulkanTexture(const TextureDescriptor&& desc);
 
 		void Update(const Span<const std::byte>& bytes);
+		void ChangeTextureView(const TextureViewDescriptor&& desc);
 		void TrasitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout, VulkanBindGroup* bindGroup);
 		void Destroy();
 
@@ -29,6 +30,7 @@ namespace HBL2
 		VkExtent3D Extent{};
 		VkImageLayout ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		TextureType ImageType = TextureType::D2;
+		uint32_t LayerCount = 0;
 
 		VkImageAspectFlags Aspect = 0;
 

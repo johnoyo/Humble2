@@ -1,19 +1,19 @@
 #pragma once
 
 #include "Asset.h"
-#include "Resources\Handle.h"
-#include "Resources\Pool.h"
+#include "Resources/Handle.h"
+#include "Resources/Pool.h"
 
-#include "Renderer\Device.h"
+#include "Renderer/Device.h"
 
-#include "Core\Allocators.h"
+#include "Core/Allocators.h"
 
-#include "Utilities\JobSystem.h"
-#include "Utilities\Allocators\PoolArena.h"
-#include "Utilities\Collections\Collections.h"
-#include "Utilities\Collections\StaticFunction.h"
+#include "Utilities/JobSystem.h"
+#include "Utilities/Allocators/PoolArena.h"
+#include "Utilities/Collections/Collections.h"
+#include "Utilities/Collections/StaticFunction.h"
 
-#include "Vendor\moodycamel\concurrentqueue.h"
+#include <moodycamel/concurrentqueue.h>
 
 namespace HBL2
 {
@@ -66,6 +66,7 @@ namespace HBL2
 		const AssetManagerSpecification& GetUsageStats();
 
 		Handle<Asset> CreateAsset(const AssetDescriptor&& desc);
+		Handle<Asset> CreateMemoryOnlyAsset(const MemoryOnlyAssetDescriptor&& desc);
 		void DeleteAsset(Handle<Asset> handle, bool destroy = false);
 		Asset* GetAssetMetadata(Handle<Asset> handle) const;
 

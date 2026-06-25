@@ -2,21 +2,22 @@
 
 #include "Base.h"
 
-#include "ECS\DenseComponentStorage.h"
+#include "ECS/DenseComponentStorage.h"
 
-#include "Resources\Handle.h"
-#include "Resources\Types.h"
-#include "Sound\Sound.h"
-#include "Asset\Asset.h"
+#include "Resources/Handle.h"
+#include "Resources/Types.h"
+#include "Sound/Sound.h"
+#include "Asset/Asset.h"
 
-#include "Physics\Physics.h"
-#include "Utilities\Bounds.h"
-#include "Utilities\JobSystem.h"
-#include "Utilities\Collections\StaticArray.h"
-#include "Utilities\Collections\StaticDArray.h"
-#include "Utilities\Collections\StaticString.h"
+#include "Physics/Physics.h"
+#include "Utilities/Bounds.h"
+#include "Utilities/JobSystem.h"
+#include "Utilities/Collections/StaticArray.h"
+#include "Utilities/Collections/StaticDArray.h"
+#include "Utilities/Collections/StaticString.h"
 
-#include <glm\gtx\hash.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 
 namespace HBL2
 {
@@ -80,16 +81,18 @@ namespace HBL2
 
 		struct HBL2_API Sprite
 		{
-			Handle<Material> Material;
+			Handle<Asset> Material;
 			bool Enabled = true;
 		};
 
 		struct HBL2_API StaticMesh
 		{
-			Handle<Mesh> Mesh;
+			Handle<Asset> Mesh;
 			uint32_t MeshIndex = 0;
 			uint32_t SubMeshIndex = 0;
-			Handle<Material> Material;
+
+			Handle<Asset> Material;
+
 			bool Enabled = true;
 		};
 
@@ -169,7 +172,7 @@ namespace HBL2
 		{
 			Handle<Texture> CubeMap;
 			Handle<Material> CubeMapMaterial;
-			Handle<Texture> EquirectangularMap;
+			Handle<Asset> EquirectangularMap;
 			bool Converted = false;
 			bool Enabled = true;
 		};
@@ -359,7 +362,7 @@ namespace HBL2
 
 			StaticDArray<LodInfo, 6> DetailLevels{};
 
-			Handle<Material> Material;
+			Handle<Asset> Material;
 
 			bool AddColliders = true;
 			bool Initialized = false;

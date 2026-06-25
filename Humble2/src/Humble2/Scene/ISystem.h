@@ -5,8 +5,8 @@
 #include "Scene.h"
 #include "IJob.h"
 
-#include "ECS\TypeResolver.h"
-#include "Core\Events.h"
+#include "ECS/TypeResolver.h"
+#include "Core/Events.h"
 
 #include <vector>
 #include <bitset>

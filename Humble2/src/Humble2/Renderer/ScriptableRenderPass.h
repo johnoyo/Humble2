@@ -3,8 +3,8 @@
 #include "Humble2API.h"
 
 #include "Enums.h"
-#include "Resources\Types.h"
-#include "Resources\Handle.h"
+#include "Resources/Types.h"
+#include "Resources/Handle.h"
 #include "DrawList.h"
 
 namespace HBL2
@@ -46,7 +46,7 @@ namespace HBL2
 		{
 			m_PassName = "DitherRenderPass";
 			m_InjectionPoint = RenderPassEvent::AfterRenderingPostProcess;
-			m_RenderPassContext = CreateContext("assets/shaders/post-process-dithering.shader", m_RenderPass);
+			m_RenderPassContext = CreateContext("assets/shaders/post-process-dithering.slang", m_RenderPass);
 		}
 
 		virtual void Execute() override

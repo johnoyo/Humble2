@@ -1,7 +1,7 @@
 #include "VulkanShader.h"
 
-#include "Platform\Vulkan\VulkanResourceManager.h"
-#include "Platform\Vulkan\Resources\VulkanRenderPass.h"
+#include "Platform/Vulkan/VulkanResourceManager.h"
+#include "Platform/Vulkan/Resources/VulkanRenderPass.h"
 
 namespace HBL2
 {
@@ -9,9 +9,11 @@ namespace HBL2
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		vkDestroyPipelineLayout(device->Get(), PipelineLayout, nullptr);
+
+		ResourceManager::Instance->DeleteBindGroup(ShaderBindGroup);
 	}
 
-	VkPipeline VulkanShaderCold::Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex, bool forceCreateNewAndRemoveOld)
+	VkPipeline VulkanShaderCold::Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex)
 	{
 		uint32_t n = m_Count.load(std::memory_order_acquire);
 
@@ -44,6 +46,15 @@ namespace HBL2
 		{
 			vkDestroyPipeline(device->Get(), pipeline, nullptr);
 		}
+
+		m_RetiredPipelines.clear();
+
+		for (auto bindGroupLayout : m_ReflectedBindGroupLayouts)
+		{
+			ResourceManager::Instance->DeleteBindGroupLayout(bindGroupLayout);
+		}
+
+		m_ReflectedBindGroupLayouts.clear();
 	}
 
 	void VulkanShaderCold::DestroyOld()
@@ -63,7 +74,7 @@ namespace HBL2
 		uint32_t pipelineIndex = UINT32_MAX;
 
 		// Fast path with a lock-free read.
-		if (p = Find(config.variantDesc, &pipelineIndex, forceCreateNewAndRemoveOld); p != VK_NULL_HANDLE && !forceCreateNewAndRemoveOld)
+		if (p = Find(config.variantDesc, &pipelineIndex); p != VK_NULL_HANDLE && !forceCreateNewAndRemoveOld)
 		{
 			return p;
 		}
@@ -74,7 +85,7 @@ namespace HBL2
 		// Re-check after acquiring lock (another thread may have inserted).
 		if (p == VK_NULL_HANDLE)
 		{
-			if (p = Find(config.variantDesc, &pipelineIndex, forceCreateNewAndRemoveOld); p != VK_NULL_HANDLE && !forceCreateNewAndRemoveOld)
+			if (p = Find(config.variantDesc, &pipelineIndex); p != VK_NULL_HANDLE && !forceCreateNewAndRemoveOld)
 			{
 				return p;
 			}
@@ -136,6 +147,12 @@ namespace HBL2
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
+		SpecializationData vertexSpecializationData;
+		BuildSpecializationInfo(ShaderStage::VERTEX, vertexSpecializationData, config);
+
+		SpecializationData fragmentSpecializationData;
+		BuildSpecializationInfo(ShaderStage::FRAGMENT, fragmentSpecializationData, config);
+
 		// Shader stages.
 		VkPipelineShaderStageCreateInfo shaderStages[2] =
 		{
@@ -145,6 +162,7 @@ namespace HBL2
 				.stage = VK_SHADER_STAGE_VERTEX_BIT,
 				.module = config.shaderModules[0],
 				.pName = config.entryPoints[0],
+				.pSpecializationInfo = (vertexSpecializationData.data.empty() ? NULL : &vertexSpecializationData.info),
 			},
 			{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -152,6 +170,7 @@ namespace HBL2
 				.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
 				.module = config.shaderModules[1],
 				.pName = config.entryPoints[1],
+				.pSpecializationInfo = (fragmentSpecializationData.data.empty() ? NULL : &fragmentSpecializationData.info),
 			}
 		};
 
@@ -367,13 +386,17 @@ namespace HBL2
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 
+		SpecializationData computeSpecializationData;
+		BuildSpecializationInfo(ShaderStage::COMPUTE, computeSpecializationData, config);
+
 		VkPipelineShaderStageCreateInfo stageInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 			.pNext = nullptr,
 			.stage = VK_SHADER_STAGE_COMPUTE_BIT,
 			.module = config.shaderModules[0],
-			.pName = "main",
+			.pName = config.entryPoints[0],
+			.pSpecializationInfo = (computeSpecializationData.data.empty() ? NULL : &computeSpecializationData.info),
 		};
 
 		VkComputePipelineCreateInfo pipelineInfo =
@@ -394,6 +417,65 @@ namespace HBL2
 		return computePipeline;
 	}
 
+	static bool GetVariantShaderConstantValueFromIndex(const ShaderDescriptor::RenderPipeline::PackedVariant& variant, uint32_t i)
+	{
+		if (i == 0) { return variant.shaderConstantBool0; }
+		if (i == 1) { return variant.shaderConstantBool1; }
+		if (i == 2) { return variant.shaderConstantBool2; }
+		if (i == 3) { return variant.shaderConstantBool3; }
+		if (i == 4) { return variant.shaderConstantBool4; }
+		if (i == 5) { return variant.shaderConstantBool5; }
+		if (i == 6) { return variant.shaderConstantBool6; }
+		if (i == 7) { return variant.shaderConstantBool7; }
+	}
+
+	void VulkanShaderCold::BuildSpecializationInfo(ShaderStage stage, SpecializationData& specializationData, const PipelineConfig& config)
+	{
+		const auto& constantStages = config.specializationConstantStages;
+
+		if (constantStages.Size() == 0)
+		{
+			return;
+		}
+
+		uint32_t offset = 0;
+		uint32_t constantID = 0;
+
+		for (uint32_t i = 0; i < constantStages.Size(); i++)
+		{
+			if (!constantStages[i].IsSet(stage))
+			{
+				constantID++;
+				continue;
+			}
+
+			VkSpecializationMapEntry entry{};
+			entry.constantID = constantID++;
+			entry.offset = offset;
+
+			{
+				// Vulkan bool spec constants are typically uint32_t
+				const uint32_t value = GetVariantShaderConstantValueFromIndex(config.variantDesc, i) ? 1u : 0u;
+
+				const void* src = &value;
+				size_t size = sizeof(value);
+
+				entry.size = size;
+				const size_t oldSize = specializationData.data.size();
+				specializationData.data.resize(oldSize + size);
+				std::memcpy(specializationData.data.data() + oldSize, src, size);
+				offset += static_cast<uint32_t>(size);
+			}
+
+			specializationData.entries.push_back(entry);
+		}
+
+		specializationData.info.mapEntryCount = static_cast<uint32_t>(specializationData.entries.size());
+		specializationData.info.pMapEntries = specializationData.entries.data();
+		specializationData.info.dataSize = specializationData.data.size();
+		specializationData.info.pData = specializationData.data.data();
+	}
+	
 	bool VulkanShader::IsValid() const
 	{
 		return Cold != nullptr && Hot != nullptr;
@@ -411,15 +493,21 @@ namespace HBL2
 			return VK_NULL_HANDLE;
 		}
 
-		return Cold->GetOrCreatePipeline({
-			.shaderModules = { Cold->VertexShaderModule, Cold->FragmentShaderModule },
-			.entryPoints = { "main", "main" },
-			.shaderModuleCount = 2,
-			.variantDesc = key,
-			.pipelineLayout = Hot->PipelineLayout,
-			.renderPass = Cold->RenderPass,
-			.vertexBufferBindings = Cold->VertexBufferBindings,
-		});
+		if (Cold->ComputeShaderModule == VK_NULL_HANDLE)
+		{
+			return Cold->GetOrCreatePipeline({
+				.shaderModules = { Cold->VertexShaderModule, Cold->FragmentShaderModule },
+				.entryPoints = { "mainVS", "mainPS" }, // TODO: fix me!
+				.shaderModuleCount = 2,
+				.variantDesc = key,
+				.pipelineLayout = Hot->PipelineLayout,
+				.renderPass = Cold->RenderPass,
+				.vertexBufferBindings = Cold->VertexBufferBindings,
+				.specializationConstantStages = Cold->m_SpecializationConstantStages,
+			});
+		}
+
+		return GetOrCreateComputeVariant(key);
 	}
 
 	VkPipeline VulkanShader::GetOrCreateComputeVariant(ShaderDescriptor::RenderPipeline::PackedVariant key)
@@ -431,15 +519,28 @@ namespace HBL2
 
 		return Cold->GetOrCreatePipeline({
 			.shaderModules = { Cold->ComputeShaderModule, VK_NULL_HANDLE },
-			.entryPoints = { "main", "" },
+			.entryPoints = { "mainCS", "" }, // TODO: fix me!
 			.shaderModuleCount = 1,
 			.variantDesc = key,
 			.pipelineLayout = Hot->PipelineLayout,
 			.renderPass = Cold->RenderPass,
 			.vertexBufferBindings = Cold->VertexBufferBindings,
+			.specializationConstantStages = Cold->m_SpecializationConstantStages,
 		});
 	}
 	
+	static void SyncVariantWithSpecializationConstant(uint32_t i, const ShaderConstant& specializationConstant, ShaderDescriptor::RenderPipeline::PackedVariant& variant)
+	{
+		if (i == 0) { variant.shaderConstantBool0 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 1) { variant.shaderConstantBool1 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 2) { variant.shaderConstantBool2 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 3) { variant.shaderConstantBool3 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 4) { variant.shaderConstantBool4 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 5) { variant.shaderConstantBool5 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 6) { variant.shaderConstantBool6 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+		if (i == 7) { variant.shaderConstantBool7 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+	}
+
 	void VulkanShader::Recompile(const ShaderDescriptor&& desc, bool removeVariants)
 	{
 		if (!IsValid())
@@ -456,8 +557,49 @@ namespace HBL2
 		Cold->m_OldComputeShaderModule = Cold->ComputeShaderModule;
 		Cold->m_OldPipelineLayout = Hot->PipelineLayout;
 
+		Cold->VertexShaderModule = VK_NULL_HANDLE;
+		Cold->FragmentShaderModule = VK_NULL_HANDLE;
+		Cold->ComputeShaderModule = VK_NULL_HANDLE;
+
 		Cold->DebugName = desc.debugName;
-		Cold->VertexBufferBindings = desc.renderPipeline.vertexBufferBindings;
+
+		// BindGroups use a reference counting system, so if there are other objects
+		// referencing the bindgroup, it will not be deleted, just the ref count will be decreased.
+		if (Hot->ShaderBindGroup.IsValid())
+		{
+			ResourceManager::Instance->DeleteBindGroup(Hot->ShaderBindGroup);
+		}
+		Hot->ShaderBindGroup = desc.shaderBindGroup;
+
+		// Clear VertexBufferBindings.
+		Cold->VertexBufferBindings.clear();
+
+		// Fill with new ones.
+		for (auto& vbb : desc.renderPipeline.vertexBufferBindings)
+		{
+			Cold->VertexBufferBindings.push_back(vbb);
+		}
+
+		// Clear m_SpecializationConstantStages.
+		for (uint32_t i = 0; i < Cold->m_SpecializationConstantStages.size(); i++)
+		{
+			Cold->m_SpecializationConstantStages[i].Clear();
+		}
+
+		// Fill with new ones.
+		for (uint32_t i = 0; i < desc.renderPipeline.specializationConstantsPerVariant.Size(); i++)
+		{
+			for (uint32_t j = 0; j < desc.renderPipeline.specializationConstantsPerVariant[i].Size(); j++)
+			{
+				auto& variant = *((ShaderDescriptor::RenderPipeline::PackedVariant*)&desc.renderPipeline.variants[i]);
+				const auto& specializationConstant = desc.renderPipeline.specializationConstantsPerVariant[i][j];
+
+				SyncVariantWithSpecializationConstant(j, specializationConstant, variant);
+
+				Cold->m_SpecializationConstantStages[j] = specializationConstant.stage;
+			}
+		}
+
 		Cold->RenderPass = rm->GetRenderPass(desc.renderPass)->RenderPass;
 
 		std::array<VkShaderModule, 2> shaderModules{};
@@ -515,20 +657,52 @@ namespace HBL2
 		}
 
 		// Pipeline layout.
-		std::vector<VkDescriptorSetLayout> setLayouts;
+		StaticDArray<VkDescriptorSetLayout, 8> setLayouts;
+		uint32_t bindGroupLayoutIndex = 0;
+
+		// Release and clear old cache reflected bind group layouts.
+		for (auto bindGroupLayout : Cold->m_ReflectedBindGroupLayouts)
+		{
+			ResourceManager::Instance->DeleteBindGroupLayout(bindGroupLayout);
+		}
+		Cold->m_ReflectedBindGroupLayouts.clear();
 
 		for (const auto& bindGroup : desc.bindGroups)
 		{
 			if (bindGroup.IsValid())
 			{
+				if (bindGroupLayoutIndex == 0)
+				{
+					Hot->GlobalBindGroupLayoutHash = bindGroup.HashKey();
+				}
+
+				if (bindGroupLayoutIndex == 1)
+				{
+					// Keep reference to the reflected bind group layout of set 1,
+					// since reflection increases the ref count of the layout obj and
+					// we need to release it on shader destroy for proper clean up.
+					if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout() && desc.bindGroups.size() == 4)
+					{
+						Cold->m_ReflectedBindGroupLayouts.push_back(bindGroup);
+					}
+				}
+
+				if (bindGroupLayoutIndex == 2 && desc.bindGroups.size() == 4)
+				{
+					// Keep reference to the reflected bind group layout of set 2,
+					// since reflection increases the ref count of the layout obj and
+					// we need to release it on shader destroy for proper clean up.
+					if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout())
+					{
+						Cold->m_ReflectedBindGroupLayouts.push_back(bindGroup);
+					}
+				}
+
 				VulkanBindGroupLayout* vkBindGroupLayout = rm->GetBindGroupLayout(bindGroup);
 				setLayouts.push_back(vkBindGroupLayout->DescriptorSetLayout);
 			}
-		}
 
-		if (!setLayouts.empty())
-		{
-			Hot->PipelineLayoutHash = (uint64_t)setLayouts[0];
+			bindGroupLayoutIndex++;
 		}
 
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
@@ -545,8 +719,10 @@ namespace HBL2
 		VK_VALIDATE(vkCreatePipelineLayout(device->Get(), &pipelineLayoutCreateInfo, nullptr, &Hot->PipelineLayout), "vkCreatePipelineLayout");
 
 		// Create shader variants.
-		for (const auto& variant : desc.renderPipeline.variants)
+		for (int i = 0; i < desc.renderPipeline.variants.Size(); i++)
 		{
+			const auto& variant = desc.renderPipeline.variants[i];
+
 			const VulkanShaderCold::PipelineConfig pipelineConfig =
 			{
 				.shaderModules = shaderModules,
@@ -556,6 +732,7 @@ namespace HBL2
 				.pipelineLayout = Hot->PipelineLayout,
 				.renderPass = Cold->RenderPass,
 				.vertexBufferBindings = Cold->VertexBufferBindings,
+				.specializationConstantStages = Cold->m_SpecializationConstantStages,
 			};
 
 			Cold->GetOrCreatePipeline(pipelineConfig, removeVariants);

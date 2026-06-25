@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Core\Allocators.h"
-#include "Utilities\Allocators\Arena.h"
+#include "Core/Allocators.h"
+#include "Utilities/Allocators/Arena.h"
 
-#include "Resources\Types.h"
-#include "Resources\Handle.h"
+#include "Resources/Types.h"
+#include "Resources/Handle.h"
 
 namespace HBL2
 {

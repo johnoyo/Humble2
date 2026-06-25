@@ -2,8 +2,8 @@
 
 #include "Sound.h"
 #include "Humble2API.h"
-#include "Scene\Scene.h"
-#include "Scene\Components.h"
+#include "Scene/Scene.h"
+#include "Scene/Components.h"
 
 #include <glm/glm.hpp>
 

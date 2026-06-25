@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "glm/gtc/noise.hpp"
+#include <glm/gtc/noise.hpp>
 
 namespace HBL2::Math
 {

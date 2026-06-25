@@ -1,19 +1,19 @@
 #include "Box2DPhysicsEngine.h"
 
-#include "Core\Time.h"
+#include "Core/Time.h"
 
 namespace HBL2
 {
 	static Entity GetEntityFromBodyId(Physics::ID body)
 	{
 		intptr_t packedEntity = reinterpret_cast<intptr_t>(b2Body_GetUserData(b2LoadBodyId(body)));
-		return Entity{ static_cast<int32_t>(packedEntity & 0xFFFFFFFF), static_cast<int32_t>((packedEntity >> 32) & 0xFFFFFFFF) };
+		return Entity::UnPack(packedEntity);
 	}
 
 	static Entity GetEntityFromShapeId(Physics::ID shape)
 	{
 		intptr_t packedEntity = reinterpret_cast<intptr_t>(b2Shape_GetUserData(b2LoadShapeId(shape)));
-		return Entity{ static_cast<int32_t>(packedEntity & 0xFFFFFFFF), static_cast<int32_t>((packedEntity >> 32) & 0xFFFFFFFF) };
+		return Entity::UnPack(packedEntity);
 	}
 
 	static b2BodyType BodyTypeTob2BodyType(Physics::BodyType bodyType)
@@ -29,12 +29,12 @@ namespace HBL2
 		return b2BodyType::b2_staticBody;
 	}
 
-	void Box2DPhysicsEngine::Initialize(Scene* ctx)
+	void Box2DPhysicsEngine::Initialize(Scene* ctx, const PhysicsEngine2DSpecification& spec)
 	{
 		m_Context = ctx;
 
 		b2WorldDef worldDef = b2DefaultWorldDef();
-		worldDef.gravity = { 0, m_GravityForce };
+		worldDef.gravity = { spec.GravityForce.x, spec.GravityForce.y };
 		worldDef.restitutionThreshold = 0.5f;
 
 		m_PhysicsWorld = b2CreateWorld(&worldDef);
@@ -377,7 +377,7 @@ namespace HBL2
 		bodyDef.rotation = b2MakeRot(glm::radians(transform.Rotation.z));
 		bodyDef.fixedRotation = rb2d.FixedRotation; // bodyDef.motionLocks.angularZ = rb2d.FixedRotation;
 
-		uint64_t packedEntity = (static_cast<uint64_t>(static_cast<uint32_t>(entity.Gen)) << 32) | static_cast<uint64_t>(static_cast<uint32_t>(entity.Idx));
+		uint64_t packedEntity = entity.Pack();
 		bodyDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>(packedEntity));
 
 		b2BodyId bodyId = b2CreateBody(m_PhysicsWorld, &bodyDef);
@@ -394,7 +394,7 @@ namespace HBL2
 		shapeDef.enableSensorEvents = bc2d.Trigger;
 		shapeDef.isSensor = bc2d.Trigger;
 
-		uint64_t packedEntity = (static_cast<uint64_t>(static_cast<uint32_t>(entity.Gen)) << 32) | static_cast<uint64_t>(static_cast<uint32_t>(entity.Idx));
+		uint64_t packedEntity = entity.Pack();
 		shapeDef.userData = reinterpret_cast<void*>(static_cast<intptr_t>(packedEntity));
 
 		const b2Polygon polygon = b2MakeBox(bc2d.Size.x * transform.Scale.x, bc2d.Size.y * transform.Scale.y);

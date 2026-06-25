@@ -1,14 +1,14 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\Handle.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/Handle.h"
+#include "Resources/TypeDescriptors.h"
 
 #include "OpenGLBuffer.h"
 #include "OpenGLTexture.h"
 #include "OpenGLBindGroupLayout.h"
 
-#include "Platform\OpenGL\OpenGLCommon.h"
+#include "Platform/OpenGL/OpenGLCommon.h"
 
 namespace HBL2
 {
@@ -24,7 +24,7 @@ namespace HBL2
 
 		const char* DebugName = "";
 		std::vector<BindGroupDescriptor::BufferEntry> Buffers;
-		std::vector<Handle<Texture>> Textures;
+		std::vector<BindGroupDescriptor::TextureEntry> Textures;
 		Handle<BindGroupLayout> BindGroupLayout;
 	};
 }

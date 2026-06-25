@@ -1,13 +1,13 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\RefCounted.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/RefCounted.h"
+#include "Resources/TypeDescriptors.h"
 
-#include "Platform\Vulkan\VulkanDevice.h"
-#include "Platform\Vulkan\VulkanRenderer.h"
+#include "Platform/Vulkan/VulkanDevice.h"
+#include "Platform/Vulkan/VulkanRenderer.h"
 
-#include "Platform\Vulkan\VulkanCommon.h"
+#include "Platform/Vulkan/VulkanCommon.h"
 
 namespace HBL2
 {
@@ -20,7 +20,7 @@ namespace HBL2
 	{
 		const char* DebugName = "";
 		Handle<BindGroupLayout> BindGroupLayout;
-		std::vector<Handle<Texture>> Textures;
+		std::vector<BindGroupDescriptor::TextureEntry> Textures;
 		std::vector<BindGroupDescriptor::BufferEntry> Buffers;
 
 		void Destroy();

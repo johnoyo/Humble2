@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Resources\Types.h"
-#include "Resources\Handle.h"
-#include "Resources\ResourceManager.h"
+#include "Resources/Types.h"
+#include "Resources/Handle.h"
+#include "Resources/ResourceManager.h"
 
 #include "Core/Allocators.h"
 #include "Utilities/Collections/Collections.h"
@@ -12,15 +12,16 @@ namespace HBL2
 	struct LocalDrawStream
 	{
 		Handle<Shader> Shader;
-		Handle<Material> Material;
 		uint64_t VariantHandle = 0;
 
 		Handle<Buffer> IndexBuffer;
 		Handle<Buffer> VertexBuffer;
 
+		Handle<BindGroup> MaterialBindGroup;
 		Handle<BindGroup> BindGroup;
-		uint32_t Offset = 0;
+		
 		uint32_t Size = 0;
+		uint32_t Offset = 0;
 
 		uint32_t IndexCount = 0;
 		uint32_t IndexOffset = 0;

@@ -1,12 +1,12 @@
 #include "PrefabSerializer.h"
 
-#include "Core\Context.h"
-#include "Utilities\Log.h"
-#include "Utilities\YamlUtilities.h"
-#include "Resources\ResourceManager.h"
+#include "Core/Context.h"
+#include "Utilities/Log.h"
+#include "Utilities/YamlUtilities.h"
+#include "Resources/ResourceManager.h"
 
 #include "Script/BuildEngine.h"
-#include "Scene\EntitySerializer.h"
+#include "Scene/EntitySerializer.h"
 
 namespace HBL2
 {

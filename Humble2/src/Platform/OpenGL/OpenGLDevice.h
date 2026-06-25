@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Base.h"
-#include "Renderer\Device.h"
+#include "Renderer/Device.h"
 
-#include <GL\glew.h>
+#include <GL/glew.h>
 
 #include <cstdint>
 
@@ -16,6 +16,7 @@ namespace HBL2
 
 		virtual void Initialize() override;
 		virtual void Destroy() override;
+		virtual bool HasContext() override;
 		virtual void SetContext(ContextType ctxType);
 
 	private:

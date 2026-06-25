@@ -1,4 +1,6 @@
-﻿#include "JobSystem.h"
+#include "JobSystem.h"
+
+#include "Renderer/Device.h"
 
 namespace HBL2
 {
@@ -7,12 +9,12 @@ namespace HBL2
     static thread_local uint32_t s_WorkerIndex = UINT32_MAX;
     static thread_local std::thread::id s_WorkerId;
 
-	void JobSystem::Initialize()
+	void JobSystem::Initialize(const JobSystemSpecification&& spec)
 	{
         HBL2_CORE_ASSERT(s_Instance == nullptr, "JobSystem::s_Instance is not null! JobSystem::Initialize has been called twice.");
         s_Instance = new JobSystem;
 
-        Get().InternalInitialize();
+        Get().InternalInitialize(std::forward<const JobSystemSpecification>(spec));
 	}
 
     void JobSystem::Shutdown()
@@ -30,20 +32,25 @@ namespace HBL2
         return Get().m_Shutdown.load() == true;
     }
 
-    void JobSystem::InternalInitialize()
+    void JobSystem::InternalInitialize(const JobSystemSpecification&& spec)
     {
         m_NumThreads = std::max(1u, std::thread::hardware_concurrency() - 2);
 
-        m_Reservation = Allocator::Arena.Reserve("JobSystemPool", (1_MB * m_NumThreads) + 100_KB);
+        const size_t ThreadArenaSize = MB(spec.MaxWorkerMemory);
+
+        // NOTE: The '+2' is to accomondate the worker arena of the render and game thread.
+        //       We need one for them for seamless behaviour and simple logic.
+
+        m_Reservation = Allocator::Arena.Reserve("JobSystemPool", (ThreadArenaSize * (m_NumThreads + 2)) + 100_KB);
         m_JobSystemArena.Initialize(&Allocator::Arena, 100_KB, m_Reservation);
 
-        m_WorkerArenas = MakeDArrayResized<Arena*>(m_JobSystemArena, m_NumThreads);
+        m_WorkerArenas = MakeDArrayResized<Arena*>(m_JobSystemArena, m_NumThreads + 2);
         m_LocalJobQueues = MakeDArrayResized<moodycamel::ConcurrentQueue<std::function<void()>>>(m_JobSystemArena, m_NumThreads);
 
-        for (int i = 0; i < m_NumThreads; i++)
+        for (int i = 0; i < m_NumThreads + 2; i++)
         {
             m_WorkerArenas[i] = m_JobSystemArena.AllocConstruct<Arena>();
-            m_WorkerArenas[i]->Initialize(&Allocator::Arena, 1_MB, m_Reservation);
+            m_WorkerArenas[i]->Initialize(&Allocator::Arena, ThreadArenaSize, m_Reservation);
         }
 
         m_Workers = MakeDArray<std::thread>(m_JobSystemArena, m_NumThreads);
@@ -72,6 +79,11 @@ namespace HBL2
             assert(SUCCEEDED(hr));
 #endif
         }
+
+        // Set the worker id for the main thread.
+        s_WorkerIndex = m_NumThreads;
+        s_WorkerId = std::this_thread::get_id();
+        m_MainThreadId = s_WorkerId;
     }
 
     void JobSystem::InternalShutdown()
@@ -97,9 +109,14 @@ namespace HBL2
     {
         ctx.counter.fetch_add(1, std::memory_order_relaxed);
 
-        auto wrappedJob = [job, &ctx]()
+        auto wrappedJob = [this, job, &ctx]()
         {
+            Device::Instance->SetContext(ContextType::FETCH);
+
             job();
+
+            GetWorkerArena()->Reset();
+
             ctx.counter.fetch_sub(1, std::memory_order_release);
         };
 
@@ -123,12 +140,19 @@ namespace HBL2
         {
             auto task = [=, &ctx]()
             {
+                if (Device::Instance != nullptr)
+                {
+                    Device::Instance->SetContext(ContextType::FETCH);
+                }
+
                 uint32_t start = i * groupSize;
                 uint32_t end = std::min(start + groupSize, jobCount);
                 for (uint32_t j = start; j < end; ++j)
                 {
                     job(JobDispatchArgs{ j, i });
                 }
+
+                GetWorkerArena()->Reset();
 
                 ctx.counter.fetch_sub(1, std::memory_order_acq_rel);
             };
@@ -176,6 +200,13 @@ namespace HBL2
         }
     }
 
+    void JobSystem::SetupWorkerRT()
+    {
+        s_WorkerIndex = m_NumThreads + 1;
+        s_WorkerId = std::this_thread::get_id();
+        m_RenderThreadId = s_WorkerId;
+    }
+
     uint32_t JobSystem::GetWorkerIndex()
     {
         return s_WorkerIndex;
@@ -185,6 +216,21 @@ namespace HBL2
     {
         HBL2_CORE_ASSERT(s_WorkerId == std::this_thread::get_id(), "Worker arena can only be used from within a valid JobSystem worker thread!");
         return m_WorkerArenas[s_WorkerIndex];
+    }
+
+    bool JobSystem::IsMainThread()
+    {
+        return std::this_thread::get_id() == m_MainThreadId;
+    }
+
+    bool JobSystem::IsRenderThread()
+    {
+        return std::this_thread::get_id() == m_RenderThreadId;
+    }
+
+    bool JobSystem::IsWorkerThread()
+    {
+        return !IsMainThread() && !IsRenderThread();
     }
 
     void JobSystem::WorkerThreadFunc(uint32_t threadIndex)

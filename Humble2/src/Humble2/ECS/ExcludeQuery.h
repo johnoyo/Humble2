@@ -3,7 +3,7 @@
 #include "StorageInfo.h"
 #include "IComponentStorage.h"
 
-#include "Utilities\Collections\StaticArray.h"
+#include "Utilities/Collections/StaticArray.h"
 
 #include <utility>
 

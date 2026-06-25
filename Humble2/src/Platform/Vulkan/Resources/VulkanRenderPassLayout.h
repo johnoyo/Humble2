@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/TypeDescriptors.h"
 
 #include <string>
 #include <fstream>

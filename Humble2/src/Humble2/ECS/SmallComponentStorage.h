@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IComponentStorage.h"
-#include "Utilities\Collections\Collections.h"
+#include "Utilities/Collections/Collections.h"
 
 namespace HBL2
 {

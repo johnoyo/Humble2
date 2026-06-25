@@ -16,13 +16,19 @@ namespace HBL2
 		glm::mat4 Model = glm::mat4(1.0f);
 		glm::mat4 InverseModel = glm::mat4(1.0f);
 		glm::vec4 Color = { 0.0f, 0.0f, 0.0f, 0.0f };
-		float Glossiness = 0.0f;
 	};
 
 	struct PerDrawDataSprite
 	{
 		glm::mat4 Model = glm::mat4(1.0f);
 		glm::vec4 Color = { 0.0f, 0.0f, 0.0f, 0.0f };
+	};
+
+	struct PerMaterialData
+	{
+		glm::vec4 Color;
+		float Roughness;
+		float Metalicness;
 	};
 
 	struct SceneRenderData
@@ -61,7 +67,7 @@ namespace HBL2
 
 		virtual void* GetRenderData() override;
 
-	private:
+	protected:
 		void ShadowPassSetup();
 		void DepthPrePassSetup();
 		void OpaquePassSetup();
@@ -116,7 +122,6 @@ namespace HBL2
 		ShaderDescriptor::RenderPipeline::PackedVariant m_DepthOnlySpriteMaterialHash = g_NullVariant;
 		Handle<BindGroup> m_DepthOnlyMeshBindGroup;
 		Handle<BindGroup> m_DepthOnlySpriteBindGroup;
-		Handle<BindGroupLayout> m_DepthOnlyBindGroupLayout;
 		Handle<Shader> m_DepthOnlyShader;
 		Handle<Shader> m_DepthOnlySpriteShader;
 
@@ -142,7 +147,7 @@ namespace HBL2
 		Handle<BindGroup> m_PostProcessBindGroup;
 		Handle<BindGroupLayout> m_PostProcessBindGroupLayout;
 		Handle<Shader> m_PostProcessShader;
-		Handle<Material> m_PostProcessMaterial;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_PostProcessShaderVariantHash;
 		Handle<Buffer> m_CubeMeshBuffer;
 		Handle<Mesh> m_CubeMesh;
 

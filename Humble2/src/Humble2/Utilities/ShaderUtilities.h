@@ -1,23 +1,26 @@
 #pragma once
 
 #include "Base.h"
-#include "Renderer\Renderer.h"
-#include "Renderer\Enums.h"
+#include "SlangReflection.h"
 
-#include "Asset\AssetManager.h"
+#include "Renderer/Renderer.h"
+#include "Renderer/Enums.h"
 
-#include <shaderc/shaderc.hpp>
-#include <spirv_cross/spirv_cross.hpp>
-#include <spirv_cross/spirv_glsl.hpp>
+#include "Asset/AssetManager.h"
 
 #include <fstream>
 #include <filesystem>
 #include <iostream>
 #include <unordered_map>
-#include <iostream>
 
 namespace HBL2
 {
+	enum class HBL2_API ShaderType2
+	{
+		D2 = 0,
+		D3 = 1,
+	};
+
 	enum class HBL2_API BuiltInShader
 	{
 		INVALID = 0,
@@ -27,16 +30,27 @@ namespace HBL2
 		PBR,
 	};
 
-	struct HBL2_API ReflectionData
+	struct HBL2_API CompilationResultData
 	{
-		std::string VertexEntryPoint;
-		std::string FragmentEntryPoint;
-		std::string ComputeEntryPoint;
-		uint32_t VertexBindingCount = 0;
-		uint32_t ByteStride = 0;
-		std::vector<ShaderDescriptor::RenderPipeline::VertexBufferBinding::Attribute> Attributes;
-		Handle<BindGroupLayout> BindGroupLayout;
-		Handle<BindGroup> BindGroup;
+		struct ShaderCode
+		{
+			uint32_t* ptr = nullptr;
+			uint32_t size = 0;
+
+			Span<const uint32_t> AsSpan() const
+			{
+				return { ptr, size };
+			}
+		};
+
+		ShaderCode vertexShaderCode;
+		ShaderCode fragmentShaderCode;
+		ShaderCode computeShaderCode;
+
+		bool IsValid() const
+		{
+			return (vertexShaderCode.ptr != nullptr && fragmentShaderCode.ptr) || computeShaderCode.ptr != nullptr;
+		}
 	};
 
 	struct HBL2_API MaterialDataDescriptor
@@ -44,13 +58,17 @@ namespace HBL2
 		Handle<Asset> ShaderAssetHandle;
 
 		ShaderDescriptor::RenderPipeline::PackedVariant VariantHash{};
-		glm::vec4 AlbedoColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-		float Glossiness = 0.0f;
 
-		Handle<Asset> AlbedoMapAssetHandle;
-		Handle<Asset> NormalMapAssetHandle;
-		Handle<Asset> RoughnessMapAssetHandle;
-		Handle<Asset> MetallicMapAssetHandle;
+		ShaderReflectionData* ReflectionData;
+		Span<const std::vector<uint8_t>> Buffers;
+		Span<const uint32_t> TextureAssets;
+	};
+
+	struct HBL2_API ShaderDataDescriptor
+	{
+		ShaderReflectionData* ReflectionData;
+		Span<const std::vector<uint8_t>> Buffers;
+		Span<const uint32_t> TextureAssets;
 	};
 
 	class HBL2_API ShaderUtilities
@@ -64,8 +82,8 @@ namespace HBL2
 		static void Shutdown();
 
 		std::string ReadFile(const std::string& filepath);
-		std::vector<std::vector<uint32_t>> Compile(const std::string& shaderFilePath, bool forceRecompile = false);
-		const ReflectionData& GetReflectionData(const std::string& shaderFilePath) { return m_ShaderReflectionData[shaderFilePath]; }
+		CompilationResultData Compile(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool forceRecompile = false);
+		ShaderReflectionData Reflect(const std::string& shaderFilePath);
 
 		void LoadBuiltInShaders();
 		void DeleteBuiltInShaders();
@@ -74,14 +92,15 @@ namespace HBL2
 		void DeleteBuiltInMaterials();
 
 		Handle<Shader> GetBuiltInShader(BuiltInShader shader) { return m_Shaders[shader]; }
-		Handle<BindGroupLayout> GetBuiltInShaderLayout(BuiltInShader shader) { return m_ShaderLayouts[shader]; }
 		const Span<const Handle<Asset>> GetBuiltInShaderAssets() const { return { m_ShaderAssets.data(), m_ShaderAssets.size() }; }
 
 		void CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType);
+		void UpdateShaderBindGroupResourcesAssetFile(Handle<Asset> handle, const ShaderDataDescriptor&& desc);
 		void UpdateShaderVariantMetadataFile(UUID shaderUUID, const ShaderDescriptor::RenderPipeline::PackedVariant& newVariant);
 
 		void CreateMaterialMetadataFile(Handle<Asset> handle, uint32_t materialType, bool autoImported = false);
 		void CreateMaterialAssetFile(Handle<Asset> handle, const MaterialDataDescriptor&& desc);
+		void UpdateMaterialShaderResourceAssetFile(Handle<Asset> handle, Handle<Asset> shaderAssetHandle);
 
 		Handle<Asset> LitMaterialAsset;
 
@@ -90,21 +109,16 @@ namespace HBL2
 
 		const char* GetCacheDirectory(GraphicsAPI target);
 		void CreateCacheDirectoryIfNeeded(GraphicsAPI target);
-		const char* GLShaderStageCachedVulkanFileExtension(ShaderStage stage);
-		const char* GLShaderStageCachedOpenGLFileExtension(ShaderStage stage);
-		shaderc_shader_kind GLShaderStageToShaderC(ShaderStage stage);
-		const char* GLShaderStageToString(ShaderStage stage);
 
-		std::vector<uint32_t> Compile(const std::string& shaderFilePath, const std::string& shaderSource, ShaderStage stage, bool forceRecompile = false);
-		ReflectionData Reflect(const Span<uint32_t>& vertexShaderData, const Span<uint32_t>& fragmentShaderData, const Span<uint32_t>& computeShaderData);
+		bool IsVertexStage(int64_t entryPointIndex, int32_t entryPointCount);
+		bool IsFragmentStage(int64_t entryPointIndex, int32_t entryPointCount);
+		bool IsComputeStage(int64_t entryPointIndex, int32_t entryPointCount);
 
 	private:
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_Arena;
 
-		HMap<std::string, ReflectionData> m_ShaderReflectionData = MakeEmptyHMap<std::string, ReflectionData>();
 		HMap<BuiltInShader, Handle<Shader>> m_Shaders = MakeEmptyHMap<BuiltInShader, Handle<Shader>>();
-		HMap<BuiltInShader, Handle<BindGroupLayout>> m_ShaderLayouts = MakeEmptyHMap<BuiltInShader, Handle<BindGroupLayout>>();
 		DArray<Handle<Asset>> m_ShaderAssets = MakeEmptyDArray<Handle<Asset>>();
 
 		static ShaderUtilities* s_Instance;

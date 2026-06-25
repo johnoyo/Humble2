@@ -56,6 +56,9 @@ namespace HBL2
 			s_ClientLogger->set_level(spdlog::level::off); 
 		}
 
+		// Give async worker time to drain queue.
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+
 		// Disable sink logging before shutdown.
 		if (s_ConsoleSink)
 		{
@@ -68,10 +71,14 @@ namespace HBL2
 		}
 
 		spdlog::set_level(spdlog::level::off);
+		spdlog::drop_all();
 		spdlog::shutdown();
 
 		s_CoreLogger.reset();
 		s_ClientLogger.reset();
+
+		s_ConsoleSink.reset();
+		s_FileSink.reset();
 	}
 
 	void Log::SetOutputs(BitFlags<LogContexts> outputs)

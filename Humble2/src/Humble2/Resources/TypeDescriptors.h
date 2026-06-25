@@ -1,13 +1,14 @@
 #pragma once
 
-#include "Renderer\Enums.h"
+#include "Renderer/Enums.h"
 #include "Handle.h"
 #include "BaseTypeDefinitions.h"
+#include "Asset/Asset.h"
 
-#include "Utilities\Collections\Span.h"
-#include "Utilities\Collections\BitFlags.h"
+#include "Utilities/Collections/Span.h"
+#include "Utilities/Collections/BitFlags.h"
 
-#include <glm\glm.hpp>
+#include <glm/glm.hpp>
 
 #include <vector>
 #include <initializer_list>
@@ -26,6 +27,7 @@ namespace HBL2
 		BitFlags<TextureUsage> usage = TextureUsage::TEXTURE_BINDING;
 		TextureType type = TextureType::D2;
 		TextureAspect aspect = TextureAspect::COLOR;
+		uint32_t layerCount = 1;
 
 		struct Sampler
 		{
@@ -39,6 +41,14 @@ namespace HBL2
 		Sampler sampler;
 		TextureLayout initialLayout = TextureLayout::SHADER_READ_ONLY;
 		void* initialData = nullptr;
+	};
+
+	struct TextureViewDescriptor
+	{
+		TextureType type = TextureType::D2;
+		Format format = Format::RGBA8_RGB;
+		TextureAspect aspect = TextureAspect::COLOR;
+		uint32_t layerCount = 1;
 	};
 
 	struct BufferDescriptor
@@ -70,7 +80,7 @@ namespace HBL2
 			ShaderStage visibility = ShaderStage::VERTEX;
 			TextureBindingType type = TextureBindingType::IMAGE_SAMPLER;
 		};
-		std::initializer_list<TextureBinding> textureBindings;
+		Span<const TextureBinding> textureBindings;
 
 		struct BufferBinding
 		{
@@ -78,22 +88,61 @@ namespace HBL2
 			ShaderStage visibility = ShaderStage::VERTEX;
 			BufferBindingType type = BufferBindingType::UNIFORM;
 		};
-		std::initializer_list<BufferBinding> bufferBindings;
+		Span<const BufferBinding> bufferBindings;
+
+		bool createdFromReflection = false;
 	};
 
 	struct BindGroupDescriptor
 	{
 		const char* debugName;
 		Handle<BindGroupLayout> layout;
-		std::initializer_list<Handle<Texture>> textures;
+
+		struct TextureEntry
+		{
+			Handle<Texture> texture;
+			TextureLayout desiredLayout = TextureLayout::UNDEFINED;
+		};
+		Span<const TextureEntry> textures;
 		struct BufferEntry
 		{
 			Handle<Buffer> buffer;
 			uint32_t byteOffset = 0;
 			uint32_t range = 0;
 		};
-		std::initializer_list<BufferEntry> buffers;
+		Span<const BufferEntry> buffers;
 	};
+
+	enum class ShaderConstantType : uint16_t
+	{
+		Bool,
+		Int,
+		UInt,
+		Float
+	};
+
+	struct ShaderConstant
+	{
+		ShaderConstantType type;
+		BitFlags<ShaderStage> stage;
+
+		union
+		{
+			bool b;
+			int32_t i;
+			uint32_t u;
+			float f;
+		} value;
+	};
+
+	inline ShaderConstant ShaderConstantBool(BitFlags<ShaderStage> stage, bool v)
+	{
+		ShaderConstant c{};
+		c.type = ShaderConstantType::Bool;
+		c.stage = stage;
+		c.value.b = v;
+		return c;
+	}
 
 	struct ShaderDescriptor
 	{
@@ -118,6 +167,7 @@ namespace HBL2
 					VertexFormat format = VertexFormat::FLOAT32;
 				};
 
+				uint32_t bufferBinding = 0;
 				uint32_t byteStride = 12;
 				std::vector<Attribute> attributes;
 			};
@@ -168,7 +218,17 @@ namespace HBL2
 				packed_size stencilEnabled : 1 = 1; // true
 				packed_size depthCompare : 3 = (packed_size)Compare::LESS_OR_EQUAL;
 
-				packed_size _padding : 34 = 0;
+				// Shader constants (Only bools are allowed in the PSO)
+				packed_size shaderConstantBool0 : 1 = 0;
+				packed_size shaderConstantBool1 : 1 = 0;
+				packed_size shaderConstantBool2 : 1 = 0;
+				packed_size shaderConstantBool3 : 1 = 0;
+				packed_size shaderConstantBool4 : 1 = 0;
+				packed_size shaderConstantBool5 : 1 = 0;
+				packed_size shaderConstantBool6 : 1 = 0;
+				packed_size shaderConstantBool7 : 1 = 0;
+
+				packed_size _padding : 26 = 0;
 
 				constexpr uint64_t Key() const noexcept { return std::bit_cast<uint64_t>(*this); }
 
@@ -201,12 +261,14 @@ namespace HBL2
 			static_assert(sizeof(PackedVariant) == sizeof(packed_size));
 			static_assert(std::is_trivially_copyable_v<PackedVariant>);
 
-			std::initializer_list<VertexBufferBinding> vertexBufferBindings;
+			Span<const VertexBufferBinding> vertexBufferBindings;
 
 			Span<const PackedVariant> variants;
+			Span<const Span<const ShaderConstant>> specializationConstantsPerVariant;
 		};
 		RenderPipeline renderPipeline;
 		Handle<RenderPass> renderPass;
+		Handle<BindGroup> shaderBindGroup;
 	};
 
 	static inline const ShaderDescriptor::RenderPipeline::PackedVariant g_NullVariant = std::bit_cast<ShaderDescriptor::RenderPipeline::PackedVariant>(uint64_t{ 0 });
@@ -265,7 +327,7 @@ namespace HBL2
 		glm::vec3 minVertex;
 		glm::vec3 maxVertex;
 
-		Handle<Material> embededMaterial;
+		Handle<Asset> embededMaterial;
 	};
 
 	struct MeshPartDescriptor
@@ -307,6 +369,7 @@ namespace HBL2
 	{
 		const char* debugName;
 		Handle<Shader> shader;
-		Handle<BindGroup> bindGroup;
+		Handle<BindGroup> drawBindGroup;
+		Handle<BindGroup> materialBindGroup;
 	};
 }

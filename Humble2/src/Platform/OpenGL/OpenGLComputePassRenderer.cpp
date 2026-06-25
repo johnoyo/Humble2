@@ -1,6 +1,6 @@
 #include "OpenGLComputePassRenderer.h"
 
-#include "Resources\OpenGLShader.h"
+#include "Resources/OpenGLShader.h"
 #include "OpenGLResourceManager.h"
 
 namespace HBL2
@@ -17,7 +17,7 @@ namespace HBL2
 
 			for (int i = 0; i < bindGroup->Textures.size(); i++)
 			{
-				OpenGLTexture* openGLTexture = rm->GetTexture(bindGroup->Textures[i]);
+				OpenGLTexture* openGLTexture = rm->GetTexture(bindGroup->Textures[i].texture);
 				openGLTexture->Bind(bindGroupLayout->TextureBindings[i].slot);
 			}
 
@@ -28,7 +28,7 @@ namespace HBL2
 				glBindBufferBase(GL_UNIFORM_BUFFER, bindGroupLayout->BufferBindings[i].slot, buffer->RendererId);
 			}
 
-			glUseProgram(shader->Program);
+			shader->Bind(ShaderDescriptor::RenderPipeline::PackedVariant::FromKey(dispatch.VariantHandle));
 			glDispatchCompute(dispatch.ThreadGroupCount.x, dispatch.ThreadGroupCount.y, dispatch.ThreadGroupCount.z);
 		}
 	}

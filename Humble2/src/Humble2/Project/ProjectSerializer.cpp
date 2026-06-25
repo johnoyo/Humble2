@@ -1,7 +1,9 @@
 #include "ProjectSerializer.h"
 
+#include "Utilities/YamlUtilities.h"
+
 #include <fstream>
-#include <yaml-cpp\yaml.h>
+#include <yaml-cpp/yaml.h>
 
 namespace HBL2
 {
@@ -32,14 +34,18 @@ namespace HBL2
 
 		out << YAML::Key << "Physics2D" << YAML::Value;
 		out << YAML::BeginMap;
-		out << YAML::Key << "Gravity Force" << YAML::Value << spec.Settings.GravityForce2D;
+		out << YAML::Key << "Gravity Force" << YAML::Value << spec.Settings.PhysicsEngine2DSpec.GravityForce;
 		out << YAML::Key << "Enable Debug Draw" << YAML::Value << spec.Settings.EnableDebugDraw2D;
 		out << YAML::Key << "Implementation" << YAML::Value << (int)spec.Settings.Physics2DImpl;
 		out << YAML::EndMap;
 
 		out << YAML::Key << "Physics3D" << YAML::Value;
 		out << YAML::BeginMap;
-		out << YAML::Key << "Gravity Force" << YAML::Value << spec.Settings.GravityForce2D;
+		out << YAML::Key << "Max Scratch Memory (MB)" << YAML::Value << spec.Settings.PhysicsEngine3DSpec.MaxScratchMemory;
+		out << YAML::Key << "Gravity Force" << YAML::Value << spec.Settings.PhysicsEngine3DSpec.GravityForce;
+		out << YAML::Key << "Max Bodies" << YAML::Value << spec.Settings.PhysicsEngine3DSpec.MaxBodies;
+		out << YAML::Key << "Max Body Pairs" << YAML::Value << spec.Settings.PhysicsEngine3DSpec.MaxBodyPairs;
+		out << YAML::Key << "Max Contact Constraints" << YAML::Value << spec.Settings.PhysicsEngine3DSpec.MaxContactConstraints;
 		out << YAML::Key << "Enable Debug Draw" << YAML::Value << spec.Settings.EnableDebugDraw3D;
 		out << YAML::Key << "Show Colliders" << YAML::Value << spec.Settings.ShowColliders3D;
 		out << YAML::Key << "Show Bounding Boxes" << YAML::Value << spec.Settings.ShowBoundingBoxes3D;
@@ -54,12 +60,29 @@ namespace HBL2
 		out << YAML::Key << "Editor" << YAML::Value;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Multiple Viewports" << YAML::Value << spec.Settings.EditorMultipleViewports;
+		out << YAML::Key << "Camera Near" << YAML::Value << spec.Settings.EditorCameraNear;
+		out << YAML::Key << "Camera Far" << YAML::Value << spec.Settings.EditorCameraFar;
+		out << YAML::Key << "Camera Fov" << YAML::Value << spec.Settings.EditorCameraFov;
+		out << YAML::Key << "Camera Aspect Ratio" << YAML::Value << spec.Settings.EditorCameraAspectRatio;
+		out << YAML::Key << "Camera Exposure" << YAML::Value << spec.Settings.EditorCameraExposure;
+		out << YAML::Key << "Camera Gamma" << YAML::Value << spec.Settings.EditorCameraGamma;
+		out << YAML::Key << "Camera Zoom Level" << YAML::Value << spec.Settings.EditorCameraZoomLevel;
+		out << YAML::Key << "Camera Translation" << YAML::Value << spec.Settings.EditorCameraTranslation;
+		out << YAML::Key << "Camera Rotation" << YAML::Value << spec.Settings.EditorCameraRotation;
+		out << YAML::Key << "Camera Movement Speed" << YAML::Value << spec.Settings.EditorCameraMovementSpeed;
+		out << YAML::Key << "Camera Mouse Sensitivity" << YAML::Value << spec.Settings.EditorCameraMouseSensitivity;
+		out << YAML::Key << "Camera Pan Speed" << YAML::Value << spec.Settings.EditorCameraPanSpeed;
+		out << YAML::Key << "Camera Zoom Speed" << YAML::Value << spec.Settings.EditorCameraZoomSpeed;
+		out << YAML::Key << "Camera Scroll Zoom Speed" << YAML::Value << spec.Settings.EditorCameraScrollZoomSpeed;
 		out << YAML::EndMap;
 
 		out << YAML::Key << "Advanced" << YAML::Value;
 		out << YAML::BeginMap;
-		out << YAML::Key << "Max App Memory" << YAML::Value << spec.Settings.MaxAppMemory;
-		out << YAML::Key << "Max UniformBuffer Memory" << YAML::Value << spec.Settings.MaxUniformBufferMemory;
+		out << YAML::Key << "Max App Memory (MB)" << YAML::Value << spec.Settings.MaxAppMemory;
+		out << YAML::Key << "Max Main Thread Frame Arena Memory (MB)" << YAML::Value << spec.Settings.MaxMainThreadFrameArenaMemory;
+		out << YAML::Key << "Max Render Thread Frame Arena Memory (MB)" << YAML::Value << spec.Settings.MaxRenderThreadFrameArenaMemory;
+		out << YAML::Key << "Max Worker Memory (MB)" << YAML::Value << spec.Settings.MaxWorkerMemory;
+		out << YAML::Key << "Max UniformBuffer Memory (MB)" << YAML::Value << spec.Settings.MaxUniformBufferMemory;
 
 		out << YAML::Key << "Resource Manager" << YAML::Value;
 		out << YAML::BeginMap;
@@ -132,11 +155,15 @@ namespace HBL2
 		spec.Settings.EditorGraphicsAPI = (GraphicsAPI)data["Project"]["Renderer"]["Editor API"].as<int>();
 		spec.Settings.RuntimeGraphicsAPI = (GraphicsAPI)data["Project"]["Renderer"]["Runtime API"].as<int>();
 
-		spec.Settings.GravityForce2D = data["Project"]["Physics2D"]["Gravity Force"].as<float>();
+		spec.Settings.PhysicsEngine2DSpec.GravityForce = data["Project"]["Physics2D"]["Gravity Force"].as<glm::vec2>();
 		spec.Settings.EnableDebugDraw2D = data["Project"]["Physics2D"]["Enable Debug Draw"].as<bool>();
 		spec.Settings.Physics2DImpl = (Physics2DEngineImpl)data["Project"]["Physics2D"]["Implementation"].as<int>();
 
-		spec.Settings.GravityForce3D = data["Project"]["Physics3D"]["Gravity Force"].as<float>();
+		spec.Settings.PhysicsEngine3DSpec.MaxScratchMemory = data["Project"]["Physics3D"]["Max Scratch Memory (MB)"].as<uint32_t>();
+		spec.Settings.PhysicsEngine3DSpec.GravityForce = data["Project"]["Physics3D"]["Gravity Force"].as<glm::vec3>();
+		spec.Settings.PhysicsEngine3DSpec.MaxBodies = data["Project"]["Physics3D"]["Max Bodies"].as<glm::uint32_t>();
+		spec.Settings.PhysicsEngine3DSpec.MaxBodyPairs = data["Project"]["Physics3D"]["Max Body Pairs"].as<uint32_t>();
+		spec.Settings.PhysicsEngine3DSpec.MaxContactConstraints = data["Project"]["Physics3D"]["Max Contact Constraints"].as<uint32_t>();
 		spec.Settings.EnableDebugDraw3D = data["Project"]["Physics3D"]["Enable Debug Draw"].as<bool>();
 		spec.Settings.ShowColliders3D = data["Project"]["Physics3D"]["Show Colliders"].as<bool>();
 		spec.Settings.ShowBoundingBoxes3D = data["Project"]["Physics3D"]["Show Bounding Boxes"].as<bool>();
@@ -145,9 +172,25 @@ namespace HBL2
 		spec.Settings.SoundImpl = (SoundEngineImpl)data["Project"]["Sound"]["Implementation"].as<int>();
 
 		spec.Settings.EditorMultipleViewports = data["Project"]["Editor"]["Multiple Viewports"].as<bool>();
+		spec.Settings.EditorCameraNear = data["Project"]["Editor"]["Camera Near"].as<float>();
+		spec.Settings.EditorCameraFar = data["Project"]["Editor"]["Camera Far"].as<float>();
+		spec.Settings.EditorCameraFov = data["Project"]["Editor"]["Camera Fov"].as<float>();
+		spec.Settings.EditorCameraAspectRatio = data["Project"]["Editor"]["Camera Aspect Ratio"].as<float>();
+		spec.Settings.EditorCameraExposure = data["Project"]["Editor"]["Camera Exposure"].as<float>();
+		spec.Settings.EditorCameraGamma = data["Project"]["Editor"]["Camera Gamma"].as<float>();
+		spec.Settings.EditorCameraZoomLevel = data["Project"]["Editor"]["Camera Zoom Level"].as<float>();
+		spec.Settings.EditorCameraTranslation = data["Project"]["Editor"]["Camera Translation"].as<glm::vec3>();
+		spec.Settings.EditorCameraRotation = data["Project"]["Editor"]["Camera Rotation"].as<glm::vec3>();
+		spec.Settings.EditorCameraMovementSpeed = data["Project"]["Editor"]["Camera Movement Speed"].as<float>();
+		spec.Settings.EditorCameraMouseSensitivity = data["Project"]["Editor"]["Camera Mouse Sensitivity"].as<float>();
+		spec.Settings.EditorCameraPanSpeed = data["Project"]["Editor"]["Camera Pan Speed"].as<float>();
+		spec.Settings.EditorCameraZoomSpeed = data["Project"]["Editor"]["Camera Zoom Speed"].as<float>();
+		spec.Settings.EditorCameraScrollZoomSpeed = data["Project"]["Editor"]["Camera Scroll Zoom Speed"].as<float>();
 
-		spec.Settings.MaxAppMemory = data["Project"]["Advanced"]["Max App Memory"].as<uint32_t>();
-		spec.Settings.MaxUniformBufferMemory = data["Project"]["Advanced"]["Max UniformBuffer Memory"].as<uint32_t>();
+		spec.Settings.MaxAppMemory = data["Project"]["Advanced"]["Max App Memory (MB)"].as<uint32_t>();
+		spec.Settings.MaxMainThreadFrameArenaMemory = data["Project"]["Advanced"]["Max Main Thread Frame Arena Memory (MB)"].as<uint32_t>();
+		spec.Settings.MaxRenderThreadFrameArenaMemory = data["Project"]["Advanced"]["Max Render Thread Frame Arena Memory (MB)"].as<uint32_t>();
+		spec.Settings.MaxUniformBufferMemory = data["Project"]["Advanced"]["Max UniformBuffer Memory (MB)"].as<uint32_t>();
 
 		if (!data["Project"]["Advanced"]["Resource Manager"].IsDefined() || !data["Project"]["Advanced"]["Asset Manager"].IsDefined())
 		{

@@ -1,6 +1,6 @@
 #include "VulkanBindGroup.h"
 
-#include "Platform\Vulkan\VulkanResourceManager.h"
+#include "Platform/Vulkan/VulkanResourceManager.h"
 
 namespace HBL2
 {
@@ -22,9 +22,6 @@ namespace HBL2
 			// NOTE(John): Do not delete texture since we might use it else where.
 			// rm->DeleteTexture(Textures[i]);
 		}
-
-		// NOTE: Maybe do not delete this as well, since it might be shared.
-		// rm->DeleteBindGroupLayout(BindGroupLayout);
 	}
 
 	bool VulkanBindGroup::IsValid() const
@@ -41,8 +38,8 @@ namespace HBL2
 
 		Cold->DebugName = desc.debugName;
 
-		Cold->Buffers = desc.buffers;
-		Cold->Textures = desc.textures;
+		Cold->Buffers = { desc.buffers.begin(), desc.buffers.end() };
+		Cold->Textures = { desc.textures.begin(), desc.textures.end() };
 		Cold->BindGroupLayout = desc.layout;
 
 		auto* rm = (VulkanResourceManager*)ResourceManager::Instance;
@@ -76,6 +73,12 @@ namespace HBL2
 		auto* device = (VulkanDevice*)Device::Instance;
 
 		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(Cold->BindGroupLayout);
+
+		if (Cold->Buffers.size() + Cold->Textures.size() == 0)
+		{
+			vkUpdateDescriptorSets(device->Get(), 0, nullptr, 0, nullptr);
+			return;
+		}
 
 		std::vector<VkWriteDescriptorSet> writeDescriptorSet(Cold->Buffers.size() + Cold->Textures.size());
 		std::vector<VkDescriptorBufferInfo> descriptorBufferInfo(Cold->Buffers.size());
@@ -124,7 +127,7 @@ namespace HBL2
 
 		for (int i = 0; i < Cold->Textures.size(); i++)
 		{
-			VulkanTexture* texture = rm->GetTexture(Cold->Textures[i]);
+			VulkanTexture* texture = rm->GetTexture(Cold->Textures[i].texture);
 
 			VkDescriptorType type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
 
@@ -138,11 +141,22 @@ namespace HBL2
 				break;
 			}
 
+			VkImageLayout layout;
+
+			if (Cold->Textures[i].desiredLayout == TextureLayout::UNDEFINED)
+			{
+				layout = texture->ImageLayout;
+			}
+			else
+			{
+				layout = VkUtils::TextureLayoutToVkImageLayout(Cold->Textures[i].desiredLayout);
+			}
+
 			descriptorImageInfo[i] =
 			{
 				.sampler = texture->Sampler,
 				.imageView = texture->ImageView,
-				.imageLayout = texture->ImageLayout,
+				.imageLayout = layout,
 			};
 
 			writeDescriptorSet[Cold->Buffers.size() + i] =

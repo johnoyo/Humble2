@@ -1,7 +1,7 @@
 #include "Types.h"
 
 #include "ResourceManager.h"
-#include "Renderer\Renderer.h"
+#include "Renderer/Renderer.h"
 
 namespace HBL2
 {
@@ -110,6 +110,31 @@ namespace HBL2
 	{
 		DebugName = desc.debugName;
 		Shader = desc.shader;
-		BindGroup = desc.bindGroup;
+		DrawBindGroup = desc.drawBindGroup;
+		MaterialBindGroup = desc.materialBindGroup;
+	}
+
+	void Material::SetGlobalShaderBuffer(uint32_t index, void* userData)
+	{
+		Handle<BindGroup> shaderBindGroup = ResourceManager::Instance->GetShaderGlobalBindGroup(Shader);
+		ResourceManager::Instance->SetBufferData(shaderBindGroup, index, userData);
+
+		// Submit to render thread, to avoid modifying the data while the render thread renders the previous frame.
+		Renderer::Instance->Submit([this, index]()
+		{
+			Handle<BindGroup> shaderBindGroup = ResourceManager::Instance->GetShaderGlobalBindGroup(Shader);
+			ResourceManager::Instance->MapBufferData(shaderBindGroup, index);
+		});
+	}
+
+	void Material::SetBuffer(uint32_t index, void* userData)
+	{
+		ResourceManager::Instance->SetBufferData(MaterialBindGroup, index, userData);
+
+		// Submit to render thread, to avoid modifying the data while the render thread renders the previous frame.
+		Renderer::Instance->Submit([this, index]()
+		{
+			ResourceManager::Instance->MapBufferData(MaterialBindGroup, index);
+		});
 	}
 }

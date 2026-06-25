@@ -3,7 +3,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
-#include "Core\Input.h"
+#include "Core/Input.h"
 
 namespace HBL2
 {
@@ -135,7 +135,11 @@ namespace HBL2
 		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI);
 		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_ImGuiRenderPass, m_Renderer->GetMainFrameBuffer());
 
-		ImGui_ImplVulkan_RenderDrawData(data, m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);
+		{
+			// Lock the queue here since the imgui function may mess with it.
+			std::lock_guard<std::mutex> lock(m_Renderer->GetGraphicsQueueMutex());
+			ImGui_ImplVulkan_RenderDrawData(data, m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);
+		}
 
 		commandBuffer->EndRenderPass(*renderPassRenderer);
 		commandBuffer->EndCommandRecording();

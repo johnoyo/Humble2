@@ -1,4 +1,4 @@
-﻿#include "DebugRenderer.h"
+#include "DebugRenderer.h"
 
 #include "Core/Context.h"
 #include "Core/Window.h"
@@ -145,15 +145,15 @@ namespace HBL2
 		wireTriVariant.frontFace = Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL ? (packed_size)FrontFace::COUNTER_CLOCKWISE : (packed_size)FrontFace::CLOCKWISE; // TODO: Fix discrepancy.
 
 		// Compile debug shader.
-		const auto& debugShaderCode = ShaderUtilities::Get().Compile("assets/shaders/debug-draw.shader");
+		const auto& debugShaderData = ShaderUtilities::Get().Compile("assets/shaders/debug-draw.slang", nullptr);
 
 		// Create debug shader handle.
 		m_DebugShader = m_ResourceManager->CreateShader({
 			.debugName = "debug-draw-shader",
-			.VS { .code = debugShaderCode[0], .entryPoint = "main" },
-			.FS { .code = debugShaderCode[1], .entryPoint = "main" },
+			.VS { .code = debugShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
+			.FS { .code = debugShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				Renderer::Instance->GetDebugBindingsLayout(),	// Global bind group (0)
+				Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = {
@@ -237,7 +237,6 @@ namespace HBL2
 			// Gather line draws.
 			renderData->Draws.Insert({
 				.Shader = m_DebugShader,
-				.Material = m_DebugLineMaterial,
 				.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DebugShader, m_DebugLineMaterialVariantHash),
 				.VertexBuffer = m_DebugLineVertexBuffer,
 				.VertexCount = renderData->CurrentLineIndex,
@@ -250,7 +249,6 @@ namespace HBL2
 			// Gather fill draws.
 			renderData->Draws.Insert({
 				.Shader = m_DebugShader,
-				.Material = m_DebugFillMaterial,
 				.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DebugShader, m_DebugFillMaterialVariantHash),
 				.VertexBuffer = m_DebugFillTriVertexBuffer,
 				.VertexCount = renderData->CurrentFillIndex,
@@ -263,7 +261,6 @@ namespace HBL2
 			// Gather wire draws.
 			renderData->Draws.Insert({
 				.Shader = m_DebugShader,
-				.Material = m_DebugWireMaterial,
 				.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DebugShader, m_DebugWireMaterialVariantHash),
 				.VertexBuffer = m_DebugWireTriVertexBuffer,
 				.VertexCount = renderData->CurrentWireIndex,
@@ -556,9 +553,11 @@ namespace HBL2
 		switch (Renderer::Instance->GetAPI())
 		{
 		case GraphicsAPI::OPENGL:
-			auto proj = camera.Projection;
-			proj[1][1] *= -1.0f;
-			return proj * camera.View;
+            {
+                auto proj = camera.Projection;
+                proj[1][1] *= -1.0f;
+                return proj * camera.View;
+            }
 		case GraphicsAPI::VULKAN:
 			return camera.ViewProjectionMatrix;
 		}

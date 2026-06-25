@@ -1,16 +1,31 @@
 #include "EditorPanelSystem.h"
 
-#include "Humble2\Utilities\FileDialogs.h"
-#include "Humble2\Utilities\YamlUtilities.h"
-#include "Humble2\Utilities\Collections\StaticString.h"
+#include "Humble2/Utilities/FileDialogs.h"
+#include "Humble2/Utilities/YamlUtilities.h"
+#include "Humble2/Utilities/Collections/StaticString.h"
 #include "EditorCameraSystem.h"
 
-#include "Resources\Handle.h"
-#include "Resources\ResourceManager.h"
-#include "Resources\Types.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/Handle.h"
+#include "Resources/ResourceManager.h"
+#include "Resources/Types.h"
+#include "Resources/TypeDescriptors.h"
 
-#include "UI/LayoutLib.h"
+#include "Inspectors/LinkEditor.h"
+#include "Inspectors/CameraEditor.h"
+#include "Inspectors/AnimationCurveEditor.h"
+
+#include "Panels/PlayStopPanel.h"
+#include "Panels/SystemsPanel.h"
+#include "Panels/TrayPanel.h"
+#include "Panels/StatsPanel.h"
+#include "Panels/ViewportPanel.h"
+#include "Panels/ConsolePanel.h"
+#include "Panels/TopBarPanel.h"
+#include "Panels/EditorSettingsPanel.h"
+#include "Panels/ProjectSettingsPanel.h"
+#include "Panels/HierachyPanel.h"
+#include "Panels/ContentBrowserPanel.h"
+#include "Panels/PropertiesPanel.h"
 
 namespace HBL2
 {
@@ -21,35 +36,32 @@ namespace HBL2
 			m_ActiveScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 			m_EditorScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
 
+			m_EditorPanels.push_back(new PlayStopPanel("Play / Stop", this));
+			m_EditorPanels.push_back(new ViewportPanel("Viewport", this));
+			m_EditorPanels.push_back(new HierachyPanel("Hierachy", this));
+			m_EditorPanels.push_back(new SystemsPanel("Systems", this));
+			m_EditorPanels.push_back(new StatsPanel("Stats", this));
+			m_EditorPanels.push_back(new ContentBrowserPanel("Content Browser", this));
+			m_EditorPanels.push_back(new PropertiesPanel("Properties", this));
+			m_EditorPanels.push_back(new ConsolePanel("Console", this));
+			m_EditorPanels.push_back(new TrayPanel("Bottom Tray", this));
+			m_EditorPanels.push_back(new TopBarPanel("Menubar", this));
+			m_EditorPanels.push_back(new EditorSettingsPanel("Editor Settings", this));
+			m_EditorPanels.push_back(new ProjectSettingsPanel("Project Settings", this));
+
+			for (EditorPanel* editorPanel : m_EditorPanels)
+			{
+				editorPanel->OnAttach();
+			}
+
 			EventDispatcher::Get().Register<SceneChangeEvent>([&](const HBL2::SceneChangeEvent& e)
 			{
 				HBL2_CORE_INFO("EditorPanelSystem::SceneChangeEvent");
-
-				std::vector<std::string> userSystemNames;
-				std::vector<std::string> userComponentNames;
 
 				// Delete temporary play mode scene.
 				Scene* currentScene = ResourceManager::Instance->GetScene(e.OldScene);
 				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != StaticString<64>::npos)
 				{
-					if (m_HotReloadedDLL)
-					{
-						// Store all registered meta types.
-						Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
-						{
-							const std::string& cleanName = BuildEngine::Instance->CleanComponentNameO3(std::string(entry.typeName));
-							userComponentNames.push_back(cleanName);
-						});
-
-						for (ISystem* userSystem : currentScene->GetRuntimeSystems())
-						{
-							if (userSystem->GetType() == SystemType::User)
-							{
-								userSystemNames.push_back(userSystem->Name);
-							}
-						}
-					}
-
 					// Clear entire scene
 					currentScene->Clear();
 
@@ -87,126 +99,23 @@ namespace HBL2
 							}
 						});
 				}
-
-				if (m_HotReloadedDLL)
-				{
-					BuildEngine::Instance->HotReload(e.NewScene, userComponentNames, userSystemNames, m_SerializedUserComponents);
-					m_HotReloadedDLL = false;
-				}
 			});
 
+			for (EditorPanel* editorPanel : m_EditorPanels)
 			{
-				// Hierachy panel.
-				auto hierachyPanel = m_Context->CreateEntity();
-				m_Context->GetComponent<HBL2::Component::Tag>(hierachyPanel).Name = "Hidden";
-				auto& panel = m_Context->AddComponent<Component::EditorPanel>(hierachyPanel);
-				panel.Name = "Hierachy";
-				panel.Type = Component::EditorPanel::Panel::Hierachy;
-				panel.Render = [this](float ts) { DrawHierachyPanel(); };
-			}
-
-			{
-				// Properties panel.
-				auto propertiesPanel = m_Context->CreateEntity();
-				m_Context->GetComponent<HBL2::Component::Tag>(propertiesPanel).Name = "Hidden";
-				auto& panel = m_Context->AddComponent<Component::EditorPanel>(propertiesPanel);
-				panel.Name = "Properties";
-				panel.Type = Component::EditorPanel::Panel::Properties;
-				panel.Render = [this](float ts) { DrawPropertiesPanel(); };
-			}
-
-			{
-				// Menubar panel.
-				auto menubarPanel = m_Context->CreateEntity();
-				m_Context->GetComponent<HBL2::Component::Tag>(menubarPanel).Name = "Hidden";
-				auto& panel = m_Context->AddComponent<Component::EditorPanel>(menubarPanel);
-				panel.Name = "Menubar";
-				panel.Type = Component::EditorPanel::Panel::Menubar;
-				panel.UseBeginEnd = false;
-				panel.Render = [this](float ts) { DrawToolBarPanel(); };
-			}
-
-			{
-				// Stats panel.
-				auto statsPanel = m_Context->CreateEntity();
-				m_Context->GetComponent<HBL2::Component::Tag>(statsPanel).Name = "Hidden";
-				auto& panel = m_Context->AddComponent<Component::EditorPanel>(statsPanel);
-				panel.Name = "Stats";
-				panel.Type = Component::EditorPanel::Panel::Stats;
-				panel.Render = [this](float ts) { DrawStatsPanel(ts); };
-			}
-
-			{
-				// Content browser panel.
-				auto contentBrowserPanel = m_Context->CreateEntity();
-				m_Context->GetComponent<HBL2::Component::Tag>(contentBrowserPanel).Name = "Hidden";
-				auto& panel = m_Context->AddComponent<Component::EditorPanel>(contentBrowserPanel);
-				panel.Name = "Content Browser";
-				panel.Type = Component::EditorPanel::Panel::ContentBrowser;
-				m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
-				panel.Render = [this](float ts) { DrawContentBrowserPanel(); };
-			}
-
-			{
-				// Console panel.
-				auto consolePanel = m_Context->CreateEntity();
-				m_Context->GetComponent<HBL2::Component::Tag>(consolePanel).Name = "Hidden";
-				auto& panel = m_Context->AddComponent<Component::EditorPanel>(consolePanel);
-				panel.Name = "Console";
-				panel.Type = Component::EditorPanel::Panel::Console;
-				panel.Render = [this](float ts) { DrawConsolePanel(ts); };
-			}
-
-			{
-				// Viewport panel.
-				auto viewportPanel = m_Context->CreateEntity();
-				m_Context->GetComponent<HBL2::Component::Tag>(viewportPanel).Name = "Hidden";
-				auto& panel = m_Context->AddComponent<Component::EditorPanel>(viewportPanel);
-				panel.Name = "Viewport";
-				panel.Type = Component::EditorPanel::Panel::Viewport;
-				panel.Styles.push_back({ ImGuiStyleVar_WindowPadding, ImVec2{ 0.f, 0.f }, 0.f, false });
-				panel.Render = [this](float ts) { DrawViewportPanel(); };
-			}
-
-			{
-				// Play / Stop panel.
-				auto playStopPanel = m_Context->CreateEntity();
-				m_Context->GetComponent<HBL2::Component::Tag>(playStopPanel).Name = "Hidden";
-				auto& panel = m_Context->AddComponent<Component::EditorPanel>(playStopPanel);
-				panel.Name = "Play / Stop";
-				panel.Type = Component::EditorPanel::Panel::PlayStop;
-				panel.Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
-				panel.Render = [this](float ts) { DrawPlayStopPanel(); };
-			}
-
-			{
-				// Systems panel.
-				auto systems = m_Context->CreateEntity();
-				m_Context->GetComponent<HBL2::Component::Tag>(systems).Name = "Hidden";
-				auto& panel = m_Context->AddComponent<Component::EditorPanel>(systems);
-				panel.Name = "Systems";
-				panel.Type = Component::EditorPanel::Panel::Systems;
-				panel.Render = [this](float ts) { DrawSystemsPanel(); };
-			}
-
-			{
-				// Bottom tray panel.
-				auto bottomTrayPanel = m_Context->CreateEntity();
-				m_Context->GetComponent<HBL2::Component::Tag>(bottomTrayPanel).Name = "Hidden";
-				auto& panel = m_Context->AddComponent<Component::EditorPanel>(bottomTrayPanel);
-				panel.Name = "Bottom Tray";
-				panel.Type = Component::EditorPanel::Panel::Tray;
-				panel.Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
-				panel.Render = [this](float ts) { DrawTrayPanel(); };
+				editorPanel->OnCreate();
 			}
 
 			// TODO: Remove from here!
 
-			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Link, LinkEditor>();
-			HBL2::EditorUtilities::Get().InitCustomEditor<HBL2::Component::Link, LinkEditor>();
+			RegisterCustomEditor<HBL2::Component::Link, LinkEditor>();
+			InitCustomEditor<HBL2::Component::Link, LinkEditor>();
 
-			HBL2::EditorUtilities::Get().RegisterCustomEditor<HBL2::Component::Camera, CameraEditor>();
-			HBL2::EditorUtilities::Get().InitCustomEditor<HBL2::Component::Camera, CameraEditor>();
+			RegisterCustomEditor<HBL2::Component::Camera, CameraEditor>();
+			InitCustomEditor<HBL2::Component::Camera, CameraEditor>();
+
+			RegisterCustomEditor<HBL2::Component::AnimationCurve, AnimationCurveEditor>();
+			InitCustomEditor<HBL2::Component::AnimationCurve, AnimationCurveEditor>();
 		}
 
 		void EditorPanelSystem::OnUpdate(float ts)
@@ -215,55 +124,40 @@ namespace HBL2
 
 		void EditorPanelSystem::OnGuiRender(float ts)
 		{
-			m_Context->Filter<Component::EditorPanel>()
-				.ForEach([&](Component::EditorPanel& panel)
+			for (EditorPanel* editorPanel : m_EditorPanels)
+			{
+				if (editorPanel->GotEnabled())
 				{
-					if (panel.Enabled)
-					{
-						// Push style vars for this window.
-						for (auto& style : panel.Styles)
-						{
-							if (style.UseFloat)
-							{
-								ImGui::PushStyleVar(style.StyleVar, style.FloatValue);
-							}
-							else
-							{
-								ImGui::PushStyleVar(style.StyleVar, style.VectorValue);
-							}
-						}
+					editorPanel->OnOpen();
+				}
 
-						// Push window to the stack.
-						if (panel.UseBeginEnd)
-						{
-							ImGui::Begin(panel.Name.c_str(), &panel.Closeable, panel.Flags);
-						}
+				if (editorPanel->Enabled)
+				{
+					editorPanel->OnRender(ts);
+				}
 
-						panel.Render(ts);
+				if (m_ProjectChanged)
+				{
+					m_ProjectChanged = false;
+					return;
+				}
 
-						if (m_ProjectChanged)
-						{
-							m_ProjectChanged = false;
-							return;
-						}
-
-						// Pop window from the stack.
-						if (panel.UseBeginEnd)
-						{
-							ImGui::End();
-						}
-
-						// Pop style vars.
-						for (auto& style : panel.Styles)
-						{
-							ImGui::PopStyleVar();
-						}
-					}
-				});
+				if (editorPanel->GotDisabled())
+				{
+					editorPanel->OnClose();
+				}
+			}
 		}
 
 		void EditorPanelSystem::OnDestroy()
 		{
+			for (EditorPanel* editorPanel : m_EditorPanels)
+			{
+				editorPanel->OnDestroy();
+			}
+			m_EditorPanels.clear();
+
+			m_CustomEditors.clear();
 		}
 	}
 }

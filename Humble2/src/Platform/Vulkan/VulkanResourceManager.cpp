@@ -68,6 +68,14 @@ namespace HBL2
 			texture->Update(bytes);
 		}
 	}
+	void VulkanResourceManager::ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc)
+	{
+		VulkanTexture* texture = GetTexture(handle);
+		if (texture != nullptr)
+		{
+			texture->ChangeTextureView(std::forward<const TextureViewDescriptor>(desc));
+		}
+	}
 	void VulkanResourceManager::TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle)
 	{
 		VulkanTexture* texture = GetTexture(handle);
@@ -153,6 +161,25 @@ namespace HBL2
 		vmaMapMemory(renderer->GetAllocator(), vulkanBuffer->Allocation, &data);
 		memcpy((void*)((char*)data + offset), (void*)((char*)vulkanBuffer->Data + offset), size);
 		vmaUnmapMemory(renderer->GetAllocator(), vulkanBuffer->Allocation);
+	}
+	void VulkanResourceManager::MapBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset, intptr_t size)
+	{
+		VulkanBindGroupCold* vulkanBindGroupCold = GetBindGroupCold(bindGroup);
+		if (vulkanBindGroupCold != nullptr && bufferIndex < vulkanBindGroupCold->Buffers.size())
+		{
+			if (size != 0)
+			{
+				MapBufferData(vulkanBindGroupCold->Buffers[bufferIndex].buffer, offset, size);
+				return;
+			}
+
+			VulkanBufferHot* vulkanBuffer = GetBufferHot(vulkanBindGroupCold->Buffers[bufferIndex].buffer);
+
+			if (vulkanBuffer != nullptr)
+			{
+				MapBufferData(vulkanBindGroupCold->Buffers[bufferIndex].buffer, offset, vulkanBuffer->ByteSize);
+			}
+		}
 	}
 	VulkanBuffer VulkanResourceManager::GetBuffer(Handle<Buffer> handle) const
 	{
@@ -241,6 +268,26 @@ namespace HBL2
 		VulkanShader shader = GetShader(handle);
 		return (uint64_t)shader.GetOrCreateVariant(variantDesc);
 	}
+	void VulkanResourceManager::SetShaderGlobalBindGroup(Handle<Shader> handle, Handle<BindGroup> bindGroupHandle)
+	{
+		VulkanShaderHot* shader = GetShaderHot(handle);
+
+		if (shader != nullptr)
+		{
+			shader->ShaderBindGroup = bindGroupHandle;
+		}
+	}
+	Handle<BindGroup> VulkanResourceManager::GetShaderGlobalBindGroup(Handle<Shader> handle)
+	{
+		VulkanShaderHot* shader = GetShaderHot(handle);
+
+		if (shader != nullptr)
+		{
+			return shader->ShaderBindGroup;
+		}
+
+		return Renderer::Instance->GetEmptyBindings();
+	}
 	VulkanShader VulkanResourceManager::GetShader(Handle<Shader> handle) const
 	{
 		VulkanShader shader;
@@ -265,7 +312,7 @@ namespace HBL2
 	{
 		// Caching mechanism so that materials with the same resources, use the same bind group.
 		uint16_t index = 0;
-		uint64_t descriptorHash = ResourceManager::Instance->GetBindGroupHash(desc);
+		uint64_t descriptorHash = ResourceManager::Instance->GetBindGroupHash(std::move(desc));
 
 		for (const auto& bindGroup : m_BindGroupSplitPool.GetDataColdPool())
 		{
@@ -287,7 +334,7 @@ namespace HBL2
 
 		VulkanBindGroup bindgroup;
 		Handle<BindGroup> bg = m_BindGroupSplitPool.Insert(&bindgroup.Hot, &bindgroup.Cold);
-		bindgroup.Initialize(std::forward<const BindGroupDescriptor>(desc));
+		bindgroup.Initialize(std::move(desc));
 
 		// Increase ref count of bindgroup.
 		bindgroup.Cold->TryAddRef();
@@ -297,6 +344,19 @@ namespace HBL2
 	void VulkanResourceManager::DeleteBindGroup(Handle<BindGroup> handle)
 	{
 		VulkanBindGroupCold* bindGroupCold = GetBindGroupCold(handle);
+
+		if (bindGroupCold == nullptr)
+		{
+			// Invalid handle or already deleted.
+			return;
+		}
+
+		VulkanBindGroupLayout* bindGroupLayout = GetBindGroupLayout(bindGroupCold->BindGroupLayout);
+		if (bindGroupLayout != nullptr && bindGroupLayout->CreatedFromReflection)
+		{
+			DeleteBindGroupLayout(bindGroupCold->BindGroupLayout);
+		}
+
 		if (bindGroupCold->ReleaseRefAndMaybeDelete())
 		{
 			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
@@ -346,19 +406,25 @@ namespace HBL2
 
 		uint64_t hash = 0;
 
+		uint64_t bufferHash = 0x517cc1b727220a95ULL;
+		uint64_t textureHash = 0x9e3779b97f4a7c15ULL;
+
 		for (const auto& bufferEntry : bindGroupCold->Buffers)
 		{
-			hash += bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code();
-			hash += bufferEntry.byteOffset;
-			hash += bufferEntry.range;
+			HashCombine(bufferHash, bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code());
+			HashCombine(bufferHash, bufferEntry.byteOffset);
+			HashCombine(bufferHash, bufferEntry.range);
 		}
 
-		for (const auto texture : bindGroupCold->Textures)
+		for (const auto& textureEntry : bindGroupCold->Textures)
 		{
-			hash += texture.HashKey() + typeid(Texture).hash_code();
+			HashCombine(textureHash, textureEntry.texture.HashKey() + typeid(Texture).hash_code());
+			HashCombine(textureHash, static_cast<uint64_t>(textureEntry.desiredLayout));
 		}
 
-		hash += bindGroupCold->BindGroupLayout.HashKey() + typeid(BindGroupLayout).hash_code();
+		HashCombine(hash, bufferHash);
+		HashCombine(hash, textureHash);
+		HashCombine(hash, bindGroupCold->BindGroupLayout.HashKey());
 
 		return hash;
 	}
@@ -366,23 +432,97 @@ namespace HBL2
 	// BindGroupsLayouts
 	Handle<BindGroupLayout> VulkanResourceManager::CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc)
 	{
-		return m_BindGroupLayoutPool.Insert(std::forward<const BindGroupLayoutDescriptor>(desc));
+		// Caching mechanism so that bind groups and shaders with the same layout, use the same bind group layout object.
+		uint16_t index = 0;
+		uint64_t layoutHash = ResourceManager::Instance->GetBindGroupLayoutHash(std::move(desc));
+
+		for (const auto& bindGroupLayout : m_BindGroupLayoutPool.GetDataPool())
+		{
+			uint64_t hash = CalculateBindGroupLayoutHash(&bindGroupLayout);
+
+			if (layoutHash == hash && bindGroupLayout.DebugName != nullptr)
+			{
+				VulkanBindGroupLayout* mutBindGroupLayout = (VulkanBindGroupLayout*)&bindGroupLayout;
+				if (mutBindGroupLayout->TryAddRef())
+				{
+					return m_BindGroupLayoutPool.GetHandleFromIndex(index);
+				}
+
+				break;
+			}
+
+			index++;
+		}
+
+		Handle<BindGroupLayout> layoutHandle = m_BindGroupLayoutPool.Insert(std::move(desc));
+		VulkanBindGroupLayout* bindGroupLayout = GetBindGroupLayout(layoutHandle);
+
+		// Increase ref count of bindgroup layout.
+		bindGroupLayout->TryAddRef();
+
+		return layoutHandle;
 	}
 	void VulkanResourceManager::DeleteBindGroupLayout(Handle<BindGroupLayout> handle)
 	{
-		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+		VulkanBindGroupLayout* bindGroupLayout = GetBindGroupLayout(handle);
+
+		if (bindGroupLayout == nullptr)
 		{
-			VulkanBindGroupLayout* bindGroupLayout = GetBindGroupLayout(handle);
-			if (bindGroupLayout != nullptr)
+			// Invalid handle or already deleted.
+			return;
+		}
+
+		if (bindGroupLayout->ReleaseRefAndMaybeDelete())
+		{
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
 			{
-				bindGroupLayout->Destroy();
-				m_BindGroupLayoutPool.Remove(handle);
-			}
-		});
+				VulkanBindGroupLayout* bindGroupLayout = GetBindGroupLayout(handle);
+				if (bindGroupLayout != nullptr)
+				{
+					bindGroupLayout->Destroy();
+					m_BindGroupLayoutPool.Remove(handle);
+				}
+			});
+		}
+	}
+	uint64_t VulkanResourceManager::GetBindGroupLayoutHash(Handle<BindGroupLayout> handle)
+	{
+		return CalculateBindGroupLayoutHash(GetBindGroupLayout(handle));
 	}
 	VulkanBindGroupLayout* VulkanResourceManager::GetBindGroupLayout(Handle<BindGroupLayout> handle) const
 	{
 		return m_BindGroupLayoutPool.Get(handle);
+	}
+	uint64_t VulkanResourceManager::CalculateBindGroupLayoutHash(const VulkanBindGroupLayout* bindGroupLayout)
+	{
+		if (bindGroupLayout == nullptr)
+		{
+			return 0;
+		}
+
+		uint64_t hash = 0;
+
+		uint64_t bufferHash = 0x517cc1b727220a95ULL;
+		uint64_t textureHash = 0x9e3779b97f4a7c15ULL;
+
+		for (const auto& bufferEntry : bindGroupLayout->BufferBindings)
+		{
+			HashCombine(bufferHash, bufferEntry.slot);
+			HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.type));
+			HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.visibility));
+		}
+
+		for (const auto& texture : bindGroupLayout->TextureBindings)
+		{
+			HashCombine(textureHash, texture.slot);
+			HashCombine(textureHash, static_cast<uint64_t>(texture.type));
+			HashCombine(textureHash, static_cast<uint64_t>(texture.visibility));
+		}
+
+		HashCombine(hash, bufferHash);
+		HashCombine(hash, textureHash);
+
+		return hash;
 	}
 	
 	// RenderPass

@@ -1,0 +1,36 @@
+Shader:
+  UUID: 15710767541953438415
+  Type: 2
+  BindGroup:
+    - u_Fog:
+        FOG_COLOR: [0.550000012, 0.649999976, 0.75]
+        FOG_START: 500
+        FOG_END: 1500
+        FOG_DENSITY: 0.000750000007
+        FOG_MODE: 2
+        FOG_TOP_Y: 50
+        FOG_BOTTOM_Y: -30
+  Variants:
+    - Variant: 233046723
+      RasterState:
+        Topology: 3
+        PolygonMode: 0
+        CullMode: 2
+        FrontFace: 1
+      BlendState:
+        Enabled: false
+        ColorOutputEnabled: true
+      DepthState:
+        Enabled: true
+        WriteEnabled: false
+        StencilEnabled: true
+        DepthTest: 1
+      ShaderConstantsState:
+        ShaderConstantBool0: false
+        ShaderConstantBool1: false
+        ShaderConstantBool2: false
+        ShaderConstantBool3: false
+        ShaderConstantBool4: false
+        ShaderConstantBool5: false
+        ShaderConstantBool6: false
+        ShaderConstantBool7: false

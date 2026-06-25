@@ -1,7 +1,7 @@
-﻿#include "SoundSystem.h"
+#include "SoundSystem.h"
 
-#include <Project\Project.h>
-#include <Sound\FmodSoundEngine.h>
+#include "Project/Project.h"
+#include "Sound/FmodSoundEngine.h"
 
 #include <unordered_set>
 

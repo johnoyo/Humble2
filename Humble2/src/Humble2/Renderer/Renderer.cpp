@@ -2,6 +2,7 @@
 
 #include "Device.h"
 #include "Core/Window.h"
+#include "Project/Project.h"
 
 #include <future>
 
@@ -11,6 +12,11 @@ namespace HBL2
 
 	void Renderer::Initialize()
 	{
+		// Retrieve project settings.
+		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
+
+		m_UniformRingBufferSize = MB(projectSettings.MaxUniformBufferMemory) * FrameCount;
+
 		uint32_t offset = 0;
 		uint32_t singleUBSize = m_UniformRingBufferSize / FrameCount;
 
@@ -22,6 +28,87 @@ namespace HBL2
 
 			offset += singleUBSize;
 		}
+
+		/*
+		 * Rules for declaring shader bindings:
+		 * - All bindings of the same type must reside in different binding slots regarless of their set.
+		 * - Different types of bindings can share the same slot if they are in different sets.
+		 */
+
+		// Global bindings layout for the 2D rendering.
+		m_GlobalBindingsLayout2D = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "global-bind-group-layout-2d",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM,
+				},
+			},
+		});
+
+		// Global bindings layout for the 3D rendering.
+		m_GlobalBindingsLayout3D = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "global-bind-group-layout-3d",
+			.textureBindings = {
+				{
+					.slot = 2,
+					.visibility = ShaderStage::FRAGMENT,
+				},
+			},
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM,
+				},
+				{
+					.slot = 1,
+					.visibility = ShaderStage::FRAGMENT,
+					.type = BufferBindingType::UNIFORM,
+				},
+			},
+		});
+
+		// Bindings layout for shadow rendering.
+		m_ShadowBindingsLayout = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "shadow-bindings-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+			},
+		});
+
+		// Dynamic bindings layout for rendering.
+		m_DynamicBindingsLayout = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "dynamic-bind-group-layout",
+			.bufferBindings = {
+				{
+					.slot = 4,
+					.visibility = ShaderStage::VERTEX,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+			},
+		});
+
+		// Global bindings layout for presenting to offscreen texture
+		m_GlobalPresentBindingsLayout = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "global-present-bind-group-layout",
+			.textureBindings = {
+				{
+					.slot = 0,
+					.visibility = ShaderStage::FRAGMENT,
+				},
+			},
+		});
+
+		// Empty bindings layout.
+		m_EmptyBindingsLayout = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "empty-bind-group-layout",
+		});
 
 		PreInitialize();
 
@@ -71,7 +158,7 @@ namespace HBL2
 			}
 		});
 
-		// Create shadow depth texture (Huge Shadow Atlas containing all the shadow textures).
+		// Create shadow depth texture (huge shadow atlas containing all the shadow textures).
 		ShadowAtlasTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "shadow-depth-target",
 			.dimensions = { g_ShadowAtlasSize, g_ShadowAtlasSize, 1 },
@@ -89,6 +176,12 @@ namespace HBL2
 		});
 
 		PostInitialize();
+
+		// Create empty bindings.
+		m_EmptyBindings = ResourceManager::Instance->CreateBindGroup({
+			.debugName = "empty-bind-group",
+			.layout = m_EmptyBindingsLayout,
+		});
 	}
 
 	void Renderer::Render(const FrameData& frameData)

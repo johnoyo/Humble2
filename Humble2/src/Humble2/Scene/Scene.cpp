@@ -2,18 +2,18 @@
 
 #include "ISystem.h"
 
-#include "Script\BuildEngine.h"
-#include "Project\Project.h"
+#include "Script/BuildEngine.h"
+#include "Project/Project.h"
 #include "SceneSerializer.h"
 
-#include "Systems\HierachySystem.h"
-#include "Systems\CameraSystem.h"
-#include "Systems\RenderingSystem.h"
-#include "Systems\SoundSystem.h"
-#include "Systems\Physics2dSystem.h"
-#include "Systems\Physics3dSystem.h"
-#include "Systems\TerrainSystem.h"
-#include "Systems\AnimationCurveSystem.h"
+#include "Systems/HierachySystem.h"
+#include "Systems/CameraSystem.h"
+#include "Systems/RenderingSystem.h"
+#include "Systems/SoundSystem.h"
+#include "Systems/Physics2dSystem.h"
+#include "Systems/Physics3dSystem.h"
+#include "Systems/TerrainSystem.h"
+#include "Systems/AnimationCurveSystem.h"
 
 #include "StructuralCommandBuffer.h"
 

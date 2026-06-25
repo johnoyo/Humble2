@@ -1,10 +1,10 @@
 #include "SceneSerializer.h"
 
-#include "Script\Script.h"
-#include "Script\BuildEngine.h"
-#include "Resources\ResourceManager.h"
-#include "Utilities\YamlUtilities.h"
-#include "Utilities\PrefabUtilities.h"
+#include "Script/Script.h"
+#include "Script/BuildEngine.h"
+#include "Resources/ResourceManager.h"
+#include "Utilities/YamlUtilities.h"
+#include "Utilities/PrefabUtilities.h"
 
 #include "EntitySerializer.h"
 
@@ -244,6 +244,12 @@ namespace HBL2
 			Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(prefabAssetHandle);
 			Handle<Prefab> prefabHandle = AssetManager::Instance->GetAsset<Prefab>(prefabAssetHandle);
 			Prefab* prefab = ResourceManager::Instance->GetPrefab(prefabHandle);
+
+			if (prefabAsset == nullptr || prefab == nullptr)
+			{
+				HBL2_CORE_ERROR("Could not load prefab with UUID: {}", prefabUUID);
+				continue;
+			}
 
 			PrefabUtilities::Get().Update(prefabAsset, prefab, m_Scene, entity, true, true);
 		}

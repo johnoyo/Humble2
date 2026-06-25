@@ -1,20 +1,20 @@
 #pragma once
 
-#include "Resources\ResourceManager.h"
+#include "Resources/ResourceManager.h"
 
-#include "Resources\Pool.h"
-#include "Resources\SplitPool.h"
-#include "Resources\Types.h"
-#include "Resources\TypeDescriptors.h"
+#include "Resources/Pool.h"
+#include "Resources/SplitPool.h"
+#include "Resources/Types.h"
+#include "Resources/TypeDescriptors.h"
 
-#include "Resources\VulkanBuffer.h"
-#include "Resources\VulkanShader.h"
-#include "Resources\VulkanTexture.h"
-#include "Resources\VulkanFrameBuffer.h"
-#include "Resources\VulkanBindGroup.h"
-#include "Resources\VulkanBindGroupLayout.h"
-#include "Resources\VulkanRenderPass.h"
-#include "Resources\VulkanRenderPassLayout.h"
+#include "Resources/VulkanBuffer.h"
+#include "Resources/VulkanShader.h"
+#include "Resources/VulkanTexture.h"
+#include "Resources/VulkanFrameBuffer.h"
+#include "Resources/VulkanBindGroup.h"
+#include "Resources/VulkanBindGroupLayout.h"
+#include "Resources/VulkanRenderPass.h"
+#include "Resources/VulkanRenderPassLayout.h"
 
 namespace HBL2
 {
@@ -31,6 +31,7 @@ namespace HBL2
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) override;
 		virtual void DeleteTexture(Handle<Texture> handle) override;
 		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) override;
+		virtual void ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc) override;
 		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle) override;
 		virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) override;
 		virtual void* GetTextureData(Handle<Texture> handle) override;
@@ -44,6 +45,7 @@ namespace HBL2
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override;
 		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
 		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) override;
+		virtual void MapBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset = 0, intptr_t size = 0) override;
 		VulkanBuffer GetBuffer(Handle<Buffer> handle) const;
 		VulkanBufferHot* GetBufferHot(Handle<Buffer> handle) const;
 		VulkanBufferCold* GetBufferCold(Handle<Buffer> handle) const;
@@ -59,6 +61,8 @@ namespace HBL2
 		virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) override;
 		virtual void DeleteShader(Handle<Shader> handle) override;
 		virtual uint64_t GetOrAddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc) override;
+		virtual void SetShaderGlobalBindGroup(Handle<Shader> handle, Handle<BindGroup> bindGroupHandle) override;
+		virtual Handle<BindGroup> GetShaderGlobalBindGroup(Handle<Shader> handle) override;
 		VulkanShader GetShader(Handle<Shader> handle) const;
 		VulkanShaderHot* GetShaderHot(Handle<Shader> handle) const;
 		VulkanShaderCold* GetShaderCold(Handle<Shader> handle) const;
@@ -75,6 +79,7 @@ namespace HBL2
 		// BindGroupsLayouts
 		virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) override;
 		virtual void DeleteBindGroupLayout(Handle<BindGroupLayout> handle) override;
+		virtual uint64_t GetBindGroupLayoutHash(Handle<BindGroupLayout> handle) override;
 		VulkanBindGroupLayout* GetBindGroupLayout(Handle<BindGroupLayout> handle) const;
 
 		// RenderPass
@@ -101,5 +106,6 @@ namespace HBL2
 
 	private:
 		uint64_t CalculateBindGroupHash(const VulkanBindGroupCold* bindGroupCold);
+		uint64_t CalculateBindGroupLayoutHash(const VulkanBindGroupLayout* bindGroupLayout);
 	};
 }

@@ -2,11 +2,11 @@
 
 #include "JoltDebugRenderer.h"
 
-#include "Core\Time.h"
-#include "Core\Allocators.h"
-#include "Resources\ResourceManager.h"
-#include "Systems\AnimationCurveSystem.h"
-#include "Utilities\Collections\Collections.h"
+#include "Core/Time.h"
+#include "Core/Allocators.h"
+#include "Resources/ResourceManager.h"
+#include "Systems/AnimationCurveSystem.h"
+#include "Utilities/Collections/Collections.h"
 
 namespace HBL2
 {
@@ -40,12 +40,12 @@ namespace HBL2
 
 			if (ioSettings.mIsSensor)
 			{
-				Physics::TriggerEnterEvent triggerEnterEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
+				Physics::TriggerEnterEvent triggerEnterEvent = { Entity::UnPack(inBody1.GetUserData()), Entity::UnPack(inBody2.GetUserData()) };
 				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Enter, &triggerEnterEvent);
 			}
 			else
 			{
-				Physics::CollisionEnterEvent collisionEnterEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
+				Physics::CollisionEnterEvent collisionEnterEvent = { Entity::UnPack(inBody1.GetUserData()), Entity::UnPack(inBody2.GetUserData()) };
 				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Enter, &collisionEnterEvent);
 			}
 		}
@@ -54,12 +54,12 @@ namespace HBL2
 		{
 			if (ioSettings.mIsSensor)
 			{
-				Physics::TriggerStayEvent triggerStayEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
+				Physics::TriggerStayEvent triggerStayEvent = { Entity::UnPack(inBody1.GetUserData()), Entity::UnPack(inBody2.GetUserData()) };
 				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Stay, &triggerStayEvent);
 			}
 			else
 			{
-				Physics::CollisionEnterEvent collisionEnterEvent = { (Entity)inBody1.GetUserData(), (Entity)inBody2.GetUserData() };
+				Physics::CollisionEnterEvent collisionEnterEvent = { Entity::UnPack(inBody1.GetUserData()), Entity::UnPack(inBody2.GetUserData()) };
 				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Stay, &collisionEnterEvent);
 			}
 		}
@@ -78,12 +78,13 @@ namespace HBL2
 
 			if (bodyIterface.GetObjectLayer(body1ID) == Layers::TRIGGER || bodyIterface.GetObjectLayer(body2ID) == Layers::TRIGGER)
 			{
-				Physics::TriggerExitEvent triggerExitEvent = { (Entity)bodyIterface.GetUserData(body1ID), (Entity)bodyIterface.GetUserData(body2ID) };
+
+				Physics::TriggerExitEvent triggerExitEvent = { Entity::UnPack(bodyIterface.GetUserData(body1ID)), Entity::UnPack(bodyIterface.GetUserData(body2ID)) };
 				m_Engine->DispatchTriggerEvent(Physics::CollisionEventType::Exit, &triggerExitEvent);
 			}
 			else
 			{
-				Physics::CollisionExitEvent collisionExitEvent = { (Entity)bodyIterface.GetUserData(body1ID), (Entity)bodyIterface.GetUserData(body2ID) };
+				Physics::CollisionExitEvent collisionExitEvent = { Entity::UnPack(bodyIterface.GetUserData(body1ID)), Entity::UnPack(bodyIterface.GetUserData(body2ID)) };
 				m_Engine->DispatchCollisionEvent(Physics::CollisionEventType::Exit, &collisionExitEvent);
 			}
 		}
@@ -119,7 +120,7 @@ namespace HBL2
 		HBL2_CORE_TRACE(buffer);
 	}
 
-	void JoltPhysicsEngine::Initialize(Scene* ctx)
+	void JoltPhysicsEngine::Initialize(Scene* ctx, const PhysicsEngine3DSpecification& spec)
 	{
 		m_Context = ctx;
 
@@ -128,20 +129,17 @@ namespace HBL2
 		JPH::Factory::sInstance = new JPH::Factory();
 		JPH::RegisterTypes();
 
-		m_TempAllocator = new JPH::TempAllocatorImpl(50_MB);
+		m_TempAllocator = new JPH::TempAllocatorImpl(MB(spec.MaxScratchMemory));
 		m_JobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, -1);
 
-		const uint32_t cMaxBodies = 65536;
 		const uint32_t cNumBodyMutexes = 0;
-		const uint32_t cMaxBodyPairs = 65536;
-		const uint32_t cMaxContactConstraints = 10240;
 
 		m_PhysicsSystem = new JPH::PhysicsSystem;
 
-		m_PhysicsSystem->Init(cMaxBodies,
+		m_PhysicsSystem->Init(spec.MaxBodies,
 			cNumBodyMutexes,
-			cMaxBodyPairs,
-			cMaxContactConstraints,
+			spec.MaxBodyPairs,
+			spec.MaxContactConstraints,
 			m_BroadPhaseLayerInterface,
 			m_ObjectVsBroadPhaseLayerFilter,
 			m_ObjectVsObjectLayerFilter);
@@ -150,6 +148,7 @@ namespace HBL2
 
 		// Register collision listener to dispatch events.
 		m_PhysicsSystem->SetContactListener(new HumbleContactListener(this, m_PhysicsSystem));
+		m_PhysicsSystem->SetGravity({ spec.GravityForce.x, spec.GravityForce.y, spec.GravityForce.z });
 
 		// The main way to interact with the bodies in the physics system is through the body interface.
 		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
@@ -648,7 +647,7 @@ namespace HBL2
 		}
 
 		// Maybe use the entity ID here?
-		uint64_t packedEntity = (static_cast<uint64_t>(static_cast<uint32_t>(entity.Gen)) << 32) | static_cast<uint64_t>(static_cast<uint32_t>(entity.Idx));
+		uint64_t packedEntity = entity.Pack();
 		body->SetUserData((JPH::uint64)packedEntity);
 		rb.BodyID = GetPhysicsIDFromBodyID(body->GetID());
 	}

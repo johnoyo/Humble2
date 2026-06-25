@@ -2,15 +2,15 @@
 
 #include "Components.h"
 
-#include "ECS\Entity.h"
-#include "ECS\Registry.h"
-#include "ECS\Reflect.h"
+#include "ECS/Entity.h"
+#include "ECS/Registry.h"
+#include "ECS/Reflect.h"
 
-#include "Utilities\Random.h"
-#include "Utilities\Allocators\Arena.h"
-#include "Utilities\Collections\Collections.h"
-#include "Utilities\Collections\HashMap.h"
-#include "Utilities\Collections\StaticString.h"
+#include "Utilities/Random.h"
+#include "Utilities/Allocators/Arena.h"
+#include "Utilities/Collections/Collections.h"
+#include "Utilities/Collections/HashMap.h"
+#include "Utilities/Collections/StaticString.h"
 
 namespace HBL2
 {
@@ -53,27 +53,8 @@ namespace HBL2
 		const Scene* scene = nullptr;
 		uint64_t epoch = 0;
 
-		bool Has(Entity e) const
-		{
-#if !DIST
-			if (!scene || scene->Epoch() != epoch)
-			{
-				return false;
-			}
-#endif
-			return scene && scene->Epoch() == epoch && storage->Has(e);
-		}
-
-		const T* TryGet(Entity e) const
-		{
-#if !DIST
-			if (!scene || scene->Epoch() != epoch)
-			{
-				return nullptr;
-			}
-#endif
-			return storage->Has(e) ? (T*)storage->Get(e) : nullptr;
-		}
+        bool Has(Entity e) const;
+        const T* TryGet(Entity e) const;
 	};
 
 	template<class T>
@@ -83,28 +64,12 @@ namespace HBL2
 		Scene* scene = nullptr;
 		uint64_t epoch = 0;
 
-		bool Has(Entity e) const
-		{
-#if !DIST
-			if (!scene || scene->Epoch() != epoch)
-			{
-				return false;
-			}
-#endif
-			return scene && scene->Epoch() == epoch && storage->Has(e);
-		}
-
-		T* TryGet(Entity e) const
-		{
-#if !DIST
-			if (!scene || scene->Epoch() != epoch)
-			{
-				return nullptr;
-			}
-#endif
-			return storage->Has(e) ? (T*)storage->Get(e) : nullptr;
-		}
+        bool Has(Entity e) const;
+        T* TryGet(Entity e) const;
 	};
+
+    template<typename T, typename U>
+    class Pool;
 
 	class HBL2_API Scene
 	{
@@ -257,4 +222,52 @@ namespace HBL2
 		void PlaybackStructuralChanges();
 		void AdvanceEpoch();
 	};
+
+    template<class T>
+    bool LookupRO<T>::Has(Entity e) const
+    {
+#if !DIST
+        if (!scene || scene->Epoch() != epoch)
+        {
+            return false;
+        }
+#endif
+        return scene && scene->Epoch() == epoch && storage->Has(e);
+    }
+
+    template<class T>
+    const T* LookupRO<T>::TryGet(Entity e) const
+    {
+#if !DIST
+        if (!scene || scene->Epoch() != epoch)
+        {
+            return nullptr;
+        }
+#endif
+        return storage->Has(e) ? (T*)storage->Get(e) : nullptr;
+    }
+
+    template<class T>
+    bool LookupRW<T>::Has(Entity e) const
+    {
+#if !DIST
+        if (!scene || scene->Epoch() != epoch)
+        {
+            return false;
+        }
+#endif
+        return scene && scene->Epoch() == epoch && storage->Has(e);
+    }
+    
+    template<class T>
+    T* LookupRW<T>::TryGet(Entity e) const
+    {
+#if !DIST
+        if (!scene || scene->Epoch() != epoch)
+        {
+            return nullptr;
+        }
+#endif
+        return storage->Has(e) ? (T*)storage->Get(e) : nullptr;
+    }
 }

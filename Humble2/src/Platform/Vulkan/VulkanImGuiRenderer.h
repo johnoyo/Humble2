@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ImGui\ImGuiRenderer.h"
-#include "Core\Window.h"
+#include "ImGui/ImGuiRenderer.h"
+#include "Core/Window.h"
 
 #include "VulkanDevice.h"
 #include "VulkanRenderer.h"

@@ -1,69 +1,99 @@
-#include "Systems\EditorPanelSystem.h"
+#include "PlayStopPanel.h"
 
-#include "Physics/PhysicsEngine2D.h"
-#include "Physics/PhysicsEngine3D.h"
+#include "Core/Context.h"
+#include "Scene/SceneManager.h"
+#include "ImGui/ImGuiRenderer.h"
+#include "Systems/EditorPanelSystem.h"
 
-namespace HBL2
+namespace HBL2::Editor
 {
-	namespace Editor
+	PlayStopPanel::PlayStopPanel(const std::string& name, EditorPanelSystem* owner)
 	{
-		void EditorPanelSystem::DrawPlayStopPanel()
+		m_Owner = owner;
+		Name = name;
+	}
+
+	void PlayStopPanel::OnAttach()
+	{
+	}
+
+	void PlayStopPanel::OnCreate()
+	{
+	}
+
+	void PlayStopPanel::OnOpen()
+	{
+	}
+
+	void PlayStopPanel::OnRender(float ts)
+	{
+		ImGui::Begin(Name.c_str(), &m_CloseState, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse);
+
+		if (ImGui::Button("Play"))
 		{
-			static bool isPlaying = false;
+			Context::Mode = Mode::Runtime;
 
-			if (ImGui::Button("Play"))
+			if (!m_Owner->m_ActiveSceneTemp.IsValid())
 			{
-				Context::Mode = Mode::Runtime;
+				m_Owner->m_ActiveSceneTemp = Context::ActiveScene;
 
-				if (!m_ActiveSceneTemp.IsValid())
-				{
-					m_ActiveSceneTemp = Context::ActiveScene;
+				auto* activeScene = m_Owner->m_ActiveScene;
+				auto& activeSceneDesc = activeScene->GetDescriptor();
 
-					auto playSceneHandle = ResourceManager::Instance->CreateScene({
-						.name = m_ActiveScene->GetName() + "(Clone)",
-						.maxEntities = m_ActiveScene->GetDescriptor().maxEntities,
-						.maxComponents = m_ActiveScene->GetDescriptor().maxComponents,
-						.maxSystems = m_ActiveScene->GetDescriptor().maxSystems,
-						.maxStructuralCommandsPerFramePerThread = m_ActiveScene->GetDescriptor().maxStructuralCommandsPerFramePerThread,
-						.maxJobsPerSystem = m_ActiveScene->GetDescriptor().maxJobsPerSystem,
-						.useStructuralCommandBuffer = m_ActiveScene->GetDescriptor().useStructuralCommandBuffer,
-					});
+				auto playSceneHandle = ResourceManager::Instance->CreateScene({
+					.name = activeScene->GetName() + "(Clone)",
+					.maxEntities = activeSceneDesc.maxEntities,
+					.maxComponents = activeSceneDesc.maxComponents,
+					.maxSystems = activeSceneDesc.maxSystems,
+					.maxStructuralCommandsPerFramePerThread = activeSceneDesc.maxStructuralCommandsPerFramePerThread,
+					.maxJobsPerSystem = activeSceneDesc.maxJobsPerSystem,
+					.useStructuralCommandBuffer = activeSceneDesc.useStructuralCommandBuffer,
+				});
 
-					Scene* playScene = ResourceManager::Instance->GetScene(playSceneHandle);
-					Scene::Copy(m_ActiveScene, playScene);
-					SceneManager::Get().LoadPlaymodeScene(playSceneHandle, true);
-				}
-
-				isPlaying = true;
+				Scene* playScene = ResourceManager::Instance->GetScene(playSceneHandle);
+				Scene::Copy(m_Owner->m_ActiveScene, playScene);
+				SceneManager::Get().LoadPlaymodeScene(playSceneHandle, true);
 			}
 
-			ImGui::SameLine();
-
-			if (ImGui::Button("Stop"))
-			{
-				Context::Mode = Mode::Editor;
-
-				if (m_ActiveSceneTemp.IsValid())
-				{
-					SceneManager::Get().LoadPlaymodeScene(m_ActiveSceneTemp, false);
-					m_ActiveSceneTemp = {};
-				}
-
-				isPlaying = false;
-			}
-
-			ImGui::SameLine();
-
-			if (isPlaying)
-			{
-				ImGui::Text("Playing ... ");
-			}
-			else
-			{
-				ImGui::Text("Editing ... ");
-			}
-
-			ImGui::SameLine();
+			m_IsPlaying = true;
 		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Stop"))
+		{
+			Context::Mode = Mode::Editor;
+
+			if (m_Owner->m_ActiveSceneTemp.IsValid())
+			{
+				SceneManager::Get().LoadPlaymodeScene(m_Owner->m_ActiveSceneTemp, false);
+				m_Owner->m_ActiveSceneTemp = {};
+			}
+
+			m_IsPlaying = false;
+		}
+
+		ImGui::SameLine();
+
+		if (m_IsPlaying)
+		{
+			ImGui::Text("Playing ... ");
+		}
+		else
+		{
+			ImGui::Text("Editing ... ");
+		}
+
+		ImGui::SameLine();
+
+		ImGui::End();
+	}
+
+	void PlayStopPanel::OnClose()
+	{
+	}
+
+	void PlayStopPanel::OnDestroy()
+	{
 	}
 }
