@@ -14,7 +14,7 @@ namespace HBL2
 
 		m_AssetPool.Initialize(m_Spec.Assets);
 
-		uint32_t byteSize = Allocator::CalculateSoAByteSize<UUID, Handle<Asset>, Handle<Asset>>(2 * m_Spec.Assets) * 2;
+		uint32_t byteSize = (uint32_t)Allocator::CalculateSoAByteSize<UUID, Handle<Asset>, Handle<Asset>>(2 * m_Spec.Assets) * 2;
 		constexpr size_t resourceTasksByteSize = 192_B * 1024;
 		constexpr size_t resourceTasksReserveBytes = resourceTasksByteSize * 2;
 

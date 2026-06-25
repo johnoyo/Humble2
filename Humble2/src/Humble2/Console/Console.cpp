@@ -7,7 +7,7 @@ namespace HBL2
 
 	void Console::Initialize()
 	{
-		const uint32_t byteSize = Allocator::CalculateSoAByteSize<MessageSlot>(s_MaxMessageHistoryLength) * 2;
+		const uint32_t byteSize = (uint32_t)Allocator::CalculateSoAByteSize<MessageSlot>(s_MaxMessageHistoryLength) * 2;
 
 		m_Reservation = Allocator::Arena.Reserve("ConsolePool", byteSize);
 		m_Arena.Initialize(&Allocator::Arena, byteSize, m_Reservation);

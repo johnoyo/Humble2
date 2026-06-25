@@ -1395,7 +1395,7 @@ namespace HBL2
 		uint32_t index = 0;
 
 		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
-		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), uniformOffset);
+		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), (uint32_t)uniformOffset);
 
 		CreateAlignedMatrixArray(sceneRenderData, sceneRenderData->m_LightData.LightSpaceMatrices, 16, alignedSize);
 

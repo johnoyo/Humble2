@@ -362,5 +362,6 @@ MigrationBackup/
 *.pbxproj
 *.xcbkptlist
 *.xcuserstate
+*.xcsettings
 *.xcworkspacedata
 

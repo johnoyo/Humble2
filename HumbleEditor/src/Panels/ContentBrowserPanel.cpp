@@ -790,7 +790,7 @@ namespace HBL2::Editor
 			// Topology.
 			{
 				const char* options[] = { "Point List", "Line List", "Line Strip", "Triangle List", "Triangle Strip", "Triangle fan", "Patch List" };
-				int currentItem = m_Topology;
+				int currentItem = (int)m_Topology;
 
 				if (ImGui::Combo("Topology", &currentItem, options, IM_ARRAYSIZE(options)))
 				{
@@ -801,7 +801,7 @@ namespace HBL2::Editor
 			// Polygon mode.
 			{
 				const char* options[] = { "Fill", "Line", "Point" };
-				int currentItem = m_PolygonMode;
+				int currentItem = (int)m_PolygonMode;
 
 				if (ImGui::Combo("Polygon Mode", &currentItem, options, IM_ARRAYSIZE(options)))
 				{
@@ -812,7 +812,7 @@ namespace HBL2::Editor
 			// Cull mode.
 			{
 				const char* options[] = { "None", "Front", "Back", "Front and Back" };
-				int currentItem = m_CullMode;
+				int currentItem = (int)m_CullMode;
 
 				if (ImGui::Combo("Cull Mode", &currentItem, options, IM_ARRAYSIZE(options)))
 				{
@@ -823,7 +823,7 @@ namespace HBL2::Editor
 			// Front face.
 			{
 				const char* options[] = { "Clockwise", "Counter Clockwise" };
-				int currentItem = m_FrontFace;
+				int currentItem = (int)m_FrontFace;
 
 				if (ImGui::Combo("Front Face", &currentItem, options, IM_ARRAYSIZE(options)))
 				{
@@ -851,7 +851,7 @@ namespace HBL2::Editor
 			// Depth test mode.
 			{
 				const char* options[] = { "Less", "Less Equal", "Greater", "Greater Equal", "Equal", "Not Equal", "Always", "Never" };
-				int currentItem = m_DepthTest;
+				int currentItem = (int)m_DepthTest;
 
 				if (ImGui::Combo("Depth Test", &currentItem, options, IM_ARRAYSIZE(options)))
 				{

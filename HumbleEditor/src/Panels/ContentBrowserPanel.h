@@ -62,15 +62,15 @@ namespace HBL2::Editor
 
 		std::string m_SearchQuery;
 
-		int m_Topology = 3;
-		int m_PolygonMode = 0;
-		int m_CullMode = 2;
-		int m_FrontFace = 1;
+        uint64_t m_Topology = 3;
+        uint64_t m_PolygonMode = 0;
+        uint64_t m_CullMode = 2;
+        uint64_t m_FrontFace = 1;
 		bool m_BlendEnabled = false;
 		bool m_ColorOutput = true;
 		bool m_DepthEnabled = true;
 		bool m_DepthWriteEnabled = false;
-		int m_DepthTest = 1;
+        uint64_t m_DepthTest = 1;
 		bool m_StencilEnabled = true;
 
 		JobContext m_MaterialTextureLoadingCtx;

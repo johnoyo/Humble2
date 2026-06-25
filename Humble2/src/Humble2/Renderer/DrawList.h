@@ -56,7 +56,7 @@ namespace HBL2
 		void Sort();
 		void Reset();
 
-		const uint32_t GetCount() const { return m_Draws.size(); }
+		const uint32_t GetCount() const { return (uint32_t)m_Draws.size(); }
 		const Span<const LocalDrawStream> GetDraws() const { return { m_Draws.data(), m_Draws.size() }; }
 
 	private:

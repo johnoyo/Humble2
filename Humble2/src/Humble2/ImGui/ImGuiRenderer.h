@@ -16,6 +16,7 @@ namespace HBL2
 	class HBL2_API ImGuiRenderer
 	{
 	public:
+        virtual ~ImGuiRenderer() = default;
 		static ImGuiRenderer* Instance;
 
 		void Create(const ImGuiRendererSpecification&& spec);

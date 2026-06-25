@@ -19,7 +19,7 @@ namespace HBL2
 			Release,
 			Distribution,
 		};
-
+        virtual ~BuildEngine() = default;
 		static BuildEngine* Instance;
 
 		void Initialize();

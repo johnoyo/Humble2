@@ -31,7 +31,6 @@ namespace HBL2::Editor
 
 	void TopBarPanel::OnRender(float ts)
 	{
-		Scene* ctx = m_Owner->m_Context;
 		Scene* activeScene = m_Owner->m_ActiveScene;
 
 		if (ImGui::BeginMainMenuBar())
@@ -61,7 +60,7 @@ namespace HBL2::Editor
 						// Create and open new project
 						HBL2::Project::Create(projectName)->Save(filepath);
 
-						auto assetHandle = AssetManager::Instance->CreateAsset({
+						AssetManager::Instance->CreateAsset({
 							.debugName = "Empty Scene",
 							.filePath = HBL2::Project::GetActive()->GetSpecification().StartingScene,
 							.type = AssetType::Scene,

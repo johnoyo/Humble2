@@ -15,7 +15,7 @@ namespace HBL2
 		// Retrieve project settings.
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
-		m_UniformRingBufferSize = MB(projectSettings.MaxUniformBufferMemory) * FrameCount;
+		m_UniformRingBufferSize = (uint32_t)MB(projectSettings.MaxUniformBufferMemory) * FrameCount;
 
 		uint32_t offset = 0;
 		uint32_t singleUBSize = m_UniformRingBufferSize / FrameCount;
@@ -113,7 +113,7 @@ namespace HBL2
 		PreInitialize();
 
 		// With 32MB per frame in flight, we can bump allocate data for ~200K draws, should be plenty enough for almost all use cases.
-		TempUniformRingBuffer = new UniformRingBuffer(m_UniformRingBufferSize, Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
+		TempUniformRingBuffer = new UniformRingBuffer(m_UniformRingBufferSize, (uint32_t)Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
 
 		IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "intermediate-color-target",

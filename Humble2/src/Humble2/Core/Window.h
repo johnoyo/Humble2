@@ -27,7 +27,7 @@ namespace HBL2
 	class HBL2_API Window
 	{
 	public:
-		~Window() = default;
+		virtual ~Window() = default;
 		static Window* Instance;
 
 		void Initialize(const WindowSpecification&& spec);

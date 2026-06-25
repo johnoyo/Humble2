@@ -109,6 +109,8 @@ namespace HBL2
 
 		auto& prefabTransform = activeScene->GetComponent<Component::Transform>(clone);
 		prefabTransform.Translation = position;
+        
+        return clone;
 	}
 
 	Entity Prefab::Instantiate(Handle<Prefab> prefabHandle)

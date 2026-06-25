@@ -758,7 +758,7 @@ namespace HBL2::Editor
 								});
 
 							// Clamp LODs and enforce non-decreasing distances.
-							for (size_t i = 0; i < t.DetailLevels.size(); ++i)
+							for (uint32_t i = 0; i < t.DetailLevels.size(); ++i)
 							{
 								t.DetailLevels[i].Lod = std::max(0, t.DetailLevels[i].Lod);
 

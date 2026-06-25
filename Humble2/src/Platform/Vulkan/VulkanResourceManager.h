@@ -70,7 +70,7 @@ namespace HBL2
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) override;
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) override;
-		virtual void UpdateBindGroup(Handle<BindGroup> handle);
+		virtual void UpdateBindGroup(Handle<BindGroup> handle) override;
 		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) override;
 		VulkanBindGroup GetBindGroup(Handle<BindGroup> handle) const;
 		VulkanBindGroupHot* GetBindGroupHot(Handle<BindGroup> handle) const;
