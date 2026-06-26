@@ -66,7 +66,8 @@ namespace HBL2
 	{
 		AssetManager::Instance->RegisterAssets();
 
-		const auto& startingSceneMetadataPath = Project::GetAssetFileSystemPath(s_ActiveProject->GetSpecification().StartingScene).string() + ".hblscene";
+        const auto& startingScenePath = s_ActiveProject->GetSpecification().StartingScene;
+		const auto& startingSceneMetadataPath = Project::GetAssetFileSystemPath(startingScenePath).string() + ".hblscene";
 
 		// Open metadata file to retrieve asset UUID.
 		std::ifstream stream(startingSceneMetadataPath);
@@ -77,7 +78,7 @@ namespace HBL2
 		{
 			// If it is a newly created project and the starting scene file is not created, create them.
 			HBL2_CORE_ERROR("Scene metadata file of starting scene not found: {0}", startingSceneMetadataPath);
-			assetUUID = std::hash<std::string>()(s_ActiveProject->GetSpecification().StartingScene.string());
+            assetUUID = AssetManager::Instance->GetUUIDFromPath(startingScenePath);
 			AssetManager::Instance->SaveAsset(assetUUID);
 		}
 		else

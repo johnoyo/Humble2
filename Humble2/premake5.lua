@@ -235,12 +235,12 @@ project "Humble2"
         {
             "glfw3",
 
-            -- Vulkan / MoltenVK
-            "vulkan",
+            -- Vulkan
+            "vulkan.1",
 
             -- Slang
             "slang",
-            "slang-compiler.0.2026.11",
+            "slang-compiler",
 
             -- Required Apple frameworks
             "Cocoa.framework",
@@ -263,11 +263,13 @@ project "Humble2"
 
             -- Slang dylibs -> HumbleEditor
             ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.0.2026.11.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-glslang-2026.11.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
 
             -- Slang dylibs -> HumbleApp
             ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang.dylib ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.dylib ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.0.2026.11.dylib ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-glslang-2026.11.dylib ../bin/" .. outputdir .. "/HumbleApp"),
 

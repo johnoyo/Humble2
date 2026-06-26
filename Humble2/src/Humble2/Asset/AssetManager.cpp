@@ -14,7 +14,7 @@ namespace HBL2
 
 		m_AssetPool.Initialize(m_Spec.Assets);
 
-		uint32_t byteSize = (uint32_t)Allocator::CalculateSoAByteSize<UUID, Handle<Asset>, Handle<Asset>>(2 * m_Spec.Assets) * 2;
+		uint32_t byteSize = (uint32_t)Allocator::CalculateSoAByteSize<std::filesystem::path, UUID, UUID, Handle<Asset>, Handle<Asset>>(2 * m_Spec.Assets) * 2;
 		constexpr size_t resourceTasksByteSize = 192_B * 1024;
 		constexpr size_t resourceTasksReserveBytes = resourceTasksByteSize * 2;
 
@@ -22,7 +22,8 @@ namespace HBL2
 		m_PoolArena.Initialize(&Allocator::Arena, byteSize, m_Reservation);
 		m_ResourceTaskPoolArena.Initialize(&Allocator::Arena, resourceTasksByteSize, 192, m_Reservation);
 
-		m_RegisteredAssetMap = MakeHMap<UUID, Handle<Asset>>(m_PoolArena, m_Spec.Assets);
+        m_RegisteredAssetMap = MakeHMap<UUID, Handle<Asset>>(m_PoolArena, m_Spec.Assets);
+		m_RegisteredAssetPathToUUIDMap = MakeHMap<std::filesystem::path, UUID>(m_PoolArena, m_Spec.Assets);
 		m_RegisteredAssets = MakeDArray<Handle<Asset>>(m_PoolArena, m_Spec.Assets);
 	}
 
@@ -52,7 +53,8 @@ namespace HBL2
 
 	Handle<Asset> AssetManager::CreateAsset(const AssetDescriptor&& desc)
 	{
-		auto handle = GetHandleFromUUID(std::hash<std::string>()(desc.filePath.string()));
+        auto assetUUID = GetUUIDFromPath(desc.filePath);
+		auto handle = GetHandleFromUUID(assetUUID);
 
 		if (IsAssetValid(handle))
 		{
@@ -63,6 +65,7 @@ namespace HBL2
 		m_RegisteredAssets.push_back(handle);
 
 		Asset* asset = GetAssetMetadata(handle);
+        m_RegisteredAssetPathToUUIDMap[desc.filePath] = asset->UUID;
 		m_RegisteredAssetMap[asset->UUID] = handle;
 
 		return handle;
@@ -88,8 +91,9 @@ namespace HBL2
 			{
 				Asset* asset = GetAssetMetadata(handle);
 				if (asset != nullptr)
-				{
-					m_RegisteredAssetMap.erase(asset->UUID);
+                {
+                    m_RegisteredAssetMap.erase(asset->UUID);
+                    m_RegisteredAssetPathToUUIDMap.erase(asset->FilePath);
 				}
 
 				auto assetIterator = std::find(m_RegisteredAssets.begin(), m_RegisteredAssets.end(), handle);
@@ -246,6 +250,7 @@ namespace HBL2
 
 		// Clear asset handle caches.
 		m_RegisteredAssets.clear();
+        m_RegisteredAssetPathToUUIDMap.clear();
 		m_RegisteredAssetMap.clear();
 
 		// Reregister built in shader assets.
@@ -253,14 +258,16 @@ namespace HBL2
 		{
 			m_RegisteredAssets.push_back(shaderAssetHandle);
 			Asset* asset = GetAssetMetadata(shaderAssetHandle);
-			m_RegisteredAssetMap[asset->UUID] = shaderAssetHandle;
-		}
+            m_RegisteredAssetPathToUUIDMap[asset->FilePath] = asset->UUID;
+            m_RegisteredAssetMap[asset->UUID] = shaderAssetHandle;
+        }
 
-		// Reregister built in material asset.
-		if (ShaderUtilities::Get().LitMaterialAsset.IsValid())
-		{
-			m_RegisteredAssets.push_back(ShaderUtilities::Get().LitMaterialAsset);
-			Asset* asset = GetAssetMetadata(ShaderUtilities::Get().LitMaterialAsset);
+        // Reregister built in material asset.
+        if (ShaderUtilities::Get().LitMaterialAsset.IsValid())
+        {
+            m_RegisteredAssets.push_back(ShaderUtilities::Get().LitMaterialAsset);
+            Asset* asset = GetAssetMetadata(ShaderUtilities::Get().LitMaterialAsset);
+            m_RegisteredAssetPathToUUIDMap[asset->FilePath] = asset->UUID;
 			m_RegisteredAssetMap[asset->UUID] = ShaderUtilities::Get().LitMaterialAsset;
 		}
 	}
@@ -270,6 +277,19 @@ namespace HBL2
 		JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
 		JobSystem::Get().Wait(ctx);
 	}
+
+    UUID AssetManager::GetUUIDFromPath(const std::filesystem::path& assetPath)
+    {
+        UUID assetUUID = 0;
+
+        auto it = m_RegisteredAssetPathToUUIDMap.find(assetPath);
+        if (it != m_RegisteredAssetPathToUUIDMap.end())
+        {
+            assetUUID = it->second;
+        }
+
+        return assetUUID;
+    }
 
 	Handle<Asset> AssetManager::GetHandleFromUUID(UUID assetUUID)
 	{

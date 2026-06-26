@@ -111,15 +111,17 @@ namespace HBL2::Editor
 						std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
 						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
 
-						AssetManager::Instance->SaveAsset(std::hash<std::string>()(relativePath.string()));
+                        UUID sceneUUID = AssetManager::Instance->GetUUIDFromPath(relativePath);
+                        AssetManager::Instance->SaveAsset(sceneUUID);
 
-						m_Owner->m_EditorScenePath = filepath;
-					}
-					else
-					{
-						auto relativePath = std::filesystem::relative(m_Owner->m_EditorScenePath, HBL2::Project::GetAssetDirectory());
+                        m_Owner->m_EditorScenePath = filepath;
+                    }
+                    else
+                    {
+                        auto relativePath = std::filesystem::relative(m_Owner->m_EditorScenePath, HBL2::Project::GetAssetDirectory());
 
-						AssetManager::Instance->SaveAsset(std::hash<std::string>()(relativePath.string()));
+                        UUID sceneUUID = AssetManager::Instance->GetUUIDFromPath(relativePath);
+						AssetManager::Instance->SaveAsset(sceneUUID);
 					}
 				}
 				else if (ImGui::MenuItem("Save Scene As"))
@@ -184,8 +186,7 @@ namespace HBL2::Editor
 						std::string filepath = HBL2::FileDialogs::OpenFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
 
 						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
-						UUID sceneUUID = std::hash<std::string>()(relativePath.string());
-
+                        UUID sceneUUID = AssetManager::Instance->GetUUIDFromPath(relativePath);
 						HBL2::SceneManager::Get().LoadScene(AssetManager::Instance->GetHandleFromUUID(sceneUUID), false);
 
 						m_Owner->m_EditorScenePath = filepath;

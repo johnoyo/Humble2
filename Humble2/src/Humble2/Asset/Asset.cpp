@@ -10,7 +10,7 @@ namespace HBL2
 		FilePath = desc.filePath;
 		Type = desc.type;
 
-		UUID = std::hash<std::string>()(FilePath.string());
+        UUID = Random::UInt64();
 	}
 
 	Asset::Asset(const MemoryOnlyAssetDescriptor&& desc)
@@ -19,7 +19,6 @@ namespace HBL2
 		FilePath = std::filesystem::path("");
 		Type = desc.type;
 		Indentifier = desc.PackedAssetResourceHandle;
-
 
 		UUID = Random::UInt64();
 

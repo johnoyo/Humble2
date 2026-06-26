@@ -315,8 +315,8 @@ namespace HBL2
 					// Draw image on top
 					ImGui::SetCursorScreenPos(ImVec2(position.x, position.y));
 					
-					UUID assetUUID = std::hash<std::string>()(m_Configuration.id);
-					Handle<Texture> textureHandle = AssetManager::Instance->GetAsset<Texture>(assetUUID);					
+                    UUID assetUUID = AssetManager::Instance->GetUUIDFromPath(m_Configuration.id);
+					Handle<Texture> textureHandle = AssetManager::Instance->GetAsset<Texture>(assetUUID);
 #if false
 					if (Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL)
 					{

@@ -263,7 +263,8 @@ namespace HBL2
 
 		Span<const Handle<Asset>> GetRegisteredAssets() { return { m_RegisteredAssets.data(), m_RegisteredAssets.size() }; }
 
-		Handle<Asset> GetHandleFromUUID(UUID assetUUID);
+        UUID GetUUIDFromPath(const std::filesystem::path& assetPath);
+        Handle<Asset> GetHandleFromUUID(UUID assetUUID);
 
 		void SaveAsset(UUID assetUUID);
 
@@ -287,7 +288,8 @@ namespace HBL2
 		Arena m_PoolArena;
 		PoolArena m_ResourceTaskPoolArena;
 
-		HMap<UUID, Handle<Asset>> m_RegisteredAssetMap = MakeEmptyHMap<UUID, Handle<Asset>>();
+        HMap<UUID, Handle<Asset>> m_RegisteredAssetMap = MakeEmptyHMap<UUID, Handle<Asset>>();
+		HMap<std::filesystem::path, UUID> m_RegisteredAssetPathToUUIDMap = MakeEmptyHMap<std::filesystem::path, UUID>();
 		DArray<Handle<Asset>> m_RegisteredAssets = MakeEmptyDArray<Handle<Asset>>();
 
 		moodycamel::ConcurrentQueue<StaticFunction<void(void), 128>> m_MainThreadCallbacks;

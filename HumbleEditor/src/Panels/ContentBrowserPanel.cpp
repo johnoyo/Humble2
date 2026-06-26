@@ -128,7 +128,7 @@ namespace HBL2::Editor
 
 				//ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 
-				UUID assetUUID = std::hash<std::string>()(relativePath);
+				UUID assetUUID = AssetManager::Instance->GetUUIDFromPath(relativePath);
 				Handle<Asset> assetHandle = AssetManager::Instance->GetHandleFromUUID(assetUUID);
 				Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 

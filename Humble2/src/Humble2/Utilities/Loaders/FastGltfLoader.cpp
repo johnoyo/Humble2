@@ -248,7 +248,7 @@ namespace HBL2
 
 					const auto& relativeTexturePath = FileUtils::RelativePath(texturePath, Project::GetAssetDirectory());
 
-					UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath);
+                    UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
 					textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
 					// If the texture asset has not been registered yet, register it now.
@@ -286,7 +286,7 @@ namespace HBL2
 						continue;
 					}
 
-					UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath.string());
+                    UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
 					textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
 					if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
@@ -307,7 +307,7 @@ namespace HBL2
 				}
 				else
 				{
-					UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath.string());
+                    UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
 					textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 					AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
 				}
@@ -340,7 +340,7 @@ namespace HBL2
 									return;
 								}
 
-								UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath.string());
+                                UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
 								textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
 								if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
@@ -361,7 +361,7 @@ namespace HBL2
 							}
 							else
 							{
-								UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath.string());
+                                UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
 								textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 								AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
 							}
@@ -405,7 +405,7 @@ namespace HBL2
 
 					const auto& relativeTexturePath = FileUtils::RelativePath(texturePath, Project::GetAssetDirectory());
 
-					UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath);
+                    UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
 					textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
 					// If the texture asset has not been registered yet, register it now.
@@ -440,7 +440,7 @@ namespace HBL2
 			{
 				const auto& relativeTexturePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Textures" / (std::string(glTFImage.name) + std::to_string(imageIndex) + ".png");
 				
-				UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath.string());
+                UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
 				textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
 				if (std::filesystem::exists(Project::GetAssetFileSystemPath(relativeTexturePath)))
@@ -491,7 +491,7 @@ namespace HBL2
 
 							const auto& relativeTexturePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Textures" / (std::string(glTFImage.name) + std::to_string(imageIndex) + ".png");
 
-							UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath.string());
+                            UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
 							textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
 							if (std::filesystem::exists(Project::GetAssetFileSystemPath(relativeTexturePath)))
@@ -650,7 +650,7 @@ namespace HBL2
 			}
 			else
 			{
-				UUID materialAssetUUID = std::hash<std::string>()(relativePath.string());
+                UUID materialAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativePath);
 				materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetUUID);
 			}
 
@@ -768,8 +768,8 @@ namespace HBL2
 			}
 			else
 			{
-				UUID materialAssetUUID = std::hash<std::string>()(relativePath.string());
-				materialAssetHandle = AssetManager::Instance->GetHandleFromUUID(materialAssetUUID);
+                UUID materialAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativePath);
+                materialAssetHandle = AssetManager::Instance->GetHandleFromUUID(materialAssetUUID);
 
 				// Recreate material asset file with new data.
 				ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
