@@ -1,0 +1,82 @@
+Shader:
+  UUID: 17370062664359595275
+  Type: 1
+  BindGroup:
+  Variants:
+    - Variant: 233046723
+      BlendState:
+        Enabled: false
+        ColorOutputEnabled: true
+      DepthState:
+        Enabled: true
+        WriteEnabled: false
+        StencilEnabled: true
+        DepthTest: 1
+      ShaderConstantsState:
+        ShaderConstantBool0: false
+        ShaderConstantBool1: false
+        ShaderConstantBool2: false
+        ShaderConstantBool3: false
+        ShaderConstantBool4: false
+        ShaderConstantBool5: false
+        ShaderConstantBool6: false
+        ShaderConstantBool7: false
+    - Variant: 3454272195
+      BlendState:
+        Enabled: false
+        ColorOutputEnabled: true
+      DepthState:
+        Enabled: true
+        WriteEnabled: false
+        StencilEnabled: true
+        DepthTest: 1
+      ShaderConstantsState:
+        ShaderConstantBool0: true
+        ShaderConstantBool1: true
+        ShaderConstantBool2: false
+        ShaderConstantBool3: false
+        ShaderConstantBool4: false
+        ShaderConstantBool5: false
+        ShaderConstantBool6: false
+        ShaderConstantBool7: false
+    - Variant: 1306788547
+      BlendState:
+        Enabled: false
+        ColorOutputEnabled: true
+      DepthState:
+        Enabled: true
+        WriteEnabled: false
+        StencilEnabled: true
+        DepthTest: 1
+      ShaderConstantsState:
+        ShaderConstantBool0: true
+        ShaderConstantBool1: false
+        ShaderConstantBool2: false
+        ShaderConstantBool3: false
+        ShaderConstantBool4: false
+        ShaderConstantBool5: false
+        ShaderConstantBool6: false
+        ShaderConstantBool7: false
+    - Variant: 165937859
+      RasterState:
+        Topology: 3
+        PolygonMode: 0
+        CullMode: 2
+        FrontFace: 1
+      BlendState:
+        Enabled: false
+        ColorOutputEnabled: true
+      DepthState:
+        Enabled: true
+        WriteEnabled: false
+        StencilEnabled: false
+        DepthTest: 1
+      ShaderConstantsState:
+        ShaderConstantBool0: false
+        ShaderConstantBool1: false
+        ShaderConstantBool2: false
+        ShaderConstantBool3: false
+        ShaderConstantBool4: false
+        ShaderConstantBool5: false
+        ShaderConstantBool6: false
+        ShaderConstantBool7: false

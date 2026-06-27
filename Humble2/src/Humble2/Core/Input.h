@@ -85,6 +85,15 @@ namespace HBL2
         static bool GetGamepadButtonPress(GamepadButton button, int gamepad = 0);
 
         /**
+         * @brief Checks if the specified gamepad button was released since the last frame.
+         *
+         * @param button The gamepad button to check for release state.
+         * @param gamepad The index of the gamepad to check (defaults to 0 for the first connected gamepad).
+         * @return True if the specified button was released since the last frame, false otherwise.
+         */
+        static bool GetGamepadButtonRelease(GamepadButton button, int gamepad = 0);
+
+        /**
          * @brief Returns the current value of the specified gamepad axis.
          *
          * @param axis The gamepad axis to get the value from.

@@ -1,6 +1,7 @@
 #include "ShaderUtilities.h"
 
 #include "YamlUtilities.h"
+#include "Asset/EditorAssetManager.h"
 #include "Collections/StaticDArray.h"
 
 #include "Project/Project.h"
@@ -542,9 +543,10 @@ namespace HBL2
     void ShaderUtilities::LoadBuiltInShaders()
     {
         JobContext ctx;
+        auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
         // Invalid shader
-        auto invalidShaderAssetHandle = AssetManager::Instance->CreateAsset({
+        auto invalidShaderAssetHandle = editorAssetManager->CreateAsset({
             .debugName = "invalid-shader-asset",
             .filePath = "assets/shaders/invalid.slang",
             .type = AssetType::Shader,
@@ -554,7 +556,7 @@ namespace HBL2
         auto* invalidShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(invalidShaderAssetHandle, &ctx);
 
         // Unlit shader
-        auto unlitShaderAssetHandle = AssetManager::Instance->CreateAsset({
+        auto unlitShaderAssetHandle = editorAssetManager->CreateAsset({
             .debugName = "unlit-shader-asset",
             .filePath = "assets/shaders/unlit.slang",
             .type = AssetType::Shader,
@@ -564,7 +566,7 @@ namespace HBL2
         auto* unlitShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(unlitShaderAssetHandle, &ctx);
 
         // Blinn-Phong shader
-        auto blinnPhongShaderAssetHandle = AssetManager::Instance->CreateAsset({
+        auto blinnPhongShaderAssetHandle = editorAssetManager->CreateAsset({
             .debugName = "blinn-phong-shader-asset",
             .filePath = "assets/shaders/blinn-phong.slang",
             .type = AssetType::Shader,
@@ -574,7 +576,7 @@ namespace HBL2
         auto* blinnPhongShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(blinnPhongShaderAssetHandle, &ctx);
 
         // PBR shader
-        auto pbrShaderAssetHandle = AssetManager::Instance->CreateAsset({
+        auto pbrShaderAssetHandle = editorAssetManager->CreateAsset({
             .debugName = "pbr-shader-asset",
             .filePath = "assets/shaders/pbr.slang",
             .type = AssetType::Shader,
@@ -614,7 +616,9 @@ namespace HBL2
 
     void ShaderUtilities::LoadBuiltInMaterials()
     {
-        LitMaterialAsset = AssetManager::Instance->CreateAsset({
+        auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
+        LitMaterialAsset = editorAssetManager->CreateAsset({
             .debugName = "lit-material-asset",
             .filePath = "assets/materials/lit.mat",
             .type = AssetType::Material,
@@ -654,7 +658,7 @@ namespace HBL2
             }
         }
 
-        std::ofstream fout(path.string() + ".hblshader", 0);
+        std::ofstream fout(path.string() + ".hblshader", std::ios::out | std::ios::trunc);
 
         ShaderDescriptor::RenderPipeline::PackedVariant variantHash = {};
 
@@ -982,11 +986,11 @@ namespace HBL2
             }
             catch (std::exception& e)
             {
-                HBL2_ERROR("Project directory creation failed: {0}", e.what());
+                HBL2_ERROR("Material metadata directory creation failed: {0}", e.what());
             }
         }
 
-        std::ofstream fout(path.string() + ".hblmat", 0);
+        std::ofstream fout(path.string() + ".hblmat", std::ios::out | std::ios::trunc);
 
         YAML::Emitter out;
         out << YAML::BeginMap;
@@ -1013,7 +1017,7 @@ namespace HBL2
             }
             catch (std::exception& e)
             {
-                HBL2_ERROR("Project directory creation failed: {0}", e.what());
+                HBL2_ERROR("Material directory creation failed: {0}", e.what());
             }
         }
 

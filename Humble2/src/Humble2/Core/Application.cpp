@@ -354,7 +354,7 @@ namespace HBL2
 		delete DebugRenderer::Instance;
 		DebugRenderer::Instance = nullptr;
 
-		AssetManager::Instance->DeregisterAssets();
+		AssetManager::Instance->Clean();
 		delete AssetManager::Instance;
 		AssetManager::Instance = nullptr;
 

@@ -61,6 +61,6 @@ namespace HBL2
             return false;
         }
 
-        return Input::GetKeyRelease(it->second.KeyboardKey);
+        return Input::GetKeyRelease(it->second.KeyboardKey) || Input::GetGamepadButtonRelease(it->second.GamepadKey);
     }
 }

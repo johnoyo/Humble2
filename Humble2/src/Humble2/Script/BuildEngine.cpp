@@ -1,6 +1,7 @@
 #include "BuildEngine.h"
 
 #include "Asset/AssetManager.h"
+#include "Asset/EditorAssetManager.h"
 #include "Project/Project.h"
 #include "Scene/ISystem.h"
 
@@ -151,9 +152,11 @@ namespace HBL2
 
 	Handle<Asset> BuildEngine::CreateSystemFile(const std::filesystem::path& currentDir, const std::string& systemName)
 	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
 		auto relativePath = std::filesystem::relative(currentDir / (systemName + ".h"), HBL2::Project::GetAssetDirectory());
 
-		auto scriptAssetHandle = AssetManager::Instance->CreateAsset({
+		auto scriptAssetHandle = editorAssetManager->CreateAsset({
 			.debugName = "script-asset",
 			.filePath = relativePath,
 			.type = AssetType::Script,
@@ -183,9 +186,11 @@ namespace HBL2
 
 	Handle<Asset> BuildEngine::CreateComponentFile(const std::filesystem::path& currentDir, const std::string& componentName)
 	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
 		auto relativePath = std::filesystem::relative(currentDir / (componentName + ".h"), HBL2::Project::GetAssetDirectory());
 
-		auto scriptAssetHandle = AssetManager::Instance->CreateAsset({
+		auto scriptAssetHandle = editorAssetManager->CreateAsset({
 			.debugName = "script-asset",
 			.filePath = relativePath,
 			.type = AssetType::Script,
@@ -215,9 +220,11 @@ namespace HBL2
 
 	Handle<Asset> BuildEngine::CreateHelperScriptFile(const std::filesystem::path& currentDir, const std::string& scriptName)
 	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
 		auto relativePath = std::filesystem::relative(currentDir / (scriptName + ".h"), HBL2::Project::GetAssetDirectory());
 
-		auto scriptAssetHandle = AssetManager::Instance->CreateAsset({
+		auto scriptAssetHandle = editorAssetManager->CreateAsset({
 			.debugName = "script-asset",
 			.filePath = relativePath,
 			.type = AssetType::Script,

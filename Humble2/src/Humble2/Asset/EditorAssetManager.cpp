@@ -136,38 +136,65 @@ namespace HBL2
 		}
     }
 
-    bool EditorAssetManager::DestroyAsset(Handle<Asset> handle)
+    void EditorAssetManager::DestroyAsset(Handle<Asset> handle)
     {
         Asset* asset = GetAssetMetadata(handle);
 
 		if (asset == nullptr)
 		{
-			return false;
+			return;
 		}
+
+		bool destroyResult = false;
 
 		switch (asset->Type)
 		{
 		case AssetType::Texture:
-			return DestroyTexture(asset);
+			destroyResult = DestroyTexture(asset);
+			break;
 		case AssetType::Shader:
-			return DestroyShader(asset);
+			destroyResult = DestroyShader(asset);
+			break;
 		case AssetType::Material:
-			return DestroyMaterial(asset);
+			destroyResult = DestroyMaterial(asset);
+			break;
 		case AssetType::Mesh:
-			return DestroyMesh(asset);
+			destroyResult = DestroyMesh(asset);
+			break;
 		case AssetType::Script:
-			return DestroyScript(asset);
+			destroyResult = DestroyScript(asset);
+			break;
 		case AssetType::Scene:
-			return DestroyScene(asset);
+			destroyResult = DestroyScene(asset);
+			break;
 		case AssetType::Sound:
-			return DestroySound(asset);
+			destroyResult = DestroySound(asset);
+			break;
 		case AssetType::Prefab:
-			return DestroyPrefab(asset);
+			destroyResult = DestroyPrefab(asset);
+			break;
 		}
 
-		HBL2_CORE_ASSERT(false, "Unsupported asset type!");
-		return false;
+		if (destroyResult)
+		{
+			m_RegisteredAssetMap.erase(asset->UUID);
+			m_RegisteredAssetPathToUUIDMap.erase(asset->FilePath);
+
+			auto assetIterator = std::find(m_RegisteredAssets.begin(), m_RegisteredAssets.end(), handle);
+
+			if (assetIterator != m_RegisteredAssets.end())
+			{
+				m_RegisteredAssets.erase(assetIterator);
+			}
+
+			m_AssetPool.Remove(handle);
+		}
     }
+
+	void EditorAssetManager::SaveAsset(UUID assetUUID)
+	{
+		return SaveAsset(GetHandleFromUUID(assetUUID));
+	}
 
 	void EditorAssetManager::SaveAsset(Handle<Asset> handle)
     {
@@ -221,6 +248,655 @@ namespace HBL2
         Asset* asset = GetAssetMetadata(handle);
         return asset->Loaded;
     }
+
+	void EditorAssetManager::RegisterAssets()
+	{
+		// Create Asset directory if it does not exist.
+		if (!std::filesystem::is_directory(HBL2::Project::GetAssetDirectory()))
+		{
+			try
+			{
+				std::filesystem::create_directories(HBL2::Project::GetAssetDirectory());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_CORE_ERROR("Project directory creation failed: {0}", e.what());
+				return;
+			}
+		}
+
+		// Register assets that are inside the Assets directory.
+		for (auto& entry : std::filesystem::recursive_directory_iterator(HBL2::Project::GetAssetDirectory()))
+		{
+			RegisterAsset(entry.path());
+		}
+	}
+
+	void EditorAssetManager::DeregisterAssets()
+	{
+		WaitForAsyncJobs();
+
+		const auto& builtInShaderAssets = ShaderUtilities::Get().GetBuiltInShaderAssets();
+		const auto& builtInMeshAssets = MeshUtilities::Get().GetBuiltInMeshAssets();
+
+		for (const auto handle : m_RegisteredAssets)
+		{
+			// Skip if is a built in material, shader or mesh asset.
+			bool isBuiltInAsset = false;
+
+			for (const auto shaderAssetHandle : builtInShaderAssets)
+			{
+				if (handle == shaderAssetHandle) { isBuiltInAsset = true; break; }
+			}
+
+			for (const auto meshAssetHandle : builtInMeshAssets)
+			{
+				if (handle == meshAssetHandle) { isBuiltInAsset = true; break; }
+			}
+
+			if (handle == ShaderUtilities::Get().LitMaterialAsset) { isBuiltInAsset = true; }
+
+			if (isBuiltInAsset)
+			{
+				continue;
+			}
+
+			// Delete assets.
+			DeleteAsset(handle);
+		}
+
+		// Clear asset handle caches.
+		m_RegisteredAssets.clear();
+		m_RegisteredAssetPathToUUIDMap.clear();
+		m_RegisteredAssetMap.clear();
+
+		// Reregister built in shader assets.
+		for (const auto shaderAssetHandle : builtInShaderAssets)
+		{
+			m_RegisteredAssets.push_back(shaderAssetHandle);
+			Asset* asset = GetAssetMetadata(shaderAssetHandle);
+			m_RegisteredAssetPathToUUIDMap[asset->FilePath] = asset->UUID;
+			m_RegisteredAssetMap[asset->UUID] = shaderAssetHandle;
+		}
+
+		// Reregister built in material asset.
+		if (ShaderUtilities::Get().LitMaterialAsset.IsValid())
+		{
+			m_RegisteredAssets.push_back(ShaderUtilities::Get().LitMaterialAsset);
+			Asset* asset = GetAssetMetadata(ShaderUtilities::Get().LitMaterialAsset);
+			m_RegisteredAssetPathToUUIDMap[asset->FilePath] = asset->UUID;
+			m_RegisteredAssetMap[asset->UUID] = ShaderUtilities::Get().LitMaterialAsset;
+		}
+	}
+
+	Handle<Asset> EditorAssetManager::CreateAsset(const AssetDescriptor&& desc)
+	{
+		auto assetUUID = GetUUIDFromPath(desc.filePath);
+		auto handle = GetHandleFromUUID(assetUUID);
+
+		if (IsAssetValid(handle))
+		{
+			return handle;
+		}
+
+		handle = m_AssetPool.Insert(Asset(std::forward<const AssetDescriptor>(desc)));
+
+		Asset* asset = GetAssetMetadata(handle);		
+
+		switch (asset->Type)
+		{
+		case AssetType::Texture:
+			CreateTextureMetadata(asset);
+			break;
+		case AssetType::Shader:
+			CreateShaderMetadata(asset);
+			break;
+		case AssetType::Material:
+			CreateMaterialMetadata(asset);
+			break;
+		case AssetType::Scene:
+			CreateSceneMetadata(asset);
+			break;
+		case AssetType::Mesh:
+			CreateMeshMetadata(asset);
+			break;
+		case AssetType::Script:
+			CreateScriptMetadata(asset);
+			break;
+		case AssetType::Sound:
+			CreateSoundMetadata(asset);
+			break;
+		case AssetType::Prefab:
+			CreatePrefabMetadata(asset);
+			break;
+		case AssetType::None:
+			HBL2_CORE_ERROR("Aborting asset creation, asset type is None.");
+			return Handle<Asset>();
+		}
+
+		m_RegisteredAssets.push_back(handle);
+		m_RegisteredAssetPathToUUIDMap[asset->FilePath] = asset->UUID;
+		m_RegisteredAssetMap[asset->UUID] = handle;
+
+		return handle;
+	}
+
+	Handle<Asset> EditorAssetManager::RegisterAsset(const std::filesystem::path& assetPath)
+	{
+		const std::string& extension = assetPath.extension().string();
+		auto relativePath = std::filesystem::relative(assetPath, HBL2::Project::GetAssetDirectory());
+
+		Handle<Asset> assetHandle;
+
+		if (extension == ".png" || extension == ".jpg" || extension == ".tga" || extension == ".hdr")
+		{
+			assetHandle = CreateAsset({
+				.debugName = "texture-asset",
+				.filePath = relativePath,
+				.type = AssetType::Texture,
+			});
+		}
+		else if (extension == ".obj" || extension == ".gltf" || extension == ".glb" || extension == ".fbx" || extension == ".FBX")
+		{
+			assetHandle = CreateAsset({
+				.debugName = "mesh-asset",
+				.filePath = relativePath,
+				.type = AssetType::Mesh,
+			});
+		}
+		else if (extension == ".mp3" || extension == ".wav" || extension == ".ogg")
+		{
+			assetHandle = CreateAsset({
+				.debugName = "sound-asset",
+				.filePath = relativePath,
+				.type = AssetType::Sound,
+			});
+		}
+		else if (extension == ".mat")
+		{
+			assetHandle = CreateAsset({
+				.debugName = "material-asset",
+				.filePath = relativePath,
+				.type = AssetType::Material,
+			});
+		}
+		else if (extension == ".slang")
+		{
+			assetHandle = CreateAsset({
+				.debugName = "shader-asset",
+				.filePath = relativePath,
+				.type = AssetType::Shader,
+			});
+		}
+		else if (extension == ".humble")
+		{
+			assetHandle = CreateAsset({
+				.debugName = "scene-asset",
+				.filePath = relativePath,
+				.type = AssetType::Scene,
+			});
+		}
+		else if (extension == ".h")
+		{
+			assetHandle = CreateAsset({
+				.debugName = "script-asset",
+				.filePath = relativePath,
+				.type = AssetType::Script,
+			});
+		}
+		else if (extension == ".prefab")
+		{
+			assetHandle = CreateAsset({
+				.debugName = "prefab-asset",
+				.filePath = relativePath,
+				.type = AssetType::Prefab,
+			});
+		}
+
+		return assetHandle;
+	}
+
+	UUID EditorAssetManager::GetUUIDFromPath(const std::filesystem::path& assetPath)
+	{
+		UUID assetUUID = 0;
+
+		auto it = m_RegisteredAssetPathToUUIDMap.find(assetPath);
+		if (it != m_RegisteredAssetPathToUUIDMap.end())
+		{
+			assetUUID = it->second;
+		}
+
+		return assetUUID;
+	}
+
+	/// Create methods
+
+	void EditorAssetManager::CreateTextureMetadata(Asset* asset)
+	{
+		const auto& path = HBL2::Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& filePath = path.string() + ".hbltexture";
+
+		// Check if the metadata exists, if it does retrieve the UUID and assign it to the asset.
+		if (std::filesystem::exists(filePath))
+		{
+			std::ifstream stream(filePath);
+
+			if (!stream.is_open())
+			{
+				HBL2_CORE_ERROR("Texture metadata file not found: {0}", filePath);
+				return;
+			}
+
+			std::stringstream ss;
+			ss << stream.rdbuf();
+
+			YAML::Node data = YAML::Load(ss.str());
+			if (!data["Texture"].IsDefined())
+			{
+				HBL2_CORE_ERROR("Texture not found: {0}", asset->DebugName);
+				stream.close();
+				return;
+			}
+
+			auto textureProperties = data["Texture"];
+			if (textureProperties)
+			{
+				asset->UUID = textureProperties["UUID"].as<UUID>();
+			}
+
+			return;
+		}
+
+		// Ensure parent path exists.
+		if (!std::filesystem::exists(path.parent_path()))
+		{
+			try
+			{
+				std::filesystem::create_directories(path.parent_path());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_ERROR("Texture metadata directory creation failed: {0}", e.what());
+			}
+		}
+
+		// If the metadata file does not exist, generate new UUID and assign it to the asset.
+		asset->UUID = Random::UInt64();
+	}
+
+	void EditorAssetManager::CreateShaderMetadata(Asset* asset)
+	{
+		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+		const auto& metaFilePath = path.string() + ".hblshader";
+
+		// Check if the metadata exists, if it does retrieve the UUID and assign it to the asset.
+		if (std::filesystem::exists(metaFilePath))
+		{
+			std::ifstream stream(metaFilePath);
+
+			if (!stream.is_open())
+			{
+				HBL2_CORE_ERROR("Shader metadata file not found: {0}", metaFilePath);
+				return;
+			}
+
+			std::stringstream ss;
+			ss << stream.rdbuf();
+
+			YAML::Node data = YAML::Load(ss.str());
+			if (!data["Shader"].IsDefined())
+			{
+				HBL2_CORE_ERROR("Shader not found: {0}", asset->DebugName);
+				stream.close();
+				return;
+			}
+
+			auto shaderProperties = data["Shader"];
+			if (shaderProperties)
+			{
+				asset->UUID = shaderProperties["UUID"].as<UUID>();
+			}
+
+			return;
+		}
+
+		// Ensure parent path exists.
+		if (!std::filesystem::exists(path.parent_path()))
+		{
+			try
+			{
+				std::filesystem::create_directories(path.parent_path());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_ERROR("Shader metadata directory creation failed: {0}", e.what());
+			}
+		}
+
+		// If the metadata file does not exist, generate new UUID and assign it to the asset.
+		asset->UUID = Random::UInt64();
+	}
+
+	void EditorAssetManager::CreateMaterialMetadata(Asset* asset)
+	{
+		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+		const auto& metaFilePath = path.string() + ".hblmat";
+
+		// Check if the metadata exists, if it does retrieve the UUID and assign it to the asset.
+		if (std::filesystem::exists(metaFilePath))
+		{
+			std::ifstream stream(metaFilePath);
+
+			if (!stream.is_open())
+			{
+				HBL2_CORE_ERROR("Material metadata file not found: {0}", metaFilePath);
+				return;
+			}
+
+			std::stringstream ss;
+			ss << stream.rdbuf();
+
+			YAML::Node data = YAML::Load(ss.str());
+			if (!data["Material"].IsDefined())
+			{
+				HBL2_CORE_ERROR("Material not found: {0}", asset->DebugName);
+				stream.close();
+				return;
+			}
+
+			auto materialProperties = data["Material"];
+			if (materialProperties)
+			{
+				asset->UUID = materialProperties["UUID"].as<UUID>();
+			}
+
+			return;
+		}
+
+		// Ensure parent path exists.
+		if (!std::filesystem::exists(path.parent_path()))
+		{
+			try
+			{
+				std::filesystem::create_directories(path.parent_path());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_ERROR("Material metadata directory creation failed: {0}", e.what());
+			}
+		}
+
+		// If the metadata file does not exist, generate new UUID and assign it to the asset.
+		asset->UUID = Random::UInt64();
+	}
+
+	void EditorAssetManager::CreateMeshMetadata(Asset* asset)
+	{
+		const auto& assetFilePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& path = std::filesystem::exists(assetFilePath) ? assetFilePath : asset->FilePath;
+		const auto& metaFilePath = path.string() + ".hblmesh";
+
+		// Check if the metadata exists, if it does retrieve the UUID and assign it to the asset.
+		if (std::filesystem::exists(metaFilePath))
+		{
+			std::ifstream stream(metaFilePath);
+
+			if (!stream.is_open())
+			{
+				HBL2_CORE_ERROR("Mesh metadata file not found: {0}", metaFilePath);
+				return;
+			}
+
+			std::stringstream ss;
+			ss << stream.rdbuf();
+
+			YAML::Node data = YAML::Load(ss.str());
+			if (!data["Mesh"].IsDefined())
+			{
+				HBL2_CORE_ERROR("Mesh not found: {0}", asset->DebugName);
+				stream.close();
+				return;
+			}
+
+			auto meshProperties = data["Mesh"];
+			if (meshProperties)
+			{
+				asset->UUID = meshProperties["UUID"].as<UUID>();
+			}
+
+			return;
+		}
+
+		// Ensure parent path exists.
+		if (!std::filesystem::exists(path.parent_path()))
+		{
+			try
+			{
+				std::filesystem::create_directories(path.parent_path());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_ERROR("Mesh metadata directory creation failed: {0}", e.what());
+			}
+		}
+
+		// If the metadata file does not exist, generate new UUID and assign it to the asset.
+		asset->UUID = Random::UInt64();
+	}
+
+	void EditorAssetManager::CreateSceneMetadata(Asset* asset)
+	{
+		const auto& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& metaFilePath = filePath.string() + ".hblscene";
+
+		// Check if the metadata exists, if it does retrieve the UUID and assign it to the asset.
+		if (std::filesystem::exists(metaFilePath))
+		{
+			std::ifstream stream(metaFilePath);
+
+			if (!stream.is_open())
+			{
+				HBL2_CORE_ERROR("Scene metadata file not found: {0}", metaFilePath);
+				return;
+			}
+
+			std::stringstream ss;
+			ss << stream.rdbuf();
+
+			YAML::Node data = YAML::Load(ss.str());
+			if (!data["Scene"].IsDefined())
+			{
+				HBL2_CORE_ERROR("Scene not found: {0}", asset->DebugName);
+				stream.close();
+				return;
+			}
+
+			auto sceneProperties = data["Scene"];
+			if (sceneProperties)
+			{
+				asset->UUID = sceneProperties["UUID"].as<UUID>();
+			}
+
+			return;
+		}
+
+		// Ensure parent path exists.
+		if (!std::filesystem::exists(filePath.parent_path()))
+		{
+			try
+			{
+				std::filesystem::create_directories(filePath.parent_path());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_ERROR("Scene metadata directory creation failed: {0}", e.what());
+			}
+		}
+
+		// If the metadata file does not exist, generate new UUID and assign it to the asset.
+		asset->UUID = Random::UInt64();
+	}
+
+	void EditorAssetManager::CreateScriptMetadata(Asset* asset)
+	{
+		const auto& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& metaFilePath = filePath.string() + ".hblscript";
+
+		// Check if the metadata exists, if it does retrieve the UUID and assign it to the asset.
+		if (std::filesystem::exists(metaFilePath))
+		{
+			std::ifstream stream(metaFilePath);
+
+			if (!stream.is_open())
+			{
+				HBL2_CORE_ERROR("Script metadata file not found: {0}", metaFilePath);
+				return;
+			}
+
+			std::stringstream ss;
+			ss << stream.rdbuf();
+
+			YAML::Node data = YAML::Load(ss.str());
+			if (!data["Script"].IsDefined())
+			{
+				HBL2_CORE_ERROR("Script not found: {0}", asset->DebugName);
+				stream.close();
+				return;
+			}
+
+			auto scriptProperties = data["Script"];
+			if (scriptProperties)
+			{
+				asset->UUID = scriptProperties["UUID"].as<UUID>();
+			}
+
+			return;
+		}
+
+		// Ensure parent path exists.
+		if (!std::filesystem::exists(filePath.parent_path()))
+		{
+			try
+			{
+				std::filesystem::create_directories(filePath.parent_path());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_ERROR("Script metadata directory creation failed: {0}", e.what());
+			}
+		}
+
+		// If the metadata file does not exist, generate new UUID and assign it to the asset.
+		asset->UUID = Random::UInt64();
+	}
+
+	void EditorAssetManager::CreateSoundMetadata(Asset* asset)
+	{
+		const auto& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& metaFilePath = filePath.string() + ".hblsound";
+
+		// Check if the metadata exists, if it does retrieve the UUID and assign it to the asset.
+		if (std::filesystem::exists(metaFilePath))
+		{
+			std::ifstream stream(metaFilePath);
+
+			if (!stream.is_open())
+			{
+				HBL2_CORE_ERROR("Sound metadata file not found: {0}", metaFilePath);
+				return;
+			}
+
+			std::stringstream ss;
+			ss << stream.rdbuf();
+
+			YAML::Node data = YAML::Load(ss.str());
+			if (!data["Sound"].IsDefined())
+			{
+				HBL2_CORE_ERROR("Sound not found: {0}", asset->DebugName);
+				stream.close();
+				return;
+			}
+
+			auto soundProperties = data["Sound"];
+			if (soundProperties)
+			{
+				asset->UUID = soundProperties["UUID"].as<UUID>();
+			}
+
+			return;
+		}
+
+		// Ensure parent path exists.
+		if (!std::filesystem::exists(filePath.parent_path()))
+		{
+			try
+			{
+				std::filesystem::create_directories(filePath.parent_path());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_ERROR("Sound metadata directory creation failed: {0}", e.what());
+			}
+		}
+
+		// If the metadata file does not exist, generate new UUID and assign it to the asset.
+		asset->UUID = Random::UInt64();
+	}
+
+	void EditorAssetManager::CreatePrefabMetadata(Asset* asset)
+	{
+		const auto& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& metaFilePath = filePath.string() + ".hblprefab";
+
+		// Check if the metadata exists, if it does retrieve the UUID and assign it to the asset.
+		if (std::filesystem::exists(metaFilePath))
+		{
+			std::ifstream stream(metaFilePath);
+
+			if (!stream.is_open())
+			{
+				HBL2_CORE_ERROR("Prefab metadata file not found: {0}", metaFilePath);
+				return;
+			}
+
+			std::stringstream ss;
+			ss << stream.rdbuf();
+
+			YAML::Node data = YAML::Load(ss.str());
+			if (!data["Prefab"].IsDefined())
+			{
+				HBL2_CORE_ERROR("Prefab not found: {0}", asset->DebugName);
+				stream.close();
+				return;
+			}
+
+			auto prefabProperties = data["Prefab"];
+			if (prefabProperties)
+			{
+				asset->UUID = prefabProperties["UUID"].as<UUID>();
+			}
+
+			return;
+		}
+
+		// Ensure parent path exists.
+		if (!std::filesystem::exists(filePath.parent_path()))
+		{
+			try
+			{
+				std::filesystem::create_directories(filePath.parent_path());
+			}
+			catch (std::exception& e)
+			{
+				HBL2_ERROR("Prefab metadata directory creation failed: {0}", e.what());
+			}
+		}
+
+		// If the metadata file does not exist, generate new UUID and assign it to the asset.
+		asset->UUID = Random::UInt64();
+	}
 
 	/// Import methods
 
@@ -1565,7 +2241,7 @@ namespace HBL2
 			// If the shader is the same, reload it first.
 			if (shaderHandle == mat->Shader)
 			{
-				shaderHandle = AssetManager::Instance->ReloadAsset<Shader>(shaderUUID);
+				shaderHandle = ReloadAsset<Shader>(shaderUUID);
 			}
 
 			// Now that we have the up to date shader, do a full reimport of the material.

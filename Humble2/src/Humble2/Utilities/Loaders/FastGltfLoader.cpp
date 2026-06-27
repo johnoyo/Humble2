@@ -3,6 +3,7 @@
 #include "Project/Project.h"
 
 #include "Asset/AssetManager.h"
+#include "Asset/EditorAssetManager.h"
 #include "Resources/ResourceManager.h"
 
 #include "Utilities/ShaderUtilities.h"
@@ -227,6 +228,8 @@ namespace HBL2
 
 	void FastGltfLoader::LoadTextures(const std::filesystem::path& path, const fastgltf::Asset& asset)
 	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
 		s_Textures.clear();
 
 		size_t numTextures = asset.images.size();
@@ -248,13 +251,13 @@ namespace HBL2
 
 					const auto& relativeTexturePath = FileUtils::RelativePath(texturePath, Project::GetAssetDirectory());
 
-                    UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
+                    UUID textureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeTexturePath);
 					textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
 					// If the texture asset has not been registered yet, register it now.
 					if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
 					{
-						textureAssetHandle = AssetManager::Instance->CreateAsset({
+						textureAssetHandle = editorAssetManager->CreateAsset({
 							.debugName = "texture-asset",
 							.filePath = relativeTexturePath,
 							.type = AssetType::Texture,
@@ -286,12 +289,12 @@ namespace HBL2
 						continue;
 					}
 
-                    UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
+                    UUID textureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeTexturePath);
 					textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
 					if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
 					{
-						textureAssetHandle = AssetManager::Instance->CreateAsset({
+						textureAssetHandle = editorAssetManager->CreateAsset({
 							.debugName = "texture-asset",
 							.filePath = relativeTexturePath,
 							.type = AssetType::Texture,
@@ -307,7 +310,7 @@ namespace HBL2
 				}
 				else
 				{
-                    UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
+                    UUID textureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeTexturePath);
 					textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 					AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
 				}
@@ -340,12 +343,12 @@ namespace HBL2
 									return;
 								}
 
-                                UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
+                                UUID textureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeTexturePath);
 								textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
 								if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
 								{
-									textureAssetHandle = AssetManager::Instance->CreateAsset({
+									textureAssetHandle = editorAssetManager->CreateAsset({
 										.debugName = "texture-asset",
 										.filePath = relativeTexturePath,
 										.type = AssetType::Texture,
@@ -361,7 +364,7 @@ namespace HBL2
 							}
 							else
 							{
-                                UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
+                                UUID textureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeTexturePath);
 								textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 								AssetManager::Instance->GetAsset<Texture>(textureAssetHandle);
 							}
@@ -384,6 +387,8 @@ namespace HBL2
 
 	void FastGltfLoader::ReloadTextures(const std::filesystem::path& path, const fastgltf::Asset& asset)
 	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
 		s_Textures.clear();
 
 		size_t numTextures = asset.images.size();
@@ -405,13 +410,13 @@ namespace HBL2
 
 					const auto& relativeTexturePath = FileUtils::RelativePath(texturePath, Project::GetAssetDirectory());
 
-                    UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
+                    UUID textureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeTexturePath);
 					textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
 					// If the texture asset has not been registered yet, register it now.
 					if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
 					{
-						textureAssetHandle = AssetManager::Instance->CreateAsset({
+						textureAssetHandle = editorAssetManager->CreateAsset({
 							.debugName = "texture-asset",
 							.filePath = relativeTexturePath,
 							.type = AssetType::Texture,
@@ -440,7 +445,7 @@ namespace HBL2
 			{
 				const auto& relativeTexturePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Textures" / (std::string(glTFImage.name) + std::to_string(imageIndex) + ".png");
 				
-                UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
+                UUID textureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeTexturePath);
 				textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
 				if (std::filesystem::exists(Project::GetAssetFileSystemPath(relativeTexturePath)))
@@ -457,7 +462,7 @@ namespace HBL2
 
 				if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
 				{
-					textureAssetHandle = AssetManager::Instance->CreateAsset({
+					textureAssetHandle = editorAssetManager->CreateAsset({
 						.debugName = "texture-asset",
 						.filePath = relativeTexturePath,
 						.type = AssetType::Texture,
@@ -491,7 +496,7 @@ namespace HBL2
 
 							const auto& relativeTexturePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Textures" / (std::string(glTFImage.name) + std::to_string(imageIndex) + ".png");
 
-                            UUID textureAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativeTexturePath);
+                            UUID textureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeTexturePath);
 							textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
 							if (std::filesystem::exists(Project::GetAssetFileSystemPath(relativeTexturePath)))
@@ -508,7 +513,7 @@ namespace HBL2
 
 							if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
 							{
-								textureAssetHandle = AssetManager::Instance->CreateAsset({
+								textureAssetHandle = editorAssetManager->CreateAsset({
 									.debugName = "texture-asset",
 									.filePath = relativeTexturePath,
 									.type = AssetType::Texture,
@@ -540,6 +545,8 @@ namespace HBL2
 
 	void FastGltfLoader::LoadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset)
 	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
 		s_MaterialNameToAssetHandle.clear();
 
 		size_t numMaterials = asset.materials.size();
@@ -555,7 +562,7 @@ namespace HBL2
 
 			if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativePath)))
 			{
-				materialAssetHandle = AssetManager::Instance->CreateAsset({
+				materialAssetHandle = editorAssetManager->CreateAsset({
 					.debugName = "material-asset",
 					.filePath = relativePath,
 					.type = AssetType::Material,
@@ -650,7 +657,7 @@ namespace HBL2
 			}
 			else
 			{
-                UUID materialAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativePath);
+                UUID materialAssetUUID = editorAssetManager->GetUUIDFromPath(relativePath);
 				materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetUUID);
 			}
 
@@ -660,6 +667,8 @@ namespace HBL2
 
 	void FastGltfLoader::ReloadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset)
 	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
 		s_MaterialNameToAssetHandle.clear();
 
 		size_t numMaterials = asset.materials.size();
@@ -725,7 +734,7 @@ namespace HBL2
 
 			if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativePath)))
 			{
-				materialAssetHandle = AssetManager::Instance->CreateAsset({
+				materialAssetHandle = editorAssetManager->CreateAsset({
 					.debugName = "material-asset",
 					.filePath = relativePath,
 					.type = AssetType::Material,
@@ -768,7 +777,7 @@ namespace HBL2
 			}
 			else
 			{
-                UUID materialAssetUUID = AssetManager::Instance->GetUUIDFromPath(relativePath);
+                UUID materialAssetUUID = editorAssetManager->GetUUIDFromPath(relativePath);
                 materialAssetHandle = AssetManager::Instance->GetHandleFromUUID(materialAssetUUID);
 
 				// Recreate material asset file with new data.
@@ -786,7 +795,7 @@ namespace HBL2
 				});
 
 				// Reload material now that we have set the new resourses.
-				materialHandle = AssetManager::Instance->ReloadAsset<Material>(materialAssetUUID);
+				materialHandle = editorAssetManager->ReloadAsset<Material>(materialAssetUUID);
 			}
 
 			s_MaterialNameToAssetHandle[glTFMaterial.name.c_str()] = materialAssetHandle;

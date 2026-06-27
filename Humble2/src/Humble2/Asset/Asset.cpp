@@ -9,8 +9,6 @@ namespace HBL2
 		DebugName = desc.debugName;
 		FilePath = desc.filePath;
 		Type = desc.type;
-
-        UUID = Random::UInt64();
 	}
 
 	Asset::Asset(const MemoryOnlyAssetDescriptor&& desc)

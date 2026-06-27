@@ -886,6 +886,7 @@ namespace HBL2::Editor
 		{
 			if (m_Owner->m_SelectedAsset.IsValid())
 			{
+				auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 				Asset* asset = AssetManager::Instance->GetAssetMetadata(m_Owner->m_SelectedAsset);
 
 				if (asset == nullptr)
@@ -1387,7 +1388,7 @@ namespace HBL2::Editor
 
 							if (shaderBindGroupNeedsReimport)
 							{
-								m_ShaderTask = AssetManager::Instance->ReloadAssetAsync<Shader>(m_Owner->m_SelectedAsset);
+								m_ShaderTask = editorAssetManager->ReloadAssetAsync<Shader>(m_Owner->m_SelectedAsset);
 								shaderBindGroupNeedsReimport = false;
 							}
 						}
@@ -2081,7 +2082,7 @@ namespace HBL2::Editor
 
 							if (m_MaterialBindGroupNeedsReimport)
 							{
-								m_MaterialTask = AssetManager::Instance->ReloadAssetAsync<Material>(m_Owner->m_SelectedAsset);
+								m_MaterialTask = editorAssetManager->ReloadAssetAsync<Material>(m_Owner->m_SelectedAsset);
 								m_MaterialBindGroupNeedsReimport = false;
 							}
 						}
@@ -2174,7 +2175,7 @@ namespace HBL2::Editor
 
 				if (ImGui::Button("Save"))
 				{
-					AssetManager::Instance->SaveAsset(m_Owner->m_SelectedAsset);
+					editorAssetManager->SaveAsset(m_Owner->m_SelectedAsset);
 				}
 
 				m_PreviouslySelectedAsset = m_Owner->m_SelectedAsset;

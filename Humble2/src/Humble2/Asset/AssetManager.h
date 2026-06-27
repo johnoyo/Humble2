@@ -18,6 +18,7 @@
 namespace HBL2
 {
 	class Window;
+	class EditorAssetManager;
 
 	template<typename T>
 	class ResourceTask
@@ -40,6 +41,7 @@ namespace HBL2
 
 	private:
 		friend class AssetManager;
+		friend class EditorAssetManager;
 
 		std::atomic_bool m_Finished = false;
 		StaticFunction<void(Handle<T>), 64> m_WorkerThreadCallback;
@@ -61,18 +63,14 @@ namespace HBL2
 
 		void Initialize(const AssetManagerSpecification& spec);
 		void Dispatch();
+		void Clean();
 
 		const AssetManagerSpecification& GetSpec() const;
 		const AssetManagerSpecification& GetUsageStats();
 
-		Handle<Asset> CreateAsset(const AssetDescriptor&& desc);
 		Handle<Asset> CreateMemoryOnlyAsset(const MemoryOnlyAssetDescriptor&& desc);
-		void DeleteAsset(Handle<Asset> handle, bool destroy = false);
-		Asset* GetAssetMetadata(Handle<Asset> handle) const;
-
-		void RegisterAssets();
-		Handle<Asset> RegisterAsset(const std::filesystem::path& assetPath);
-		void DeregisterAssets();
+		void DeleteAsset(Handle<Asset> handle);
+		Asset* GetAssetMetadata(Handle<Asset> handle) const;		
 
 		template<typename T>
 		Handle<T> GetAsset(UUID assetUUID)
@@ -176,83 +174,6 @@ namespace HBL2
 			return task;
 		}
 
-		template<typename T>
-		Handle<T> ReloadAsset(UUID assetUUID)
-		{
-			return ReloadAsset<T>(GetHandleFromUUID(assetUUID));
-		}
-
-		template<typename T>
-		Handle<T> ReloadAsset(Handle<Asset> handle)
-		{
-			if (!IsAssetValid(handle))
-			{
-				return Handle<T>();
-			}
-
-			Asset* asset = GetAssetMetadata(handle);
-			if (asset->Loaded)
-			{
-				uint32_t packedHandle = ReloadAsset(handle);
-				return Handle<T>::UnPack(packedHandle);
-			}
-			else
-			{
-				uint32_t packedHandle = LoadAsset(handle);
-				return Handle<T>::UnPack(packedHandle);
-			}
-
-			return Handle<T>();
-		}
-
-		template<typename T>
-		ResourceTask<T>* ReloadAssetAsync(UUID assetUUID, JobContext* customJobCtx = nullptr)
-		{
-			return ReloadAssetAsync<T>(GetHandleFromUUID(assetUUID), customJobCtx);
-		}
-
-		template<typename T>
-		ResourceTask<T>* ReloadAssetAsync(Handle<Asset> assetHandle, JobContext* customJobCtx = nullptr)
-		{
-			// Do not schedule job if the asset handle is invalid.
-			if (!IsAssetValid(assetHandle))
-			{
-				return nullptr;
-			}
-
-			ResourceTask<T>* task = m_ResourceTaskPoolArena.AllocConstruct<ResourceTask<T>>();
-			task->m_Finished.store(false, std::memory_order_release);
-
-			// Load from scratch if the asset is not loaded.
-			if (!IsAssetLoaded(assetHandle))
-			{
-				return GetAssetAsync<T>(assetHandle, customJobCtx);
-			}
-
-			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
-
-			JobSystem::Get().Execute(ctx, [this, assetHandle, task]()
-			{
-				Device::Instance->SetContext(ContextType::FETCH);
-
-				// NOTE: Keep an eye here, it may cause problems if we still reload an asset while we change scenes!
-				if (task != nullptr)
-				{
-					task->ResourceHandle = ReloadAsset<T>(assetHandle);
-					task->m_Finished.store(true, std::memory_order_release);
-
-					if (task->m_WorkerThreadCallback)
-					{
-						task->m_WorkerThreadCallback(task->ResourceHandle);
-					}
-				}
-
-				Device::Instance->SetContext(ContextType::FLUSH_CLEAR);
-			});
-
-			return task;
-		}
-
 		void WaitForAsyncJobs(JobContext* customJobCtx = nullptr);
 
 		template<typename T>
@@ -263,30 +184,26 @@ namespace HBL2
 
 		Span<const Handle<Asset>> GetRegisteredAssets() { return { m_RegisteredAssets.data(), m_RegisteredAssets.size() }; }
 
-        UUID GetUUIDFromPath(const std::filesystem::path& assetPath);
         Handle<Asset> GetHandleFromUUID(UUID assetUUID);
 
-		void SaveAsset(UUID assetUUID);
-
-		virtual void SaveAsset(Handle<Asset> handle) = 0;
+		virtual void RegisterAssets() = 0;
+		virtual void DeregisterAssets() = 0;
 		virtual bool IsAssetValid(Handle<Asset> handle) = 0;
 		virtual bool IsAssetLoaded(Handle<Asset> handle) = 0;
 
 	protected:
+		virtual uint32_t LoadAsset(Handle<Asset> handle) = 0;
+		virtual void UnloadAsset(Handle<Asset> handle) = 0;
+
 		AssetManagerSpecification m_Spec;
 
-		virtual uint32_t LoadAsset(Handle<Asset> handle) = 0;
-		virtual uint32_t ReloadAsset(Handle<Asset> handle) = 0;
-		virtual void UnloadAsset(Handle<Asset> handle) = 0;
-		virtual bool DestroyAsset(Handle<Asset> handle) = 0;
-
-	private:
-		JobContext m_ResourceJobCtx;
 		Pool<Asset, Asset> m_AssetPool;
 
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_PoolArena;
 		PoolArena m_ResourceTaskPoolArena;
+
+		JobContext m_ResourceJobCtx;
 
         HMap<UUID, Handle<Asset>> m_RegisteredAssetMap = MakeEmptyHMap<UUID, Handle<Asset>>();
 		HMap<std::filesystem::path, UUID> m_RegisteredAssetPathToUUIDMap = MakeEmptyHMap<std::filesystem::path, UUID>();

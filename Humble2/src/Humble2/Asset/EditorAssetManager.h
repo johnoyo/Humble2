@@ -24,14 +24,111 @@ namespace HBL2
 		virtual bool IsAssetValid(Handle<Asset> handle) override;
 		virtual bool IsAssetLoaded(Handle<Asset> handle) override;
 
+		virtual void RegisterAssets() override;
+		virtual void DeregisterAssets() override;
+
+		Handle<Asset> CreateAsset(const AssetDescriptor&& desc);
+		Handle<Asset> RegisterAsset(const std::filesystem::path& assetPath);
+
+		UUID GetUUIDFromPath(const std::filesystem::path& assetPath);
+
+		template<typename T>
+		Handle<T> ReloadAsset(UUID assetUUID)
+		{
+			return ReloadAsset<T>(GetHandleFromUUID(assetUUID));
+		}
+
+		template<typename T>
+		Handle<T> ReloadAsset(Handle<Asset> handle)
+		{
+			if (!IsAssetValid(handle))
+			{
+				return Handle<T>();
+			}
+
+			Asset* asset = GetAssetMetadata(handle);
+			if (asset->Loaded)
+			{
+				uint32_t packedHandle = ReloadAsset(handle);
+				return Handle<T>::UnPack(packedHandle);
+			}
+			else
+			{
+				uint32_t packedHandle = LoadAsset(handle);
+				return Handle<T>::UnPack(packedHandle);
+			}
+
+			return Handle<T>();
+		}
+
+		template<typename T>
+		ResourceTask<T>* ReloadAssetAsync(UUID assetUUID, JobContext* customJobCtx = nullptr)
+		{
+			return ReloadAssetAsync<T>(GetHandleFromUUID(assetUUID), customJobCtx);
+		}
+
+		template<typename T>
+		ResourceTask<T>* ReloadAssetAsync(Handle<Asset> assetHandle, JobContext* customJobCtx = nullptr)
+		{
+			// Do not schedule job if the asset handle is invalid.
+			if (!IsAssetValid(assetHandle))
+			{
+				return nullptr;
+			}
+
+			ResourceTask<T>* task = m_ResourceTaskPoolArena.AllocConstruct<ResourceTask<T>>();
+			task->m_Finished.store(false, std::memory_order_release);
+
+			// Load from scratch if the asset is not loaded.
+			if (!IsAssetLoaded(assetHandle))
+			{
+				return GetAssetAsync<T>(assetHandle, customJobCtx);
+			}
+
+			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
+
+			JobSystem::Get().Execute(ctx, [this, assetHandle, task]()
+				{
+					Device::Instance->SetContext(ContextType::FETCH);
+
+					// NOTE: Keep an eye here, it may cause problems if we still reload an asset while we change scenes!
+					if (task != nullptr)
+					{
+						task->ResourceHandle = ReloadAsset<T>(assetHandle);
+						task->m_Finished.store(true, std::memory_order_release);
+
+						if (task->m_WorkerThreadCallback)
+						{
+							task->m_WorkerThreadCallback(task->ResourceHandle);
+						}
+					}
+
+					Device::Instance->SetContext(ContextType::FLUSH_CLEAR);
+				});
+
+			return task;
+		}
+
+		void SaveAsset(UUID assetUUID);
+		void SaveAsset(Handle<Asset> handle);
+		void DestroyAsset(Handle<Asset> handle);
+
 	protected:
 		virtual uint32_t LoadAsset(Handle<Asset> handle) override;
-		virtual uint32_t ReloadAsset(Handle<Asset> handle) override;
 		virtual void UnloadAsset(Handle<Asset> handle) override;
-		virtual void SaveAsset(Handle<Asset> handle) override;
-		virtual bool DestroyAsset(Handle<Asset> handle) override;
 
 	private:
+		uint32_t ReloadAsset(Handle<Asset> handle);
+
+		void CreateTextureMetadata(Asset* asset);
+		void CreateShaderMetadata(Asset* asset);
+		void CreateMaterialMetadata(Asset* asset);
+		void CreateMeshMetadata(Asset* asset);
+		void CreateSceneMetadata(Asset* asset);
+		void CreateScriptMetadata(Asset* asset);
+		void CreateSoundMetadata(Asset* asset);
+		void CreatePrefabMetadata(Asset* asset);
+
 		Handle<Texture> ImportTexture(Asset* asset);
 		Handle<Shader> ImportShader(Asset* asset);
 		Handle<Material> ImportMaterial(Asset* asset);
