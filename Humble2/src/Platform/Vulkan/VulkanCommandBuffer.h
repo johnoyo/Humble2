@@ -33,6 +33,9 @@ namespace HBL2
 		virtual void EndCommandRecording() override;
 		virtual void Submit() override;
 
+		void SetWaitSemaphore(VkSemaphore waitSemaphore);
+		void SetSignalSemaphore(VkSemaphore signalSemaphore);
+
 		VkCommandBuffer CommandBuffer;
 
 	private:

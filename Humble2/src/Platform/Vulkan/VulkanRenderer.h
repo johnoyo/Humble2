@@ -21,9 +21,7 @@ namespace HBL2
 
 	struct VkFrameData
 	{
-		VkSemaphore ImageAvailableSemaphore; // Signal from swapchain.
-		VkSemaphore MainRenderFinishedSemaphore; // Signal that main render is done.
-		VkSemaphore ImGuiRenderFinishedSemaphore; // Signal that UI render is done.
+		VkSemaphore RenderingFinishedSemaphore; // Signal that UI render is done.
 
 		VkFence InFlightFence;
 
@@ -117,6 +115,9 @@ namespace HBL2
 		DeletionQueue m_MainDeletionQueue;
 
 		VkFrameData m_VkFrames[FRAME_OVERLAP];
+
+		std::vector<VkSemaphore> m_ImageAvailableSemaphores; // FRAME_OVERLAP
+		std::vector<VkSemaphore> m_RenderFinishedSemaphores; // swapchain image count
 		
 		VulkanCommandBuffer m_MainCommandBuffers[FRAME_OVERLAP];
 		VulkanCommandBuffer m_ImGuiCommandBuffers[FRAME_OVERLAP];

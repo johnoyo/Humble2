@@ -94,9 +94,12 @@ namespace HBL2
 		// Flush any pending deletions that occured in the frames before the current one.
 		m_ResourceManager->Flush(m_FrameNumber.load());
 
+		// Retrieve current frame index.
+		uint32_t frameIndex = m_FrameNumber.load() % FRAME_OVERLAP;
+
 		// Get the next swap chain image from the implementation.
 		// Note that the implementation is free to return the images in any order, so we must use the acquire function and can't just cycle through the images/imageIndex on our own.
-		VkResult result = vkAcquireNextImageKHR(m_Device->Get(), m_SwapChain, UINT64_MAX, GetCurrentFrame().ImageAvailableSemaphore, nullptr, &m_SwapchainImageIndex);
+		VkResult result = vkAcquireNextImageKHR(m_Device->Get(), m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[frameIndex], nullptr, &m_SwapchainImageIndex);
 
 		// Recreate the swapchain if it's no longer compatible with the surface (OUT_OF_DATE)
 		// If no longer optimal (VK_SUBOPTIMAL_KHR), wait until Present() in case number of swapchain images will change on resize.
@@ -111,6 +114,11 @@ namespace HBL2
 		{
 			VK_VALIDATE(result, "vkAcquireNextImageKHR");
 		}
+
+		// Patch semaphores now that we know the image index.
+		m_MainCommandBuffers[frameIndex].SetWaitSemaphore(m_ImageAvailableSemaphores[frameIndex]);
+		m_MainCommandBuffers[frameIndex].SetSignalSemaphore(m_RenderFinishedSemaphores[m_SwapchainImageIndex]);
+		m_ImGuiCommandBuffers[frameIndex].SetWaitSemaphore(m_RenderFinishedSemaphores[m_SwapchainImageIndex]);
 
 		SwapAndResetStats();
 	}
@@ -136,7 +144,7 @@ namespace HBL2
 			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 			.pNext = nullptr,
 			.waitSemaphoreCount = 1,
-			.pWaitSemaphores = &GetCurrentFrame().ImGuiRenderFinishedSemaphore,
+			.pWaitSemaphores = &GetCurrentFrame().RenderingFinishedSemaphore,
 			.swapchainCount = 1,
 			.pSwapchains = &m_SwapChain,
 			.pImageIndices = &m_SwapchainImageIndex,
@@ -380,10 +388,24 @@ namespace HBL2
 
 		m_Device->UpdateSwapChainSupportDetails();
 
+		for (auto& sem : m_RenderFinishedSemaphores)
+		{
+			vkDestroySemaphore(m_Device->Get(), sem, nullptr);
+		}
+		m_RenderFinishedSemaphores.clear();
+
 		// Recreate swapchain and associated resources.
 		CreateSwapchain(oldSwapchain);
 		CreateImageViews();
 		CreateFrameBuffers();
+
+		// Recreate per swarchain image semaphores.
+		m_RenderFinishedSemaphores.resize(m_SwapChainImages.size());
+		VkSemaphoreCreateInfo semCI = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+		for (int i = 0; i < (int)m_SwapChainImages.size(); i++)
+		{
+			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semCI, nullptr, &m_RenderFinishedSemaphores[i]), "vkCreateSemaphore");
+		}
 
 		// Destroy the old swapchain.
 		vkDestroySwapchainKHR(m_Device->Get(), oldSwapchain, nullptr);
@@ -622,16 +644,34 @@ namespace HBL2
 				vkDestroyFence(m_Device->Get(), m_VkFrames[i].InFlightFence, nullptr);
 			});
 
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_VkFrames[i].ImageAvailableSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_VkFrames[i].MainRenderFinishedSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_VkFrames[i].ImGuiRenderFinishedSemaphore), "vkCreateSemaphore");
+			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_VkFrames[i].RenderingFinishedSemaphore), "vkCreateSemaphore");
 
 			//enqueue the destruction of semaphores
 			m_MainDeletionQueue.PushFunction([=]()
 			{
-				vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].ImageAvailableSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].MainRenderFinishedSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].ImGuiRenderFinishedSemaphore, nullptr);
+				vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].RenderingFinishedSemaphore, nullptr);
+			});
+		}
+
+		// Per-frame acquire semaphores (FRAME_OVERLAP)
+		m_ImageAvailableSemaphores.resize(FRAME_OVERLAP);
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphores[i]), "vkCreateSemaphore");
+			m_MainDeletionQueue.PushFunction([=]()
+			{
+				vkDestroySemaphore(m_Device->Get(), m_ImageAvailableSemaphores[i], nullptr);
+			});
+		}
+
+		// Per-swapchain-image render finished semaphores
+		m_RenderFinishedSemaphores.resize(m_SwapChainImages.size());
+		for (int i = 0; i < (int)m_SwapChainImages.size(); i++)
+		{
+			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphores[i]), "vkCreateSemaphore");
+			m_MainDeletionQueue.PushFunction([=]()
+			{
+				vkDestroySemaphore(m_Device->Get(), m_RenderFinishedSemaphores[i], nullptr);
 			});
 		}
 	}
@@ -679,16 +719,16 @@ namespace HBL2
 				.type = CommandBufferType::MAIN,
 				.commandBuffer = m_VkFrames[i].MainCommandBuffer,
 				.blockFence = VK_NULL_HANDLE,
-				.waitSemaphore = m_VkFrames[i].ImageAvailableSemaphore,
-				.signalSemaphore = m_VkFrames[i].MainRenderFinishedSemaphore,
+				.waitSemaphore = m_ImageAvailableSemaphores[i],
+				.signalSemaphore = VK_NULL_HANDLE,  // patched in BeginFrame
 			});
 
 			m_ImGuiCommandBuffers[i] = VulkanCommandBuffer({
 				.type = CommandBufferType::UI,
 				.commandBuffer = m_VkFrames[i].ImGuiCommandBuffer,
 				.blockFence = m_VkFrames[i].InFlightFence,
-				.waitSemaphore = m_VkFrames[i].MainRenderFinishedSemaphore,
-				.signalSemaphore = m_VkFrames[i].ImGuiRenderFinishedSemaphore,
+				.waitSemaphore = VK_NULL_HANDLE,    // patched in BeginFrame
+				.signalSemaphore = m_VkFrames[i].RenderingFinishedSemaphore,
 			});
 		}
 
