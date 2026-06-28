@@ -107,66 +107,63 @@ namespace HBL2
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 
-		Renderer::Instance->SubmitBlocking([this]()
-		{
-			// Create color render pass.
-			m_RenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
-				.debugName = "main-renderpass-layout",
-				.depthTargetFormat = Format::D32_FLOAT,
-				.subPasses = {
-					{ .depthTarget = true, .colorTargets = 1, },
-				},
-			});
-
-			// Create depth only render pass.
-			m_DepthOnlyRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
-				.debugName = "pre-pass-renderpass-layout",
-				.depthTargetFormat = Format::D32_FLOAT,
-				.subPasses = {
-					{ .depthTarget = true },
-				},
-			});
-
-			m_DepthOnlyRenderPass = m_ResourceManager->CreateRenderPass({
-				.debugName = "pre-pass-renderpass",
-				.layout = m_DepthOnlyRenderPassLayout,
-				.depthTarget = {
-					.loadOp = LoadOperation::CLEAR,
-					.storeOp = StoreOperation::STORE,
-					.stencilLoadOp = LoadOperation::DONT_CARE,
-					.stencilStoreOp = StoreOperation::DONT_CARE,
-					.prevUsage = TextureLayout::UNDEFINED,
-					.nextUsage = TextureLayout::DEPTH_STENCIL,
-				},
-			});
-
-			// Create pre-pass bind groups.
-			m_DepthOnlyMeshBindGroup = ResourceManager::Instance->CreateBindGroup({
-				.debugName = "pre-pass-bind-group",
-				.layout = Renderer::Instance->GetDynamicBindingsLayout(),
-				.buffers = {
-					{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawData) },
-				}
-			});
-
-			m_DepthOnlySpriteBindGroup = ResourceManager::Instance->CreateBindGroup({
-				.debugName = "pre-pass-bind-group",
-				.layout = Renderer::Instance->GetDynamicBindingsLayout(),
-				.buffers = {
-					{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawDataSprite) },
-				}
-			});
-
-			// Setup render passes.
-			ShadowPassSetup();
-			DepthPrePassSetup();
-			OpaquePassSetup();
-			TransparentPassSetup();
-			SpriteRenderingSetup();
-			PostProcessPassSetup();
-			SkyboxPassSetup();
-			PresentPassSetup();
+		// Create color render pass.
+		m_RenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
+			.debugName = "main-renderpass-layout",
+			.depthTargetFormat = Format::D32_FLOAT,
+			.subPasses = {
+				{ .depthTarget = true, .colorTargets = 1, },
+			},
 		});
+
+		// Create depth only render pass.
+		m_DepthOnlyRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
+			.debugName = "pre-pass-renderpass-layout",
+			.depthTargetFormat = Format::D32_FLOAT,
+			.subPasses = {
+				{ .depthTarget = true },
+			},
+		});
+
+		m_DepthOnlyRenderPass = m_ResourceManager->CreateRenderPass({
+			.debugName = "pre-pass-renderpass",
+			.layout = m_DepthOnlyRenderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::CLEAR,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::UNDEFINED,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
+			},
+		});
+
+		// Create pre-pass bind groups.
+		m_DepthOnlyMeshBindGroup = ResourceManager::Instance->CreateBindGroup({
+			.debugName = "pre-pass-bind-group",
+			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
+			.buffers = {
+				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawData) },
+			}
+		});
+
+		m_DepthOnlySpriteBindGroup = ResourceManager::Instance->CreateBindGroup({
+			.debugName = "pre-pass-bind-group",
+			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
+			.buffers = {
+				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawDataSprite) },
+			}
+		});
+
+		// Setup render passes.
+		ShadowPassSetup();
+		DepthPrePassSetup();
+		OpaquePassSetup();
+		TransparentPassSetup();
+		SpriteRenderingSetup();
+		PostProcessPassSetup();
+		SkyboxPassSetup();
+		PresentPassSetup();
 	}
 
 	void ForwardSceneRenderer::Gather(Entity mainCamera)

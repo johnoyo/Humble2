@@ -1,0 +1,50 @@
+Scene: TestScen
+Entities:
+  - Entity: 1
+    Component::Tag:
+      Tag: Camera
+    Component::ID:
+      ID: 8903121076731574272
+    Component::Transform:
+      Translation: [0, 0, 10]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    Component::Camera:
+      Enabled: true
+      Primary: true
+      Far: 1000
+      Near: 0.100000001
+      FOV: 30
+      Aspect Ratio: 2.29974151
+      Exposure: 1
+      Gamma: 2.20000005
+      Zoom Level: 300
+      Type: 0
+  - Entity: 2
+    Component::Tag:
+      Tag: Sprite
+    Component::ID:
+      ID: 2187664200544321792
+    Component::Transform:
+      Translation: [0, 1, -5]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    Component::Sprite:
+      Enabled: true
+      Material: 1468601051210103437
+User Systems:
+  - 1446947720767051862
+User Components:
+  - 7276202125255088842
+User Helper Scripts:
+  - 14679799005195782872

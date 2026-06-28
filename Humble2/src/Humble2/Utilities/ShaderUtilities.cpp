@@ -224,11 +224,11 @@ namespace HBL2
         }
 
         // Module.
-        const std::string& shaderSource = ReadFile(shaderPath);
+        const std::string& shaderSource = ReadFile(shaderPath.string());
 
         Slang::ComPtr<slang::IBlob> diagnostics;
         Slang::ComPtr<slang::IModule> slangModule;
-        slangModule = session->loadModuleFromSourceString(shaderPath.filename().stem().string().c_str(), shaderPath.c_str(), shaderSource.c_str(), diagnostics.writeRef());
+        slangModule = session->loadModuleFromSourceString(shaderPath.filename().stem().string().c_str(), shaderPath.string().c_str(), shaderSource.c_str(), diagnostics.writeRef());
 
         if (diagnostics)
         {
@@ -420,7 +420,7 @@ namespace HBL2
         // Reflection.
         if (outReflectionData != nullptr)
         {
-            *outReflectionData = ShaderReflector::Reflect(linkedProgram, shaderPath);
+            *outReflectionData = ShaderReflector::Reflect(linkedProgram, shaderPath.string());
         }
 
         return compilationResultData;
@@ -635,6 +635,7 @@ namespace HBL2
     {
         auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
+        // Lit built-in material.
         LitMaterialAsset = editorAssetManager->CreateAsset({
             .debugName = "lit-material-asset",
             .filePath = "assets/materials/lit.mat",
@@ -644,11 +645,23 @@ namespace HBL2
         CreateMaterialMetadataFile(LitMaterialAsset, 1);
 
         AssetManager::Instance->GetAsset<Material>(LitMaterialAsset);
+
+        // Unlit built-in material.
+        UnlitMaterialAsset = editorAssetManager->CreateAsset({
+            .debugName = "unlit-material-asset",
+            .filePath = "assets/materials/unlit.mat",
+            .type = AssetType::Material,
+        });
+
+        CreateMaterialMetadataFile(UnlitMaterialAsset, 0);
+
+        AssetManager::Instance->GetAsset<Material>(UnlitMaterialAsset);
     }
 
     void ShaderUtilities::DeleteBuiltInMaterials()
     {
         AssetManager::Instance->DeleteAsset(LitMaterialAsset);
+        AssetManager::Instance->DeleteAsset(UnlitMaterialAsset);
     }
 
     void ShaderUtilities::CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType)

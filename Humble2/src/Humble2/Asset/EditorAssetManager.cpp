@@ -295,6 +295,7 @@ namespace HBL2
 			}
 
 			if (handle == ShaderUtilities::Get().LitMaterialAsset) { isBuiltInAsset = true; }
+			else if (handle == ShaderUtilities::Get().UnlitMaterialAsset) { isBuiltInAsset = true; }
 
 			if (isBuiltInAsset)
 			{
@@ -319,13 +320,22 @@ namespace HBL2
 			m_RegisteredAssetMap[asset->UUID] = shaderAssetHandle;
 		}
 
-		// Reregister built in material asset.
+		// Reregister built-in lit material asset.
 		if (ShaderUtilities::Get().LitMaterialAsset.IsValid())
 		{
 			m_RegisteredAssets.push_back(ShaderUtilities::Get().LitMaterialAsset);
 			Asset* asset = GetAssetMetadata(ShaderUtilities::Get().LitMaterialAsset);
 			m_RegisteredAssetPathToUUIDMap[asset->FilePath] = asset->UUID;
 			m_RegisteredAssetMap[asset->UUID] = ShaderUtilities::Get().LitMaterialAsset;
+		}
+
+		// Reregister built-in unlit material asset.
+		if (ShaderUtilities::Get().UnlitMaterialAsset.IsValid())
+		{
+			m_RegisteredAssets.push_back(ShaderUtilities::Get().UnlitMaterialAsset);
+			Asset* asset = GetAssetMetadata(ShaderUtilities::Get().UnlitMaterialAsset);
+			m_RegisteredAssetPathToUUIDMap[asset->FilePath] = asset->UUID;
+			m_RegisteredAssetMap[asset->UUID] = ShaderUtilities::Get().UnlitMaterialAsset;
 		}
 	}
 

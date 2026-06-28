@@ -103,6 +103,7 @@ namespace HBL2
 		void UpdateMaterialShaderResourceAssetFile(Handle<Asset> handle, Handle<Asset> shaderAssetHandle);
 
 		Handle<Asset> LitMaterialAsset;
+		Handle<Asset> UnlitMaterialAsset;
 
 	private:
 		ShaderUtilities();

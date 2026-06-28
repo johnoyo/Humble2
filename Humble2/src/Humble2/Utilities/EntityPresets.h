@@ -229,7 +229,8 @@ namespace HBL2
 
 			auto entity = scene->CreateEntity("Sprite");
 			scene->AddComponent<HBL2::Component::EditorVisible>(entity);
-			scene->AddComponent<HBL2::Component::Sprite>(entity);
+			auto& sprite = scene->AddComponent<HBL2::Component::Sprite>(entity);
+			sprite.Material = ShaderUtilities::Get().UnlitMaterialAsset;
 
 			return entity;
 		}

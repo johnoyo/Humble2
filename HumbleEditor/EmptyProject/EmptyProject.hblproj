@@ -1,6 +1,6 @@
 Project:
   Name: EmptyProject
-  StartingScene: Scenes/Physics3D.humble
+  StartingScene: Scenes/TestScen.humble
   AssetDirectory: Assets
   ScriptDirectory: ""
   Renderer:
