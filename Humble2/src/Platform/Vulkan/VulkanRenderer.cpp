@@ -510,7 +510,28 @@ namespace HBL2
 		}
 
 		createInfo.preTransform = swapChainSupport.Capabilities.currentTransform;
-		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        
+        // Choose compositeAlpha based on capabilities.
+        VkCompositeAlphaFlagBitsKHR compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+
+        const VkCompositeAlphaFlagBitsKHR compositeAlphaPriority[] =
+        {
+            VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,
+            VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
+            VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
+        };
+
+        for (auto candidate : compositeAlphaPriority)
+        {
+            if (swapChainSupport.Capabilities.supportedCompositeAlpha & candidate)
+            {
+                compositeAlpha = candidate;
+                break;
+            }
+        }
+
+        createInfo.compositeAlpha = compositeAlpha;
 		createInfo.presentMode = presentMode;
 		createInfo.clipped = VK_TRUE;
 		createInfo.oldSwapchain = oldSwapchain;
@@ -625,14 +646,6 @@ namespace HBL2
 			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 			.pNext = nullptr,
 			.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-			.queueFamilyIndex = indices.graphicsFamily.value(),
-		};
-
-		VkCommandPoolCreateInfo secondaryCommandPoolInfo =
-		{
-			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-			.pNext = nullptr,
-			.flags = 0,
 			.queueFamilyIndex = indices.graphicsFamily.value(),
 		};
 

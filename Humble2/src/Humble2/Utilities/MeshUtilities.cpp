@@ -245,7 +245,8 @@ namespace HBL2
 		}
 
 		const auto& assetFilePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath);
-		const auto& path = std::filesystem::exists(assetFilePath) ? assetFilePath : asset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+		const auto& path = std::filesystem::exists(assetFilePath) ? assetFilePath : workingDirectory / asset->FilePath;
 
 		if (std::filesystem::exists(path.string() + ".hblmesh"))
 		{

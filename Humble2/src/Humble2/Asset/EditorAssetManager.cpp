@@ -527,7 +527,8 @@ namespace HBL2
 	void EditorAssetManager::CreateShaderMetadata(Asset* asset)
 	{
 		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-		const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+		const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : workingDirectory / asset->FilePath;
 		const auto& metaFilePath = path.string() + ".hblshader";
 
 		// Check if the metadata exists, if it does retrieve the UUID and assign it to the asset.
@@ -581,7 +582,8 @@ namespace HBL2
 	void EditorAssetManager::CreateMaterialMetadata(Asset* asset)
 	{
 		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-		const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+		const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : workingDirectory / asset->FilePath;
 		const auto& metaFilePath = path.string() + ".hblmat";
 
 		// Check if the metadata exists, if it does retrieve the UUID and assign it to the asset.
@@ -635,7 +637,8 @@ namespace HBL2
 	void EditorAssetManager::CreateMeshMetadata(Asset* asset)
 	{
 		const auto& assetFilePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath);
-		const auto& path = std::filesystem::exists(assetFilePath) ? assetFilePath : asset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+		const auto& path = std::filesystem::exists(assetFilePath) ? assetFilePath : workingDirectory / asset->FilePath;
 		const auto& metaFilePath = path.string() + ".hblmesh";
 
 		// Check if the metadata exists, if it does retrieve the UUID and assign it to the asset.
@@ -958,7 +961,8 @@ namespace HBL2
 	Handle<Shader> EditorAssetManager::ImportShader(Asset* asset)
 	{
 		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-		const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+		const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : workingDirectory / asset->FilePath;
 
 		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
@@ -1306,7 +1310,8 @@ namespace HBL2
 	{
 		// Open metadata file.
 		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-		const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+		const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : workingDirectory / asset->FilePath;
 
 		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
@@ -1828,7 +1833,8 @@ namespace HBL2
 	Handle<Mesh> EditorAssetManager::ImportMesh(Asset* asset)
 	{
 		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-		const std::filesystem::path& meshPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+		const std::filesystem::path& meshPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : workingDirectory / asset->FilePath;
 
 		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
@@ -1866,7 +1872,8 @@ namespace HBL2
 		Handle<Shader> shaderHandle = Handle<Shader>::UnPack(asset->Indentifier);
 
 		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-		const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+		const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : workingDirectory / asset->FilePath;
 
 		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
@@ -2198,7 +2205,8 @@ namespace HBL2
 		Handle<Material> materialHandle = Handle<Material>::UnPack(asset->Indentifier);
 
 		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-		const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+		const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : workingDirectory / asset->FilePath;
 
 		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
@@ -2476,7 +2484,8 @@ namespace HBL2
 		mesh->MarkAsEmpty();
 
 		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-		const std::filesystem::path& meshPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : asset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+		const std::filesystem::path& meshPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : workingDirectory / asset->FilePath;
 
 		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
