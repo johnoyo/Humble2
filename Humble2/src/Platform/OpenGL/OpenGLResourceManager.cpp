@@ -78,7 +78,7 @@ namespace HBL2
 			return texture->ChangeTextureView(std::forward<const TextureViewDescriptor>(desc));
 		}
 	}
-	void OpenGLResourceManager::TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle)
+	void OpenGLResourceManager::TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout)
 	{
 	}
 	glm::vec3 OpenGLResourceManager::GetTextureDimensions(Handle<Texture> handle)

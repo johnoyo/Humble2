@@ -19,7 +19,7 @@ namespace HBL2
 
 		void Update(const Span<const std::byte>& bytes);
 		void ChangeTextureView(const TextureViewDescriptor&& desc);
-		void TrasitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout, VulkanBindGroup* bindGroup);
+		void TrasitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout);
 		void Destroy();
 
 		const char* DebugName = "";

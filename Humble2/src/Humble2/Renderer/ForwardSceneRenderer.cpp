@@ -191,24 +191,21 @@ namespace HBL2
 			commandBuffer,
 			Renderer::Instance->IntermediateColorTexture,
 			TextureLayout::UNDEFINED,
-			TextureLayout::RENDER_ATTACHMENT,
-			{}
+			TextureLayout::RENDER_ATTACHMENT
 		);
 
 		rm->TransitionTextureLayout(
 			commandBuffer,
 			Renderer::Instance->MainColorTexture,
 			TextureLayout::UNDEFINED,
-			TextureLayout::RENDER_ATTACHMENT,
-			{}
+			TextureLayout::RENDER_ATTACHMENT
 		);
 
 		rm->TransitionTextureLayout(
 			commandBuffer,
 			Renderer::Instance->ShadowAtlasTexture,
 			TextureLayout::UNDEFINED,
-			TextureLayout::DEPTH_STENCIL,
-			{}
+			TextureLayout::DEPTH_STENCIL
 		);
 
 		auto& renderPassPool = Renderer::Instance->GetRenderPassPool();
@@ -1585,8 +1582,7 @@ namespace HBL2
 							commandBuffer,
 							skyLight.CubeMap,
 							TextureLayout::UNDEFINED,
-							TextureLayout::GENERAL,
-							{}
+							TextureLayout::GENERAL
 						);
 
 						Handle<Texture> equirectangularMapHandle = AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap);
@@ -1680,8 +1676,7 @@ namespace HBL2
 			commandBuffer,
 			Renderer::Instance->IntermediateColorTexture,
 			TextureLayout::RENDER_ATTACHMENT,
-			TextureLayout::SHADER_READ_ONLY,
-			{}
+			TextureLayout::SHADER_READ_ONLY
 		);
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass, m_PostProcessFrameBuffer);
@@ -1723,8 +1718,7 @@ namespace HBL2
 			commandBuffer,
 			Renderer::Instance->MainColorTexture,
 			TextureLayout::RENDER_ATTACHMENT,
-			TextureLayout::SHADER_READ_ONLY,
-			{}
+			TextureLayout::SHADER_READ_ONLY
 		);
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
