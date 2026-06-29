@@ -113,6 +113,8 @@ namespace HBL2
 		}
 
 		SwapAndResetStats();
+        
+        m_ImGuiCommandBuffers[m_FrameNumber.load() % FRAME_OVERLAP].SetSignalSemophore(m_ImGuiRenderFinishedSemaphores[m_SwapchainImageIndex]);
 	}
 
 	void VulkanRenderer::EndFrame()
@@ -136,7 +138,7 @@ namespace HBL2
 			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 			.pNext = nullptr,
 			.waitSemaphoreCount = 1,
-			.pWaitSemaphores = &GetCurrentFrame().ImGuiRenderFinishedSemaphore,
+			.pWaitSemaphores = &m_ImGuiRenderFinishedSemaphores[m_SwapchainImageIndex],
 			.swapchainCount = 1,
 			.pSwapchains = &m_SwapChain,
 			.pImageIndices = &m_SwapchainImageIndex,
@@ -612,28 +614,38 @@ namespace HBL2
 			.flags = 0,
 		};
 
-		for (int i = 0; i < FRAME_OVERLAP; i++)
-		{
-			VK_VALIDATE(vkCreateFence(m_Device->Get(), &fenceCreateInfo, nullptr, &m_VkFrames[i].InFlightFence), "vkCreateFence");
+        for (int i = 0; i < FRAME_OVERLAP; i++)
+        {
+            VK_VALIDATE(vkCreateFence(m_Device->Get(), &fenceCreateInfo, nullptr, &m_VkFrames[i].InFlightFence), "vkCreateFence");
 
-			//enqueue the destruction of the fence
-			m_MainDeletionQueue.PushFunction([=]()
-			{
-				vkDestroyFence(m_Device->Get(), m_VkFrames[i].InFlightFence, nullptr);
-			});
+            //enqueue the destruction of the fence
+            m_MainDeletionQueue.PushFunction([=]()
+            {
+                vkDestroyFence(m_Device->Get(), m_VkFrames[i].InFlightFence, nullptr);
+            });
 
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_VkFrames[i].ImageAvailableSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_VkFrames[i].MainRenderFinishedSemaphore), "vkCreateSemaphore");
-			VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_VkFrames[i].ImGuiRenderFinishedSemaphore), "vkCreateSemaphore");
+            VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_VkFrames[i].ImageAvailableSemaphore), "vkCreateSemaphore");
+            VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_VkFrames[i].MainRenderFinishedSemaphore), "vkCreateSemaphore");
 
-			//enqueue the destruction of semaphores
-			m_MainDeletionQueue.PushFunction([=]()
-			{
-				vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].ImageAvailableSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].MainRenderFinishedSemaphore, nullptr);
-				vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].ImGuiRenderFinishedSemaphore, nullptr);
-			});
-		}
+            //enqueue the destruction of semaphores
+            m_MainDeletionQueue.PushFunction([=]()
+            {
+                vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].ImageAvailableSemaphore, nullptr);
+                vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].MainRenderFinishedSemaphore, nullptr);
+            });
+        }
+        
+        m_ImGuiRenderFinishedSemaphores.resize(m_SwapChainImages.size());
+        for (int i = 0; i < m_SwapChainImages.size(); i++)
+        {
+            VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_ImGuiRenderFinishedSemaphores[i]), "vkCreateSemaphore");
+            
+            //enqueue the destruction of semaphores
+            m_MainDeletionQueue.PushFunction([=]()
+            {
+                vkDestroySemaphore(m_Device->Get(), m_ImGuiRenderFinishedSemaphores[i], nullptr);
+            });
+        }
 	}
 
 	void VulkanRenderer::CreateCommands()
@@ -688,7 +700,7 @@ namespace HBL2
 				.commandBuffer = m_VkFrames[i].ImGuiCommandBuffer,
 				.blockFence = m_VkFrames[i].InFlightFence,
 				.waitSemaphore = m_VkFrames[i].MainRenderFinishedSemaphore,
-				.signalSemaphore = m_VkFrames[i].ImGuiRenderFinishedSemaphore,
+				.signalSemaphore = VK_NULL_HANDLE, // Set at BeginFrame.
 			});
 		}
 

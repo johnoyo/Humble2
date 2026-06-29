@@ -203,4 +203,9 @@ namespace HBL2
 			VK_VALIDATE(vkQueueSubmit(renderer->GetGraphicsQueue(), 1, &submitInfo, m_BlockFence), "vkQueueSubmit");
 		}
     }
+
+    void VulkanCommandBuffer::SetSignalSemophore(VkSemaphore signalSemaphore)
+    {
+        m_SignalSemaphore = signalSemaphore;
+    }
 }
