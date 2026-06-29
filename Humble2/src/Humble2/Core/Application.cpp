@@ -3,6 +3,7 @@
 #include "Asset/EditorAssetManager.h"
 #include "Script/BuildEngine.h"
 #include "Platform/Windows/WindowsBuildEngine.h"
+#include "Platform/MacOS/MacOSBuildEngine.h"
 
 #ifdef DIST
 	#define BEGIN_APP_PROFILE(tag)
@@ -82,12 +83,17 @@ namespace HBL2
 		PrefabUtilities::Initialize();
 		ShaderUtilities::Initialize();
 
-		BuildEngine::Instance = new WindowsBuildEngine;
+#ifdef HBL2_PLATFORM_WINDOWS
+        BuildEngine::Instance = new WindowsBuildEngine;
+#elif HBL2_PLATFORM_MACOS
+        BuildEngine::Instance = new MacOSBuildEngine;
+#endif
 
-		switch (gfxAPI)
-		{
+        switch (gfxAPI)
+        {
+        case GraphicsAPI::OPENGL:
+            HBL2_CORE_WARN("OpenGL gfx backend is deprecated and will be removed in the future.");
 #ifndef HBL2_PLATFORM_MACOS
-		case GraphicsAPI::OPENGL:
 			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
 			g_GfxAPI = "OpenGL";
 			Device::Instance = new OpenGLDevice;
@@ -95,8 +101,8 @@ namespace HBL2
 			ResourceManager::Instance = new OpenGLResourceManager;
 			Renderer::Instance = new OpenGLRenderer;
 			ImGuiRenderer::Instance = new OpenGLImGuiRenderer;
-			break;
 #endif
+            break;
 		case GraphicsAPI::VULKAN:
 			HBL2_CORE_INFO("Vulkan is selected as the renderer API.");
 			g_GfxAPI = "Vulkan";
@@ -106,8 +112,9 @@ namespace HBL2
 			Renderer::Instance = new VulkanRenderer;
 			ImGuiRenderer::Instance = new VulkanImGuiRenderer;
 			break;
+        case GraphicsAPI::METAL:
+        case GraphicsAPI::WEBGPU:
 		case GraphicsAPI::NONE:
-        default:
 			HBL2_CORE_ERROR("No RendererAPI specified. Please choose between OpenGL, or Vulkan depending on your target platform.");
 			exit(-1);
 			break;
