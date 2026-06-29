@@ -4,6 +4,12 @@
 
 using namespace HBL2;
 
+struct MaterialBuffer
+{
+	glm::vec4 Color;
+	float Glossiness;
+};
+
 class NewSystem final : public HBL2::ISystem
 {
 public:
@@ -32,8 +38,12 @@ public:
 			HBL2_INFO("[COLLISION] Entered {} -> {}\n", tagA, tagB);
 
 			auto& mesh = m_Context->GetComponent<Component::StaticMesh>(collisionEnterEvent->entityB);
-			Material* mat = ResourceManager::Instance->GetMaterial(mesh.Material);
-			mat->AlbedoColor = { 1.0f, 0.55f, 0.95f, 1.0f };
+			Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(mesh.Material);
+			Material* mat = ResourceManager::Instance->GetMaterial(materialHandle);
+
+			m_Buffer = { .Color = { 1.0f, 0.55f, 0.95f, 1.0f }, .Glossiness = 1.0f };
+
+			mat->SetBuffer(0, &m_Buffer);
 		});
 
 		PhysicsEngine3D::Instance->OnTriggerEnterEvent([this](Physics::TriggerEnterEvent* triggerEnterEvent)
@@ -132,6 +142,7 @@ public:
 
 private:
 	bool m_Grounded = false;
+	MaterialBuffer m_Buffer = {};
 };
 
 REGISTER_HBL2_SYSTEM(NewSystem)

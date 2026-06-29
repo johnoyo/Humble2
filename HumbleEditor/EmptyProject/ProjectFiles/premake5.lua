@@ -1,6 +1,6 @@
 VULKAN_SDK = os.getenv("VULKAN_SDK")
 
-workspace "UnityBuild"
+workspace "UnityBuildNew"
     architecture "x64"
 
     configurations 
@@ -13,20 +13,19 @@ workspace "UnityBuild"
 outputdir = "%{cfg.buildcfg}-%{cfg.architecture}"
 
 -- Engine project.
-project "UnityBuild"
+project "UnityBuildNew"
     kind "SharedLib"
     language "C++"
     cppdialect "C++20"
     staticruntime "Off"
-
-    flags { "MultiProcessorCompile" }
+    multiprocessorcompile "On"
 
     -- Directories for binary and intermediate files.
     targetdir ("../../assets/dlls/" .. outputdir .. "/%{prj.name}")
     objdir ("../../assets/dlls-int/" .. outputdir .. "/%{prj.name}")
 
     files 
-    { 
+    {
         "../Assets/**.h",
         "UnityBuildSource.cpp",
     }
@@ -43,9 +42,14 @@ project "UnityBuild"
         "../Assets",
         "../../../Humble2/src",
         "../../../Humble2/src/Humble2",
+        
+    }
+
+    externalincludedirs
+    {
         "../../../Humble2/src/Vendor",
         "../../../Humble2/src/Vendor/spdlog-1.x/include",
-        "../../../Humble2/src/Vendor/entt/include",
+        "../../../Humble2/src/Vendor/fastgltf/include",
         "../../../Dependencies/GLFW/include",
         "../../../Dependencies/GLEW/include",
         "../../../Dependencies/ImGui/imgui",
@@ -55,20 +59,24 @@ project "UnityBuild"
         "../../../Dependencies/YAML-Cpp/yaml-cpp/include",
         "../../../Dependencies/PortableFileDialogs",
         "../../../Dependencies/FMOD/core/include",
-        "../../../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
-        "%{VULKAN_SDK}/Include"
+        "../../../Dependencies/Box2D/box2d/include",
+        "../../../Dependencies/Box2D/box2d/src",
+        "%{VULKAN_SDK}/Include",
+        "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS/include",
     }
     
     links
     {
         "Humble2",
-        "ImGui",
-        "YAML-Cpp"
     }
     
     filter "system:windows"
-    systemversion "latest"    
+        systemversion "latest"    
         defines { "HBL2_PLATFORM_WINDOWS" }
+
+    filter "system:macosx"
+        systemversion "latest"    
+        defines { "HBL2_PLATFORM_MACOS" }
 
     filter "configurations:Debug"
         defines { "DEBUG" }
@@ -79,8 +87,3 @@ project "UnityBuild"
         defines { "RELEASE" }
         runtime "Release"
         optimize "On"
-        
-    filter "configurations:Emscripten"
-        defines { "EMSCRIPTEN" }
-        runtime "Release"
-        optimize "on"

@@ -5,7 +5,6 @@
 
 #include "Panel.h"
 #include "Elements.h"
-#include "EditorInspector.h"
 #include "UserInterfaceUtilities.h"
 
 #include <glm/glm.hpp>
