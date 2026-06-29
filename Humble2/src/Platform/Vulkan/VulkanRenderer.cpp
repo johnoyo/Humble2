@@ -619,7 +619,7 @@ namespace HBL2
             VK_VALIDATE(vkCreateFence(m_Device->Get(), &fenceCreateInfo, nullptr, &m_VkFrames[i].InFlightFence), "vkCreateFence");
 
             //enqueue the destruction of the fence
-            m_MainDeletionQueue.PushFunction([=]()
+            m_MainDeletionQueue.PushFunction([=, this]()
             {
                 vkDestroyFence(m_Device->Get(), m_VkFrames[i].InFlightFence, nullptr);
             });
@@ -628,7 +628,7 @@ namespace HBL2
             VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_VkFrames[i].MainRenderFinishedSemaphore), "vkCreateSemaphore");
 
             //enqueue the destruction of semaphores
-            m_MainDeletionQueue.PushFunction([=]()
+            m_MainDeletionQueue.PushFunction([=, this]()
             {
                 vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].ImageAvailableSemaphore, nullptr);
                 vkDestroySemaphore(m_Device->Get(), m_VkFrames[i].MainRenderFinishedSemaphore, nullptr);
@@ -641,7 +641,7 @@ namespace HBL2
             VK_VALIDATE(vkCreateSemaphore(m_Device->Get(), &semaphoreCreateInfo, nullptr, &m_ImGuiRenderFinishedSemaphores[i]), "vkCreateSemaphore");
             
             //enqueue the destruction of semaphores
-            m_MainDeletionQueue.PushFunction([=]()
+            m_MainDeletionQueue.PushFunction([=, this]()
             {
                 vkDestroySemaphore(m_Device->Get(), m_ImGuiRenderFinishedSemaphores[i], nullptr);
             });
@@ -682,7 +682,7 @@ namespace HBL2
 			m_VkFrames[i].MainCommandBuffer = commandBuffers[0];
 			m_VkFrames[i].ImGuiCommandBuffer = commandBuffers[1];
 
-			m_MainDeletionQueue.PushFunction([=]()
+			m_MainDeletionQueue.PushFunction([=, this]()
 			{
 				vkDestroyCommandPool(m_Device->Get(), m_VkFrames[i].CommandPool, nullptr);
 			});

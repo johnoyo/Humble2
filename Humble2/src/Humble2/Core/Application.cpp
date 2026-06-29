@@ -68,6 +68,9 @@ namespace HBL2
 			Log::SetOutputs({ LogContexts::FILE });
 			gfxAPI = projectSettings.RuntimeGraphicsAPI;
 			break;
+        case Mode::None:
+            HBL2_CORE_FATAL("Context mode cannot be 'None', it should be either 'Editor' or 'Runtime'.");
+            exit(-1);
 		}
 
 		Console::Instance = new Console;
@@ -238,14 +241,18 @@ namespace HBL2
 
 		Window::Instance->Create();
 		ImGuiRenderer::Instance->Create({ .EnableMultiViewports = projectSettings.EditorMultipleViewports });
-		
-		Input::Initialize();
+        
+        // The device is initialized in the main thread because of MacOS limitation,
+        // since it requires the surface creation to happen on the main thread.
+        // https://github.com/KhronosGroup/Vulkan-Docs/issues/1200
+        Device::Instance->Initialize();
+        
+        Input::Initialize();
+        
+        DispatchRenderLoop([this]()
+        {
+            JobSystem::Get().SetupWorkerRT();
 
-		DispatchRenderLoop([this]()
-		{
-			JobSystem::Get().SetupWorkerRT();
-
-			Device::Instance->Initialize();
 			Renderer::Instance->Initialize();
 			ImGuiRenderer::Instance->Initialize();
 			DebugRenderer::Instance->Initialize();

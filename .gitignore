@@ -364,4 +364,5 @@ MigrationBackup/
 *.xcuserstate
 *.xcsettings
 *.xcworkspacedata
+*.xcscheme
 

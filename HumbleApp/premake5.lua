@@ -70,6 +70,11 @@ project "HumbleApp"
             "-rpath @executable_path"
         }
 
+        xcodebuildsettings
+        {
+            ["GENERATE_INFOPLIST_FILE"] = "YES",
+        }
+
     filter "configurations:Debug"
         defines { "DEBUG" }
         runtime "Debug"
