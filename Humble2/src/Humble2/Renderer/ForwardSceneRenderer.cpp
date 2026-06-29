@@ -187,26 +187,9 @@ namespace HBL2
 
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
-		rm->TransitionTextureLayout(
-			commandBuffer,
-			Renderer::Instance->IntermediateColorTexture,
-			TextureLayout::UNDEFINED,
-			TextureLayout::RENDER_ATTACHMENT
-		);
-
-		rm->TransitionTextureLayout(
-			commandBuffer,
-			Renderer::Instance->MainColorTexture,
-			TextureLayout::UNDEFINED,
-			TextureLayout::RENDER_ATTACHMENT
-		);
-
-		rm->TransitionTextureLayout(
-			commandBuffer,
-			Renderer::Instance->ShadowAtlasTexture,
-			TextureLayout::UNDEFINED,
-			TextureLayout::DEPTH_STENCIL
-		);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL);
 
 		auto& renderPassPool = Renderer::Instance->GetRenderPassPool();
 
@@ -1672,12 +1655,7 @@ namespace HBL2
 		BEGIN_PROFILE_PASS();
 
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(
-			commandBuffer,
-			Renderer::Instance->IntermediateColorTexture,
-			TextureLayout::RENDER_ATTACHMENT,
-			TextureLayout::SHADER_READ_ONLY
-		);
+		ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::RENDER_ATTACHMENT, TextureLayout::SHADER_READ_ONLY);
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass, m_PostProcessFrameBuffer);
 
@@ -1714,12 +1692,7 @@ namespace HBL2
 		BEGIN_PROFILE_PASS();
 
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(
-			commandBuffer,
-			Renderer::Instance->MainColorTexture,
-			TextureLayout::RENDER_ATTACHMENT,
-			TextureLayout::SHADER_READ_ONLY
-		);
+		ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::RENDER_ATTACHMENT, TextureLayout::SHADER_READ_ONLY);
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
 
