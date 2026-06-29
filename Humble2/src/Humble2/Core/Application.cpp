@@ -15,8 +15,9 @@
 	#define SWAP_AND_RESET_PROFILED_TIMERS() (m_PreviousStats = m_CurrentStats, m_CurrentStats.Reset())
 #endif
 
-#define SKIP_MT_FRAME() if (skipMTFrame.load() <= 0) { if (skipMTFrame.load() == 0) { skipMTFrame = 1; } EndFrame(); return; }
-#define SKIP_RT_FRAME() if (skipRTFrame.load() <= 0) { if (skipRTFrame.load() == 0) { skipRTFrame = 1; } continue; }
+#define SKIP_MT_FRAME_IF_NEEDED() if (skipMTFrame.load() <= 0) { if (skipMTFrame.load() == 0) { skipMTFrame = 1; } EndFrame(); return; }
+#define SKIP_RT_FRAME_IF_NEEDED() if (skipRTFrame.load() <= 0) { if (skipRTFrame.load() == 0) { skipRTFrame = 1; } continue; }
+#define ABORT_RT_FRAME_IF_NEEDED() if (frameData == nullptr) { break; }
 
 namespace HBL2
 {
@@ -273,7 +274,7 @@ namespace HBL2
 
 			while (true)
 			{
-				SKIP_RT_FRAME();
+				SKIP_RT_FRAME_IF_NEEDED();
 
 				BEGIN_APP_PROFILE(renderThread);
 
@@ -281,7 +282,7 @@ namespace HBL2
 				const FrameData* frameData = Renderer::Instance->WaitAndRender();
 				END_APP_PROFILE(renderThreadWait, m_CurrentStats.RenderThreadWaitTime);
 
-				if (frameData == nullptr) { break; }
+                ABORT_RT_FRAME_IF_NEEDED();
 
 				BEGIN_APP_PROFILE(render);
 				Renderer::Instance->BeginFrame();
@@ -316,7 +317,7 @@ namespace HBL2
 
 			BeginFrame();
 
-			SKIP_MT_FRAME();
+			SKIP_MT_FRAME_IF_NEEDED();
 
 			BEGIN_APP_PROFILE(gameThreadWait);
 			Renderer::Instance->WaitAndBegin();

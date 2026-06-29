@@ -17,7 +17,6 @@ project "UnityBuildNew"
     kind "SharedLib"
     language "C++"
     cppdialect "C++20"
-    staticruntime "Off"
     multiprocessorcompile "On"
 
     -- Directories for binary and intermediate files.
@@ -42,7 +41,6 @@ project "UnityBuildNew"
         "../Assets",
         "../../../Humble2/src",
         "../../../Humble2/src/Humble2",
-        
     }
 
     externalincludedirs
@@ -73,6 +71,7 @@ project "UnityBuildNew"
     filter "system:windows"
         systemversion "latest"    
         defines { "HBL2_PLATFORM_WINDOWS" }
+        symbolsfile ("../../assets/dlls/" .. outputdir .. "/%{prj.name}/{pdbName}.pdb")
 
     filter "system:macosx"
         systemversion "latest"    
@@ -81,9 +80,11 @@ project "UnityBuildNew"
     filter "configurations:Debug"
         defines { "DEBUG" }
         runtime "Debug"
+        staticruntime "Off"
         symbols "On"
 
     filter "configurations:Release"
         defines { "RELEASE" }
         runtime "Release"
+        staticruntime "Off"
         optimize "On"
