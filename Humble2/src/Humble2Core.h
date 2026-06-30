@@ -26,11 +26,26 @@
 #include "Utilities/Collections/BitFlags.h"
 
 // Macro to generate system registration factory function
-#define REGISTER_HBL2_SYSTEM(TYPE)                                                                                              \
-    extern "C" __declspec(dllexport) void RegisterSystem_##TYPE(HBL2::Scene* ctx)                                               \
-    {                                                                                                                           \
-        void* mem = ctx->GetArena()->Alloc(sizeof(TYPE), alignof(TYPE));                                                        \
-        TYPE* new##TYPE = ::new (mem) TYPE();                                                                                   \
-        new##TYPE->Name = #TYPE;                                                                                                \
-        ctx->RegisterSystem(new##TYPE, HBL2::SystemType::User);                                                                 \
-    }
+#ifdef HBL2_PLATFORM_WINDOWS
+
+    #define REGISTER_HBL2_SYSTEM(TYPE)                                                                                              \
+        extern "C" __declspec(dllexport) void RegisterSystem_##TYPE(HBL2::Scene* ctx)                                               \
+        {                                                                                                                           \
+            void* mem = ctx->GetArena()->Alloc(sizeof(TYPE), alignof(TYPE));                                                        \
+            TYPE* new##TYPE = ::new (mem) TYPE();                                                                                   \
+            new##TYPE->Name = #TYPE;                                                                                                \
+            ctx->RegisterSystem(new##TYPE, HBL2::SystemType::User);                                                                 \
+        }
+
+#elif defined(HBL2_PLATFORM_MACOS) || defined(HBL2_PLATFORM_LINUX)
+
+    #define REGISTER_HBL2_SYSTEM(TYPE)                                                                                              \
+        extern "C" __attribute__((visibility("default"))) void RegisterSystem_##TYPE(HBL2::Scene* ctx)                              \
+        {                                                                                                                           \
+            void* mem = ctx->GetArena()->Alloc(sizeof(TYPE), alignof(TYPE));                                                        \
+            TYPE* new##TYPE = ::new (mem) TYPE();                                                                                   \
+            new##TYPE->Name = #TYPE;                                                                                                \
+            ctx->RegisterSystem(new##TYPE, HBL2::SystemType::User);                                                                 \
+        }
+
+#endif

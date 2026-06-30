@@ -193,96 +193,58 @@ namespace HBL2::Editor
 						m_Owner->m_EditorScenePath = filepath;
 					}
 				}
-				else if (ImGui::MenuItem("Build (Windows - Debug)"))
+				else if (ImGui::MenuItem("Build (Desktop - Debug)"))
 				{
-					const std::string& projectName = HBL2::Project::GetActive()->GetName();
-
 					// Build.
 					BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Debug);
-
-					// Copy project folder to build folder.
-					FileUtils::CopyFolder("./" + projectName, "..\\bin\\Debug-x86_64\\HumbleApp\\" + projectName);
-
-					// Copy assets folder to build folder.
-					FileUtils::CopyFolder("./assets", "..\\bin\\Debug-x86_64\\HumbleApp\\assets");
 				}
-				else if (ImGui::MenuItem("Build (Windows - Release)"))
+				else if (ImGui::MenuItem("Build (Desktop - Release)"))
 				{
 					const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 					// Build.
 					BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Release);
-
-					// Copy project folder to build folder.
-					FileUtils::CopyFolder("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName);
-
-					// Copy assets folder to build folder.
-					FileUtils::CopyFolder("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets");
 				}
-				else if (ImGui::MenuItem("Build (Windows - Distribution)"))
+				else if (ImGui::MenuItem("Build (Desktop - Distribution)"))
 				{
 					const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 					// Build.
 					BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Distribution);
-
-					// Copy project folder to build folder.
-					FileUtils::CopyFolder("./" + projectName, "..\\bin\\Dist-x86_64\\HumbleApp\\" + projectName);
-
-					// Copy assets folder to build folder.
-					FileUtils::CopyFolder("./assets", "..\\bin\\Dist-x86_64\\HumbleApp\\assets");
 				}
-				else if (ImGui::MenuItem("Build & Run (Windows - Debug)"))
+				else if (ImGui::MenuItem("Build & Run (Desktop - Debug)"))
 				{
 					const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 					// Build.
 					BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Debug);
-
-					// Copy project folder to build folder.
-					FileUtils::CopyFolder("./" + projectName, "..\\bin\\Debug-x86_64\\HumbleApp\\" + projectName);
-
-					// Copy assets folder to build folder.
-					FileUtils::CopyFolder("./assets", "..\\bin\\Debug-x86_64\\HumbleApp\\assets");
 
 					// Run.
 					BuildEngine::Instance->RunRuntime(BuildEngine::Configuration::Debug);
 				}
-				else if (ImGui::MenuItem("Build & Run (Windows - Release)"))
+				else if (ImGui::MenuItem("Build & Run (Desktop - Release)"))
 				{
 					const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 					// Build.
 					BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Release);
 
-					// Copy project folder to build folder.
-					FileUtils::CopyFolder("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName);
-
-					// Copy assets folder to build folder.
-					FileUtils::CopyFolder("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets");
-
 					// Run.
 					BuildEngine::Instance->RunRuntime(BuildEngine::Configuration::Release);
 				}
-				else if (ImGui::MenuItem("Build & Run (Windows - Distribution)"))
+				else if (ImGui::MenuItem("Build & Run (Desktop - Distribution)"))
 				{
 					const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 					// Build.
 					BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Distribution);
-
-					// Copy project folder to build folder.
-					FileUtils::CopyFolder("./" + projectName, "..\\bin\\Dist-x86_64\\HumbleApp\\" + projectName);
-
-					// Copy assets folder to build folder.
-					FileUtils::CopyFolder("./assets", "..\\bin\\Dist-x86_64\\HumbleApp\\assets");
 
 					// Run.
 					BuildEngine::Instance->RunRuntime(BuildEngine::Configuration::Release);
 				}
 				else if (ImGui::MenuItem("Build (Web)"))
 				{
-					system("..\\Scripts\\emBuildAll.bat");
+					system("../Scripts/emBuildAll.bat");
 				}
 				else if (ImGui::MenuItem("Close"))
 				{

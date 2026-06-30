@@ -252,22 +252,6 @@ namespace HBL2
 		return scriptAssetHandle;
 	}
 
-	const std::filesystem::path BuildEngine::GetUnityBuildPath(Configuration config) const
-	{
-		const std::string& projectName = Project::GetActive()->GetName();
-
-		switch (config)
-		{
-		case Configuration::Debug: 
-			return std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-		case Configuration::Release: 
-		case Configuration::Distribution: 
-			return std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-		}
-
-		return std::filesystem::path("");
-	}
-
 	std::string BuildEngine::GetDefaultSystemCode(const std::string& systemName)
 	{
 		const std::string& placeholder = "{SystemName}";
@@ -403,7 +387,7 @@ class {ScriptName}
 	void BuildEngine::LoadBuild(const std::string& path)
 	{
 		// Load new unity build dll.
-		m_DynamicLibrary = DynamicLibrary(path);
+        m_DynamicLibrary = DynamicLibrary(path);
 	}
 
 	void BuildEngine::UnloadBuild(Scene* ctx)

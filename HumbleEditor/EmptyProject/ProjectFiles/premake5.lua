@@ -1,6 +1,6 @@
 VULKAN_SDK = os.getenv("VULKAN_SDK")
 
-workspace "UnityBuildNew"
+workspace "UnityBuild"
     architecture "x64"
 
     configurations 
@@ -13,15 +13,15 @@ workspace "UnityBuildNew"
 outputdir = "%{cfg.buildcfg}-%{cfg.architecture}"
 
 -- Engine project.
-project "UnityBuildNew"
+project "UnityBuild"
     kind "SharedLib"
     language "C++"
     cppdialect "C++20"
     multiprocessorcompile "On"
 
     -- Directories for binary and intermediate files.
-    targetdir ("../../assets/dlls/" .. outputdir .. "/%{prj.name}")
-    objdir ("../../assets/dlls-int/" .. outputdir .. "/%{prj.name}")
+    targetdir ("../../assets/dlls/" .. outputdir .. "/{ProjectName}")
+    objdir ("../../assets/dlls-int/" .. outputdir .. "/{ProjectName}")
 
     files 
     {
@@ -71,7 +71,7 @@ project "UnityBuildNew"
     filter "system:windows"
         systemversion "latest"    
         defines { "HBL2_PLATFORM_WINDOWS" }
-        symbolsfile ("../../assets/dlls/" .. outputdir .. "/%{prj.name}/{pdbName}.pdb")
+        --symbolsfile ("../../assets/dlls/" .. outputdir .. "/%{prj.name}/{pdbName}.pdb")
 
     filter "system:macosx"
         systemversion "latest"    
@@ -83,8 +83,18 @@ project "UnityBuildNew"
         staticruntime "Off"
         symbols "On"
 
+        libdirs
+        {
+            "../../../bin/Debug-x86_64/Humble2",
+        }
+
     filter "configurations:Release"
         defines { "RELEASE" }
         runtime "Release"
         staticruntime "Off"
         optimize "On"
+
+        libdirs
+        {
+            "../../../bin/Release-x86_64/Humble2",
+        }

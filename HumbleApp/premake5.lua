@@ -67,12 +67,25 @@ project "HumbleApp"
 
         linkoptions
         {
-            "-rpath @executable_path"
+            "-rpath @executable_path/../Frameworks"
         }
 
         xcodebuildsettings
         {
             ["GENERATE_INFOPLIST_FILE"] = "YES",
+        }
+
+        postbuildcommands
+        {
+            "{MKDIR} %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks",
+            
+            "{COPY} %{wks.location}/bin/" .. outputdir .. "/Humble2/libHumble2.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+
+            "{COPY} %{wks.location}/Dependencies/FMOD/MacOS/core/lib/libfmodL.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.0.2026.11.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",  
+            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-glslang-2026.11.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",  
         }
 
     filter "configurations:Debug"

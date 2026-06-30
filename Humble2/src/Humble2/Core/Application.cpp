@@ -89,7 +89,6 @@ namespace HBL2
 #elif HBL2_PLATFORM_MACOS
         BuildEngine::Instance = new MacOSBuildEngine;
 #endif
-
         switch (gfxAPI)
         {
         case GraphicsAPI::OPENGL:
@@ -159,9 +158,9 @@ namespace HBL2
 	{
 		m_RenderThread = std::thread(renderLoop);
 
-		auto handle = m_RenderThread.native_handle();
-
-#ifdef _WIN32
+#ifdef HBL2_PLATFORM_WINDOWS
+        auto handle = m_RenderThread.native_handle();
+        
 		// Put render thread on to dedicated core.
 		DWORD_PTR affinityMask = 1ull << 1;
 		DWORD_PTR affinity_result = SetThreadAffinityMask(handle, affinityMask);

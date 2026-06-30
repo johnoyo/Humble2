@@ -1,6 +1,7 @@
 #include "WindowsBuildEngine.h"
 
 #include "Project/Project.h"
+#include "Utilities/FileDialogs.h"
 
 namespace HBL2
 {
@@ -78,20 +79,34 @@ namespace HBL2
 
 	bool WindowsBuildEngine::BuildRuntime(Configuration configuration)
 	{
+        const std::string& projectName = Project::GetActive()->GetName();
+        const auto& workingDir = Project::GetProjectDirectory().parent_path();
+        
+        std::string config;
+        
 		switch (configuration)
 		{
 		case HBL2::BuildEngine::Configuration::Debug:
-			system("\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.slnx /t:HumbleApp /p:Configuration=Debug");
-			return true;
-		case HBL2::BuildEngine::Configuration::Release:
-			system("\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.slnx /t:HumbleApp /p:Configuration=Release");
-			return true;
-		case HBL2::BuildEngine::Configuration::Distribution:
-			system("\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.slnx /t:HumbleApp /p:Configuration=Dist");
-			return true;
+            config = "Debug";
+            system("\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.slnx /t:HumbleApp /p:Configuration=Debug");
+            break;
+        case HBL2::BuildEngine::Configuration::Release:
+            config = "Release";
+            system("\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.slnx /t:HumbleApp /p:Configuration=Release");
+            break;
+        case HBL2::BuildEngine::Configuration::Distribution:
+            config = "Dist";
+            system("\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\HumbleGameEngine2.slnx /t:HumbleApp /p:Configuration=Dist");
+			break;
 		}
+        
+        // Copy project folder to build folder.
+        FileUtils::CopyFolder("./" + projectName, "..\\bin\\" + config + "-x86_64\\HumbleApp\\" + projectName);
 
-		return false;
+        // Copy assets folder to build folder.
+        FileUtils::CopyFolder("./assets", "..\\bin\\" + config + "-x86_64\\HumbleApp\\assets");
+
+		return true;
 	}
 
 	void WindowsBuildEngine::Combine()
@@ -246,8 +261,6 @@ EndGlobal
 		const std::string& placeholderPDB = "{randomPDB}";
 		const std::string& placeholderVulkan = "{VULKAN_SDK}";
 		const std::string& placeholderProject = "{Project}";
-
-		Scene* activeScene = ResourceManager::Instance->GetScene(Context::ActiveScene);
 
 #ifdef DEBUG
 		const std::string& useDebugLibraries = "true";
@@ -418,4 +431,21 @@ EndGlobal
 
 		return projectText;
 	}
+
+    const std::filesystem::path WindowsBuildEngine::GetUnityBuildPath(Configuration config) const
+    {
+        const std::string& projectName = Project::GetActive()->GetName();
+        const auto& rootPath = Project::GetProjectDirectory().parent_path();
+        
+        switch (config)
+        {
+        case Configuration::Debug:
+            return rootPath / "assets" / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
+        case Configuration::Release:
+        case Configuration::Distribution:
+            return rootPath / "assets" / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
+        }
+
+        return std::filesystem::path("");
+    }
 }

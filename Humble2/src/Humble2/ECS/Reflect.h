@@ -565,9 +565,22 @@ namespace HBL2::Reflect
     }
 }
 
-#define REGISTER_HBL2_COMPONENT(Type)       \
-    extern "C" __declspec(dllexport)        \
-    void RegisterComponent_##Type()         \
-    {                                       \
-        HBL2::Reflect::Register<Type>();    \
-    }
+#ifdef HBL2_PLATFORM_WINDOWS
+
+    #define REGISTER_HBL2_COMPONENT(Type)       \
+        extern "C" __declspec(dllexport)        \
+        void RegisterComponent_##Type()         \
+        {                                       \
+            HBL2::Reflect::Register<Type>();    \
+        }
+
+#elif defined(HBL2_PLATFORM_MACOS)
+
+    #define REGISTER_HBL2_COMPONENT(Type)                           \
+        extern "C" __attribute__((visibility("default")))           \
+        void RegisterComponent_##Type()                             \
+        {                                                           \
+            HBL2::Reflect::Register<Type>();                        \
+        }
+
+#endif
