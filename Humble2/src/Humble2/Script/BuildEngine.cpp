@@ -481,6 +481,15 @@ class {ScriptName}
 		{
 			return output.substr(0, pos2);
 		}
+        
+        // Remove any leading digits.
+        output.erase(
+            output.begin(),
+            std::find_if(output.begin(), output.end(), [](unsigned char c)
+            {
+                return !std::isdigit(c);
+            })
+        );
 
 		return output;
 	}

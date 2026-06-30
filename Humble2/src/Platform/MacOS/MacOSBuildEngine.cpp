@@ -57,10 +57,10 @@ namespace HBL2
 
     bool MacOSBuildEngine::Build()
     {
-        // Combine scripts into a single cpp source file.
+        // Combine scripts into a single .cpp source file.
         Combine();
         
-        // Create directory.
+        // Create ProjectFiles directory.
         const auto& projectFilesPath = Project::GetProjectDirectory() / "ProjectFiles";
         
         try
@@ -72,7 +72,7 @@ namespace HBL2
             HBL2_ERROR("Project directory creation failed: {0}", e.what());
         }
 
-        // Open and inject final code.
+        // Open and inject final code to .cpp file.
         std::ofstream stream(projectFilesPath / "UnityBuildSource.cpp", std::ios::out);
 
         if (!stream.is_open())
@@ -86,7 +86,7 @@ namespace HBL2
         
         // Patch project name in premake file.
         const std::string& projectName = Project::GetActive()->GetName();
-        const auto& premakeSource = ReadFile(projectFilesPath / "premake5.lua");
+        const auto& premakeSource = ReadFile(projectFilesPath / "premake5Reference.txt");
         const std::string& placeholder = "{ProjectName}";
 
         size_t pos = premakeSource.find(placeholder);

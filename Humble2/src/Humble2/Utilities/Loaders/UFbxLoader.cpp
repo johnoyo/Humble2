@@ -322,7 +322,8 @@ namespace HBL2
             else
             {
                 UUID materialAssetUUID = editorAssetManager->GetUUIDFromPath(relativePath);
-                materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetUUID);
+                materialAssetHandle = editorAssetManager->GetHandleFromUUID(materialAssetUUID);
+                materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetHandle);
             }
 
             CleanUpResourceTasks(albedoMapTask, normalMapTask, roughnessMapTask, metallicMapTask);
@@ -807,7 +808,8 @@ namespace HBL2
 
         if (node->mesh->materials.count > 0)
         {
-            subMeshDescriptor.embededMaterial = s_MaterialNameToAssetHandle[node->mesh->materials.data[subMeshIndex]->name.data];
+            const std::string materialName = node->mesh->materials.data[subMeshIndex]->name.data;
+            subMeshDescriptor.embededMaterial = s_MaterialNameToAssetHandle[materialName];
         }
 
         if (!(fbxSubmesh.num_triangles))

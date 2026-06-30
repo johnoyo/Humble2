@@ -592,7 +592,7 @@ namespace HBL2
 	void EditorAssetManager::CreateMaterialMetadata(Asset* asset)
 	{
 		const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+        const auto& workingDirectory = Project::GetProjectDirectory().parent_path();
 		const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : workingDirectory / asset->FilePath;
 		const auto& metaFilePath = path.string() + ".hblmat";
 
@@ -625,19 +625,6 @@ namespace HBL2
 			}
 
 			return;
-		}
-
-		// Ensure parent path exists.
-		if (!std::filesystem::exists(path.parent_path()))
-		{
-			try
-			{
-				std::filesystem::create_directories(path.parent_path());
-			}
-			catch (std::exception& e)
-			{
-				HBL2_ERROR("Material metadata directory creation failed: {0}", e.what());
-			}
 		}
 
 		// If the metadata file does not exist, generate new UUID and assign it to the asset.

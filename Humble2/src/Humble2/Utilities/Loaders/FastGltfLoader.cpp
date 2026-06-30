@@ -580,8 +580,8 @@ namespace HBL2
 				// diffuse map aka basecolor aka albedo
 				if (glTFMaterial.pbrData.baseColorTexture.has_value())
 				{
-					uint32_t diffuseMapIndex = glTFMaterial.pbrData.baseColorTexture.value().textureIndex;
-					uint32_t imageIndex = asset.textures[diffuseMapIndex].imageIndex.value();
+					uint32_t diffuseMapIndex = (uint32_t)glTFMaterial.pbrData.baseColorTexture.value().textureIndex;
+					uint32_t imageIndex = (uint32_t)asset.textures[diffuseMapIndex].imageIndex.value();
 
 					albedoMapAssetHandle = s_Textures[imageIndex];
 				}
@@ -589,8 +589,8 @@ namespace HBL2
 				// normal map
 				if (glTFMaterial.normalTexture.has_value())
 				{
-					uint32_t normalMapIndex = glTFMaterial.normalTexture.value().textureIndex;
-					uint32_t imageIndex = asset.textures[normalMapIndex].imageIndex.value();
+					uint32_t normalMapIndex = (uint32_t)glTFMaterial.normalTexture.value().textureIndex;
+					uint32_t imageIndex = (uint32_t)asset.textures[normalMapIndex].imageIndex.value();
 
 					normalMapAssetHandle = s_Textures[imageIndex];
 				}
@@ -598,8 +598,8 @@ namespace HBL2
 				// texture for roughness and metallicness
 				if (glTFMaterial.pbrData.metallicRoughnessTexture.has_value())
 				{
-					int metallicRoughnessMapIndex = glTFMaterial.pbrData.metallicRoughnessTexture.value().textureIndex;
-					uint32_t imageIndex = asset.textures[metallicRoughnessMapIndex].imageIndex.value();
+					int metallicRoughnessMapIndex = (uint32_t)glTFMaterial.pbrData.metallicRoughnessTexture.value().textureIndex;
+					uint32_t imageIndex = (uint32_t)asset.textures[metallicRoughnessMapIndex].imageIndex.value();
 
 					metallicRoughnessMapAssetHandle = s_Textures[imageIndex];
 				}
@@ -658,7 +658,8 @@ namespace HBL2
 			else
 			{
                 UUID materialAssetUUID = editorAssetManager->GetUUIDFromPath(relativePath);
-				materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetUUID);
+                materialAssetHandle = editorAssetManager->GetHandleFromUUID(materialAssetUUID);
+				materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetHandle);
 			}
 
 			s_MaterialNameToAssetHandle[glTFMaterial.name.c_str()] = materialAssetHandle;
@@ -795,7 +796,7 @@ namespace HBL2
 				});
 
 				// Reload material now that we have set the new resourses.
-				materialHandle = editorAssetManager->ReloadAsset<Material>(materialAssetUUID);
+				materialHandle = editorAssetManager->ReloadAsset<Material>(materialAssetHandle);
 			}
 
 			s_MaterialNameToAssetHandle[glTFMaterial.name.c_str()] = materialAssetHandle;
@@ -810,7 +811,7 @@ namespace HBL2
 		MeshPartDescriptor meshPartDescriptor{};
 		const fastgltf::Mesh& mesh = asset.meshes[*node.meshIndex];
 
-		uint32_t numSubMeshes = mesh.primitives.size();
+		uint32_t numSubMeshes = (uint32_t)mesh.primitives.size();
 		if (numSubMeshes)
 		{
 			meshPartDescriptor.debugName = strdup(node.name.c_str());
@@ -923,8 +924,8 @@ namespace HBL2
 		}
 
 		// Append data to model's vertex buffer
-		uint32_t numVerticesBefore = s_Vertices.size();
-		uint32_t numIndicesBefore = s_Indices.size();
+		uint32_t numVerticesBefore = (uint32_t)s_Vertices.size();
+		uint32_t numIndicesBefore = (uint32_t)s_Indices.size();
 		s_Vertices.resize(numVerticesBefore + vertexCount);
 
 		uint32_t vertexIndex = numVerticesBefore;
@@ -972,8 +973,8 @@ namespace HBL2
 			});
 		}
 
-		subMeshDescriptor.vertexCount = vertexCount;
-		subMeshDescriptor.indexCount = indexCount;
+		subMeshDescriptor.vertexCount = (uint32_t)vertexCount;
+		subMeshDescriptor.indexCount = (uint32_t)indexCount;
 
 		return subMeshDescriptor;
 	}
