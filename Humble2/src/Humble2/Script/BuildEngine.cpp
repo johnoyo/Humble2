@@ -432,20 +432,6 @@ class {ScriptName}
 		}
 	}
 
-	std::string BuildEngine::CleanComponentNameO1(const std::string& input)
-	{
-		std::string output = input;
-
-		// Find the '>' character and truncate the string if it exists
-		size_t pos = output.find('>');
-		if (pos != std::string::npos)
-		{
-			return output = output.substr(0, pos);
-		}
-
-		return output;
-	}
-
 	std::string BuildEngine::CleanComponentNameO3(const std::string& input)
 	{
 		std::string output = input;

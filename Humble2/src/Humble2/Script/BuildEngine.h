@@ -51,7 +51,6 @@ namespace HBL2
 		std::string GetDefaultComponentCode(const std::string& componentName);
 		std::string GetDefaultHelperScriptCode(const std::string& scriptName);
 
-		std::string CleanComponentNameO1(const std::string& input);
 		std::string CleanComponentNameO3(const std::string& input);
 
 	protected:
