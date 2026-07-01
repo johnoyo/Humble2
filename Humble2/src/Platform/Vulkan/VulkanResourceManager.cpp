@@ -76,13 +76,12 @@ namespace HBL2
 			texture->ChangeTextureView(std::forward<const TextureViewDescriptor>(desc));
 		}
 	}
-	void VulkanResourceManager::TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle)
+	void VulkanResourceManager::TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout)
 	{
 		VulkanTexture* texture = GetTexture(handle);
 		if (texture != nullptr)
 		{
-			VulkanBindGroup bindGroup = GetBindGroup(bindGroupHandle);
-			texture->TrasitionLayout((VulkanCommandBuffer*)commandBuffer, currentLayout, newLayout, &bindGroup);
+			texture->TrasitionLayout((VulkanCommandBuffer*)commandBuffer, currentLayout, newLayout);
 		}
 	}
 	glm::vec3 VulkanResourceManager::GetTextureDimensions(Handle<Texture> handle)

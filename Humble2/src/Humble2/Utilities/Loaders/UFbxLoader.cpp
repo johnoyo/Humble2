@@ -1,7 +1,7 @@
 #include "UFbxLoader.h"
 
 #include "Project/Project.h"
-
+#include "Asset/EditorAssetManager.h"
 #include "Resources/ResourceManager.h"
 
 #include "Utilities/ShaderUtilities.h"
@@ -225,6 +225,8 @@ namespace HBL2
 
     void UFbxLoader::LoadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path)
     {
+        auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
         s_MaterialNameToAssetHandle.clear();
 
         uint32_t numMaterials = ufbxScene->materials.count;
@@ -245,7 +247,7 @@ namespace HBL2
 
             if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativePath)))
             {
-                materialAssetHandle = AssetManager::Instance->CreateAsset({
+                materialAssetHandle = editorAssetManager->CreateAsset({
                     .debugName = "material-asset",
                     .filePath = relativePath,
                     .type = AssetType::Material,
@@ -319,8 +321,9 @@ namespace HBL2
             }
             else
             {
-                UUID materialAssetUUID = std::hash<std::string>()(relativePath.string());
-                materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetUUID);
+                UUID materialAssetUUID = editorAssetManager->GetUUIDFromPath(relativePath);
+                materialAssetHandle = editorAssetManager->GetHandleFromUUID(materialAssetUUID);
+                materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetHandle);
             }
 
             CleanUpResourceTasks(albedoMapTask, normalMapTask, roughnessMapTask, metallicMapTask);
@@ -331,6 +334,8 @@ namespace HBL2
 
     void UFbxLoader::ReloadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path)
     {
+        auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
         s_MaterialNameToAssetHandle.clear();
 
         uint32_t numMaterials = ufbxScene->materials.count;
@@ -380,7 +385,7 @@ namespace HBL2
 
             if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativePath)))
             {
-                materialAssetHandle = AssetManager::Instance->CreateAsset({
+                materialAssetHandle = editorAssetManager->CreateAsset({
                     .debugName = "material-asset",
                     .filePath = relativePath,
                     .type = AssetType::Material,
@@ -424,7 +429,7 @@ namespace HBL2
             }
             else
             {
-                UUID materialAssetUUID = std::hash<std::string>()(relativePath.string());
+                UUID materialAssetUUID = editorAssetManager->GetUUIDFromPath(relativePath);
                 materialAssetHandle = AssetManager::Instance->GetHandleFromUUID(materialAssetUUID);
 
                 // Recreate material asset file with new data.
@@ -442,7 +447,7 @@ namespace HBL2
                 });
 
                 // Reload material now that we have set the new resourses.
-                materialHandle = AssetManager::Instance->ReloadAsset<Material>(materialAssetUUID);
+                materialHandle = editorAssetManager->ReloadAsset<Material>(materialAssetUUID);
             }
 
             CleanUpResourceTasks(albedoMapTask, normalMapTask, roughnessMapTask, metallicMapTask);
@@ -568,6 +573,8 @@ namespace HBL2
 
     Handle<Asset> UFbxLoader::LoadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>*& resourceTask)
     {
+        auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
         Handle<Asset> textureAssetHandle;
 
         const auto& texturePath = std::filesystem::path(texture->filename.data);
@@ -578,12 +585,12 @@ namespace HBL2
 
             const auto& relativeTexturePath = FileUtils::RelativePath(texturePath, Project::GetAssetDirectory());
 
-            UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath);
+            UUID textureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeTexturePath);
             textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
             if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
             {
-                textureAssetHandle = AssetManager::Instance->CreateAsset({
+                textureAssetHandle = editorAssetManager->CreateAsset({
                     .debugName = "texture-asset",
                     .filePath = relativeTexturePath,
                     .type = AssetType::Texture,
@@ -609,12 +616,12 @@ namespace HBL2
 
                 const auto& relativeTexturePath = FileUtils::RelativePath(texturePathAlt, Project::GetAssetDirectory());
 
-                UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath);
+                UUID textureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeTexturePath);
                 textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
                 if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
                 {
-                    textureAssetHandle = AssetManager::Instance->CreateAsset({
+                    textureAssetHandle = editorAssetManager->CreateAsset({
                         .debugName = "texture-asset",
                         .filePath = relativeTexturePath,
                         .type = AssetType::Texture,
@@ -638,6 +645,8 @@ namespace HBL2
 
     Handle<Asset> UFbxLoader::ReloadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>*& resourceTask)
     {
+        auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
         Handle<Asset> textureAssetHandle;
 
         const auto& texturePath = std::filesystem::path(texture->filename.data);
@@ -648,12 +657,12 @@ namespace HBL2
 
             const auto& relativeTexturePath = FileUtils::RelativePath(texturePath, Project::GetAssetDirectory());
 
-            UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath);
+            UUID textureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeTexturePath);
             textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
             if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
             {
-                textureAssetHandle = AssetManager::Instance->CreateAsset({
+                textureAssetHandle = editorAssetManager->CreateAsset({
                     .debugName = "texture-asset",
                     .filePath = relativeTexturePath,
                     .type = AssetType::Texture,
@@ -684,12 +693,12 @@ namespace HBL2
 
                 const auto& relativeTexturePath = FileUtils::RelativePath(texturePathAlt, Project::GetAssetDirectory());
 
-                UUID textureAssetUUID = std::hash<std::string>()(relativeTexturePath);
+                UUID textureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeTexturePath);
                 textureAssetHandle = AssetManager::Instance->GetHandleFromUUID(textureAssetUUID);
 
                 if (!AssetManager::Instance->IsAssetValid(textureAssetHandle))
                 {
-                    textureAssetHandle = AssetManager::Instance->CreateAsset({
+                    textureAssetHandle = editorAssetManager->CreateAsset({
                         .debugName = "texture-asset",
                         .filePath = relativeTexturePath,
                         .type = AssetType::Texture,
@@ -799,7 +808,8 @@ namespace HBL2
 
         if (node->mesh->materials.count > 0)
         {
-            subMeshDescriptor.embededMaterial = s_MaterialNameToAssetHandle[node->mesh->materials.data[subMeshIndex]->name.data];
+            const std::string materialName = node->mesh->materials.data[subMeshIndex]->name.data;
+            subMeshDescriptor.embededMaterial = s_MaterialNameToAssetHandle[materialName];
         }
 
         if (!(fbxSubmesh.num_triangles))

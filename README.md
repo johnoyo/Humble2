@@ -6,8 +6,10 @@ Features:
 ---------
 
 - Supports multiple graphics APIs **OpenGL 4.6** and **Vulkan**.
-    - **WebGPU**  support is planned for the future.
+    - **Metal** and **WebGPU** support are planned for the future.
+    - **OpenGL** backend is deprecated and will be removed in the near future.
 - Forward, API agnostic, PBR renderer that features shadow maps, equirectangular skyboxes and various post processing effects.
+    - Utilizes the [Slang](https://github.com/shader-slang/slang) shader language for seamless cross api integration and advanced reflection and tooling.
 - Complete UI Editor for creating applications / games.
 - Uses an ECS architecture featuring a custom flexible implementation.
 - Fully integrated C++ scripting support.
@@ -17,18 +19,21 @@ Features:
 - Support for prefabs (Instantiate, Unpack, Update, Revert, Override, Destroy) and with infinite prefab nesting.
 - Planned web support with [Emscripten](https://github.com/emscripten-core/emsdk) using WebGPU to build games for the browser.
 - Editor to Runtime workflow for publishing games properly without the editor.
-- Currently supports only Windows.
+- Currently supports Windows and MacOS.
+    - Linux support is planned for the future.
 
 Installation:
 -------------
 
 - Clone the repo recursively: ```git clone --recursive https://github.com/johnoyo/Humble2.git```
     - If the repo was not cloned recursively, call this to initialize the submodules: ```git submodule update --init```
-- Run the GenerateProjectsVC20XX.bat file.
+- On Windows, run the GenerateProjectsVC20XX.bat file.
     - There are three default batch files, one for Visual Studio 2019, one for 2022 and one for 2026.
-- Open the generated Visual Studio solution.
+    - Open the generated Visual Studio solution.
+- On MacOS, run the GenerateProjectsXCode.sh file.
+    - Open the generated XCode workspace.
 
-- NOTE: You need to have installed the [VulkanSDK](https://vulkan.lunarg.com/sdk/home) with the optional debug libraries.
+- NOTE: You need to have installed the [VulkanSDK](https://vulkan.lunarg.com/sdk/home).
 
 Screenshots & Gifs:
 ------------

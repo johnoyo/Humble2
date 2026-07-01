@@ -107,66 +107,63 @@ namespace HBL2
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 
-		Renderer::Instance->SubmitBlocking([this]()
-		{
-			// Create color render pass.
-			m_RenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
-				.debugName = "main-renderpass-layout",
-				.depthTargetFormat = Format::D32_FLOAT,
-				.subPasses = {
-					{ .depthTarget = true, .colorTargets = 1, },
-				},
-			});
-
-			// Create depth only render pass.
-			m_DepthOnlyRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
-				.debugName = "pre-pass-renderpass-layout",
-				.depthTargetFormat = Format::D32_FLOAT,
-				.subPasses = {
-					{ .depthTarget = true },
-				},
-			});
-
-			m_DepthOnlyRenderPass = m_ResourceManager->CreateRenderPass({
-				.debugName = "pre-pass-renderpass",
-				.layout = m_DepthOnlyRenderPassLayout,
-				.depthTarget = {
-					.loadOp = LoadOperation::CLEAR,
-					.storeOp = StoreOperation::STORE,
-					.stencilLoadOp = LoadOperation::DONT_CARE,
-					.stencilStoreOp = StoreOperation::DONT_CARE,
-					.prevUsage = TextureLayout::UNDEFINED,
-					.nextUsage = TextureLayout::DEPTH_STENCIL,
-				},
-			});
-
-			// Create pre-pass bind groups.
-			m_DepthOnlyMeshBindGroup = ResourceManager::Instance->CreateBindGroup({
-				.debugName = "pre-pass-bind-group",
-				.layout = Renderer::Instance->GetDynamicBindingsLayout(),
-				.buffers = {
-					{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawData) },
-				}
-			});
-
-			m_DepthOnlySpriteBindGroup = ResourceManager::Instance->CreateBindGroup({
-				.debugName = "pre-pass-bind-group",
-				.layout = Renderer::Instance->GetDynamicBindingsLayout(),
-				.buffers = {
-					{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawDataSprite) },
-				}
-			});
-
-			// Setup render passes.
-			ShadowPassSetup();
-			DepthPrePassSetup();
-			OpaquePassSetup();
-			TransparentPassSetup();
-			SpriteRenderingSetup();
-			PostProcessPassSetup();
-			SkyboxPassSetup();
-			PresentPassSetup();
+		// Create color render pass.
+		m_RenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
+			.debugName = "main-renderpass-layout",
+			.depthTargetFormat = Format::D32_FLOAT,
+			.subPasses = {
+				{ .depthTarget = true, .colorTargets = 1, },
+			},
 		});
+
+		// Create depth only render pass.
+		m_DepthOnlyRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
+			.debugName = "pre-pass-renderpass-layout",
+			.depthTargetFormat = Format::D32_FLOAT,
+			.subPasses = {
+				{ .depthTarget = true },
+			},
+		});
+
+		m_DepthOnlyRenderPass = m_ResourceManager->CreateRenderPass({
+			.debugName = "pre-pass-renderpass",
+			.layout = m_DepthOnlyRenderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::CLEAR,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::UNDEFINED,
+				.nextUsage = TextureLayout::DEPTH_STENCIL,
+			},
+		});
+
+		// Create pre-pass bind groups.
+		m_DepthOnlyMeshBindGroup = ResourceManager::Instance->CreateBindGroup({
+			.debugName = "pre-pass-bind-group",
+			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
+			.buffers = {
+				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawData) },
+			}
+		});
+
+		m_DepthOnlySpriteBindGroup = ResourceManager::Instance->CreateBindGroup({
+			.debugName = "pre-pass-bind-group",
+			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
+			.buffers = {
+				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawDataSprite) },
+			}
+		});
+
+		// Setup render passes.
+		ShadowPassSetup();
+		DepthPrePassSetup();
+		OpaquePassSetup();
+		TransparentPassSetup();
+		SpriteRenderingSetup();
+		PostProcessPassSetup();
+		SkyboxPassSetup();
+		PresentPassSetup();
 	}
 
 	void ForwardSceneRenderer::Gather(Entity mainCamera)
@@ -190,29 +187,9 @@ namespace HBL2
 
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
-		rm->TransitionTextureLayout(
-			commandBuffer,
-			Renderer::Instance->IntermediateColorTexture,
-			TextureLayout::UNDEFINED,
-			TextureLayout::RENDER_ATTACHMENT,
-			{}
-		);
-
-		rm->TransitionTextureLayout(
-			commandBuffer,
-			Renderer::Instance->MainColorTexture,
-			TextureLayout::UNDEFINED,
-			TextureLayout::RENDER_ATTACHMENT,
-			{}
-		);
-
-		rm->TransitionTextureLayout(
-			commandBuffer,
-			Renderer::Instance->ShadowAtlasTexture,
-			TextureLayout::UNDEFINED,
-			TextureLayout::DEPTH_STENCIL,
-			{}
-		);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL);
 
 		auto& renderPassPool = Renderer::Instance->GetRenderPassPool();
 
@@ -1395,7 +1372,7 @@ namespace HBL2
 		uint32_t index = 0;
 
 		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
-		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), uniformOffset);
+		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), (uint32_t)uniformOffset);
 
 		CreateAlignedMatrixArray(sceneRenderData, sceneRenderData->m_LightData.LightSpaceMatrices, 16, alignedSize);
 
@@ -1588,8 +1565,7 @@ namespace HBL2
 							commandBuffer,
 							skyLight.CubeMap,
 							TextureLayout::UNDEFINED,
-							TextureLayout::GENERAL,
-							{}
+							TextureLayout::GENERAL
 						);
 
 						Handle<Texture> equirectangularMapHandle = AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap);
@@ -1679,13 +1655,7 @@ namespace HBL2
 		BEGIN_PROFILE_PASS();
 
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(
-			commandBuffer,
-			Renderer::Instance->IntermediateColorTexture,
-			TextureLayout::RENDER_ATTACHMENT,
-			TextureLayout::SHADER_READ_ONLY,
-			{}
-		);
+		ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::RENDER_ATTACHMENT, TextureLayout::SHADER_READ_ONLY);
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass, m_PostProcessFrameBuffer);
 
@@ -1722,13 +1692,7 @@ namespace HBL2
 		BEGIN_PROFILE_PASS();
 
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(
-			commandBuffer,
-			Renderer::Instance->MainColorTexture,
-			TextureLayout::RENDER_ATTACHMENT,
-			TextureLayout::SHADER_READ_ONLY,
-			{}
-		);
+		ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::RENDER_ATTACHMENT, TextureLayout::SHADER_READ_ONLY);
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
 

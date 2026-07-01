@@ -217,7 +217,7 @@ namespace HBL2
 		VK_VALIDATE(vkCreateImageView(device->Get(), &imageViewCreateInfo, nullptr, &ImageView), "vkCreateImageView");
 	}
 
-	void VulkanTexture::TrasitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout, VulkanBindGroup* bindGroup)
+	void VulkanTexture::TrasitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout)
 	{
 		// NOTE: Vulkan validation layers do not automatically track the layout state across command buffers unless you properly synchronize them.
 		//		 That's why we do not use here the helper function ImmediateSubmit of the renderer class here.
@@ -249,21 +249,8 @@ namespace HBL2
 			1, &barrier
 		);
 
-		// Wait for device to idle in case the descriptors are still in use.
-		VulkanDevice* device = (VulkanDevice*)Device::Instance;
-		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
-		{
-			std::lock_guard<std::mutex> lock(renderer->GetGraphicsQueueMutex());
-			vkDeviceWaitIdle(device->Get());
-		}
-
 		// Update bind group with new image layout.
 		ImageLayout = VkUtils::TextureLayoutToVkImageLayout(newLayout);
-
-		if (bindGroup != nullptr)
-		{
-			bindGroup->Update();
-		}
 	}
 
 	void VulkanTexture::Destroy()

@@ -107,6 +107,8 @@ namespace HBL2::Editor
 		int columnCount = (int)(panelWidth / (padding + thumbnailSize));
 		columnCount = columnCount < 1 ? 1 : columnCount;
 
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
 		if (ImGui::BeginTable("FileGrid", columnCount))
 		{
 			int id = 0;
@@ -128,7 +130,7 @@ namespace HBL2::Editor
 
 				//ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 
-				UUID assetUUID = std::hash<std::string>()(relativePath);
+				UUID assetUUID = editorAssetManager->GetUUIDFromPath(relativePath);
 				Handle<Asset> assetHandle = AssetManager::Instance->GetHandleFromUUID(assetUUID);
 				Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 
@@ -161,7 +163,7 @@ namespace HBL2::Editor
 							else
 							{
 								AssetManager::Instance->GetAsset<Script>(assetHandle);
-								AssetManager::Instance->SaveAsset(assetHandle);				// NOTE: Consider changing this!
+								editorAssetManager->SaveAsset(assetHandle);				// NOTE: Consider changing this!
 							}
 						}
 					}
@@ -169,21 +171,21 @@ namespace HBL2::Editor
 					{
 						if (ImGui::MenuItem("Recompile"))
 						{
-							AssetManager::Instance->ReloadAssetAsync<Shader>(assetHandle);
+							editorAssetManager->ReloadAssetAsync<Shader>(assetHandle);
 						}
 					}
 					else if (extension == ".mat")
 					{
 						if (ImGui::MenuItem("Reload"))
 						{
-							AssetManager::Instance->ReloadAssetAsync<Material>(assetHandle);
+							editorAssetManager->ReloadAssetAsync<Material>(assetHandle);
 						}
 					}
 					else if (asset && asset->Type == AssetType::Mesh)
 					{
 						if (ImGui::MenuItem("Reload"))
 						{
-							AssetManager::Instance->ReloadAssetAsync<Mesh>(assetHandle);
+							editorAssetManager->ReloadAssetAsync<Mesh>(assetHandle);
 						}
 					}
 
@@ -204,7 +206,7 @@ namespace HBL2::Editor
 					{
 						HBL2_CORE_WARN("Asset at path: {0} and with UUID: {1} has not been registered. Registering it now.", entry.path().string(), assetUUID);
 
-						assetHandle = AssetManager::Instance->RegisterAsset(entry.path());
+						assetHandle = editorAssetManager->RegisterAsset(entry.path());
 						packedHandle = assetHandle.Pack();
 						asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 					}
@@ -281,7 +283,8 @@ namespace HBL2::Editor
 
 			if (ImGui::Button("OK"))
 			{
-				AssetManager::Instance->DeleteAsset(m_AssetToBeDeleted, true);
+				auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+				editorAssetManager->DestroyAsset(m_AssetToBeDeleted);
 				m_OpenDeleteConfirmationWindow = false;
 				m_AssetToBeDeleted = Handle<Asset>();
 			}
@@ -310,6 +313,8 @@ namespace HBL2::Editor
 
 	void ContentBrowserPanel::HandleContentBrowserDragAndDrop()
 	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
 		if (ImGui::BeginDragDropTarget())
 		{
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Entity_UUID"))
@@ -332,7 +337,7 @@ namespace HBL2::Editor
 				const auto& relativePath = FileUtils::RelativePath(prefabPath, HBL2::Project::GetAssetDirectory());
 
 				// Create and register asset.
-				Handle<Asset> prefabAssetHandle = AssetManager::Instance->CreateAsset({
+				Handle<Asset> prefabAssetHandle = editorAssetManager->CreateAsset({
 					.debugName = "prefab-asset",
 					.filePath = relativePath,
 					.type = AssetType::Prefab,
@@ -409,6 +414,8 @@ namespace HBL2::Editor
 
 	void ContentBrowserPanel::DrawContentBrowserContextMenu()
 	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
 		// Pop up menu when right clicking on an empty space inside the Content Browser panel.
 		if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
 		{
@@ -538,13 +545,13 @@ namespace HBL2::Editor
 				auto filepath = m_Owner->m_CurrentDirectory / (m_SceneNameBuffer + ".humble");
 				const auto& relativePath = std::filesystem::relative(filepath, HBL2::Project::GetAssetDirectory());
 
-				auto assetHandle = AssetManager::Instance->CreateAsset({
+				auto assetHandle = editorAssetManager->CreateAsset({
 					.debugName = "New Scene",
 					.filePath = relativePath,
 					.type = AssetType::Scene,
 				});
 
-				AssetManager::Instance->SaveAsset(assetHandle);
+				editorAssetManager->SaveAsset(assetHandle);
 
 				HBL2::SceneManager::Get().LoadScene(assetHandle, false);
 
@@ -588,7 +595,7 @@ namespace HBL2::Editor
 				else
 				{
 					// Save script (build).
-					AssetManager::Instance->SaveAsset(scriptAssetHandle);
+					editorAssetManager->SaveAsset(scriptAssetHandle);
 				}
 
 				m_OpenScriptSetupPopup = false;
@@ -629,7 +636,7 @@ namespace HBL2::Editor
 				else
 				{
 					// Save script (build).
-					AssetManager::Instance->SaveAsset(scriptAssetHandle);
+					editorAssetManager->SaveAsset(scriptAssetHandle);
 				}
 
 				m_OpenComponentSetupPopup = false;
@@ -670,7 +677,7 @@ namespace HBL2::Editor
 				else
 				{
 					// Save script (build).
-					AssetManager::Instance->SaveAsset(scriptAssetHandle);
+					editorAssetManager->SaveAsset(scriptAssetHandle);
 				}
 
 				m_OpenHelperScriptSetupPopup = false;
@@ -700,7 +707,7 @@ namespace HBL2::Editor
 			{
 				const auto& relativePath = std::filesystem::relative(m_Owner->m_CurrentDirectory / (m_ShaderNameBuffer + ".slang"), HBL2::Project::GetAssetDirectory());
 
-				auto shaderAssetHandle = AssetManager::Instance->CreateAsset({
+				auto shaderAssetHandle = editorAssetManager->CreateAsset({
 					.debugName = "shader-asset",
 					.filePath = relativePath,
 					.type = AssetType::Shader,
@@ -790,7 +797,7 @@ namespace HBL2::Editor
 			// Topology.
 			{
 				const char* options[] = { "Point List", "Line List", "Line Strip", "Triangle List", "Triangle Strip", "Triangle fan", "Patch List" };
-				int currentItem = m_Topology;
+				int currentItem = (int)m_Topology;
 
 				if (ImGui::Combo("Topology", &currentItem, options, IM_ARRAYSIZE(options)))
 				{
@@ -801,7 +808,7 @@ namespace HBL2::Editor
 			// Polygon mode.
 			{
 				const char* options[] = { "Fill", "Line", "Point" };
-				int currentItem = m_PolygonMode;
+				int currentItem = (int)m_PolygonMode;
 
 				if (ImGui::Combo("Polygon Mode", &currentItem, options, IM_ARRAYSIZE(options)))
 				{
@@ -812,7 +819,7 @@ namespace HBL2::Editor
 			// Cull mode.
 			{
 				const char* options[] = { "None", "Front", "Back", "Front and Back" };
-				int currentItem = m_CullMode;
+				int currentItem = (int)m_CullMode;
 
 				if (ImGui::Combo("Cull Mode", &currentItem, options, IM_ARRAYSIZE(options)))
 				{
@@ -823,7 +830,7 @@ namespace HBL2::Editor
 			// Front face.
 			{
 				const char* options[] = { "Clockwise", "Counter Clockwise" };
-				int currentItem = m_FrontFace;
+				int currentItem = (int)m_FrontFace;
 
 				if (ImGui::Combo("Front Face", &currentItem, options, IM_ARRAYSIZE(options)))
 				{
@@ -851,7 +858,7 @@ namespace HBL2::Editor
 			// Depth test mode.
 			{
 				const char* options[] = { "Less", "Less Equal", "Greater", "Greater Equal", "Equal", "Not Equal", "Always", "Never" };
-				int currentItem = m_DepthTest;
+				int currentItem = (int)m_DepthTest;
 
 				if (ImGui::Combo("Depth Test", &currentItem, options, IM_ARRAYSIZE(options)))
 				{
@@ -1011,7 +1018,7 @@ namespace HBL2::Editor
 				{
 					const auto& relativePath = std::filesystem::relative(m_Owner->m_CurrentDirectory / (m_MaterialNameBuffer + ".mat"), HBL2::Project::GetAssetDirectory());
 
-					auto materialAssetHandle = AssetManager::Instance->CreateAsset({
+					auto materialAssetHandle = editorAssetManager->CreateAsset({
 						.debugName = "material-asset",
 						.filePath = relativePath,
 						.type = AssetType::Material,

@@ -31,8 +31,8 @@ namespace HBL2::Editor
 
 	void TopBarPanel::OnRender(float ts)
 	{
-		Scene* ctx = m_Owner->m_Context;
 		Scene* activeScene = m_Owner->m_ActiveScene;
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
 		if (ImGui::BeginMainMenuBar())
 		{
@@ -53,7 +53,7 @@ namespace HBL2::Editor
 						}
 
 						// Unload all registered assets.
-						AssetManager::Instance->DeregisterAssets();
+						editorAssetManager->DeregisterAssets();
 
 						// Free unity build dll.
 						BuildEngine::Instance->UnloadBuild(activeScene);
@@ -61,7 +61,7 @@ namespace HBL2::Editor
 						// Create and open new project
 						HBL2::Project::Create(projectName)->Save(filepath);
 
-						auto assetHandle = AssetManager::Instance->CreateAsset({
+						editorAssetManager->CreateAsset({
 							.debugName = "Empty Scene",
 							.filePath = HBL2::Project::GetActive()->GetSpecification().StartingScene,
 							.type = AssetType::Scene,
@@ -86,7 +86,7 @@ namespace HBL2::Editor
 						}
 
 						// Unload all registered assets.
-						AssetManager::Instance->DeregisterAssets();
+						editorAssetManager->DeregisterAssets();
 
 						// Free unity build dll.
 						BuildEngine::Instance->UnloadBuild(activeScene);
@@ -112,15 +112,17 @@ namespace HBL2::Editor
 						std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
 						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
 
-						AssetManager::Instance->SaveAsset(std::hash<std::string>()(relativePath.string()));
+                        UUID sceneUUID = editorAssetManager->GetUUIDFromPath(relativePath);
+						editorAssetManager->SaveAsset(sceneUUID);
 
-						m_Owner->m_EditorScenePath = filepath;
-					}
-					else
-					{
-						auto relativePath = std::filesystem::relative(m_Owner->m_EditorScenePath, HBL2::Project::GetAssetDirectory());
+                        m_Owner->m_EditorScenePath = filepath;
+                    }
+                    else
+                    {
+                        auto relativePath = std::filesystem::relative(m_Owner->m_EditorScenePath, HBL2::Project::GetAssetDirectory());
 
-						AssetManager::Instance->SaveAsset(std::hash<std::string>()(relativePath.string()));
+                        UUID sceneUUID = editorAssetManager->GetUUIDFromPath(relativePath);
+						editorAssetManager->SaveAsset(sceneUUID);
 					}
 				}
 				else if (ImGui::MenuItem("Save Scene As"))
@@ -128,20 +130,20 @@ namespace HBL2::Editor
 					std::string filepath = HBL2::FileDialogs::SaveFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
 					auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
 
-					auto assetHandle = AssetManager::Instance->CreateAsset({
+					auto assetHandle = editorAssetManager->CreateAsset({
 						.debugName = strdup(relativePath.filename().stem().string().c_str()),
 						.filePath = relativePath,
 						.type = AssetType::Scene,
 					});
 
-					AssetManager::Instance->SaveAsset(assetHandle);
+					editorAssetManager->SaveAsset(assetHandle);
 					Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
 
 					Handle<Scene> sceneHandle = Handle<Scene>::UnPack(asset->Indentifier);
 
 					Scene* newScene = ResourceManager::Instance->GetScene(sceneHandle);
 					Scene::Copy(activeScene, newScene);
-					AssetManager::Instance->SaveAsset(assetHandle);
+					editorAssetManager->SaveAsset(assetHandle);
 
 					SceneManager::Get().LoadScene(assetHandle, false);
 
@@ -155,13 +157,13 @@ namespace HBL2::Editor
 					{
 						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
 
-						auto assetHandle = AssetManager::Instance->CreateAsset({
+						auto assetHandle = editorAssetManager->CreateAsset({
 							.debugName = "New Scene",
 							.filePath = relativePath,
 							.type = AssetType::Scene,
 						});
 
-						AssetManager::Instance->SaveAsset(assetHandle);
+						editorAssetManager->SaveAsset(assetHandle);
 
 						if (Context::Mode == Mode::Runtime)
 						{
@@ -185,103 +187,64 @@ namespace HBL2::Editor
 						std::string filepath = HBL2::FileDialogs::OpenFile("Humble Scene", Project::GetAssetDirectory().string(), { "Humble Scene Files (*.humble)", "*.humble" });
 
 						auto relativePath = std::filesystem::relative(std::filesystem::path(filepath), HBL2::Project::GetAssetDirectory());
-						UUID sceneUUID = std::hash<std::string>()(relativePath.string());
-
+                        UUID sceneUUID = editorAssetManager->GetUUIDFromPath(relativePath);
 						HBL2::SceneManager::Get().LoadScene(AssetManager::Instance->GetHandleFromUUID(sceneUUID), false);
 
 						m_Owner->m_EditorScenePath = filepath;
 					}
 				}
-				else if (ImGui::MenuItem("Build (Windows - Debug)"))
+				else if (ImGui::MenuItem("Build (Desktop - Debug)"))
 				{
-					const std::string& projectName = HBL2::Project::GetActive()->GetName();
-
 					// Build.
 					BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Debug);
-
-					// Copy project folder to build folder.
-					FileUtils::CopyFolder("./" + projectName, "..\\bin\\Debug-x86_64\\HumbleApp\\" + projectName);
-
-					// Copy assets folder to build folder.
-					FileUtils::CopyFolder("./assets", "..\\bin\\Debug-x86_64\\HumbleApp\\assets");
 				}
-				else if (ImGui::MenuItem("Build (Windows - Release)"))
+				else if (ImGui::MenuItem("Build (Desktop - Release)"))
 				{
 					const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 					// Build.
 					BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Release);
-
-					// Copy project folder to build folder.
-					FileUtils::CopyFolder("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName);
-
-					// Copy assets folder to build folder.
-					FileUtils::CopyFolder("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets");
 				}
-				else if (ImGui::MenuItem("Build (Windows - Distribution)"))
+				else if (ImGui::MenuItem("Build (Desktop - Distribution)"))
 				{
 					const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 					// Build.
 					BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Distribution);
-
-					// Copy project folder to build folder.
-					FileUtils::CopyFolder("./" + projectName, "..\\bin\\Dist-x86_64\\HumbleApp\\" + projectName);
-
-					// Copy assets folder to build folder.
-					FileUtils::CopyFolder("./assets", "..\\bin\\Dist-x86_64\\HumbleApp\\assets");
 				}
-				else if (ImGui::MenuItem("Build & Run (Windows - Debug)"))
+				else if (ImGui::MenuItem("Build & Run (Desktop - Debug)"))
 				{
 					const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 					// Build.
 					BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Debug);
-
-					// Copy project folder to build folder.
-					FileUtils::CopyFolder("./" + projectName, "..\\bin\\Debug-x86_64\\HumbleApp\\" + projectName);
-
-					// Copy assets folder to build folder.
-					FileUtils::CopyFolder("./assets", "..\\bin\\Debug-x86_64\\HumbleApp\\assets");
 
 					// Run.
 					BuildEngine::Instance->RunRuntime(BuildEngine::Configuration::Debug);
 				}
-				else if (ImGui::MenuItem("Build & Run (Windows - Release)"))
+				else if (ImGui::MenuItem("Build & Run (Desktop - Release)"))
 				{
 					const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 					// Build.
 					BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Release);
 
-					// Copy project folder to build folder.
-					FileUtils::CopyFolder("./" + projectName, "..\\bin\\Release-x86_64\\HumbleApp\\" + projectName);
-
-					// Copy assets folder to build folder.
-					FileUtils::CopyFolder("./assets", "..\\bin\\Release-x86_64\\HumbleApp\\assets");
-
 					// Run.
 					BuildEngine::Instance->RunRuntime(BuildEngine::Configuration::Release);
 				}
-				else if (ImGui::MenuItem("Build & Run (Windows - Distribution)"))
+				else if (ImGui::MenuItem("Build & Run (Desktop - Distribution)"))
 				{
 					const std::string& projectName = HBL2::Project::GetActive()->GetName();
 
 					// Build.
 					BuildEngine::Instance->BuildRuntime(BuildEngine::Configuration::Distribution);
-
-					// Copy project folder to build folder.
-					FileUtils::CopyFolder("./" + projectName, "..\\bin\\Dist-x86_64\\HumbleApp\\" + projectName);
-
-					// Copy assets folder to build folder.
-					FileUtils::CopyFolder("./assets", "..\\bin\\Dist-x86_64\\HumbleApp\\assets");
 
 					// Run.
 					BuildEngine::Instance->RunRuntime(BuildEngine::Configuration::Release);
 				}
 				else if (ImGui::MenuItem("Build (Web)"))
 				{
-					system("..\\Scripts\\emBuildAll.bat");
+					system("../Scripts/emBuildAll.bat");
 				}
 				else if (ImGui::MenuItem("Close"))
 				{

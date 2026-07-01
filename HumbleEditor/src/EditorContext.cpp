@@ -220,7 +220,11 @@ namespace HBL2
 				}
 			}
 
-			ImGui::SetCurrentContext(nullptr);
+            // Disabled the imgui context reset to null due to MacOS support.
+            // Its seems that the context is shared across dll boundaries,
+            // so when trying to clean up on the engine dll, the context would be null.
+            // "Symbol Coalescing" scetion in https://leancrew.com/all-this/man/man1/ld-classic.html
+			// ImGui::SetCurrentContext(nullptr);
 		}
 
 		void EditorContext::OnDetach()

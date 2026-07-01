@@ -188,8 +188,6 @@ namespace HBL2
 
 			out << YAML::Key << "Enabled" << YAML::Value << light.Enabled;
 
-			const Span<const Handle<Asset>>& assetHandles = AssetManager::Instance->GetRegisteredAssets();
-
 			Asset* textureAsset = AssetManager::Instance->GetAssetMetadata(light.EquirectangularMap);
 
 			out << YAML::Key << "EquirectangularMap" << YAML::Value << (textureAsset != nullptr ? textureAsset->UUID : (UUID)0);
@@ -434,7 +432,7 @@ namespace HBL2
 
 		m_Entity = m_Scene->CreateEntityWithUUID(uuid, name);
 
-		auto& editorVisible = m_Scene->AddComponent<Component::EditorVisible>(m_Entity);
+		m_Scene->AddComponent<Component::EditorVisible>(m_Entity);
 
 		auto transformComponent = entityNode["Component::Transform"];
 		if (transformComponent)

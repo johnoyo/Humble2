@@ -34,6 +34,8 @@ namespace HBL2
 		virtual void Submit() override;
 
 		VkCommandBuffer CommandBuffer;
+        
+        void SetSignalSemophore(VkSemaphore signalSemaphore);
 
 	private:
 		CommandBufferType m_Type;

@@ -2,6 +2,7 @@
 
 #include "ProjectSerializer.h"
 #include "Core/Context.h"
+#include "Asset/EditorAssetManager.h"
 
 #include "Physics/PhysicsEngine2D.h"
 #include "Physics/PhysicsEngine3D.h"
@@ -64,9 +65,12 @@ namespace HBL2
 
 	void Project::OpenStartingScene(bool runtime)
 	{
-		AssetManager::Instance->RegisterAssets();
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
-		const auto& startingSceneMetadataPath = Project::GetAssetFileSystemPath(s_ActiveProject->GetSpecification().StartingScene).string() + ".hblscene";
+		editorAssetManager->RegisterAssets();
+
+        const auto& startingScenePath = s_ActiveProject->GetSpecification().StartingScene;
+		const auto& startingSceneMetadataPath = Project::GetAssetFileSystemPath(startingScenePath).string() + ".hblscene";
 
 		// Open metadata file to retrieve asset UUID.
 		std::ifstream stream(startingSceneMetadataPath);
@@ -77,8 +81,9 @@ namespace HBL2
 		{
 			// If it is a newly created project and the starting scene file is not created, create them.
 			HBL2_CORE_ERROR("Scene metadata file of starting scene not found: {0}", startingSceneMetadataPath);
-			assetUUID = std::hash<std::string>()(s_ActiveProject->GetSpecification().StartingScene.string());
-			AssetManager::Instance->SaveAsset(assetUUID);
+
+            assetUUID = editorAssetManager->GetUUIDFromPath(startingScenePath);
+			editorAssetManager->SaveAsset(assetUUID);
 		}
 		else
 		{

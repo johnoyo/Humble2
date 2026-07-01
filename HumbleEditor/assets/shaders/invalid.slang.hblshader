@@ -1,8 +1,9 @@
 Shader:
-  UUID: 10181528867610607982
+  UUID: 3658203544181590646
   Type: 0
+  BindGroup:
   Variants:
-    - Variant: 17454635739480729941
+    - Variant: 233046723
       BlendState:
         Enabled: true
         ColorOutputEnabled: true

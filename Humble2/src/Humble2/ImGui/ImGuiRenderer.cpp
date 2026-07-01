@@ -1,6 +1,8 @@
 #include "ImGuiRenderer.h"
 
 #include "Core/Context.h"
+#include "Project/Project.h"
+
 #include <imgui_internal.h>
 
 namespace HBL2
@@ -29,9 +31,14 @@ namespace HBL2
 		const auto& boldFontPath = std::filesystem::path("assets") / "fonts" / "OpenSans-Bold.ttf";
 		const auto& regularFontPath = std::filesystem::path("assets") / "fonts" / "OpenSans-Regular.ttf";
 
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+        
+        const auto& boldFontFullPath = workingDirectory / boldFontPath;
+        const auto& regularFontFullPath = workingDirectory / regularFontPath;
+        
 		float fontSize = 18.0f;
-		io.Fonts->AddFontFromFileTTF(boldFontPath.string().c_str(), fontSize);
-		io.FontDefault = io.Fonts->AddFontFromFileTTF(regularFontPath.string().c_str(), fontSize);
+		io.Fonts->AddFontFromFileTTF(boldFontFullPath.string().c_str(), fontSize);
+		io.FontDefault = io.Fonts->AddFontFromFileTTF(regularFontFullPath.string().c_str(), fontSize);
 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();

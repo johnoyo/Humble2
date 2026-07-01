@@ -51,7 +51,7 @@ project "Humble2"
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "../Dependencies/SLang/include",
         "%{VULKAN_SDK}/Include",
-        "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS/include",
+        "%{VULKAN_SDK}/include",
     }
     
     links
@@ -211,6 +211,11 @@ project "Humble2"
         systemversion "latest"    
         defines { "HBL2_PLATFORM_MACOS", table.unpack(JoltDefinesArm) }
 
+        files 
+        { 
+            "src/**.mm",
+        }
+
         removefiles
         {
             "src/Platform/OpenGL/**.h",
@@ -220,7 +225,9 @@ project "Humble2"
         linkoptions
         {
             "-rpath @executable_path",
-            "-rpath /Users/johnpetr/VulkanSDK/1.4.350.1/macOS/lib",
+            "-rpath " .. VULKAN_SDK .. "/lib",
+
+            "-install_name @rpath/libHumble2.dylib",
         }
 
         libdirs
@@ -228,19 +235,19 @@ project "Humble2"
             "../Dependencies/GLFW/glfw-3.4.bin.MACOS/lib-arm64",
             "../Dependencies/FMOD/MacOS/core/lib",
             "../Dependencies/SLang/slang-2026.11-macos-aarch64/lib",
-            "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS/lib",
+            "%{VULKAN_SDK}/lib",
         }
 
         links
         {
             "glfw3",
 
-            -- Vulkan / MoltenVK
-            "vulkan",
+            -- Vulkan
+            "vulkan.1",
 
             -- Slang
             "slang",
-            "slang-compiler.0.2026.11",
+            "slang-compiler",
 
             -- Required Apple frameworks
             "Cocoa.framework",
@@ -257,19 +264,11 @@ project "Humble2"
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleEditor"),
 
-            -- HumbleApp
-            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleApp"),
-
             -- Slang dylibs -> HumbleEditor
             ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.0.2026.11.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-glslang-2026.11.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
-
-            -- Slang dylibs -> HumbleApp
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang.dylib ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.0.2026.11.dylib ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-glslang-2026.11.dylib ../bin/" .. outputdir .. "/HumbleApp"),
 
             ("xattr -dr com.apple.quarantine ../bin"),
         }
@@ -290,10 +289,6 @@ project "Humble2"
                 ("{COPY} ../Dependencies/FMOD/MacOS/core/lib/libfmodL.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
                 ("{COPY} %{cfg.buildtarget.directory}/libHumble2.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
 
-                -- HumbleApp
-                ("{COPY} ../Dependencies/FMOD/MacOS/core/lib/libfmodL.dylib ../bin/" .. outputdir .. "/HumbleApp"),
-                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.dylib ../bin/" .. outputdir .. "/HumbleApp"),
-
                 ("xattr -dr com.apple.quarantine ../bin"),
             }
             
@@ -312,10 +307,6 @@ project "Humble2"
                 -- HumbleEditor
                 ("{COPY} ../Dependencies/FMOD/MacOS/core/lib/libfmod.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
                 ("{COPY} %{cfg.buildtarget.directory}/libHumble2.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
-
-                -- HumbleApp
-                ("{COPY} ../Dependencies/FMOD/MacOS/core/lib/libfmod.dylib ../bin/" .. outputdir .. "/HumbleApp"),
-                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.dylib ../bin/" .. outputdir .. "/HumbleApp"),
 
                 ("xattr -dr com.apple.quarantine ../bin"),
             }

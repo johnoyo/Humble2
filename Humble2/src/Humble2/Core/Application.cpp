@@ -3,6 +3,7 @@
 #include "Asset/EditorAssetManager.h"
 #include "Script/BuildEngine.h"
 #include "Platform/Windows/WindowsBuildEngine.h"
+#include "Platform/MacOS/MacOSBuildEngine.h"
 
 #ifdef DIST
 	#define BEGIN_APP_PROFILE(tag)
@@ -14,8 +15,9 @@
 	#define SWAP_AND_RESET_PROFILED_TIMERS() (m_PreviousStats = m_CurrentStats, m_CurrentStats.Reset())
 #endif
 
-#define SKIP_MT_FRAME() if (skipMTFrame.load() <= 0) { if (skipMTFrame.load() == 0) { skipMTFrame = 1; } EndFrame(); return; }
-#define SKIP_RT_FRAME() if (skipRTFrame.load() <= 0) { if (skipRTFrame.load() == 0) { skipRTFrame = 1; } continue; }
+#define SKIP_MT_FRAME_IF_NEEDED() if (skipMTFrame.load() <= 0) { if (skipMTFrame.load() == 0) { skipMTFrame = 1; } EndFrame(); return; }
+#define SKIP_RT_FRAME_IF_NEEDED() if (skipRTFrame.load() <= 0) { if (skipRTFrame.load() == 0) { skipRTFrame = 1; } continue; }
+#define ABORT_RT_FRAME_IF_NEEDED() if (frameData == nullptr) { break; }
 
 namespace HBL2
 {
@@ -68,6 +70,9 @@ namespace HBL2
 			Log::SetOutputs({ LogContexts::FILE });
 			gfxAPI = projectSettings.RuntimeGraphicsAPI;
 			break;
+        case Mode::None:
+            HBL2_CORE_FATAL("Context mode cannot be 'None', it should be either 'Editor' or 'Runtime'.");
+            exit(-1);
 		}
 
 		Console::Instance = new Console;
@@ -79,12 +84,16 @@ namespace HBL2
 		PrefabUtilities::Initialize();
 		ShaderUtilities::Initialize();
 
-		BuildEngine::Instance = new WindowsBuildEngine;
-
-		switch (gfxAPI)
-		{
+#ifdef HBL2_PLATFORM_WINDOWS
+        BuildEngine::Instance = new WindowsBuildEngine;
+#elif HBL2_PLATFORM_MACOS
+        BuildEngine::Instance = new MacOSBuildEngine;
+#endif
+        switch (gfxAPI)
+        {
+        case GraphicsAPI::OPENGL:
+            HBL2_CORE_WARN("OpenGL gfx backend is deprecated and will be removed in the future.");
 #ifndef HBL2_PLATFORM_MACOS
-		case GraphicsAPI::OPENGL:
 			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
 			g_GfxAPI = "OpenGL";
 			Device::Instance = new OpenGLDevice;
@@ -92,8 +101,8 @@ namespace HBL2
 			ResourceManager::Instance = new OpenGLResourceManager;
 			Renderer::Instance = new OpenGLRenderer;
 			ImGuiRenderer::Instance = new OpenGLImGuiRenderer;
-			break;
 #endif
+            break;
 		case GraphicsAPI::VULKAN:
 			HBL2_CORE_INFO("Vulkan is selected as the renderer API.");
 			g_GfxAPI = "Vulkan";
@@ -103,8 +112,9 @@ namespace HBL2
 			Renderer::Instance = new VulkanRenderer;
 			ImGuiRenderer::Instance = new VulkanImGuiRenderer;
 			break;
+        case GraphicsAPI::METAL:
+        case GraphicsAPI::WEBGPU:
 		case GraphicsAPI::NONE:
-        default:
 			HBL2_CORE_ERROR("No RendererAPI specified. Please choose between OpenGL, or Vulkan depending on your target platform.");
 			exit(-1);
 			break;
@@ -148,9 +158,9 @@ namespace HBL2
 	{
 		m_RenderThread = std::thread(renderLoop);
 
-		auto handle = m_RenderThread.native_handle();
-
-#ifdef _WIN32
+#ifdef HBL2_PLATFORM_WINDOWS
+        auto handle = m_RenderThread.native_handle();
+        
 		// Put render thread on to dedicated core.
 		DWORD_PTR affinityMask = 1ull << 1;
 		DWORD_PTR affinity_result = SetThreadAffinityMask(handle, affinityMask);
@@ -238,14 +248,18 @@ namespace HBL2
 
 		Window::Instance->Create();
 		ImGuiRenderer::Instance->Create({ .EnableMultiViewports = projectSettings.EditorMultipleViewports });
-		
-		Input::Initialize();
+        
+        // The device is initialized in the main thread because of MacOS limitation,
+        // since it requires the surface creation to happen on the main thread.
+        // https://github.com/KhronosGroup/Vulkan-Docs/issues/1200
+        Device::Instance->Initialize();
+        
+        Input::Initialize();
+        
+        DispatchRenderLoop([this]()
+        {
+            JobSystem::Get().SetupWorkerRT();
 
-		DispatchRenderLoop([this]()
-		{
-			JobSystem::Get().SetupWorkerRT();
-
-			Device::Instance->Initialize();
 			Renderer::Instance->Initialize();
 			ImGuiRenderer::Instance->Initialize();
 			DebugRenderer::Instance->Initialize();
@@ -259,7 +273,7 @@ namespace HBL2
 
 			while (true)
 			{
-				SKIP_RT_FRAME();
+				SKIP_RT_FRAME_IF_NEEDED();
 
 				BEGIN_APP_PROFILE(renderThread);
 
@@ -267,7 +281,7 @@ namespace HBL2
 				const FrameData* frameData = Renderer::Instance->WaitAndRender();
 				END_APP_PROFILE(renderThreadWait, m_CurrentStats.RenderThreadWaitTime);
 
-				if (frameData == nullptr) { break; }
+                ABORT_RT_FRAME_IF_NEEDED();
 
 				BEGIN_APP_PROFILE(render);
 				Renderer::Instance->BeginFrame();
@@ -302,7 +316,7 @@ namespace HBL2
 
 			BeginFrame();
 
-			SKIP_MT_FRAME();
+			SKIP_MT_FRAME_IF_NEEDED();
 
 			BEGIN_APP_PROFILE(gameThreadWait);
 			Renderer::Instance->WaitAndBegin();
@@ -354,7 +368,7 @@ namespace HBL2
 		delete DebugRenderer::Instance;
 		DebugRenderer::Instance = nullptr;
 
-		AssetManager::Instance->DeregisterAssets();
+		AssetManager::Instance->Clean();
 		delete AssetManager::Instance;
 		AssetManager::Instance = nullptr;
 

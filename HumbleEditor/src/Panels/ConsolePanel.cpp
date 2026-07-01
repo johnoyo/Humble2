@@ -46,10 +46,10 @@ namespace HBL2::Editor
 
         // Format: "[TAG] message", clamp to avoid overflow
         int written = 0;
-        written += snprintf(tmp + written, sizeof(tmp) - written, "[%.*s] ", tagLen, msg.Tag);
+        written += snprintf(tmp + written, sizeof(tmp) - written, "[%.*s] ", tagLen, msg.Tag.c_str());
         if (written < (int)sizeof(tmp))
         {
-            written += snprintf(tmp + written, sizeof(tmp) - written, "%.*s", msgLen, msg.Message);
+            written += snprintf(tmp + written, sizeof(tmp) - written, "%.*s", msgLen, msg.Message.c_str());
         }
 
         tmp[sizeof(tmp) - 1] = '\0';
@@ -60,9 +60,6 @@ namespace HBL2::Editor
     {
         // Draw an invisible splitter bar between top and bottom.
         const float splitterThickness = 6.0f;
-
-        ImVec2 avail = ImGui::GetContentRegionAvail();
-        ImVec2 cursor = ImGui::GetCursorPos();
 
         // Place splitter at current cursor. We'll position it after the top child.
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
@@ -248,7 +245,7 @@ namespace HBL2::Editor
 
                 // Build row label (single line)
                 char label[1024];
-                int written = snprintf(label, sizeof(label), "[%.*s] %.*s", msg.Message.size(), msg.Tag, msg.Message.size(), msg.Message);
+                int written = snprintf(label, sizeof(label), "[%.*s] %.*s", (uint32_t)msg.Message.size(), msg.Tag.c_str(), (uint32_t)msg.Message.size(), msg.Message.c_str());
                 (void)written;
                 label[sizeof(label) - 1] = '\0';
 
@@ -347,7 +344,7 @@ namespace HBL2::Editor
                         }
 
                         ImGui::PushStyleColor(ImGuiCol_Text, ColorForType(sel.Type));
-                        ImGui::Text("[%.*s] %.*s", sel.Tag.size(), sel.Tag, sel.Message.size(), sel.Message);
+                        ImGui::Text("[%.*s] %.*s", (uint32_t)sel.Tag.size(), sel.Tag.c_str(), (uint32_t)sel.Message.size(), sel.Message.c_str());
                         ImGui::PopStyleColor();
 
                         ImGui::Spacing();

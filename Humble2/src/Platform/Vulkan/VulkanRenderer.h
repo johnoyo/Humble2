@@ -23,7 +23,6 @@ namespace HBL2
 	{
 		VkSemaphore ImageAvailableSemaphore; // Signal from swapchain.
 		VkSemaphore MainRenderFinishedSemaphore; // Signal that main render is done.
-		VkSemaphore ImGuiRenderFinishedSemaphore; // Signal that UI render is done.
 
 		VkFence InFlightFence;
 
@@ -60,7 +59,7 @@ namespace HBL2
 		virtual void* GetDepthAttachment() override { return nullptr; }
 		virtual void* GetColorAttachment() override;		
 
-		virtual void SetViewportAttachment(Handle<Texture> viewportTexture) {}
+		virtual void SetViewportAttachment(Handle<Texture> viewportTexture) override {}
 		virtual void* GetViewportAttachment() override { return m_ColorAttachmentID; }
 
 		virtual Handle<BindGroup> GetShadowBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].ShadowBindings; }
@@ -117,6 +116,7 @@ namespace HBL2
 		DeletionQueue m_MainDeletionQueue;
 
 		VkFrameData m_VkFrames[FRAME_OVERLAP];
+        std::vector<VkSemaphore> m_ImGuiRenderFinishedSemaphores;
 		
 		VulkanCommandBuffer m_MainCommandBuffers[FRAME_OVERLAP];
 		VulkanCommandBuffer m_ImGuiCommandBuffers[FRAME_OVERLAP];

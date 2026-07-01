@@ -1,6 +1,7 @@
 #include "BuildEngine.h"
 
 #include "Asset/AssetManager.h"
+#include "Asset/EditorAssetManager.h"
 #include "Project/Project.h"
 #include "Scene/ISystem.h"
 
@@ -151,9 +152,11 @@ namespace HBL2
 
 	Handle<Asset> BuildEngine::CreateSystemFile(const std::filesystem::path& currentDir, const std::string& systemName)
 	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
 		auto relativePath = std::filesystem::relative(currentDir / (systemName + ".h"), HBL2::Project::GetAssetDirectory());
 
-		auto scriptAssetHandle = AssetManager::Instance->CreateAsset({
+		auto scriptAssetHandle = editorAssetManager->CreateAsset({
 			.debugName = "script-asset",
 			.filePath = relativePath,
 			.type = AssetType::Script,
@@ -183,9 +186,11 @@ namespace HBL2
 
 	Handle<Asset> BuildEngine::CreateComponentFile(const std::filesystem::path& currentDir, const std::string& componentName)
 	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
 		auto relativePath = std::filesystem::relative(currentDir / (componentName + ".h"), HBL2::Project::GetAssetDirectory());
 
-		auto scriptAssetHandle = AssetManager::Instance->CreateAsset({
+		auto scriptAssetHandle = editorAssetManager->CreateAsset({
 			.debugName = "script-asset",
 			.filePath = relativePath,
 			.type = AssetType::Script,
@@ -215,9 +220,11 @@ namespace HBL2
 
 	Handle<Asset> BuildEngine::CreateHelperScriptFile(const std::filesystem::path& currentDir, const std::string& scriptName)
 	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
 		auto relativePath = std::filesystem::relative(currentDir / (scriptName + ".h"), HBL2::Project::GetAssetDirectory());
 
-		auto scriptAssetHandle = AssetManager::Instance->CreateAsset({
+		auto scriptAssetHandle = editorAssetManager->CreateAsset({
 			.debugName = "script-asset",
 			.filePath = relativePath,
 			.type = AssetType::Script,
@@ -243,22 +250,6 @@ namespace HBL2
 		fout.close();
 
 		return scriptAssetHandle;
-	}
-
-	const std::filesystem::path BuildEngine::GetUnityBuildPath(Configuration config) const
-	{
-		const std::string& projectName = Project::GetActive()->GetName();
-
-		switch (config)
-		{
-		case Configuration::Debug: 
-			return std::filesystem::path("assets") / "dlls" / "Debug-x86_64" / projectName / "UnityBuild.dll";
-		case Configuration::Release: 
-		case Configuration::Distribution: 
-			return std::filesystem::path("assets") / "dlls" / "Release-x86_64" / projectName / "UnityBuild.dll";
-		}
-
-		return std::filesystem::path("");
 	}
 
 	std::string BuildEngine::GetDefaultSystemCode(const std::string& systemName)
@@ -396,7 +387,7 @@ class {ScriptName}
 	void BuildEngine::LoadBuild(const std::string& path)
 	{
 		// Load new unity build dll.
-		m_DynamicLibrary = DynamicLibrary(path);
+        m_DynamicLibrary = DynamicLibrary(path);
 	}
 
 	void BuildEngine::UnloadBuild(Scene* ctx)
@@ -441,20 +432,6 @@ class {ScriptName}
 		}
 	}
 
-	std::string BuildEngine::CleanComponentNameO1(const std::string& input)
-	{
-		std::string output = input;
-
-		// Find the '>' character and truncate the string if it exists
-		size_t pos = output.find('>');
-		if (pos != std::string::npos)
-		{
-			return output = output.substr(0, pos);
-		}
-
-		return output;
-	}
-
 	std::string BuildEngine::CleanComponentNameO3(const std::string& input)
 	{
 		std::string output = input;
@@ -490,6 +467,15 @@ class {ScriptName}
 		{
 			return output.substr(0, pos2);
 		}
+        
+        // Remove any leading digits.
+        output.erase(
+            output.begin(),
+            std::find_if(output.begin(), output.end(), [](unsigned char c)
+            {
+                return !std::isdigit(c);
+            })
+        );
 
 		return output;
 	}

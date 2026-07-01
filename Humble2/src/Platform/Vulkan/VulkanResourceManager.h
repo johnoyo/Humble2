@@ -32,7 +32,7 @@ namespace HBL2
 		virtual void DeleteTexture(Handle<Texture> handle) override;
 		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) override;
 		virtual void ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc) override;
-		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout, Handle<BindGroup> bindGroupHandle) override;
+		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout) override;
 		virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) override;
 		virtual void* GetTextureData(Handle<Texture> handle) override;
 		VulkanTexture* GetTexture(Handle<Texture> handle) const;
@@ -70,7 +70,7 @@ namespace HBL2
 		// BindGroups
 		virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) override;
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) override;
-		virtual void UpdateBindGroup(Handle<BindGroup> handle);
+		virtual void UpdateBindGroup(Handle<BindGroup> handle) override;
 		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) override;
 		VulkanBindGroup GetBindGroup(Handle<BindGroup> handle) const;
 		VulkanBindGroupHot* GetBindGroupHot(Handle<BindGroup> handle) const;

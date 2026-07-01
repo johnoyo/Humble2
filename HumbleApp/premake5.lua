@@ -40,7 +40,7 @@ project "HumbleApp"
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "../Dependencies/SLang/include",
         "%{VULKAN_SDK}/Include",
-        "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS/include",
+        "%{VULKAN_SDK}/include",
     }
 
     links
@@ -67,7 +67,35 @@ project "HumbleApp"
 
         linkoptions
         {
-            "-rpath @executable_path"
+            "-rpath @executable_path/../Frameworks"
+        }
+
+        xcodebuildsettings
+        {
+            ["GENERATE_INFOPLIST_FILE"] = "YES",
+        }
+
+        postbuildcommands
+        {
+            "{MKDIR} %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks",
+
+            -- Humble2
+            "{COPY} %{wks.location}/bin/" .. outputdir .. "/Humble2/libHumble2.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+
+            -- Third party
+            "{COPY} %{wks.location}/Dependencies/FMOD/MacOS/core/lib/libfmodL.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.0.2026.11.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",  
+            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-glslang-2026.11.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+
+            -- Vulkan
+            "{COPY} %{VULKAN_SDK}/lib/libvulkan_kosmickrisp.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+            "{COPY} %{VULKAN_SDK}/lib/libvulkan.1.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+            "{COPY} %{VULKAN_SDK}/lib/libvulkan.%{VULKAN_SDK_VERSION}.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+
+            "{MKDIR} %{cfg.targetdir}/%{prj.name}.app/Contents/Resources/vulkan/icd.d",
+            "{COPY} %{VULKAN_SDK}/share/vulkan/icd.d/libkosmickrisp_icd.json %{cfg.targetdir}/%{prj.name}.app/Contents/Resources/vulkan/icd.d/",
         }
 
     filter "configurations:Debug"

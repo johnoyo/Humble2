@@ -1,5 +1,7 @@
 #include "Panel.h"
 
+#include "Asset/EditorAssetManager.h"
+
 #ifndef HBL2_PLATFORM_MACOS
     #include "Platform/OpenGL/OpenGLResourceManager.h"
     #include "Platform/Vulkan/VulkanResourceManager.h"
@@ -314,9 +316,11 @@ namespace HBL2
 
 					// Draw image on top
 					ImGui::SetCursorScreenPos(ImVec2(position.x, position.y));
-					
-					UUID assetUUID = std::hash<std::string>()(m_Configuration.id);
-					Handle<Texture> textureHandle = AssetManager::Instance->GetAsset<Texture>(assetUUID);					
+
+					auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
+                    UUID assetUUID = editorAssetManager->GetUUIDFromPath(m_Configuration.id);
+					Handle<Texture> textureHandle = AssetManager::Instance->GetAsset<Texture>(assetUUID);
 #if false
 					if (Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL)
 					{

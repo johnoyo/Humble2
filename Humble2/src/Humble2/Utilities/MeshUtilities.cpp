@@ -1,6 +1,7 @@
 #include "MeshUtilities.h"
 
 #include "Project/Project.h"
+#include "Asset/EditorAssetManager.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -82,9 +83,10 @@ namespace HBL2
 	void MeshUtilities::LoadBuiltInMeshes()
 	{
 		JobContext ctx;
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
 		// Plane
-		auto planeAssetHandle = AssetManager::Instance->CreateAsset({
+		auto planeAssetHandle = editorAssetManager->CreateAsset({
 			.debugName = "plane-mesh-asset",
 			.filePath = "assets/meshes/plane.obj",
 			.type = AssetType::Mesh,
@@ -95,7 +97,7 @@ namespace HBL2
 		auto* planeTask = AssetManager::Instance->GetAssetAsync<Mesh>(planeAssetHandle, &ctx);
 
 		// Tessellated Plane
-		auto tessellatedPlaneAssetHandle = AssetManager::Instance->CreateAsset({
+		auto tessellatedPlaneAssetHandle = editorAssetManager->CreateAsset({
 			.debugName = "plane-mesh-asset",
 			.filePath = "assets/meshes/tessellated_plane.obj",
 			.type = AssetType::Mesh,
@@ -106,7 +108,7 @@ namespace HBL2
 		auto* tesselatedPlaneTask = AssetManager::Instance->GetAssetAsync<Mesh>(tessellatedPlaneAssetHandle, &ctx);
 
 		// Cube
-		auto cubeAssetHandle = AssetManager::Instance->CreateAsset({
+		auto cubeAssetHandle = editorAssetManager->CreateAsset({
 			.debugName = "cube-mesh-asset",
 			.filePath = "assets/meshes/cube.obj",
 			.type = AssetType::Mesh,
@@ -117,7 +119,7 @@ namespace HBL2
 		auto* cubeTask = AssetManager::Instance->GetAssetAsync<Mesh>(cubeAssetHandle, &ctx);
 
 		// Sphere
-		auto sphereAssetHandle = AssetManager::Instance->CreateAsset({
+		auto sphereAssetHandle = editorAssetManager->CreateAsset({
 			.debugName = "sphere-mesh-asset",
 			.filePath = "assets/meshes/sphere.obj",
 			.type = AssetType::Mesh,
@@ -128,7 +130,7 @@ namespace HBL2
 		auto* sphereTask = AssetManager::Instance->GetAssetAsync<Mesh>(sphereAssetHandle, &ctx);
 
 		// Cylinder
-		auto cylinderAssetHandle = AssetManager::Instance->CreateAsset({
+		auto cylinderAssetHandle = editorAssetManager->CreateAsset({
 			.debugName = "cylinder-mesh-asset",
 			.filePath = "assets/meshes/cylinder.obj",
 			.type = AssetType::Mesh,
@@ -139,7 +141,7 @@ namespace HBL2
 		auto* cylinderTask = AssetManager::Instance->GetAssetAsync<Mesh>(cylinderAssetHandle, &ctx);
 
 		// Capsule
-		auto capsuleAssetHandle = AssetManager::Instance->CreateAsset({
+		auto capsuleAssetHandle = editorAssetManager->CreateAsset({
 			.debugName = "capsule-mesh-asset",
 			.filePath = "assets/meshes/capsule.obj",
 			.type = AssetType::Mesh,
@@ -150,7 +152,7 @@ namespace HBL2
 		auto* capsuleTask = AssetManager::Instance->GetAssetAsync<Mesh>(capsuleAssetHandle, &ctx);
 
 		// Torus
-		auto torusAssetHandle = AssetManager::Instance->CreateAsset({
+		auto torusAssetHandle = editorAssetManager->CreateAsset({
 			.debugName = "torus-mesh-asset",
 			.filePath = "assets/meshes/torus.obj",
 			.type = AssetType::Mesh,
@@ -243,7 +245,8 @@ namespace HBL2
 		}
 
 		const auto& assetFilePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath);
-		const auto& path = std::filesystem::exists(assetFilePath) ? assetFilePath : asset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+		const auto& path = std::filesystem::exists(assetFilePath) ? assetFilePath : workingDirectory / asset->FilePath;
 
 		if (std::filesystem::exists(path.string() + ".hblmesh"))
 		{

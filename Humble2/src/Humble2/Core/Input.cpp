@@ -71,6 +71,26 @@ namespace HBL2
         return false;
     }
 
+    bool Input::GetGamepadButtonRelease(GamepadButton button, int gamepad)
+    {
+        if (!IsGamepadConnected(gamepad))
+        {
+            return false;
+        }
+
+        GLFWgamepadstate state;
+        if (glfwGetGamepadState(gamepad, &state))
+        {
+            bool pressed = (state.buttons[(int)button] == GLFW_PRESS);
+            bool wasPressed = s_Instance->m_LastGamepadState[gamepad][(int)button];
+
+            s_Instance->m_LastGamepadState[gamepad][(int)button] = pressed;
+            return !pressed && wasPressed;
+        }
+
+        return false;
+    }
+
     float Input::GetGamepadAxis(GamepadAxis axis, int gamepad)
     {
         if (!IsGamepadConnected(gamepad))

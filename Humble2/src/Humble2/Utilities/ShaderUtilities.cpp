@@ -1,6 +1,7 @@
 #include "ShaderUtilities.h"
 
 #include "YamlUtilities.h"
+#include "Asset/EditorAssetManager.h"
 #include "Collections/StaticDArray.h"
 
 #include "Project/Project.h"
@@ -106,8 +107,17 @@ namespace HBL2
 
     std::string ShaderUtilities::ReadFile(const std::string& filepath)
     {
+        const auto& shaderFilePath = std::filesystem::path(filepath);
+        const auto& workingDir = Project::GetAssetDirectory().parent_path().parent_path();
+        auto shaderPath = std::filesystem::exists(shaderFilePath) ? shaderFilePath : workingDir / shaderFilePath;
+        
+        if (!std::filesystem::exists(shaderPath))
+        {
+            shaderPath = Project::GetAssetFileSystemPath(shaderFilePath);
+        }
+        
         std::string result;
-        std::ifstream in(filepath, std::ios::in | std::ios::binary);
+        std::ifstream in(shaderPath, std::ios::in | std::ios::binary);
 
         if (in)
         {
@@ -141,13 +151,21 @@ namespace HBL2
         GraphicsAPI target = Renderer::Instance->GetAPI();
         CreateCacheDirectoryIfNeeded(target);
 
-        std::filesystem::path shaderPath = shaderFilePath;
-        std::filesystem::path cacheDirectory = GetCacheDirectory(target);
+        const auto& shaderFilePathAsPath = std::filesystem::path(shaderFilePath);
+        const auto& workingDir = Project::GetAssetDirectory().parent_path().parent_path();
+        auto shaderPath = std::filesystem::exists(shaderFilePathAsPath) ? shaderFilePathAsPath : workingDir / shaderFilePath;
+        
+        if (!std::filesystem::exists(shaderPath))
+        {
+            shaderPath = Project::GetAssetFileSystemPath(shaderFilePath);
+        }
+        
+        const auto& cacheDirectory = GetCacheDirectory(target);
 
         uint32_t workerIndex = JobSystem::Get().GetWorkerIndex();
 
         // Target description.
-        // NOTE: No GENERATE_WHOLE_PROGRAM — we want one SPIR-V binary per entry point.
+        // NOTE: No GENERATE_WHOLE_PROGRAM, we want one SPIR-V binary per entry point.
         slang::TargetDesc targetDesc = {};
         targetDesc.format = SLANG_SPIRV; // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/a2-01-spirv-target-specific.html
         targetDesc.flags = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY;
@@ -206,11 +224,11 @@ namespace HBL2
         }
 
         // Module.
-        std::string shaderSource = ReadFile(shaderFilePath);
+        const std::string& shaderSource = ReadFile(shaderPath.string());
 
         Slang::ComPtr<slang::IBlob> diagnostics;
         Slang::ComPtr<slang::IModule> slangModule;
-        slangModule = session->loadModuleFromSourceString(shaderPath.filename().stem().string().c_str(), shaderFilePath.c_str(), shaderSource.c_str(), diagnostics.writeRef());
+        slangModule = session->loadModuleFromSourceString(shaderPath.filename().stem().string().c_str(), shaderPath.string().c_str(), shaderSource.c_str(), diagnostics.writeRef());
 
         if (diagnostics)
         {
@@ -260,7 +278,7 @@ namespace HBL2
             return {};
         }
 
-        // Compile — one SPIR-V binary per entry point, each in its own vector.
+        // Compile one SPIR-V binary per entry point, each in its own vector.
         CompilationResultData compilationResultData;
 
         for (SlangInt i = 0; i < (SlangInt)entryPoints.size(); ++i)
@@ -287,7 +305,7 @@ namespace HBL2
             }
 
             // Cache path per entry point.
-            std::filesystem::path cachedPath = cacheDirectory / (shaderPath.filename().string() + ".cached." + shaderStageName + ".spv");
+            const auto& cachedPath = cacheDirectory / (shaderPath.filename().string() + ".cached." + shaderStageName + ".spv");
 
             // Cache hit for this entry point.
             if (!forceRecompile)
@@ -304,21 +322,21 @@ namespace HBL2
                     if (IsVertexStage(i, entryPointCount))
                     {
                         compilationResultData.vertexShaderCode.ptr = (uint32_t*)JobSystem::Get().GetWorkerArena()->Alloc(size, alignof(uint32_t));
-                        compilationResultData.vertexShaderCode.size = size / sizeof(uint32_t);
+                        compilationResultData.vertexShaderCode.size = (uint32_t)size / sizeof(uint32_t);
 
                         shaderCode = &compilationResultData.vertexShaderCode;
                     }
                     else if (IsFragmentStage(i, entryPointCount))
                     {
                         compilationResultData.fragmentShaderCode.ptr = (uint32_t*)JobSystem::Get().GetWorkerArena()->Alloc(size, alignof(uint32_t));
-                        compilationResultData.fragmentShaderCode.size = size / sizeof(uint32_t);
+                        compilationResultData.fragmentShaderCode.size = (uint32_t)size / sizeof(uint32_t);
 
                         shaderCode = &compilationResultData.fragmentShaderCode;
                     }
                     else if (IsComputeStage(i, entryPointCount))
                     {
                         compilationResultData.computeShaderCode.ptr = (uint32_t*)JobSystem::Get().GetWorkerArena()->Alloc(size, alignof(uint32_t));
-                        compilationResultData.computeShaderCode.size = size / sizeof(uint32_t);
+                        compilationResultData.computeShaderCode.size = (uint32_t)size / sizeof(uint32_t);
 
                         shaderCode = &compilationResultData.computeShaderCode;
                     }
@@ -357,21 +375,21 @@ namespace HBL2
             if (IsVertexStage(i, entryPointCount))
             {
                 compilationResultData.vertexShaderCode.ptr = (uint32_t*)JobSystem::Get().GetWorkerArena()->Alloc(spirvByteSize, alignof(uint32_t));
-                compilationResultData.vertexShaderCode.size = spirvSize;
+                compilationResultData.vertexShaderCode.size = (uint32_t)spirvSize;
 
                 shaderCode = &compilationResultData.vertexShaderCode;
             }
             else if (IsFragmentStage(i, entryPointCount))
             {
                 compilationResultData.fragmentShaderCode.ptr = (uint32_t*)JobSystem::Get().GetWorkerArena()->Alloc(spirvByteSize, alignof(uint32_t));
-                compilationResultData.fragmentShaderCode.size = spirvSize;
+                compilationResultData.fragmentShaderCode.size = (uint32_t)spirvSize;
 
                 shaderCode = &compilationResultData.fragmentShaderCode;
             }
             else if (IsComputeStage(i, entryPointCount))
             {
                 compilationResultData.computeShaderCode.ptr = (uint32_t*)JobSystem::Get().GetWorkerArena()->Alloc(spirvByteSize, alignof(uint32_t));
-                compilationResultData.computeShaderCode.size = spirvSize;
+                compilationResultData.computeShaderCode.size = (uint32_t)spirvSize;
 
                 shaderCode = &compilationResultData.computeShaderCode;
             }
@@ -402,7 +420,7 @@ namespace HBL2
         // Reflection.
         if (outReflectionData != nullptr)
         {
-            *outReflectionData = ShaderReflector::Reflect(linkedProgram, shaderFilePath);
+            *outReflectionData = ShaderReflector::Reflect(linkedProgram, shaderPath.string());
         }
 
         return compilationResultData;
@@ -418,7 +436,7 @@ namespace HBL2
         CreateCacheDirectoryIfNeeded(target);
 
         std::filesystem::path shaderPath = shaderFilePath;
-        std::filesystem::path cacheDirectory = GetCacheDirectory(target);
+        const auto& cacheDirectory = GetCacheDirectory(target);
 
         uint32_t workerIndex = JobSystem::Get().GetWorkerIndex();
 
@@ -542,9 +560,10 @@ namespace HBL2
     void ShaderUtilities::LoadBuiltInShaders()
     {
         JobContext ctx;
+        auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
         // Invalid shader
-        auto invalidShaderAssetHandle = AssetManager::Instance->CreateAsset({
+        auto invalidShaderAssetHandle = editorAssetManager->CreateAsset({
             .debugName = "invalid-shader-asset",
             .filePath = "assets/shaders/invalid.slang",
             .type = AssetType::Shader,
@@ -554,7 +573,7 @@ namespace HBL2
         auto* invalidShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(invalidShaderAssetHandle, &ctx);
 
         // Unlit shader
-        auto unlitShaderAssetHandle = AssetManager::Instance->CreateAsset({
+        auto unlitShaderAssetHandle = editorAssetManager->CreateAsset({
             .debugName = "unlit-shader-asset",
             .filePath = "assets/shaders/unlit.slang",
             .type = AssetType::Shader,
@@ -564,7 +583,7 @@ namespace HBL2
         auto* unlitShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(unlitShaderAssetHandle, &ctx);
 
         // Blinn-Phong shader
-        auto blinnPhongShaderAssetHandle = AssetManager::Instance->CreateAsset({
+        auto blinnPhongShaderAssetHandle = editorAssetManager->CreateAsset({
             .debugName = "blinn-phong-shader-asset",
             .filePath = "assets/shaders/blinn-phong.slang",
             .type = AssetType::Shader,
@@ -574,7 +593,7 @@ namespace HBL2
         auto* blinnPhongShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(blinnPhongShaderAssetHandle, &ctx);
 
         // PBR shader
-        auto pbrShaderAssetHandle = AssetManager::Instance->CreateAsset({
+        auto pbrShaderAssetHandle = editorAssetManager->CreateAsset({
             .debugName = "pbr-shader-asset",
             .filePath = "assets/shaders/pbr.slang",
             .type = AssetType::Shader,
@@ -614,7 +633,10 @@ namespace HBL2
 
     void ShaderUtilities::LoadBuiltInMaterials()
     {
-        LitMaterialAsset = AssetManager::Instance->CreateAsset({
+        auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
+        // Lit built-in material.
+        LitMaterialAsset = editorAssetManager->CreateAsset({
             .debugName = "lit-material-asset",
             .filePath = "assets/materials/lit.mat",
             .type = AssetType::Material,
@@ -623,11 +645,23 @@ namespace HBL2
         CreateMaterialMetadataFile(LitMaterialAsset, 1);
 
         AssetManager::Instance->GetAsset<Material>(LitMaterialAsset);
+
+        // Unlit built-in material.
+        UnlitMaterialAsset = editorAssetManager->CreateAsset({
+            .debugName = "unlit-material-asset",
+            .filePath = "assets/materials/unlit.mat",
+            .type = AssetType::Material,
+        });
+
+        CreateMaterialMetadataFile(UnlitMaterialAsset, 0);
+
+        AssetManager::Instance->GetAsset<Material>(UnlitMaterialAsset);
     }
 
     void ShaderUtilities::DeleteBuiltInMaterials()
     {
         AssetManager::Instance->DeleteAsset(LitMaterialAsset);
+        AssetManager::Instance->DeleteAsset(UnlitMaterialAsset);
     }
 
     void ShaderUtilities::CreateShaderMetadataFile(Handle<Asset> handle, uint32_t shaderType)
@@ -635,7 +669,8 @@ namespace HBL2
         Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
 
         const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-        const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+        const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : workingDirectory / asset->FilePath;
 
         if (std::filesystem::exists(path.string() + ".hblshader"))
         {
@@ -654,7 +689,7 @@ namespace HBL2
             }
         }
 
-        std::ofstream fout(path.string() + ".hblshader", 0);
+        std::ofstream fout(path.string() + ".hblshader", std::ios::out | std::ios::trunc);
 
         ShaderDescriptor::RenderPipeline::PackedVariant variantHash = {};
 
@@ -814,7 +849,8 @@ namespace HBL2
         Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(handle);
 
         const auto& filesystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
-        const auto& filePath = std::filesystem::exists(filesystemPath) ? filesystemPath : shaderAsset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+        const auto& filePath = std::filesystem::exists(filesystemPath) ? filesystemPath : workingDirectory / shaderAsset->FilePath;
 
         YAML::Node root = YAML::LoadFile(filePath.string() + ".hblshader");
 
@@ -941,7 +977,8 @@ namespace HBL2
         Handle<Shader> shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderAssetHandle);
 
         const auto& filesystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
-        const auto& filePath = std::filesystem::exists(filesystemPath) ? filesystemPath : shaderAsset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+        const auto& filePath = std::filesystem::exists(filesystemPath) ? filesystemPath : workingDirectory / shaderAsset->FilePath;
 
         YAML::Node root = YAML::LoadFile(filePath.string() + ".hblshader");
         YAML::Node variants = root["Shader"]["Variants"];
@@ -967,7 +1004,8 @@ namespace HBL2
         Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
 
         const auto& filesystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-        const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : asset->FilePath;
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+        const auto& path = std::filesystem::exists(filesystemPath) ? filesystemPath : workingDirectory / asset->FilePath;
 
         if (std::filesystem::exists(path.string() + ".hblmat"))
         {
@@ -982,11 +1020,11 @@ namespace HBL2
             }
             catch (std::exception& e)
             {
-                HBL2_ERROR("Project directory creation failed: {0}", e.what());
+                HBL2_ERROR("Material metadata directory creation failed: {0}", e.what());
             }
         }
 
-        std::ofstream fout(path.string() + ".hblmat", 0);
+        std::ofstream fout(path.string() + ".hblmat", std::ios::out | std::ios::trunc);
 
         YAML::Emitter out;
         out << YAML::BeginMap;
@@ -1013,7 +1051,7 @@ namespace HBL2
             }
             catch (std::exception& e)
             {
-                HBL2_ERROR("Project directory creation failed: {0}", e.what());
+                HBL2_ERROR("Material directory creation failed: {0}", e.what());
             }
         }
 
@@ -1226,14 +1264,16 @@ namespace HBL2
         ioStream.close();
     }
 
-    const char* ShaderUtilities::GetCacheDirectory(GraphicsAPI target)
+    std::filesystem::path ShaderUtilities::GetCacheDirectory(GraphicsAPI target)
     {
+        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+        
         switch (target)
         {
         case GraphicsAPI::OPENGL:
-            return "assets/cache/shader/opengl";
+            return workingDirectory / "assets/cache/shader/opengl";
         case GraphicsAPI::VULKAN:
-            return "assets/cache/shader/vulkan";
+            return workingDirectory / "assets/cache/shader/vulkan";
         default:
             HBL2_CORE_ASSERT(false, "Stage not supported");
             return "";
@@ -1242,7 +1282,7 @@ namespace HBL2
 
     void ShaderUtilities::CreateCacheDirectoryIfNeeded(GraphicsAPI target)
     {
-        std::string cacheDirectory = GetCacheDirectory(target);
+        const auto& cacheDirectory = GetCacheDirectory(target);
 
         if (!std::filesystem::exists(cacheDirectory))
         {

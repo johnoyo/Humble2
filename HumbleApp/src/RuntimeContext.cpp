@@ -1,5 +1,9 @@
 #include "RuntimeContext.h"
 
+#ifdef HBL2_PLATFORM_MACOS
+    #include "Platform/MacOS/MacOSUtils.h"
+#endif
+
 namespace HBL2
 {
 	namespace Runtime
@@ -132,7 +136,11 @@ namespace HBL2
 				system->OnDestroy();
 			}
 
-			ImGui::SetCurrentContext(nullptr);
+            // Disabled the imgui context reset to null due to MacOS support.
+            // Its seems that the context is shared across dll boundaries,
+            // so when trying to clean up on the engine dll, the context would be null.
+            // "Symbol Coalescing" scetion in https://leancrew.com/all-this/man/man1/ld-classic.html
+            // ImGui::SetCurrentContext(nullptr);
 		}
 
 		void RuntimeContext::OnDetach()
@@ -151,8 +159,14 @@ namespace HBL2
 		bool RuntimeContext::OpenProject()
 		{
 			std::filesystem::path filepath;
-
-			for (const auto& entry : std::filesystem::recursive_directory_iterator(std::filesystem::current_path()))
+            
+            // TODO: Refactor when Platform abstraction is implemented.
+#ifdef HBL2_PLATFORM_MACOS
+            const auto& resourcesPath = GetResourcesDir();
+#else
+            const auto& resourcesPath = std::filesystem::current_path();
+#endif
+			for (const auto& entry : std::filesystem::recursive_directory_iterator(resourcesPath))
 			{
 				if (entry.path().extension() == ".hblproj")
 				{

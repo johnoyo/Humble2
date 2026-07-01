@@ -10,9 +10,9 @@ namespace HBL2
 	struct PrefabDescriptor
 	{
 		const char* debugName;
-		UUID uuid;
-		UUID baseEntityUUID;
-		uint32_t version;
+		UUID uuid = 0;
+		UUID baseEntityUUID = 0;
+		uint32_t version = 0;
 		uint32_t maxEntities = 4096;
 		uint32_t maxComponents = 32;
 	};

@@ -45,6 +45,7 @@ namespace HBL2
 		NONE,
 		OPENGL,
 		VULKAN,
+        METAL,
 		WEBGPU,
 	};
 
