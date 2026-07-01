@@ -2,6 +2,11 @@
 
 VULKAN_SDK = os.getenv("VULKAN_SDK")
 
+if os.host() == "macosx" then
+    VULKAN_SDK = "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS"
+    VULKAN_SDK_VERSION = "1.4.350"
+end
+
 workspace "HumbleGameEngine2"
     architecture "x64"
 

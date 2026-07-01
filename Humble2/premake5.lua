@@ -51,7 +51,7 @@ project "Humble2"
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "../Dependencies/SLang/include",
         "%{VULKAN_SDK}/Include",
-        "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS/include",
+        "%{VULKAN_SDK}/include",
     }
     
     links
@@ -211,6 +211,11 @@ project "Humble2"
         systemversion "latest"    
         defines { "HBL2_PLATFORM_MACOS", table.unpack(JoltDefinesArm) }
 
+        files 
+        { 
+            "src/**.mm",
+        }
+
         removefiles
         {
             "src/Platform/OpenGL/**.h",
@@ -220,7 +225,7 @@ project "Humble2"
         linkoptions
         {
             "-rpath @executable_path",
-            "-rpath /Users/johnpetr/VulkanSDK/1.4.350.1/macOS/lib",
+            "-rpath " .. VULKAN_SDK .. "/lib",
 
             "-install_name @rpath/libHumble2.dylib",
         }
@@ -230,7 +235,7 @@ project "Humble2"
             "../Dependencies/GLFW/glfw-3.4.bin.MACOS/lib-arm64",
             "../Dependencies/FMOD/MacOS/core/lib",
             "../Dependencies/SLang/slang-2026.11-macos-aarch64/lib",
-            "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS/lib",
+            "%{VULKAN_SDK}/lib",
         }
 
         links

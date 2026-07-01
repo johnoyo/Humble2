@@ -1,5 +1,9 @@
 #include "RuntimeContext.h"
 
+#ifdef HBL2_PLATFORM_MACOS
+    #include "Platform/MacOS/MacOSUtils.h"
+#endif
+
 namespace HBL2
 {
 	namespace Runtime
@@ -155,8 +159,14 @@ namespace HBL2
 		bool RuntimeContext::OpenProject()
 		{
 			std::filesystem::path filepath;
-
-			for (const auto& entry : std::filesystem::recursive_directory_iterator(std::filesystem::current_path()))
+            
+            // TODO: Refactor when Platform abstraction is implemented.
+#ifdef HBL2_PLATFORM_MACOS
+            const auto& resourcesPath = GetResourcesDir();
+#else
+            const auto& resourcesPath = std::filesystem::current_path();
+#endif
+			for (const auto& entry : std::filesystem::recursive_directory_iterator(resourcesPath))
 			{
 				if (entry.path().extension() == ".hblproj")
 				{

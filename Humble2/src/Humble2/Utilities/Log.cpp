@@ -2,16 +2,26 @@
 
 #include "Base.h"
 
+#ifdef HBL2_PLATFORM_MACOS
+    #include "Platform/MacOS/MacOSUtils.h"
+#endif
+
 namespace HBL2
 {
-	std::shared_ptr<spdlog::logger> Log::s_CoreLogger;
-	std::shared_ptr<spdlog::logger> Log::s_ClientLogger;
+    std::shared_ptr<spdlog::logger> Log::s_CoreLogger;
+    std::shared_ptr<spdlog::logger> Log::s_ClientLogger;
 
-	std::shared_ptr<spdlog::sinks::stdout_color_sink_mt> Log::s_ConsoleSink;
-	std::shared_ptr<spdlog::sinks::rotating_file_sink_mt> Log::s_FileSink;
+    std::shared_ptr<spdlog::sinks::stdout_color_sink_mt> Log::s_ConsoleSink;
+    std::shared_ptr<spdlog::sinks::rotating_file_sink_mt> Log::s_FileSink;
 
-	void Log::Initialize()
-	{
+    void Log::Initialize()
+    {
+        // TODO: Refactor when Platform abstraction is implemented.
+#ifdef HBL2_PLATFORM_MACOS
+        const std::string& logFile = GetAppSupportDir() + "/Console.log";
+#else
+        const std::string& logFile = "Console.log";
+#endif
 		// Async thread pool initialization.
 		spdlog::init_thread_pool(8192, 1);
 
@@ -19,7 +29,7 @@ namespace HBL2
 		s_ConsoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 		s_ConsoleSink->set_pattern("%^[%T] [%l] [%s:%#] %v%$");
 
-		s_FileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("Console.log", 5_MB, 3);
+		s_FileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(logFile, 5_MB, 3);
 		s_FileSink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%s:%#] %v");
 
 		s_ConsoleSink->set_level(spdlog::level::trace);

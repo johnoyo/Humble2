@@ -42,7 +42,7 @@ project "HumbleEditor"
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "../Dependencies/SLang/include",
         "%{VULKAN_SDK}/Include",
-        "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS/include",
+        "%{VULKAN_SDK}/include",
     }
 
     links
