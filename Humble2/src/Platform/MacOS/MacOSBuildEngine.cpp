@@ -37,6 +37,7 @@ namespace HBL2
 
     static int ExecuteCommand(const char* command)
     {
+#ifdef HBL2_PLATFORM_MACOS
         FILE* pipe = popen(command, "r");
         if (!pipe)
         {
@@ -53,6 +54,9 @@ namespace HBL2
         HBL2_CORE_INFO(output);
 
         return pclose(pipe);
+#else
+        retuen -1;
+#endif
     }
 
     bool MacOSBuildEngine::Build()
