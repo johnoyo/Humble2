@@ -432,7 +432,7 @@ EndGlobal
 		return projectText;
 	}
 
-    const std::filesystem::path WindowsBuildEngine::GetUnityBuildPath(Configuration config) const
+    const std::filesystem::path WindowsBuildEngine::GetUnityBuildPath(Configuration config)
     {
         const std::string& projectName = Project::GetActive()->GetName();
         const auto& rootPath = Project::GetProjectDirectory().parent_path();

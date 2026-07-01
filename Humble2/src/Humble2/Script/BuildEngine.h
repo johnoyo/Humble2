@@ -28,7 +28,7 @@ namespace HBL2
 		virtual bool Build() = 0;
 		virtual bool RunRuntime(Configuration configuration) = 0;
 		virtual bool BuildRuntime(Configuration configuration) = 0;
-        virtual const std::filesystem::path GetUnityBuildPath(Configuration config) const = 0;
+        virtual const std::filesystem::path GetUnityBuildPath(Configuration config) = 0;
         
         void Recompile();
         void HotReload(Handle<Scene> sceneHandle, const std::vector<std::string>& userComponentNames, const std::vector<std::string>& userSystemNames, Reflect::TypeEntry::ByteStorage& serializedUserComponents);

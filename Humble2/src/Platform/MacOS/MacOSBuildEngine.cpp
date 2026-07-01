@@ -61,6 +61,16 @@ namespace HBL2
 
     bool MacOSBuildEngine::Build()
     {
+        /*
+         Workflow for masOS script building:
+         
+         - Build the user code into the libUnityBuild.dylib file.
+         - Duplicate that file into a libUnityBuildX.dylib file incrementing the number each time.
+         - Load that duplicated .dylib every time, not the base libUnityBuild.dylib.
+         
+         That workflow is chosen to support hot reloading.
+         */
+        
         // Combine scripts into a single .cpp source file.
         Combine();
         
@@ -73,7 +83,7 @@ namespace HBL2
         }
         catch (std::exception& e)
         {
-            HBL2_ERROR("Project directory creation failed: {0}", e.what());
+            HBL2_CORE_ERROR("Project directory creation failed: {0}", e.what());
         }
 
         // Open and inject final code to .cpp file.
@@ -146,6 +156,32 @@ namespace HBL2
             return false;
         }
         
+        // Duplicate dylib.
+        if (!m_CurrentDylibName.empty())
+        {
+            std::error_code ec;
+            std::filesystem::remove(GetUnityBuildPath(m_CurrentConfiguration), ec);
+            
+            if (ec)
+            {
+                HBL2_CORE_WARN("Failed to remove previous .dylib during build process.");
+            }
+        }
+        
+        m_CurrentDylibName = "libUnityBuild" + std::to_string(m_DylibLoadCount++) + ".dylib";
+        
+        const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
+        const auto& basePath = GetUnityBuildBasePath(m_CurrentConfiguration);
+        
+        std::error_code ec;
+        std::filesystem::copy_file(basePath, path, std::filesystem::copy_options::overwrite_existing, ec);
+        
+        if (ec)
+        {
+            HBL2_CORE_ERROR("Build failed, base .dylib does not exists.");
+            return false;
+        }
+        
         // Load dynamic library.
         LoadBuild(m_CurrentConfiguration);
         
@@ -211,7 +247,42 @@ namespace HBL2
         return false;
     }
 
-    const std::filesystem::path MacOSBuildEngine::GetUnityBuildPath(Configuration config) const
+    const std::filesystem::path MacOSBuildEngine::GetUnityBuildPath(Configuration config)
+    {
+        const std::string& projectName = Project::GetActive()->GetName();
+        const auto& rootPath = Project::GetProjectDirectory().parent_path();
+        
+        if (m_CurrentDylibName.empty())
+        {
+            m_CurrentDylibName = "libUnityBuild" + std::to_string(m_DylibLoadCount++) + ".dylib";
+            
+            const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
+            const auto& basePath = GetUnityBuildBasePath(m_CurrentConfiguration);
+            
+            std::error_code ec;
+            std::filesystem::copy_file(basePath, path, std::filesystem::copy_options::overwrite_existing, ec);
+            
+            if (ec)
+            {
+                return "";
+            }
+            
+            return path;
+        }
+        
+        switch (config)
+        {
+        case Configuration::Debug:
+            return rootPath / "assets" / "dlls" / "Debug-x86_64" / projectName / m_CurrentDylibName;
+        case Configuration::Release:
+        case Configuration::Distribution:
+            return rootPath / "assets" / "dlls" / "Release-x86_64" / projectName / m_CurrentDylibName;
+        }
+        
+        return std::filesystem::path("");
+    }
+    
+const std::filesystem::path MacOSBuildEngine::GetUnityBuildBasePath(Configuration config) const
     {
         const std::string& projectName = Project::GetActive()->GetName();
         const auto& rootPath = Project::GetProjectDirectory().parent_path();
@@ -237,7 +308,7 @@ namespace HBL2
         }
         catch (std::exception& e)
         {
-            HBL2_ERROR("Project directory creation failed: {0}", e.what());
+            HBL2_CORE_ERROR("Project directory creation failed: {0}", e.what());
         }
 
         m_UnityBuildSourceFinal = m_UnityBuildSource;

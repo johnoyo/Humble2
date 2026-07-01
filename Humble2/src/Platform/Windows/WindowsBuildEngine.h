@@ -10,7 +10,7 @@ namespace HBL2
 		virtual bool Build() override;
 		virtual bool RunRuntime(Configuration configuration) override;
 		virtual bool BuildRuntime(Configuration configuration) override;
-        virtual const std::filesystem::path GetUnityBuildPath(Configuration config) const override;
+        virtual const std::filesystem::path GetUnityBuildPath(Configuration config) override;
 
 	private:
 		void Combine();
