@@ -55,7 +55,7 @@ namespace HBL2
 
         return pclose(pipe);
 #else
-        retuen -1;
+        return -1;
 #endif
     }
 
