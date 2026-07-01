@@ -2613,8 +2613,9 @@ namespace HBL2
 			{
 				.name = asset->FilePath.filename().stem().string(),
 			};
+			
 
-			std::ofstream fout(filePath.string() + ".hblscene", 0);
+			std::ofstream fout(filePath.string() + ".hblscene", std::ios_base::out);
 
 			YAML::Emitter out;
 			out << YAML::BeginMap;

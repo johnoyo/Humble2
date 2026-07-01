@@ -164,7 +164,7 @@ namespace HBL2
 
 		if (scriptAssetHandle.IsValid())
 		{
-			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblscript", 0);
+			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblscript", std::ios_base::out);
 			YAML::Emitter out;
 			out << YAML::BeginMap;
 			out << YAML::Key << "Script" << YAML::Value;
@@ -177,7 +177,7 @@ namespace HBL2
 			fout.close();
 		}
 
-		std::ofstream fout(currentDir / (systemName + ".h"), 0);
+		std::ofstream fout(currentDir / (systemName + ".h"), std::ios_base::out);
 		fout << GetDefaultSystemCode(systemName);
 		fout.close();
 
@@ -198,7 +198,7 @@ namespace HBL2
 
 		if (scriptAssetHandle.IsValid())
 		{
-			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblscript", 0);
+			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblscript", std::ios_base::out);
 			YAML::Emitter out;
 			out << YAML::BeginMap;
 			out << YAML::Key << "Script" << YAML::Value;
@@ -211,7 +211,7 @@ namespace HBL2
 			fout.close();
 		}
 
-		std::ofstream fout(currentDir / (componentName + ".h"), 0);
+		std::ofstream fout(currentDir / (componentName + ".h"), std::ios_base::out);
 		fout << GetDefaultComponentCode(componentName);
 		fout.close();
 
@@ -232,7 +232,7 @@ namespace HBL2
 
 		if (scriptAssetHandle.IsValid())
 		{
-			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblscript", 0);
+			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblscript", std::ios_base::out);
 			YAML::Emitter out;
 			out << YAML::BeginMap;
 			out << YAML::Key << "Script" << YAML::Value;
@@ -245,7 +245,7 @@ namespace HBL2
 			fout.close();
 		}
 
-		std::ofstream fout(currentDir / (scriptName + ".h"), 0);
+		std::ofstream fout(currentDir / (scriptName + ".h"), std::ios_base::out);
 		fout << GetDefaultHelperScriptCode(scriptName);
 		fout.close();
 

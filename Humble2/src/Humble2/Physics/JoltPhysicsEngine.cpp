@@ -8,6 +8,8 @@
 #include "Systems/AnimationCurveSystem.h"
 #include "Utilities/Collections/Collections.h"
 
+#include <cstdarg>
+
 namespace HBL2
 {
 	static inline const JPH::BodyID& GetBodyIDFromPhysicsID(Physics::ID id)

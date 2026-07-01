@@ -72,6 +72,28 @@ project "HumbleEditor"
             "-rpath @executable_path"
         }
 
+    filter "system:linux"
+        systemversion "latest"
+        defines { "HBL2_PLATFORM_LINUX", table.unpack(JoltDefines) }
+        buildoptions { "-Wno-changes-meaning", "-march=native" }
+
+        runpathdirs
+        { 
+            VULKAN_SDK .. "/lib/VulkanLoader/lib",
+            "../Dependencies/SLang/slang-2026.11-linux-x86_64/lib",
+            "../Dependencies/FMOD/Linux/core/lib/x86_64"
+        }
+        
+        linkoptions
+        {
+            "-Wl,-rpath-link=../Dependencies/SLang/slang-2026.11-linux-x86_64/lib:-Wl,-rpath-link=../Dependencies/FMOD/Linux/core/lib/x86_64"
+        }
+
+        links
+        {
+            "X11",
+        }
+
     filter "configurations:Debug"
         defines { "DEBUG" }
         runtime "Debug"

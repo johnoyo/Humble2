@@ -3,6 +3,8 @@
 #include "Humble2API.h"
 
 #include <type_traits>
+#include <functional>
+#include <cstdint>
 
 namespace HBL2
 {

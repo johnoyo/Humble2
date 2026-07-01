@@ -90,3 +90,38 @@ project "Jolt"
             -- Match Release settings (no debug symbols, optimized, LTO)
             buildoptions { "/GS-", "/Gy", "/O2", "/Oi", "/Ot", "/GL" }
             linkoptions { "/LTCG" }
+
+	filter "system:linux"
+		systemversion "latest"
+        defines { table.unpack(JoltDefines) }
+		buildoptions { "-msse4.1", "-march=native", "-fPIC" }
+
+        filter { "system:linux", "configurations:Debug" }
+            runtime "Debug"
+            symbols "On"
+            optimize "Off"
+            -- Enable all warnings as errors in Debug
+            warnings "Extra"
+            fatalwarnings "All"
+            
+        filter { "system:linux", "configurations:Release" }
+            runtime "Release"
+            symbols "Off"
+            optimize "On"
+            warnings "Extra"
+            fatalwarnings "All"
+            
+            -- Override MSVC's Release CXX flags per CMake's OVERRIDE_CXX_FLAGS:
+            buildoptions { "/GS-", "/Gy", "/O2", "/Oi", "/Ot", "/GL" }
+            linkoptions { "/LTCG" }
+            
+        filter { "system:linux", "configurations:Dist" }
+            runtime "Release"
+            symbols "Off"
+            optimize "Full"
+            warnings "Extra"
+            fatalwarnings "All"
+
+            -- Match Release settings (no debug symbols, optimized, LTO)
+            buildoptions { "/GS-", "/Gy", "/O2", "/Oi", "/Ot", "/GL" }
+            linkoptions { "/LTCG" }

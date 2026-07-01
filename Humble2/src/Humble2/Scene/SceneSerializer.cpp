@@ -144,13 +144,13 @@ namespace HBL2
 		BuildEngine::Configuration currentConfiguration = BuildEngine::Instance->GetActiveConfiguration();
 
 		// If we have user defined scripts but no dll exists, build it.
-		if ((components.size() > 0 || systems.size() > 0 || helperScripts.size() > 0) && !BuildEngine::Instance->Exists(currentConfiguration))
+		if ((components.size() > 0 || systems.size() > 0 || helperScripts.size() > 0) && !BuildEngine::Instance->Exists(currentConfiguration) && false)
 		{
 			HBL2_CORE_TRACE("No user defined scripts dll found for scene: {}, building one now...", m_Scene->GetName().c_str());
 			BuildEngine::Instance->Build();
 		}
 
-		if (components)
+		if (components && false)
 		{
 			HBL2_CORE_TRACE("Deserializing user components of scene: {0}", sceneName);
 
@@ -170,7 +170,7 @@ namespace HBL2
 			}
 		}
 
-		if (helperScripts)
+		if (helperScripts && false)
 		{
 			HBL2_CORE_TRACE("Deserializing user helper scripts of scene: {0}", sceneName);
 
@@ -185,7 +185,7 @@ namespace HBL2
 			}
 		}
 
-		if (systems)
+		if (systems && false)
 		{
 			HBL2_CORE_TRACE("Deserializing user systems of scene: {0}", sceneName);
 

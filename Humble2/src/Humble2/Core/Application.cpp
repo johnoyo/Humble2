@@ -88,12 +88,14 @@ namespace HBL2
         BuildEngine::Instance = new WindowsBuildEngine;
 #elif HBL2_PLATFORM_MACOS
         BuildEngine::Instance = new MacOSBuildEngine;
+#elif HBL2_PLATFORM_LINUX
+		BuildEngine::Instance = new WindowsBuildEngine;
 #endif
         switch (gfxAPI)
         {
         case GraphicsAPI::OPENGL:
             HBL2_CORE_WARN("OpenGL gfx backend is deprecated and will be removed in the future.");
-#ifndef HBL2_PLATFORM_MACOS
+#ifdef HBL2_PLATFORM_WINDOWS
 			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
 			g_GfxAPI = "OpenGL";
 			Device::Instance = new OpenGLDevice;

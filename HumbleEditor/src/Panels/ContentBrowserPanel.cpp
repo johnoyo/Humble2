@@ -728,7 +728,7 @@ namespace HBL2::Editor
 					break;
 				}
 
-				std::ofstream fout(m_Owner->m_CurrentDirectory / (m_ShaderNameBuffer + ".slang"), 0);
+				std::ofstream fout(m_Owner->m_CurrentDirectory / (m_ShaderNameBuffer + ".slang"), std::ios_base::out);
 				fout << shaderSource;
 				fout.close();
 

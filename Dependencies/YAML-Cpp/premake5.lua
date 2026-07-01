@@ -31,6 +31,10 @@ project "YAML-Cpp"
 	filter "system:macosx"
 		systemversion "latest"
 
+	filter "system:linux"
+		systemversion "latest"
+		buildoptions { "-fPIC" }
+
 	filter "configurations:Debug"
 		runtime "Debug"
 		symbols "On"

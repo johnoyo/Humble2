@@ -1,6 +1,6 @@
 #pragma once
 
-#ifndef HBL2_PLATFORM_MACOS
+#ifdef HBL2_PLATFORM_WINDOWS
     #include "Platform/OpenGL/OpenGLWindow.h"
     #include "Platform/Vulkan/VulkanWindow.h"
 #endif
@@ -25,7 +25,7 @@
 #include "Physics/PhysicsEngine3D.h"
 #include "Physics/Box2DPhysicsEngine.h"
 
-#ifndef HBL2_PLATFORM_MACOS
+#ifdef HBL2_PLATFORM_WINDOWS
     #include "Platform/OpenGL/OpenGLResourceManager.h"
     #include "Platform/OpenGL/OpenGLImGuiRenderer.h"
     #include "Platform/OpenGL/OpenGLRenderer.h"

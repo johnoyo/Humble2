@@ -417,7 +417,7 @@ namespace HBL2
 
 		const auto& relativePath = prefabAsset->FilePath;
 
-		std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblprefab", 0);
+		std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblprefab", std::ios_base::out);
 		YAML::Emitter out;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Prefab" << YAML::Value;
@@ -443,7 +443,7 @@ namespace HBL2
 		Asset* prefabAsset = AssetManager::Instance->GetAssetMetadata(handle);
 		const std::filesystem::path& filePath = HBL2::Project::GetAssetFileSystemPath(prefabAsset->FilePath).string() + ".hblprefab";
 
-		std::ofstream fout(filePath, 0);
+		std::ofstream fout(filePath, std::ios_base::out);
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;

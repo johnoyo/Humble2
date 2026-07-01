@@ -376,7 +376,7 @@ namespace HBL2::Editor
 
 				if (!std::filesystem::exists(metadataPath))
 				{
-					std::ofstream fout(metadataPath, 0);
+					std::ofstream fout(metadataPath, std::ios_base::out);
 
 					YAML::Emitter out;
 					out << YAML::BeginMap;

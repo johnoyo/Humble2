@@ -1,5 +1,6 @@
 #include "VulkanDevice.h"
 
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(

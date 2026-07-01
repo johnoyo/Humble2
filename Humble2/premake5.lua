@@ -334,3 +334,171 @@ project "Humble2"
 
                 ("xattr -dr com.apple.quarantine ../bin"),
             }
+
+    filter "system:linux"
+        systemversion "latest"    
+        defines { "HBL2_PLATFORM_LINUX", table.unpack(JoltDefines) }
+        buildoptions { "-Wno-changes-meaning", "-march=native" }
+
+        removefiles
+        {
+            "src/Platform/OpenGL/**.h",
+            "src/Platform/OpenGL/**.cpp"
+        }
+
+        runpathdirs
+        { 
+            VULKAN_SDK .. "/lib/VulkanLoader/lib",
+            "../Dependencies/SLang/slang-2026.11-linux-x86_64/lib",
+            "../Dependencies/FMOD/Linux/core/lib/x86_64"
+        }
+        
+        -- Link-time hints for indirect dependencies
+        linkoptions
+        {
+            "-Wl,-rpath-link=../Dependencies/SLang/slang-2026.11-linux-x86_64/lib:-Wl,-rpath-link=../Dependencies/FMOD/Linux/core/lib/x86_64"
+        }
+
+        libdirs
+        {
+            "../Dependencies/GLFW/glfw-3.4.bin.LINUX/x86_64",
+            "../Dependencies/FMOD/Linux/core/lib/x86_64",
+            "../Dependencies/SLang/slang-2026.11-linux-x86_64/lib",
+            "%{VULKAN_SDK}/lib/VulkanLoader/lib"
+        }
+
+        links
+        {
+            "glfw3",
+
+            "vulkan",
+
+            "slang",
+            "slang-compiler",
+
+            "X11",
+        }
+
+        postbuildcommands
+        {
+            -- Ensure the HumbleEditor directory exists and copy the target file
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleEditor"),
+            
+            -- Ensure the HumbleApp directory exists and copy the target file
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleApp"),
+            
+            -- Ensure the GLEW and SLang DLLs are copied to HumbleEditor
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang.so ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang-compiler.so ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang-compiler.so.0.2026.11 ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang-glslang-2026.11.so ../bin/" .. outputdir .. "/HumbleEditor"),
+            
+            -- Ensure the GLEW and SLang DLLs are copied to HumbleApp
+            ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang.so ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang-compiler.so ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang-compiler.so.0.2026.11 ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang-glslang-2026.11.so ../bin/" .. outputdir .. "/HumbleApp"),
+        }
+
+        filter { "system:linux", "configurations:Debug" }
+            defines { "DEBUG" }
+            runtime "Debug"
+            symbols "On"
+
+            links
+            {
+                "fmodL",
+            }
+
+            postbuildcommands
+            {
+                -- Ensure the Humble and FMOD DLLs are copied to HumbleEditor
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmodL.so ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmodL.so.14 ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.so ../bin/" .. outputdir .. "/HumbleEditor"),
+
+                -- Ensure the Humble and FMOD DLLs are copied to HumbleApp
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmodL.so ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmodL.so.14 ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.so ../bin/" .. outputdir .. "/HumbleApp"),
+            }
+            
+        filter { "system:linux", "configurations:Release" }
+            defines { "RELEASE" }
+            runtime "Release"
+            optimize "On"
+            
+            links
+            {
+                "fmod",
+            }
+
+            postbuildcommands
+            {
+                -- Ensure the Humble and FMOD DLLs are copied to HumbleEditor
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmod.so ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmod.so.14 ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.so ../bin/" .. outputdir .. "/HumbleEditor"),
+
+                -- Ensure the Humble and FMOD DLLs are copied to HumbleApp
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmod.so ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmod.so.14 ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.so ../bin/" .. outputdir .. "/HumbleApp"),
+            }
+
+        filter { "system:linux", "configurations:Dist" }
+            defines { "DIST" }
+            runtime "Release"
+            optimize "Full"
+            symbols "Off"
+            
+            links
+            {
+                "fmod",
+            }
+
+            postbuildcommands
+            {
+                -- Ensure the FMOD DLL is copied to HumbleEditor
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmod.so ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmod.so.14 ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.so ../bin/" .. outputdir .. "/HumbleEditor"),
+
+                -- Ensure the FMOD DLL is copied to HumbleApp
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmod.so ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmod.so.14 ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} %{cfg.buildtarget.directory}/libHumble2.so ../bin/" .. outputdir .. "/HumbleApp"),
+            }
+            
+        filter { "system:linux", "configurations:Emscripten" }
+            defines { "EMSCRIPTEN" }
+            runtime "Release"
+            optimize "On"
+            
+            links
+            {
+                "fmod",
+            }
+
+            postbuildcommands
+            {
+                -- Ensure the FMOD DLL is copied to HumbleEditor
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmod.so ../bin/" .. outputdir .. "/HumbleEditor"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmod.so.14 ../bin/" .. outputdir .. "/HumbleEditor"),
+
+                -- Ensure the FMOD DLL is copied to HumbleApp
+                ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmod.so ../bin/" .. outputdir .. "/HumbleApp"),
+                ("{COPY} ../Dependencies/FMOD/Linux/core/lib/x86_64/libfmod.so.14 ../bin/" .. outputdir .. "/HumbleApp"),
+            }
