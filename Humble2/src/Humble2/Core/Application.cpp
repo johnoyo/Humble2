@@ -4,6 +4,7 @@
 #include "Script/BuildEngine.h"
 #include "Platform/Windows/WindowsBuildEngine.h"
 #include "Platform/MacOS/MacOSBuildEngine.h"
+#include "Platform/Linux/LinuxBuildEngine.h"
 
 #ifdef DIST
 	#define BEGIN_APP_PROFILE(tag)
@@ -89,7 +90,7 @@ namespace HBL2
 #elif HBL2_PLATFORM_MACOS
         BuildEngine::Instance = new MacOSBuildEngine;
 #elif HBL2_PLATFORM_LINUX
-		BuildEngine::Instance = new WindowsBuildEngine;
+		BuildEngine::Instance = new LinuxBuildEngine;
 #endif
         switch (gfxAPI)
         {

@@ -27,7 +27,6 @@
 
 // Macro to generate system registration factory function
 #ifdef HBL2_PLATFORM_WINDOWS
-
     #define REGISTER_HBL2_SYSTEM(TYPE)                                                                                              \
         extern "C" __declspec(dllexport) void RegisterSystem_##TYPE(HBL2::Scene* ctx)                                               \
         {                                                                                                                           \
@@ -36,9 +35,7 @@
             new##TYPE->Name = #TYPE;                                                                                                \
             ctx->RegisterSystem(new##TYPE, HBL2::SystemType::User);                                                                 \
         }
-
-#elif defined(HBL2_PLATFORM_MACOS) || defined(HBL2_PLATFORM_LINUX)
-
+#else
     #define REGISTER_HBL2_SYSTEM(TYPE)                                                                                              \
         extern "C" __attribute__((visibility("default"))) void RegisterSystem_##TYPE(HBL2::Scene* ctx)                              \
         {                                                                                                                           \
@@ -47,5 +44,4 @@
             new##TYPE->Name = #TYPE;                                                                                                \
             ctx->RegisterSystem(new##TYPE, HBL2::SystemType::User);                                                                 \
         }
-
 #endif
