@@ -22,8 +22,6 @@ namespace HBL2
 		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", byteSize + resourceTasksReserveBytes);
 		m_PoolArena.Initialize(&Allocator::Arena, byteSize, m_Reservation);
 
-		HBL2_CORE_ERROR("sizeof(ResourceTask<Texture>: {0}", resourceTaskByteSize);
-
 		m_ResourceTaskPoolArena.Initialize(&Allocator::Arena, resourceTasksByteSize, resourceTaskByteSize, m_Reservation);
 
         m_RegisteredAssetMap = MakeHMap<UUID, Handle<Asset>>(m_PoolArena, m_Spec.Assets);
