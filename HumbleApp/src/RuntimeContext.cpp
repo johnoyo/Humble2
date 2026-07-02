@@ -6,9 +6,13 @@ namespace HBL2
 {
 	namespace Runtime
 	{
-		void RuntimeContext::OnAttach()
-		{
-			HBL2::Context::Mode = HBL2::Mode::Runtime;
+        RuntimeContext::RuntimeContext()
+        {
+            HBL2::Context::Mode = HBL2::Mode::Runtime;
+        }
+    
+        void RuntimeContext::OnAttach()
+        {
 			OpenProject();
 		}
 

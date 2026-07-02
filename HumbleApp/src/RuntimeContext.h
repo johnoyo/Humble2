@@ -9,6 +9,8 @@ namespace HBL2
 		class RuntimeContext final : public Context
 		{
 		public:
+            RuntimeContext();
+            
 			virtual void OnAttach() override;
 			virtual void OnCreate() override;
 			virtual void OnUpdate(float ts) override;

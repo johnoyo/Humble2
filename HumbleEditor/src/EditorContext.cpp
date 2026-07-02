@@ -6,10 +6,13 @@ namespace HBL2
 {
 	namespace Editor
 	{
-		void EditorContext::OnAttach()
-		{
-			Mode = HBL2::Mode::Editor;
-
+        EditorContext::EditorContext()
+        {
+            Mode = HBL2::Mode::Editor;
+        }
+    
+        void EditorContext::OnAttach()
+        {
 			if (!OpenProject())
 			{
 				return;

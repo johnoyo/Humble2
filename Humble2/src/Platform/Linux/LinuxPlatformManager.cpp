@@ -1,5 +1,7 @@
 #include "LinuxPlatformManager.h"
 
+#include "Core/Context.h"
+
 #include <iostream>
 #include <filesystem>
 
@@ -52,7 +54,15 @@ namespace HBL2
 
     void LinuxPlatformManager::Initialize()
     {
-        m_AppDataDirectory = GetAppDataDir();
+        if (Context::Mode == Mode::Editor)
+        {
+            m_AppDataDirectory = GetAppDataDir() + "/Editor";
+        }
+        else
+        {
+            m_AppDataDirectory = GetAppDataDir() + "/Runtime";
+        }
+        
         m_ResourcesDirectory = std::filesystem::current_path();
         m_ExecutableDirectory = std::filesystem::current_path();
     }

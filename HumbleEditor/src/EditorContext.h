@@ -17,6 +17,8 @@ namespace HBL2
 		class EditorContext final : public HBL2::Context
 		{
 		public:
+            EditorContext();
+            
 			virtual void OnAttach() override;
 			virtual void OnCreate() override;
 			virtual void OnUpdate(float ts) override;
