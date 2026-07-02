@@ -46,7 +46,7 @@ namespace HBL2
             return "";
         }
 
-        return logDirectory;
+        return logDirectory.string();
 #else
         return "";
 #endif
@@ -63,8 +63,8 @@ namespace HBL2
             m_AppDataDirectory = GetAppDataDir() + "/Runtime";
         }
         
-        m_ResourcesDirectory = std::filesystem::current_path();
-        m_ExecutableDirectory = std::filesystem::current_path();
+        m_ResourcesDirectory = std::filesystem::current_path().string();
+        m_ExecutableDirectory = std::filesystem::current_path().string();
     }
 
     void LinuxPlatformManager::Shutdown()
