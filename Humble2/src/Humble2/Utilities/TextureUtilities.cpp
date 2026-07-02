@@ -107,7 +107,7 @@ namespace HBL2
 			return;
 		}
 
-		std::ofstream fout(filePath, 0);
+		std::ofstream fout(filePath, std::ios_base::out);
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;
@@ -131,7 +131,7 @@ namespace HBL2
 		Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
 		const std::filesystem::path& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture";
 
-		std::ofstream fout(filePath, 0);
+		std::ofstream fout(filePath, std::ios_base::out);
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;

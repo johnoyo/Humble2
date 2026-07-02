@@ -253,7 +253,7 @@ namespace HBL2
 			return;
 		}
 
-		std::ofstream fout(path.string() + ".hblmesh", 0);
+		std::ofstream fout(path.string() + ".hblmesh", std::ios_base::out);
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;

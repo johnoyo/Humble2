@@ -17,10 +17,9 @@ Features:
 - Powerfull physics support for 2D (using [Box2D](https://github.com/erincatto/box2d)) and 3D (using [Jolt](https://github.com/jrouwe/JoltPhysics)) games.
 - Endless procedurally terrain support, utilizing the job system for multithreading.
 - Support for prefabs (Instantiate, Unpack, Update, Revert, Override, Destroy) and with infinite prefab nesting.
-- Planned web support with [Emscripten](https://github.com/emscripten-core/emsdk) using WebGPU to build games for the browser.
 - Editor to Runtime workflow for publishing games properly without the editor.
-- Currently supports Windows and MacOS.
-    - Linux support is planned for the future.
+- Supports **Windows**, **MacOS** and **Linux**.
+    - Planned Web support with [Emscripten](https://github.com/emscripten-core/emsdk) using WebGPU to build games for the browser.
 
 Installation:
 -------------
@@ -32,6 +31,8 @@ Installation:
     - Open the generated Visual Studio solution.
 - On MacOS, run the GenerateProjectsXCode.sh file.
     - Open the generated XCode workspace.
+- On Linux, run the GenerateProjectsMake.sh file.
+    - Open the workspace folder with an editor of your choice.
 
 - NOTE: You need to have installed the [VulkanSDK](https://vulkan.lunarg.com/sdk/home).
 

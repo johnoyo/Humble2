@@ -1,5 +1,6 @@
 #include "VulkanWindow.h"
 
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 namespace HBL2
@@ -16,6 +17,9 @@ namespace HBL2
 			// TODO
 		});
 
+#if defined(__linux__) || defined(__gnu_linux__)
+    	glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+#endif
 		if (!glfwInit())
 		{
 			HBL2_CORE_FATAL("Error initializing window!");

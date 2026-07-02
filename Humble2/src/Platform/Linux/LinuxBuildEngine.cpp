@@ -1,0 +1,391 @@
+#include "LinuxBuildEngine.h"
+
+#include "Project/Project.h"
+#include "Utilities/FileDialogs.h"
+
+#include <cstdio>
+
+namespace HBL2
+{
+    static std::string ReadFile(const std::filesystem::path& filepath)
+    {
+        std::string result;
+        std::ifstream in(filepath, std::ios::in | std::ios::binary);
+
+        if (in)
+        {
+            in.seekg(0, std::ios::end);
+            size_t size = in.tellg();
+            if (size != -1)
+            {
+                result.resize(size);
+                in.seekg(0, std::ios::beg);
+                in.read(&result[0], size);
+            }
+            else
+            {
+                HBL2_CORE_ERROR("Could not read from file '{0}'", filepath.string());
+            }
+        }
+        else
+        {
+            HBL2_CORE_ERROR("Could not open file '{0}'", filepath.string());
+        }
+
+        return result;
+    }
+
+    static int ExecuteCommand(const char* command)
+    {
+#ifdef HBL2_PLATFORM_LINUX
+        FILE* pipe = popen(command, "r");
+        if (!pipe)
+        {
+            return -1;
+        }
+
+        char buf[256];
+        std::string output;
+        while (fgets(buf, sizeof(buf), pipe))
+        {
+            output += buf;
+        }
+        
+        HBL2_CORE_INFO(output);
+
+        return pclose(pipe);
+#else
+        return -1;
+#endif
+    }
+
+    bool LinuxBuildEngine::Build()
+    {
+        /*
+         Workflow for linux script building:
+         
+         - Build the user code into the libUnityBuild.so file.
+         - Duplicate that file into a libUnityBuildX.so file incrementing the number each time.
+         - Load that duplicated .so every time, not the base libUnityBuild.so.
+         
+         That workflow is chosen to support hot reloading.
+         */
+        
+        // Combine scripts into a single .cpp source file.
+        Combine();
+        
+        // Create ProjectFiles directory.
+        const auto& projectFilesPath = Project::GetProjectDirectory() / "ProjectFiles";
+        
+        try
+        {
+            std::filesystem::create_directories(projectFilesPath);
+        }
+        catch (std::exception& e)
+        {
+            HBL2_CORE_ERROR("Project directory creation failed: {0}", e.what());
+        }
+
+        // Open and inject final code to .cpp file.
+        std::ofstream stream(projectFilesPath / "UnityBuildSource.cpp", std::ios::out);
+
+        if (!stream.is_open())
+        {
+            HBL2_CORE_ERROR("UnityBuildSource file not found: {0}", projectFilesPath / "UnityBuildSource.cpp");
+            return false;
+        }
+
+        stream << m_UnityBuildSourceFinal;
+        stream.close();
+        
+        // Patch project name in premake file.
+        const std::string& projectName = Project::GetActive()->GetName();
+        const auto& premakeSource = ReadFile(projectFilesPath / "premake5Reference.txt");
+        const std::string& placeholder = "{ProjectName}";
+
+        size_t pos = premakeSource.find(placeholder);
+
+        while (pos != std::string::npos)
+        {
+            ((std::string&)premakeSource).replace(pos, placeholder.length(), projectName);
+            pos = premakeSource.find(placeholder, pos + projectName.length());
+        }
+        
+        // Write back the injected premake source into file.
+        std::ofstream streamPremake(projectFilesPath / "premake5.lua", std::ios::out);
+
+        if (!streamPremake.is_open())
+        {
+            HBL2_CORE_ERROR("premake5.lua file not found: {0}", projectFilesPath / "premake5.lua");
+            return false;
+        }
+
+        streamPremake << premakeSource;
+        streamPremake.close();
+        
+        // Create makefiles through premake.
+        const auto& premakeCmd = "cd " + projectFilesPath.string() + " && ./../../../Dependencies/Premake5/Linux/premake5 gmake";
+        
+        int cmdExecutionRes = ExecuteCommand(premakeCmd.c_str());
+        
+        if (cmdExecutionRes != 0)
+        {
+            HBL2_CORE_ERROR("Makefiles generation through premake failed.");
+            return false;
+        }
+        
+        // Build makefiles.
+        std::string makeCmd;
+
+        switch (m_CurrentConfiguration)
+        {
+        case BuildEngine::Configuration::Debug:
+            makeCmd = "make -C " + projectFilesPath.string() + " -f Makefile config=debug";
+            cmdExecutionRes = ExecuteCommand(makeCmd.c_str());
+            break;
+        case BuildEngine::Configuration::Release:
+        case BuildEngine::Configuration::Distribution:
+            makeCmd = "make -C " + projectFilesPath.string() + " -f Makefile config=release";
+            cmdExecutionRes = ExecuteCommand(makeCmd.c_str());
+            break;
+        }
+        
+        if (cmdExecutionRes != 0)
+        {
+            HBL2_CORE_ERROR("Makefiles build failed.");
+            return false;
+        }
+        
+        // Duplicate so.
+        if (!m_CurrentSoName.empty())
+        {
+            std::error_code ec;
+            std::filesystem::remove(GetUnityBuildPath(m_CurrentConfiguration), ec);
+            
+            if (ec)
+            {
+                HBL2_CORE_WARN("Failed to remove previous .so during build process.");
+            }
+        }
+        
+        m_CurrentSoName = "libUnityBuild" + std::to_string(m_SoLoadCount++) + ".so";
+        
+        const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
+        const auto& basePath = GetUnityBuildBasePath(m_CurrentConfiguration);
+        
+        std::error_code ec;
+        std::filesystem::copy_file(basePath, path, std::filesystem::copy_options::overwrite_existing, ec);
+        
+        if (ec)
+        {
+            HBL2_CORE_ERROR("Build failed, base .so does not exists.");
+            return false;
+        }
+        
+        // Load dynamic library.
+        LoadBuild(m_CurrentConfiguration);
+        
+        return true;
+    }
+
+    bool LinuxBuildEngine::RunRuntime(Configuration configuration)
+    {
+        int commandExecutionResult = 0;
+        
+        switch (configuration)
+        {
+        case BuildEngine::Configuration::Debug:
+            commandExecutionResult = ExecuteCommand("cd ../../Debug-x86_64/HumbleApp && ./HumbleApp");
+            break;
+        case BuildEngine::Configuration::Release:
+            commandExecutionResult = ExecuteCommand("cd ../../Release-x86_64/HumbleApp && ./HumbleApp");
+            break;
+        case BuildEngine::Configuration::Distribution:
+            commandExecutionResult = ExecuteCommand("cd ../../Dist-x86_64/HumbleApp && ./HumbleApp");
+            break;
+        }
+
+        return (commandExecutionResult == 0);
+    }
+
+    bool LinuxBuildEngine::BuildRuntime(Configuration configuration)
+    {
+        const std::string& projectName = Project::GetActive()->GetName();
+        const auto& workingDir = Project::GetProjectDirectory().parent_path();
+        
+        int commandExecutionResult = 0;
+        
+        std::string config;
+        
+        switch (configuration)
+        {
+        case Configuration::Debug:
+            config = "Debug";
+            commandExecutionResult = ExecuteCommand("make -C ../../.. -f Makefile config=debug HumbleApp");
+            break;
+        case Configuration::Release:
+            config = "Release";
+            commandExecutionResult = ExecuteCommand("make -C ../../.. -f Makefile config=release HumbleApp");
+            break;
+        case Configuration::Distribution:
+            config = "Dist";
+            commandExecutionResult = ExecuteCommand("make -C ../../.. -f Makefile config=dist HumbleApp");
+            break;
+        }
+        
+        if (commandExecutionResult == 0)
+        {
+            // Copy project folder to build folder.
+            FileUtils::CopyFolder(workingDir / projectName, "../../" + config + "-x86_64/HumbleApp/" + projectName);
+
+            // Copy assets folder to build folder.
+            FileUtils::CopyFolder(workingDir / "assets", "../../" + config + "-x86_64/HumbleApp/assets");
+            
+            return true;
+        }
+        
+        return false;
+    }
+
+    const std::filesystem::path LinuxBuildEngine::GetUnityBuildPath(Configuration config)
+    {
+        const std::string& projectName = Project::GetActive()->GetName();
+        const auto& rootPath = Project::GetProjectDirectory().parent_path();
+        
+        if (m_CurrentSoName.empty())
+        {
+            m_CurrentSoName = "libUnityBuild" + std::to_string(m_SoLoadCount++) + ".so";
+            
+            const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
+            const auto& basePath = GetUnityBuildBasePath(m_CurrentConfiguration);
+            
+            std::error_code ec;
+            std::filesystem::copy_file(basePath, path, std::filesystem::copy_options::overwrite_existing, ec);
+            
+            if (ec)
+            {
+                return "";
+            }
+            
+            return path;
+        }
+        
+        switch (config)
+        {
+        case Configuration::Debug:
+            return rootPath / "assets" / "dlls" / "Debug-x86_64" / projectName / m_CurrentSoName;
+        case Configuration::Release:
+        case Configuration::Distribution:
+            return rootPath / "assets" / "dlls" / "Release-x86_64" / projectName / m_CurrentSoName;
+        }
+        
+        return std::filesystem::path("");
+    }
+    
+const std::filesystem::path LinuxBuildEngine::GetUnityBuildBasePath(Configuration config) const
+    {
+        const std::string& projectName = Project::GetActive()->GetName();
+        const auto& rootPath = Project::GetProjectDirectory().parent_path();
+        
+        switch (config)
+        {
+        case Configuration::Debug:
+            return rootPath / "assets" / "dlls" / "Debug-x86_64" / projectName / "libUnityBuild.so";
+        case Configuration::Release:
+        case Configuration::Distribution:
+            return rootPath / "assets" / "dlls" / "Release-x86_64" / projectName / "libUnityBuild.so";
+        }
+
+        return std::filesystem::path("");
+    }
+
+    void LinuxBuildEngine::Combine()
+    {
+        // Create directory.
+        try
+        {
+            std::filesystem::create_directories(Project::GetProjectDirectory() / "ProjectFiles");
+        }
+        catch (std::exception& e)
+        {
+            HBL2_CORE_ERROR("Project directory creation failed: {0}", e.what());
+        }
+
+        m_UnityBuildSourceFinal = m_UnityBuildSource;
+
+        // Collect includes and systems registration
+        std::string componentIncludes;
+        std::string helperScriptsIncludes;
+        std::string systemIncludes;
+
+        for (const auto assetHandle : AssetManager::Instance->GetRegisteredAssets())
+        {
+            if (!AssetManager::Instance->IsAssetValid(assetHandle))
+            {
+                continue;
+            }
+
+            Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+            if (asset->Type == AssetType::Script)
+            {
+                Handle<Script> scriptHandle = AssetManager::Instance->GetAsset<Script>(asset->UUID);
+
+                if (scriptHandle.IsValid())
+                {
+                    Script* script = ResourceManager::Instance->GetScript(scriptHandle);
+
+                    if (script->Type == ScriptType::COMPONENT)
+                    {
+                        componentIncludes += std::format("#include \"{}\"\n", script->Path.string());
+                    }
+                    else if (script->Type == ScriptType::SYSTEM)
+                    {
+                        systemIncludes += std::format("#include \"{}\"\n", script->Path.string());
+                    }
+                    else if (script->Type == ScriptType::HELPER_SCRIPT)
+                    {
+                        helperScriptsIncludes += std::format("#include \"{}\"\n", script->Path.string());
+                    }
+                }
+            }
+        }
+
+        // Inject includes in the code.
+        {
+            const std::string& placeholder = "{ComponentIncludes}";
+
+            size_t pos = m_UnityBuildSourceFinal.find(placeholder);
+
+            while (pos != std::string::npos)
+            {
+                ((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), componentIncludes);
+                pos = m_UnityBuildSourceFinal.find(placeholder, pos + componentIncludes.length());
+            }
+        }
+
+        {
+            const std::string& placeholder = "{HelperScriptIncludes}";
+
+            size_t pos = m_UnityBuildSourceFinal.find(placeholder);
+
+            while (pos != std::string::npos)
+            {
+                ((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), helperScriptsIncludes);
+                pos = m_UnityBuildSourceFinal.find(placeholder, pos + helperScriptsIncludes.length());
+            }
+        }
+
+        {
+            const std::string& placeholder = "{SystemIncludes}";
+
+            size_t pos = m_UnityBuildSourceFinal.find(placeholder);
+
+            while (pos != std::string::npos)
+            {
+                ((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), systemIncludes);
+                pos = m_UnityBuildSourceFinal.find(placeholder, pos + systemIncludes.length());
+            }
+        }
+    }
+}

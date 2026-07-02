@@ -15,12 +15,14 @@ namespace HBL2
 		m_AssetPool.Initialize(m_Spec.Assets);
 
 		uint32_t byteSize = (uint32_t)Allocator::CalculateSoAByteSize<std::filesystem::path, UUID, UUID, Handle<Asset>, Handle<Asset>>(2 * m_Spec.Assets) * 2;
-		constexpr size_t resourceTasksByteSize = 192_B * 1024;
+		constexpr size_t resourceTaskByteSize = sizeof(ResourceTask<Texture>);
+		constexpr size_t resourceTasksByteSize = resourceTaskByteSize * 1024;
 		constexpr size_t resourceTasksReserveBytes = resourceTasksByteSize * 2;
 
 		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", byteSize + resourceTasksReserveBytes);
 		m_PoolArena.Initialize(&Allocator::Arena, byteSize, m_Reservation);
-		m_ResourceTaskPoolArena.Initialize(&Allocator::Arena, resourceTasksByteSize, 192, m_Reservation);
+
+		m_ResourceTaskPoolArena.Initialize(&Allocator::Arena, resourceTasksByteSize, resourceTaskByteSize, m_Reservation);
 
         m_RegisteredAssetMap = MakeHMap<UUID, Handle<Asset>>(m_PoolArena, m_Spec.Assets);
 		m_RegisteredAssetPathToUUIDMap = MakeHMap<std::filesystem::path, UUID>(m_PoolArena, m_Spec.Assets);
@@ -46,7 +48,7 @@ namespace HBL2
 		return m_Spec;
 	}
 
-	const AssetManagerSpecification& AssetManager::GetUsageStats()
+	const AssetManagerSpecification AssetManager::GetUsageStats()
 	{
 		AssetManagerSpecification currentSpec =
 		{

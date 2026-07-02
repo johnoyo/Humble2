@@ -1,5 +1,10 @@
 VULKAN_SDK = os.getenv("VULKAN_SDK")
 
+if os.host() == "macosx" then
+    VULKAN_SDK = "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS"
+    VULKAN_SDK_VERSION = "1.4.350"
+end
+
 workspace "UnityBuild"
     architecture "x64"
 
@@ -60,7 +65,7 @@ project "UnityBuild"
         "../../../Dependencies/Box2D/box2d/include",
         "../../../Dependencies/Box2D/box2d/src",
         "%{VULKAN_SDK}/Include",
-        "/Users/johnpetr/VulkanSDK/1.4.350.1/macOS/include",
+        "%{VULKAN_SDK}/include",
     }
     
     links
@@ -71,11 +76,16 @@ project "UnityBuild"
     filter "system:windows"
         systemversion "latest"    
         defines { "HBL2_PLATFORM_WINDOWS" }
-        --symbolsfile ("../../assets/dlls/" .. outputdir .. "/%{prj.name}/{pdbName}.pdb")
+        -- symbolsfile ("../../assets/dlls/" .. outputdir .. "/%{prj.name}/{pdbName}.pdb")
 
     filter "system:macosx"
         systemversion "latest"    
         defines { "HBL2_PLATFORM_MACOS" }
+
+    filter "system:linux"
+        systemversion "latest"
+        defines { "HBL2_PLATFORM_LINUX" }
+        buildoptions { "-Wno-changes-meaning" }
 
     filter "configurations:Debug"
         defines { "DEBUG" }

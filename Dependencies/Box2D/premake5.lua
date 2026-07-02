@@ -28,6 +28,11 @@ project "Box2D"
 	filter "system:macosx"
 		systemversion "latest"
 
+	filter "system:linux"
+		systemversion "latest"
+		defines { "_POSIX_C_SOURCE=199309L" }
+		buildoptions { "-fPIC" }
+
 	filter "configurations:Debug"
 		runtime "Debug"
 		symbols "On"

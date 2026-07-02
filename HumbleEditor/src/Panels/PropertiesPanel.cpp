@@ -79,7 +79,7 @@ namespace HBL2::Editor
 		Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
 		const std::filesystem::path& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscene";
 
-		std::ofstream fout(filePath, 0);
+		std::ofstream fout(filePath, std::ios_base::out);
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;
@@ -301,7 +301,7 @@ namespace HBL2::Editor
 
 						if (assetHandle.IsValid())
 						{
-							std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(assetHandle)->FilePath).string() + ".hblmesh", 0);
+							std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(assetHandle)->FilePath).string() + ".hblmesh", std::ios_base::out);
 
 							YAML::Emitter out;
 							out << YAML::BeginMap;
@@ -429,7 +429,7 @@ namespace HBL2::Editor
 
 							if (!std::filesystem::exists(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound"))
 							{
-								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound", 0);
+								std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(soundAsset->FilePath).string() + ".hblsound", std::ios_base::out);
 
 								YAML::Emitter out;
 								out << YAML::BeginMap;
