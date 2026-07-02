@@ -22,7 +22,7 @@ namespace HBL2
 		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", byteSize + resourceTasksReserveBytes);
 		m_PoolArena.Initialize(&Allocator::Arena, byteSize, m_Reservation);
 
-		HBL2_CORE_ERROR("sizeof(ResourceTask<Texture>: {0}", resourceTaskByteSize));
+		HBL2_CORE_ERROR("sizeof(ResourceTask<Texture>: {0}", resourceTaskByteSize);
 
 		m_ResourceTaskPoolArena.Initialize(&Allocator::Arena, resourceTasksByteSize, resourceTaskByteSize, m_Reservation);
 
@@ -50,7 +50,7 @@ namespace HBL2
 		return m_Spec;
 	}
 
-	const AssetManagerSpecification& AssetManager::GetUsageStats()
+	const AssetManagerSpecification AssetManager::GetUsageStats()
 	{
 		AssetManagerSpecification currentSpec =
 		{
