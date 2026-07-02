@@ -1,10 +1,7 @@
 #include "Log.h"
 
 #include "Base.h"
-
-#ifdef HBL2_PLATFORM_MACOS
-    #include "Platform/MacOS/MacOSUtils.h"
-#endif
+#include "Utilities/PlatformManager.h"
 
 namespace HBL2
 {
@@ -16,12 +13,8 @@ namespace HBL2
 
     void Log::Initialize()
     {
-        // TODO: Refactor when Platform abstraction is implemented.
-#ifdef HBL2_PLATFORM_MACOS
-        const std::string& logFile = GetAppSupportDir() + "/Console.log";
-#else
-        const std::string& logFile = "Console.log";
-#endif
+        const std::string& logFile = PlatformManager::Instance->GetAppDataDirectory() + "/Console.log";
+
 		// Async thread pool initialization.
 		spdlog::init_thread_pool(8192, 1);
 

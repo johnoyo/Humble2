@@ -1,10 +1,14 @@
 #include "Application.h"
 
+#include "Utilities/PlatformManager.h"
 #include "Asset/EditorAssetManager.h"
 #include "Script/BuildEngine.h"
 #include "Platform/Windows/WindowsBuildEngine.h"
+#include "Platform/Windows/WindowsPlatformManager.h"
 #include "Platform/MacOS/MacOSBuildEngine.h"
+#include "Platform/MacOS/MacOSPlatformManager.h"
 #include "Platform/Linux/LinuxBuildEngine.h"
+#include "Platform/Linux/LinuxPlatformManager.h"
 
 #ifdef DIST
 	#define BEGIN_APP_PROFILE(tag)
@@ -33,7 +37,16 @@ namespace HBL2
 		HBL2_CORE_ASSERT(!s_Instance, "Application already exists!");
 
 		s_Instance = this;
-
+        
+#ifdef HBL2_PLATFORM_WINDOWS
+        PlatformManager::Instance = new WindowsPlatformManager;
+#elif HBL2_PLATFORM_MACOS
+        PlatformManager::Instance = new MacOSPlatformManager;
+#elif HBL2_PLATFORM_LINUX
+        PlatformManager::Instance = new LinuxPlatformManager;
+#endif
+        PlatformManager::Instance->Initialize();
+        
 		Log::Initialize();
 		Random::Initialize();
 
@@ -118,7 +131,7 @@ namespace HBL2
         case GraphicsAPI::METAL:
         case GraphicsAPI::WEBGPU:
 		case GraphicsAPI::NONE:
-			HBL2_CORE_ERROR("No RendererAPI specified. Please choose between OpenGL, or Vulkan depending on your target platform.");
+			HBL2_CORE_ERROR("No valid RendererAPI specified. Please choose between OpenGL, or Vulkan depending on your target platform.");
 			exit(-1);
 			break;
 		}
@@ -407,5 +420,6 @@ namespace HBL2
 		JobSystem::Shutdown();
 
 		Log::Shutdown();
+        PlatformManager::Instance->Shutdown();
 	}
 }
