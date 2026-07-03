@@ -76,8 +76,6 @@ project "Jolt"
             warnings "Extra"
             fatalwarnings "All"
             
-            -- Override MSVC's Release CXX flags per CMake's OVERRIDE_CXX_FLAGS:
-            buildoptions { "/GS-", "/Gy", "/O2", "/Oi", "/Ot", "/GL" }
             linkoptions { "/LTCG" }
             
         filter { "system:macosx", "configurations:Dist" }
@@ -87,8 +85,6 @@ project "Jolt"
             warnings "Extra"
             fatalwarnings "All"
 
-            -- Match Release settings (no debug symbols, optimized, LTO)
-            buildoptions { "/GS-", "/Gy", "/O2", "/Oi", "/Ot", "/GL" }
             linkoptions { "/LTCG" }
 
 	filter "system:linux"
@@ -111,8 +107,6 @@ project "Jolt"
             warnings "Extra"
             fatalwarnings "All"
             
-            -- Override MSVC's Release CXX flags per CMake's OVERRIDE_CXX_FLAGS:
-            buildoptions { "/GS-", "/Gy", "/O2", "/Oi", "/Ot", "/GL" }
             linkoptions { "/LTCG" }
             
         filter { "system:linux", "configurations:Dist" }
@@ -122,6 +116,4 @@ project "Jolt"
             warnings "Extra"
             fatalwarnings "All"
 
-            -- Match Release settings (no debug symbols, optimized, LTO)
-            buildoptions { "/GS-", "/Gy", "/O2", "/Oi", "/Ot", "/GL" }
             linkoptions { "/LTCG" }

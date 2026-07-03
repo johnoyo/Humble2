@@ -50,7 +50,7 @@ namespace HBL2
 	}
 	void VulkanResourceManager::DeleteTexture(Handle<Texture> handle)
 	{
-		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 		{
 			VulkanTexture* texture = GetTexture(handle);
 			if (texture != nullptr)
@@ -113,7 +113,7 @@ namespace HBL2
 	}
 	void VulkanResourceManager::DeleteBuffer(Handle<Buffer> handle)
 	{
-		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 		{
 			VulkanBuffer buffer = GetBuffer(handle);
 			if (buffer.IsValid())
@@ -206,7 +206,7 @@ namespace HBL2
 	}
 	void VulkanResourceManager::DeleteFrameBuffer(Handle<FrameBuffer> handle)
 	{
-		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 		{
 			VulkanFrameBuffer* frameBuffer = GetFrameBuffer(handle);
 			if (frameBuffer != nullptr)
@@ -244,7 +244,7 @@ namespace HBL2
 		VulkanShader shader = GetShader(handle);
 		shader.Recompile(std::forward<const ShaderDescriptor>(desc), true);
 
-		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 		{
 			VulkanShader shader = GetShader(handle);
 			shader.DestroyOld();
@@ -252,7 +252,7 @@ namespace HBL2
 	}
 	void VulkanResourceManager::DeleteShader(Handle<Shader> handle)
 	{
-		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 		{
 			VulkanShader shader = GetShader(handle);
 			if (shader.IsValid())
@@ -358,7 +358,7 @@ namespace HBL2
 
 		if (bindGroupCold->ReleaseRefAndMaybeDelete())
 		{
-			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 			{
 				VulkanBindGroupCold* bindGroupCold = GetBindGroupCold(handle);
 				if (bindGroupCold != nullptr)
@@ -473,7 +473,7 @@ namespace HBL2
 
 		if (bindGroupLayout->ReleaseRefAndMaybeDelete())
 		{
-			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 			{
 				VulkanBindGroupLayout* bindGroupLayout = GetBindGroupLayout(handle);
 				if (bindGroupLayout != nullptr)
@@ -531,7 +531,7 @@ namespace HBL2
 	}
 	void VulkanResourceManager::DeleteRenderPass(Handle<RenderPass> handle)
 	{
-		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 		{
 			VulkanRenderPass* renderPass = GetRenderPass(handle);
 			if (renderPass != nullptr)
@@ -553,7 +553,7 @@ namespace HBL2
 	}
 	void VulkanResourceManager::DeleteRenderPassLayout(Handle<RenderPassLayout> handle)
 	{
-		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 		{
 			m_RenderPassLayoutPool.Remove(handle);
 		});

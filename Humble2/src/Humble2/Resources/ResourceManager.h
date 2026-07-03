@@ -22,7 +22,7 @@ namespace HBL2
 	{
 		uint32_t Textures = 128;
 		uint32_t Buffers = 512;
-		uint32_t FrameBuffers = 32;
+		uint32_t FrameBuffers = 64;
 		uint32_t Shaders = 64;
 		uint32_t BindGroups = 64;
 		uint32_t BindGroupLayouts = 32;

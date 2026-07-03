@@ -51,7 +51,7 @@ Project:
       Buffers Pool Size: 1024
       BindGroups Pool Size: 64
       BindGroupLayouts Pool Size: 32
-      FrameBuffers Pool Size: 32
+      FrameBuffers Pool Size: 64
       RenderPass Pool Size: 32
       RenderPassLayouts Pool Size: 32
       Meshes Pool Size: 256

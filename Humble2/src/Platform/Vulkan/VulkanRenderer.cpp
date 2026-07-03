@@ -370,6 +370,12 @@ namespace HBL2
 		{
 			vkDestroyImageView(m_Device->Get(), imageView, nullptr);
 		}
+        
+        // Required due to hack in CreateImageViews.
+        for (auto colorTexturehandle : m_SwapChainColorTextures)
+        {
+            m_ResourceManager->m_TexturePool.Remove(colorTexturehandle);
+        }
 
 		m_SwapChainImages.clear();
 		m_SwapChainImageViews.clear();
