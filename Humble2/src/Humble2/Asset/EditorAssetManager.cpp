@@ -1307,7 +1307,7 @@ namespace HBL2
 	{
 		// Open metadata file.
 		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+        const auto& workingDirectory = Project::GetProjectDirectory().parent_path();
 		const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : workingDirectory / asset->FilePath;
 
 		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
@@ -1414,10 +1414,13 @@ namespace HBL2
 				return Handle<Material>();
 			}
 
-			auto shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderUUID);
+			auto shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderAssetHandle);
 
 			const auto& filesystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
-			const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : shaderAsset->FilePath;
+			const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : workingDirectory / shaderAsset->FilePath;
+
+			// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
+			//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
 
 			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
 
@@ -2202,7 +2205,7 @@ namespace HBL2
 		Handle<Material> materialHandle = Handle<Material>::UnPack(asset->Indentifier);
 
 		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
-        const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+        const auto& workingDirectory = Project::GetProjectDirectory().parent_path();
 		const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : workingDirectory / asset->FilePath;
 
 		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
@@ -2288,7 +2291,10 @@ namespace HBL2
 			Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
 
 			const auto& filesystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
-			const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : shaderAsset->FilePath;
+			const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : workingDirectory / shaderAsset->FilePath;
+
+			// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
+			//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
 
 			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
 

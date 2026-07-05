@@ -152,7 +152,7 @@ namespace HBL2
         CreateCacheDirectoryIfNeeded(target);
 
         const auto& shaderFilePathAsPath = std::filesystem::path(shaderFilePath);
-        const auto& workingDir = Project::GetAssetDirectory().parent_path().parent_path();
+        const auto& workingDir = Project::GetProjectDirectory().parent_path();
         auto shaderPath = std::filesystem::exists(shaderFilePathAsPath) ? shaderFilePathAsPath : workingDir / shaderFilePath;
         
         if (!std::filesystem::exists(shaderPath))

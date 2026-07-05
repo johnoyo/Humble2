@@ -317,7 +317,7 @@ namespace HBL2
 		{
 			uint64_t hash = CalculateBindGroupHash(&bindGroup);
 
-			if (descriptorHash == hash)
+			if (descriptorHash == hash && bindGroup.DebugName != nullptr)
 			{
 				VulkanBindGroupCold* mutBindGroup = (VulkanBindGroupCold*)&bindGroup;
 				if (mutBindGroup->TryAddRef())
