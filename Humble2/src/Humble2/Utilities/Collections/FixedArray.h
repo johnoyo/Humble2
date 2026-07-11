@@ -21,7 +21,7 @@ namespace HBL2
         explicit FixedArray(Arena* arena, uint32_t inCapacity)
             : m_Arena(arena), m_Capacity(inCapacity)
         {
-            m_Elements = (T*)m_Arena->Alloc(sizeof(T) * m_Capacity);
+            m_Elements = (T*)m_Arena->Alloc(sizeof(T) * m_Capacity, alignof(T));
         }
 
         /// Constructor from initializer list
@@ -30,7 +30,7 @@ namespace HBL2
         {
             HBL2_CORE_ASSERT(inList.size() <= inCapacity, "");
 
-            m_Elements = (T*)m_Arena->Alloc(sizeof(T) * m_Capacity);
+            m_Elements = (T*)m_Arena->Alloc(sizeof(T) * m_Capacity, alignof(T));
             for (const T& v : inList)
             {
                 new (&m_Elements[m_Size++]) T(v);
@@ -41,7 +41,7 @@ namespace HBL2
         FixedArray(const FixedArray<T>& inRHS)
             : m_Arena(inRHS.m_Arena), m_Capacity(inRHS.m_Capacity)
         {
-            m_Elements = (T*)m_Arena->Alloc(sizeof(T) * m_Capacity);
+            m_Elements = (T*)m_Arena->Alloc(sizeof(T) * m_Capacity, alignof(T));
             while (m_Size < inRHS.m_Size)
             {
                 new (&m_Elements[m_Size]) T(inRHS[m_Size]);
@@ -239,7 +239,7 @@ namespace HBL2
             clear();
 
             m_Capacity = inRHS.m_Capacity;
-            m_Elements = (T*)m_Arena->Alloc(sizeof(T) * m_Capacity);
+            m_Elements = (T*)m_Arena->Alloc(sizeof(T) * m_Capacity, alignof(T));
 
             while (m_Size < inRHS.m_Size)
             {

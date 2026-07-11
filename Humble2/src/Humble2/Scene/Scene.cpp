@@ -26,15 +26,15 @@ namespace HBL2
         m_Registry.Initialize(desc.maxEntities, desc.maxComponents);
 
         // Memory requirements for scene arena.
-        uint64_t totalBytes = 0;
-
-        totalBytes += desc.maxSystems * sizeof(ISystem*);
-        totalBytes += desc.maxSystems * sizeof(ISystem*);
-        totalBytes += desc.maxSystems * sizeof(ISystem*);
-        totalBytes += desc.maxEntities * sizeof(std::pair<UUID, Entity>) * 2;
-        totalBytes += desc.maxEntities * sizeof(uint64_t) * 2;
-        totalBytes += sizeof(StructuralCommandBuffer);
-        totalBytes += 100_KB;
+        uint64_t totalBytes = ArenaLayout::Create()
+            .Add<ISystem*>(desc.maxSystems)                         // m_Systems
+            .Add<ISystem*>(desc.maxSystems)                         // m_CoreSystems
+            .Add<ISystem*>(desc.maxSystems)                         // m_RuntimeSystems
+            .Add<std::pair<UUID, Entity>>(desc.maxEntities * 2)     // m_EntityMap
+            .Add<uint64_t>(desc.maxEntities * 2)                    // TODO: Investigate if needed!
+            .Add<StructuralCommandBuffer>(1)                        // m_CmdBuffer
+            .AddRaw(100_KB, 1)                                      // Extra headroom
+            .Total();
 
         uint64_t sceneArenaBytes = totalBytes;
 
@@ -44,11 +44,21 @@ namespace HBL2
         {
             uint32_t workerThreadCount = JobSystem::Get().GetThreadCount();
 
-            mainStructuralCommandBufferArenaByteSize = (uint32_t)Allocator::CalculateInterleavedByteSize<StructuralCommandBuffer::ChunkCommands, Arena>(workerThreadCount);
+            // Memory for scb arena.
+            mainStructuralCommandBufferArenaByteSize = ArenaLayout::Create()
+                .Add<StructuralCommandBuffer::ChunkCommands>(workerThreadCount)
+                .Add<Arena>(workerThreadCount)
+                .AddRaw(1_KB, 1)
+                .Total();
+
             totalBytes += mainStructuralCommandBufferArenaByteSize;
 
-            totalBytes += (desc.maxStructuralCommandsPerFramePerThread * (sizeof(StructuralCommandBuffer::Command) + 128_B)) * workerThreadCount;
-            totalBytes += 100_KB;
+            // Memory for scb worker arenas.
+            totalBytes += ArenaLayout::Create()
+                .Add<StructuralCommandBuffer::Command>(desc.maxStructuralCommandsPerFramePerThread * workerThreadCount)
+                .AddRaw(128_B * desc.maxStructuralCommandsPerFramePerThread * workerThreadCount, 1)
+                .AddRaw(100_KB, 1)
+                .Total();
         }
 
         // Allocate memory for scene.

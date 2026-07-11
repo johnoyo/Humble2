@@ -23,9 +23,12 @@ namespace HBL2
 			m_MaxEntities = maxEntities;
 			m_Mask.Initialize(maxEntities, reservation);
 
-			size_t bytes = maxEntities * sizeof(T);
+			size_t bytes = ArenaLayout::Create()
+				.Add<T>(m_MaxEntities)
+				.Total();
+
 			m_Arena.Initialize(&Allocator::Arena, bytes, reservation);
-			m_Components = (T*)m_Arena.Alloc(m_MaxEntities * sizeof(T));
+			m_Components = (T*)m_Arena.Alloc(bytes, alignof(T));
 
 			m_IsInitialized = true;
 		}

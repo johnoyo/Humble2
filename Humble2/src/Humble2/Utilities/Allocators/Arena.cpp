@@ -13,14 +13,14 @@ namespace HBL2
     void Arena::Initialize(MainArena* global, size_t bytes, PoolReservation* reservation)
     {
         m_GlobalArena = global;
+
         m_Bytes = bytes;
         m_Reservation = reservation;
         m_Reservation->RefCount.fetch_add(1, std::memory_order_relaxed);
-        m_Current = nullptr;
-        m_NextChunkSize = bytes;
+        m_Chunk = nullptr;
         m_Destructed = false;
 
-        AcquireChunk(m_NextChunkSize);
+        m_Chunk = m_GlobalArena->AllocateChunkStruct(bytes, m_Reservation);
 
         m_Used.store(0);
         m_HighWater.store(0);
@@ -28,14 +28,9 @@ namespace HBL2
 
     void Arena::Destroy()
     {
-        // Return chunk structs to per-reservation or global free lists
-        for (ArenaChunk* ch : m_Chunks)
-        {
-            m_GlobalArena->FreeChunkStruct(ch);
-        }
-
-        m_Chunks.clear();
-        m_Current = nullptr;
+        // Return chunk struct to per-reservation or global free lists
+        m_GlobalArena->FreeChunkStruct(m_Chunk);
+        m_Chunk = nullptr;
 
         m_Bytes = 0;
         m_Used.store(0);
@@ -61,9 +56,9 @@ namespace HBL2
             return nullptr;
         }
 
-        ArenaChunk* ch = m_Current;
+        ArenaChunk* ch = m_Chunk;
 
-        if (!m_Current)
+        if (!m_Chunk)
         {
             return nullptr;
         }
@@ -81,64 +76,28 @@ namespace HBL2
             return static_cast<void*>(ch->Data + offset);
         }
 
-        // Request new chunk.
-        size_t requestSize = std::max<size_t>(size + alignment, m_NextChunkSize);
-        if (m_NextChunkSize < requestSize)
-        {
-            m_NextChunkSize = requestSize;
-        }
-        else
-        {
-            m_NextChunkSize = std::min(m_NextChunkSize * 2, requestSize);
-        }
+        HBL2_CORE_FATAL("Arena out of memory!");
 
-        if (!AcquireChunk(requestSize))
-        {
-            return nullptr;
-        }
-
-        if (!m_Current)
-        {
-            return nullptr;
-        }
-
-        ch = m_Current;
-        uintptr_t base = reinterpret_cast<uintptr_t>(ch->Data);
-        uintptr_t cur = base + ch->Used;
-        uintptr_t aligned = AlignUp(cur, alignment);
-        size_t offset = static_cast<size_t>(aligned - base);
-        assert(offset + size <= ch->Capacity);
-        ch->Used = offset + size;
-#ifdef ARENA_DEBUG
-        UpdateStats(size);
-#endif
-        return static_cast<void*>(ch->Data + offset);
+        return nullptr;
     }
 
     Arena::Marker Arena::Mark() const
     {
         Marker m{};
-        m.ChunkCount = m_Chunks.size();
-        m.UsedInLast = m_Chunks.empty() ? 0 : m_Chunks.back()->Used;
+
+        if (m_Chunk != nullptr)
+        {
+            m.UsedInLast = m_Chunk->Used;
+        };
+
         return m;
     }
+
     void Arena::Restore(const Arena::Marker& m)
     {
-        while (m_Chunks.size() > m.ChunkCount)
+        if (m_Chunk != nullptr)
         {
-            ArenaChunk* c = m_Chunks.back();
-            m_Chunks.pop_back();
-            m_GlobalArena->FreeChunkStruct(c);
-        }
-
-        if (!m_Chunks.empty())
-        {
-            m_Chunks.back()->Used = m.UsedInLast;
-            m_Current = m_Chunks.back();
-        }
-        else
-        {
-            m_Current = nullptr;
+            m_Chunk->Used = m.UsedInLast;
         }
 
 #ifdef ARENA_DEBUG
@@ -146,43 +105,16 @@ namespace HBL2
 #endif
     }
 
-    void Arena::Reset(bool keepOneChunk)
+    void Arena::Reset()
     {
-        while (m_Chunks.size() > (keepOneChunk ? 1u : 0u))
+        if (m_Chunk != nullptr)
         {
-            ArenaChunk* c = m_Chunks.back();
-            m_Chunks.pop_back();
-            m_GlobalArena->FreeChunkStruct(c);
-        }
-
-        if (!m_Chunks.empty())
-        {
-            m_Chunks.back()->Used = 0;
-            m_Current = m_Chunks.back();
-        }
-        else
-        {
-            m_Current = nullptr;
+            m_Chunk->Used = 0;
         }
 
 #ifdef ARENA_DEBUG
         RecalcStats();
 #endif
-    }
-
-    bool Arena::AcquireChunk(size_t minCapacity)
-    {
-        ArenaChunk* newChunk = m_GlobalArena->AllocateChunkStruct(minCapacity, m_Reservation);
-
-        if (!newChunk)
-        {
-            return false;
-        }
-
-        m_Chunks.push_back(newChunk);
-        m_Current = newChunk;
-
-        return true;
     }
 
     void Arena::UpdateStats(size_t delta)
@@ -198,9 +130,10 @@ namespace HBL2
         m_UsedBeforeReset.store(m_Used.load());
 
         size_t total = 0;
-        for (ArenaChunk* c : m_Chunks)
+
+        if (m_Chunk != nullptr)
         {
-            total += c->Used;
+            total += m_Chunk->Used;
         }
 
         m_Used.store(total);

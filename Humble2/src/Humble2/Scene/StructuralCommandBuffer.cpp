@@ -10,7 +10,10 @@ namespace HBL2
 		m_ChunkCommands = MakeDArrayResized<StructuralCommandBuffer::ChunkCommands>(m_Arena, workerThreadCount);
 
 		// Reserve memory for the Command struct and for the component (we use 128_B as a average worst case for component size).
-		const uint32_t workerArenaByteSize = maxStructuralCommandsPerFramePerThread * (sizeof(StructuralCommandBuffer::Command) + 128_B);
+		const uint32_t workerArenaByteSize = ArenaLayout::Create()
+			.Add<StructuralCommandBuffer::Command>(maxStructuralCommandsPerFramePerThread)
+			.AddRaw(128_B * maxStructuralCommandsPerFramePerThread, 1)
+			.Total();
 
 		for (int i = 0; i < workerThreadCount; i++)
 		{

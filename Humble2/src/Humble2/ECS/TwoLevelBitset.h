@@ -62,7 +62,12 @@ namespace HBL2
             m_L1Count = maxEntities / 64;
             m_L0Count = maxEntities / 4096;
 
-            size_t bytes = (m_L0Count * sizeof(uint64_t) + 63) + (m_L1Count * sizeof(uint64_t) + 63);
+            size_t bytes = ArenaLayout::Create()
+                .Add<uint64_t>(m_L0Count)
+                .AddRaw(63, 1)
+                .Add<uint64_t>(m_L1Count)
+                .AddRaw(63, 1)
+                .Total();
 
             m_Arena.Initialize(&Allocator::Arena, bytes, reservation);
 

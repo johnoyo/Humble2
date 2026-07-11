@@ -29,39 +29,42 @@ namespace HBL2
             m_MaxEntities = maxEntities;
             m_MaxComponents = maxComponents;
 
-            uint64_t bytes = 0;
-
-            // Bytes for EntityManager memory.
-            bytes += maxEntities * sizeof(bool);    // m_Used
-            bytes += maxEntities * sizeof(int32_t); // m_Gen
-            bytes += maxEntities * sizeof(int32_t); // m_NextFree
-
-            // Bytes for array for component storages.
-            bytes += m_MaxComponents * sizeof(IComponentStorage*);
-            bytes += m_MaxComponents * sizeof(void*);
-            bytes += m_MaxComponents * sizeof(512_B) * 16; // Reserve space for allocating the storages (in the EnsureArray method).
-
-            // Bytes for type resolver.
-            bytes += m_MaxComponents * sizeof(std::type_index);
-            bytes += m_MaxComponents * sizeof(uint32_t);
-            bytes += m_MaxComponents * sizeof(uint32_t);
+            uint64_t bytes = ArenaLayout::Create()
+                // Bytes for EntityManager memory.
+                .Add<bool>(maxEntities)                     // m_Used
+                .Add<int32_t>(maxEntities)                  // m_Gen
+                .Add<int32_t>(maxEntities)                  // m_NextFree
+                // Bytes for array for component storages.
+                .Add<IComponentStorage*>(m_MaxComponents)   // m_ComponentStorages
+                .Add<void*>(m_MaxComponents)                // m_ConcreteStorages
+                .AddRaw(m_MaxComponents * 512_B * 32, 1)    // Reserve space for allocating the storages (in the EnsureArray method).
+                // Bytes for type resolver.
+                .Add<std::type_index>(m_MaxComponents)      // TypeResolver::m_TypeMap
+                .Add<uint32_t>(m_MaxComponents)             // TypeResolver::m_FreeList
+                .Add<uint32_t>(m_MaxComponents)             // TypeResolver::m_Next
+                .Total();
 
             uint64_t registryArenaBytes = bytes;
 
-            // Bytes for the component storages, allocate enough as if all are SparseComponentStorage,
-            // which is the default and worst case.
+            // Bytes for the component storages, allocate enough as if all are SparseComponentStorage, which is the default and worst case.
             for (uint32_t i = 0; i < m_MaxComponents; ++i)
             {
-                bytes += maxEntities * sizeof(uint32_t); // m_EntityToIndex
-                bytes += maxEntities * sizeof(Entity);   // m_Entities
-                bytes += maxEntities * 128_B;            // m_Packed (we choose 128 bytes as the worst case average size of components)
+                bytes += ArenaLayout::Create()
+                    .Add<uint32_t>(maxEntities)             // m_EntityToIndex
+                    .Add<Entity>(maxEntities)               // m_Entities
+                    .AddRaw(maxEntities * 128_B, 1)         // m_Packed (we choose 128 bytes as the worst case average size of components)
+                    .Total();
 
                 // Bytes for the TwoLevelBitset.
                 uint32_t l1Count = maxEntities / 64;
                 uint32_t l0Count = maxEntities / 4096;
 
-                bytes += l0Count * sizeof(uint64_t) + 63;
-                bytes += l1Count * sizeof(uint64_t) + 63;
+                bytes += ArenaLayout::Create()
+                    .Add<uint64_t>(l0Count)
+                    .AddRaw(63, 1)
+                    .Add<uint64_t>(l1Count)
+                    .AddRaw(63, 1)
+                    .Total();
             }
 
             m_Reservation = Allocator::Arena.Reserve("RegistryPool", bytes);
@@ -485,7 +488,7 @@ namespace HBL2
             return m_ComponentStorages[id];
         }
 
-        // Simple FNV-1a hash for field name strings — constexpr, no allocations
+        // Simple FNV-1a hash for field name strings.
         static constexpr uint64_t HashFieldName(std::string_view name) noexcept
         {
             uint64_t hash = 14695981039346656037ULL;

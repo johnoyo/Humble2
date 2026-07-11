@@ -14,15 +14,24 @@ namespace HBL2
 
 		m_AssetPool.Initialize(m_Spec.Assets);
 
-		uint32_t byteSize = (uint32_t)Allocator::CalculateSoAByteSize<std::filesystem::path, UUID, UUID, Handle<Asset>, Handle<Asset>>(2 * m_Spec.Assets) * 2;
+		uint64_t bytes = ArenaLayout::Create()
+			.Add<std::pair<UUID, Handle<Asset>>>(2 * m_Spec.Assets)
+			.Add<std::pair<std::filesystem::path, UUID>>(2 * m_Spec.Assets)
+			.Add<Handle<Asset>>(2 * m_Spec.Assets)
+			.Total();
+
 		constexpr size_t resourceTaskByteSize = sizeof(ResourceTask<Texture>);
+		constexpr size_t resourceTaskByteAlignment = alignof(ResourceTask<Texture>);
 		constexpr size_t resourceTasksByteSize = resourceTaskByteSize * 1024;
-		constexpr size_t resourceTasksReserveBytes = resourceTasksByteSize * 2;
 
-		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", byteSize + resourceTasksReserveBytes);
-		m_PoolArena.Initialize(&Allocator::Arena, byteSize, m_Reservation);
+		uint64_t resourceTasksReserveBytes = ArenaLayout::Create()
+			.AddRaw(resourceTasksByteSize * 2, resourceTaskByteAlignment)
+			.Total();
 
-		m_ResourceTaskPoolArena.Initialize(&Allocator::Arena, resourceTasksByteSize, resourceTaskByteSize, m_Reservation);
+		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", bytes + resourceTasksReserveBytes);
+		m_PoolArena.Initialize(&Allocator::Arena, bytes, m_Reservation);
+
+		m_ResourceTaskPoolArena.Initialize(&Allocator::Arena, resourceTasksByteSize, resourceTaskByteSize, m_Reservation, resourceTaskByteAlignment);
 
         m_RegisteredAssetMap = MakeHMap<UUID, Handle<Asset>>(m_PoolArena, m_Spec.Assets);
 		m_RegisteredAssetPathToUUIDMap = MakeHMap<std::filesystem::path, UUID>(m_PoolArena, m_Spec.Assets);

@@ -26,6 +26,48 @@ namespace HBL2
         return (value + mask) & ~mask;
     }
 
+    class ArenaLayout
+    {
+    public:
+        static ArenaLayout Create()
+        {
+            return ArenaLayout{};
+        }
+
+        template<typename T>
+        ArenaLayout& Add(size_t count = 1)
+        {
+            return AddRaw(count * sizeof(T), alignof(T));
+        }
+
+        ArenaLayout& AddRaw(size_t bytes, size_t alignment)
+        {
+            HBL2_CORE_ASSERT(alignment != 0 && (alignment & (alignment - 1)) == 0, "Bad alignment!");
+
+            m_Offset = AlignUp(m_Offset, alignment);
+            m_Offset += bytes;
+            m_MaxAlignment = std::max(m_MaxAlignment, alignment);
+
+            return *this;
+        }
+
+        size_t Total() const
+        {
+            // CarveData only guarantees alignof(std::max_align_t) for a chunk's base pointer.
+            // If any field needs more than that, the true base may land anywhere relative to
+            // that field's alignment. Reserving the gap once, up front, is enough to cover
+            // every field in the sequence, not just the first.
+            constexpr size_t baseGuarantee = alignof(std::max_align_t);
+            size_t slack = (m_MaxAlignment > baseGuarantee) ? (m_MaxAlignment - baseGuarantee) : 0;
+
+            return m_Offset + slack;
+        }
+
+    private:
+        size_t m_Offset = 0;
+        size_t m_MaxAlignment = 1;
+    };
+
     static inline void CopyName(char* dst, size_t dstCap, std::string_view name)
     {
         const std::size_t len = std::min(name.size(), dstCap - 1);
@@ -160,7 +202,8 @@ namespace HBL2
             uintptr_t cur = base + Used;
             uintptr_t aligned = AlignUp(cur, alignment);
             size_t offset = static_cast<size_t>(aligned - base);
-            return (offset + size) <= Capacity;
+            size_t currCapacity = offset + size;
+            return currCapacity <= Capacity;
         }
 
 #ifdef ARENA_DEBUG

@@ -86,15 +86,16 @@ namespace HBL2
 
         m_ShaderAssets = MakeDArray<Handle<Asset>>(m_Arena, 1024);
         m_Shaders = MakeHMap<BuiltInShader, Handle<Shader>>(m_Arena, 1024);
-        // m_ShaderLayouts = MakeHMap<BuiltInShader, Handle<BindGroupLayout>>(m_Arena, 64);
 
         uint32_t globalSessionNum = std::thread::hardware_concurrency();
 
-        g_SLangGlobalSessions = (Slang::ComPtr<slang::IGlobalSession>*)m_Arena.Alloc(globalSessionNum * sizeof(Slang::ComPtr<slang::IGlobalSession>));
+        g_SLangGlobalSessions = (Slang::ComPtr<slang::IGlobalSession>*)m_Arena.Alloc(globalSessionNum * sizeof(Slang::ComPtr<slang::IGlobalSession>), alignof(Slang::ComPtr<slang::IGlobalSession>));
         g_SLangGlobalSessions = m_Arena.ConstructArray<Slang::ComPtr<slang::IGlobalSession>>(g_SLangGlobalSessions, globalSessionNum);
 
         {
             HBL2_PROFILE("SLang Global Sessions Creation");
+
+            // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/08-compiling.html#creating-a-global-session
 
             JobContext ctx;
             JobSystem::Get().Dispatch(ctx, globalSessionNum, 1, [](JobDispatchArgs args)
@@ -304,6 +305,8 @@ namespace HBL2
                 continue;
             }
 
+            Arena* workerArena = JobSystem::Get().GetWorkerArena();
+
             // Cache path per entry point.
             const auto& cachedPath = cacheDirectory / (shaderPath.filename().string() + ".cached." + shaderStageName + ".spv");
 
@@ -321,21 +324,21 @@ namespace HBL2
 
                     if (IsVertexStage(i, entryPointCount))
                     {
-                        compilationResultData.vertexShaderCode.ptr = (uint32_t*)JobSystem::Get().GetWorkerArena()->Alloc(size, alignof(uint32_t));
+                        compilationResultData.vertexShaderCode.ptr = (uint32_t*)workerArena->Alloc(size, alignof(uint32_t));
                         compilationResultData.vertexShaderCode.size = (uint32_t)size / sizeof(uint32_t);
 
                         shaderCode = &compilationResultData.vertexShaderCode;
                     }
                     else if (IsFragmentStage(i, entryPointCount))
                     {
-                        compilationResultData.fragmentShaderCode.ptr = (uint32_t*)JobSystem::Get().GetWorkerArena()->Alloc(size, alignof(uint32_t));
+                        compilationResultData.fragmentShaderCode.ptr = (uint32_t*)workerArena->Alloc(size, alignof(uint32_t));
                         compilationResultData.fragmentShaderCode.size = (uint32_t)size / sizeof(uint32_t);
 
                         shaderCode = &compilationResultData.fragmentShaderCode;
                     }
                     else if (IsComputeStage(i, entryPointCount))
                     {
-                        compilationResultData.computeShaderCode.ptr = (uint32_t*)JobSystem::Get().GetWorkerArena()->Alloc(size, alignof(uint32_t));
+                        compilationResultData.computeShaderCode.ptr = (uint32_t*)workerArena->Alloc(size, alignof(uint32_t));
                         compilationResultData.computeShaderCode.size = (uint32_t)size / sizeof(uint32_t);
 
                         shaderCode = &compilationResultData.computeShaderCode;
@@ -374,21 +377,21 @@ namespace HBL2
 
             if (IsVertexStage(i, entryPointCount))
             {
-                compilationResultData.vertexShaderCode.ptr = (uint32_t*)JobSystem::Get().GetWorkerArena()->Alloc(spirvByteSize, alignof(uint32_t));
+                compilationResultData.vertexShaderCode.ptr = (uint32_t*)workerArena->Alloc(spirvByteSize, alignof(uint32_t));
                 compilationResultData.vertexShaderCode.size = (uint32_t)spirvSize;
 
                 shaderCode = &compilationResultData.vertexShaderCode;
             }
             else if (IsFragmentStage(i, entryPointCount))
             {
-                compilationResultData.fragmentShaderCode.ptr = (uint32_t*)JobSystem::Get().GetWorkerArena()->Alloc(spirvByteSize, alignof(uint32_t));
+                compilationResultData.fragmentShaderCode.ptr = (uint32_t*)workerArena->Alloc(spirvByteSize, alignof(uint32_t));
                 compilationResultData.fragmentShaderCode.size = (uint32_t)spirvSize;
 
                 shaderCode = &compilationResultData.fragmentShaderCode;
             }
             else if (IsComputeStage(i, entryPointCount))
             {
-                compilationResultData.computeShaderCode.ptr = (uint32_t*)JobSystem::Get().GetWorkerArena()->Alloc(spirvByteSize, alignof(uint32_t));
+                compilationResultData.computeShaderCode.ptr = (uint32_t*)workerArena->Alloc(spirvByteSize, alignof(uint32_t));
                 compilationResultData.computeShaderCode.size = (uint32_t)spirvSize;
 
                 shaderCode = &compilationResultData.computeShaderCode;

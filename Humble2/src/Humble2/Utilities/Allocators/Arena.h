@@ -162,7 +162,6 @@ namespace HBL2
          */
         struct Marker
         {
-            size_t ChunkCount;
             size_t UsedInLast;
         };
 
@@ -181,9 +180,9 @@ namespace HBL2
         void Restore(const Marker& m);
 
         /**
-         * @brief Reset arena: return all but optionally keep one chunk.
+         * @brief Reset arena.
          */
-        void Reset(bool keepOneChunk = true);
+        void Reset();
 
         /**
          * @brief Current used bytes inside this arena (debug).
@@ -211,9 +210,7 @@ namespace HBL2
         MainArena* m_GlobalArena = nullptr;
         size_t m_Bytes = 0;
         PoolReservation* m_Reservation = nullptr;
-        std::vector<ArenaChunk*> m_Chunks;
-        ArenaChunk* m_Current = nullptr;
-        size_t m_NextChunkSize = 0;
+        ArenaChunk* m_Chunk = nullptr;
         bool m_Destructed = false;
 
         std::atomic<size_t> m_Used{ 0 };

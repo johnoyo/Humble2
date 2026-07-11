@@ -35,9 +35,7 @@ namespace HBL2
     template<typename T>
     [[nodiscard]] inline DArray<T> MakeDArrayResized(Arena& arena, std::size_t resizeCount)
     {
-        DArray<T> v{ ArenaAllocator<T>(&arena) };
-        v.resize(resizeCount);
-        return v;
+        return DArray<T>(resizeCount, ArenaAllocator<T>(&arena));
     }
 
     template<typename T>
@@ -57,9 +55,7 @@ namespace HBL2
     template<typename T>
     [[nodiscard]] inline DArray<T> MakeDArrayResized(ScratchArena& scratch, std::size_t resizeCount)
     {
-        DArray<T> v{ ArenaAllocator<T>(&scratch) };
-        v.resize(resizeCount);
-        return v;
+        return DArray<T>(resizeCount, ArenaAllocator<T>(&scratch));
     }
 
     // Hash Map
