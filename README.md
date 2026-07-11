@@ -26,8 +26,7 @@ Installation:
 
 - Clone the repo recursively: ```git clone --recursive https://github.com/johnoyo/Humble2.git```
     - If the repo was not cloned recursively, call this to initialize the submodules: ```git submodule update --init```
-- On Windows, run the GenerateProjectsVC20XX.bat file.
-    - There are three default batch files, one for Visual Studio 2019, one for 2022 and one for 2026.
+- On Windows, run the GenerateProjectsVC2026.bat file.
     - Open the generated Visual Studio solution.
 - On MacOS, run the GenerateProjectsXCode.sh file.
     - Open the generated XCode workspace.
