@@ -42,9 +42,9 @@ namespace HBL2
 
             size_t bytes = ArenaLayout::Create()
                 .Add<THot>(m_Size)
-                .Add<TCold>(m_Size)
-                .Add<std::atomic<uint16_t>>(m_Size)
-                .Add<std::atomic<uint16_t>>(m_Size)
+                .template Add<TCold>(m_Size)
+                .template Add<std::atomic<uint16_t>>(m_Size)
+                .template Add<std::atomic<uint16_t>>(m_Size)
                 .Total();
 
             m_Reservation = Allocator::Arena.Reserve("SplitPoolReservation", bytes);

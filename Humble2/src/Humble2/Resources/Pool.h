@@ -42,8 +42,8 @@ namespace HBL2
 
             size_t bytes = ArenaLayout::Create()
                 .Add<T>(m_Size)
-                .Add<std::atomic<uint16_t>>(m_Size)
-                .Add<std::atomic<uint16_t>>(m_Size)
+                .template Add<std::atomic<uint16_t>>(m_Size)
+                .template Add<std::atomic<uint16_t>>(m_Size)
                 .Total();
 
             m_Reservation = Allocator::Arena.Reserve("PoolReservation", bytes);
