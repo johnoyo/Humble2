@@ -23,3 +23,6 @@
 [submodule "Dependencies/Jolt/jolt"]
 	path = Dependencies/Jolt/jolt
 	url = https://github.com/jrouwe/JoltPhysics.git
+[submodule "Dependencies/Metal-Cpp"]
+	path = Dependencies/Metal-Cpp
+	url = https://github.com/apple/metal-cpp.git
