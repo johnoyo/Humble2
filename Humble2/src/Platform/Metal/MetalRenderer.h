@@ -41,9 +41,6 @@ namespace HBL2
         
         virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
         
-        virtual void* GetDepthAttachment() override { return nullptr; }
-        virtual void* GetColorAttachment() override;
-        
         virtual void SetViewportAttachment(void* viewportTextureRef) override {}
         virtual void* GetViewportAttachment() override { return nullptr; }
 

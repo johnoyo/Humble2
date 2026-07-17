@@ -79,9 +79,4 @@ namespace HBL2
     {
         return nullptr;
     }
-
-    void* MetalRenderer::GetColorAttachment()
-    {
-        return nullptr;
-    }
 }
