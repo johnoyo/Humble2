@@ -56,10 +56,7 @@ namespace HBL2
 
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
 
-		virtual void* GetDepthAttachment() override { return nullptr; }
-		virtual void* GetColorAttachment() override;		
-
-		virtual void SetViewportAttachment(Handle<Texture> viewportTexture) override {}
+		virtual void SetViewportAttachment(void* viewportTextureRef) { m_ColorAttachmentID = (VkDescriptorSet)viewportTextureRef; }
 		virtual void* GetViewportAttachment() override { return m_ColorAttachmentID; }
 
 		virtual Handle<BindGroup> GetShadowBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].ShadowBindings; }

@@ -109,7 +109,7 @@ namespace HBL2
         {
         case GraphicsAPI::OPENGL:
             HBL2_CORE_WARN("OpenGL gfx backend is deprecated and will be removed in the future.");
-#ifdef HBL2_PLATFORM_WINDOWS
+#ifdef false
 			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
 			g_GfxAPI = "OpenGL";
 			Device::Instance = new OpenGLDevice;

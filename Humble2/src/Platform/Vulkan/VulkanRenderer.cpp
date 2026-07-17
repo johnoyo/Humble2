@@ -283,15 +283,6 @@ namespace HBL2
 		return vkCmdObj;
 	}
 
-	void* VulkanRenderer::GetColorAttachment()
-	{
-		Handle<BindGroup> presentBindGroupHandle = m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalPresentBindings;
-		VulkanBindGroupHot* vkPresentBindGroupHot = m_ResourceManager->GetBindGroupHot(presentBindGroupHandle);
-		m_ColorAttachmentID = vkPresentBindGroupHot->DescriptorSet;
-
-		return m_ColorAttachmentID;
-	}
-
 	void VulkanRenderer::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function)
 	{
 		if (s_UploadContext.CommandBuffer == VK_NULL_HANDLE)
@@ -465,6 +456,15 @@ namespace HBL2
 			VulkanBindGroup vkGlobalPresentBindings = m_ResourceManager->GetBindGroup(m_VkFrames[i].GlobalPresentBindings);
 			vkGlobalPresentBindings.Update();
 		}
+
+		// Update imgui viewport texture.
+		VkDescriptorSet oldColorAttachmentID = m_ColorAttachmentID;
+		m_ResourceManager->GetDeletionQueue().Push(GetFrameNumber(), [=]()
+		{
+			ImGui_ImplVulkan_RemoveTexture(oldColorAttachmentID);
+		});
+		VulkanTexture* viewportTexture = m_ResourceManager->GetTexture(MainColorTexture);
+		m_ColorAttachmentID = ImGui_ImplVulkan_AddTexture(viewportTexture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		// Call on resize callbacks.
 		for (auto&& [name, callback] : m_OnResizeCallbacks)

@@ -68,8 +68,11 @@ project "Humble2"
 
         removefiles
         {
+            "src/Platform/OpenGL/**.h",
+            "src/Platform/OpenGL/**.cpp",
+
             "src/Platform/Metal/**.h",
-            "src/Platform/Metal/**.cpp"
+            "src/Platform/Metal/**.cpp",
         }
 
         libdirs
@@ -354,11 +357,8 @@ project "Humble2"
         removefiles
         {
             "src/Platform/OpenGL/**.h",
-            "src/Platform/OpenGL/**.cpp"
-        }
+            "src/Platform/OpenGL/**.cpp",
 
-        removefiles
-        {
             "src/Platform/Metal/**.h",
             "src/Platform/Metal/**.cpp"
         }

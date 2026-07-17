@@ -62,6 +62,10 @@ namespace HBL2
 			.MSAASamples = VK_SAMPLE_COUNT_1_BIT,
 		};
 		ImGui_ImplVulkan_Init(&initInfo);
+
+		// Set viewport texture.
+		VulkanTexture* viewportTexture = m_ResourceManager->GetTexture(m_Renderer->MainColorTexture);
+		m_Renderer->SetViewportAttachment(ImGui_ImplVulkan_AddTexture(viewportTexture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 	}
 
 	void VulkanImGuiRenderer::BeginFrame()

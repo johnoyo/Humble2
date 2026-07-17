@@ -63,7 +63,7 @@ namespace HBL2::Editor
 				});
 		}
 
-		ImTextureID viewportTexture = (ImTextureID)HBL2::Renderer::Instance->GetColorAttachment();
+		ImTextureID viewportTexture = (ImTextureID)HBL2::Renderer::Instance->GetViewportAttachment();
 
 		if (viewportTexture != 0)
 		{

@@ -139,10 +139,7 @@ namespace HBL2
 
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) = 0;
 
-		virtual void* GetDepthAttachment() = 0;
-		virtual void* GetColorAttachment() = 0;
-
-		virtual void SetViewportAttachment(Handle<Texture> viewportTexture) = 0;
+		virtual void SetViewportAttachment(void* viewportTextureRef) = 0;
 		virtual void* GetViewportAttachment() = 0;
 
 		RenderPassPool& GetRenderPassPool() { return m_RenderPassPool; }

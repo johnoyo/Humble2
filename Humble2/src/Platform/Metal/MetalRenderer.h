@@ -44,7 +44,7 @@ namespace HBL2
         virtual void* GetDepthAttachment() override { return nullptr; }
         virtual void* GetColorAttachment() override;
         
-        virtual void SetViewportAttachment(Handle<Texture> viewportTexture) override {}
+        virtual void SetViewportAttachment(void* viewportTextureRef) override {}
         virtual void* GetViewportAttachment() override { return nullptr; }
 
         virtual Handle<BindGroup> GetShadowBindings() override { return {}; }
