@@ -26,7 +26,7 @@ namespace HBL2
 	class HBL2_API CommandBuffer
 	{
 	public:
-		virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer, Viewport&& drawArea = {}) = 0;
+		virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Viewport&& drawArea = {}) = 0;
 		virtual void EndRenderPass(const RenderPassRenderer& renderPassRenderer) = 0;
 
 		virtual ComputePassRenderer* BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite) = 0;

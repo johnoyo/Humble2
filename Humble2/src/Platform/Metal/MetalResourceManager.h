@@ -10,7 +10,6 @@
 #include "Resources/MetalBuffer.h"
 #include "Resources/MetalShader.h"
 #include "Resources/MetalTexture.h"
-//#include "Resources/MetalFrameBuffer.h"
 #include "Resources/MetalBindGroup.h"
 #include "Resources/MetalBindGroupLayout.h"
 #include "Resources/MetalRenderPass.h"
@@ -50,12 +49,6 @@ namespace HBL2
         //MetalBufferHot* GetBufferHot(Handle<Buffer> handle) const;
         //MetalBufferCold* GetBufferCold(Handle<Buffer> handle) const;
 
-        // Framebuffers
-        virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) override;
-        virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) override;
-        virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) override;
-        //MetalFrameBuffer* GetFrameBuffer(Handle<FrameBuffer> handle) const;
-
         // Shaders
         virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) override;
         virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) override;
@@ -85,6 +78,7 @@ namespace HBL2
         // RenderPass
         virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) override;
         virtual void DeleteRenderPass(Handle<RenderPass> handle) override;
+        virtual void RecreateRenderPassFrameBuffer(Handle<RenderPass> handle, const FrameBufferDescriptor&& desc) override;
 //        MetalRenderPass* GetRenderPass(Handle<RenderPass> handle) const;
 
         // RenderPassLayouts
@@ -96,7 +90,6 @@ namespace HBL2
 //        Pool<MetalTexture, Texture> m_TexturePool;
 //        SplitPool<MetalBufferHot, MetalBufferCold, Buffer> m_BufferSplitPool;
 //        SplitPool<MetalShaderHot, MetalShaderCold, Shader> m_ShaderSplitPool;
-//        Pool<MetalFrameBuffer, FrameBuffer> m_FrameBufferPool;
 //        SplitPool<MetalBindGroupHot, MetalBindGroupCold, BindGroup> m_BindGroupSplitPool;
 //        Pool<MetalBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
 //        Pool<MetalRenderPass, RenderPass> m_RenderPassPool;

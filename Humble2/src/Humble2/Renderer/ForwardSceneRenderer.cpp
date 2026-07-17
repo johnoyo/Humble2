@@ -116,25 +116,12 @@ namespace HBL2
 			},
 		});
 
-		// Create depth only render pass.
+		// Create depth only render pass layout.
 		m_DepthOnlyRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
 			.debugName = "pre-pass-renderpass-layout",
 			.depthTargetFormat = Format::D32_FLOAT,
 			.subPasses = {
 				{ .depthTarget = true },
-			},
-		});
-
-		m_DepthOnlyRenderPass = m_ResourceManager->CreateRenderPass({
-			.debugName = "pre-pass-renderpass",
-			.layout = m_DepthOnlyRenderPassLayout,
-			.depthTarget = {
-				.loadOp = LoadOperation::CLEAR,
-				.storeOp = StoreOperation::STORE,
-				.stencilLoadOp = LoadOperation::DONT_CARE,
-				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::UNDEFINED,
-				.nextUsage = TextureLayout::DEPTH_STENCIL,
 			},
 		});
 
@@ -239,7 +226,6 @@ namespace HBL2
 			m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
 
 			m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
-			m_ResourceManager->DeleteFrameBuffer(m_ShadowFrameBuffer);
 			m_ResourceManager->DeleteRenderPass(m_ShadowRenderPass);
 			m_ResourceManager->DeleteShader(m_ShadowPrePassShader);
 			m_ResourceManager->DeleteMaterial(m_ShadowPrePassMaterial);
@@ -255,15 +241,12 @@ namespace HBL2
 
 			m_ResourceManager->DeleteRenderPassLayout(m_DepthOnlyRenderPassLayout);
 			m_ResourceManager->DeleteRenderPass(m_DepthOnlyRenderPass);
-			m_ResourceManager->DeleteFrameBuffer(m_DepthOnlyFrameBuffer);
 			Renderer::Instance->RemoveOnResizeCallback("Depth-Only-Resize-FrameBuffer");
 
 			m_ResourceManager->DeleteRenderPass(m_OpaqueRenderPass);
-			m_ResourceManager->DeleteFrameBuffer(m_OpaqueFrameBuffer);
 			Renderer::Instance->RemoveOnResizeCallback("Resize-Opaque-FrameBuffer");
 
 			m_ResourceManager->DeleteRenderPass(m_TransparentRenderPass);
-			m_ResourceManager->DeleteFrameBuffer(m_TransparentFrameBuffer);
 			Renderer::Instance->RemoveOnResizeCallback("Resize-Transparent-FrameBuffer");
 
 			m_ResourceManager->DeleteBindGroupLayout(m_EquirectToSkyboxBindGroupLayout);
@@ -317,7 +300,6 @@ namespace HBL2
 			m_ResourceManager->DeleteBindGroupLayout(m_PostProcessBindGroupLayout);
 			m_ResourceManager->DeleteBindGroup(m_PostProcessBindGroup);
 			m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
-			m_ResourceManager->DeleteFrameBuffer(m_PostProcessFrameBuffer);
 			Renderer::Instance->RemoveOnResizeCallback("Post-Process-Resize-FrameBuffer");
 
 			m_ResourceManager->DeleteBuffer(m_VertexBuffer);
@@ -350,14 +332,11 @@ namespace HBL2
 				.prevUsage = TextureLayout::DEPTH_STENCIL,
 				.nextUsage = TextureLayout::DEPTH_STENCIL,
 			},
-		});
-
-		m_ShadowFrameBuffer = m_ResourceManager->CreateFrameBuffer({
-			.debugName = "shadow-fb-load",
-			.width = g_ShadowAtlasSize,
-			.height = g_ShadowAtlasSize,
-			.renderPass = m_ShadowRenderPass,
-			.depthTarget = Renderer::Instance->ShadowAtlasTexture,
+            .frameBufferDesc = {
+                .width = g_ShadowAtlasSize,
+                .height = g_ShadowAtlasSize,
+                .depthTarget = Renderer::Instance->ShadowAtlasTexture,
+            }
 		});
 
 		// Create shadow pre-pass shader.
@@ -411,24 +390,30 @@ namespace HBL2
 
 	void ForwardSceneRenderer::DepthPrePassSetup()
 	{
-		// Create pre-pass framebuffer.	
-		m_DepthOnlyFrameBuffer = m_ResourceManager->CreateFrameBuffer({
-			.debugName = "viewport-fb",
-			.width = Window::Instance->GetExtents().x,
-			.height = Window::Instance->GetExtents().y,
-			.renderPass = m_DepthOnlyRenderPass,
-			.depthTarget = Renderer::Instance->MainDepthTexture,
-		});
+		// Create pre-pass framebuffer.
+        m_DepthOnlyRenderPass = m_ResourceManager->CreateRenderPass({
+            .debugName = "pre-pass-renderpass",
+            .layout = m_DepthOnlyRenderPassLayout,
+            .depthTarget = {
+                .loadOp = LoadOperation::CLEAR,
+                .storeOp = StoreOperation::STORE,
+                .stencilLoadOp = LoadOperation::DONT_CARE,
+                .stencilStoreOp = StoreOperation::DONT_CARE,
+                .prevUsage = TextureLayout::UNDEFINED,
+                .nextUsage = TextureLayout::DEPTH_STENCIL,
+            },
+            .frameBufferDesc = {
+                .width = Window::Instance->GetExtents().x,
+                .height = Window::Instance->GetExtents().y,
+                .depthTarget = Renderer::Instance->MainDepthTexture,
+            }
+        });
 
 		Renderer::Instance->AddCallbackOnResize("Depth-Only-Resize-FrameBuffer", [this](uint32_t width, uint32_t height)
 		{
-			ResourceManager::Instance->DeleteFrameBuffer(m_DepthOnlyFrameBuffer);
-
-			m_DepthOnlyFrameBuffer = ResourceManager::Instance->CreateFrameBuffer({
-				.debugName = "viewport-fb",
+			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DepthOnlyRenderPass, {
 				.width = width,
 				.height = height,
-				.renderPass = m_DepthOnlyRenderPass,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 			});
 		});
@@ -541,31 +526,24 @@ namespace HBL2
 					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
 				},
 			},
-		});
-
-		m_OpaqueFrameBuffer = m_ResourceManager->CreateFrameBuffer({
-			.debugName = "opaques-viewport-fb",
-			.width = Window::Instance->GetExtents().x,
-			.height = Window::Instance->GetExtents().y,
-			.renderPass = m_OpaqueRenderPass,
-			.depthTarget = Renderer::Instance->MainDepthTexture,
-			.colorTargets = { Renderer::Instance->IntermediateColorTexture },
+            .frameBufferDesc = {
+                .width = Window::Instance->GetExtents().x,
+                .height = Window::Instance->GetExtents().y,
+                .depthTarget = Renderer::Instance->MainDepthTexture,
+                .colorTargets = { Renderer::Instance->IntermediateColorTexture },
+            }
 		});
 
 		// Resize opaque framebuffer callback.
 		Renderer::Instance->AddCallbackOnResize("Resize-Opaque-FrameBuffer", [this](uint32_t width, uint32_t height)
-		{
-			ResourceManager::Instance->DeleteFrameBuffer(m_OpaqueFrameBuffer);
-
-			m_OpaqueFrameBuffer = ResourceManager::Instance->CreateFrameBuffer({
-				.debugName = "opaques-viewport-fb",
-				.width = width,
-				.height = height,
-				.renderPass = m_OpaqueRenderPass,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
-			});
-		});
+        {
+            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_OpaqueRenderPass, {
+                .width = width,
+                .height = height,
+                .depthTarget = Renderer::Instance->MainDepthTexture,
+                .colorTargets = { Renderer::Instance->IntermediateColorTexture },
+            });
+        });
 	}
 
 	void ForwardSceneRenderer::TransparentPassSetup()
@@ -591,30 +569,23 @@ namespace HBL2
 					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
 				},
 			},
-		});
-
-		m_TransparentFrameBuffer = m_ResourceManager->CreateFrameBuffer({
-			.debugName = "transparents-viewport-fb",
-			.width = Window::Instance->GetExtents().x,
-			.height = Window::Instance->GetExtents().y,
-			.renderPass = m_TransparentRenderPass,
-			.depthTarget = Renderer::Instance->MainDepthTexture,
-			.colorTargets = { Renderer::Instance->IntermediateColorTexture },
+            .frameBufferDesc = {
+                .width = Window::Instance->GetExtents().x,
+                .height = Window::Instance->GetExtents().y,
+                .depthTarget = Renderer::Instance->MainDepthTexture,
+                .colorTargets = { Renderer::Instance->IntermediateColorTexture },
+            }
 		});
 
 		// Resize transparent framebuffer callback.
 		Renderer::Instance->AddCallbackOnResize("Resize-Transparent-FrameBuffer", [this](uint32_t width, uint32_t height)
 		{
-			ResourceManager::Instance->DeleteFrameBuffer(m_TransparentFrameBuffer);
-
-			m_TransparentFrameBuffer = ResourceManager::Instance->CreateFrameBuffer({
-				.debugName = "transparents-viewport-fb",
-				.width = width,
-				.height = height,
-				.renderPass = m_TransparentRenderPass,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
-			});
+            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_TransparentRenderPass, {
+                .width = width,
+                .height = height,
+                .depthTarget = Renderer::Instance->MainDepthTexture,
+                .colorTargets = { Renderer::Instance->IntermediateColorTexture },
+            });
 		});
 	}
 
@@ -905,29 +876,22 @@ namespace HBL2
 					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
 				},
 			},
-		});
-
-		m_PostProcessFrameBuffer = m_ResourceManager->CreateFrameBuffer({
-			.debugName = "post-process-fb",
-			.width = Window::Instance->GetExtents().x,
-			.height = Window::Instance->GetExtents().y,
-			.renderPass = m_PostProcessRenderPass,
-			.depthTarget = Renderer::Instance->MainDepthTexture,
-			.colorTargets = { Renderer::Instance->MainColorTexture },
+            .frameBufferDesc = {
+                .width = Window::Instance->GetExtents().x,
+                .height = Window::Instance->GetExtents().y,
+                .depthTarget = Renderer::Instance->MainDepthTexture,
+                .colorTargets = { Renderer::Instance->MainColorTexture },
+            }
 		});
 
 		Renderer::Instance->AddCallbackOnResize("Post-Process-Resize-FrameBuffer", [this](uint32_t width, uint32_t height)
 		{
-			ResourceManager::Instance->DeleteFrameBuffer(m_PostProcessFrameBuffer);
-
-			m_PostProcessFrameBuffer = m_ResourceManager->CreateFrameBuffer({
-				.debugName = "post-process-fb",
-				.width = width,
-				.height = height,
-				.renderPass = m_PostProcessRenderPass,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->MainColorTexture },
-			});
+            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PostProcessRenderPass, {
+                .width = width,
+                .height = height,
+                .depthTarget = Renderer::Instance->MainDepthTexture,
+                .colorTargets = { Renderer::Instance->MainColorTexture },
+            });
 
 			ResourceManager::Instance->DeleteBindGroup(m_PostProcessBindGroup);
 
@@ -1398,7 +1362,7 @@ namespace HBL2
 						uint32_t tileX = tile.x * g_TileSize;
 						uint32_t tileY = tile.y * g_TileSize;
 
-						RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_ShadowRenderPass, m_ShadowFrameBuffer, { tileX, tileY, g_TileSize, g_TileSize });
+						RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_ShadowRenderPass, { tileX, tileY, g_TileSize, g_TileSize });
 
 						GlobalDrawStream globalDrawStream =
 						{
@@ -1425,7 +1389,7 @@ namespace HBL2
 	{
 		BEGIN_PROFILE_PASS();
 
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DepthOnlyRenderPass, m_DepthOnlyFrameBuffer);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DepthOnlyRenderPass);
 
 		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
 
@@ -1452,7 +1416,7 @@ namespace HBL2
 	{
 		BEGIN_PROFILE_PASS();
 
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_OpaqueRenderPass, m_OpaqueFrameBuffer);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_OpaqueRenderPass);
 
 		// Render opaque meshes.
 		{
@@ -1480,7 +1444,7 @@ namespace HBL2
 	{
 		BEGIN_PROFILE_PASS();
 
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass, m_TransparentFrameBuffer);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass);
 
 		// Render transparent meshes.
 		{
@@ -1639,7 +1603,7 @@ namespace HBL2
 		}
 
 		// Render Skybox
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass, m_TransparentFrameBuffer);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass);
 
 		ResourceManager::Instance->SetBufferData(m_SkyboxGlobalBindGroup, 0, (void*)&sceneRenderData->m_OnlyRotationInViewProjection);
 		GlobalDrawStream globalDrawStream = { .BindGroup = m_SkyboxGlobalBindGroup };
@@ -1657,7 +1621,7 @@ namespace HBL2
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::RENDER_ATTACHMENT, TextureLayout::SHADER_READ_ONLY);
 
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass, m_PostProcessFrameBuffer);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass);
 
 		ScratchArena scratch(Allocator::FrameArenaRT);
 		DrawList draws(scratch, 1);
@@ -1696,7 +1660,7 @@ namespace HBL2
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
 
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass(), Renderer::Instance->GetMainFrameBuffer());
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass());
 
 		ScratchArena scratch(Allocator::FrameArenaRT);
 		DrawList draws(scratch, 1);

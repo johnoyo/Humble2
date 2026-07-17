@@ -133,7 +133,7 @@ namespace HBL2
 		ImGui_ImplVulkan_NewFrame();
 
 		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI);
-		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_ImGuiRenderPass, m_Renderer->GetMainFrameBuffer());
+		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_Renderer->GetImGuiRenderPass());
 
 		{
 			// Lock the queue here since the imgui function may mess with it.

@@ -121,7 +121,6 @@ namespace HBL2::Editor
 		TextWithCapacityColor("Buffers Pool", rmStats.Buffers, rmSpec.Buffers);
 		TextWithCapacityColor("BindGroups Pool", rmStats.BindGroups, rmSpec.BindGroups);
 		TextWithCapacityColor("BindGroupLayouts Pool", rmStats.BindGroupLayouts, rmSpec.BindGroupLayouts);
-		TextWithCapacityColor("FrameBuffers Pool", rmStats.FrameBuffers, rmSpec.FrameBuffers);
 		TextWithCapacityColor("RenderPass Pool", rmStats.RenderPass, rmSpec.RenderPass);
 		TextWithCapacityColor("RenderPassLayouts Pool", rmStats.RenderPassLayouts, rmSpec.RenderPassLayouts);
 		TextWithCapacityColor("Meshes Pool", rmStats.Meshes, rmSpec.Meshes);

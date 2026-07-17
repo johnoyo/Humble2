@@ -11,7 +11,6 @@ namespace HBL2
 //        m_TexturePool.Initialize(m_Spec.Textures);
 //        m_BufferSplitPool.Initialize(m_Spec.Buffers);
 //        m_ShaderSplitPool.Initialize(m_Spec.Shaders);
-//        m_FrameBufferPool.Initialize(m_Spec.FrameBuffers);
 //        m_BindGroupSplitPool.Initialize(m_Spec.BindGroups);
 //        m_BindGroupLayoutPool.Initialize(m_Spec.BindGroupLayouts);
 //        m_RenderPassPool.Initialize(m_Spec.RenderPass);
@@ -23,7 +22,6 @@ namespace HBL2
         {
 //            .Textures = m_TexturePool.FreeSlotCount(),
 //            .Buffers = m_BufferSplitPool.FreeSlotCount(),
-//            .FrameBuffers = m_FrameBufferPool.FreeSlotCount(),
 //            .Shaders = m_ShaderSplitPool.FreeSlotCount(),
 //            .BindGroups = m_BindGroupSplitPool.FreeSlotCount(),
 //            .BindGroupLayouts = m_BindGroupLayoutPool.FreeSlotCount(),
@@ -200,39 +198,6 @@ namespace HBL2
 //    MetalBufferCold* MetalResourceManager::GetBufferCold(Handle<Buffer> handle) const
 //    {
 //        return m_BufferSplitPool.GetCold(handle);
-//    }
-
-    // Framebuffers
-    Handle<FrameBuffer> MetalResourceManager::CreateFrameBuffer(const FrameBufferDescriptor&& desc)
-    {
-//        return m_FrameBufferPool.Insert(std::forward<const FrameBufferDescriptor>(desc));
-        return {};
-    }
-    void MetalResourceManager::DeleteFrameBuffer(Handle<FrameBuffer> handle)
-    {
-//        m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
-//        {
-//            MetalFrameBuffer* frameBuffer = GetFrameBuffer(handle);
-//            if (frameBuffer != nullptr)
-//            {
-//                frameBuffer->Destroy();
-//                m_FrameBufferPool.Remove(handle);
-//            }
-//        });
-    }
-    void MetalResourceManager::ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height)
-    {
-//        if (!handle.IsValid())
-//        {
-//            return;
-//        }
-//
-//        MetalFrameBuffer* frameBuffer = GetFrameBuffer(handle);
-//        frameBuffer->Resize(width, height);
-    }
-//    MetalFrameBuffer* MetalResourceManager::GetFrameBuffer(Handle<FrameBuffer> handle) const
-//    {
-//        return m_FrameBufferPool.Get(handle);
 //    }
 
     // Shaders
@@ -566,6 +531,10 @@ namespace HBL2
     }
     void MetalResourceManager::DeleteRenderPassLayout(Handle<RenderPassLayout> handle)
     {
+    }
+    void MetalResourceManager::RecreateRenderPassFrameBuffer(Handle<RenderPass> handle, const FrameBufferDescriptor&& desc)
+    {
+        
     }
 //    MetalRenderPassLayout* MetalResourceManager::GetRenderPassLayout(Handle<RenderPassLayout> handle) const
 //    {

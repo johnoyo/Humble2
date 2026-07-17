@@ -17,7 +17,7 @@ namespace HBL2
         MetalCommandBuffer() = default;
         MetalCommandBuffer(const MtlCommandBufferCreateInfo&& commandBufferCreateInfo);
         
-        virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer, Viewport&& drawArea = {}) override;
+        virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Viewport&& drawArea = {}) override;
         virtual void EndRenderPass(const RenderPassRenderer& renderPassRenderer) override;
 
         virtual ComputePassRenderer* BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite) override;

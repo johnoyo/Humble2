@@ -44,7 +44,10 @@ namespace HBL2
         virtual Handle<BindGroup> GetGlobalPresentBindings() override { return {}; }
         virtual Handle<BindGroup> GetDebugBindings() override { return {}; }
 
-        virtual Handle<FrameBuffer> GetMainFrameBuffer() override { return {}; }
+        virtual Handle<RenderPass> GetMainRenderPass() override { return {}; }
+        virtual Handle<RenderPass> GetImGuiRenderPass() override { return {}; }
+        virtual Handle<RenderPass> GetRenderingRenderPass() override { return {}; }
+        
         virtual const uint32_t GetFrameIndex() const override { return m_FrameNumber.load() % FRAME_OVERLAP; }
         
         const MtlFrameData& GetCurrentFrame() const { return m_MtlFrames[m_FrameNumber.load() % FRAME_OVERLAP]; }

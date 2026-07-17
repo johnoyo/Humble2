@@ -61,16 +61,6 @@ namespace HBL2
 		void* initialData = nullptr;
 	};
 
-	struct FrameBufferDescriptor
-	{
-		const char* debugName;
-		uint32_t width = 0;
-		uint32_t height = 0;
-		Handle<RenderPass> renderPass;
-		Handle<Texture> depthTarget;
-		std::initializer_list<Handle<Texture>> colorTargets;
-	};
-
 	struct BindGroupLayoutDescriptor
 	{
 		const char* debugName;
@@ -273,6 +263,14 @@ namespace HBL2
 
 	static inline const ShaderDescriptor::RenderPipeline::PackedVariant g_NullVariant = std::bit_cast<ShaderDescriptor::RenderPipeline::PackedVariant>(uint64_t{ 0 });
 
+    struct FrameBufferDescriptor
+    {
+        uint32_t width = 0;
+        uint32_t height = 0;
+        Handle<Texture> depthTarget;
+        std::initializer_list<Handle<Texture>> colorTargets;
+    };
+
 	struct RenderPassLayoutDescriptor
 	{
 		const char* debugName;
@@ -315,6 +313,8 @@ namespace HBL2
 		Handle<RenderPassLayout> layout;
 		DepthTarget depthTarget;
 		Span<const ColorTarget> colorTargets;
+        
+        FrameBufferDescriptor frameBufferDesc;
 	};
 
 	struct SubMeshDescriptor

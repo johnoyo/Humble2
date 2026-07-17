@@ -11,7 +11,6 @@ namespace HBL2
 		m_TexturePool.Initialize(m_Spec.Textures);
 		m_BufferSplitPool.Initialize(m_Spec.Buffers);
 		m_ShaderSplitPool.Initialize(m_Spec.Shaders);
-		m_FrameBufferPool.Initialize(m_Spec.FrameBuffers);
 		m_BindGroupSplitPool.Initialize(m_Spec.BindGroups);
 		m_BindGroupLayoutPool.Initialize(m_Spec.BindGroupLayouts);
 		m_RenderPassPool.Initialize(m_Spec.RenderPass);
@@ -23,7 +22,6 @@ namespace HBL2
 		{
 			.Textures = m_TexturePool.FreeSlotCount(),
 			.Buffers = m_BufferSplitPool.FreeSlotCount(),
-			.FrameBuffers = m_FrameBufferPool.FreeSlotCount(),
 			.Shaders = m_ShaderSplitPool.FreeSlotCount(),
 			.BindGroups = m_BindGroupSplitPool.FreeSlotCount(),
 			.BindGroupLayouts = m_BindGroupLayoutPool.FreeSlotCount(),
@@ -197,38 +195,6 @@ namespace HBL2
 	VulkanBufferCold* VulkanResourceManager::GetBufferCold(Handle<Buffer> handle) const
 	{
 		return m_BufferSplitPool.GetCold(handle);
-	}
-
-	// Framebuffers
-	Handle<FrameBuffer> VulkanResourceManager::CreateFrameBuffer(const FrameBufferDescriptor&& desc)
-	{
-		return m_FrameBufferPool.Insert(std::forward<const FrameBufferDescriptor>(desc));
-	}
-	void VulkanResourceManager::DeleteFrameBuffer(Handle<FrameBuffer> handle)
-	{
-		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
-		{
-			VulkanFrameBuffer* frameBuffer = GetFrameBuffer(handle);
-			if (frameBuffer != nullptr)
-			{
-				frameBuffer->Destroy();
-				m_FrameBufferPool.Remove(handle);
-			}
-		});
-	}
-	void VulkanResourceManager::ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height)
-	{
-		if (!handle.IsValid())
-		{
-			return;
-		}
-
-		VulkanFrameBuffer* frameBuffer = GetFrameBuffer(handle);
-		frameBuffer->Resize(width, height);
-	}
-	VulkanFrameBuffer* VulkanResourceManager::GetFrameBuffer(Handle<FrameBuffer> handle) const
-	{
-		return m_FrameBufferPool.Get(handle);
 	}
 
 	// Shaders
@@ -541,6 +507,15 @@ namespace HBL2
 			}
 		});
 	}
+    void VulkanResourceManager::RecreateRenderPassFrameBuffer(Handle<RenderPass> handle, const FrameBufferDescriptor&& desc)
+    {
+        VulkanRenderPass* rp = GetRenderPass(handle);
+
+        if (rp != nullptr)
+        {
+            return rp->CreateFrameBuffer(std::forward<const FrameBufferDescriptor>(desc));
+        }
+    }
 	VulkanRenderPass* VulkanResourceManager::GetRenderPass(Handle<RenderPass> handle) const
 	{
 		return m_RenderPassPool.Get(handle);

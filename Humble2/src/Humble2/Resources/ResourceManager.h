@@ -22,11 +22,10 @@ namespace HBL2
 	{
 		uint32_t Textures = 128;
 		uint32_t Buffers = 512;
-		uint32_t FrameBuffers = 64;
 		uint32_t Shaders = 64;
 		uint32_t BindGroups = 64;
 		uint32_t BindGroupLayouts = 32;
-		uint32_t RenderPass = 32;
+		uint32_t RenderPass = 64;
 		uint32_t RenderPassLayouts = 32;
 		uint32_t Meshes = 256;
 		uint32_t Materials = 64;
@@ -46,7 +45,7 @@ namespace HBL2
 
 		const ResourceManagerSpecification& GetSpec() const;
 		ResourceDeletionQueue& GetDeletionQueue();
-		void Flush(uint32_t currentFrame);
+		void Flush(uint64_t currentFrame);
 		void FlushAll();
 
 		virtual void Initialize(const ResourceManagerSpecification& spec) = 0;
@@ -72,11 +71,6 @@ namespace HBL2
 		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) = 0;
 		virtual void MapBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset = 0, intptr_t size = 0) = 0;
 
-		// FrameBuffers
-		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) = 0;
-		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) = 0;
-		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) = 0;
-
 		// Shaders
 		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) = 0;
 		virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) = 0;
@@ -101,6 +95,7 @@ namespace HBL2
 		// RenderPass
 		virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) = 0;
 		virtual void DeleteRenderPass(Handle<RenderPass> handle) = 0;
+        virtual void RecreateRenderPassFrameBuffer(Handle<RenderPass> handle, const FrameBufferDescriptor&& desc) = 0;
 
 		// RenderPassLayouts
 		virtual Handle<RenderPassLayout> CreateRenderPassLayout(const RenderPassLayoutDescriptor&& desc) = 0;

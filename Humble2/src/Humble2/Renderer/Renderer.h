@@ -153,10 +153,10 @@ namespace HBL2
 		RendererStats& GetStatsForDisplay() { return m_PreviousStats; }
 		void SwapAndResetStats() { (m_PreviousStats = m_CurrentStats, m_CurrentStats.Reset()); }
 
-		const Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
-		const Handle<RenderPass> GetRenderingRenderPass() const { return m_RenderingRenderPass; }
-		virtual Handle<FrameBuffer> GetMainFrameBuffer() = 0;
-
+		virtual Handle<RenderPass> GetMainRenderPass() = 0;
+        virtual Handle<RenderPass> GetImGuiRenderPass() = 0;
+        virtual Handle<RenderPass> GetRenderingRenderPass() = 0;
+        
 		virtual Handle<BindGroup> GetShadowBindings() = 0;
 		virtual Handle<BindGroup> GetGlobalBindings2D() = 0;
 		virtual Handle<BindGroup> GetGlobalBindings3D() = 0;
@@ -210,9 +210,6 @@ namespace HBL2
 		Handle<BindGroupLayout> m_EmptyBindingsLayout;
 
 		Handle<BindGroup> m_EmptyBindings;
-
-		Handle<RenderPass> m_RenderPass;
-		Handle<RenderPass> m_RenderingRenderPass;
 
 		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 

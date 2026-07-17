@@ -7,7 +7,6 @@ namespace HBL2
 	VulkanRenderPass::VulkanRenderPass(const RenderPassDescriptor&& desc)
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
-		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
 		DebugName = desc.debugName;
@@ -127,5 +126,66 @@ namespace HBL2
 		};		
 
 		VK_VALIDATE(vkCreateRenderPass(device->Get(), &renderPassInfo, nullptr, &RenderPass), "vkCreateRenderPass");
+        
+        // Abort frame buffer creation if width or height are 0.
+        if (desc.frameBufferDesc.width == 0 || desc.frameBufferDesc.height == 0)
+        {
+            return;
+        }
+        
+        CreateFrameBuffer(std::forward<const FrameBufferDescriptor>(desc.frameBufferDesc));
 	}
+
+    void VulkanRenderPass::CreateFrameBuffer(const FrameBufferDescriptor&& desc)
+    {
+        Width = desc.width;
+        Height = desc.height;
+        ColorTargets = desc.colorTargets;
+        DepthTarget = desc.depthTarget;
+        
+        VulkanDevice* device = (VulkanDevice*)Device::Instance;
+        VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
+
+        if (FrameBuffer != VK_NULL_HANDLE)
+        {
+            vkDestroyFramebuffer(device->Get(), FrameBuffer, nullptr);
+        }
+
+        std::vector<VkImageView> attachments;
+
+        for (const auto& colorTarget : ColorTargets)
+        {
+            if (colorTarget.IsValid())
+            {
+                VulkanTexture* colorTexture = rm->GetTexture(colorTarget);
+                attachments.push_back(colorTexture->ImageView);
+            }
+        }
+
+        if (DepthTarget.IsValid())
+        {
+            VulkanTexture* depthTexture = rm->GetTexture(DepthTarget);
+            attachments.push_back(depthTexture->ImageView);
+        }
+
+        if (RenderPass == VK_NULL_HANDLE)
+        {
+            HBL2_CORE_ERROR("RenderPass handle provided in framebuffer: {}, is invalid.", DebugName);
+            return;
+        }
+
+        VkFramebufferCreateInfo frameBufferInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .pNext = nullptr,
+            .renderPass = RenderPass,
+            .attachmentCount = (uint32_t)attachments.size(),
+            .pAttachments = attachments.data(),
+            .width = Width,
+            .height = Height,
+            .layers = 1,
+        };
+
+        VK_VALIDATE(vkCreateFramebuffer(device->Get(), &frameBufferInfo, nullptr, &FrameBuffer), "vkCreateFramebuffer");
+    }
 }

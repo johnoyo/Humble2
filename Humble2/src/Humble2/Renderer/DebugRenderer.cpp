@@ -62,30 +62,23 @@ namespace HBL2
 					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
 				},
 			},
-		});
-
-		m_DebugFrameBuffer = m_ResourceManager->CreateFrameBuffer({
-			.debugName = "debug-viewport-fb",
-			.width = Window::Instance->GetExtents().x,
-			.height = Window::Instance->GetExtents().y,
-			.renderPass = m_DebugRenderPass,
-			.depthTarget = Renderer::Instance->MainDepthTexture,
-			.colorTargets = { Renderer::Instance->MainColorTexture },
+            .frameBufferDesc = {
+                .width = Window::Instance->GetExtents().x,
+                .height = Window::Instance->GetExtents().y,
+                .depthTarget = Renderer::Instance->MainDepthTexture,
+                .colorTargets = { Renderer::Instance->MainColorTexture },
+            }
 		});
 
 		// Resize debug draw framebuffer callback.
 		Renderer::Instance->AddCallbackOnResize("Resize-Debug-FrameBuffer", [this](uint32_t width, uint32_t height)
 		{
-			m_ResourceManager->DeleteFrameBuffer(m_DebugFrameBuffer);
-
-			m_DebugFrameBuffer = m_ResourceManager->CreateFrameBuffer({
-				.debugName = "debug-viewport-fb",
-				.width = width,
-				.height = height,
-				.renderPass = m_DebugRenderPass,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->MainColorTexture },
-			});
+            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DebugRenderPass, {
+                .width = width,
+                .height = height,
+                .depthTarget = Renderer::Instance->MainDepthTexture,
+                .colorTargets = { Renderer::Instance->MainColorTexture },
+            });
 		});
 
 		// Debug vertex buffers.
@@ -303,7 +296,7 @@ namespace HBL2
 		Handle<BindGroup> globalBindings = Renderer::Instance->GetDebugBindings();
 		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&cameraMVP);
 
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DebugRenderPass, m_DebugFrameBuffer);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DebugRenderPass);
 
 		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
 		passRenderer->DrawSubPass(globalDrawStream, renderData->Draws);
@@ -319,7 +312,6 @@ namespace HBL2
 
 		m_ResourceManager->DeleteRenderPassLayout(m_DebugRenderPassLayout);
 		m_ResourceManager->DeleteRenderPass(m_DebugRenderPass);
-		m_ResourceManager->DeleteFrameBuffer(m_DebugFrameBuffer);
 
 		m_ResourceManager->DeleteShader(m_DebugShader);
 		m_ResourceManager->DeleteMaterial(m_DebugLineMaterial);

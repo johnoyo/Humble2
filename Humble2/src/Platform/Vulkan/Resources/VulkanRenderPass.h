@@ -20,10 +20,13 @@ namespace HBL2
 		VulkanRenderPass() = default;
 		VulkanRenderPass(const RenderPassDescriptor&& desc);
 
+        void CreateFrameBuffer(const FrameBufferDescriptor&& desc);
+        
 		void Destroy()
 		{
 			VulkanDevice* device = (VulkanDevice*)Device::Instance;
 			vkDestroyRenderPass(device->Get(), RenderPass, nullptr);
+            vkDestroyFramebuffer(device->Get(), FrameBuffer, nullptr);
 		}
 
 		const char* DebugName = "";
@@ -36,5 +39,12 @@ namespace HBL2
 
 		bool StencilClearValue = false;
 		uint32_t ClearStencil = 0;
+        
+        // FrameBuffer data.
+        VkFramebuffer FrameBuffer = VK_NULL_HANDLE;
+        uint32_t Width = 0;
+        uint32_t Height = 0;
+        std::vector<Handle<Texture>> ColorTargets;
+        Handle<Texture> DepthTarget;
 	};
 }

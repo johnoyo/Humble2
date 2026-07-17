@@ -24,7 +24,7 @@ namespace HBL2
 			  m_BlockFence(commandBufferCreateInfo.blockFence), m_WaitSemaphore(commandBufferCreateInfo.waitSemaphore),
 			  m_SignalSemaphore(commandBufferCreateInfo.signalSemaphore) {}
 
-		virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer, Viewport&& drawArea = {}) override;
+		virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Viewport&& drawArea = {}) override;
 		virtual void EndRenderPass(const RenderPassRenderer& renderPassRenderer) override;
 
 		virtual ComputePassRenderer* BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite) override;

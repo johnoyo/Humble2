@@ -68,7 +68,9 @@ namespace HBL2
 		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalPresentBindings; }
 		virtual Handle<BindGroup> GetDebugBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].DebugBindings; }
 
-		virtual Handle<FrameBuffer> GetMainFrameBuffer() override { return m_FrameBuffers[m_SwapchainImageIndex]; }
+        virtual Handle<RenderPass> GetMainRenderPass() override { return m_RenderPasses[m_SwapchainImageIndex]; }
+        virtual Handle<RenderPass> GetImGuiRenderPass() override { return m_ImGuiRenderPasses[m_SwapchainImageIndex]; }
+		virtual Handle<RenderPass> GetRenderingRenderPass() override { return m_RenderingRenderPass; }
 
 		const VmaAllocator& GetAllocator() const { return m_Allocator; } // TODO: Move to VulkanResourceManager
 
@@ -98,8 +100,7 @@ namespace HBL2
 		void CreateSyncStructures();
 		void CreateCommands();
 		void CreateUploadContextCommands();
-		void CreateRenderPass();
-		void CreateFrameBuffers();
+		void CreateRenderPasses();
 		void CreateDescriptorPool();
 		void CreateDescriptorSets();
 
@@ -137,7 +138,9 @@ namespace HBL2
 		Handle<Texture> m_DepthImage;
 		std::vector<Handle<Texture>> m_SwapChainColorTextures;
 
-		std::vector<Handle<FrameBuffer>> m_FrameBuffers;
+        std::vector<Handle<RenderPass>> m_RenderPasses;
+        std::vector<Handle<RenderPass>> m_ImGuiRenderPasses;
+		Handle<RenderPass> m_RenderingRenderPass;
 
 		VkDescriptorPool m_DescriptorPool;
 		VkDescriptorSet m_ColorAttachmentID = VK_NULL_HANDLE;

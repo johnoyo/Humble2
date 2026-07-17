@@ -31,8 +31,7 @@ namespace HBL2
 		CreateImageViews();
 		CreateSyncStructures();
 		CreateCommands();
-		CreateRenderPass();
-		CreateFrameBuffers();
+		CreateRenderPasses();
 		CreateDescriptorPool();
 		CreateDescriptorSets();
 	}
@@ -180,12 +179,6 @@ namespace HBL2
 
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 
-		VkRenderPass renderPass = m_ResourceManager->GetRenderPass(m_RenderPass)->RenderPass;
-		vkDestroyRenderPass(m_Device->Get(), renderPass, nullptr);
-
-		VkRenderPass renderingRenderPass = m_ResourceManager->GetRenderPass(m_RenderingRenderPass)->RenderPass;
-		vkDestroyRenderPass(m_Device->Get(), renderingRenderPass, nullptr);
-
 		m_ResourceManager->DeleteBindGroupLayout(m_ShadowBindingsLayout);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
@@ -210,13 +203,22 @@ namespace HBL2
 			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].GlobalPresentBindings);
 			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].DebugBindings);
 		}
+        
+        const uint32_t swapChainImageCount = (uint32_t)m_SwapChainImages.size();
 
-		for (int i = 0; i < m_FrameBuffers.size(); i++)
+		for (int i = 0; i < swapChainImageCount; i++)
 		{
-			VulkanFrameBuffer* vkFrameBuffer = m_ResourceManager->GetFrameBuffer(m_FrameBuffers[i]);
-			vkDestroyFramebuffer(m_Device->Get(), vkFrameBuffer->FrameBuffer, nullptr);
-			vkDestroyImageView(m_Device->Get(), m_SwapChainImageViews[i], nullptr);
-		}
+			VulkanRenderPass* vkRenderPass = m_ResourceManager->GetRenderPass(m_RenderPasses[i]);
+            vkRenderPass->Destroy();
+            
+            VulkanRenderPass* vkImGuiRenderPass = m_ResourceManager->GetRenderPass(m_ImGuiRenderPasses[i]);
+            vkImGuiRenderPass->Destroy();
+            
+            vkDestroyImageView(m_Device->Get(), m_SwapChainImageViews[i], nullptr);
+        }
+        
+        VulkanRenderPass* vkRenderingRenderPass = m_ResourceManager->GetRenderPass(m_RenderingRenderPass);
+        vkRenderingRenderPass->Destroy();
 
 		for (int i = 0; i < m_SwapChainColorTextures.size(); i++)
 		{
@@ -238,7 +240,7 @@ namespace HBL2
 	{
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(GetMainRenderPass(), GetMainFrameBuffer());
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(GetMainRenderPass());
 		commandBuffer->EndRenderPass(*passRenderer);
 
 		commandBuffer->EndCommandRecording();
@@ -359,12 +361,18 @@ namespace HBL2
 		VkSwapchainKHR oldSwapchain = m_SwapChain;
 
 		// Cleanup old swapchain resources.
-		for (auto frameBuffer : m_FrameBuffers)
+		for (auto rp : m_RenderPasses)
 		{
-			m_ResourceManager->DeleteFrameBuffer(frameBuffer);
+			m_ResourceManager->DeleteRenderPass(rp);
 		}
+        for (auto rp : m_ImGuiRenderPasses)
+        {
+            m_ResourceManager->DeleteRenderPass(rp);
+        }
+        m_ResourceManager->DeleteRenderPass(m_RenderingRenderPass);
 
-		m_FrameBuffers.clear();
+        m_RenderPasses.clear();
+        m_ImGuiRenderPasses.clear();
 
 		for (auto imageView : m_SwapChainImageViews)
 		{
@@ -394,7 +402,7 @@ namespace HBL2
 		// Recreate swapchain and associated resources.
 		CreateSwapchain(oldSwapchain);
 		CreateImageViews();
-		CreateFrameBuffers();
+		CreateRenderPasses();
 
 		// Destroy the old swapchain.
 		vkDestroySwapchainKHR(m_Device->Get(), oldSwapchain, nullptr);
@@ -768,80 +776,105 @@ namespace HBL2
 		}
 	}
 
-	void VulkanRenderer::CreateRenderPass()
+	void VulkanRenderer::CreateRenderPasses()
 	{
-		Handle<RenderPassLayout> renderPassLayout = ResourceManager::Instance->CreateRenderPassLayout({
-			.debugName = "main-renderpass-layout",
-			.depthTargetFormat = Format::D32_FLOAT,
-			.subPasses = {
-				{ .depthTarget = true, .colorTargets = 1, },
-			},
-		});
-
-		m_RenderPass = ResourceManager::Instance->CreateRenderPass({
-			.debugName = "main-renderpass",
-			.layout = renderPassLayout,
-			.depthTarget = {
-				.loadOp = LoadOperation::CLEAR,
-				.storeOp = StoreOperation::STORE,
-				.stencilLoadOp = LoadOperation::DONT_CARE,
-				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::UNDEFINED,
-				.nextUsage = TextureLayout::DEPTH_STENCIL,
-			},
-			.colorTargets = {
-				{
-					.loadOp = LoadOperation::CLEAR,
-					.storeOp = StoreOperation::STORE,
-					.prevUsage = TextureLayout::UNDEFINED,
-					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
-				},
-			},
-		});
-
-		m_RenderingRenderPass = ResourceManager::Instance->CreateRenderPass({
-			.debugName = "main-renderpass",
-			.layout = renderPassLayout,
-			.depthTarget = {
-				.loadOp = LoadOperation::CLEAR,
-				.storeOp = StoreOperation::STORE,
-				.stencilLoadOp = LoadOperation::DONT_CARE,
-				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::UNDEFINED,
-				.nextUsage = TextureLayout::DEPTH_STENCIL,
-			},
-			.colorTargets = {
-				{
-					.format = Format::RGBA16_FLOAT,
-					.loadOp = LoadOperation::CLEAR,
-					.storeOp = StoreOperation::STORE,
-					.prevUsage = TextureLayout::UNDEFINED,
-					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
-				},
-			},
-		});
-	}
-
-	void VulkanRenderer::CreateFrameBuffers()
-	{
-		VulkanTexture* vulkanDepthImage = m_ResourceManager->GetTexture(m_DepthImage);
-		VulkanRenderPass* vkRenderPass = m_ResourceManager->GetRenderPass(m_RenderPass);
-
 		// Grab how many images we have in the swapchain.
-		const uint32_t swapChainImageCount = m_SwapChainImages.size();
-		m_FrameBuffers = std::vector<Handle<FrameBuffer>>(swapChainImageCount);
+		const uint32_t swapChainImageCount = (uint32_t)m_SwapChainImages.size();
+        
+        m_RenderPasses = std::vector<Handle<RenderPass>>(swapChainImageCount);
+        m_ImGuiRenderPasses = std::vector<Handle<RenderPass>>(swapChainImageCount);
 
+        Handle<RenderPassLayout> renderPassLayout = ResourceManager::Instance->CreateRenderPassLayout({
+            .debugName = "main-renderpass-layout",
+            .depthTargetFormat = Format::D32_FLOAT,
+            .subPasses = {
+                { .depthTarget = true, .colorTargets = 1, },
+            },
+        });
+        
 		for (int i = 0; i < swapChainImageCount; i++)
 		{
-			m_FrameBuffers[i] = m_ResourceManager->CreateFrameBuffer({
-				.debugName = "swapchain-framebuffer",
-				.width = m_SwapChainExtent.width,
-				.height = m_SwapChainExtent.height,
-				.renderPass = m_RenderPass,
-				.depthTarget = m_DepthImage,
-				.colorTargets = { m_SwapChainColorTextures[i] },
-			});
+            // Render passes for main swapchain rendering.
+            m_RenderPasses[i] = ResourceManager::Instance->CreateRenderPass({
+                .debugName = "main-renderpass",
+                .layout = renderPassLayout,
+                .depthTarget = {
+                    .loadOp = LoadOperation::CLEAR,
+                    .storeOp = StoreOperation::STORE,
+                    .stencilLoadOp = LoadOperation::DONT_CARE,
+                    .stencilStoreOp = StoreOperation::DONT_CARE,
+                    .prevUsage = TextureLayout::UNDEFINED,
+                    .nextUsage = TextureLayout::DEPTH_STENCIL,
+                },
+                .colorTargets = {
+                    {
+                        .loadOp = LoadOperation::CLEAR,
+                        .storeOp = StoreOperation::STORE,
+                        .prevUsage = TextureLayout::UNDEFINED,
+                        .nextUsage = TextureLayout::RENDER_ATTACHMENT,
+                    },
+                },
+                .frameBufferDesc = {
+                    .width = m_SwapChainExtent.width,
+                    .height = m_SwapChainExtent.height,
+                    .depthTarget = m_DepthImage,
+                    .colorTargets = { m_SwapChainColorTextures[i] },
+                }
+            });
+            
+            // Render passes for imgui rendering.
+            m_ImGuiRenderPasses[i] = m_ResourceManager->CreateRenderPass({
+                .debugName = "imgui-renderpass",
+                .layout = renderPassLayout,
+                .depthTarget = {
+                    .loadOp = LoadOperation::LOAD,
+                    .storeOp = StoreOperation::STORE,
+                    .stencilLoadOp = LoadOperation::DONT_CARE,
+                    .stencilStoreOp = StoreOperation::DONT_CARE,
+                    .prevUsage = TextureLayout::DEPTH_STENCIL,
+                    .nextUsage = TextureLayout::DEPTH_STENCIL,
+                },
+                .colorTargets = {
+                    {
+                        .loadOp = LoadOperation::LOAD,
+                        .storeOp = StoreOperation::STORE,
+                        .prevUsage = TextureLayout::RENDER_ATTACHMENT,
+                        .nextUsage = TextureLayout::PRESENT,
+                    },
+                },
+                .frameBufferDesc = {
+                    .width = m_SwapChainExtent.width,
+                    .height = m_SwapChainExtent.height,
+                    .depthTarget = m_DepthImage,
+                    .colorTargets = { m_SwapChainColorTextures[i] },
+                }
+            });
 		}
+        
+        // Render passes for offscreen rendering.
+        // We only need that to pass the VkRenderPass to the shader creation in the EditorAssetManager flow.
+        // So no need to create a FrameBuffer here at all or have it per frame in flight.
+        m_RenderingRenderPass = m_ResourceManager->CreateRenderPass({
+            .debugName = "rendering-renderpass",
+            .layout = renderPassLayout,
+            .depthTarget = {
+                .loadOp = LoadOperation::CLEAR,
+                .storeOp = StoreOperation::STORE,
+                .stencilLoadOp = LoadOperation::DONT_CARE,
+                .stencilStoreOp = StoreOperation::DONT_CARE,
+                .prevUsage = TextureLayout::UNDEFINED,
+                .nextUsage = TextureLayout::DEPTH_STENCIL,
+            },
+            .colorTargets = {
+                {
+                    .format = Format::RGBA16_FLOAT,
+                    .loadOp = LoadOperation::CLEAR,
+                    .storeOp = StoreOperation::STORE,
+                    .prevUsage = TextureLayout::UNDEFINED,
+                    .nextUsage = TextureLayout::RENDER_ATTACHMENT,
+                },
+            },
+        });
 	}
 
 	void VulkanRenderer::CreateDescriptorPool()
@@ -867,7 +900,7 @@ namespace HBL2
 
 		VK_VALIDATE(vkCreateDescriptorPool(m_Device->Get(), &tDescriptorPoolInfo, NULL, &m_DescriptorPool), "vkCreateDescriptorPool");
 
-		m_MainDeletionQueue.PushFunction([=]()
+		m_MainDeletionQueue.PushFunction([this]()
 		{
 			vkDestroyDescriptorPool(m_Device->Get(), m_DescriptorPool, nullptr);
 		});
@@ -898,7 +931,7 @@ namespace HBL2
 
 		// Bindings for shadow rendering.
 		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
-		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), uniformOffset);
+		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), (uint32_t)uniformOffset);
 
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{

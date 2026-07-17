@@ -6,7 +6,7 @@
 
 namespace HBL2
 {
-    RenderPassRenderer* VulkanCommandBuffer::BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer, Viewport&& drawArea)
+    RenderPassRenderer* VulkanCommandBuffer::BeginRenderPass(Handle<RenderPass> renderPass, Viewport&& drawArea)
     {
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
@@ -20,18 +20,11 @@ namespace HBL2
 
 		VulkanRenderPass* vkRenderPass = rm->GetRenderPass(renderPass);
 
-		if (!frameBuffer.IsValid())
-		{
-			return &m_CurrentRenderPassRenderer;
-		}
-
-		VulkanFrameBuffer* vkFrameBuffer = rm->GetFrameBuffer(frameBuffer);
-
 		if (!drawArea.IsValid())
 		{
 			drawArea =
 			{
-				0, 0, vkFrameBuffer->Width, vkFrameBuffer->Height
+				0, 0, vkRenderPass->Width, vkRenderPass->Height
 			};
 		}
 
@@ -59,8 +52,8 @@ namespace HBL2
 			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 			.pNext = nullptr,
 			.renderPass = vkRenderPass->RenderPass,
-			.framebuffer = vkFrameBuffer->FrameBuffer,
-			.renderArea = 
+			.framebuffer = vkRenderPass->FrameBuffer,
+			.renderArea =
 			{
 				.offset = { (int32_t)drawArea.x, (int32_t)drawArea.y },
 				.extent = { drawArea.width, drawArea.height },
