@@ -16,7 +16,7 @@ namespace HBL2
 	{
 		OpenGLFrameBuffer() = default;
 		OpenGLFrameBuffer(const FrameBufferDescriptor&& desc)
-			: DebugName(desc.debugName), Width(desc.width), Height(desc.height), ColorTargets(desc.colorTargets), DepthTarget(desc.depthTarget)
+			: Width(desc.width), Height(desc.height), ColorTargets(desc.colorTargets), DepthTarget(desc.depthTarget)
 		{
 			Create();
 		}

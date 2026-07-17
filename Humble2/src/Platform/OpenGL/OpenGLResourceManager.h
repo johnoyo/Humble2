@@ -47,12 +47,6 @@ namespace HBL2
 		virtual void MapBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset = 0, intptr_t size = 0) override;
 		OpenGLBuffer* GetBuffer(Handle<Buffer> handle) const;
 
-		// Framebuffers
-		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) override;
-		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) override;
-		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) override;
-		OpenGLFrameBuffer* GetFrameBuffer(Handle<FrameBuffer> handle) const;
-
 		// Shaders
 		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) override;
 		virtual void RecompileShader(Handle<Shader> handle, const ShaderDescriptor&& desc) override;
@@ -89,7 +83,6 @@ namespace HBL2
 		Pool<OpenGLTexture, Texture> m_TexturePool;
 		Pool<OpenGLBuffer, Buffer> m_BufferPool;
 		Pool<OpenGLShader, Shader> m_ShaderPool;
-		Pool<OpenGLFrameBuffer, FrameBuffer> m_FrameBufferPool;
 		Pool<OpenGLBindGroup, BindGroup> m_BindGroupPool;
 		Pool<OpenGLBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
 		Pool<OpenGLRenderPass, RenderPass> m_RenderPassPool;

@@ -13,7 +13,6 @@ namespace HBL2
 		m_TexturePool.Initialize(m_Spec.Textures);
 		m_BufferPool.Initialize(m_Spec.Buffers);
 		m_ShaderPool.Initialize(m_Spec.Shaders);
-		m_FrameBufferPool.Initialize(m_Spec.FrameBuffers);
 		m_BindGroupPool.Initialize(m_Spec.BindGroups);
 		m_BindGroupLayoutPool.Initialize(m_Spec.BindGroupLayouts);
 		m_RenderPassPool.Initialize(m_Spec.RenderPass);
@@ -25,7 +24,6 @@ namespace HBL2
 		{
 			.Textures = m_TexturePool.FreeSlotCount(),
 			.Buffers = m_BufferPool.FreeSlotCount(),
-			.FrameBuffers = m_FrameBufferPool.FreeSlotCount(),
 			.Shaders = m_ShaderPool.FreeSlotCount(),
 			.BindGroups = m_BindGroupPool.FreeSlotCount(),
 			.BindGroupLayouts = m_BindGroupLayoutPool.FreeSlotCount(),
@@ -191,38 +189,6 @@ namespace HBL2
 	OpenGLBuffer* OpenGLResourceManager::GetBuffer(Handle<Buffer> handle) const
 	{
 		return m_BufferPool.Get(handle);
-	}
-
-	// Framebuffers
-	Handle<FrameBuffer> OpenGLResourceManager::CreateFrameBuffer(const FrameBufferDescriptor&& desc)
-	{
-		return m_FrameBufferPool.Insert(std::forward<const FrameBufferDescriptor>(desc));
-	}
-	void OpenGLResourceManager::DeleteFrameBuffer(Handle<FrameBuffer> handle)
-	{
-		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
-		{
-			OpenGLFrameBuffer* framebuffer = GetFrameBuffer(handle);
-			if (framebuffer != nullptr)
-			{
-				framebuffer->Destroy();
-				m_FrameBufferPool.Remove(handle);
-			}
-		});
-	}
-	void OpenGLResourceManager::ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height)
-	{
-		if (!handle.IsValid())
-		{
-			return;
-		}
-
-		OpenGLFrameBuffer* frameBuffer = GetFrameBuffer(handle);
-		frameBuffer->Resize(width, height);
-	}
-	OpenGLFrameBuffer* OpenGLResourceManager::GetFrameBuffer(Handle<FrameBuffer> handle) const
-	{
-		return m_FrameBufferPool.Get(handle);
 	}
 
 	// Shaders
