@@ -6,7 +6,7 @@
 
 namespace HBL2
 {
-	struct CommandBufferCreateInfo
+	struct VkCommandBufferCreateInfo
 	{
 		CommandBufferType type;
 		VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
@@ -19,7 +19,7 @@ namespace HBL2
 	{
 	public:
 		VulkanCommandBuffer() = default;
-		VulkanCommandBuffer(const CommandBufferCreateInfo&& commandBufferCreateInfo) 
+		VulkanCommandBuffer(const VkCommandBufferCreateInfo&& commandBufferCreateInfo) 
 			: m_Type(commandBufferCreateInfo.type), CommandBuffer(commandBufferCreateInfo.commandBuffer),
 			  m_BlockFence(commandBufferCreateInfo.blockFence), m_WaitSemaphore(commandBufferCreateInfo.waitSemaphore),
 			  m_SignalSemaphore(commandBufferCreateInfo.signalSemaphore) {}

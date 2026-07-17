@@ -28,8 +28,6 @@ namespace HBL2
         virtual void Clean() override;
 
     private:
-        Handle<RenderPass> m_ImGuiRenderPass;
-
         MetalDevice* m_Device = nullptr;
         MetalRenderer* m_Renderer = nullptr;
         MetalResourceManager* m_ResourceManager = nullptr;

@@ -6,11 +6,16 @@
 #include "Scene/Components.h"
 #include "Renderer/Renderer.h"
 
+#include "MetalDevice.h"
 #include "MetalCommandBuffer.h"
 
 #include "MetalCommon.h"
 
 #include "Utilities/Collections/DeletionQueue.h"
+
+#include <Foundation/Foundation.hpp>
+#include <Metal/Metal.hpp>
+#include <QuartzCore/QuartzCore.hpp>
 
 namespace HBL2
 {
@@ -18,6 +23,10 @@ namespace HBL2
 
     struct MtlFrameData
     {
+        MTL4::CommandBuffer* MainCommandBuffer = nullptr;
+        MTL4::CommandBuffer* ImGuiCommandBuffer = nullptr;
+        MTL4::CommandAllocator* CommandAllocator = nullptr;
+        MTL4::ArgumentTable* GlobalArgumentTable = nullptr;
     };
 
     class MetalRenderer final : public Renderer
@@ -50,7 +59,11 @@ namespace HBL2
         
         virtual const uint32_t GetFrameIndex() const override { return m_FrameNumber.load() % FRAME_OVERLAP; }
         
+        MtlFrameData& GetCurrentFrame() { return m_MtlFrames[m_FrameNumber.load() % FRAME_OVERLAP]; }
         const MtlFrameData& GetCurrentFrame() const { return m_MtlFrames[m_FrameNumber.load() % FRAME_OVERLAP]; }
+        
+        MTL4::CommandQueue* GetCommandQueue() { return m_CommandQueue; }
+        const MTL4::CommandQueue* GetCommandQueue() const { return m_CommandQueue; }
         
     protected:
         virtual void PreInitialize() override;
@@ -60,6 +73,14 @@ namespace HBL2
         
         
     private:
-        MtlFrameData m_MtlFrames[FRAME_OVERLAP];
+        MetalDevice* m_Device = nullptr;
+        MTL4::CommandQueue* m_CommandQueue = nullptr;
+        std::array<MtlFrameData, FRAME_OVERLAP> m_MtlFrames;
+        MTL::ResidencySet* m_ResidencySet = nullptr;
+        std::array<MTL::Texture*, FRAME_OVERLAP> m_DepthTextures;
+        MTL::SharedEvent* m_FrameAvailableSharedEvent = nullptr;
+        
+        std::array<MetalCommandBuffer, FRAME_OVERLAP> m_MainCommandBuffers;
+        std::array<MetalCommandBuffer, FRAME_OVERLAP> m_ImGuiCommandBuffers;
     };
 }

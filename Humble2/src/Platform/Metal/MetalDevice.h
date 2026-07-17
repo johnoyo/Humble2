@@ -25,7 +25,11 @@ namespace HBL2
         virtual bool HasContext() override { return true; }
         virtual void SetContext(ContextType ctxType) override {}
         
+        MTL::Device* Get() { return m_Device; }
         const MTL::Device* Get() const { return m_Device; }
+        
+        CA::MetalLayer* GetMetalLayer() { return m_MetalLayer; }
+        const CA::MetalLayer* GetMetalLayer() const { return m_MetalLayer; }
         
     private:
         MTL::Device* m_Device = nullptr;

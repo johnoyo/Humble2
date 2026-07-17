@@ -4,11 +4,16 @@
 #include "MetalRenderPassRenderer.h"
 #include "MetalComputePassRenderer.h"
 
+#include <Foundation/Foundation.hpp>
+#include <Metal/Metal.hpp>
+#include <QuartzCore/QuartzCore.hpp>
+
 namespace HBL2
 {
     struct MtlCommandBufferCreateInfo
     {
         CommandBufferType type;
+        MTL4::CommandBuffer* commandBuffer = nullptr;
     };
 
     class MetalCommandBuffer final : public CommandBuffer
@@ -25,5 +30,10 @@ namespace HBL2
 
         virtual void EndCommandRecording() override;
         virtual void Submit() override;
+        
+        MTL4::CommandBuffer* CommandBuffer = nullptr;
+        
+    private:
+        CommandBufferType m_Type;
     };
 }

@@ -1,7 +1,7 @@
 #include "MetalImGuiRenderer.h"
 
 #include <imgui_impl_glfw.h>
-#include <imgui_impl_metal.h>
+#include <imgui_impl_metal4.h>
 
 #include "Core/Input.h"
 
@@ -14,7 +14,7 @@ namespace HBL2
         m_ResourceManager = (MetalResourceManager*)ResourceManager::Instance;
 
         ImGui_ImplGlfw_InitForOther(Window::Instance->GetHandle(), true);
-        ImGui_ImplMetal_Init((MTL::Device*)m_Device->Get());
+        ImGui_ImplMetal4_Init(m_Device->Get(), m_Renderer->GetCommandQueue(), FRAME_OVERLAP);
     }
 
     void MetalImGuiRenderer::BeginFrame()
@@ -34,18 +34,13 @@ namespace HBL2
     {
         ImDrawData* data = (ImDrawData*)&frameData.ImGuiRenderData.DrawData;
 
-        ImGui_ImplMetal_NewFrame(nullptr);
+        // TODO: Construct a MTL4::RenderPassDescriptor from the m_Renderer->GetImGuiRenderPass().
+        ImGui_ImplMetal4_NewFrame(nullptr, m_Renderer->GetFrameIndex());
 
         CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI);
         RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_Renderer->GetImGuiRenderPass());
 
-        {
-            // Lock the queue here since the imgui function may mess with it.
-            //std::lock_guard<std::mutex> lock(m_Renderer->GetGraphicsQueueMutex());
-            //ImGui_ImplVulkan_RenderDrawData(data, m_Renderer->GetCurrentFrame().ImGuiCommandBuffer);
-            
-            ImGui_ImplMetal_RenderDrawData(data, nullptr, nullptr);
-        }
+        ImGui_ImplMetal4_RenderDrawData(data, m_Renderer->GetCurrentFrame().ImGuiCommandBuffer, ((MetalRenderPassRenderer*)renderPassRenderer)->Encoder);
 
         commandBuffer->EndRenderPass(*renderPassRenderer);
         commandBuffer->EndCommandRecording();
@@ -56,7 +51,7 @@ namespace HBL2
     {
         m_Renderer->ClearFrameDataBuffer();
 
-        ImGui_ImplMetal_Shutdown();
+        ImGui_ImplMetal4_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
     }
