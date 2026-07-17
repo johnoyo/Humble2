@@ -2,7 +2,7 @@
 
 #include "Asset/EditorAssetManager.h"
 
-#ifdef HBL2_PLATFORM_WINDOWS
+#ifdef false
     #include "Platform/OpenGL/OpenGLResourceManager.h"
     #include "Platform/Vulkan/VulkanResourceManager.h"
 #endif
