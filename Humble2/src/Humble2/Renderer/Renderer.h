@@ -148,7 +148,7 @@ namespace HBL2
 		RenderPassPool& GetRenderPassPool() { return m_RenderPassPool; }
 
 		virtual const uint32_t GetFrameIndex() const = 0;
-		const uint32_t GetFrameNumber() const { return m_FrameNumber.load(); }
+		const uint64_t GetFrameNumber() const { return m_FrameNumber.load(); }
 		RendererStats& GetStats() { return m_CurrentStats; }
 		RendererStats& GetStatsForDisplay() { return m_PreviousStats; }
 		void SwapAndResetStats() { (m_PreviousStats = m_CurrentStats, m_CurrentStats.Reset()); }
@@ -196,7 +196,7 @@ namespace HBL2
 		virtual void PostInitialize() = 0;
 
 	protected:
-		std::atomic_int32_t m_FrameNumber = { 0 };
+		std::atomic_int64_t m_FrameNumber = { 0 };
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::NONE;
 		RendererStats m_CurrentStats{};
 		RendererStats m_PreviousStats{};

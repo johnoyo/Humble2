@@ -60,7 +60,7 @@ namespace HBL2
 
 	void VulkanWindow::Setup()
 	{
-		// No extra context windows for worker threads in vulkan,
+		// No extra context windows for worker threads in vulkan.
 		for (int i = 0; i < MAX_WORKERS; ++i)
 		{
 			m_WorkerWindows[i] = nullptr;

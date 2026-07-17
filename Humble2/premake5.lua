@@ -66,6 +66,12 @@ project "Humble2"
         systemversion "latest"    
         defines { "HBL2_PLATFORM_WINDOWS", table.unpack(JoltDefines) }
 
+        removefiles
+        {
+            "src/Platform/Metal/**.h",
+            "src/Platform/Metal/**.cpp"
+        }
+
         libdirs
         {
             "../Dependencies/GLFW/glfw-3.4.bin.WIN64/lib-vc2022",
@@ -209,10 +215,10 @@ project "Humble2"
 
     filter "system:macosx"
         systemversion "latest"    
-        defines { "HBL2_PLATFORM_MACOS", table.unpack(JoltDefinesArm) }
+        defines { "HBL2_PLATFORM_MACOS", "IMGUI_IMPL_METAL_CPP", table.unpack(JoltDefinesArm) }
 
         files 
-        { 
+        {
             "src/**.mm",
         }
 
@@ -349,6 +355,12 @@ project "Humble2"
         {
             "src/Platform/OpenGL/**.h",
             "src/Platform/OpenGL/**.cpp"
+        }
+
+        removefiles
+        {
+            "src/Platform/Metal/**.h",
+            "src/Platform/Metal/**.cpp"
         }
 
         runpathdirs
