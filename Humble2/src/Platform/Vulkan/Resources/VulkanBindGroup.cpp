@@ -171,7 +171,7 @@ namespace HBL2
 			};
 		}
 
-		vkUpdateDescriptorSets(device->Get(), writeDescriptorSet.size(), writeDescriptorSet.data(), 0, nullptr);
+		vkUpdateDescriptorSets(device->Get(), (uint32_t)writeDescriptorSet.size(), writeDescriptorSet.data(), 0, nullptr);
 	}
 
 	void VulkanBindGroup::Destroy()

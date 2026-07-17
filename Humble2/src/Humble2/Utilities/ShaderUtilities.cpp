@@ -109,7 +109,7 @@ namespace HBL2
     std::string ShaderUtilities::ReadFile(const std::string& filepath)
     {
         const auto& shaderFilePath = std::filesystem::path(filepath);
-        const auto& workingDir = Project::GetAssetDirectory().parent_path().parent_path();
+        const auto& workingDir = Project::GetProjectDirectory().parent_path();
         auto shaderPath = std::filesystem::exists(shaderFilePath) ? shaderFilePath : workingDir / shaderFilePath;
         
         if (!std::filesystem::exists(shaderPath))
@@ -166,19 +166,23 @@ namespace HBL2
         uint32_t workerIndex = JobSystem::Get().GetWorkerIndex();
 
         // Target description.
-        // NOTE: No GENERATE_WHOLE_PROGRAM, we want one SPIR-V binary per entry point.
         slang::TargetDesc targetDesc = {};
-        targetDesc.format = SLANG_SPIRV; // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/a2-01-spirv-target-specific.html
-        targetDesc.flags = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY;
 
         switch (target)
         {
-        case GraphicsAPI::OPENGL:
-            targetDesc.profile = g_SLangGlobalSessions[workerIndex]->findProfile("glsl_460");
-            break;
         case GraphicsAPI::VULKAN:
+            // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/a2-01-spirv-target-specific.html
+            targetDesc.format = SLANG_SPIRV;
+            targetDesc.flags = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY;
             targetDesc.profile = g_SLangGlobalSessions[workerIndex]->findProfile("spirv_1_3");
             break;
+        case GraphicsAPI::METAL:
+            targetDesc.format = SLANG_METAL_LIB;
+            targetDesc.profile = g_SLangGlobalSessions[workerIndex]->findProfile("metal_3_2");
+            break;
+        default:
+            HBL2_CORE_FATAL("Unsupported graphics backend!");
+            exit(-1);
         }
 
         // Session description.
@@ -187,32 +191,64 @@ namespace HBL2
 
         // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/08-compiling.html
 
-        std::array<slang::CompilerOptionEntry, 4> options =
+        switch (target)
         {
-            slang::CompilerOptionEntry
+        case GraphicsAPI::VULKAN:
             {
-                .name = slang::CompilerOptionName::EmitSpirvDirectly,
-                .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-            },
-            slang::CompilerOptionEntry
-            {
-                .name = slang::CompilerOptionName::VulkanUseEntryPointName,
-                .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-            },
-            slang::CompilerOptionEntry
-            {
-                .name = slang::CompilerOptionName::MatrixLayoutColumn,
-                .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
-            },
-            slang::CompilerOptionEntry
-            {
-                .name = slang::CompilerOptionName::Optimization,
-                .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                std::array<slang::CompilerOptionEntry, 4> options =
+                {
+                    slang::CompilerOptionEntry
+                    {
+                        .name = slang::CompilerOptionName::EmitSpirvDirectly,
+                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
+                    },
+                    slang::CompilerOptionEntry
+                    {
+                        .name = slang::CompilerOptionName::VulkanUseEntryPointName,
+                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
+                    },
+                    slang::CompilerOptionEntry
+                    {
+                        .name = slang::CompilerOptionName::MatrixLayoutColumn,
+                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
+                    },
+                    slang::CompilerOptionEntry
+                    {
+                        .name = slang::CompilerOptionName::Optimization,
+                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                    }
+                };
+                
+                sessionDesc.compilerOptionEntries = options.data();
+                sessionDesc.compilerOptionEntryCount = options.size();
+                
+                break;
             }
-        };
-
-        sessionDesc.compilerOptionEntries = options.data();
-        sessionDesc.compilerOptionEntryCount = options.size();
+        case GraphicsAPI::METAL:
+            {
+                std::array<slang::CompilerOptionEntry, 2> options =
+                {
+                    slang::CompilerOptionEntry
+                    {
+                        .name = slang::CompilerOptionName::MatrixLayoutColumn,
+                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
+                    },
+                    slang::CompilerOptionEntry
+                    {
+                        .name = slang::CompilerOptionName::Optimization,
+                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                    }
+                };
+                
+                sessionDesc.compilerOptionEntries = options.data();
+                sessionDesc.compilerOptionEntryCount = options.size();
+                
+                break;
+            }
+        default:
+            HBL2_CORE_FATAL("Unsupported graphics backend!");
+            exit(-1);
+        }
 
         sessionDesc.targets = &targetDesc;
         sessionDesc.targetCount = 1;
@@ -279,12 +315,26 @@ namespace HBL2
             return {};
         }
 
-        // Compile one SPIR-V binary per entry point, each in its own vector.
+        // Compile one binary per entry point, each in its own buffer.
         CompilationResultData compilationResultData;
 
         for (SlangInt i = 0; i < (SlangInt)entryPoints.size(); ++i)
         {
             const char* shaderStageName = nullptr;
+            const char* shaderStageExt = nullptr;
+            
+            switch (target)
+            {
+            case GraphicsAPI::VULKAN:
+                shaderStageExt = ".spv";
+                break;
+            case GraphicsAPI::METAL:
+                shaderStageExt = ".metallib";
+                break;
+            default:
+                HBL2_CORE_FATAL("Unsupported graphics backend!");
+                exit(-1);
+            }
 
             if (IsVertexStage(i, entryPointCount))
             {
@@ -308,7 +358,7 @@ namespace HBL2
             Arena* workerArena = JobSystem::Get().GetWorkerArena();
 
             // Cache path per entry point.
-            const auto& cachedPath = cacheDirectory / (shaderPath.filename().string() + ".cached." + shaderStageName + ".spv");
+            const auto& cachedPath = cacheDirectory / (shaderPath.filename().string() + ".cached." + shaderStageName + shaderStageExt);
 
             // Cache hit for this entry point.
             if (!forceRecompile)
@@ -317,30 +367,27 @@ namespace HBL2
                 if (in.is_open())
                 {
                     in.seekg(0, std::ios::end);
-                    auto size = in.tellg();
+                    size_t size = (size_t)in.tellg();
                     in.seekg(0, std::ios::beg);
 
                     CompilationResultData::ShaderCode* shaderCode = nullptr;
 
                     if (IsVertexStage(i, entryPointCount))
                     {
-                        compilationResultData.vertexShaderCode.ptr = (uint32_t*)workerArena->Alloc(size, alignof(uint32_t));
-                        compilationResultData.vertexShaderCode.size = (uint32_t)size / sizeof(uint32_t);
-
+                        compilationResultData.vertexShaderCode.ptr = (uint8_t*)workerArena->Alloc(size, alignof(uint8_t));
+                        compilationResultData.vertexShaderCode.size = size;
                         shaderCode = &compilationResultData.vertexShaderCode;
                     }
                     else if (IsFragmentStage(i, entryPointCount))
                     {
-                        compilationResultData.fragmentShaderCode.ptr = (uint32_t*)workerArena->Alloc(size, alignof(uint32_t));
-                        compilationResultData.fragmentShaderCode.size = (uint32_t)size / sizeof(uint32_t);
-
+                        compilationResultData.fragmentShaderCode.ptr = (uint8_t*)workerArena->Alloc(size, alignof(uint8_t));
+                        compilationResultData.fragmentShaderCode.size = size;
                         shaderCode = &compilationResultData.fragmentShaderCode;
                     }
                     else if (IsComputeStage(i, entryPointCount))
                     {
-                        compilationResultData.computeShaderCode.ptr = (uint32_t*)workerArena->Alloc(size, alignof(uint32_t));
-                        compilationResultData.computeShaderCode.size = (uint32_t)size / sizeof(uint32_t);
-
+                        compilationResultData.computeShaderCode.ptr = (uint8_t*)workerArena->Alloc(size, alignof(uint8_t));
+                        compilationResultData.computeShaderCode.size = size;
                         shaderCode = &compilationResultData.computeShaderCode;
                     }
 
@@ -360,7 +407,8 @@ namespace HBL2
                     HBL2_CORE_ERROR("Slang compile error: {}", (const char*)diagnostics->getBufferPointer());
                 }
 
-                HBL2_CORE_ERROR("Slang: Failed to get SPIR-V for entry point {}", i);
+                HBL2_CORE_ERROR("Slang: Failed to get code for entry point {}", i);
+
                 return {};
             }
 
@@ -369,31 +417,28 @@ namespace HBL2
                 HBL2_CORE_WARN("Slang: {}", (const char*)diagnostics->getBufferPointer());
             }
 
-            const uint32_t* spirvData = static_cast<const uint32_t*>(code->getBufferPointer());
-            size_t spirvByteSize = code->getBufferSize();
-            size_t spirvSize = spirvByteSize / sizeof(uint32_t);
+            const uint8_t* shaderData =(uint8_t*)code->getBufferPointer();
+
+            size_t shaderByteSize = code->getBufferSize();
 
             CompilationResultData::ShaderCode* shaderCode = nullptr;
 
             if (IsVertexStage(i, entryPointCount))
             {
-                compilationResultData.vertexShaderCode.ptr = (uint32_t*)workerArena->Alloc(spirvByteSize, alignof(uint32_t));
-                compilationResultData.vertexShaderCode.size = (uint32_t)spirvSize;
-
+                compilationResultData.vertexShaderCode.ptr =( uint8_t*)workerArena->Alloc(shaderByteSize, alignof(uint8_t));
+                compilationResultData.vertexShaderCode.size = shaderByteSize;
                 shaderCode = &compilationResultData.vertexShaderCode;
             }
             else if (IsFragmentStage(i, entryPointCount))
             {
-                compilationResultData.fragmentShaderCode.ptr = (uint32_t*)workerArena->Alloc(spirvByteSize, alignof(uint32_t));
-                compilationResultData.fragmentShaderCode.size = (uint32_t)spirvSize;
-
+                compilationResultData.fragmentShaderCode.ptr = (uint8_t*)workerArena->Alloc(shaderByteSize, alignof(uint8_t));
+                compilationResultData.fragmentShaderCode.size = shaderByteSize;
                 shaderCode = &compilationResultData.fragmentShaderCode;
             }
             else if (IsComputeStage(i, entryPointCount))
             {
-                compilationResultData.computeShaderCode.ptr = (uint32_t*)workerArena->Alloc(spirvByteSize, alignof(uint32_t));
-                compilationResultData.computeShaderCode.size = (uint32_t)spirvSize;
-
+                compilationResultData.computeShaderCode.ptr = (uint8_t*)workerArena->Alloc(shaderByteSize, alignof(uint8_t));
+                compilationResultData.computeShaderCode.size = shaderByteSize;
                 shaderCode = &compilationResultData.computeShaderCode;
             }
 
@@ -403,13 +448,13 @@ namespace HBL2
                 continue;
             }
 
-            std::memcpy(shaderCode->ptr, spirvData, spirvByteSize);
+            std::memcpy(shaderCode->ptr, shaderData, shaderByteSize);
 
             // Write cache.
             std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
             if (out.is_open())
             {
-                out.write(reinterpret_cast<const char*>(shaderCode->ptr), shaderCode->size * sizeof(uint32_t));
+                out.write(reinterpret_cast<const char*>(shaderCode->ptr), shaderCode->size);
                 out.flush();
             }
         }
@@ -444,19 +489,23 @@ namespace HBL2
         uint32_t workerIndex = JobSystem::Get().GetWorkerIndex();
 
         // Target description.
-        // NOTE: No GENERATE_WHOLE_PROGRAM — we want one SPIR-V binary per entry point.
         slang::TargetDesc targetDesc = {};
-        targetDesc.format = SLANG_SPIRV; // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/a2-01-spirv-target-specific.html
-        targetDesc.flags = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY;
 
         switch (target)
         {
-        case GraphicsAPI::OPENGL:
-            targetDesc.profile = g_SLangGlobalSessions[workerIndex]->findProfile("glsl_460");
-            break;
         case GraphicsAPI::VULKAN:
+            // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/a2-01-spirv-target-specific.html
+            targetDesc.format = SLANG_SPIRV;
+            targetDesc.flags = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY;
             targetDesc.profile = g_SLangGlobalSessions[workerIndex]->findProfile("spirv_1_3");
             break;
+        case GraphicsAPI::METAL:
+            targetDesc.format = SLANG_METAL_LIB;
+            targetDesc.profile = g_SLangGlobalSessions[workerIndex]->findProfile("metal_3_2");
+            break;
+        default:
+            HBL2_CORE_FATAL("Unsupported graphics backend!");
+            exit(-1);
         }
 
         // Session description.
@@ -465,36 +514,68 @@ namespace HBL2
 
         // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/08-compiling.html
 
-        std::array<slang::CompilerOptionEntry, 4> options =
+        switch (target)
         {
-            slang::CompilerOptionEntry
+        case GraphicsAPI::VULKAN:
             {
-                .name = slang::CompilerOptionName::EmitSpirvDirectly,
-                .value = {.kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-            },
-            slang::CompilerOptionEntry
-            {
-                .name = slang::CompilerOptionName::VulkanUseEntryPointName,
-                .value = {.kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-            },
-            slang::CompilerOptionEntry
-            {
-                .name = slang::CompilerOptionName::MatrixLayoutColumn,
-                .value = {.kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
-            },
-            slang::CompilerOptionEntry
-            {
-                .name = slang::CompilerOptionName::Optimization,
-                .value = {.kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                std::array<slang::CompilerOptionEntry, 4> options =
+                {
+                    slang::CompilerOptionEntry
+                    {
+                        .name = slang::CompilerOptionName::EmitSpirvDirectly,
+                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
+                    },
+                    slang::CompilerOptionEntry
+                    {
+                        .name = slang::CompilerOptionName::VulkanUseEntryPointName,
+                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
+                    },
+                    slang::CompilerOptionEntry
+                    {
+                        .name = slang::CompilerOptionName::MatrixLayoutColumn,
+                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
+                    },
+                    slang::CompilerOptionEntry
+                    {
+                        .name = slang::CompilerOptionName::Optimization,
+                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                    }
+                };
+                
+                sessionDesc.compilerOptionEntries = options.data();
+                sessionDesc.compilerOptionEntryCount = options.size();
+                
+                break;
             }
-        };
-
-        sessionDesc.compilerOptionEntries = options.data();
-        sessionDesc.compilerOptionEntryCount = options.size();
+        case GraphicsAPI::METAL:
+            {
+                std::array<slang::CompilerOptionEntry, 2> options =
+                {
+                    slang::CompilerOptionEntry
+                    {
+                        .name = slang::CompilerOptionName::MatrixLayoutColumn,
+                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
+                    },
+                    slang::CompilerOptionEntry
+                    {
+                        .name = slang::CompilerOptionName::Optimization,
+                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                    }
+                };
+                
+                sessionDesc.compilerOptionEntries = options.data();
+                sessionDesc.compilerOptionEntryCount = options.size();
+                
+                break;
+            }
+        default:
+            HBL2_CORE_FATAL("Unsupported graphics backend!");
+            exit(-1);
+        }
 
         sessionDesc.targets = &targetDesc;
         sessionDesc.targetCount = 1;
-
+        
         Slang::ComPtr<slang::ISession> session;
         if (SLANG_FAILED(g_SLangGlobalSessions[workerIndex]->createSession(sessionDesc, session.writeRef())))
         {
@@ -714,9 +795,6 @@ namespace HBL2
             {
                 continue;
             }
-
-            uint32_t bufferIndex = 0;
-            uint32_t textureIndex = 0;
 
             for (const auto& b : descriptorSet.bindings)
             {
@@ -1277,6 +1355,8 @@ namespace HBL2
             return workingDirectory / "assets/cache/shader/opengl";
         case GraphicsAPI::VULKAN:
             return workingDirectory / "assets/cache/shader/vulkan";
+        case GraphicsAPI::METAL:
+            return workingDirectory / "assets/cache/shader/metal";
         default:
             HBL2_CORE_ASSERT(false, "Stage not supported");
             return "";

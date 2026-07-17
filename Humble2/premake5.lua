@@ -222,6 +222,11 @@ project "Humble2"
             "src/Platform/OpenGL/**.cpp"
         }
 
+        externalincludedirs
+        {
+            "../Dependencies/Metal-Cpp"
+        }
+
         linkoptions
         {
             "-rpath @executable_path",

@@ -150,7 +150,7 @@ namespace HBL2
 		ShaderType type = ShaderType::RASTERIZATION;
 		struct ShaderStage
 		{
-			Span<const uint32_t> code;
+			Span<const uint8_t> code;
 			const char* entryPoint;
 		};
 		ShaderStage VS;

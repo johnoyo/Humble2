@@ -34,10 +34,10 @@ namespace HBL2
 	{
 		struct ShaderCode
 		{
-			uint32_t* ptr = nullptr;
-			uint32_t size = 0;
+			uint8_t* ptr = nullptr;
+			size_t size = 0;
 
-			Span<const uint32_t> AsSpan() const
+			Span<const uint8_t> AsSpan() const
 			{
 				return { ptr, size };
 			}
