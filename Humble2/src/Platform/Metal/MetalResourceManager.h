@@ -7,13 +7,13 @@
 #include "Resources/Types.h"
 #include "Resources/TypeDescriptors.h"
 
-#include "Resources/MetalBuffer.h"
-#include "Resources/MetalShader.h"
-#include "Resources/MetalTexture.h"
-#include "Resources/MetalBindGroup.h"
-#include "Resources/MetalBindGroupLayout.h"
-#include "Resources/MetalRenderPass.h"
-#include "Resources/MetalRenderPassLayout.h"
+#include "Platform/Metal/Resources/MetalBuffer.h"
+#include "Platform/Metal/Resources/MetalShader.h"
+#include "Platform/Metal/Resources/MetalTexture.h"
+#include "Platform/Metal/Resources/MetalBindGroup.h"
+#include "Platform/Metal/Resources/MetalBindGroupLayout.h"
+#include "Platform/Metal/Resources/MetalRenderPass.h"
+#include "Platform/Metal/Resources/MetalRenderPassLayout.h"
 
 namespace HBL2
 {
@@ -34,7 +34,7 @@ namespace HBL2
         virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout) override;
         virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) override;
         virtual void* GetTextureData(Handle<Texture> handle) override;
-        //MetalTexture* GetTexture(Handle<Texture> handle) const;
+        MetalTexture* GetTexture(Handle<Texture> handle) const;
 
         // Buffers
         virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) override;
@@ -79,7 +79,7 @@ namespace HBL2
         virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) override;
         virtual void DeleteRenderPass(Handle<RenderPass> handle) override;
         virtual void RecreateRenderPassFrameBuffer(Handle<RenderPass> handle, const FrameBufferDescriptor&& desc) override;
-//        MetalRenderPass* GetRenderPass(Handle<RenderPass> handle) const;
+        MetalRenderPass* GetRenderPass(Handle<RenderPass> handle) const;
 
         // RenderPassLayouts
         virtual Handle<RenderPassLayout> CreateRenderPassLayout(const RenderPassLayoutDescriptor&& desc) override;

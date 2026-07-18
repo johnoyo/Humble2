@@ -14,8 +14,6 @@ namespace HBL2
     {
     public:
         virtual void DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws) override;
-
-        MTL4::RenderCommandEncoder* Encoder = nullptr;
         
     private:
         friend class MetalCommandBuffer;

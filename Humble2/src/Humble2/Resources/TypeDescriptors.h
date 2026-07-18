@@ -41,6 +41,8 @@ namespace HBL2
 		Sampler sampler;
 		TextureLayout initialLayout = TextureLayout::SHADER_READ_ONLY;
 		void* initialData = nullptr;
+        
+        bool dynamicTextureView = false;
 	};
 
 	struct TextureViewDescriptor

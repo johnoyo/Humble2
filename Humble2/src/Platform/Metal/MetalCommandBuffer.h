@@ -32,6 +32,7 @@ namespace HBL2
         virtual void Submit() override;
         
         MTL4::CommandBuffer* CommandBuffer = nullptr;
+        MTL4::RenderCommandEncoder* Encoder = nullptr;
         
     private:
         CommandBufferType m_Type;

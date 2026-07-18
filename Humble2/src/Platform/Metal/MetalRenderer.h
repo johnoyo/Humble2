@@ -6,16 +6,13 @@
 #include "Scene/Components.h"
 #include "Renderer/Renderer.h"
 
-#include "MetalDevice.h"
-#include "MetalCommandBuffer.h"
+#include "Platform/Metal/MetalDevice.h"
+#include "Platform/Metal/MetalResourceManager.h"
+#include "Platform/Metal/MetalCommandBuffer.h"
 
-#include "MetalCommon.h"
+#include "Platform/Metal/MetalCommon.h"
 
 #include "Utilities/Collections/DeletionQueue.h"
-
-#include <Foundation/Foundation.hpp>
-#include <Metal/Metal.hpp>
-#include <QuartzCore/QuartzCore.hpp>
 
 namespace HBL2
 {
@@ -27,6 +24,14 @@ namespace HBL2
         MTL4::CommandBuffer* ImGuiCommandBuffer = nullptr;
         MTL4::CommandAllocator* CommandAllocator = nullptr;
         MTL4::ArgumentTable* GlobalArgumentTable = nullptr;
+    };
+
+    struct MtlUploadContext
+    {
+        MTL4::CommandAllocator* Allocator = nullptr;
+        MTL4::CommandBuffer* CommandBuffer = nullptr;
+        MTL::SharedEvent* Event = nullptr;
+        uint64_t EventValue = 0;
     };
 
     class MetalRenderer final : public Renderer
@@ -41,8 +46,8 @@ namespace HBL2
         
         virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
         
-        virtual void SetViewportAttachment(void* viewportTextureRef) override {}
-        virtual void* GetViewportAttachment() override { return nullptr; }
+        virtual void SetViewportAttachment(void* viewportTextureRef) override { m_ColorAttachmentID = (MTL::Texture*)viewportTextureRef; }
+        virtual void* GetViewportAttachment() override { return m_ColorAttachmentID; }
 
         virtual Handle<BindGroup> GetShadowBindings() override { return {}; }
         virtual Handle<BindGroup> GetGlobalBindings2D() override { return {}; }
@@ -50,9 +55,9 @@ namespace HBL2
         virtual Handle<BindGroup> GetGlobalPresentBindings() override { return {}; }
         virtual Handle<BindGroup> GetDebugBindings() override { return {}; }
 
-        virtual Handle<RenderPass> GetMainRenderPass() override { return {}; }
-        virtual Handle<RenderPass> GetImGuiRenderPass() override { return {}; }
-        virtual Handle<RenderPass> GetRenderingRenderPass() override { return {}; }
+        virtual Handle<RenderPass> GetMainRenderPass() override { return m_RenderPasses[m_FrameNumber.load() % FRAME_OVERLAP]; }
+        virtual Handle<RenderPass> GetImGuiRenderPass() override { return m_ImGuiRenderPasses[m_FrameNumber.load() % FRAME_OVERLAP]; }
+        virtual Handle<RenderPass> GetRenderingRenderPass() override { return m_RenderingRenderPass; }
         
         virtual const uint32_t GetFrameIndex() const override { return m_FrameNumber.load() % FRAME_OVERLAP; }
         
@@ -62,22 +67,40 @@ namespace HBL2
         MTL4::CommandQueue* GetCommandQueue() { return m_CommandQueue; }
         const MTL4::CommandQueue* GetCommandQueue() const { return m_CommandQueue; }
         
+        void MakeResident(std::initializer_list<MTL::Allocation*> resources);
+        void RemoveResident(MTL::Allocation* resource);
+        void ImmediateSubmit(const std::function<void(MTL4::ComputeCommandEncoder*)>& fn);
+        
     protected:
         virtual void PreInitialize() override;
         virtual void PostInitialize() override;
         
     private:
-        
+        void CreateUploadContextCommands();
+        MTL::Texture* CreateDepthTexture(uint32_t width, uint32_t height, uint32_t frameIdx);
         
     private:
         MetalDevice* m_Device = nullptr;
+        MetalResourceManager* m_ResourceManager;
+        DeletionQueue m_MainDeletionQueue;
+        std::mutex m_DeletionQueueMutex;
+        
         MTL4::CommandQueue* m_CommandQueue = nullptr;
         std::array<MtlFrameData, FRAME_OVERLAP> m_MtlFrames;
         MTL::ResidencySet* m_ResidencySet = nullptr;
-        std::array<MTL::Texture*, FRAME_OVERLAP> m_DepthTextures;
+        std::array<Handle<Texture>, FRAME_OVERLAP> m_DepthTextures;
         MTL::SharedEvent* m_FrameAvailableSharedEvent = nullptr;
         
         std::array<MetalCommandBuffer, FRAME_OVERLAP> m_MainCommandBuffers;
         std::array<MetalCommandBuffer, FRAME_OVERLAP> m_ImGuiCommandBuffers;
+        
+        std::mutex m_ResidencyMutex;
+        static thread_local MtlUploadContext s_UploadContext;
+                
+        std::array<Handle<RenderPass>, FRAME_OVERLAP> m_RenderPasses;
+        std::array<Handle<RenderPass>, FRAME_OVERLAP> m_ImGuiRenderPasses;
+        Handle<RenderPass> m_RenderingRenderPass;
+        
+        MTL::Texture* m_ColorAttachmentID = nullptr;
     };
 }

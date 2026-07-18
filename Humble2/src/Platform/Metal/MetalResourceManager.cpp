@@ -97,10 +97,11 @@ namespace HBL2
     {
         return nullptr;
     }
-//    MetalTexture* MetalResourceManager::GetTexture(Handle<Texture> handle) const
-//    {
+    MetalTexture* MetalResourceManager::GetTexture(Handle<Texture> handle) const
+    {
 //        return m_TexturePool.Get(handle);
-//    }
+        return nullptr;
+    }
 
     // Buffers
     Handle<Buffer> MetalResourceManager::CreateBuffer(const BufferDescriptor&& desc)
@@ -518,10 +519,11 @@ namespace HBL2
 //            }
 //        });
     }
-//    MetalRenderPass* MetalResourceManager::GetRenderPass(Handle<RenderPass> handle) const
-//    {
+    MetalRenderPass* MetalResourceManager::GetRenderPass(Handle<RenderPass> handle) const
+    {
 //        return m_RenderPassPool.Get(handle);
-//    }
+        return nullptr;
+    }
 
     // RenderPassLayouts
     Handle<RenderPassLayout> MetalResourceManager::CreateRenderPassLayout(const RenderPassLayoutDescriptor&& desc)

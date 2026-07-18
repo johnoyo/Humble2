@@ -7,6 +7,19 @@
 
 namespace HBL2
 {
+    static MTL4::RenderPassDescriptor* ExtractRenderPassDescriptor(Handle<RenderPass> rpH)
+    {
+        auto* rm = (MetalResourceManager*)ResourceManager::Instance;
+        
+        MetalRenderPass* rp = rm->GetRenderPass(rpH);
+        if (rp != nullptr)
+        {
+            return rp->PassDesc;
+        }
+        
+        return nullptr;
+    }
+
     void MetalImGuiRenderer::Initialize()
     {
         m_Device = (MetalDevice*)Device::Instance;
@@ -15,6 +28,10 @@ namespace HBL2
 
         ImGui_ImplGlfw_InitForOther(Window::Instance->GetHandle(), true);
         ImGui_ImplMetal4_Init(m_Device->Get(), m_Renderer->GetCommandQueue(), FRAME_OVERLAP);
+        
+        // Set viewport texture.
+        MetalTexture* viewportTexture = m_ResourceManager->GetTexture(m_Renderer->MainColorTexture);
+        m_Renderer->SetViewportAttachment((void*)viewportTexture->Texture);
     }
 
     void MetalImGuiRenderer::BeginFrame()
@@ -34,13 +51,13 @@ namespace HBL2
     {
         ImDrawData* data = (ImDrawData*)&frameData.ImGuiRenderData.DrawData;
 
-        // TODO: Construct a MTL4::RenderPassDescriptor from the m_Renderer->GetImGuiRenderPass().
-        ImGui_ImplMetal4_NewFrame(nullptr, m_Renderer->GetFrameIndex());
+        MTL4::RenderPassDescriptor* renderPassDescriptor = ExtractRenderPassDescriptor(m_Renderer->GetImGuiRenderPass());
+        ImGui_ImplMetal4_NewFrame(renderPassDescriptor, m_Renderer->GetFrameIndex());
 
-        CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI);
+        MetalCommandBuffer* commandBuffer = (MetalCommandBuffer*)m_Renderer->BeginCommandRecording(CommandBufferType::UI);
         RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_Renderer->GetImGuiRenderPass());
 
-        ImGui_ImplMetal4_RenderDrawData(data, m_Renderer->GetCurrentFrame().ImGuiCommandBuffer, ((MetalRenderPassRenderer*)renderPassRenderer)->Encoder);
+        ImGui_ImplMetal4_RenderDrawData(data, commandBuffer->CommandBuffer, commandBuffer->Encoder);
 
         commandBuffer->EndRenderPass(*renderPassRenderer);
         commandBuffer->EndCommandRecording();

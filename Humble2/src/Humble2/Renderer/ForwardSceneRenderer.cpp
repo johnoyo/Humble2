@@ -1523,6 +1523,7 @@ namespace HBL2
 							.layerCount = 6,
 							.sampler = { .filter = TextureFilter::LINEAR, .wrap = Wrap::CLAMP_TO_EDGE, },
 							.initialLayout = TextureLayout::GENERAL,
+                            .dynamicTextureView = true,
 						});
 
 						ResourceManager::Instance->TransitionTextureLayout(
