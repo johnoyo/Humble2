@@ -5,6 +5,8 @@
 
 #include "Platform/Metal/MetalCommon.h"
 
+#include "Utilities/Collections/StaticDArray.h"
+
 namespace HBL2
 {
     struct MetalRenderPass
@@ -18,5 +20,8 @@ namespace HBL2
         
         const char* DebugName = "";
         MTL4::RenderPassDescriptor* PassDesc = nullptr;
+        StaticDArray<MTL::PixelFormat, 4> ColorAttachmentFormats;
+        MTL::PixelFormat DepthAttachmentFormat;
+        uint32_t ColorAttachmentCount = 0;
     };
 }

@@ -7,7 +7,6 @@
 #include "Renderer/Renderer.h"
 
 #include "Platform/Metal/MetalDevice.h"
-#include "Platform/Metal/MetalResourceManager.h"
 #include "Platform/Metal/MetalCommandBuffer.h"
 
 #include "Platform/Metal/MetalCommon.h"
@@ -16,6 +15,10 @@
 
 namespace HBL2
 {
+    static constexpr uint32_t VERTEX_BUFFER_BINDING_IDX = 15;
+
+    class MetalResourceManager;
+
     struct MtlFrameData
     {
         MTL4::CommandBuffer* MainCommandBuffer = nullptr;

@@ -177,4 +177,104 @@ namespace HBL2
 
         return (MTL::CompareFunction)NS::UInteger(-1);
     }
+
+    MTL::VertexFormat MtlUtils::VertexFormatToMTLVertexFormat(VertexFormat vertexFormat)
+    {
+        switch (vertexFormat)
+        {
+        case HBL2::VertexFormat::FLOAT32:
+            return MTL::VertexFormatFloat;
+        case HBL2::VertexFormat::FLOAT32x2:
+            return MTL::VertexFormatFloat2;
+        case HBL2::VertexFormat::FLOAT32x3:
+            return MTL::VertexFormatFloat3;
+        case HBL2::VertexFormat::FLOAT32x4:
+            return MTL::VertexFormatFloat4;
+        case HBL2::VertexFormat::INT32:
+            return MTL::VertexFormatInt;
+        case HBL2::VertexFormat::INT32x2:
+            return MTL::VertexFormatInt2;
+        case HBL2::VertexFormat::INT32x3:
+            return MTL::VertexFormatInt3;
+        case HBL2::VertexFormat::INT32x4:
+            return MTL::VertexFormatInt4;
+        case HBL2::VertexFormat::UINT32:
+            return MTL::VertexFormatUInt;
+        case HBL2::VertexFormat::UINT32x2:
+            return MTL::VertexFormatUInt2;
+        case HBL2::VertexFormat::UINT32x3:
+            return MTL::VertexFormatUInt3;
+        case HBL2::VertexFormat::UINT32x4:
+            return MTL::VertexFormatUInt4;
+        case HBL2::VertexFormat::NONE:
+            break;
+        }
+
+        return MTL::VertexFormatInvalid;
+    }
+
+    MTL::PrimitiveTopologyClass MtlUtils::TopologyToMTLPrimitiveTopologyClass(Topology topology)
+    {
+        switch (topology)
+        {
+        case HBL2::Topology::POINT_LIST:
+            return MTL::PrimitiveTopologyClassPoint;
+        case HBL2::Topology::LINE_LIST:
+            return MTL::PrimitiveTopologyClassLine;
+        case HBL2::Topology::TRIANGLE_LIST:
+            return MTL::PrimitiveTopologyClassTriangle;
+        case HBL2::Topology::LINE_STRIP:
+        case HBL2::Topology::TRIANGLE_STRIP:
+        case HBL2::Topology::TRIANGLE_FAN:
+        case HBL2::Topology::PATCH_LIST:
+            return MTL::PrimitiveTopologyClassUnspecified;
+        }
+
+        return (MTL::PrimitiveTopologyClass)NS::UInteger(-1);
+    }
+
+    MTL::PrimitiveType MtlUtils::TopologyToMTLPrimitiveType(Topology topology)
+    {
+        switch (topology)
+        {
+        case HBL2::Topology::POINT_LIST:
+            return MTL::PrimitiveTypePoint;
+        case HBL2::Topology::LINE_LIST:
+            return MTL::PrimitiveTypeLine;
+        case HBL2::Topology::TRIANGLE_LIST:
+            return MTL::PrimitiveTypeTriangle;
+        case HBL2::Topology::LINE_STRIP:
+                return MTL::PrimitiveTypeLineStrip;
+        case HBL2::Topology::TRIANGLE_STRIP:
+                return MTL::PrimitiveTypeTriangleStrip;
+        case HBL2::Topology::TRIANGLE_FAN:
+        case HBL2::Topology::PATCH_LIST:
+            break;
+        }
+
+        return (MTL::PrimitiveType)NS::UInteger(-1);
+    }
+
+    MTL::ResourceOptions MtlUtils::MemoryUsageToMTLResourceOptions(MemoryUsage memoryUsage)
+    {
+        switch (memoryUsage)
+        {
+        case HBL2::MemoryUsage::CPU_ONLY:
+            // Host-visible, coherent, normally cached — general-purpose staging/CPU-owned data.
+            return MTL::ResourceStorageModeShared | MTL::ResourceCPUCacheModeDefaultCache;
+        case HBL2::MemoryUsage::GPU_ONLY:
+            // GPU-exclusive, not CPU-visible at all — fastest for static VBs/IBs, render targets.
+            return MTL::ResourceStorageModePrivate;
+        case HBL2::MemoryUsage::GPU_CPU:
+            // GPU writes, CPU reads back (e.g. readback/query buffers).
+            // Default cache mode matters here — write-combined is uncached for CPU *reads* and would be brutal for readback.
+            return MTL::ResourceStorageModeShared | MTL::ResourceCPUCacheModeDefaultCache;
+        case HBL2::MemoryUsage::CPU_GPU:
+            // CPU writes every frame, GPU reads (uniforms, streamed vertex data).
+            // Write-combined optimizes sequential CPU writes; fine since CPU never reads this back.
+            return MTL::ResourceStorageModeShared | MTL::ResourceCPUCacheModeWriteCombined;
+        }
+
+        return MTL::ResourceStorageModeShared;
+    }
 }

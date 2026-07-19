@@ -22,5 +22,9 @@ namespace HBL2
         MTL::SamplerMinMagFilter FilterToMTLSamplerMinMagFilter(TextureFilter filter);
         MTL::SamplerAddressMode WrapToMTLSamplerAddressMode(Wrap wrap);
         MTL::CompareFunction CompareToMTLCompareFunction(Compare compare);
+        MTL::VertexFormat VertexFormatToMTLVertexFormat(VertexFormat vertexFormat);
+        MTL::PrimitiveTopologyClass TopologyToMTLPrimitiveTopologyClass(Topology topology);
+        MTL::PrimitiveType TopologyToMTLPrimitiveType(Topology topology);
+        MTL::ResourceOptions MemoryUsageToMTLResourceOptions(MemoryUsage memoryUsage);
     }
 }

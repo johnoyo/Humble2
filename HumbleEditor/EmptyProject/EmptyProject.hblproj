@@ -1,11 +1,11 @@
 Project:
   Name: EmptyProject
-  StartingScene: Scenes/Physics3D.humble
+  StartingScene: Scenes/TestScen.humble
   AssetDirectory: Assets
   ScriptDirectory: ""
   Renderer:
     Type: 0
-    Editor API: 2
+    Editor API: 3
     Runtime API: 2
   Physics2D:
     Gravity Force: [0, -9.81000042]
@@ -51,8 +51,8 @@ Project:
       Buffers Pool Size: 1024
       BindGroups Pool Size: 64
       BindGroupLayouts Pool Size: 32
-      RenderPass Pool Size: 64
-      RenderPassLayouts Pool Size: 32
+      RenderPass Pool Size: 256
+      RenderPassLayouts Pool Size: 64
       Meshes Pool Size: 256
       Materials Pool Size: 64
       Scenes Pool Size: 16

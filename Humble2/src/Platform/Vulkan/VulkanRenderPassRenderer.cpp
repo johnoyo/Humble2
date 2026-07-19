@@ -25,7 +25,6 @@ namespace HBL2
 	{
 		Renderer::Instance->GetStats().DrawCalls += draws.GetCount();
 
-		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 

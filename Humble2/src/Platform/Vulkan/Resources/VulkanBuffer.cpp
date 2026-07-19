@@ -74,7 +74,7 @@ namespace HBL2
 			memcpy(mappedData, Hot->Data, Hot->ByteSize);
 			vmaUnmapMemory(renderer->GetAllocator(), stagingBufferAllocation);
 
-			renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
+			renderer->ImmediateSubmit([=, this](VkCommandBuffer cmd)
 			{
 				VkBufferCopy copy =
 				{

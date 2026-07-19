@@ -45,9 +45,9 @@ namespace HBL2
         virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
         virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) override;
         virtual void MapBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, intptr_t offset = 0, intptr_t size = 0) override;
-        //MetalBuffer GetBuffer(Handle<Buffer> handle) const;
-        //MetalBufferHot* GetBufferHot(Handle<Buffer> handle) const;
-        //MetalBufferCold* GetBufferCold(Handle<Buffer> handle) const;
+        MetalBuffer GetBuffer(Handle<Buffer> handle) const;
+        MetalBufferHot* GetBufferHot(Handle<Buffer> handle) const;
+        MetalBufferCold* GetBufferCold(Handle<Buffer> handle) const;
 
         // Shaders
         virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) override;
@@ -56,24 +56,24 @@ namespace HBL2
         virtual uint64_t GetOrAddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc) override;
         virtual void SetShaderGlobalBindGroup(Handle<Shader> handle, Handle<BindGroup> bindGroupHandle) override;
         virtual Handle<BindGroup> GetShaderGlobalBindGroup(Handle<Shader> handle) override;
-        //MetalShader GetShader(Handle<Shader> handle) const;
-        //MetalShaderHot* GetShaderHot(Handle<Shader> handle) const;
-        //MetalShaderCold* GetShaderCold(Handle<Shader> handle) const;
+        MetalShader GetShader(Handle<Shader> handle) const;
+        MetalShaderHot* GetShaderHot(Handle<Shader> handle) const;
+        MetalShaderCold* GetShaderCold(Handle<Shader> handle) const;
 
         // BindGroups
         virtual Handle<BindGroup> CreateBindGroup(const BindGroupDescriptor&& desc) override;
         virtual void DeleteBindGroup(Handle<BindGroup> handle) override;
         virtual void UpdateBindGroup(Handle<BindGroup> handle) override;
         virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) override;
-        //MetalBindGroup GetBindGroup(Handle<BindGroup> handle) const;
-        //MetalBindGroupHot* GetBindGroupHot(Handle<BindGroup> handle) const;
-        //MetalBindGroupCold* GetBindGroupCold(Handle<BindGroup> handle) const;
+        MetalBindGroup GetBindGroup(Handle<BindGroup> handle) const;
+        MetalBindGroupHot* GetBindGroupHot(Handle<BindGroup> handle) const;
+        MetalBindGroupCold* GetBindGroupCold(Handle<BindGroup> handle) const;
 
         // BindGroupsLayouts
         virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) override;
         virtual void DeleteBindGroupLayout(Handle<BindGroupLayout> handle) override;
         virtual uint64_t GetBindGroupLayoutHash(Handle<BindGroupLayout> handle) override;
-//        MetalBindGroupLayout* GetBindGroupLayout(Handle<BindGroupLayout> handle) const;
+        MetalBindGroupLayout* GetBindGroupLayout(Handle<BindGroupLayout> handle) const;
 
         // RenderPass
         virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) override;
@@ -88,18 +88,18 @@ namespace HBL2
 
     private:
         Pool<MetalTexture, Texture> m_TexturePool;
-//        SplitPool<MetalBufferHot, MetalBufferCold, Buffer> m_BufferSplitPool;
-//        SplitPool<MetalShaderHot, MetalShaderCold, Shader> m_ShaderSplitPool;
-//        SplitPool<MetalBindGroupHot, MetalBindGroupCold, BindGroup> m_BindGroupSplitPool;
-//        Pool<MetalBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
+        SplitPool<MetalBufferHot, MetalBufferCold, Buffer> m_BufferSplitPool;
+        SplitPool<MetalShaderHot, MetalShaderCold, Shader> m_ShaderSplitPool;
+        SplitPool<MetalBindGroupHot, MetalBindGroupCold, BindGroup> m_BindGroupSplitPool;
+        Pool<MetalBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
         Pool<MetalRenderPass, RenderPass> m_RenderPassPool;
         Pool<MetalRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
 
         friend class VulkanRenderer; // This is required for a hack to create the swapchain images in the VulkanRenderer
 
     private:
-        // uint64_t CalculateBindGroupHash(const MetalBindGroupCold* bindGroupCold);
-        // uint64_t CalculateBindGroupLayoutHash(const MetalBindGroupLayout* bindGroupLayout);
+         uint64_t CalculateBindGroupHash(const MetalBindGroupCold* bindGroupCold);
+         uint64_t CalculateBindGroupLayoutHash(const MetalBindGroupLayout* bindGroupLayout);
     };
 }
 

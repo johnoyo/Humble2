@@ -1,5 +1,7 @@
 #include "MetalRenderer.h"
 
+#include "Platform/Metal/MetalResourceManager.h"
+
 namespace HBL2
 {
     thread_local MtlUploadContext MetalRenderer::s_UploadContext;
