@@ -17,8 +17,6 @@ namespace HBL2
 	class VulkanDevice;
 	class VulkanResourceManager;
 
-	constexpr unsigned int FRAME_OVERLAP = 2;
-
 	struct VkFrameData
 	{
 		VkSemaphore ImageAvailableSemaphore; // Signal from swapchain.
@@ -138,7 +136,8 @@ namespace HBL2
         std::vector<Handle<RenderPass>> m_RenderPasses;
         std::vector<Handle<RenderPass>> m_ImGuiRenderPasses;
 		Handle<RenderPass> m_RenderingRenderPass;
-
+        Handle<RenderPassLayout> m_RenderPassLayout;
+        
 		VkDescriptorPool m_DescriptorPool;
 		VkDescriptorSet m_ColorAttachmentID = VK_NULL_HANDLE;
 

@@ -84,16 +84,16 @@ namespace HBL2
         // RenderPassLayouts
         virtual Handle<RenderPassLayout> CreateRenderPassLayout(const RenderPassLayoutDescriptor&& desc) override;
         virtual void DeleteRenderPassLayout(Handle<RenderPassLayout> handle) override;
-//        MetalRenderPassLayout* GetRenderPassLayout(Handle<RenderPassLayout> handle) const;
+        MetalRenderPassLayout* GetRenderPassLayout(Handle<RenderPassLayout> handle) const;
 
     private:
-//        Pool<MetalTexture, Texture> m_TexturePool;
+        Pool<MetalTexture, Texture> m_TexturePool;
 //        SplitPool<MetalBufferHot, MetalBufferCold, Buffer> m_BufferSplitPool;
 //        SplitPool<MetalShaderHot, MetalShaderCold, Shader> m_ShaderSplitPool;
 //        SplitPool<MetalBindGroupHot, MetalBindGroupCold, BindGroup> m_BindGroupSplitPool;
 //        Pool<MetalBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
-//        Pool<MetalRenderPass, RenderPass> m_RenderPassPool;
-//        Pool<MetalRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
+        Pool<MetalRenderPass, RenderPass> m_RenderPassPool;
+        Pool<MetalRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
 
         friend class VulkanRenderer; // This is required for a hack to create the swapchain images in the VulkanRenderer
 

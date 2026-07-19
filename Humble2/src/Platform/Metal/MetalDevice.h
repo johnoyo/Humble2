@@ -12,9 +12,6 @@
 
 namespace HBL2
 {
-    static constexpr auto MAX_FRAMES_IN_FLIGHT = 3u;
-    static constexpr auto PIXEL_FORMAT = MTL::PixelFormatBGRA8Unorm_sRGB;
-
     class MetalDevice : public Device
     {
     public:

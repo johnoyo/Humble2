@@ -55,11 +55,11 @@ namespace HBL2
         ImGui_ImplMetal4_NewFrame(renderPassDescriptor, m_Renderer->GetFrameIndex());
 
         MetalCommandBuffer* commandBuffer = (MetalCommandBuffer*)m_Renderer->BeginCommandRecording(CommandBufferType::UI);
-        RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_Renderer->GetImGuiRenderPass());
+        RenderPassRenderer* rpRenderer = commandBuffer->BeginRenderPass(m_Renderer->GetImGuiRenderPass());
 
-        ImGui_ImplMetal4_RenderDrawData(data, commandBuffer->CommandBuffer, commandBuffer->Encoder);
+        ImGui_ImplMetal4_RenderDrawData(data, commandBuffer->CommandBuffer, ((MetalRenderPassRenderer*)rpRenderer)->Encoder);
 
-        commandBuffer->EndRenderPass(*renderPassRenderer);
+        commandBuffer->EndRenderPass(*rpRenderer);
         commandBuffer->EndCommandRecording();
         commandBuffer->Submit();
     }

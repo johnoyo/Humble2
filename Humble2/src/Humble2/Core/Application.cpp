@@ -2,6 +2,7 @@
 
 #include "Utilities/PlatformManager.h"
 #include "Asset/EditorAssetManager.h"
+
 #include "Script/BuildEngine.h"
 #include "Platform/Windows/WindowsBuildEngine.h"
 #include "Platform/Windows/WindowsPlatformManager.h"
@@ -9,6 +10,11 @@
 #include "Platform/MacOS/MacOSPlatformManager.h"
 #include "Platform/Linux/LinuxBuildEngine.h"
 #include "Platform/Linux/LinuxPlatformManager.h"
+
+#include "Platform/Metal/MetalImGuiRenderer.h"
+#include "Platform/Metal/MetalResourceManager.h"
+#include "Platform/Metal/MetalRenderer.h"
+#include "Platform/Metal/MetalDevice.h"
 
 #ifdef DIST
 	#define BEGIN_APP_PROFILE(tag)
@@ -129,9 +135,17 @@ namespace HBL2
 			ImGuiRenderer::Instance = new VulkanImGuiRenderer;
 			break;
         case GraphicsAPI::METAL:
+            HBL2_CORE_INFO("Metal is selected as the renderer API.");
+            g_GfxAPI = "Metal";
+            Device::Instance = new MetalDevice;
+            Window::Instance = new MetalWindow;
+            ResourceManager::Instance = new MetalResourceManager;
+            Renderer::Instance = new MetalRenderer;
+            ImGuiRenderer::Instance = new MetalImGuiRenderer;
+            break;
         case GraphicsAPI::WEBGPU:
 		case GraphicsAPI::NONE:
-			HBL2_CORE_ERROR("No valid RendererAPI specified. Please choose between OpenGL, or Vulkan depending on your target platform.");
+			HBL2_CORE_ERROR("No valid RendererAPI specified. Please choose between Metal, or Vulkan depending on your target platform.");
 			exit(-1);
 			break;
 		}

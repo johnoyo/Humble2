@@ -513,7 +513,7 @@ namespace HBL2
 
         if (rp != nullptr)
         {
-            return rp->CreateFrameBuffer(std::forward<const FrameBufferDescriptor>(desc));
+            rp->CreateFrameBuffer(std::forward<const FrameBufferDescriptor>(desc));
         }
     }
 	VulkanRenderPass* VulkanResourceManager::GetRenderPass(Handle<RenderPass> handle) const

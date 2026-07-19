@@ -1,6 +1,7 @@
 #include "MetalDevice.h"
 
 #include "MetalUtils.h"
+#include "Renderer/Renderer.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -15,12 +16,23 @@ namespace HBL2
         m_MetalLayer = CA::MetalLayer::layer();
         {
             m_MetalLayer->setDevice(m_Device);
-            m_MetalLayer->setPixelFormat(PIXEL_FORMAT);
-            m_MetalLayer->setMaximumDrawableCount(MAX_FRAMES_IN_FLIGHT);
+            m_MetalLayer->setPixelFormat(MTL::PixelFormatBGRA8Unorm);
+            m_MetalLayer->setMaximumDrawableCount(FRAME_OVERLAP);
             m_MetalLayer->setFramebufferOnly(true);
         }
         
         ConnectWindowWithMetal(Window::Instance->GetHandle(), m_MetalLayer);
+        
+        // Set surface size from window.
+        int fbWidth, fbHeight;
+        glfwGetFramebufferSize(Window::Instance->GetHandle(), &fbWidth, &fbHeight);
+        
+        if (fbWidth == 0 || fbHeight == 0)
+        {
+            return;
+        }
+        
+        m_MetalLayer->setDrawableSize(CGSizeMake(fbWidth, fbHeight));
     }
 
     void MetalDevice::Destroy()

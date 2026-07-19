@@ -14,6 +14,8 @@
 
 namespace HBL2
 {
+    constexpr unsigned int FRAME_OVERLAP = 2;
+
 	struct CameraData
 	{
 		glm::mat4 ViewProjection;
@@ -102,7 +104,6 @@ namespace HBL2
 		std::function<void()> Fn;
 		std::function<void()> Done;
 	};
-
 
 	class HBL2_API Renderer
 	{

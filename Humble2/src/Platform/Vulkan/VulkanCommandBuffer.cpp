@@ -9,7 +9,6 @@ namespace HBL2
     RenderPassRenderer* VulkanCommandBuffer::BeginRenderPass(Handle<RenderPass> renderPass, Viewport&& drawArea)
     {
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
-		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 
         m_CurrentRenderPassRenderer.m_CommandBuffer = CommandBuffer;
 

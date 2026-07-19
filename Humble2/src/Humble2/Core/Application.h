@@ -56,6 +56,8 @@ namespace HBL2
 	enum class HBL2_API Platform
 	{
 		Windows,
+        MacOS,
+        Linux,
 		Web,
 		None
 	};

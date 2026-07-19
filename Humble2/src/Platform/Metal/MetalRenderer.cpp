@@ -6,6 +6,8 @@ namespace HBL2
 
     void MetalRenderer::PreInitialize()
     {
+        m_GraphicsAPI = GraphicsAPI::METAL;
+        
         m_Device = (MetalDevice*)Device::Instance;
         m_ResourceManager = (MetalResourceManager*)ResourceManager::Instance;
         
@@ -70,131 +72,43 @@ namespace HBL2
                 .aspect = TextureAspect::DEPTH,
                 .createSampler = false,
             });
-            
-            MetalTexture* mtlDepthTexture = m_ResourceManager->GetTexture(depthTexture);
-            m_ResidencySet->addAllocation(mtlDepthTexture->Texture);
         }
         
         // Create render passes.
-        uint32_t frameIndex = 0;
-        
-        Handle<RenderPassLayout> renderPassLayout = m_ResourceManager->CreateRenderPassLayout({
-            .debugName = "main-renderpass-layout",
-            .depthTargetFormat = Format::D32_FLOAT,
-            .subPasses = {
-                { .depthTarget = true, .colorTargets = 1, },
-            },
-        });
-        
-        // Render passes for main rendering.
-        for (auto renderPassHandle : m_RenderPasses)
-        {
-            renderPassHandle = ResourceManager::Instance->CreateRenderPass({
-                .debugName = "main-renderpass",
-                .layout = renderPassLayout,
-                .depthTarget = {
-                    .loadOp = LoadOperation::CLEAR,
-                    .storeOp = StoreOperation::STORE,
-                    .stencilLoadOp = LoadOperation::DONT_CARE,
-                    .stencilStoreOp = StoreOperation::DONT_CARE,
-                    .prevUsage = TextureLayout::UNDEFINED,
-                    .nextUsage = TextureLayout::DEPTH_STENCIL,
-                },
-                .colorTargets = {
-                    {
-                        .loadOp = LoadOperation::CLEAR,
-                        .storeOp = StoreOperation::STORE,
-                        .prevUsage = TextureLayout::UNDEFINED,
-                        .nextUsage = TextureLayout::RENDER_ATTACHMENT,
-                    },
-                },
-                .frameBufferDesc = {
-                    .width = (uint32_t)extents.width,
-                    .height = (uint32_t)extents.height,
-                    .depthTarget = m_DepthTextures[frameIndex],
-                    .colorTargets = { {} }, // Empty since it requires surface texture, aquired in begin frame.
-                }
-            });
-            
-            frameIndex++;
-        }
-        
-        frameIndex = 0;
-        
-        // Render passes for imgui rendering.
-        for (auto renderPassHandle : m_ImGuiRenderPasses)
-        {
-            renderPassHandle = m_ResourceManager->CreateRenderPass({
-                .debugName = "imgui-renderpass",
-                .layout = renderPassLayout,
-                .depthTarget = {
-                    .loadOp = LoadOperation::LOAD,
-                    .storeOp = StoreOperation::STORE,
-                    .stencilLoadOp = LoadOperation::DONT_CARE,
-                    .stencilStoreOp = StoreOperation::DONT_CARE,
-                    .prevUsage = TextureLayout::DEPTH_STENCIL,
-                    .nextUsage = TextureLayout::DEPTH_STENCIL,
-                },
-                .colorTargets = {
-                    {
-                        .loadOp = LoadOperation::LOAD,
-                        .storeOp = StoreOperation::STORE,
-                        .prevUsage = TextureLayout::RENDER_ATTACHMENT,
-                        .nextUsage = TextureLayout::PRESENT,
-                    },
-                },
-                .frameBufferDesc = {
-                    .width = (uint32_t)extents.width,
-                    .height = (uint32_t)extents.height,
-                    .depthTarget = m_DepthTextures[frameIndex],
-                    .colorTargets = { {} }, // Empty since it requires surface texture, aquired in begin frame.
-                }
-            });
-            
-            frameIndex++;
-        }
-        
-        // Render passes for offscreen rendering.
-        // We only need that to pass the VkRenderPass to the shader creation in the EditorAssetManager flow.
-        // So no need to create a FrameBuffer here at all or have it per frame in flight.
-        m_RenderingRenderPass = m_ResourceManager->CreateRenderPass({
-            .debugName = "rendering-renderpass",
-            .layout = renderPassLayout,
-            .depthTarget = {
-                .loadOp = LoadOperation::CLEAR,
-                .storeOp = StoreOperation::STORE,
-                .stencilLoadOp = LoadOperation::DONT_CARE,
-                .stencilStoreOp = StoreOperation::DONT_CARE,
-                .prevUsage = TextureLayout::UNDEFINED,
-                .nextUsage = TextureLayout::DEPTH_STENCIL,
-            },
-            .colorTargets = {
-                {
-                    .format = Format::RGBA16_FLOAT,
-                    .loadOp = LoadOperation::CLEAR,
-                    .storeOp = StoreOperation::STORE,
-                    .prevUsage = TextureLayout::UNDEFINED,
-                    .nextUsage = TextureLayout::RENDER_ATTACHMENT,
-                },
-            },
-        });
+        CreateRenderPasses();
     }
 
     void MetalRenderer::PostInitialize()
     {
-        
+        // Register event to update the drawble size on resize.
+        EventDispatcher::Get().Register<FramebufferSizeEvent>([this](const FramebufferSizeEvent& e)
+        {
+            Resize(e.Width, e.Height);
+        });
     }
 
     void MetalRenderer::BeginFrame()
     {
+        // Signal that frame is ready.
+        if (m_FrameNumber.load() >= FRAME_OVERLAP)
+        {
+            m_FrameAvailableSharedEvent->waitUntilSignaledValue(m_FrameNumber.load() - FRAME_OVERLAP, 1000);
+        }
+        
+        // Flush any pending deletions that occured in the frames before the current one.
+        m_ResourceManager->Flush(m_FrameNumber.load());
+        
+        // Reset frames command allocator.
+        GetCurrentFrame().CommandAllocator->reset();
+        
         // Attach surface color target texture to main and imgui render passes.
-        CA::MetalDrawable* surface = m_Device->GetMetalLayer()->nextDrawable();
+        m_SurfaceRef = m_Device->GetMetalLayer()->nextDrawable();
         
         MetalRenderPass* mainRp = m_ResourceManager->GetRenderPass(GetMainRenderPass());
-        mainRp->SetColorTarget(0, surface->texture());
+        mainRp->SetColorTarget(0, m_SurfaceRef->texture());
         
         MetalRenderPass* imguiRp = m_ResourceManager->GetRenderPass(GetImGuiRenderPass());
-        imguiRp->SetColorTarget(0, surface->texture());
+        imguiRp->SetColorTarget(0, m_SurfaceRef->texture());
     }
 
     void MetalRenderer::EndFrame()
@@ -204,17 +118,188 @@ namespace HBL2
 
     void MetalRenderer::Present()
     {
+        m_CommandQueue->signalDrawable(m_SurfaceRef);
+        m_SurfaceRef->present();
         
+        m_CommandQueue->signalEvent(m_FrameAvailableSharedEvent, m_FrameNumber.load());
+        m_FrameNumber++;
     }
 
     void MetalRenderer::Clean()
     {
+        m_MainDeletionQueue.Flush();
+
+        // Delete offscreen render targets.
+        m_ResourceManager->DeleteTexture(IntermediateColorTexture);
+        m_ResourceManager->DeleteTexture(MainColorTexture);
+        m_ResourceManager->DeleteTexture(MainDepthTexture);
+        m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
         
+        // Delete render passes.
+        for (auto& rp : m_RenderPasses)
+        {
+            m_ResourceManager->DeleteRenderPass(rp);
+            rp = {};
+        }
+        for (auto& rp : m_ImGuiRenderPasses)
+        {
+            m_ResourceManager->DeleteRenderPass(rp);
+            rp = {};
+        }
+        m_ResourceManager->DeleteRenderPass(m_RenderingRenderPass);
+        m_RenderingRenderPass = {};
+        
+        m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
+        m_RenderPassLayout = {};
+        
+        // Delete surface depth textures.
+        for (uint8_t i = 0; i < FRAME_OVERLAP; ++i)
+        {
+            m_ResourceManager->DeleteTexture(m_DepthTextures[i]);
+        }
+        
+        m_ResidencySet->release();
+        
+        TempUniformRingBuffer->Free();
+        delete TempUniformRingBuffer;
+        TempUniformRingBuffer = nullptr;
+
+        m_ResourceManager->FlushAll();
+    }
+
+    void MetalRenderer::Resize(int width, int height)
+    {
+        // Skip resize if width or height are 0.
+        if (width == 0 || height == 0)
+        {
+            return;
+        }
+        
+        // Update drawble surface size.
+        m_Device->GetMetalLayer()->setDrawableSize(CGSizeMake(width, height));
+        
+        // Wait for device idle.
+        if (m_FrameNumber.load() > 0)
+        {
+            m_FrameAvailableSharedEvent->waitUntilSignaledValue(m_FrameNumber.load() - 1, UINT64_MAX);
+        }
+        
+        // Cleanup old swapchain resources.
+        for (auto& rp : m_RenderPasses)
+        {
+            m_ResourceManager->DeleteRenderPass(rp);
+            rp = {};
+        }
+        for (auto& rp : m_ImGuiRenderPasses)
+        {
+            m_ResourceManager->DeleteRenderPass(rp);
+            rp = {};
+        }
+        m_ResourceManager->DeleteRenderPass(m_RenderingRenderPass);
+        m_RenderingRenderPass = {};
+        
+        m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
+        m_RenderPassLayout = {};
+        
+        // Recreate depth surface textures.
+        for (uint8_t i = 0; i < FRAME_OVERLAP; ++i)
+        {
+            m_ResourceManager->DeleteTexture(m_DepthTextures[i]);
+            
+            m_DepthTextures[i] = m_ResourceManager->CreateTexture({
+                .debugName = "swapchain-depth-image",
+                .dimensions = { width, height, 1 },
+                .format = Format::D32_FLOAT,
+                .internalFormat = Format::D32_FLOAT,
+                .usage = TextureUsage::DEPTH_STENCIL,
+                .aspect = TextureAspect::DEPTH,
+                .createSampler = false,
+            });
+        }
+        
+        // Recreate swapchain and associated resources.
+        CreateRenderPasses();
+        
+        // Destroy old offscreen textures.
+        m_ResourceManager->DeleteTexture(IntermediateColorTexture);
+        m_ResourceManager->DeleteTexture(MainColorTexture);
+        m_ResourceManager->DeleteTexture(MainDepthTexture);
+        
+        // Recreate the offscreen textures (render targets).
+        IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
+            .debugName = "intermediate-color-target",
+            .dimensions = { width, height, 1 },
+            .format = Format::RGBA16_FLOAT,
+            .internalFormat = Format::RGBA16_FLOAT,
+            .usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+            .aspect = TextureAspect::COLOR,
+            .sampler =
+            {
+                .filter = TextureFilter::LINEAR,
+                .wrap = Wrap::CLAMP_TO_EDGE,
+            }
+        });
+
+        MainColorTexture = ResourceManager::Instance->CreateTexture({
+            .debugName = "viewport-color-target",
+            .dimensions = { width, height, 1 },
+            .format = Format::BGRA8_UNORM,
+            .internalFormat = Format::BGRA8_UNORM,
+            .usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+            .aspect = TextureAspect::COLOR,
+            .sampler =
+            {
+                .filter = TextureFilter::LINEAR,
+                .wrap = Wrap::CLAMP_TO_EDGE,
+            }
+        });
+
+        MainDepthTexture = ResourceManager::Instance->CreateTexture({
+            .debugName = "viewport-depth-target",
+            .dimensions = { width, height, 1 },
+            .format = Format::D32_FLOAT,
+            .internalFormat = Format::D32_FLOAT,
+            .usage = TextureUsage::DEPTH_STENCIL,
+            .aspect = TextureAspect::DEPTH,
+            .createSampler = true,
+            .sampler =
+            {
+                .filter = TextureFilter::NEAREST,
+                .wrap = Wrap::CLAMP_TO_EDGE,
+            }
+        });
+        
+        // Update viewport texture attachment (used in imgui).
+        MetalTexture* viewportTexture = m_ResourceManager->GetTexture(MainColorTexture);
+        SetViewportAttachment((void*)viewportTexture->Texture);
+        
+        // Call on resize callbacks.
+        for (auto&& [name, callback] : m_OnResizeCallbacks)
+        {
+            callback(width, height);
+        }
     }
 
     CommandBuffer* MetalRenderer::BeginCommandRecording(CommandBufferType type)
     {
-        return nullptr;
+        MTL4::CommandBuffer* cmd = nullptr;
+        MetalCommandBuffer* mtlCmdObj = nullptr;
+        
+        switch (type)
+        {
+            case CommandBufferType::MAIN:
+                cmd = GetCurrentFrame().MainCommandBuffer;
+                mtlCmdObj = &m_MainCommandBuffers[m_FrameNumber.load() % FRAME_OVERLAP];
+                break;
+            case CommandBufferType::UI:
+                cmd = GetCurrentFrame().ImGuiCommandBuffer;
+                mtlCmdObj = &m_ImGuiCommandBuffers[m_FrameNumber.load() % FRAME_OVERLAP];
+                break;
+        }
+        
+        cmd->beginCommandBuffer(GetCurrentFrame().CommandAllocator);
+        
+        return mtlCmdObj;
     }
 
     void MetalRenderer::MakeResident(std::initializer_list<MTL::Allocation*> resources)
@@ -278,6 +363,113 @@ namespace HBL2
         texture->setLabel(NS::String::string(label.c_str(), NS::UTF8StringEncoding));
 
         return texture;
+    }
+
+    void MetalRenderer::CreateRenderPasses()
+    {
+        uint32_t frameIndex = 0;
+        const auto& extents = m_Device->GetMetalLayer()->drawableSize();
+        
+        m_RenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
+            .debugName = "main-renderpass-layout",
+            .depthTargetFormat = Format::D32_FLOAT,
+            .subPasses = {
+                { .depthTarget = true, .colorTargets = 1, },
+            },
+        });
+        
+        // Render passes for main rendering.
+        for (auto& renderPassHandle : m_RenderPasses)
+        {
+            renderPassHandle = ResourceManager::Instance->CreateRenderPass({
+                .debugName = "main-renderpass",
+                .layout = m_RenderPassLayout,
+                .depthTarget = {
+                    .loadOp = LoadOperation::CLEAR,
+                    .storeOp = StoreOperation::STORE,
+                    .stencilLoadOp = LoadOperation::DONT_CARE,
+                    .stencilStoreOp = StoreOperation::DONT_CARE,
+                    .prevUsage = TextureLayout::UNDEFINED,
+                    .nextUsage = TextureLayout::DEPTH_STENCIL,
+                },
+                .colorTargets = {
+                    {
+                        .loadOp = LoadOperation::CLEAR,
+                        .storeOp = StoreOperation::STORE,
+                        .prevUsage = TextureLayout::UNDEFINED,
+                        .nextUsage = TextureLayout::RENDER_ATTACHMENT,
+                    },
+                },
+                .frameBufferDesc = {
+                    .width = (uint32_t)extents.width,
+                    .height = (uint32_t)extents.height,
+                    .depthTarget = m_DepthTextures[frameIndex],
+                    .colorTargets = { {} }, // Empty since it requires surface texture, aquired in begin frame.
+                }
+            });
+            
+            frameIndex++;
+        }
+        
+        frameIndex = 0;
+        
+        // Render passes for imgui rendering.
+        for (auto& renderPassHandle : m_ImGuiRenderPasses)
+        {
+            renderPassHandle = m_ResourceManager->CreateRenderPass({
+                .debugName = "imgui-renderpass",
+                .layout = m_RenderPassLayout,
+                .depthTarget = {
+                    .loadOp = LoadOperation::LOAD,
+                    .storeOp = StoreOperation::STORE,
+                    .stencilLoadOp = LoadOperation::DONT_CARE,
+                    .stencilStoreOp = StoreOperation::DONT_CARE,
+                    .prevUsage = TextureLayout::DEPTH_STENCIL,
+                    .nextUsage = TextureLayout::DEPTH_STENCIL,
+                },
+                .colorTargets = {
+                    {
+                        .loadOp = LoadOperation::LOAD,
+                        .storeOp = StoreOperation::STORE,
+                        .prevUsage = TextureLayout::RENDER_ATTACHMENT,
+                        .nextUsage = TextureLayout::PRESENT,
+                    },
+                },
+                .frameBufferDesc = {
+                    .width = (uint32_t)extents.width,
+                    .height = (uint32_t)extents.height,
+                    .depthTarget = m_DepthTextures[frameIndex],
+                    .colorTargets = { {} }, // Empty since it requires surface texture, aquired in begin frame.
+                }
+            });
+            
+            frameIndex++;
+        }
+        
+        // Render passes for offscreen rendering.
+        // We only need that to pass the VkRenderPass to the shader creation in the EditorAssetManager flow.
+        // So no need to create a FrameBuffer here at all or have it per frame in flight.
+        m_RenderingRenderPass = m_ResourceManager->CreateRenderPass({
+            .debugName = "rendering-renderpass",
+            .layout = m_RenderPassLayout,
+            .depthTarget = {
+                .loadOp = LoadOperation::CLEAR,
+                .storeOp = StoreOperation::STORE,
+                .stencilLoadOp = LoadOperation::DONT_CARE,
+                .stencilStoreOp = StoreOperation::DONT_CARE,
+                .prevUsage = TextureLayout::UNDEFINED,
+                .nextUsage = TextureLayout::DEPTH_STENCIL,
+            },
+            .colorTargets = {
+                {
+                    .format = Format::RGBA16_FLOAT,
+                    .loadOp = LoadOperation::CLEAR,
+                    .storeOp = StoreOperation::STORE,
+                    .prevUsage = TextureLayout::UNDEFINED,
+                    .nextUsage = TextureLayout::RENDER_ATTACHMENT,
+                },
+            },
+        });
     }
 
     void MetalRenderer::CreateUploadContextCommands()

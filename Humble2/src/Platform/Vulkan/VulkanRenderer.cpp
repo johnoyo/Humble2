@@ -219,6 +219,8 @@ namespace HBL2
         
         VulkanRenderPass* vkRenderingRenderPass = m_ResourceManager->GetRenderPass(m_RenderingRenderPass);
         vkRenderingRenderPass->Destroy();
+        
+        m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
 
 		for (int i = 0; i < m_SwapChainColorTextures.size(); i++)
 		{
@@ -361,6 +363,7 @@ namespace HBL2
             m_ResourceManager->DeleteRenderPass(rp);
         }
         m_ResourceManager->DeleteRenderPass(m_RenderingRenderPass);
+        m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
 
         m_RenderPasses.clear();
         m_ImGuiRenderPasses.clear();
@@ -784,7 +787,7 @@ namespace HBL2
         m_RenderPasses = std::vector<Handle<RenderPass>>(swapChainImageCount);
         m_ImGuiRenderPasses = std::vector<Handle<RenderPass>>(swapChainImageCount);
 
-        Handle<RenderPassLayout> renderPassLayout = ResourceManager::Instance->CreateRenderPassLayout({
+        m_RenderPassLayout = ResourceManager::Instance->CreateRenderPassLayout({
             .debugName = "main-renderpass-layout",
             .depthTargetFormat = Format::D32_FLOAT,
             .subPasses = {
@@ -797,7 +800,7 @@ namespace HBL2
             // Render passes for main swapchain rendering.
             m_RenderPasses[i] = ResourceManager::Instance->CreateRenderPass({
                 .debugName = "main-renderpass",
-                .layout = renderPassLayout,
+                .layout = m_RenderPassLayout,
                 .depthTarget = {
                     .loadOp = LoadOperation::CLEAR,
                     .storeOp = StoreOperation::STORE,
@@ -825,7 +828,7 @@ namespace HBL2
             // Render passes for imgui rendering.
             m_ImGuiRenderPasses[i] = m_ResourceManager->CreateRenderPass({
                 .debugName = "imgui-renderpass",
-                .layout = renderPassLayout,
+                .layout = m_RenderPassLayout,
                 .depthTarget = {
                     .loadOp = LoadOperation::LOAD,
                     .storeOp = StoreOperation::STORE,
@@ -856,7 +859,7 @@ namespace HBL2
         // So no need to create a FrameBuffer here at all or have it per frame in flight.
         m_RenderingRenderPass = m_ResourceManager->CreateRenderPass({
             .debugName = "rendering-renderpass",
-            .layout = renderPassLayout,
+            .layout = m_RenderPassLayout,
             .depthTarget = {
                 .loadOp = LoadOperation::CLEAR,
                 .storeOp = StoreOperation::STORE,

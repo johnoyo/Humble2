@@ -16,8 +16,6 @@
 
 namespace HBL2
 {
-    constexpr unsigned int FRAME_OVERLAP = 2;
-
     struct MtlFrameData
     {
         MTL4::CommandBuffer* MainCommandBuffer = nullptr;
@@ -67,6 +65,9 @@ namespace HBL2
         MTL4::CommandQueue* GetCommandQueue() { return m_CommandQueue; }
         const MTL4::CommandQueue* GetCommandQueue() const { return m_CommandQueue; }
         
+        CA::MetalDrawable* GetCurrentSurface() { return m_SurfaceRef; }
+        const CA::MetalDrawable* GetCurrentSurface() const { return m_SurfaceRef; }
+        
         void MakeResident(std::initializer_list<MTL::Allocation*> resources);
         void RemoveResident(MTL::Allocation* resource);
         void ImmediateSubmit(const std::function<void(MTL4::ComputeCommandEncoder*)>& fn);
@@ -78,6 +79,8 @@ namespace HBL2
     private:
         void CreateUploadContextCommands();
         MTL::Texture* CreateDepthTexture(uint32_t width, uint32_t height, uint32_t frameIdx);
+        void CreateRenderPasses();
+        void Resize(int width, int height);
         
     private:
         MetalDevice* m_Device = nullptr;
@@ -85,6 +88,7 @@ namespace HBL2
         DeletionQueue m_MainDeletionQueue;
         std::mutex m_DeletionQueueMutex;
         
+        CA::MetalDrawable* m_SurfaceRef = nullptr;
         MTL4::CommandQueue* m_CommandQueue = nullptr;
         std::array<MtlFrameData, FRAME_OVERLAP> m_MtlFrames;
         MTL::ResidencySet* m_ResidencySet = nullptr;
@@ -100,7 +104,12 @@ namespace HBL2
         std::array<Handle<RenderPass>, FRAME_OVERLAP> m_RenderPasses;
         std::array<Handle<RenderPass>, FRAME_OVERLAP> m_ImGuiRenderPasses;
         Handle<RenderPass> m_RenderingRenderPass;
+        Handle<RenderPassLayout> m_RenderPassLayout;
         
         MTL::Texture* m_ColorAttachmentID = nullptr;
+        
+        bool m_ResizeRequested = false;
+        int m_Width = 0;
+        int m_Height = 0;
     };
 }

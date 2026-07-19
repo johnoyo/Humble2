@@ -1,5 +1,7 @@
 #include "MetalResourceManager.h"
 
+#include "Renderer/Renderer.h"
+
 namespace HBL2
 {
     void MetalResourceManager::Initialize(const ResourceManagerSpecification& spec)
@@ -8,25 +10,25 @@ namespace HBL2
 
         InternalInitialize();
 
-//        m_TexturePool.Initialize(m_Spec.Textures);
+        m_TexturePool.Initialize(m_Spec.Textures);
 //        m_BufferSplitPool.Initialize(m_Spec.Buffers);
 //        m_ShaderSplitPool.Initialize(m_Spec.Shaders);
 //        m_BindGroupSplitPool.Initialize(m_Spec.BindGroups);
 //        m_BindGroupLayoutPool.Initialize(m_Spec.BindGroupLayouts);
-//        m_RenderPassPool.Initialize(m_Spec.RenderPass);
-//        m_RenderPassLayoutPool.Initialize(m_Spec.RenderPassLayouts);
+        m_RenderPassPool.Initialize(m_Spec.RenderPass);
+        m_RenderPassLayoutPool.Initialize(m_Spec.RenderPassLayouts);
     }
     const ResourceManagerSpecification MetalResourceManager::GetUsageStats()
     {
         ResourceManagerSpecification currentSpec =
         {
-//            .Textures = m_TexturePool.FreeSlotCount(),
+            .Textures = m_TexturePool.FreeSlotCount(),
 //            .Buffers = m_BufferSplitPool.FreeSlotCount(),
 //            .Shaders = m_ShaderSplitPool.FreeSlotCount(),
 //            .BindGroups = m_BindGroupSplitPool.FreeSlotCount(),
 //            .BindGroupLayouts = m_BindGroupLayoutPool.FreeSlotCount(),
-//            .RenderPass = m_RenderPassPool.FreeSlotCount(),
-//            .RenderPassLayouts = m_RenderPassLayoutPool.FreeSlotCount(),
+            .RenderPass = m_RenderPassPool.FreeSlotCount(),
+            .RenderPassLayouts = m_RenderPassLayoutPool.FreeSlotCount(),
             .Meshes = m_MeshPool.FreeSlotCount(),
             .Materials = m_MaterialPool.FreeSlotCount(),
             .Scenes = m_ScenePool.FreeSlotCount(),
@@ -44,52 +46,47 @@ namespace HBL2
     // Textures
     Handle<Texture> MetalResourceManager::CreateTexture(const TextureDescriptor&& desc)
     {
-//        return m_TexturePool.Insert(std::forward<const TextureDescriptor>(desc));
-        return {};
+        return m_TexturePool.Insert(std::forward<const TextureDescriptor>(desc));
     }
     void MetalResourceManager::DeleteTexture(Handle<Texture> handle)
     {
-//        m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
-//        {
-//            MetalTexture* texture = GetTexture(handle);
-//            if (texture != nullptr)
-//            {
-//                texture->Destroy();
-//                m_TexturePool.Remove(handle);
-//            }
-//        });
+        m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
+        {
+            MetalTexture* texture = GetTexture(handle);
+            if (texture != nullptr)
+            {
+                texture->Destroy();
+                m_TexturePool.Remove(handle);
+            }
+        });
     }
     void MetalResourceManager::UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes)
     {
-//        MetalTexture* texture = GetTexture(handle);
-//        if (texture != nullptr)
-//        {
-//            texture->Update(bytes);
-//        }
+        MetalTexture* texture = GetTexture(handle);
+        if (texture != nullptr)
+        {
+            texture->Update(bytes);
+        }
     }
     void MetalResourceManager::ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc)
     {
-//        MetalTexture* texture = GetTexture(handle);
-//        if (texture != nullptr)
-//        {
-//            texture->ChangeTextureView(std::forward<const TextureViewDescriptor>(desc));
-//        }
+        MetalTexture* texture = GetTexture(handle);
+        if (texture != nullptr)
+        {
+            texture->ChangeTextureView(std::forward<const TextureViewDescriptor>(desc));
+        }
     }
     void MetalResourceManager::TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout)
     {
-//        MetalTexture* texture = GetTexture(handle);
-//        if (texture != nullptr)
-//        {
-//            texture->TrasitionLayout((MetalCommandBuffer*)commandBuffer, currentLayout, newLayout);
-//        }
+        // no-op
     }
     glm::vec3 MetalResourceManager::GetTextureDimensions(Handle<Texture> handle)
     {
-//        MetalTexture* texture = GetTexture(handle);
-//        if (texture != nullptr)
-//        {
-//            return { texture->Extent.width, texture->Extent.height, texture->Extent.depth };
-//        }
+        MetalTexture* texture = GetTexture(handle);
+        if (texture != nullptr)
+        {
+            return { texture->Extent.width, texture->Extent.height, texture->Extent.depth };
+        }
 
         return { 0.f, 0.f, 0.f };
     }
@@ -99,7 +96,7 @@ namespace HBL2
     }
     MetalTexture* MetalResourceManager::GetTexture(Handle<Texture> handle) const
     {
-//        return m_TexturePool.Get(handle);
+        return m_TexturePool.Get(handle);
         return nullptr;
     }
 
@@ -504,44 +501,50 @@ namespace HBL2
     // RenderPass
     Handle<RenderPass> MetalResourceManager::CreateRenderPass(const RenderPassDescriptor&& desc)
     {
-//        return m_RenderPassPool.Insert(std::forward<const RenderPassDescriptor>(desc));
-        return {};
+        return m_RenderPassPool.Insert(std::forward<const RenderPassDescriptor>(desc));
     }
     void MetalResourceManager::DeleteRenderPass(Handle<RenderPass> handle)
     {
-//        m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
-//        {
-//            MetalRenderPass* renderPass = GetRenderPass(handle);
-//            if (renderPass != nullptr)
-//            {
-//                renderPass->Destroy();
-//                m_RenderPassPool.Remove(handle);
-//            }
-//        });
+        m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
+        {
+            MetalRenderPass* renderPass = GetRenderPass(handle);
+            if (renderPass != nullptr)
+            {
+                renderPass->Destroy();
+                m_RenderPassPool.Remove(handle);
+            }
+        });
     }
     MetalRenderPass* MetalResourceManager::GetRenderPass(Handle<RenderPass> handle) const
     {
-//        return m_RenderPassPool.Get(handle);
-        return nullptr;
+        return m_RenderPassPool.Get(handle);
     }
 
     // RenderPassLayouts
     Handle<RenderPassLayout> MetalResourceManager::CreateRenderPassLayout(const RenderPassLayoutDescriptor&& desc)
     {
-//        return m_RenderPassLayoutPool.Insert(std::forward<const RenderPassLayoutDescriptor>(desc));
-        return {};
+        return m_RenderPassLayoutPool.Insert(std::forward<const RenderPassLayoutDescriptor>(desc));
     }
     void MetalResourceManager::DeleteRenderPassLayout(Handle<RenderPassLayout> handle)
     {
+        m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
+        {
+            m_RenderPassLayoutPool.Remove(handle);
+        });
     }
     void MetalResourceManager::RecreateRenderPassFrameBuffer(Handle<RenderPass> handle, const FrameBufferDescriptor&& desc)
     {
-        
+        MetalRenderPass* rp = GetRenderPass(handle);
+
+        if (rp != nullptr)
+        {
+//            rp->CreateFrameBuffer(std::forward<const FrameBufferDescriptor>(desc));
+        }
     }
-//    MetalRenderPassLayout* MetalResourceManager::GetRenderPassLayout(Handle<RenderPassLayout> handle) const
-//    {
-//        return m_RenderPassLayoutPool.Get(handle);
-//    }
+    MetalRenderPassLayout* MetalResourceManager::GetRenderPassLayout(Handle<RenderPassLayout> handle) const
+    {
+        return m_RenderPassLayoutPool.Get(handle);
+    }
 }
 
 
