@@ -18,9 +18,6 @@ namespace HBL2
         MTL::DepthStencilState* DepthStencilState = nullptr;
         Handle<BindGroup> ShaderBindGroup = {};
         
-        StaticArray<uint16_t, 4> BuffersInBindGroups;
-        StaticArray<uint16_t, 4> TexturesInBindGroups;
-        
         void Destroy();
     };
 
