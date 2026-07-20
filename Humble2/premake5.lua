@@ -40,7 +40,7 @@ project "Humble2"
         "../Dependencies/GLEW/include",
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
-        "../Dependencies/ImGuizmo",
+        "../Dependencies/ImGuizmo/src",
         "../Dependencies/GLM",
         "../Dependencies/YAML-Cpp/yaml-cpp/include",
         "../Dependencies/PortableFileDialogs",

@@ -25,6 +25,11 @@ namespace HBL2
         MTL::VertexFormat VertexFormatToMTLVertexFormat(VertexFormat vertexFormat);
         MTL::PrimitiveTopologyClass TopologyToMTLPrimitiveTopologyClass(Topology topology);
         MTL::PrimitiveType TopologyToMTLPrimitiveType(Topology topology);
+        MTL::Winding FrontFaceToMTLWinding(FrontFace frontFace);
+        MTL::CullMode CullModeToMTLCullMode(CullMode cullMode);
+        MTL::TriangleFillMode PolygonModeToMTLTriangleFillMode(PolygonMode polygonMode);
         MTL::ResourceOptions MemoryUsageToMTLResourceOptions(MemoryUsage memoryUsage);
+        MTL::BlendOperation BlendOperationToMTLBlendOperation(BlendOperation blendOperation);
+        MTL::BlendFactor BlendFactorToMTLBlendFactor(BlendFactor blendFactor);
     }
 }

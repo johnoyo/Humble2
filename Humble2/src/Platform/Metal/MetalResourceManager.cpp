@@ -227,7 +227,7 @@ namespace HBL2
     uint64_t MetalResourceManager::GetOrAddShaderVariant(Handle<Shader> handle, const ShaderDescriptor::RenderPipeline::PackedVariant& variantDesc)
     {
         MetalShader shader = GetShader(handle);
-        return (uint64_t)shader.GetOrCreateVariant(variantDesc);
+        return shader.GetOrCreateVariant(variantDesc); // return the pipeline packed variant.
     }
     void MetalResourceManager::SetShaderGlobalBindGroup(Handle<Shader> handle, Handle<BindGroup> bindGroupHandle)
     {
@@ -334,7 +334,7 @@ namespace HBL2
     }
     void MetalResourceManager::UpdateBindGroup(Handle<BindGroup> handle)
     {
-        MetalBindGroup bindGroup = GetBindGroup(handle);
+        //MetalBindGroup bindGroup = GetBindGroup(handle);
         //bindGroup.Update();
     }
     uint64_t MetalResourceManager::GetBindGroupHash(Handle<BindGroup> handle)

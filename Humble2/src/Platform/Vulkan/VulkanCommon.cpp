@@ -46,8 +46,12 @@ namespace HBL2
 				return VK_BLEND_OP_ADD;
 			case HBL2::BlendOperation::MUL:
 				return VK_BLEND_OP_MULTIPLY_EXT;
-			case HBL2::BlendOperation::SUB:
-				return VK_BLEND_OP_SUBTRACT;
+            case HBL2::BlendOperation::SUB:
+                return VK_BLEND_OP_SUBTRACT;
+            case HBL2::BlendOperation::MIN:
+                return VK_BLEND_OP_MIN;
+            case HBL2::BlendOperation::MAX:
+                return VK_BLEND_OP_MAX;
 			}
 
 			return VK_BLEND_OP_MAX_ENUM;

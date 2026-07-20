@@ -19,6 +19,7 @@ namespace HBL2
             m_MetalLayer->setPixelFormat(MTL::PixelFormatBGRA8Unorm);
             m_MetalLayer->setMaximumDrawableCount(FRAME_OVERLAP);
             m_MetalLayer->setFramebufferOnly(true);
+            m_MetalLayer->setDisplaySyncEnabled(Window::Instance->GetSpec().VerticalSync);
         }
         
         ConnectWindowWithMetal(Window::Instance->GetHandle(), m_MetalLayer);

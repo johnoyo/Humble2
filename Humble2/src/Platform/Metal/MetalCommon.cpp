@@ -39,9 +39,9 @@ namespace HBL2
         case HBL2::TextureType::D2:
             return MTL::TextureType2D;
         case HBL2::TextureType::D3:
-                return MTL::TextureType3D;
+            return MTL::TextureType3D;
         case HBL2::TextureType::D2_ARRAY:
-                return MTL::TextureType2DArray;
+            return MTL::TextureType2DArray;
         case HBL2::TextureType::CUBE:
             return MTL::TextureTypeCube;
         }
@@ -244,15 +244,62 @@ namespace HBL2
         case HBL2::Topology::TRIANGLE_LIST:
             return MTL::PrimitiveTypeTriangle;
         case HBL2::Topology::LINE_STRIP:
-                return MTL::PrimitiveTypeLineStrip;
+            return MTL::PrimitiveTypeLineStrip;
         case HBL2::Topology::TRIANGLE_STRIP:
-                return MTL::PrimitiveTypeTriangleStrip;
+            return MTL::PrimitiveTypeTriangleStrip;
         case HBL2::Topology::TRIANGLE_FAN:
         case HBL2::Topology::PATCH_LIST:
             break;
         }
 
         return (MTL::PrimitiveType)NS::UInteger(-1);
+    }
+
+    MTL::Winding MtlUtils::FrontFaceToMTLWinding(FrontFace frontFace)
+    {
+        // NOTE: Front face inverted to match vulkan setup.
+        
+        switch (frontFace)
+        {
+        case HBL2::FrontFace::COUNTER_CLOCKWISE:
+            return MTL::WindingClockwise;
+        case HBL2::FrontFace::CLOCKWISE:
+            return MTL::WindingCounterClockwise;
+        }
+
+        return (MTL::Winding)NS::UInteger(-1);
+    }
+
+    MTL::CullMode MtlUtils::CullModeToMTLCullMode(CullMode cullMode)
+    {
+        switch (cullMode)
+        {
+        case HBL2::CullMode::NONE:
+            return MTL::CullModeNone;
+        case HBL2::CullMode::FRONT:
+            return MTL::CullModeFront;
+        case HBL2::CullMode::BACK:
+            return MTL::CullModeBack;
+        case HBL2::CullMode::FRONT_AND_BACK:
+            return MTL::CullModeBack; // NOTE: FrontAndBack is missing!
+        }
+
+        return (MTL::CullMode)NS::UInteger(-1);
+    }
+
+    MTL::TriangleFillMode MtlUtils::PolygonModeToMTLTriangleFillMode(PolygonMode polygonMode)
+    {
+        switch (polygonMode)
+        {
+        case HBL2::PolygonMode::FILL:
+            return MTL::TriangleFillModeFill;
+        case HBL2::PolygonMode::LINE:
+            return MTL::TriangleFillModeLines;
+        case HBL2::PolygonMode::POINT:
+            return MTL::TriangleFillModeFill; // NOTE: Points is missing!
+        }
+
+        return (MTL::TriangleFillMode)NS::UInteger(-1);
     }
 
     MTL::ResourceOptions MtlUtils::MemoryUsageToMTLResourceOptions(MemoryUsage memoryUsage)
@@ -277,5 +324,41 @@ namespace HBL2
         }
 
         return MTL::ResourceStorageModeShared;
+    }
+
+    MTL::BlendOperation MtlUtils::BlendOperationToMTLBlendOperation(BlendOperation blendOperation)
+    {
+        switch (blendOperation)
+        {
+        case HBL2::BlendOperation::ADD:
+            return MTL::BlendOperationAdd;
+        case HBL2::BlendOperation::MUL:
+            return MTL::BlendOperationUnspecialized; // Multiply not available!
+        case HBL2::BlendOperation::SUB:
+                return MTL::BlendOperationSubtract;
+        case HBL2::BlendOperation::MIN:
+                return MTL::BlendOperationMin;
+        case HBL2::BlendOperation::MAX:
+            return MTL::BlendOperationMax;
+        }
+
+        return MTL::BlendOperationUnspecialized;
+    }
+
+    MTL::BlendFactor MtlUtils::BlendFactorToMTLBlendFactor(BlendFactor blendFactor)
+    {
+        switch (blendFactor)
+        {
+        case HBL2::BlendFactor::SRC_ALPHA:
+            return MTL::BlendFactorSourceAlpha;
+        case HBL2::BlendFactor::ONE_MINUS_SRC_ALPHA:
+            return MTL::BlendFactorOneMinusSourceAlpha;
+        case HBL2::BlendFactor::ONE:
+            return MTL::BlendFactorOne;
+        case HBL2::BlendFactor::ZERO:
+            return MTL::BlendFactorZero;
+        }
+
+        return MTL::BlendFactorUnspecialized;
     }
 }

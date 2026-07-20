@@ -14,6 +14,7 @@ namespace HBL2
 {
     struct MetalShaderHot
     {
+        void* Pso = nullptr;
         MTL::DepthStencilState* DepthStencilState = nullptr;
         Handle<BindGroup> ShaderBindGroup = {};
         
@@ -54,7 +55,7 @@ namespace HBL2
             MetalShaderHot* shaderHotData = nullptr;
         };
 
-        void* GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld = false);
+        uint64_t GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld = false);
         MTL::RenderPipelineState* CreatePipeline(const PipelineConfig& config);
         MTL::ComputePipelineState* CreateComputePipeline(const PipelineConfig& config);
         
@@ -85,8 +86,8 @@ namespace HBL2
         void Recompile(const ShaderDescriptor&& desc, bool removeVariants = false);
         void Destroy();
         
-        void* GetOrCreateVariant(ShaderDescriptor::RenderPipeline::PackedVariant key);
-        void* GetOrCreateComputeVariant(ShaderDescriptor::RenderPipeline::PackedVariant key);
+        uint64_t GetOrCreateVariant(ShaderDescriptor::RenderPipeline::PackedVariant key);
+        uint64_t GetOrCreateComputeVariant(ShaderDescriptor::RenderPipeline::PackedVariant key);
         
         bool IsValid() const;
         

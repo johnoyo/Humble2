@@ -20,8 +20,8 @@ project "ImGui"
 		"imgui/imstb_textedit.h",
 		"imgui/imstb_truetype.h",
 		"imgui/imgui_demo.cpp",
-		"../ImGuizmo/ImGuizmo.h",
-		"../ImGuizmo/ImGuizmo.cpp",
+		"../ImGuizmo/src/ImGuizmo.h",
+		"../ImGuizmo/src/ImGuizmo.cpp",
 	}
 
 	includedirs

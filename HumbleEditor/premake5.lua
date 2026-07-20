@@ -28,7 +28,7 @@ project "HumbleEditor"
         "../Humble2/src/Vendor",
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
-        "../Dependencies/ImGuizmo",
+        "../Dependencies/ImGuizmo/src",
         "../Dependencies/GLFW/include",
         "../Dependencies/GLEW/include",
         "../Dependencies/stb_image",

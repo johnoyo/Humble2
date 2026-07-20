@@ -72,7 +72,7 @@ namespace HBL2
 
             if (prevVariantHash != draw.VariantHandle || prevShader != draw.Shader)
             {
-                Encoder->setRenderPipelineState((MTL::RenderPipelineState*)draw.VariantHandle);
+                Encoder->setRenderPipelineState((MTL::RenderPipelineState*)shader->Pso);
                 Encoder->setDepthStencilState(shader->DepthStencilState);
                 
                 // Bind global shader descriptor set for custom per frame data if needed.
@@ -169,8 +169,15 @@ namespace HBL2
             
             Encoder->setArgumentTable(argTable, MTL::RenderStageVertex | MTL::RenderStageFragment);
             
-            // Get topology.
+            // Get variant properties.
             MTL::PrimitiveType topology = MtlUtils::TopologyToMTLPrimitiveType((Topology)variant.topology);
+            MTL::Winding windingOrder = MtlUtils::FrontFaceToMTLWinding((FrontFace)variant.frontFace);
+            MTL::CullMode cullMode = MtlUtils::CullModeToMTLCullMode((CullMode)variant.cullMode);
+            MTL::TriangleFillMode triangleFillMode = MtlUtils::PolygonModeToMTLTriangleFillMode((PolygonMode)variant.polygonMode);
+            
+            Encoder->setFrontFacingWinding(windingOrder);
+            Encoder->setCullMode(cullMode);
+            Encoder->setTriangleFillMode(triangleFillMode);
             
             // Draw the mesh accordingly.
             if (draw.IndexBuffer.IsValid())

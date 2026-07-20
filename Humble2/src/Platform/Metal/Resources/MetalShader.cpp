@@ -6,11 +6,7 @@ namespace HBL2
 {
     void MetalShaderHot::Destroy()
     {
-        if (DepthStencilState != nullptr)
-        {
-            DepthStencilState->release();
-        }
-        
+        // The Pso and DepthStencilState are released in the ShaderColdCold::Destroy with all the variants.
         ResourceManager::Instance->DeleteBindGroup(ShaderBindGroup);
     }
 
@@ -30,7 +26,7 @@ namespace HBL2
         return nullptr;
     }
 
-    void* MetalShaderCold::GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld)
+    uint64_t MetalShaderCold::GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld)
     {
         void* p = nullptr;
         MTL::DepthStencilState* d = nullptr;
@@ -41,9 +37,10 @@ namespace HBL2
         {
             if (config.shaderHotData != nullptr)
             {
+                config.shaderHotData->Pso = p;
                 config.shaderHotData->DepthStencilState = m_Entries[pipelineIndex].DepthStencilState;
             }
-            return p;
+            return m_Entries[pipelineIndex].Key.Key();
         }
 
         // Slow path where only writers lock, if the pipeline is not in cache.
@@ -58,7 +55,7 @@ namespace HBL2
                 {
                     config.shaderHotData->DepthStencilState = m_Entries[pipelineIndex].DepthStencilState;
                 }
-                return p;
+                return m_Entries[pipelineIndex].Key.Key();
             }
         }
 
@@ -116,20 +113,20 @@ namespace HBL2
 
         if (idx >= MaxVariants)
         {
-            return p;
+            return 0;
         }
 
         // Store in array and update count.
         m_Entries[idx] = { config.variantDesc, p, d };
         m_Count.store(idx + 1, std::memory_order_release);
 
-        return p;
+        return m_Entries[idx].Key.Key();
     }
 
     MTL::RenderPipelineState* MetalShaderCold::CreatePipeline(const PipelineConfig& config)
     {
         // Primitive topology state.
-        MTL::PrimitiveTopologyClass inputPrimitiveTopology = MtlUtils::TopologyToMTLPrimitiveTopologyClass((Topology)config.variantDesc.topology);
+        MTL::PrimitiveTopologyClass topology = MtlUtils::TopologyToMTLPrimitiveTopologyClass((Topology)config.variantDesc.topology);
         
         // Alpha state.
         MTL4::AlphaToOneState alphaToOneState = MTL4::AlphaToOneStateDisabled;
@@ -161,14 +158,31 @@ namespace HBL2
         pipelineDesc->setLabel(NS::String::string(DebugName, NS::UTF8StringEncoding));
         pipelineDesc->setVertexFunctionDescriptor(config.shaderModules[0]);
         pipelineDesc->setFragmentFunctionDescriptor(config.shaderModules[1]);
-        pipelineDesc->setInputPrimitiveTopology(inputPrimitiveTopology);
+        pipelineDesc->setInputPrimitiveTopology(topology);
         pipelineDesc->setAlphaToOneState(alphaToOneState);
         pipelineDesc->setAlphaToCoverageState(alphaToCoverageState);
         pipelineDesc->setRasterSampleCount(1);
         pipelineDesc->setRasterizationEnabled(true);
+        
+        const auto& var = config.variantDesc;
+        
         for (uint32_t i = 0; i < ColorAttachmentCount; i++)
         {
-            pipelineDesc->colorAttachments()->object(i)->setPixelFormat(ColorAttachmentFormats[i]);
+            MTL4::RenderPipelineColorAttachmentDescriptor* colorAttachment = pipelineDesc->colorAttachments()->object(i);
+
+            colorAttachment->setBlendingState(config.variantDesc.blendEnabled ? MTL4::BlendStateEnabled : MTL4::BlendStateDisabled);
+            
+            colorAttachment->setSourceRGBBlendFactor(MtlUtils::BlendFactorToMTLBlendFactor((BlendFactor)var.srcColorFactor));
+            colorAttachment->setDestinationRGBBlendFactor(MtlUtils::BlendFactorToMTLBlendFactor((BlendFactor)var.dstColorFactor));
+            colorAttachment->setRgbBlendOperation(MtlUtils::BlendOperationToMTLBlendOperation((BlendOperation)var.colorOp));
+            
+            colorAttachment->setSourceAlphaBlendFactor(MtlUtils::BlendFactorToMTLBlendFactor((BlendFactor)var.srcAlphaFactor));
+            colorAttachment->setDestinationAlphaBlendFactor(MtlUtils::BlendFactorToMTLBlendFactor((BlendFactor)var.dstAlphaFactor));
+            colorAttachment->setAlphaBlendOperation(MtlUtils::BlendOperationToMTLBlendOperation((BlendOperation)var.alphaOp));
+            
+            colorAttachment->setWriteMask(config.variantDesc.colorOutput ? MTL::ColorWriteMaskAll : MTL::ColorWriteMaskNone);
+            
+            colorAttachment->setPixelFormat(ColorAttachmentFormats[i]);
         }
         pipelineDesc->setVertexDescriptor(vertexDesc);
 
@@ -520,11 +534,11 @@ namespace HBL2
         Cold->Destroy();
     }
 
-    void* MetalShader::GetOrCreateVariant(ShaderDescriptor::RenderPipeline::PackedVariant key)
+    uint64_t MetalShader::GetOrCreateVariant(ShaderDescriptor::RenderPipeline::PackedVariant key)
     {
         if (!IsValid())
         {
-            return nullptr;
+            return 0;
         }
         
         if (Cold->ComputeShaderModule == nullptr)
@@ -543,11 +557,11 @@ namespace HBL2
         return GetOrCreateComputeVariant(key);
     }
 
-    void* MetalShader::GetOrCreateComputeVariant(ShaderDescriptor::RenderPipeline::PackedVariant key)
+    uint64_t MetalShader::GetOrCreateComputeVariant(ShaderDescriptor::RenderPipeline::PackedVariant key)
     {
         if (!IsValid())
         {
-            return nullptr;
+            return 0;
         }
         
         return Cold->GetOrCreatePipeline({
