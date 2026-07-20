@@ -10,6 +10,12 @@
 
 namespace HBL2
 {
+    struct PendingBarrier
+    {
+        MTL::Stages After;
+        MTL::Stages Before;
+    };
+
     struct MtlCommandBufferCreateInfo
     {
         CommandBufferType type;
@@ -33,9 +39,12 @@ namespace HBL2
         
         MTL4::CommandBuffer* CommandBuffer = nullptr;
         
+        void AddPendingBarrier(const PendingBarrier& pendingbarrier) { m_PendingBarriers.push_back(pendingbarrier); }
+        
     private:
         CommandBufferType m_Type;
         MetalRenderPassRenderer m_CurrentRenderPassRenderer;
         MetalComputePassRenderer m_CurrentComputePassRenderer;
+        std::vector<PendingBarrier> m_PendingBarriers;
     };
 }

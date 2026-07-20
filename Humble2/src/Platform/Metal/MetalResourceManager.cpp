@@ -78,7 +78,11 @@ namespace HBL2
     }
     void MetalResourceManager::TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout)
     {
-        // no-op
+        MetalTexture* texture = GetTexture(handle);
+        if (texture != nullptr)
+        {
+            texture->SynchronizeUsage((MetalCommandBuffer*)commandBuffer, currentLayout, newLayout);
+        }
     }
     glm::vec3 MetalResourceManager::GetTextureDimensions(Handle<Texture> handle)
     {

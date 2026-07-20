@@ -70,8 +70,7 @@ namespace HBL2
 	protected:
 		void ShadowPassSetup();
 		void DepthPrePassSetup();
-		void OpaquePassSetup();
-		void TransparentPassSetup();
+		void GeometryPassSetup();
 		void SpriteRenderingSetup();
 		void SkyboxPassSetup();
 		void PostProcessPassSetup();
@@ -83,9 +82,10 @@ namespace HBL2
 
 		void ShadowPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
 		void DepthPrePass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
-		void OpaquePass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
-		void TransparentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
-		void SkyboxPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
+        void GeometryPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData, RenderPassPool& renderPassPool);
+		void OpaquePass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
+		void TransparentPass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
+		void SkyboxPass(CommandBuffer* commandBuffer, RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
 		void PostProcessPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
 		void DebugPass(CommandBuffer* commandBuffer, void* debugRenderData);
 		void PresentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
@@ -123,8 +123,7 @@ namespace HBL2
 		Handle<Shader> m_DepthOnlyShader;
 		Handle<Shader> m_DepthOnlySpriteShader;
 
-		Handle<RenderPass> m_OpaqueRenderPass;
-		Handle<RenderPass> m_TransparentRenderPass;
+		Handle<RenderPass> m_GeometryRenderPass;
 
 		Handle<BindGroupLayout> m_EquirectToSkyboxBindGroupLayout;
 		Handle<Buffer> m_CaptureMatricesBuffer;

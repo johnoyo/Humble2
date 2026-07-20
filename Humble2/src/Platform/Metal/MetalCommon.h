@@ -31,5 +31,6 @@ namespace HBL2
         MTL::ResourceOptions MemoryUsageToMTLResourceOptions(MemoryUsage memoryUsage);
         MTL::BlendOperation BlendOperationToMTLBlendOperation(BlendOperation blendOperation);
         MTL::BlendFactor BlendFactorToMTLBlendFactor(BlendFactor blendFactor);
+        MTL::Stages TextureLayoutToMTLStage(TextureLayout layout);
     }
 }

@@ -361,4 +361,18 @@ namespace HBL2
 
         return MTL::BlendFactorUnspecialized;
     }
+
+    MTL::Stages MtlUtils::TextureLayoutToMTLStage(TextureLayout layout)
+    {
+        switch (layout)
+        {
+        case TextureLayout::RENDER_ATTACHMENT:
+        case TextureLayout::DEPTH_STENCIL:
+            return MTL::StageFragment;
+        case TextureLayout::SHADER_READ_ONLY:
+            return MTL::StageFragment | MTL::StageVertex;
+        default:
+            return MTL::StageFragment;
+        }
+    }
 }

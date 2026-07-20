@@ -186,6 +186,11 @@ MetalTexture::MetalTexture(const TextureDescriptor&& desc)
             });
         }
     }
+
+    void MetalTexture::SynchronizeUsage(MetalCommandBuffer* commandBuffer, TextureLayout prevUsage, TextureLayout newUsage)
+    {
+        commandBuffer->AddPendingBarrier({ MtlUtils::TextureLayoutToMTLStage(prevUsage), MtlUtils::TextureLayoutToMTLStage(newUsage) });
+    }
  
     void MetalTexture::Destroy()
     {

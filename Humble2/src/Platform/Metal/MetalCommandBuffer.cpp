@@ -38,6 +38,12 @@ namespace HBL2
         
         m_CurrentRenderPassRenderer.Encoder = CommandBuffer->renderCommandEncoder(mtlRenderPass->PassDesc);
         
+        for (const auto& barrier : m_PendingBarriers)
+        {
+            m_CurrentRenderPassRenderer.Encoder->barrierAfterQueueStages(barrier.After, barrier.Before, MTL4::VisibilityOptionDevice);
+        }
+        m_PendingBarriers.clear();
+        
         // Viewport
         MTL::Viewport viewport;
         viewport.originX = drawArea.x;

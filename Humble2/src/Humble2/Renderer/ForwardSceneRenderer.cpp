@@ -145,8 +145,7 @@ namespace HBL2
 		// Setup render passes.
 		ShadowPassSetup();
 		DepthPrePassSetup();
-		OpaquePassSetup();
-		TransparentPassSetup();
+        GeometryPassSetup();
 		SpriteRenderingSetup();
 		PostProcessPassSetup();
 		SkyboxPassSetup();
@@ -186,21 +185,13 @@ namespace HBL2
 		ShadowPass(commandBuffer, sceneRenderData);
 		renderPassPool.Execute(RenderPassEvent::AfterRenderingShadows);
 
-		renderPassPool.Execute(RenderPassEvent::BeforeRenderingPrePasses);
-		DepthPrePass(commandBuffer, sceneRenderData);
-		renderPassPool.Execute(RenderPassEvent::AfterRenderingPrePasses);
+        renderPassPool.Execute(RenderPassEvent::BeforeRenderingPrePasses);
+        DepthPrePass(commandBuffer, sceneRenderData);
+        renderPassPool.Execute(RenderPassEvent::AfterRenderingPrePasses);
 
-		renderPassPool.Execute(RenderPassEvent::BeforeRenderingOpaques);
-		OpaquePass(commandBuffer, sceneRenderData);
-		renderPassPool.Execute(RenderPassEvent::AfterRenderingOpaques);
-
-		renderPassPool.Execute(RenderPassEvent::BeforeRenderingSkybox);
-		SkyboxPass(commandBuffer, sceneRenderData);
-		renderPassPool.Execute(RenderPassEvent::AfterRenderingSkybox);
-
-		renderPassPool.Execute(RenderPassEvent::BeforeRenderingTransparents);
-		TransparentPass(commandBuffer, sceneRenderData);
-		renderPassPool.Execute(RenderPassEvent::AfterRenderingTransparents);
+        renderPassPool.Execute(RenderPassEvent::BeforeRenderingGeometry);
+        GeometryPass(commandBuffer, sceneRenderData, renderPassPool);
+        renderPassPool.Execute(RenderPassEvent::AfterRenderingGeometry);
 
 		renderPassPool.Execute(RenderPassEvent::BeforeRenderingPostProcess);
 		PostProcessPass(commandBuffer, sceneRenderData);
@@ -243,11 +234,8 @@ namespace HBL2
 			m_ResourceManager->DeleteRenderPass(m_DepthOnlyRenderPass);
 			Renderer::Instance->RemoveOnResizeCallback("Depth-Only-Resize-FrameBuffer");
 
-			m_ResourceManager->DeleteRenderPass(m_OpaqueRenderPass);
-			Renderer::Instance->RemoveOnResizeCallback("Resize-Opaque-FrameBuffer");
-
-			m_ResourceManager->DeleteRenderPass(m_TransparentRenderPass);
-			Renderer::Instance->RemoveOnResizeCallback("Resize-Transparent-FrameBuffer");
+			m_ResourceManager->DeleteRenderPass(m_GeometryRenderPass);
+			Renderer::Instance->RemoveOnResizeCallback("Resize-Geometry-FrameBuffer");
 
 			m_ResourceManager->DeleteBindGroupLayout(m_EquirectToSkyboxBindGroupLayout);
 			m_ResourceManager->DeleteShader(m_EquirectToSkyboxShader);
@@ -503,10 +491,10 @@ namespace HBL2
 		m_DepthOnlySpriteMaterialHash = m_DepthOnlyMaterialHash;
 	}
 
-	void ForwardSceneRenderer::OpaquePassSetup()
+	void ForwardSceneRenderer::GeometryPassSetup()
 	{
 		// Renderpass and framebuffer for opaques.
-		m_OpaqueRenderPass = m_ResourceManager->CreateRenderPass({
+        m_GeometryRenderPass = m_ResourceManager->CreateRenderPass({
 			.debugName = "opaques-renderpass",
 			.layout = m_RenderPassLayout,
 			.depthTarget = {
@@ -535,58 +523,15 @@ namespace HBL2
 		});
 
 		// Resize opaque framebuffer callback.
-		Renderer::Instance->AddCallbackOnResize("Resize-Opaque-FrameBuffer", [this](uint32_t width, uint32_t height)
+		Renderer::Instance->AddCallbackOnResize("Resize-Geometry-FrameBuffer", [this](uint32_t width, uint32_t height)
         {
-            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_OpaqueRenderPass, {
+            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_GeometryRenderPass, {
                 .width = width,
                 .height = height,
                 .depthTarget = Renderer::Instance->MainDepthTexture,
                 .colorTargets = { Renderer::Instance->IntermediateColorTexture },
             });
         });
-	}
-
-	void ForwardSceneRenderer::TransparentPassSetup()
-	{
-		// Renderpass and framebuffer for transparents.
-		m_TransparentRenderPass = m_ResourceManager->CreateRenderPass({
-			.debugName = "transparents-renderpass",
-			.layout = m_RenderPassLayout,
-			.depthTarget = {
-				.loadOp = LoadOperation::LOAD,
-				.storeOp = StoreOperation::STORE,
-				.stencilLoadOp = LoadOperation::DONT_CARE,
-				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::DEPTH_STENCIL,
-				.nextUsage = TextureLayout::DEPTH_STENCIL,
-			},
-			.colorTargets = {
-				{
-					.format = Format::RGBA16_FLOAT,
-					.loadOp = LoadOperation::LOAD,
-					.storeOp = StoreOperation::STORE,
-					.prevUsage = TextureLayout::RENDER_ATTACHMENT,
-					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
-				},
-			},
-            .frameBufferDesc = {
-                .width = Window::Instance->GetExtents().x,
-                .height = Window::Instance->GetExtents().y,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->IntermediateColorTexture },
-            }
-		});
-
-		// Resize transparent framebuffer callback.
-		Renderer::Instance->AddCallbackOnResize("Resize-Transparent-FrameBuffer", [this](uint32_t width, uint32_t height)
-		{
-            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_TransparentRenderPass, {
-                .width = width,
-                .height = height,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->IntermediateColorTexture },
-            });
-		});
 	}
 
 	void ForwardSceneRenderer::SpriteRenderingSetup()
@@ -741,7 +686,7 @@ namespace HBL2
 				},
 				.variants = { m_SkyboxVariant },
 			},
-			.renderPass = m_TransparentRenderPass,
+			.renderPass = m_GeometryRenderPass,
 		});
 
 		// Cube mesh
@@ -1412,39 +1357,52 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PrePassTime);
 	}
 
-	void ForwardSceneRenderer::OpaquePass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData)
-	{
-		BEGIN_PROFILE_PASS();
+    void ForwardSceneRenderer::GeometryPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData, RenderPassPool& renderPassPool)
+    {
+        RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_GeometryRenderPass);
+        {
+            renderPassPool.Execute(RenderPassEvent::BeforeRenderingOpaques);
+            OpaquePass(passRenderer, sceneRenderData);
+            renderPassPool.Execute(RenderPassEvent::AfterRenderingOpaques);
+            
+            renderPassPool.Execute(RenderPassEvent::BeforeRenderingSkybox);
+            SkyboxPass(commandBuffer, passRenderer, sceneRenderData);
+            renderPassPool.Execute(RenderPassEvent::AfterRenderingSkybox);
+            
+            renderPassPool.Execute(RenderPassEvent::BeforeRenderingTransparents);
+            TransparentPass(passRenderer, sceneRenderData);
+            renderPassPool.Execute(RenderPassEvent::AfterRenderingTransparents);
+        }
+        commandBuffer->EndRenderPass(*passRenderer);
+    }
 
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_OpaqueRenderPass);
+    void ForwardSceneRenderer::OpaquePass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData)
+    {
+        BEGIN_PROFILE_PASS();
+        
+        // Render opaque meshes.
+        {
+            Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
+            ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData);
+            ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&sceneRenderData->m_LightData);
+            GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
+            passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshOpaqueDraws);
+        }
 
-		// Render opaque meshes.
-		{
-			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
-			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData);
-			ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&sceneRenderData->m_LightData);
-			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
-			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshOpaqueDraws);
-		}
-
-		// Render opaque sprites.
-		{
-			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
-			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
-			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
-			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_SpriteOpaqueDraws);
-		}
-
-		commandBuffer->EndRenderPass(*passRenderer);
-
-		END_PROFILE_PASS(Renderer::Instance->GetStats().OpaquePassTime);
+        // Render opaque sprites.
+        {
+            Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
+            ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
+            GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
+            passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_SpriteOpaqueDraws);
+        }
+        
+        END_PROFILE_PASS(Renderer::Instance->GetStats().OpaquePassTime);
 	}
 
-	void ForwardSceneRenderer::TransparentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::TransparentPass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
-
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass);
 
 		// Render transparent meshes.
 		{
@@ -1463,12 +1421,10 @@ namespace HBL2
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_SpriteTransparentDraws);
 		}
 
-		commandBuffer->EndRenderPass(*passRenderer);
-
 		END_PROFILE_PASS(Renderer::Instance->GetStats().TransparentPassTime);
 	}
 
-	void ForwardSceneRenderer::SkyboxPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::SkyboxPass(CommandBuffer* commandBuffer, RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1603,14 +1559,10 @@ namespace HBL2
 			return;
 		}
 
-		// Render Skybox
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_TransparentRenderPass);
-
+		// Render Skybox.
 		ResourceManager::Instance->SetBufferData(m_SkyboxGlobalBindGroup, 0, (void*)&sceneRenderData->m_OnlyRotationInViewProjection);
 		GlobalDrawStream globalDrawStream = { .BindGroup = m_SkyboxGlobalBindGroup };
 		passRenderer->DrawSubPass(globalDrawStream, draws);
-
-		commandBuffer->EndRenderPass(*passRenderer);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxPassTime);
 	}
