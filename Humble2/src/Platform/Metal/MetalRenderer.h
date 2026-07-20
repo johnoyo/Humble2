@@ -81,6 +81,9 @@ namespace HBL2
         void RemoveResident(MTL::Allocation* resource);
         void ImmediateSubmit(const std::function<void(MTL4::ComputeCommandEncoder*)>& fn);
         
+        void SignalMainRenderFinishedEvent();
+        void WaitForMainRenderFinishedEvent();
+        
     protected:
         virtual void PreInitialize() override;
         virtual void PostInitialize() override;
@@ -103,6 +106,7 @@ namespace HBL2
         MTL::ResidencySet* m_ResidencySet = nullptr;
         std::array<Handle<Texture>, FRAME_OVERLAP> m_DepthTextures;
         MTL::SharedEvent* m_FrameAvailableSharedEvent = nullptr;
+        MTL::SharedEvent* m_MainRenderFinishedSharedEvent = nullptr;
         
         std::array<MetalCommandBuffer, FRAME_OVERLAP> m_MainCommandBuffers;
         std::array<MetalCommandBuffer, FRAME_OVERLAP> m_ImGuiCommandBuffers;

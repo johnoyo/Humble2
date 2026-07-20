@@ -85,7 +85,17 @@ namespace HBL2
     {
         MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
         
+        if (m_Type == CommandBufferType::UI)
+        {
+            renderer->WaitForMainRenderFinishedEvent();
+        }
+        
         renderer->GetCommandQueue()->wait(renderer->GetCurrentSurface());
         renderer->GetCommandQueue()->commit(&CommandBuffer, 1);
+        
+        if (m_Type == CommandBufferType::MAIN)
+        {
+            renderer->SignalMainRenderFinishedEvent();            
+        }
     }
 }

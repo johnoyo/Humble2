@@ -59,6 +59,9 @@ namespace HBL2
         m_FrameAvailableSharedEvent = m_Device->Get()->newSharedEvent();
         m_FrameAvailableSharedEvent->setSignaledValue(0);
         
+        m_MainRenderFinishedSharedEvent = m_Device->Get()->newSharedEvent();
+        m_MainRenderFinishedSharedEvent->setSignaledValue(0);
+        
         // Create UploadContext Commands for this thread.
         CreateUploadContextCommands();
         
@@ -452,6 +455,16 @@ namespace HBL2
         const uint64_t waitValue = ++s_UploadContext.EventValue;
         m_CommandQueue->signalEvent(s_UploadContext.Event, waitValue);
         s_UploadContext.Event->waitUntilSignaledValue(waitValue, UINT64_MAX);
+    }
+
+    void MetalRenderer::SignalMainRenderFinishedEvent()
+    {
+        m_CommandQueue->signalEvent(m_MainRenderFinishedSharedEvent, m_FrameNumber.load());
+    }
+
+    void MetalRenderer::WaitForMainRenderFinishedEvent()
+    {
+        m_CommandQueue->wait(m_MainRenderFinishedSharedEvent, m_FrameNumber.load());
     }
 
     MTL::Texture* MetalRenderer::CreateDepthTexture(uint32_t width, uint32_t height, uint32_t frameIdx)
