@@ -26,14 +26,27 @@ namespace HBL2
         Cold->DebugName = desc.debugName;
         Hot->ByteSize = desc.byteSize;
         
-        Hot->Buffer = device->Get()->newBuffer(Hot->ByteSize, MtlUtils::MemoryUsageToMTLResourceOptions(desc.memoryUsage));
-        Hot->Buffer->setLabel(NS::String::string(Cold->DebugName, NS::UTF8StringEncoding));
+        MTL::ResourceOptions resourceOptions = MtlUtils::MemoryUsageToMTLResourceOptions(desc.memoryUsage);
         
         if (desc.initialData != nullptr)
         {
             Hot->Data = desc.initialData;
-            memcpy(Hot->Buffer->contents(), Hot->Data, Hot->ByteSize);
+            
+            if (resourceOptions == MTL::ResourceStorageModePrivate)
+            {
+                // TODO: implement copy buffer to buffer using ImmediateSubmit.
+                // Also fix the MemoryUsageToMTLResourceOptions to return MTL::ResourceStorageModePrivate on GPU_ONLY.
+            }
+            else
+            {
+                Hot->Buffer = device->Get()->newBuffer(Hot->Data, Hot->ByteSize, resourceOptions);
+            }
         }
+        else
+        {
+            Hot->Buffer = device->Get()->newBuffer(Hot->ByteSize, MtlUtils::MemoryUsageToMTLResourceOptions(desc.memoryUsage));
+        }
+        Hot->Buffer->setLabel(NS::String::string(Cold->DebugName, NS::UTF8StringEncoding));
         
         renderer->MakeResident({ Hot->Buffer });
     }

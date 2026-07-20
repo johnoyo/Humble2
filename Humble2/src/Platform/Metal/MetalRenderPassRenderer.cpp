@@ -10,13 +10,12 @@ namespace HBL2
     {
         Renderer::Instance->GetStats().DrawCalls += draws.GetCount();
         
-        MetalDevice* device = (MetalDevice*)Device::Instance;
         MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
         MetalResourceManager* rm = (MetalResourceManager*)ResourceManager::Instance;
 
         MTL4::ArgumentTable* argTable = renderer->GetCurrentFrame().GlobalArgumentTable;
-        uint32_t bufferIndexForGlobalBindGroup = 0;
-        uint32_t textureIndexForGlobalBindGroup = 0;
+        uint32_t bufferIndexForGlobal = 0;
+        uint32_t textureIndexForGlobal = 0;
         
         // Global descriptor set.
         MetalBindGroupHot* globalBindGroupHot = nullptr;
@@ -33,24 +32,24 @@ namespace HBL2
                 MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
                 memcpy(buffer->Buffer->contents(), buffer->Data, buffer->ByteSize);
                 
-                if (globalDraw.UsesDynamicOffset)
+                if (globalDraw.GlobalBufferOffset != UINT32_MAX)
                 {
-                    argTable->setAddress(buffer->Buffer->gpuAddress() + globalDraw.GlobalBufferOffset, bufferIndexForGlobalBindGroup);
+                    argTable->setAddress(buffer->Buffer->gpuAddress() + globalDraw.GlobalBufferOffset, bufferIndexForGlobal);
                 }
                 else
                 {
-                    argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndexForGlobalBindGroup);
+                    argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndexForGlobal);
                 }
                 
-                bufferIndexForGlobalBindGroup++;
+                bufferIndexForGlobal++;
             }
             
             for (const auto& textureEntry : globalBindGroupCold->Textures)
             {
                 MetalTexture* texture = rm->GetTexture(textureEntry.texture);
-                argTable->setTexture(texture->Texture->gpuResourceID(), textureIndexForGlobalBindGroup);
-                argTable->setSamplerState(texture->Sampler->gpuResourceID(), textureIndexForGlobalBindGroup);
-                textureIndexForGlobalBindGroup++;
+                argTable->setTexture(texture->Texture->gpuResourceID(), textureIndexForGlobal);
+                argTable->setSamplerState(texture->Sampler->gpuResourceID(), textureIndexForGlobal);
+                textureIndexForGlobal++;
             }
         }
         
@@ -61,13 +60,11 @@ namespace HBL2
         Handle<BindGroup> prevMaterialBindGroup;
 
         uint64_t prevVariantHash = 0;
-        uint64_t prevBindGroupLayoutHash = 0;
 
         for (const auto& draw : draws.GetDraws())
         {
-            // TODO: Broken solution due to caching, if the control flow does not go into the if statement the indexing fails.
-            uint32_t bufferIndex = bufferIndexForGlobalBindGroup;
-            uint32_t textureIndex = textureIndexForGlobalBindGroup;
+            uint32_t bufferIndex = bufferIndexForGlobal;
+            uint32_t textureIndex = textureIndexForGlobal;
             
             auto variant = ShaderDescriptor::RenderPipeline::PackedVariant::FromKey(draw.VariantHandle);
 
@@ -75,7 +72,7 @@ namespace HBL2
 
             if (prevVariantHash != draw.VariantHandle || prevShader != draw.Shader)
             {
-                Encoder->setRenderPipelineState((MTL::RenderPipelineState*)shader->Pso);
+                Encoder->setRenderPipelineState((MTL::RenderPipelineState*)draw.VariantHandle);
                 Encoder->setDepthStencilState(shader->DepthStencilState);
                 
                 // Bind global shader descriptor set for custom per frame data if needed.
@@ -87,6 +84,7 @@ namespace HBL2
                     {
                         MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
                         argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndex);
+                        
                         bufferIndex++;
                     }
                     
@@ -95,11 +93,22 @@ namespace HBL2
                         MetalTexture* texture = rm->GetTexture(textureEntry.texture);
                         argTable->setTexture(texture->Texture->gpuResourceID(), textureIndex);
                         argTable->setSamplerState(texture->Sampler->gpuResourceID(), textureIndex);
+                        
                         textureIndex++;
                     }
 
                     prevShaderBindGroup = shader->ShaderBindGroup;
                 }
+                else
+                {
+                    bufferIndex += shader->BuffersInBindGroups[1];
+                    textureIndex += shader->TexturesInBindGroups[1];
+                }
+            }
+            else
+            {
+                bufferIndex += shader->BuffersInBindGroups[1];
+                textureIndex += shader->TexturesInBindGroups[1];
             }
             
             // Bind the per material bind group if needed.
@@ -111,6 +120,7 @@ namespace HBL2
                 {
                     MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
                     argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndex);
+                    
                     bufferIndex++;
                 }
                 
@@ -119,10 +129,16 @@ namespace HBL2
                     MetalTexture* texture = rm->GetTexture(textureEntry.texture);
                     argTable->setTexture(texture->Texture->gpuResourceID(), textureIndex);
                     argTable->setSamplerState(texture->Sampler->gpuResourceID(), textureIndex);
+                    
                     textureIndex++;
                 }
                 
                 prevMaterialBindGroup = draw.MaterialBindGroup;
+            }
+            else
+            {
+                bufferIndex += shader->BuffersInBindGroups[2];
+                textureIndex += shader->TexturesInBindGroups[2];
             }
             
             // Bind the vertex buffer if needed.
@@ -137,12 +153,21 @@ namespace HBL2
             if (draw.BindGroup.IsValid())
             {
                 MetalBindGroupCold* drawBindGroupCold = rm->GetBindGroupCold(draw.BindGroup);
-
+                
                 // Per draw bind group should only ever hold the one bump-allocated UBO.
                 MetalBufferHot* buffer = rm->GetBufferHot(drawBindGroupCold->Buffers[0].buffer);
-                argTable->setAddress(buffer->Buffer->gpuAddress() + draw.Offset, bufferIndex);
+                if (globalDraw.UsesDynamicOffset)
+                {
+                    argTable->setAddress(buffer->Buffer->gpuAddress() + draw.Offset, bufferIndex);
+                }
+                else
+                {
+                    argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndex);
+                }
                 bufferIndex++;
             }
+            
+            Encoder->setArgumentTable(argTable, MTL::RenderStageVertex | MTL::RenderStageFragment);
             
             // Get topology.
             MTL::PrimitiveType topology = MtlUtils::TopologyToMTLPrimitiveType((Topology)variant.topology);

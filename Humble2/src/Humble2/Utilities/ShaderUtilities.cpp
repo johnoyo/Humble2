@@ -481,27 +481,24 @@ namespace HBL2
         // https://docs.shader-slang.org/en/stable/coming-from-glsl.html
 
         GraphicsAPI target = Renderer::Instance->GetAPI();
-        CreateCacheDirectoryIfNeeded(target);
 
         std::filesystem::path shaderPath = shaderFilePath;
-        const auto& cacheDirectory = GetCacheDirectory(target);
 
         uint32_t workerIndex = JobSystem::Get().GetWorkerIndex();
 
         // Target description.
         slang::TargetDesc targetDesc = {};
 
+        // NOTE: We use the vulkan backend for reflection even on metal in order to preserve descriptor set bindings.
+        // Otherwise they get flattened to one set and the reflection code later does not work.
         switch (target)
         {
         case GraphicsAPI::VULKAN:
+        case GraphicsAPI::METAL:
             // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/a2-01-spirv-target-specific.html
             targetDesc.format = SLANG_SPIRV;
             targetDesc.flags = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY;
             targetDesc.profile = g_SLangGlobalSessions[workerIndex]->findProfile("spirv_1_3");
-            break;
-        case GraphicsAPI::METAL:
-            targetDesc.format = SLANG_METAL_LIB;
-            targetDesc.profile = g_SLangGlobalSessions[workerIndex]->findProfile("metal_3_2");
             break;
         default:
             HBL2_CORE_FATAL("Unsupported graphics backend!");
@@ -517,6 +514,7 @@ namespace HBL2
         switch (target)
         {
         case GraphicsAPI::VULKAN:
+        case GraphicsAPI::METAL:
             {
                 std::array<slang::CompilerOptionEntry, 4> options =
                 {
@@ -530,27 +528,6 @@ namespace HBL2
                         .name = slang::CompilerOptionName::VulkanUseEntryPointName,
                         .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
                     },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::MatrixLayoutColumn,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::Optimization,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
-                    }
-                };
-                
-                sessionDesc.compilerOptionEntries = options.data();
-                sessionDesc.compilerOptionEntryCount = options.size();
-                
-                break;
-            }
-        case GraphicsAPI::METAL:
-            {
-                std::array<slang::CompilerOptionEntry, 2> options =
-                {
                     slang::CompilerOptionEntry
                     {
                         .name = slang::CompilerOptionName::MatrixLayoutColumn,

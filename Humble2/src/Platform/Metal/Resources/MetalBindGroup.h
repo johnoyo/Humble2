@@ -35,7 +35,6 @@ namespace HBL2
         bool IsValid() const;
 
         void Initialize(const BindGroupDescriptor&& desc);
-        void Update();
         void Destroy();
 
         MetalBindGroupHot* Hot = nullptr;

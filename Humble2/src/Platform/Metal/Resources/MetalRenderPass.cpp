@@ -8,6 +8,8 @@ namespace HBL2
     {
         MetalResourceManager* rm = (MetalResourceManager*)ResourceManager::Instance;
         
+        Width = desc.frameBufferDesc.width;
+        Height = desc.frameBufferDesc.height;
         PassDesc = MTL4::RenderPassDescriptor::alloc()->init();
         ColorAttachmentCount = (uint32_t)desc.colorTargets.Size();
         ColorAttachmentFormats.clear();
@@ -30,9 +32,12 @@ namespace HBL2
                 colorAttachment->setTexture(colorTexture->Texture);
             }
             
-            ColorAttachmentFormats.push_back(MtlUtils::FormatToMTLPixelFormat(colorTargetDesc.format));
-            
             colorTargetIndex++;
+        }
+        
+        for (auto colorTargetDesc : desc.colorTargets)
+        {
+            ColorAttachmentFormats.push_back(MtlUtils::FormatToMTLPixelFormat(colorTargetDesc.format));
         }
         
         MTL::RenderPassDepthAttachmentDescriptor* depthAttachment = PassDesc->depthAttachment();

@@ -14,9 +14,11 @@ namespace HBL2
 {
     struct MetalShaderHot
     {
-        void* Pso = nullptr;
         MTL::DepthStencilState* DepthStencilState = nullptr;
         Handle<BindGroup> ShaderBindGroup = {};
+        
+        StaticArray<uint16_t, 4> BuffersInBindGroups;
+        StaticArray<uint16_t, 4> TexturesInBindGroups;
         
         void Destroy();
     };
@@ -49,6 +51,7 @@ namespace HBL2
             ShaderDescriptor::RenderPipeline::PackedVariant variantDesc{};
             Span<const ShaderDescriptor::RenderPipeline::VertexBufferBinding> vertexBufferBindings;
             Span<const BitFlags<ShaderStage>> specializationConstantStages;
+            MetalShaderHot* shaderHotData = nullptr;
         };
 
         void* GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld = false);

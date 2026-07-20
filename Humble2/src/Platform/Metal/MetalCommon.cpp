@@ -264,7 +264,8 @@ namespace HBL2
             return MTL::ResourceStorageModeShared | MTL::ResourceCPUCacheModeDefaultCache;
         case HBL2::MemoryUsage::GPU_ONLY:
             // GPU-exclusive, not CPU-visible at all — fastest for static VBs/IBs, render targets.
-            return MTL::ResourceStorageModePrivate;
+            // return MTL::ResourceStorageModePrivate; // TODO: fix when the buffer is fixed.
+            return MTL::ResourceStorageModeShared;
         case HBL2::MemoryUsage::GPU_CPU:
             // GPU writes, CPU reads back (e.g. readback/query buffers).
             // Default cache mode matters here — write-combined is uncached for CPU *reads* and would be brutal for readback.

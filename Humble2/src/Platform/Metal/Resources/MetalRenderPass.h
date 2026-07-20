@@ -23,5 +23,7 @@ namespace HBL2
         StaticDArray<MTL::PixelFormat, 4> ColorAttachmentFormats;
         MTL::PixelFormat DepthAttachmentFormat;
         uint32_t ColorAttachmentCount = 0;
+        uint32_t Width = 0;
+        uint32_t Height = 0;
     };
 }

@@ -23,6 +23,12 @@ namespace HBL2
         
         ConnectWindowWithMetal(Window::Instance->GetHandle(), m_MetalLayer);
         
+        // Set GPU properties
+        m_GPUProperties.limits.minUniformBufferOffsetAlignment = 32;
+
+        HBL2_CORE_INFO("GPU Limits: \n\
+                The GPU has a minimum buffer alignment of {}", m_GPUProperties.limits.minUniformBufferOffsetAlignment);
+        
         // Set surface size from window.
         int fbWidth, fbHeight;
         glfwGetFramebufferSize(Window::Instance->GetHandle(), &fbWidth, &fbHeight);

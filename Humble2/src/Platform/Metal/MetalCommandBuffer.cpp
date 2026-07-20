@@ -24,8 +24,39 @@ namespace HBL2
         }
         
         MetalRenderPass* mtlRenderPass = rm->GetRenderPass(renderPass);
+
+        if (!drawArea.IsValid())
+        {
+            drawArea =
+            {
+                0,
+                0,
+                mtlRenderPass->Width,
+                mtlRenderPass->Height
+            };
+        }
         
         m_CurrentRenderPassRenderer.Encoder = CommandBuffer->renderCommandEncoder(mtlRenderPass->PassDesc);
+        
+        // Viewport
+        MTL::Viewport viewport;
+        viewport.originX = drawArea.x;
+        viewport.originY = drawArea.y;
+        viewport.width   = drawArea.width;
+        viewport.height  = drawArea.height;
+        viewport.znear   = 0.0;
+        viewport.zfar    = 1.0;
+
+        m_CurrentRenderPassRenderer.Encoder->setViewport(viewport);
+
+        // Scissor
+        MTL::ScissorRect scissor;
+        scissor.x      = static_cast<NS::UInteger>(drawArea.x);
+        scissor.y      = static_cast<NS::UInteger>(drawArea.y);
+        scissor.width  = static_cast<NS::UInteger>(drawArea.width);
+        scissor.height = static_cast<NS::UInteger>(drawArea.height);
+
+        m_CurrentRenderPassRenderer.Encoder->setScissorRect(scissor);
         
         return &m_CurrentRenderPassRenderer;
     }

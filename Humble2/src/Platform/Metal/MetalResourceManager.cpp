@@ -143,8 +143,6 @@ namespace HBL2
     }
     void MetalResourceManager::MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size)
     {
-        MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
-
         MetalBufferHot* metalBuffer = GetBufferHot(buffer);
 
         if (metalBuffer == nullptr)
@@ -337,7 +335,7 @@ namespace HBL2
     void MetalResourceManager::UpdateBindGroup(Handle<BindGroup> handle)
     {
         MetalBindGroup bindGroup = GetBindGroup(handle);
-        bindGroup.Update();
+        //bindGroup.Update();
     }
     uint64_t MetalResourceManager::GetBindGroupHash(Handle<BindGroup> handle)
     {

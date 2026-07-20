@@ -6,11 +6,6 @@ namespace HBL2
 {
     void MetalShaderHot::Destroy()
     {
-        if (Pso != nullptr)
-        {
-            ((MTL::Allocation*)Pso)->release();
-        }
-        
         if (DepthStencilState != nullptr)
         {
             DepthStencilState->release();
@@ -44,6 +39,10 @@ namespace HBL2
         // Fast path with a lock-free read.
         if (p = Find(config.variantDesc, &pipelineIndex); p != nullptr && !forceCreateNewAndRemoveOld)
         {
+            if (config.shaderHotData != nullptr)
+            {
+                config.shaderHotData->DepthStencilState = m_Entries[pipelineIndex].DepthStencilState;
+            }
             return p;
         }
 
@@ -55,6 +54,10 @@ namespace HBL2
         {
             if (p = Find(config.variantDesc, &pipelineIndex); p != nullptr && !forceCreateNewAndRemoveOld)
             {
+                if (config.shaderHotData != nullptr)
+                {
+                    config.shaderHotData->DepthStencilState = m_Entries[pipelineIndex].DepthStencilState;
+                }
                 return p;
             }
         }
@@ -100,6 +103,8 @@ namespace HBL2
             depthStencilDesc->setDepthWriteEnabled(config.variantDesc.depthWrite ? true : false);
             d = ((MetalDevice*)Device::Instance)->Get()->newDepthStencilState(depthStencilDesc);
             depthStencilDesc->release();
+            
+            config.shaderHotData->DepthStencilState = d;
         }
         else
         {
@@ -175,9 +180,9 @@ namespace HBL2
             std::cerr << "PSO compile error: " << psoError->localizedDescription()->utf8String() << "\n";
             return nullptr;
         }
-        
-        pipelineDesc->release();
 
+        pipelineDesc->release();
+        
         return pipeline;
     }
 
@@ -285,7 +290,10 @@ namespace HBL2
         MetalRenderPass* rp = rm->GetRenderPass(desc.renderPass);
         if (rp != nullptr)
         {
-            Cold->ColorAttachmentFormats = rp->ColorAttachmentFormats;
+            for (auto& format : rp->ColorAttachmentFormats)
+            {
+                Cold->ColorAttachmentFormats.push_back(format);
+            }
             Cold->ColorAttachmentCount = rp->ColorAttachmentCount;
         }
         
@@ -308,6 +316,10 @@ namespace HBL2
         std::array<const char*, 2> entryPoints{};
         uint32_t shaderModuleCount = 0;
 
+        MTL::Function* vertexFn = nullptr;
+        MTL::Function* fragmentFn = nullptr;
+        MTL::Function* computeFn = nullptr;
+        
         if (desc.type == ShaderType::RASTERIZATION)
         {
             // Vertex shader module.
@@ -329,18 +341,19 @@ namespace HBL2
             Cold->VertexShaderModule = MTL4::LibraryFunctionDescriptor::alloc()->init();
             Cold->VertexShaderModule->setLibrary(vertexLibrary);
             Cold->VertexShaderModule->setName(NS::String::string(desc.VS.entryPoint, NS::UTF8StringEncoding));
+            vertexFn = vertexLibrary->newFunction(NS::String::string(desc.VS.entryPoint, NS::UTF8StringEncoding));
 
             // Fragment shader module.
             MTL::Library* fragmentLibrary;
             {
                 NS::Error* error = nullptr;
-                auto& bytes = desc.VS.code;
+                auto& bytes = desc.FS.code;
                 
                 auto data = dispatch_data_create(bytes.Data(), bytes.Size(), nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                 fragmentLibrary = device->Get()->newLibrary(data, &error);
                 dispatch_release(data);
 
-                if (!vertexLibrary)
+                if (!fragmentLibrary)
                 {
                     std::cerr << "Failed to load vertex metallib from memory: " << error->localizedDescription()->utf8String() << "\n";
                     return;
@@ -349,6 +362,7 @@ namespace HBL2
             Cold->FragmentShaderModule = MTL4::LibraryFunctionDescriptor::alloc()->init();
             Cold->FragmentShaderModule->setLibrary(fragmentLibrary);
             Cold->FragmentShaderModule->setName(NS::String::string(desc.FS.entryPoint, NS::UTF8StringEncoding));
+            fragmentFn = fragmentLibrary->newFunction(NS::String::string(desc.FS.entryPoint, NS::UTF8StringEncoding));
 
             entryPoints[0] = desc.VS.entryPoint;
             shaderModules[0] = Cold->VertexShaderModule;
@@ -377,13 +391,103 @@ namespace HBL2
             Cold->ComputeShaderModule = MTL4::LibraryFunctionDescriptor::alloc()->init();
             Cold->ComputeShaderModule->setLibrary(computeLibrary);
             Cold->ComputeShaderModule->setName(NS::String::string(desc.CS.entryPoint, NS::UTF8StringEncoding));
-
+            computeFn = computeLibrary->newFunction(NS::String::string(desc.CS.entryPoint, NS::UTF8StringEncoding));
+            
             entryPoints[0] = desc.CS.entryPoint;
             shaderModules[0] = Cold->ComputeShaderModule;
             entryPoints[1] = "";
             shaderModules[1] = nullptr;
             shaderModuleCount = 1;
         }
+        
+        uint32_t bindGroupIndex = 0;
+        std::fill(Hot->BuffersInBindGroups.begin(), Hot->BuffersInBindGroups.end(), 0);
+        std::fill(Hot->TexturesInBindGroups.begin(), Hot->TexturesInBindGroups.end(), 0);
+        
+        for (auto bindGroupLayoutHandle : desc.bindGroups)
+        {
+            MetalBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(bindGroupLayoutHandle);
+            
+            Hot->BuffersInBindGroups[bindGroupIndex] = bindGroupLayout->BufferBindings.size();
+            Hot->TexturesInBindGroups[bindGroupIndex] = bindGroupLayout->TextureBindings.size();
+            
+            bindGroupIndex++;
+        }
+
+//        // Reflection
+//        if (vertexFn != nullptr && fragmentFn != nullptr)
+//        {
+//            const auto& binding = Cold->VertexBufferBinding;
+//
+//            MTL::VertexDescriptor* vertexDesc = MTL::VertexDescriptor::alloc()->init();
+//
+//            for (uint32_t j = 0; j < binding.attributes.size(); j++)
+//            {
+//                auto& attribute = binding.attributes[j];
+//
+//                vertexDesc->attributes()->object(j)->setFormat(MtlUtils::VertexFormatToMTLVertexFormat(attribute.format));
+//                vertexDesc->attributes()->object(j)->setOffset(attribute.byteOffset);
+//                vertexDesc->attributes()->object(j)->setBufferIndex(VERTEX_BUFFER_BINDING_IDX);
+//            }
+//
+//            vertexDesc->layouts()->object(VERTEX_BUFFER_BINDING_IDX)->setStride(binding.byteStride);
+//
+//            MTL::RenderPipelineDescriptor* reflectionDesc = MTL::RenderPipelineDescriptor::alloc()->init();
+//            reflectionDesc->setVertexFunction(vertexFn);
+//            reflectionDesc->setFragmentFunction(fragmentFn);
+//            reflectionDesc->setVertexDescriptor(vertexDesc);
+//
+//            MTL::AutoreleasedRenderPipelineReflection reflection;
+//
+//            device->Get()->newRenderPipelineState(reflectionDesc, MTL::PipelineOptionArgumentInfo, &reflection, nullptr);
+//
+//            HBL2_CORE_INFO("Shader: {0}", Cold->DebugName);
+//            HBL2_CORE_INFO("Vertex Stage");
+//            for (int i = 0; i < (int)reflection->vertexArguments()->count(); i++)
+//            {
+//                MTL::Argument* arg = (MTL::Argument*)reflection->vertexArguments()->object(i);
+//                HBL2_CORE_INFO("name: {0}, index: {1}", std::string(arg->name()->cString(NS::UTF8StringEncoding)), arg->index());
+//
+//                if (arg->type() == MTL::ArgumentTypeBuffer)
+//                {
+//                    if (arg->index() != VERTEX_BUFFER_BINDING_IDX)
+//                    {
+//                        Hot->BufferIndexes.push_back(arg->index());
+//                    }
+//                }
+//                else if (arg->type() == MTL::ArgumentTypeTexture)
+//                {
+//                    Hot->TextureIndexes.push_back(arg->index());
+//                }
+//            }
+//            HBL2_CORE_INFO("Fragment Stage");
+//            for (int i = 0; i < (int)reflection->fragmentArguments()->count(); i++)
+//            {
+//                MTL::Argument* arg = (MTL::Argument*)reflection->fragmentArguments()->object(i);
+//                HBL2_CORE_INFO("name: {0}, index: {1}", std::string(arg->name()->cString(NS::UTF8StringEncoding)), arg->index());
+//
+//                if (arg->type() == MTL::ArgumentTypeBuffer)
+//                {
+//                    Hot->BufferIndexes.push_back(arg->index());
+//                }
+//                else if (arg->type() == MTL::ArgumentTypeTexture)
+//                {
+//                    Hot->TextureIndexes.push_back(arg->index());
+//                }
+//            }
+//
+//            std::sort(Hot->BufferIndexes.begin(), Hot->BufferIndexes.end(), [](const uint16_t& a, const uint16_t& b)
+//            {
+//                return a < b;
+//            });
+//
+//            std::sort(Hot->TextureIndexes.begin(), Hot->TextureIndexes.end(), [](const uint16_t& a, const uint16_t& b)
+//            {
+//                return a < b;
+//            });
+//
+//            HBL2_CORE_INFO("sorting done");
+//      }
 
         // Create shader variants.
         for (int i = 0; i < desc.renderPipeline.variants.Size(); i++)
@@ -398,6 +502,7 @@ namespace HBL2
                 .variantDesc = variant,
                 .vertexBufferBindings = { &Cold->VertexBufferBinding, 1 },
                 .specializationConstantStages = {},
+                .shaderHotData = Hot,
             };
 
             Cold->GetOrCreatePipeline(pipelineConfig, removeVariants);
@@ -431,6 +536,7 @@ namespace HBL2
                 .variantDesc = key,
                 .vertexBufferBindings = { &Cold->VertexBufferBinding, 1 },
                 .specializationConstantStages = {},
+                .shaderHotData = Hot,
             });
         }
 
