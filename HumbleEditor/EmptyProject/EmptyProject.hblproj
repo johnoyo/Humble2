@@ -5,7 +5,7 @@ Project:
   ScriptDirectory: ""
   Renderer:
     Type: 0
-    Editor API: 3
+    Editor API: 2
     Runtime API: 2
   Physics2D:
     Gravity Force: [0, -9.81000042]

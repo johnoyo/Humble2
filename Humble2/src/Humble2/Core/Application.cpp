@@ -11,10 +11,12 @@
 #include "Platform/Linux/LinuxBuildEngine.h"
 #include "Platform/Linux/LinuxPlatformManager.h"
 
-#include "Platform/Metal/MetalImGuiRenderer.h"
-#include "Platform/Metal/MetalResourceManager.h"
-#include "Platform/Metal/MetalRenderer.h"
-#include "Platform/Metal/MetalDevice.h"
+#ifdef HBL2_PLATFORM_MACOS
+	#include "Platform/Metal/MetalImGuiRenderer.h"
+	#include "Platform/Metal/MetalResourceManager.h"
+	#include "Platform/Metal/MetalRenderer.h"
+	#include "Platform/Metal/MetalDevice.h"
+#endif
 
 #ifdef DIST
 	#define BEGIN_APP_PROFILE(tag)
@@ -135,6 +137,7 @@ namespace HBL2
 			ImGuiRenderer::Instance = new VulkanImGuiRenderer;
 			break;
         case GraphicsAPI::METAL:
+#ifdef HBL2_PLATFORM_MACOS
             HBL2_CORE_INFO("Metal is selected as the renderer API.");
             g_GfxAPI = "Metal";
             Device::Instance = new MetalDevice;
@@ -142,6 +145,7 @@ namespace HBL2
             ResourceManager::Instance = new MetalResourceManager;
             Renderer::Instance = new MetalRenderer;
             ImGuiRenderer::Instance = new MetalImGuiRenderer;
+#endif
             break;
         case GraphicsAPI::WEBGPU:
 		case GraphicsAPI::NONE:
