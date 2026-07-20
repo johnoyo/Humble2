@@ -8,6 +8,20 @@ namespace HBL2
 {
     void MetalRenderPassRenderer::DrawSubPass(const GlobalDrawStream& globalDraw, DrawList& draws)
     {
+        /**
+         * NOTE ON ARGUMENT TABLE UPDATES:
+         * We deliberately do NOT cache buffer/texture indices between draws sharing the same material or shader.
+         *
+         * 1. PERSISTENCE: Metal's 'setArgumentTable' performs a point-in-time snapshot of the 'argTable' struct.
+         *    To apply a new per-draw dynamic UBO offset, we must call 'setArgumentTable' every draw.
+         *
+         * 2. STRUCTURAL ALIGNMENT: Because the engine packs indices sequentially via a dynamic 'bufferIndex++',
+         *    omitting a cached bind group would cause index misalignment on subsequent iterations.
+         *
+         * Therefore, we rewrite the transient table slots and rebind the table for every draw call,
+         * keeping only heavy hardware states (like the PSO) cached.
+         */
+        
         Renderer::Instance->GetStats().DrawCalls += draws.GetCount();
         
         MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
@@ -53,20 +67,14 @@ namespace HBL2
             }
         }
         
-        Handle<Buffer> prevIndexBuffer;
-        Handle<Buffer> prevVertexBuffer;
         Handle<Shader> prevShader;
-        Handle<BindGroup> prevShaderBindGroup;
-        Handle<BindGroup> prevMaterialBindGroup;
-
         uint64_t prevVariantHash = 0;
-
+        MTL::PrimitiveType topology = MTL::PrimitiveTypeTriangle;
+        
         for (const auto& draw : draws.GetDraws())
         {
             uint32_t bufferIndex = bufferIndexForGlobal;
             uint32_t textureIndex = textureIndexForGlobal;
-            
-            auto variant = ShaderDescriptor::RenderPipeline::PackedVariant::FromKey(draw.VariantHandle);
 
             MetalShaderHot* shader = rm->GetShaderHot(draw.Shader);
 
@@ -75,44 +83,47 @@ namespace HBL2
                 Encoder->setRenderPipelineState((MTL::RenderPipelineState*)shader->Pso);
                 Encoder->setDepthStencilState(shader->DepthStencilState);
                 
-                // Bind global shader descriptor set for custom per frame data if needed.
-                if (shader->ShaderBindGroup.IsValid() && prevShaderBindGroup != shader->ShaderBindGroup)
-                {
-                    MetalBindGroupCold* shaderBindGroupCold = rm->GetBindGroupCold(shader->ShaderBindGroup);
-
-                    for (const auto& bufferEntry : shaderBindGroupCold->Buffers)
-                    {
-                        MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
-                        argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndex);
-                        
-                        bufferIndex++;
-                    }
-                    
-                    for (const auto& textureEntry : shaderBindGroupCold->Textures)
-                    {
-                        MetalTexture* texture = rm->GetTexture(textureEntry.texture);
-                        argTable->setTexture(texture->Texture->gpuResourceID(), textureIndex);
-                        argTable->setSamplerState(texture->Sampler->gpuResourceID(), textureIndex);
-                        
-                        textureIndex++;
-                    }
-
-                    prevShaderBindGroup = shader->ShaderBindGroup;
-                }
-                else
-                {
-                    bufferIndex += shader->BuffersInBindGroups[1];
-                    textureIndex += shader->TexturesInBindGroups[1];
-                }
-            }
-            else
-            {
-                bufferIndex += shader->BuffersInBindGroups[1];
-                textureIndex += shader->TexturesInBindGroups[1];
+                auto variant = ShaderDescriptor::RenderPipeline::PackedVariant::FromKey(draw.VariantHandle);
+                
+                MTL::Winding windingOrder = MtlUtils::FrontFaceToMTLWinding((FrontFace)variant.frontFace);
+                MTL::CullMode cullMode = MtlUtils::CullModeToMTLCullMode((CullMode)variant.cullMode);
+                MTL::TriangleFillMode triangleFillMode = MtlUtils::PolygonModeToMTLTriangleFillMode((PolygonMode)variant.polygonMode);
+                
+                Encoder->setFrontFacingWinding(windingOrder);
+                Encoder->setCullMode(cullMode);
+                Encoder->setTriangleFillMode(triangleFillMode);
+                
+                topology = MtlUtils::TopologyToMTLPrimitiveType((Topology)variant.topology);
+                
+                prevVariantHash = draw.VariantHandle;
+                prevShader = draw.Shader;
             }
             
-            // Bind the per material bind group if needed.
-            if (draw.MaterialBindGroup.IsValid() && prevMaterialBindGroup != draw.MaterialBindGroup)
+            // Bind global shader descriptor set for custom per frame data.
+            if (shader->ShaderBindGroup.IsValid())
+            {
+                MetalBindGroupCold* shaderBindGroupCold = rm->GetBindGroupCold(shader->ShaderBindGroup);
+
+                for (const auto& bufferEntry : shaderBindGroupCold->Buffers)
+                {
+                    MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
+                    argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndex);
+                    
+                    bufferIndex++;
+                }
+                
+                for (const auto& textureEntry : shaderBindGroupCold->Textures)
+                {
+                    MetalTexture* texture = rm->GetTexture(textureEntry.texture);
+                    argTable->setTexture(texture->Texture->gpuResourceID(), textureIndex);
+                    argTable->setSamplerState(texture->Sampler->gpuResourceID(), textureIndex);
+                    
+                    textureIndex++;
+                }
+            }
+            
+            // Bind the per material bind group.
+            if (draw.MaterialBindGroup.IsValid())
             {
                 MetalBindGroupCold* materialBindGroupCold = rm->GetBindGroupCold(draw.MaterialBindGroup);
 
@@ -132,22 +143,11 @@ namespace HBL2
                     
                     textureIndex++;
                 }
-                
-                prevMaterialBindGroup = draw.MaterialBindGroup;
-            }
-            else
-            {
-                bufferIndex += shader->BuffersInBindGroups[2];
-                textureIndex += shader->TexturesInBindGroups[2];
             }
             
             // Bind the vertex buffer if needed.
-            if (prevVertexBuffer != draw.VertexBuffer)
-            {
-                MetalBufferHot* vertexBuffer = rm->GetBufferHot(draw.VertexBuffer);
-                argTable->setAddress(vertexBuffer->Buffer->gpuAddress(), VERTEX_BUFFER_BINDING_IDX);
-                prevVertexBuffer = draw.VertexBuffer;
-            }
+            MetalBufferHot* vertexBuffer = rm->GetBufferHot(draw.VertexBuffer);
+            argTable->setAddress(vertexBuffer->Buffer->gpuAddress(), VERTEX_BUFFER_BINDING_IDX);
 
             // Bind the dynamic uniform buffer in the appropriate offset.
             if (draw.BindGroup.IsValid())
@@ -167,17 +167,8 @@ namespace HBL2
                 bufferIndex++;
             }
             
+            // Metal takes a point-in-time snapshot of whatever memory addresses and texture IDs are sitting inside that table.
             Encoder->setArgumentTable(argTable, MTL::RenderStageVertex | MTL::RenderStageFragment);
-            
-            // Get variant properties.
-            MTL::PrimitiveType topology = MtlUtils::TopologyToMTLPrimitiveType((Topology)variant.topology);
-            MTL::Winding windingOrder = MtlUtils::FrontFaceToMTLWinding((FrontFace)variant.frontFace);
-            MTL::CullMode cullMode = MtlUtils::CullModeToMTLCullMode((CullMode)variant.cullMode);
-            MTL::TriangleFillMode triangleFillMode = MtlUtils::PolygonModeToMTLTriangleFillMode((PolygonMode)variant.polygonMode);
-            
-            Encoder->setFrontFacingWinding(windingOrder);
-            Encoder->setCullMode(cullMode);
-            Encoder->setTriangleFillMode(triangleFillMode);
             
             // Draw the mesh accordingly.
             if (draw.IndexBuffer.IsValid())
