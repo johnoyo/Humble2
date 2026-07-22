@@ -482,6 +482,7 @@ namespace HBL2
             .variantDesc = key,
             .vertexBufferBindings = { &Cold->VertexBufferBinding, 1 },
             .specializationConstantStages = {},
+            .shaderHotData = Hot,
         });
     }
 

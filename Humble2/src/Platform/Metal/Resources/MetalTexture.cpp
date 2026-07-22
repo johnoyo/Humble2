@@ -173,6 +173,7 @@ MetalTexture::MetalTexture(const TextureDescriptor&& desc)
         // built against the new view hit residency validation errors, add
         // `renderer->MakeResident({ Texture })` here too - re-adding an already-resident
         // allocation should be a harmless no-op.
+        // renderer->MakeResident({ Texture });
 
         if (previouslyBound != m_StorageTexture)
         {
@@ -180,8 +181,9 @@ MetalTexture::MetalTexture(const TextureDescriptor&& desc)
             // it once, in Destroy(). Defer releasing the old view since GPU work that wrote
             // through it (e.g. the compute dispatch in the skybox pass) may still be in flight.
             auto& deletionQueue = ResourceManager::Instance->GetDeletionQueue();
-            deletionQueue.Push(Renderer::Instance->GetFrameNumber(), [previouslyBound]()
+            deletionQueue.Push(Renderer::Instance->GetFrameNumber(), [previouslyBound, renderer]()
             {
+                // renderer->RemoveResident(previouslyBound);
                 previouslyBound->release();
             });
         }

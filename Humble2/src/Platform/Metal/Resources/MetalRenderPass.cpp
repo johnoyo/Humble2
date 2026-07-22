@@ -68,6 +68,38 @@ namespace HBL2
         PassDesc->depthAttachment()->setTexture(target);
     }
 
+    void MetalRenderPass::UpdateFrameBuffer(const FrameBufferDescriptor&& desc)
+    {
+        MetalResourceManager* rm = (MetalResourceManager*)ResourceManager::Instance;
+        
+        if (PassDesc == nullptr)
+        {
+            return;
+        }
+        
+        Width = desc.width;
+        Height = desc.height;
+        
+        uint32_t colorTargetIndex = 0;
+        
+        for (auto colorTarget : desc.colorTargets)
+        {
+            MetalTexture* colorTexture = rm->GetTexture(colorTarget);
+            if (colorTexture != nullptr)
+            {
+                PassDesc->colorAttachments()->object(colorTargetIndex)->setTexture(colorTexture->Texture);
+            }
+            
+            colorTargetIndex++;
+        }
+        
+        MetalTexture* depthTexture = rm->GetTexture(desc.depthTarget);
+        if (depthTexture != nullptr)
+        {
+            PassDesc->depthAttachment()->setTexture(depthTexture->Texture);
+        }
+    }
+
     void MetalRenderPass::Destroy()
     {
         PassDesc->release();

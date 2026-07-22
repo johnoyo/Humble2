@@ -16,6 +16,7 @@ namespace HBL2
         
         void SetColorTarget(uint32_t index, MTL::Texture* target);
         void SetDepthTarget(MTL::Texture* target);
+        void UpdateFrameBuffer(const FrameBufferDescriptor&& desc);
         void Destroy();
         
         const char* DebugName = "";

@@ -100,6 +100,7 @@ namespace HBL2
         DeletionQueue m_MainDeletionQueue;
         std::mutex m_DeletionQueueMutex;
         
+        NS::AutoreleasePool* m_AutoReleasePool = nullptr;
         CA::MetalDrawable* m_SurfaceRef = nullptr;
         MTL4::CommandQueue* m_CommandQueue = nullptr;
         std::array<MtlFrameData, FRAME_OVERLAP> m_MtlFrames;

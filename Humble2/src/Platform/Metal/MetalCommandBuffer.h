@@ -43,8 +43,13 @@ namespace HBL2
         
     private:
         CommandBufferType m_Type;
+        
         MetalRenderPassRenderer m_CurrentRenderPassRenderer;
         MetalComputePassRenderer m_CurrentComputePassRenderer;
         std::vector<PendingBarrier> m_PendingBarriers;
+        
+        uint32_t m_PendingBarrierAfterStages = 0;
+        Span<const Handle<Texture>> m_TexturesWrite;
+        Span<const Handle<Buffer>> m_BuffersWrite;
     };
 }

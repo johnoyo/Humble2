@@ -87,11 +87,11 @@ namespace HBL2
                 
                 MTL::Winding windingOrder = MtlUtils::FrontFaceToMTLWinding((FrontFace)variant.frontFace);
                 MTL::CullMode cullMode = MtlUtils::CullModeToMTLCullMode((CullMode)variant.cullMode);
-                MTL::TriangleFillMode triangleFillMode = MtlUtils::PolygonModeToMTLTriangleFillMode((PolygonMode)variant.polygonMode);
+                MTL::TriangleFillMode fillMode = MtlUtils::PolygonModeToMTLTriangleFillMode((PolygonMode)variant.polygonMode);
                 
                 Encoder->setFrontFacingWinding(windingOrder);
                 Encoder->setCullMode(cullMode);
-                Encoder->setTriangleFillMode(triangleFillMode);
+                Encoder->setTriangleFillMode(fillMode);
                 
                 topology = MtlUtils::TopologyToMTLPrimitiveType((Topology)variant.topology);
                 

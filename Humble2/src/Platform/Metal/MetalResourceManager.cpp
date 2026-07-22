@@ -531,7 +531,7 @@ namespace HBL2
 
         if (rp != nullptr)
         {
-//            rp->CreateFrameBuffer(std::forward<const FrameBufferDescriptor>(desc));
+            rp->UpdateFrameBuffer(std::forward<const FrameBufferDescriptor>(desc));
         }
     }
     MetalRenderPassLayout* MetalResourceManager::GetRenderPassLayout(Handle<RenderPassLayout> handle) const

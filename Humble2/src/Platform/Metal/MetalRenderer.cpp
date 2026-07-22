@@ -200,6 +200,8 @@ namespace HBL2
 
     void MetalRenderer::BeginFrame()
     {
+        m_AutoReleasePool = NS::AutoreleasePool::alloc()->init();
+        
         // Signal that frame is ready.
         if (m_FrameNumber.load() >= FRAME_OVERLAP)
         {
@@ -224,16 +226,17 @@ namespace HBL2
 
     void MetalRenderer::EndFrame()
     {
-        
+        m_CommandQueue->signalDrawable(m_SurfaceRef);
     }
 
     void MetalRenderer::Present()
     {
-        m_CommandQueue->signalDrawable(m_SurfaceRef);
         m_SurfaceRef->present();
         
         m_CommandQueue->signalEvent(m_FrameAvailableSharedEvent, m_FrameNumber.load());
         m_FrameNumber++;
+        
+        m_AutoReleasePool->release();
     }
 
     void MetalRenderer::Clean()
@@ -245,6 +248,33 @@ namespace HBL2
         m_ResourceManager->DeleteTexture(MainColorTexture);
         m_ResourceManager->DeleteTexture(MainDepthTexture);
         m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
+        
+        // Delete bind group layouts.
+        m_ResourceManager->DeleteBindGroupLayout(m_ShadowBindingsLayout);
+        m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
+        m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
+        m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
+        m_ResourceManager->DeleteBindGroupLayout(m_EmptyBindingsLayout);
+        m_ResourceManager->DeleteBindGroupLayout(m_DynamicBindingsLayout);
+
+        // Delete bind groups.
+        m_ResourceManager->DeleteBindGroup(m_EmptyBindings);
+
+        for (int i = 0; i < FRAME_OVERLAP; i++)
+        {
+            MetalBindGroupCold* shadowBindGroupCold = m_ResourceManager->GetBindGroupCold(m_MtlFrames[i].ShadowBindings);
+
+            for (auto& bufferEntry : shadowBindGroupCold->Buffers)
+            {
+                m_ResourceManager->DeleteBuffer(bufferEntry.buffer);
+            }
+
+            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].ShadowBindings);
+            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].GlobalBindings2D);
+            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].GlobalBindings3D);
+            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].GlobalPresentBindings);
+            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].DebugBindings);
+        }
         
         // Delete render passes.
         for (auto& rp : m_RenderPasses)
@@ -379,6 +409,18 @@ namespace HBL2
                 .wrap = Wrap::CLAMP_TO_EDGE,
             }
         });
+        
+        // Update descriptor sets (for the full screen quad shader).
+        for (int i = 0; i < FRAME_OVERLAP; i++)
+        {
+            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].GlobalPresentBindings);
+
+            m_MtlFrames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
+                .debugName = "global-present-bind-group",
+                .layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
+                .textures = { { MainColorTexture, TextureLayout::SHADER_READ_ONLY } },  // Updated with new size
+            });
+        }
         
         // Update viewport texture attachment (used in imgui).
         MetalTexture* viewportTexture = m_ResourceManager->GetTexture(MainColorTexture);

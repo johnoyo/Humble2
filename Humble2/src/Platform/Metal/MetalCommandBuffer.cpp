@@ -44,6 +44,13 @@ namespace HBL2
         }
         m_PendingBarriers.clear();
         
+        if (m_PendingBarrierAfterStages != 0)
+        {
+            m_CurrentRenderPassRenderer.Encoder->barrierAfterQueueStages(m_PendingBarrierAfterStages, MTL::StageVertex | MTL::StageFragment, MTL4::VisibilityOptionDevice);
+
+            m_PendingBarrierAfterStages = 0;
+        }
+        
         // Viewport
         MTL::Viewport viewport;
         viewport.originX = drawArea.x;
@@ -74,12 +81,29 @@ namespace HBL2
 
     ComputePassRenderer* MetalCommandBuffer::BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite)
     {
-        return nullptr;
+        m_CurrentComputePassRenderer.Encoder = CommandBuffer->computeCommandEncoder();
+        
+        if (m_PendingBarrierAfterStages != 0)
+        {
+            m_CurrentComputePassRenderer.Encoder->barrierAfterQueueStages(m_PendingBarrierAfterStages, MTL::StageDispatch | MTL::StageBlit, MTL4::VisibilityOptionDevice);
+
+            m_PendingBarrierAfterStages = 0;
+        }
+        
+        m_TexturesWrite = texturesWrite;
+        m_BuffersWrite = buffersWrite;
+        
+        return &m_CurrentComputePassRenderer;
     }
 
     void MetalCommandBuffer::EndComputePass(const ComputePassRenderer& computePassRenderer)
     {
-        return;
+        if (m_TexturesWrite.Size() != 0 || m_BuffersWrite.Size() != 0)
+        {
+            m_PendingBarrierAfterStages |= MTL::StageDispatch;
+        }
+        
+        ((MetalComputePassRenderer*)&computePassRenderer)->Encoder->endEncoding();
     }
 
     void MetalCommandBuffer::EndCommandRecording()

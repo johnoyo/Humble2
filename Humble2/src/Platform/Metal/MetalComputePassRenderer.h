@@ -11,7 +11,10 @@ namespace HBL2
     public:
         virtual void Dispatch(const Span<const HBL2::Dispatch>& dispatches) override;
 
+        MTL4::ComputeCommandEncoder* Encoder = nullptr;
+        
     private:
+        MTL4::CommandBuffer* m_CommandBuffer = nullptr;
         friend class MetalCommandBuffer;
     };
 }

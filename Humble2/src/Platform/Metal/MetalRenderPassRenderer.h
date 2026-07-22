@@ -4,10 +4,6 @@
 
 #include "MetalCommon.h"
 
-#include <Foundation/Foundation.hpp>
-#include <Metal/Metal.hpp>
-#include <QuartzCore/QuartzCore.hpp>
-
 namespace HBL2
 {
     class MetalRenderPassRenderer final : public RenderPassRenderer
