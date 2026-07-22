@@ -67,6 +67,7 @@ namespace HBL2
 		float ShadowPassTime = 0.f;
 		float PrePassTime = 0.f;
 		float OpaquePassTime = 0.f;
+        float SkyboxComputePassTime = 0.f;
 		float SkyboxPassTime = 0.f;
 		float TransparentPassTime = 0.f;
 		float PostProcessPassTime = 0.f;

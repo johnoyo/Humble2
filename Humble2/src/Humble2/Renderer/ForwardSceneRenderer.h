@@ -85,7 +85,8 @@ namespace HBL2
         void GeometryPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData, RenderPassPool& renderPassPool);
 		void OpaquePass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
 		void TransparentPass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
-		void SkyboxPass(CommandBuffer* commandBuffer, RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
+        void SkyboxComputePass(CommandBuffer* commandBuffer, DrawList* skyboxDraws);
+		void SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
 		void PostProcessPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
 		void DebugPass(CommandBuffer* commandBuffer, void* debugRenderData);
 		void PresentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
