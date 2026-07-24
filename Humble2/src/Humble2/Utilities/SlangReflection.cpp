@@ -398,6 +398,50 @@ namespace HBL2
         return data;
     }
 
+    ComputeShaderReflectionData ShaderReflector::ReflectCompute(slang::IComponentType* linkedProgram, const std::string& sourcePath)
+    {
+        if (!linkedProgram)
+        {
+            return {};
+        }
+
+        slang::ProgramLayout* layout = linkedProgram->getLayout();
+        if (!layout)
+        {
+            return {};
+        }
+
+        ComputeShaderReflectionData reflectionData{};
+
+        SlangUInt entryPointCount = layout->getEntryPointCount();
+        for (SlangUInt i = 0; i < entryPointCount; ++i)
+        {
+            slang::EntryPointLayout* entryPoint = layout->getEntryPointByIndex(i);
+            if (!entryPoint)
+            {
+                continue;
+            }
+
+            // Check if the entry point is a compute shader stage
+            if (entryPoint->getStage() == SLANG_STAGE_COMPUTE)
+            {
+                SlangUInt threadGroupSize[3] = { 1, 1, 1 };
+                entryPoint->getComputeThreadGroupSize(3, threadGroupSize);
+
+                reflectionData.threadsPerThreadGroup = glm::u16vec3(
+                    static_cast<uint16_t>(threadGroupSize[0]),
+                    static_cast<uint16_t>(threadGroupSize[1]),
+                    static_cast<uint16_t>(threadGroupSize[2])
+                );
+
+                // Found the compute entry point, exit early
+                break;
+            }
+        }
+
+        return reflectionData;
+    }
+
     void ShaderReflector::ReflectEntryPoints(slang::ProgramLayout* layout, ShaderReflectionData& out)
     {
         const uint32_t count = static_cast<uint32_t>(layout->getEntryPointCount());
