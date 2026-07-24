@@ -324,7 +324,7 @@ namespace HBL2
 		});
 
 		// Create shadow pre-pass shader.
-		const auto& shadowPrePassShaderData = ShaderUtilities::Get().Compile("assets/shaders/shadow-mapping-pre-pass.slang", nullptr);
+		const auto& shadowPrePassShaderData = ShaderUtilities::Get().Compile("assets/shaders/shadow-mapping-pre-pass.slang", (ShaderReflectionData*)nullptr);
 
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.colorOutput = false;
@@ -403,7 +403,7 @@ namespace HBL2
 		});
 
 		// Create pre-pass shaders.
-		const auto& prePassShaderData = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-mesh.slang", nullptr);
+		const auto& prePassShaderData = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-mesh.slang", (ShaderReflectionData*)nullptr);
 
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.colorOutput = false;
@@ -437,7 +437,7 @@ namespace HBL2
 			.renderPass = m_DepthOnlyRenderPass,
 		});
 
-		const auto& prePassSpriteShaderData = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-sprite.slang", nullptr);
+		const auto& prePassSpriteShaderData = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-sprite.slang", (ShaderReflectionData*)nullptr);
 
 		m_DepthOnlySpriteShader = ResourceManager::Instance->CreateShader({
 			.debugName = "sprite-pre-pass-shader",
@@ -574,8 +574,8 @@ namespace HBL2
 		});
 
 		// Compile compute shader.
-		const auto& compilationData = ShaderUtilities::Get().Compile("assets/shaders/equirectangular-to-skybox.slang", nullptr);
-        const auto& shaderReflectionData = ShaderUtilities::Get().ReflectCompute("assets/shaders/equirectangular-to-skybox.slang");
+        ComputeShaderReflectionData shaderReflectionData;
+        const auto& compilationData = ShaderUtilities::Get().Compile("assets/shaders/equirectangular-to-skybox.slang", nullptr);
         
 		// Create compute bind group layout.
 		m_EquirectToSkyboxBindGroupLayout = m_ResourceManager->CreateBindGroupLayout({
@@ -657,7 +657,7 @@ namespace HBL2
 		});
 
 		// Create skybox shader.
-		const auto& skyboxShaderData = ShaderUtilities::Get().Compile("assets/shaders/skybox.slang", nullptr);
+		const auto& skyboxShaderData = ShaderUtilities::Get().Compile("assets/shaders/skybox.slang", (ShaderReflectionData*)nullptr);
 
 		m_SkyboxVariant.blendEnabled = false;
 		m_SkyboxVariant.depthWrite = false;
@@ -858,7 +858,7 @@ namespace HBL2
 		});
 
 		// Create pre-pass shaders.
-		const auto& postProcessShaderData = ShaderUtilities::Get().Compile("assets/shaders/post-process-tone-mapping.slang", nullptr);
+		const auto& postProcessShaderData = ShaderUtilities::Get().Compile("assets/shaders/post-process-tone-mapping.slang", (ShaderReflectionData*)nullptr);
 
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.blendEnabled = false;
@@ -920,7 +920,7 @@ namespace HBL2
 		variant.frontFace = (packed_size)FrontFace::CLOCKWISE;
 
 		// Compile present shaders.
-		const auto& presentShaderData = ShaderUtilities::Get().Compile("assets/shaders/present.slang", nullptr);
+		const auto& presentShaderData = ShaderUtilities::Get().Compile("assets/shaders/present.slang", (ShaderReflectionData*)nullptr);
 
 		// Create present bind group layout.
 		m_PresentShader = ResourceManager::Instance->CreateShader({
