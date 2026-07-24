@@ -46,7 +46,7 @@ namespace HBL2
 
             MTL::Size threadgroupsPerGrid = MTL::Size::Make(dispatch.ThreadGroupCount.x, dispatch.ThreadGroupCount.y, dispatch.ThreadGroupCount.z);
 
-            MTL::Size threadsPerThreadgroup = MTL::Size::Make(16, 16, 1); // TODO: Get them from shader relflection.
+            MTL::Size threadsPerThreadgroup = MTL::Size::Make(shader->ThreadsPerThreadgroup.x, shader->ThreadsPerThreadgroup.y, shader->ThreadsPerThreadgroup.z);
 
             Encoder->dispatchThreadgroups(threadgroupsPerGrid, threadsPerThreadgroup);
         }

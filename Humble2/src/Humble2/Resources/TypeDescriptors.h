@@ -256,11 +256,12 @@ namespace HBL2
 			Span<const VertexBufferBinding> vertexBufferBindings;
 
 			Span<const PackedVariant> variants;
-			Span<const Span<const ShaderConstant>> specializationConstantsPerVariant;
-		};
-		RenderPipeline renderPipeline;
-		Handle<RenderPass> renderPass;
-		Handle<BindGroup> shaderBindGroup;
+            Span<const Span<const ShaderConstant>> specializationConstantsPerVariant;
+        };
+        RenderPipeline renderPipeline;
+        Handle<RenderPass> renderPass;
+        Handle<BindGroup> shaderBindGroup;
+        glm::u16vec3 threadsPerThreadGroup = {};
 	};
 
 	static inline const ShaderDescriptor::RenderPipeline::PackedVariant g_NullVariant = std::bit_cast<ShaderDescriptor::RenderPipeline::PackedVariant>(uint64_t{ 0 });

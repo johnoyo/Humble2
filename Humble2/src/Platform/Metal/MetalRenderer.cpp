@@ -222,6 +222,8 @@ namespace HBL2
         
         MetalRenderPass* imguiRp = m_ResourceManager->GetRenderPass(GetImGuiRenderPass());
         imguiRp->SetColorTarget(0, m_SurfaceRef->texture());
+        
+        SwapAndResetStats();
     }
 
     void MetalRenderer::EndFrame()

@@ -14,6 +14,14 @@
 
 namespace HBL2
 {
+#ifdef DIST
+    #define BEGIN_PROFILE_PASS()
+    #define END_PROFILE_PASS(time)
+#else
+    #define BEGIN_PROFILE_PASS() Timer profilePass
+    #define END_PROFILE_PASS(time) time = profilePass.ElapsedMillis()
+#endif
+
     constexpr unsigned int FRAME_OVERLAP = 2;
 
 	struct CameraData
@@ -71,8 +79,11 @@ namespace HBL2
 		float SkyboxPassTime = 0.f;
 		float TransparentPassTime = 0.f;
 		float PostProcessPassTime = 0.f;
-		float DebugPassTime = 0.f;
-		float PresentPassTime = 0.f;
+        float DebugPassTime = 0.f;
+        float PresentPassTime = 0.f;
+        
+        float MainPassTime = 0.f;
+        float ImGuiPassTime = 0.f;
 
 		void Reset()
 		{
@@ -82,11 +93,15 @@ namespace HBL2
 			ShadowPassTime = 0.f;
 			PrePassTime = 0.f;
 			OpaquePassTime = 0.f;
-			SkyboxPassTime = 0.f;
+            SkyboxPassTime = 0.f;
+            SkyboxComputePassTime = 0.f;
 			TransparentPassTime = 0.f;
 			PostProcessPassTime = 0.f;
-			DebugPassTime = 0.f;
-			PresentPassTime = 0.f;
+            DebugPassTime = 0.f;
+            PresentPassTime = 0.f;
+            
+            MainPassTime = 0.f;
+            ImGuiPassTime = 0.f;
 		}
 	};
 
@@ -113,7 +128,7 @@ namespace HBL2
 
 		virtual ~Renderer() = default;
 
-		static constexpr uint32_t FrameCount = 2;
+		static constexpr uint32_t FrameCount = FRAME_OVERLAP;
 
 		void Initialize();
 		virtual void BeginFrame() = 0;

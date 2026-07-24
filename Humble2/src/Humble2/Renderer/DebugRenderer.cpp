@@ -17,10 +17,10 @@ namespace HBL2
 
 	void DebugRenderer::Initialize()
 	{
-		// We need 48MB for the vector verticesn since we have 500K max vertices per primitives, each being 8MB, but with each of them for each frame.
+		// We need 48MB for the vector vertices since we have 500K max vertices per primitives, each being 8MB, but with each of them for each frame.
 		// The rest is used for the draw list, which only requires a couple hundred bytes but we round up.
-		m_Reservation = Allocator::Arena.Reserve("DebugRendererPool", 64_MB);
-		m_Arena.Initialize(&Allocator::Arena, 64_MB, m_Reservation);
+		m_Reservation = Allocator::Arena.Reserve("DebugRendererPool", (Renderer::Instance->FrameCount * 24_MB) + 16_MB);
+		m_Arena.Initialize(&Allocator::Arena, (Renderer::Instance->FrameCount * 24_MB) + 16_MB, m_Reservation);
 
 		// Reserve max space for the draws and vertices cpu storage to avoid allocations.
 		for (auto& renderData : m_RenderData)

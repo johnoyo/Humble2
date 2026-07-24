@@ -319,6 +319,11 @@ namespace HBL2
         }
         Hot->ShaderBindGroup = desc.shaderBindGroup;
         
+        if (desc.type == ShaderType::COMPUTE)
+        {
+            Hot->ThreadsPerThreadgroup = desc.threadsPerThreadGroup;
+        }
+        
         // Create compiler.
         {
             auto* compilerDesc = MTL4::CompilerDescriptor::alloc()->init();

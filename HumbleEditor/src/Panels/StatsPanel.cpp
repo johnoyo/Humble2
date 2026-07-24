@@ -80,11 +80,17 @@ namespace HBL2::Editor
 		ImGui::Text("ShadowPass: %f ms", stats.ShadowPassTime);
 		ImGui::Text("PrePass: %f ms", stats.PrePassTime);
 		ImGui::Text("OpaquePass: %f ms", stats.OpaquePassTime);
+        ImGui::Text("SkyboxComputePass: %f ms", stats.SkyboxComputePassTime);
 		ImGui::Text("SkyboxPass: %f ms", stats.SkyboxPassTime);
 		ImGui::Text("TransparentPass: %f ms", stats.TransparentPassTime);
 		ImGui::Text("PostProcessPass: %f ms", stats.PostProcessPassTime);
-		ImGui::Text("DebugPassTime: %f ms", stats.DebugPassTime);
-		ImGui::Text("PresentPass: %f ms", stats.PresentPassTime);
+        ImGui::Text("DebugPassTime: %f ms", stats.DebugPassTime);
+        ImGui::Text("PresentPass: %f ms", stats.PresentPassTime);
+        
+        ImGui::NewLine();
+        
+        ImGui::Text("MainPassTime: %f ms", stats.MainPassTime);
+        ImGui::Text("ImGuiPassTime: %f ms", stats.ImGuiPassTime);
 
 		ImGui::Separator();
 

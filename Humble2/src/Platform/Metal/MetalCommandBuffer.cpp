@@ -120,7 +120,11 @@ namespace HBL2
             renderer->WaitForMainRenderFinishedEvent();
         }
         
-        renderer->GetCommandQueue()->wait(renderer->GetCurrentSurface());
+        if (m_Type == CommandBufferType::MAIN)
+        {
+            renderer->GetCommandQueue()->wait(renderer->GetCurrentSurface());
+        }
+        
         renderer->GetCommandQueue()->commit(&CommandBuffer, 1);
         
         if (m_Type == CommandBufferType::MAIN)

@@ -49,6 +49,8 @@ namespace HBL2
 
     void MetalImGuiRenderer::Render(const FrameData& frameData)
     {
+        BEGIN_PROFILE_PASS();
+        
         ImDrawData* data = (ImDrawData*)&frameData.ImGuiRenderData.DrawData;
 
         MTL4::RenderPassDescriptor* renderPassDescriptor = ExtractRenderPassDescriptor(m_Renderer->GetImGuiRenderPass());
@@ -62,6 +64,8 @@ namespace HBL2
         commandBuffer->EndRenderPass(*rpRenderer);
         commandBuffer->EndCommandRecording();
         commandBuffer->Submit();
+        
+        END_PROFILE_PASS(Renderer::Instance->GetStats().ImGuiPassTime);
     }
 
     void MetalImGuiRenderer::Clean()

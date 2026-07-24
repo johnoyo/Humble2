@@ -132,6 +132,8 @@ namespace HBL2
 
 	void VulkanImGuiRenderer::Render(const FrameData& frameData)
 	{
+        BEGIN_PROFILE_PASS();
+        
 		ImDrawData* data = (ImDrawData*)&frameData.ImGuiRenderData.DrawData;
 
 		ImGui_ImplVulkan_NewFrame();
@@ -148,6 +150,8 @@ namespace HBL2
 		commandBuffer->EndRenderPass(*renderPassRenderer);
 		commandBuffer->EndCommandRecording();
 		commandBuffer->Submit();
+        
+        END_PROFILE_PASS(Renderer::Instance->GetStats().ImGuiPassTime);
 	}
 
 	void VulkanImGuiRenderer::Clean()

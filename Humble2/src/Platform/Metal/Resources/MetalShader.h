@@ -17,6 +17,7 @@ namespace HBL2
         void* Pso = nullptr;
         MTL::DepthStencilState* DepthStencilState = nullptr;
         Handle<BindGroup> ShaderBindGroup = {};
+        glm::u16vec3 ThreadsPerThreadgroup = {};
         
         void Destroy();
     };

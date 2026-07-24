@@ -10,14 +10,6 @@
 
 namespace HBL2
 {
-#ifdef DIST
-	#define BEGIN_PROFILE_PASS()
-	#define END_PROFILE_PASS(time)
-#else
-	#define BEGIN_PROFILE_PASS() Timer profilePass
-	#define END_PROFILE_PASS(time) time = profilePass.ElapsedMillis()
-#endif
-
 	struct Attenuation
 	{
 		float distance;
@@ -86,8 +78,8 @@ namespace HBL2
 	{
 		// Each draw list is pre allocated with ~2MB of space (~32K draws), we have 16 draw lists, 8 for each renderData in flight.
 		// So, for the draw lists we need ~32MB.
-		m_Reservation = Allocator::Arena.Reserve("ForwardSceneRendererPool", 64_MB);
-		m_Arena.Initialize(&Allocator::Arena, 64_MB, m_Reservation);
+		m_Reservation = Allocator::Arena.Reserve("ForwardSceneRendererPool", (Renderer::Instance->FrameCount * 8 * 2_MB) + 32_MB);
+		m_Arena.Initialize(&Allocator::Arena, (Renderer::Instance->FrameCount * 8 * 2_MB) + 32_MB, m_Reservation);
 
 		for (auto& sceneRenderData : m_RenderData)
 		{
@@ -164,6 +156,8 @@ namespace HBL2
 
 	void ForwardSceneRenderer::Render(void* renderData, void* debugRenderData)
 	{
+        BEGIN_PROFILE_PASS();
+        
 		SceneRenderData* sceneRenderData = (SceneRenderData*)renderData;
 		UniformRingBuffer* uniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 		ResourceManager* rm = ResourceManager::Instance;
@@ -207,6 +201,8 @@ namespace HBL2
 
 		commandBuffer->EndCommandRecording();
 		commandBuffer->Submit();
+        
+        END_PROFILE_PASS(Renderer::Instance->GetStats().MainPassTime);
 	}
 
 	void ForwardSceneRenderer::CleanUp()
@@ -579,7 +575,8 @@ namespace HBL2
 
 		// Compile compute shader.
 		const auto& compilationData = ShaderUtilities::Get().Compile("assets/shaders/equirectangular-to-skybox.slang", nullptr);
-
+        const auto& shaderReflectionData = ShaderUtilities::Get().ReflectCompute("assets/shaders/equirectangular-to-skybox.slang");
+        
 		// Create compute bind group layout.
 		m_EquirectToSkyboxBindGroupLayout = m_ResourceManager->CreateBindGroupLayout({
 			.debugName = "compute-bind-group-layout",
@@ -615,6 +612,7 @@ namespace HBL2
 				.variants = { m_ComputeVariant },
 			},
 			.renderPass = m_PostProcessRenderPass,
+            .threadsPerThreadGroup = { 16, 16, 1 },
 		});
 
 		// Skybox bind group.
@@ -1359,8 +1357,12 @@ namespace HBL2
 
     void ForwardSceneRenderer::GeometryPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData, RenderPassPool& renderPassPool)
     {
+        // Transition the layout of the texture that the shadows are rendered to, in order to be sampled in the shader.
+        // NOTE: This is mainly need for the metal backend, in vulkan it has no effect or use.
+        ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL, TextureLayout::DEPTH_STENCIL);
+        
         ScratchArena scratch(Allocator::FrameArenaRT);
-        DrawList skyboxDraws(scratch, 16);
+        DrawList skyboxDraws(scratch, 32);
         
         SkyboxComputePass(commandBuffer, &skyboxDraws);
         
