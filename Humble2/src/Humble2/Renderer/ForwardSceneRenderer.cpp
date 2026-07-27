@@ -1357,14 +1357,14 @@ namespace HBL2
 
     void ForwardSceneRenderer::GeometryPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData, RenderPassPool& renderPassPool)
     {
-        // Transition the layout of the texture that the shadows are rendered to, in order to be sampled in the shader.
-        // NOTE: This is mainly need for the metal backend, in vulkan it has no effect or use.
-        ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL, TextureLayout::DEPTH_STENCIL);
-        
         ScratchArena scratch(Allocator::FrameArenaRT);
         DrawList skyboxDraws(scratch, 32);
         
         SkyboxComputePass(commandBuffer, &skyboxDraws);
+        
+        // Transition the layout of the texture that the shadows are rendered to, in order to be sampled in the shader.
+        // NOTE: This is mainly need for the metal backend, in vulkan it has no effect or use.
+        ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL, TextureLayout::DEPTH_STENCIL);
         
         RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_GeometryRenderPass);
         {
@@ -1483,6 +1483,7 @@ namespace HBL2
                             .sampler = { .filter = TextureFilter::LINEAR, .wrap = Wrap::CLAMP_TO_EDGE, },
                             .initialLayout = TextureLayout::GENERAL,
                             .dynamicTextureView = true,
+                            .bindSampler = false,
                         });
 
                         ResourceManager::Instance->TransitionTextureLayout(
@@ -1513,13 +1514,6 @@ namespace HBL2
                         ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.CubeMap }, {});
                         computePassRenderer->Dispatch({ dispatch });
                         commandBuffer->EndComputePass(*computePassRenderer);
-
-                        ResourceManager::Instance->ChangeTextureView(skyLight.CubeMap, TextureViewDescriptor{
-                            .type = TextureType::CUBE,
-                            .format = Format::RGBA16_FLOAT,
-                            .aspect = TextureAspect::COLOR,
-                            .layerCount = 6,
-                        });
 
                         auto skyboxBindGroup = m_ResourceManager->CreateBindGroup({
                             .debugName = "skybox-bind-group",
@@ -1568,6 +1562,25 @@ namespace HBL2
 		{
 			return;
 		}
+        
+        // Change texture view from 2d-array to cube.
+        m_Scene->Filter<Component::SkyLight>()
+            .ForEach([&](Component::SkyLight& skyLight)
+             {
+                if (skyLight.Enabled)
+                {
+                    if (skyLight.Converted)
+                    {
+                        ResourceManager::Instance->ChangeTextureView(skyLight.CubeMap, TextureViewDescriptor{
+                            .type = TextureType::CUBE,
+                            .format = Format::RGBA16_FLOAT,
+                            .aspect = TextureAspect::COLOR,
+                            .layerCount = 6,
+                            .bindSampler = true,
+                        });
+                    }
+                }
+            });
 
 		// Render Skybox.
 		ResourceManager::Instance->SetBufferData(m_SkyboxGlobalBindGroup, 0, (void*)&sceneRenderData->m_OnlyRotationInViewProjection);

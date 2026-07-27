@@ -15,7 +15,7 @@ namespace HBL2
     RenderPassRenderer* MetalCommandBuffer::BeginRenderPass(Handle<RenderPass> renderPass, Viewport&& drawArea)
     {
         MetalResourceManager* rm = (MetalResourceManager*)ResourceManager::Instance;
-
+        
         m_CurrentRenderPassRenderer.m_CommandBuffer = CommandBuffer;
 
         if (!renderPass.IsValid())
@@ -100,7 +100,7 @@ namespace HBL2
     {
         if (m_TexturesWrite.Size() != 0 || m_BuffersWrite.Size() != 0)
         {
-            m_PendingBarrierAfterStages |= MTL::StageDispatch;
+            m_PendingBarrierAfterStages |= (MTL::StageDispatch | MTL::StageBlit);
         }
         
         ((MetalComputePassRenderer*)&computePassRenderer)->Encoder->endEncoding();

@@ -26,6 +26,7 @@ namespace HBL2
         MTL::Size Extent;
         TextureType ImageType = TextureType::D2;
         uint32_t LayerCount = 0;
+        bool BindSampler = true;
         
     private:
         void CreateStagingBuffer(MetalRenderer* renderer, size_t imageSize, MTL::Buffer** outStagingBuffer);

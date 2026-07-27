@@ -17,6 +17,7 @@ namespace HBL2
 
             uint32_t bufferIndex = 0;
             uint32_t textureIndex = 0;
+            uint32_t samplerIndex = 0;
             
             Encoder->setComputePipelineState((MTL::ComputePipelineState*)shader->Pso);
 
@@ -36,7 +37,12 @@ namespace HBL2
                 {
                     MetalTexture* texture = rm->GetTexture(textureEntry.texture);
                     argTable->setTexture(texture->Texture->gpuResourceID(), textureIndex);
-                    argTable->setSamplerState(texture->Sampler->gpuResourceID(), textureIndex);
+                    
+                    if (texture->BindSampler)
+                    {
+                        argTable->setSamplerState(texture->Sampler->gpuResourceID(), samplerIndex);
+                        samplerIndex++;
+                    }
                     
                     textureIndex++;
                 }

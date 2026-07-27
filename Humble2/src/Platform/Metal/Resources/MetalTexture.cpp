@@ -4,7 +4,7 @@
 
 namespace HBL2
 {
-MetalTexture::MetalTexture(const TextureDescriptor&& desc)
+    MetalTexture::MetalTexture(const TextureDescriptor&& desc)
     {
         MetalDevice* device = (MetalDevice*)Device::Instance;
         MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
@@ -13,6 +13,7 @@ MetalTexture::MetalTexture(const TextureDescriptor&& desc)
         ImageType = desc.type;
         LayerCount = desc.layerCount;
         Extent = MTL::Size((NS::UInteger)desc.dimensions.x, (NS::UInteger)desc.dimensions.y, (NS::UInteger)desc.dimensions.z);
+        BindSampler = desc.bindSampler;
     
         switch (desc.format)
         {
@@ -156,34 +157,23 @@ MetalTexture::MetalTexture(const TextureDescriptor&& desc)
 
         MTL::Texture* previouslyBound = Texture;
 
-        // Always derive the new view from the root storage texture, not from whatever view
-        // is currently bound, avoids ambiguity around chaining views-of-views.
         MTL::Texture* newView = m_StorageTexture->newTextureView(MtlUtils::FormatToMTLPixelFormat(desc.format), MtlUtils::TextureTypeToMTLTextureType(desc.type), NS::Range::Make(0, 1), NS::Range::Make(0, desc.layerCount));
 
         if (newView == nullptr)
         {
             HBL2_CORE_ERROR("MetalTexture: newTextureView failed for '{}' - check MTLTextureUsagePixelFormatView and type/format compatibility", DebugName);
+            
             return;
         }
-
+        
         Texture = newView;
-
-        // NOTE: unconfirmed whether a texture view needs its own residency-set entry or
-        // shares its parent's underlying allocation for residency purposes. If bind groups
-        // built against the new view hit residency validation errors, add
-        // `renderer->MakeResident({ Texture })` here too - re-adding an already-resident
-        // allocation should be a harmless no-op.
-        // renderer->MakeResident({ Texture });
+        BindSampler = desc.bindSampler;
 
         if (previouslyBound != m_StorageTexture)
         {
-            // Don't release the root storage texture through this path, only ever release
-            // it once, in Destroy(). Defer releasing the old view since GPU work that wrote
-            // through it (e.g. the compute dispatch in the skybox pass) may still be in flight.
             auto& deletionQueue = ResourceManager::Instance->GetDeletionQueue();
             deletionQueue.Push(Renderer::Instance->GetFrameNumber(), [previouslyBound, renderer]()
             {
-                // renderer->RemoveResident(previouslyBound);
                 previouslyBound->release();
             });
         }
@@ -191,7 +181,10 @@ MetalTexture::MetalTexture(const TextureDescriptor&& desc)
 
     void MetalTexture::SynchronizeUsage(MetalCommandBuffer* commandBuffer, TextureLayout prevUsage, TextureLayout newUsage)
     {
-        commandBuffer->AddPendingBarrier({ MtlUtils::TextureLayoutToMTLStage(prevUsage), MtlUtils::TextureLayoutToMTLStage(newUsage) });
+        commandBuffer->AddPendingBarrier({
+            .After = MtlUtils::TextureLayoutToMTLStage(prevUsage), // which stage to wait for.
+            .Before = MtlUtils::TextureLayoutToMTLStage(newUsage) // which stage to block.
+        });
     }
  
     void MetalTexture::Destroy()

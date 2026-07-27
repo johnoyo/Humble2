@@ -30,6 +30,7 @@ namespace HBL2
         MTL4::ArgumentTable* argTable = renderer->GetCurrentFrame().GlobalArgumentTable;
         uint32_t bufferIndexForGlobal = 0;
         uint32_t textureIndexForGlobal = 0;
+        uint32_t samplerIndexForGlobal = 0;
         
         // Global descriptor set.
         MetalBindGroupHot* globalBindGroupHot = nullptr;
@@ -61,9 +62,15 @@ namespace HBL2
             for (const auto& textureEntry : globalBindGroupCold->Textures)
             {
                 MetalTexture* texture = rm->GetTexture(textureEntry.texture);
+                
                 argTable->setTexture(texture->Texture->gpuResourceID(), textureIndexForGlobal);
-                argTable->setSamplerState(texture->Sampler->gpuResourceID(), textureIndexForGlobal);
                 textureIndexForGlobal++;
+                
+                if (texture->BindSampler)
+                {
+                    argTable->setSamplerState(texture->Sampler->gpuResourceID(), samplerIndexForGlobal);
+                    samplerIndexForGlobal++;
+                }
             }
         }
         
@@ -75,6 +82,7 @@ namespace HBL2
         {
             uint32_t bufferIndex = bufferIndexForGlobal;
             uint32_t textureIndex = textureIndexForGlobal;
+            uint32_t samplerIndex = samplerIndexForGlobal;
 
             MetalShaderHot* shader = rm->GetShaderHot(draw.Shader);
 
@@ -116,9 +124,13 @@ namespace HBL2
                 {
                     MetalTexture* texture = rm->GetTexture(textureEntry.texture);
                     argTable->setTexture(texture->Texture->gpuResourceID(), textureIndex);
-                    argTable->setSamplerState(texture->Sampler->gpuResourceID(), textureIndex);
-                    
                     textureIndex++;
+                    
+                    if (texture->BindSampler)
+                    {
+                        argTable->setSamplerState(texture->Sampler->gpuResourceID(), samplerIndex);
+                        samplerIndex++;
+                    }
                 }
             }
             
@@ -139,9 +151,13 @@ namespace HBL2
                 {
                     MetalTexture* texture = rm->GetTexture(textureEntry.texture);
                     argTable->setTexture(texture->Texture->gpuResourceID(), textureIndex);
-                    argTable->setSamplerState(texture->Sampler->gpuResourceID(), textureIndex);
-                    
                     textureIndex++;
+                    
+                    if (texture->BindSampler)
+                    {
+                        argTable->setSamplerState(texture->Sampler->gpuResourceID(), samplerIndex);
+                        samplerIndex++;
+                    }
                 }
             }
             

@@ -162,7 +162,6 @@ namespace HBL2
 
 	void VulkanTexture::Update(const Span<const std::byte>& bytes)
 	{
-		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 
 		VkBuffer stagingBuffer = VK_NULL_HANDLE;
@@ -294,7 +293,7 @@ namespace HBL2
 	void VulkanTexture::CopyBufferToTexture(VulkanRenderer* renderer, VkBuffer stagingBuffer)
 	{
 		// Copy the data of the staging buffer to the GPU memory of Image
-		renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
+		renderer->ImmediateSubmit([=, this](VkCommandBuffer cmd)
 		{
 			uint32_t faceCount = (ImageType == TextureType::CUBE ? 6 : LayerCount);
 
