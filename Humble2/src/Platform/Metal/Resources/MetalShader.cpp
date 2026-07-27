@@ -4,6 +4,31 @@
 
 namespace HBL2
 {
+    static bool GetVariantShaderConstantValueFromIndex(const ShaderDescriptor::RenderPipeline::PackedVariant& variant, uint32_t i)
+    {
+        if (i == 0) { return variant.shaderConstantBool0; }
+        if (i == 1) { return variant.shaderConstantBool1; }
+        if (i == 2) { return variant.shaderConstantBool2; }
+        if (i == 3) { return variant.shaderConstantBool3; }
+        if (i == 4) { return variant.shaderConstantBool4; }
+        if (i == 5) { return variant.shaderConstantBool5; }
+        if (i == 6) { return variant.shaderConstantBool6; }
+        if (i == 7) { return variant.shaderConstantBool7; }
+        return false;
+    }
+
+    static void SyncVariantWithSpecializationConstant(uint32_t i, const ShaderConstant& specializationConstant, ShaderDescriptor::RenderPipeline::PackedVariant& variant)
+    {
+        if (i == 0) { variant.shaderConstantBool0 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+        if (i == 1) { variant.shaderConstantBool1 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+        if (i == 2) { variant.shaderConstantBool2 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+        if (i == 3) { variant.shaderConstantBool3 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+        if (i == 4) { variant.shaderConstantBool4 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+        if (i == 5) { variant.shaderConstantBool5 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+        if (i == 6) { variant.shaderConstantBool6 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+        if (i == 7) { variant.shaderConstantBool7 = (ShaderDescriptor::RenderPipeline::packed_size)specializationConstant.value.b; return; }
+    }
+
     void MetalShaderHot::Destroy()
     {
         // The Pso and DepthStencilState are released in the ShaderColdCold::Destroy with all the variants.
@@ -24,6 +49,36 @@ namespace HBL2
         }
 
         return nullptr;
+    }
+
+    MTL::FunctionConstantValues* MetalShaderCold::BuildSpecializationInfo(ShaderStage stage, const PipelineConfig& config)
+    {
+        const auto& constantStages = config.specializationConstantStages;
+
+        if (constantStages.Size() == 0)
+        {
+            return nullptr;
+        }
+
+        MTL::FunctionConstantValues* constantValues = nullptr;
+
+        for (uint32_t i = 0; i < constantStages.Size(); i++)
+        {
+            if (!constantStages[i].IsSet(stage))
+            {
+                continue;
+            }
+
+            if (constantValues == nullptr)
+            {
+                constantValues = MTL::FunctionConstantValues::alloc()->init();
+            }
+
+            bool value = GetVariantShaderConstantValueFromIndex(config.variantDesc, i);
+            constantValues->setConstantValue(&value, MTL::DataTypeBool, (NS::UInteger)i);
+        }
+
+        return constantValues;
     }
 
     uint64_t MetalShaderCold::GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld)
@@ -153,11 +208,37 @@ namespace HBL2
             vertexDesc->layouts()->object(VERTEX_BUFFER_BINDING_IDX)->setStride(binding.byteStride);
         }
         
+        // Specialization constants.
+        MTL::FunctionConstantValues* vertexConstants = BuildSpecializationInfo(ShaderStage::VERTEX, config);
+        MTL::FunctionConstantValues* fragmentConstants = BuildSpecializationInfo(ShaderStage::FRAGMENT, config);
+
+        MTL4::FunctionDescriptor* vertexFuncDesc = config.shaderModules[0];
+        MTL4::FunctionDescriptor* fragmentFuncDesc = config.shaderModules[1];
+
+        MTL4::SpecializedFunctionDescriptor* vertexSpecDesc = nullptr;
+        MTL4::SpecializedFunctionDescriptor* fragmentSpecDesc = nullptr;
+
+        if (vertexConstants != nullptr)
+        {
+            vertexSpecDesc = MTL4::SpecializedFunctionDescriptor::alloc()->init();
+            vertexSpecDesc->setFunctionDescriptor(config.shaderModules[0]);
+            vertexSpecDesc->setConstantValues(vertexConstants);
+            vertexFuncDesc = vertexSpecDesc;
+        }
+
+        if (fragmentConstants != nullptr)
+        {
+            fragmentSpecDesc = MTL4::SpecializedFunctionDescriptor::alloc()->init();
+            fragmentSpecDesc->setFunctionDescriptor(config.shaderModules[1]);
+            fragmentSpecDesc->setConstantValues(fragmentConstants);
+            fragmentFuncDesc = fragmentSpecDesc;
+        }
+        
         // Build pso.
         MTL4::RenderPipelineDescriptor* pipelineDesc = MTL4::RenderPipelineDescriptor::alloc()->init();
         pipelineDesc->setLabel(NS::String::string(DebugName, NS::UTF8StringEncoding));
-        pipelineDesc->setVertexFunctionDescriptor(config.shaderModules[0]);
-        pipelineDesc->setFragmentFunctionDescriptor(config.shaderModules[1]);
+        pipelineDesc->setVertexFunctionDescriptor(vertexFuncDesc);
+        pipelineDesc->setFragmentFunctionDescriptor(fragmentFuncDesc);
         pipelineDesc->setInputPrimitiveTopology(topology);
         pipelineDesc->setAlphaToOneState(alphaToOneState);
         pipelineDesc->setAlphaToCoverageState(alphaToCoverageState);
@@ -188,6 +269,12 @@ namespace HBL2
 
         NS::Error* psoError = nullptr;
         MTL::RenderPipelineState* pipeline = Compiler->newRenderPipelineState(pipelineDesc, nullptr, &psoError);
+        
+        // Clean up specialization constants resources.
+        if (vertexSpecDesc)    { vertexSpecDesc->release(); }
+        if (fragmentSpecDesc)  { fragmentSpecDesc->release(); }
+        if (vertexConstants)   { vertexConstants->release(); }
+        if (fragmentConstants) { fragmentConstants->release(); }
         
         if (!pipeline)
         {
@@ -253,6 +340,13 @@ namespace HBL2
                 variantEntry.DepthStencilState->release();
             }
         }
+        
+        for (auto bindGroupLayout : m_ReflectedBindGroupLayouts)
+        {
+            ResourceManager::Instance->DeleteBindGroupLayout(bindGroupLayout);
+        }
+
+        m_ReflectedBindGroupLayouts.clear();
     }
 
     void MetalShaderCold::DestroyOldShaderModules()
@@ -322,6 +416,66 @@ namespace HBL2
         if (desc.type == ShaderType::COMPUTE)
         {
             Hot->ThreadsPerThreadgroup = desc.threadsPerThreadGroup;
+        }
+        
+        // Clear m_SpecializationConstantStages.
+        for (uint32_t i = 0; i < Cold->m_SpecializationConstantStages.size(); i++)
+        {
+            Cold->m_SpecializationConstantStages[i].Clear();
+        }
+
+        // Fill with new specialization constants.
+        for (uint32_t i = 0; i < desc.renderPipeline.specializationConstantsPerVariant.Size(); i++)
+        {
+            for (uint32_t j = 0; j < desc.renderPipeline.specializationConstantsPerVariant[i].Size(); j++)
+            {
+                auto& variant = *((ShaderDescriptor::RenderPipeline::PackedVariant*)&desc.renderPipeline.variants[i]);
+                const auto& specializationConstant = desc.renderPipeline.specializationConstantsPerVariant[i][j];
+
+                SyncVariantWithSpecializationConstant(j, specializationConstant, variant);
+
+                Cold->m_SpecializationConstantStages[j] = specializationConstant.stage;
+            }
+        }
+        
+        // Release and clear old cache reflected bind group layouts.
+        for (auto bindGroupLayout : Cold->m_ReflectedBindGroupLayouts)
+        {
+            ResourceManager::Instance->DeleteBindGroupLayout(bindGroupLayout);
+        }
+        Cold->m_ReflectedBindGroupLayouts.clear();
+
+        // Hold a reference to the bind groups of the shader that come from reflection.
+        uint32_t bindGroupLayoutIndex = 0;
+        
+        for (const auto& bindGroup : desc.bindGroups)
+        {
+            if (bindGroup.IsValid())
+            {
+                if (bindGroupLayoutIndex == 1)
+                {
+                    // Keep reference to the reflected bind group layout of set 1,
+                    // since reflection increases the ref count of the layout obj and
+                    // we need to release it on shader destroy for proper clean up.
+                    if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout() && desc.bindGroups.size() == 4)
+                    {
+                        Cold->m_ReflectedBindGroupLayouts.push_back(bindGroup);
+                    }
+                }
+
+                if (bindGroupLayoutIndex == 2 && desc.bindGroups.size() == 4)
+                {
+                    // Keep reference to the reflected bind group layout of set 2,
+                    // since reflection increases the ref count of the layout obj and
+                    // we need to release it on shader destroy for proper clean up.
+                    if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout())
+                    {
+                        Cold->m_ReflectedBindGroupLayouts.push_back(bindGroup);
+                    }
+                }
+            }
+
+            bindGroupLayoutIndex++;
         }
         
         // Create compiler.
@@ -431,7 +585,7 @@ namespace HBL2
                 .shaderModuleCount = shaderModuleCount,
                 .variantDesc = variant,
                 .vertexBufferBindings = { &Cold->VertexBufferBinding, 1 },
-                .specializationConstantStages = {},
+                .specializationConstantStages = Cold->m_SpecializationConstantStages,
                 .shaderHotData = Hot,
             };
 
@@ -465,7 +619,7 @@ namespace HBL2
                 .shaderModuleCount = 2,
                 .variantDesc = key,
                 .vertexBufferBindings = { &Cold->VertexBufferBinding, 1 },
-                .specializationConstantStages = {},
+                .specializationConstantStages = Cold->m_SpecializationConstantStages,
                 .shaderHotData = Hot,
             });
         }
@@ -486,7 +640,7 @@ namespace HBL2
             .shaderModuleCount = 1,
             .variantDesc = key,
             .vertexBufferBindings = { &Cold->VertexBufferBinding, 1 },
-            .specializationConstantStages = {},
+            .specializationConstantStages = Cold->m_SpecializationConstantStages,
             .shaderHotData = Hot,
         });
     }

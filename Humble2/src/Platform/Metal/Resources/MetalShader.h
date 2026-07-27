@@ -53,6 +53,7 @@ namespace HBL2
             MetalShaderHot* shaderHotData = nullptr;
         };
 
+        MTL::FunctionConstantValues* BuildSpecializationInfo(ShaderStage stage, const PipelineConfig& config);
         uint64_t GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld = false);
         MTL::RenderPipelineState* CreatePipeline(const PipelineConfig& config);
         MTL::ComputePipelineState* CreateComputePipeline(const PipelineConfig& config);
@@ -71,6 +72,9 @@ namespace HBL2
         static constexpr uint32_t MaxSpecializationConstants = 8;
 
         std::array<VariantEntry, MaxVariants> m_Entries;
+        std::array<BitFlags<ShaderStage>, MaxSpecializationConstants> m_SpecializationConstantStages;
+        
+        StaticDArray<Handle<BindGroupLayout>, 4> m_ReflectedBindGroupLayouts;
         
         uint32_t ColorAttachmentCount = 0;
         StaticDArray<MTL::PixelFormat, 4> ColorAttachmentFormats;

@@ -43,14 +43,16 @@ namespace HBL2
 		void* initialData = nullptr;
         
         bool dynamicTextureView = false;
-	};
+        bool bindSampler = true;
+    };
 
-	struct TextureViewDescriptor
-	{
-		TextureType type = TextureType::D2;
-		Format format = Format::RGBA8_RGB;
-		TextureAspect aspect = TextureAspect::COLOR;
-		uint32_t layerCount = 1;
+    struct TextureViewDescriptor
+    {
+        TextureType type = TextureType::D2;
+        Format format = Format::RGBA8_RGB;
+        TextureAspect aspect = TextureAspect::COLOR;
+        uint32_t layerCount = 1;
+        bool bindSampler = true;
 	};
 
 	struct BufferDescriptor
