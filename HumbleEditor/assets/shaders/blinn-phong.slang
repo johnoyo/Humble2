@@ -43,10 +43,10 @@ Sampler2D u_ShadowAltasMap;
 [[vk::binding(0, 2)]]
 Sampler2D u_AlbedoMap;
 
-[[vk::binding(2, 2)]]
+[[vk::binding(1, 2)]]
 ConstantBuffer<Material> u_Material;
 
-[[vk::binding(4, 3)]]
+[[vk::binding(0, 3)]]
 ConstantBuffer<Object> u_Object;
 
 // Vertex Shader

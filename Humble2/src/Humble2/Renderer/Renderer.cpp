@@ -31,8 +31,7 @@ namespace HBL2
 
 		/*
 		 * Rules for declaring shader bindings:
-		 * - All bindings of the same type must reside in different binding slots regarless of their set.
-		 * - Different types of bindings can share the same slot if they are in different sets.
+		 * - Bindings in each set should start from zero and increase from there.
 		 */
 
 		// Global bindings layout for the 2D rendering.
@@ -87,7 +86,7 @@ namespace HBL2
 			.debugName = "dynamic-bind-group-layout",
 			.bufferBindings = {
 				{
-					.slot = 4,
+					.slot = 0,
 					.visibility = ShaderStage::VERTEX,
 					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
 				},

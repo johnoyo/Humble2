@@ -574,7 +574,6 @@ namespace HBL2
 		});
 
 		// Compile compute shader.
-        ComputeShaderReflectionData shaderReflectionData;
         const auto& compilationData = ShaderUtilities::Get().Compile("assets/shaders/equirectangular-to-skybox.slang", nullptr);
         
 		// Create compute bind group layout.
@@ -620,7 +619,7 @@ namespace HBL2
 			.debugName = "skybox-global-layout",
 			.textureBindings = {
 				{
-					.slot = 1,
+					.slot = 0,
 					.visibility = ShaderStage::FRAGMENT,
 					.type = TextureBindingType::IMAGE_SAMPLER,
 				},
@@ -1514,6 +1513,14 @@ namespace HBL2
                         ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.CubeMap }, {});
                         computePassRenderer->Dispatch({ dispatch });
                         commandBuffer->EndComputePass(*computePassRenderer);
+                        
+                        ResourceManager::Instance->ChangeTextureView(skyLight.CubeMap, TextureViewDescriptor{
+                            .type = TextureType::CUBE,
+                            .format = Format::RGBA16_FLOAT,
+                            .aspect = TextureAspect::COLOR,
+                            .layerCount = 6,
+                            .bindSampler = true,
+                        });
 
                         auto skyboxBindGroup = m_ResourceManager->CreateBindGroup({
                             .debugName = "skybox-bind-group",
@@ -1562,25 +1569,6 @@ namespace HBL2
 		{
 			return;
 		}
-        
-        // Change texture view from 2d-array to cube.
-        m_Scene->Filter<Component::SkyLight>()
-            .ForEach([&](Component::SkyLight& skyLight)
-             {
-                if (skyLight.Enabled)
-                {
-                    if (skyLight.Converted)
-                    {
-                        ResourceManager::Instance->ChangeTextureView(skyLight.CubeMap, TextureViewDescriptor{
-                            .type = TextureType::CUBE,
-                            .format = Format::RGBA16_FLOAT,
-                            .aspect = TextureAspect::COLOR,
-                            .layerCount = 6,
-                            .bindSampler = true,
-                        });
-                    }
-                }
-            });
 
 		// Render Skybox.
 		ResourceManager::Instance->SetBufferData(m_SkyboxGlobalBindGroup, 0, (void*)&sceneRenderData->m_OnlyRotationInViewProjection);
