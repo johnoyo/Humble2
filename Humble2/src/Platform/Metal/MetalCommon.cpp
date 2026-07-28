@@ -307,19 +307,18 @@ namespace HBL2
         switch (memoryUsage)
         {
         case HBL2::MemoryUsage::CPU_ONLY:
-            // Host-visible, coherent, normally cached — general-purpose staging/CPU-owned data.
+            // Host-visible, coherent, normally cached, general purpose staging/CPU-owned data.
             return MTL::ResourceStorageModeShared | MTL::ResourceCPUCacheModeDefaultCache;
         case HBL2::MemoryUsage::GPU_ONLY:
-            // GPU-exclusive, not CPU-visible at all — fastest for static VBs/IBs, render targets.
-            // return MTL::ResourceStorageModePrivate; // TODO: fix when the buffer is fixed.
-            return MTL::ResourceStorageModeShared;
+            // GPU-exclusive, not CPU-visible at all, fastest for static VBs/IBs, render targets.
+            return MTL::ResourceStorageModePrivate;
         case HBL2::MemoryUsage::GPU_CPU:
             // GPU writes, CPU reads back (e.g. readback/query buffers).
-            // Default cache mode matters here — write-combined is uncached for CPU *reads* and would be brutal for readback.
+            // Default cache mode matters here, write combined is uncached for CPU reads and would be brutal for readback.
             return MTL::ResourceStorageModeShared | MTL::ResourceCPUCacheModeDefaultCache;
         case HBL2::MemoryUsage::CPU_GPU:
             // CPU writes every frame, GPU reads (uniforms, streamed vertex data).
-            // Write-combined optimizes sequential CPU writes; fine since CPU never reads this back.
+            // Write combined optimizes sequential CPU writes, fine since CPU never reads this back.
             return MTL::ResourceStorageModeShared | MTL::ResourceCPUCacheModeWriteCombined;
         }
 

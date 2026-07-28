@@ -20,7 +20,6 @@ namespace HBL2
 			return;
 		}
 
-		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 
 		Cold->DebugName = desc.debugName;
@@ -97,7 +96,6 @@ namespace HBL2
 			return;
 		}
 
-		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 
 		// Store old buffer and allocation
@@ -127,7 +125,7 @@ namespace HBL2
 		// Check if there is existing data to copy from the old buffer
 		if (oldBuffer != VK_NULL_HANDLE && currentOffset > 0)
 		{
-			renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
+			renderer->ImmediateSubmit([=, this](VkCommandBuffer cmd)
 			{
 				VkBufferCopy copyRegion =
 				{

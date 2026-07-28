@@ -34,8 +34,25 @@ namespace HBL2
             
             if (resourceOptions == MTL::ResourceStorageModePrivate)
             {
-                // TODO: implement copy buffer to buffer using ImmediateSubmit.
-                // Also fix the MemoryUsageToMTLResourceOptions to return MTL::ResourceStorageModePrivate on GPU_ONLY.
+                // Shared staging buffer, CPU-writable, holding the initial data.
+                MTL::Buffer* stagingBuffer = device->Get()->newBuffer(Hot->Data, Hot->ByteSize, MTL::ResourceStorageModeShared);
+                stagingBuffer->setLabel(NS::String::string("StagingBuffer", NS::UTF8StringEncoding));
+
+                // GPU-only destination buffer.
+                Hot->Buffer = device->Get()->newBuffer(Hot->ByteSize, resourceOptions);
+                Hot->Buffer->setLabel(NS::String::string(Cold->DebugName, NS::UTF8StringEncoding));
+                
+                renderer->MakeResident({ Hot->Buffer, stagingBuffer });
+
+                renderer->ImmediateSubmit([=, this](MTL4::ComputeCommandEncoder* encoder)
+                {
+                    encoder->copyFromBuffer(stagingBuffer, 0, Hot->Buffer, 0, Hot->ByteSize);
+                });
+
+                renderer->RemoveResident(stagingBuffer);
+                stagingBuffer->release();
+                
+                return;
             }
             else
             {
@@ -44,10 +61,10 @@ namespace HBL2
         }
         else
         {
-            Hot->Buffer = device->Get()->newBuffer(Hot->ByteSize, MtlUtils::MemoryUsageToMTLResourceOptions(desc.memoryUsage));
+            Hot->Buffer = device->Get()->newBuffer(Hot->ByteSize, resourceOptions);
         }
-        Hot->Buffer->setLabel(NS::String::string(Cold->DebugName, NS::UTF8StringEncoding));
         
+        Hot->Buffer->setLabel(NS::String::string(Cold->DebugName, NS::UTF8StringEncoding));
         renderer->MakeResident({ Hot->Buffer });
     }
 
