@@ -1,5 +1,9 @@
 #include "BuildEngine.h"
 
+#include "Platform/Windows/WindowsBuildEngine.h"
+#include "Platform/MacOS/MacOSBuildEngine.h"
+#include "Platform/Linux/LinuxBuildEngine.h"
+
 #include "Asset/AssetManager.h"
 #include "Asset/EditorAssetManager.h"
 #include "Project/Project.h"
@@ -8,6 +12,17 @@
 namespace HBL2
 {
 	BuildEngine* BuildEngine::Instance = nullptr;
+
+    BuildEngine* BuildEngine::Create()
+    {
+#ifdef HBL2_PLATFORM_WINDOWS
+        return new WindowsBuildEngine;
+#elif HBL2_PLATFORM_MACOS
+        return new MacOSBuildEngine;
+#elif HBL2_PLATFORM_LINUX
+        return new LinuxBuildEngine;
+#endif
+    }
 
 	extern "C"
 	{

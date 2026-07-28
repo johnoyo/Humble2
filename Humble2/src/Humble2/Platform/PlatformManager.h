@@ -14,6 +14,8 @@ namespace HBL2
         PlatformManager() = default;
         virtual ~PlatformManager() = default;
         
+        static PlatformManager* Create();
+        
         virtual void Initialize() = 0;
         virtual void Shutdown() = 0;
         

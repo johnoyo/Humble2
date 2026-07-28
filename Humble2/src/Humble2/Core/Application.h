@@ -1,10 +1,5 @@
 #pragma once
 
-#ifdef false
-    #include "Platform/OpenGL/OpenGLWindow.h"
-    #include "Platform/Vulkan/VulkanWindow.h"
-#endif
-
 #include "Base.h"
 #include "Input.h"
 #include "Time.h"
@@ -21,21 +16,7 @@
 #include "Resources/ResourceManager.h"
 
 #include "Physics/PhysicsEngine2D.h"
-#include "Physics/JoltPhysicsEngine.h"
 #include "Physics/PhysicsEngine3D.h"
-#include "Physics/Box2DPhysicsEngine.h"
-
-#ifdef false
-    #include "Platform/OpenGL/OpenGLResourceManager.h"
-    #include "Platform/OpenGL/OpenGLImGuiRenderer.h"
-    #include "Platform/OpenGL/OpenGLRenderer.h"
-    #include "Platform/OpenGL/OpenGLDevice.h"
-#endif
-
-#include "Platform/Vulkan/VulkanImGuiRenderer.h"
-#include "Platform/Vulkan/VulkanResourceManager.h"
-#include "Platform/Vulkan/VulkanRenderer.h"
-#include "Platform/Vulkan/VulkanDevice.h"
 
 #include "Scene/SceneManager.h"
 
