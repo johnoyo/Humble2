@@ -374,4 +374,19 @@ namespace HBL2
             return MTL::StageFragment;
         }
     }
+
+    MTL::Stages MtlUtils::ShaderStageToMTLStages(ShaderStage stage)
+    {
+        switch (stage)
+        {
+            case ShaderStage::VERTEX:
+                return MTL::StageVertex;
+            case ShaderStage::FRAGMENT:
+                return MTL::StageFragment;
+            case ShaderStage::COMPUTE:
+                return MTL::StageDispatch;
+            case ShaderStage::NONE:
+                return MTL::Stages(0);
+        }
+    }
 }

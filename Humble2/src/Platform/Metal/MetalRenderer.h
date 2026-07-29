@@ -25,6 +25,7 @@ namespace HBL2
         MTL4::CommandBuffer* ImGuiCommandBuffer = nullptr;
         MTL4::CommandAllocator* CommandAllocator = nullptr;
         MTL4::ArgumentTable* GlobalArgumentTable = nullptr;
+        MTL4::ArgumentTable* GlobalComputeArgumentTable = nullptr;
         
         Handle<BindGroup> ShadowBindings;
         Handle<BindGroup> DebugBindings;
@@ -77,12 +78,11 @@ namespace HBL2
         CA::MetalDrawable* GetCurrentSurface() { return m_SurfaceRef; }
         const CA::MetalDrawable* GetCurrentSurface() const { return m_SurfaceRef; }
         
+        dispatch_semaphore_t GetFrameSemaphore() const { return m_FrameSemaphore; }
+        
         void MakeResident(std::initializer_list<MTL::Allocation*> resources);
         void RemoveResident(MTL::Allocation* resource);
         void ImmediateSubmit(const std::function<void(MTL4::ComputeCommandEncoder*)>& fn);
-        
-        void SignalMainRenderFinishedEvent();
-        void WaitForMainRenderFinishedEvent();
         
     protected:
         virtual void PreInitialize() override;
@@ -106,8 +106,8 @@ namespace HBL2
         std::array<MtlFrameData, FRAME_OVERLAP> m_MtlFrames;
         MTL::ResidencySet* m_ResidencySet = nullptr;
         std::array<Handle<Texture>, FRAME_OVERLAP> m_DepthTextures;
-        MTL::SharedEvent* m_FrameAvailableSharedEvent = nullptr;
-        MTL::SharedEvent* m_MainRenderFinishedSharedEvent = nullptr;
+        
+        dispatch_semaphore_t m_FrameSemaphore = nullptr;
         
         std::array<MetalCommandBuffer, FRAME_OVERLAP> m_MainCommandBuffers;
         std::array<MetalCommandBuffer, FRAME_OVERLAP> m_ImGuiCommandBuffers;

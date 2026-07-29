@@ -37,12 +37,23 @@ namespace HBL2
                 .commandBuffer = frame.ImGuiCommandBuffer,
             });
             
-            auto* argTableDesc = MTL4::ArgumentTableDescriptor::alloc();
-            argTableDesc->setMaxBufferBindCount(16);
-            argTableDesc->setMaxTextureBindCount(16);
-            argTableDesc->setMaxSamplerStateBindCount(16);
-            frame.GlobalArgumentTable = m_Device->Get()->newArgumentTable(argTableDesc, /* error */ nullptr);
-            argTableDesc->release();
+            {
+                auto* argTableDesc = MTL4::ArgumentTableDescriptor::alloc();
+                argTableDesc->setMaxBufferBindCount(16);
+                argTableDesc->setMaxTextureBindCount(16);
+                argTableDesc->setMaxSamplerStateBindCount(16);
+                frame.GlobalArgumentTable = m_Device->Get()->newArgumentTable(argTableDesc, /* error */ nullptr);
+                argTableDesc->release();
+            }
+            
+            {
+                auto* argTableDesc = MTL4::ArgumentTableDescriptor::alloc();
+                argTableDesc->setMaxBufferBindCount(16);
+                argTableDesc->setMaxTextureBindCount(16);
+                argTableDesc->setMaxSamplerStateBindCount(16);
+                frame.GlobalComputeArgumentTable = m_Device->Get()->newArgumentTable(argTableDesc, /* error */ nullptr);
+                argTableDesc->release();
+            }
             
             index++;
         }
@@ -55,12 +66,8 @@ namespace HBL2
         m_CommandQueue->addResidencySet(m_ResidencySet);
         m_CommandQueue->addResidencySet(m_Device->GetMetalLayer()->residencySet());
         
-        // Synchronization (shared events are similar to vulkan fences).
-        m_FrameAvailableSharedEvent = m_Device->Get()->newSharedEvent();
-        m_FrameAvailableSharedEvent->setSignaledValue(0);
-        
-        m_MainRenderFinishedSharedEvent = m_Device->Get()->newSharedEvent();
-        m_MainRenderFinishedSharedEvent->setSignaledValue(0);
+        // Semaphore initialized with capacity = 2 (allows 2 frames in-flight)
+        m_FrameSemaphore = dispatch_semaphore_create(FRAME_OVERLAP);
         
         // Create UploadContext Commands for this thread.
         CreateUploadContextCommands();
@@ -203,10 +210,7 @@ namespace HBL2
         m_AutoReleasePool = NS::AutoreleasePool::alloc()->init();
         
         // Signal that frame is ready.
-        if (m_FrameNumber.load() >= FRAME_OVERLAP)
-        {
-            m_FrameAvailableSharedEvent->waitUntilSignaledValue(m_FrameNumber.load() - FRAME_OVERLAP, 1000);
-        }
+        dispatch_semaphore_wait(m_FrameSemaphore, DISPATCH_TIME_FOREVER);
         
         // Flush any pending deletions that occured in the frames before the current one.
         m_ResourceManager->Flush(m_FrameNumber.load());
@@ -234,8 +238,6 @@ namespace HBL2
     void MetalRenderer::Present()
     {
         m_SurfaceRef->present();
-        
-        m_CommandQueue->signalEvent(m_FrameAvailableSharedEvent, m_FrameNumber.load());
         m_FrameNumber++;
         
         m_AutoReleasePool->release();
@@ -243,6 +245,22 @@ namespace HBL2
 
     void MetalRenderer::Clean()
     {
+        // Drain all in-flight GPU frames before destroying resources.
+        for (uint32_t i = 0; i < FRAME_OVERLAP; ++i)
+        {
+            dispatch_semaphore_wait(m_FrameSemaphore, DISPATCH_TIME_FOREVER);
+        }
+        
+        // Restore count back to initial capacity (FRAME_OVERLAP) so GCD allows release.
+        for (uint32_t i = 0; i < FRAME_OVERLAP; ++i)
+        {
+            dispatch_semaphore_signal(m_FrameSemaphore);
+        }
+        
+        // Safe to release frame semaphore now.
+        dispatch_release(m_FrameSemaphore);
+        m_FrameSemaphore = nullptr;
+        
         m_MainDeletionQueue.Flush();
 
         // Delete offscreen render targets.
@@ -322,9 +340,9 @@ namespace HBL2
         m_Device->GetMetalLayer()->setDrawableSize(CGSizeMake(width, height));
         
         // Wait for device idle.
-        if (m_FrameNumber.load() > 0)
+        for (uint32_t i = 0; i < FRAME_OVERLAP; ++i)
         {
-            m_FrameAvailableSharedEvent->waitUntilSignaledValue(m_FrameNumber.load() - 1, UINT64_MAX);
+            dispatch_semaphore_wait(m_FrameSemaphore, DISPATCH_TIME_FOREVER);
         }
         
         // Cleanup old swapchain resources.
@@ -433,6 +451,12 @@ namespace HBL2
         {
             callback(width, height);
         }
+        
+        // Replenish tokens so frame rendering can resume cleanly.
+        for (uint32_t i = 0; i < FRAME_OVERLAP; ++i)
+        {
+            dispatch_semaphore_signal(m_FrameSemaphore);
+        }
     }
 
     CommandBuffer* MetalRenderer::BeginCommandRecording(CommandBufferType type)
@@ -499,16 +523,6 @@ namespace HBL2
         const uint64_t waitValue = ++s_UploadContext.EventValue;
         m_CommandQueue->signalEvent(s_UploadContext.Event, waitValue);
         s_UploadContext.Event->waitUntilSignaledValue(waitValue, UINT64_MAX);
-    }
-
-    void MetalRenderer::SignalMainRenderFinishedEvent()
-    {
-        m_CommandQueue->signalEvent(m_MainRenderFinishedSharedEvent, m_FrameNumber.load());
-    }
-
-    void MetalRenderer::WaitForMainRenderFinishedEvent()
-    {
-        m_CommandQueue->wait(m_MainRenderFinishedSharedEvent, m_FrameNumber.load());
     }
 
     MTL::Texture* MetalRenderer::CreateDepthTexture(uint32_t width, uint32_t height, uint32_t frameIdx)

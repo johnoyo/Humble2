@@ -9,7 +9,7 @@ namespace HBL2
         MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
         MetalResourceManager* rm = (MetalResourceManager*)ResourceManager::Instance;
 
-        MTL4::ArgumentTable* argTable = renderer->GetCurrentFrame().GlobalArgumentTable;
+        MTL4::ArgumentTable* argTable = renderer->GetCurrentFrame().GlobalComputeArgumentTable;
         
         for (const auto& dispatch : dispatches)
         {

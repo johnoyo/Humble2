@@ -115,21 +115,28 @@ namespace HBL2
     {
         MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
         
-        if (m_Type == CommandBufferType::UI)
-        {
-            renderer->WaitForMainRenderFinishedEvent();
-        }
-        
         if (m_Type == CommandBufferType::MAIN)
         {
             renderer->GetCommandQueue()->wait(renderer->GetCurrentSurface());
+            
+            renderer->GetCommandQueue()->commit(&CommandBuffer, 1);
+            
+            return;
         }
         
-        renderer->GetCommandQueue()->commit(&CommandBuffer, 1);
-        
-        if (m_Type == CommandBufferType::MAIN)
+        if (m_Type == CommandBufferType::UI)
         {
-            renderer->SignalMainRenderFinishedEvent();            
+            MTL4::CommitOptions* options = MTL4::CommitOptions::alloc()->init();
+
+            dispatch_semaphore_t sema = renderer->GetFrameSemaphore();
+            options->addFeedbackHandler([sema](MTL4::CommitFeedback* pFeedback)
+            {
+                dispatch_semaphore_signal(sema);
+            });
+            
+            renderer->GetCommandQueue()->commit(&CommandBuffer, 1, options);
+            
+            options->release();
         }
     }
 }

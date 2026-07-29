@@ -32,5 +32,6 @@ namespace HBL2
         MTL::BlendOperation BlendOperationToMTLBlendOperation(BlendOperation blendOperation);
         MTL::BlendFactor BlendFactorToMTLBlendFactor(BlendFactor blendFactor);
         MTL::Stages TextureLayoutToMTLStage(TextureLayout layout);
+        MTL::Stages ShaderStageToMTLStages(ShaderStage stage);
     }
 }
