@@ -49,6 +49,9 @@ namespace HBL2
 
 		glm::u32vec2 GetExtents() const { return { m_Spec.Width, m_Spec.Height }; }
 		void SetExtents(uint32_t x, uint32_t y) { m_Spec.Width = x; m_Spec.Height = y; }
+        
+        glm::u32vec2 GetContentScale() const { return m_ContentScale; }
+        void SetContentScale(float x, float y) { m_ContentScale.x = x; m_ContentScale.y = y; }
 
 		const WindowSpecification& GetSpec() const { return m_Spec; }
 
@@ -60,6 +63,7 @@ namespace HBL2
 		std::array<GLFWwindow*, MAX_WORKERS> m_WorkerWindows;
 		WindowSpecification m_Spec;
 		glm::i32vec2 m_Position;
+        glm::vec2 m_ContentScale;
 
 		static void DispatchMainEm(void* fp);
 	};
