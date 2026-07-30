@@ -80,6 +80,7 @@ namespace HBL2
         
         dispatch_semaphore_t GetFrameSemaphore() const { return m_FrameSemaphore; }
         
+        void EnsureDrawableAcquired();
         void MakeResident(std::initializer_list<MTL::Allocation*> resources);
         void RemoveResident(MTL::Allocation* resource);
         void ImmediateSubmit(const std::function<void(MTL4::ComputeCommandEncoder*)>& fn);
@@ -94,11 +95,17 @@ namespace HBL2
         void CreateRenderPasses();
         void Resize(int width, int height);
         
+        void BeginCapture();
+        void EndCapture();
+        
     private:
         MetalDevice* m_Device = nullptr;
         MetalResourceManager* m_ResourceManager;
         DeletionQueue m_MainDeletionQueue;
         std::mutex m_DeletionQueueMutex;
+        
+        MTL::CaptureManager* m_CaptureManager = nullptr;
+        MTL::CaptureDescriptor* m_CaptureDescriptor = nullptr;
         
         NS::AutoreleasePool* m_AutoReleasePool = nullptr;
         CA::MetalDrawable* m_SurfaceRef = nullptr;

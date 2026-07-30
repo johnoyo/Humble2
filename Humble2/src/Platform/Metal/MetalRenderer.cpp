@@ -203,6 +203,8 @@ namespace HBL2
         {
             Resize(e.Width, e.Height);
         });
+        
+        m_CaptureManager = MTL::CaptureManager::sharedCaptureManager();
     }
 
     void MetalRenderer::BeginFrame()
@@ -481,6 +483,21 @@ namespace HBL2
         return mtlCmdObj;
     }
 
+    void MetalRenderer::EnsureDrawableAcquired()
+    {
+        if (!m_SurfaceRef)
+        {
+            m_SurfaceRef = m_Device->GetMetalLayer()->nextDrawable();
+            
+            // Now set targets right before rendering
+            MetalRenderPass* mainRp = m_ResourceManager->GetRenderPass(GetMainRenderPass());
+            mainRp->SetColorTarget(0, m_SurfaceRef->texture());
+
+            MetalRenderPass* imguiRp = m_ResourceManager->GetRenderPass(GetImGuiRenderPass());
+            imguiRp->SetColorTarget(0, m_SurfaceRef->texture());
+        }
+    }
+
     void MetalRenderer::MakeResident(std::initializer_list<MTL::Allocation*> resources)
     {
         std::lock_guard lock(m_ResidencyMutex);
@@ -671,6 +688,40 @@ namespace HBL2
                 ctx.CommandBuffer->release();
                 ctx.Event->release();
             });
+        }
+    }
+
+    void MetalRenderer::BeginCapture()
+    {
+        // Check if Xcode or Instruments is attached and ready to receive a trace.
+        if (m_CaptureManager->isCapturing())
+        {
+            std::cout << "A capture is already in progress." << std::endl;
+            return;
+        }
+
+        // Configure the capture descriptor.
+        m_CaptureDescriptor = MTL::CaptureDescriptor::alloc()->init();
+        m_CaptureDescriptor->setCaptureObject(m_CommandQueue); // Capture scope tied to this queue
+        m_CaptureDescriptor->setDestination(MTL::CaptureDestinationDeveloperTools); // Send to Xcode
+
+        NS::Error* error = nullptr;
+        
+        // Start recording GPU commands.
+        if (!m_CaptureManager->startCapture(m_CaptureDescriptor, &error))
+        {
+            std::cerr << "Failed to start capture: " << error->localizedDescription()->utf8String() << std::endl;
+            m_CaptureDescriptor->release();
+            return;
+        }
+    }
+
+    void MetalRenderer::EndCapture()
+    {
+        if (m_CaptureManager->isCapturing())
+        {
+            m_CaptureManager->stopCapture();
+            m_CaptureDescriptor->release();
         }
     }
 }

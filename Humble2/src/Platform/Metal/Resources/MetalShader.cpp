@@ -395,6 +395,7 @@ namespace HBL2
             Cold->VertexBufferBinding = desc.renderPipeline.vertexBufferBindings[0];
         }
         
+        Cold->ColorAttachmentFormats.clear();
         MetalRenderPass* rp = rm->GetRenderPass(desc.renderPass);
         if (rp != nullptr)
         {
