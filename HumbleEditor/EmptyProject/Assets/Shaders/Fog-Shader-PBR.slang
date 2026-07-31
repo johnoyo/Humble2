@@ -71,7 +71,7 @@ ConstantBuffer<Light> u_Light;
 [[vk::binding(2, 0)]]
 Sampler2D u_ShadowAltasMap;
 
-[[vk::binding(3, 1)]]
+[[vk::binding(0, 1)]]
 ConstantBuffer<Fog> u_Fog;
 
 [[vk::binding(0, 2)]]
@@ -81,18 +81,18 @@ Sampler2D u_AlbedoMap;
 Sampler2D u_NormalMap;
 
 [[vk::binding(2, 2)]]
-ConstantBuffer<Material> u_Material;
-
-[[vk::binding(3, 2)]]
 Sampler2D u_MetallicMap;
 
-[[vk::binding(4, 2)]]
+[[vk::binding(3, 2)]]
 Sampler2D u_RoughnessMap;
+
+[[vk::binding(4, 2)]]
+ConstantBuffer<Material> u_Material;
 
 [[vk::binding(5, 2)]]
 ConstantBuffer<Terrain> u_Terrain;
 
-[[vk::binding(4, 3)]]
+[[vk::binding(0, 3)]]
 ConstantBuffer<Object> u_Object;
 
 // Vertex Shader
