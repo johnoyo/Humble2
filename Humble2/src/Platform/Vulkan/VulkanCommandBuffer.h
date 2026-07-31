@@ -4,8 +4,24 @@
 #include "VulkanRenderPassRenderer.h"
 #include "VulkanComputePassRenderer.h"
 
+#include "Utilities/Collections/StaticDArray.h"
+
 namespace HBL2
 {
+    struct VulkanTexture;
+
+    struct VulkanBarrierTracker
+    {
+        VkPipelineStageFlags SrcStageMask = 0;
+        VkPipelineStageFlags DstStageMask = 0;
+        StaticDArray<VkImageMemoryBarrier, 8>  ImageBarriers;
+        StaticDArray<VkBufferMemoryBarrier, 8> BufferBarriers;
+
+        void AddImageBarrier(VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage, VkImageMemoryBarrier b);
+        void AddBufferBarrier(VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage, VkBufferMemoryBarrier b);
+        void Flush(VkCommandBuffer cmd);
+    };
+
 	struct VkCommandBufferCreateInfo
 	{
 		CommandBufferType type;
@@ -32,6 +48,10 @@ namespace HBL2
 
 		virtual void EndCommandRecording() override;
 		virtual void Submit() override;
+        
+        void TextureBarrier(Handle<Texture> texture, ResourceState oldState, ResourceState newState);
+        void TextureBarrier(VulkanTexture* vkTexture, ResourceState oldState, ResourceState newState);
+        void MemoryBarrier(Handle<Buffer> buffer, ResourceState oldState, ResourceState newState);
 
 		VkCommandBuffer CommandBuffer;
         
@@ -48,6 +68,9 @@ namespace HBL2
 		VulkanComputePassRenderer m_CurrentComputePassRenderer;
 		Span<const Handle<Texture>> m_TexturesWrite;
 		Span<const Handle<Buffer>> m_BuffersWrite;
+        
+        VulkanBarrierTracker m_BarrierTracker;
+        bool m_PassOpen = false;
 
 		inline static bool s_AlreadyCleared = false;
 	};

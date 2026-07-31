@@ -179,12 +179,9 @@ namespace HBL2
         }
     }
 
-    void MetalTexture::SynchronizeUsage(MetalCommandBuffer* commandBuffer, TextureLayout prevUsage, TextureLayout newUsage)
+    void MetalTexture::SynchronizeUsage(MetalCommandBuffer* commandBuffer, ResourceState currentState, ResourceState newState)
     {
-        commandBuffer->AddPendingBarrier({
-            .After = MtlUtils::TextureLayoutToMTLStage(prevUsage), // which stage to wait for.
-            .Before = MtlUtils::TextureLayoutToMTLStage(newUsage) // which stage to block.
-        });
+        commandBuffer->AddPendingBarrier(currentState, newState);
     }
  
     void MetalTexture::Destroy()

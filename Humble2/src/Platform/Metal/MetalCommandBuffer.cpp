@@ -6,6 +6,69 @@
 
 namespace HBL2
 {
+    void MetalBarrierTracker::Add(MTL::Stages after, MTL::Stages before)
+    {
+        if (after == 0 || before == 0)
+        {
+            return;
+        }
+        
+        AfterStages |= after;
+        BeforeStages |= before;
+        Pending = true;
+    }
+
+    void MetalBarrierTracker::Add(ResourceState oldState, ResourceState newState)
+    {
+        MTL::Stages oldProducer, oldConsumer, newProducer, newConsumer;
+        MtlUtils::ResourceStateToMTLStagesSplit(oldState, &oldProducer, &oldConsumer);
+        MtlUtils::ResourceStateToMTLStagesSplit(newState, &newProducer, &newConsumer);
+
+        MTL::Stages after = oldProducer ? oldProducer : oldConsumer;
+        MTL::Stages before = newConsumer ? newConsumer : newProducer;
+
+        if (after == 0 || before == 0)
+        {
+            return;
+        }
+
+        AfterStages  |= after;
+        BeforeStages |= before;
+        Pending = true;
+    }
+
+    void MetalBarrierTracker::Flush(MTL4::CommandEncoder* encoder)
+    {
+        if (!Pending)
+        {
+            return;
+        }
+        
+        encoder->barrierAfterQueueStages(AfterStages, BeforeStages, MTL4::VisibilityOptionDevice);
+        
+        AfterStages = 0;
+        BeforeStages = 0;
+        Pending = false;
+    }
+
+    void MetalBarrierTracker::FlushInline(MTL4::CommandEncoder* encoder, MTL::Stages encoderStages)
+    {
+        if (!Pending)
+        {
+            return;
+        }
+        
+        MTL::Stages afterInEncoder = AfterStages  & encoderStages;
+        MTL::Stages beforeInEncoder = BeforeStages & encoderStages;
+        
+        if (afterInEncoder != 0 && beforeInEncoder != 0)
+        {
+            encoder->barrierAfterEncoderStages(afterInEncoder, beforeInEncoder, MTL4::VisibilityOptionDevice);
+        }
+        
+        Flush(encoder);
+    }
+
     MetalCommandBuffer::MetalCommandBuffer(const MtlCommandBufferCreateInfo&& commandBufferCreateInfo)
         : m_Type(commandBufferCreateInfo.type), CommandBuffer(commandBufferCreateInfo.commandBuffer)
     {
@@ -38,18 +101,10 @@ namespace HBL2
         
         m_CurrentRenderPassRenderer.Encoder = CommandBuffer->renderCommandEncoder(mtlRenderPass->PassDesc);
         
-        for (const auto& barrier : m_PendingBarriers)
-        {
-            m_CurrentRenderPassRenderer.Encoder->barrierAfterQueueStages(barrier.After, barrier.Before, MTL4::VisibilityOptionDevice);
-        }
-        m_PendingBarriers.clear();
-        
-        if (m_PendingBarrierAfterStages != 0)
-        {
-            m_CurrentRenderPassRenderer.Encoder->barrierAfterQueueStages(m_PendingBarrierAfterStages, MTL::StageVertex | MTL::StageFragment, MTL4::VisibilityOptionDevice);
+        m_BarrierTracker.Flush(m_CurrentRenderPassRenderer.Encoder);
 
-            m_PendingBarrierAfterStages = 0;
-        }
+        m_CurrentEncoder = m_CurrentRenderPassRenderer.Encoder;
+        m_CurrentEncoderStages = MTL::StageVertex | MTL::StageFragment | MTL::StageTile | MTL::StageObject;
         
         // Viewport
         MTL::Viewport viewport;
@@ -76,19 +131,26 @@ namespace HBL2
 
     void MetalCommandBuffer::EndRenderPass(const RenderPassRenderer& renderPassRenderer)
     {
-        ((MetalRenderPassRenderer*)&renderPassRenderer)->Encoder->endEncoding();
+        auto* encoder = ((MetalRenderPassRenderer*)&renderPassRenderer)->Encoder;
+
+        // Unconditional safety barrier: back-to-back render encoders are NOT implicitly ordered
+        // by Metal 4 just because they're issued in sequence.
+        encoder->barrierAfterStages(MTL::StageFragment, MTL::StageFragment, MTL4::VisibilityOptionDevice);
+
+        encoder->endEncoding();
+        
+        m_CurrentEncoder = nullptr;
+        m_CurrentEncoderStages = 0;
     }
 
     ComputePassRenderer* MetalCommandBuffer::BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite)
     {
         m_CurrentComputePassRenderer.Encoder = CommandBuffer->computeCommandEncoder();
         
-        if (m_PendingBarrierAfterStages != 0)
-        {
-            m_CurrentComputePassRenderer.Encoder->barrierAfterQueueStages(m_PendingBarrierAfterStages, MTL::StageDispatch | MTL::StageBlit, MTL4::VisibilityOptionDevice);
+        m_BarrierTracker.Flush(m_CurrentComputePassRenderer.Encoder);
 
-            m_PendingBarrierAfterStages = 0;
-        }
+        m_CurrentEncoder = m_CurrentComputePassRenderer.Encoder;
+        m_CurrentEncoderStages = MTL::StageDispatch | MTL::StageBlit;
         
         m_TexturesWrite = texturesWrite;
         m_BuffersWrite = buffersWrite;
@@ -100,10 +162,13 @@ namespace HBL2
     {
         if (m_TexturesWrite.Size() != 0 || m_BuffersWrite.Size() != 0)
         {
-            m_PendingBarrierAfterStages |= (MTL::StageDispatch | MTL::StageBlit);
+            m_BarrierTracker.Add(MTL::StageDispatch | MTL::StageBlit, MTL::StageVertex | MTL::StageFragment | MTL::StageDispatch | MTL::StageBlit);
         }
         
         ((MetalComputePassRenderer*)&computePassRenderer)->Encoder->endEncoding();
+        
+        m_CurrentEncoder = nullptr;
+        m_CurrentEncoderStages = 0;
     }
 
     void MetalCommandBuffer::EndCommandRecording()
@@ -117,6 +182,7 @@ namespace HBL2
         
         if (m_Type == CommandBufferType::MAIN)
         {
+            renderer->EnsureDrawableAcquired();
             renderer->GetCommandQueue()->wait(renderer->GetCurrentSurface());
             
             renderer->GetCommandQueue()->commit(&CommandBuffer, 1);
@@ -137,6 +203,17 @@ namespace HBL2
             renderer->GetCommandQueue()->commit(&CommandBuffer, 1, options);
             
             options->release();
+        }
+    }
+
+    void MetalCommandBuffer::AddPendingBarrier(ResourceState oldState, ResourceState newState)
+    {
+        m_BarrierTracker.Add(oldState, newState);
+        
+        if (m_CurrentEncoder)
+        {
+            // Pass already open so flush now, not next Begin.
+            m_BarrierTracker.FlushInline(m_CurrentEncoder, m_CurrentEncoderStages);
         }
     }
 }

@@ -220,25 +220,29 @@ namespace HBL2
         // Reset frames command allocator.
         GetCurrentFrame().CommandAllocator->reset();
         
-        // Attach surface color target texture to main and imgui render passes.
-        m_SurfaceRef = m_Device->GetMetalLayer()->nextDrawable();
-        
-        MetalRenderPass* mainRp = m_ResourceManager->GetRenderPass(GetMainRenderPass());
-        mainRp->SetColorTarget(0, m_SurfaceRef->texture());
-        
-        MetalRenderPass* imguiRp = m_ResourceManager->GetRenderPass(GetImGuiRenderPass());
-        imguiRp->SetColorTarget(0, m_SurfaceRef->texture());
+        // Invalidate surface, it will be aquired late, before rendering.
+        m_SurfaceRef = nullptr;
         
         SwapAndResetStats();
     }
 
     void MetalRenderer::EndFrame()
     {
+        if (!m_SurfaceRef)
+        {
+            return;
+        }
+        
         m_CommandQueue->signalDrawable(m_SurfaceRef);
     }
 
     void MetalRenderer::Present()
     {
+        if (!m_SurfaceRef)
+        {
+            return;
+        }
+        
         m_SurfaceRef->present();
         m_FrameNumber++;
         

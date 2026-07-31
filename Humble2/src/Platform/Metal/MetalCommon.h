@@ -33,5 +33,7 @@ namespace HBL2
         MTL::BlendFactor BlendFactorToMTLBlendFactor(BlendFactor blendFactor);
         MTL::Stages TextureLayoutToMTLStage(TextureLayout layout);
         MTL::Stages ShaderStageToMTLStages(ShaderStage stage);
+        MTL::Stages ResourceStateToMTLStages(ResourceState state);
+        void ResourceStateToMTLStagesSplit(ResourceState state, MTL::Stages* outProducer, MTL::Stages* outConsumer);
     }
 }

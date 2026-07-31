@@ -10,10 +10,16 @@
 
 namespace HBL2
 {
-    struct PendingBarrier
+    struct MetalBarrierTracker
     {
-        MTL::Stages After;
-        MTL::Stages Before;
+        MTL::Stages AfterStages = 0;   // stages that must finish first
+        MTL::Stages BeforeStages = 0;  // stages that must wait
+        bool Pending = false;
+        
+        void Add(MTL::Stages after, MTL::Stages before);
+        void Add(ResourceState oldState, ResourceState newState);
+        void Flush(MTL4::CommandEncoder* encoder);
+        void FlushInline(MTL4::CommandEncoder* encoder, MTL::Stages encoderStages);
     };
 
     struct MtlCommandBufferCreateInfo
@@ -39,14 +45,17 @@ namespace HBL2
         
         MTL4::CommandBuffer* CommandBuffer = nullptr;
         
-        void AddPendingBarrier(const PendingBarrier& pendingbarrier) { m_PendingBarriers.push_back(pendingbarrier); }
+        void AddPendingBarrier(ResourceState oldState, ResourceState newState);
         
     private:
         CommandBufferType m_Type;
         
         MetalRenderPassRenderer m_CurrentRenderPassRenderer;
         MetalComputePassRenderer m_CurrentComputePassRenderer;
-        std::vector<PendingBarrier> m_PendingBarriers;
+        
+        MetalBarrierTracker m_BarrierTracker;
+        MTL4::CommandEncoder* m_CurrentEncoder = nullptr;
+        MTL::Stages m_CurrentEncoderStages = 0;
         
         uint32_t m_PendingBarrierAfterStages = 0;
         Span<const Handle<Texture>> m_TexturesWrite;

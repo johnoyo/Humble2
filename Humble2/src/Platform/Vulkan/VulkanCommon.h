@@ -74,5 +74,11 @@ namespace HBL2
 		VkAccessFlags CurrentTextureLayoutToVkAccessFlags(TextureLayout currentLayout);
 
 		VkAccessFlags NewTextureLayoutToVkAccessFlags(TextureLayout newLayout);
+    
+        VkImageLayout ResourceStateToVkImageLayout(ResourceState state);
+
+        VkAccessFlags ResourceStateToVkAccessFlags(ResourceState state);
+
+        VkPipelineStageFlags ResourceStateToVkPipelineStageFlags(ResourceState state);
 	}
 }

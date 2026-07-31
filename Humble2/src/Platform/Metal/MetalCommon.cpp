@@ -389,4 +389,53 @@ namespace HBL2
                 return MTL::Stages(0);
         }
     }
+
+    MTL::Stages MtlUtils::ResourceStateToMTLStages(ResourceState state)
+    {
+        MTL::Stages producer, consumer;
+        ResourceStateToMTLStagesSplit(state, &producer, &consumer);
+        return producer ? producer : consumer;
+    }
+
+    void MtlUtils::ResourceStateToMTLStagesSplit(ResourceState state, MTL::Stages* outProducer, MTL::Stages* outConsumer)
+    {
+        switch (state)
+        {
+            case ResourceState::VertexAndConstantBuffer:
+            case ResourceState::IndexBuffer:
+                *outProducer = 0; *outConsumer = MTL::StageVertex;
+                break;
+            case ResourceState::RenderTarget:
+            case ResourceState::DepthWrite:
+                *outProducer = MTL::StageFragment; *outConsumer = 0;
+                break;
+            case ResourceState::DepthRead:
+            case ResourceState::PixelShaderResource:
+                *outProducer = 0; *outConsumer = MTL::StageFragment;
+                break;
+            case ResourceState::UnorderedAccess:
+                *outProducer = MTL::StageDispatch; *outConsumer = MTL::StageDispatch;
+                break;
+            case ResourceState::NonPixelShaderResource:
+                *outProducer = 0; *outConsumer = MTL::StageVertex | MTL::StageDispatch;
+                break;
+            case ResourceState::IndirectArgument:
+                *outProducer = 0; *outConsumer = MTL::StageVertex | MTL::StageDispatch;
+                break;
+            case ResourceState::CopyDest:
+                *outProducer = MTL::StageBlit; *outConsumer = 0;
+                break;
+            case ResourceState::CopySource:
+                *outProducer = 0; *outConsumer = MTL::StageBlit;
+                break;
+            case ResourceState::GenericRead:
+                *outProducer = 0; *outConsumer = MTL::StageVertex | MTL::StageFragment | MTL::StageDispatch | MTL::StageBlit;
+                break;
+            case ResourceState::Common:
+            case ResourceState::Present:
+            default:
+                *outProducer = 0; *outConsumer = 0;
+                break;
+        }
+    }
 }

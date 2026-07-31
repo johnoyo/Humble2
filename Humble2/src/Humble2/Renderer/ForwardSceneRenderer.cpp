@@ -167,9 +167,9 @@ namespace HBL2
 
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, ResourceState::Undefined, ResourceState::RenderTarget);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, ResourceState::Undefined, ResourceState::RenderTarget);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, ResourceState::Undefined, ResourceState::RenderTarget);
 
 		auto& renderPassPool = Renderer::Instance->GetRenderPassPool();
 
@@ -1361,10 +1361,6 @@ namespace HBL2
         
         SkyboxComputePass(commandBuffer, &skyboxDraws);
         
-        // Transition the layout of the texture that the shadows are rendered to, in order to be sampled in the shader.
-        // NOTE: This is mainly need for the metal backend, in vulkan it has no effect or use.
-        ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL, TextureLayout::DEPTH_STENCIL);
-        
         RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_GeometryRenderPass);
         {
             renderPassPool.Execute(RenderPassEvent::BeforeRenderingOpaques);
@@ -1488,8 +1484,8 @@ namespace HBL2
                         ResourceManager::Instance->TransitionTextureLayout(
                             commandBuffer,
                             skyLight.CubeMap,
-                            TextureLayout::UNDEFINED,
-                            TextureLayout::GENERAL
+                            ResourceState::Undefined,
+                            ResourceState::UnorderedAccess
                         );
 
                         Handle<Texture> equirectangularMapHandle = AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap);
@@ -1583,7 +1579,7 @@ namespace HBL2
 		BEGIN_PROFILE_PASS();
 
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::RENDER_ATTACHMENT, TextureLayout::SHADER_READ_ONLY);
+		ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, ResourceState::RenderTarget, ResourceState::GenericRead);
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass);
 
@@ -1620,7 +1616,7 @@ namespace HBL2
 		BEGIN_PROFILE_PASS();
 
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::RENDER_ATTACHMENT, TextureLayout::SHADER_READ_ONLY);
+		ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, ResourceState::RenderTarget, ResourceState::GenericRead);
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
 

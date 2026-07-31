@@ -17,7 +17,7 @@ namespace HBL2
         
         void Update(const Span<const std::byte>& bytes);
         void ChangeTextureView(const TextureViewDescriptor&& desc);
-        void SynchronizeUsage(MetalCommandBuffer* commandBuffer, TextureLayout prevUsage, TextureLayout newUsage);
+        void SynchronizeUsage(MetalCommandBuffer* commandBuffer, ResourceState currentState, ResourceState newState);
         void Destroy();
         
         const char* DebugName = "";
