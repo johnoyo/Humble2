@@ -39,6 +39,8 @@ project "HumbleApp"
         "../Dependencies/Jolt/jolt",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "../Dependencies/SLang/include",
+        "../Dependencies/KTX-Software/ktx/lib/include",
+        "../Dependencies/KTX-Software/ktx/external/dfdutils",
         "%{VULKAN_SDK}/Include",
         "%{VULKAN_SDK}/include",
     }

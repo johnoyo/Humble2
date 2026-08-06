@@ -92,6 +92,7 @@ group "Dependencies"
     include "Dependencies/YAML-Cpp"
     include "Dependencies/Box2D"
     include "Dependencies/Jolt"
+    include "Dependencies/KTX-Software"
 group ""
 
 group "Core"
