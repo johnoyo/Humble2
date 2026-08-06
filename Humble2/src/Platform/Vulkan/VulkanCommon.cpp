@@ -5,6 +5,9 @@ namespace HBL2
 {
 	namespace VkUtils
 	{
+        static constexpr VkPipelineStageFlags kAllShadingStages = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        static constexpr VkPipelineStageFlags kNonPixelShadingStages = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+    
 		VkFormat VertexFormatToVkFormat(VertexFormat vertexFormat)
 		{
 			switch (vertexFormat)
@@ -494,32 +497,31 @@ namespace HBL2
 			return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
 		}
 
-		VkPipelineStageFlags CurrentTextureLayoutToVkPipelineStageFlags(TextureLayout currentLayout)
-		{
-			switch (currentLayout)
-			{
-			case HBL2::TextureLayout::UNDEFINED:
-				return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-			case HBL2::TextureLayout::COPY_SRC:
-				return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM; // FIXME
-			case HBL2::TextureLayout::COPY_DST:
-				return VK_PIPELINE_STAGE_TRANSFER_BIT;
-			case HBL2::TextureLayout::RENDER_ATTACHMENT:
-				return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			case HBL2::TextureLayout::SHADER_READ_ONLY:
-				return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-			case HBL2::TextureLayout::DEPTH_STENCIL:
-				return VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-			case HBL2::TextureLayout::PRESENT:
-				return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM; // FIXME
-			case HBL2::TextureLayout::SHARED_PRESENT:
-				return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM; // FIXME
-			case HBL2::TextureLayout::GENERAL:
-				return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-			}
+        VkPipelineStageFlags CurrentTextureLayoutToVkPipelineStageFlags(TextureLayout currentLayout)
+        {
+            switch (currentLayout)
+            {
+                case HBL2::TextureLayout::UNDEFINED:
+                    return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                case HBL2::TextureLayout::COPY_SRC:
+                    return VK_PIPELINE_STAGE_TRANSFER_BIT;
+                case HBL2::TextureLayout::COPY_DST:
+                    return VK_PIPELINE_STAGE_TRANSFER_BIT;
+                case HBL2::TextureLayout::RENDER_ATTACHMENT:
+                    return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                case HBL2::TextureLayout::SHADER_READ_ONLY:
+                    return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                case HBL2::TextureLayout::DEPTH_STENCIL:
+                    return VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                case HBL2::TextureLayout::PRESENT:
+                case HBL2::TextureLayout::SHARED_PRESENT:
+                    return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+                case HBL2::TextureLayout::GENERAL:
+                    return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+            }
 
-			return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
-		}
+            return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        }
 
 		VkPipelineStageFlags NewTextureLayoutToVkPipelineStageFlags(TextureLayout newLayout)
 		{
@@ -548,32 +550,31 @@ namespace HBL2
 			return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
 		}
 
-		VkAccessFlags CurrentTextureLayoutToVkAccessFlags(TextureLayout currentLayout)
-		{
-			switch (currentLayout)
-			{
-			case HBL2::TextureLayout::UNDEFINED:
-				return 0;
-			case HBL2::TextureLayout::COPY_SRC:
-				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
-			case HBL2::TextureLayout::COPY_DST:
-				return VK_ACCESS_TRANSFER_WRITE_BIT;
-			case HBL2::TextureLayout::RENDER_ATTACHMENT:
-				return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			case HBL2::TextureLayout::SHADER_READ_ONLY:
-				return VK_ACCESS_SHADER_READ_BIT;
-			case HBL2::TextureLayout::DEPTH_STENCIL:
-				return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-			case HBL2::TextureLayout::PRESENT:
-				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
-			case HBL2::TextureLayout::SHARED_PRESENT:
-				return VK_ACCESS_FLAG_BITS_MAX_ENUM; // FIXME
-			case HBL2::TextureLayout::GENERAL:
-				return VK_ACCESS_SHADER_WRITE_BIT;
-			}
+        VkAccessFlags CurrentTextureLayoutToVkAccessFlags(TextureLayout currentLayout)
+        {
+            switch (currentLayout)
+            {
+                case HBL2::TextureLayout::UNDEFINED:
+                    return VK_ACCESS_NONE;
+                case HBL2::TextureLayout::COPY_SRC:
+                    return VK_ACCESS_TRANSFER_READ_BIT;
+                case HBL2::TextureLayout::COPY_DST:
+                    return VK_ACCESS_TRANSFER_WRITE_BIT;
+                case HBL2::TextureLayout::RENDER_ATTACHMENT:
+                    return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                case HBL2::TextureLayout::SHADER_READ_ONLY:
+                    return VK_ACCESS_SHADER_READ_BIT;
+                case HBL2::TextureLayout::DEPTH_STENCIL:
+                    return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                case HBL2::TextureLayout::PRESENT:
+                case HBL2::TextureLayout::SHARED_PRESENT:
+                    return VK_ACCESS_NONE;
+                case HBL2::TextureLayout::GENERAL:
+                    return VK_ACCESS_SHADER_WRITE_BIT;
+            }
 
-			return VK_ACCESS_FLAG_BITS_MAX_ENUM;
-		}
+            return VK_ACCESS_FLAG_BITS_MAX_ENUM;
+        }
 
 		VkAccessFlags NewTextureLayoutToVkAccessFlags(TextureLayout newLayout)
 		{
@@ -604,18 +605,17 @@ namespace HBL2
         {
             switch (state)
             {
-                case ResourceState::RenderTarget:           return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                case ResourceState::DepthWrite:             return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                case ResourceState::DepthRead:              return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-                case ResourceState::UnorderedAccess:        return VK_IMAGE_LAYOUT_GENERAL;
+                case ResourceState::RenderTarget:            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                case ResourceState::DepthWrite:              return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                case ResourceState::DepthRead:               return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+                case ResourceState::UnorderedAccess:         return VK_IMAGE_LAYOUT_GENERAL;
                 case ResourceState::PixelShaderResource:
                 case ResourceState::NonPixelShaderResource:
-                case ResourceState::GenericRead:            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                case ResourceState::CopySource:             return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-                case ResourceState::CopyDest:               return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-                case ResourceState::Present:                return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-                case ResourceState::Undefined:              return VK_IMAGE_LAYOUT_UNDEFINED;
-                default:                                    return VK_IMAGE_LAYOUT_UNDEFINED;
+                case ResourceState::GenericRead:             return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                case ResourceState::CopySource:              return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                case ResourceState::CopyDest:                return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                case ResourceState::Present:                 return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                default:                                     return VK_IMAGE_LAYOUT_UNDEFINED;
             }
         }
 
@@ -623,19 +623,19 @@ namespace HBL2
         {
             switch (state)
             {
-                case ResourceState::VertexAndConstantBuffer: return VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+                case ResourceState::VertexAndConstantBuffer: return VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_UNIFORM_READ_BIT;
                 case ResourceState::IndexBuffer:             return VK_ACCESS_INDEX_READ_BIT;
-                case ResourceState::RenderTarget:            return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                case ResourceState::DepthWrite:              return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                case ResourceState::DepthRead:               return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT;
+                case ResourceState::RenderTarget:            return VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
                 case ResourceState::UnorderedAccess:         return VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+                case ResourceState::DepthWrite:              return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                case ResourceState::DepthRead:               return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
                 case ResourceState::PixelShaderResource:
-                case ResourceState::NonPixelShaderResource:
-                case ResourceState::GenericRead:             return VK_ACCESS_SHADER_READ_BIT;
+                case ResourceState::NonPixelShaderResource:  return VK_ACCESS_SHADER_READ_BIT;
                 case ResourceState::IndirectArgument:        return VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
                 case ResourceState::CopySource:              return VK_ACCESS_TRANSFER_READ_BIT;
                 case ResourceState::CopyDest:                return VK_ACCESS_TRANSFER_WRITE_BIT;
-                default:                                     return 0;
+                case ResourceState::GenericRead:             return VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_INDIRECT_COMMAND_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
+                default: return 0; // Common, Present
             }
         }
 
@@ -643,20 +643,19 @@ namespace HBL2
         {
             switch (state)
             {
-                case ResourceState::VertexAndConstantBuffer:
-                case ResourceState::IndexBuffer:                return VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
-                case ResourceState::RenderTarget:               return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                // NOTE: keep an eye out if DepthRead only needs VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+                case ResourceState::VertexAndConstantBuffer: return kAllShadingStages;
+                case ResourceState::IndexBuffer:             return VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+                case ResourceState::RenderTarget:            return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                case ResourceState::UnorderedAccess:         return kAllShadingStages;
                 case ResourceState::DepthWrite:
-                case ResourceState::DepthRead:                  return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-                case ResourceState::UnorderedAccess:            return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-                case ResourceState::PixelShaderResource:        return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-                case ResourceState::NonPixelShaderResource:     return VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-                case ResourceState::GenericRead:                return VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-                case ResourceState::IndirectArgument:           return VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+                case ResourceState::DepthRead:               return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                case ResourceState::NonPixelShaderResource:  return kNonPixelShadingStages;
+                case ResourceState::PixelShaderResource:     return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                case ResourceState::IndirectArgument:        return VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
                 case ResourceState::CopySource:
-                case ResourceState::CopyDest:                   return VK_PIPELINE_STAGE_TRANSFER_BIT;
-                default:                                        return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                case ResourceState::CopyDest:                return VK_PIPELINE_STAGE_TRANSFER_BIT;
+                case ResourceState::GenericRead:             return kAllShadingStages | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT;
+                default: return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT; // Common, Present
             }
         }
 	}

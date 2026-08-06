@@ -10,16 +10,11 @@ namespace HBL2
 {
     struct VulkanTexture;
 
-    struct VulkanBarrierTracker
+    enum class VulkanPassType
     {
-        VkPipelineStageFlags SrcStageMask = 0;
-        VkPipelineStageFlags DstStageMask = 0;
-        StaticDArray<VkImageMemoryBarrier, 8>  ImageBarriers;
-        StaticDArray<VkBufferMemoryBarrier, 8> BufferBarriers;
-
-        void AddImageBarrier(VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage, VkImageMemoryBarrier b);
-        void AddBufferBarrier(VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage, VkBufferMemoryBarrier b);
-        void Flush(VkCommandBuffer cmd);
+        None,
+        Render,
+        Compute
     };
 
 	struct VkCommandBufferCreateInfo
@@ -69,8 +64,7 @@ namespace HBL2
 		Span<const Handle<Texture>> m_TexturesWrite;
 		Span<const Handle<Buffer>> m_BuffersWrite;
         
-        VulkanBarrierTracker m_BarrierTracker;
-        bool m_PassOpen = false;
+        VulkanPassType m_CurrentPassType = VulkanPassType::None;
 
 		inline static bool s_AlreadyCleared = false;
 	};
