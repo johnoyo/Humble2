@@ -299,7 +299,6 @@ namespace HBL2::Editor
 				ImGui::InputInt("Buffers Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Buffers);
 				ImGui::InputInt("BindGroups Pool Size", (int*)&spec.Settings.ResourceManagerSpec.BindGroups);
 				ImGui::InputInt("BindGroupLayouts Pool Size", (int*)&spec.Settings.ResourceManagerSpec.BindGroupLayouts);
-				ImGui::InputInt("FrameBuffers Pool Size", (int*)&spec.Settings.ResourceManagerSpec.FrameBuffers);
 				ImGui::InputInt("RenderPass Pool Size", (int*)&spec.Settings.ResourceManagerSpec.RenderPass);
 				ImGui::InputInt("RenderPassLayouts Pool Size", (int*)&spec.Settings.ResourceManagerSpec.RenderPassLayouts);
 				ImGui::InputInt("Meshes Pool Size", (int*)&spec.Settings.ResourceManagerSpec.Meshes);

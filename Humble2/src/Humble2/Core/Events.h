@@ -61,6 +61,17 @@ namespace HBL2
 		int Height = 0;
 	};
 
+    class HBL2_API WindowContentScaleEvent final : public EventType<WindowContentScaleEvent>
+    {
+    public:
+        WindowContentScaleEvent(int xscale, int yscale) : XScale(xscale), YScale(yscale)
+        {
+        }
+
+        int XScale = 0;
+        int YScale = 0;
+    };
+
 	class HBL2_API WindowFocusEvent final : public EventType<WindowFocusEvent>
 	{
 	public:

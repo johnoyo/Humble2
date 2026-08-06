@@ -9,8 +9,10 @@ namespace HBL2
 		AfterRenderingShadows,
 		BeforeRenderingPrePasses,
 		AfterRenderingPrePasses,
-		BeforeRenderingOpaques,
-		AfterRenderingOpaques,
+        BeforeRenderingGeometry,
+        AfterRenderingGeometry,
+        BeforeRenderingOpaques,
+        AfterRenderingOpaques,
 		BeforeRenderingSkybox,
 		AfterRenderingSkybox,
 		BeforeRenderingTransparents,
@@ -288,4 +290,16 @@ namespace HBL2
 		LOAD = 1,
 		DONT_CARE = 2,
 	};
+
+    enum class ResourceState
+    {
+        Undefined, Common, Present,
+        VertexAndConstantBuffer, IndexBuffer,
+        RenderTarget, DepthWrite, DepthRead,
+        UnorderedAccess,
+        PixelShaderResource, NonPixelShaderResource,
+        IndirectArgument,
+        CopySource, CopyDest,
+        GenericRead,
+    };
 }

@@ -10,7 +10,6 @@
 #include "Resources/VulkanBuffer.h"
 #include "Resources/VulkanShader.h"
 #include "Resources/VulkanTexture.h"
-#include "Resources/VulkanFrameBuffer.h"
 #include "Resources/VulkanBindGroup.h"
 #include "Resources/VulkanBindGroupLayout.h"
 #include "Resources/VulkanRenderPass.h"
@@ -32,7 +31,7 @@ namespace HBL2
 		virtual void DeleteTexture(Handle<Texture> handle) override;
 		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) override;
 		virtual void ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc) override;
-		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout) override;
+		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, ResourceState currentState, ResourceState newState) override;
 		virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) override;
 		virtual void* GetTextureData(Handle<Texture> handle) override;
 		VulkanTexture* GetTexture(Handle<Texture> handle) const;
@@ -49,12 +48,6 @@ namespace HBL2
 		VulkanBuffer GetBuffer(Handle<Buffer> handle) const;
 		VulkanBufferHot* GetBufferHot(Handle<Buffer> handle) const;
 		VulkanBufferCold* GetBufferCold(Handle<Buffer> handle) const;
-
-		// Framebuffers
-		virtual Handle<FrameBuffer> CreateFrameBuffer(const FrameBufferDescriptor&& desc) override;
-		virtual void DeleteFrameBuffer(Handle<FrameBuffer> handle) override;
-		virtual void ResizeFrameBuffer(Handle<FrameBuffer> handle, uint32_t width, uint32_t height) override;
-		VulkanFrameBuffer* GetFrameBuffer(Handle<FrameBuffer> handle) const;
 
 		// Shaders
 		virtual Handle<Shader> CreateShader(const ShaderDescriptor&& desc) override;
@@ -85,6 +78,7 @@ namespace HBL2
 		// RenderPass
 		virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) override;
 		virtual void DeleteRenderPass(Handle<RenderPass> handle) override;
+        virtual void RecreateRenderPassFrameBuffer(Handle<RenderPass> handle, const FrameBufferDescriptor&& desc) override;
 		VulkanRenderPass* GetRenderPass(Handle<RenderPass> handle) const;
 
 		// RenderPassLayouts
@@ -96,7 +90,6 @@ namespace HBL2
 		Pool<VulkanTexture, Texture> m_TexturePool;
 		SplitPool<VulkanBufferHot, VulkanBufferCold, Buffer> m_BufferSplitPool;
 		SplitPool<VulkanShaderHot, VulkanShaderCold, Shader> m_ShaderSplitPool;
-		Pool<VulkanFrameBuffer, FrameBuffer> m_FrameBufferPool;
 		SplitPool<VulkanBindGroupHot, VulkanBindGroupCold, BindGroup> m_BindGroupSplitPool;
 		Pool<VulkanBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
 		Pool<VulkanRenderPass, RenderPass> m_RenderPassPool;

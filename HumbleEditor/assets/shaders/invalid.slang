@@ -14,7 +14,7 @@ struct Object
 [[vk::binding(0, 0)]]
 ConstantBuffer<Camera> u_Camera;
 
-[[vk::binding(4, 3)]]
+[[vk::binding(0, 3)]]
 ConstantBuffer<Object> u_Object;
 
 // Vertex Shader

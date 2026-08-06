@@ -91,7 +91,6 @@ namespace HBL2
 		out << YAML::Key << "Buffers Pool Size" << YAML::Value << spec.Settings.ResourceManagerSpec.Buffers;
 		out << YAML::Key << "BindGroups Pool Size" << YAML::Value << spec.Settings.ResourceManagerSpec.BindGroups;
 		out << YAML::Key << "BindGroupLayouts Pool Size" << YAML::Value << spec.Settings.ResourceManagerSpec.BindGroupLayouts;
-		out << YAML::Key << "FrameBuffers Pool Size" << YAML::Value << spec.Settings.ResourceManagerSpec.FrameBuffers;
 		out << YAML::Key << "RenderPass Pool Size" << YAML::Value << spec.Settings.ResourceManagerSpec.RenderPass;
 		out << YAML::Key << "RenderPassLayouts Pool Size" << YAML::Value << spec.Settings.ResourceManagerSpec.RenderPassLayouts;
 		out << YAML::Key << "Meshes Pool Size" << YAML::Value << spec.Settings.ResourceManagerSpec.Meshes;
@@ -203,7 +202,6 @@ namespace HBL2
 		spec.Settings.ResourceManagerSpec.Buffers = data["Project"]["Advanced"]["Resource Manager"]["Buffers Pool Size"].as<uint32_t>();
 		spec.Settings.ResourceManagerSpec.BindGroups = data["Project"]["Advanced"]["Resource Manager"]["BindGroups Pool Size"].as<uint32_t>();
 		spec.Settings.ResourceManagerSpec.BindGroupLayouts = data["Project"]["Advanced"]["Resource Manager"]["BindGroupLayouts Pool Size"].as<uint32_t>();
-		spec.Settings.ResourceManagerSpec.FrameBuffers = data["Project"]["Advanced"]["Resource Manager"]["FrameBuffers Pool Size"].as<uint32_t>();
 		spec.Settings.ResourceManagerSpec.RenderPass = data["Project"]["Advanced"]["Resource Manager"]["RenderPass Pool Size"].as<uint32_t>();
 		spec.Settings.ResourceManagerSpec.RenderPassLayouts = data["Project"]["Advanced"]["Resource Manager"]["RenderPassLayouts Pool Size"].as<uint32_t>();
 		spec.Settings.ResourceManagerSpec.Meshes = data["Project"]["Advanced"]["Resource Manager"]["Meshes Pool Size"].as<uint32_t>();

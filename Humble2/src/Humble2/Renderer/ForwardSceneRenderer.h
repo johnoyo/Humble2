@@ -70,8 +70,7 @@ namespace HBL2
 	protected:
 		void ShadowPassSetup();
 		void DepthPrePassSetup();
-		void OpaquePassSetup();
-		void TransparentPassSetup();
+		void GeometryPassSetup();
 		void SpriteRenderingSetup();
 		void SkyboxPassSetup();
 		void PostProcessPassSetup();
@@ -83,9 +82,11 @@ namespace HBL2
 
 		void ShadowPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
 		void DepthPrePass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
-		void OpaquePass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
-		void TransparentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
-		void SkyboxPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
+        void GeometryPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData, RenderPassPool& renderPassPool);
+		void OpaquePass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
+		void TransparentPass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
+        void SkyboxComputePass(CommandBuffer* commandBuffer, DrawList* skyboxDraws);
+		void SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
 		void PostProcessPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
 		void DebugPass(CommandBuffer* commandBuffer, void* debugRenderData);
 		void PresentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
@@ -107,7 +108,6 @@ namespace HBL2
 		Handle<RenderPassLayout> m_RenderPassLayout;
 
 		Handle<Texture> m_ShadowDepthTexture;
-		Handle<FrameBuffer> m_ShadowFrameBuffer;
 		Handle<RenderPass> m_ShadowRenderPass;
 		Handle<Shader> m_ShadowPrePassShader;
 		Handle<Material> m_ShadowPrePassMaterial;
@@ -115,7 +115,6 @@ namespace HBL2
 
 		Handle<RenderPassLayout> m_DepthOnlyRenderPassLayout;
 		Handle<RenderPass> m_DepthOnlyRenderPass;
-		Handle<FrameBuffer> m_DepthOnlyFrameBuffer;
 		Handle<Material> m_DepthOnlyMaterial;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_DepthOnlyMaterialHash = g_NullVariant;
 		Handle<Material> m_DepthOnlySpriteMaterial;
@@ -125,10 +124,7 @@ namespace HBL2
 		Handle<Shader> m_DepthOnlyShader;
 		Handle<Shader> m_DepthOnlySpriteShader;
 
-		Handle<RenderPass> m_OpaqueRenderPass;
-		Handle<RenderPass> m_TransparentRenderPass;
-		Handle<FrameBuffer> m_OpaqueFrameBuffer;
-		Handle<FrameBuffer> m_TransparentFrameBuffer;
+		Handle<RenderPass> m_GeometryRenderPass;
 
 		Handle<BindGroupLayout> m_EquirectToSkyboxBindGroupLayout;
 		Handle<Buffer> m_CaptureMatricesBuffer;
@@ -142,7 +138,6 @@ namespace HBL2
 		ShaderDescriptor::RenderPipeline::PackedVariant m_ComputeVariant{};
 
 		Handle<RenderPass> m_PostProcessRenderPass;
-		Handle<FrameBuffer> m_PostProcessFrameBuffer;
 		Handle<Buffer> m_PostProcessBuffer;
 		Handle<BindGroup> m_PostProcessBindGroup;
 		Handle<BindGroupLayout> m_PostProcessBindGroupLayout;

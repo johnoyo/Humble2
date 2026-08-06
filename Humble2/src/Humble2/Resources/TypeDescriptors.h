@@ -41,14 +41,18 @@ namespace HBL2
 		Sampler sampler;
 		TextureLayout initialLayout = TextureLayout::SHADER_READ_ONLY;
 		void* initialData = nullptr;
-	};
+        
+        bool dynamicTextureView = false;
+        bool bindSampler = true;
+    };
 
-	struct TextureViewDescriptor
-	{
-		TextureType type = TextureType::D2;
-		Format format = Format::RGBA8_RGB;
-		TextureAspect aspect = TextureAspect::COLOR;
-		uint32_t layerCount = 1;
+    struct TextureViewDescriptor
+    {
+        TextureType type = TextureType::D2;
+        Format format = Format::RGBA8_RGB;
+        TextureAspect aspect = TextureAspect::COLOR;
+        uint32_t layerCount = 1;
+        bool bindSampler = true;
 	};
 
 	struct BufferDescriptor
@@ -59,16 +63,6 @@ namespace HBL2
 		MemoryUsage memoryUsage = MemoryUsage::CPU_GPU;
 		uint32_t byteSize = 0;
 		void* initialData = nullptr;
-	};
-
-	struct FrameBufferDescriptor
-	{
-		const char* debugName;
-		uint32_t width = 0;
-		uint32_t height = 0;
-		Handle<RenderPass> renderPass;
-		Handle<Texture> depthTarget;
-		std::initializer_list<Handle<Texture>> colorTargets;
 	};
 
 	struct BindGroupLayoutDescriptor
@@ -150,7 +144,7 @@ namespace HBL2
 		ShaderType type = ShaderType::RASTERIZATION;
 		struct ShaderStage
 		{
-			Span<const uint32_t> code;
+			Span<const uint8_t> code;
 			const char* entryPoint;
 		};
 		ShaderStage VS;
@@ -264,14 +258,23 @@ namespace HBL2
 			Span<const VertexBufferBinding> vertexBufferBindings;
 
 			Span<const PackedVariant> variants;
-			Span<const Span<const ShaderConstant>> specializationConstantsPerVariant;
-		};
-		RenderPipeline renderPipeline;
-		Handle<RenderPass> renderPass;
-		Handle<BindGroup> shaderBindGroup;
+            Span<const Span<const ShaderConstant>> specializationConstantsPerVariant;
+        };
+        RenderPipeline renderPipeline;
+        Handle<RenderPass> renderPass;
+        Handle<BindGroup> shaderBindGroup;
+        glm::u16vec3 threadsPerThreadGroup = {};
 	};
 
 	static inline const ShaderDescriptor::RenderPipeline::PackedVariant g_NullVariant = std::bit_cast<ShaderDescriptor::RenderPipeline::PackedVariant>(uint64_t{ 0 });
+
+    struct FrameBufferDescriptor
+    {
+        uint32_t width = 0;
+        uint32_t height = 0;
+        Handle<Texture> depthTarget;
+        std::initializer_list<Handle<Texture>> colorTargets;
+    };
 
 	struct RenderPassLayoutDescriptor
 	{
@@ -315,6 +318,8 @@ namespace HBL2
 		Handle<RenderPassLayout> layout;
 		DepthTarget depthTarget;
 		Span<const ColorTarget> colorTargets;
+        
+        FrameBufferDescriptor frameBufferDesc;
 	};
 
 	struct SubMeshDescriptor

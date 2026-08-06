@@ -1,25 +1,25 @@
 # Humble2
 
-Humble2 is a simple 3D & 2D game engine with an ECS architecture.
+Humble2 is a simple 3D & 2D game engine with an ECS architecture with support for **Windows**, **MacOS** and **Linux**.
 
 Features:
 ---------
 
-- Supports multiple graphics APIs **OpenGL 4.6** and **Vulkan**.
-    - **Metal** and **WebGPU** support are planned for the future.
+- Supports multiple graphics APIs **Metal 4** and **Vulkan**.
+    - **WebGPU** support is planned for the future.
     - **OpenGL** backend is deprecated and will be removed in the near future.
 - Forward, API agnostic, PBR renderer that features shadow maps, equirectangular skyboxes and various post processing effects.
-    - Utilizes the [Slang](https://github.com/shader-slang/slang) shader language for seamless cross api integration and advanced reflection and tooling.
+    - Forward Plus renderer backend is planned for the future, with the ability to switch between renderer backends.
+- Utilizes the [Slang](https://github.com/shader-slang/slang) shader language for seamless cross api integration and advanced reflection and tooling.
 - Complete UI Editor for creating applications / games.
 - Uses an ECS architecture featuring a custom flexible implementation.
-- Fully integrated C++ scripting support.
+- Fully integrated C++ scripting support with hot reloading.
 - Flexible job system with support for async asset loading.
 - Powerfull physics support for 2D (using [Box2D](https://github.com/erincatto/box2d)) and 3D (using [Jolt](https://github.com/jrouwe/JoltPhysics)) games.
 - Endless procedurally terrain support, utilizing the job system for multithreading.
 - Support for prefabs (Instantiate, Unpack, Update, Revert, Override, Destroy) and with infinite prefab nesting.
 - Editor to Runtime workflow for publishing games properly without the editor.
-- Supports **Windows**, **MacOS** and **Linux**.
-    - Planned Web support with [Emscripten](https://github.com/emscripten-core/emsdk) using WebGPU to build games for the browser.
+- Planned Web support with [Emscripten](https://github.com/emscripten-core/emsdk) using WebGPU to build games for the browser.
 
 Installation:
 -------------

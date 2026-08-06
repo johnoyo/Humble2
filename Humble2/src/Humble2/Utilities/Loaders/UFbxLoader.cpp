@@ -229,7 +229,7 @@ namespace HBL2
 
         s_MaterialNameToAssetHandle.clear();
 
-        uint32_t numMaterials = ufbxScene->materials.count;
+        uint32_t numMaterials = (uint32_t)ufbxScene->materials.count;
 
         for (uint32_t materialIndex = 0; materialIndex < numMaterials; ++materialIndex)
         {
@@ -338,7 +338,7 @@ namespace HBL2
 
         s_MaterialNameToAssetHandle.clear();
 
-        uint32_t numMaterials = ufbxScene->materials.count;
+        uint32_t numMaterials = (uint32_t)ufbxScene->materials.count;
 
         for (uint32_t materialIndex = 0; materialIndex < numMaterials; ++materialIndex)
         {
@@ -742,7 +742,7 @@ namespace HBL2
 
         ufbx_mesh& fbxMesh = *node->mesh; // mesh for this node, contains submeshes
 
-        uint32_t numSubMeshes = fbxMesh.material_parts.count;
+        uint32_t numSubMeshes = (uint32_t)fbxMesh.material_parts.count;
         if (numSubMeshes)
         {
             meshPartDescriptor.debugName = strdup(node->name.data);
@@ -820,8 +820,8 @@ namespace HBL2
         size_t numVerticesBefore = s_Vertices.size();
         size_t numIndicesBefore = s_Indeces.size();
 
-        subMeshDescriptor.vertexOffset = numVerticesBefore;
-        subMeshDescriptor.indexOffset = numIndicesBefore;
+        subMeshDescriptor.vertexOffset = (uint32_t)numVerticesBefore;
+        subMeshDescriptor.indexOffset = (uint32_t)numIndicesBefore;
         subMeshDescriptor.vertexCount = 0;
         subMeshDescriptor.indexCount = 0;
 
@@ -839,9 +839,9 @@ namespace HBL2
                 : glm::vec4(1.0f);
         }
 
-        bool hasTangents = fbxMesh.vertex_tangent.exists;
+//        bool hasTangents = fbxMesh.vertex_tangent.exists;
         bool hasUVs = fbxMesh.uv_sets.count;
-        bool hasVertexColors = fbxMesh.vertex_color.exists;
+//        bool hasVertexColors = fbxMesh.vertex_color.exists;
 
         ufbx_skin_deformer* fbxSkin = nullptr;
         if (fbxMesh.skin_deformers.count)
@@ -929,7 +929,7 @@ namespace HBL2
         // A face has four vertices, while above loop generates at least six vertices for per face)
         {
             // get number of all vertices created from above (faces * trianglesPerFace * 3)
-            uint32_t submeshAllVertices = s_Vertices.size() - numVerticesBefore;
+            uint32_t submeshAllVertices = (uint32_t)(s_Vertices.size() - numVerticesBefore);
 
             // create a ufbx vertex stream with data pointing to the first vertex of this submesh
             // (meshData.VertexBuffer is for all submeshes)
@@ -955,7 +955,7 @@ namespace HBL2
 
             // meshData.VertexBuffer can be downsized now
             s_Vertices.resize(numVerticesBefore + numVertices);
-            subMeshDescriptor.vertexCount = numVertices;
+            subMeshDescriptor.vertexCount = (uint32_t)numVertices;
             subMeshDescriptor.indexCount = submeshAllVertices;
         }
 

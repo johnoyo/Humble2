@@ -17,10 +17,10 @@ namespace HBL2
 
 	void DebugRenderer::Initialize()
 	{
-		// We need 48MB for the vector verticesn since we have 500K max vertices per primitives, each being 8MB, but with each of them for each frame.
+		// We need 48MB for the vector vertices since we have 500K max vertices per primitives, each being 8MB, but with each of them for each frame.
 		// The rest is used for the draw list, which only requires a couple hundred bytes but we round up.
-		m_Reservation = Allocator::Arena.Reserve("DebugRendererPool", 64_MB);
-		m_Arena.Initialize(&Allocator::Arena, 64_MB, m_Reservation);
+		m_Reservation = Allocator::Arena.Reserve("DebugRendererPool", (Renderer::Instance->FrameCount * 24_MB) + 16_MB);
+		m_Arena.Initialize(&Allocator::Arena, (Renderer::Instance->FrameCount * 24_MB) + 16_MB, m_Reservation);
 
 		// Reserve max space for the draws and vertices cpu storage to avoid allocations.
 		for (auto& renderData : m_RenderData)
@@ -62,30 +62,23 @@ namespace HBL2
 					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
 				},
 			},
-		});
-
-		m_DebugFrameBuffer = m_ResourceManager->CreateFrameBuffer({
-			.debugName = "debug-viewport-fb",
-			.width = Window::Instance->GetExtents().x,
-			.height = Window::Instance->GetExtents().y,
-			.renderPass = m_DebugRenderPass,
-			.depthTarget = Renderer::Instance->MainDepthTexture,
-			.colorTargets = { Renderer::Instance->MainColorTexture },
+            .frameBufferDesc = {
+                .width = Window::Instance->GetExtents().x,
+                .height = Window::Instance->GetExtents().y,
+                .depthTarget = Renderer::Instance->MainDepthTexture,
+                .colorTargets = { Renderer::Instance->MainColorTexture },
+            }
 		});
 
 		// Resize debug draw framebuffer callback.
 		Renderer::Instance->AddCallbackOnResize("Resize-Debug-FrameBuffer", [this](uint32_t width, uint32_t height)
 		{
-			m_ResourceManager->DeleteFrameBuffer(m_DebugFrameBuffer);
-
-			m_DebugFrameBuffer = m_ResourceManager->CreateFrameBuffer({
-				.debugName = "debug-viewport-fb",
-				.width = width,
-				.height = height,
-				.renderPass = m_DebugRenderPass,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->MainColorTexture },
-			});
+            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DebugRenderPass, {
+                .width = width,
+                .height = height,
+                .depthTarget = Renderer::Instance->MainDepthTexture,
+                .colorTargets = { Renderer::Instance->MainColorTexture },
+            });
 		});
 
 		// Debug vertex buffers.
@@ -145,7 +138,7 @@ namespace HBL2
 		wireTriVariant.frontFace = Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL ? (packed_size)FrontFace::COUNTER_CLOCKWISE : (packed_size)FrontFace::CLOCKWISE; // TODO: Fix discrepancy.
 
 		// Compile debug shader.
-		const auto& debugShaderData = ShaderUtilities::Get().Compile("assets/shaders/debug-draw.slang", nullptr);
+		const auto& debugShaderData = ShaderUtilities::Get().Compile("assets/shaders/debug-draw.slang", (ShaderReflectionData*)nullptr);
 
 		// Create debug shader handle.
 		m_DebugShader = m_ResourceManager->CreateShader({
@@ -303,7 +296,7 @@ namespace HBL2
 		Handle<BindGroup> globalBindings = Renderer::Instance->GetDebugBindings();
 		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&cameraMVP);
 
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DebugRenderPass, m_DebugFrameBuffer);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DebugRenderPass);
 
 		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
 		passRenderer->DrawSubPass(globalDrawStream, renderData->Draws);
@@ -319,7 +312,6 @@ namespace HBL2
 
 		m_ResourceManager->DeleteRenderPassLayout(m_DebugRenderPassLayout);
 		m_ResourceManager->DeleteRenderPass(m_DebugRenderPass);
-		m_ResourceManager->DeleteFrameBuffer(m_DebugFrameBuffer);
 
 		m_ResourceManager->DeleteShader(m_DebugShader);
 		m_ResourceManager->DeleteMaterial(m_DebugLineMaterial);

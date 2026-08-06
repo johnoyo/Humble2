@@ -14,6 +14,16 @@
 
 namespace HBL2
 {
+#ifdef DIST
+    #define BEGIN_PROFILE_PASS()
+    #define END_PROFILE_PASS(time)
+#else
+    #define BEGIN_PROFILE_PASS() Timer profilePass
+    #define END_PROFILE_PASS(time) time = profilePass.ElapsedMillis()
+#endif
+
+    constexpr unsigned int FRAME_OVERLAP = 2;
+
 	struct CameraData
 	{
 		glm::mat4 ViewProjection;
@@ -65,11 +75,15 @@ namespace HBL2
 		float ShadowPassTime = 0.f;
 		float PrePassTime = 0.f;
 		float OpaquePassTime = 0.f;
+        float SkyboxComputePassTime = 0.f;
 		float SkyboxPassTime = 0.f;
 		float TransparentPassTime = 0.f;
 		float PostProcessPassTime = 0.f;
-		float DebugPassTime = 0.f;
-		float PresentPassTime = 0.f;
+        float DebugPassTime = 0.f;
+        float PresentPassTime = 0.f;
+        
+        float MainPassTime = 0.f;
+        float ImGuiPassTime = 0.f;
 
 		void Reset()
 		{
@@ -79,11 +93,15 @@ namespace HBL2
 			ShadowPassTime = 0.f;
 			PrePassTime = 0.f;
 			OpaquePassTime = 0.f;
-			SkyboxPassTime = 0.f;
+            SkyboxPassTime = 0.f;
+            SkyboxComputePassTime = 0.f;
 			TransparentPassTime = 0.f;
 			PostProcessPassTime = 0.f;
-			DebugPassTime = 0.f;
-			PresentPassTime = 0.f;
+            DebugPassTime = 0.f;
+            PresentPassTime = 0.f;
+            
+            MainPassTime = 0.f;
+            ImGuiPassTime = 0.f;
 		}
 	};
 
@@ -103,7 +121,6 @@ namespace HBL2
 		std::function<void()> Done;
 	};
 
-
 	class HBL2_API Renderer
 	{
 	public:
@@ -111,7 +128,7 @@ namespace HBL2
 
 		virtual ~Renderer() = default;
 
-		static constexpr uint32_t FrameCount = 2;
+		static constexpr uint32_t FrameCount = FRAME_OVERLAP;
 
 		void Initialize();
 		virtual void BeginFrame() = 0;
@@ -139,24 +156,21 @@ namespace HBL2
 
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) = 0;
 
-		virtual void* GetDepthAttachment() = 0;
-		virtual void* GetColorAttachment() = 0;
-
-		virtual void SetViewportAttachment(Handle<Texture> viewportTexture) = 0;
+		virtual void SetViewportAttachment(void* viewportTextureRef) = 0;
 		virtual void* GetViewportAttachment() = 0;
 
 		RenderPassPool& GetRenderPassPool() { return m_RenderPassPool; }
 
 		virtual const uint32_t GetFrameIndex() const = 0;
-		const uint32_t GetFrameNumber() const { return m_FrameNumber.load(); }
+		const uint64_t GetFrameNumber() const { return m_FrameNumber.load(); }
 		RendererStats& GetStats() { return m_CurrentStats; }
 		RendererStats& GetStatsForDisplay() { return m_PreviousStats; }
 		void SwapAndResetStats() { (m_PreviousStats = m_CurrentStats, m_CurrentStats.Reset()); }
 
-		const Handle<RenderPass> GetMainRenderPass() const { return m_RenderPass; }
-		const Handle<RenderPass> GetRenderingRenderPass() const { return m_RenderingRenderPass; }
-		virtual Handle<FrameBuffer> GetMainFrameBuffer() = 0;
-
+		virtual Handle<RenderPass> GetMainRenderPass() = 0;
+        virtual Handle<RenderPass> GetImGuiRenderPass() = 0;
+        virtual Handle<RenderPass> GetRenderingRenderPass() = 0;
+        
 		virtual Handle<BindGroup> GetShadowBindings() = 0;
 		virtual Handle<BindGroup> GetGlobalBindings2D() = 0;
 		virtual Handle<BindGroup> GetGlobalBindings3D() = 0;
@@ -196,7 +210,7 @@ namespace HBL2
 		virtual void PostInitialize() = 0;
 
 	protected:
-		std::atomic_int32_t m_FrameNumber = { 0 };
+		std::atomic_int64_t m_FrameNumber = { 0 };
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::NONE;
 		RendererStats m_CurrentStats{};
 		RendererStats m_PreviousStats{};
@@ -210,9 +224,6 @@ namespace HBL2
 		Handle<BindGroupLayout> m_EmptyBindingsLayout;
 
 		Handle<BindGroup> m_EmptyBindings;
-
-		Handle<RenderPass> m_RenderPass;
-		Handle<RenderPass> m_RenderingRenderPass;
 
 		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 

@@ -1,14 +1,23 @@
 #include "Application.h"
 
-#include "Utilities/PlatformManager.h"
+#include "Platform/PlatformManager.h"
 #include "Asset/EditorAssetManager.h"
 #include "Script/BuildEngine.h"
-#include "Platform/Windows/WindowsBuildEngine.h"
-#include "Platform/Windows/WindowsPlatformManager.h"
-#include "Platform/MacOS/MacOSBuildEngine.h"
-#include "Platform/MacOS/MacOSPlatformManager.h"
-#include "Platform/Linux/LinuxBuildEngine.h"
-#include "Platform/Linux/LinuxPlatformManager.h"
+
+#include "Physics/JoltPhysicsEngine.h"
+#include "Physics/Box2DPhysicsEngine.h"
+
+#include "Platform/Vulkan/VulkanImGuiRenderer.h"
+#include "Platform/Vulkan/VulkanResourceManager.h"
+#include "Platform/Vulkan/VulkanRenderer.h"
+#include "Platform/Vulkan/VulkanDevice.h"
+
+#ifdef HBL2_PLATFORM_MACOS
+	#include "Platform/Metal/MetalImGuiRenderer.h"
+	#include "Platform/Metal/MetalResourceManager.h"
+	#include "Platform/Metal/MetalRenderer.h"
+	#include "Platform/Metal/MetalDevice.h"
+#endif
 
 #ifdef DIST
 	#define BEGIN_APP_PROFILE(tag)
@@ -38,13 +47,7 @@ namespace HBL2
 
 		s_Instance = this;
         
-#ifdef HBL2_PLATFORM_WINDOWS
-        PlatformManager::Instance = new WindowsPlatformManager;
-#elif HBL2_PLATFORM_MACOS
-        PlatformManager::Instance = new MacOSPlatformManager;
-#elif HBL2_PLATFORM_LINUX
-        PlatformManager::Instance = new LinuxPlatformManager;
-#endif
+        PlatformManager::Instance = PlatformManager::Create();
         PlatformManager::Instance->Initialize();
         
 		Log::Initialize();
@@ -98,27 +101,11 @@ namespace HBL2
 		PrefabUtilities::Initialize();
 		ShaderUtilities::Initialize();
 
-#ifdef HBL2_PLATFORM_WINDOWS
-        BuildEngine::Instance = new WindowsBuildEngine;
-#elif HBL2_PLATFORM_MACOS
-        BuildEngine::Instance = new MacOSBuildEngine;
-#elif HBL2_PLATFORM_LINUX
-		BuildEngine::Instance = new LinuxBuildEngine;
-#endif
+        BuildEngine::Instance = BuildEngine::Create();
+        BuildEngine::Instance->Initialize();
+        
         switch (gfxAPI)
         {
-        case GraphicsAPI::OPENGL:
-            HBL2_CORE_WARN("OpenGL gfx backend is deprecated and will be removed in the future.");
-#ifdef HBL2_PLATFORM_WINDOWS
-			HBL2_CORE_INFO("OpenGL is selected as the renderer API.");
-			g_GfxAPI = "OpenGL";
-			Device::Instance = new OpenGLDevice;
-			Window::Instance = new OpenGLWindow;
-			ResourceManager::Instance = new OpenGLResourceManager;
-			Renderer::Instance = new OpenGLRenderer;
-			ImGuiRenderer::Instance = new OpenGLImGuiRenderer;
-#endif
-            break;
 		case GraphicsAPI::VULKAN:
 			HBL2_CORE_INFO("Vulkan is selected as the renderer API.");
 			g_GfxAPI = "Vulkan";
@@ -129,9 +116,20 @@ namespace HBL2
 			ImGuiRenderer::Instance = new VulkanImGuiRenderer;
 			break;
         case GraphicsAPI::METAL:
+#ifdef HBL2_PLATFORM_MACOS
+            HBL2_CORE_INFO("Metal is selected as the renderer API.");
+            g_GfxAPI = "Metal";
+            Device::Instance = new MetalDevice;
+            Window::Instance = new MetalWindow;
+            ResourceManager::Instance = new MetalResourceManager;
+            Renderer::Instance = new MetalRenderer;
+            ImGuiRenderer::Instance = new MetalImGuiRenderer;
+#endif
+            break;
+        case GraphicsAPI::OPENGL:
         case GraphicsAPI::WEBGPU:
 		case GraphicsAPI::NONE:
-			HBL2_CORE_ERROR("No valid RendererAPI specified. Please choose between OpenGL, or Vulkan depending on your target platform.");
+			HBL2_CORE_ERROR("No valid RendererAPI specified. Please choose between Metal, or Vulkan depending on your target platform.");
 			exit(-1);
 			break;
 		}

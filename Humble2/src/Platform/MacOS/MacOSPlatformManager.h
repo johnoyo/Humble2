@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Utilities/PlatformManager.h"
+#include "Platform/PlatformManager.h"
 
 namespace HBL2
 {
