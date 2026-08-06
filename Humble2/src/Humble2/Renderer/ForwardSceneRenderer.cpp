@@ -169,7 +169,7 @@ namespace HBL2
 
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, ResourceState::Undefined, ResourceState::RenderTarget);
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, ResourceState::Undefined, ResourceState::RenderTarget);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, ResourceState::Undefined, ResourceState::RenderTarget);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, ResourceState::Undefined, ResourceState::DepthWrite);
 
 		auto& renderPassPool = Renderer::Instance->GetRenderPassPool();
 
