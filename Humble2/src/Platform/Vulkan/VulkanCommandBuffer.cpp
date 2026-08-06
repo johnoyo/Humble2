@@ -6,10 +6,9 @@
 
 namespace HBL2
 {
-    RenderPassRenderer* VulkanCommandBuffer::BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer, Viewport&& drawArea)
+    RenderPassRenderer* VulkanCommandBuffer::BeginRenderPass(Handle<RenderPass> renderPass, Viewport&& drawArea)
     {
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
-		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 
         m_CurrentRenderPassRenderer.m_CommandBuffer = CommandBuffer;
 
@@ -20,18 +19,11 @@ namespace HBL2
 
 		VulkanRenderPass* vkRenderPass = rm->GetRenderPass(renderPass);
 
-		if (!frameBuffer.IsValid())
-		{
-			return &m_CurrentRenderPassRenderer;
-		}
-
-		VulkanFrameBuffer* vkFrameBuffer = rm->GetFrameBuffer(frameBuffer);
-
 		if (!drawArea.IsValid())
 		{
 			drawArea =
 			{
-				0, 0, vkFrameBuffer->Width, vkFrameBuffer->Height
+				0, 0, vkRenderPass->Width, vkRenderPass->Height
 			};
 		}
 
@@ -59,8 +51,8 @@ namespace HBL2
 			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 			.pNext = nullptr,
 			.renderPass = vkRenderPass->RenderPass,
-			.framebuffer = vkFrameBuffer->FrameBuffer,
-			.renderArea = 
+			.framebuffer = vkRenderPass->FrameBuffer,
+			.renderArea =
 			{
 				.offset = { (int32_t)drawArea.x, (int32_t)drawArea.y },
 				.extent = { drawArea.width, drawArea.height },
@@ -70,6 +62,7 @@ namespace HBL2
 		};
 
 		vkCmdBeginRenderPass(CommandBuffer, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
+        m_CurrentPassType = VulkanPassType::Render;
 
 		// Set viewport
 		VkViewport viewport =
@@ -99,78 +92,37 @@ namespace HBL2
     void VulkanCommandBuffer::EndRenderPass(const RenderPassRenderer& renderPassRenderer)
     {
 		vkCmdEndRenderPass(CommandBuffer);
+        m_CurrentPassType = VulkanPassType::None;
     }
 
 	ComputePassRenderer* VulkanCommandBuffer::BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite)
 	{
 		m_CurrentComputePassRenderer.m_CommandBuffer = CommandBuffer;
+        
+        m_CurrentPassType = VulkanPassType::Compute;
+        
 		m_TexturesWrite = texturesWrite;
 		m_BuffersWrite = buffersWrite;
+        
 		return &m_CurrentComputePassRenderer;
 	}
 
 	void VulkanCommandBuffer::EndComputePass(const ComputePassRenderer& computePassRenderer)
 	{
-		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
+        for (auto texture : m_TexturesWrite)
+        {
+            TextureBarrier(texture, ResourceState::UnorderedAccess, ResourceState::GenericRead);
+        }
+        
+        for (auto buffer : m_BuffersWrite)
+        {
+            MemoryBarrier(buffer, ResourceState::UnorderedAccess, ResourceState::GenericRead);
+        }
 
-		std::vector<VkImageMemoryBarrier> imageBarriers(m_TexturesWrite.Size());
-		std::vector<VkBufferMemoryBarrier> bufferBarriers(m_BuffersWrite.Size());
+        m_TexturesWrite = {};
+        m_BuffersWrite = {};
 
-		uint32_t index = 0;
-
-		for (auto& texture : m_TexturesWrite)
-		{
-			VulkanTexture* vkTexture = rm->GetTexture(texture);
-
-			VkImageMemoryBarrier barrier = {};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.oldLayout = vkTexture->ImageLayout;
-			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // Fix
-			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-			barrier.image = vkTexture->Image;
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
-			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = (vkTexture->ImageType == TextureType::CUBE ? 6 : vkTexture->LayerCount);
-
-			imageBarriers[index++] = barrier;
-
-			vkTexture->ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		}
-
-		index = 0;
-
-		for (auto& buffer : m_BuffersWrite)
-		{
-			VulkanBufferHot* vkBufferHot = rm->GetBufferHot(buffer);
-			VulkanBufferCold* vkBufferCold = rm->GetBufferCold(buffer);
-
-			VkBufferMemoryBarrier barrier = {};
-			barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT; // Fix
-			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT; // Fix
-			barrier.buffer = vkBufferHot->Buffer;
-			barrier.offset = vkBufferCold->ByteOffset;
-			barrier.size = vkBufferHot->ByteSize;
-
-			bufferBarriers[index++] = barrier;
-		}
-
-		if (!imageBarriers.empty() || !bufferBarriers.empty())
-		{
-			vkCmdPipelineBarrier(
-				CommandBuffer,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				0,
-				0, nullptr,
-				static_cast<uint32_t>(bufferBarriers.size()), bufferBarriers.data(),
-				static_cast<uint32_t>(imageBarriers.size()), imageBarriers.data());
-		}
-
-		return;
+        m_CurrentPassType = VulkanPassType::None;
 	}
 
 	void VulkanCommandBuffer::EndCommandRecording()
@@ -202,6 +154,76 @@ namespace HBL2
 			std::lock_guard<std::mutex> lock(renderer->GetGraphicsQueueMutex());
 			VK_VALIDATE(vkQueueSubmit(renderer->GetGraphicsQueue(), 1, &submitInfo, m_BlockFence), "vkQueueSubmit");
 		}
+    }
+
+    void VulkanCommandBuffer::TextureBarrier(Handle<Texture> texture, ResourceState oldState, ResourceState newState)
+    {
+        VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
+        VulkanTexture* vkTexture = rm->GetTexture(texture);
+        TextureBarrier(vkTexture, oldState, newState);
+    }
+
+    void VulkanCommandBuffer::TextureBarrier(VulkanTexture* vkTexture, ResourceState oldState, ResourceState newState)
+    {
+        HBL2_ASSERT(m_CurrentPassType != VulkanPassType::Render,
+            "TextureBarrier called while a render pass is open — vkCmdPipelineBarrier for a "
+            "non-attachment image is illegal inside vkCmdBeginRenderPass/EndRenderPass. "
+            "Call this between passes instead.");
+
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = (oldState == ResourceState::Present || oldState == ResourceState::Common)
+            ? VK_IMAGE_LAYOUT_UNDEFINED : VkUtils::ResourceStateToVkImageLayout(oldState);
+        barrier.newLayout = VkUtils::ResourceStateToVkImageLayout(newState);
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = vkTexture->Image;
+        barrier.subresourceRange.aspectMask = vkTexture->Aspect;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = (vkTexture->ImageType == TextureType::CUBE ? 6 : vkTexture->LayerCount);
+        barrier.srcAccessMask = VkUtils::ResourceStateToVkAccessFlags(oldState);
+        barrier.dstAccessMask = VkUtils::ResourceStateToVkAccessFlags(newState);
+
+        vkCmdPipelineBarrier(
+            CommandBuffer,
+            VkUtils::ResourceStateToVkPipelineStageFlags(oldState),
+            VkUtils::ResourceStateToVkPipelineStageFlags(newState),
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier);
+
+        vkTexture->ImageLayout = barrier.newLayout;
+    }
+
+    void VulkanCommandBuffer::MemoryBarrier(Handle<Buffer> buffer, ResourceState oldState, ResourceState newState)
+    {
+        HBL2_ASSERT(m_CurrentPassType != VulkanPassType::Render, "MemoryBarrier called while a render pass is open.");
+
+        VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
+        VulkanBufferHot* vkBufferHot = rm->GetBufferHot(buffer);
+        VulkanBufferCold* vkBufferCold = rm->GetBufferCold(buffer);
+
+        VkBufferMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.srcAccessMask = VkUtils::ResourceStateToVkAccessFlags(oldState);
+        barrier.dstAccessMask = VkUtils::ResourceStateToVkAccessFlags(newState);
+        barrier.buffer = vkBufferHot->Buffer;
+        barrier.offset = vkBufferCold->ByteOffset;
+        barrier.size = vkBufferHot->ByteSize;
+
+        vkCmdPipelineBarrier(
+            CommandBuffer,
+            VkUtils::ResourceStateToVkPipelineStageFlags(oldState),
+            VkUtils::ResourceStateToVkPipelineStageFlags(newState),
+            0,
+            0, nullptr,
+            1, &barrier,
+            0, nullptr);
     }
 
     void VulkanCommandBuffer::SetSignalSemophore(VkSemaphore signalSemaphore)

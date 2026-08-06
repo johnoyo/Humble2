@@ -2,7 +2,7 @@
 
 namespace HBL2
 {
-    void ResourceDeletionQueue::Push(uint32_t frame, std::function<void()>&& deletor)
+    void ResourceDeletionQueue::Push(uint64_t frame, std::function<void()>&& deletor)
     {
         if (!deletor)
         {
@@ -19,14 +19,14 @@ namespace HBL2
         // We mark the item to be deleted on frame ahead to ensure the GPU will be done with it.
         // Thats because of the double buffering set up, on Renderer::BeginFrame we only wait for the new
         // frame fence to be done, no the one that was just rendering.
-        uint32_t itemFrame = frame + 1;
+        uint64_t itemFrame = frame + 1;
 
         m_Buffer[m_Tail] = { itemFrame, std::move(deletor) };
         m_Tail = (m_Tail + 1) % m_Capacity;
         ++m_Size;
     }
 
-    void ResourceDeletionQueue::Flush(uint32_t currentFrame)
+    void ResourceDeletionQueue::Flush(uint64_t currentFrame)
     {
         m_FlushTemp.clear();
 

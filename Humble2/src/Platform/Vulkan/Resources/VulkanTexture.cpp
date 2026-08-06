@@ -162,7 +162,6 @@ namespace HBL2
 
 	void VulkanTexture::Update(const Span<const std::byte>& bytes)
 	{
-		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 
 		VkBuffer stagingBuffer = VK_NULL_HANDLE;
@@ -217,40 +216,9 @@ namespace HBL2
 		VK_VALIDATE(vkCreateImageView(device->Get(), &imageViewCreateInfo, nullptr, &ImageView), "vkCreateImageView");
 	}
 
-	void VulkanTexture::TrasitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout)
+	void VulkanTexture::TransitionLayout(VulkanCommandBuffer* commandBuffer, ResourceState currentState, ResourceState newState)
 	{
-		// NOTE: Vulkan validation layers do not automatically track the layout state across command buffers unless you properly synchronize them.
-		//		 That's why we do not use here the helper function ImmediateSubmit of the renderer class here.
-
-		VkCommandBuffer cmd = commandBuffer->CommandBuffer;
-
-		VkImageMemoryBarrier barrier{};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.oldLayout = VkUtils::TextureLayoutToVkImageLayout(currentLayout);
-		barrier.newLayout = VkUtils::TextureLayoutToVkImageLayout(newLayout);
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = Image;
-		barrier.subresourceRange.aspectMask = Aspect;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = (ImageType == TextureType::CUBE ? 6 : LayerCount);
-		barrier.srcAccessMask = VkUtils::CurrentTextureLayoutToVkAccessFlags(currentLayout);
-		barrier.dstAccessMask = VkUtils::NewTextureLayoutToVkAccessFlags(newLayout);
-
-		vkCmdPipelineBarrier(
-			cmd,
-			VkUtils::CurrentTextureLayoutToVkPipelineStageFlags(currentLayout),
-			VkUtils::NewTextureLayoutToVkPipelineStageFlags(newLayout),
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &barrier
-		);
-
-		// Update bind group with new image layout.
-		ImageLayout = VkUtils::TextureLayoutToVkImageLayout(newLayout);
+        commandBuffer->TextureBarrier(this, currentState, newState);
 	}
 
 	void VulkanTexture::Destroy()
@@ -294,7 +262,7 @@ namespace HBL2
 	void VulkanTexture::CopyBufferToTexture(VulkanRenderer* renderer, VkBuffer stagingBuffer)
 	{
 		// Copy the data of the staging buffer to the GPU memory of Image
-		renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
+		renderer->ImmediateSubmit([=, this](VkCommandBuffer cmd)
 		{
 			uint32_t faceCount = (ImageType == TextureType::CUBE ? 6 : LayerCount);
 

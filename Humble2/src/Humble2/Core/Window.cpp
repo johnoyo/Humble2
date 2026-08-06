@@ -14,7 +14,6 @@ namespace HBL2
 
 	static void WindowSizeCallback(GLFWwindow* window, int width, int height)
 	{
-		Window::Instance->SetExtents(width, height);
 		EventDispatcher::Get().Post(WindowSizeEvent(width, height));
 	}
 
@@ -29,6 +28,12 @@ namespace HBL2
 		Window::Instance->SetExtents(width, height);
 		EventDispatcher::Get().Post(FramebufferSizeEvent(width, height));
 	}
+
+    static void WindowContentScaleCallback(GLFWwindow* window, float xscale, float yscale)
+    {
+        Window::Instance->SetContentScale(xscale, yscale);
+        EventDispatcher::Get().Post(WindowContentScaleEvent(xscale, yscale));
+    }
 
 	static void WindowFocusCallback(GLFWwindow* window, int focused)
 	{
@@ -155,6 +160,7 @@ namespace HBL2
 		glfwSetWindowSizeCallback(m_Window, WindowSizeCallback);
 		glfwSetWindowPosCallback(m_Window, WindowPositionCallback);
 		glfwSetFramebufferSizeCallback(m_Window, FramebufferSizeCallback);
+        glfwSetWindowContentScaleCallback(m_Window, WindowContentScaleCallback);
 		glfwSetWindowFocusCallback(m_Window, WindowFocusCallback);
 		glfwSetWindowIconifyCallback(m_Window, WindowIconifyCallback);
 		glfwSetWindowMaximizeCallback(m_Window, WindowMaximizeCallback);
@@ -166,5 +172,12 @@ namespace HBL2
 
 		// Set the initial window position.
 		glfwGetWindowPos(m_Window, &m_Position.x, &m_Position.y);
+        
+        // Set the initial window content scale.
+        glfwGetWindowContentScale(m_Window, &m_ContentScale.x, &m_ContentScale.y);
+        
+        // Update window size to take account into the scale.
+        m_Spec.Width *= m_ContentScale.x;
+        m_Spec.Height *= m_ContentScale.y;
 	}
 }

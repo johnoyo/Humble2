@@ -32,25 +32,6 @@ struct Material
     float Metalicness;
 };
 
-/*
-
-- set 0: Global - per frame
-    - Binding 0: ConstantBuffer<Camera>
-    - Binding 1: ConstantBuffer<Light>
-    - Binding 2: Sampler2D u_ShadowAltasMap;
-- set 1: User Global - per frame
-    - ...
-- set 2: Object - per draw
-    - Binding 2: ConstantBuffer<Object>
-- set 3: User / Material - per material
-    - Binding 3: ConstantBuffer<Material>
-    - Binding 4: Sampler2D u_AlbedoMap
-    - Binding 5: Sampler2D u_NormalMap
-    - Binding 6: Sampler2D u_MetallicMap
-    - Binding 7: Sampler2D u_RoughnessMap
-
-*/
-
 [[vk::binding(0, 0)]]
 ConstantBuffer<Camera> u_Camera;
 
@@ -67,15 +48,15 @@ Sampler2D u_AlbedoMap;
 Sampler2D u_NormalMap;
 
 [[vk::binding(2, 2)]]
-ConstantBuffer<Material> u_Material;
-
-[[vk::binding(3, 2)]]
 Sampler2D u_MetallicMap;
 
-[[vk::binding(4, 2)]]
+[[vk::binding(3, 2)]]
 Sampler2D u_RoughnessMap;
 
-[[vk::binding(4, 3)]]
+[[vk::binding(4, 2)]]
+ConstantBuffer<Material> u_Material;
+
+[[vk::binding(0, 3)]]
 ConstantBuffer<Object> u_Object;
 
 // Vertex Shader

@@ -1,0 +1,64 @@
+#pragma once
+
+#include "Renderer/CommandBuffer.h"
+#include "MetalRenderPassRenderer.h"
+#include "MetalComputePassRenderer.h"
+
+#include <Foundation/Foundation.hpp>
+#include <Metal/Metal.hpp>
+#include <QuartzCore/QuartzCore.hpp>
+
+namespace HBL2
+{
+    struct MetalBarrierTracker
+    {
+        MTL::Stages AfterStages = 0;   // stages that must finish first
+        MTL::Stages BeforeStages = 0;  // stages that must wait
+        bool Pending = false;
+        
+        void Add(MTL::Stages after, MTL::Stages before);
+        void Add(ResourceState oldState, ResourceState newState);
+        void Flush(MTL4::CommandEncoder* encoder);
+        void FlushInline(MTL4::CommandEncoder* encoder, MTL::Stages encoderStages);
+    };
+
+    struct MtlCommandBufferCreateInfo
+    {
+        CommandBufferType type;
+        MTL4::CommandBuffer* commandBuffer = nullptr;
+    };
+
+    class MetalCommandBuffer final : public CommandBuffer
+    {
+    public:
+        MetalCommandBuffer() = default;
+        MetalCommandBuffer(const MtlCommandBufferCreateInfo&& commandBufferCreateInfo);
+        
+        virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Viewport&& drawArea = {}) override;
+        virtual void EndRenderPass(const RenderPassRenderer& renderPassRenderer) override;
+
+        virtual ComputePassRenderer* BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite) override;
+        virtual void EndComputePass(const ComputePassRenderer& computePassRenderer) override;
+
+        virtual void EndCommandRecording() override;
+        virtual void Submit() override;
+        
+        MTL4::CommandBuffer* CommandBuffer = nullptr;
+        
+        void AddPendingBarrier(ResourceState oldState, ResourceState newState);
+        
+    private:
+        CommandBufferType m_Type;
+        
+        MetalRenderPassRenderer m_CurrentRenderPassRenderer;
+        MetalComputePassRenderer m_CurrentComputePassRenderer;
+        
+        MetalBarrierTracker m_BarrierTracker;
+        MTL4::CommandEncoder* m_CurrentEncoder = nullptr;
+        MTL::Stages m_CurrentEncoderStages = 0;
+        
+        uint32_t m_PendingBarrierAfterStages = 0;
+        Span<const Handle<Texture>> m_TexturesWrite;
+        Span<const Handle<Buffer>> m_BuffersWrite;
+    };
+}

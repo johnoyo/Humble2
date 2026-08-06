@@ -12,13 +12,19 @@
 /*
     // Storage. Keep persistent as we reuse buffers across frames.
     ImDrawDataSnapshot g_Snapshots[2];
-    ImDrawDataSnapshot* snapshot = &g_Snapshots[g_FrameIndex % 1];
+    ImDrawDataSnapshot* snapshot = &g_Snapshots[g_FrameIndex % 2];
 
     // [Update thread] Take a snapshot of the ImDrawData
     snapshot->SnapUsingSwap(ImGui::GetDrawData(), ImGui::GetTime());
 
     // [Render thread] Render later
     ImGui_ImplDX11_RenderDrawData(&snapshot->DrawData);
+
+    // [Shutdown]
+    for (ImDrawDataSnapshot& snapshot : g_Snapshots)
+        snapshot.Clear(); // otherwise context will assert since 1.92.0
+    ImGui::DestroyContext();
+}
 */
 
 // FIXME: Could store an ID in ImDrawList to make this easier for user.
@@ -63,7 +69,6 @@ inline void ImDrawDataSnapshot::Clear()
     for (int n = 0; n < Cache.GetMapSize(); n++)
         if (ImDrawDataSnapshotEntry* entry = Cache.TryGetMapData(n))
             IM_DELETE(entry->OurCopy);
-
     Cache.Clear();
     DrawData.Clear();
 }
@@ -93,15 +98,9 @@ inline void ImDrawDataSnapshot::SnapUsingSwap(ImDrawData* src, double current_ti
         entry->SrcCopy->CmdBuffer.swap(entry->OurCopy->CmdBuffer); // Cheap swap
         entry->SrcCopy->IdxBuffer.swap(entry->OurCopy->IdxBuffer);
         entry->SrcCopy->VtxBuffer.swap(entry->OurCopy->VtxBuffer);
-
-        // Preserve bigger size to avoid reallocs for two consecutive frames
-        if (entry->OurCopy->CmdBuffer.Capacity > 0)
-            entry->SrcCopy->CmdBuffer.reserve(entry->OurCopy->CmdBuffer.Capacity);
-        if (entry->OurCopy->IdxBuffer.Capacity > 0)
-            entry->SrcCopy->IdxBuffer.reserve(entry->OurCopy->IdxBuffer.Capacity);
-        if (entry->OurCopy->VtxBuffer.Capacity > 0)
-            entry->SrcCopy->VtxBuffer.reserve(entry->OurCopy->VtxBuffer.Capacity);
-
+        entry->SrcCopy->CmdBuffer.reserve(entry->OurCopy->CmdBuffer.Capacity); // Preserve bigger size to avoid reallocs for two consecutive frames
+        entry->SrcCopy->IdxBuffer.reserve(entry->OurCopy->IdxBuffer.Capacity);
+        entry->SrcCopy->VtxBuffer.reserve(entry->OurCopy->VtxBuffer.Capacity);
         entry->LastUsedTime = current_time;
         dst->CmdLists.push_back(entry->OurCopy);
     }

@@ -70,9 +70,9 @@ namespace HBL2
 			fastgltf::Extensions::KHR_mesh_quantization | fastgltf::Extensions::KHR_materials_emissive_strength |
 			fastgltf::Extensions::KHR_lights_punctual | fastgltf::Extensions::KHR_texture_transform;
 
-		constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble |
-			fastgltf::Options::LoadGLBBuffers | fastgltf::Options::LoadExternalBuffers |
-			fastgltf::Options::LoadExternalImages | fastgltf::Options::GenerateMeshIndices;
+		constexpr auto gltfOptions =
+            fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble |
+			fastgltf::Options::LoadExternalBuffers | fastgltf::Options::LoadExternalImages | fastgltf::Options::GenerateMeshIndices;
 
 		// Initialize fastgltf parser
 		fastgltf::GltfDataBuffer dataBuffer;
@@ -135,9 +135,9 @@ namespace HBL2
 			fastgltf::Extensions::KHR_mesh_quantization | fastgltf::Extensions::KHR_materials_emissive_strength |
 			fastgltf::Extensions::KHR_lights_punctual | fastgltf::Extensions::KHR_texture_transform;
 
-		constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble |
-			fastgltf::Options::LoadGLBBuffers | fastgltf::Options::LoadExternalBuffers |
-			fastgltf::Options::LoadExternalImages | fastgltf::Options::GenerateMeshIndices;
+		constexpr auto gltfOptions =
+            fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble |
+            fastgltf::Options::LoadExternalBuffers | fastgltf::Options::LoadExternalImages | fastgltf::Options::GenerateMeshIndices;
 
 		// Initialize fastgltf parser
 		fastgltf::GltfDataBuffer dataBuffer;
@@ -571,7 +571,7 @@ namespace HBL2
 				// diffuse color aka base color factor used as constant color, if no diffuse texture is provided
 				glm::vec4 albedoColor = glm::make_vec4(glTFMaterial.pbrData.baseColorFactor.data());
 				float roughness = glTFMaterial.pbrData.roughnessFactor;
-				float metalicness = glTFMaterial.pbrData.metallicFactor;
+//				float metalicness = glTFMaterial.pbrData.metallicFactor;
 
 				Handle<Asset> albedoMapAssetHandle;
 				Handle<Asset> normalMapAssetHandle;
@@ -598,7 +598,7 @@ namespace HBL2
 				// texture for roughness and metallicness
 				if (glTFMaterial.pbrData.metallicRoughnessTexture.has_value())
 				{
-					int metallicRoughnessMapIndex = (uint32_t)glTFMaterial.pbrData.metallicRoughnessTexture.value().textureIndex;
+                    uint32_t metallicRoughnessMapIndex = (uint32_t)glTFMaterial.pbrData.metallicRoughnessTexture.value().textureIndex;
 					uint32_t imageIndex = (uint32_t)asset.textures[metallicRoughnessMapIndex].imageIndex.value();
 
 					metallicRoughnessMapAssetHandle = s_Textures[imageIndex];
@@ -686,7 +686,7 @@ namespace HBL2
 			// diffuse color aka base color factor used as constant color, if no diffuse texture is provided
 			glm::vec4 albedoColor = glm::make_vec4(glTFMaterial.pbrData.baseColorFactor.data());
 			float roughness = glTFMaterial.pbrData.roughnessFactor;
-			float metalicness = glTFMaterial.pbrData.metallicFactor;
+//			float metalicness = glTFMaterial.pbrData.metallicFactor;
 
 			Handle<Asset> albedoMapAssetHandle;
 			Handle<Asset> normalMapAssetHandle;
@@ -695,8 +695,8 @@ namespace HBL2
 			// diffuse map aka basecolor aka albedo
 			if (glTFMaterial.pbrData.baseColorTexture.has_value())
 			{
-				uint32_t diffuseMapIndex = glTFMaterial.pbrData.baseColorTexture.value().textureIndex;
-				uint32_t imageIndex = asset.textures[diffuseMapIndex].imageIndex.value();
+				uint32_t diffuseMapIndex = (uint32_t)glTFMaterial.pbrData.baseColorTexture.value().textureIndex;
+				uint32_t imageIndex = (uint32_t)asset.textures[diffuseMapIndex].imageIndex.value();
 
 				albedoMapAssetHandle = s_Textures[imageIndex];
 			}
@@ -704,8 +704,8 @@ namespace HBL2
 			// normal map
 			if (glTFMaterial.normalTexture.has_value())
 			{
-				uint32_t normalMapIndex = glTFMaterial.normalTexture.value().textureIndex;
-				uint32_t imageIndex = asset.textures[normalMapIndex].imageIndex.value();
+				uint32_t normalMapIndex = (uint32_t)glTFMaterial.normalTexture.value().textureIndex;
+				uint32_t imageIndex = (uint32_t)asset.textures[normalMapIndex].imageIndex.value();
 
 				normalMapAssetHandle = s_Textures[imageIndex];
 			}
@@ -713,8 +713,8 @@ namespace HBL2
 			// texture for roughness and metallicness
 			if (glTFMaterial.pbrData.metallicRoughnessTexture.has_value())
 			{
-				int metallicRoughnessMapIndex = glTFMaterial.pbrData.metallicRoughnessTexture.value().textureIndex;
-				uint32_t imageIndex = asset.textures[metallicRoughnessMapIndex].imageIndex.value();
+                uint32_t metallicRoughnessMapIndex = (uint32_t)glTFMaterial.pbrData.metallicRoughnessTexture.value().textureIndex;
+				uint32_t imageIndex = (uint32_t)asset.textures[metallicRoughnessMapIndex].imageIndex.value();
 
 				metallicRoughnessMapAssetHandle = s_Textures[imageIndex];
 			}

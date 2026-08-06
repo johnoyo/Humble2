@@ -1,26 +1,20 @@
 Material:
   Shader: 17012696883391400132
-  u_AlbedoMap: 1713192181602978148
-  u_NormalMap: 15915782526247855392
+  u_AlbedoMap: 15569852088505032425
+  u_NormalMap: 7164867910757863425
+  u_MetallicMap: 2964377236877552039
+  u_RoughnessMap: 7173136356654894929
   u_Material:
     Color: [1, 1, 1, 1]
-    Roughness: 0
-    Metalicness: 0
-  u_MetallicMap: 5843223504900981895
-  u_RoughnessMap: 6598087512067364106
+    Roughness: 1
+    Metalicness: 1
   u_Terrain:
     baseColors:
-      - [0.128266275, 0.171842828, 0.607260704]
-      - [0.5, 0.589999974, 0.280000001]
-      - [0.310000002, 0.230000004, 0.189999998]
-    baseStartHeights:
-      - 0.00999999978
-      - 0.150000006
-      - 0.649999976
-    baseBlends:
-      - 0
-      - 0
-      - 0.25
+      - [0.128266275, 0.171842828, 0.607260704, 1]
+      - [0.5, 0.589999974, 0.280000001, 1]
+      - [0.310000002, 0.230000004, 0.189999998, 1]
+    baseStartHeights: [0.00999999978, 0.150000006, 0.649999976, 1]
+    baseBlends: [0, 0, 0.25, 1]
   RasterState:
     Topology: 3
     PolygonMode: 0

@@ -9,7 +9,6 @@
 
 namespace HBL2
 {
-
 	class HBL2_API BuildEngine
 	{
 	public:
@@ -19,8 +18,12 @@ namespace HBL2
 			Release,
 			Distribution,
 		};
+        
+        static BuildEngine* Instance;
+        
         virtual ~BuildEngine() = default;
-		static BuildEngine* Instance;
+        
+        static BuildEngine* Create();
 
 		void Initialize();
 		void ShutDown();

@@ -4,9 +4,20 @@
 #include "VulkanRenderPassRenderer.h"
 #include "VulkanComputePassRenderer.h"
 
+#include "Utilities/Collections/StaticDArray.h"
+
 namespace HBL2
 {
-	struct CommandBufferCreateInfo
+    struct VulkanTexture;
+
+    enum class VulkanPassType
+    {
+        None,
+        Render,
+        Compute
+    };
+
+	struct VkCommandBufferCreateInfo
 	{
 		CommandBufferType type;
 		VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
@@ -19,12 +30,12 @@ namespace HBL2
 	{
 	public:
 		VulkanCommandBuffer() = default;
-		VulkanCommandBuffer(const CommandBufferCreateInfo&& commandBufferCreateInfo) 
+		VulkanCommandBuffer(const VkCommandBufferCreateInfo&& commandBufferCreateInfo) 
 			: m_Type(commandBufferCreateInfo.type), CommandBuffer(commandBufferCreateInfo.commandBuffer),
 			  m_BlockFence(commandBufferCreateInfo.blockFence), m_WaitSemaphore(commandBufferCreateInfo.waitSemaphore),
 			  m_SignalSemaphore(commandBufferCreateInfo.signalSemaphore) {}
 
-		virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Handle<FrameBuffer> frameBuffer, Viewport&& drawArea = {}) override;
+		virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Viewport&& drawArea = {}) override;
 		virtual void EndRenderPass(const RenderPassRenderer& renderPassRenderer) override;
 
 		virtual ComputePassRenderer* BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite) override;
@@ -32,6 +43,10 @@ namespace HBL2
 
 		virtual void EndCommandRecording() override;
 		virtual void Submit() override;
+        
+        void TextureBarrier(Handle<Texture> texture, ResourceState oldState, ResourceState newState);
+        void TextureBarrier(VulkanTexture* vkTexture, ResourceState oldState, ResourceState newState);
+        void MemoryBarrier(Handle<Buffer> buffer, ResourceState oldState, ResourceState newState);
 
 		VkCommandBuffer CommandBuffer;
         
@@ -48,6 +63,8 @@ namespace HBL2
 		VulkanComputePassRenderer m_CurrentComputePassRenderer;
 		Span<const Handle<Texture>> m_TexturesWrite;
 		Span<const Handle<Buffer>> m_BuffersWrite;
+        
+        VulkanPassType m_CurrentPassType = VulkanPassType::None;
 
 		inline static bool s_AlreadyCleared = false;
 	};

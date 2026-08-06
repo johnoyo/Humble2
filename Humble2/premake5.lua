@@ -40,7 +40,7 @@ project "Humble2"
         "../Dependencies/GLEW/include",
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
-        "../Dependencies/ImGuizmo",
+        "../Dependencies/ImGuizmo/src",
         "../Dependencies/GLM",
         "../Dependencies/YAML-Cpp/yaml-cpp/include",
         "../Dependencies/PortableFileDialogs",
@@ -68,6 +68,15 @@ project "Humble2"
     filter "system:windows"
         systemversion "latest"    
         defines { "HBL2_PLATFORM_WINDOWS", table.unpack(JoltDefines) }
+
+        removefiles
+        {
+            "src/Platform/OpenGL/**.h",
+            "src/Platform/OpenGL/**.cpp",
+
+            "src/Platform/Metal/**.h",
+            "src/Platform/Metal/**.cpp",
+        }
 
         libdirs
         {
@@ -212,10 +221,10 @@ project "Humble2"
 
     filter "system:macosx"
         systemversion "latest"    
-        defines { "HBL2_PLATFORM_MACOS", table.unpack(JoltDefinesArm) }
+        defines { "HBL2_PLATFORM_MACOS", "IMGUI_IMPL_METAL_CPP", table.unpack(JoltDefinesArm) }
 
         files 
-        { 
+        {
             "src/**.mm",
         }
 
@@ -223,6 +232,11 @@ project "Humble2"
         {
             "src/Platform/OpenGL/**.h",
             "src/Platform/OpenGL/**.cpp"
+        }
+
+        externalincludedirs
+        {
+            "../Dependencies/Metal-Cpp"
         }
 
         linkoptions
@@ -346,7 +360,10 @@ project "Humble2"
         removefiles
         {
             "src/Platform/OpenGL/**.h",
-            "src/Platform/OpenGL/**.cpp"
+            "src/Platform/OpenGL/**.cpp",
+
+            "src/Platform/Metal/**.h",
+            "src/Platform/Metal/**.cpp"
         }
 
         runpathdirs

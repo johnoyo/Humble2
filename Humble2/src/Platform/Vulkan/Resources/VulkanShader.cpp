@@ -145,7 +145,6 @@ namespace HBL2
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
-		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
 		SpecializationData vertexSpecializationData;
 		BuildSpecializationInfo(ShaderStage::VERTEX, vertexSpecializationData, config);
@@ -427,6 +426,8 @@ namespace HBL2
 		if (i == 5) { return variant.shaderConstantBool5; }
 		if (i == 6) { return variant.shaderConstantBool6; }
 		if (i == 7) { return variant.shaderConstantBool7; }
+        
+        return false;
 	}
 
 	void VulkanShaderCold::BuildSpecializationInfo(ShaderStage stage, SpecializationData& specializationData, const PipelineConfig& config)
@@ -462,7 +463,7 @@ namespace HBL2
 
 				entry.size = size;
 				const size_t oldSize = specializationData.data.size();
-				specializationData.data.resize(oldSize + size);
+				specializationData.data.resize((uint32_t)(oldSize + size));
 				std::memcpy(specializationData.data.data() + oldSize, src, size);
 				offset += static_cast<uint32_t>(size);
 			}
@@ -549,7 +550,6 @@ namespace HBL2
 		}
 
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
-		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
 		Cold->m_OldVertexShaderModule = Cold->VertexShaderModule;
@@ -614,7 +614,7 @@ namespace HBL2
 				{
 					.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 					.pNext = nullptr,
-					.codeSize = 4 * desc.VS.code.Size(),
+					.codeSize = desc.VS.code.Size(),
 					.pCode = reinterpret_cast<const uint32_t*>(desc.VS.code.Data()),
 				};
 				VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &Cold->VertexShaderModule), "vkCreateShaderModule");
@@ -626,7 +626,7 @@ namespace HBL2
 				{
 					.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 					.pNext = nullptr,
-					.codeSize = 4 * desc.FS.code.Size(),
+					.codeSize = desc.FS.code.Size(),
 					.pCode = reinterpret_cast<const uint32_t*>(desc.FS.code.Data()),
 				};
 				VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &Cold->FragmentShaderModule), "vkCreateShaderModule");
@@ -644,7 +644,7 @@ namespace HBL2
 			{
 				.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 				.pNext = nullptr,
-				.codeSize = 4 * desc.CS.code.Size(),
+				.codeSize = desc.CS.code.Size(),
 				.pCode = reinterpret_cast<const uint32_t*>(desc.CS.code.Data()),
 			};
 			VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &Cold->ComputeShaderModule), "vkCreateShaderModule");

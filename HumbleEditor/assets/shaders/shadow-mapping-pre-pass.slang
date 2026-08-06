@@ -15,7 +15,7 @@ struct Object
 [[vk::binding(0, 0)]]
 ConstantBuffer<LightData> u_LightData;
 
-[[vk::binding(4, 3)]]
+[[vk::binding(0, 3)]]
 ConstantBuffer<Object> u_Object;
 
 // Vertex Shader

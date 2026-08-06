@@ -127,12 +127,18 @@ namespace HBL2
         std::vector<Span<const ShaderConstant>> m_SpecConstantsPerVariant;
     };
 
+    struct HBL2_API ComputeShaderReflectionData
+    {
+        glm::u16vec3 threadsPerThreadGroup = {};
+    };
+
     class ShaderReflector
     {
     public:
         // Primary entry point: call after linking your Slang program.
         // linkedProgram must be the result of IComponentType::link().
         static ShaderReflectionData Reflect(slang::IComponentType* linkedProgram, const std::string& sourcePath = "");
+        static ComputeShaderReflectionData ReflectCompute(slang::IComponentType* linkedProgram, const std::string& sourcePath = "");
 
     private:
         static void ReflectEntryPoints(slang::ProgramLayout* layout, ShaderReflectionData&  out);

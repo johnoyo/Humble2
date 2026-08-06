@@ -91,7 +91,6 @@ namespace HBL2
 
 		Handle<RenderPass> m_DebugRenderPass;
 		Handle<RenderPassLayout> m_DebugRenderPassLayout;
-		Handle<FrameBuffer> m_DebugFrameBuffer;
 
 		Handle<Buffer> m_DebugLineVertexBuffer;
 		Handle<Buffer> m_DebugFillTriVertexBuffer;

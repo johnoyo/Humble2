@@ -62,6 +62,10 @@ namespace HBL2
 			.MSAASamples = VK_SAMPLE_COUNT_1_BIT,
 		};
 		ImGui_ImplVulkan_Init(&initInfo);
+
+		// Set viewport texture.
+		VulkanTexture* viewportTexture = m_ResourceManager->GetTexture(m_Renderer->MainColorTexture);
+		m_Renderer->SetViewportAttachment(ImGui_ImplVulkan_AddTexture(viewportTexture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 	}
 
 	void VulkanImGuiRenderer::BeginFrame()
@@ -128,12 +132,14 @@ namespace HBL2
 
 	void VulkanImGuiRenderer::Render(const FrameData& frameData)
 	{
+        BEGIN_PROFILE_PASS();
+        
 		ImDrawData* data = (ImDrawData*)&frameData.ImGuiRenderData.DrawData;
 
 		ImGui_ImplVulkan_NewFrame();
 
 		CommandBuffer* commandBuffer = m_Renderer->BeginCommandRecording(CommandBufferType::UI);
-		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_ImGuiRenderPass, m_Renderer->GetMainFrameBuffer());
+		RenderPassRenderer* renderPassRenderer = commandBuffer->BeginRenderPass(m_Renderer->GetImGuiRenderPass());
 
 		{
 			// Lock the queue here since the imgui function may mess with it.
@@ -144,6 +150,8 @@ namespace HBL2
 		commandBuffer->EndRenderPass(*renderPassRenderer);
 		commandBuffer->EndCommandRecording();
 		commandBuffer->Submit();
+        
+        END_PROFILE_PASS(Renderer::Instance->GetStats().ImGuiPassTime);
 	}
 
 	void VulkanImGuiRenderer::Clean()

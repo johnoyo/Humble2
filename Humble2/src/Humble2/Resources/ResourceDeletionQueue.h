@@ -10,7 +10,7 @@ namespace HBL2
 {
     struct DeleteItem
     {
-        uint32_t Frame = 0;
+        uint64_t Frame = 0;
         std::function<void()> Deletor;
     };
 
@@ -29,8 +29,8 @@ namespace HBL2
             m_FlushTemp.reserve(256);
         }
 
-        void Push(uint32_t frame, std::function<void()>&& deletor);
-        void Flush(uint32_t currentFrame);
+        void Push(uint64_t frame, std::function<void()>&& deletor);
+        void Flush(uint64_t currentFrame);
         void FlushAll();
         inline bool IsEmpty() const { return m_Size == 0; }
 

@@ -13,6 +13,7 @@ namespace HBL2
         switch (Renderer::Instance->GetAPI())
         {
         case GraphicsAPI::OPENGL:
+        case GraphicsAPI::METAL:
             return
             {
                 (float)(x * g_TileSize) / g_ShadowAtlasSize,    // offset X
@@ -28,6 +29,8 @@ namespace HBL2
                 (float)(g_TileSize) / g_ShadowAtlasSize,        // scale X
                 -scaleY                                         // scale Y
             };
+        default:
+            break;
         }
 
         HBL2_CORE_ASSERT(false, "Unsupported graphics API!");

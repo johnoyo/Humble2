@@ -2,6 +2,7 @@
 
 #include "Base.h"
 #include "Resources/TypeDescriptors.h"
+#include "Utilities/Collections/StaticDArray.h"
 
 #include <string>
 #include <fstream>
@@ -27,6 +28,6 @@ namespace HBL2
 
 		const char* DebugName = "";
 		Format DepthTargetFormat = Format::D32_FLOAT;
-		std::vector<RenderPassLayoutDescriptor::SubPass> SubPasses;
+        StaticDArray<RenderPassLayoutDescriptor::SubPass, 4> SubPasses;
 	};
 }

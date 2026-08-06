@@ -32,32 +32,11 @@ struct Material
     float Metalicness;
 };
 
-// static const float3 baseColors[3] =
-//     {
-//         float3(0.16, 0.2, 0.6),
-//         float3(0.5, 0.59, 0.28),
-//         float3(0.31, 0.23, 0.19)
-//     };
-
-// static const float baseStartHeights[3] =
-//     {
-//         0.01,
-//         0.15,
-//         0.65
-//     };
-
-// static const float baseBlends[3] =
-//     {
-//         0.0,
-//         0.0,
-//         0.25
-//     };
-
 struct Terrain
 {
-    float3 baseColors[3];
-    float baseStartHeights[3];
-    float baseBlends[3];
+    float4 baseColors[3];
+    float4 baseStartHeights;
+    float4 baseBlends;
 };
 
 [[vk::binding(0, 0)]]
@@ -76,18 +55,18 @@ Sampler2D u_AlbedoMap;
 Sampler2D u_NormalMap;
 
 [[vk::binding(2, 2)]]
-ConstantBuffer<Material> u_Material;
-
-[[vk::binding(3, 2)]]
 Sampler2D u_MetallicMap;
 
-[[vk::binding(4, 2)]]
+[[vk::binding(3, 2)]]
 Sampler2D u_RoughnessMap;
+
+[[vk::binding(4, 2)]]
+ConstantBuffer<Material> u_Material;
 
 [[vk::binding(5, 2)]]
 ConstantBuffer<Terrain> u_Terrain;
 
-[[vk::binding(4, 3)]]
+[[vk::binding(0, 3)]]
 ConstantBuffer<Object> u_Object;
 
 // Vertex Shader
@@ -287,11 +266,14 @@ float3 getNormalFromMap(PSInput input)
     float2 st2 = ddy(input.v_TextureCoord);
 
     float3 N = normalize(input.v_Normal);
-    float3 T = normalize(Q1 * st2.y - Q2 * st1.y);
-    float3 B = -normalize(cross(N, T));
-    float3x3 TBN = float3x3(T, B, N);
+    float det = (st1.x * st2.y - st1.y * st2.x);
+    float signDet = det < 0.0 ? -1.0 : 1.0;
 
-    return normalize(mul(TBN, tangentNormal));
+    float3 T = normalize((Q1 * st2.y - Q2 * st1.y) * signDet);
+    float3 B = normalize((Q2 * st1.x - Q1 * st2.x) * signDet);
+
+    float3x3 TBN = float3x3(T, B, N);
+    return normalize(mul(tangentNormal, TBN));
 }
 
 float DistributionGGX(float3 N, float3 H, float roughness)
@@ -460,9 +442,8 @@ float4 mainPS(PSInput input) : SV_Target0
 
     for (int i = 0; i < 3; i++)
     {
-        // float drawStrenght = clamp(sign(heightPercent - baseStartHeights[i]), 0.0, 1.0);
         float drawStrenght = InverseLerp(-u_Terrain.baseBlends[i] / 2 - epsilon, u_Terrain.baseBlends[i] / 2, heightPercent - u_Terrain.baseStartHeights[i]);
-        terrainColor = terrainColor * float3(1.0 - drawStrenght) + u_Terrain.baseColors[i] * float3(drawStrenght);
+        terrainColor = terrainColor * float3(1.0 - drawStrenght) + u_Terrain.baseColors[i].rgb * float3(drawStrenght);
     }
 
     color = color * terrainColor;

@@ -1,6 +1,6 @@
 Project:
   Name: EmptyProject
-  StartingScene: Scenes/Physics3D.humble
+  StartingScene: Scenes/TestScen.humble
   AssetDirectory: Assets
   ScriptDirectory: ""
   Renderer:
@@ -51,9 +51,8 @@ Project:
       Buffers Pool Size: 1024
       BindGroups Pool Size: 64
       BindGroupLayouts Pool Size: 32
-      FrameBuffers Pool Size: 64
-      RenderPass Pool Size: 32
-      RenderPassLayouts Pool Size: 32
+      RenderPass Pool Size: 256
+      RenderPassLayouts Pool Size: 64
       Meshes Pool Size: 256
       Materials Pool Size: 64
       Scenes Pool Size: 16
