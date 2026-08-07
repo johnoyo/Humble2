@@ -907,7 +907,7 @@ namespace HBL2::Editor
 					static bool flip = false;
 					if (ImGui::Checkbox("Flip", &flip))
 					{
-						TextureUtilities::Get().UpdateAssetMetadataFile(m_Owner->m_SelectedAsset, flip);
+                        TextureUtilities::Get().UpdateAssetMetadataFile(m_Owner->m_SelectedAsset, { .Flip = flip });
 					}
 				}
 				break;

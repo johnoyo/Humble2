@@ -191,57 +191,53 @@ namespace HBL2
 
         // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/08-compiling.html
 
+        std::array<slang::CompilerOptionEntry, 4> options;
+        
         switch (target)
         {
         case GraphicsAPI::VULKAN:
             {
-                std::array<slang::CompilerOptionEntry, 4> options =
+                options[0] = slang::CompilerOptionEntry
                 {
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::EmitSpirvDirectly,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::VulkanUseEntryPointName,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::MatrixLayoutColumn,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::Optimization,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
-                    }
+                    .name = slang::CompilerOptionName::EmitSpirvDirectly,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
+                };
+                options[1] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::VulkanUseEntryPointName,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
+                };
+                options[2] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::MatrixLayoutColumn,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
+                };
+                options[3] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::Optimization,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
                 };
                 
                 sessionDesc.compilerOptionEntries = options.data();
-                sessionDesc.compilerOptionEntryCount = options.size();
+                sessionDesc.compilerOptionEntryCount = 4;
                 
                 break;
             }
         case GraphicsAPI::METAL:
             {
-                std::array<slang::CompilerOptionEntry, 2> options =
+                options[0] = slang::CompilerOptionEntry
                 {
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::MatrixLayoutColumn,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::Optimization,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
-                    }
+                    .name = slang::CompilerOptionName::MatrixLayoutColumn,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
+                };
+                options[1] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::Optimization,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
                 };
                 
                 sessionDesc.compilerOptionEntries = options.data();
-                sessionDesc.compilerOptionEntryCount = options.size();
+                sessionDesc.compilerOptionEntryCount = 2;
                 
                 break;
             }
@@ -508,40 +504,36 @@ namespace HBL2
         // Session description.
         slang::SessionDesc sessionDesc = {};
         sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR;
-
+        
         // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/08-compiling.html
-
+        
+        std::array<slang::CompilerOptionEntry, 4> options;
+        
         switch (target)
         {
         case GraphicsAPI::VULKAN:
         case GraphicsAPI::METAL:
             {
-                std::array<slang::CompilerOptionEntry, 4> options =
+                options[0] = slang::CompilerOptionEntry
                 {
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::EmitSpirvDirectly,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::VulkanUseEntryPointName,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::MatrixLayoutColumn,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::Optimization,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
-                    }
+                    .name = slang::CompilerOptionName::EmitSpirvDirectly,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
                 };
-                
-                sessionDesc.compilerOptionEntries = options.data();
-                sessionDesc.compilerOptionEntryCount = options.size();
+                options[1] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::VulkanUseEntryPointName,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
+                };
+                options[2] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::MatrixLayoutColumn,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
+                };
+                options[3] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::Optimization,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                };
                 
                 break;
             }
@@ -549,9 +541,12 @@ namespace HBL2
             HBL2_CORE_FATAL("Unsupported graphics backend!");
             exit(-1);
         }
-
+        
         sessionDesc.targets = &targetDesc;
         sessionDesc.targetCount = 1;
+        
+        sessionDesc.compilerOptionEntries = options.data();
+        sessionDesc.compilerOptionEntryCount = options.size();
         
         Slang::ComPtr<slang::ISession> session;
         if (SLANG_FAILED(g_SLangGlobalSessions[workerIndex]->createSession(sessionDesc, session.writeRef())))

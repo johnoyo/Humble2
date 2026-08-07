@@ -262,8 +262,32 @@ namespace HBL2
 				return VK_FORMAT_R32G32B32_SFLOAT;
 			case Format::RGBA32_FLOAT:
 				return VK_FORMAT_R32G32B32A32_SFLOAT;
-			case Format::R10G10B10A2_UNORM:
-				return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+            case Format::R10G10B10A2_UNORM:
+                return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+            case Format::ASTC_4x4_SRGB:
+                return VK_FORMAT_ASTC_4x4_SRGB_BLOCK;
+            case Format::ASTC_4x4_UNORM:
+                return VK_FORMAT_ASTC_4x4_UNORM_BLOCK;
+            case Format::ASTC_5x5_SRGB:
+                return VK_FORMAT_ASTC_5x5_SRGB_BLOCK;
+            case Format::ASTC_5x5_UNORM:
+                return VK_FORMAT_ASTC_5x5_UNORM_BLOCK;
+            case Format::ASTC_6x6_SRGB:
+                return VK_FORMAT_ASTC_6x6_SRGB_BLOCK;
+            case Format::ASTC_6x6_UNORM:
+                return VK_FORMAT_ASTC_6x6_UNORM_BLOCK;
+            case Format::ASTC_8x8_SRGB:
+                return VK_FORMAT_ASTC_8x8_SRGB_BLOCK;
+            case Format::ASTC_8x8_UNORM:
+                return VK_FORMAT_ASTC_8x8_UNORM_BLOCK;
+            case Format::ASTC_10x10_SRGB:
+                return VK_FORMAT_ASTC_10x10_SRGB_BLOCK;
+            case Format::ASTC_10x10_UNORM:
+                return VK_FORMAT_ASTC_10x10_UNORM_BLOCK;
+            case Format::ASTC_12x12_SRGB:
+                return VK_FORMAT_ASTC_12x12_SRGB_BLOCK;
+            case Format::ASTC_12x12_UNORM:
+                return VK_FORMAT_ASTC_12x12_UNORM_BLOCK;
 			}
 
 			return VK_FORMAT_MAX_ENUM;

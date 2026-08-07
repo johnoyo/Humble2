@@ -1469,6 +1469,7 @@ namespace HBL2
                         skyLight.CubeMap = m_ResourceManager->CreateTexture({
                             .debugName = "skybox-texture",
                             .dimensions = { (uint32_t)g_CaptureMatrices.FaceSize, (uint32_t)g_CaptureMatrices.FaceSize, 1 },
+                            .dataSize = (size_t)(g_CaptureMatrices.FaceSize * g_CaptureMatrices.FaceSize * 2 * sizeof(float)),
                             .format = Format::RGBA16_FLOAT,
                             .internalFormat = Format::RGBA16_FLOAT,
                             .usage = { TextureUsage::TEXTURE_BINDING, TextureUsage::SAMPLED, TextureUsage::STORAGE_BINDING },

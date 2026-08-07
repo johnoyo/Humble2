@@ -4,6 +4,62 @@
 
 namespace HBL2
 {
+    static BlockFormatInfo GetBlockFormatInfo(Format format)
+    {
+        switch (format)
+        {
+        case Format::D32_FLOAT:
+        case Format::RGBA8_RGB:
+        case Format::RGBA8_UNORM:
+        case Format::BGRA8_UNORM:
+        case Format::RG16_FLOAT:
+            return { 1, 1, 4 };
+        case Format::RGBA32_FLOAT:
+            return { 1, 1, 16 };
+        case Format::RGBA16_FLOAT:
+        case Format::RGB32_FLOAT:
+            return { 1, 1, 8 };
+        case Format::R10G10B10A2_UNORM:
+            return { 1, 1, 8 }; // TODO: same open question as the Vulkan version.
+        case Format::ASTC_4x4_SRGB:
+        case Format::ASTC_4x4_UNORM:
+            return { 4, 4, 16 };
+        case Format::ASTC_6x6_SRGB:
+        case Format::ASTC_6x6_UNORM:
+            return { 6, 6, 16 };
+        case Format::ASTC_8x8_SRGB:
+        case Format::ASTC_8x8_UNORM:
+            return { 8, 8, 16 };
+        case Format::ASTC_10x10_SRGB:
+        case Format::ASTC_10x10_UNORM:
+            return { 10, 10, 16 };
+        case Format::ASTC_12x12_SRGB:
+        case Format::ASTC_12x12_UNORM:
+            return { 12, 12, 16 };
+
+        // case Format::BC1_RGBA_UNORM: return { 4, 4, 8 };  // BC1/BC4
+        // case Format::BC3_RGBA_UNORM: return { 4, 4, 16 }; // BC2/3/5/6H/7
+
+        default:
+            return { 1, 1, 4 };
+        }
+    }
+
+    static inline uint32_t DivRoundUp(uint32_t value, uint32_t divisor)
+    {
+        return (value + divisor - 1) / divisor;
+    }
+
+    static inline size_t RowPitch(uint32_t width, const BlockFormatInfo& info)
+    {
+        return (size_t)DivRoundUp(width, info.blockWidth) * info.bytesPerBlock;
+    }
+
+    static inline size_t ImageSize(uint32_t width, uint32_t height, const BlockFormatInfo& info)
+    {
+        return RowPitch(width, info) * DivRoundUp(height, info.blockHeight);
+    }
+
     MetalTexture::MetalTexture(const TextureDescriptor&& desc)
     {
         MetalDevice* device = (MetalDevice*)Device::Instance;
@@ -14,27 +70,8 @@ namespace HBL2
         LayerCount = desc.layerCount;
         Extent = MTL::Size((NS::UInteger)desc.dimensions.x, (NS::UInteger)desc.dimensions.y, (NS::UInteger)desc.dimensions.z);
         BindSampler = desc.bindSampler;
-    
-        switch (desc.format)
-        {
-        case Format::D32_FLOAT:
-        case Format::RGBA8_RGB:
-        case Format::RGBA8_UNORM:
-        case Format::BGRA8_UNORM:
-        case Format::RG16_FLOAT:
-            m_PixelByteSize = 4;
-            break;
-        case Format::RGBA32_FLOAT:
-            m_PixelByteSize = 16;
-            break;
-        case Format::RGBA16_FLOAT:
-        case Format::RGB32_FLOAT:
-            m_PixelByteSize = 8;
-            break;
-        case Format::R10G10B10A2_UNORM: // TODO: same open question as the Vulkan version.
-            m_PixelByteSize = 8;
-            break;
-        }
+        
+        m_BlockInfo = GetBlockFormatInfo(desc.format);
  
         const uint32_t faceCount = (desc.type == TextureType::CUBE ? 6 : LayerCount);
     
@@ -52,7 +89,7 @@ namespace HBL2
         // Allocate texture (GPU-private, CPU never touches this again after the initial upload below).
         MTL::TextureDescriptor* texDesc = MTL::TextureDescriptor::alloc()->init();
         texDesc->setTextureType(MtlUtils::TextureTypeToMTLTextureType(desc.type));
-        texDesc->setPixelFormat(MtlUtils::FormatToMTLPixelFormat(desc.internalFormat));
+        texDesc->setPixelFormat(MtlUtils::FormatToMTLPixelFormat(desc.format));
         texDesc->setWidth(Extent.width);
         texDesc->setHeight(Extent.height);
         texDesc->setArrayLength(desc.type == TextureType::D2_ARRAY ? LayerCount : 1);
@@ -77,7 +114,7 @@ namespace HBL2
  
         if (desc.initialData == nullptr && Extent.width == 1 && Extent.height == 1)
         {
-            const size_t imageSize = (size_t)Extent.width * (size_t)Extent.height * m_PixelByteSize;
+            const size_t imageSize = ImageSize(Extent.width, Extent.height, m_BlockInfo);
  
             MTL::Buffer* stagingBuffer = nullptr;
             CreateStagingBuffer(renderer, imageSize, &stagingBuffer);
@@ -92,7 +129,7 @@ namespace HBL2
         }
         else if (desc.initialData != nullptr)
         {
-            const size_t faceSize = (size_t)Extent.width * (size_t)Extent.height * m_PixelByteSize;
+            const size_t faceSize = ImageSize(Extent.width, Extent.height, m_BlockInfo);
             const size_t imageSize = faceSize * faceCount;
  
             MTL::Buffer* stagingBuffer = nullptr;
@@ -137,7 +174,7 @@ namespace HBL2
         MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
  
         const uint32_t faceCount = (ImageType == TextureType::CUBE ? 6 : LayerCount);
-        const size_t faceSize = (size_t)Extent.width * (size_t)Extent.height * m_PixelByteSize;
+        const size_t faceSize = ImageSize(Extent.width, Extent.height, m_BlockInfo);
         const size_t imageSize = faceSize * faceCount;
  
         MTL::Buffer* stagingBuffer = nullptr;
@@ -220,7 +257,8 @@ namespace HBL2
     void MetalTexture::CopyBufferToTexture(MetalRenderer* renderer, MTL::Buffer* stagingBuffer)
     {
         const uint32_t faceCount = (ImageType == TextureType::CUBE ? 6 : LayerCount);
-        const size_t faceSize = (size_t)Extent.width * (size_t)Extent.height * m_PixelByteSize;
+        const size_t faceSize = ImageSize(Extent.width, Extent.height, m_BlockInfo);
+        const size_t rowPitch = RowPitch(Extent.width, m_BlockInfo);
 
         renderer->MakeResident({ stagingBuffer });
 
@@ -243,7 +281,7 @@ namespace HBL2
                 encoder->copyFromBuffer(
                     stagingBuffer,
                     faceSize * face,
-                    Extent.width * m_PixelByteSize,
+                    rowPitch,
                     faceSize,
                     faceExtent,
                     writeTarget,

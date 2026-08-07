@@ -22,7 +22,8 @@ namespace HBL2
 		const char* debugName;
 		glm::u32vec3 dimensions;
 		uint32_t mips = 1;
-		Format format = Format::RGBA8_RGB;
+        size_t dataSize = 0;
+        Format format = Format::RGBA8_RGB;
 		Format internalFormat = Format::RGBA8_RGB;
 		BitFlags<TextureUsage> usage = TextureUsage::TEXTURE_BINDING;
 		TextureType type = TextureType::D2;
@@ -54,6 +55,13 @@ namespace HBL2
         uint32_t layerCount = 1;
         bool bindSampler = true;
 	};
+
+    struct BlockFormatInfo
+    {
+        uint32_t blockWidth;
+        uint32_t blockHeight;
+        uint32_t bytesPerBlock;
+    };
 
 	struct BufferDescriptor
 	{

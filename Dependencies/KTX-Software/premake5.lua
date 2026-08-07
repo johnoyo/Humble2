@@ -10,6 +10,7 @@ project "KTX-Software"
     cppdialect "C++17"
     cdialect "C11"
     staticruntime "Off"
+	multiprocessorcompile "On"
 
     targetdir (KTX_ROOT .. "/bin/" .. outputdir .. "/%{prj.name}")
     objdir (KTX_ROOT .. "/bin-int/" .. outputdir .. "/%{prj.name}")

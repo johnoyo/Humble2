@@ -396,6 +396,7 @@ namespace HBL2
         IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
             .debugName = "intermediate-color-target",
             .dimensions = { width, height, 1 },
+            .dataSize = (size_t)(width * height * 2 * sizeof(float)),
             .format = Format::RGBA16_FLOAT,
             .internalFormat = Format::RGBA16_FLOAT,
             .usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
@@ -410,6 +411,7 @@ namespace HBL2
         MainColorTexture = ResourceManager::Instance->CreateTexture({
             .debugName = "viewport-color-target",
             .dimensions = { width, height, 1 },
+            .dataSize = (size_t)width * height * 4,
             .format = Format::BGRA8_UNORM,
             .internalFormat = Format::BGRA8_UNORM,
             .usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
@@ -424,6 +426,7 @@ namespace HBL2
         MainDepthTexture = ResourceManager::Instance->CreateTexture({
             .debugName = "viewport-depth-target",
             .dimensions = { width, height, 1 },
+            .dataSize = (size_t)width * height * 4,
             .format = Format::D32_FLOAT,
             .internalFormat = Format::D32_FLOAT,
             .usage = TextureUsage::DEPTH_STENCIL,

@@ -34,7 +34,7 @@ namespace HBL2
         
     private:
         MTL::Texture* m_StorageTexture = nullptr;
-        uint32_t m_PixelByteSize = 0;
+        BlockFormatInfo m_BlockInfo;
     };
 }
 

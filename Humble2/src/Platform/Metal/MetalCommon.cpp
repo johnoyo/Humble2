@@ -71,6 +71,30 @@ namespace HBL2
                 return MTL::PixelFormatRGBA32Float;
             case Format::R10G10B10A2_UNORM:
                 return MTL::PixelFormatRGB10A2Unorm;
+            case Format::ASTC_4x4_SRGB:
+                return MTL::PixelFormatASTC_4x4_sRGB;
+            case Format::ASTC_4x4_UNORM:
+                return MTL::PixelFormatASTC_4x4_LDR;
+            case Format::ASTC_5x5_SRGB:
+                return MTL::PixelFormatASTC_5x5_sRGB;
+            case Format::ASTC_5x5_UNORM:
+                return MTL::PixelFormatASTC_5x5_LDR;
+            case Format::ASTC_6x6_SRGB:
+                return MTL::PixelFormatASTC_6x6_sRGB;
+            case Format::ASTC_6x6_UNORM:
+                return MTL::PixelFormatASTC_6x6_LDR;
+            case Format::ASTC_8x8_SRGB:
+                return MTL::PixelFormatASTC_8x8_sRGB;
+            case Format::ASTC_8x8_UNORM:
+                return MTL::PixelFormatASTC_8x8_LDR;
+            case Format::ASTC_10x10_SRGB:
+                return MTL::PixelFormatASTC_10x10_sRGB;
+            case Format::ASTC_10x10_UNORM:
+                return MTL::PixelFormatASTC_10x10_LDR;
+            case Format::ASTC_12x12_SRGB:
+                return MTL::PixelFormatASTC_12x12_sRGB;
+            case Format::ASTC_12x12_UNORM:
+                return MTL::PixelFormatASTC_12x12_LDR;
             default:
                 break;
         }

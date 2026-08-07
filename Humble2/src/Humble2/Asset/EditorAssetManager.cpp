@@ -937,6 +937,7 @@ namespace HBL2
 			auto texture = ResourceManager::Instance->CreateTexture({
 				.debugName = strdup(std::format("{}-texture", textureName).c_str()),
 				.dimensions = { textureSettings.Width, textureSettings.Height, 1 },
+                .dataSize = textureSettings.PixelDataSize,
 				.format = textureSettings.PixelFormat,
 				.internalFormat = textureSettings.PixelFormat,
 				.usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },

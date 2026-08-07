@@ -5,6 +5,9 @@
 #include <stb_image/stb_image_write.h>
 #include <yaml-cpp/yaml.h>
 
+#include <ktx.h>
+#include <ktx/lib/src/vkformat_enum.h>
+
 namespace HBL2
 {
 	TextureUtilities& TextureUtilities::Get()
@@ -32,19 +35,101 @@ namespace HBL2
 			}
 
 			const auto& pathAsPath = std::filesystem::path(path);
+            ktx_uint32_t ktxFormat = 0;
 
 			if (pathAsPath.extension() == ".hdr")
 			{
 				pixels = stbi_loadf(path.c_str(), &settings.Width, &settings.Height, &bits, STBI_rgb_alpha);
 				settings.PixelFormat = Format::RGBA32_FLOAT;
+                
+                settings.PixelDataSize = (ktx_size_t)settings.Width * (ktx_size_t)settings.Height * 4 * sizeof(float);
+                ktxFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
 			}
 			else
 			{
 				pixels = stbi_load(path.c_str(), &settings.Width, &settings.Height, &bits, STBI_rgb_alpha);
 				settings.PixelFormat = Format::RGBA8_RGB;
+                
+                settings.PixelDataSize = (ktx_size_t)settings.Width * (ktx_size_t)settings.Height * 4;
+                ktxFormat = VK_FORMAT_R8G8B8A8_SRGB;
 			}
+            
+            HBL2_CORE_ASSERT(pixels, "Failed to load pixels!");
+            
+            // return pixels;
+            
+            // Create empty ktx2 texture.
+            ktxTextureCreateInfo info{};
+            info.vkFormat = ktxFormat;
+            info.baseWidth = settings.Width;
+            info.baseHeight = settings.Height;
+            info.baseDepth = 1;
+            info.numDimensions = 2;
+            info.numLevels = 1;
+            info.numLayers = 1;
+            info.numFaces = 1;
+            info.isArray = KTX_FALSE;
+            info.generateMipmaps = KTX_FALSE;
+            
+            ktxTexture2* kTexture;
+            KTX_error_code result = ktxTexture2_Create(&info, KTX_TEXTURE_CREATE_ALLOC_STORAGE, &kTexture);
 
-			HBL2_CORE_ASSERT(pixels, "Failed to load pixels!");
+            if (result != KTX_SUCCESS)
+            {
+                HBL2_CORE_ASSERT(false, "Failed to load ktx texture image!");
+            }
+            
+            // Upload texture pixel data to ktx2 texture.
+            result = ktxTexture_SetImageFromMemory(
+                ktxTexture(kTexture),
+                0, // mip level
+                0, // array layer
+                0, // face or depth slice
+                (const ktx_uint8_t*)pixels,
+                settings.PixelDataSize);
+
+            if (result != KTX_SUCCESS)
+            {
+                ktxTexture_Destroy(ktxTexture(kTexture));
+                HBL2_CORE_ASSERT(false, ktxErrorString(result));
+            }
+            
+            // Serialize ktx2 texture data to disk.
+            // ...
+            
+            // Compress ktx2 texture data.
+            ktxAstcParams params = {0};
+            params.structSize = sizeof(params);
+            params.blockDimension = KTX_PACK_ASTC_BLOCK_DIMENSION_6x6;
+            params.qualityLevel = KTX_PACK_ASTC_QUALITY_LEVEL_MEDIUM;
+            params.mode = KTX_PACK_ASTC_ENCODER_MODE_LDR;
+            params.threadCount = std::thread::hardware_concurrency() - 2;
+            
+            settings.PixelFormat = Format::ASTC_6x6_SRGB;
+
+            result = ktxTexture2_CompressAstcEx(kTexture, &params);
+            
+            if (result != KTX_SUCCESS)
+            {
+                ktxTexture_Destroy(ktxTexture(kTexture));
+                HBL2_CORE_ASSERT(false, ktxErrorString(result));
+            }
+            
+            // Get and return raw pixel data.
+            ktx_size_t imageOffset = 0;
+            ktxTexture_GetImageOffset(ktxTexture(kTexture), 0, 0, 0, &imageOffset);
+            ktx_size_t levelSize = ktxTexture_GetImageSize(ktxTexture(kTexture), 0);
+
+            void* textureData = malloc(levelSize);
+            std::memcpy(textureData, ktxTexture_GetData(ktxTexture(kTexture)) + imageOffset, levelSize);
+            settings.PixelDataSize = levelSize;
+
+            ktxTexture_Destroy(ktxTexture(kTexture));
+            
+            // Serialize raw compressed texture data to disk.
+            // ...
+            
+            return textureData;
 		}
 
 		return pixels;
@@ -73,7 +158,7 @@ namespace HBL2
 			stbi_set_flip_vertically_on_load(1);
 		}
 
-		stbi_uc* pixels = stbi_load_from_memory((const stbi_uc*)bytes.Data(), bytes.Size(), &width, &height, &channels, STBI_default);
+		stbi_uc* pixels = stbi_load_from_memory((const stbi_uc*)bytes.Data(), (int)bytes.Size(), &width, &height, &channels, STBI_default);
 
 		if (pixels == NULL)
 		{
@@ -115,13 +200,24 @@ namespace HBL2
 		out << YAML::BeginMap;
 		out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(handle)->UUID;
 		out << YAML::Key << "Flip" << YAML::Value << false;
+        
+        out << YAML::BeginMap;
+        out << YAML::Key << "Compression" << YAML::Value;
+        out << YAML::BeginMap;
+        out << YAML::Key << "Windows" << YAML::Value << (uint32_t)Format::RGBA8_RGB;
+        out << YAML::Key << "MacOS" << YAML::Value << (uint32_t)Format::RGBA8_RGB;
+        out << YAML::Key << "Linux" << YAML::Value << (uint32_t)Format::RGBA8_RGB;
+        out << YAML::Key << "Web" << YAML::Value << (uint32_t)Format::RGBA8_RGB;
+        out << YAML::EndMap;
+        out << YAML::EndMap;
+        
 		out << YAML::EndMap;
 		out << YAML::EndMap;
 		fout << out.c_str();
 		fout.close();
 	}
 
-	void TextureUtilities::UpdateAssetMetadataFile(Handle<Asset> handle, bool flip)
+	void TextureUtilities::UpdateAssetMetadataFile(Handle<Asset> handle, const TextureSettings& settings)
 	{
 		if (!AssetManager::Instance->IsAssetValid(handle))
 		{
@@ -138,7 +234,18 @@ namespace HBL2
 		out << YAML::Key << "Texture" << YAML::Value;
 		out << YAML::BeginMap;
 		out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(handle)->UUID;
-		out << YAML::Key << "Flip" << YAML::Value << flip;
+		out << YAML::Key << "Flip" << YAML::Value << settings.Flip;
+        
+        out << YAML::BeginMap;
+        out << YAML::Key << "Compression" << YAML::Value;
+        out << YAML::BeginMap;
+        out << YAML::Key << "Windows" << YAML::Value << (uint32_t)settings.WindowsCompressionFormat;
+        out << YAML::Key << "MacOS" << YAML::Value << (uint32_t)settings.MacOSCompressionFormat;
+        out << YAML::Key << "Linux" << YAML::Value << (uint32_t)settings.LinuxCompressionFormat;
+        out << YAML::Key << "Web" << YAML::Value << (uint32_t)settings.WebCompressionFormat;
+        out << YAML::EndMap;
+        out << YAML::EndMap;
+        
 		out << YAML::EndMap;
 		out << YAML::EndMap;
 		fout << out.c_str();
@@ -150,6 +257,7 @@ namespace HBL2
 		WhiteTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "white-texture",
 			.dimensions = { 1.0f, 1.0f, 1.0f },
+            .dataSize = 1 * 1 * 4,
 			.usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },
 			.aspect = TextureAspect::COLOR,
 			.initialData = nullptr,

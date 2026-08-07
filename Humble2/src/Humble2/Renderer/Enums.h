@@ -184,6 +184,19 @@ namespace HBL2
 		RG16_FLOAT,
 		RGBA8_RGB,
 		R10G10B10A2_UNORM,
+        
+        ASTC_4x4_SRGB,
+        ASTC_4x4_UNORM,
+        ASTC_5x5_SRGB,
+        ASTC_5x5_UNORM,
+        ASTC_6x6_SRGB,
+        ASTC_6x6_UNORM,
+        ASTC_8x8_SRGB,
+        ASTC_8x8_UNORM,
+        ASTC_10x10_SRGB,
+        ASTC_10x10_UNORM,
+        ASTC_12x12_SRGB,
+        ASTC_12x12_UNORM,
 	};
 
 	enum class MemoryUsage
