@@ -111,7 +111,6 @@ namespace HBL2
                     
                     if (result != KTX_SUCCESS)
                     {
-                        ktxTexture_Destroy(ktxTexture(kTexture));
                         HBL2_CORE_ERROR("Compression of ktx2 texture file failed: {0}", ktxErrorString(result));
                     }
                     else
@@ -120,7 +119,6 @@ namespace HBL2
                         
                         if (result != KTX_SUCCESS)
                         {
-                            ktxTexture_Destroy(ktxTexture(kTexture));
                             HBL2_CORE_ERROR("Serialization of ktx2 texture file failed: {0}", ktxErrorString(result));
                         }
                     }
@@ -184,7 +182,6 @@ namespace HBL2
                 
                 if (result != KTX_SUCCESS)
                 {
-                    ktxTexture_Destroy(ktxTexture(kTexture));
                     HBL2_CORE_ERROR("Compression of ktx2 texture file failed: {0}", ktxErrorString(result));
                 }
                 else
@@ -193,7 +190,6 @@ namespace HBL2
                     
                     if (result != KTX_SUCCESS)
                     {
-                        ktxTexture_Destroy(ktxTexture(kTexture));
                         HBL2_CORE_ERROR("Serialization of ktx2 texture file failed: {0}", ktxErrorString(result));
                     }
                 }
