@@ -12,6 +12,7 @@ namespace HBL2
 		int Width = 0;
 		int Height = 0;
 		bool Flip = false;
+        bool Relaod = false;
         
         Format PixelFormat = Format::RGBA8_RGB;
         size_t PixelDataSize = 0;

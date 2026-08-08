@@ -56,41 +56,43 @@ namespace HBL2
             
             HBL2_CORE_ASSERT(pixels, "Failed to load pixels!");
             
-            // return pixels;
-            
             ktxTexture2* kTexture;
-            
-            // Serialize ktx2 texture data to disk.
-            bool forceRecompile = false;
 
-            // Cache path per entry point.
             const auto& cachedPath = std::filesystem::path("assets") / "cache" / "texture" / (pathAsPath.stem().string() + ".ktx2");
             const auto& workingDir = Project::GetProjectDirectory().parent_path();
             auto texturePath = workingDir / cachedPath;
             
             // Ensure parent path exists.
-            if (!std::filesystem::exists(texturePath.parent_path()))
+            std::error_code ec;
+            if (!std::filesystem::exists(texturePath.parent_path(), ec))
             {
-                try
+                std::filesystem::create_directories(texturePath.parent_path(), ec);
+                
+                if (!ec)
                 {
-                    std::filesystem::create_directories(texturePath.parent_path());
-                }
-                catch (std::exception& e)
-                {
-                    HBL2_CORE_ERROR("Texture metadata directory creation failed: {0}", e.what());
+                    HBL2_CORE_ERROR("Texture cache directory creation failed: {0}", ec.message());
+                    return nullptr;
                 }
             }
-
-            // Cache hit for this entry point.
-            std::error_code ec;
-            if (std::filesystem::exists(texturePath, ec) && !forceRecompile)
+            
+            if (!ec)
             {
+                HBL2_CORE_ERROR("Texture cache file inspection failed: {0}", ec.message());
+                return nullptr;
+            }
+
+            // Check for cache hit for texture.
+            if (std::filesystem::exists(texturePath, ec) && !settings.Relaod)
+            {
+                // Serialize ktx2 texture data to disk.
                 KTX_error_code result = ktxTexture2_CreateFromNamedFile(texturePath.string().c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &kTexture);
                 
                 if (result != KTX_SUCCESS)
                 {
                     ktxTexture_Destroy(ktxTexture(kTexture));
-                    HBL2_CORE_ASSERT(false, ktxErrorString(result));
+                    
+                    HBL2_CORE_ERROR("Creation of ktx2 texture file failed: {0}", ktxErrorString(result));
+                    return nullptr;
                 }
                 
                 if (!kTexture->isCompressed)
@@ -110,15 +112,17 @@ namespace HBL2
                     if (result != KTX_SUCCESS)
                     {
                         ktxTexture_Destroy(ktxTexture(kTexture));
-                        HBL2_CORE_ASSERT(false, ktxErrorString(result));
+                        HBL2_CORE_ERROR("Compression of ktx2 texture file failed: {0}", ktxErrorString(result));
                     }
-                    
-                    result = ktxTexture2_WriteToNamedFile(kTexture, texturePath.string().c_str());
-                    
-                    if (result != KTX_SUCCESS)
+                    else
                     {
-                        ktxTexture_Destroy(ktxTexture(kTexture));
-                        HBL2_CORE_ASSERT(false, ktxErrorString(result));
+                        result = ktxTexture2_WriteToNamedFile(kTexture, texturePath.string().c_str());
+                        
+                        if (result != KTX_SUCCESS)
+                        {
+                            ktxTexture_Destroy(ktxTexture(kTexture));
+                            HBL2_CORE_ERROR("Serialization of ktx2 texture file failed: {0}", ktxErrorString(result));
+                        }
                     }
                 }
                 else
@@ -145,7 +149,8 @@ namespace HBL2
 
                 if (result != KTX_SUCCESS)
                 {
-                    HBL2_CORE_ASSERT(false, "Failed to load ktx texture image!");
+                    HBL2_CORE_ERROR("Failed to create ktx2 texture image: {0}", ktxErrorString(result));
+                    return nullptr;
                 }
                 
                 // Upload texture pixel data to ktx2 texture.
@@ -160,7 +165,9 @@ namespace HBL2
                 if (result != KTX_SUCCESS)
                 {
                     ktxTexture_Destroy(ktxTexture(kTexture));
-                    HBL2_CORE_ASSERT(false, ktxErrorString(result));
+                    
+                    HBL2_CORE_ERROR("Failed to set ktx2 texture image data: {0}", ktxErrorString(result));
+                    return nullptr;
                 }
                 
                 // Compress ktx2 texture data.
@@ -178,15 +185,17 @@ namespace HBL2
                 if (result != KTX_SUCCESS)
                 {
                     ktxTexture_Destroy(ktxTexture(kTexture));
-                    HBL2_CORE_ASSERT(false, ktxErrorString(result));
+                    HBL2_CORE_ERROR("Compression of ktx2 texture file failed: {0}", ktxErrorString(result));
                 }
-                
-                result = ktxTexture2_WriteToNamedFile(kTexture, texturePath.string().c_str());
-                
-                if (result != KTX_SUCCESS)
+                else
                 {
-                    ktxTexture_Destroy(ktxTexture(kTexture));
-                    HBL2_CORE_ASSERT(false, ktxErrorString(result));
+                    result = ktxTexture2_WriteToNamedFile(kTexture, texturePath.string().c_str());
+                    
+                    if (result != KTX_SUCCESS)
+                    {
+                        ktxTexture_Destroy(ktxTexture(kTexture));
+                        HBL2_CORE_ERROR("Serialization of ktx2 texture file failed: {0}", ktxErrorString(result));
+                    }
                 }
             }
             
