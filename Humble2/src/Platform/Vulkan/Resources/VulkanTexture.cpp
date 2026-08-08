@@ -137,7 +137,7 @@ namespace HBL2
 			memcpy(mappedData, desc.initialData, (size_t)imageSize);
 			vmaUnmapMemory(renderer->GetAllocator(), stagingBufferAllocation);
 
-			stbi_image_free(desc.initialData);
+			std::free(desc.initialData);
 
 			CopyBufferToTexture(renderer, stagingBuffer);
 

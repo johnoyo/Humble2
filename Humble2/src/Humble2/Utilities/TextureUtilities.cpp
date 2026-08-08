@@ -58,61 +58,136 @@ namespace HBL2
             
             // return pixels;
             
-            // Create empty ktx2 texture.
-            ktxTextureCreateInfo info{};
-            info.vkFormat = ktxFormat;
-            info.baseWidth = settings.Width;
-            info.baseHeight = settings.Height;
-            info.baseDepth = 1;
-            info.numDimensions = 2;
-            info.numLevels = 1;
-            info.numLayers = 1;
-            info.numFaces = 1;
-            info.isArray = KTX_FALSE;
-            info.generateMipmaps = KTX_FALSE;
-            
             ktxTexture2* kTexture;
-            KTX_error_code result = ktxTexture2_Create(&info, KTX_TEXTURE_CREATE_ALLOC_STORAGE, &kTexture);
-
-            if (result != KTX_SUCCESS)
-            {
-                HBL2_CORE_ASSERT(false, "Failed to load ktx texture image!");
-            }
-            
-            // Upload texture pixel data to ktx2 texture.
-            result = ktxTexture_SetImageFromMemory(
-                ktxTexture(kTexture),
-                0, // mip level
-                0, // array layer
-                0, // face or depth slice
-                (const ktx_uint8_t*)pixels,
-                settings.PixelDataSize);
-
-            if (result != KTX_SUCCESS)
-            {
-                ktxTexture_Destroy(ktxTexture(kTexture));
-                HBL2_CORE_ASSERT(false, ktxErrorString(result));
-            }
             
             // Serialize ktx2 texture data to disk.
-            // ...
-            
-            // Compress ktx2 texture data.
-            ktxAstcParams params = {0};
-            params.structSize = sizeof(params);
-            params.blockDimension = KTX_PACK_ASTC_BLOCK_DIMENSION_6x6;
-            params.qualityLevel = KTX_PACK_ASTC_QUALITY_LEVEL_MEDIUM;
-            params.mode = KTX_PACK_ASTC_ENCODER_MODE_LDR;
-            params.threadCount = std::thread::hardware_concurrency() - 2;
-            
-            settings.PixelFormat = Format::ASTC_6x6_SRGB;
+            bool forceRecompile = false;
 
-            result = ktxTexture2_CompressAstcEx(kTexture, &params);
+            // Cache path per entry point.
+            const auto& cachedPath = std::filesystem::path("assets") / "cache" / "texture" / (pathAsPath.stem().string() + ".ktx2");
+            const auto& workingDir = Project::GetProjectDirectory().parent_path();
+            auto texturePath = workingDir / cachedPath;
             
-            if (result != KTX_SUCCESS)
+            // Ensure parent path exists.
+            if (!std::filesystem::exists(texturePath.parent_path()))
             {
-                ktxTexture_Destroy(ktxTexture(kTexture));
-                HBL2_CORE_ASSERT(false, ktxErrorString(result));
+                try
+                {
+                    std::filesystem::create_directories(texturePath.parent_path());
+                }
+                catch (std::exception& e)
+                {
+                    HBL2_CORE_ERROR("Texture metadata directory creation failed: {0}", e.what());
+                }
+            }
+
+            // Cache hit for this entry point.
+            std::error_code ec;
+            if (std::filesystem::exists(texturePath, ec) && !forceRecompile)
+            {
+                KTX_error_code result = ktxTexture2_CreateFromNamedFile(texturePath.string().c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &kTexture);
+                
+                if (result != KTX_SUCCESS)
+                {
+                    ktxTexture_Destroy(ktxTexture(kTexture));
+                    HBL2_CORE_ASSERT(false, ktxErrorString(result));
+                }
+                
+                if (!kTexture->isCompressed)
+                {
+                    // Compress ktx2 texture data.
+                    ktxAstcParams params = {0};
+                    params.structSize = sizeof(params);
+                    params.blockDimension = KTX_PACK_ASTC_BLOCK_DIMENSION_6x6;
+                    params.qualityLevel = KTX_PACK_ASTC_QUALITY_LEVEL_MEDIUM;
+                    params.mode = KTX_PACK_ASTC_ENCODER_MODE_LDR;
+                    params.threadCount = std::thread::hardware_concurrency() - 2;
+                    
+                    settings.PixelFormat = Format::ASTC_6x6_SRGB;
+
+                    KTX_error_code result = ktxTexture2_CompressAstcEx(kTexture, &params);
+                    
+                    if (result != KTX_SUCCESS)
+                    {
+                        ktxTexture_Destroy(ktxTexture(kTexture));
+                        HBL2_CORE_ASSERT(false, ktxErrorString(result));
+                    }
+                    
+                    result = ktxTexture2_WriteToNamedFile(kTexture, texturePath.string().c_str());
+                    
+                    if (result != KTX_SUCCESS)
+                    {
+                        ktxTexture_Destroy(ktxTexture(kTexture));
+                        HBL2_CORE_ASSERT(false, ktxErrorString(result));
+                    }
+                }
+                else
+                {
+                    settings.PixelFormat = Format::ASTC_6x6_SRGB;
+                }
+            }
+            else
+            {
+                // Create empty ktx2 texture.
+                ktxTextureCreateInfo info{};
+                info.vkFormat = ktxFormat;
+                info.baseWidth = settings.Width;
+                info.baseHeight = settings.Height;
+                info.baseDepth = 1;
+                info.numDimensions = 2;
+                info.numLevels = 1;
+                info.numLayers = 1;
+                info.numFaces = 1;
+                info.isArray = KTX_FALSE;
+                info.generateMipmaps = KTX_FALSE;
+                
+                KTX_error_code result = ktxTexture2_Create(&info, KTX_TEXTURE_CREATE_ALLOC_STORAGE, &kTexture);
+
+                if (result != KTX_SUCCESS)
+                {
+                    HBL2_CORE_ASSERT(false, "Failed to load ktx texture image!");
+                }
+                
+                // Upload texture pixel data to ktx2 texture.
+                result = ktxTexture_SetImageFromMemory(
+                    ktxTexture(kTexture),
+                    0, // mip level
+                    0, // array layer
+                    0, // face or depth slice
+                    (const ktx_uint8_t*)pixels,
+                    settings.PixelDataSize);
+
+                if (result != KTX_SUCCESS)
+                {
+                    ktxTexture_Destroy(ktxTexture(kTexture));
+                    HBL2_CORE_ASSERT(false, ktxErrorString(result));
+                }
+                
+                // Compress ktx2 texture data.
+                ktxAstcParams params = {0};
+                params.structSize = sizeof(params);
+                params.blockDimension = KTX_PACK_ASTC_BLOCK_DIMENSION_6x6;
+                params.qualityLevel = KTX_PACK_ASTC_QUALITY_LEVEL_MEDIUM;
+                params.mode = KTX_PACK_ASTC_ENCODER_MODE_LDR;
+                params.threadCount = std::thread::hardware_concurrency() - 2;
+                
+                settings.PixelFormat = Format::ASTC_6x6_SRGB;
+
+                result = ktxTexture2_CompressAstcEx(kTexture, &params);
+                
+                if (result != KTX_SUCCESS)
+                {
+                    ktxTexture_Destroy(ktxTexture(kTexture));
+                    HBL2_CORE_ASSERT(false, ktxErrorString(result));
+                }
+                
+                result = ktxTexture2_WriteToNamedFile(kTexture, texturePath.string().c_str());
+                
+                if (result != KTX_SUCCESS)
+                {
+                    ktxTexture_Destroy(ktxTexture(kTexture));
+                    HBL2_CORE_ASSERT(false, ktxErrorString(result));
+                }
             }
             
             // Get and return raw pixel data.
@@ -120,14 +195,13 @@ namespace HBL2
             ktxTexture_GetImageOffset(ktxTexture(kTexture), 0, 0, 0, &imageOffset);
             ktx_size_t levelSize = ktxTexture_GetImageSize(ktxTexture(kTexture), 0);
 
-            void* textureData = malloc(levelSize);
+            void* textureData = std::malloc(levelSize);
             std::memcpy(textureData, ktxTexture_GetData(ktxTexture(kTexture)) + imageOffset, levelSize);
             settings.PixelDataSize = levelSize;
 
             ktxTexture_Destroy(ktxTexture(kTexture));
             
-            // Serialize raw compressed texture data to disk.
-            // ...
+            stbi_image_free(pixels);
             
             return textureData;
 		}

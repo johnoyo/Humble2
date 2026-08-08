@@ -22,6 +22,8 @@ namespace HBL2
 				float ZoomSpeed = 1.0f;
 				float ScrollZoomSpeed = 10.0f;
 				float PanSpeed = 0.25f;
+                
+                bool EnableInput = true;
 
 				bool Enabled = true;
 			};

@@ -63,6 +63,11 @@ namespace HBL2
 				{
 					return;
 				}
+                
+                if (!m_EditorCamera->EnableInput)
+                {
+                    return;
+                }
 
 				float zoomAmount = (float)e.YOffset * m_EditorCamera->ScrollZoomSpeed;
 				m_Transform->Translation += m_EditorCamera->Front * zoomAmount;
@@ -140,7 +145,7 @@ namespace HBL2
 
 						float velocity = 0.0f;
 						
-						if (Input::GetKeyDown(KeyCode::MouseRight))
+						if (Input::GetKeyDown(KeyCode::MouseRight) && editorCamera.EnableInput)
 						{
 							velocity = editorCamera.MovementSpeed * ts;
 

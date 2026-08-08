@@ -114,7 +114,7 @@ namespace HBL2
  
         if (desc.initialData == nullptr && Extent.width == 1 && Extent.height == 1)
         {
-            const size_t imageSize = ImageSize(Extent.width, Extent.height, m_BlockInfo);
+            const size_t imageSize = ImageSize((uint32_t)Extent.width, (uint32_t)Extent.height, m_BlockInfo);
  
             MTL::Buffer* stagingBuffer = nullptr;
             CreateStagingBuffer(renderer, imageSize, &stagingBuffer);
@@ -129,14 +129,14 @@ namespace HBL2
         }
         else if (desc.initialData != nullptr)
         {
-            const size_t faceSize = ImageSize(Extent.width, Extent.height, m_BlockInfo);
+            const size_t faceSize = ImageSize((uint32_t)Extent.width, (uint32_t)Extent.height, m_BlockInfo);
             const size_t imageSize = faceSize * faceCount;
  
             MTL::Buffer* stagingBuffer = nullptr;
             CreateStagingBuffer(renderer, imageSize, &stagingBuffer);
  
             std::memcpy(stagingBuffer->contents(), desc.initialData, imageSize);
-            stbi_image_free(desc.initialData);
+            std::free(desc.initialData);
  
             CopyBufferToTexture(renderer, stagingBuffer);
  
@@ -174,7 +174,7 @@ namespace HBL2
         MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
  
         const uint32_t faceCount = (ImageType == TextureType::CUBE ? 6 : LayerCount);
-        const size_t faceSize = ImageSize(Extent.width, Extent.height, m_BlockInfo);
+        const size_t faceSize = ImageSize((uint32_t)Extent.width, (uint32_t)Extent.height, m_BlockInfo);
         const size_t imageSize = faceSize * faceCount;
  
         MTL::Buffer* stagingBuffer = nullptr;
@@ -257,8 +257,8 @@ namespace HBL2
     void MetalTexture::CopyBufferToTexture(MetalRenderer* renderer, MTL::Buffer* stagingBuffer)
     {
         const uint32_t faceCount = (ImageType == TextureType::CUBE ? 6 : LayerCount);
-        const size_t faceSize = ImageSize(Extent.width, Extent.height, m_BlockInfo);
-        const size_t rowPitch = RowPitch(Extent.width, m_BlockInfo);
+        const size_t faceSize = ImageSize((uint32_t)Extent.width, (uint32_t)Extent.height, m_BlockInfo);
+        const size_t rowPitch = RowPitch((uint32_t)Extent.width, m_BlockInfo);
 
         renderer->MakeResident({ stagingBuffer });
 
