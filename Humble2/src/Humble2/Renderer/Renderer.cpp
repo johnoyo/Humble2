@@ -175,7 +175,7 @@ namespace HBL2
 				.filter = TextureFilter::NEAREST,
 				.wrap = Wrap::CLAMP_TO_BORDER,
 			},
-			.initialLayout = TextureLayout::DEPTH_STENCIL,
+			.initialLayout = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
 		});
 
 		PostInitialize();

@@ -56,6 +56,8 @@ namespace HBL2
             
             HBL2_CORE_ASSERT(pixels, "Failed to load pixels!");
             
+            return pixels;
+            
             ktxTexture2* kTexture;
 
             const auto& cachedPath = std::filesystem::path("assets") / "cache" / "texture" / (pathAsPath.stem().string() + ".ktx2");

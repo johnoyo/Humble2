@@ -262,10 +262,11 @@ namespace HBL2
 		COPY_DST = 2,
 		RENDER_ATTACHMENT = 4,
 		SHADER_READ_ONLY = 8,
-		DEPTH_STENCIL = 16,
-		PRESENT = 32,
-		SHARED_PRESENT = 64,
+        DEPTH_STENCIL_READ_ONLY = 16,
+		DEPTH_STENCIL_ATTACHMENT = 32,
+		PRESENT = 64,
 		GENERAL = 128,
+        GENERIC_READ = 256,
 	};
 
 	enum class BlendOperation
@@ -303,16 +304,4 @@ namespace HBL2
 		LOAD = 1,
 		DONT_CARE = 2,
 	};
-
-    enum class ResourceState
-    {
-        Undefined, Common, Present,
-        VertexAndConstantBuffer, IndexBuffer,
-        RenderTarget, DepthWrite, DepthRead,
-        UnorderedAccess,
-        PixelShaderResource, NonPixelShaderResource,
-        IndirectArgument,
-        CopySource, CopyDest,
-        GenericRead,
-    };
 }

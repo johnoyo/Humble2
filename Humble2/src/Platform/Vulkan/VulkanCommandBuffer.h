@@ -44,9 +44,9 @@ namespace HBL2
 		virtual void EndCommandRecording() override;
 		virtual void Submit() override;
         
-        void TextureBarrier(Handle<Texture> texture, ResourceState oldState, ResourceState newState);
-        void TextureBarrier(VulkanTexture* vkTexture, ResourceState oldState, ResourceState newState);
-        void MemoryBarrier(Handle<Buffer> buffer, ResourceState oldState, ResourceState newState);
+        void TextureBarrier(Handle<Texture> texture, TextureLayout oldLayout, TextureLayout newLayout);
+        void TextureBarrier(VulkanTexture* vkTexture, TextureLayout oldLayout, TextureLayout newLayout);
+        void MemoryBarrier(Handle<Buffer> buffer, TextureLayout oldLayout, TextureLayout newLayout);
 
 		VkCommandBuffer CommandBuffer;
         

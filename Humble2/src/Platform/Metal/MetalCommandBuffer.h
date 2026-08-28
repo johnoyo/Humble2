@@ -17,7 +17,7 @@ namespace HBL2
         bool Pending = false;
         
         void Add(MTL::Stages after, MTL::Stages before);
-        void Add(ResourceState oldState, ResourceState newState);
+        void Add(TextureLayout oldLayout, TextureLayout newLayout);
         void Flush(MTL4::CommandEncoder* encoder);
         void FlushInline(MTL4::CommandEncoder* encoder, MTL::Stages encoderStages);
     };
@@ -45,7 +45,7 @@ namespace HBL2
         
         MTL4::CommandBuffer* CommandBuffer = nullptr;
         
-        void AddPendingBarrier(ResourceState oldState, ResourceState newState);
+        void AddPendingBarrier(TextureLayout oldLayout, TextureLayout newLayout);
         
     private:
         CommandBufferType m_Type;

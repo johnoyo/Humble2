@@ -253,9 +253,9 @@ namespace HBL2
 		VK_VALIDATE(vkCreateImageView(device->Get(), &imageViewCreateInfo, nullptr, &ImageView), "vkCreateImageView");
 	}
 
-	void VulkanTexture::TransitionLayout(VulkanCommandBuffer* commandBuffer, ResourceState currentState, ResourceState newState)
+	void VulkanTexture::TransitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout)
 	{
-        commandBuffer->TextureBarrier(this, currentState, newState);
+        commandBuffer->TextureBarrier(this, currentLayout, newLayout);
 	}
 
 	void VulkanTexture::Destroy()

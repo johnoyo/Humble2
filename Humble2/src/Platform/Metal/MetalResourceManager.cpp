@@ -76,12 +76,12 @@ namespace HBL2
             texture->ChangeTextureView(std::forward<const TextureViewDescriptor>(desc));
         }
     }
-    void MetalResourceManager::TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, ResourceState currentState, ResourceState newState)
+    void MetalResourceManager::TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout)
     {
         MetalTexture* texture = GetTexture(handle);
         if (texture != nullptr)
         {
-            texture->SynchronizeUsage((MetalCommandBuffer*)commandBuffer, currentState, newState);
+            texture->SynchronizeUsage((MetalCommandBuffer*)commandBuffer, currentLayout, newLayout);
         }
     }
     glm::vec3 MetalResourceManager::GetTextureDimensions(Handle<Texture> handle)

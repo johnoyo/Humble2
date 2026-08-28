@@ -216,9 +216,9 @@ namespace HBL2
         }
     }
 
-    void MetalTexture::SynchronizeUsage(MetalCommandBuffer* commandBuffer, ResourceState currentState, ResourceState newState)
+    void MetalTexture::SynchronizeUsage(MetalCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout)
     {
-        commandBuffer->AddPendingBarrier(currentState, newState);
+        commandBuffer->AddPendingBarrier(currentLayout, newLayout);
     }
  
     void MetalTexture::Destroy()

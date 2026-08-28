@@ -56,6 +56,10 @@ namespace HBL2
 		VkImageUsageFlags TextureUsageFlagToVkImageUsageFlags(BitFlags<TextureUsage> textureUsageFlags);
 
 		VkImageLayout TextureLayoutToVkImageLayout(TextureLayout textureLayout);
+    
+        VkAccessFlags TextureLayoutToVkAccessFlags(TextureLayout layout);
+
+        VkPipelineStageFlags TextureLayoutToVkPipelineStageFlags(TextureLayout layout);
 
 		VkAttachmentLoadOp LoadOperationToVkAttachmentLoadOp(LoadOperation loadOperation);
 
@@ -66,19 +70,5 @@ namespace HBL2
 		VkBufferUsageFlags BufferUsageToVkBufferUsageFlags(BufferUsage bufferUsage);
 
 		VkPipelineStageFlags PipelineStageToVkPipelineStageFlags(PipelineStage pipelineStage);
-
-		VkPipelineStageFlags CurrentTextureLayoutToVkPipelineStageFlags(TextureLayout currentLayout);
-
-		VkPipelineStageFlags NewTextureLayoutToVkPipelineStageFlags(TextureLayout newLayout);
-
-		VkAccessFlags CurrentTextureLayoutToVkAccessFlags(TextureLayout currentLayout);
-
-		VkAccessFlags NewTextureLayoutToVkAccessFlags(TextureLayout newLayout);
-    
-        VkImageLayout ResourceStateToVkImageLayout(ResourceState state);
-
-        VkAccessFlags ResourceStateToVkAccessFlags(ResourceState state);
-
-        VkPipelineStageFlags ResourceStateToVkPipelineStageFlags(ResourceState state);
 	}
 }

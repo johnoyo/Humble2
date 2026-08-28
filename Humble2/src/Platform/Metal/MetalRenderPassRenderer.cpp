@@ -161,7 +161,7 @@ namespace HBL2
                 }
             }
             
-            // Bind the vertex buffer if needed.
+            // Bind the vertex buffer.
             MetalBufferHot* vertexBuffer = rm->GetBufferHot(draw.VertexBuffer);
             argTable->setAddress(vertexBuffer->Buffer->gpuAddress(), VERTEX_BUFFER_BINDING_IDX);
 

@@ -19,9 +19,6 @@ namespace HBL2
 		attachments.reserve(desc.colorTargets.Size());
 		std::vector<VkAttachmentReference> colorAttachmentRefs;
 		colorAttachmentRefs.reserve(desc.colorTargets.Size());
-
-        VkPipelineStageFlags colorSrcStage = 0;
-        VkAccessFlags colorSrcAccess = 0;
         
 		uint32_t index = 0;
 
@@ -47,9 +44,6 @@ namespace HBL2
 				.attachment = index++,
 				.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			});
-            
-            colorSrcStage |= VkUtils::CurrentTextureLayoutToVkPipelineStageFlags(colorTarget.prevUsage);
-            colorSrcAccess |= VkUtils::CurrentTextureLayoutToVkAccessFlags(colorTarget.prevUsage);
 		}
 
 		std::vector<VkSubpassDependency> dependencies;
@@ -97,9 +91,6 @@ namespace HBL2
 					.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 				};
                 
-                VkPipelineStageFlags depthSrcStage = VkUtils::CurrentTextureLayoutToVkPipelineStageFlags(desc.depthTarget.prevUsage);
-                VkAccessFlags depthSrcAccess = VkUtils::CurrentTextureLayoutToVkAccessFlags(desc.depthTarget.prevUsage);
-
 				VkSubpassDependency depthDependency =
 				{
 					.srcSubpass = VK_SUBPASS_EXTERNAL,

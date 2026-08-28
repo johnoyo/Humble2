@@ -167,9 +167,9 @@ namespace HBL2
 
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, ResourceState::Undefined, ResourceState::RenderTarget);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, ResourceState::Undefined, ResourceState::RenderTarget);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, ResourceState::Undefined, ResourceState::DepthWrite);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
 
 		auto& renderPassPool = Renderer::Instance->GetRenderPassPool();
 
@@ -313,8 +313,8 @@ namespace HBL2
 				.storeOp = StoreOperation::STORE,
 				.stencilLoadOp = LoadOperation::DONT_CARE,
 				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::DEPTH_STENCIL,
-				.nextUsage = TextureLayout::DEPTH_STENCIL,
+				.prevUsage = TextureLayout::UNDEFINED,
+				.nextUsage = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
 			},
             .frameBufferDesc = {
                 .width = g_ShadowAtlasSize,
@@ -384,7 +384,7 @@ namespace HBL2
                 .stencilLoadOp = LoadOperation::DONT_CARE,
                 .stencilStoreOp = StoreOperation::DONT_CARE,
                 .prevUsage = TextureLayout::UNDEFINED,
-                .nextUsage = TextureLayout::DEPTH_STENCIL,
+                .nextUsage = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
             },
             .frameBufferDesc = {
                 .width = Window::Instance->GetExtents().x,
@@ -498,8 +498,8 @@ namespace HBL2
 				.storeOp = StoreOperation::STORE,
 				.stencilLoadOp = LoadOperation::DONT_CARE,
 				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::DEPTH_STENCIL,
-				.nextUsage = TextureLayout::DEPTH_STENCIL,
+				.prevUsage = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
+				.nextUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
 			},
 			.colorTargets = {
 				{
@@ -807,8 +807,8 @@ namespace HBL2
 				.storeOp = StoreOperation::STORE,
 				.stencilLoadOp = LoadOperation::DONT_CARE,
 				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::DEPTH_STENCIL,
-				.nextUsage = TextureLayout::DEPTH_STENCIL,
+				.prevUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
+				.nextUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
 			},
 			.colorTargets = {
 				{
@@ -1323,6 +1323,13 @@ namespace HBL2
 			});
 
 		Renderer::Instance->ShadowAtlasAllocator.Clear();
+        
+        ResourceManager::Instance->TransitionTextureLayout(
+            commandBuffer,
+            Renderer::Instance->ShadowAtlasTexture,
+            TextureLayout::DEPTH_STENCIL_ATTACHMENT,
+            TextureLayout::DEPTH_STENCIL_READ_ONLY
+        );
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().ShadowPassTime);
 	}
@@ -1485,8 +1492,8 @@ namespace HBL2
                         ResourceManager::Instance->TransitionTextureLayout(
                             commandBuffer,
                             skyLight.CubeMap,
-                            ResourceState::Undefined,
-                            ResourceState::UnorderedAccess
+                            TextureLayout::UNDEFINED,
+                            TextureLayout::GENERAL
                         );
 
                         Handle<Texture> equirectangularMapHandle = AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap);
@@ -1580,7 +1587,12 @@ namespace HBL2
 		BEGIN_PROFILE_PASS();
 
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, ResourceState::RenderTarget, ResourceState::GenericRead);
+		ResourceManager::Instance->TransitionTextureLayout(
+            commandBuffer,
+            Renderer::Instance->IntermediateColorTexture,
+            TextureLayout::RENDER_ATTACHMENT,
+            TextureLayout::SHADER_READ_ONLY
+        );
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass);
 
@@ -1617,7 +1629,12 @@ namespace HBL2
 		BEGIN_PROFILE_PASS();
 
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, ResourceState::RenderTarget, ResourceState::GenericRead);
+		ResourceManager::Instance->TransitionTextureLayout(
+            commandBuffer,
+            Renderer::Instance->MainColorTexture,
+            TextureLayout::RENDER_ATTACHMENT,
+            TextureLayout::SHADER_READ_ONLY
+        );
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
 

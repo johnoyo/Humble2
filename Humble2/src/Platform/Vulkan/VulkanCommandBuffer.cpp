@@ -111,12 +111,12 @@ namespace HBL2
 	{
         for (auto texture : m_TexturesWrite)
         {
-            TextureBarrier(texture, ResourceState::UnorderedAccess, ResourceState::GenericRead);
+            TextureBarrier(texture, TextureLayout::GENERAL, TextureLayout::SHADER_READ_ONLY);
         }
         
         for (auto buffer : m_BuffersWrite)
         {
-            MemoryBarrier(buffer, ResourceState::UnorderedAccess, ResourceState::GenericRead);
+            MemoryBarrier(buffer, TextureLayout::GENERAL, TextureLayout::GENERIC_READ);
         }
 
         m_TexturesWrite = {};
@@ -156,14 +156,14 @@ namespace HBL2
 		}
     }
 
-    void VulkanCommandBuffer::TextureBarrier(Handle<Texture> texture, ResourceState oldState, ResourceState newState)
+    void VulkanCommandBuffer::TextureBarrier(Handle<Texture> texture, TextureLayout oldLayout, TextureLayout newLayout)
     {
         VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
         VulkanTexture* vkTexture = rm->GetTexture(texture);
-        TextureBarrier(vkTexture, oldState, newState);
+        TextureBarrier(vkTexture, oldLayout, newLayout);
     }
 
-    void VulkanCommandBuffer::TextureBarrier(VulkanTexture* vkTexture, ResourceState oldState, ResourceState newState)
+    void VulkanCommandBuffer::TextureBarrier(VulkanTexture* vkTexture, TextureLayout oldLayout, TextureLayout newLayout)
     {
         HBL2_ASSERT(m_CurrentPassType != VulkanPassType::Render,
             "TextureBarrier called while a render pass is open — vkCmdPipelineBarrier for a "
@@ -172,9 +172,8 @@ namespace HBL2
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.oldLayout = (oldState == ResourceState::Present || oldState == ResourceState::Common)
-            ? VK_IMAGE_LAYOUT_UNDEFINED : VkUtils::ResourceStateToVkImageLayout(oldState);
-        barrier.newLayout = VkUtils::ResourceStateToVkImageLayout(newState);
+        barrier.oldLayout = (oldLayout == TextureLayout::PRESENT) ? VK_IMAGE_LAYOUT_UNDEFINED : VkUtils::TextureLayoutToVkImageLayout(oldLayout);
+        barrier.newLayout = VkUtils::TextureLayoutToVkImageLayout(newLayout);
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.image = vkTexture->Image;
@@ -183,13 +182,13 @@ namespace HBL2
         barrier.subresourceRange.levelCount = 1;
         barrier.subresourceRange.baseArrayLayer = 0;
         barrier.subresourceRange.layerCount = (vkTexture->ImageType == TextureType::CUBE ? 6 : vkTexture->LayerCount);
-        barrier.srcAccessMask = VkUtils::ResourceStateToVkAccessFlags(oldState);
-        barrier.dstAccessMask = VkUtils::ResourceStateToVkAccessFlags(newState);
+        barrier.srcAccessMask = VkUtils::TextureLayoutToVkAccessFlags(oldLayout);
+        barrier.dstAccessMask = VkUtils::TextureLayoutToVkAccessFlags(newLayout);
 
         vkCmdPipelineBarrier(
             CommandBuffer,
-            VkUtils::ResourceStateToVkPipelineStageFlags(oldState),
-            VkUtils::ResourceStateToVkPipelineStageFlags(newState),
+            VkUtils::TextureLayoutToVkPipelineStageFlags(oldLayout),
+            VkUtils::TextureLayoutToVkPipelineStageFlags(newLayout),
             0,
             0, nullptr,
             0, nullptr,
@@ -198,7 +197,7 @@ namespace HBL2
         vkTexture->ImageLayout = barrier.newLayout;
     }
 
-    void VulkanCommandBuffer::MemoryBarrier(Handle<Buffer> buffer, ResourceState oldState, ResourceState newState)
+    void VulkanCommandBuffer::MemoryBarrier(Handle<Buffer> buffer, TextureLayout oldLayout, TextureLayout newLayout)
     {
         HBL2_ASSERT(m_CurrentPassType != VulkanPassType::Render, "MemoryBarrier called while a render pass is open.");
 
@@ -210,16 +209,16 @@ namespace HBL2
         barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.srcAccessMask = VkUtils::ResourceStateToVkAccessFlags(oldState);
-        barrier.dstAccessMask = VkUtils::ResourceStateToVkAccessFlags(newState);
+        barrier.srcAccessMask = VkUtils::TextureLayoutToVkAccessFlags(oldLayout);
+        barrier.dstAccessMask = VkUtils::TextureLayoutToVkAccessFlags(newLayout);
         barrier.buffer = vkBufferHot->Buffer;
         barrier.offset = vkBufferCold->ByteOffset;
         barrier.size = vkBufferHot->ByteSize;
 
         vkCmdPipelineBarrier(
             CommandBuffer,
-            VkUtils::ResourceStateToVkPipelineStageFlags(oldState),
-            VkUtils::ResourceStateToVkPipelineStageFlags(newState),
+            VkUtils::TextureLayoutToVkPipelineStageFlags(oldLayout),
+            VkUtils::TextureLayoutToVkPipelineStageFlags(newLayout),
             0,
             0, nullptr,
             1, &barrier,

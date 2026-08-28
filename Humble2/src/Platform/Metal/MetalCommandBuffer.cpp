@@ -18,11 +18,11 @@ namespace HBL2
         Pending = true;
     }
 
-    void MetalBarrierTracker::Add(ResourceState oldState, ResourceState newState)
+    void MetalBarrierTracker::Add(TextureLayout oldLayout, TextureLayout newLayout)
     {
         MTL::Stages oldProducer, oldConsumer, newProducer, newConsumer;
-        MtlUtils::ResourceStateToMTLStagesSplit(oldState, &oldProducer, &oldConsumer);
-        MtlUtils::ResourceStateToMTLStagesSplit(newState, &newProducer, &newConsumer);
+        MtlUtils::TextureLayoutToMTLStagesSplit(oldLayout, &oldProducer, &oldConsumer);
+        MtlUtils::TextureLayoutToMTLStagesSplit(newLayout, &newProducer, &newConsumer);
 
         MTL::Stages after = oldProducer ? oldProducer : oldConsumer;
         MTL::Stages before = newConsumer ? newConsumer : newProducer;
@@ -133,7 +133,7 @@ namespace HBL2
     {
         auto* encoder = ((MetalRenderPassRenderer*)&renderPassRenderer)->Encoder;
 
-        // Unconditional safety barrier: back-to-back render encoders are NOT implicitly ordered
+        // Unconditional safety barrier since back-to-back render encoders are not implicitly ordered
         // by Metal 4 just because they're issued in sequence.
         encoder->barrierAfterStages(MTL::StageFragment, MTL::StageFragment, MTL4::VisibilityOptionDevice);
 
@@ -206,9 +206,9 @@ namespace HBL2
         }
     }
 
-    void MetalCommandBuffer::AddPendingBarrier(ResourceState oldState, ResourceState newState)
+    void MetalCommandBuffer::AddPendingBarrier(TextureLayout oldLayout, TextureLayout newLayout)
     {
-        m_BarrierTracker.Add(oldState, newState);
+        m_BarrierTracker.Add(oldLayout, newLayout);
         
         if (m_CurrentEncoder)
         {
