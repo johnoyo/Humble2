@@ -20,6 +20,7 @@ project "Humble2"
 	{
 		"_CRT_SECURE_NO_WARNINGS",
         "YAML_CPP_STATIC_DEFINE",
+        "KHRONOS_STATIC",
 
         "HBL2_BUILD_DLL",
 	}

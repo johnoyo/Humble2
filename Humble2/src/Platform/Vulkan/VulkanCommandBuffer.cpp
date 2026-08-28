@@ -116,7 +116,7 @@ namespace HBL2
         
         for (auto buffer : m_BuffersWrite)
         {
-            MemoryBarrier(buffer, TextureLayout::GENERAL, TextureLayout::GENERIC_READ);
+            MemoryBarrier(buffer, TextureLayout::GENERAL, TextureLayout::EGENERIC_READ);
         }
 
         m_TexturesWrite = {};

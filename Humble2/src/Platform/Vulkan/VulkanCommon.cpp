@@ -424,7 +424,7 @@ namespace HBL2
                     return VK_ACCESS_TRANSFER_READ_BIT;
                 case TextureLayout::COPY_DST:
                     return VK_ACCESS_TRANSFER_WRITE_BIT;
-                case TextureLayout::GENERIC_READ:
+                case TextureLayout::EGENERIC_READ:
                     return VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_INDIRECT_COMMAND_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
                 default:
                     return VK_ACCESS_NONE; // UNDEFINED, PRESENT
@@ -446,10 +446,10 @@ namespace HBL2
                 case TextureLayout::COPY_SRC:
                 case TextureLayout::COPY_DST:
                     return VK_PIPELINE_STAGE_TRANSFER_BIT;
-                case TextureLayout::GENERIC_READ:
+                case TextureLayout::EGENERIC_READ:
                     return kAllShadingStages | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT;
                 case TextureLayout::PRESENT:
-                    return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;;
+                    return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
                 default:
                     return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT; // UNDEFINED
             }

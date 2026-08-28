@@ -266,7 +266,7 @@ namespace HBL2
 		DEPTH_STENCIL_ATTACHMENT = 32,
 		PRESENT = 64,
 		GENERAL = 128,
-        GENERIC_READ = 256,
+        EGENERIC_READ = 256,
 	};
 
 	enum class BlendOperation
