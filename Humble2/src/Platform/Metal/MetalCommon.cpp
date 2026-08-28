@@ -445,7 +445,7 @@ namespace HBL2
             case TextureLayout::COPY_DST:
                 *outProducer = MTL::StageBlit; *outConsumer = 0;
                 break;
-            case TextureLayout::GENERIC_READ:
+            case TextureLayout::EGENERIC_READ:
                 *outProducer = 0; *outConsumer = MTL::StageVertex | MTL::StageFragment | MTL::StageDispatch | MTL::StageBlit;
                 break;
             case TextureLayout::PRESENT:
