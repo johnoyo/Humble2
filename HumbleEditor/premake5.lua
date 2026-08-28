@@ -83,13 +83,13 @@ project "HumbleEditor"
         runpathdirs
         { 
             VULKAN_SDK .. "/lib/VulkanLoader/lib",
-            "../Dependencies/SLang/slang-2026.11-linux-x86_64/lib",
+            "../Dependencies/SLang/slang-2026.16-linux-x86_64/lib",
             "../Dependencies/FMOD/Linux/core/lib/x86_64"
         }
         
         linkoptions
         {
-            "-Wl,-rpath-link=../Dependencies/SLang/slang-2026.11-linux-x86_64/lib:-Wl,-rpath-link=../Dependencies/FMOD/Linux/core/lib/x86_64"
+            "-Wl,-rpath-link=../Dependencies/SLang/slang-2026.16-linux-x86_64/lib:-Wl,-rpath-link=../Dependencies/FMOD/Linux/core/lib/x86_64"
         }
 
         links
