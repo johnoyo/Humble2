@@ -1,2 +1,0 @@
-// Level 1 of the 5-deep include chain for include-nested-5deep.slang.
-#include "include-nested-5deep-2.slang.h"
