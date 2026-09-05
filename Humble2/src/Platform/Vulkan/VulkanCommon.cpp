@@ -266,6 +266,12 @@ namespace HBL2
                 return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
             case Format::ASTC_4x4_SRGB:
                 return VK_FORMAT_ASTC_4x4_SRGB_BLOCK;
+            case Format::BC7_SRGB:
+				return VK_FORMAT_BC7_SRGB_BLOCK;
+			case Format::BC7_UNORM:
+				return VK_FORMAT_BC7_UNORM_BLOCK;
+			case Format::BC6H_UF:
+				return VK_FORMAT_BC6H_UFLOAT_BLOCK;
             case Format::ASTC_4x4_UNORM:
                 return VK_FORMAT_ASTC_4x4_UNORM_BLOCK;
             case Format::ASTC_5x5_SRGB:

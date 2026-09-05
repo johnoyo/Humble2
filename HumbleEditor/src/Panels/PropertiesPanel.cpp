@@ -4,6 +4,8 @@
 #include "ImGui/ImGuiRenderer.h"
 #include "Systems/EditorPanelSystem.h"
 
+#include "Platform/PlatformManager.h"
+
 #include "UI/UserInterfaceUtilities.h"
 
 #include "Inspectors/LinkEditor.h"
@@ -733,7 +735,7 @@ namespace HBL2::Editor
 								t.DetailLevels.push_back({
 									.Lod = nextLod,
 									.VisibleDstThreshold = nextDistance,
-									});
+								});
 
 								changed = true;
 							}
@@ -753,9 +755,9 @@ namespace HBL2::Editor
 						if (changed)
 						{
 							std::sort(t.DetailLevels.begin(), t.DetailLevels.end(), [](const auto& a, const auto& b)
-								{
-									return a.VisibleDstThreshold < b.VisibleDstThreshold;
-								});
+							{
+								return a.VisibleDstThreshold < b.VisibleDstThreshold;
+							});
 
 							// Clamp LODs and enforce non-decreasing distances.
 							for (uint32_t i = 0; i < t.DetailLevels.size(); ++i)
@@ -904,10 +906,209 @@ namespace HBL2::Editor
 				{
 				case AssetType::Texture:
 				{
-					static bool flip = false;
-					if (ImGui::Checkbox("Flip", &flip))
+					if (m_Owner->m_SelectedAsset != m_PreviouslySelectedAsset)
 					{
-                        TextureUtilities::Get().UpdateAssetMetadataFile(m_Owner->m_SelectedAsset, { .Flip = flip });
+						m_TextureNeedsReimport = true;
+					}
+
+					if (m_TextureNeedsReimport)
+					{
+						m_TextureSettings = TextureUtilities::Get().DeserializeAssetMetadataFile(m_Owner->m_SelectedAsset);
+						m_TextureNeedsReimport = false;
+					}
+
+					bool dirty = false;
+
+					if (ImGui::Checkbox("Flip", &m_TextureSettings.Flip))
+					{
+						dirty = true;
+					}
+
+					ImGui::Text("Compression");
+					const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
+
+					const char* platforms[] = { "Windows", "Mac", "Linux", "Web" };
+
+					for (int i = 0; i < IM_ARRAYSIZE(platforms); i++)
+					{
+						Platform platform = (Platform)i;
+
+						ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+						bool opened = ImGui::TreeNodeEx((void*)(133769420690 + i), treeNodeFlags, platforms[i]);
+						ImGui::PopStyleVar();
+
+						if (opened)
+						{
+							// Encoder.
+							{
+								StaticDArray<const char*, 3> compressionMethods;
+								auto supportedCompressionMethods = PlatformManager::Instance->GetSupportedCompressionMethods(platform);
+
+								if (supportedCompressionMethods.IsSet(CompressionMethod::NONE))
+								{
+									compressionMethods.push_back("None");
+								}
+
+								if (supportedCompressionMethods.IsSet(CompressionMethod::BASISU))
+								{
+									compressionMethods.push_back("BasisU");
+								}
+
+								if (supportedCompressionMethods.IsSet(CompressionMethod::ASTC))
+								{
+									compressionMethods.push_back("Astc");
+								}
+
+								if (ImGui::Combo("Method", (int*)&m_TextureSettings.PlatformCompressionMethod[i], compressionMethods.data(), compressionMethods.size()))
+								{
+									dirty = true;
+								}
+							}
+
+							// Format.
+							{
+								if (m_TextureSettings.PlatformCompressionMethod[i] == CompressionMethod::BASISU)
+								{
+									StaticDArray<Format, 3> transcodingFormats;
+									StaticDArray<const char*, 3> transcodingFormatLabels;
+
+									auto supportedTranscodingFormats = PlatformManager::Instance->GetSupportedTranscodingFormats(platform);
+
+									if (supportedTranscodingFormats.IsSet(Format::BC7_SRGB))
+									{
+										transcodingFormats.push_back(Format::BC7_SRGB);
+										transcodingFormatLabels.push_back("BC7");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::BC6H_UF))
+									{
+										transcodingFormats.push_back(Format::BC6H_UF);
+										transcodingFormatLabels.push_back("BC6H");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_4x4_SRGB))
+									{
+										transcodingFormats.push_back(Format::ASTC_4x4_SRGB);
+										transcodingFormatLabels.push_back("ASTC_4x4");
+									}
+
+									bool newFormatSet = false;
+									m_CurrentCompressionFormatItem[i] = 0;
+
+									for (int j = 0; j < transcodingFormats.size(); j++)
+									{
+										if (transcodingFormats[j] == m_TextureSettings.PlatformCompressionFormat[i])
+										{
+											m_CurrentCompressionFormatItem[i] = j;
+											newFormatSet = true;
+											break;
+										}
+									}
+
+									m_TextureSettings.PlatformCompressionFormat[i] = transcodingFormats[m_CurrentCompressionFormatItem[i]];
+
+									if (!newFormatSet)
+									{
+										dirty = true;
+									}
+
+									if (ImGui::Combo("Format", &m_CurrentCompressionFormatItem[i], transcodingFormatLabels.data(), transcodingFormatLabels.size()))
+									{
+										dirty = true;
+										m_TextureSettings.PlatformCompressionFormat[i] = transcodingFormats[m_CurrentCompressionFormatItem[i]];
+									}
+								}
+								else if (m_TextureSettings.PlatformCompressionMethod[i] == CompressionMethod::ASTC)
+								{
+									StaticDArray<Format, 6> astcFormats;
+									StaticDArray<const char*, 6> astcFormatLabels;
+
+									auto supportedTranscodingFormats = PlatformManager::Instance->GetSupportedCompressionFormats(platform);
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_4x4_SRGB))
+									{
+										astcFormats.push_back(Format::ASTC_4x4_SRGB);
+										astcFormatLabels.push_back("ASTC_4x4");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_5x5_SRGB))
+									{
+										astcFormats.push_back(Format::ASTC_5x5_SRGB);
+										astcFormatLabels.push_back("ASTC_5x5");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_6x6_SRGB))
+									{
+										astcFormats.push_back(Format::ASTC_6x6_SRGB);
+										astcFormatLabels.push_back("ASTC_6x6");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_8x8_SRGB))
+									{
+										astcFormats.push_back(Format::ASTC_8x8_SRGB);
+										astcFormatLabels.push_back("ASTC_8x8");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_10x10_SRGB))
+									{
+										astcFormats.push_back(Format::ASTC_10x10_SRGB);
+										astcFormatLabels.push_back("ASTC_10x10");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_12x12_SRGB))
+									{
+										astcFormats.push_back(Format::ASTC_12x12_SRGB);
+										astcFormatLabels.push_back("ASTC_12x12");
+									}
+
+									bool newFormatSet = false;
+									m_CurrentCompressionFormatItem[i] = 0;
+
+									for (int j = 0; j < astcFormats.size(); j++)
+									{
+										if (astcFormats[j] == m_TextureSettings.PlatformCompressionFormat[i])
+										{
+											m_CurrentCompressionFormatItem[i] = j;
+											newFormatSet = true;
+											break;
+										}
+									}
+
+									m_TextureSettings.PlatformCompressionFormat[i] = astcFormats[m_CurrentCompressionFormatItem[i]];
+
+									if (!newFormatSet)
+									{
+										dirty = true;
+									}
+
+									if (ImGui::Combo("Format", &m_CurrentCompressionFormatItem[i], astcFormatLabels.data(), astcFormatLabels.size()))
+									{
+										dirty = true;
+										m_TextureSettings.PlatformCompressionFormat[i] = astcFormats[m_CurrentCompressionFormatItem[i]];
+									}
+								}
+							}
+
+							// Quality level.
+							{
+								if (m_TextureSettings.PlatformCompressionMethod[i] != CompressionMethod::NONE)
+								{
+									const char* options[] = { "Fastest", "Fast", "Medium", "Thorough", "Exhuastive"};
+
+									if (ImGui::Combo("Quality Level", (int*)&m_TextureSettings.PlatformCompressionQuality[i], options, IM_ARRAYSIZE(options)))
+									{
+										dirty = true;
+									}
+								}
+							}
+
+							ImGui::TreePop();
+						}
+					}
+
+					if (dirty)
+					{
+						TextureUtilities::Get().SerializeAssetMetadataFile(m_Owner->m_SelectedAsset, m_TextureSettings);
 					}
 				}
 				break;

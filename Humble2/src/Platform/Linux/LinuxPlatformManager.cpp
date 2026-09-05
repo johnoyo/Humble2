@@ -54,6 +54,8 @@ namespace HBL2
 
     void LinuxPlatformManager::Initialize()
     {
+        m_Platform = Platform::Linux;
+
         if (Context::Mode == Mode::Editor)
         {
             m_AppDataDirectory = GetAppDataDir() + "/Editor";

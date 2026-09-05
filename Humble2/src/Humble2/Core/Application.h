@@ -34,15 +34,6 @@
 
 namespace HBL2
 {
-	enum class HBL2_API Platform
-	{
-		Windows,
-        MacOS,
-        Linux,
-		Web,
-		None
-	};
-
 	struct HBL2_API ApplicationSpec
 	{
 		std::string Name = "Humble2 Application";

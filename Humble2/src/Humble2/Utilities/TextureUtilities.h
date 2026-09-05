@@ -7,6 +7,22 @@
 
 namespace HBL2
 {
+	enum class CompressionMethod
+	{
+		NONE,
+		BASISU,
+		ASTC,
+	};
+
+	enum class CompressionQuality
+	{
+		FASTEST,
+		FAST,
+		MEDIUM,
+		THOROUGH,
+		EXHAUSTIVE,
+	};
+
 	struct HBL2_API TextureSettings
 	{
 		int Width = 0;
@@ -15,12 +31,10 @@ namespace HBL2
         bool Relaod = false;
         
         Format PixelFormat = Format::RGBA8_RGB;
-        size_t PixelDataSize = 0;
-        
-        Format WindowsCompressionFormat = Format::RGBA8_RGB;
-        Format MacOSCompressionFormat = Format::RGBA8_RGB;
-        Format LinuxCompressionFormat = Format::RGBA8_RGB;
-		Format WebCompressionFormat = Format::RGBA8_RGB;
+
+		StaticArray<CompressionMethod, 4> PlatformCompressionMethod = { CompressionMethod::NONE, CompressionMethod::NONE, CompressionMethod::NONE, CompressionMethod::NONE };
+		StaticArray<Format, 4> PlatformCompressionFormat = { Format::RGBA8_RGB, Format::RGBA8_RGB, Format::RGBA8_RGB, Format::RGBA8_RGB };
+		StaticArray<CompressionQuality, 4> PlatformCompressionQuality = { CompressionQuality::MEDIUM, CompressionQuality::MEDIUM, CompressionQuality::MEDIUM, CompressionQuality::MEDIUM };
 	};
 
 	class HBL2_API TextureUtilities
@@ -34,7 +48,9 @@ namespace HBL2
 		bool Save(const std::filesystem::path& path, const Span<const std::byte>& bytes, bool flip = false);
 
 		void CreateAssetMetadataFile(Handle<Asset> handle);
-		void UpdateAssetMetadataFile(Handle<Asset> handle, const TextureSettings& settings);
+		void SerializeAssetMetadataFile(Handle<Asset> handle, const TextureSettings& settings);
+		TextureSettings DeserializeAssetMetadataFile(Handle<Asset> handle);
+		TextureSettings DeserializeAssetMetadataFile(Asset* asset);
 
 		void LoadWhiteTexture();
 		void DeleteWhiteTexture();

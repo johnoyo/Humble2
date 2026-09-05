@@ -22,7 +22,6 @@ namespace HBL2
 		const char* debugName;
 		glm::u32vec3 dimensions;
 		uint32_t mips = 1;
-        size_t dataSize = 0;
         Format format = Format::RGBA8_RGB;
 		Format internalFormat = Format::RGBA8_RGB;
 		BitFlags<TextureUsage> usage = TextureUsage::TEXTURE_BINDING;
@@ -58,9 +57,9 @@ namespace HBL2
 
     struct BlockFormatInfo
     {
-        uint32_t blockWidth;
-        uint32_t blockHeight;
-        uint32_t bytesPerBlock;
+        uint32_t blockWidth = 0;
+        uint32_t blockHeight = 0;
+        uint32_t bytesPerBlock = 0;
     };
 
 	struct BufferDescriptor

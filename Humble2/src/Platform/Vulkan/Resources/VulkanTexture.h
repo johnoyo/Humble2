@@ -42,6 +42,6 @@ namespace HBL2
 		VulkanTexture(const VulkanTexture&& other) noexcept;
         
 	private:
-        BlockFormatInfo m_BlockInfo;
+		BlockFormatInfo m_BlockInfo{};
 	};
 }

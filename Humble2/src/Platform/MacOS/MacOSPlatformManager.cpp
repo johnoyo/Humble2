@@ -8,6 +8,8 @@ namespace HBL2
     void MacOSPlatformManager::Initialize()
     {
 #ifdef HBL2_PLATFORM_MACOS
+        m_Platform = Platform::MacOS;
+
         if (Context::Mode == Mode::Editor)
         {
             m_AppDataDirectory = MacOSUtils::GetAppSupportDir() + "/Editor";

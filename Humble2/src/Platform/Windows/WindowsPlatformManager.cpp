@@ -32,7 +32,6 @@ namespace HBL2
             return "";
         }
 
-        // Use C++17 filesystem to safely combine paths with correct backslashes.
         auto logDirectory = std::filesystem::path(localAppDataPath) / L"Humble";
 
         // Create the full folder structure if it does not exist yet.
@@ -53,6 +52,8 @@ namespace HBL2
 
     void WindowsPlatformManager::Initialize()
     {
+        m_Platform = Platform::Windows;
+
         if (Context::Mode == Mode::Editor)
         {
             m_AppDataDirectory = GetAppDataDir() + "/Editor";

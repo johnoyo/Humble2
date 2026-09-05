@@ -34,6 +34,11 @@ namespace HBL2
         case Format::ASTC_12x12_SRGB:
         case Format::ASTC_12x12_UNORM:
             return { 12, 12, 16 };
+        case Format::BC7_SRGB:
+        case Format::BC7_UNORM:
+			return { 4, 4, 16 };
+        case Format::BC6H_UF:
+			return { 4, 4, 16 };
 
         // case Format::BC1_RGBA_UNORM: return { 4, 4, 8 };  // BC1/BC4
         // case Format::BC3_RGBA_UNORM: return { 4, 4, 16 }; // BC2/3/5/6H/7

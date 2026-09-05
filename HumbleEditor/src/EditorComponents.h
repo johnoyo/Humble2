@@ -24,6 +24,7 @@ namespace HBL2
 				float PanSpeed = 0.25f;
                 
                 bool EnableInput = true;
+                bool ShouldDrag = true;
 
 				bool Enabled = true;
 			};

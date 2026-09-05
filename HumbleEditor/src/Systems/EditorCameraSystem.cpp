@@ -80,7 +80,7 @@ namespace HBL2
 					return;
 				}
 
-				if (Input::GetKeyDown(KeyCode::LeftAlt) && Input::GetKeyDown(KeyCode::MouseRight))
+				if (Input::GetKeyDown(KeyCode::LeftAlt) && m_EditorCamera->ShouldDrag)
 				{
 					float dy = (float)e.YPosition - m_EditorCamera->MousePreviousPositionY;
 
@@ -98,7 +98,7 @@ namespace HBL2
 
 					m_Transform->Translation += panRight + panUp;
 				}
-				else if (Input::GetKeyDown(KeyCode::MouseRight))
+				else if (m_EditorCamera->ShouldDrag)
 				{
 					float dx = (float)e.XPosition - m_EditorCamera->MousePreviousPositionX;
 					float dy = (float)e.YPosition - m_EditorCamera->MousePreviousPositionY;
@@ -144,8 +144,21 @@ namespace HBL2
 						m_Transform = &transform;
 
 						float velocity = 0.0f;
+
+						if (editorCamera.EnableInput)
+						{
+							if (Input::GetKeyDown(KeyCode::MouseRight))
+							{
+								editorCamera.ShouldDrag = true;
+							}
+						}
+
+						if (Input::GetKeyUp(KeyCode::MouseRight))
+						{
+							editorCamera.ShouldDrag = false;
+						}
 						
-						if (Input::GetKeyDown(KeyCode::MouseRight) && editorCamera.EnableInput)
+						if (editorCamera.ShouldDrag)
 						{
 							velocity = editorCamera.MovementSpeed * ts;
 

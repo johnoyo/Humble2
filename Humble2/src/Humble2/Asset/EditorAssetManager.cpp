@@ -925,10 +925,8 @@ namespace HBL2
 		if (textureProperties)
 		{
 			// Load the texture
-			TextureSettings textureSettings =
-			{
-				.Flip = textureProperties["Flip"].as<bool>(),
-			};
+			TextureSettings textureSettings = TextureUtilities::Get().DeserializeAssetMetadataFile(asset);
+
 			void* textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
 
 			const std::string& textureName = asset->FilePath.filename().stem().string();
@@ -937,7 +935,6 @@ namespace HBL2
 			auto texture = ResourceManager::Instance->CreateTexture({
 				.debugName = strdup(std::format("{}-texture", textureName).c_str()),
 				.dimensions = { textureSettings.Width, textureSettings.Height, 1 },
-                .dataSize = textureSettings.PixelDataSize,
 				.format = textureSettings.PixelFormat,
 				.internalFormat = textureSettings.PixelFormat,
 				.usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },
