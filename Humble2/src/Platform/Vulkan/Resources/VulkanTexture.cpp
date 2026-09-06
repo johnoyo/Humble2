@@ -217,7 +217,7 @@ namespace HBL2
 		// Transfer initiaData to staging buffer
 		void* mappedData;
 		vmaMapMemory(renderer->GetAllocator(), stagingBufferAllocation, &mappedData);
-		memcpy(mappedData, bytes.Data(), (size_t)imageSize);
+		memcpy(mappedData, bytes.data(), (size_t)imageSize);
 		vmaUnmapMemory(renderer->GetAllocator(), stagingBufferAllocation);
 
 		CopyBufferToTexture(renderer, stagingBuffer);
@@ -351,7 +351,7 @@ namespace HBL2
 				};
 			}
 
-			vkCmdCopyBufferToImage(cmd, stagingBuffer, Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, faceCount, copyRegions.Data());
+			vkCmdCopyBufferToImage(cmd, stagingBuffer, Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, faceCount, copyRegions.data());
 
 			VkImageMemoryBarrier imageBarrierToReadable =
 			{

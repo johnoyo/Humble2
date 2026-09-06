@@ -30,11 +30,11 @@ namespace HBL2
 		Meshes.clear();
 		DebugName = desc.debugName;
 
-		uint32_t* indeces = (uint32_t*)desc.indeces.Data();
-		uint32_t indecesCount = uint32_t(desc.indeces.Size());
+		uint32_t* indeces = (uint32_t*)desc.indeces.data();
+		uint32_t indecesCount = uint32_t(desc.indeces.size());
 
-		float* vertices = (float*)desc.vertices.Data();
-		uint32_t verticesCount = uint32_t(desc.vertices.Size());
+		float* vertices = (float*)desc.vertices.data();
+		uint32_t verticesCount = uint32_t(desc.vertices.size());
 
 		Handle<Buffer> indexBufferHandle = ResourceManager::Instance->CreateBuffer({
 			.debugName = "terrain-index-buffer",

@@ -104,9 +104,9 @@ namespace HBL2
         HBL2_CORE_ASSERT(boolConstants.size() <= 8, "PackedVariant only supports up to 8 bool shader constants");
 
         m_SpecConstantStorage.clear();
-        m_SpecConstantStorage.reserve(variants.Size() * boolConstants.size());
+        m_SpecConstantStorage.reserve(variants.size() * boolConstants.size());
         m_SpecConstantsPerVariant.clear();
-        m_SpecConstantsPerVariant.reserve(variants.Size());
+        m_SpecConstantsPerVariant.reserve(variants.size());
 
         for (const auto& variant : variants)
         {

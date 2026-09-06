@@ -1186,7 +1186,7 @@ namespace HBL2::Editor
 							{
 								data.clear();
 							}
-							std::memset(m_ShaderUniformTextureData.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.Size());
+							std::memset(m_ShaderUniformTextureData.data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.size());
 
 							// Open shader metadata file.
 							std::ifstream stream(shaderPath.string() + ".hblshader");
@@ -1580,8 +1580,8 @@ namespace HBL2::Editor
 							{
 								ShaderUtilities::Get().UpdateShaderBindGroupResourcesAssetFile(m_Owner->m_SelectedAsset, {
 									.ReflectionData = &m_ShaderReflectionData,
-                                    .Buffers = { m_ShaderUniformBufferData.Data(), m_ShaderUniformBufferData.Size() },
-                                    .TextureAssets = { m_ShaderUniformTextureData.Data(), m_ShaderUniformTextureData.Size() },
+                                    .Buffers = { m_ShaderUniformBufferData.data(), m_ShaderUniformBufferData.size() },
+                                    .TextureAssets = { m_ShaderUniformTextureData.data(), m_ShaderUniformTextureData.size() },
 								});
 
 								shaderNeedsReimport = false;
@@ -1895,7 +1895,7 @@ namespace HBL2::Editor
 										{
 											data.clear();
 										}
-										std::memset(m_ShaderUniformTextureData.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.Size());
+										std::memset(m_ShaderUniformTextureData.data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.size());
 
 										// Get the shader path of the material in order to reflect on it.
 										UUID shaderUUID = materialProperties["Shader"].as<UUID>();
@@ -2274,8 +2274,8 @@ namespace HBL2::Editor
 									.ShaderAssetHandle = shaderAssetHandle,
 									.VariantHash = mat->VariantHash,
 									.ReflectionData = &m_ShaderReflectionData,
-                                    .Buffers = { m_ShaderUniformBufferData.Data(), m_ShaderUniformBufferData.Size() },
-                                    .TextureAssets = { m_ShaderUniformTextureData.Data(), m_ShaderUniformTextureData.Size() },
+                                    .Buffers = { m_ShaderUniformBufferData.data(), m_ShaderUniformBufferData.size() },
+                                    .TextureAssets = { m_ShaderUniformTextureData.data(), m_ShaderUniformTextureData.size() },
 								});
 
 								m_MaterialNeedsReimport = false;

@@ -174,10 +174,10 @@ namespace HBL2
 		};
 
 		// Vertex input state.
-		std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions(config.vertexBufferBindings.Size());
+		std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions(config.vertexBufferBindings.size());
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
 
-		for (uint32_t i = 0; i < config.vertexBufferBindings.Size(); i++)
+		for (uint32_t i = 0; i < config.vertexBufferBindings.size(); i++)
 		{
 			const auto& binding = config.vertexBufferBindings[i];
 
@@ -434,7 +434,7 @@ namespace HBL2
 	{
 		const auto& constantStages = config.specializationConstantStages;
 
-		if (constantStages.Size() == 0)
+		if (constantStages.size() == 0)
 		{
 			return;
 		}
@@ -442,7 +442,7 @@ namespace HBL2
 		uint32_t offset = 0;
 		uint32_t constantID = 0;
 
-		for (uint32_t i = 0; i < constantStages.Size(); i++)
+		for (uint32_t i = 0; i < constantStages.size(); i++)
 		{
 			if (!constantStages[i].IsSet(stage))
 			{
@@ -587,9 +587,9 @@ namespace HBL2
 		}
 
 		// Fill with new ones.
-		for (uint32_t i = 0; i < desc.renderPipeline.specializationConstantsPerVariant.Size(); i++)
+		for (uint32_t i = 0; i < desc.renderPipeline.specializationConstantsPerVariant.size(); i++)
 		{
-			for (uint32_t j = 0; j < desc.renderPipeline.specializationConstantsPerVariant[i].Size(); j++)
+			for (uint32_t j = 0; j < desc.renderPipeline.specializationConstantsPerVariant[i].size(); j++)
 			{
 				auto& variant = *((ShaderDescriptor::RenderPipeline::PackedVariant*)&desc.renderPipeline.variants[i]);
 				const auto& specializationConstant = desc.renderPipeline.specializationConstantsPerVariant[i][j];
@@ -614,8 +614,8 @@ namespace HBL2
 				{
 					.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 					.pNext = nullptr,
-					.codeSize = desc.VS.code.Size(),
-					.pCode = reinterpret_cast<const uint32_t*>(desc.VS.code.Data()),
+					.codeSize = desc.VS.code.size(),
+					.pCode = reinterpret_cast<const uint32_t*>(desc.VS.code.data()),
 				};
 				VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &Cold->VertexShaderModule), "vkCreateShaderModule");
 			}
@@ -626,8 +626,8 @@ namespace HBL2
 				{
 					.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 					.pNext = nullptr,
-					.codeSize = desc.FS.code.Size(),
-					.pCode = reinterpret_cast<const uint32_t*>(desc.FS.code.Data()),
+					.codeSize = desc.FS.code.size(),
+					.pCode = reinterpret_cast<const uint32_t*>(desc.FS.code.data()),
 				};
 				VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &Cold->FragmentShaderModule), "vkCreateShaderModule");
 			}
@@ -644,8 +644,8 @@ namespace HBL2
 			{
 				.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 				.pNext = nullptr,
-				.codeSize = desc.CS.code.Size(),
-				.pCode = reinterpret_cast<const uint32_t*>(desc.CS.code.Data()),
+				.codeSize = desc.CS.code.size(),
+				.pCode = reinterpret_cast<const uint32_t*>(desc.CS.code.data()),
 			};
 			VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &Cold->ComputeShaderModule), "vkCreateShaderModule");
 
@@ -719,7 +719,7 @@ namespace HBL2
 		VK_VALIDATE(vkCreatePipelineLayout(device->Get(), &pipelineLayoutCreateInfo, nullptr, &Hot->PipelineLayout), "vkCreatePipelineLayout");
 
 		// Create shader variants.
-		for (int i = 0; i < desc.renderPipeline.variants.Size(); i++)
+		for (int i = 0; i < desc.renderPipeline.variants.size(); i++)
 		{
 			const auto& variant = desc.renderPipeline.variants[i];
 

@@ -27,7 +27,7 @@ namespace HBL2::Editor
 		{
 			data.clear();
 		}
-		std::memset(m_ShaderUniformTextureData.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.Size());
+		std::memset(m_ShaderUniformTextureData.data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.size());
 
 		m_Owner->m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
 	}
@@ -784,7 +784,7 @@ namespace HBL2::Editor
 					{
 						data.clear();
 					}
-					std::memset(m_ShaderUniformTextureData.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.Size());
+					std::memset(m_ShaderUniformTextureData.data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.size());
 				}
 
 				ImGui::EndDragDropTarget();
@@ -1039,8 +1039,8 @@ namespace HBL2::Editor
 							.stencilEnabled = m_StencilEnabled,
 							.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)(Compare)m_DepthTest,
 						},
-						.Buffers = { m_ShaderUniformBufferData.Data(), m_ShaderUniformBufferSize },
-						.TextureAssets = { m_ShaderUniformTextureData.Data(), m_ShaderUniformTextureSize },
+						.Buffers = { m_ShaderUniformBufferData.data(), m_ShaderUniformBufferSize },
+						.TextureAssets = { m_ShaderUniformTextureData.data(), m_ShaderUniformTextureSize },
 					});
 
 					if (materialAssetHandle.IsValid())
@@ -1077,7 +1077,7 @@ namespace HBL2::Editor
 		{
 			data.clear();
 		}
-		std::memset(m_ShaderUniformTextureData.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.Size());
+		std::memset(m_ShaderUniformTextureData.data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.size());
 
 		m_Topology = 3;
 		m_PolygonMode = 0;

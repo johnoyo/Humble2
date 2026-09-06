@@ -1267,8 +1267,8 @@ namespace HBL2
 				shaderBindGroup = ResourceManager::Instance->CreateBindGroup({
 					.debugName = "shader-bind-group",
 					.layout = outReflectionData.GetBindGroupLayout(1),
-                    .textures = { textureBindings.data(), textureBindings.size() },
-                    .buffers = { bufferBindings.data(), bufferBindings.size() },
+                    .textures = textureBindings,
+                    .buffers = bufferBindings,
 				});
 			}
 		}
