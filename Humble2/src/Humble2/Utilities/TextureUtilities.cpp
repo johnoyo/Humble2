@@ -494,7 +494,7 @@ namespace HBL2
 			stbi_set_flip_vertically_on_load(1);
 		}
 
-		stbi_uc* pixels = stbi_load_from_memory((const stbi_uc*)bytes.Data(), (int)bytes.Size(), &width, &height, &channels, STBI_default);
+		stbi_uc* pixels = stbi_load_from_memory((const stbi_uc*)bytes.data(), (int)bytes.size(), &width, &height, &channels, STBI_default);
 
 		if (pixels == NULL)
 		{
