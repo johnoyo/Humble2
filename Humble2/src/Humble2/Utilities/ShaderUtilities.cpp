@@ -616,6 +616,12 @@ namespace HBL2
     void ShaderUtilities::LoadBuiltInShaders()
     {
         JobContext ctx;
+
+        ResourceTask<Shader> invalidShaderTask = {};
+        ResourceTask<Shader> unlitShaderTask = {};
+        ResourceTask<Shader> blinnPhongShaderTask = {};
+        ResourceTask<Shader> pbrShaderTask = {};
+
         auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
         // Invalid shader
@@ -626,7 +632,7 @@ namespace HBL2
         });
 
         CreateShaderMetadataFile(invalidShaderAssetHandle, 0);
-        auto* invalidShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(invalidShaderAssetHandle, &ctx);
+        AssetManager::Instance->GetAssetAsync<Shader>(invalidShaderAssetHandle, &invalidShaderTask, &ctx);
 
         // Unlit shader
         auto unlitShaderAssetHandle = editorAssetManager->CreateAsset({
@@ -636,7 +642,7 @@ namespace HBL2
         });
 
         CreateShaderMetadataFile(unlitShaderAssetHandle, 0);
-        auto* unlitShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(unlitShaderAssetHandle, &ctx);
+        AssetManager::Instance->GetAssetAsync<Shader>(unlitShaderAssetHandle, &unlitShaderTask, &ctx);
 
         // Blinn-Phong shader
         auto blinnPhongShaderAssetHandle = editorAssetManager->CreateAsset({
@@ -646,7 +652,7 @@ namespace HBL2
         });
 
         CreateShaderMetadataFile(blinnPhongShaderAssetHandle, 1);
-        auto* blinnPhongShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(blinnPhongShaderAssetHandle, &ctx);
+        AssetManager::Instance->GetAssetAsync<Shader>(blinnPhongShaderAssetHandle, &blinnPhongShaderTask, &ctx);
 
         // PBR shader
         auto pbrShaderAssetHandle = editorAssetManager->CreateAsset({
@@ -656,8 +662,9 @@ namespace HBL2
         });
 
         CreateShaderMetadataFile(pbrShaderAssetHandle, 1);
-        auto* pbrShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(pbrShaderAssetHandle, &ctx);
+        AssetManager::Instance->GetAssetAsync<Shader>(pbrShaderAssetHandle, &pbrShaderTask, &ctx);
 
+        // Cache shader asset handles.
         m_ShaderAssets.push_back(invalidShaderAssetHandle);
         m_ShaderAssets.push_back(unlitShaderAssetHandle);
         m_ShaderAssets.push_back(blinnPhongShaderAssetHandle);
@@ -665,15 +672,11 @@ namespace HBL2
 
         AssetManager::Instance->WaitForAsyncJobs(&ctx);
 
-        m_Shaders[BuiltInShader::INVALID] = invalidShaderTask ? invalidShaderTask->ResourceHandle : Handle<Shader>();
-        m_Shaders[BuiltInShader::UNLIT] = unlitShaderTask ? unlitShaderTask->ResourceHandle : Handle<Shader>();
-        m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderTask ? blinnPhongShaderTask->ResourceHandle : Handle<Shader>();
-        m_Shaders[BuiltInShader::PBR] = pbrShaderTask ? pbrShaderTask->ResourceHandle : Handle<Shader>();
-
-        AssetManager::Instance->ReleaseResourceTask(invalidShaderTask);
-        AssetManager::Instance->ReleaseResourceTask(unlitShaderTask);
-        AssetManager::Instance->ReleaseResourceTask(blinnPhongShaderTask);
-        AssetManager::Instance->ReleaseResourceTask(pbrShaderTask);
+        // Cache shader resource handles.
+        m_Shaders[BuiltInShader::INVALID] = invalidShaderTask.ResourceHandle;
+        m_Shaders[BuiltInShader::UNLIT] = unlitShaderTask.ResourceHandle;
+        m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderTask.ResourceHandle;
+        m_Shaders[BuiltInShader::PBR] = pbrShaderTask.ResourceHandle;
     }
 
     void ShaderUtilities::DeleteBuiltInShaders()

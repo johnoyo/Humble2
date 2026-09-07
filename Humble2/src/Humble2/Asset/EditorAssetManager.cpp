@@ -1100,7 +1100,7 @@ namespace HBL2
 
 				JobContext shaderTextureCtx;
 
-				StaticDArray<ResourceTask<Texture>*, 8> textureTasks;
+				StaticDArray<UUID, 8> textureUUIDs;
 				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
 				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
 
@@ -1232,8 +1232,8 @@ namespace HBL2
 						{
 							UUID textureMapUUID = textureProp[b.name].as<UUID>();
 
-							auto* task = AssetManager::Instance->GetAssetAsync<Texture>(textureMapUUID, &shaderTextureCtx);
-							textureTasks.push_back(task);
+							AssetManager::Instance->GetAssetAsync<Texture>(textureMapUUID, &shaderTextureCtx);
+							textureUUIDs.push_back(textureMapUUID);
 						}
 					}
 
@@ -1242,17 +1242,10 @@ namespace HBL2
 
 				AssetManager::Instance->WaitForAsyncJobs(&shaderTextureCtx);
 
-				for (auto* task : textureTasks)
+				for (auto uuid : textureUUIDs)
 				{
-					if (task != nullptr)
-					{
-						textureBindings.push_back({ task->ResourceHandle });
-						AssetManager::Instance->ReleaseResourceTask(task);
-					}
-					else
-					{
-						textureBindings.push_back({ Handle<Texture>() });
-					}
+					// The assets are loaded now, so GetAsset will just grab the resource handle.
+					textureBindings.push_back({ AssetManager::Instance->GetAsset<Texture>(uuid) });
 				}
 
 				// If there is only one texture and is not set, use the built in white texture.
@@ -1433,7 +1426,7 @@ namespace HBL2
 
 				JobContext materialTextureCtx;
 
-				StaticDArray<ResourceTask<Texture>*, 8> textureTasks;
+				StaticDArray<UUID, 8> textureUUIDs;
 				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
 				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
 
@@ -1563,25 +1556,18 @@ namespace HBL2
 						{
 							UUID textureMapUUID = textureProp.as<UUID>();
 
-							auto* task = AssetManager::Instance->GetAssetAsync<Texture>(textureMapUUID, &materialTextureCtx);
-							textureTasks.push_back(task);
+							AssetManager::Instance->GetAssetAsync<Texture>(textureMapUUID, &materialTextureCtx);
+							textureUUIDs.push_back(textureMapUUID);
 						}
 					}
 				}
 
 				AssetManager::Instance->WaitForAsyncJobs(&materialTextureCtx);
 
-				for (auto* task : textureTasks)
+				for (auto uuid : textureUUIDs)
 				{
-					if (task != nullptr)
-					{
-						textureBindings.push_back({ task->ResourceHandle });
-						AssetManager::Instance->ReleaseResourceTask(task);
-					}
-					else
-					{
-						textureBindings.push_back({ Handle<Texture>() });
-					}
+					// The assets are loaded now, so GetAsset will just grab the resource handle.
+					textureBindings.push_back({ AssetManager::Instance->GetAsset<Texture>(uuid) });
 				}
 
 				// If there is only one texture and is not set, use the built in white texture.

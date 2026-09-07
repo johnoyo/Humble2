@@ -989,14 +989,7 @@ namespace HBL2::Editor
 										TextureUtilities::Get().CreateAssetMetadataFile(userMapAssetHandle);
 									}
 
-									auto* task = AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_MaterialTextureLoadingCtx);
-									if (task != nullptr)
-									{
-										task->ThenOnMainThread([task](Handle<Texture> handle)
-										{
-											AssetManager::Instance->ReleaseResourceTask(task);
-										});
-									}
+									AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_MaterialTextureLoadingCtx);
 								}
 
 								ImGui::EndDragDropTarget();

@@ -62,51 +62,86 @@ namespace HBL2
 		}
 
 		template<typename T>
-		ResourceTask<T>* ReloadAssetAsync(UUID assetUUID, JobContext* customJobCtx = nullptr)
+		void ReloadAssetAsync(UUID assetUUID, ResourceTask<T>* resourceTask, JobContext* customJobCtx = nullptr)
+		{
+			return ReloadAssetAsync<T>(GetHandleFromUUID(assetUUID), resourceTask, customJobCtx);
+		}
+
+		template<typename T>
+		void ReloadAssetAsync(Handle<Asset> assetHandle, ResourceTask<T>* resourceTask, JobContext* customJobCtx = nullptr)
+		{
+			// Do not schedule job if the asset handle is invalid.
+			if (!IsAssetValid(assetHandle))
+			{
+				return;
+			}
+
+			// Do not schedule job if the resource task provided is null.
+			if (resourceTask == nullptr)
+			{
+				return;
+			}
+
+			resourceTask->m_Finished.store(false, std::memory_order_release);
+
+			// Load from scratch if the asset is not loaded.
+			if (!IsAssetLoaded(assetHandle))
+			{
+				GetAssetAsync<T>(assetHandle, resourceTask, customJobCtx);
+				return;
+			}
+
+			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
+
+			JobSystem::Get().Execute(ctx, [this, assetHandle, resourceTask]()
+			{
+				// NOTE: Keep an eye here, it may cause problems if we still reload an asset while we change scenes!
+				if (resourceTask != nullptr)
+				{
+					resourceTask->ResourceHandle = ReloadAsset<T>(assetHandle);
+					resourceTask->m_Finished.store(true, std::memory_order_release);
+
+					if (resourceTask->m_WorkerThreadCallback)
+					{
+						resourceTask->m_WorkerThreadCallback(resourceTask->ResourceHandle);
+					}
+				}
+			});
+
+			return;
+		}
+
+		template<typename T>
+		void ReloadAssetAsync(UUID assetUUID, JobContext* customJobCtx = nullptr)
 		{
 			return ReloadAssetAsync<T>(GetHandleFromUUID(assetUUID), customJobCtx);
 		}
 
 		template<typename T>
-		ResourceTask<T>* ReloadAssetAsync(Handle<Asset> assetHandle, JobContext* customJobCtx = nullptr)
+		void ReloadAssetAsync(Handle<Asset> assetHandle, JobContext* customJobCtx = nullptr)
 		{
 			// Do not schedule job if the asset handle is invalid.
 			if (!IsAssetValid(assetHandle))
 			{
-				return nullptr;
+				return;
 			}
-
-			ResourceTask<T>* task = m_ResourceTaskPoolArena.AllocConstruct<ResourceTask<T>>();
-			task->m_Finished.store(false, std::memory_order_release);
 
 			// Load from scratch if the asset is not loaded.
 			if (!IsAssetLoaded(assetHandle))
 			{
-				return GetAssetAsync<T>(assetHandle, customJobCtx);
+				GetAssetAsync<T>(assetHandle, customJobCtx);
+				return;
 			}
 
 			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
 
-			JobSystem::Get().Execute(ctx, [this, assetHandle, task]()
-				{
-					Device::Instance->SetContext(ContextType::FETCH);
+			JobSystem::Get().Execute(ctx, [this, assetHandle]()
+			{
+				// NOTE: Keep an eye here, it may cause problems if we still reload an asset while we change scenes!
+				ReloadAsset<T>(assetHandle);
+			});
 
-					// NOTE: Keep an eye here, it may cause problems if we still reload an asset while we change scenes!
-					if (task != nullptr)
-					{
-						task->ResourceHandle = ReloadAsset<T>(assetHandle);
-						task->m_Finished.store(true, std::memory_order_release);
-
-						if (task->m_WorkerThreadCallback)
-						{
-							task->m_WorkerThreadCallback(task->ResourceHandle);
-						}
-					}
-
-					Device::Instance->SetContext(ContextType::FLUSH_CLEAR);
-				});
-
-			return task;
+			return;
 		}
 
 		void SaveAsset(UUID assetUUID);

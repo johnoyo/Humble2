@@ -72,13 +72,13 @@ namespace HBL2
 		auto* rm = (VulkanResourceManager*)ResourceManager::Instance;
 		auto* device = (VulkanDevice*)Device::Instance;
 
-		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(Cold->BindGroupLayout);
-
 		if (Cold->Buffers.size() + Cold->Textures.size() == 0)
 		{
 			vkUpdateDescriptorSets(device->Get(), 0, nullptr, 0, nullptr);
 			return;
 		}
+
+		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(Cold->BindGroupLayout);		
 
 		std::vector<VkWriteDescriptorSet> writeDescriptorSet(Cold->Buffers.size() + Cold->Textures.size());
 		std::vector<VkDescriptorBufferInfo> descriptorBufferInfo(Cold->Buffers.size());

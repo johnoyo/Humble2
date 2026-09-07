@@ -21,10 +21,9 @@ namespace HBL2
 	private:
 		void LoadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path);
 		void ReloadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path);
-		Handle<Asset> LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, JobContext& ctx, ResourceTask<Texture>*& textureTask, bool reload, void* internalData = nullptr);
-		Handle<Asset> LoadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>*& resourceTask);
-		Handle<Asset> ReloadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>*& resourceTask);
-		void CleanUpResourceTasks(ResourceTask<Texture>* albedoMapTask, ResourceTask<Texture>* normalMapTask, ResourceTask<Texture>* roughnessMapTask, ResourceTask<Texture>* metallicMapTask);
+		Handle<Asset> LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, JobContext& ctx, ResourceTask<Texture>& textureTask, bool reload, void* internalData = nullptr);
+		Handle<Asset> LoadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>& resourceTask);
+		Handle<Asset> ReloadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>& resourceTask);
 
 		Result<MeshPartDescriptor> LoadMeshData(const ufbx_node* node, uint32_t meshIndex);
 		Result<SubMeshDescriptor> LoadSubMeshVertexData(const ufbx_node* node, uint32_t meshIndex, uint32_t subMeshIndex);

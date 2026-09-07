@@ -24,7 +24,8 @@ namespace HBL2::Editor
 	private:
 		Handle<Asset> m_PreviouslySelectedAsset;
 
-		bool m_TextureNeedsReimport = false;
+		bool m_ReimportTexture = false;
+		bool m_UpdateTexture = false;
 		TextureSettings m_TextureSettings = {};
 
 		bool m_TextureFlip = false;
@@ -45,9 +46,9 @@ namespace HBL2::Editor
 		bool m_MaterialNeedsReimport = false;
 		bool m_MaterialShaderReflectionStarted = false;
 		bool m_MaterialBindGroupNeedsReimport = false;
-		ResourceTask<Material>* m_MaterialTask = nullptr;
+		ResourceTask<Material> m_MaterialTask = {};
 
 		bool m_ShaderNeedsReimport = false;
-		ResourceTask<Shader>* m_ShaderTask = nullptr;
+		ResourceTask<Shader> m_ShaderTask = {};
 	};
 }
