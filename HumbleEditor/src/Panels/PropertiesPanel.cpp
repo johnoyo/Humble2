@@ -265,7 +265,7 @@ namespace HBL2::Editor
 
 			DrawComponent<HBL2::Component::Sprite>("Sprite", activeScene, [this](HBL2::Component::Sprite& sprite)
 			{
-				uint32_t materialHandle = sprite.Material.Pack();
+				uint32_t materialHandle = sprite.Material.Get().Pack();
 
 				ImGui::Checkbox("Enabled", &sprite.Enabled);
 
@@ -288,8 +288,8 @@ namespace HBL2::Editor
 
 			DrawComponent<HBL2::Component::StaticMesh>("StaticMesh", activeScene, [this](HBL2::Component::StaticMesh& mesh)
 			{
-				uint32_t meshHandle = mesh.Mesh.Pack();
-				uint32_t materialHandle = mesh.Material.Pack();
+				uint32_t meshHandle = mesh.Mesh.Get().Pack();
+				uint32_t materialHandle = mesh.Material.Get().Pack();
 
 				ImGui::Checkbox("Enabled", &mesh.Enabled);
 				ImGui::InputScalar("Mesh", ImGuiDataType_U32, (void*)(intptr_t*)&meshHandle);
@@ -378,7 +378,7 @@ namespace HBL2::Editor
 			{
 				ImGui::Checkbox("Enabled", &skyLight.Enabled);
 
-				uint32_t textureHandle = skyLight.EquirectangularMap.Pack();
+				uint32_t textureHandle = skyLight.EquirectangularMap.Get().Pack();
 
 				ImGui::InputScalar("Equirectangular Map", ImGuiDataType_U32, (void*)(intptr_t*)&textureHandle);
 
@@ -612,7 +612,7 @@ namespace HBL2::Editor
 
 				if (t.NormaliseMode == HBL2::Component::Terrain::ENormaliseMode::LOCAL)
 				{
-					uint32_t textureHandle = t.HeightMap.Pack();
+					uint32_t textureHandle = t.HeightMap.Get().Pack();
 
 					ImGui::InputScalar("Height Map", ImGuiDataType_U32, (void*)(intptr_t*)&textureHandle);
 
@@ -660,7 +660,7 @@ namespace HBL2::Editor
 				ImGui::DragFloat("NoiseScale", &t.NoiseScale);
 				ImGui::DragFloat2("Offset", glm::value_ptr(t.Offset));
 
-				uint32_t materialHandle = t.Material.Pack();
+				uint32_t materialHandle = t.Material.Get().Pack();
 
 				ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
 
@@ -900,6 +900,21 @@ namespace HBL2::Editor
 
 				ImGui::Text(std::format("Asset: {}", asset->DebugName).c_str());
 				ImGui::Text(std::format("Asset UUID: {}", asset->UUID).c_str());
+
+				ImGui::NewLine();
+
+				m_PinAsset = asset->Pinned;
+				if (ImGui::Checkbox("Pinned", &m_PinAsset))
+				{
+					if (m_PinAsset)
+					{
+						AssetManager::Instance->PinAsset(m_Owner->m_SelectedAsset);
+					}
+					else
+					{
+						AssetManager::Instance->UnpinAsset(m_Owner->m_SelectedAsset);
+					}
+				}
 
 				ImGui::NewLine();
 
@@ -1258,7 +1273,7 @@ namespace HBL2::Editor
 
 											for (const auto& b : descriptorSet.bindings)
 											{
-												if (b.type == ResourceType::UniformBuffer)
+												if (b.type == ShaderResourceType::UniformBuffer)
 												{
 													auto& uniformBufferBytes = m_ShaderUniformBufferData[m_ShaderUniformBufferSize++];
 													uniformBufferBytes.clear();
@@ -1365,7 +1380,7 @@ namespace HBL2::Editor
 														}
 													}
 												}
-												else if (b.type == ResourceType::SampledTexture)
+												else if (b.type == ShaderResourceType::SampledTexture)
 												{
 													const auto& textureProp = shaderProperties["BindGroup"][bindingIndex];
 
@@ -1409,7 +1424,7 @@ namespace HBL2::Editor
 
 							for (const auto& b : descriptorSet.bindings)
 							{
-								if (b.type == ResourceType::UniformBuffer)
+								if (b.type == ShaderResourceType::UniformBuffer)
 								{
 									auto& uniformBufferBytes = m_ShaderUniformBufferData[m_ShaderUniformBufferSize];
 
@@ -1555,7 +1570,7 @@ namespace HBL2::Editor
 
 									m_ShaderUniformBufferSize++;
 								}
-								else if (b.type == ResourceType::SampledTexture)
+								else if (b.type == ShaderResourceType::SampledTexture)
 								{
 									auto& userMapHandlePacked = m_ShaderUniformTextureData[m_ShaderUniformTextureSize++];
 
@@ -1943,7 +1958,7 @@ namespace HBL2::Editor
 
 											for (const auto& b : descriptorSet.bindings)
 											{
-												if (b.type == ResourceType::UniformBuffer)
+												if (b.type == ShaderResourceType::UniformBuffer)
 												{
 													auto& uniformBufferBytes = m_ShaderUniformBufferData[m_ShaderUniformBufferSize++];
 													uniformBufferBytes.resize(b.size);
@@ -2049,7 +2064,7 @@ namespace HBL2::Editor
 														}
 													}
 												}
-												else if (b.type == ResourceType::SampledTexture)
+												else if (b.type == ShaderResourceType::SampledTexture)
 												{
 													const auto& textureProp = materialProperties[b.name];
 
@@ -2087,7 +2102,7 @@ namespace HBL2::Editor
 
 							for (const auto& b : descriptorSet.bindings)
 							{
-								if (b.type == ResourceType::UniformBuffer)
+								if (b.type == ShaderResourceType::UniformBuffer)
 								{
 									auto& uniformBufferBytes = m_ShaderUniformBufferData[m_ShaderUniformBufferSize];
 
@@ -2230,7 +2245,7 @@ namespace HBL2::Editor
 
 									m_ShaderUniformBufferSize++;
 								}
-								else if (b.type == ResourceType::SampledTexture)
+								else if (b.type == ShaderResourceType::SampledTexture)
 								{
 									auto& userMapHandlePacked = m_ShaderUniformTextureData[m_ShaderUniformTextureSize++];
 

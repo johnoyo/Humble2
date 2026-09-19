@@ -211,17 +211,17 @@ namespace HBL2
         return m_WorkerArenas[s_WorkerIndex];
     }
 
-    bool JobSystem::IsMainThread()
+    bool JobSystem::IsMainThread() const
     {
         return std::this_thread::get_id() == m_MainThreadId;
     }
 
-    bool JobSystem::IsRenderThread()
+    bool JobSystem::IsRenderThread() const
     {
         return std::this_thread::get_id() == m_RenderThreadId;
     }
 
-    bool JobSystem::IsWorkerThread()
+    bool JobSystem::IsWorkerThread() const
     {
         return !IsMainThread() && !IsRenderThread();
     }

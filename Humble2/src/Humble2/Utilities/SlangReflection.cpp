@@ -262,20 +262,20 @@ namespace HBL2
                     shaderStage = ShaderStage::COMPUTE;
                 }
 
-                if (b.type == ResourceType::SampledTexture || b.type == ResourceType::StorageTexture)
+                if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::StorageTexture)
                 {
                     textureBindings.push_back({
                         .slot = b.binding,
                         .visibility = shaderStage,
-                        .type = b.type == ResourceType::SampledTexture ? TextureBindingType::IMAGE_SAMPLER : TextureBindingType::STORAGE_IMAGE,
+                        .type = b.type == ShaderResourceType::SampledTexture ? TextureBindingType::IMAGE_SAMPLER : TextureBindingType::STORAGE_IMAGE,
                     });
                 }
-                else if (b.type == ResourceType::UniformBuffer || b.type == ResourceType::StorageBuffer)
+                else if (b.type == ShaderResourceType::UniformBuffer || b.type == ShaderResourceType::StorageBuffer)
                 {
                     bufferBindings.push_back({
                         .slot = b.binding,
                         .visibility = shaderStage,
-                        .type = b.type == ResourceType::UniformBuffer ? BufferBindingType::UNIFORM : BufferBindingType::STORAGE,
+                        .type = b.type == ShaderResourceType::UniformBuffer ? BufferBindingType::UNIFORM : BufferBindingType::STORAGE,
                     });
                 }
             }
@@ -611,8 +611,8 @@ namespace HBL2
                 type = type->getElementType();
             }
 
-            ResourceType resourceType = ToResourceType(type);
-            if (resourceType == ResourceType::Unknown)
+            ShaderResourceType resourceType = ToResourceType(type);
+            if (resourceType == ShaderResourceType::Unknown)
             {
                 continue; // skip push constants, plain structs, etc.
             }
@@ -620,7 +620,7 @@ namespace HBL2
             DescriptorBinding descBinding;
 
             uint64_t bindingSize = 0;
-            if (resourceType == ResourceType::UniformBuffer || resourceType == ResourceType::StorageBuffer || resourceType == ResourceType::StorageBufferReadOnly)
+            if (resourceType == ShaderResourceType::UniformBuffer || resourceType == ShaderResourceType::StorageBuffer || resourceType == ShaderResourceType::StorageBufferReadOnly)
             {
                 // getElementTypeLayout() peels off the ConstantBuffer<> / StructuredBuffer<> wrapper to reach the inner T.
                 slang::TypeLayoutReflection* elementLayout = typeLayout->getElementTypeLayout();
@@ -797,14 +797,14 @@ namespace HBL2
         }
     }
 
-    ResourceType ShaderReflector::ToResourceType(slang::TypeReflection* type)
+    ShaderResourceType ShaderReflector::ToResourceType(slang::TypeReflection* type)
     {
         using Kind = slang::TypeReflection::Kind;
 
         switch (type->getKind())
         {
         case Kind::ConstantBuffer:
-            return ResourceType::UniformBuffer;
+            return ShaderResourceType::UniformBuffer;
 
         case Kind::Resource:
         {
@@ -817,35 +817,35 @@ namespace HBL2
             {
                 if (shape == SLANG_TEXTURE_2D || shape == SLANG_TEXTURE_3D || shape == SLANG_TEXTURE_CUBE || shape == SLANG_TEXTURE_2D_ARRAY)
                 {
-                    return ResourceType::StorageTexture;
+                    return ShaderResourceType::StorageTexture;
                 }
 
-                return ResourceType::StorageBuffer;
+                return ShaderResourceType::StorageBuffer;
             }
 
             if (shape == SLANG_TEXTURE_2D || shape == SLANG_TEXTURE_3D || shape == SLANG_TEXTURE_CUBE || shape == SLANG_TEXTURE_2D_ARRAY)
             {
-                return ResourceType::SampledTexture;
+                return ShaderResourceType::SampledTexture;
             }
 
             if (shape == SLANG_STRUCTURED_BUFFER || shape == SLANG_BYTE_ADDRESS_BUFFER)
             {
                 if (access == SLANG_RESOURCE_ACCESS_READ)
                 {
-                    return ResourceType::StorageBufferReadOnly;
+                    return ShaderResourceType::StorageBufferReadOnly;
                 }
 
-                return ResourceType::StorageBuffer;
+                return ShaderResourceType::StorageBuffer;
             }
 
-            return ResourceType::Unknown;
+            return ShaderResourceType::Unknown;
         }
 
         case Kind::SamplerState:
-            return ResourceType::Sampler;
+            return ShaderResourceType::Sampler;
 
         default:
-            return ResourceType::Unknown;
+            return ShaderResourceType::Unknown;
         }
     }
 
@@ -946,15 +946,15 @@ namespace HBL2
         }
     }
 
-    const char* ShaderReflector::ResourceTypeToString(ResourceType type)
+    const char* ShaderReflector::ResourceTypeToString(ShaderResourceType type)
     {
         switch (type)
         {
-        case ResourceType::UniformBuffer:  return "UniformBuffer";
-        case ResourceType::StorageBuffer:  return "StorageBuffer";
-        case ResourceType::SampledTexture: return "SampledTexture";
-        case ResourceType::StorageTexture: return "StorageTexture";
-        case ResourceType::Sampler:        return "Sampler";
+        case ShaderResourceType::UniformBuffer:  return "UniformBuffer";
+        case ShaderResourceType::StorageBuffer:  return "StorageBuffer";
+        case ShaderResourceType::SampledTexture: return "SampledTexture";
+        case ShaderResourceType::StorageTexture: return "StorageTexture";
+        case ShaderResourceType::Sampler:        return "Sampler";
         default:                           return "Unknown";
         }
     }

@@ -66,9 +66,9 @@ namespace HBL2
         // They get automotically freed when the job ends.
         Arena* GetWorkerArena();
 
-        bool IsMainThread();
-        bool IsRenderThread();
-        bool IsWorkerThread();
+        bool IsMainThread() const;
+        bool IsRenderThread() const;
+        bool IsWorkerThread() const;
 
     private:
         JobSystem() {}

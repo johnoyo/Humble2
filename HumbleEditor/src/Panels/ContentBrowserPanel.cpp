@@ -888,7 +888,7 @@ namespace HBL2::Editor
 
 					for (const auto& b : descriptorSet.bindings)
 					{
-						if (b.type == ResourceType::UniformBuffer)
+						if (b.type == ShaderResourceType::UniformBuffer)
 						{
 							auto& uniformBufferBytes = m_ShaderUniformBufferData[m_ShaderUniformBufferSize++];
 							uniformBufferBytes.resize(b.size);
@@ -956,7 +956,7 @@ namespace HBL2::Editor
 								}
 							}
 						}
-						else if (b.type == ResourceType::SampledTexture)
+						else if (b.type == ShaderResourceType::SampledTexture)
 						{
 							auto& userMapHandlePacked = m_ShaderUniformTextureData[m_ShaderUniformTextureSize++];
 

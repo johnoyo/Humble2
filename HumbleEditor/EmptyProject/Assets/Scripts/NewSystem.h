@@ -38,7 +38,7 @@ public:
 			HBL2_INFO("[COLLISION] Entered {} -> {}\n", tagA, tagB);
 
 			auto& mesh = m_Context->GetComponent<Component::StaticMesh>(collisionEnterEvent->entityB);
-			Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(mesh.Material);
+			Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(mesh.Material.Get());
 			Material* mat = ResourceManager::Instance->GetMaterial(materialHandle);
 
 			m_Buffer = { .Color = { 1.0f, 0.55f, 0.95f, 1.0f }, .Glossiness = 1.0f };

@@ -2,7 +2,8 @@
 
 #include "Asset.h"
 #include "Resources/Handle.h"
-#include "Resources/Pool.h"
+#include "Resources/RefHandle.h"
+#include "Resources/RefCountedPool.h"
 
 #include "Renderer/Device.h"
 
@@ -69,7 +70,13 @@ namespace HBL2
 
 		Handle<Asset> CreateMemoryOnlyAsset(const MemoryOnlyAssetDescriptor&& desc);
 		void DeleteAsset(Handle<Asset> handle);
-		Asset* GetAssetMetadata(Handle<Asset> handle) const;		
+		void DeleteAssetImmediate(Handle<Asset> handle);
+		Asset* GetAssetMetadata(Handle<Asset> handle) const;
+
+		void Acquire(Handle<Asset> handle);
+		void Release(Handle<Asset> handle);
+		void PinAsset(Handle<Asset> handle);
+		void UnpinAsset(Handle<Asset> handle);
 
 		template<typename T>
 		Handle<T> GetAsset(UUID assetUUID)
@@ -224,7 +231,7 @@ namespace HBL2
 
 		AssetManagerSpecification m_Spec;
 
-		Pool<Asset, Asset> m_AssetPool;
+		RefCountedPool<Asset, Asset> m_AssetPool;
 
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_PoolArena;
@@ -236,5 +243,9 @@ namespace HBL2
 		DArray<Handle<Asset>> m_RegisteredAssets = MakeEmptyDArray<Handle<Asset>>();
 
 		moodycamel::ConcurrentQueue<StaticFunction<void(void), 128>> m_MainThreadCallbacks;
+		moodycamel::ConcurrentQueue<StaticFunction<void(void), 64>> m_AssetDeleteCallbacks;
 	};
+
+	template<> inline void PoolAccess<Asset>::Acquire(Handle<Asset> handle) { AssetManager::Instance->Acquire(handle); }
+	template<> inline void PoolAccess<Asset>::Release(Handle<Asset> handle) { AssetManager::Instance->Release(handle); }
 }

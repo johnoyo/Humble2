@@ -36,9 +36,10 @@ namespace HBL2
 		void LoadScene(Handle<Scene> sceneHandle, bool runtime);
 		void LoadSceneDeffered();
 
-		void LoadSceneFromAsset();
-		void LoadSceneFromResource();
-		void LoadSceneFromResourceForPlaymode();
+		Handle<Scene> LoadNewScene() const;
+		void ManageSceneChangeState();
+		void EnableNewSceneSystems(Handle<Scene> newSceneHandle) const;
+		void UnloadOldScene(Handle<Scene> oldSceneHandle, Handle<Asset> oldSceneAssetHandle) const;
 
 		bool SceneChangeRequested = false;
 

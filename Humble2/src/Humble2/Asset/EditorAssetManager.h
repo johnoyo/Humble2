@@ -173,6 +173,7 @@ namespace HBL2
 		Handle<Sound> ImportSound(Asset* asset);
 		Handle<Prefab> ImportPrefab(Asset* asset);
 
+		Handle<Texture> ReimportTexture(Asset* asset);
 		Handle<Shader> ReimportShader(Asset* asset);
 		Handle<Material> ReimportMaterial(Asset* asset);
 		Handle<Mesh> ReimportMesh(Asset* asset);

@@ -32,6 +32,123 @@ namespace HBL2
 		return instance;
 	}
 
+	static void HandleAssetDragAndDrop(Handle<Asset> assetHandle, Reflect::Any& fieldMeta)
+	{
+		Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+
+		if (asset == nullptr)
+		{
+			return;
+		}
+
+		switch (asset->Type)
+		{
+		case AssetType::Texture:
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
+			{
+				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+				if (assetHandle.IsValid())
+				{
+					fieldMeta.Set(assetHandle);
+					AssetManager::Instance->GetAsset<Texture>(assetHandle);
+				}
+			}
+			return;
+		case AssetType::Shader:
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Shader"))
+			{
+				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+				if (assetHandle.IsValid())
+				{
+					fieldMeta.Set(assetHandle);
+					AssetManager::Instance->GetAsset<Shader>(assetHandle);
+				}
+			}
+			return;
+		case AssetType::Material:
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
+			{
+				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+				if (assetHandle.IsValid())
+				{
+					fieldMeta.Set(assetHandle);
+					AssetManager::Instance->GetAsset<Material>(assetHandle);
+				}
+			}
+			return;
+		case AssetType::Mesh:
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
+			{
+				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+				if (assetHandle.IsValid())
+				{
+					fieldMeta.Set(assetHandle);
+					AssetManager::Instance->GetAsset<Mesh>(assetHandle);
+				}
+			}
+			return;
+		case AssetType::Scene:
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Scene"))
+			{
+				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+				if (assetHandle.IsValid())
+				{
+					fieldMeta.Set(assetHandle);
+					AssetManager::Instance->GetAsset<Scene>(assetHandle);
+				}
+			}
+			return;
+		case AssetType::Prefab:
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Prefab"))
+			{
+				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+				if (assetHandle.IsValid())
+				{
+					fieldMeta.Set(assetHandle);
+					AssetManager::Instance->GetAsset<Prefab>(assetHandle);
+				}
+			}
+			return;
+		case AssetType::Sound:
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Sound"))
+			{
+				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+				if (assetHandle.IsValid())
+				{
+					fieldMeta.Set(assetHandle);
+					AssetManager::Instance->GetAsset<Sound>(assetHandle);
+				}
+			}
+		case AssetType::Script:
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Script"))
+			{
+				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+				if (assetHandle.IsValid())
+				{
+					fieldMeta.Set(assetHandle);
+					AssetManager::Instance->GetAsset<Script>(assetHandle);
+				}
+			}
+			return;
+		}
+	}
+
 	void EditorUtilities::DrawComponent(Scene* ctx, Reflect::Any& fieldMeta, const char* memberName)
 	{
 		if (auto* v = fieldMeta.TryGetAs<glm::vec4>())
@@ -128,6 +245,28 @@ namespace HBL2
 					{
 						Handle<Sound> soundHandle = AssetManager::Instance->GetAsset<Sound>(assetHandle);
 						fieldMeta.Set(soundHandle);
+					}
+				}
+
+				ImGui::EndDragDropTarget();
+			}
+		}
+		else if (auto* v = fieldMeta.TryGetAs<Handle<Script>>())
+		{
+			uint32_t scriptHandlePacked = v->Pack();
+			ImGui::InputScalar(memberName, ImGuiDataType_U32, (void*)(intptr_t*)&scriptHandlePacked);
+
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Script"))
+				{
+					uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+					Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+					if (assetHandle.IsValid())
+					{
+						Handle<Script> scriptHandle = AssetManager::Instance->GetAsset<Script>(assetHandle);
+						fieldMeta.Set(scriptHandle);
 					}
 				}
 
@@ -244,6 +383,30 @@ namespace HBL2
 				ImGui::EndDragDropTarget();
 			}
 		}
+		else if (auto* v = fieldMeta.TryGetAs<Handle<Asset>>())
+		{
+			uint32_t assetHandlePacked = v->Pack();
+			ImGui::InputScalar(memberName, ImGuiDataType_U32, (void*)(intptr_t*)&assetHandlePacked);
+
+			if (ImGui::BeginDragDropTarget())
+			{
+				HandleAssetDragAndDrop(*v, fieldMeta);
+
+				ImGui::EndDragDropTarget();
+			}
+		}
+		else if (auto* v = fieldMeta.TryGetAs<RefHandle<Asset>>())
+		{
+			uint32_t assetHandlePacked = v->Get().Pack();
+			ImGui::InputScalar(memberName, ImGuiDataType_U32, (void*)(intptr_t*)&assetHandlePacked);
+
+			if (ImGui::BeginDragDropTarget())
+			{
+				HandleAssetDragAndDrop(v->Get(), fieldMeta);
+
+				ImGui::EndDragDropTarget();
+			}
+		}
 		else if (auto* v = fieldMeta.TryGetAs<Entity>())
 		{
 			uint64_t packedEntity = v->Pack();
@@ -332,6 +495,31 @@ namespace HBL2
 			{
 				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
 				if (asset->Type == AssetType::Sound && asset->Indentifier != 0 && asset->Indentifier == v->Pack())
+				{
+					asset = asset;
+					break;
+				}
+			}
+
+			if (asset != nullptr)
+			{
+				out << YAML::Key << memberName << YAML::Value << asset->UUID;
+			}
+			else
+			{
+				out << YAML::Key << memberName << YAML::Value << (UUID)0;
+			}
+		}
+		else if (auto* v = fieldMeta.TryGetAs<Handle<Script>>())
+		{
+			const auto& assetHandles = AssetManager::Instance->GetRegisteredAssets();
+
+			Asset* asset = nullptr;
+
+			for (auto handle : assetHandles)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+				if (asset->Type == AssetType::Script && asset->Indentifier != 0 && asset->Indentifier == v->Pack())
 				{
 					asset = asset;
 					break;
@@ -472,6 +660,32 @@ namespace HBL2
 				out << YAML::Key << memberName << YAML::Value << (UUID)0;
 			}
 		}
+		else if (auto* v = fieldMeta.TryGetAs<Handle<Asset>>())
+		{
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(*v);
+
+			if (asset != nullptr)
+			{
+				out << YAML::Key << memberName << YAML::Value << asset->UUID;
+			}
+			else
+			{
+				out << YAML::Key << memberName << YAML::Value << (UUID)0;
+			}
+		}
+		else if (auto* v = fieldMeta.TryGetAs<RefHandle<Asset>>())
+		{
+			Asset* asset = AssetManager::Instance->GetAssetMetadata(v->Get());
+
+			if (asset != nullptr)
+			{
+				out << YAML::Key << memberName << YAML::Value << asset->UUID;
+			}
+			else
+			{
+				out << YAML::Key << memberName << YAML::Value << (UUID)0;
+			}
+		}
 		else if (auto* v = fieldMeta.TryGetAs<Entity>())
 		{
 			auto* id = ctx->TryGetComponent<Component::ID>(*v);
@@ -543,6 +757,11 @@ namespace HBL2
 			auto vr = AssetManager::Instance->GetAsset<Sound>(node[memberName].as<UUID>());
 			fieldMeta.Set(vr);
 		}
+		else if (auto* v = fieldMeta.TryGetAs<Handle<Script>>())
+		{
+			auto vr = AssetManager::Instance->GetAsset<Script>(node[memberName].as<UUID>());
+			fieldMeta.Set(vr);
+		}
 		else if (auto* v = fieldMeta.TryGetAs<Handle<Shader>>())
 		{
 			auto vr = AssetManager::Instance->GetAsset<Shader>(node[memberName].as<UUID>());
@@ -566,6 +785,16 @@ namespace HBL2
 		else if (auto* v = fieldMeta.TryGetAs<Handle<Prefab>>())
 		{
 			auto vr = AssetManager::Instance->GetAsset<Prefab>(node[memberName].as<UUID>());
+			fieldMeta.Set(vr);
+		}
+		else if (auto* v = fieldMeta.TryGetAs<Handle<Asset>>())
+		{
+			auto vr = AssetManager::Instance->GetHandleFromUUID(node[memberName].as<UUID>());
+			fieldMeta.Set(vr);
+		}
+		else if (auto* v = fieldMeta.TryGetAs<RefHandle<Asset>>())
+		{
+			RefHandle<Asset> vr = AssetManager::Instance->GetHandleFromUUID(node[memberName].as<UUID>());
 			fieldMeta.Set(vr);
 		}
 		else if (auto* v = fieldMeta.TryGetAs<Entity>())

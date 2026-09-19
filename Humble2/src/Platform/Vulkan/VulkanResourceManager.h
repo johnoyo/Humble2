@@ -28,6 +28,7 @@ namespace HBL2
 
 		// Textures
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) override;
+		virtual void ReimportTexture(Handle<Texture> handle, const TextureDescriptor&& desc) override;
 		virtual void DeleteTexture(Handle<Texture> handle) override;
 		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) override;
 		virtual void ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc) override;
@@ -85,6 +86,9 @@ namespace HBL2
 		virtual Handle<RenderPassLayout> CreateRenderPassLayout(const RenderPassLayoutDescriptor&& desc) override;
 		virtual void DeleteRenderPassLayout(Handle<RenderPassLayout> handle) override;
 		VulkanRenderPassLayout* GetRenderPassLayout(Handle<RenderPassLayout> handle) const;
+
+		virtual void Acquire(uint32_t packedHandle, ResourceType resourceType) override;
+		virtual void Release(uint32_t packedHandle, ResourceType resourceType) override;
 
 	private:
 		Pool<VulkanTexture, Texture> m_TexturePool;

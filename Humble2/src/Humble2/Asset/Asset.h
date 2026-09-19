@@ -26,6 +26,7 @@ namespace HBL2
 		const char* debugName = "";
 		std::filesystem::path filePath;
 		AssetType type = AssetType::None;
+		bool Pin = false;
 	};
 
 	struct HBL2_API MemoryOnlyAssetDescriptor
@@ -33,6 +34,7 @@ namespace HBL2
 		const char* debugName = "";
 		AssetType type = AssetType::None;
 		uint32_t PackedAssetResourceHandle = 0;
+		bool Pin = false;
 	};
 
 	struct HBL2_API Asset
@@ -47,6 +49,7 @@ namespace HBL2
 		AssetType Type = AssetType::None;
 		std::filesystem::path FilePath;
 		uint32_t FileFormatVersion = 1;
+		bool Pinned = false;
 		bool Loaded = false;
 	};
 }

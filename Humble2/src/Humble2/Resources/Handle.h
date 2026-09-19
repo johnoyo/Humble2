@@ -10,9 +10,11 @@ namespace HBL2
 	public:
 		Handle() : m_ArrayIndex(0), m_GenerationalCounter(0) {}
 
-		bool IsValid() const { return m_GenerationalCounter != 0; }
 		bool operator==(const Handle<T>& other) const { return m_ArrayIndex == other.m_ArrayIndex && m_GenerationalCounter == other.m_GenerationalCounter; }
 		bool operator!=(const Handle<T>& other) const { return m_ArrayIndex != other.m_ArrayIndex || m_GenerationalCounter != other.m_GenerationalCounter; }
+
+		void Invalidate() { m_GenerationalCounter = 0; }
+		bool IsValid() const { return m_GenerationalCounter != 0; }
 
 		uint32_t HashKey() const { return (((uint32_t)m_ArrayIndex) << 16) + (uint32_t)m_GenerationalCounter; }
 		uint32_t Pack() const { return (static_cast<uint32_t>(m_ArrayIndex) << 16) | m_GenerationalCounter; }
@@ -27,7 +29,11 @@ namespace HBL2
 		uint16_t m_ArrayIndex;
 		uint16_t m_GenerationalCounter;
 
+		template<typename U> friend class RefHandle;
 		template<typename U, typename H> friend class Pool;
+		template<typename U, typename H> friend class RefCountedPool;
 		template<typename UH, typename UC, typename H> friend class SplitPool;
+		template<typename UH, typename UC, typename H> friend class RefCountedSplitPool;
 	};
+
 }

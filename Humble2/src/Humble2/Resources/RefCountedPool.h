@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Handle.h"
+#include "RefCounted.h"
 #include "LockFreeIndexStack.h"
 #include "Utilities/Collections/Span.h"
 
@@ -14,20 +15,27 @@
 
 namespace HBL2
 {
+    struct PoolSlotMeta
+    {
+        std::atomic<uint16_t> GenerationalCounter{ 0 };
+        RefCounted ReferenceCounter{ 0 };
+    };
+
     template <typename T, typename H>
-    class Pool
+    class RefCountedPool
     {
     public:
         static constexpr uint16_t InvalidIndex = LockFreeIndexStack::InvalidIndex;
+        static constexpr uint16_t MaxReferenceCount = 4096;
 
-        Pool() = default;
+        RefCountedPool() = default;
 
-        explicit Pool(uint32_t size)
+        explicit RefCountedPool(uint32_t size)
         {
             Initialize(size);
         }
 
-        ~Pool()
+        ~RefCountedPool()
         {
         }
 
@@ -42,7 +50,7 @@ namespace HBL2
 
             size_t bytes = ArenaLayout::Create()
                 .Add<T>(m_Size)
-                .template Add<std::atomic<uint16_t>>(m_Size)
+                .template Add<PoolSlotMeta>(m_Size)
                 .template Add<std::atomic<uint16_t>>(m_Size)
                 .Total();
 
@@ -52,15 +60,16 @@ namespace HBL2
             m_Data = (T*)m_PoolArena.Alloc(sizeof(T) * m_Size, alignof(T));
             std::memset(m_Data, 0, sizeof(T) * m_Size);
 
-            void* generationalCounterMem = m_PoolArena.Alloc(sizeof(std::atomic<uint16_t>) * m_Size, alignof(std::atomic<uint16_t>));
-            m_GenerationalCounter = m_PoolArena.ConstructArray<std::atomic<uint16_t>>(generationalCounterMem, m_Size, 0);
+            void* poolSlotMetaMem = m_PoolArena.Alloc(sizeof(PoolSlotMeta) * m_Size, alignof(PoolSlotMeta));
+            m_Meta = m_PoolArena.ConstructArray<PoolSlotMeta>(poolSlotMetaMem, m_Size, 0);
 
             void* nextFreeMem = m_PoolArena.Alloc(sizeof(std::atomic<uint16_t>) * m_Size, alignof(std::atomic<uint16_t>));
             m_NextFree = m_PoolArena.ConstructArray<std::atomic<uint16_t>>(nextFreeMem, m_Size, 0);
 
             for (uint32_t i = 0; i < m_Size; ++i)
             {
-                m_GenerationalCounter[i].store(1, std::memory_order_relaxed);
+                m_Meta[i].ReferenceCounter.RefCount.store(0, std::memory_order_relaxed);
+                m_Meta[i].GenerationalCounter.store(1, std::memory_order_relaxed);
             }
 
             m_FreeList.Initialize(m_NextFree, m_Size);
@@ -78,7 +87,7 @@ namespace HBL2
 
             new (&m_Data[index]) T(std::forward<const Arg>(arg));
 
-            const uint16_t gen = m_GenerationalCounter[index].load(std::memory_order_relaxed);
+            const uint16_t gen = m_Meta[index].GenerationalCounter.load(std::memory_order_relaxed);
             return { index, gen };
         }
 
@@ -95,13 +104,13 @@ namespace HBL2
                 return;
             }
 
-            const uint16_t cur = m_GenerationalCounter[idx].load(std::memory_order_acquire);
+            const uint16_t cur = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
             if (cur != handle.m_GenerationalCounter)
             {
                 return;
             }
 
-            m_GenerationalCounter[idx].fetch_add(1, std::memory_order_acq_rel);
+            m_Meta[idx].GenerationalCounter.fetch_add(1, std::memory_order_acq_rel);
             m_FreeList.Push(idx);
         }
 
@@ -119,13 +128,91 @@ namespace HBL2
                 return nullptr;
             }
 
-            const uint16_t gen = m_GenerationalCounter[idx].load(std::memory_order_acquire);
+            const uint16_t gen = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
             if (gen != handle.m_GenerationalCounter)
             {
                 return nullptr;
             }
 
+            //const uint16_t refCount = m_Meta[idx].ReferenceCounter.RefCount.load(std::memory_order_acquire);
+            //if (refCount == 0)
+            //{
+            //    return nullptr;
+            //}
+
             return &m_Data[idx];
+        }
+
+        bool Acquire(Handle<H> handle)
+        {
+            if (!handle.IsValid())
+            {
+                return false;
+            }
+
+            const uint16_t idx = handle.m_ArrayIndex;
+            if (idx == InvalidIndex || idx >= m_Size)
+            {
+                return false;
+            }
+
+            const uint16_t cur = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
+            if (cur != handle.m_GenerationalCounter)
+            {
+                return false;
+            }
+
+            return m_Meta[idx].ReferenceCounter.TryAddRef();
+        }
+
+        bool Release(Handle<H> handle)
+        {
+            if (!handle.IsValid())
+            {
+                return false;
+            }
+
+            const uint16_t idx = handle.m_ArrayIndex;
+            if (idx == InvalidIndex || idx >= m_Size)
+            {
+                return false;
+            }
+
+            const uint16_t cur = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
+            if (cur != handle.m_GenerationalCounter)
+            {
+                return false;
+            }
+
+            return m_Meta[idx].ReferenceCounter.TryReleaseRef();
+        }
+
+        bool IsAlive(Handle<H> handle)
+        {
+            if (!handle.IsValid())
+            {
+                return false;
+            }
+
+            const uint16_t idx = handle.m_ArrayIndex;
+            if (idx == InvalidIndex || idx >= m_Size)
+            {
+                return false;
+            }
+
+            const uint16_t cur = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
+            if (cur != handle.m_GenerationalCounter)
+            {
+                return false;
+            }
+
+            const uint16_t rc = m_Meta[idx].ReferenceCounter.RefCount.load(std::memory_order_acquire);
+            if (rc >= 1 && rc < MaxReferenceCount)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         const Span<T> GetDataPool() const
@@ -140,7 +227,7 @@ namespace HBL2
                 return {};
             }
 
-            return { index, m_GenerationalCounter[index].load(std::memory_order_acquire) };
+            return { index, m_Meta[index].GenerationalCounter.load(std::memory_order_acquire) };
         }
 
         uint32_t Capacity() const { return m_Size; }
@@ -152,7 +239,7 @@ namespace HBL2
 
         std::atomic<uint16_t>* m_NextFree = nullptr;
         T* m_Data = nullptr;
-        std::atomic<uint16_t>* m_GenerationalCounter = nullptr;
+        PoolSlotMeta* m_Meta = nullptr;
 
         uint32_t m_Size = 32;
 

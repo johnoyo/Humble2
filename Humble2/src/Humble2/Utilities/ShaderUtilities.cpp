@@ -773,7 +773,7 @@ namespace HBL2
 
             for (const auto& b : descriptorSet.bindings)
             {
-                if (b.type == ResourceType::UniformBuffer)
+                if (b.type == ShaderResourceType::UniformBuffer)
                 {
                     out << YAML::Key << b.name.c_str();
                     out << YAML::BeginMap;
@@ -836,7 +836,7 @@ namespace HBL2
 
                     out << YAML::EndMap;
                 }
-                else if (b.type == ResourceType::SampledTexture)
+                else if (b.type == ShaderResourceType::SampledTexture)
                 {
                     out << YAML::Key << b.name.c_str() << YAML::Value << (UUID)0;
                 }
@@ -933,7 +933,7 @@ namespace HBL2
             {
                 YAML::Node out;
 
-                if (b.type == ResourceType::UniformBuffer)
+                if (b.type == ShaderResourceType::UniformBuffer)
                 {
                     for (const auto& m : b.members)
                     {
@@ -995,7 +995,7 @@ namespace HBL2
                         }
                     }
                 }
-                else if (b.type == ResourceType::SampledTexture)
+                else if (b.type == ShaderResourceType::SampledTexture)
                 {
                     Handle<Asset> textureAssetHandle = Handle<Asset>::UnPack(desc.TextureAssets[textureIndex++]);
 
@@ -1140,7 +1140,7 @@ namespace HBL2
 
             for (const auto& b : descriptorSet.bindings)
             {
-                if (b.type == ResourceType::UniformBuffer)
+                if (b.type == ShaderResourceType::UniformBuffer)
                 {
                     const std::vector<uint8_t>& uniformBufferBytes = desc.Buffers[bufferIndex++];
 
@@ -1213,7 +1213,7 @@ namespace HBL2
 
                     out << YAML::EndMap;
                 }
-                else if (b.type == ResourceType::SampledTexture)
+                else if (b.type == ShaderResourceType::SampledTexture)
                 {
                     Handle<Asset> textureAssetHandle = Handle<Asset>::UnPack(desc.TextureAssets[textureIndex++]);
 

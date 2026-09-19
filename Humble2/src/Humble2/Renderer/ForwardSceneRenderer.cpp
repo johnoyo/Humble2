@@ -207,93 +207,88 @@ namespace HBL2
 
 	void ForwardSceneRenderer::CleanUp()
 	{
-		// TODO: Fix!
-		Renderer::Instance->SubmitBlocking([this]()
-		{
-			m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
+		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
 
-			m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
-			m_ResourceManager->DeleteRenderPass(m_ShadowRenderPass);
-			m_ResourceManager->DeleteShader(m_ShadowPrePassShader);
-			m_ResourceManager->DeleteMaterial(m_ShadowPrePassMaterial);
+		m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
+		m_ResourceManager->DeleteRenderPass(m_ShadowRenderPass);
+		m_ResourceManager->DeleteShader(m_ShadowPrePassShader);
+		m_ResourceManager->DeleteMaterial(m_ShadowPrePassMaterial);
 
-			m_ResourceManager->DeleteShader(m_DepthOnlyShader);
-			m_ResourceManager->DeleteShader(m_DepthOnlySpriteShader);
+		m_ResourceManager->DeleteShader(m_DepthOnlyShader);
+		m_ResourceManager->DeleteShader(m_DepthOnlySpriteShader);
 
-			m_ResourceManager->DeleteBindGroup(m_DepthOnlyMeshBindGroup);
-			m_ResourceManager->DeleteBindGroup(m_DepthOnlySpriteBindGroup);
+		m_ResourceManager->DeleteBindGroup(m_DepthOnlyMeshBindGroup);
+		m_ResourceManager->DeleteBindGroup(m_DepthOnlySpriteBindGroup);
 
-			m_ResourceManager->DeleteMaterial(m_DepthOnlyMaterial);
-			m_ResourceManager->DeleteMaterial(m_DepthOnlySpriteMaterial);
+		m_ResourceManager->DeleteMaterial(m_DepthOnlyMaterial);
+		m_ResourceManager->DeleteMaterial(m_DepthOnlySpriteMaterial);
 
-			m_ResourceManager->DeleteRenderPassLayout(m_DepthOnlyRenderPassLayout);
-			m_ResourceManager->DeleteRenderPass(m_DepthOnlyRenderPass);
-			Renderer::Instance->RemoveOnResizeCallback("Depth-Only-Resize-FrameBuffer");
+		m_ResourceManager->DeleteRenderPassLayout(m_DepthOnlyRenderPassLayout);
+		m_ResourceManager->DeleteRenderPass(m_DepthOnlyRenderPass);
+		Renderer::Instance->RemoveOnResizeCallback("Depth-Only-Resize-FrameBuffer");
 
-			m_ResourceManager->DeleteRenderPass(m_GeometryRenderPass);
-			Renderer::Instance->RemoveOnResizeCallback("Resize-Geometry-FrameBuffer");
+		m_ResourceManager->DeleteRenderPass(m_GeometryRenderPass);
+		Renderer::Instance->RemoveOnResizeCallback("Resize-Geometry-FrameBuffer");
 
-			m_ResourceManager->DeleteBindGroupLayout(m_EquirectToSkyboxBindGroupLayout);
-			m_ResourceManager->DeleteShader(m_EquirectToSkyboxShader);
-			m_ResourceManager->DeleteBuffer(m_CaptureMatricesBuffer);
-			m_ResourceManager->DeleteBindGroupLayout(m_SkyboxGlobalBindGroupLayout);
-			m_ResourceManager->DeleteBindGroup(m_SkyboxGlobalBindGroup);
-			m_ResourceManager->DeleteShader(m_SkyboxShader);
-			m_ResourceManager->DeleteBindGroupLayout(m_SkyboxBindGroupLayout);
-			m_ResourceManager->DeleteBuffer(m_CubeMeshBuffer);
-			m_ResourceManager->DeleteMesh(m_CubeMesh);
+		m_ResourceManager->DeleteBindGroupLayout(m_EquirectToSkyboxBindGroupLayout);
+		m_ResourceManager->DeleteShader(m_EquirectToSkyboxShader);
+		m_ResourceManager->DeleteBuffer(m_CaptureMatricesBuffer);
+		m_ResourceManager->DeleteBindGroupLayout(m_SkyboxGlobalBindGroupLayout);
+		m_ResourceManager->DeleteBindGroup(m_SkyboxGlobalBindGroup);
+		m_ResourceManager->DeleteShader(m_SkyboxShader);
+		m_ResourceManager->DeleteBindGroupLayout(m_SkyboxBindGroupLayout);
+		m_ResourceManager->DeleteBuffer(m_CubeMeshBuffer);
+		m_ResourceManager->DeleteMesh(m_CubeMesh);
 
-			m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
-			m_Scene->Filter<Component::SkyLight>()
-				.ForEach([&](Component::SkyLight& skyLight)
+		m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
+		m_Scene->Filter<Component::SkyLight>()
+			.ForEach([&](Component::SkyLight& skyLight)
+			{
+				m_ResourceManager->DeleteTexture(skyLight.CubeMap);
+				skyLight.CubeMap = {};
+
+				Material* mat = m_ResourceManager->GetMaterial(skyLight.CubeMapMaterial);
+				if (mat != nullptr)
 				{
-					m_ResourceManager->DeleteTexture(skyLight.CubeMap);
-					skyLight.CubeMap = {};
+					m_ResourceManager->DeleteBindGroup(mat->DrawBindGroup);
+					m_ResourceManager->DeleteBindGroup(mat->MaterialBindGroup);
+				}
 
-					Material* mat = m_ResourceManager->GetMaterial(skyLight.CubeMapMaterial);
-					if (mat != nullptr)
-					{
-						m_ResourceManager->DeleteBindGroup(mat->DrawBindGroup);
-						m_ResourceManager->DeleteBindGroup(mat->MaterialBindGroup);
-					}
+				m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
+				skyLight.CubeMapMaterial = {};
 
-					m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
-					skyLight.CubeMapMaterial = {};
+				skyLight.EquirectangularMap.Release();
 
-					// TODO: Investigate if we need to delete EquirectangularMap.
-					// AssetManager::Instance->DeleteAsset(skyLight.EquirectangularMap);
-					// skyLight.EquirectangularMap = {};
+				skyLight.Converted = false;
+			});
 
-					skyLight.Converted = false;
-				});
+		m_Scene->Filter<Component::StaticMesh>()
+			.ForEach([&](Component::StaticMesh& staticMesh)
+			{
+				staticMesh.Mesh.Release();
+				staticMesh.Material.Release();
+			});
 
-			m_Scene->Filter<Component::StaticMesh>()
-				.ForEach([&](Component::StaticMesh& staticMesh)
-				{
-					AssetManager::Instance->DeleteAsset(staticMesh.Material);
-				});
+		m_Scene->Filter<Component::Sprite>()
+			.ForEach([&](Component::Sprite& sprite)
+			{
+				sprite.Material.Release();
+			});
 
-			m_Scene->Filter<Component::Sprite>()
-				.ForEach([&](Component::Sprite& sprite)
-				{
-					AssetManager::Instance->DeleteAsset(sprite.Material);
-				});
+		m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
+		m_ResourceManager->DeleteShader(m_PostProcessShader);
+		m_ResourceManager->DeleteBindGroupLayout(m_PostProcessBindGroupLayout);
+		m_ResourceManager->DeleteBindGroup(m_PostProcessBindGroup);
+		m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
+		Renderer::Instance->RemoveOnResizeCallback("Post-Process-Resize-FrameBuffer");
 
-			m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
-			m_ResourceManager->DeleteShader(m_PostProcessShader);
-			m_ResourceManager->DeleteBindGroupLayout(m_PostProcessBindGroupLayout);
-			m_ResourceManager->DeleteBindGroup(m_PostProcessBindGroup);
-			m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
-			Renderer::Instance->RemoveOnResizeCallback("Post-Process-Resize-FrameBuffer");
+		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
+		m_ResourceManager->DeleteMesh(m_SpriteMesh);
 
-			m_ResourceManager->DeleteBuffer(m_VertexBuffer);
-			m_ResourceManager->DeleteMesh(m_SpriteMesh);
-
-			m_ResourceManager->DeleteBuffer(m_PostProcessQuadVertexBuffer);
-			m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
-			m_ResourceManager->DeleteShader(m_PresentShader);
-			m_ResourceManager->DeleteMaterial(m_QuadMaterial);
-		});
+		m_ResourceManager->DeleteBuffer(m_PostProcessQuadVertexBuffer);
+		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
+		m_ResourceManager->DeleteShader(m_PresentShader);
+		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
 	}
 
 	void* ForwardSceneRenderer::GetRenderData()
@@ -981,10 +976,15 @@ namespace HBL2
 							return;
 						}
 
-						Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(staticMesh.Material);
+						Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(staticMesh.Material.Get());
 						Material* material = ResourceManager::Instance->GetMaterial(materialHandle);
 
-						Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(staticMesh.Mesh);
+						if (material == nullptr)
+						{
+							return;
+						}
+
+						Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(staticMesh.Mesh.Get());
 						Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
 
 						if (mesh == nullptr || mesh->IsEmpty())
@@ -1000,11 +1000,6 @@ namespace HBL2
 						}
 
 						const auto& subMesh = meshPart.SubMeshes[staticMesh.SubMeshIndex];
-
-						if (material == nullptr)
-						{
-							return;
-						}
 
 						// Bump allocate and set per draw data.
 						auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawData>();
@@ -1111,7 +1106,7 @@ namespace HBL2
 							return;
 						}
 
-						Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(sprite.Material);
+						Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(sprite.Material.Get());
 						Material* material = ResourceManager::Instance->GetMaterial(materialHandle);
 
 						if (material == nullptr)
@@ -1495,7 +1490,7 @@ namespace HBL2
                             TextureLayout::GENERAL
                         );
 
-                        Handle<Texture> equirectangularMapHandle = AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap);
+                        Handle<Texture> equirectangularMapHandle = AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap.Get());
 
                         // FIXME: When entering the playmode multiple times in the session we create new descriptor sets in vk, so it exceeds the max in the pool.
                         m_ComputeBindGroup = m_ResourceManager->CreateBindGroup({

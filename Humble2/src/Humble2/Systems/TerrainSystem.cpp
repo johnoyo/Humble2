@@ -150,7 +150,7 @@ namespace HBL2
 	{
 		if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::LOCAL)
 		{
-			Asset* heightMapAsset = AssetManager::Instance->GetAssetMetadata(terrain.HeightMap);
+			Asset* heightMapAsset = AssetManager::Instance->GetAssetMetadata(terrain.HeightMap.Get());
 
 			if (heightMapAsset == nullptr)
 			{
@@ -757,7 +757,7 @@ namespace HBL2
 					terrainChunk.LevelOfDetail = lodMesh.Lod;
 					terrainChunk.PreviousLodIndex = lodIndex;
 
-					Asset* chunkMeshAsset = AssetManager::Instance->GetAssetMetadata(chunkMesh.Mesh);
+					Asset* chunkMeshAsset = AssetManager::Instance->GetAssetMetadata(chunkMesh.Mesh.Get());
 					chunkMeshAsset->Indentifier = lodMesh.Mesh.Pack();
 					chunkMeshAsset->Loaded = true;
 				}
@@ -947,7 +947,7 @@ namespace HBL2
 		HBL2_FUNC_PROFILE()
 
 		auto& chunkMeshComponent = m_Context->GetComponent<Component::StaticMesh>(chunkMeshData.Chunk);
-		Asset* chunkMeshAsset = AssetManager::Instance->GetAssetMetadata(chunkMeshComponent.Mesh);
+		Asset* chunkMeshAsset = AssetManager::Instance->GetAssetMetadata(chunkMeshComponent.Mesh.Get());
 		chunkMeshAsset->Indentifier = chunkMeshData.ChunkMeshHandle.Pack();
 		chunkMeshAsset->Loaded = true;
 

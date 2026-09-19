@@ -123,7 +123,7 @@ namespace HBL2
 
 			out << YAML::Key << "Enabled" << YAML::Value << sprite.Enabled;
 
-			Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(sprite.Material);
+			Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(sprite.Material.Get());
 
 			out << YAML::Key << "Material" << YAML::Value << (materialAsset != nullptr ? materialAsset->UUID : (UUID)0);
 
@@ -139,8 +139,8 @@ namespace HBL2
 
 			out << YAML::Key << "Enabled" << YAML::Value << staticMesh.Enabled;
 
-			Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(staticMesh.Material);
-			Asset* meshAsset = AssetManager::Instance->GetAssetMetadata(staticMesh.Mesh);
+			Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(staticMesh.Material.Get());
+			Asset* meshAsset = AssetManager::Instance->GetAssetMetadata(staticMesh.Mesh.Get());
 
 			out << YAML::Key << "Material" << YAML::Value << (materialAsset != nullptr ? materialAsset->UUID : (UUID)0);
 
@@ -188,7 +188,7 @@ namespace HBL2
 
 			out << YAML::Key << "Enabled" << YAML::Value << light.Enabled;
 
-			Asset* textureAsset = AssetManager::Instance->GetAssetMetadata(light.EquirectangularMap);
+			Asset* textureAsset = AssetManager::Instance->GetAssetMetadata(light.EquirectangularMap.Get());
 
 			out << YAML::Key << "EquirectangularMap" << YAML::Value << (textureAsset != nullptr ? textureAsset->UUID : (UUID)0);
 
@@ -360,7 +360,7 @@ namespace HBL2
 			}
 			out << YAML::EndSeq;
 
-			Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(t.Material);
+			Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(t.Material.Get());
 
 			out << YAML::Key << "Material" << YAML::Value << (materialAsset != nullptr ? materialAsset->UUID : (UUID)0);
 
@@ -511,7 +511,7 @@ namespace HBL2
 			auto& sprite = m_Scene->AddComponent<Component::Sprite>(m_Entity);
 			sprite.Enabled = sprite_NewComponent["Enabled"].as<bool>();
 			sprite.Material = AssetManager::Instance->GetHandleFromUUID(sprite_NewComponent["Material"].as<UUID>());
-			AssetManager::Instance->GetAsset<Material>(sprite.Material);
+			AssetManager::Instance->GetAsset<Material>(sprite.Material.Get());
 		}
 
 		auto staticMesh_NewComponent = entityNode["Component::StaticMesh"];
@@ -523,13 +523,13 @@ namespace HBL2
 			if (staticMesh_NewComponent["Mesh"].IsDefined())
 			{
 				staticMesh.Mesh = AssetManager::Instance->GetHandleFromUUID(staticMesh_NewComponent["Mesh"]["UUID"].as<UUID>());
-				AssetManager::Instance->GetAsset<Mesh>(staticMesh.Mesh);
+				AssetManager::Instance->GetAsset<Mesh>(staticMesh.Mesh.Get());
 				staticMesh.MeshIndex = staticMesh_NewComponent["Mesh"]["MeshIndex"].as<uint32_t>();
 				staticMesh.SubMeshIndex = staticMesh_NewComponent["Mesh"]["SubMeshIndex"].as<uint32_t>();
 			}
 
 			staticMesh.Material = AssetManager::Instance->GetHandleFromUUID(staticMesh_NewComponent["Material"].as<UUID>());
-			AssetManager::Instance->GetAsset<Material>(staticMesh.Material);
+			AssetManager::Instance->GetAsset<Material>(staticMesh.Material.Get());
 		}
 
 		auto light_NewComponent = entityNode["Component::Light"];
@@ -572,7 +572,7 @@ namespace HBL2
 			auto& skyLight = m_Scene->AddComponent<Component::SkyLight>(m_Entity);
 			skyLight.Enabled = skyLight_NewComponent["Enabled"].as<bool>();
 			skyLight.EquirectangularMap = AssetManager::Instance->GetHandleFromUUID(skyLight_NewComponent["EquirectangularMap"].as<UUID>());
-			AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap);
+			AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap.Get());
 		}
 
 		auto soundSource_NewComponent = entityNode["Component::AudioSource"];
@@ -673,7 +673,7 @@ namespace HBL2
 			t.NoiseScale = t_NewComponent["NoiseScale"].as<float>();
 
 			t.Material = AssetManager::Instance->GetHandleFromUUID(t_NewComponent["Material"].as<UUID>());
-			AssetManager::Instance->GetAsset<Material>(t.Material);
+			AssetManager::Instance->GetAsset<Material>(t.Material.Get());
 
 			t.AddColliders = t_NewComponent["AddColliders"].as<bool>();
 			t.UseFalloffMap = t_NewComponent["UseFalloffMap"].as<bool>();

@@ -22,8 +22,6 @@ namespace HBL2
 
 	struct VulkanBufferCold
 	{
-		void ReAllocate(uint32_t currentOffset);
-
 		const char* DebugName = "";
 		uint32_t ByteOffset = 0;
 		VkBufferUsageFlags BufferUsageFlags = VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;

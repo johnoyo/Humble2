@@ -140,7 +140,7 @@ namespace HBL2
                         return;
                     }
 
-                    dst->m_Registry.AddOrReplaceComponent<Component>(entity, std::forward<Component>(component));
+                    dst->m_Registry.GetOrAddComponent<Component>(entity) = component;
                 });
         };
 

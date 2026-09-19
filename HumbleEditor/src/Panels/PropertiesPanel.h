@@ -23,6 +23,7 @@ namespace HBL2::Editor
 
 	private:
 		Handle<Asset> m_PreviouslySelectedAsset;
+		bool m_PinAsset = false;
 
 		bool m_ReimportTexture = false;
 		bool m_UpdateTexture = false;

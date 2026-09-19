@@ -14,7 +14,7 @@
 
 namespace HBL2
 {
-    enum class ResourceType : uint8_t
+    enum class ShaderResourceType : uint8_t
     {
         UniformBuffer,   // ConstantBuffer<T>
         StorageBuffer,   // RWStructuredBuffer / StructuredBuffer
@@ -58,7 +58,7 @@ namespace HBL2
         std::string name;
         uint32_t binding;
         uint32_t set;
-        ResourceType type;
+        ShaderResourceType type;
         uint32_t count;           // array size, 1 for non-arrays
         uint64_t size;       // byte size of the underlying type; 0 for opaque resources
         std::vector<UniformMember> members;
@@ -150,12 +150,12 @@ namespace HBL2
         friend class ShaderReflectionData;
 
         static ShaderStage ToShaderStage(SlangStage stage);
-        static ResourceType ToResourceType(slang::TypeReflection* type);
+        static ShaderResourceType ToResourceType(slang::TypeReflection* type);
         static VertexFormat ToVertexFormat(slang::TypeReflection* type);
         static uint32_t ComponentCount(VertexFormat format);
         static uint32_t FormatSizeBytes(VertexFormat format);
         static const char* VertexFormatToString(VertexFormat format);
-        static const char* ResourceTypeToString(ResourceType type);
+        static const char* ResourceTypeToString(ShaderResourceType type);
         static const char* ShaderStageToString(BitFlags<ShaderStage> stageMask);
         static ShaderConstantType ToConstantType(slang::TypeReflection* type);
         static const char* ConstantTypeToString(ShaderConstantType type);

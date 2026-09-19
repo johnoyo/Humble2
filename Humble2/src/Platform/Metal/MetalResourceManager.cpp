@@ -48,6 +48,10 @@ namespace HBL2
     {
         return m_TexturePool.Insert(std::forward<const TextureDescriptor>(desc));
     }
+    void MetalResourceManager::ReimportTexture(Handle<Texture> handle, const TextureDescriptor&& desc)
+    {
+
+    }
     void MetalResourceManager::DeleteTexture(Handle<Texture> handle)
     {
         m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
@@ -323,7 +327,7 @@ namespace HBL2
             DeleteBindGroupLayout(bindGroupCold->BindGroupLayout);
         }
 
-        if (bindGroupCold->ReleaseRefAndMaybeDelete())
+        if (bindGroupCold->TryReleaseRef())
         {
             m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
             {
@@ -438,7 +442,7 @@ namespace HBL2
             return;
         }
 
-        if (bindGroupLayout->ReleaseRefAndMaybeDelete())
+        if (bindGroupLayout->TryReleaseRef())
         {
             m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
             {
@@ -537,6 +541,43 @@ namespace HBL2
     MetalRenderPassLayout* MetalResourceManager::GetRenderPassLayout(Handle<RenderPassLayout> handle) const
     {
         return m_RenderPassLayoutPool.Get(handle);
+    }
+
+    void MetalResourceManager::Acquire(uint32_t packedHandle, ResourceType resourceType)
+    {
+        if (resourceType == ResourceType::BindGroup)
+        {
+            Handle<BindGroup> handle = Handle<BindGroup>::UnPack(packedHandle);
+            // m_BindGroupSplitPool.Acquire(handle);
+        }
+        else if (resourceType == ResourceType::BindGroupLayout)
+        {
+            Handle<BindGroupLayout> handle = Handle<BindGroupLayout>::UnPack(packedHandle);
+            // m_BindGroupLayoutPool.Acquire(handle);
+        }
+        else if (resourceType == ResourceType::Texture)
+        {
+            Handle<Texture> handle = Handle<Texture>::UnPack(packedHandle);
+            // m_TexturePool.Acquire(handle);
+        }
+    }
+    void MetalResourceManager::Release(uint32_t packedHandle, ResourceType resourceType)
+    {
+        if (resourceType == ResourceType::BindGroup)
+        {
+            Handle<BindGroup> handle = Handle<BindGroup>::UnPack(packedHandle);
+            // m_BindGroupSplitPool.Release(handle);
+        }
+        else if (resourceType == ResourceType::BindGroupLayout)
+        {
+            Handle<BindGroupLayout> handle = Handle<BindGroupLayout>::UnPack(packedHandle);
+            // m_BindGroupLayoutPool.Release(handle);
+        }
+        else if (resourceType == ResourceType::Texture)
+        {
+            Handle<Texture> handle = Handle<Texture>::UnPack(packedHandle);
+            // m_TexturePool.Release(handle);
+        }
     }
 }
 
