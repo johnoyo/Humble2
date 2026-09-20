@@ -116,7 +116,7 @@ namespace HBL2
         
         for (auto buffer : m_BuffersWrite)
         {
-            MemoryBarrier(buffer, TextureLayout::GENERAL, TextureLayout::EGENERIC_READ);
+			MemoryBufferBarrier(buffer, TextureLayout::GENERAL, TextureLayout::EGENERIC_READ);
         }
 
         m_TexturesWrite = {};
@@ -165,7 +165,7 @@ namespace HBL2
 
     void VulkanCommandBuffer::TextureBarrier(VulkanTexture* vkTexture, TextureLayout oldLayout, TextureLayout newLayout)
     {
-        HBL2_ASSERT(m_CurrentPassType != VulkanPassType::Render,
+        HBL2_CORE_ASSERT(m_CurrentPassType != VulkanPassType::Render,
             "TextureBarrier called while a render pass is open — vkCmdPipelineBarrier for a "
             "non-attachment image is illegal inside vkCmdBeginRenderPass/EndRenderPass. "
             "Call this between passes instead.");
@@ -197,7 +197,7 @@ namespace HBL2
         vkTexture->ImageLayout = barrier.newLayout;
     }
 
-    void VulkanCommandBuffer::MemoryBarrier(Handle<Buffer> buffer, TextureLayout oldLayout, TextureLayout newLayout)
+    void VulkanCommandBuffer::MemoryBufferBarrier(Handle<Buffer> buffer, TextureLayout oldLayout, TextureLayout newLayout)
     {
         HBL2_ASSERT(m_CurrentPassType != VulkanPassType::Render, "MemoryBarrier called while a render pass is open.");
 

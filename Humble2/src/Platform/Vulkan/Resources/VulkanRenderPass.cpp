@@ -105,7 +105,7 @@ namespace HBL2
 			}
 		}
 
-		//we are going to create 1 subpass, which is the minimum you can do
+		// Create 1 subpass, which is the minimum you can do.
 		VkSubpassDescription subpass =
 		{
 			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -143,12 +143,21 @@ namespace HBL2
         ColorTargets = desc.colorTargets;
         DepthTarget = desc.depthTarget;
         
-        VulkanDevice* device = (VulkanDevice*)Device::Instance;
+		VulkanDevice* device = (VulkanDevice*)Device::Instance;
+        VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
         VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
         if (FrameBuffer != VK_NULL_HANDLE)
         {
-            vkDestroyFramebuffer(device->Get(), FrameBuffer, nullptr);
+			VkFramebuffer oldFrameBuffer = FrameBuffer;
+
+			rm->GetDeletionQueue().Push(renderer->GetFrameNumber(), [=]()
+			{
+				VulkanDevice* device = (VulkanDevice*)Device::Instance;
+				vkDestroyFramebuffer(device->Get(), oldFrameBuffer, nullptr);
+			});
+
+			FrameBuffer = VK_NULL_HANDLE;
         }
 
         std::vector<VkImageView> attachments;

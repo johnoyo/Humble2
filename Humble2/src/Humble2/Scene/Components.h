@@ -12,6 +12,7 @@
 #include "Resources/Types.h"
 #include "Sound/Sound.h"
 #include "Asset/Asset.h"
+#include "Asset/AssetManager.h"
 
 #include "Physics/Physics.h"
 #include "Utilities/Bounds.h"

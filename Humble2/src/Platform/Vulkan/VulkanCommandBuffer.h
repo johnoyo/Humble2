@@ -46,7 +46,7 @@ namespace HBL2
         
         void TextureBarrier(Handle<Texture> texture, TextureLayout oldLayout, TextureLayout newLayout);
         void TextureBarrier(VulkanTexture* vkTexture, TextureLayout oldLayout, TextureLayout newLayout);
-        void MemoryBarrier(Handle<Buffer> buffer, TextureLayout oldLayout, TextureLayout newLayout);
+        void MemoryBufferBarrier(Handle<Buffer> buffer, TextureLayout oldLayout, TextureLayout newLayout);
 
 		VkCommandBuffer CommandBuffer;
         

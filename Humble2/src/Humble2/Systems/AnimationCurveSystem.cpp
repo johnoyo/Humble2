@@ -122,20 +122,31 @@ namespace HBL2
 
 	void AnimationCurveSystem::SetPreset(Component::AnimationCurve& curve)
 	{
-		const auto mid = [](Component::AnimationCurve::CurvePreset pr) -> float
-		{
-			switch (pr)
-			{
-			case Component::AnimationCurve::CurvePreset::Linear:           return 0.50f;
-			case Component::AnimationCurve::CurvePreset::QuadraticEaseIn:  return 0.25f;
-			case Component::AnimationCurve::CurvePreset::QuadraticEaseOut: return 0.75f;
-			case Component::AnimationCurve::CurvePreset::CubicEaseIn:      return 0.125f;
-			case Component::AnimationCurve::CurvePreset::CubicEaseOut:     return 0.875f;
-			default:													   return 0.50f;
-			}
-		};
+		float mid = 0.5f;
 
-		curve.Keys = { { 0.01f, 0.01f }, { 0.5f, mid(curve.Preset) }, { 1.0f, 1.0f } };
+		switch (curve.Preset)
+		{
+		case Component::AnimationCurve::CurvePreset::Linear:
+			mid = 0.50f;
+			break;
+		case Component::AnimationCurve::CurvePreset::QuadraticEaseIn:
+			mid = 0.25f;
+			break;
+		case Component::AnimationCurve::CurvePreset::QuadraticEaseOut:
+			mid = 0.75f;
+			break;
+		case Component::AnimationCurve::CurvePreset::CubicEaseIn:
+			mid = 0.125f;
+			break;
+		case Component::AnimationCurve::CurvePreset::CubicEaseOut:
+			mid = 0.875f;
+			break;
+		default:
+			mid = 0.50f;
+			break;
+		}
+
+		curve.Keys = { { 0.01f, 0.01f }, { 0.5f, mid }, { 1.0f, 1.0f } };
 
 		RecalculateTangents(curve);
 	}

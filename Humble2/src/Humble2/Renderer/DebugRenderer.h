@@ -32,15 +32,15 @@ namespace HBL2
 		DrawList Draws;
 
 		uint32_t CurrentLineIndex = 0;
-		DArray<DebugVertex> LineVerts = MakeEmptyDArray<DebugVertex>();
+		FixedArray<DebugVertex> LineVerts;
 
 		uint32_t CurrentFillIndex = 0;
-		DArray<DebugVertex> FillTrisVerts = MakeEmptyDArray<DebugVertex>();
-		//DArray<uint32_t> FillTrisIndices = MakeEmptyDArray<uint32_t>();
+		FixedArray<DebugVertex> FillTrisVerts;
+		//FixedArray<uint32_t> FillTrisIndices;
 
 		uint32_t CurrentWireIndex = 0;
-		DArray<DebugVertex> WireTrisVerts = MakeEmptyDArray<DebugVertex>();
-		//DArray<uint32_t> WireTrisIndices = MakeEmptyDArray<uint32_t>();
+		FixedArray<DebugVertex> WireTrisVerts;
+		//FixedArray<uint32_t> WireTrisIndices;
 	};
 
 	class HBL2_API DebugRenderer

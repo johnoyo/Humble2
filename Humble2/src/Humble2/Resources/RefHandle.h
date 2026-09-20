@@ -24,11 +24,13 @@ namespace HBL2
 		Prefab,
 	};
 
+	template<typename T> inline constexpr bool always_false_v = false;
+
 	template<typename T>
 	struct PoolAccess
 	{
-		static void Acquire(Handle<T> handle);
-		static void Release(Handle<T> handle);
+		static void Acquire(Handle<T>) { static_assert(always_false_v<T>, "No PoolAccess specialization visible for this T"); }
+		static void Release(Handle<T>) { static_assert(always_false_v<T>, "No PoolAccess specialization visible for this T"); }
 	};
 
 	template<typename T>
