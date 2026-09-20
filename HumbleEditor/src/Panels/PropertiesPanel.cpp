@@ -2351,7 +2351,7 @@ namespace HBL2::Editor
 					SceneDescriptor& desc = scene->GetDescriptor();
 
 					bool dirty = false;
-					dirty |= ImGui::InputInt("MaxEntities", (int*)&desc.maxEntities, 4096);
+					dirty |= ImGui::InputInt("MaxEntities", (int*)&desc.maxEntities, 4096, 4096);
 					dirty |= ImGui::InputInt("MaxComponents", (int*)&desc.maxComponents);
 					dirty |= ImGui::InputInt("MaxSystems", (int*)&desc.maxSystems);
 					dirty |= ImGui::InputInt("MaxJobsPerSystem", (int*)&desc.maxJobsPerSystem);

@@ -43,12 +43,14 @@ namespace HBL2::Editor
 		uint32_t m_ShaderUniformTextureSize = 0;
 		uint32_t m_SelectedMaterialType = 0;
 
-		std::string m_ShaderNameBuffer = "New-Shader";
-		std::string m_ScriptNameBuffer = "NewHelperScript";
-		std::string m_ComponentNameBuffer = "NewComponent";
-		std::string m_SystemNameBuffer = "NewSystem";
-		std::string m_SceneNameBuffer = "NewScene";
-		std::string m_FolderNameBuffer = "NewFolder";
+		static constexpr int MaxCharBufferSize = 128;
+
+		char m_ShaderNameBuffer[MaxCharBufferSize] = "NewShader";
+		char m_ScriptNameBuffer[MaxCharBufferSize] = "NewHelperScript";
+		char m_ComponentNameBuffer[MaxCharBufferSize] = "NewComponent";
+		char m_SystemNameBuffer[MaxCharBufferSize] = "NewSystem";
+		char m_SceneNameBuffer[MaxCharBufferSize] = "NewScene";
+		char m_FolderNameBuffer[MaxCharBufferSize] = "NewFolder";
 
 		uint32_t m_ShaderAssetHandlePacked = 0;
 		std::string m_MaterialNameBuffer = "New-Material";

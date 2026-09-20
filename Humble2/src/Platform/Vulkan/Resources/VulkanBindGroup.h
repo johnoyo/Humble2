@@ -18,10 +18,26 @@ namespace HBL2
 
 	struct VulkanBindGroupCold : public RefCounted
 	{
+		static constexpr uint32_t MaxTextureEntries = 6;
+		static constexpr uint32_t MaxBufferEntries = 6;
+
+		struct TextureEntry
+		{
+			Handle<Texture> texture;
+			TextureLayout desiredLayout = TextureLayout::UNDEFINED;
+			Handle<ReimportDependency> dependency;
+		};
+		struct BufferEntry
+		{
+			Handle<Buffer> buffer;
+			uint32_t byteOffset = 0;
+			uint32_t range = 0;
+		};
+
 		const char* DebugName = "";
 		Handle<BindGroupLayout> BindGroupLayout;
-		std::vector<BindGroupDescriptor::TextureEntry> Textures;
-		std::vector<BindGroupDescriptor::BufferEntry> Buffers;
+		StaticDArray<TextureEntry, MaxTextureEntries> Textures;
+		StaticDArray<BufferEntry, MaxBufferEntries> Buffers;
 
 		void Destroy();
 	};
@@ -34,7 +50,7 @@ namespace HBL2
 
 		bool IsValid() const;
 
-		void Initialize(const BindGroupDescriptor&& desc);
+		void Initialize(Handle<BindGroup> self, const BindGroupDescriptor&& desc);
 		void Update();
 		void Destroy();
 

@@ -135,7 +135,7 @@ namespace HBL2
 			}
 		};
 
-		curve.Keys = { { 0.0f, 0.0f }, { 0.5f, mid(curve.Preset) }, { 1.0f, 1.0f } };
+		curve.Keys = { { 0.01f, 0.01f }, { 0.5f, mid(curve.Preset) }, { 1.0f, 1.0f } };
 
 		RecalculateTangents(curve);
 	}

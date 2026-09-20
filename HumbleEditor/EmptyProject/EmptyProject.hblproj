@@ -40,7 +40,7 @@ Project:
     Camera Zoom Speed: 1
     Camera Scroll Zoom Speed: 10
   Advanced:
-    Max App Memory (MB): 750
+    Max App Memory (MB): 1000
     Max Main Thread Frame Arena Memory (MB): 32
     Max Render Thread Frame Arena Memory (MB): 8
     Max Worker Memory (MB): 2

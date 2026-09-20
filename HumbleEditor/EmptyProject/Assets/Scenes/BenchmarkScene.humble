@@ -1,0 +1,109 @@
+Scene: BenchmarkScene
+Entities:
+  - Entity: 1
+    Component::Tag:
+      Tag: SkyLight
+    Component::ID:
+      ID: 6209559403279831040
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    Component::SkyLight:
+      Enabled: true
+      EquirectangularMap: 6203812838040720333
+  - Entity: 2
+    Component::Tag:
+      Tag: Camera
+    Component::ID:
+      ID: 9392739696137134080
+    Component::Transform:
+      Translation: [0, 80, 210]
+      Rotation: [-15, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    Component::Camera:
+      Enabled: true
+      Primary: true
+      Far: 1000
+      Near: 0.100000001
+      FOV: 30
+      Aspect Ratio: 2.47757244
+      Exposure: 1
+      Gamma: 2.20000005
+      Zoom Level: 300
+      Type: 0
+  - Entity: 3
+    Component::Tag:
+      Tag: Sun
+    Component::ID:
+      ID: 8428477097434796032
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    Component::Light:
+      Enabled: true
+      CastsShadows: false
+      Intensity: 1
+      Color: [1, 1, 1]
+      Type: 0
+      Distance: 50
+      InnerCutOff: 12.5
+      OuterCutOff: 17.5
+      ConstantBias: 0.00200000009
+      SlopeBias: 0
+      NormalOffsetScale: 0
+      FieldOfView: 60
+  - Entity: 4
+    Component::Tag:
+      Tag: Benchmark
+    Component::ID:
+      ID: 11931383794032949248
+    Component::Transform:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    BenchmarkComponent:
+      Cubes: 6400
+      CubeMaterial: 6805961995243789723
+      Spheres: 6400
+      SphereMaterial: 4720716532741265419
+      Cylinders: 6400
+      CylinderMaterial: 17674126706215361874
+      Torus: 6400
+      TorusMaterial: 2424841968117342138
+      Capsules: 6400
+      CapsuleMaterial: 5943600009211747259
+      Monkeys: 6889
+      Sprites: 6400
+      UniqueMaterials: true
+      Terrain: true
+      TerrainMaterial: 8028564448814204329
+User Systems:
+  - 8502399835964988416
+  - 1446947720767051862
+User Components:
+  - 14922873939048706048
+  - 7276202125255088842
+User Helper Scripts:
+  - 14679799005195782872

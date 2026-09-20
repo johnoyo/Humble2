@@ -76,21 +76,26 @@ namespace HBL2
 
 	void ForwardSceneRenderer::Initialize(Scene* scene)
 	{
-		// Each draw list is pre allocated with ~2MB of space (~32K draws), we have 16 draw lists, 8 for each renderData in flight.
-		// So, for the draw lists we need ~32MB.
-		m_Reservation = Allocator::Arena.Reserve("ForwardSceneRendererPool", (Renderer::Instance->FrameCount * 8 * 2_MB) + 32_MB);
-		m_Arena.Initialize(&Allocator::Arena, (Renderer::Instance->FrameCount * 8 * 2_MB) + 32_MB, m_Reservation);
+		uint32_t maxEntities = scene->GetDescriptor().maxEntities;
+
+		// Calculate space needed for the 8 draw lists per frame in flight.
+		uint64_t totalBytes = ArenaLayout::Create()
+			.Add<LocalDrawStream>(Renderer::Instance->FrameCount * 8 * maxEntities)
+			.Total();
+
+		m_Reservation = Allocator::Arena.Reserve("ForwardSceneRendererPool", totalBytes);
+		m_Arena.Initialize(&Allocator::Arena, totalBytes, m_Reservation);
 
 		for (auto& sceneRenderData : m_RenderData)
 		{
-			sceneRenderData.m_PrePassSpriteDraws.Initialize(m_Arena);
-			sceneRenderData.m_PrePassStaticMeshDraws.Initialize(m_Arena);
-			sceneRenderData.m_ShadowPassSpriteDraws.Initialize(m_Arena);
-			sceneRenderData.m_ShadowPassStaticMeshDraws.Initialize(m_Arena);
-			sceneRenderData.m_SpriteOpaqueDraws.Initialize(m_Arena);
-			sceneRenderData.m_SpriteTransparentDraws.Initialize(m_Arena);
-			sceneRenderData.m_StaticMeshOpaqueDraws.Initialize(m_Arena);
-			sceneRenderData.m_StaticMeshTransparentDraws.Initialize(m_Arena);
+			sceneRenderData.m_PrePassSpriteDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_PrePassStaticMeshDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_ShadowPassSpriteDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_ShadowPassStaticMeshDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_SpriteOpaqueDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_SpriteTransparentDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_StaticMeshOpaqueDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_StaticMeshTransparentDraws.Initialize(m_Arena, maxEntities);
 		}
 
 		m_Scene = scene;

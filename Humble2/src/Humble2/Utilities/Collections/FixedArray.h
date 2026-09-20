@@ -2,6 +2,7 @@
 
 #include "Base.h"
 #include "Utilities/Allocators/Arena.h"
+#include "Utilities/Allocators/ScratchArena.h"
 
 #include <cstdint>
 #include <initializer_list>
@@ -20,6 +21,12 @@ namespace HBL2
         /// Constructor with capacity
         explicit FixedArray(Arena* arena, uint32_t inCapacity)
             : m_Arena(arena), m_Capacity(inCapacity)
+        {
+            m_Elements = (T*)m_Arena->Alloc(sizeof(T) * m_Capacity, alignof(T));
+        }
+
+        explicit FixedArray(ScratchArena* scratch, uint32_t inCapacity)
+            : m_Arena(scratch->GetArena()), m_Capacity(inCapacity)
         {
             m_Elements = (T*)m_Arena->Alloc(sizeof(T) * m_Capacity, alignof(T));
         }

@@ -2,7 +2,10 @@
 
 #include "Base.h"
 
+#include "ECS/SingletonComponentStorage.h"
+#include "ECS/SmallComponentStorage.h"
 #include "ECS/DenseComponentStorage.h"
+#include "ECS/SparseComponentStorage.h"
 
 #include "Resources/Handle.h"
 #include "Resources/RefHandle.h"

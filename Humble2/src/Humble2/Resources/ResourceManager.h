@@ -34,6 +34,28 @@ namespace HBL2
 		uint32_t Scripts = 32;
 		uint32_t Sounds = 32;
 		uint32_t Prefabs = 64;
+		uint32_t ReimportDependencies = 1024;
+	};
+
+	struct ReimportDependency
+	{
+		struct Description
+		{
+			uint32_t PackedResource = 0;
+			ResourceType ResourceType = ResourceType::None;
+		};
+
+		Description Resource;
+		Description Dependent;
+
+		void Invalidate()
+		{
+			Resource.PackedResource = 0;
+			Resource.ResourceType = ResourceType::None;
+
+			Dependent.PackedResource = 0;
+			Dependent.ResourceType = ResourceType::None;
+		}
 	};
 
 	class HBL2_API ResourceManager
@@ -43,6 +65,45 @@ namespace HBL2
 
 		ResourceManager() = default;
 		virtual ~ResourceManager() = default;
+
+		template<typename TResource, typename TDependent>
+		Handle<ReimportDependency> AddReimportDependency(Handle<TResource> resourceHandle, Handle<TDependent> dependentHandle)
+		{
+			return m_ReimportDependenciesPool.Insert(ReimportDependency{
+				{ resourceHandle.Pack(), GetResourceType<TResource>() },
+				{ dependentHandle.Pack(), GetResourceType<TDependent>() }
+			});
+		}
+		void RemoveReimportDependency(Handle<ReimportDependency> handle)
+		{
+			ReimportDependency* dep = m_ReimportDependenciesPool.Get(handle);
+			if (dep != nullptr)
+			{
+				dep->Invalidate();
+			}
+
+			m_ReimportDependenciesPool.Remove(handle);
+		}
+
+		template<typename T>
+		constexpr ResourceType GetResourceType()
+		{
+			if constexpr (std::same_as<T, Mesh>) return ResourceType::Mesh;
+			if constexpr (std::same_as<T, Material>) return ResourceType::Material;
+			if constexpr (std::same_as<T, Shader>) return ResourceType::Shader;
+			if constexpr (std::same_as<T, Buffer>) return ResourceType::Buffer;
+			if constexpr (std::same_as<T, Texture>) return ResourceType::Texture;
+			if constexpr (std::same_as<T, Prefab>) return ResourceType::Prefab;
+			if constexpr (std::same_as<T, Script>) return ResourceType::Script;
+			if constexpr (std::same_as<T, Sound>) return ResourceType::Sound;
+			if constexpr (std::same_as<T, Scene>) return ResourceType::Scene;
+			if constexpr (std::same_as<T, BindGroup>) return ResourceType::BindGroup;
+			if constexpr (std::same_as<T, BindGroupLayout>) return ResourceType::BindGroupLayout;
+			if constexpr (std::same_as<T, RenderPass>) return ResourceType::RenderPass;
+			if constexpr (std::same_as<T, RenderPassLayout>) return ResourceType::RenderPassLayout;
+
+			return ResourceType::None;
+		}
 
 		const ResourceManagerSpecification& GetSpec() const;
 		ResourceDeletionQueue& GetDeletionQueue();
@@ -153,6 +214,8 @@ namespace HBL2
 		Pool<Script, Script> m_ScriptPool;
 		Pool<Sound, Sound> m_SoundPool;
 		Pool<Prefab, Prefab> m_PrefabPool;
+
+		Pool<ReimportDependency, ReimportDependency> m_ReimportDependenciesPool;
 	};
 
 	template<> inline void PoolAccess<Mesh>::Acquire(Handle<Mesh> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::Mesh); }

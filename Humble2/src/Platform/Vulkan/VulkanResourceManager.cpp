@@ -52,6 +52,18 @@ namespace HBL2
 		if (texture != nullptr)
 		{
 			texture->Reimport(std::forward<const TextureDescriptor>(desc), true);
+
+			for (const auto& dependencyDesc : m_ReimportDependenciesPool.GetDataPool())
+			{
+				if (dependencyDesc.Resource.ResourceType == ResourceType::Texture && dependencyDesc.Resource.PackedResource == handle.Pack())
+				{
+					if (dependencyDesc.Dependent.ResourceType == ResourceType::BindGroup)
+					{
+						Handle<BindGroup> bindGroupHandle = Handle<BindGroup>::UnPack(dependencyDesc.Dependent.PackedResource);
+						UpdateBindGroup(bindGroupHandle);
+					}
+				}
+			}
 		}
 	}
 	void VulkanResourceManager::DeleteTexture(Handle<Texture> handle)
@@ -307,7 +319,7 @@ namespace HBL2
 
 		VulkanBindGroup bindgroup;
 		Handle<BindGroup> bg = m_BindGroupSplitPool.Insert(&bindgroup.Hot, &bindgroup.Cold);
-		bindgroup.Initialize(std::move(desc));
+		bindgroup.Initialize(bg, std::move(desc));
 
 		// Increase ref count of bindgroup.
 		bindgroup.Cold->TryAddRef();

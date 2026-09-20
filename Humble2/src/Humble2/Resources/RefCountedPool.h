@@ -15,15 +15,15 @@
 
 namespace HBL2
 {
-    struct PoolSlotMeta
-    {
-        std::atomic<uint16_t> GenerationalCounter{ 0 };
-        RefCounted ReferenceCounter{ 0 };
-    };
-
     template <typename T, typename H>
     class RefCountedPool
     {
+        struct PoolSlotMeta
+        {
+            std::atomic<uint16_t> GenerationalCounter{ 0 };
+            RefCounted ReferenceCounter{ 0 };
+        };
+
     public:
         static constexpr uint16_t InvalidIndex = LockFreeIndexStack::InvalidIndex;
         static constexpr uint16_t MaxReferenceCount = 4096;
@@ -133,12 +133,6 @@ namespace HBL2
             {
                 return nullptr;
             }
-
-            //const uint16_t refCount = m_Meta[idx].ReferenceCounter.RefCount.load(std::memory_order_acquire);
-            //if (refCount == 0)
-            //{
-            //    return nullptr;
-            //}
 
             return &m_Data[idx];
         }

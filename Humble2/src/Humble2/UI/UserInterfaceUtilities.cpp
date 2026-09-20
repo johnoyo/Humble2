@@ -32,119 +32,115 @@ namespace HBL2
 		return instance;
 	}
 
-	static void HandleAssetDragAndDrop(Handle<Asset> assetHandle, Reflect::Any& fieldMeta)
+	static void HandleAssetDragAndDrop(Reflect::Any& fieldMeta)
 	{
-		Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
-
-		if (asset == nullptr)
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
 		{
+			uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+			Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+			if (assetHandle.IsValid())
+			{
+				fieldMeta.Set(assetHandle);
+				AssetManager::Instance->GetAsset<Texture>(assetHandle);
+			}
+
 			return;
 		}
 
-		switch (asset->Type)
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Shader"))
 		{
-		case AssetType::Texture:
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Texture"))
-			{
-				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+			uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+			Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
 
-				if (assetHandle.IsValid())
-				{
-					fieldMeta.Set(assetHandle);
-					AssetManager::Instance->GetAsset<Texture>(assetHandle);
-				}
+			if (assetHandle.IsValid())
+			{
+				fieldMeta.Set(assetHandle);
+				AssetManager::Instance->GetAsset<Shader>(assetHandle);
+			}
+
+			return;
+		}
+
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
+		{
+			uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+			Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+			if (assetHandle.IsValid())
+			{
+				fieldMeta.Set(assetHandle);
+				AssetManager::Instance->GetAsset<Material>(assetHandle);
+			}
+
+			return;
+		}
+
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
+		{
+			uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+			Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+			if (assetHandle.IsValid())
+			{
+				fieldMeta.Set(assetHandle);
+				AssetManager::Instance->GetAsset<Mesh>(assetHandle);
 			}
 			return;
-		case AssetType::Shader:
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Shader"))
-			{
-				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+		}
 
-				if (assetHandle.IsValid())
-				{
-					fieldMeta.Set(assetHandle);
-					AssetManager::Instance->GetAsset<Shader>(assetHandle);
-				}
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Scene"))
+		{
+			uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+			Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+			if (assetHandle.IsValid())
+			{
+				fieldMeta.Set(assetHandle);
+				AssetManager::Instance->GetAsset<Scene>(assetHandle);
 			}
 			return;
-		case AssetType::Material:
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
-			{
-				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+		}
 
-				if (assetHandle.IsValid())
-				{
-					fieldMeta.Set(assetHandle);
-					AssetManager::Instance->GetAsset<Material>(assetHandle);
-				}
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Prefab"))
+		{
+			uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+			Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+			if (assetHandle.IsValid())
+			{
+				fieldMeta.Set(assetHandle);
+				AssetManager::Instance->GetAsset<Prefab>(assetHandle);
 			}
+
 			return;
-		case AssetType::Mesh:
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
-			{
-				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+		}
 
-				if (assetHandle.IsValid())
-				{
-					fieldMeta.Set(assetHandle);
-					AssetManager::Instance->GetAsset<Mesh>(assetHandle);
-				}
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Sound"))
+		{
+			uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+			Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+			if (assetHandle.IsValid())
+			{
+				fieldMeta.Set(assetHandle);
+				AssetManager::Instance->GetAsset<Sound>(assetHandle);
 			}
+
 			return;
-		case AssetType::Scene:
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Scene"))
-			{
-				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+		}
 
-				if (assetHandle.IsValid())
-				{
-					fieldMeta.Set(assetHandle);
-					AssetManager::Instance->GetAsset<Scene>(assetHandle);
-				}
-			}
-			return;
-		case AssetType::Prefab:
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Prefab"))
-			{
-				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Script"))
+		{
+			uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+			Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
 
-				if (assetHandle.IsValid())
-				{
-					fieldMeta.Set(assetHandle);
-					AssetManager::Instance->GetAsset<Prefab>(assetHandle);
-				}
-			}
-			return;
-		case AssetType::Sound:
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Sound"))
+			if (assetHandle.IsValid())
 			{
-				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
-
-				if (assetHandle.IsValid())
-				{
-					fieldMeta.Set(assetHandle);
-					AssetManager::Instance->GetAsset<Sound>(assetHandle);
-				}
+				fieldMeta.Set(assetHandle);
+				AssetManager::Instance->GetAsset<Script>(assetHandle);
 			}
-		case AssetType::Script:
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Script"))
-			{
-				uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
-				Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
 
-				if (assetHandle.IsValid())
-				{
-					fieldMeta.Set(assetHandle);
-					AssetManager::Instance->GetAsset<Script>(assetHandle);
-				}
-			}
 			return;
 		}
 	}
@@ -390,7 +386,7 @@ namespace HBL2
 
 			if (ImGui::BeginDragDropTarget())
 			{
-				HandleAssetDragAndDrop(*v, fieldMeta);
+				HandleAssetDragAndDrop(fieldMeta);
 
 				ImGui::EndDragDropTarget();
 			}
@@ -402,7 +398,7 @@ namespace HBL2
 
 			if (ImGui::BeginDragDropTarget())
 			{
-				HandleAssetDragAndDrop(v->Get(), fieldMeta);
+				HandleAssetDragAndDrop(fieldMeta);
 
 				ImGui::EndDragDropTarget();
 			}

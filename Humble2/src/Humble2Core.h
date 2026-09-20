@@ -22,6 +22,7 @@
 
 #include "UI/LayoutLib.h"
 
+#include "Utilities/MeshUtilities.h"
 #include "Utilities/Collections/StaticArray.h"
 #include "Utilities/Collections/BitFlags.h"
 

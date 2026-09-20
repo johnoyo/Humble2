@@ -5,7 +5,7 @@
 #include "Resources/ResourceManager.h"
 
 #include "Core/Allocators.h"
-#include "Utilities/Collections/Collections.h"
+#include "Utilities/Collections/FixedArray.h"
 
 namespace HBL2
 {
@@ -60,6 +60,6 @@ namespace HBL2
 		const Span<const LocalDrawStream> GetDraws() const { return { m_Draws.data(), m_Draws.size() }; }
 
 	private:
-		DArray<LocalDrawStream> m_Draws = MakeEmptyDArray<LocalDrawStream>();
+		FixedArray<LocalDrawStream> m_Draws;
 	};
 }

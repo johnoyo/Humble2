@@ -6,6 +6,8 @@ namespace HBL2
 
 	void ResourceManager::InternalInitialize()
 	{
+		m_ReimportDependenciesPool.Initialize(m_Spec.ReimportDependencies);
+		
 		m_MeshPool.Initialize(m_Spec.Meshes);
 		m_MaterialPool.Initialize(m_Spec.Materials);
 		m_ScenePool.Initialize(m_Spec.Scenes);
