@@ -96,6 +96,7 @@ Entities:
       CapsuleMaterial: 5943600009211747259
       Monkeys: 6889
       Sprites: 6400
+      EnablePhysics: true
       UniqueMaterials: true
       Terrain: true
       TerrainMaterial: 8028564448814204329
