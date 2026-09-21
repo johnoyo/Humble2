@@ -7,7 +7,7 @@
 
 #include "Core/Allocators.h"
 #include "Allocators/Arena.h"
-#include "Collections/Collections.h"
+#include "Collections/FixedArray.h"
 
 #include "moodycamel/concurrentqueue.h"
 
@@ -82,9 +82,9 @@ namespace HBL2
 
         uint32_t m_NumThreads = 0;
 
-        DArray<std::thread> m_Workers = MakeEmptyDArray<std::thread>();
-        DArray<Arena*> m_WorkerArenas = MakeEmptyDArray<Arena*>();
-        DArray<moodycamel::ConcurrentQueue<std::function<void()>>> m_LocalJobQueues = MakeEmptyDArray<moodycamel::ConcurrentQueue<std::function<void()>>>();
+        FixedArray<std::thread> m_Workers;
+        FixedArray<Arena*> m_WorkerArenas;
+        FixedArray<moodycamel::ConcurrentQueue<std::function<void()>>> m_LocalJobQueues;
 
         std::condition_variable m_WakeCondition;
         std::mutex m_WakeMutex;

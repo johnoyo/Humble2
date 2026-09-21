@@ -40,12 +40,25 @@ namespace HBL2
 
         // NOTE: The '+2' is to accomondate the worker arena of the render and game thread.
         //       We need one for them for seamless behaviour and simple logic.
+        uint64_t jobSystemBytes = ArenaLayout::Create()
+            .Add<Arena>(m_NumThreads + 2)
+            .Add<Arena*>(m_NumThreads + 2)
+            .Add<std::thread>(m_NumThreads)
+            .Add<moodycamel::ConcurrentQueue<std::function<void()>>>(m_NumThreads)
+            .Total();
 
-        m_Reservation = Allocator::Arena.Reserve("JobSystemPool", (ThreadArenaSize * (m_NumThreads + 2)) + 100_KB);
-        m_JobSystemArena.Initialize(&Allocator::Arena, 100_KB, m_Reservation);
+        uint64_t workerArenasBytes = ArenaLayout::Create()
+            .AddRaw(ThreadArenaSize * (m_NumThreads + 2), alignof(max_align_t))
+            .Total();
 
-        m_WorkerArenas = MakeDArrayResized<Arena*>(m_JobSystemArena, m_NumThreads + 2);
-        m_LocalJobQueues = MakeDArrayResized<moodycamel::ConcurrentQueue<std::function<void()>>>(m_JobSystemArena, m_NumThreads);
+        m_Reservation = Allocator::Arena.Reserve("JobSystemPool", jobSystemBytes + workerArenasBytes);
+        m_JobSystemArena.Initialize(&Allocator::Arena, jobSystemBytes, m_Reservation);
+
+        m_WorkerArenas = FixedArray<Arena*>(&m_JobSystemArena, m_NumThreads + 2);
+        m_WorkerArenas.resize(m_NumThreads + 2);
+
+        m_LocalJobQueues = FixedArray<moodycamel::ConcurrentQueue<std::function<void()>>>(&m_JobSystemArena, m_NumThreads);
+        m_LocalJobQueues.resize(m_NumThreads);
 
         for (int i = 0; i < m_NumThreads + 2; i++)
         {
@@ -53,11 +66,12 @@ namespace HBL2
             m_WorkerArenas[i]->Initialize(&Allocator::Arena, ThreadArenaSize, m_Reservation);
         }
 
-        m_Workers = MakeDArray<std::thread>(m_JobSystemArena, m_NumThreads);
+        m_Workers = FixedArray<std::thread>(&m_JobSystemArena, m_NumThreads);
 
         for (uint32_t threadID = 0; threadID < m_NumThreads; ++threadID)
         {
-            std::thread& worker = m_Workers.emplace_back([this, threadID] { WorkerThreadFunc(threadID); });
+            m_Workers.emplace_back([this, threadID] { WorkerThreadFunc(threadID); });
+            std::thread& worker = m_Workers.back();
 
             auto handle = worker.native_handle();
 
