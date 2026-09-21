@@ -16,7 +16,7 @@ Project:
     Gravity Force: [0, -9.81000042, 0]
     Max Bodies: 65536
     Max Body Pairs: 65536
-    Max Contact Constraints: 10240
+    Max Contact Constraints: 65536
     Enable Debug Draw: false
     Show Colliders: true
     Show Bounding Boxes: true

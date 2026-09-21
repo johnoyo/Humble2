@@ -245,7 +245,7 @@ namespace HBL2
 		// Update internal simulation step.
 		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
 		const float cDeltaTime = Time::FixedTimeStep;
-		const int cCollisionSteps = 4;
+		const int cCollisionSteps = 2;
 
 		m_PhysicsSystem->Update(cDeltaTime, cCollisionSteps, m_TempAllocator, m_JobSystem);
 
