@@ -13,14 +13,14 @@
 #include <source_location>
 
 #ifndef DIST
-	#define CONSOLE_LOG(...)				Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EINFO, std::source_location::current(), "SCRIPT", __VA_ARGS__)
-	#define CONSOLE_LOG_TAG(tag, ...)       Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EINFO, std::source_location::current(), tag, __VA_ARGS__)
-	#define CONSOLE_LOG_WARN(...)			Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EWARN, std::source_location::current(), "SCRIPT", __VA_ARGS__)
-	#define CONSOLE_LOG_WARN_TAG(tag, ...)  Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EWARN, std::source_location::current(), tag, __VA_ARGS__)
-	#define CONSOLE_LOG_ERROR(...)			Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EERROR, std::source_location::current(), "SCRIPT", __VA_ARGS__)
-	#define CONSOLE_LOG_ERROR_TAG(tag, ...) Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EERROR, std::source_location::current(), tag, __VA_ARGS__)
-	#define CONSOLE_LOG_FATAL(...)			Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EFATAL, std::source_location::current(), "SCRIPT", __VA_ARGS__)
-	#define CONSOLE_LOG_FATAL_TAG(tag, ...) Console::Instance->AddMessage(MessageInfo::MessageContext::APP, MessageInfo::MessageType::EFATAL, std::source_location::current(), tag, __VA_ARGS__)
+	#define CONSOLE_LOG(...)				HBL2::Console::Instance->AddMessage(HBL2::MessageInfo::MessageContext::APP, HBL2::MessageInfo::MessageType::EINFO, std::source_location::current(), "SCRIPT", __VA_ARGS__)
+	#define CONSOLE_LOG_TAG(tag, ...)       HBL2::Console::Instance->AddMessage(HBL2::MessageInfo::MessageContext::APP, HBL2::MessageInfo::MessageType::EINFO, std::source_location::current(), tag, __VA_ARGS__)
+	#define CONSOLE_LOG_WARN(...)			HBL2::Console::Instance->AddMessage(HBL2::MessageInfo::MessageContext::APP, HBL2::MessageInfo::MessageType::EWARN, std::source_location::current(), "SCRIPT", __VA_ARGS__)
+	#define CONSOLE_LOG_WARN_TAG(tag, ...)  HBL2::Console::Instance->AddMessage(HBL2::MessageInfo::MessageContext::APP, HBL2::MessageInfo::MessageType::EWARN, std::source_location::current(), tag, __VA_ARGS__)
+	#define CONSOLE_LOG_ERROR(...)			HBL2::Console::Instance->AddMessage(HBL2::MessageInfo::MessageContext::APP, HBL2::MessageInfo::MessageType::EERROR, std::source_location::current(), "SCRIPT", __VA_ARGS__)
+	#define CONSOLE_LOG_ERROR_TAG(tag, ...) HBL2::Console::Instance->AddMessage(HBL2::MessageInfo::MessageContext::APP, HBL2::MessageInfo::MessageType::EERROR, std::source_location::current(), tag, __VA_ARGS__)
+	#define CONSOLE_LOG_FATAL(...)			HBL2::Console::Instance->AddMessage(HBL2::MessageInfo::MessageContext::APP, HBL2::MessageInfo::MessageType::EFATAL, std::source_location::current(), "SCRIPT", __VA_ARGS__)
+	#define CONSOLE_LOG_FATAL_TAG(tag, ...) HBL2::Console::Instance->AddMessage(HBL2::MessageInfo::MessageContext::APP, HBL2::MessageInfo::MessageType::EFATAL, std::source_location::current(), tag, __VA_ARGS__)
 #else
 	#define CONSOLE_LOG(...)
 	#define CONSOLE_LOG_WARN(...)

@@ -2,11 +2,81 @@
 
 #include "Humble2/Utilities/Log.h"
 #include "Humble2/Utilities/ProfilerScope.h"
-#include "Humble2/Utilities/Math.h"
 
 #include "Core/Timer.h"
 
 #include "Humble2API.h"
+
+// Detect CPU architecture
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM) || defined(_M_ARM64EC)
+	// ARM CPU architecture
+	#define HBL2_CPU_ARM
+	#if defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC)
+		#define HBL2_CPU_ARCH_BITS 64
+		#define HBL2_USE_NEON
+	#else
+		#error Unsupported 32bit CPU architecture
+	#endif
+#elif defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
+	// X86 CPU architecture
+	#define HBL2_CPU_X86
+	#if defined(__x86_64__) || defined(_M_X64)
+		#define HBL2_CPU_ARCH_BITS 64
+	#else
+		#error Unsupported 32bit CPU architecture
+	#endif
+	#define HBL2_USE_SSE
+
+	// Detect enabled instruction sets
+	#if defined(__AVX512F__) && defined(__AVX512VL__) && defined(__AVX512DQ__) && !defined(HBL2_USE_AVX512)
+		#define HBL2_USE_AVX512
+	#endif
+	#if (defined(__AVX2__) || defined(HBL2_USE_AVX512)) && !defined(HBL2_USE_AVX2)
+		#define HBL2_USE_AVX2
+	#endif
+	#if (defined(__AVX__) || defined(HBL2_USE_AVX2)) && !defined(HBL2_USE_AVX)
+		#define HBL2_USE_AVX
+	#endif
+	#if (defined(__SSE4_2__) || defined(HBL2_USE_AVX)) && !defined(HBL2_USE_SSE4_2)
+		#define HBL2_USE_SSE4_2
+	#endif
+	#if (defined(__SSE4_1__) || defined(HBL2_USE_SSE4_2)) && !defined(HBL2_USE_SSE4_1)
+		#define HBL2_USE_SSE4_1
+	#endif
+	#if (defined(__F16C__) || defined(HBL2_USE_AVX2)) && !defined(HBL2_USE_F16C)
+		#define HBL2_USE_F16C
+	#endif
+	#if (defined(__LZCNT__) || defined(HBL2_USE_AVX2)) && !defined(HBL2_USE_LZCNT)
+		#define HBL2_USE_LZCNT
+	#endif
+	#if (defined(__BMI__) || defined(HBL2_USE_AVX2)) && !defined(HBL2_USE_TZCNT)
+		#define HBL2_USE_TZCNT
+	#endif
+#elif defined(HBL2_PLATFORM_WASM)
+	// WebAssembly CPU architecture
+	#define HBL2_CPU_WASM
+	#if defined(__wasm64__)
+		#define HBL2_CPU_ARCH_BITS 64
+	#else
+		#error Unsupported 32bit CPU architecture
+	#endif
+	#ifdef __wasm_simd128__
+		#define HBL2_USE_SSE
+		#define HBL2_USE_SSE4_1
+		#define HBL2_USE_SSE4_2
+	#endif
+#else
+	#error Unsupported CPU architecture
+#endif
+
+// Define compiler
+#if defined(__clang__)
+	#define HBL2_COMPILER_CLANG
+#elif defined(__GNUC__)
+	#define HBL2_COMPILER_GCC
+#elif defined(_MSC_VER)
+	#define HBL2_COMPILER_MSVC
+#endif
 
 #ifdef DEBUG
 	#define HBL2_PROFILE(...) HBL2::ProfilerScope profiler = HBL2::ProfilerScope(__VA_ARGS__);

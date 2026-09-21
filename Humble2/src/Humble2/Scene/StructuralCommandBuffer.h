@@ -2,7 +2,7 @@
 
 #include "Scene.h"
 #include "Utilities/Allocators/Arena.h"
-#include "Utilities/Collections/Collections.h"
+#include "Utilities/Collections/FixedArray.h"
 
 #include <format>
 
@@ -62,7 +62,7 @@ namespace HBL2
 		struct ChunkCommands
 		{
 			Arena* Arena = nullptr;
-			DArray<Command> Commands = MakeEmptyDArray<Command>();
+			FixedArray<Command> Commands;
 		};
 
 		void Initialize(PoolReservation* reservation, uint32_t mainArenaByteSize, uint32_t maxStructuralCommandsPerFramePerThread);
@@ -115,7 +115,7 @@ namespace HBL2
 
 	private:
 		Arena m_Arena;
-		DArray<ChunkCommands> m_ChunkCommands = MakeEmptyDArray<ChunkCommands>();
+		FixedArray<ChunkCommands> m_ChunkCommands;
 		uint32_t m_MaxStructuralCommandsPerFramePerThread = 0;
 	};
 }

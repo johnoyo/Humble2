@@ -11,6 +11,8 @@ public:
 			.Filter<BenchmarkComponent>()
 			.ForEach([this](BenchmarkComponent& benchmark)
 			{
+				CONSOLE_LOG("Cubes: {0}", benchmark.Cubes);
+
 				if (benchmark.Terrain)
 				{
 					HBL2::Entity terrainEntity = m_Context->CreateEntity("Terrain");
@@ -25,7 +27,7 @@ public:
 					terrain.DetailLevels.push_back({ .Lod = 2, .VisibleDstThreshold = 400 });
 					terrain.DetailLevels.push_back({ .Lod = 5, .VisibleDstThreshold = 600 });
 					terrain.HeightMultiplier = 17.f;
-					terrain.AddColliders = true;
+					terrain.AddColliders = benchmark.EnablePhysics;
 				}
 
 				// Cubes
@@ -52,6 +54,14 @@ public:
 						auto& staticMesh = m_Context->AddComponent<HBL2::Component::StaticMesh>(entity);
 						staticMesh.Mesh = HBL2::MeshUtilities::Get().GetBuiltInLoadedMeshAssetHandle(HBL2::BuiltInMesh::CUBE);
 						staticMesh.Material = benchmark.CubeMaterial;
+
+						if (benchmark.EnablePhysics)
+						{
+							auto& rb = m_Context->AddComponent<HBL2::Component::Rigidbody>(entity);
+							rb.Type = HBL2::Physics::BodyType::Dynamic;
+
+							auto& bc = m_Context->AddComponent<HBL2::Component::BoxCollider>(entity);
+						}
 					}
 				}
 

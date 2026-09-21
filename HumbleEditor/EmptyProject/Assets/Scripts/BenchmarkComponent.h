@@ -24,6 +24,7 @@ struct BenchmarkComponent
 
     int Monkeys = 10000;
     int Sprites = 10000;
+    bool EnablePhysics = true;
     bool UniqueMaterials = true;
 
     bool Terrain = true;
@@ -44,6 +45,7 @@ struct BenchmarkComponent
         HBL2::Reflect::Field{"CapsuleMaterial", &BenchmarkComponent::CapsuleMaterial},
         HBL2::Reflect::Field{"Monkeys", &BenchmarkComponent::Monkeys},
         HBL2::Reflect::Field{"Sprites", &BenchmarkComponent::Sprites},
+        HBL2::Reflect::Field{"EnablePhysics", &BenchmarkComponent::EnablePhysics},
         HBL2::Reflect::Field{"UniqueMaterials", &BenchmarkComponent::UniqueMaterials},
         HBL2::Reflect::Field{"Terrain", &BenchmarkComponent::Terrain},
         HBL2::Reflect::Field{"TerrainMaterial", &BenchmarkComponent::TerrainMaterial},

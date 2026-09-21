@@ -22,9 +22,12 @@
 
 #include "UI/LayoutLib.h"
 
+#include "Console/Console.h"
+
 #include "Utilities/MeshUtilities.h"
 #include "Utilities/Collections/StaticArray.h"
 #include "Utilities/Collections/BitFlags.h"
+#include "Utilities/Math.h"
 
 // Macro to generate system registration factory function
 #ifdef HBL2_PLATFORM_WINDOWS

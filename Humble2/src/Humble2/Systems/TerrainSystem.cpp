@@ -1,6 +1,7 @@
 #include "TerrainSystem.h"
 
 #include "AnimationCurveSystem.h"
+#include "Utilities/Math.h"
 #include "Utilities/EntityPresets.h"
 #include "Project/Project.h"
 

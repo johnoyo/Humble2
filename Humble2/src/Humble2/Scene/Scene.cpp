@@ -25,15 +25,17 @@ namespace HBL2
 
         m_Registry.Initialize(desc.maxEntities, desc.maxComponents);
 
+        uint32_t entiyMapBytes = FixedHashMap<UUID, Entity>::RequiredBytes(desc.maxEntities);
+
         // Memory requirements for scene arena.
         uint64_t totalBytes = ArenaLayout::Create()
-            .Add<ISystem*>(desc.maxSystems)                         // m_Systems
-            .Add<ISystem*>(desc.maxSystems)                         // m_CoreSystems
-            .Add<ISystem*>(desc.maxSystems)                         // m_RuntimeSystems
-            .Add<std::pair<UUID, Entity>>(desc.maxEntities * 2)     // m_EntityMap
-            .Add<uint64_t>(desc.maxEntities * 2)                    // TODO: Investigate if needed!
-            .Add<StructuralCommandBuffer>(1)                        // m_CmdBuffer
-            .AddRaw(100_KB, 1)                                      // Extra headroom
+            .Add<ISystem*>(desc.maxSystems)         // m_Systems
+            .Add<ISystem*>(desc.maxSystems)         // m_CoreSystems
+            .Add<ISystem*>(desc.maxSystems)         // m_RuntimeSystems
+            .AddRaw(entiyMapBytes, 1)               // m_EntityMap
+            .Add<StructuralCommandBuffer>(1)        // m_CmdBuffer
+            .AddRaw(512_B * desc.maxSystems * 2, 1) // For allocating the ISystems in the RegisterSystem method.
+                                                    // (Use 512 bytes as the worst case average of the ISystem object size.)
             .Total();
 
         uint64_t sceneArenaBytes = totalBytes;
@@ -48,7 +50,6 @@ namespace HBL2
             mainStructuralCommandBufferArenaByteSize = ArenaLayout::Create()
                 .Add<StructuralCommandBuffer::ChunkCommands>(workerThreadCount)
                 .Add<Arena>(workerThreadCount)
-                .AddRaw(1_KB, 1)
                 .Total();
 
             totalBytes += mainStructuralCommandBufferArenaByteSize;
@@ -57,7 +58,6 @@ namespace HBL2
             totalBytes += ArenaLayout::Create()
                 .Add<StructuralCommandBuffer::Command>(desc.maxStructuralCommandsPerFramePerThread * workerThreadCount)
                 .AddRaw(128_B * desc.maxStructuralCommandsPerFramePerThread * workerThreadCount, 1)
-                .AddRaw(100_KB, 1)
                 .Total();
         }
 
@@ -66,11 +66,11 @@ namespace HBL2
         m_SceneArena.Initialize(&Allocator::Arena, sceneArenaBytes, m_Reservation);
 
         // Create scene data structures from arena.
-        m_Systems = MakeDArray<ISystem*>(m_SceneArena, desc.maxSystems);
-        m_CoreSystems = MakeDArray<ISystem*>(m_SceneArena, desc.maxSystems);
-        m_RuntimeSystems = MakeDArray<ISystem*>(m_SceneArena, desc.maxSystems);
+        m_Systems = FixedArray<ISystem*>(&m_SceneArena, desc.maxSystems);
+        m_CoreSystems = FixedArray<ISystem*>(&m_SceneArena, desc.maxSystems);
+        m_RuntimeSystems = FixedArray<ISystem*>(&m_SceneArena, desc.maxSystems);
 
-        m_EntityMap = HashMap<UUID, Entity>(&m_SceneArena, desc.maxEntities * 2);
+        m_EntityMap = FixedHashMap<UUID, Entity>(&m_SceneArena, desc.maxEntities);
 
         // Create the StructuralCommandBuffer if is requested.
         // (This is optional since for example in prefabs, which have subscenes embeded in them, we dont need it)
@@ -450,7 +450,7 @@ namespace HBL2
             return;
         }
 
-        m_EntityMap.remove(id->Identifier);
+        m_EntityMap.erase(id->Identifier);
         m_Registry.DestroyEntity(entity);
     }
 
@@ -737,7 +737,7 @@ namespace HBL2
             {
                 const auto& pe = GetComponent<Component::PrefabEntity>(e);
                 auto& id = GetComponent<Component::ID>(e);
-                m_EntityMap.remove(id.Identifier);
+                m_EntityMap.erase(id.Identifier);
 
                 if (preservedUUIDs.contains(pe.EntityId))
                 {

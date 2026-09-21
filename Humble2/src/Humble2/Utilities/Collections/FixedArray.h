@@ -10,7 +10,7 @@
 
 namespace HBL2
 {
-    /// Simple variable length array backed by a heap-allocated fixed size buffer
+    /// Simple variable length array backed by a heap-allocated fixed size buffer (Adapted from Jolt).
     template <class T>
     class FixedArray
     {

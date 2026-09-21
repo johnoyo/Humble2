@@ -8,8 +8,8 @@
 
 #include "Utilities/Random.h"
 #include "Utilities/Allocators/Arena.h"
-#include "Utilities/Collections/Collections.h"
-#include "Utilities/Collections/HashMap.h"
+#include "Utilities/Collections/FixedArray.h"
+#include "Utilities/Collections/FixedHashMap.h"
 #include "Utilities/Collections/StaticString.h"
 
 namespace HBL2
@@ -159,9 +159,10 @@ namespace HBL2
 		}
 		void RegisterSystem(ISystem* system, SystemType type = SystemType::Core);
 
-		const DArray<ISystem*>& GetSystems() const { return m_Systems; }
-		const DArray<ISystem*>& GetCoreSystems() const { return m_CoreSystems; }
-		const DArray<ISystem*>& GetRuntimeSystems() const { return m_RuntimeSystems; }
+		Span<ISystem*> GetSystems() { return { m_Systems.data(), m_Systems.size() }; }
+		Span<ISystem*> GetCoreSystems() { return { m_CoreSystems.data(), m_CoreSystems.size() }; }
+		Span<ISystem*> GetRuntimeSystems() { return { m_RuntimeSystems.data(), m_RuntimeSystems.size() }; }
+
 		Registry& GetRegistry() { return m_Registry; }
 
 		[[nodiscard]] inline auto Entities() noexcept
@@ -206,10 +207,10 @@ namespace HBL2
 
 		SceneDescriptor m_Descriptor;
 		Registry m_Registry;
-		DArray<ISystem*> m_Systems = MakeEmptyDArray<ISystem*>();
-		DArray<ISystem*> m_CoreSystems = MakeEmptyDArray<ISystem*>();
-		DArray<ISystem*> m_RuntimeSystems = MakeEmptyDArray<ISystem*>();
-		HashMap<UUID, Entity> m_EntityMap;
+		FixedArray<ISystem*> m_Systems;
+		FixedArray<ISystem*> m_CoreSystems;
+		FixedArray<ISystem*> m_RuntimeSystems;
+		FixedHashMap<UUID, Entity> m_EntityMap;
 
 		Arena m_SceneArena;
 		PoolReservation* m_Reservation = nullptr;

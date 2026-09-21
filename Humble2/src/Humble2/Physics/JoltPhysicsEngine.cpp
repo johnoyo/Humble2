@@ -156,7 +156,7 @@ namespace HBL2
 		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterfaceNoLock();
 
 		ScratchArena scratch(Allocator::FrameArenaMT);
-		DArray<JPH::BodyID> bulkAddBuffer = MakeDArray<JPH::BodyID>(scratch, 512);
+		FixedArray<JPH::BodyID> bulkAddBuffer(&scratch, spec.MaxBodies);
 
 		m_Context->Filter<Component::Rigidbody, Component::Transform>()
 			.ForEach([this, &bodyInterface, &bulkAddBuffer](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)

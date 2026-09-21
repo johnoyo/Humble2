@@ -7,7 +7,8 @@ namespace HBL2
 		uint32_t workerThreadCount = JobSystem::Get().GetThreadCount();
 		m_Arena.Initialize(&Allocator::Arena, mainArenaByteSize, reservation);
 
-		m_ChunkCommands = MakeDArrayResized<StructuralCommandBuffer::ChunkCommands>(m_Arena, workerThreadCount);
+		m_ChunkCommands = FixedArray<StructuralCommandBuffer::ChunkCommands>(&m_Arena, workerThreadCount);
+		m_ChunkCommands.resize(workerThreadCount);
 
 		// Reserve memory for the Command struct and for the component (we use 128_B as a average worst case for component size).
 		const uint32_t workerArenaByteSize = ArenaLayout::Create()
@@ -20,7 +21,7 @@ namespace HBL2
 			m_ChunkCommands[i].Arena = m_Arena.AllocConstruct<Arena>();
 			m_ChunkCommands[i].Arena->Initialize(&Allocator::Arena, workerArenaByteSize, reservation);
 
-			m_ChunkCommands[i].Commands = MakeDArray<StructuralCommandBuffer::Command>(*m_ChunkCommands[i].Arena, maxStructuralCommandsPerFramePerThread);
+			m_ChunkCommands[i].Commands = FixedArray<StructuralCommandBuffer::Command>(m_ChunkCommands[i].Arena, maxStructuralCommandsPerFramePerThread);
 		}
 	}
 
