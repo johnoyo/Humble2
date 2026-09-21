@@ -250,7 +250,7 @@ namespace HBL2
 				}
 
 				// Abort unload if its the same as the new one.
-				if (oldSceneAssetHandle != m_NewSceneAssetHandle)
+				if (oldSceneAssetHandle != m_NewSceneAssetHandle && m_NewSceneAssetHandle.IsValid())
 				{
 					// If we are in play mode and we changes scenes, dot not delete the scene that was played.
 					if (oldSceneAssetHandle != m_BaseSceneAssetHandle)
@@ -269,22 +269,14 @@ namespace HBL2
 				if (oldScene != nullptr && oldScene->GetName().find("(Clone)") != StaticString<64>::npos)
 				{
 					// Unload old scene systems.
-					if (oldSceneHandle.IsValid())
+					for (ISystem* system : oldScene->GetSystems())
 					{
-						Scene* scene = ResourceManager::Instance->GetScene(oldSceneHandle);
+						system->OnDestroy();
+					}
 
-						if (scene != nullptr)
-						{
-							for (ISystem* system : scene->GetSystems())
-							{
-								system->OnDestroy();
-							}
-
-							for (ISystem* system : scene->GetSystems())
-							{
-								system->OnDetach();
-							}
-						}
+					for (ISystem* system : oldScene->GetSystems())
+					{
+						system->OnDetach();
 					}
 
 					// Clear entire scene.

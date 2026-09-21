@@ -230,10 +230,10 @@ namespace HBL2
 
 		m_ResourceManager->DeleteRenderPassLayout(m_DepthOnlyRenderPassLayout);
 		m_ResourceManager->DeleteRenderPass(m_DepthOnlyRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback("Depth-Only-Resize-FrameBuffer");
+		Renderer::Instance->RemoveOnResizeCallback(std::string("Depth-Only-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
 
 		m_ResourceManager->DeleteRenderPass(m_GeometryRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback("Resize-Geometry-FrameBuffer");
+		Renderer::Instance->RemoveOnResizeCallback(std::string("Resize-Geometry-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
 
 		m_ResourceManager->DeleteBindGroupLayout(m_EquirectToSkyboxBindGroupLayout);
 		m_ResourceManager->DeleteShader(m_EquirectToSkyboxShader);
@@ -285,7 +285,7 @@ namespace HBL2
 		m_ResourceManager->DeleteBindGroupLayout(m_PostProcessBindGroupLayout);
 		m_ResourceManager->DeleteBindGroup(m_PostProcessBindGroup);
 		m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback("Post-Process-Resize-FrameBuffer");
+		Renderer::Instance->RemoveOnResizeCallback(std::string("Post-Process-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
 
 		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
 		m_ResourceManager->DeleteMesh(m_SpriteMesh);
@@ -393,7 +393,7 @@ namespace HBL2
             }
         });
 
-		Renderer::Instance->AddCallbackOnResize("Depth-Only-Resize-FrameBuffer", [this](uint32_t width, uint32_t height)
+		Renderer::Instance->AddCallbackOnResize(std::string("Depth-Only-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
 		{
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DepthOnlyRenderPass, {
 				.width = width,
@@ -519,7 +519,7 @@ namespace HBL2
 		});
 
 		// Resize opaque framebuffer callback.
-		Renderer::Instance->AddCallbackOnResize("Resize-Geometry-FrameBuffer", [this](uint32_t width, uint32_t height)
+		Renderer::Instance->AddCallbackOnResize(std::string("Resize-Geometry-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
         {
             ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_GeometryRenderPass, {
                 .width = width,
@@ -826,7 +826,7 @@ namespace HBL2
             }
 		});
 
-		Renderer::Instance->AddCallbackOnResize("Post-Process-Resize-FrameBuffer", [this](uint32_t width, uint32_t height)
+		Renderer::Instance->AddCallbackOnResize(std::string("Post-Process-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
 		{
             ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PostProcessRenderPass, {
                 .width = width,
