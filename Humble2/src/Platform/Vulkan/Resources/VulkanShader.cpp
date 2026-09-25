@@ -42,6 +42,11 @@ namespace HBL2
 			vkDestroyPipeline(device->Get(), variantEntry.Pipeline, nullptr);
 		}
 
+		// Release old cache reflected bind group layout (set 2).
+		// We need to do that in case no material ends up using this descriptor,
+		// so the layout of the set will not get released, but it was created from reflection.
+		m_ReflectedBindGroupLayout.Release();
+
 		// TODO: Remove!
 		for (const auto& pipeline : m_RetiredPipelines)
 		{
@@ -655,6 +660,11 @@ namespace HBL2
 		StaticDArray<VkDescriptorSetLayout, 8> setLayouts;
 		uint32_t bindGroupLayoutIndex = 0;
 
+		// Release old cache reflected bind group layout (set 2).
+		// We need to do that in case no material ends up using this descriptor,
+		// so the layout of the set will not get released, but it was created from reflection.
+		Cold->m_ReflectedBindGroupLayout.Release();
+
 		for (const auto& bindGroup : desc.bindGroups)
 		{
 			if (bindGroup.IsValid())
@@ -662,6 +672,15 @@ namespace HBL2
 				if (bindGroupLayoutIndex == 0)
 				{
 					Hot->GlobalBindGroupLayoutHash = bindGroup.HashKey();
+				}
+
+				if (bindGroupLayoutIndex == 2 && desc.bindGroups.size() == 4)
+				{
+					if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout())
+					{
+						// Keep reference to the reflected bind group layout of set 2.
+						Cold->m_ReflectedBindGroupLayout = bindGroup;
+					}
 				}
 
 				VulkanBindGroupLayout* vkBindGroupLayout = rm->GetBindGroupLayout(bindGroup);
