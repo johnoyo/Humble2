@@ -180,7 +180,7 @@ namespace HBL2
         MTL::Buffer* stagingBuffer = nullptr;
         CreateStagingBuffer(renderer, imageSize, &stagingBuffer);
  
-        std::memcpy(stagingBuffer->contents(), bytes.Data(), imageSize);
+        std::memcpy(stagingBuffer->contents(), bytes.data(), imageSize);
  
         CopyBufferToTexture(renderer, stagingBuffer);
  

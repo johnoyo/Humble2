@@ -160,7 +160,7 @@ namespace HBL2
 
     void MetalCommandBuffer::EndComputePass(const ComputePassRenderer& computePassRenderer)
     {
-        if (m_TexturesWrite.Size() != 0 || m_BuffersWrite.Size() != 0)
+        if (m_TexturesWrite.size() != 0 || m_BuffersWrite.size() != 0)
         {
             m_BarrierTracker.Add(MTL::StageDispatch | MTL::StageBlit, MTL::StageVertex | MTL::StageFragment | MTL::StageDispatch | MTL::StageBlit);
         }

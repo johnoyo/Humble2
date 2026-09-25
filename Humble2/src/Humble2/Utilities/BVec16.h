@@ -5,6 +5,10 @@
 #include <cstdint>
 #include <ostream>
 
+#if defined(HBL2_USE_NEON)
+    #include <arm_neon.h>
+#endif
+
 namespace HBL2
 {
 	/// A vector consisting of 16 bytes (Adapted from Jolt BVec16)

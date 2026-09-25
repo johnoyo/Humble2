@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 namespace HBL2
 {
 	enum class RenderPassEvent
@@ -171,7 +173,7 @@ namespace HBL2
 		CLOCKWISE = 1,
 	};
 
-	enum class Format
+	enum class Format : uint32_t
 	{
 		RGB32_FLOAT = 0x00000001,
 		RGBA32_FLOAT = 0x00000002,

@@ -55,14 +55,14 @@ namespace HBL2
     {
         const auto& constantStages = config.specializationConstantStages;
 
-        if (constantStages.Size() == 0)
+        if (constantStages.size() == 0)
         {
             return nullptr;
         }
 
         MTL::FunctionConstantValues* constantValues = nullptr;
 
-        for (uint32_t i = 0; i < constantStages.Size(); i++)
+        for (uint32_t i = 0; i < constantStages.size(); i++)
         {
             if (!constantStages[i].IsSet(stage))
             {
@@ -190,7 +190,7 @@ namespace HBL2
         // Vertex input state.
         MTL::VertexDescriptor* vertexDesc = nullptr;
 
-        for (uint32_t i = 0; i < config.vertexBufferBindings.Size(); i++)
+        for (uint32_t i = 0; i < config.vertexBufferBindings.size(); i++)
         {
             const auto& binding = config.vertexBufferBindings[i];
             
@@ -390,7 +390,7 @@ namespace HBL2
         
         Cold->DebugName = desc.debugName;
         
-        if (desc.renderPipeline.vertexBufferBindings.Size() > 0)
+        if (desc.renderPipeline.vertexBufferBindings.size() > 0)
         {
             Cold->VertexBufferBinding = desc.renderPipeline.vertexBufferBindings[0];
         }
@@ -426,9 +426,9 @@ namespace HBL2
         }
 
         // Fill with new specialization constants.
-        for (uint32_t i = 0; i < desc.renderPipeline.specializationConstantsPerVariant.Size(); i++)
+        for (uint32_t i = 0; i < desc.renderPipeline.specializationConstantsPerVariant.size(); i++)
         {
-            for (uint32_t j = 0; j < desc.renderPipeline.specializationConstantsPerVariant[i].Size(); j++)
+            for (uint32_t j = 0; j < desc.renderPipeline.specializationConstantsPerVariant[i].size(); j++)
             {
                 auto& variant = *((ShaderDescriptor::RenderPipeline::PackedVariant*)&desc.renderPipeline.variants[i]);
                 const auto& specializationConstant = desc.renderPipeline.specializationConstantsPerVariant[i][j];
@@ -502,7 +502,7 @@ namespace HBL2
                 NS::Error* error = nullptr;
                 auto& bytes = desc.VS.code;
                 
-                auto data = dispatch_data_create(bytes.Data(), bytes.Size(), nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+                auto data = dispatch_data_create(bytes.data(), bytes.size(), nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                 vertexLibrary = device->Get()->newLibrary(data, &error);
                 dispatch_release(data);
 
@@ -523,7 +523,7 @@ namespace HBL2
                 NS::Error* error = nullptr;
                 auto& bytes = desc.FS.code;
                 
-                auto data = dispatch_data_create(bytes.Data(), bytes.Size(), nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+                auto data = dispatch_data_create(bytes.data(), bytes.size(), nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                 fragmentLibrary = device->Get()->newLibrary(data, &error);
                 dispatch_release(data);
 
@@ -552,7 +552,7 @@ namespace HBL2
                 NS::Error* error = nullptr;
                 auto& bytes = desc.CS.code;
                 
-                auto data = dispatch_data_create(bytes.Data(), bytes.Size(), nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+                auto data = dispatch_data_create(bytes.data(), bytes.size(), nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                 computeLibrary = device->Get()->newLibrary(data, &error);
                 dispatch_release(data);
 
@@ -575,7 +575,7 @@ namespace HBL2
         }
 
         // Create shader variants.
-        for (int i = 0; i < desc.renderPipeline.variants.Size(); i++)
+        for (int i = 0; i < desc.renderPipeline.variants.size(); i++)
         {
             const auto& variant = desc.renderPipeline.variants[i];
 
