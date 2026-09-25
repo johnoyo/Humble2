@@ -29,13 +29,13 @@ namespace HBL2
 
         // Memory requirements for scene arena.
         uint64_t totalBytes = ArenaLayout::Create()
-            .Add<ISystem*>(desc.maxSystems)         // m_Systems
-            .Add<ISystem*>(desc.maxSystems)         // m_CoreSystems
-            .Add<ISystem*>(desc.maxSystems)         // m_RuntimeSystems
-            .AddRaw(entiyMapBytes, 1)               // m_EntityMap
-            .Add<StructuralCommandBuffer>(1)        // m_CmdBuffer
-            .AddRaw(512_B * desc.maxSystems * 2, 1) // For allocating the ISystems in the RegisterSystem method.
-                                                    // (Use 512 bytes as the worst case average of the ISystem object size.)
+            .Add<ISystem*>(desc.maxSystems)                             // m_Systems
+            .Add<ISystem*>(desc.maxSystems)                             // m_CoreSystems
+            .Add<ISystem*>(desc.maxSystems)                             // m_RuntimeSystems
+            .AddRaw(entiyMapBytes, alignof(std::pair<UUID, Entity>))    // m_EntityMap
+            .Add<StructuralCommandBuffer>(1)                            // m_CmdBuffer
+            .AddRaw(512_B * desc.maxSystems * 2, 1)                     // For allocating the ISystems in the RegisterSystem method.
+                                                                        // (Use 512 bytes as the worst case average of the ISystem object size.)
             .Total();
 
         uint64_t sceneArenaBytes = totalBytes;

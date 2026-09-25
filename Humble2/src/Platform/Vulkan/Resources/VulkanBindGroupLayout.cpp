@@ -1,17 +1,29 @@
 #include "VulkanBindGroupLayout.h"
 
+#include "Resources/ResourceManager.h"
+
 namespace HBL2
 {
 	VulkanBindGroupLayout::VulkanBindGroupLayout(const BindGroupLayoutDescriptor&& desc)
 	{
 		DebugName = desc.debugName;
-		CreatedFromReflection = desc.createdFromReflection;
-		BufferBindings = { desc.bufferBindings.begin(), desc.bufferBindings.end() };
-		TextureBindings = { desc.textureBindings.begin(), desc.textureBindings.end() };
+
+		HBL2_CORE_ASSERT(desc.bufferBindings.size() < BufferBindings.capacity(), "Exceeded max number of buffer bindings in a bind group layout!");
+		for (const auto& bufferBinding : desc.bufferBindings)
+		{
+			BufferBindings.emplace_back(bufferBinding);
+		}
+
+		HBL2_CORE_ASSERT(desc.textureBindings.size() < TextureBindings.capacity(), "Exceeded max number of texture bindings in a bind group layout!");
+		for (const auto& textureBinding : desc.textureBindings)
+		{
+			TextureBindings.emplace_back(textureBinding);
+		}
 
 		auto* device = (VulkanDevice*)Device::Instance;
 
-		std::vector<VkDescriptorSetLayoutBinding> bindings(BufferBindings.size() + TextureBindings.size());
+		StaticDArray<VkDescriptorSetLayoutBinding, MaxTextureEntries + MaxBufferEntries> bindings;
+		bindings.resize(BufferBindings.size() + TextureBindings.size());
 
 		for (int i = 0; i < BufferBindings.size(); i++)
 		{
@@ -110,11 +122,16 @@ namespace HBL2
 		};
 
 		VK_VALIDATE(vkCreateDescriptorSetLayout(device->Get(), &descriptorSetLayoutCreateInfo, nullptr, &DescriptorSetLayout), "vkCreateDescriptorSetLayout");
+
+		Hash = ResourceManager::Instance->GetBindGroupLayoutHash(std::forward<const BindGroupLayoutDescriptor>(desc));
 	}
 
 	void VulkanBindGroupLayout::Destroy()
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		vkDestroyDescriptorSetLayout(device->Get(), DescriptorSetLayout, nullptr);
+
+		DebugName = nullptr;
+		Hash = 0;
 	}
 }

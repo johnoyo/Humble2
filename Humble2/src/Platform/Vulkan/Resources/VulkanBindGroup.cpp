@@ -8,7 +8,7 @@ namespace HBL2
 	{
 		auto* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
-		// BindGroupLayout.Release();
+		BindGroupLayout.Release();
 
 		for (int i = 0; i < Buffers.size(); i++)
 		{
@@ -60,7 +60,7 @@ namespace HBL2
 		auto* renderer = (VulkanRenderer*)Renderer::Instance;
 		auto* device = (VulkanDevice*)Device::Instance;
 
-		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(Cold->BindGroupLayout);
+		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(Cold->BindGroupLayout.Get());
 
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo =
 		{
@@ -92,7 +92,7 @@ namespace HBL2
 			return;
 		}
 
-		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(Cold->BindGroupLayout);
+		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(Cold->BindGroupLayout.Get());
 
 		StaticDArray<VkWriteDescriptorSet, VulkanBindGroupCold::MaxTextureEntries + VulkanBindGroupCold::MaxBufferEntries> writeDescriptorSet;
 		writeDescriptorSet.resize(Cold->Textures.size() + Cold->Buffers.size());

@@ -153,7 +153,7 @@ namespace HBL2
 		virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) = 0;
 		virtual void DeleteBindGroupLayout(Handle<BindGroupLayout> handle) = 0;
 		virtual uint64_t GetBindGroupLayoutHash(Handle<BindGroupLayout> handle) = 0;
-		uint64_t GetBindGroupLayoutHash(const BindGroupLayoutDescriptor&& desc);
+		uint64_t GetBindGroupLayoutHash(const BindGroupLayoutDescriptor& desc);
 
 		// RenderPass
 		virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) = 0;

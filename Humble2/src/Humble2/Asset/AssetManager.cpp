@@ -14,18 +14,21 @@ namespace HBL2
 
 		m_AssetPool.Initialize(m_Spec.Assets);
 
+		uint32_t registeredAssetMapBytes = FixedHashMap<UUID, Handle<Asset>>::RequiredBytes(m_Spec.Assets);
+		uint32_t registeredAssetPathToUUIDMap = FixedHashMap<std::filesystem::path, UUID>::RequiredBytes(m_Spec.Assets);
+
 		uint64_t bytes = ArenaLayout::Create()
-			.Add<std::pair<UUID, Handle<Asset>>>(2 * m_Spec.Assets)
-			.Add<std::pair<std::filesystem::path, UUID>>(2 * m_Spec.Assets)
-			.Add<Handle<Asset>>(2 * m_Spec.Assets)
+			.AddRaw(registeredAssetMapBytes, alignof(std::pair<UUID, Handle<Asset>>))
+			.AddRaw(registeredAssetPathToUUIDMap, alignof(std::pair<std::filesystem::path, UUID>))
+			.Add<Handle<Asset>>(m_Spec.Assets)
 			.Total();
 
 		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", bytes);
 		m_PoolArena.Initialize(&Allocator::Arena, bytes, m_Reservation);
 
-        m_RegisteredAssetMap = MakeHMap<UUID, Handle<Asset>>(m_PoolArena, m_Spec.Assets);
-		m_RegisteredAssetPathToUUIDMap = MakeHMap<std::filesystem::path, UUID>(m_PoolArena, m_Spec.Assets);
-		m_RegisteredAssets = MakeDArray<Handle<Asset>>(m_PoolArena, m_Spec.Assets);
+        m_RegisteredAssetMap = FixedHashMap<UUID, Handle<Asset>>(&m_PoolArena, m_Spec.Assets);
+		m_RegisteredAssetPathToUUIDMap = FixedHashMap<std::filesystem::path, UUID>(&m_PoolArena, m_Spec.Assets);
+		m_RegisteredAssets = FixedArray<Handle<Asset>>(&m_PoolArena, m_Spec.Assets);
 	}
 
 	void AssetManager::Dispatch()

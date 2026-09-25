@@ -12,6 +12,24 @@ namespace HBL2
 
         std::atomic<uint16_t> RefCount{ 0 };
 
+        bool NewRefsAreAllowed() const
+        {
+            uint16_t cur = RefCount.load(std::memory_order_relaxed);
+
+            if (cur & CLOSING)
+            {
+                return false;                 // no new refs allowed
+            }
+
+            uint16_t cnt = cur & COUNT_MASK;
+            if (cnt == COUNT_MASK)
+            {
+                return false;             // overflow guard
+            }
+
+            return true;
+        }
+
         // Try to acquire a reference (Create / AddRef)
         bool TryAddRef()
         {

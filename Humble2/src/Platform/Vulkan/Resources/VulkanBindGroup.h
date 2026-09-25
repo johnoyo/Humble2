@@ -35,7 +35,7 @@ namespace HBL2
 		};
 
 		const char* DebugName = "";
-		Handle<BindGroupLayout> BindGroupLayout;
+		RefHandle<BindGroupLayout> BindGroupLayout;
 		StaticDArray<TextureEntry, MaxTextureEntries> Textures;
 		StaticDArray<BufferEntry, MaxBufferEntries> Buffers;
 

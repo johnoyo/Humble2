@@ -81,8 +81,6 @@ namespace HBL2
 		alignas(64) std::array<VariantEntry, MaxVariants> m_Entries;
 		std::array<BitFlags<ShaderStage>, MaxSpecializationConstants> m_SpecializationConstantStages;
 
-		StaticDArray<Handle<BindGroupLayout>, 4> m_ReflectedBindGroupLayouts;
-
 		friend class VulkanShader;
 	};
 

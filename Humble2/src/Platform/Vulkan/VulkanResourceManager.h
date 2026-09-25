@@ -95,7 +95,7 @@ namespace HBL2
 		SplitPool<VulkanBufferHot, VulkanBufferCold, Buffer> m_BufferSplitPool;
 		SplitPool<VulkanShaderHot, VulkanShaderCold, Shader> m_ShaderSplitPool;
 		SplitPool<VulkanBindGroupHot, VulkanBindGroupCold, BindGroup> m_BindGroupSplitPool;
-		Pool<VulkanBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
+		RefCountedPool<VulkanBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
 		Pool<VulkanRenderPass, RenderPass> m_RenderPassPool;
 		Pool<VulkanRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
 
@@ -103,6 +103,5 @@ namespace HBL2
 
 	private:
 		uint64_t CalculateBindGroupHash(const VulkanBindGroupCold* bindGroupCold);
-		uint64_t CalculateBindGroupLayoutHash(const VulkanBindGroupLayout* bindGroupLayout);
 	};
 }

@@ -179,7 +179,7 @@ namespace HBL2
 
 		return hash;
 	}
-	uint64_t ResourceManager::GetBindGroupLayoutHash(const BindGroupLayoutDescriptor&& desc)
+	uint64_t ResourceManager::GetBindGroupLayoutHash(const BindGroupLayoutDescriptor& desc)
 	{
 		uint64_t hash = 0;
 

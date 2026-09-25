@@ -328,10 +328,10 @@ namespace HBL2
 				return this->mTable->m_Data[this->mIndex];
 			}
 
-			using Base::operator ->;
+			using Base::operator->;
 
 			/// Non-const access to key value pair
-			std::pair<Key, Value>* operator -> ()
+			std::pair<Key, Value>* operator->()
 			{
 				HBL2_CORE_ASSERT(this->IsValid(), "");
 				return this->mTable->m_Data + this->mIndex;
@@ -442,37 +442,6 @@ namespace HBL2
 
 		/// Destroy the entire hash table
 		void clear()
-		{
-			// Delete all elements
-			if constexpr (!std::is_trivially_destructible<std::pair<Key, Value>>())
-			{
-				if (!empty())
-				{
-					for (size_type i = 0; i < m_MaxSize; ++i)
-					{
-						if (m_Control[i] & s_BucketUsed)
-						{
-							m_Data[i].~value_type();
-						}
-					}
-				}
-			}
-
-			if (m_Data != nullptr)
-			{
-				// No explicit free memory.
-
-				// Reset members
-				m_Data = nullptr;
-				m_Control = nullptr;
-				m_Size = 0;
-				m_MaxSize = 0;
-				m_LoadLeft = 0;
-			}
-		}
-
-		/// Destroy the entire hash table but keeps the memory allocated
-		void ClearAndKeepMemory()
 		{
 			// Destruct elements
 			if constexpr (!std::is_trivially_destructible<std::pair<Key, Value>>())

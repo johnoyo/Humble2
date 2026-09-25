@@ -10,7 +10,8 @@
 #include "Core/Allocators.h"
 
 #include "Utilities/JobSystem.h"
-#include "Utilities/Collections/Collections.h"
+#include "Utilities/Collections/FixedArray.h"
+#include "Utilities/Collections/FixedHashMap.h"
 #include "Utilities/Collections/StaticFunction.h"
 
 #include <moodycamel/concurrentqueue.h>
@@ -238,9 +239,9 @@ namespace HBL2
 
 		JobContext m_ResourceJobCtx;
 
-        HMap<UUID, Handle<Asset>> m_RegisteredAssetMap = MakeEmptyHMap<UUID, Handle<Asset>>();
-		HMap<std::filesystem::path, UUID> m_RegisteredAssetPathToUUIDMap = MakeEmptyHMap<std::filesystem::path, UUID>();
-		DArray<Handle<Asset>> m_RegisteredAssets = MakeEmptyDArray<Handle<Asset>>();
+		FixedHashMap<UUID, Handle<Asset>> m_RegisteredAssetMap;
+		FixedHashMap<std::filesystem::path, UUID> m_RegisteredAssetPathToUUIDMap;
+		FixedArray<Handle<Asset>> m_RegisteredAssets;
 
 		moodycamel::ConcurrentQueue<StaticFunction<void(void), 128>> m_MainThreadCallbacks;
 		moodycamel::ConcurrentQueue<StaticFunction<void(void), 64>> m_AssetDeleteCallbacks;

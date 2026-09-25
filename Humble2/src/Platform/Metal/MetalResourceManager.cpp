@@ -566,17 +566,29 @@ namespace HBL2
         if (resourceType == ResourceType::BindGroup)
         {
             Handle<BindGroup> handle = Handle<BindGroup>::UnPack(packedHandle);
-            // m_BindGroupSplitPool.Release(handle);
+
+            /*if (m_BindGroupSplitPool.Release(handle))
+            {
+                DeleteBindGroup(handle);
+            }*/
         }
         else if (resourceType == ResourceType::BindGroupLayout)
         {
             Handle<BindGroupLayout> handle = Handle<BindGroupLayout>::UnPack(packedHandle);
-            // m_BindGroupLayoutPool.Release(handle);
+
+            /*if (m_BindGroupLayoutPool.Release(handle))
+            {
+                DeleteBindGroupLayout(handle);
+            }*/
         }
         else if (resourceType == ResourceType::Texture)
         {
             Handle<Texture> handle = Handle<Texture>::UnPack(packedHandle);
-            // m_TexturePool.Release(handle);
+
+            /*if (m_TexturePool.Release(handle))
+            {
+                DeleteTexture(handle);
+            }*/
         }
     }
 }

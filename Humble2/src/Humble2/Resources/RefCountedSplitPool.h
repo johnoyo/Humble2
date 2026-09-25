@@ -265,6 +265,28 @@ namespace HBL2
             return false;
         }
 
+        bool NewRefsAreAllowed(Handle<H> handle)
+        {
+            if (!handle.IsValid())
+            {
+                return false;
+            }
+
+            const uint16_t idx = handle.m_ArrayIndex;
+            if (idx == InvalidIndex || idx >= m_Size)
+            {
+                return false;
+            }
+
+            const uint16_t cur = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
+            if (cur != handle.m_GenerationalCounter)
+            {
+                return false;
+            }
+
+            return m_Meta[idx].ReferenceCounter.NewRefsAreAllowed();
+        }
+
         const Span<THot> GetDataHotPool() const
         {
             return { m_HotData, m_Size };
