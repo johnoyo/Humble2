@@ -118,6 +118,8 @@ namespace HBL2
             }
 
             m_Meta[idx].GenerationalCounter.fetch_add(1, std::memory_order_acq_rel);
+            m_Meta[idx].ReferenceCounter.RefCount.store(0, std::memory_order_release);
+
             m_FreeList.Push(idx);
         }
 
@@ -265,26 +267,26 @@ namespace HBL2
             return false;
         }
 
-        bool NewRefsAreAllowed(Handle<H> handle)
+        bool IsClosing(Handle<H> handle)
         {
             if (!handle.IsValid())
             {
-                return false;
+                return true;
             }
 
             const uint16_t idx = handle.m_ArrayIndex;
             if (idx == InvalidIndex || idx >= m_Size)
             {
-                return false;
+                return true;
             }
 
             const uint16_t cur = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
             if (cur != handle.m_GenerationalCounter)
             {
-                return false;
+                return true;
             }
 
-            return m_Meta[idx].ReferenceCounter.NewRefsAreAllowed();
+            return m_Meta[idx].ReferenceCounter.IsClosing();
         }
 
         const Span<THot> GetDataHotPool() const

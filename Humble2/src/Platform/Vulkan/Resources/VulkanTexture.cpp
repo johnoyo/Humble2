@@ -113,10 +113,10 @@ namespace HBL2
 				vmaDestroyImage(renderer->GetAllocator(), image, allocation);
 			});
 
-			VkImage Image = VK_NULL_HANDLE;
-			VkImageView ImageView = VK_NULL_HANDLE;
-			VmaAllocation Allocation = VK_NULL_HANDLE;
-			VkSampler Sampler = VK_NULL_HANDLE;
+			Image = VK_NULL_HANDLE;
+			ImageView = VK_NULL_HANDLE;
+			Allocation = VK_NULL_HANDLE;
+			Sampler = VK_NULL_HANDLE;
 		}
 
 		DebugName = desc.debugName;

@@ -457,7 +457,7 @@ namespace HBL2
 			});
 
 			VulkanBindGroup vkGlobalPresentBindings = m_ResourceManager->GetBindGroup(m_VkFrames[i].GlobalPresentBindings);
-			vkGlobalPresentBindings.Update();
+			vkGlobalPresentBindings.Update(m_VkFrames[i].GlobalPresentBindings);
 		}
 
 		// Update imgui viewport texture.

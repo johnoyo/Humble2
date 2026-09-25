@@ -229,12 +229,6 @@ namespace HBL2
 	{
 		VulkanShader shader = GetShader(handle);
 		shader.Recompile(std::forward<const ShaderDescriptor>(desc), true);
-
-		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
-		{
-			VulkanShader shader = GetShader(handle);
-			shader.DestroyOld();
-		});
 	}
 	void VulkanResourceManager::DeleteShader(Handle<Shader> handle)
 	{
@@ -268,7 +262,7 @@ namespace HBL2
 
 		if (shader != nullptr)
 		{
-			return shader->ShaderBindGroup;
+			return shader->ShaderBindGroup.Get();
 		}
 
 		return Renderer::Instance->GetEmptyBindings();
@@ -297,21 +291,18 @@ namespace HBL2
 	{
 		// Caching mechanism so that materials with the same resources, use the same bind group.
 		uint16_t index = 0;
-		uint64_t descriptorHash = ResourceManager::Instance->GetBindGroupHash(std::move(desc));
+		uint64_t descriptorHash = ResourceManager::Instance->GetBindGroupHash(desc);
 
 		for (const auto& bindGroup : m_BindGroupSplitPool.GetDataColdPool())
 		{
-			uint64_t hash = CalculateBindGroupHash(&bindGroup);
-
-			if (descriptorHash == hash && bindGroup.DebugName != nullptr)
+			if (descriptorHash == bindGroup.Hash && bindGroup.DebugName != nullptr)
 			{
-				VulkanBindGroupCold* mutBindGroup = (VulkanBindGroupCold*)&bindGroup;
-				if (mutBindGroup->TryAddRef())
-				{
-					return m_BindGroupSplitPool.GetHandleFromIndex(index);
-				}
+				Handle<BindGroup> bindGroupHandle = m_BindGroupSplitPool.GetHandleFromIndex(index);
 
-				break;
+				if (!m_BindGroupSplitPool.IsClosing(bindGroupHandle))
+				{
+					return bindGroupHandle;
+				}
 			}
 
 			index++;
@@ -319,24 +310,13 @@ namespace HBL2
 
 		VulkanBindGroup bindgroup;
 		Handle<BindGroup> bg = m_BindGroupSplitPool.Insert(&bindgroup.Hot, &bindgroup.Cold);
-		bindgroup.Initialize(bg, std::move(desc));
-
-		// Increase ref count of bindgroup.
-		bindgroup.Cold->TryAddRef();
+		bindgroup.Initialize(bg, std::forward<const BindGroupDescriptor>(desc));
 
 		return bg;
 	}
 	void VulkanResourceManager::DeleteBindGroup(Handle<BindGroup> handle)
 	{
-		VulkanBindGroupCold* bindGroupCold = GetBindGroupCold(handle);
-
-		if (bindGroupCold == nullptr)
-		{
-			// Invalid handle or already deleted.
-			return;
-		}
-
-		if (bindGroupCold->TryReleaseRef())
+		if (!m_BindGroupSplitPool.IsAlive(handle))
 		{
 			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 			{
@@ -352,11 +332,17 @@ namespace HBL2
 	void VulkanResourceManager::UpdateBindGroup(Handle<BindGroup> handle)
 	{
 		VulkanBindGroup bindGroup = GetBindGroup(handle);
-		bindGroup.Update();
+		bindGroup.Update(handle);
 	}
 	uint64_t VulkanResourceManager::GetBindGroupHash(Handle<BindGroup> handle)
 	{
-		return CalculateBindGroupHash(GetBindGroupCold(handle));
+		VulkanBindGroupCold* bindGroup = GetBindGroupCold(handle);
+		if (bindGroup != nullptr)
+		{
+			return bindGroup->Hash;
+		}
+
+		return 0;
 	}
 	VulkanBindGroup VulkanResourceManager::GetBindGroup(Handle<BindGroup> handle) const
 	{
@@ -376,37 +362,6 @@ namespace HBL2
 	{
 		return m_BindGroupSplitPool.GetCold(handle);
 	}
-	uint64_t VulkanResourceManager::CalculateBindGroupHash(const VulkanBindGroupCold* bindGroupCold)
-	{
-		if (bindGroupCold == nullptr)
-		{
-			return 0;
-		}
-
-		uint64_t hash = 0;
-
-		uint64_t bufferHash = 0x517cc1b727220a95ULL;
-		uint64_t textureHash = 0x9e3779b97f4a7c15ULL;
-
-		for (const auto& bufferEntry : bindGroupCold->Buffers)
-		{
-			HashCombine(bufferHash, bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code());
-			HashCombine(bufferHash, bufferEntry.byteOffset);
-			HashCombine(bufferHash, bufferEntry.range);
-		}
-
-		for (const auto& textureEntry : bindGroupCold->Textures)
-		{
-			HashCombine(textureHash, textureEntry.texture.HashKey() + typeid(Texture).hash_code());
-			HashCombine(textureHash, static_cast<uint64_t>(textureEntry.desiredLayout));
-		}
-
-		HashCombine(hash, bufferHash);
-		HashCombine(hash, textureHash);
-		HashCombine(hash, bindGroupCold->BindGroupLayout.Get().HashKey());
-
-		return hash;
-	}
 
 	// BindGroupsLayouts
 	Handle<BindGroupLayout> VulkanResourceManager::CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc)
@@ -421,7 +376,7 @@ namespace HBL2
 			{
 				Handle<BindGroupLayout> bindGroupLayoutHandle = m_BindGroupLayoutPool.GetHandleFromIndex(index);
 
-				if (m_BindGroupLayoutPool.NewRefsAreAllowed(bindGroupLayoutHandle))
+				if (!m_BindGroupLayoutPool.IsClosing(bindGroupLayoutHandle))
 				{
 					return bindGroupLayoutHandle;
 				}
@@ -515,7 +470,7 @@ namespace HBL2
 		if (resourceType == ResourceType::BindGroup)
 		{
 			Handle<BindGroup> handle = Handle<BindGroup>::UnPack(packedHandle);
-			// m_BindGroupSplitPool.Acquire(handle);
+			m_BindGroupSplitPool.Acquire(handle);
 		}
 		else if (resourceType == ResourceType::BindGroupLayout)
 		{
@@ -534,10 +489,10 @@ namespace HBL2
 		{
 			Handle<BindGroup> handle = Handle<BindGroup>::UnPack(packedHandle);
 
-			/*if (m_BindGroupSplitPool.Release(handle))
+			if (m_BindGroupSplitPool.Release(handle))
 			{
 				DeleteBindGroup(handle);
-			}*/
+			}
 		}
 		else if (resourceType == ResourceType::BindGroupLayout)
 		{

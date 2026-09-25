@@ -13,7 +13,7 @@ namespace HBL2
 	struct VulkanShaderHot
 	{
 		uint32_t GlobalBindGroupLayoutHash = 0;
-		Handle<BindGroup> ShaderBindGroup = {};
+		RefHandle<BindGroup> ShaderBindGroup = {};
 		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
 
 		void Destroy();
@@ -23,7 +23,6 @@ namespace HBL2
 	{
 		VkPipeline Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex);
 		void Destroy();
-		void DestroyOld();
 
 		const char* DebugName = "";
 
@@ -60,12 +59,7 @@ namespace HBL2
 
 		void BuildSpecializationInfo(ShaderStage stage, SpecializationData& specializationData, const PipelineConfig& config);
 
-		VkPipelineLayout m_OldPipelineLayout = VK_NULL_HANDLE;
-		VkShaderModule m_OldVertexShaderModule = VK_NULL_HANDLE;
-		VkShaderModule m_OldFragmentShaderModule = VK_NULL_HANDLE;
-		VkShaderModule m_OldComputeShaderModule = VK_NULL_HANDLE;
-
-		std::vector<VkPipeline> m_RetiredPipelines;
+		std::vector<VkPipeline> m_RetiredPipelines; // TODO: Remove!
 		std::atomic<uint32_t> m_Count{ 0 };
 		mutable std::mutex m_WriteMutex;
 		
@@ -97,7 +91,6 @@ namespace HBL2
 
 		void Recompile(const ShaderDescriptor&& desc, bool removeVariants = false);
 		void Destroy();
-		void DestroyOld();
 
 		VulkanShaderHot* Hot = nullptr;
 		VulkanShaderCold* Cold = nullptr;

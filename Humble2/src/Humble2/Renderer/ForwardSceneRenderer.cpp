@@ -124,7 +124,7 @@ namespace HBL2
 
 		// Create pre-pass bind groups.
 		m_DepthOnlyMeshBindGroup = ResourceManager::Instance->CreateBindGroup({
-			.debugName = "pre-pass-bind-group",
+			.debugName = "pre-pass-mesh-bind-group",
 			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
 			.buffers = {
 				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawData) },
@@ -132,7 +132,7 @@ namespace HBL2
 		});
 
 		m_DepthOnlySpriteBindGroup = ResourceManager::Instance->CreateBindGroup({
-			.debugName = "pre-pass-bind-group",
+			.debugName = "pre-pass-sprite-bind-group",
 			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
 			.buffers = {
 				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawDataSprite) },
@@ -251,13 +251,6 @@ namespace HBL2
 			{
 				m_ResourceManager->DeleteTexture(skyLight.CubeMap);
 				skyLight.CubeMap = {};
-
-				Material* mat = m_ResourceManager->GetMaterial(skyLight.CubeMapMaterial);
-				if (mat != nullptr)
-				{
-					m_ResourceManager->DeleteBindGroup(mat->DrawBindGroup);
-					m_ResourceManager->DeleteBindGroup(mat->MaterialBindGroup);
-				}
 
 				m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
 				skyLight.CubeMapMaterial = {};
@@ -1020,8 +1013,8 @@ namespace HBL2
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.IndexBuffer = meshPart.IndexBuffer,
 								.VertexBuffer = meshPart.VertexBuffers[0],
-								.MaterialBindGroup = material->MaterialBindGroup,
-								.BindGroup = material->DrawBindGroup,
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
 								.Size = sizeof(PerDrawData),
 								.Offset = alloc.Offset,
 								.IndexCount = subMesh.IndexCount,
@@ -1057,8 +1050,8 @@ namespace HBL2
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.IndexBuffer = meshPart.IndexBuffer,
 								.VertexBuffer = meshPart.VertexBuffers[0],
-								.MaterialBindGroup = material->MaterialBindGroup,
-								.BindGroup = material->DrawBindGroup,
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
 								.Size = sizeof(PerDrawData),
 								.Offset = alloc.Offset,
 								.IndexCount = subMesh.IndexCount,
@@ -1131,8 +1124,8 @@ namespace HBL2
 								.Shader = material->Shader,
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.VertexBuffer = m_VertexBuffer,
-								.MaterialBindGroup = material->MaterialBindGroup,
-								.BindGroup = material->DrawBindGroup,
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
 								.Size = sizeof(PerDrawDataSprite),
 								.Offset = alloc.Offset,
 								.VertexCount = 6,
@@ -1156,8 +1149,8 @@ namespace HBL2
 								.Shader = material->Shader,
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.VertexBuffer = m_VertexBuffer,
-								.MaterialBindGroup = material->MaterialBindGroup,
-								.BindGroup = material->DrawBindGroup,
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
 								.Size = sizeof(PerDrawDataSprite),
 								.Offset = alloc.Offset,
 								.VertexCount = 6,
@@ -1454,16 +1447,7 @@ namespace HBL2
                         if (skyLight.CubeMapMaterial.IsValid())
                         {
                             m_ResourceManager->DeleteTexture(skyLight.CubeMap);
-
-                            Material* mat = m_ResourceManager->GetMaterial(skyLight.CubeMapMaterial);
-                            if (mat != nullptr)
-                            {
-                                m_ResourceManager->DeleteBindGroup(mat->DrawBindGroup);
-                                m_ResourceManager->DeleteBindGroup(mat->MaterialBindGroup);
-                            }
-
                             m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
-
                             m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
 
                             m_CaptureMatricesBuffer = m_ResourceManager->CreateBuffer({
@@ -1555,7 +1539,7 @@ namespace HBL2
                         .Shader = m_SkyboxShader,
                         .VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_SkyboxShader, mat->VariantHash),
                         .VertexBuffer = m_CubeMeshBuffer,
-                        .MaterialBindGroup = mat->MaterialBindGroup,
+                        .MaterialBindGroup = mat->MaterialBindGroup.Get(),
                         .VertexCount = 36,
                     });
                 }

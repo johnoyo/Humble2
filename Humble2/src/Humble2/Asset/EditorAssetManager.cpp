@@ -2281,7 +2281,7 @@ namespace HBL2
 			.renderPipeline {
 				.vertexBufferBindings = outReflectionData.vertexBufferBindings,
 				.variants = { shaderVariants.data(), shaderVariants.size() },
-                .specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant({ shaderVariants.data(), shaderVariants.size() }),
+                .specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant(shaderVariants),
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
 			.shaderBindGroup = shaderBindGroup,
@@ -2550,13 +2550,13 @@ namespace HBL2
 				});
 			}
 
-			// Delete old bind group.
-			ResourceManager::Instance->DeleteBindGroup(mat->MaterialBindGroup);
+			// Release old bind group.
+			mat->MaterialBindGroup.Release();
 
 			ResourceManager::Instance->ReimportMaterial(materialHandle, {
 				.debugName = strdup(std::format("{}-material", materialName).c_str()),
 				.shader = shaderHandle,
-				.drawBindGroup = mat->DrawBindGroup,
+				.drawBindGroup = mat->DrawBindGroup.Get(),
 				.materialBindGroup = materialBindGroup,
 			});
 		}
@@ -3433,14 +3433,6 @@ namespace HBL2
 		{
 			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
 			return;
-		}
-
-		Material* material = ResourceManager::Instance->GetMaterial(materialAssetHandle);
-
-		if (material != nullptr)
-		{
-			ResourceManager::Instance->DeleteBindGroup(material->DrawBindGroup);
-			ResourceManager::Instance->DeleteBindGroup(material->MaterialBindGroup);
 		}
 
 		ResourceManager::Instance->DeleteMaterial(materialAssetHandle);

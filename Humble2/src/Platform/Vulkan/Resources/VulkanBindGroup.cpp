@@ -24,6 +24,9 @@ namespace HBL2
 			rm->RemoveReimportDependency(Textures[i].dependency);
 			// Textures[i].texture.Release();
 		}
+
+		DebugName = nullptr;
+		Hash = 0;
 	}
 
 	bool VulkanBindGroup::IsValid() const
@@ -73,10 +76,10 @@ namespace HBL2
 
 		VK_VALIDATE(vkAllocateDescriptorSets(device->Get(), &descriptorSetAllocateInfo, &Hot->DescriptorSet), "vkAllocateDescriptorSets");
 
-		Update();
+		Update(self);
 	}
 	
-	void VulkanBindGroup::Update()
+	void VulkanBindGroup::Update(Handle<BindGroup> self)
 	{
 		if (!IsValid())
 		{
@@ -191,6 +194,8 @@ namespace HBL2
 		}
 
 		vkUpdateDescriptorSets(device->Get(), (uint32_t)writeDescriptorSet.size(), writeDescriptorSet.data(), 0, nullptr);
+
+		Cold->Hash = ResourceManager::Instance->GetBindGroupHash(self);
 	}
 
 	void VulkanBindGroup::Destroy()

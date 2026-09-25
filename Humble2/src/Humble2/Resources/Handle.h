@@ -4,6 +4,24 @@
 
 namespace HBL2
 {
+	enum class ResourceType
+	{
+		None,
+		Texture,
+		Buffer,
+		Shader,
+		BindGroup,
+		BindGroupLayout,
+		RenderPass,
+		RenderPassLayout,
+		Mesh,
+		Material,
+		Scene,
+		Script,
+		Sound,
+		Prefab,
+	};
+
 	template<typename T>
 	class Handle
 	{

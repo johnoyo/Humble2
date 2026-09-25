@@ -91,6 +91,12 @@ namespace HBL2
 	}
 	void ResourceManager::DeleteMaterial(Handle<Material> handle)
 	{
+		Material* mat = m_MaterialPool.Get(handle);
+		if (mat != nullptr)
+		{
+			mat->Destroy();
+		}
+
 		m_MaterialPool.Remove(handle);
 	}
 	Material* ResourceManager::GetMaterial(Handle<Material> handle) const
@@ -153,7 +159,7 @@ namespace HBL2
 	{
 		return m_PrefabPool.Get(handle);
 	}
-	uint64_t ResourceManager::GetBindGroupHash(const BindGroupDescriptor&& desc)
+	uint64_t ResourceManager::GetBindGroupHash(const BindGroupDescriptor& desc)
 	{
 		uint64_t hash = 0;
 

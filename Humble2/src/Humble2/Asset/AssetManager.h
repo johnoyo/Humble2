@@ -246,7 +246,4 @@ namespace HBL2
 		moodycamel::ConcurrentQueue<StaticFunction<void(void), 128>> m_MainThreadCallbacks;
 		moodycamel::ConcurrentQueue<StaticFunction<void(void), 64>> m_AssetDeleteCallbacks;
 	};
-
-	template<> inline void PoolAccess<Asset>::Acquire(Handle<Asset> handle) { AssetManager::Instance->Acquire(handle); }
-	template<> inline void PoolAccess<Asset>::Release(Handle<Asset> handle) { AssetManager::Instance->Release(handle); }
 }

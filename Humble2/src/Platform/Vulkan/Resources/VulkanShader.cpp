@@ -10,7 +10,7 @@ namespace HBL2
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		vkDestroyPipelineLayout(device->Get(), PipelineLayout, nullptr);
 
-		ResourceManager::Instance->DeleteBindGroup(ShaderBindGroup);
+		ShaderBindGroup.Release();
 	}
 
 	VkPipeline VulkanShaderCold::Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex)
@@ -42,23 +42,13 @@ namespace HBL2
 			vkDestroyPipeline(device->Get(), variantEntry.Pipeline, nullptr);
 		}
 
+		// TODO: Remove!
 		for (const auto& pipeline : m_RetiredPipelines)
 		{
 			vkDestroyPipeline(device->Get(), pipeline, nullptr);
 		}
 
 		m_RetiredPipelines.clear();
-	}
-
-	void VulkanShaderCold::DestroyOld()
-	{
-		VulkanDevice* device = (VulkanDevice*)Device::Instance;
-
-		vkDestroyShaderModule(device->Get(), m_OldVertexShaderModule, nullptr);
-		vkDestroyShaderModule(device->Get(), m_OldFragmentShaderModule, nullptr);
-		vkDestroyShaderModule(device->Get(), m_OldComputeShaderModule, nullptr);
-
-		vkDestroyPipelineLayout(device->Get(), m_OldPipelineLayout, nullptr);
 	}
 
 	VkPipeline VulkanShaderCold::GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld)
@@ -106,7 +96,7 @@ namespace HBL2
 			m_Count.store(last, std::memory_order_release);
 
 			// Append pipeline to retired array for cleanup.
-			m_RetiredPipelines.push_back(p);
+			m_RetiredPipelines.push_back(p);  // TODO: Remove! Use deletion queue.
 		}
 
 		// Create pipeline
@@ -543,25 +533,37 @@ namespace HBL2
 		}
 
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
+		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
-		Cold->m_OldVertexShaderModule = Cold->VertexShaderModule;
-		Cold->m_OldFragmentShaderModule = Cold->FragmentShaderModule;
-		Cold->m_OldComputeShaderModule = Cold->ComputeShaderModule;
-		Cold->m_OldPipelineLayout = Hot->PipelineLayout;
+		if (removeVariants)
+		{
+			// Copy the old resources to be deleted in the next frames.
+			VkShaderModule oldVertexShaderModule = Cold->VertexShaderModule;
+			VkShaderModule oldFragmentShaderModule = Cold->FragmentShaderModule;
+			VkShaderModule oldComputeShaderModule = Cold->ComputeShaderModule;
+			VkPipelineLayout oldPipelineLayout = Hot->PipelineLayout;
 
-		Cold->VertexShaderModule = VK_NULL_HANDLE;
-		Cold->FragmentShaderModule = VK_NULL_HANDLE;
-		Cold->ComputeShaderModule = VK_NULL_HANDLE;
+			VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
+			rm->GetDeletionQueue().Push(renderer->GetFrameNumber(), [=]()
+			{
+				VulkanDevice* device = (VulkanDevice*)Device::Instance;
+
+				vkDestroyShaderModule(device->Get(), oldVertexShaderModule, nullptr);
+				vkDestroyShaderModule(device->Get(), oldFragmentShaderModule, nullptr);
+				vkDestroyShaderModule(device->Get(), oldComputeShaderModule, nullptr);
+
+				vkDestroyPipelineLayout(device->Get(), oldPipelineLayout, nullptr);
+			});
+
+			Cold->VertexShaderModule = VK_NULL_HANDLE;
+			Cold->FragmentShaderModule = VK_NULL_HANDLE;
+			Cold->ComputeShaderModule = VK_NULL_HANDLE;
+
+			Hot->PipelineLayout = VK_NULL_HANDLE;
+		}
 
 		Cold->DebugName = desc.debugName;
-
-		// BindGroups use a reference counting system, so if there are other objects
-		// referencing the bindgroup, it will not be deleted, just the ref count will be decreased.
-		if (Hot->ShaderBindGroup.IsValid())
-		{
-			ResourceManager::Instance->DeleteBindGroup(Hot->ShaderBindGroup);
-		}
 		Hot->ShaderBindGroup = desc.shaderBindGroup;
 
 		// Clear VertexBufferBindings.
@@ -712,15 +714,5 @@ namespace HBL2
 
 		Hot->Destroy();
 		Cold->Destroy();
-	}
-
-	void VulkanShader::DestroyOld()
-	{
-		if (!IsValid())
-		{
-			return;
-		}
-
-		Cold->DestroyOld();
 	}
 }

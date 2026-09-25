@@ -147,7 +147,7 @@ namespace HBL2
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) = 0;
 		virtual void UpdateBindGroup(Handle<BindGroup> handle) = 0;
 		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) = 0;
-		uint64_t GetBindGroupHash(const BindGroupDescriptor&& desc);
+		uint64_t GetBindGroupHash(const BindGroupDescriptor& desc);
 
 		// BindGroupLayouts
 		virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) = 0;
@@ -217,43 +217,4 @@ namespace HBL2
 
 		Pool<ReimportDependency, ReimportDependency> m_ReimportDependenciesPool;
 	};
-
-	template<> inline void PoolAccess<Mesh>::Acquire(Handle<Mesh> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::Mesh); }
-	template<> inline void PoolAccess<Mesh>::Release(Handle<Mesh> handle) { ResourceManager::Instance->Release(handle.Pack(), ResourceType::Mesh); }
-
-	template<> inline void PoolAccess<Material>::Acquire(Handle<Material> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::Material); }
-	template<> inline void PoolAccess<Material>::Release(Handle<Material> handle) { ResourceManager::Instance->Release(handle.Pack(), ResourceType::Material); }
-
-	template<> inline void PoolAccess<Scene>::Acquire(Handle<Scene> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::Scene); }
-	template<> inline void PoolAccess<Scene>::Release(Handle<Scene> handle) { ResourceManager::Instance->Release(handle.Pack(), ResourceType::Scene); }
-
-	template<> inline void PoolAccess<Script>::Acquire(Handle<Script> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::Script); }
-	template<> inline void PoolAccess<Script>::Release(Handle<Script> handle) { ResourceManager::Instance->Release(handle.Pack(), ResourceType::Script); }
-
-	template<> inline void PoolAccess<Sound>::Acquire(Handle<Sound> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::Sound); }
-	template<> inline void PoolAccess<Sound>::Release(Handle<Sound> handle) { ResourceManager::Instance->Release(handle.Pack(), ResourceType::Sound); }
-
-	template<> inline void PoolAccess<Prefab>::Acquire(Handle<Prefab> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::Prefab); }
-	template<> inline void PoolAccess<Prefab>::Release(Handle<Prefab> handle) { ResourceManager::Instance->Release(handle.Pack(), ResourceType::Prefab); }
-
-	template<> inline void PoolAccess<BindGroup>::Acquire(Handle<BindGroup> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::BindGroup); }
-	template<> inline void PoolAccess<BindGroup>::Release(Handle<BindGroup> handle) { ResourceManager::Instance->Release(handle.Pack(), ResourceType::BindGroup); }
-
-	template<> inline void PoolAccess<BindGroupLayout>::Acquire(Handle<BindGroupLayout> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::BindGroupLayout); }
-	template<> inline void PoolAccess<BindGroupLayout>::Release(Handle<BindGroupLayout> handle) { ResourceManager::Instance->Release(handle.Pack(), ResourceType::BindGroupLayout); }
-
-	template<> inline void PoolAccess<Shader>::Acquire(Handle<Shader> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::Shader); }
-	template<> inline void PoolAccess<Shader>::Release(Handle<Shader> handle) { ResourceManager::Instance->Release(handle.Pack(), ResourceType::Shader); }
-
-	template<> inline void PoolAccess<Texture>::Acquire(Handle<Texture> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::Texture); }
-	template<> inline void PoolAccess<Texture>::Release(Handle<Texture> handle) { ResourceManager::Instance->Release(handle.Pack(), ResourceType::Texture); }
-
-	template<> inline void PoolAccess<Buffer>::Acquire(Handle<Buffer> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::Buffer); }
-	template<> inline void PoolAccess<Buffer>::Release(Handle<Buffer> handle) { ResourceManager::Instance->Release(handle.Pack(), ResourceType::Buffer); }
-
-	template<> inline void PoolAccess<RenderPass>::Acquire(Handle<RenderPass> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::RenderPass); }
-	template<> inline void PoolAccess<RenderPass>::Release(Handle<RenderPass> handle) { ResourceManager::Instance->Release(handle.Pack(), ResourceType::RenderPass); }
-
-	template<> inline void PoolAccess<RenderPassLayout>::Acquire(Handle<RenderPassLayout> handle) { ResourceManager::Instance->Acquire(handle.Pack(), ResourceType::RenderPassLayout); }
-	template<> inline void PoolAccess<RenderPassLayout>::Release(Handle<RenderPassLayout> handle) { ResourceManager::Instance->Release(handle.Pack(), ResourceType::RenderPassLayout); }
 }

@@ -4,6 +4,8 @@
 
 #include "Resources/Pool.h"
 #include "Resources/SplitPool.h"
+#include "Resources/RefCountedPool.h"
+#include "Resources/RefCountedSplitPool.h"
 #include "Resources/Types.h"
 #include "Resources/TypeDescriptors.h"
 
@@ -94,14 +96,11 @@ namespace HBL2
 		Pool<VulkanTexture, Texture> m_TexturePool;
 		SplitPool<VulkanBufferHot, VulkanBufferCold, Buffer> m_BufferSplitPool;
 		SplitPool<VulkanShaderHot, VulkanShaderCold, Shader> m_ShaderSplitPool;
-		SplitPool<VulkanBindGroupHot, VulkanBindGroupCold, BindGroup> m_BindGroupSplitPool;
+		RefCountedSplitPool<VulkanBindGroupHot, VulkanBindGroupCold, BindGroup> m_BindGroupSplitPool;
 		RefCountedPool<VulkanBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
 		Pool<VulkanRenderPass, RenderPass> m_RenderPassPool;
 		Pool<VulkanRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
 
 		friend class VulkanRenderer; // This is required for a hack to create the swapchain images in the VulkanRenderer
-
-	private:
-		uint64_t CalculateBindGroupHash(const VulkanBindGroupCold* bindGroupCold);
 	};
 }
