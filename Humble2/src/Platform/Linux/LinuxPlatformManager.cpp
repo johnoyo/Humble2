@@ -42,7 +42,7 @@ namespace HBL2
         
         if (ec)
         {
-            std::cerr << "Failed to create Linux log directory: " << e.what() << std::endl;
+            std::cerr << "Failed to create Linux log directory: " << ec.message() << std::endl;
             return "";
         }
 

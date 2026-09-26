@@ -5,8 +5,16 @@
 #include <cstdint>
 #include <ostream>
 
-#if defined(HBL2_USE_NEON)
-    #include <arm_neon.h>
+#if defined(HBL2_CPU_X86)
+    #if defined(_MSC_VER)
+        #include <intrin.h>
+    #else
+        #include <x86intrin.h>
+    #endif
+#elif defined(HBL2_CPU_ARM)
+	#if defined(HBL2_USE_NEON)
+    	#include <arm_neon.h>
+	#endif
 #endif
 
 namespace HBL2

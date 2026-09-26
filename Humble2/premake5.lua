@@ -357,7 +357,7 @@ project "Humble2"
     filter "system:linux"
         systemversion "latest"    
         defines { "HBL2_PLATFORM_LINUX", table.unpack(JoltDefines) }
-        buildoptions { "-Wno-changes-meaning", "-march=native" }
+        buildoptions { "-fPIC", "-Wno-changes-meaning", "-march=native" }
 
         removefiles
         {

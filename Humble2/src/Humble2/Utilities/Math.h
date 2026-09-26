@@ -5,6 +5,14 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/noise.hpp>
 
+#if defined(HBL2_CPU_X86)
+    #if defined(_MSC_VER)
+        #include <intrin.h>
+    #else
+        #include <x86intrin.h>
+    #endif
+#endif
+
 namespace HBL2::Math
 {
 	static inline float Lerp(float a, float b, float value)

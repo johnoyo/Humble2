@@ -71,8 +71,8 @@ namespace HBL2
 
             m_Arena.Initialize(&Allocator::Arena, bytes, reservation);
 
-            uint8_t* l0Raw = (uint8_t*)m_Arena.Alloc(m_L0Count * sizeof(uint64_t) + 63);
-            uint8_t* l1Raw = (uint8_t*)m_Arena.Alloc(m_L1Count * sizeof(uint64_t) + 63);
+            uint8_t* l0Raw = (uint8_t*)m_Arena.Alloc(m_L0Count * sizeof(uint64_t) + 63, alignof(int8_t));
+            uint8_t* l1Raw = (uint8_t*)m_Arena.Alloc(m_L1Count * sizeof(uint64_t) + 63, alignof(int8_t));
 
             m_L0 = Align64<uint64_t>(l0Raw);
             m_L1 = Align64<uint64_t>(l1Raw);

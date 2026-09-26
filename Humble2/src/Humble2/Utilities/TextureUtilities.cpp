@@ -359,7 +359,7 @@ namespace HBL2
                 std::error_code ec;
                 std::filesystem::create_directories(texturePath.parent_path(), ec);
                 
-                if (!ec)
+                if (ec)
                 {
                     HBL2_CORE_ERROR("Texture cache directory creation failed: {0}", ec.message());
                     return nullptr;

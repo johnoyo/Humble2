@@ -137,6 +137,9 @@ project "KTX-Software"
         ASTC_ROOT .. "/Source/UnitTest/**",
         ASTC_ROOT .. "/Test/**",
 
+        -- Exclude the fuzzing tests.
+        ASTC_ROOT .. "/Source/Fuzzers/**",
+
         -- Never compile BasisU tools/examples into the library.
         BASIS_ROOT .. "/basisu_tool.cpp",
         BASIS_ROOT .. "/example/**",
@@ -208,7 +211,7 @@ project "KTX-Software"
 	
     filter "system:linux"
         systemversion "latest"
-		buildoptions { "-fPIC" }
+		buildoptions { "-fPIC", "-msse4.1" }
         links { "pthread", "dl", "m" }
 
 		defines

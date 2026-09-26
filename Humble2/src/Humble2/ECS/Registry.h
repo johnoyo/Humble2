@@ -37,7 +37,7 @@ namespace HBL2
                 // Bytes for array for component storages.
                 .Add<IComponentStorage*>(m_MaxComponents)   // m_ComponentStorages
                 .Add<void*>(m_MaxComponents)                // m_ConcreteStorages
-                .AddRaw(m_MaxComponents * 512_B * 32, 1)    // Reserve space for allocating the storages (in the EnsureArray method).
+                .AddRaw(m_MaxComponents * 512_B * 64, 1)    // Reserve space for allocating the storages (in the EnsureArray method).
                 // Bytes for type resolver.
                 .Add<std::type_index>(m_MaxComponents)      // TypeResolver::m_TypeMap
                 .Add<uint32_t>(m_MaxComponents)             // TypeResolver::m_FreeList
