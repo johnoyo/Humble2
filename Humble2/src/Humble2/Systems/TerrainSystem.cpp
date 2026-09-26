@@ -145,6 +145,13 @@ namespace HBL2
 		}
 
 		CleanUpChunks(Entity::Null);
+
+		m_Context->Filter<Component::Terrain>()
+			.ForEach([](Component::Terrain& terrain)
+			{
+				terrain.HeightMap.Release();
+				terrain.Material.Release();
+			});
 	}
 
 	void TerrainSystem::RegenerateTerrainSettings(Component::Terrain& terrain)
@@ -998,8 +1005,8 @@ namespace HBL2
 		ScratchArena scratch(Allocator::FrameArenaMT);
 		FixedArray<Entity> chunks = FixedArray<Entity>(&scratch, 4096);
 
-		m_Context->Filter<Component::TerrainChunk, Component::StaticMesh>()
-			.ForEach([this, ownerUUID, &chunks](Entity chunk, Component::TerrainChunk& terrainChunk, Component::StaticMesh& staticMesh)
+		m_Context->Filter<Component::TerrainChunk>()
+			.ForEach([this, ownerUUID, &chunks](Entity chunk, Component::TerrainChunk& terrainChunk)
 			{
 				if (ownerUUID != terrainChunk.Owner && ownerUUID != 0)
 				{
@@ -1029,11 +1036,6 @@ namespace HBL2
 				}
 
 				chunks.push_back(chunk);
-
-				// Release static mesh refs here, since below we destroy the entities, so they wont get cleaned from the RenderingSystem.
-				// Note that this is not required, since when we destroy the entity the resources get released by the destructor.
-				staticMesh.Mesh.Release();
-				staticMesh.Material.Release();
 			});
 
 		// NOTE: We need to do such excessive clean up here because of play mode logic.
@@ -1053,9 +1055,6 @@ namespace HBL2
 		m_Context->Filter<Component::Terrain>()
 			.ForEach([](Component::Terrain& terrain)
 			{
-				terrain.HeightMap.Release();
-				terrain.Material.Release();
-
 				terrain.ChunksCache.clear();
 
 				JobSystem::Get().Wait(terrain.ChunkDataContext);
