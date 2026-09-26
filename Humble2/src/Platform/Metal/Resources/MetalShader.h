@@ -16,7 +16,7 @@ namespace HBL2
     {
         void* Pso = nullptr;
         MTL::DepthStencilState* DepthStencilState = nullptr;
-        Handle<BindGroup> ShaderBindGroup = {};
+        RefHandle<BindGroup> ShaderBindGroup = {};
         glm::u16vec3 ThreadsPerThreadgroup = {};
         
         void Destroy();
@@ -26,17 +26,12 @@ namespace HBL2
     {
         void* Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex);
         void Destroy();
-        void DestroyOldShaderModules();
         
         const char* DebugName = "";
         
         MTL4::LibraryFunctionDescriptor* VertexShaderModule = nullptr;
         MTL4::LibraryFunctionDescriptor* FragmentShaderModule = nullptr;
         MTL4::LibraryFunctionDescriptor* ComputeShaderModule = nullptr;
-        
-        MTL4::LibraryFunctionDescriptor* OldVertexShaderModule = nullptr;
-        MTL4::LibraryFunctionDescriptor* OldFragmentShaderModule = nullptr;
-        MTL4::LibraryFunctionDescriptor* OldComputeShaderModule = nullptr;
         
         ShaderDescriptor::RenderPipeline::VertexBufferBinding VertexBufferBinding;
         
@@ -74,7 +69,7 @@ namespace HBL2
         std::array<VariantEntry, MaxVariants> m_Entries;
         std::array<BitFlags<ShaderStage>, MaxSpecializationConstants> m_SpecializationConstantStages;
         
-        StaticDArray<Handle<BindGroupLayout>, 4> m_ReflectedBindGroupLayouts;
+        RefHandle<BindGroupLayout> m_ReflectedBindGroupLayout;
         
         uint32_t ColorAttachmentCount = 0;
         StaticDArray<MTL::PixelFormat, 4> ColorAttachmentFormats;

@@ -14,8 +14,8 @@ namespace HBL2
 
 		m_AssetPool.Initialize(m_Spec.Assets);
 
-		uint32_t registeredAssetMapBytes = FixedHashMap<UUID, Handle<Asset>>::RequiredBytes(m_Spec.Assets);
-		uint32_t registeredAssetPathToUUIDMap = FixedHashMap<std::filesystem::path, UUID>::RequiredBytes(m_Spec.Assets);
+		size_t registeredAssetMapBytes = FixedHashMap<UUID, Handle<Asset>>::RequiredBytes(m_Spec.Assets);
+		size_t registeredAssetPathToUUIDMap = FixedHashMap<std::filesystem::path, UUID>::RequiredBytes(m_Spec.Assets);
 
 		uint64_t bytes = ArenaLayout::Create()
 			.AddRaw(registeredAssetMapBytes, alignof(std::pair<UUID, Handle<Asset>>))

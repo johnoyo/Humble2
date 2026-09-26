@@ -62,6 +62,8 @@ namespace HBL2
 			asset->Indentifier = ImportPrefab(asset).Pack();
 			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
+        case AssetType::None:
+            return 0;
 		}
 
 		return 0;
@@ -93,10 +95,15 @@ namespace HBL2
 			asset->Indentifier = ReimportMesh(asset).Pack();
 			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
-		case AssetType::Prefab:
-			asset->Indentifier = ReimportPrefab(asset).Pack();
-			asset->Loaded = (asset->Indentifier != 0);
-			return asset->Indentifier;
+        case AssetType::Prefab:
+            asset->Indentifier = ReimportPrefab(asset).Pack();
+            asset->Loaded = (asset->Indentifier != 0);
+            return asset->Indentifier;
+        case AssetType::Scene:
+        case AssetType::Script:
+        case AssetType::Sound:
+        case AssetType::None:
+            return 0;
 		}
 
 		return 0;
@@ -137,7 +144,9 @@ namespace HBL2
 		case AssetType::Prefab:
 			UnloadPrefab(asset);
 			break;
-		}
+        case AssetType::None:
+            break;
+        }
     }
 
     void EditorAssetManager::DestroyAsset(Handle<Asset> handle)
@@ -177,7 +186,9 @@ namespace HBL2
 		case AssetType::Prefab:
 			destroyResult = DestroyPrefab(asset);
 			break;
-		}
+        case AssetType::None:
+            break;
+        }
 
 		if (destroyResult)
 		{
@@ -234,7 +245,11 @@ namespace HBL2
 		case AssetType::Prefab:
 			SavePrefab(asset);
 			break;
-		}
+        case AssetType::Shader:
+        case AssetType::Mesh:
+        case AssetType::None:
+            break;
+        }
     }
 
     bool EditorAssetManager::IsAssetValid(Handle<Asset> handle)

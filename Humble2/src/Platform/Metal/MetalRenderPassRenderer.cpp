@@ -110,7 +110,7 @@ namespace HBL2
             // Bind global shader descriptor set for custom per frame data.
             if (shader->ShaderBindGroup.IsValid())
             {
-                MetalBindGroupCold* shaderBindGroupCold = rm->GetBindGroupCold(shader->ShaderBindGroup);
+                MetalBindGroupCold* shaderBindGroupCold = rm->GetBindGroupCold(shader->ShaderBindGroup.Get());
 
                 for (const auto& bufferEntry : shaderBindGroupCold->Buffers)
                 {

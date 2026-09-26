@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources/RefCounted.h"
 #include "Resources/TypeDescriptors.h"
 
 #include "Platform/Metal/MetalDevice.h"
@@ -16,18 +15,20 @@ namespace HBL2
         void* DescriptorSet = nullptr;
     };
 
-    struct MetalBindGroupCold : public RefCounted
+    struct MetalBindGroupCold
     {
+        static constexpr uint32_t MaxTextureEntries = 6;
+        static constexpr uint32_t MaxBufferEntries = 6;
+        
+        uint64_t Hash = 0;
         const char* DebugName = "";
-        Handle<BindGroupLayout> BindGroupLayout;
-        std::vector<BindGroupDescriptor::TextureEntry> Textures;
-        std::vector<BindGroupDescriptor::BufferEntry> Buffers;
+        RefHandle<BindGroupLayout> BindGroupLayout;
+        StaticDArray<BindGroupDescriptor::BufferEntry, MaxBufferEntries> Buffers;
+        StaticDArray<BindGroupDescriptor::TextureEntry, MaxTextureEntries> Textures;
 
         void Destroy();
     };
 
-    // Helper struct for centralised operations on hot and cold data.
-    // NOTE: Use with SplitPool::Get to retrieve the Hot and Cold data from the pool.
     struct MetalBindGroup
     {
         MetalBindGroup() = default;

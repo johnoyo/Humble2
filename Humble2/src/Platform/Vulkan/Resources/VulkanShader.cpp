@@ -549,7 +549,6 @@ namespace HBL2
 			VkShaderModule oldComputeShaderModule = Cold->ComputeShaderModule;
 			VkPipelineLayout oldPipelineLayout = Hot->PipelineLayout;
 
-			VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 			rm->GetDeletionQueue().Push(renderer->GetFrameNumber(), [=]()
 			{
 				VulkanDevice* device = (VulkanDevice*)Device::Instance;
@@ -567,7 +566,7 @@ namespace HBL2
 
 			Hot->PipelineLayout = VK_NULL_HANDLE;
 		}
-
+		
 		Cold->DebugName = desc.debugName;
 		Hot->ShaderBindGroup = desc.shaderBindGroup;
 

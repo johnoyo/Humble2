@@ -77,8 +77,6 @@ namespace HBL2
         {
             static_assert(std::is_base_of_v<Event, T>, "T must derive from Event.");
 
-            std::type_index type = std::type_index(typeid(T));
-
             auto it = m_CallbackSlots.find(std::type_index(typeid(T)));
             if (it != m_CallbackSlots.end())
             {

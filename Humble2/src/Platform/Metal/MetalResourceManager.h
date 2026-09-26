@@ -4,6 +4,8 @@
 
 #include "Resources/Pool.h"
 #include "Resources/SplitPool.h"
+#include "Resources/RefCountedPool.h"
+#include "Resources/RefCountedSplitPool.h"
 #include "Resources/Types.h"
 #include "Resources/TypeDescriptors.h"
 
@@ -94,16 +96,12 @@ namespace HBL2
         Pool<MetalTexture, Texture> m_TexturePool;
         SplitPool<MetalBufferHot, MetalBufferCold, Buffer> m_BufferSplitPool;
         SplitPool<MetalShaderHot, MetalShaderCold, Shader> m_ShaderSplitPool;
-        SplitPool<MetalBindGroupHot, MetalBindGroupCold, BindGroup> m_BindGroupSplitPool;
-        Pool<MetalBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
+        RefCountedSplitPool<MetalBindGroupHot, MetalBindGroupCold, BindGroup> m_BindGroupSplitPool;
+        RefCountedPool<MetalBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
         Pool<MetalRenderPass, RenderPass> m_RenderPassPool;
         Pool<MetalRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
 
         friend class VulkanRenderer; // This is required for a hack to create the swapchain images in the VulkanRenderer
-
-    private:
-         uint64_t CalculateBindGroupHash(const MetalBindGroupCold* bindGroupCold);
-         uint64_t CalculateBindGroupLayoutHash(const MetalBindGroupLayout* bindGroupLayout);
     };
 }
 

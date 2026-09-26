@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources/RefCounted.h"
 #include "Resources/TypeDescriptors.h"
 
 #include "Platform/Metal/MetalDevice.h"
@@ -10,16 +9,19 @@
 
 namespace HBL2
 {
-    struct MetalBindGroupLayout : RefCounted
+    struct MetalBindGroupLayout
     {
+        static constexpr uint32_t MaxTextureEntries = 6;
+        static constexpr uint32_t MaxBufferEntries = 6;
+        
         MetalBindGroupLayout() = default;
         MetalBindGroupLayout(const BindGroupLayoutDescriptor&& desc);
 
         void Destroy();
 
+        uint64_t Hash = 0;
         const char* DebugName = "";
-        std::vector<BindGroupLayoutDescriptor::BufferBinding> BufferBindings;
-        std::vector<BindGroupLayoutDescriptor::TextureBinding> TextureBindings;
-        bool CreatedFromReflection = false;
+        StaticDArray<BindGroupLayoutDescriptor::BufferBinding, MaxBufferEntries> BufferBindings;
+        StaticDArray<BindGroupLayoutDescriptor::TextureBinding, MaxTextureEntries> TextureBindings;
     };
 }

@@ -210,15 +210,6 @@ namespace HBL2
     {
         MetalShader shader = GetShader(handle);
         shader.Recompile(std::forward<const ShaderDescriptor>(desc), true);
-
-        m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
-        {
-            MetalShader shader = GetShader(handle);
-            if (shader.IsValid())
-            {
-                shader.Cold->DestroyOldShaderModules();
-            }
-        });
     }
     void MetalResourceManager::DeleteShader(Handle<Shader> handle)
     {
@@ -252,8 +243,7 @@ namespace HBL2
 
         if (shader != nullptr)
         {
-            return shader->ShaderBindGroup;
-            return {};
+            return shader->ShaderBindGroup.Get();
         }
 
         return Renderer::Instance->GetEmptyBindings();
@@ -282,21 +272,18 @@ namespace HBL2
     {
         // Caching mechanism so that materials with the same resources, use the same bind group.
         uint16_t index = 0;
-        uint64_t descriptorHash = ResourceManager::Instance->GetBindGroupHash(std::move(desc));
+        uint64_t descriptorHash = ResourceManager::Instance->GetBindGroupHash(desc);
 
         for (const auto& bindGroup : m_BindGroupSplitPool.GetDataColdPool())
         {
-            uint64_t hash = CalculateBindGroupHash(&bindGroup);
-
-            if (descriptorHash == hash && bindGroup.DebugName != nullptr)
+            if (descriptorHash == bindGroup.Hash && bindGroup.DebugName != nullptr)
             {
-                MetalBindGroupCold* mutBindGroup = (MetalBindGroupCold*)&bindGroup;
-                if (mutBindGroup->TryAddRef())
-                {
-                    return m_BindGroupSplitPool.GetHandleFromIndex(index);
-                }
+                Handle<BindGroup> bindGroupHandle = m_BindGroupSplitPool.GetHandleFromIndex(index);
 
-                break;
+                if (!m_BindGroupSplitPool.IsClosing(bindGroupHandle))
+                {
+                    return bindGroupHandle;
+                }
             }
 
             index++;
@@ -304,30 +291,13 @@ namespace HBL2
 
         MetalBindGroup bindgroup;
         Handle<BindGroup> bg = m_BindGroupSplitPool.Insert(&bindgroup.Hot, &bindgroup.Cold);
-        bindgroup.Initialize(std::move(desc));
-
-        // Increase ref count of bindgroup.
-        bindgroup.Cold->TryAddRef();
+        bindgroup.Initialize(std::forward<const BindGroupDescriptor>(desc));
 
         return bg;
     }
     void MetalResourceManager::DeleteBindGroup(Handle<BindGroup> handle)
     {
-        MetalBindGroupCold* bindGroupCold = GetBindGroupCold(handle);
-
-        if (bindGroupCold == nullptr)
-        {
-            // Invalid handle or already deleted.
-            return;
-        }
-
-        MetalBindGroupLayout* bindGroupLayout = GetBindGroupLayout(bindGroupCold->BindGroupLayout);
-        if (bindGroupLayout != nullptr && bindGroupLayout->CreatedFromReflection)
-        {
-            DeleteBindGroupLayout(bindGroupCold->BindGroupLayout);
-        }
-
-        if (bindGroupCold->TryReleaseRef())
+        if (!m_BindGroupSplitPool.IsAlive(handle))
         {
             m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
             {
@@ -347,7 +317,13 @@ namespace HBL2
     }
     uint64_t MetalResourceManager::GetBindGroupHash(Handle<BindGroup> handle)
     {
-        return CalculateBindGroupHash(GetBindGroupCold(handle));
+        MetalBindGroupCold* bindGroupCold = GetBindGroupCold(handle);
+        if (bindGroupCold != nullptr)
+        {
+            return bindGroupCold->Hash;
+        }
+        
+        return 0;
     }
     MetalBindGroup MetalResourceManager::GetBindGroup(Handle<BindGroup> handle) const
     {
@@ -367,82 +343,34 @@ namespace HBL2
     {
         return m_BindGroupSplitPool.GetCold(handle);
     }
-    uint64_t MetalResourceManager::CalculateBindGroupHash(const MetalBindGroupCold* bindGroupCold)
-    {
-        if (bindGroupCold == nullptr)
-        {
-            return 0;
-        }
-
-        uint64_t hash = 0;
-
-        uint64_t bufferHash = 0x517cc1b727220a95ULL;
-        uint64_t textureHash = 0x9e3779b97f4a7c15ULL;
-
-        for (const auto& bufferEntry : bindGroupCold->Buffers)
-        {
-            HashCombine(bufferHash, bufferEntry.buffer.HashKey() + typeid(Buffer).hash_code());
-            HashCombine(bufferHash, bufferEntry.byteOffset);
-            HashCombine(bufferHash, bufferEntry.range);
-        }
-
-        for (const auto& textureEntry : bindGroupCold->Textures)
-        {
-            HashCombine(textureHash, textureEntry.texture.HashKey() + typeid(Texture).hash_code());
-            HashCombine(textureHash, static_cast<uint64_t>(textureEntry.desiredLayout));
-        }
-
-        HashCombine(hash, bufferHash);
-        HashCombine(hash, textureHash);
-        HashCombine(hash, bindGroupCold->BindGroupLayout.HashKey());
-
-        return hash;
-    }
 
     // BindGroupsLayouts
     Handle<BindGroupLayout> MetalResourceManager::CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc)
     {
         // Caching mechanism so that bind groups and shaders with the same layout, use the same bind group layout object.
         uint16_t index = 0;
-        uint64_t layoutHash = ResourceManager::Instance->GetBindGroupLayoutHash(std::move(desc));
+        uint64_t layoutHash = ResourceManager::Instance->GetBindGroupLayoutHash(desc);
 
         for (const auto& bindGroupLayout : m_BindGroupLayoutPool.GetDataPool())
         {
-            uint64_t hash = CalculateBindGroupLayoutHash(&bindGroupLayout);
-
-            if (layoutHash == hash && bindGroupLayout.DebugName != nullptr)
+            if (layoutHash == bindGroupLayout.Hash && bindGroupLayout.DebugName != nullptr)
             {
-                MetalBindGroupLayout* mutBindGroupLayout = (MetalBindGroupLayout*)&bindGroupLayout;
-                if (mutBindGroupLayout->TryAddRef())
-                {
-                    return m_BindGroupLayoutPool.GetHandleFromIndex(index);
-                }
+                Handle<BindGroupLayout> bindGroupLayoutHandle = m_BindGroupLayoutPool.GetHandleFromIndex(index);
 
-                break;
+                if (!m_BindGroupLayoutPool.IsClosing(bindGroupLayoutHandle))
+                {
+                    return bindGroupLayoutHandle;
+                }
             }
 
             index++;
         }
 
-        Handle<BindGroupLayout> layoutHandle = m_BindGroupLayoutPool.Insert(std::move(desc));
-        MetalBindGroupLayout* bindGroupLayout = GetBindGroupLayout(layoutHandle);
-
-        // Increase ref count of bindgroup layout.
-        bindGroupLayout->TryAddRef();
-
-        return layoutHandle;
+        return m_BindGroupLayoutPool.Insert(std::forward<const BindGroupLayoutDescriptor>(desc));
     }
     void MetalResourceManager::DeleteBindGroupLayout(Handle<BindGroupLayout> handle)
     {
-        MetalBindGroupLayout* bindGroupLayout = GetBindGroupLayout(handle);
-
-        if (bindGroupLayout == nullptr)
-        {
-            // Invalid handle or already deleted.
-            return;
-        }
-
-        if (bindGroupLayout->TryReleaseRef())
+        if (!m_BindGroupLayoutPool.IsAlive(handle))
         {
             m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
             {
@@ -457,42 +385,17 @@ namespace HBL2
     }
     uint64_t MetalResourceManager::GetBindGroupLayoutHash(Handle<BindGroupLayout> handle)
     {
-        return CalculateBindGroupLayoutHash(GetBindGroupLayout(handle));
+        MetalBindGroupLayout* bindGroupLayout = GetBindGroupLayout(handle);
+        if (bindGroupLayout != nullptr)
+        {
+            return bindGroupLayout->Hash;
+        }
+        
+        return 0;
     }
     MetalBindGroupLayout* MetalResourceManager::GetBindGroupLayout(Handle<BindGroupLayout> handle) const
     {
         return m_BindGroupLayoutPool.Get(handle);
-    }
-    uint64_t MetalResourceManager::CalculateBindGroupLayoutHash(const MetalBindGroupLayout* bindGroupLayout)
-    {
-        if (bindGroupLayout == nullptr)
-        {
-            return 0;
-        }
-
-        uint64_t hash = 0;
-
-        uint64_t bufferHash = 0x517cc1b727220a95ULL;
-        uint64_t textureHash = 0x9e3779b97f4a7c15ULL;
-
-        for (const auto& bufferEntry : bindGroupLayout->BufferBindings)
-        {
-            HashCombine(bufferHash, bufferEntry.slot);
-            HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.type));
-            HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.visibility));
-        }
-
-        for (const auto& texture : bindGroupLayout->TextureBindings)
-        {
-            HashCombine(textureHash, texture.slot);
-            HashCombine(textureHash, static_cast<uint64_t>(texture.type));
-            HashCombine(textureHash, static_cast<uint64_t>(texture.visibility));
-        }
-
-        HashCombine(hash, bufferHash);
-        HashCombine(hash, textureHash);
-
-        return hash;
     }
     
     // RenderPass
@@ -548,17 +451,17 @@ namespace HBL2
         if (resourceType == ResourceType::BindGroup)
         {
             Handle<BindGroup> handle = Handle<BindGroup>::UnPack(packedHandle);
-            // m_BindGroupSplitPool.Acquire(handle);
+            m_BindGroupSplitPool.Acquire(handle);
         }
         else if (resourceType == ResourceType::BindGroupLayout)
         {
             Handle<BindGroupLayout> handle = Handle<BindGroupLayout>::UnPack(packedHandle);
-            // m_BindGroupLayoutPool.Acquire(handle);
+            m_BindGroupLayoutPool.Acquire(handle);
         }
         else if (resourceType == ResourceType::Texture)
         {
-            Handle<Texture> handle = Handle<Texture>::UnPack(packedHandle);
-            // m_TexturePool.Acquire(handle);
+//            Handle<Texture> handle = Handle<Texture>::UnPack(packedHandle);
+//            m_TexturePool.Acquire(handle);
         }
     }
     void MetalResourceManager::Release(uint32_t packedHandle, ResourceType resourceType)
@@ -567,28 +470,28 @@ namespace HBL2
         {
             Handle<BindGroup> handle = Handle<BindGroup>::UnPack(packedHandle);
 
-            /*if (m_BindGroupSplitPool.Release(handle))
+            if (m_BindGroupSplitPool.Release(handle))
             {
                 DeleteBindGroup(handle);
-            }*/
+            }
         }
         else if (resourceType == ResourceType::BindGroupLayout)
         {
             Handle<BindGroupLayout> handle = Handle<BindGroupLayout>::UnPack(packedHandle);
 
-            /*if (m_BindGroupLayoutPool.Release(handle))
+            if (m_BindGroupLayoutPool.Release(handle))
             {
                 DeleteBindGroupLayout(handle);
-            }*/
+            }
         }
         else if (resourceType == ResourceType::Texture)
         {
-            Handle<Texture> handle = Handle<Texture>::UnPack(packedHandle);
-
-            /*if (m_TexturePool.Release(handle))
-            {
-                DeleteTexture(handle);
-            }*/
+//            Handle<Texture> handle = Handle<Texture>::UnPack(packedHandle);
+//
+//            if (m_TexturePool.Release(handle))
+//            {
+//                DeleteTexture(handle);
+//            }
         }
     }
 }
