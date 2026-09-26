@@ -90,7 +90,7 @@ namespace HBL2
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 
-		if (destroyOld && false)
+		if (destroyOld)
 		{
 			// Copy the old resources to be deleted in the next frames.
 			VkImage image = Image;
