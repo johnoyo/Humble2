@@ -84,6 +84,8 @@ Entities:
       Children:
         []
     BenchmarkComponent:
+      PhysicsCubes: 625
+      PhysicsCubeMaterial: 2424841968117342138
       Cubes: 6400
       CubeMaterial: 6805961995243789723
       Spheres: 6400

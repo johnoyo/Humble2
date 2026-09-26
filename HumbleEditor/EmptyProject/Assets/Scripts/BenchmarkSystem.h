@@ -30,30 +30,32 @@ public:
 					terrain.AddColliders = benchmark.EnablePhysics;
 				}
 
-				// Cubes
-				auto cubes = m_Context->CreateEntity("Cubes");
-				auto& cubesID = m_Context->GetComponent<HBL2::Component::ID>(cubes);
-
-				int32_t numCubesPerEdge = (int32_t)glm::ceil(glm::sqrt(benchmark.Cubes));
-				for (int32_t i = -numCubesPerEdge / 2; i < numCubesPerEdge / 2; i++)
+				// PhysicsCubes
+				auto physicsCubes = m_Context->CreateEntity("PhysicsCubes");
+				auto& physicsCubesID = m_Context->GetComponent<HBL2::Component::ID>(physicsCubes);
+                
+                float spacing = 2.5f;
+                
+				int32_t numPhysicsCubesPerEdge = (int32_t)glm::ceil(glm::sqrt(benchmark.PhysicsCubes));
+				for (int32_t i = -numPhysicsCubesPerEdge / 2; i < numPhysicsCubesPerEdge / 2; i++)
 				{
-					for (int32_t j = -numCubesPerEdge / 2; j < numCubesPerEdge / 2; j++)
+					for (int32_t j = -numPhysicsCubesPerEdge / 2; j < numPhysicsCubesPerEdge / 2; j++)
 					{
-						auto entity = m_Context->CreateEntity("Cube");
+						auto entity = m_Context->CreateEntity("PhysicsCube");
 
 						auto& link = m_Context->GetComponent<HBL2::Component::Link>(entity);
-						link.Parent = cubesID.Identifier;
+						link.Parent = physicsCubesID.Identifier;
 
 						auto& transform = m_Context->GetComponent<HBL2::Component::Transform>(entity);
-						transform.Translation.x = i;
-						transform.Translation.y = 20.f;
-						transform.Translation.z = -j;
+						transform.Translation.x = i * spacing;
+						transform.Translation.y = 120.f;
+						transform.Translation.z = -j * spacing;
 
 						m_Context->AddComponent<HBL2::Component::EditorVisible>(entity);
 
 						auto& staticMesh = m_Context->AddComponent<HBL2::Component::StaticMesh>(entity);
 						staticMesh.Mesh = HBL2::MeshUtilities::Get().GetBuiltInLoadedMeshAssetHandle(HBL2::BuiltInMesh::CUBE);
-						staticMesh.Material = benchmark.CubeMaterial;
+						staticMesh.Material = benchmark.PhysicsCubeMaterial;
 
 						if (benchmark.EnablePhysics)
 						{
@@ -62,8 +64,35 @@ public:
 
 							auto& bc = m_Context->AddComponent<HBL2::Component::BoxCollider>(entity);
 						}
-					}
+                    }
 				}
+                
+                // Cubes
+                auto cubes = m_Context->CreateEntity("Cubes");
+                auto& cubesID = m_Context->GetComponent<HBL2::Component::ID>(cubes);
+
+                int32_t numCubesPerEdge = (int32_t)glm::ceil(glm::sqrt(benchmark.Cubes));
+                for (int32_t i = -numCubesPerEdge / 2; i < numCubesPerEdge / 2; i++)
+                {
+                    for (int32_t j = -numCubesPerEdge / 2; j < numCubesPerEdge / 2; j++)
+                    {
+                        auto entity = m_Context->CreateEntity("Cube");
+
+                        auto& link = m_Context->GetComponent<HBL2::Component::Link>(entity);
+                        link.Parent = cubesID.Identifier;
+
+                        auto& transform = m_Context->GetComponent<HBL2::Component::Transform>(entity);
+                        transform.Translation.x = i;
+                        transform.Translation.y = 20.f;
+                        transform.Translation.z = -j;
+
+                        m_Context->AddComponent<HBL2::Component::EditorVisible>(entity);
+
+                        auto& staticMesh = m_Context->AddComponent<HBL2::Component::StaticMesh>(entity);
+                        staticMesh.Mesh = HBL2::MeshUtilities::Get().GetBuiltInLoadedMeshAssetHandle(HBL2::BuiltInMesh::CUBE);
+                        staticMesh.Material = benchmark.CubeMaterial;
+                    }
+                }
 
 				// Spheres
 				auto spheres = m_Context->CreateEntity("Spheres");

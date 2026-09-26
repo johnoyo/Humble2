@@ -7,6 +7,9 @@ struct BenchmarkComponent
 {
     using storage_type = HBL2::SingletonComponentStorage<BenchmarkComponent>;
 
+    int PhysicsCubes = 625;
+    HBL2::Handle<HBL2::Asset> PhysicsCubeMaterial;
+    
     int Cubes = 10000;
     HBL2::Handle<HBL2::Asset> CubeMaterial;
 
@@ -33,6 +36,8 @@ struct BenchmarkComponent
 	// Member registration.
 	static constexpr auto schema = HBL2::Reflect::Schema
 	{
+        HBL2::Reflect::Field{"PhysicsCubes", &BenchmarkComponent::PhysicsCubes},
+        HBL2::Reflect::Field{"PhysicsCubeMaterial", &BenchmarkComponent::PhysicsCubeMaterial},
         HBL2::Reflect::Field{"Cubes", &BenchmarkComponent::Cubes},
         HBL2::Reflect::Field{"CubeMaterial", &BenchmarkComponent::CubeMaterial},
         HBL2::Reflect::Field{"Spheres", &BenchmarkComponent::Spheres},
