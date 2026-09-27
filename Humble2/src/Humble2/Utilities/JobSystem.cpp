@@ -130,14 +130,15 @@ namespace HBL2
 
         auto wrappedJob = [this, job, &ctx]()
         {
+#if !DIST
             BeginJobSlot(s_WorkerIndex, "Execute Job Active");
-            
+#endif
             job();
 
             GetWorkerArena()->Reset();
-            
+#if !DIST
             EndJobSlot(s_WorkerIndex);
-
+#endif
             ctx.counter.fetch_sub(1, std::memory_order_release);
         };
 
@@ -161,8 +162,9 @@ namespace HBL2
         {
             auto task = [=, this, &ctx]()
             {
+#if !DIST
                 BeginJobSlot(s_WorkerIndex, "Dispatch Job Active");
-                
+#endif
                 uint32_t start = i * groupSize;
                 uint32_t end = std::min(start + groupSize, jobCount);
                 for (uint32_t j = start; j < end; ++j)
@@ -171,9 +173,9 @@ namespace HBL2
                 }
 
                 GetWorkerArena()->Reset();
-                
+#if !DIST
                 EndJobSlot(s_WorkerIndex);
-
+#endif
                 ctx.counter.fetch_sub(1, std::memory_order_acq_rel);
             };
 
