@@ -4,6 +4,8 @@
 
 #include "Resources/Pool.h"
 #include "Resources/SplitPool.h"
+#include "Resources/RefCountedPool.h"
+#include "Resources/RefCountedSplitPool.h"
 #include "Resources/Types.h"
 #include "Resources/TypeDescriptors.h"
 
@@ -28,10 +30,11 @@ namespace HBL2
 
 		// Textures
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) override;
+		virtual void ReimportTexture(Handle<Texture> handle, const TextureDescriptor&& desc) override;
 		virtual void DeleteTexture(Handle<Texture> handle) override;
 		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) override;
 		virtual void ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc) override;
-		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, ResourceState currentState, ResourceState newState) override;
+		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout) override;
 		virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) override;
 		virtual void* GetTextureData(Handle<Texture> handle) override;
 		VulkanTexture* GetTexture(Handle<Texture> handle) const;
@@ -86,19 +89,18 @@ namespace HBL2
 		virtual void DeleteRenderPassLayout(Handle<RenderPassLayout> handle) override;
 		VulkanRenderPassLayout* GetRenderPassLayout(Handle<RenderPassLayout> handle) const;
 
+		virtual void Acquire(uint32_t packedHandle, ResourceType resourceType) override;
+		virtual void Release(uint32_t packedHandle, ResourceType resourceType) override;
+
 	private:
 		Pool<VulkanTexture, Texture> m_TexturePool;
 		SplitPool<VulkanBufferHot, VulkanBufferCold, Buffer> m_BufferSplitPool;
 		SplitPool<VulkanShaderHot, VulkanShaderCold, Shader> m_ShaderSplitPool;
-		SplitPool<VulkanBindGroupHot, VulkanBindGroupCold, BindGroup> m_BindGroupSplitPool;
-		Pool<VulkanBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
+		RefCountedSplitPool<VulkanBindGroupHot, VulkanBindGroupCold, BindGroup> m_BindGroupSplitPool;
+		RefCountedPool<VulkanBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
 		Pool<VulkanRenderPass, RenderPass> m_RenderPassPool;
 		Pool<VulkanRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
 
 		friend class VulkanRenderer; // This is required for a hack to create the swapchain images in the VulkanRenderer
-
-	private:
-		uint64_t CalculateBindGroupHash(const VulkanBindGroupCold* bindGroupCold);
-		uint64_t CalculateBindGroupLayoutHash(const VulkanBindGroupLayout* bindGroupLayout);
 	};
 }

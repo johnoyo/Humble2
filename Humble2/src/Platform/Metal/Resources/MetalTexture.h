@@ -15,9 +15,10 @@ namespace HBL2
         MetalTexture() = default;
         MetalTexture(const TextureDescriptor&& desc);
         
+        void Reimport(const TextureDescriptor&& desc, bool destroyOld);
         void Update(const Span<const std::byte>& bytes);
         void ChangeTextureView(const TextureViewDescriptor&& desc);
-        void SynchronizeUsage(MetalCommandBuffer* commandBuffer, ResourceState currentState, ResourceState newState);
+        void SynchronizeUsage(MetalCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout);
         void Destroy();
         
         const char* DebugName = "";
@@ -34,7 +35,7 @@ namespace HBL2
         
     private:
         MTL::Texture* m_StorageTexture = nullptr;
-        uint32_t m_PixelByteSize = 0;
+        BlockFormatInfo m_BlockInfo;
     };
 }
 

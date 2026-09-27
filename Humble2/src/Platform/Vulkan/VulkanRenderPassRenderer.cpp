@@ -84,16 +84,16 @@ namespace HBL2
 				}
 
 				// Bind global shader descriptor set for custom per frame data if needed.
-				if (shader->ShaderBindGroup.IsValid() && prevShaderBindGroup != shader->ShaderBindGroup)
+				if (shader->ShaderBindGroup.IsValid() && prevShaderBindGroup != shader->ShaderBindGroup.Get())
 				{
-					VulkanBindGroupHot* shaderBindGroupHot = rm->GetBindGroupHot(shader->ShaderBindGroup);
+					VulkanBindGroupHot* shaderBindGroupHot = rm->GetBindGroupHot(shader->ShaderBindGroup.Get());
 
 					if (shaderBindGroupHot != nullptr)
 					{
 						vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 1, 1, &shaderBindGroupHot->DescriptorSet, 0, nullptr);
 					}
 
-					prevShaderBindGroup = shader->ShaderBindGroup;
+					prevShaderBindGroup = shader->ShaderBindGroup.Get();
 				}
 			}
 

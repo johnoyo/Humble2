@@ -1,6 +1,6 @@
 #include "RuntimeContext.h"
 
-#include "Utilities/PlatformManager.h"
+#include "Platform/PlatformManager.h"
 
 namespace HBL2
 {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Base.h"
-#include "Resources/RefCounted.h"
 #include "Resources/TypeDescriptors.h"
 
 #include "Platform/Vulkan/VulkanDevice.h"
@@ -16,26 +15,41 @@ namespace HBL2
 		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE;
 	};
 
-	struct VulkanBindGroupCold : public RefCounted
+	struct VulkanBindGroupCold
 	{
+		static constexpr uint32_t MaxTextureEntries = 6;
+		static constexpr uint32_t MaxBufferEntries = 6;
+
+		struct TextureEntry
+		{
+			Handle<Texture> texture;
+			TextureLayout desiredLayout = TextureLayout::UNDEFINED;
+			Handle<ReimportDependency> dependency;
+		};
+		struct BufferEntry
+		{
+			Handle<Buffer> buffer;
+			uint32_t byteOffset = 0;
+			uint32_t range = 0;
+		};
+
+		uint64_t Hash = 0;
 		const char* DebugName = "";
-		Handle<BindGroupLayout> BindGroupLayout;
-		std::vector<BindGroupDescriptor::TextureEntry> Textures;
-		std::vector<BindGroupDescriptor::BufferEntry> Buffers;
+		RefHandle<BindGroupLayout> BindGroupLayout;
+		StaticDArray<TextureEntry, MaxTextureEntries> Textures;
+		StaticDArray<BufferEntry, MaxBufferEntries> Buffers;
 
 		void Destroy();
 	};
 
-	// Helper struct for centralised operations on hot and cold data.
-	// NOTE: Use with SplitPool::Get to retrieve the Hot and Cold data from the pool.
 	struct VulkanBindGroup
 	{
 		VulkanBindGroup() = default;
 
 		bool IsValid() const;
 
-		void Initialize(const BindGroupDescriptor&& desc);
-		void Update();
+		void Initialize(Handle<BindGroup> self, const BindGroupDescriptor&& desc);
+		void Update(Handle<BindGroup> self);
 		void Destroy();
 
 		VulkanBindGroupHot* Hot = nullptr;

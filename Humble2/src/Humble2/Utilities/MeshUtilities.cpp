@@ -83,6 +83,15 @@ namespace HBL2
 	void MeshUtilities::LoadBuiltInMeshes()
 	{
 		JobContext ctx;
+
+		ResourceTask<Mesh> planeTask = {};
+		ResourceTask<Mesh> tesselatedPlaneTask = {};
+		ResourceTask<Mesh> cubeTask = {};
+		ResourceTask<Mesh> sphereTask = {};
+		ResourceTask<Mesh> cylinderTask = {};
+		ResourceTask<Mesh> capsuleTask = {};
+		ResourceTask<Mesh> torusTask = {};
+
 		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
 		// Plane
@@ -94,7 +103,7 @@ namespace HBL2
 		CreateMeshMetadataFile(planeAssetHandle);
 		m_BuiltInMeshAssets.push_back(planeAssetHandle);
 		m_LoadedBuiltInMeshAssets[BuiltInMesh::PLANE] = planeAssetHandle;
-		auto* planeTask = AssetManager::Instance->GetAssetAsync<Mesh>(planeAssetHandle, &ctx);
+		AssetManager::Instance->GetAssetAsync<Mesh>(planeAssetHandle, &planeTask, &ctx);
 
 		// Tessellated Plane
 		auto tessellatedPlaneAssetHandle = editorAssetManager->CreateAsset({
@@ -105,7 +114,7 @@ namespace HBL2
 		CreateMeshMetadataFile(tessellatedPlaneAssetHandle);
 		m_BuiltInMeshAssets.push_back(tessellatedPlaneAssetHandle);
 		m_LoadedBuiltInMeshAssets[BuiltInMesh::TESSELATED_PLANE] = tessellatedPlaneAssetHandle;
-		auto* tesselatedPlaneTask = AssetManager::Instance->GetAssetAsync<Mesh>(tessellatedPlaneAssetHandle, &ctx);
+		AssetManager::Instance->GetAssetAsync<Mesh>(tessellatedPlaneAssetHandle, &tesselatedPlaneTask, &ctx);
 
 		// Cube
 		auto cubeAssetHandle = editorAssetManager->CreateAsset({
@@ -116,7 +125,7 @@ namespace HBL2
 		CreateMeshMetadataFile(cubeAssetHandle);
 		m_BuiltInMeshAssets.push_back(cubeAssetHandle);
 		m_LoadedBuiltInMeshAssets[BuiltInMesh::CUBE] = cubeAssetHandle;
-		auto* cubeTask = AssetManager::Instance->GetAssetAsync<Mesh>(cubeAssetHandle, &ctx);
+		AssetManager::Instance->GetAssetAsync<Mesh>(cubeAssetHandle, &cubeTask, &ctx);
 
 		// Sphere
 		auto sphereAssetHandle = editorAssetManager->CreateAsset({
@@ -127,7 +136,7 @@ namespace HBL2
 		CreateMeshMetadataFile(sphereAssetHandle);
 		m_BuiltInMeshAssets.push_back(sphereAssetHandle);
 		m_LoadedBuiltInMeshAssets[BuiltInMesh::SPHERE] = sphereAssetHandle;
-		auto* sphereTask = AssetManager::Instance->GetAssetAsync<Mesh>(sphereAssetHandle, &ctx);
+		AssetManager::Instance->GetAssetAsync<Mesh>(sphereAssetHandle, &sphereTask, &ctx);
 
 		// Cylinder
 		auto cylinderAssetHandle = editorAssetManager->CreateAsset({
@@ -138,7 +147,7 @@ namespace HBL2
 		CreateMeshMetadataFile(cylinderAssetHandle);
 		m_BuiltInMeshAssets.push_back(cylinderAssetHandle);
 		m_LoadedBuiltInMeshAssets[BuiltInMesh::CYLINDER] = cylinderAssetHandle;
-		auto* cylinderTask = AssetManager::Instance->GetAssetAsync<Mesh>(cylinderAssetHandle, &ctx);
+		AssetManager::Instance->GetAssetAsync<Mesh>(cylinderAssetHandle, &cylinderTask, &ctx);
 
 		// Capsule
 		auto capsuleAssetHandle = editorAssetManager->CreateAsset({
@@ -149,7 +158,7 @@ namespace HBL2
 		CreateMeshMetadataFile(capsuleAssetHandle);
 		m_BuiltInMeshAssets.push_back(capsuleAssetHandle);
 		m_LoadedBuiltInMeshAssets[BuiltInMesh::CAPSULE] = capsuleAssetHandle;
-		auto* capsuleTask = AssetManager::Instance->GetAssetAsync<Mesh>(capsuleAssetHandle, &ctx);
+		AssetManager::Instance->GetAssetAsync<Mesh>(capsuleAssetHandle, &capsuleTask, &ctx);
 
 		// Torus
 		auto torusAssetHandle = editorAssetManager->CreateAsset({
@@ -160,24 +169,18 @@ namespace HBL2
 		CreateMeshMetadataFile(torusAssetHandle);
 		m_BuiltInMeshAssets.push_back(torusAssetHandle);
 		m_LoadedBuiltInMeshAssets[BuiltInMesh::TORUS] = torusAssetHandle;
-		auto* torusTask = AssetManager::Instance->GetAssetAsync<Mesh>(torusAssetHandle, &ctx);
+		AssetManager::Instance->GetAssetAsync<Mesh>(torusAssetHandle, &torusTask, &ctx);
 
 		AssetManager::Instance->WaitForAsyncJobs(&ctx);
 
-		m_LoadedBuiltInMeshes[BuiltInMesh::PLANE] = planeTask ? planeTask->ResourceHandle : Handle<Mesh>();
-		m_LoadedBuiltInMeshes[BuiltInMesh::TESSELATED_PLANE] = tesselatedPlaneTask ? tesselatedPlaneTask->ResourceHandle : Handle<Mesh>();
-		m_LoadedBuiltInMeshes[BuiltInMesh::CUBE] = cubeTask ? cubeTask->ResourceHandle : Handle<Mesh>();
-		m_LoadedBuiltInMeshes[BuiltInMesh::SPHERE] = sphereTask ? sphereTask->ResourceHandle : Handle<Mesh>();
-		m_LoadedBuiltInMeshes[BuiltInMesh::CYLINDER] = cylinderTask ? cylinderTask->ResourceHandle : Handle<Mesh>();
-		m_LoadedBuiltInMeshes[BuiltInMesh::CAPSULE] = capsuleTask ? capsuleTask->ResourceHandle : Handle<Mesh>();
-		m_LoadedBuiltInMeshes[BuiltInMesh::TORUS] = torusTask ? torusTask->ResourceHandle : Handle<Mesh>();
-
-		AssetManager::Instance->ReleaseResourceTask(planeTask);
-		AssetManager::Instance->ReleaseResourceTask(tesselatedPlaneTask);
-		AssetManager::Instance->ReleaseResourceTask(sphereTask);
-		AssetManager::Instance->ReleaseResourceTask(cylinderTask);
-		AssetManager::Instance->ReleaseResourceTask(capsuleTask);
-		AssetManager::Instance->ReleaseResourceTask(torusTask);
+		// Cache mesh resource handles.
+		m_LoadedBuiltInMeshes[BuiltInMesh::PLANE] = planeTask.ResourceHandle;
+		m_LoadedBuiltInMeshes[BuiltInMesh::TESSELATED_PLANE] = tesselatedPlaneTask.ResourceHandle;
+		m_LoadedBuiltInMeshes[BuiltInMesh::CUBE] = cubeTask.ResourceHandle;
+		m_LoadedBuiltInMeshes[BuiltInMesh::SPHERE] = sphereTask.ResourceHandle;
+		m_LoadedBuiltInMeshes[BuiltInMesh::CYLINDER] = cylinderTask.ResourceHandle;
+		m_LoadedBuiltInMeshes[BuiltInMesh::CAPSULE] = capsuleTask.ResourceHandle;
+		m_LoadedBuiltInMeshes[BuiltInMesh::TORUS] = torusTask.ResourceHandle;
 	}
 
 	void MeshUtilities::DeleteBuiltInMeshes()

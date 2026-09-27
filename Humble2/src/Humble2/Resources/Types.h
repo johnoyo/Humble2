@@ -3,6 +3,7 @@
 #include "Base.h"
 #include "BaseTypeDefinitions.h"
 #include "TypeDescriptors.h"
+#include "RefHandle.h"
 
 #include <glm/glm.hpp>
 
@@ -125,13 +126,14 @@ namespace HBL2
 		Material(const MaterialDescriptor&& desc);
 
 		void Reimport(const MaterialDescriptor&& desc);
-		void SetGlobalShaderBuffer(uint32_t index, void* userData);
-		void SetBuffer(uint32_t index, void* userData);
+		void SetGlobalShaderBuffer(uint32_t index, void* userData) const;
+		void SetBuffer(uint32_t index, void* userData) const;
+		void Destroy();
 
 		const char* DebugName = "";
 		Handle<Shader> Shader;
-		Handle<BindGroup> DrawBindGroup;
-		Handle<BindGroup> MaterialBindGroup;
+		RefHandle<BindGroup> DrawBindGroup;
+		RefHandle<BindGroup> MaterialBindGroup;
 
 		ShaderDescriptor::RenderPipeline::PackedVariant VariantHash = {};
 		bool ReceiveShadows = true;

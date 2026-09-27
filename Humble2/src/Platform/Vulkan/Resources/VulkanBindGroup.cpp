@@ -8,6 +8,8 @@ namespace HBL2
 	{
 		auto* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
+		BindGroupLayout.Release();
+
 		for (int i = 0; i < Buffers.size(); i++)
 		{
 			// If the range is not 0, this means its a dynamic uniform buffer meaning that is shared across bindgroup, so do not delete.
@@ -19,9 +21,12 @@ namespace HBL2
 
 		for (int i = 0; i < Textures.size(); i++)
 		{
-			// NOTE(John): Do not delete texture since we might use it else where.
-			// rm->DeleteTexture(Textures[i]);
+			rm->RemoveReimportDependency(Textures[i].dependency);
+			// Textures[i].texture.Release();
 		}
+
+		DebugName = nullptr;
+		Hash = 0;
 	}
 
 	bool VulkanBindGroup::IsValid() const
@@ -29,24 +34,36 @@ namespace HBL2
 		return Cold != nullptr && Hot != nullptr;
 	}
 
-	void VulkanBindGroup::Initialize(const BindGroupDescriptor&& desc)
+	void VulkanBindGroup::Initialize(Handle<BindGroup> self, const BindGroupDescriptor&& desc)
 	{
 		if (!IsValid())
 		{
 			return;
 		}
 
+		auto* rm = (VulkanResourceManager*)ResourceManager::Instance;
+
 		Cold->DebugName = desc.debugName;
 
-		Cold->Buffers = { desc.buffers.begin(), desc.buffers.end() };
-		Cold->Textures = { desc.textures.begin(), desc.textures.end() };
+		HBL2_CORE_ASSERT(desc.buffers.size() < Cold->Buffers.capacity(), "Exceeded max number of buffers in a bind group!");
+		for (const auto& bufferEntry : desc.buffers)
+		{
+			Cold->Buffers.push_back({ bufferEntry.buffer, bufferEntry.byteOffset, bufferEntry.range });
+		}
+
+		HBL2_CORE_ASSERT(desc.textures.size() < Cold->Textures.capacity(), "Exceeded max number of textures in a bind group!");
+		for (const auto& textureEntry : desc.textures)
+		{
+			Handle<ReimportDependency> dependencyHandle = rm->AddReimportDependency(textureEntry.texture, self);
+			Cold->Textures.push_back({ textureEntry.texture, textureEntry.desiredLayout, dependencyHandle });
+		}
+
 		Cold->BindGroupLayout = desc.layout;
 
-		auto* rm = (VulkanResourceManager*)ResourceManager::Instance;
 		auto* renderer = (VulkanRenderer*)Renderer::Instance;
 		auto* device = (VulkanDevice*)Device::Instance;
 
-		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(Cold->BindGroupLayout);
+		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(Cold->BindGroupLayout.Get());
 
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo =
 		{
@@ -59,10 +76,10 @@ namespace HBL2
 
 		VK_VALIDATE(vkAllocateDescriptorSets(device->Get(), &descriptorSetAllocateInfo, &Hot->DescriptorSet), "vkAllocateDescriptorSets");
 
-		Update();
+		Update(self);
 	}
 	
-	void VulkanBindGroup::Update()
+	void VulkanBindGroup::Update(Handle<BindGroup> self)
 	{
 		if (!IsValid())
 		{
@@ -72,17 +89,22 @@ namespace HBL2
 		auto* rm = (VulkanResourceManager*)ResourceManager::Instance;
 		auto* device = (VulkanDevice*)Device::Instance;
 
-		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(Cold->BindGroupLayout);
-
 		if (Cold->Buffers.size() + Cold->Textures.size() == 0)
 		{
 			vkUpdateDescriptorSets(device->Get(), 0, nullptr, 0, nullptr);
 			return;
 		}
 
-		std::vector<VkWriteDescriptorSet> writeDescriptorSet(Cold->Buffers.size() + Cold->Textures.size());
-		std::vector<VkDescriptorBufferInfo> descriptorBufferInfo(Cold->Buffers.size());
-		std::vector<VkDescriptorImageInfo> descriptorImageInfo(Cold->Textures.size());
+		VulkanBindGroupLayout* bindGroupLayout = rm->GetBindGroupLayout(Cold->BindGroupLayout.Get());
+
+		StaticDArray<VkWriteDescriptorSet, VulkanBindGroupCold::MaxTextureEntries + VulkanBindGroupCold::MaxBufferEntries> writeDescriptorSet;
+		writeDescriptorSet.resize(Cold->Textures.size() + Cold->Buffers.size());
+
+		StaticDArray<VkDescriptorBufferInfo, VulkanBindGroupCold::MaxBufferEntries> descriptorBufferInfo;
+		descriptorBufferInfo.resize(Cold->Buffers.size());
+
+		StaticDArray<VkDescriptorImageInfo, VulkanBindGroupCold::MaxTextureEntries> descriptorImageInfo;
+		descriptorImageInfo.resize(Cold->Textures.size());
 
 		for (int i = 0; i < Cold->Buffers.size(); i++)
 		{
@@ -172,6 +194,8 @@ namespace HBL2
 		}
 
 		vkUpdateDescriptorSets(device->Get(), (uint32_t)writeDescriptorSet.size(), writeDescriptorSet.data(), 0, nullptr);
+
+		Cold->Hash = ResourceManager::Instance->GetBindGroupHash(self);
 	}
 
 	void VulkanBindGroup::Destroy()

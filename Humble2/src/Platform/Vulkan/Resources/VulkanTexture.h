@@ -17,9 +17,10 @@ namespace HBL2
 		VulkanTexture() = default;
 		VulkanTexture(const TextureDescriptor&& desc);
 
+		void Reimport(const TextureDescriptor&& desc, bool destroyOld);
 		void Update(const Span<const std::byte>& bytes);
 		void ChangeTextureView(const TextureViewDescriptor&& desc);
-		void TransitionLayout(VulkanCommandBuffer* commandBuffer, ResourceState currentState, ResourceState newState);
+		void TransitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout);
 		void Destroy();
 
 		const char* DebugName = "";
@@ -40,7 +41,8 @@ namespace HBL2
 
 		friend class Pool<VulkanTexture, Texture>; // This is required for a hack to create the swapchain images in the VulkanRenderer
 		VulkanTexture(const VulkanTexture&& other) noexcept;
+        
 	private:
-		uint32_t m_PixelByteSize = 0;
+		BlockFormatInfo m_BlockInfo{};
 	};
 }

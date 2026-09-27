@@ -26,30 +26,38 @@ namespace HBL2
 		Span(T* data, size_t size) : m_Data(data), m_Size(size) {}
 
 		Span(std::vector<T>& list) : m_Data(list.data()), m_Size(list.size()) {}
-        template<typename U>
-        Span(std::vector<U>& list) : m_Data(list.data()), m_Size(list.size()) {}
+		template<typename U>
+		Span(std::vector<U>& list) : m_Data(list.data()), m_Size(list.size()) {}
 
 		template<size_t N>
 		Span(std::array<T, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
-        template<typename U, size_t N>
-        Span(std::array<U, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
+		template<typename U, size_t N>
+		Span(std::array<U, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
 
 		Span(DArray<T>& list) : m_Data(list.data()), m_Size(list.size()) {}
-        template<typename U>
-        Span(DArray<U>& list) : m_Data(list.data()), m_Size(list.size()) {}
+		template<typename U>
+		Span(DArray<U>& list) : m_Data(list.data()), m_Size(list.size()) {}
 
 		template<size_t N>
 		Span(T(&array)[N]) : m_Data(array), m_Size(sizeof(array) / sizeof(T)) {}
 
 		template<size_t N>
-		Span(StaticArray<T, N>& array) : m_Data(array.Data()), m_Size(array.Size()) {}
-        template<typename U, size_t N>
-        Span(StaticArray<U, N>& array) : m_Data(array.Data()), m_Size(array.Size()) {}
+		Span(StaticArray<T, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
+		template<typename U, size_t N>
+		Span(StaticArray<U, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
 
 		template<size_t N>
 		Span(StaticDArray<T, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
-        template<typename U, size_t N>
+		template<typename U, size_t N>
 		Span(StaticDArray<U, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
+
+		template<typename Container>
+		constexpr Span(Container&& values) noexcept
+			requires(
+				std::is_same_v<std::remove_cv_t<std::remove_pointer_t<decltype(values.data())>>, std::remove_cv_t<T>>&&
+				std::is_convertible_v<decltype(values.data()), T*>&&
+				std::is_convertible_v<decltype(values.size()), size_t>)
+			: Span(values.data(), values.size()) {}
 
 		explicit Span(T* data) : m_Data(data), m_Size(1) {}
 		explicit Span(T& data) : m_Data(&data), m_Size(1) {}
@@ -59,9 +67,9 @@ namespace HBL2
 		T& operator[](uint32_t i) { return m_Data[i]; }
 		const T& operator[](uint32_t i) const { return m_Data[i]; }
 
-		T* Data() { return m_Data; }
-		const T* Data() const { return m_Data; }
-		const size_t Size() const { return m_Size; }
+		T* data() { return m_Data; }
+		const T* data() const { return m_Data; }
+		const size_t size() const { return m_Size; }
 
 		T* begin() { return m_Data; }
 		T* end() { return m_Data + m_Size; }

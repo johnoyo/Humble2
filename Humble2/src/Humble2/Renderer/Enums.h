@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 namespace HBL2
 {
 	enum class RenderPassEvent
@@ -171,19 +173,42 @@ namespace HBL2
 		CLOCKWISE = 1,
 	};
 
-	enum class Format
+	enum class Format : uint32_t
 	{
-		RGB32_FLOAT = 1,
-		RGBA32_FLOAT,
-		D16_FLOAT,
-		D24_FLOAT,
-		D32_FLOAT,
-		RGBA16_FLOAT,
-		RGBA8_UNORM,
-		BGRA8_UNORM,
-		RG16_FLOAT,
-		RGBA8_RGB,
-		R10G10B10A2_UNORM,
+		RGB32_FLOAT = 0x00000001,
+		RGBA32_FLOAT = 0x00000002,
+		D16_FLOAT = 0x00000004,
+		D24_FLOAT = 0x00000008,
+		D32_FLOAT = 0x00000010,
+		RGBA16_FLOAT = 0x00000020,
+		RGBA8_UNORM = 0x00000040,
+		BGRA8_UNORM = 0x00000080,
+		RG16_FLOAT = 0x00000100,
+		RGBA8_RGB = 0x00000200,
+		R10G10B10A2_UNORM = 0x00000400,
+        
+		BC1_RGB_UNORM = 0x00000800,
+		BC1_RGB_SRGB = 0x00001000,
+		BC1_RGBA_UNORM = 0x00002000,
+		BC1_RGBA_SRGB = 0x00004000,
+		BC3_UNORM = 0x00008000,
+		BC3_SRGB = 0x00010000,
+		BC7_UNORM = 0x00020000,
+		BC7_SRGB = 0x00040000,
+		BC6H_UF = 0x00080000,
+
+        ASTC_4x4_SRGB = 0x00100000,
+        ASTC_4x4_UNORM = 0x00200000,
+        ASTC_5x5_SRGB = 0x00400000,
+        ASTC_5x5_UNORM = 0x00800000,
+        ASTC_6x6_SRGB = 0x01000000,
+        ASTC_6x6_UNORM = 0x02000000,
+        ASTC_8x8_SRGB = 0x04000000,
+        ASTC_8x8_UNORM = 0x08000000,
+        ASTC_10x10_SRGB = 0x10000000,
+        ASTC_10x10_UNORM = 0x20000000,
+        ASTC_12x12_SRGB = 0x40000000,
+        ASTC_12x12_UNORM = 0x80000000,
 	};
 
 	enum class MemoryUsage
@@ -249,10 +274,11 @@ namespace HBL2
 		COPY_DST = 2,
 		RENDER_ATTACHMENT = 4,
 		SHADER_READ_ONLY = 8,
-		DEPTH_STENCIL = 16,
-		PRESENT = 32,
-		SHARED_PRESENT = 64,
+        DEPTH_STENCIL_READ_ONLY = 16,
+		DEPTH_STENCIL_ATTACHMENT = 32,
+		PRESENT = 64,
 		GENERAL = 128,
+        EGENERIC_READ = 256,
 	};
 
 	enum class BlendOperation
@@ -290,16 +316,4 @@ namespace HBL2
 		LOAD = 1,
 		DONT_CARE = 2,
 	};
-
-    enum class ResourceState
-    {
-        Undefined, Common, Present,
-        VertexAndConstantBuffer, IndexBuffer,
-        RenderTarget, DepthWrite, DepthRead,
-        UnorderedAccess,
-        PixelShaderResource, NonPixelShaderResource,
-        IndirectArgument,
-        CopySource, CopyDest,
-        GenericRead,
-    };
 }

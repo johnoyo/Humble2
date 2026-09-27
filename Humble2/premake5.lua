@@ -20,6 +20,7 @@ project "Humble2"
 	{
 		"_CRT_SECURE_NO_WARNINGS",
         "YAML_CPP_STATIC_DEFINE",
+        "KHRONOS_STATIC",
 
         "HBL2_BUILD_DLL",
 	}
@@ -50,6 +51,9 @@ project "Humble2"
         "../Dependencies/Jolt/jolt",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "../Dependencies/SLang/include",
+        "../Dependencies/KTX-Software",
+        "../Dependencies/KTX-Software/ktx/lib/include",
+        "../Dependencies/KTX-Software/ktx/external/dfdutils",
         "%{VULKAN_SDK}/Include",
         "%{VULKAN_SDK}/include",
     }
@@ -60,6 +64,7 @@ project "Humble2"
         "YAML-Cpp",
         "Box2D",
         "Jolt",
+        "KTX-Software",
     }
     
     filter "system:windows"
@@ -80,7 +85,7 @@ project "Humble2"
             "../Dependencies/GLFW/glfw-3.4.bin.WIN64/lib-vc2022",
             "../Dependencies/GLEW/lib/Release/x64",
             "../Dependencies/FMOD/Windows/core/lib/x64",
-            "../Dependencies/SLang/slang-2026.11-windows-x86_64/lib",
+            "../Dependencies/SLang/slang-2026.16-windows-x86_64/lib",
             "%{VULKAN_SDK}/Lib"
         }
 
@@ -109,16 +114,16 @@ project "Humble2"
             -- Ensure the GLEW and SLang DLLs are copied to HumbleEditor
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/GLEW/bin/Release/x64/glew32.dll ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-windows-x86_64/bin/slang.dll ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-windows-x86_64/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-windows-x86_64/bin/slang-glslang.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-windows-x86_64/bin/slang.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-windows-x86_64/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-windows-x86_64/bin/slang-glslang.dll ../bin/" .. outputdir .. "/HumbleEditor"),
             
             -- Ensure the GLEW and SLang DLLs are copied to HumbleApp
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} ../Dependencies/GLEW/bin/Release/x64/glew32.dll ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-windows-x86_64/bin/slang.dll ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-windows-x86_64/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-windows-x86_64/bin/slang-glslang.dll ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-windows-x86_64/bin/slang.dll ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-windows-x86_64/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-windows-x86_64/bin/slang-glslang.dll ../bin/" .. outputdir .. "/HumbleApp"),
         }
 
         filter { "system:windows", "configurations:Debug" }
@@ -248,7 +253,7 @@ project "Humble2"
         {
             "../Dependencies/GLFW/glfw-3.4.bin.MACOS/lib-arm64",
             "../Dependencies/FMOD/MacOS/core/lib",
-            "../Dependencies/SLang/slang-2026.11-macos-aarch64/lib",
+            "../Dependencies/SLang/slang-2026.16-macos-aarch64/lib",
             "%{VULKAN_SDK}/lib",
         }
 
@@ -279,10 +284,10 @@ project "Humble2"
             ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleEditor"),
 
             -- Slang dylibs -> HumbleEditor
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.0.2026.11.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-glslang-2026.11.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-macos-aarch64/lib/libslang.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-macos-aarch64/lib/libslang-compiler.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-macos-aarch64/lib/libslang-compiler.0.2026.16.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-macos-aarch64/lib/libslang-glslang-2026.16.dylib ../bin/" .. outputdir .. "/HumbleEditor"),
 
             ("xattr -dr com.apple.quarantine ../bin"),
         }
@@ -352,7 +357,7 @@ project "Humble2"
     filter "system:linux"
         systemversion "latest"    
         defines { "HBL2_PLATFORM_LINUX", table.unpack(JoltDefines) }
-        buildoptions { "-Wno-changes-meaning", "-march=native" }
+        buildoptions { "-fPIC", "-Wno-changes-meaning", "-march=native" }
 
         removefiles
         {
@@ -366,21 +371,21 @@ project "Humble2"
         runpathdirs
         { 
             VULKAN_SDK .. "/lib/VulkanLoader/lib",
-            "../Dependencies/SLang/slang-2026.11-linux-x86_64/lib",
+            "../Dependencies/SLang/slang-2026.16-linux-x86_64/lib",
             "../Dependencies/FMOD/Linux/core/lib/x86_64"
         }
         
         -- Link-time hints for indirect dependencies
         linkoptions
         {
-            "-Wl,-rpath-link=../Dependencies/SLang/slang-2026.11-linux-x86_64/lib:-Wl,-rpath-link=../Dependencies/FMOD/Linux/core/lib/x86_64"
+            "-Wl,-rpath-link=../Dependencies/SLang/slang-2026.16-linux-x86_64/lib:-Wl,-rpath-link=../Dependencies/FMOD/Linux/core/lib/x86_64"
         }
 
         libdirs
         {
             "../Dependencies/GLFW/glfw-3.4.bin.LINUX/x86_64",
             "../Dependencies/FMOD/Linux/core/lib/x86_64",
-            "../Dependencies/SLang/slang-2026.11-linux-x86_64/lib",
+            "../Dependencies/SLang/slang-2026.16-linux-x86_64/lib",
             "%{VULKAN_SDK}/lib/VulkanLoader/lib"
         }
 
@@ -408,17 +413,17 @@ project "Humble2"
             
             -- Ensure the GLEW and SLang DLLs are copied to HumbleEditor
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang.so ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang-compiler.so ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang-compiler.so.0.2026.11 ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang-glslang-2026.11.so ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang.so ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang-compiler.so ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang-compiler.so.0.2026.16 ../bin/" .. outputdir .. "/HumbleEditor"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang-glslang-2026.16.so ../bin/" .. outputdir .. "/HumbleEditor"),
             
             -- Ensure the GLEW and SLang DLLs are copied to HumbleApp
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang.so ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang-compiler.so ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang-compiler.so.0.2026.11 ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/SLang/slang-2026.11-linux-x86_64/lib/libslang-glslang-2026.11.so ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang.so ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang-compiler.so ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang-compiler.so.0.2026.16 ../bin/" .. outputdir .. "/HumbleApp"),
+            ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang-glslang-2026.16.so ../bin/" .. outputdir .. "/HumbleApp"),
         }
 
         filter { "system:linux", "configurations:Debug" }

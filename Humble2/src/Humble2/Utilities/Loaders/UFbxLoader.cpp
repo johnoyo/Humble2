@@ -238,10 +238,10 @@ namespace HBL2
             Handle<Asset> materialAssetHandle;
             Handle<Material> materialHandle;
 
-            ResourceTask<Texture>* albedoMapTask = nullptr;
-            ResourceTask<Texture>* normalMapTask = nullptr;
-            ResourceTask<Texture>* roughnessMapTask = nullptr;
-            ResourceTask<Texture>* metallicMapTask = nullptr;
+            ResourceTask<Texture> albedoMapTask = {};
+            ResourceTask<Texture> normalMapTask = {};
+            ResourceTask<Texture> roughnessMapTask = {};
+            ResourceTask<Texture> metallicMapTask = {};
 
             const auto& relativePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Materials" / (std::string(fbxMaterial->name.data) + ".mat");
 
@@ -326,8 +326,6 @@ namespace HBL2
                 materialHandle = AssetManager::Instance->GetAsset<Material>(materialAssetHandle);
             }
 
-            CleanUpResourceTasks(albedoMapTask, normalMapTask, roughnessMapTask, metallicMapTask);
-
             s_MaterialNameToAssetHandle[fbxMaterial->name.data] = materialAssetHandle;
         }
     }
@@ -347,10 +345,10 @@ namespace HBL2
             Handle<Asset> materialAssetHandle;
             Handle<Material> materialHandle;
 
-            ResourceTask<Texture>* albedoMapTask = nullptr;
-            ResourceTask<Texture>* normalMapTask = nullptr;
-            ResourceTask<Texture>* roughnessMapTask = nullptr;
-            ResourceTask<Texture>* metallicMapTask = nullptr;
+            ResourceTask<Texture> albedoMapTask = {};
+            ResourceTask<Texture> normalMapTask = {};
+            ResourceTask<Texture> roughnessMapTask = {};
+            ResourceTask<Texture> metallicMapTask = {};
 
             const auto& relativePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Materials" / (std::string(fbxMaterial->name.data) + ".mat");
 
@@ -450,13 +448,11 @@ namespace HBL2
                 materialHandle = editorAssetManager->ReloadAsset<Material>(materialAssetUUID);
             }
 
-            CleanUpResourceTasks(albedoMapTask, normalMapTask, roughnessMapTask, metallicMapTask);
-
             s_MaterialNameToAssetHandle[fbxMaterial->name.data] = materialAssetHandle;
         }
     }
 
-    Handle<Asset> UFbxLoader::LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, JobContext& ctx, ResourceTask<Texture>*& textureTask, bool reload, void* internalData)
+    Handle<Asset> UFbxLoader::LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, JobContext& ctx, ResourceTask<Texture>& textureTask, bool reload, void* internalData)
     {
         Handle<Asset> textureAssetHandle;
 
@@ -571,7 +567,7 @@ namespace HBL2
         return textureAssetHandle;
     }
 
-    Handle<Asset> UFbxLoader::LoadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>*& resourceTask)
+    Handle<Asset> UFbxLoader::LoadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>& resourceTask)
     {
         auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
@@ -602,7 +598,7 @@ namespace HBL2
                 TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
             }
 
-            resourceTask = AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
+            AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &resourceTask, &ctx);
             return textureAssetHandle;
         }
 
@@ -633,7 +629,7 @@ namespace HBL2
                     TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
                 }
 
-                resourceTask = AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
+                AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &resourceTask, &ctx);
                 return textureAssetHandle;
             }
         }
@@ -643,7 +639,7 @@ namespace HBL2
         return textureAssetHandle;
     }
 
-    Handle<Asset> UFbxLoader::ReloadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>*& resourceTask)
+    Handle<Asset> UFbxLoader::ReloadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>& resourceTask)
     {
         auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
@@ -679,7 +675,7 @@ namespace HBL2
                 AssetManager::Instance->DeleteAsset(textureAssetHandle);
             }
 
-            resourceTask = AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
+            AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &resourceTask, &ctx);
             return textureAssetHandle;
         }
 
@@ -715,7 +711,7 @@ namespace HBL2
                     AssetManager::Instance->DeleteAsset(textureAssetHandle);
                 }
 
-                resourceTask = AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
+                AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &resourceTask, &ctx);
                 return textureAssetHandle;
             }
         }
@@ -723,14 +719,6 @@ namespace HBL2
         HBL2_CORE_ERROR("UFbxLoader::LoadTexture::AlbedoMap located at: \"{}\", not found!.", texture->filename.data);
 
         return textureAssetHandle;
-    }
-
-    void UFbxLoader::CleanUpResourceTasks(ResourceTask<Texture>* albedoMapTask, ResourceTask<Texture>* normalMapTask, ResourceTask<Texture>* roughnessMapTask, ResourceTask<Texture>* metallicMapTask)
-    {
-        AssetManager::Instance->ReleaseResourceTask(albedoMapTask);
-        AssetManager::Instance->ReleaseResourceTask(normalMapTask);
-        AssetManager::Instance->ReleaseResourceTask(roughnessMapTask);
-        AssetManager::Instance->ReleaseResourceTask(metallicMapTask);
     }
 
     Result<MeshPartDescriptor> UFbxLoader::LoadMeshData(const ufbx_node* node, uint32_t meshIndex)

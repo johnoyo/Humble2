@@ -1,11 +1,123 @@
 #include "VulkanTexture.h"
 
+#include "Platform/Vulkan/VulkanResourceManager.h"
+
 namespace HBL2
 {
+    static BlockFormatInfo GetBlockFormatInfo(Format format)
+    {
+        switch (format)
+        {
+        case Format::D32_FLOAT:
+        case Format::RGBA8_RGB:
+        case Format::RGBA8_UNORM:
+        case Format::BGRA8_UNORM:
+        case Format::RG16_FLOAT:
+            return { 1, 1, 4 };
+        case Format::RGBA32_FLOAT:
+            return { 1, 1, 16 };
+        case Format::RGBA16_FLOAT:
+        case Format::RGB32_FLOAT:
+            return { 1, 1, 8 };
+        case Format::R10G10B10A2_UNORM:
+            return { 1, 1, 8 }; // TODO: same open question as the Vulkan version.
+        case Format::ASTC_4x4_SRGB:
+        case Format::ASTC_4x4_UNORM:
+            return { 4, 4, 16 };
+        case Format::ASTC_6x6_SRGB:
+        case Format::ASTC_6x6_UNORM:
+            return { 6, 6, 16 };
+        case Format::ASTC_8x8_SRGB:
+        case Format::ASTC_8x8_UNORM:
+            return { 8, 8, 16 };
+        case Format::ASTC_10x10_SRGB:
+        case Format::ASTC_10x10_UNORM:
+            return { 10, 10, 16 };
+        case Format::ASTC_12x12_SRGB:
+        case Format::ASTC_12x12_UNORM:
+            return { 12, 12, 16 };
+        case Format::BC1_RGB_SRGB:
+        case Format::BC1_RGB_UNORM:
+        case Format::BC1_RGBA_SRGB:
+        case Format::BC1_RGBA_UNORM:
+			return { 4, 4, 8 };
+        case Format::BC3_SRGB:
+        case Format::BC3_UNORM:
+        case Format::BC7_SRGB:
+        case Format::BC7_UNORM:
+        case Format::BC6H_UF:
+			return { 4, 4, 16 };
+
+        // case Format::BC1_RGBA_UNORM: return { 4, 4, 8 };  // BC1/BC4
+        // case Format::BC3_RGBA_UNORM: return { 4, 4, 16 }; // BC2/3/5/6H/7
+
+        default:
+            return { 1, 1, 4 };
+        }
+    }
+
+    static inline uint32_t DivRoundUp(uint32_t value, uint32_t divisor)
+    {
+        return (value + divisor - 1) / divisor;
+    }
+
+    static inline size_t RowPitch(uint32_t width, const BlockFormatInfo& info)
+    {
+        return (size_t)DivRoundUp(width, info.blockWidth) * info.bytesPerBlock;
+    }
+
+    static inline size_t ImageSize(uint32_t width, uint32_t height, const BlockFormatInfo& info)
+    {
+        return RowPitch(width, info) * DivRoundUp(height, info.blockHeight);
+    }
+
 	VulkanTexture::VulkanTexture(const TextureDescriptor&& desc)
+	{
+		Reimport(std::forward<const TextureDescriptor>(desc), false);
+	}
+
+	VulkanTexture::VulkanTexture(const VulkanTexture&& other) noexcept
+	{
+		Image = other.Image;
+		ImageView = other.ImageView;
+		Extent = other.Extent;
+		Aspect = other.Aspect;
+		LayerCount = other.LayerCount;
+	}
+
+	void VulkanTexture::Reimport(const TextureDescriptor&& desc, bool destroyOld)
 	{
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
+
+		if (destroyOld)
+		{
+			// Copy the old resources to be deleted in the next frames.
+			VkImage image = Image;
+			VkImageView imageView = ImageView;
+			VmaAllocation allocation = Allocation;
+			VkSampler sampler = Sampler;
+
+			VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
+			rm->GetDeletionQueue().Push(renderer->GetFrameNumber(), [=]()
+			{
+				VulkanDevice* device = (VulkanDevice*)Device::Instance;
+				VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
+
+				if (sampler != VK_NULL_HANDLE)
+				{
+					vkDestroySampler(device->Get(), sampler, nullptr);
+				}
+
+				vkDestroyImageView(device->Get(), imageView, nullptr);
+				vmaDestroyImage(renderer->GetAllocator(), image, allocation);
+			});
+
+			Image = VK_NULL_HANDLE;
+			ImageView = VK_NULL_HANDLE;
+			Allocation = VK_NULL_HANDLE;
+			Sampler = VK_NULL_HANDLE;
+		}
 
 		DebugName = desc.debugName;
 
@@ -15,26 +127,7 @@ namespace HBL2
 		Extent = { desc.dimensions.x, desc.dimensions.y, desc.dimensions.z };
 		Aspect = VkUtils::TextureAspectToVkImageAspectFlags(desc.aspect);
 
-		switch (desc.format)
-		{
-		case Format::D32_FLOAT:
-		case Format::RGBA8_RGB:
-		case Format::RGBA8_UNORM:
-		case Format::BGRA8_UNORM:
-		case Format::RG16_FLOAT:
-			m_PixelByteSize = 4;
-			break;
-		case Format::RGBA32_FLOAT:
-			m_PixelByteSize = 16;
-			break;
-		case Format::RGBA16_FLOAT:
-		case Format::RGB32_FLOAT:
-			m_PixelByteSize = 8;
-			break;
-		case Format::R10G10B10A2_UNORM: // TODO: Maybe the byte size here should be 4? Investigate!
-			m_PixelByteSize = 8;
-			break;
-		}
+		m_BlockInfo = GetBlockFormatInfo(desc.format);
 
 		VkImageUsageFlags usage = VkUtils::TextureUsageFlagToVkImageUsageFlags(desc.usage);
 
@@ -70,7 +163,7 @@ namespace HBL2
 
 			CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation);
 
-			VkDeviceSize imageSize = Extent.width * Extent.height * m_PixelByteSize;
+			VkDeviceSize imageSize = (VkDeviceSize)ImageSize(Extent.width, Extent.height, m_BlockInfo);
 
 			uint32_t whiteTexture = 0xffffffff;
 
@@ -91,7 +184,7 @@ namespace HBL2
 
 			CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation);
 
-			VkDeviceSize faceSize = Extent.width * Extent.height * m_PixelByteSize;
+			VkDeviceSize faceSize = (VkDeviceSize)ImageSize(Extent.width, Extent.height, m_BlockInfo);
 			VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : LayerCount);
 
 			// Transfer initiaData to staging buffer
@@ -100,7 +193,7 @@ namespace HBL2
 			memcpy(mappedData, desc.initialData, (size_t)imageSize);
 			vmaUnmapMemory(renderer->GetAllocator(), stagingBufferAllocation);
 
-			stbi_image_free(desc.initialData);
+			std::free(desc.initialData);
 
 			CopyBufferToTexture(renderer, stagingBuffer);
 
@@ -151,15 +244,6 @@ namespace HBL2
 		}
 	}
 
-	VulkanTexture::VulkanTexture(const VulkanTexture&& other) noexcept
-	{
-		Image = other.Image;
-		ImageView = other.ImageView;
-		Extent = other.Extent;
-		Aspect = other.Aspect;
-		LayerCount = other.LayerCount;
-	}
-
 	void VulkanTexture::Update(const Span<const std::byte>& bytes)
 	{
 		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
@@ -169,13 +253,13 @@ namespace HBL2
 
 		CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation);
 
-		VkDeviceSize faceSize = Extent.width * Extent.height * m_PixelByteSize;
+        VkDeviceSize faceSize = (VkDeviceSize)ImageSize(Extent.width, Extent.height, m_BlockInfo);
 		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : LayerCount);
 
 		// Transfer initiaData to staging buffer
 		void* mappedData;
 		vmaMapMemory(renderer->GetAllocator(), stagingBufferAllocation, &mappedData);
-		memcpy(mappedData, bytes.Data(), (size_t)imageSize);
+		memcpy(mappedData, bytes.data(), (size_t)imageSize);
 		vmaUnmapMemory(renderer->GetAllocator(), stagingBufferAllocation);
 
 		CopyBufferToTexture(renderer, stagingBuffer);
@@ -216,9 +300,9 @@ namespace HBL2
 		VK_VALIDATE(vkCreateImageView(device->Get(), &imageViewCreateInfo, nullptr, &ImageView), "vkCreateImageView");
 	}
 
-	void VulkanTexture::TransitionLayout(VulkanCommandBuffer* commandBuffer, ResourceState currentState, ResourceState newState)
+	void VulkanTexture::TransitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout)
 	{
-        commandBuffer->TextureBarrier(this, currentState, newState);
+        commandBuffer->TextureBarrier(this, currentLayout, newLayout);
 	}
 
 	void VulkanTexture::Destroy()
@@ -238,7 +322,7 @@ namespace HBL2
 	void VulkanTexture::CreateStagingBuffer(VulkanRenderer* renderer, VkBuffer* stagingBuffer, VmaAllocation* stagingBufferAllocation)
 	{
 		// Allocate staging buffer
-		VkDeviceSize faceSize = Extent.width * Extent.height * m_PixelByteSize;
+        VkDeviceSize faceSize = (VkDeviceSize)ImageSize(Extent.width, Extent.height, m_BlockInfo);
 		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : LayerCount);
 
 		VkBufferCreateInfo stagingBufferCreateInfo =
@@ -288,7 +372,7 @@ namespace HBL2
 
 			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrierToTransfer);
 
-			VkDeviceSize faceSize = Extent.width * Extent.height * m_PixelByteSize;
+            VkDeviceSize faceSize = (VkDeviceSize)ImageSize(Extent.width, Extent.height, m_BlockInfo);
 			StaticArray<VkBufferImageCopy, 6> copyRegions{};
 
 			for (uint32_t face = 0; face < faceCount; ++face)
@@ -309,7 +393,7 @@ namespace HBL2
 				};
 			}
 
-			vkCmdCopyBufferToImage(cmd, stagingBuffer, Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, faceCount, copyRegions.Data());
+			vkCmdCopyBufferToImage(cmd, stagingBuffer, Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, faceCount, copyRegions.data());
 
 			VkImageMemoryBarrier imageBarrierToReadable =
 			{

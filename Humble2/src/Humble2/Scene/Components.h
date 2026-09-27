@@ -2,9 +2,13 @@
 
 #include "Base.h"
 
+#include "ECS/SingletonComponentStorage.h"
+#include "ECS/SmallComponentStorage.h"
 #include "ECS/DenseComponentStorage.h"
+#include "ECS/SparseComponentStorage.h"
 
 #include "Resources/Handle.h"
+#include "Resources/RefHandle.h"
 #include "Resources/Types.h"
 #include "Sound/Sound.h"
 #include "Asset/Asset.h"
@@ -81,17 +85,17 @@ namespace HBL2
 
 		struct HBL2_API Sprite
 		{
-			Handle<Asset> Material;
+			RefHandle<Asset> Material;
 			bool Enabled = true;
 		};
 
 		struct HBL2_API StaticMesh
 		{
-			Handle<Asset> Mesh;
+			RefHandle<Asset> Mesh;
 			uint32_t MeshIndex = 0;
 			uint32_t SubMeshIndex = 0;
 
-			Handle<Asset> Material;
+			RefHandle<Asset> Material;
 
 			bool Enabled = true;
 		};
@@ -172,7 +176,7 @@ namespace HBL2
 		{
 			Handle<Texture> CubeMap;
 			Handle<Material> CubeMapMaterial;
-			Handle<Asset> EquirectangularMap;
+			RefHandle<Asset> EquirectangularMap;
 			bool Converted = false;
 			bool Enabled = true;
 		};
@@ -317,7 +321,7 @@ namespace HBL2
 
 			glm::vec3 OldViewerPosition{};
 
-			Handle<Asset> HeightMap;
+			RefHandle<Asset> HeightMap;
 			std::vector<float> FixedNoiseMap;
 			std::vector<float> FalloffMap;
 			int32_t NumberOfChunks = 9;
@@ -362,7 +366,7 @@ namespace HBL2
 
 			StaticDArray<LodInfo, 6> DetailLevels{};
 
-			Handle<Asset> Material;
+			RefHandle<Asset> Material;
 
 			bool AddColliders = true;
 			bool Initialized = false;

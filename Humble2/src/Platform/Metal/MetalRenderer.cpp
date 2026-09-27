@@ -590,7 +590,7 @@ namespace HBL2
                     .stencilLoadOp = LoadOperation::DONT_CARE,
                     .stencilStoreOp = StoreOperation::DONT_CARE,
                     .prevUsage = TextureLayout::UNDEFINED,
-                    .nextUsage = TextureLayout::DEPTH_STENCIL,
+                    .nextUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
                 },
                 .colorTargets = {
                     {
@@ -624,8 +624,8 @@ namespace HBL2
                     .storeOp = StoreOperation::STORE,
                     .stencilLoadOp = LoadOperation::DONT_CARE,
                     .stencilStoreOp = StoreOperation::DONT_CARE,
-                    .prevUsage = TextureLayout::DEPTH_STENCIL,
-                    .nextUsage = TextureLayout::DEPTH_STENCIL,
+                    .prevUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
+                    .nextUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
                 },
                 .colorTargets = {
                     {
@@ -658,7 +658,7 @@ namespace HBL2
                 .stencilLoadOp = LoadOperation::DONT_CARE,
                 .stencilStoreOp = StoreOperation::DONT_CARE,
                 .prevUsage = TextureLayout::UNDEFINED,
-                .nextUsage = TextureLayout::DEPTH_STENCIL,
+                .nextUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
             },
             .colorTargets = {
                 {

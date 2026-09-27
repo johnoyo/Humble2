@@ -84,14 +84,14 @@ namespace HBL2
 		 *
 		 * @return The fixed size of the array.
 		 */
-		uint32_t Size() const { return N; }
+		uint32_t size() const { return N; }
 
 		/**
 		 * @brief Returns a pointer to the underlying data.
 		 *
 		 * @return Pointer to the internal array.
 		 */
-		T* Data() { return m_Data; }
+		T* data() { return m_Data; }
 
 		T* begin() { return m_Data; }
 		T* end() { return m_Data + N; }

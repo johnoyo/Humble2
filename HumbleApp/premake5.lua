@@ -39,6 +39,9 @@ project "HumbleApp"
         "../Dependencies/Jolt/jolt",
         "../Dependencies/Emscripten/emsdk/upstream/emscripten/system/include",
         "../Dependencies/SLang/include",
+        "../Dependencies/KTX-Software",
+        "../Dependencies/KTX-Software/ktx/lib/include",
+        "../Dependencies/KTX-Software/ktx/external/dfdutils",
         "%{VULKAN_SDK}/Include",
         "%{VULKAN_SDK}/include",
     }
@@ -84,10 +87,10 @@ project "HumbleApp"
 
             -- Third party
             "{COPY} %{wks.location}/Dependencies/FMOD/MacOS/core/lib/libfmodL.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
-            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
-            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
-            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-compiler.0.2026.11.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",  
-            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.11-macos-aarch64/lib/libslang-glslang-2026.11.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.16-macos-aarch64/lib/libslang.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.16-macos-aarch64/lib/libslang-compiler.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
+            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.16-macos-aarch64/lib/libslang-compiler.0.2026.16.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",  
+            "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.16-macos-aarch64/lib/libslang-glslang-2026.16.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
 
             -- Vulkan
             "{COPY} %{VULKAN_SDK}/lib/libvulkan_kosmickrisp.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
@@ -106,13 +109,13 @@ project "HumbleApp"
         runpathdirs
         { 
             VULKAN_SDK .. "/lib/VulkanLoader/lib",
-            "../Dependencies/SLang/slang-2026.11-linux-x86_64/lib",
+            "../Dependencies/SLang/slang-2026.16-linux-x86_64/lib",
             "../Dependencies/FMOD/Linux/core/lib/x86_64"
         }
         
         linkoptions
         {
-            "-Wl,-rpath-link=../Dependencies/SLang/slang-2026.11-linux-x86_64/lib:-Wl,-rpath-link=../Dependencies/FMOD/Linux/core/lib/x86_64"
+            "-Wl,-rpath-link=../Dependencies/SLang/slang-2026.16-linux-x86_64/lib:-Wl,-rpath-link=../Dependencies/FMOD/Linux/core/lib/x86_64"
         }
 
     filter "configurations:Debug"

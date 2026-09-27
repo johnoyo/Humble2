@@ -16,12 +16,9 @@ namespace HBL2
 		VulkanRenderPassLayout* layout = rm->GetRenderPassLayout(desc.layout);
 
 		std::vector<VkAttachmentDescription> attachments;
-		attachments.reserve(desc.colorTargets.Size());
+		attachments.reserve(desc.colorTargets.size());
 		std::vector<VkAttachmentReference> colorAttachmentRefs;
-		colorAttachmentRefs.reserve(desc.colorTargets.Size());
-
-        VkPipelineStageFlags colorSrcStage = 0;
-        VkAccessFlags colorSrcAccess = 0;
+		colorAttachmentRefs.reserve(desc.colorTargets.size());
         
 		uint32_t index = 0;
 
@@ -47,22 +44,19 @@ namespace HBL2
 				.attachment = index++,
 				.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			});
-            
-            colorSrcStage |= VkUtils::CurrentTextureLayoutToVkPipelineStageFlags(colorTarget.prevUsage);
-            colorSrcAccess |= VkUtils::CurrentTextureLayoutToVkAccessFlags(colorTarget.prevUsage);
 		}
 
 		std::vector<VkSubpassDependency> dependencies;
 
-		if (desc.colorTargets.Size() != 0)
+		if (desc.colorTargets.size() != 0)
 		{
 			VkSubpassDependency colorDependency =
 			{
 				.srcSubpass = VK_SUBPASS_EXTERNAL,
 				.dstSubpass = 0,
-				.srcStageMask = colorSrcStage,
+				.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 				.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-				.srcAccessMask = colorSrcAccess,
+				.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 				.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 			};
 
@@ -97,16 +91,13 @@ namespace HBL2
 					.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 				};
                 
-                VkPipelineStageFlags depthSrcStage = VkUtils::CurrentTextureLayoutToVkPipelineStageFlags(desc.depthTarget.prevUsage);
-                VkAccessFlags depthSrcAccess = VkUtils::CurrentTextureLayoutToVkAccessFlags(desc.depthTarget.prevUsage);
-
 				VkSubpassDependency depthDependency =
 				{
 					.srcSubpass = VK_SUBPASS_EXTERNAL,
 					.dstSubpass = 0,
-					.srcStageMask = depthSrcStage,
+					.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 					.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-					.srcAccessMask = depthSrcAccess,
+					.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 				};
 
@@ -114,7 +105,7 @@ namespace HBL2
 			}
 		}
 
-		//we are going to create 1 subpass, which is the minimum you can do
+		// Create 1 subpass, which is the minimum you can do.
 		VkSubpassDescription subpass =
 		{
 			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -152,12 +143,21 @@ namespace HBL2
         ColorTargets = desc.colorTargets;
         DepthTarget = desc.depthTarget;
         
-        VulkanDevice* device = (VulkanDevice*)Device::Instance;
+		VulkanDevice* device = (VulkanDevice*)Device::Instance;
+        VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
         VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
         if (FrameBuffer != VK_NULL_HANDLE)
         {
-            vkDestroyFramebuffer(device->Get(), FrameBuffer, nullptr);
+			VkFramebuffer oldFrameBuffer = FrameBuffer;
+
+			rm->GetDeletionQueue().Push(renderer->GetFrameNumber(), [=]()
+			{
+				VulkanDevice* device = (VulkanDevice*)Device::Instance;
+				vkDestroyFramebuffer(device->Get(), oldFrameBuffer, nullptr);
+			});
+
+			FrameBuffer = VK_NULL_HANDLE;
         }
 
         std::vector<VkImageView> attachments;

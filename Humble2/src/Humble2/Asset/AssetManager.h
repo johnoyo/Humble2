@@ -2,15 +2,16 @@
 
 #include "Asset.h"
 #include "Resources/Handle.h"
-#include "Resources/Pool.h"
+#include "Resources/RefHandle.h"
+#include "Resources/RefCountedPool.h"
 
 #include "Renderer/Device.h"
 
 #include "Core/Allocators.h"
 
 #include "Utilities/JobSystem.h"
-#include "Utilities/Allocators/PoolArena.h"
-#include "Utilities/Collections/Collections.h"
+#include "Utilities/Collections/FixedArray.h"
+#include "Utilities/Collections/FixedHashMap.h"
 #include "Utilities/Collections/StaticFunction.h"
 
 #include <moodycamel/concurrentqueue.h>
@@ -70,7 +71,13 @@ namespace HBL2
 
 		Handle<Asset> CreateMemoryOnlyAsset(const MemoryOnlyAssetDescriptor&& desc);
 		void DeleteAsset(Handle<Asset> handle);
-		Asset* GetAssetMetadata(Handle<Asset> handle) const;		
+		void DeleteAssetImmediate(Handle<Asset> handle);
+		Asset* GetAssetMetadata(Handle<Asset> handle) const;
+
+		void Acquire(Handle<Asset> handle);
+		void Release(Handle<Asset> handle);
+		void PinAsset(Handle<Asset> handle);
+		void UnpinAsset(Handle<Asset> handle);
 
 		template<typename T>
 		Handle<T> GetAsset(UUID assetUUID)
@@ -101,86 +108,114 @@ namespace HBL2
 		}
 
 		template<typename T>
-		ResourceTask<T>* GetAssetAsync(UUID assetUUID, JobContext* customJobCtx = nullptr)
+		void GetAssetAsync(UUID assetUUID, ResourceTask<T>* resourceTask, JobContext* customJobCtx = nullptr)
 		{
-			return GetAssetAsync<T>(GetHandleFromUUID(assetUUID), customJobCtx);
+			return GetAssetAsync<T>(GetHandleFromUUID(assetUUID), resourceTask, customJobCtx);
 		}
 
 		template<typename T>
-		ResourceTask<T>* GetAssetAsync(Handle<Asset> assetHandle, JobContext* customJobCtx = nullptr)
+		void GetAssetAsync(Handle<Asset> assetHandle, ResourceTask<T>* resourceTask, JobContext* customJobCtx = nullptr)
 		{
 			// Do not schedule job if the asset handle is invalid.
 			if (!IsAssetValid(assetHandle))
 			{
-				return nullptr;
+				return;
 			}
 
-			ResourceTask<T>* task = m_ResourceTaskPoolArena.AllocConstruct<ResourceTask<T>>();
-			task->m_Finished.store(false, std::memory_order_release);
+			// Do not schedule job if the resource task provided is null.
+			if (resourceTask == nullptr)
+			{
+				return;
+			}
+
+			resourceTask->m_Finished.store(false, std::memory_order_release);
 
 			// Do not schedule job if the asset is loaded.
 			if (IsAssetLoaded(assetHandle))
 			{
-				task->ResourceHandle = GetAsset<T>(assetHandle);
-				task->m_Finished.store(true, std::memory_order_release);
+				resourceTask->ResourceHandle = GetAsset<T>(assetHandle);
+				resourceTask->m_Finished.store(true, std::memory_order_release);
 
-				if (task->m_WorkerThreadCallback)
+				if (resourceTask->m_WorkerThreadCallback)
 				{
-					task->m_WorkerThreadCallback(task->ResourceHandle);
+					resourceTask->m_WorkerThreadCallback(resourceTask->ResourceHandle);
 				}
 
-				if (task->m_MainThreadCallback)
+				if (resourceTask->m_MainThreadCallback)
 				{
 					m_MainThreadCallbacks.enqueue(
-						StaticFunction<void(void), 128>([cb = std::move(task->m_MainThreadCallback), handle = task->ResourceHandle]() mutable
+						StaticFunction<void(void), 128>([cb = std::move(resourceTask->m_MainThreadCallback), handle = resourceTask->ResourceHandle]() mutable
 						{
 							cb(handle);
 						}));
 				}
 
-				return task;
+				return;
 			}
 
 			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
 
-			JobSystem::Get().Execute(ctx, [this, assetHandle, task]()
+			JobSystem::Get().Execute(ctx, [this, assetHandle, resourceTask]()
 			{
-				Device::Instance->SetContext(ContextType::FETCH);
-
 				// NOTE: Keep an eye here, it may cause problems if we still load an asset while we change scenes!
-				if (task != nullptr)
+				if (resourceTask != nullptr)
 				{
-					task->ResourceHandle = GetAsset<T>(assetHandle);
-					task->m_Finished.store(true, std::memory_order_release);
+					resourceTask->ResourceHandle = GetAsset<T>(assetHandle);
+					resourceTask->m_Finished.store(true, std::memory_order_release);
 
-					if (task->m_WorkerThreadCallback)
+					if (resourceTask->m_WorkerThreadCallback)
 					{
-						task->m_WorkerThreadCallback(task->ResourceHandle);
+						resourceTask->m_WorkerThreadCallback(resourceTask->ResourceHandle);
 					}
 
-					if (task->m_MainThreadCallback)
+					if (resourceTask->m_MainThreadCallback)
 					{
 						m_MainThreadCallbacks.enqueue(
-							StaticFunction<void(void), 128>([cb = std::move(task->m_MainThreadCallback), handle = task->ResourceHandle]() mutable
+							StaticFunction<void(void), 128>([cb = std::move(resourceTask->m_MainThreadCallback), handle = resourceTask->ResourceHandle]() mutable
 							{
 								cb(handle);
 							}));
 					}
 				}
-
-				Device::Instance->SetContext(ContextType::FLUSH_CLEAR);
 			});
 
-			return task;
+			return;
+		}
+
+		template<typename T>
+		void GetAssetAsync(UUID assetUUID, JobContext* customJobCtx = nullptr)
+		{
+			return GetAssetAsync<T>(GetHandleFromUUID(assetUUID), customJobCtx);
+		}
+
+		template<typename T>
+		void GetAssetAsync(Handle<Asset> assetHandle, JobContext* customJobCtx = nullptr)
+		{
+			// Do not schedule job if the asset handle is invalid.
+			if (!IsAssetValid(assetHandle))
+			{
+				return;
+			}
+
+			// Do not schedule job if the asset is loaded.
+			if (IsAssetLoaded(assetHandle))
+			{
+				GetAsset<T>(assetHandle);
+				return;
+			}
+
+			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
+
+			JobSystem::Get().Execute(ctx, [this, assetHandle]()
+			{
+				// NOTE: Keep an eye here, it may cause problems if we still load an asset while we change scenes!
+				GetAsset<T>(assetHandle);
+			});
+
+			return;
 		}
 
 		void WaitForAsyncJobs(JobContext* customJobCtx = nullptr);
-
-		template<typename T>
-		void ReleaseResourceTask(ResourceTask<T>* task)
-		{
-			m_ResourceTaskPoolArena.Free(task);
-		}
 
 		Span<const Handle<Asset>> GetRegisteredAssets() { return { m_RegisteredAssets.data(), m_RegisteredAssets.size() }; }
 
@@ -197,18 +232,18 @@ namespace HBL2
 
 		AssetManagerSpecification m_Spec;
 
-		Pool<Asset, Asset> m_AssetPool;
+		RefCountedPool<Asset, Asset> m_AssetPool;
 
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_PoolArena;
-		PoolArena m_ResourceTaskPoolArena;
 
 		JobContext m_ResourceJobCtx;
 
-        HMap<UUID, Handle<Asset>> m_RegisteredAssetMap = MakeEmptyHMap<UUID, Handle<Asset>>();
-		HMap<std::filesystem::path, UUID> m_RegisteredAssetPathToUUIDMap = MakeEmptyHMap<std::filesystem::path, UUID>();
-		DArray<Handle<Asset>> m_RegisteredAssets = MakeEmptyDArray<Handle<Asset>>();
+		FixedHashMap<UUID, Handle<Asset>> m_RegisteredAssetMap;
+		FixedHashMap<std::filesystem::path, UUID> m_RegisteredAssetPathToUUIDMap;
+		FixedArray<Handle<Asset>> m_RegisteredAssets;
 
 		moodycamel::ConcurrentQueue<StaticFunction<void(void), 128>> m_MainThreadCallbacks;
+		moodycamel::ConcurrentQueue<StaticFunction<void(void), 64>> m_AssetDeleteCallbacks;
 	};
 }

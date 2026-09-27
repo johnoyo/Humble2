@@ -3,6 +3,7 @@
 #include "EditorPanel.h"
 
 #include "Asset/AssetManager.h"
+#include "Utilities/TextureUtilities.h"
 #include "Utilities/SlangReflection.h"
 #include "Utilities/Collections/StaticArray.h"
 
@@ -22,6 +23,15 @@ namespace HBL2::Editor
 
 	private:
 		Handle<Asset> m_PreviouslySelectedAsset;
+		bool m_PinAsset = false;
+
+		bool m_ReimportTexture = false;
+		bool m_UpdateTexture = false;
+		TextureSettings m_TextureSettings = {};
+
+		bool m_TextureFlip = false;
+		StaticArray<int, 4> m_CurrentCompressionFormatItem = { 0, 0, 0, 0 };
+
 		JobContext m_MaterialShaderReflectionCtx;
 		ShaderReflectionData m_ShaderReflectionData;
 		StaticArray<std::vector<uint8_t>, 8> m_ShaderUniformBufferData = {};
@@ -37,9 +47,9 @@ namespace HBL2::Editor
 		bool m_MaterialNeedsReimport = false;
 		bool m_MaterialShaderReflectionStarted = false;
 		bool m_MaterialBindGroupNeedsReimport = false;
-		ResourceTask<Material>* m_MaterialTask = nullptr;
+		ResourceTask<Material> m_MaterialTask = {};
 
 		bool m_ShaderNeedsReimport = false;
-		ResourceTask<Shader>* m_ShaderTask = nullptr;
+		ResourceTask<Shader> m_ShaderTask = {};
 	};
 }

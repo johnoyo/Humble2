@@ -42,7 +42,7 @@ namespace HBL2
         
         if (ec)
         {
-            std::cerr << "Failed to create Linux log directory: " << e.what() << std::endl;
+            std::cerr << "Failed to create Linux log directory: " << ec.message() << std::endl;
             return "";
         }
 
@@ -54,6 +54,8 @@ namespace HBL2
 
     void LinuxPlatformManager::Initialize()
     {
+        m_Platform = Platform::Linux;
+
         if (Context::Mode == Mode::Editor)
         {
             m_AppDataDirectory = GetAppDataDir() + "/Editor";

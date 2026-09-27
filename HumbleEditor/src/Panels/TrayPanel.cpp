@@ -11,6 +11,19 @@
 
 namespace HBL2::Editor
 {
+    static bool SelectableWrapped(const char* id, const char* text, float wrapWidth)
+    {
+        ImVec2 textSize = ImGui::CalcTextSize(text, nullptr, false, wrapWidth);
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+
+        bool clicked = ImGui::Selectable(id, false, 0, ImVec2(wrapWidth, textSize.y));
+
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        drawList->AddText(ImGui::GetFont(), ImGui::GetFontSize(), pos, ImGui::ColorConvertFloat4ToU32(ImVec4(0, 1, 0, 1)), text, nullptr, wrapWidth);
+
+        return clicked;
+    }
+
 	TrayPanel::TrayPanel(const std::string& name, EditorPanelSystem* owner)
 	{
 		m_Owner = owner;
@@ -143,6 +156,56 @@ namespace HBL2::Editor
 
 			BuildEngine::Instance->Recompile();
 		}
+        
+        ImGui::SameLine();
+        
+        if (ImGui::Button("Backgroung Jobs"))
+        {
+            m_ShowBackgroungJobsList = !m_ShowBackgroungJobsList;
+        }
+
+        ImVec2 buttonMin  = ImGui::GetItemRectMin();
+        ImVec2 buttonSize = ImGui::GetItemRectSize();
+
+        if (m_ShowBackgroungJobsList)
+        {
+            uint32_t maxWorkers = JobSystem::Get().GetThreadCount();
+            
+            ScratchArena scratch(Allocator::FrameArenaMT);
+            FixedArray<JobSnapshot> jobs(&scratch, maxWorkers);
+            jobs.resize(maxWorkers);
+            
+            int jobCount = JobSystem::Get().SnapshotActiveJobs(jobs.data(), maxWorkers);
+            
+            float rectWidth  = buttonSize.x * 2.0f;
+            float rectHeight = 150.0f;
+            ImVec2 rectPos(buttonMin.x, buttonMin.y - rectHeight);
+
+            ImGui::SetNextWindowPos(rectPos);
+            ImGui::SetNextWindowSize(ImVec2(rectWidth, rectHeight));
+
+            ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar
+                                    | ImGuiWindowFlags_NoResize
+                                    | ImGuiWindowFlags_NoCollapse
+                                    | ImGuiWindowFlags_NoMove
+                                    | ImGuiWindowFlags_NoSavedSettings
+                                    | ImGuiWindowFlags_NoFocusOnAppearing;
+
+            ImGui::Begin("##ItemListPopup", nullptr, flags);
+
+            float wrapWidth = ImGui::GetContentRegionAvail().x;
+            for (int i = 0; i < jobCount; i++)
+            {
+                ImGui::PushID(i);
+                if (SelectableWrapped("##sel", jobs[i].name, wrapWidth))
+                {
+                    
+                }
+                ImGui::PopID();
+            }
+
+            ImGui::End();
+        }
 
 		ImGui::End();
 	}

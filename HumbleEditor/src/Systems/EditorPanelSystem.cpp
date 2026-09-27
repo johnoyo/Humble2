@@ -58,29 +58,12 @@ namespace HBL2
 			{
 				HBL2_CORE_INFO("EditorPanelSystem::SceneChangeEvent");
 
-				// Delete temporary play mode scene.
-				Scene* currentScene = ResourceManager::Instance->GetScene(e.OldScene);
-				if (currentScene != nullptr && currentScene->GetName().find("(Clone)") != StaticString<64>::npos)
-				{
-					// Clear entire scene
-					currentScene->Clear();
-
-					// Delete play mode scene.
-					ResourceManager::Instance->DeleteScene(e.OldScene);
-				}
-
 				// Clear selected entity
 				HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
 				m_ActiveScene = ResourceManager::Instance->GetScene(e.NewScene);
 
-				if (Context::Mode == Mode::Runtime)
-				{
-					for (ISystem* system : m_ActiveScene->GetRuntimeSystems())
-					{
-						system->SetState(SystemState::Play);
-					}
-				}
-				else if (Context::Mode == Mode::Editor)
+				// Pause runtime systems when we return to editor context.
+				if (Context::Mode == Mode::Editor)
 				{
 					for (ISystem* system : m_ActiveScene->GetRuntimeSystems())
 					{
@@ -88,6 +71,7 @@ namespace HBL2
 					}
 				}
 
+				// Adjust camera aspect ratio.
 				if (m_ActiveScene != nullptr)
 				{
 					m_ActiveScene->Filter<HBL2::Component::Camera>()

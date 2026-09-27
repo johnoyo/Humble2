@@ -26,3 +26,6 @@
 [submodule "Dependencies/Metal-Cpp"]
 	path = Dependencies/Metal-Cpp
 	url = https://github.com/apple/metal-cpp.git
+[submodule "Dependencies/KTX-Software/ktx"]
+	path = Dependencies/KTX-Software/ktx
+	url = https://github.com/KhronosGroup/KTX-Software.git

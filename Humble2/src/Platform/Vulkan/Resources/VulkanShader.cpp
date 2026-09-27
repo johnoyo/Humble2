@@ -10,7 +10,7 @@ namespace HBL2
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
 		vkDestroyPipelineLayout(device->Get(), PipelineLayout, nullptr);
 
-		ResourceManager::Instance->DeleteBindGroup(ShaderBindGroup);
+		ShaderBindGroup.Release();
 	}
 
 	VkPipeline VulkanShaderCold::Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex)
@@ -42,30 +42,18 @@ namespace HBL2
 			vkDestroyPipeline(device->Get(), variantEntry.Pipeline, nullptr);
 		}
 
+		// Release old cache reflected bind group layout (set 2).
+		// We need to do that in case no material ends up using this descriptor,
+		// so the layout of the set will not get released, but it was created from reflection.
+		m_ReflectedBindGroupLayout.Release();
+
+		// TODO: Remove!
 		for (const auto& pipeline : m_RetiredPipelines)
 		{
 			vkDestroyPipeline(device->Get(), pipeline, nullptr);
 		}
 
 		m_RetiredPipelines.clear();
-
-		for (auto bindGroupLayout : m_ReflectedBindGroupLayouts)
-		{
-			ResourceManager::Instance->DeleteBindGroupLayout(bindGroupLayout);
-		}
-
-		m_ReflectedBindGroupLayouts.clear();
-	}
-
-	void VulkanShaderCold::DestroyOld()
-	{
-		VulkanDevice* device = (VulkanDevice*)Device::Instance;
-
-		vkDestroyShaderModule(device->Get(), m_OldVertexShaderModule, nullptr);
-		vkDestroyShaderModule(device->Get(), m_OldFragmentShaderModule, nullptr);
-		vkDestroyShaderModule(device->Get(), m_OldComputeShaderModule, nullptr);
-
-		vkDestroyPipelineLayout(device->Get(), m_OldPipelineLayout, nullptr);
 	}
 
 	VkPipeline VulkanShaderCold::GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld)
@@ -113,7 +101,7 @@ namespace HBL2
 			m_Count.store(last, std::memory_order_release);
 
 			// Append pipeline to retired array for cleanup.
-			m_RetiredPipelines.push_back(p);
+			m_RetiredPipelines.push_back(p);  // TODO: Remove! Use deletion queue.
 		}
 
 		// Create pipeline
@@ -174,10 +162,10 @@ namespace HBL2
 		};
 
 		// Vertex input state.
-		std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions(config.vertexBufferBindings.Size());
+		std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions(config.vertexBufferBindings.size());
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
 
-		for (uint32_t i = 0; i < config.vertexBufferBindings.Size(); i++)
+		for (uint32_t i = 0; i < config.vertexBufferBindings.size(); i++)
 		{
 			const auto& binding = config.vertexBufferBindings[i];
 
@@ -434,7 +422,7 @@ namespace HBL2
 	{
 		const auto& constantStages = config.specializationConstantStages;
 
-		if (constantStages.Size() == 0)
+		if (constantStages.size() == 0)
 		{
 			return;
 		}
@@ -442,7 +430,7 @@ namespace HBL2
 		uint32_t offset = 0;
 		uint32_t constantID = 0;
 
-		for (uint32_t i = 0; i < constantStages.Size(); i++)
+		for (uint32_t i = 0; i < constantStages.size(); i++)
 		{
 			if (!constantStages[i].IsSet(stage))
 			{
@@ -550,25 +538,36 @@ namespace HBL2
 		}
 
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
+		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
 		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
 
-		Cold->m_OldVertexShaderModule = Cold->VertexShaderModule;
-		Cold->m_OldFragmentShaderModule = Cold->FragmentShaderModule;
-		Cold->m_OldComputeShaderModule = Cold->ComputeShaderModule;
-		Cold->m_OldPipelineLayout = Hot->PipelineLayout;
-
-		Cold->VertexShaderModule = VK_NULL_HANDLE;
-		Cold->FragmentShaderModule = VK_NULL_HANDLE;
-		Cold->ComputeShaderModule = VK_NULL_HANDLE;
-
-		Cold->DebugName = desc.debugName;
-
-		// BindGroups use a reference counting system, so if there are other objects
-		// referencing the bindgroup, it will not be deleted, just the ref count will be decreased.
-		if (Hot->ShaderBindGroup.IsValid())
+		if (removeVariants)
 		{
-			ResourceManager::Instance->DeleteBindGroup(Hot->ShaderBindGroup);
+			// Copy the old resources to be deleted in the next frames.
+			VkShaderModule oldVertexShaderModule = Cold->VertexShaderModule;
+			VkShaderModule oldFragmentShaderModule = Cold->FragmentShaderModule;
+			VkShaderModule oldComputeShaderModule = Cold->ComputeShaderModule;
+			VkPipelineLayout oldPipelineLayout = Hot->PipelineLayout;
+
+			rm->GetDeletionQueue().Push(renderer->GetFrameNumber(), [=]()
+			{
+				VulkanDevice* device = (VulkanDevice*)Device::Instance;
+
+				vkDestroyShaderModule(device->Get(), oldVertexShaderModule, nullptr);
+				vkDestroyShaderModule(device->Get(), oldFragmentShaderModule, nullptr);
+				vkDestroyShaderModule(device->Get(), oldComputeShaderModule, nullptr);
+
+				vkDestroyPipelineLayout(device->Get(), oldPipelineLayout, nullptr);
+			});
+
+			Cold->VertexShaderModule = VK_NULL_HANDLE;
+			Cold->FragmentShaderModule = VK_NULL_HANDLE;
+			Cold->ComputeShaderModule = VK_NULL_HANDLE;
+
+			Hot->PipelineLayout = VK_NULL_HANDLE;
 		}
+		
+		Cold->DebugName = desc.debugName;
 		Hot->ShaderBindGroup = desc.shaderBindGroup;
 
 		// Clear VertexBufferBindings.
@@ -587,9 +586,9 @@ namespace HBL2
 		}
 
 		// Fill with new ones.
-		for (uint32_t i = 0; i < desc.renderPipeline.specializationConstantsPerVariant.Size(); i++)
+		for (uint32_t i = 0; i < desc.renderPipeline.specializationConstantsPerVariant.size(); i++)
 		{
-			for (uint32_t j = 0; j < desc.renderPipeline.specializationConstantsPerVariant[i].Size(); j++)
+			for (uint32_t j = 0; j < desc.renderPipeline.specializationConstantsPerVariant[i].size(); j++)
 			{
 				auto& variant = *((ShaderDescriptor::RenderPipeline::PackedVariant*)&desc.renderPipeline.variants[i]);
 				const auto& specializationConstant = desc.renderPipeline.specializationConstantsPerVariant[i][j];
@@ -614,8 +613,8 @@ namespace HBL2
 				{
 					.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 					.pNext = nullptr,
-					.codeSize = desc.VS.code.Size(),
-					.pCode = reinterpret_cast<const uint32_t*>(desc.VS.code.Data()),
+					.codeSize = desc.VS.code.size(),
+					.pCode = reinterpret_cast<const uint32_t*>(desc.VS.code.data()),
 				};
 				VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &Cold->VertexShaderModule), "vkCreateShaderModule");
 			}
@@ -626,8 +625,8 @@ namespace HBL2
 				{
 					.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 					.pNext = nullptr,
-					.codeSize = desc.FS.code.Size(),
-					.pCode = reinterpret_cast<const uint32_t*>(desc.FS.code.Data()),
+					.codeSize = desc.FS.code.size(),
+					.pCode = reinterpret_cast<const uint32_t*>(desc.FS.code.data()),
 				};
 				VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &Cold->FragmentShaderModule), "vkCreateShaderModule");
 			}
@@ -644,8 +643,8 @@ namespace HBL2
 			{
 				.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 				.pNext = nullptr,
-				.codeSize = desc.CS.code.Size(),
-				.pCode = reinterpret_cast<const uint32_t*>(desc.CS.code.Data()),
+				.codeSize = desc.CS.code.size(),
+				.pCode = reinterpret_cast<const uint32_t*>(desc.CS.code.data()),
 			};
 			VK_VALIDATE(vkCreateShaderModule(device->Get(), &createInfo, nullptr, &Cold->ComputeShaderModule), "vkCreateShaderModule");
 
@@ -660,12 +659,10 @@ namespace HBL2
 		StaticDArray<VkDescriptorSetLayout, 8> setLayouts;
 		uint32_t bindGroupLayoutIndex = 0;
 
-		// Release and clear old cache reflected bind group layouts.
-		for (auto bindGroupLayout : Cold->m_ReflectedBindGroupLayouts)
-		{
-			ResourceManager::Instance->DeleteBindGroupLayout(bindGroupLayout);
-		}
-		Cold->m_ReflectedBindGroupLayouts.clear();
+		// Release old cache reflected bind group layout (set 2).
+		// We need to do that in case no material ends up using this descriptor,
+		// so the layout of the set will not get released, but it was created from reflection.
+		Cold->m_ReflectedBindGroupLayout.Release();
 
 		for (const auto& bindGroup : desc.bindGroups)
 		{
@@ -676,25 +673,12 @@ namespace HBL2
 					Hot->GlobalBindGroupLayoutHash = bindGroup.HashKey();
 				}
 
-				if (bindGroupLayoutIndex == 1)
-				{
-					// Keep reference to the reflected bind group layout of set 1,
-					// since reflection increases the ref count of the layout obj and
-					// we need to release it on shader destroy for proper clean up.
-					if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout() && desc.bindGroups.size() == 4)
-					{
-						Cold->m_ReflectedBindGroupLayouts.push_back(bindGroup);
-					}
-				}
-
 				if (bindGroupLayoutIndex == 2 && desc.bindGroups.size() == 4)
 				{
-					// Keep reference to the reflected bind group layout of set 2,
-					// since reflection increases the ref count of the layout obj and
-					// we need to release it on shader destroy for proper clean up.
 					if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout())
 					{
-						Cold->m_ReflectedBindGroupLayouts.push_back(bindGroup);
+						// Keep reference to the reflected bind group layout of set 2.
+						Cold->m_ReflectedBindGroupLayout = bindGroup;
 					}
 				}
 
@@ -719,7 +703,7 @@ namespace HBL2
 		VK_VALIDATE(vkCreatePipelineLayout(device->Get(), &pipelineLayoutCreateInfo, nullptr, &Hot->PipelineLayout), "vkCreatePipelineLayout");
 
 		// Create shader variants.
-		for (int i = 0; i < desc.renderPipeline.variants.Size(); i++)
+		for (int i = 0; i < desc.renderPipeline.variants.size(); i++)
 		{
 			const auto& variant = desc.renderPipeline.variants[i];
 
@@ -748,15 +732,5 @@ namespace HBL2
 
 		Hot->Destroy();
 		Cold->Destroy();
-	}
-
-	void VulkanShader::DestroyOld()
-	{
-		if (!IsValid())
-		{
-			return;
-		}
-
-		Cold->DestroyOld();
 	}
 }

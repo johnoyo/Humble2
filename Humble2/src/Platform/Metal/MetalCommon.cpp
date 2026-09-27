@@ -71,6 +71,44 @@ namespace HBL2
                 return MTL::PixelFormatRGBA32Float;
             case Format::R10G10B10A2_UNORM:
                 return MTL::PixelFormatRGB10A2Unorm;
+            case Format::BC1_RGBA_SRGB:
+                return MTL::PixelFormatBC1_RGBA_sRGB;
+            case Format::BC1_RGBA_UNORM:
+                return MTL::PixelFormatBC1_RGBA;
+            case Format::BC3_SRGB:
+                return MTL::PixelFormatBC3_RGBA_sRGB;
+            case Format::BC3_UNORM:
+                return MTL::PixelFormatBC3_RGBA;
+            case Format::BC7_SRGB:
+                return MTL::PixelFormatBC7_RGBAUnorm_sRGB;
+            case Format::BC7_UNORM:
+                return MTL::PixelFormatBC7_RGBAUnorm;
+            case Format::BC6H_UF:
+                return MTL::PixelFormatBC6H_RGBUfloat;
+            case Format::ASTC_4x4_SRGB:
+                return MTL::PixelFormatASTC_4x4_sRGB;
+            case Format::ASTC_4x4_UNORM:
+                return MTL::PixelFormatASTC_4x4_LDR;
+            case Format::ASTC_5x5_SRGB:
+                return MTL::PixelFormatASTC_5x5_sRGB;
+            case Format::ASTC_5x5_UNORM:
+                return MTL::PixelFormatASTC_5x5_LDR;
+            case Format::ASTC_6x6_SRGB:
+                return MTL::PixelFormatASTC_6x6_sRGB;
+            case Format::ASTC_6x6_UNORM:
+                return MTL::PixelFormatASTC_6x6_LDR;
+            case Format::ASTC_8x8_SRGB:
+                return MTL::PixelFormatASTC_8x8_sRGB;
+            case Format::ASTC_8x8_UNORM:
+                return MTL::PixelFormatASTC_8x8_LDR;
+            case Format::ASTC_10x10_SRGB:
+                return MTL::PixelFormatASTC_10x10_sRGB;
+            case Format::ASTC_10x10_UNORM:
+                return MTL::PixelFormatASTC_10x10_LDR;
+            case Format::ASTC_12x12_SRGB:
+                return MTL::PixelFormatASTC_12x12_sRGB;
+            case Format::ASTC_12x12_UNORM:
+                return MTL::PixelFormatASTC_12x12_LDR;
             default:
                 break;
         }
@@ -366,9 +404,10 @@ namespace HBL2
         switch (layout)
         {
         case TextureLayout::RENDER_ATTACHMENT:
-        case TextureLayout::DEPTH_STENCIL:
+        case TextureLayout::DEPTH_STENCIL_ATTACHMENT:
             return MTL::StageFragment;
         case TextureLayout::SHADER_READ_ONLY:
+        case TextureLayout::DEPTH_STENCIL_READ_ONLY:
             return MTL::StageFragment | MTL::StageVertex;
         default:
             return MTL::StageFragment;
@@ -390,49 +429,41 @@ namespace HBL2
         }
     }
 
-    MTL::Stages MtlUtils::ResourceStateToMTLStages(ResourceState state)
+    MTL::Stages MtlUtils::TextureLayoutToMTLStages(TextureLayout layout)
     {
         MTL::Stages producer, consumer;
-        ResourceStateToMTLStagesSplit(state, &producer, &consumer);
+        TextureLayoutToMTLStagesSplit(layout, &producer, &consumer);
         return producer ? producer : consumer;
     }
 
-    void MtlUtils::ResourceStateToMTLStagesSplit(ResourceState state, MTL::Stages* outProducer, MTL::Stages* outConsumer)
+    void MtlUtils::TextureLayoutToMTLStagesSplit(TextureLayout layout, MTL::Stages* outProducer, MTL::Stages* outConsumer)
     {
-        switch (state)
+        switch (layout)
         {
-            case ResourceState::VertexAndConstantBuffer:
-            case ResourceState::IndexBuffer:
-                *outProducer = 0; *outConsumer = MTL::StageVertex;
-                break;
-            case ResourceState::RenderTarget:
-            case ResourceState::DepthWrite:
+            case TextureLayout::RENDER_ATTACHMENT:
+            case TextureLayout::DEPTH_STENCIL_ATTACHMENT:
                 *outProducer = MTL::StageFragment; *outConsumer = 0;
                 break;
-            case ResourceState::DepthRead:
-            case ResourceState::PixelShaderResource:
+            case TextureLayout::DEPTH_STENCIL_READ_ONLY:
                 *outProducer = 0; *outConsumer = MTL::StageFragment;
                 break;
-            case ResourceState::UnorderedAccess:
+            case TextureLayout::SHADER_READ_ONLY:
+                *outProducer = 0; *outConsumer = MTL::StageVertex | MTL::StageFragment | MTL::StageDispatch;
+                break;
+            case TextureLayout::GENERAL:
                 *outProducer = MTL::StageDispatch; *outConsumer = MTL::StageDispatch;
                 break;
-            case ResourceState::NonPixelShaderResource:
-                *outProducer = 0; *outConsumer = MTL::StageVertex | MTL::StageDispatch;
-                break;
-            case ResourceState::IndirectArgument:
-                *outProducer = 0; *outConsumer = MTL::StageVertex | MTL::StageDispatch;
-                break;
-            case ResourceState::CopyDest:
-                *outProducer = MTL::StageBlit; *outConsumer = 0;
-                break;
-            case ResourceState::CopySource:
+            case TextureLayout::COPY_SRC:
                 *outProducer = 0; *outConsumer = MTL::StageBlit;
                 break;
-            case ResourceState::GenericRead:
+            case TextureLayout::COPY_DST:
+                *outProducer = MTL::StageBlit; *outConsumer = 0;
+                break;
+            case TextureLayout::EGENERIC_READ:
                 *outProducer = 0; *outConsumer = MTL::StageVertex | MTL::StageFragment | MTL::StageDispatch | MTL::StageBlit;
                 break;
-            case ResourceState::Common:
-            case ResourceState::Present:
+            case TextureLayout::PRESENT:
+            case TextureLayout::UNDEFINED:
             default:
                 *outProducer = 0; *outConsumer = 0;
                 break;

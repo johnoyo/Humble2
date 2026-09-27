@@ -76,21 +76,26 @@ namespace HBL2
 
 	void ForwardSceneRenderer::Initialize(Scene* scene)
 	{
-		// Each draw list is pre allocated with ~2MB of space (~32K draws), we have 16 draw lists, 8 for each renderData in flight.
-		// So, for the draw lists we need ~32MB.
-		m_Reservation = Allocator::Arena.Reserve("ForwardSceneRendererPool", (Renderer::Instance->FrameCount * 8 * 2_MB) + 32_MB);
-		m_Arena.Initialize(&Allocator::Arena, (Renderer::Instance->FrameCount * 8 * 2_MB) + 32_MB, m_Reservation);
+		uint32_t maxEntities = scene->GetDescriptor().maxEntities;
+
+		// Calculate space needed for the 8 draw lists per frame in flight.
+		uint64_t totalBytes = ArenaLayout::Create()
+			.Add<LocalDrawStream>(Renderer::Instance->FrameCount * 8 * maxEntities)
+			.Total();
+
+		m_Reservation = Allocator::Arena.Reserve("ForwardSceneRendererPool", totalBytes);
+		m_Arena.Initialize(&Allocator::Arena, totalBytes, m_Reservation);
 
 		for (auto& sceneRenderData : m_RenderData)
 		{
-			sceneRenderData.m_PrePassSpriteDraws.Initialize(m_Arena);
-			sceneRenderData.m_PrePassStaticMeshDraws.Initialize(m_Arena);
-			sceneRenderData.m_ShadowPassSpriteDraws.Initialize(m_Arena);
-			sceneRenderData.m_ShadowPassStaticMeshDraws.Initialize(m_Arena);
-			sceneRenderData.m_SpriteOpaqueDraws.Initialize(m_Arena);
-			sceneRenderData.m_SpriteTransparentDraws.Initialize(m_Arena);
-			sceneRenderData.m_StaticMeshOpaqueDraws.Initialize(m_Arena);
-			sceneRenderData.m_StaticMeshTransparentDraws.Initialize(m_Arena);
+			sceneRenderData.m_PrePassSpriteDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_PrePassStaticMeshDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_ShadowPassSpriteDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_ShadowPassStaticMeshDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_SpriteOpaqueDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_SpriteTransparentDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_StaticMeshOpaqueDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_StaticMeshTransparentDraws.Initialize(m_Arena, maxEntities);
 		}
 
 		m_Scene = scene;
@@ -119,7 +124,7 @@ namespace HBL2
 
 		// Create pre-pass bind groups.
 		m_DepthOnlyMeshBindGroup = ResourceManager::Instance->CreateBindGroup({
-			.debugName = "pre-pass-bind-group",
+			.debugName = "pre-pass-mesh-bind-group",
 			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
 			.buffers = {
 				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawData) },
@@ -127,7 +132,7 @@ namespace HBL2
 		});
 
 		m_DepthOnlySpriteBindGroup = ResourceManager::Instance->CreateBindGroup({
-			.debugName = "pre-pass-bind-group",
+			.debugName = "pre-pass-sprite-bind-group",
 			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
 			.buffers = {
 				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawDataSprite) },
@@ -167,9 +172,9 @@ namespace HBL2
 
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, ResourceState::Undefined, ResourceState::RenderTarget);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, ResourceState::Undefined, ResourceState::RenderTarget);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, ResourceState::Undefined, ResourceState::RenderTarget);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
 
 		auto& renderPassPool = Renderer::Instance->GetRenderPassPool();
 
@@ -207,93 +212,81 @@ namespace HBL2
 
 	void ForwardSceneRenderer::CleanUp()
 	{
-		// TODO: Fix!
-		Renderer::Instance->SubmitBlocking([this]()
-		{
-			m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
+		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
 
-			m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
-			m_ResourceManager->DeleteRenderPass(m_ShadowRenderPass);
-			m_ResourceManager->DeleteShader(m_ShadowPrePassShader);
-			m_ResourceManager->DeleteMaterial(m_ShadowPrePassMaterial);
+		m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
+		m_ResourceManager->DeleteRenderPass(m_ShadowRenderPass);
+		m_ResourceManager->DeleteShader(m_ShadowPrePassShader);
+		m_ResourceManager->DeleteMaterial(m_ShadowPrePassMaterial);
 
-			m_ResourceManager->DeleteShader(m_DepthOnlyShader);
-			m_ResourceManager->DeleteShader(m_DepthOnlySpriteShader);
+		m_ResourceManager->DeleteShader(m_DepthOnlyShader);
+		m_ResourceManager->DeleteShader(m_DepthOnlySpriteShader);
 
-			m_ResourceManager->DeleteBindGroup(m_DepthOnlyMeshBindGroup);
-			m_ResourceManager->DeleteBindGroup(m_DepthOnlySpriteBindGroup);
+		m_ResourceManager->DeleteBindGroup(m_DepthOnlyMeshBindGroup);
+		m_ResourceManager->DeleteBindGroup(m_DepthOnlySpriteBindGroup);
 
-			m_ResourceManager->DeleteMaterial(m_DepthOnlyMaterial);
-			m_ResourceManager->DeleteMaterial(m_DepthOnlySpriteMaterial);
+		m_ResourceManager->DeleteMaterial(m_DepthOnlyMaterial);
+		m_ResourceManager->DeleteMaterial(m_DepthOnlySpriteMaterial);
 
-			m_ResourceManager->DeleteRenderPassLayout(m_DepthOnlyRenderPassLayout);
-			m_ResourceManager->DeleteRenderPass(m_DepthOnlyRenderPass);
-			Renderer::Instance->RemoveOnResizeCallback("Depth-Only-Resize-FrameBuffer");
+		m_ResourceManager->DeleteRenderPassLayout(m_DepthOnlyRenderPassLayout);
+		m_ResourceManager->DeleteRenderPass(m_DepthOnlyRenderPass);
+		Renderer::Instance->RemoveOnResizeCallback(std::string("Depth-Only-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
 
-			m_ResourceManager->DeleteRenderPass(m_GeometryRenderPass);
-			Renderer::Instance->RemoveOnResizeCallback("Resize-Geometry-FrameBuffer");
+		m_ResourceManager->DeleteRenderPass(m_GeometryRenderPass);
+		Renderer::Instance->RemoveOnResizeCallback(std::string("Resize-Geometry-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
 
-			m_ResourceManager->DeleteBindGroupLayout(m_EquirectToSkyboxBindGroupLayout);
-			m_ResourceManager->DeleteShader(m_EquirectToSkyboxShader);
-			m_ResourceManager->DeleteBuffer(m_CaptureMatricesBuffer);
-			m_ResourceManager->DeleteBindGroupLayout(m_SkyboxGlobalBindGroupLayout);
-			m_ResourceManager->DeleteBindGroup(m_SkyboxGlobalBindGroup);
-			m_ResourceManager->DeleteShader(m_SkyboxShader);
-			m_ResourceManager->DeleteBindGroupLayout(m_SkyboxBindGroupLayout);
-			m_ResourceManager->DeleteBuffer(m_CubeMeshBuffer);
-			m_ResourceManager->DeleteMesh(m_CubeMesh);
+		m_ResourceManager->DeleteBindGroupLayout(m_EquirectToSkyboxBindGroupLayout);
+		m_ResourceManager->DeleteShader(m_EquirectToSkyboxShader);
+		m_ResourceManager->DeleteBuffer(m_CaptureMatricesBuffer);
+		m_ResourceManager->DeleteBindGroupLayout(m_SkyboxGlobalBindGroupLayout);
+		m_ResourceManager->DeleteBindGroup(m_SkyboxGlobalBindGroup);
+		m_ResourceManager->DeleteShader(m_SkyboxShader);
+		m_ResourceManager->DeleteBindGroupLayout(m_SkyboxBindGroupLayout);
+		m_ResourceManager->DeleteBuffer(m_CubeMeshBuffer);
+		m_ResourceManager->DeleteMesh(m_CubeMesh);
 
-			m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
-			m_Scene->Filter<Component::SkyLight>()
-				.ForEach([&](Component::SkyLight& skyLight)
-				{
-					m_ResourceManager->DeleteTexture(skyLight.CubeMap);
-					skyLight.CubeMap = {};
+		m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
+		m_Scene->Filter<Component::SkyLight>()
+			.ForEach([&](Component::SkyLight& skyLight)
+			{
+				m_ResourceManager->DeleteTexture(skyLight.CubeMap);
+				skyLight.CubeMap = {};
 
-					Material* mat = m_ResourceManager->GetMaterial(skyLight.CubeMapMaterial);
-					if (mat != nullptr)
-					{
-						m_ResourceManager->DeleteBindGroup(mat->DrawBindGroup);
-						m_ResourceManager->DeleteBindGroup(mat->MaterialBindGroup);
-					}
+				m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
+				skyLight.CubeMapMaterial = {};
 
-					m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
-					skyLight.CubeMapMaterial = {};
+				skyLight.EquirectangularMap.Release();
 
-					// TODO: Investigate if we need to delete EquirectangularMap.
-					// AssetManager::Instance->DeleteAsset(skyLight.EquirectangularMap);
-					// skyLight.EquirectangularMap = {};
+				skyLight.Converted = false;
+			});
 
-					skyLight.Converted = false;
-				});
+		m_Scene->Filter<Component::StaticMesh>()
+			.ForEach([&](Component::StaticMesh& staticMesh)
+			{
+				staticMesh.Mesh.Release();
+				staticMesh.Material.Release();
+			});
 
-			m_Scene->Filter<Component::StaticMesh>()
-				.ForEach([&](Component::StaticMesh& staticMesh)
-				{
-					AssetManager::Instance->DeleteAsset(staticMesh.Material);
-				});
+		m_Scene->Filter<Component::Sprite>()
+			.ForEach([&](Component::Sprite& sprite)
+			{
+				sprite.Material.Release();
+			});
 
-			m_Scene->Filter<Component::Sprite>()
-				.ForEach([&](Component::Sprite& sprite)
-				{
-					AssetManager::Instance->DeleteAsset(sprite.Material);
-				});
+		m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
+		m_ResourceManager->DeleteShader(m_PostProcessShader);
+		m_ResourceManager->DeleteBindGroupLayout(m_PostProcessBindGroupLayout);
+		m_ResourceManager->DeleteBindGroup(m_PostProcessBindGroup);
+		m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
+		Renderer::Instance->RemoveOnResizeCallback(std::string("Post-Process-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
 
-			m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
-			m_ResourceManager->DeleteShader(m_PostProcessShader);
-			m_ResourceManager->DeleteBindGroupLayout(m_PostProcessBindGroupLayout);
-			m_ResourceManager->DeleteBindGroup(m_PostProcessBindGroup);
-			m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
-			Renderer::Instance->RemoveOnResizeCallback("Post-Process-Resize-FrameBuffer");
+		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
+		m_ResourceManager->DeleteMesh(m_SpriteMesh);
 
-			m_ResourceManager->DeleteBuffer(m_VertexBuffer);
-			m_ResourceManager->DeleteMesh(m_SpriteMesh);
-
-			m_ResourceManager->DeleteBuffer(m_PostProcessQuadVertexBuffer);
-			m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
-			m_ResourceManager->DeleteShader(m_PresentShader);
-			m_ResourceManager->DeleteMaterial(m_QuadMaterial);
-		});
+		m_ResourceManager->DeleteBuffer(m_PostProcessQuadVertexBuffer);
+		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
+		m_ResourceManager->DeleteShader(m_PresentShader);
+		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
 	}
 
 	void* ForwardSceneRenderer::GetRenderData()
@@ -313,8 +306,8 @@ namespace HBL2
 				.storeOp = StoreOperation::STORE,
 				.stencilLoadOp = LoadOperation::DONT_CARE,
 				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::DEPTH_STENCIL,
-				.nextUsage = TextureLayout::DEPTH_STENCIL,
+				.prevUsage = TextureLayout::UNDEFINED,
+				.nextUsage = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
 			},
             .frameBufferDesc = {
                 .width = g_ShadowAtlasSize,
@@ -384,7 +377,7 @@ namespace HBL2
                 .stencilLoadOp = LoadOperation::DONT_CARE,
                 .stencilStoreOp = StoreOperation::DONT_CARE,
                 .prevUsage = TextureLayout::UNDEFINED,
-                .nextUsage = TextureLayout::DEPTH_STENCIL,
+                .nextUsage = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
             },
             .frameBufferDesc = {
                 .width = Window::Instance->GetExtents().x,
@@ -393,7 +386,7 @@ namespace HBL2
             }
         });
 
-		Renderer::Instance->AddCallbackOnResize("Depth-Only-Resize-FrameBuffer", [this](uint32_t width, uint32_t height)
+		Renderer::Instance->AddCallbackOnResize(std::string("Depth-Only-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
 		{
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DepthOnlyRenderPass, {
 				.width = width,
@@ -498,8 +491,8 @@ namespace HBL2
 				.storeOp = StoreOperation::STORE,
 				.stencilLoadOp = LoadOperation::DONT_CARE,
 				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::DEPTH_STENCIL,
-				.nextUsage = TextureLayout::DEPTH_STENCIL,
+				.prevUsage = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
+				.nextUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
 			},
 			.colorTargets = {
 				{
@@ -519,7 +512,7 @@ namespace HBL2
 		});
 
 		// Resize opaque framebuffer callback.
-		Renderer::Instance->AddCallbackOnResize("Resize-Geometry-FrameBuffer", [this](uint32_t width, uint32_t height)
+		Renderer::Instance->AddCallbackOnResize(std::string("Resize-Geometry-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
         {
             ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_GeometryRenderPass, {
                 .width = width,
@@ -807,8 +800,8 @@ namespace HBL2
 				.storeOp = StoreOperation::STORE,
 				.stencilLoadOp = LoadOperation::DONT_CARE,
 				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::DEPTH_STENCIL,
-				.nextUsage = TextureLayout::DEPTH_STENCIL,
+				.prevUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
+				.nextUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
 			},
 			.colorTargets = {
 				{
@@ -826,7 +819,7 @@ namespace HBL2
             }
 		});
 
-		Renderer::Instance->AddCallbackOnResize("Post-Process-Resize-FrameBuffer", [this](uint32_t width, uint32_t height)
+		Renderer::Instance->AddCallbackOnResize(std::string("Post-Process-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
 		{
             ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PostProcessRenderPass, {
                 .width = width,
@@ -981,10 +974,15 @@ namespace HBL2
 							return;
 						}
 
-						Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(staticMesh.Material);
+						Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(staticMesh.Material.Get());
 						Material* material = ResourceManager::Instance->GetMaterial(materialHandle);
 
-						Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(staticMesh.Mesh);
+						if (material == nullptr)
+						{
+							return;
+						}
+
+						Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(staticMesh.Mesh.Get());
 						Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
 
 						if (mesh == nullptr || mesh->IsEmpty())
@@ -1001,11 +999,6 @@ namespace HBL2
 
 						const auto& subMesh = meshPart.SubMeshes[staticMesh.SubMeshIndex];
 
-						if (material == nullptr)
-						{
-							return;
-						}
-
 						// Bump allocate and set per draw data.
 						auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawData>();
 						alloc.Data->Model = transform.WorldMatrix;
@@ -1020,8 +1013,8 @@ namespace HBL2
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.IndexBuffer = meshPart.IndexBuffer,
 								.VertexBuffer = meshPart.VertexBuffers[0],
-								.MaterialBindGroup = material->MaterialBindGroup,
-								.BindGroup = material->DrawBindGroup,
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
 								.Size = sizeof(PerDrawData),
 								.Offset = alloc.Offset,
 								.IndexCount = subMesh.IndexCount,
@@ -1057,8 +1050,8 @@ namespace HBL2
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.IndexBuffer = meshPart.IndexBuffer,
 								.VertexBuffer = meshPart.VertexBuffers[0],
-								.MaterialBindGroup = material->MaterialBindGroup,
-								.BindGroup = material->DrawBindGroup,
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
 								.Size = sizeof(PerDrawData),
 								.Offset = alloc.Offset,
 								.IndexCount = subMesh.IndexCount,
@@ -1111,7 +1104,7 @@ namespace HBL2
 							return;
 						}
 
-						Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(sprite.Material);
+						Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(sprite.Material.Get());
 						Material* material = ResourceManager::Instance->GetMaterial(materialHandle);
 
 						if (material == nullptr)
@@ -1131,8 +1124,8 @@ namespace HBL2
 								.Shader = material->Shader,
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.VertexBuffer = m_VertexBuffer,
-								.MaterialBindGroup = material->MaterialBindGroup,
-								.BindGroup = material->DrawBindGroup,
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
 								.Size = sizeof(PerDrawDataSprite),
 								.Offset = alloc.Offset,
 								.VertexCount = 6,
@@ -1156,8 +1149,8 @@ namespace HBL2
 								.Shader = material->Shader,
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.VertexBuffer = m_VertexBuffer,
-								.MaterialBindGroup = material->MaterialBindGroup,
-								.BindGroup = material->DrawBindGroup,
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
 								.Size = sizeof(PerDrawDataSprite),
 								.Offset = alloc.Offset,
 								.VertexCount = 6,
@@ -1323,6 +1316,13 @@ namespace HBL2
 			});
 
 		Renderer::Instance->ShadowAtlasAllocator.Clear();
+        
+        ResourceManager::Instance->TransitionTextureLayout(
+            commandBuffer,
+            Renderer::Instance->ShadowAtlasTexture,
+            TextureLayout::DEPTH_STENCIL_ATTACHMENT,
+            TextureLayout::DEPTH_STENCIL_READ_ONLY
+        );
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().ShadowPassTime);
 	}
@@ -1447,16 +1447,7 @@ namespace HBL2
                         if (skyLight.CubeMapMaterial.IsValid())
                         {
                             m_ResourceManager->DeleteTexture(skyLight.CubeMap);
-
-                            Material* mat = m_ResourceManager->GetMaterial(skyLight.CubeMapMaterial);
-                            if (mat != nullptr)
-                            {
-                                m_ResourceManager->DeleteBindGroup(mat->DrawBindGroup);
-                                m_ResourceManager->DeleteBindGroup(mat->MaterialBindGroup);
-                            }
-
                             m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
-
                             m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
 
                             m_CaptureMatricesBuffer = m_ResourceManager->CreateBuffer({
@@ -1484,11 +1475,11 @@ namespace HBL2
                         ResourceManager::Instance->TransitionTextureLayout(
                             commandBuffer,
                             skyLight.CubeMap,
-                            ResourceState::Undefined,
-                            ResourceState::UnorderedAccess
+                            TextureLayout::UNDEFINED,
+                            TextureLayout::GENERAL
                         );
 
-                        Handle<Texture> equirectangularMapHandle = AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap);
+                        Handle<Texture> equirectangularMapHandle = AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap.Get());
 
                         // FIXME: When entering the playmode multiple times in the session we create new descriptor sets in vk, so it exceeds the max in the pool.
                         m_ComputeBindGroup = m_ResourceManager->CreateBindGroup({
@@ -1548,7 +1539,7 @@ namespace HBL2
                         .Shader = m_SkyboxShader,
                         .VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_SkyboxShader, mat->VariantHash),
                         .VertexBuffer = m_CubeMeshBuffer,
-                        .MaterialBindGroup = mat->MaterialBindGroup,
+                        .MaterialBindGroup = mat->MaterialBindGroup.Get(),
                         .VertexCount = 36,
                     });
                 }
@@ -1579,7 +1570,12 @@ namespace HBL2
 		BEGIN_PROFILE_PASS();
 
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, ResourceState::RenderTarget, ResourceState::GenericRead);
+		ResourceManager::Instance->TransitionTextureLayout(
+            commandBuffer,
+            Renderer::Instance->IntermediateColorTexture,
+            TextureLayout::RENDER_ATTACHMENT,
+            TextureLayout::SHADER_READ_ONLY
+        );
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass);
 
@@ -1616,7 +1612,12 @@ namespace HBL2
 		BEGIN_PROFILE_PASS();
 
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, ResourceState::RenderTarget, ResourceState::GenericRead);
+		ResourceManager::Instance->TransitionTextureLayout(
+            commandBuffer,
+            Renderer::Instance->MainColorTexture,
+            TextureLayout::RENDER_ATTACHMENT,
+            TextureLayout::SHADER_READ_ONLY
+        );
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
 

@@ -11,7 +11,7 @@ namespace HBL2
         Width = desc.frameBufferDesc.width;
         Height = desc.frameBufferDesc.height;
         PassDesc = MTL4::RenderPassDescriptor::alloc()->init();
-        ColorAttachmentCount = (uint32_t)desc.colorTargets.Size();
+        ColorAttachmentCount = (uint32_t)desc.colorTargets.size();
         ColorAttachmentFormats.clear();
         
         uint32_t colorTargetIndex = 0;

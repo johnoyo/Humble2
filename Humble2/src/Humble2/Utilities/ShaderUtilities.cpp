@@ -191,57 +191,53 @@ namespace HBL2
 
         // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/08-compiling.html
 
+        std::array<slang::CompilerOptionEntry, 4> options;
+        
         switch (target)
         {
         case GraphicsAPI::VULKAN:
             {
-                std::array<slang::CompilerOptionEntry, 4> options =
+                options[0] = slang::CompilerOptionEntry
                 {
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::EmitSpirvDirectly,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::VulkanUseEntryPointName,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::MatrixLayoutColumn,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::Optimization,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
-                    }
+                    .name = slang::CompilerOptionName::EmitSpirvDirectly,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
+                };
+                options[1] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::VulkanUseEntryPointName,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
+                };
+                options[2] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::MatrixLayoutColumn,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
+                };
+                options[3] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::Optimization,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
                 };
                 
                 sessionDesc.compilerOptionEntries = options.data();
-                sessionDesc.compilerOptionEntryCount = options.size();
+                sessionDesc.compilerOptionEntryCount = 4;
                 
                 break;
             }
         case GraphicsAPI::METAL:
             {
-                std::array<slang::CompilerOptionEntry, 2> options =
+                options[0] = slang::CompilerOptionEntry
                 {
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::MatrixLayoutColumn,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::Optimization,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
-                    }
+                    .name = slang::CompilerOptionName::MatrixLayoutColumn,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
+                };
+                options[1] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::Optimization,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
                 };
                 
                 sessionDesc.compilerOptionEntries = options.data();
-                sessionDesc.compilerOptionEntryCount = options.size();
+                sessionDesc.compilerOptionEntryCount = 2;
                 
                 break;
             }
@@ -508,40 +504,36 @@ namespace HBL2
         // Session description.
         slang::SessionDesc sessionDesc = {};
         sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR;
-
+        
         // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/08-compiling.html
-
+        
+        std::array<slang::CompilerOptionEntry, 4> options;
+        
         switch (target)
         {
         case GraphicsAPI::VULKAN:
         case GraphicsAPI::METAL:
             {
-                std::array<slang::CompilerOptionEntry, 4> options =
+                options[0] = slang::CompilerOptionEntry
                 {
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::EmitSpirvDirectly,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::VulkanUseEntryPointName,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::MatrixLayoutColumn,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
-                    },
-                    slang::CompilerOptionEntry
-                    {
-                        .name = slang::CompilerOptionName::Optimization,
-                        .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
-                    }
+                    .name = slang::CompilerOptionName::EmitSpirvDirectly,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
                 };
-                
-                sessionDesc.compilerOptionEntries = options.data();
-                sessionDesc.compilerOptionEntryCount = options.size();
+                options[1] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::VulkanUseEntryPointName,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 },
+                };
+                options[2] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::MatrixLayoutColumn,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1 }
+                };
+                options[3] = slang::CompilerOptionEntry
+                {
+                    .name = slang::CompilerOptionName::Optimization,
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                };
                 
                 break;
             }
@@ -549,9 +541,12 @@ namespace HBL2
             HBL2_CORE_FATAL("Unsupported graphics backend!");
             exit(-1);
         }
-
+        
         sessionDesc.targets = &targetDesc;
         sessionDesc.targetCount = 1;
+        
+        sessionDesc.compilerOptionEntries = options.data();
+        sessionDesc.compilerOptionEntryCount = options.size();
         
         Slang::ComPtr<slang::ISession> session;
         if (SLANG_FAILED(g_SLangGlobalSessions[workerIndex]->createSession(sessionDesc, session.writeRef())))
@@ -621,6 +616,12 @@ namespace HBL2
     void ShaderUtilities::LoadBuiltInShaders()
     {
         JobContext ctx;
+
+        ResourceTask<Shader> invalidShaderTask = {};
+        ResourceTask<Shader> unlitShaderTask = {};
+        ResourceTask<Shader> blinnPhongShaderTask = {};
+        ResourceTask<Shader> pbrShaderTask = {};
+
         auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
         // Invalid shader
@@ -631,7 +632,7 @@ namespace HBL2
         });
 
         CreateShaderMetadataFile(invalidShaderAssetHandle, 0);
-        auto* invalidShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(invalidShaderAssetHandle, &ctx);
+        AssetManager::Instance->GetAssetAsync<Shader>(invalidShaderAssetHandle, &invalidShaderTask, &ctx);
 
         // Unlit shader
         auto unlitShaderAssetHandle = editorAssetManager->CreateAsset({
@@ -641,7 +642,7 @@ namespace HBL2
         });
 
         CreateShaderMetadataFile(unlitShaderAssetHandle, 0);
-        auto* unlitShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(unlitShaderAssetHandle, &ctx);
+        AssetManager::Instance->GetAssetAsync<Shader>(unlitShaderAssetHandle, &unlitShaderTask, &ctx);
 
         // Blinn-Phong shader
         auto blinnPhongShaderAssetHandle = editorAssetManager->CreateAsset({
@@ -651,7 +652,7 @@ namespace HBL2
         });
 
         CreateShaderMetadataFile(blinnPhongShaderAssetHandle, 1);
-        auto* blinnPhongShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(blinnPhongShaderAssetHandle, &ctx);
+        AssetManager::Instance->GetAssetAsync<Shader>(blinnPhongShaderAssetHandle, &blinnPhongShaderTask, &ctx);
 
         // PBR shader
         auto pbrShaderAssetHandle = editorAssetManager->CreateAsset({
@@ -661,8 +662,9 @@ namespace HBL2
         });
 
         CreateShaderMetadataFile(pbrShaderAssetHandle, 1);
-        auto* pbrShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(pbrShaderAssetHandle, &ctx);
+        AssetManager::Instance->GetAssetAsync<Shader>(pbrShaderAssetHandle, &pbrShaderTask, &ctx);
 
+        // Cache shader asset handles.
         m_ShaderAssets.push_back(invalidShaderAssetHandle);
         m_ShaderAssets.push_back(unlitShaderAssetHandle);
         m_ShaderAssets.push_back(blinnPhongShaderAssetHandle);
@@ -670,15 +672,11 @@ namespace HBL2
 
         AssetManager::Instance->WaitForAsyncJobs(&ctx);
 
-        m_Shaders[BuiltInShader::INVALID] = invalidShaderTask ? invalidShaderTask->ResourceHandle : Handle<Shader>();
-        m_Shaders[BuiltInShader::UNLIT] = unlitShaderTask ? unlitShaderTask->ResourceHandle : Handle<Shader>();
-        m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderTask ? blinnPhongShaderTask->ResourceHandle : Handle<Shader>();
-        m_Shaders[BuiltInShader::PBR] = pbrShaderTask ? pbrShaderTask->ResourceHandle : Handle<Shader>();
-
-        AssetManager::Instance->ReleaseResourceTask(invalidShaderTask);
-        AssetManager::Instance->ReleaseResourceTask(unlitShaderTask);
-        AssetManager::Instance->ReleaseResourceTask(blinnPhongShaderTask);
-        AssetManager::Instance->ReleaseResourceTask(pbrShaderTask);
+        // Cache shader resource handles.
+        m_Shaders[BuiltInShader::INVALID] = invalidShaderTask.ResourceHandle;
+        m_Shaders[BuiltInShader::UNLIT] = unlitShaderTask.ResourceHandle;
+        m_Shaders[BuiltInShader::BLINN_PHONG] = blinnPhongShaderTask.ResourceHandle;
+        m_Shaders[BuiltInShader::PBR] = pbrShaderTask.ResourceHandle;
     }
 
     void ShaderUtilities::DeleteBuiltInShaders()
@@ -775,7 +773,7 @@ namespace HBL2
 
             for (const auto& b : descriptorSet.bindings)
             {
-                if (b.type == ResourceType::UniformBuffer)
+                if (b.type == ShaderResourceType::UniformBuffer)
                 {
                     out << YAML::Key << b.name.c_str();
                     out << YAML::BeginMap;
@@ -838,7 +836,7 @@ namespace HBL2
 
                     out << YAML::EndMap;
                 }
-                else if (b.type == ResourceType::SampledTexture)
+                else if (b.type == ShaderResourceType::SampledTexture)
                 {
                     out << YAML::Key << b.name.c_str() << YAML::Value << (UUID)0;
                 }
@@ -935,7 +933,7 @@ namespace HBL2
             {
                 YAML::Node out;
 
-                if (b.type == ResourceType::UniformBuffer)
+                if (b.type == ShaderResourceType::UniformBuffer)
                 {
                     for (const auto& m : b.members)
                     {
@@ -997,7 +995,7 @@ namespace HBL2
                         }
                     }
                 }
-                else if (b.type == ResourceType::SampledTexture)
+                else if (b.type == ShaderResourceType::SampledTexture)
                 {
                     Handle<Asset> textureAssetHandle = Handle<Asset>::UnPack(desc.TextureAssets[textureIndex++]);
 
@@ -1142,7 +1140,7 @@ namespace HBL2
 
             for (const auto& b : descriptorSet.bindings)
             {
-                if (b.type == ResourceType::UniformBuffer)
+                if (b.type == ShaderResourceType::UniformBuffer)
                 {
                     const std::vector<uint8_t>& uniformBufferBytes = desc.Buffers[bufferIndex++];
 
@@ -1215,7 +1213,7 @@ namespace HBL2
 
                     out << YAML::EndMap;
                 }
-                else if (b.type == ResourceType::SampledTexture)
+                else if (b.type == ShaderResourceType::SampledTexture)
                 {
                     Handle<Asset> textureAssetHandle = Handle<Asset>::UnPack(desc.TextureAssets[textureIndex++]);
 

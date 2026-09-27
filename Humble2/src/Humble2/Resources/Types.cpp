@@ -30,11 +30,11 @@ namespace HBL2
 		Meshes.clear();
 		DebugName = desc.debugName;
 
-		uint32_t* indeces = (uint32_t*)desc.indeces.Data();
-		uint32_t indecesCount = uint32_t(desc.indeces.Size());
+		uint32_t* indeces = (uint32_t*)desc.indeces.data();
+		uint32_t indecesCount = uint32_t(desc.indeces.size());
 
-		float* vertices = (float*)desc.vertices.Data();
-		uint32_t verticesCount = uint32_t(desc.vertices.Size());
+		float* vertices = (float*)desc.vertices.data();
+		uint32_t verticesCount = uint32_t(desc.vertices.size());
 
 		Handle<Buffer> indexBufferHandle = ResourceManager::Instance->CreateBuffer({
 			.debugName = "terrain-index-buffer",
@@ -114,7 +114,7 @@ namespace HBL2
 		MaterialBindGroup = desc.materialBindGroup;
 	}
 
-	void Material::SetGlobalShaderBuffer(uint32_t index, void* userData)
+	void Material::SetGlobalShaderBuffer(uint32_t index, void* userData) const
 	{
 		Handle<BindGroup> shaderBindGroup = ResourceManager::Instance->GetShaderGlobalBindGroup(Shader);
 		ResourceManager::Instance->SetBufferData(shaderBindGroup, index, userData);
@@ -127,14 +127,20 @@ namespace HBL2
 		});
 	}
 
-	void Material::SetBuffer(uint32_t index, void* userData)
+	void Material::SetBuffer(uint32_t index, void* userData) const
 	{
-		ResourceManager::Instance->SetBufferData(MaterialBindGroup, index, userData);
+		ResourceManager::Instance->SetBufferData(MaterialBindGroup.Get(), index, userData);
 
 		// Submit to render thread, to avoid modifying the data while the render thread renders the previous frame.
 		Renderer::Instance->Submit([this, index]()
 		{
-			ResourceManager::Instance->MapBufferData(MaterialBindGroup, index);
+			ResourceManager::Instance->MapBufferData(MaterialBindGroup.Get(), index);
 		});
+	}
+
+	void Material::Destroy()
+	{
+		DrawBindGroup.Release();
+		MaterialBindGroup.Release();
 	}
 }

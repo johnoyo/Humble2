@@ -53,6 +53,9 @@ namespace HBL2
             m_HotData = (THot*)m_PoolArena.Alloc(sizeof(THot) * m_Size, alignof(THot));
             m_ColdData = (TCold*)m_PoolArena.Alloc(sizeof(TCold) * m_Size, alignof(TCold));
 
+            std::memset(m_HotData, 0, sizeof(THot) * m_Size);
+            std::memset(m_ColdData, 0, sizeof(TCold) * m_Size);
+
             void* generationalCounterMem = m_PoolArena.Alloc(sizeof(std::atomic<uint16_t>) * m_Size, alignof(std::atomic<uint16_t>));
             m_GenerationalCounter = m_PoolArena.ConstructArray<std::atomic<uint16_t>>(generationalCounterMem, m_Size, 0);
 

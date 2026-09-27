@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Handle.h"
+#include "RefHandle.h"
 #include "Pool.h"
 #include "Types.h"
 #include "TypeDescriptors.h"
@@ -23,7 +24,7 @@ namespace HBL2
 		uint32_t Textures = 128;
 		uint32_t Buffers = 512;
 		uint32_t Shaders = 64;
-		uint32_t BindGroups = 64;
+		uint32_t BindGroups = 128;
 		uint32_t BindGroupLayouts = 32;
 		uint32_t RenderPass = 64;
 		uint32_t RenderPassLayouts = 32;
@@ -33,6 +34,28 @@ namespace HBL2
 		uint32_t Scripts = 32;
 		uint32_t Sounds = 32;
 		uint32_t Prefabs = 64;
+		uint32_t ReimportDependencies = 1024;
+	};
+
+	struct ReimportDependency
+	{
+		struct Description
+		{
+			uint32_t PackedResource = 0;
+			ResourceType ResourceType = ResourceType::None;
+		};
+
+		Description Resource;
+		Description Dependent;
+
+		void Invalidate()
+		{
+			Resource.PackedResource = 0;
+			Resource.ResourceType = ResourceType::None;
+
+			Dependent.PackedResource = 0;
+			Dependent.ResourceType = ResourceType::None;
+		}
 	};
 
 	class HBL2_API ResourceManager
@@ -42,6 +65,45 @@ namespace HBL2
 
 		ResourceManager() = default;
 		virtual ~ResourceManager() = default;
+
+		template<typename TResource, typename TDependent>
+		Handle<ReimportDependency> AddReimportDependency(Handle<TResource> resourceHandle, Handle<TDependent> dependentHandle)
+		{
+			return m_ReimportDependenciesPool.Insert(ReimportDependency{
+				{ resourceHandle.Pack(), GetResourceType<TResource>() },
+				{ dependentHandle.Pack(), GetResourceType<TDependent>() }
+			});
+		}
+		void RemoveReimportDependency(Handle<ReimportDependency> handle)
+		{
+			ReimportDependency* dep = m_ReimportDependenciesPool.Get(handle);
+			if (dep != nullptr)
+			{
+				dep->Invalidate();
+			}
+
+			m_ReimportDependenciesPool.Remove(handle);
+		}
+
+		template<typename T>
+		constexpr ResourceType GetResourceType()
+		{
+			if constexpr (std::same_as<T, Mesh>) return ResourceType::Mesh;
+			if constexpr (std::same_as<T, Material>) return ResourceType::Material;
+			if constexpr (std::same_as<T, Shader>) return ResourceType::Shader;
+			if constexpr (std::same_as<T, Buffer>) return ResourceType::Buffer;
+			if constexpr (std::same_as<T, Texture>) return ResourceType::Texture;
+			if constexpr (std::same_as<T, Prefab>) return ResourceType::Prefab;
+			if constexpr (std::same_as<T, Script>) return ResourceType::Script;
+			if constexpr (std::same_as<T, Sound>) return ResourceType::Sound;
+			if constexpr (std::same_as<T, Scene>) return ResourceType::Scene;
+			if constexpr (std::same_as<T, BindGroup>) return ResourceType::BindGroup;
+			if constexpr (std::same_as<T, BindGroupLayout>) return ResourceType::BindGroupLayout;
+			if constexpr (std::same_as<T, RenderPass>) return ResourceType::RenderPass;
+			if constexpr (std::same_as<T, RenderPassLayout>) return ResourceType::RenderPassLayout;
+
+			return ResourceType::None;
+		}
 
 		const ResourceManagerSpecification& GetSpec() const;
 		ResourceDeletionQueue& GetDeletionQueue();
@@ -54,10 +116,11 @@ namespace HBL2
 
 		// Textures
 		virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) = 0;
+		virtual void ReimportTexture(Handle<Texture> handle, const TextureDescriptor&& desc) = 0;
 		virtual void DeleteTexture(Handle<Texture> handle) = 0;
 		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) = 0;
 		virtual void ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc) = 0;
-		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, ResourceState currentState, ResourceState newState) = 0;
+		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout) = 0;
 		virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) = 0;
 		virtual void* GetTextureData(Handle<Texture> handle) = 0;
 
@@ -84,13 +147,13 @@ namespace HBL2
 		virtual void DeleteBindGroup(Handle<BindGroup> handle) = 0;
 		virtual void UpdateBindGroup(Handle<BindGroup> handle) = 0;
 		virtual uint64_t GetBindGroupHash(Handle<BindGroup> handle) = 0;
-		uint64_t GetBindGroupHash(const BindGroupDescriptor&& desc);
+		uint64_t GetBindGroupHash(const BindGroupDescriptor& desc);
 
 		// BindGroupLayouts
 		virtual Handle<BindGroupLayout> CreateBindGroupLayout(const BindGroupLayoutDescriptor&& desc) = 0;
 		virtual void DeleteBindGroupLayout(Handle<BindGroupLayout> handle) = 0;
 		virtual uint64_t GetBindGroupLayoutHash(Handle<BindGroupLayout> handle) = 0;
-		uint64_t GetBindGroupLayoutHash(const BindGroupLayoutDescriptor&& desc);
+		uint64_t GetBindGroupLayoutHash(const BindGroupLayoutDescriptor& desc);
 
 		// RenderPass
 		virtual Handle<RenderPass> CreateRenderPass(const RenderPassDescriptor&& desc) = 0;
@@ -135,6 +198,9 @@ namespace HBL2
 		void DeletePrefab(Handle<Prefab> handle);
 		Prefab* GetPrefab(Handle<Prefab> handle) const;
 
+		virtual void Acquire(uint32_t packedHandle, ResourceType resourceType) = 0;
+		virtual void Release(uint32_t packedHandle, ResourceType resourceType) = 0;
+
 	protected:
 		void InternalInitialize();
 		void HashCombine(uint64_t& hash, uint64_t value);
@@ -148,5 +214,7 @@ namespace HBL2
 		Pool<Script, Script> m_ScriptPool;
 		Pool<Sound, Sound> m_SoundPool;
 		Pool<Prefab, Prefab> m_PrefabPool;
+
+		Pool<ReimportDependency, ReimportDependency> m_ReimportDependenciesPool;
 	};
 }

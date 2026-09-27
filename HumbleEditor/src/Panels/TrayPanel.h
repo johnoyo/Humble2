@@ -25,5 +25,7 @@ namespace HBL2::Editor
 		std::vector<std::string> m_UserSystemNames;
 		std::vector<std::string> m_UserComponentNames;
 		std::unordered_map<std::string, std::unordered_map<Entity, std::vector<std::byte>>> m_SerializedUserComponents;
+        
+        bool m_ShowBackgroungJobsList = false;
 	};
 }

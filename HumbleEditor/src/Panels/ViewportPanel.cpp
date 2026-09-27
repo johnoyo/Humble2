@@ -35,6 +35,15 @@ namespace HBL2::Editor
 		Context::ViewportPosition = { ImGui::GetWindowPos().x, ImGui::GetWindowPos().y };
 
 		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+        
+        ctx->Filter<Component::EditorCamera, HBL2::Component::Camera>()
+            .ForEach([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera)
+            {
+                if (editorCamera.Enabled)
+                {
+                    editorCamera.EnableInput = ImGui::IsWindowHovered();
+                }
+            });
 
 		if (m_Owner->m_ViewportSize != *(glm::vec2*)&viewportPanelSize)
 		{

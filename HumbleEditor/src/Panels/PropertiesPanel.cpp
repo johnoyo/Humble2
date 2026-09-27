@@ -4,6 +4,8 @@
 #include "ImGui/ImGuiRenderer.h"
 #include "Systems/EditorPanelSystem.h"
 
+#include "Platform/PlatformManager.h"
+
 #include "UI/UserInterfaceUtilities.h"
 
 #include "Inspectors/LinkEditor.h"
@@ -263,7 +265,7 @@ namespace HBL2::Editor
 
 			DrawComponent<HBL2::Component::Sprite>("Sprite", activeScene, [this](HBL2::Component::Sprite& sprite)
 			{
-				uint32_t materialHandle = sprite.Material.Pack();
+				uint32_t materialHandle = sprite.Material.Get().Pack();
 
 				ImGui::Checkbox("Enabled", &sprite.Enabled);
 
@@ -286,8 +288,8 @@ namespace HBL2::Editor
 
 			DrawComponent<HBL2::Component::StaticMesh>("StaticMesh", activeScene, [this](HBL2::Component::StaticMesh& mesh)
 			{
-				uint32_t meshHandle = mesh.Mesh.Pack();
-				uint32_t materialHandle = mesh.Material.Pack();
+				uint32_t meshHandle = mesh.Mesh.Get().Pack();
+				uint32_t materialHandle = mesh.Material.Get().Pack();
 
 				ImGui::Checkbox("Enabled", &mesh.Enabled);
 				ImGui::InputScalar("Mesh", ImGuiDataType_U32, (void*)(intptr_t*)&meshHandle);
@@ -376,7 +378,7 @@ namespace HBL2::Editor
 			{
 				ImGui::Checkbox("Enabled", &skyLight.Enabled);
 
-				uint32_t textureHandle = skyLight.EquirectangularMap.Pack();
+				uint32_t textureHandle = skyLight.EquirectangularMap.Get().Pack();
 
 				ImGui::InputScalar("Equirectangular Map", ImGuiDataType_U32, (void*)(intptr_t*)&textureHandle);
 
@@ -610,7 +612,7 @@ namespace HBL2::Editor
 
 				if (t.NormaliseMode == HBL2::Component::Terrain::ENormaliseMode::LOCAL)
 				{
-					uint32_t textureHandle = t.HeightMap.Pack();
+					uint32_t textureHandle = t.HeightMap.Get().Pack();
 
 					ImGui::InputScalar("Height Map", ImGuiDataType_U32, (void*)(intptr_t*)&textureHandle);
 
@@ -658,7 +660,7 @@ namespace HBL2::Editor
 				ImGui::DragFloat("NoiseScale", &t.NoiseScale);
 				ImGui::DragFloat2("Offset", glm::value_ptr(t.Offset));
 
-				uint32_t materialHandle = t.Material.Pack();
+				uint32_t materialHandle = t.Material.Get().Pack();
 
 				ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
 
@@ -733,7 +735,7 @@ namespace HBL2::Editor
 								t.DetailLevels.push_back({
 									.Lod = nextLod,
 									.VisibleDstThreshold = nextDistance,
-									});
+								});
 
 								changed = true;
 							}
@@ -753,9 +755,9 @@ namespace HBL2::Editor
 						if (changed)
 						{
 							std::sort(t.DetailLevels.begin(), t.DetailLevels.end(), [](const auto& a, const auto& b)
-								{
-									return a.VisibleDstThreshold < b.VisibleDstThreshold;
-								});
+							{
+								return a.VisibleDstThreshold < b.VisibleDstThreshold;
+							});
 
 							// Clamp LODs and enforce non-decreasing distances.
 							for (uint32_t i = 0; i < t.DetailLevels.size(); ++i)
@@ -888,6 +890,7 @@ namespace HBL2::Editor
 			{
 				auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 				Asset* asset = AssetManager::Instance->GetAssetMetadata(m_Owner->m_SelectedAsset);
+				bool useDefaultSaveButton = true;
 
 				if (asset == nullptr)
 				{
@@ -900,14 +903,262 @@ namespace HBL2::Editor
 
 				ImGui::NewLine();
 
+				m_PinAsset = asset->Pinned;
+				if (ImGui::Checkbox("Pinned", &m_PinAsset))
+				{
+					if (m_PinAsset)
+					{
+						AssetManager::Instance->PinAsset(m_Owner->m_SelectedAsset);
+					}
+					else
+					{
+						AssetManager::Instance->UnpinAsset(m_Owner->m_SelectedAsset);
+					}
+				}
+
+				ImGui::NewLine();
+
 				switch (asset->Type)
 				{
 				case AssetType::Texture:
 				{
-					static bool flip = false;
-					if (ImGui::Checkbox("Flip", &flip))
+					useDefaultSaveButton = false;
+
+					// If selected texture changed update settings and reset flags.
+					if (m_Owner->m_SelectedAsset != m_PreviouslySelectedAsset)
 					{
-						TextureUtilities::Get().UpdateAssetMetadataFile(m_Owner->m_SelectedAsset, flip);
+						m_ReimportTexture = false;
+						m_UpdateTexture = false;
+
+						m_TextureSettings = TextureUtilities::Get().DeserializeAssetMetadataFile(m_Owner->m_SelectedAsset);
+					}
+
+					bool dirty = false;
+
+					if (ImGui::Checkbox("Flip", &m_TextureSettings.Flip))
+					{
+						dirty = true;
+						m_UpdateTexture = true;
+					}
+
+					ImGui::Text("Compression");
+					const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_AllowOverlap;
+
+					const char* platforms[] = { "Windows", "Mac", "Linux", "Web" };
+
+					for (int i = 0; i < IM_ARRAYSIZE(platforms); i++)
+					{
+						Platform platform = (Platform)i;
+
+						ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+						bool opened = ImGui::TreeNodeEx((void*)(133769420690 + i), treeNodeFlags, platforms[i]);
+						ImGui::PopStyleVar();
+
+						if (opened)
+						{
+							// Encoder.
+							{
+								StaticDArray<const char*, 3> compressionMethods;
+								auto supportedCompressionMethods = PlatformManager::Instance->GetSupportedCompressionMethods(platform);
+
+								if (supportedCompressionMethods.IsSet(CompressionMethod::NONE))
+								{
+									compressionMethods.push_back("None");
+								}
+
+								if (supportedCompressionMethods.IsSet(CompressionMethod::BASISU))
+								{
+									compressionMethods.push_back("BasisU");
+								}
+
+								if (supportedCompressionMethods.IsSet(CompressionMethod::ASTC))
+								{
+									compressionMethods.push_back("Astc");
+								}
+
+								if (ImGui::Combo("Method", (int*)&m_TextureSettings.PlatformCompressionMethod[i], compressionMethods.data(), compressionMethods.size()))
+								{
+									dirty = true;
+									m_ReimportTexture = true;
+								}
+							}
+
+							// Format.
+							{
+								if (m_TextureSettings.PlatformCompressionMethod[i] == CompressionMethod::BASISU)
+								{
+									StaticDArray<Format, 5> transcodingFormats;
+									StaticDArray<const char*, 5> transcodingFormatLabels;
+
+									auto supportedTranscodingFormats = PlatformManager::Instance->GetSupportedTranscodingFormats(platform);
+
+									if (supportedTranscodingFormats.IsSet(Format::BC1_RGB_SRGB))
+									{
+										transcodingFormats.push_back(Format::BC1_RGB_SRGB);
+										transcodingFormatLabels.push_back("BC1_RGB");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::BC3_SRGB))
+									{
+										transcodingFormats.push_back(Format::BC3_SRGB);
+										transcodingFormatLabels.push_back("BC3");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::BC7_SRGB))
+									{
+										transcodingFormats.push_back(Format::BC7_SRGB);
+										transcodingFormatLabels.push_back("BC7");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::BC6H_UF))
+									{
+										transcodingFormats.push_back(Format::BC6H_UF);
+										transcodingFormatLabels.push_back("BC6H");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_4x4_SRGB))
+									{
+										transcodingFormats.push_back(Format::ASTC_4x4_SRGB);
+										transcodingFormatLabels.push_back("ASTC_4x4");
+									}
+
+									bool newFormatSet = false;
+									m_CurrentCompressionFormatItem[i] = 0;
+
+									for (int j = 0; j < transcodingFormats.size(); j++)
+									{
+										if (transcodingFormats[j] == m_TextureSettings.PlatformCompressionFormat[i])
+										{
+											m_CurrentCompressionFormatItem[i] = j;
+											newFormatSet = true;
+											break;
+										}
+									}
+
+									m_TextureSettings.PlatformCompressionFormat[i] = transcodingFormats[m_CurrentCompressionFormatItem[i]];
+
+									if (!newFormatSet)
+									{
+										dirty = true;
+										m_ReimportTexture = true;
+									}
+
+									if (ImGui::Combo("Format", &m_CurrentCompressionFormatItem[i], transcodingFormatLabels.data(), transcodingFormatLabels.size()))
+									{
+										dirty = true;
+										m_ReimportTexture = true;
+										m_TextureSettings.PlatformCompressionFormat[i] = transcodingFormats[m_CurrentCompressionFormatItem[i]];
+									}
+								}
+								else if (m_TextureSettings.PlatformCompressionMethod[i] == CompressionMethod::ASTC)
+								{
+									StaticDArray<Format, 6> astcFormats;
+									StaticDArray<const char*, 6> astcFormatLabels;
+
+									auto supportedTranscodingFormats = PlatformManager::Instance->GetSupportedCompressionFormats(platform);
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_4x4_SRGB))
+									{
+										astcFormats.push_back(Format::ASTC_4x4_SRGB);
+										astcFormatLabels.push_back("ASTC_4x4");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_5x5_SRGB))
+									{
+										astcFormats.push_back(Format::ASTC_5x5_SRGB);
+										astcFormatLabels.push_back("ASTC_5x5");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_6x6_SRGB))
+									{
+										astcFormats.push_back(Format::ASTC_6x6_SRGB);
+										astcFormatLabels.push_back("ASTC_6x6");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_8x8_SRGB))
+									{
+										astcFormats.push_back(Format::ASTC_8x8_SRGB);
+										astcFormatLabels.push_back("ASTC_8x8");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_10x10_SRGB))
+									{
+										astcFormats.push_back(Format::ASTC_10x10_SRGB);
+										astcFormatLabels.push_back("ASTC_10x10");
+									}
+
+									if (supportedTranscodingFormats.IsSet(Format::ASTC_12x12_SRGB))
+									{
+										astcFormats.push_back(Format::ASTC_12x12_SRGB);
+										astcFormatLabels.push_back("ASTC_12x12");
+									}
+
+									bool newFormatSet = false;
+									m_CurrentCompressionFormatItem[i] = 0;
+
+									for (int j = 0; j < astcFormats.size(); j++)
+									{
+										if (astcFormats[j] == m_TextureSettings.PlatformCompressionFormat[i])
+										{
+											m_CurrentCompressionFormatItem[i] = j;
+											newFormatSet = true;
+											break;
+										}
+									}
+
+									m_TextureSettings.PlatformCompressionFormat[i] = astcFormats[m_CurrentCompressionFormatItem[i]];
+
+									if (!newFormatSet)
+									{
+										dirty = true;
+										m_ReimportTexture = true;
+									}
+
+									if (ImGui::Combo("Format", &m_CurrentCompressionFormatItem[i], astcFormatLabels.data(), astcFormatLabels.size()))
+									{
+										dirty = true;
+										m_ReimportTexture = true;
+										m_TextureSettings.PlatformCompressionFormat[i] = astcFormats[m_CurrentCompressionFormatItem[i]];
+									}
+								}
+							}
+
+							// Quality level.
+							{
+								if (m_TextureSettings.PlatformCompressionMethod[i] != CompressionMethod::NONE)
+								{
+									const char* options[] = { "Fastest", "Fast", "Medium", "Thorough", "Exhuastive"};
+
+									if (ImGui::Combo("Quality Level", (int*)&m_TextureSettings.PlatformCompressionQuality[i], options, IM_ARRAYSIZE(options)))
+									{
+										dirty = true;
+										m_UpdateTexture = true;
+									}
+								}
+							}
+
+							ImGui::TreePop();
+						}
+					}
+
+					if (dirty)
+					{
+						TextureUtilities::Get().SerializeAssetMetadataFile(m_Owner->m_SelectedAsset, m_TextureSettings);
+					}
+
+					if (ImGui::Button("Save"))
+					{
+						if (m_ReimportTexture)
+						{
+							editorAssetManager->ReloadAssetAsync<Texture>(m_Owner->m_SelectedAsset);
+						}
+						else if (m_UpdateTexture)
+						{
+							editorAssetManager->SaveAssetAsync(m_Owner->m_SelectedAsset);
+						}
+
+						m_ReimportTexture = false;
+						m_UpdateTexture = false;
 					}
 				}
 				break;
@@ -918,9 +1169,9 @@ namespace HBL2::Editor
 						m_ShaderNeedsReimport = true;
 					}
 
-					if (m_ShaderTask != nullptr)
+					if (m_ShaderTask.ResourceHandle.IsValid())
 					{
-						if (!m_ShaderTask->Finished())
+						if (!m_ShaderTask.Finished())
 						{
 							ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 							ImGui::Text("Loading shader asset...");
@@ -928,16 +1179,23 @@ namespace HBL2::Editor
 							break;
 						}
 
-						AssetManager::Instance->ReleaseResourceTask(m_ShaderTask);
-						m_ShaderTask = nullptr;
+						m_ShaderTask.ResourceHandle = {};
 					}
 
-					if (m_ShaderTask == nullptr)
+					if (!m_ShaderTask.ResourceHandle.IsValid())
 					{
-						m_ShaderTask = AssetManager::Instance->GetAssetAsync<Shader>(m_Owner->m_SelectedAsset);
+						AssetManager::Instance->GetAssetAsync<Shader>(m_Owner->m_SelectedAsset, &m_ShaderTask);
 					}
 
-					if (m_ShaderTask == nullptr)
+					if (!m_ShaderTask.Finished())
+					{
+						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
+						ImGui::Text("Loading shader asset...");
+						ImGui::PopStyleColor();
+						break;
+					}
+
+					if (!m_ShaderTask.ResourceHandle.IsValid())
 					{
 						HBL2_CORE_ERROR("Failed to load shader asset!");
 						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
@@ -946,18 +1204,8 @@ namespace HBL2::Editor
 						break;
 					}
 
-					if (!m_ShaderTask->Finished())
-					{
-						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
-						ImGui::Text("Loading shader asset...");
-						ImGui::PopStyleColor();
-						break;
-					}
-
-					Handle<Shader> handle = m_ShaderTask->ResourceHandle;
-
-					AssetManager::Instance->ReleaseResourceTask(m_ShaderTask);
-					m_ShaderTask = nullptr;
+					Handle<Shader> handle = m_ShaderTask.ResourceHandle;
+					m_ShaderTask.ResourceHandle = {};
 
 					static bool shaderNeedsReimport = false;
 					static bool shaderBindGroupNeedsReimport = false;
@@ -985,7 +1233,7 @@ namespace HBL2::Editor
 							{
 								data.clear();
 							}
-							std::memset(m_ShaderUniformTextureData.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.Size());
+							std::memset(m_ShaderUniformTextureData.data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.size());
 
 							// Open shader metadata file.
 							std::ifstream stream(shaderPath.string() + ".hblshader");
@@ -1025,7 +1273,7 @@ namespace HBL2::Editor
 
 											for (const auto& b : descriptorSet.bindings)
 											{
-												if (b.type == ResourceType::UniformBuffer)
+												if (b.type == ShaderResourceType::UniformBuffer)
 												{
 													auto& uniformBufferBytes = m_ShaderUniformBufferData[m_ShaderUniformBufferSize++];
 													uniformBufferBytes.clear();
@@ -1132,7 +1380,7 @@ namespace HBL2::Editor
 														}
 													}
 												}
-												else if (b.type == ResourceType::SampledTexture)
+												else if (b.type == ShaderResourceType::SampledTexture)
 												{
 													const auto& textureProp = shaderProperties["BindGroup"][bindingIndex];
 
@@ -1176,7 +1424,7 @@ namespace HBL2::Editor
 
 							for (const auto& b : descriptorSet.bindings)
 							{
-								if (b.type == ResourceType::UniformBuffer)
+								if (b.type == ShaderResourceType::UniformBuffer)
 								{
 									auto& uniformBufferBytes = m_ShaderUniformBufferData[m_ShaderUniformBufferSize];
 
@@ -1322,25 +1570,17 @@ namespace HBL2::Editor
 
 									m_ShaderUniformBufferSize++;
 								}
-								else if (b.type == ResourceType::SampledTexture)
+								else if (b.type == ShaderResourceType::SampledTexture)
 								{
 									auto& userMapHandlePacked = m_ShaderUniformTextureData[m_ShaderUniformTextureSize++];
 
 									ImGui::InputScalar(b.name.c_str(), ImGuiDataType_U32, (void*)(intptr_t*)&userMapHandlePacked);
 
 									Handle<Asset> userMapAssetHandle = Handle<Asset>::UnPack(userMapHandlePacked);
-									AssetManager::Instance->GetAsset<Texture>(userMapAssetHandle);
 
 									if (!shaderBindGroupNeedsReimport && !AssetManager::Instance->IsAssetLoaded(userMapAssetHandle))
 									{
-										auto* task = AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_MaterialTextureLoadingCtx);
-										if (task != nullptr)
-										{
-											task->Then([task](auto handle)
-											{
-												AssetManager::Instance->ReleaseResourceTask(task);
-											});
-										}
+										AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_ShaderTextureLoadingCtx);
 									}
 
 									if (ImGui::BeginDragDropTarget())
@@ -1355,14 +1595,7 @@ namespace HBL2::Editor
 												TextureUtilities::Get().CreateAssetMetadataFile(userMapAssetHandle);
 											}
 
-											auto* task = AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_ShaderTextureLoadingCtx);
-											if (task != nullptr)
-											{
-												task->ThenOnMainThread([task](auto handle)
-												{
-													AssetManager::Instance->ReleaseResourceTask(task);
-												});
-											}
+											AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_ShaderTextureLoadingCtx);
 
 											shaderBindGroupNeedsReimport = true;
 										}
@@ -1379,8 +1612,8 @@ namespace HBL2::Editor
 							{
 								ShaderUtilities::Get().UpdateShaderBindGroupResourcesAssetFile(m_Owner->m_SelectedAsset, {
 									.ReflectionData = &m_ShaderReflectionData,
-                                    .Buffers = { m_ShaderUniformBufferData.Data(), m_ShaderUniformBufferData.Size() },
-                                    .TextureAssets = { m_ShaderUniformTextureData.Data(), m_ShaderUniformTextureData.Size() },
+                                    .Buffers = { m_ShaderUniformBufferData.data(), m_ShaderUniformBufferData.size() },
+                                    .TextureAssets = { m_ShaderUniformTextureData.data(), m_ShaderUniformTextureData.size() },
 								});
 
 								shaderNeedsReimport = false;
@@ -1388,7 +1621,7 @@ namespace HBL2::Editor
 
 							if (shaderBindGroupNeedsReimport)
 							{
-								m_ShaderTask = editorAssetManager->ReloadAssetAsync<Shader>(m_Owner->m_SelectedAsset);
+								editorAssetManager->ReloadAssetAsync<Shader>(m_Owner->m_SelectedAsset, &m_ShaderTask);
 								shaderBindGroupNeedsReimport = false;
 							}
 						}
@@ -1410,9 +1643,9 @@ namespace HBL2::Editor
 						m_MaterialShaderReflectionStarted = false;
 					}
 
-					if (m_MaterialTask != nullptr)
+					if (m_MaterialTask.ResourceHandle.IsValid())
 					{
-						if (!m_MaterialTask->Finished())
+						if (!m_MaterialTask.Finished())
 						{
 							ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
 							ImGui::Text("Loading material asset...");
@@ -1420,16 +1653,23 @@ namespace HBL2::Editor
 							break;
 						}
 
-						AssetManager::Instance->ReleaseResourceTask(m_MaterialTask);
-						m_MaterialTask = nullptr;
+						m_MaterialTask.ResourceHandle = {};
 					}
 
-					if (m_MaterialTask == nullptr)
+					if (!m_MaterialTask.ResourceHandle.IsValid())
 					{
-						m_MaterialTask = AssetManager::Instance->GetAssetAsync<Material>(m_Owner->m_SelectedAsset);
+						AssetManager::Instance->GetAssetAsync<Material>(m_Owner->m_SelectedAsset, &m_MaterialTask);
 					}
 
-					if (m_MaterialTask == nullptr)
+					if (!m_MaterialTask.Finished())
+					{
+						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
+						ImGui::Text("Loading material asset...");
+						ImGui::PopStyleColor();
+						break;
+					}
+
+					if (!m_MaterialTask.ResourceHandle.IsValid())
 					{
 						HBL2_CORE_ERROR("Failed to load material asset!");
 						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
@@ -1438,18 +1678,8 @@ namespace HBL2::Editor
 						break;
 					}
 
-					if (!m_MaterialTask->Finished())
-					{
-						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 1.0f, 0.0f, 1.0f });
-						ImGui::Text("Loading material asset...");
-						ImGui::PopStyleColor();
-						break;
-					}
-
-					Material* mat = ResourceManager::Instance->GetMaterial(m_MaterialTask->ResourceHandle);
-
-					AssetManager::Instance->ReleaseResourceTask(m_MaterialTask);
-					m_MaterialTask = nullptr;
+					Material* mat = ResourceManager::Instance->GetMaterial(m_MaterialTask.ResourceHandle);
+					m_MaterialTask.ResourceHandle = {};
 
 					if (mat == nullptr)
 					{
@@ -1694,7 +1924,7 @@ namespace HBL2::Editor
 										{
 											data.clear();
 										}
-										std::memset(m_ShaderUniformTextureData.Data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.Size());
+										std::memset(m_ShaderUniformTextureData.data(), 0, sizeof(uint32_t) * m_ShaderUniformTextureData.size());
 
 										// Get the shader path of the material in order to reflect on it.
 										UUID shaderUUID = materialProperties["Shader"].as<UUID>();
@@ -1728,7 +1958,7 @@ namespace HBL2::Editor
 
 											for (const auto& b : descriptorSet.bindings)
 											{
-												if (b.type == ResourceType::UniformBuffer)
+												if (b.type == ShaderResourceType::UniformBuffer)
 												{
 													auto& uniformBufferBytes = m_ShaderUniformBufferData[m_ShaderUniformBufferSize++];
 													uniformBufferBytes.resize(b.size);
@@ -1834,7 +2064,7 @@ namespace HBL2::Editor
 														}
 													}
 												}
-												else if (b.type == ResourceType::SampledTexture)
+												else if (b.type == ShaderResourceType::SampledTexture)
 												{
 													const auto& textureProp = materialProperties[b.name];
 
@@ -1872,7 +2102,7 @@ namespace HBL2::Editor
 
 							for (const auto& b : descriptorSet.bindings)
 							{
-								if (b.type == ResourceType::UniformBuffer)
+								if (b.type == ShaderResourceType::UniformBuffer)
 								{
 									auto& uniformBufferBytes = m_ShaderUniformBufferData[m_ShaderUniformBufferSize];
 
@@ -2015,7 +2245,7 @@ namespace HBL2::Editor
 
 									m_ShaderUniformBufferSize++;
 								}
-								else if (b.type == ResourceType::SampledTexture)
+								else if (b.type == ShaderResourceType::SampledTexture)
 								{
 									auto& userMapHandlePacked = m_ShaderUniformTextureData[m_ShaderUniformTextureSize++];
 
@@ -2025,14 +2255,7 @@ namespace HBL2::Editor
 
 									if (!m_MaterialBindGroupNeedsReimport && !AssetManager::Instance->IsAssetLoaded(userMapAssetHandle))
 									{
-										auto* task = AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_MaterialTextureLoadingCtx);
-										if (task != nullptr)
-										{
-											task->Then([task](auto handle)
-											{
-												AssetManager::Instance->ReleaseResourceTask(task);
-											});
-										}
+										AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_MaterialTextureLoadingCtx);
 									}
 
 									if (ImGui::BeginDragDropTarget())
@@ -2047,14 +2270,7 @@ namespace HBL2::Editor
 												TextureUtilities::Get().CreateAssetMetadataFile(userMapAssetHandle);
 											}
 
-											auto* task = AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_MaterialTextureLoadingCtx);
-											if (task != nullptr)
-											{
-												task->Then([task](auto handle)
-												{
-													AssetManager::Instance->ReleaseResourceTask(task);
-												});
-											}
+											AssetManager::Instance->GetAssetAsync<Texture>(userMapAssetHandle, &m_MaterialTextureLoadingCtx);
 
 											m_MaterialBindGroupNeedsReimport = true;
 										}
@@ -2073,8 +2289,8 @@ namespace HBL2::Editor
 									.ShaderAssetHandle = shaderAssetHandle,
 									.VariantHash = mat->VariantHash,
 									.ReflectionData = &m_ShaderReflectionData,
-                                    .Buffers = { m_ShaderUniformBufferData.Data(), m_ShaderUniformBufferData.Size() },
-                                    .TextureAssets = { m_ShaderUniformTextureData.Data(), m_ShaderUniformTextureData.Size() },
+                                    .Buffers = { m_ShaderUniformBufferData.data(), m_ShaderUniformBufferData.size() },
+                                    .TextureAssets = { m_ShaderUniformTextureData.data(), m_ShaderUniformTextureData.size() },
 								});
 
 								m_MaterialNeedsReimport = false;
@@ -2082,7 +2298,7 @@ namespace HBL2::Editor
 
 							if (m_MaterialBindGroupNeedsReimport)
 							{
-								m_MaterialTask = editorAssetManager->ReloadAssetAsync<Material>(m_Owner->m_SelectedAsset);
+								editorAssetManager->ReloadAssetAsync<Material>(m_Owner->m_SelectedAsset, &m_MaterialTask);
 								m_MaterialBindGroupNeedsReimport = false;
 							}
 						}
@@ -2135,7 +2351,7 @@ namespace HBL2::Editor
 					SceneDescriptor& desc = scene->GetDescriptor();
 
 					bool dirty = false;
-					dirty |= ImGui::InputInt("MaxEntities", (int*)&desc.maxEntities, 4096);
+					dirty |= ImGui::InputInt("MaxEntities", (int*)&desc.maxEntities, 4096, 4096);
 					dirty |= ImGui::InputInt("MaxComponents", (int*)&desc.maxComponents);
 					dirty |= ImGui::InputInt("MaxSystems", (int*)&desc.maxSystems);
 					dirty |= ImGui::InputInt("MaxJobsPerSystem", (int*)&desc.maxJobsPerSystem);
@@ -2173,9 +2389,12 @@ namespace HBL2::Editor
 
 				ImGui::NewLine();
 
-				if (ImGui::Button("Save"))
+				if (useDefaultSaveButton)
 				{
-					editorAssetManager->SaveAsset(m_Owner->m_SelectedAsset);
+					if (ImGui::Button("Save"))
+					{
+						editorAssetManager->SaveAsset(m_Owner->m_SelectedAsset);
+					}
 				}
 
 				m_PreviouslySelectedAsset = m_Owner->m_SelectedAsset;

@@ -40,12 +40,29 @@ namespace HBL2
 
         // NOTE: The '+2' is to accomondate the worker arena of the render and game thread.
         //       We need one for them for seamless behaviour and simple logic.
+        uint64_t jobSystemBytes = ArenaLayout::Create()
+            .Add<Arena>(m_NumThreads + 2)
+            .Add<Arena*>(m_NumThreads + 2)
+            .Add<std::thread>(m_NumThreads)
+            .Add<moodycamel::ConcurrentQueue<std::function<void()>>>(m_NumThreads)
+            .Add<JobSlot>(m_NumThreads + 2)
+            .Total();
 
-        m_Reservation = Allocator::Arena.Reserve("JobSystemPool", (ThreadArenaSize * (m_NumThreads + 2)) + 100_KB);
-        m_JobSystemArena.Initialize(&Allocator::Arena, 100_KB, m_Reservation);
+        uint64_t workerArenasBytes = ArenaLayout::Create()
+            .AddRaw(ThreadArenaSize * (m_NumThreads + 2), alignof(max_align_t))
+            .Total();
 
-        m_WorkerArenas = MakeDArrayResized<Arena*>(m_JobSystemArena, m_NumThreads + 2);
-        m_LocalJobQueues = MakeDArrayResized<moodycamel::ConcurrentQueue<std::function<void()>>>(m_JobSystemArena, m_NumThreads);
+        m_Reservation = Allocator::Arena.Reserve("JobSystemPool", jobSystemBytes + workerArenasBytes);
+        m_JobSystemArena.Initialize(&Allocator::Arena, jobSystemBytes, m_Reservation);
+
+        m_WorkerArenas = FixedArray<Arena*>(&m_JobSystemArena, m_NumThreads + 2);
+        m_WorkerArenas.resize(m_NumThreads + 2);
+
+        m_LocalJobQueues = FixedArray<moodycamel::ConcurrentQueue<std::function<void()>>>(&m_JobSystemArena, m_NumThreads);
+        m_LocalJobQueues.resize(m_NumThreads);
+
+        m_ActiveJobsDebugView = FixedArray<JobSlot>(&m_JobSystemArena, m_NumThreads + 2);
+        m_ActiveJobsDebugView.resize(m_NumThreads + 2);
 
         for (int i = 0; i < m_NumThreads + 2; i++)
         {
@@ -53,17 +70,19 @@ namespace HBL2
             m_WorkerArenas[i]->Initialize(&Allocator::Arena, ThreadArenaSize, m_Reservation);
         }
 
-        m_Workers = MakeDArray<std::thread>(m_JobSystemArena, m_NumThreads);
+        m_Workers = FixedArray<std::thread>(&m_JobSystemArena, m_NumThreads);
 
         for (uint32_t threadID = 0; threadID < m_NumThreads; ++threadID)
         {
-            std::thread& worker = m_Workers.emplace_back([this, threadID] { WorkerThreadFunc(threadID); });
+            m_Workers.emplace_back([this, threadID] { WorkerThreadFunc(threadID); });
+#ifdef _WIN32
+            std::thread& worker = m_Workers.back();
 
             auto handle = worker.native_handle();
 
             // Put threads on increasing cores starting from 3rd.
             int core = threadID + 2;
-#ifdef _WIN32
+            
             // Put each thread on to dedicated core.
             DWORD_PTR affinityMask = 1ull << core;
             DWORD_PTR affinity_result = SetThreadAffinityMask(handle, affinityMask);
@@ -111,12 +130,15 @@ namespace HBL2
 
         auto wrappedJob = [this, job, &ctx]()
         {
-            Device::Instance->SetContext(ContextType::FETCH);
-
+#if !DIST
+            BeginJobSlot(s_WorkerIndex, "Execute Job Active");
+#endif
             job();
 
             GetWorkerArena()->Reset();
-
+#if !DIST
+            EndJobSlot(s_WorkerIndex);
+#endif
             ctx.counter.fetch_sub(1, std::memory_order_release);
         };
 
@@ -138,13 +160,11 @@ namespace HBL2
 
         for (uint32_t i = 0; i < groupCount; ++i)
         {
-            auto task = [=, &ctx]()
+            auto task = [=, this, &ctx]()
             {
-                if (Device::Instance != nullptr)
-                {
-                    Device::Instance->SetContext(ContextType::FETCH);
-                }
-
+#if !DIST
+                BeginJobSlot(s_WorkerIndex, "Dispatch Job Active");
+#endif
                 uint32_t start = i * groupSize;
                 uint32_t end = std::min(start + groupSize, jobCount);
                 for (uint32_t j = start; j < end; ++j)
@@ -153,7 +173,9 @@ namespace HBL2
                 }
 
                 GetWorkerArena()->Reset();
-
+#if !DIST
+                EndJobSlot(s_WorkerIndex);
+#endif
                 ctx.counter.fetch_sub(1, std::memory_order_acq_rel);
             };
 
@@ -218,17 +240,17 @@ namespace HBL2
         return m_WorkerArenas[s_WorkerIndex];
     }
 
-    bool JobSystem::IsMainThread()
+    bool JobSystem::IsMainThread() const
     {
         return std::this_thread::get_id() == m_MainThreadId;
     }
 
-    bool JobSystem::IsRenderThread()
+    bool JobSystem::IsRenderThread() const
     {
         return std::this_thread::get_id() == m_RenderThreadId;
     }
 
-    bool JobSystem::IsWorkerThread()
+    bool JobSystem::IsWorkerThread() const
     {
         return !IsMainThread() && !IsRenderThread();
     }
@@ -272,5 +294,47 @@ namespace HBL2
                 m_WakeCondition.wait(lock);
             }
         }
+    }
+
+    int JobSystem::SnapshotActiveJobs(JobSnapshot* out, int maxOut)
+    {
+        int count = 0;
+        for (uint32_t i = 0; i < m_NumThreads && count < maxOut; i++)
+        {
+            JobSlot& slot = m_ActiveJobsDebugView[i];
+            uint32_t s1, s2;
+            JobSnapshot tmp;
+            do
+            {
+                s1 = slot.seq.load(std::memory_order_acquire);
+                std::memcpy(tmp.name, slot.name, sizeof(tmp.name));
+                s2 = slot.seq.load(std::memory_order_acquire);
+            } while (s1 != s2 || (s1 & 1)); // retry if torn or caught mid-write
+
+            if (slot.active)
+            {
+                out[count++] = tmp;
+            }
+        }
+        return count;
+    }
+
+    void JobSystem::BeginJobSlot(uint32_t workerIndex, const char* jobName)
+    {
+        JobSlot& slot = m_ActiveJobsDebugView[workerIndex];
+        uint32_t s = slot.seq.load(std::memory_order_relaxed);
+        slot.seq.store(s + 1, std::memory_order_release); // enter "writing" (odd)
+        std::strncpy(slot.name, jobName, sizeof(slot.name) - 1);
+        slot.active = true;
+        slot.seq.store(s + 2, std::memory_order_release); // back to "stable" (even)
+    }
+
+    void JobSystem::EndJobSlot(uint32_t workerIndex)
+    {
+        JobSlot& slot = m_ActiveJobsDebugView[workerIndex];
+        uint32_t s = slot.seq.load(std::memory_order_relaxed);
+        slot.seq.store(s + 1, std::memory_order_release);
+        slot.active = false;
+        slot.seq.store(s + 2, std::memory_order_release);
     }
 }

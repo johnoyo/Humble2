@@ -50,6 +50,7 @@ namespace HBL2
             m_PoolArena.Initialize(&Allocator::Arena, bytes, m_Reservation);
 
             m_Data = (T*)m_PoolArena.Alloc(sizeof(T) * m_Size, alignof(T));
+            std::memset(m_Data, 0, sizeof(T) * m_Size);
 
             void* generationalCounterMem = m_PoolArena.Alloc(sizeof(std::atomic<uint16_t>) * m_Size, alignof(std::atomic<uint16_t>));
             m_GenerationalCounter = m_PoolArena.ConstructArray<std::atomic<uint16_t>>(generationalCounterMem, m_Size, 0);

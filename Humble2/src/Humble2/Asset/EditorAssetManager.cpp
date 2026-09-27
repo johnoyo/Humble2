@@ -62,6 +62,8 @@ namespace HBL2
 			asset->Indentifier = ImportPrefab(asset).Pack();
 			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
+        case AssetType::None:
+            return 0;
 		}
 
 		return 0;
@@ -77,6 +79,10 @@ namespace HBL2
 
 		switch (asset->Type)
 		{
+		case AssetType::Texture:
+			asset->Indentifier = ReimportTexture(asset).Pack();
+			asset->Loaded = (asset->Indentifier != 0);
+			return asset->Indentifier;
 		case AssetType::Shader:
 			asset->Indentifier = ReimportShader(asset).Pack();
 			asset->Loaded = (asset->Indentifier != 0);
@@ -89,10 +95,15 @@ namespace HBL2
 			asset->Indentifier = ReimportMesh(asset).Pack();
 			asset->Loaded = (asset->Indentifier != 0);
 			return asset->Indentifier;
-		case AssetType::Prefab:
-			asset->Indentifier = ReimportPrefab(asset).Pack();
-			asset->Loaded = (asset->Indentifier != 0);
-			return asset->Indentifier;
+        case AssetType::Prefab:
+            asset->Indentifier = ReimportPrefab(asset).Pack();
+            asset->Loaded = (asset->Indentifier != 0);
+            return asset->Indentifier;
+        case AssetType::Scene:
+        case AssetType::Script:
+        case AssetType::Sound:
+        case AssetType::None:
+            return 0;
 		}
 
 		return 0;
@@ -133,7 +144,9 @@ namespace HBL2
 		case AssetType::Prefab:
 			UnloadPrefab(asset);
 			break;
-		}
+        case AssetType::None:
+            break;
+        }
     }
 
     void EditorAssetManager::DestroyAsset(Handle<Asset> handle)
@@ -173,7 +186,9 @@ namespace HBL2
 		case AssetType::Prefab:
 			destroyResult = DestroyPrefab(asset);
 			break;
-		}
+        case AssetType::None:
+            break;
+        }
 
 		if (destroyResult)
 		{
@@ -230,7 +245,35 @@ namespace HBL2
 		case AssetType::Prefab:
 			SavePrefab(asset);
 			break;
-		}
+        case AssetType::Shader:
+        case AssetType::Mesh:
+        case AssetType::None:
+            break;
+        }
+    }
+
+    void EditorAssetManager::SaveAssetAsync(UUID assetUUID, JobContext* customJobCtx)
+    {
+        return SaveAssetAsync(GetHandleFromUUID(assetUUID), customJobCtx);
+    }
+
+    void EditorAssetManager::SaveAssetAsync(Handle<Asset> assetHandle, JobContext* customJobCtx)
+    {
+        // Do not schedule job if the asset handle is invalid.
+        if (!IsAssetValid(assetHandle))
+        {
+            return;
+        }
+
+        JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
+
+        JobSystem::Get().Execute(ctx, [this, assetHandle]()
+        {
+            // NOTE: Keep an eye here, it may cause problems if we still save an asset while we change scenes!
+            SaveAsset(assetHandle);
+        });
+
+        return;
     }
 
     bool EditorAssetManager::IsAssetValid(Handle<Asset> handle)
@@ -303,7 +346,7 @@ namespace HBL2
 			}
 
 			// Delete assets.
-			DeleteAsset(handle);
+			DeleteAssetImmediate(handle);
 		}
 
 		// Clear asset handle caches.
@@ -387,6 +430,11 @@ namespace HBL2
 		m_RegisteredAssets.push_back(handle);
 		m_RegisteredAssetPathToUUIDMap[asset->FilePath] = asset->UUID;
 		m_RegisteredAssetMap[asset->UUID] = handle;
+
+		if (asset->Pinned)
+		{
+			m_AssetPool.Acquire(handle);
+		}
 
 		return handle;
 	}
@@ -512,6 +560,11 @@ namespace HBL2
 			if (textureProperties)
 			{
 				asset->UUID = textureProperties["UUID"].as<UUID>();
+
+				if (textureProperties["Pinned"].IsDefined())
+				{
+					asset->Pinned = textureProperties["Pinned"].as<bool>();
+				}
 			}
 
 			return;
@@ -567,6 +620,11 @@ namespace HBL2
 			if (shaderProperties)
 			{
 				asset->UUID = shaderProperties["UUID"].as<UUID>();
+
+				if (shaderProperties["Pinned"].IsDefined())
+				{
+					asset->Pinned = shaderProperties["Pinned"].as<bool>();
+				}
 			}
 
 			return;
@@ -622,6 +680,11 @@ namespace HBL2
 			if (materialProperties)
 			{
 				asset->UUID = materialProperties["UUID"].as<UUID>();
+
+				if (materialProperties["Pinned"].IsDefined())
+				{
+					asset->Pinned = materialProperties["Pinned"].as<bool>();
+				}
 			}
 
 			return;
@@ -664,6 +727,11 @@ namespace HBL2
 			if (meshProperties)
 			{
 				asset->UUID = meshProperties["UUID"].as<UUID>();
+
+				if (meshProperties["Pinned"].IsDefined())
+				{
+					asset->Pinned = meshProperties["Pinned"].as<bool>();
+				}
 			}
 
 			return;
@@ -717,6 +785,11 @@ namespace HBL2
 			if (sceneProperties)
 			{
 				asset->UUID = sceneProperties["UUID"].as<UUID>();
+
+				if (sceneProperties["Pinned"].IsDefined())
+				{
+					asset->Pinned = sceneProperties["Pinned"].as<bool>();
+				}
 			}
 
 			return;
@@ -770,6 +843,11 @@ namespace HBL2
 			if (scriptProperties)
 			{
 				asset->UUID = scriptProperties["UUID"].as<UUID>();
+
+				if (scriptProperties["Pinned"].IsDefined())
+				{
+					asset->Pinned = scriptProperties["Pinned"].as<bool>();
+				}
 			}
 
 			return;
@@ -823,6 +901,11 @@ namespace HBL2
 			if (soundProperties)
 			{
 				asset->UUID = soundProperties["UUID"].as<UUID>();
+
+				if (soundProperties["Pinned"].IsDefined())
+				{
+					asset->Pinned = soundProperties["Pinned"].as<bool>();
+				}
 			}
 
 			return;
@@ -876,6 +959,11 @@ namespace HBL2
 			if (prefabProperties)
 			{
 				asset->UUID = prefabProperties["UUID"].as<UUID>();
+
+				if (prefabProperties["Pinned"].IsDefined())
+				{
+					asset->Pinned = prefabProperties["Pinned"].as<bool>();
+				}
 			}
 
 			return;
@@ -925,10 +1013,8 @@ namespace HBL2
 		if (textureProperties)
 		{
 			// Load the texture
-			TextureSettings textureSettings =
-			{
-				.Flip = textureProperties["Flip"].as<bool>(),
-			};
+			TextureSettings textureSettings = TextureUtilities::Get().DeserializeAssetMetadataFile(asset);
+
 			void* textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
 
 			const std::string& textureName = asset->FilePath.filename().stem().string();
@@ -1102,7 +1188,7 @@ namespace HBL2
 
 				JobContext shaderTextureCtx;
 
-				StaticDArray<ResourceTask<Texture>*, 8> textureTasks;
+				StaticDArray<UUID, 8> textureUUIDs;
 				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
 				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
 
@@ -1110,7 +1196,7 @@ namespace HBL2
 
 				for (const auto& b : descriptorSet.bindings)
 				{
-					if (b.type == ResourceType::UniformBuffer)
+					if (b.type == ShaderResourceType::UniformBuffer)
 					{
 						std::vector<uint8_t> uniformBufferBytes(b.size);
 
@@ -1226,7 +1312,7 @@ namespace HBL2
 							bufferBindings.push_back({ .buffer = userBuffer, });
 						}
 					}
-					else if (b.type == ResourceType::SampledTexture)
+					else if (b.type == ShaderResourceType::SampledTexture)
 					{
 						const auto& textureProp = shaderProperties["BindGroup"][bindingIndex];
 
@@ -1234,8 +1320,8 @@ namespace HBL2
 						{
 							UUID textureMapUUID = textureProp[b.name].as<UUID>();
 
-							auto* task = AssetManager::Instance->GetAssetAsync<Texture>(textureMapUUID, &shaderTextureCtx);
-							textureTasks.push_back(task);
+							AssetManager::Instance->GetAssetAsync<Texture>(textureMapUUID, &shaderTextureCtx);
+							textureUUIDs.push_back(textureMapUUID);
 						}
 					}
 
@@ -1244,17 +1330,10 @@ namespace HBL2
 
 				AssetManager::Instance->WaitForAsyncJobs(&shaderTextureCtx);
 
-				for (auto* task : textureTasks)
+				for (auto uuid : textureUUIDs)
 				{
-					if (task != nullptr)
-					{
-						textureBindings.push_back({ task->ResourceHandle });
-						AssetManager::Instance->ReleaseResourceTask(task);
-					}
-					else
-					{
-						textureBindings.push_back({ Handle<Texture>() });
-					}
+					// The assets are loaded now, so GetAsset will just grab the resource handle.
+					textureBindings.push_back({ AssetManager::Instance->GetAsset<Texture>(uuid) });
 				}
 
 				// If there is only one texture and is not set, use the built in white texture.
@@ -1269,8 +1348,8 @@ namespace HBL2
 				shaderBindGroup = ResourceManager::Instance->CreateBindGroup({
 					.debugName = "shader-bind-group",
 					.layout = outReflectionData.GetBindGroupLayout(1),
-                    .textures = { textureBindings.data(), textureBindings.size() },
-                    .buffers = { bufferBindings.data(), bufferBindings.size() },
+                    .textures = textureBindings,
+                    .buffers = bufferBindings,
 				});
 			}
 		}
@@ -1435,13 +1514,13 @@ namespace HBL2
 
 				JobContext materialTextureCtx;
 
-				StaticDArray<ResourceTask<Texture>*, 8> textureTasks;
+				StaticDArray<UUID, 8> textureUUIDs;
 				StaticDArray<BindGroupDescriptor::TextureEntry, 8> textureBindings;
 				StaticDArray<BindGroupDescriptor::BufferEntry, 8> bufferBindings;
 
 				for (const auto& b : descriptorSet.bindings)
 				{
-					if (b.type == ResourceType::UniformBuffer)
+					if (b.type == ShaderResourceType::UniformBuffer)
 					{
 						std::vector<uint8_t> uniformBufferBytes(b.size);
 
@@ -1557,7 +1636,7 @@ namespace HBL2
 							bufferBindings.push_back({ .buffer = userBuffer, });
 						}
 					}
-					else if (b.type == ResourceType::SampledTexture)
+					else if (b.type == ShaderResourceType::SampledTexture)
 					{
 						const auto& textureProp = materialProperties[b.name];
 
@@ -1565,25 +1644,18 @@ namespace HBL2
 						{
 							UUID textureMapUUID = textureProp.as<UUID>();
 
-							auto* task = AssetManager::Instance->GetAssetAsync<Texture>(textureMapUUID, &materialTextureCtx);
-							textureTasks.push_back(task);
+							AssetManager::Instance->GetAssetAsync<Texture>(textureMapUUID, &materialTextureCtx);
+							textureUUIDs.push_back(textureMapUUID);
 						}
 					}
 				}
 
 				AssetManager::Instance->WaitForAsyncJobs(&materialTextureCtx);
 
-				for (auto* task : textureTasks)
+				for (auto uuid : textureUUIDs)
 				{
-					if (task != nullptr)
-					{
-						textureBindings.push_back({ task->ResourceHandle });
-						AssetManager::Instance->ReleaseResourceTask(task);
-					}
-					else
-					{
-						textureBindings.push_back({ Handle<Texture>() });
-					}
+					// The assets are loaded now, so GetAsset will just grab the resource handle.
+					textureBindings.push_back({ AssetManager::Instance->GetAsset<Texture>(uuid) });
 				}
 
 				// If there is only one texture and is not set, use the built in white texture.
@@ -1867,6 +1939,64 @@ namespace HBL2
 
 	/// Reimport methods
 
+	Handle<Texture> EditorAssetManager::ReimportTexture(Asset* asset)
+	{
+		Handle<Texture> textureHandle = Handle<Texture>::UnPack(asset->Indentifier);
+
+		std::ifstream stream(Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture");
+
+		if (!stream.is_open())
+		{
+			HBL2_CORE_ERROR("Texture metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hbltexture");
+			return Handle<Texture>();
+		}
+
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Texture"].IsDefined())
+		{
+			HBL2_CORE_ERROR("Texture not found: {0}", asset->DebugName);
+			stream.close();
+			return Handle<Texture>();
+		}
+
+		auto textureProperties = data["Texture"];
+		if (textureProperties)
+		{
+			// Load the texture
+			TextureSettings textureSettings = TextureUtilities::Get().DeserializeAssetMetadataFile(asset);
+
+			// Mark for reload so that the cache gets updated.
+			textureSettings.Relaod = true;
+
+			void* textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
+
+			const std::string& textureName = asset->FilePath.filename().stem().string();
+
+			// Create the texture
+			ResourceManager::Instance->ReimportTexture(textureHandle, {
+				.debugName = strdup(std::format("{}-texture", textureName).c_str()),
+				.dimensions = { textureSettings.Width, textureSettings.Height, 1 },
+				.format = textureSettings.PixelFormat,
+				.internalFormat = textureSettings.PixelFormat,
+				.usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },
+				.aspect = TextureAspect::COLOR,
+				.sampler = { .filter = TextureFilter::LINEAR },
+				.initialData = textureData,
+			});
+
+			stream.close();
+			return textureHandle;
+		}
+
+		HBL2_CORE_ERROR("Texture not found: {0}", asset->DebugName);
+
+		stream.close();
+		return Handle<Texture>();
+	}
+
 	Handle<Shader> EditorAssetManager::ReimportShader(Asset* asset)
 	{
 		Handle<Shader> shaderHandle = Handle<Shader>::UnPack(asset->Indentifier);
@@ -2021,7 +2151,7 @@ namespace HBL2
 
 				for (const auto& b : descriptorSet.bindings)
 				{
-					if (b.type == ResourceType::UniformBuffer)
+					if (b.type == ShaderResourceType::UniformBuffer)
 					{
 						std::vector<uint8_t> uniformBufferBytes(b.size);
 
@@ -2138,7 +2268,7 @@ namespace HBL2
 							bufferBindings.push_back({ .buffer = userBuffer, });
 						}
 					}
-					else if (b.type == ResourceType::SampledTexture)
+					else if (b.type == ShaderResourceType::SampledTexture)
 					{
 						const auto& textureProp = shaderProperties["BindGroup"][bindingIndex];
 
@@ -2190,7 +2320,7 @@ namespace HBL2
 			.renderPipeline {
 				.vertexBufferBindings = outReflectionData.vertexBufferBindings,
 				.variants = { shaderVariants.data(), shaderVariants.size() },
-                .specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant({ shaderVariants.data(), shaderVariants.size() }),
+                .specializationConstantsPerVariant = outReflectionData.GetSpecializationConstantsPerVariant(shaderVariants),
 			},
 			.renderPass = Renderer::Instance->GetRenderingRenderPass(),
 			.shaderBindGroup = shaderBindGroup,
@@ -2312,7 +2442,7 @@ namespace HBL2
 
 				for (const auto& b : descriptorSet.bindings)
 				{
-					if (b.type == ResourceType::UniformBuffer)
+					if (b.type == ShaderResourceType::UniformBuffer)
 					{
 						std::vector<uint8_t> uniformBufferBytes(b.size);
 
@@ -2428,7 +2558,7 @@ namespace HBL2
 							bufferBindings.push_back({ .buffer = userBuffer, });
 						}
 					}
-					else if (b.type == ResourceType::SampledTexture)
+					else if (b.type == ShaderResourceType::SampledTexture)
 					{
 						const auto& textureProp = materialProperties[b.name];
 
@@ -2459,13 +2589,13 @@ namespace HBL2
 				});
 			}
 
-			// Delete old bind group.
-			ResourceManager::Instance->DeleteBindGroup(mat->MaterialBindGroup);
+			// Release old bind group.
+			mat->MaterialBindGroup.Release();
 
 			ResourceManager::Instance->ReimportMaterial(materialHandle, {
 				.debugName = strdup(std::format("{}-material", materialName).c_str()),
 				.shader = shaderHandle,
-				.drawBindGroup = mat->DrawBindGroup,
+				.drawBindGroup = mat->DrawBindGroup.Get(),
 				.materialBindGroup = materialBindGroup,
 			});
 		}
@@ -2709,17 +2839,18 @@ namespace HBL2
 		if (textureProperties)
 		{
 			// Load the texture to get current pixel data.
-			TextureSettings textureSettings =
-			{
-				.Flip = textureProperties["Flip"].as<bool>(),
-			};
+			TextureSettings textureSettings = TextureUtilities::Get().DeserializeAssetMetadataFile(asset);
+
+			// Mark for reload so that the cache gets updated.
+			textureSettings.Relaod = true;
+
 			void* textureData = TextureUtilities::Get().Load(Project::GetAssetFileSystemPath(asset->FilePath).string(), textureSettings);
 
 			// Update gpu texture storage.
 			ResourceManager::Instance->UpdateTexture(textureHandle, { (std::byte*)textureData, (size_t)(textureSettings.Width * textureSettings.Height) });
 
 			// Free the cpu side pixel data since they are copied by the driver.
-			stbi_image_free(textureData);
+            std::free(textureData);
 		}
 
 		stream.close();
@@ -3341,14 +3472,6 @@ namespace HBL2
 		{
 			HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
 			return;
-		}
-
-		Material* material = ResourceManager::Instance->GetMaterial(materialAssetHandle);
-
-		if (material != nullptr)
-		{
-			ResourceManager::Instance->DeleteBindGroup(material->DrawBindGroup);
-			ResourceManager::Instance->DeleteBindGroup(material->MaterialBindGroup);
 		}
 
 		ResourceManager::Instance->DeleteMaterial(materialAssetHandle);

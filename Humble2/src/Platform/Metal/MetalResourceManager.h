@@ -4,6 +4,8 @@
 
 #include "Resources/Pool.h"
 #include "Resources/SplitPool.h"
+#include "Resources/RefCountedPool.h"
+#include "Resources/RefCountedSplitPool.h"
 #include "Resources/Types.h"
 #include "Resources/TypeDescriptors.h"
 
@@ -28,10 +30,11 @@ namespace HBL2
 
         // Textures
         virtual Handle<Texture> CreateTexture(const TextureDescriptor&& desc) override;
+        virtual void ReimportTexture(Handle<Texture> handle, const TextureDescriptor&& desc) override;
         virtual void DeleteTexture(Handle<Texture> handle) override;
         virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) override;
         virtual void ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc) override;
-        virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, ResourceState currentState, ResourceState newState) override;
+        virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout) override;
         virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) override;
         virtual void* GetTextureData(Handle<Texture> handle) override;
         MetalTexture* GetTexture(Handle<Texture> handle) const;
@@ -86,20 +89,19 @@ namespace HBL2
         virtual void DeleteRenderPassLayout(Handle<RenderPassLayout> handle) override;
         MetalRenderPassLayout* GetRenderPassLayout(Handle<RenderPassLayout> handle) const;
 
+        virtual void Acquire(uint32_t packedHandle, ResourceType resourceType) override;
+        virtual void Release(uint32_t packedHandle, ResourceType resourceType) override;
+
     private:
         Pool<MetalTexture, Texture> m_TexturePool;
         SplitPool<MetalBufferHot, MetalBufferCold, Buffer> m_BufferSplitPool;
         SplitPool<MetalShaderHot, MetalShaderCold, Shader> m_ShaderSplitPool;
-        SplitPool<MetalBindGroupHot, MetalBindGroupCold, BindGroup> m_BindGroupSplitPool;
-        Pool<MetalBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
+        RefCountedSplitPool<MetalBindGroupHot, MetalBindGroupCold, BindGroup> m_BindGroupSplitPool;
+        RefCountedPool<MetalBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;
         Pool<MetalRenderPass, RenderPass> m_RenderPassPool;
         Pool<MetalRenderPassLayout, RenderPassLayout> m_RenderPassLayoutPool;
 
         friend class VulkanRenderer; // This is required for a hack to create the swapchain images in the VulkanRenderer
-
-    private:
-         uint64_t CalculateBindGroupHash(const MetalBindGroupCold* bindGroupCold);
-         uint64_t CalculateBindGroupLayoutHash(const MetalBindGroupLayout* bindGroupLayout);
     };
 }
 

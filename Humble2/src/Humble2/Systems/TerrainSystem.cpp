@@ -1,6 +1,7 @@
 #include "TerrainSystem.h"
 
 #include "AnimationCurveSystem.h"
+#include "Utilities/Math.h"
 #include "Utilities/EntityPresets.h"
 #include "Project/Project.h"
 
@@ -144,13 +145,20 @@ namespace HBL2
 		}
 
 		CleanUpChunks(Entity::Null);
+
+		m_Context->Filter<Component::Terrain>()
+			.ForEach([](Component::Terrain& terrain)
+			{
+				terrain.HeightMap.Release();
+				terrain.Material.Release();
+			});
 	}
 
 	void TerrainSystem::RegenerateTerrainSettings(Component::Terrain& terrain)
 	{
 		if (terrain.NormaliseMode == Component::Terrain::ENormaliseMode::LOCAL)
 		{
-			Asset* heightMapAsset = AssetManager::Instance->GetAssetMetadata(terrain.HeightMap);
+			Asset* heightMapAsset = AssetManager::Instance->GetAssetMetadata(terrain.HeightMap.Get());
 
 			if (heightMapAsset == nullptr)
 			{
@@ -757,7 +765,7 @@ namespace HBL2
 					terrainChunk.LevelOfDetail = lodMesh.Lod;
 					terrainChunk.PreviousLodIndex = lodIndex;
 
-					Asset* chunkMeshAsset = AssetManager::Instance->GetAssetMetadata(chunkMesh.Mesh);
+					Asset* chunkMeshAsset = AssetManager::Instance->GetAssetMetadata(chunkMesh.Mesh.Get());
 					chunkMeshAsset->Indentifier = lodMesh.Mesh.Pack();
 					chunkMeshAsset->Loaded = true;
 				}
@@ -947,7 +955,7 @@ namespace HBL2
 		HBL2_FUNC_PROFILE()
 
 		auto& chunkMeshComponent = m_Context->GetComponent<Component::StaticMesh>(chunkMeshData.Chunk);
-		Asset* chunkMeshAsset = AssetManager::Instance->GetAssetMetadata(chunkMeshComponent.Mesh);
+		Asset* chunkMeshAsset = AssetManager::Instance->GetAssetMetadata(chunkMeshComponent.Mesh.Get());
 		chunkMeshAsset->Indentifier = chunkMeshData.ChunkMeshHandle.Pack();
 		chunkMeshAsset->Loaded = true;
 
@@ -995,7 +1003,7 @@ namespace HBL2
 
 		// Clean up resources of terrain chunks.
 		ScratchArena scratch(Allocator::FrameArenaMT);
-		DArray<Entity> chunks = MakeDArray<Entity>(scratch, 512);
+		FixedArray<Entity> chunks = FixedArray<Entity>(&scratch, 4096);
 
 		m_Context->Filter<Component::TerrainChunk>()
 			.ForEach([this, ownerUUID, &chunks](Entity chunk, Component::TerrainChunk& terrainChunk)

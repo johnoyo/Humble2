@@ -32,7 +32,7 @@ namespace HBL2
     void MetalShaderHot::Destroy()
     {
         // The Pso and DepthStencilState are released in the ShaderColdCold::Destroy with all the variants.
-        ResourceManager::Instance->DeleteBindGroup(ShaderBindGroup);
+        ShaderBindGroup.Release();
     }
 
     void* MetalShaderCold::Find(ShaderDescriptor::RenderPipeline::PackedVariant key, uint32_t* pipelineIndex)
@@ -55,14 +55,14 @@ namespace HBL2
     {
         const auto& constantStages = config.specializationConstantStages;
 
-        if (constantStages.Size() == 0)
+        if (constantStages.size() == 0)
         {
             return nullptr;
         }
 
         MTL::FunctionConstantValues* constantValues = nullptr;
 
-        for (uint32_t i = 0; i < constantStages.Size(); i++)
+        for (uint32_t i = 0; i < constantStages.size(); i++)
         {
             if (!constantStages[i].IsSet(stage))
             {
@@ -190,7 +190,7 @@ namespace HBL2
         // Vertex input state.
         MTL::VertexDescriptor* vertexDesc = nullptr;
 
-        for (uint32_t i = 0; i < config.vertexBufferBindings.Size(); i++)
+        for (uint32_t i = 0; i < config.vertexBufferBindings.size(); i++)
         {
             const auto& binding = config.vertexBufferBindings[i];
             
@@ -341,28 +341,10 @@ namespace HBL2
             }
         }
         
-        for (auto bindGroupLayout : m_ReflectedBindGroupLayouts)
-        {
-            ResourceManager::Instance->DeleteBindGroupLayout(bindGroupLayout);
-        }
-
-        m_ReflectedBindGroupLayouts.clear();
-    }
-
-    void MetalShaderCold::DestroyOldShaderModules()
-    {
-        if (OldVertexShaderModule != nullptr)
-        {
-            OldVertexShaderModule->release();
-        }
-        if (OldFragmentShaderModule != nullptr)
-        {
-            OldFragmentShaderModule->release();
-        }
-        if (OldComputeShaderModule != nullptr)
-        {
-            OldComputeShaderModule->release();
-        }
+        // Release old cache reflected bind group layout (set 2).
+        // We need to do that in case no material ends up using this descriptor,
+        // so the layout of the set will not get released, but it was created from reflection.
+        m_ReflectedBindGroupLayout.Release();
     }
 
     void MetalShader::Initialize(const ShaderDescriptor&& desc)
@@ -378,11 +360,34 @@ namespace HBL2
         }
 
         MetalDevice* device = (MetalDevice*)Device::Instance;
+        MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
         MetalResourceManager* rm = (MetalResourceManager*)ResourceManager::Instance;
         
-        Cold->OldVertexShaderModule = Cold->VertexShaderModule;
-        Cold->OldFragmentShaderModule = Cold->FragmentShaderModule;
-        Cold->OldComputeShaderModule = Cold->ComputeShaderModule;
+        if (removeVariants)
+        {
+            // Copy the old resources to be deleted in the next frames.
+            MTL4::LibraryFunctionDescriptor* oldVertexShaderModule = Cold->VertexShaderModule;
+            MTL4::LibraryFunctionDescriptor* oldFragmentShaderModule = Cold->FragmentShaderModule;
+            MTL4::LibraryFunctionDescriptor* oldComputeShaderModule = Cold->ComputeShaderModule;
+            
+            rm->GetDeletionQueue().Push(renderer->GetFrameNumber(), [=]()
+            {
+                if (oldVertexShaderModule != nullptr)
+                {
+                    oldVertexShaderModule->release();
+                }
+                
+                if (oldFragmentShaderModule != nullptr)
+                {
+                    oldFragmentShaderModule->release();
+                }
+                
+                if (oldComputeShaderModule != nullptr)
+                {
+                    oldComputeShaderModule->release();
+                }
+            });
+        }
 
         Cold->VertexShaderModule = nullptr;
         Cold->FragmentShaderModule = nullptr;
@@ -390,7 +395,7 @@ namespace HBL2
         
         Cold->DebugName = desc.debugName;
         
-        if (desc.renderPipeline.vertexBufferBindings.Size() > 0)
+        if (desc.renderPipeline.vertexBufferBindings.size() > 0)
         {
             Cold->VertexBufferBinding = desc.renderPipeline.vertexBufferBindings[0];
         }
@@ -406,12 +411,6 @@ namespace HBL2
             Cold->ColorAttachmentCount = rp->ColorAttachmentCount;
         }
         
-        // BindGroups use a reference counting system, so if there are other objects
-        // referencing the bindgroup, it will not be deleted, just the ref count will be decreased.
-        if (Hot->ShaderBindGroup.IsValid())
-        {
-            ResourceManager::Instance->DeleteBindGroup(Hot->ShaderBindGroup);
-        }
         Hot->ShaderBindGroup = desc.shaderBindGroup;
         
         if (desc.type == ShaderType::COMPUTE)
@@ -426,9 +425,9 @@ namespace HBL2
         }
 
         // Fill with new specialization constants.
-        for (uint32_t i = 0; i < desc.renderPipeline.specializationConstantsPerVariant.Size(); i++)
+        for (uint32_t i = 0; i < desc.renderPipeline.specializationConstantsPerVariant.size(); i++)
         {
-            for (uint32_t j = 0; j < desc.renderPipeline.specializationConstantsPerVariant[i].Size(); j++)
+            for (uint32_t j = 0; j < desc.renderPipeline.specializationConstantsPerVariant[i].size(); j++)
             {
                 auto& variant = *((ShaderDescriptor::RenderPipeline::PackedVariant*)&desc.renderPipeline.variants[i]);
                 const auto& specializationConstant = desc.renderPipeline.specializationConstantsPerVariant[i][j];
@@ -439,12 +438,10 @@ namespace HBL2
             }
         }
         
-        // Release and clear old cache reflected bind group layouts.
-        for (auto bindGroupLayout : Cold->m_ReflectedBindGroupLayouts)
-        {
-            ResourceManager::Instance->DeleteBindGroupLayout(bindGroupLayout);
-        }
-        Cold->m_ReflectedBindGroupLayouts.clear();
+        // Release old cache reflected bind group layout (set 2).
+        // We need to do that in case no material ends up using this descriptor,
+        // so the layout of the set will not get released, but it was created from reflection.
+        Cold->m_ReflectedBindGroupLayout.Release();
 
         // Hold a reference to the bind groups of the shader that come from reflection.
         uint32_t bindGroupLayoutIndex = 0;
@@ -453,25 +450,12 @@ namespace HBL2
         {
             if (bindGroup.IsValid())
             {
-                if (bindGroupLayoutIndex == 1)
-                {
-                    // Keep reference to the reflected bind group layout of set 1,
-                    // since reflection increases the ref count of the layout obj and
-                    // we need to release it on shader destroy for proper clean up.
-                    if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout() && desc.bindGroups.size() == 4)
-                    {
-                        Cold->m_ReflectedBindGroupLayouts.push_back(bindGroup);
-                    }
-                }
-
                 if (bindGroupLayoutIndex == 2 && desc.bindGroups.size() == 4)
                 {
-                    // Keep reference to the reflected bind group layout of set 2,
-                    // since reflection increases the ref count of the layout obj and
-                    // we need to release it on shader destroy for proper clean up.
                     if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout())
                     {
-                        Cold->m_ReflectedBindGroupLayouts.push_back(bindGroup);
+                        // Keep reference to the reflected bind group layout of set 2.
+                        Cold->m_ReflectedBindGroupLayout = bindGroup;
                     }
                 }
             }
@@ -502,7 +486,7 @@ namespace HBL2
                 NS::Error* error = nullptr;
                 auto& bytes = desc.VS.code;
                 
-                auto data = dispatch_data_create(bytes.Data(), bytes.Size(), nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+                auto data = dispatch_data_create(bytes.data(), bytes.size(), nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                 vertexLibrary = device->Get()->newLibrary(data, &error);
                 dispatch_release(data);
 
@@ -523,7 +507,7 @@ namespace HBL2
                 NS::Error* error = nullptr;
                 auto& bytes = desc.FS.code;
                 
-                auto data = dispatch_data_create(bytes.Data(), bytes.Size(), nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+                auto data = dispatch_data_create(bytes.data(), bytes.size(), nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                 fragmentLibrary = device->Get()->newLibrary(data, &error);
                 dispatch_release(data);
 
@@ -552,7 +536,7 @@ namespace HBL2
                 NS::Error* error = nullptr;
                 auto& bytes = desc.CS.code;
                 
-                auto data = dispatch_data_create(bytes.Data(), bytes.Size(), nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+                auto data = dispatch_data_create(bytes.data(), bytes.size(), nullptr, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
                 computeLibrary = device->Get()->newLibrary(data, &error);
                 dispatch_release(data);
 
@@ -575,7 +559,7 @@ namespace HBL2
         }
 
         // Create shader variants.
-        for (int i = 0; i < desc.renderPipeline.variants.Size(); i++)
+        for (int i = 0; i < desc.renderPipeline.variants.size(); i++)
         {
             const auto& variant = desc.renderPipeline.variants[i];
 
