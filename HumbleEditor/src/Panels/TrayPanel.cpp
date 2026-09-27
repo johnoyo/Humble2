@@ -16,14 +16,10 @@ namespace HBL2::Editor
         ImVec2 textSize = ImGui::CalcTextSize(text, nullptr, false, wrapWidth);
         ImVec2 pos = ImGui::GetCursorScreenPos();
 
-        // Selectable owns the cursor/layout advance — nothing touches cursor after this
         bool clicked = ImGui::Selectable(id, false, 0, ImVec2(wrapWidth, textSize.y));
 
-        // Draw the wrapped text directly onto the draw list, independent of the cursor
         ImDrawList* drawList = ImGui::GetWindowDrawList();
-        drawList->AddText(ImGui::GetFont(), ImGui::GetFontSize(), pos,
-                           ImGui::GetColorU32(ImGuiCol_Text),
-                           text, nullptr, wrapWidth);
+        drawList->AddText(ImGui::GetFont(), ImGui::GetFontSize(), pos, ImGui::ColorConvertFloat4ToU32(ImVec4(0, 1, 0, 1)), text, nullptr, wrapWidth);
 
         return clicked;
     }
