@@ -36,6 +36,17 @@ namespace HBL2
         case Format::ASTC_12x12_SRGB:
         case Format::ASTC_12x12_UNORM:
             return { 12, 12, 16 };
+        case Format::BC1_RGB_SRGB:
+        case Format::BC1_RGB_UNORM:
+        case Format::BC1_RGBA_SRGB:
+        case Format::BC1_RGBA_UNORM:
+            return { 4, 4, 8 };
+        case Format::BC3_SRGB:
+        case Format::BC3_UNORM:
+        case Format::BC7_SRGB:
+        case Format::BC7_UNORM:
+        case Format::BC6H_UF:
+            return { 4, 4, 16 };
 
         // case Format::BC1_RGBA_UNORM: return { 4, 4, 8 };  // BC1/BC4
         // case Format::BC3_RGBA_UNORM: return { 4, 4, 16 }; // BC2/3/5/6H/7
@@ -62,6 +73,45 @@ namespace HBL2
 
     MetalTexture::MetalTexture(const TextureDescriptor&& desc)
     {
+        Reimport(std::forward<const TextureDescriptor>(desc), false);
+    }
+
+    void MetalTexture::Reimport(const TextureDescriptor &&desc, bool destroyOld)
+    {
+        if (destroyOld)
+        {
+            // Copy the old resources to be deleted in the next frames.
+            MTL::Texture* oldTexture = Texture;
+            MTL::SamplerState* oldSampler = Sampler;
+            MTL::Texture* oldStorageTexture = m_StorageTexture;
+            
+            auto& deletionQueue = ResourceManager::Instance->GetDeletionQueue();
+            deletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=]()
+            {
+                MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
+                
+                if (oldSampler != nullptr)
+                {
+                    oldSampler->release();
+                }
+                
+                if (oldTexture != nullptr && oldTexture != oldStorageTexture)
+                {
+                    oldTexture->release();
+                }
+                
+                if (oldStorageTexture != nullptr)
+                {
+                    renderer->RemoveResident(oldStorageTexture);
+                    oldStorageTexture->release();
+                }
+            });
+            
+            Texture = nullptr;
+            Sampler = nullptr;
+            m_StorageTexture = nullptr;
+        }
+        
         MetalDevice* device = (MetalDevice*)Device::Instance;
         MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
  

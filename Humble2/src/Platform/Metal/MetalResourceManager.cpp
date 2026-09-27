@@ -50,7 +50,11 @@ namespace HBL2
     }
     void MetalResourceManager::ReimportTexture(Handle<Texture> handle, const TextureDescriptor&& desc)
     {
-
+        MetalTexture* texture = GetTexture(handle);
+        if (texture != nullptr)
+        {
+            texture->Reimport(std::forward<const TextureDescriptor>(desc), true);
+        }
     }
     void MetalResourceManager::DeleteTexture(Handle<Texture> handle)
     {

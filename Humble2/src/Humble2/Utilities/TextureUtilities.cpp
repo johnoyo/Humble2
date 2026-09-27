@@ -79,6 +79,9 @@ namespace HBL2
         case Format::ASTC_4x4_SRGB:
         case Format::ASTC_4x4_UNORM:
             return KTX_TTF_ASTC_4x4_RGBA;
+        default:
+            HBL2_CORE_ASSERT(false, "Invalid Transcode format selected!");
+            return KTX_TTF_NOSELECTION;
         }
     }
 
@@ -104,6 +107,9 @@ namespace HBL2
         case Format::ASTC_12x12_SRGB:
         case Format::ASTC_12x12_UNORM:
             return KTX_PACK_ASTC_BLOCK_DIMENSION_12x12;
+        default:
+            HBL2_CORE_ASSERT(false, "Invalid ASTC block format selected!");
+            return UINT32_MAX;
         }
     }
 
@@ -209,7 +215,10 @@ namespace HBL2
 
             if (settings.PlatformCompressionMethod[(int)Platform::Windows] == CompressionMethod::BASISU)
             {
-                compressionResult = CompressBasisU(kTexture, texturePath, isHDR, CompressionQualityToUASTC(settings.PlatformCompressionQuality[(int)Platform::Windows]), FormatToTranscodeFormat(format));
+                auto qualityLevel = CompressionQualityToUASTC(settings.PlatformCompressionQuality[(int)Platform::Windows]);
+                auto outputFormat = FormatToTranscodeFormat(format);
+                
+                compressionResult = CompressBasisU(kTexture, texturePath, isHDR, qualityLevel, outputFormat);
             }
 
             if (compressionResult)
@@ -224,11 +233,23 @@ namespace HBL2
 
             if (settings.PlatformCompressionMethod[(int)Platform::MacOS] == CompressionMethod::BASISU)
             {
-                compressionResult = CompressBasisU(kTexture, texturePath, isHDR, CompressionQualityToUASTC(settings.PlatformCompressionQuality[(int)Platform::MacOS]), FormatToTranscodeFormat(format));
+                auto qualityLevel = CompressionQualityToUASTC(settings.PlatformCompressionQuality[(int)Platform::MacOS]);
+                auto outputFormat = FormatToTranscodeFormat(format);
+                
+                compressionResult = CompressBasisU(kTexture, texturePath, isHDR, qualityLevel, outputFormat);
             }
             else if (settings.PlatformCompressionMethod[(int)Platform::MacOS] == CompressionMethod::ASTC)
             {
-                compressionResult = CompressAstc(kTexture, texturePath, isHDR, CompressionQualityToASTC(settings.PlatformCompressionQuality[(int)Platform::MacOS]), FormatToASTCBlockFormat(format));
+                if (isHDR)
+                {
+                    HBL2_CORE_ERROR("HDR formats are not yet supported for ASTC block compression!");
+                    return false;
+                }
+                
+                auto qualityLevel = CompressionQualityToASTC(settings.PlatformCompressionQuality[(int)Platform::MacOS]);
+                auto outputFormat = FormatToASTCBlockFormat(format);
+                
+                compressionResult = CompressAstc(kTexture, texturePath, isHDR, qualityLevel, outputFormat);
             }
 
             if (compressionResult)
@@ -243,7 +264,10 @@ namespace HBL2
 
             if (settings.PlatformCompressionMethod[(int)Platform::Linux] == CompressionMethod::BASISU)
             {
-                compressionResult = CompressBasisU(kTexture, texturePath, isHDR, CompressionQualityToUASTC(settings.PlatformCompressionQuality[(int)Platform::Linux]), FormatToTranscodeFormat(format));
+                auto qualityLevel = CompressionQualityToUASTC(settings.PlatformCompressionQuality[(int)Platform::Linux]);
+                auto outputFormat = FormatToTranscodeFormat(format);
+                
+                compressionResult = CompressBasisU(kTexture, texturePath, isHDR, qualityLevel, outputFormat);
             }
 
             if (compressionResult)
@@ -253,9 +277,9 @@ namespace HBL2
             break;
         }
         case Platform::Web:
-        {
             break;
-        }
+        case Platform::None:
+            break;
         }
 
         return compressionResult;
@@ -391,6 +415,7 @@ namespace HBL2
                 }
                 else
                 {
+                    // If already compressed just update the pixel format.
                     settings.PixelFormat = settings.PlatformCompressionFormat[(int)platform];
                 }
             }

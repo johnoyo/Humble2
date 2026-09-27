@@ -53,6 +53,9 @@ namespace HBL2
             supportedCompressionMethods.Set(CompressionMethod::NONE);
             supportedCompressionMethods.Set(CompressionMethod::BASISU);
             break;
+        case Platform::Web:
+        case Platform::None:
+            break;
         }
                 
         return supportedCompressionMethods;
@@ -79,8 +82,6 @@ namespace HBL2
         case Platform::MacOS:
             supportedTranscodingFormats.Set(Format::BC1_RGBA_SRGB);
             supportedTranscodingFormats.Set(Format::BC1_RGBA_UNORM);
-            supportedTranscodingFormats.Set(Format::BC1_RGB_SRGB);
-            supportedTranscodingFormats.Set(Format::BC1_RGB_UNORM);
             supportedTranscodingFormats.Set(Format::BC3_SRGB);
             supportedTranscodingFormats.Set(Format::BC3_UNORM);
             supportedTranscodingFormats.Set(Format::BC7_SRGB);
@@ -102,6 +103,9 @@ namespace HBL2
             supportedTranscodingFormats.Set(Format::BC7_UNORM);
             supportedTranscodingFormats.Set(Format::BC6H_UF);
             break;
+        case Platform::Web:
+        case Platform::None:
+            break;
         }
                 
         return supportedTranscodingFormats;
@@ -121,18 +125,14 @@ namespace HBL2
             supportedCompressionFormats.Set(Format::BC3_SRGB);
             supportedCompressionFormats.Set(Format::BC3_UNORM);
             supportedCompressionFormats.Set(Format::BC7_SRGB);
-            supportedCompressionFormats.Set(Format::BC7_SRGB);
             supportedCompressionFormats.Set(Format::BC7_UNORM);
             supportedCompressionFormats.Set(Format::BC6H_UF);
             break;
         case Platform::MacOS:
             supportedCompressionFormats.Set(Format::BC1_RGBA_SRGB);
             supportedCompressionFormats.Set(Format::BC1_RGBA_UNORM);
-            supportedCompressionFormats.Set(Format::BC1_RGB_SRGB);
-            supportedCompressionFormats.Set(Format::BC1_RGB_UNORM);
             supportedCompressionFormats.Set(Format::BC3_SRGB);
             supportedCompressionFormats.Set(Format::BC3_UNORM);
-            supportedCompressionFormats.Set(Format::BC7_SRGB);
             supportedCompressionFormats.Set(Format::BC7_SRGB);
             supportedCompressionFormats.Set(Format::BC7_UNORM);
             supportedCompressionFormats.Set(Format::BC6H_UF);
@@ -157,9 +157,11 @@ namespace HBL2
             supportedCompressionFormats.Set(Format::BC3_SRGB);
             supportedCompressionFormats.Set(Format::BC3_UNORM);
             supportedCompressionFormats.Set(Format::BC7_SRGB);
-            supportedCompressionFormats.Set(Format::BC7_SRGB);
             supportedCompressionFormats.Set(Format::BC7_UNORM);
             supportedCompressionFormats.Set(Format::BC6H_UF);
+            break;
+        case Platform::Web:
+        case Platform::None:
             break;
         }
 

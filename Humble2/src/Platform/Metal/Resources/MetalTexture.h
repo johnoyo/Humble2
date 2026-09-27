@@ -15,6 +15,7 @@ namespace HBL2
         MetalTexture() = default;
         MetalTexture(const TextureDescriptor&& desc);
         
+        void Reimport(const TextureDescriptor&& desc, bool destroyOld);
         void Update(const Span<const std::byte>& bytes);
         void ChangeTextureView(const TextureViewDescriptor&& desc);
         void SynchronizeUsage(MetalCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout);

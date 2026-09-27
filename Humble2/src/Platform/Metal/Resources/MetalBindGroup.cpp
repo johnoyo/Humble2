@@ -23,7 +23,7 @@ namespace HBL2
         Hash = 0;
     }
 
-    void MetalBindGroup::Initialize(const BindGroupDescriptor &&desc)
+    void MetalBindGroup::Initialize(const BindGroupDescriptor&& desc)
     {
         if (!IsValid())
         {

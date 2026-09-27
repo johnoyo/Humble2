@@ -71,6 +71,20 @@ namespace HBL2
                 return MTL::PixelFormatRGBA32Float;
             case Format::R10G10B10A2_UNORM:
                 return MTL::PixelFormatRGB10A2Unorm;
+            case Format::BC1_RGBA_SRGB:
+                return MTL::PixelFormatBC1_RGBA_sRGB;
+            case Format::BC1_RGBA_UNORM:
+                return MTL::PixelFormatBC1_RGBA;
+            case Format::BC3_SRGB:
+                return MTL::PixelFormatBC3_RGBA_sRGB;
+            case Format::BC3_UNORM:
+                return MTL::PixelFormatBC3_RGBA;
+            case Format::BC7_SRGB:
+                return MTL::PixelFormatBC7_RGBAUnorm_sRGB;
+            case Format::BC7_UNORM:
+                return MTL::PixelFormatBC7_RGBAUnorm;
+            case Format::BC6H_UF:
+                return MTL::PixelFormatBC6H_RGBUfloat;
             case Format::ASTC_4x4_SRGB:
                 return MTL::PixelFormatASTC_4x4_sRGB;
             case Format::ASTC_4x4_UNORM:

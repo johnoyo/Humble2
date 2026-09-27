@@ -36,6 +36,8 @@ namespace HBL2
 				return VK_FORMAT_R32G32B32_UINT;
 			case HBL2::VertexFormat::UINT32x4:
 				return VK_FORMAT_R32G32B32A32_UINT;
+            case HBL2::VertexFormat::NONE:
+                return VK_FORMAT_MAX_ENUM;
 			}
 
 			return VK_FORMAT_MAX_ENUM;
