@@ -1150,11 +1150,11 @@ namespace HBL2::Editor
 					{
 						if (m_ReimportTexture)
 						{
-							editorAssetManager->ReloadAsset<Texture>(m_Owner->m_SelectedAsset);
+							editorAssetManager->ReloadAssetAsync<Texture>(m_Owner->m_SelectedAsset);
 						}
 						else if (m_UpdateTexture)
 						{
-							editorAssetManager->SaveAsset(m_Owner->m_SelectedAsset);
+							editorAssetManager->SaveAssetAsync(m_Owner->m_SelectedAsset);
 						}
 
 						m_ReimportTexture = false;

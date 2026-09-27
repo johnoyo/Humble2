@@ -145,7 +145,13 @@ namespace HBL2
 		}
 
 		void SaveAsset(UUID assetUUID);
+        
 		void SaveAsset(Handle<Asset> handle);
+        
+        void SaveAssetAsync(UUID assetUUID, JobContext* customJobCtx = nullptr);
+        
+        void SaveAssetAsync(Handle<Asset> assetHandle, JobContext* customJobCtx = nullptr);
+        
 		void DestroyAsset(Handle<Asset> handle);
 
 	protected:

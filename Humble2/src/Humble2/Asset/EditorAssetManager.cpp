@@ -252,6 +252,30 @@ namespace HBL2
         }
     }
 
+    void EditorAssetManager::SaveAssetAsync(UUID assetUUID, JobContext* customJobCtx)
+    {
+        return SaveAssetAsync(GetHandleFromUUID(assetUUID), customJobCtx);
+    }
+
+    void EditorAssetManager::SaveAssetAsync(Handle<Asset> assetHandle, JobContext* customJobCtx)
+    {
+        // Do not schedule job if the asset handle is invalid.
+        if (!IsAssetValid(assetHandle))
+        {
+            return;
+        }
+
+        JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
+
+        JobSystem::Get().Execute(ctx, [this, assetHandle]()
+        {
+            // NOTE: Keep an eye here, it may cause problems if we still save an asset while we change scenes!
+            SaveAsset(assetHandle);
+        });
+
+        return;
+    }
+
     bool EditorAssetManager::IsAssetValid(Handle<Asset> handle)
     {
         return handle.IsValid() && GetAssetMetadata(handle) != nullptr;
@@ -2826,7 +2850,7 @@ namespace HBL2
 			ResourceManager::Instance->UpdateTexture(textureHandle, { (std::byte*)textureData, (size_t)(textureSettings.Width * textureSettings.Height) });
 
 			// Free the cpu side pixel data since they are copied by the driver.
-			stbi_image_free(textureData);
+            std::free(textureData);
 		}
 
 		stream.close();

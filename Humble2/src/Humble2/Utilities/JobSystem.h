@@ -8,6 +8,7 @@
 #include "Core/Allocators.h"
 #include "Allocators/Arena.h"
 #include "Collections/FixedArray.h"
+#include "Collections/StaticString.h"
 
 #include "moodycamel/concurrentqueue.h"
 
@@ -34,6 +35,18 @@ namespace HBL2
     struct HBL2_API JobContext
     {
         std::atomic<uint64_t> counter{0};
+    };
+
+    struct alignas(64) JobSlot
+    {
+        std::atomic<uint32_t> seq{0}; // seqlock: odd = being written, even = stable
+        char name[64] = {};
+        bool active = false;
+    };
+
+    struct JobSnapshot
+    {
+        char name[64];
     };
 
     class HBL2_API JobSystem
@@ -69,6 +82,8 @@ namespace HBL2
         bool IsMainThread() const;
         bool IsRenderThread() const;
         bool IsWorkerThread() const;
+        
+        int SnapshotActiveJobs(JobSnapshot* out, int maxOut);
 
     private:
         JobSystem() {}
@@ -76,6 +91,9 @@ namespace HBL2
         void InternalInitialize(const JobSystemSpecification&& spec);
         void InternalShutdown();
         void WorkerThreadFunc(uint32_t threadIndex);
+        
+        void BeginJobSlot(uint32_t workerIndex, const char* jobName);
+        void EndJobSlot(uint32_t workerIndex);
 
         PoolReservation* m_Reservation = nullptr;
         Arena m_JobSystemArena;
@@ -85,6 +103,7 @@ namespace HBL2
         FixedArray<std::thread> m_Workers;
         FixedArray<Arena*> m_WorkerArenas;
         FixedArray<moodycamel::ConcurrentQueue<std::function<void()>>> m_LocalJobQueues;
+        FixedArray<JobSlot> m_ActiveJobsDebugView;
 
         std::condition_variable m_WakeCondition;
         std::mutex m_WakeMutex;
