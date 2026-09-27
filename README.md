@@ -11,6 +11,8 @@ Features:
 - Forward, API agnostic, PBR renderer that features shadow maps, equirectangular skyboxes and various post processing effects.
     - Forward Plus renderer backend is planned for the future, with the ability to switch between renderer backends.
 - Utilizes the [Slang](https://github.com/shader-slang/slang) shader language for seamless cross api integration and advanced reflection and tooling.
+- Texture compression utilizing the [KTX-Software](https://github.com/KhronosGroup/KTX-Software) library.
+- Flexible and performant reference counting system for assets and resources.
 - Complete UI Editor for creating applications / games.
 - Uses an ECS architecture featuring a custom flexible implementation.
 - Fully integrated C++ scripting support with hot reloading.
