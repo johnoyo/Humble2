@@ -1,5 +1,9 @@
 // Common definitions
 
+import lighting_common;
+
+extern struct LightProvider : ILightProvider;
+
 struct Camera
 {
     float4x4 ViewProjection;
@@ -10,19 +14,6 @@ struct Object
     float4x4 Model;
     float4x4 InverseModel;
     float4 Color;
-};
-
-struct Light
-{
-    float4 ViewPosition;
-    float4 Positions[16];
-    float4 Directions[16];
-    float4 Colors[16];
-    float4 Metadata[16];
-    float4 ShadowData[16];
-    float4x4 LightSpaceMatrices[16];
-    float4 TileUVRange[16];
-    float Count;
 };
 
 struct Material
@@ -42,9 +33,6 @@ struct Fog
 
 [[vk::binding(0, 0)]]
 ConstantBuffer<Camera> u_Camera;
-
-[[vk::binding(1, 0)]]
-ConstantBuffer<Light> u_Light;
 
 [[vk::binding(2, 0)]]
 Sampler2D u_ShadowAltasMap;
@@ -279,6 +267,9 @@ float4 mainPS(PSInput input) : SV_Target0
         return float4(input.v_Color.rgb, 1.0);
     }
 
+    LightQuery q = { float3(0), uint2(0) };
+    LightProvider provider;
+
     float3 textureColor = u_AlbedoMap.Sample(input.v_TextureCoord).rgb;
     float3 normal = normalize(input.v_Normal);
     float3 camDir = normalize(u_Light.ViewPosition.xyz - input.v_Position);
@@ -287,7 +278,7 @@ float4 mainPS(PSInput input) : SV_Target0
     float3 diffuseAcc = float3(0.0, 0.0, 0.0);
     float3 specularAcc = float3(0.0, 0.0, 0.0);
 
-    for (int i = 0; i < int(u_Light.Count); ++i)
+    for (int i = 0; i < int(provider.GetLightCount(q)); ++i)
     {
         float intensity = u_Light.Metadata[i].x;
         float3 lightCol = u_Light.Colors[i].xyz;
