@@ -151,7 +151,7 @@ namespace HBL2
 
 	void ForwardSceneRenderer::Gather(Entity mainCamera)
 	{
-		SceneRenderData* sceneRenderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
+		ForwardSceneRenderData* sceneRenderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
 
 		GetViewProjection(sceneRenderData, mainCamera);
 
@@ -163,7 +163,7 @@ namespace HBL2
 	{
         BEGIN_PROFILE_PASS();
         
-		SceneRenderData* sceneRenderData = (SceneRenderData*)renderData;
+		ForwardSceneRenderData* sceneRenderData = (ForwardSceneRenderData*)renderData;
 		UniformRingBuffer* uniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 		ResourceManager* rm = ResourceManager::Instance;
 
@@ -317,7 +317,7 @@ namespace HBL2
 		});
 
 		// Create shadow pre-pass shader.
-		const auto& shadowPrePassShaderData = ShaderUtilities::Get().Compile("assets/shaders/shadow-mapping-pre-pass.slang", (ShaderReflectionData*)nullptr);
+		const auto& shadowPrePassShaderData = ShaderUtilities::Get().Compile("assets/shaders/shadow-mapping-pre-pass.slang", (ShaderReflectionData*)nullptr, false);
 
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.colorOutput = false;
@@ -396,7 +396,7 @@ namespace HBL2
 		});
 
 		// Create pre-pass shaders.
-		const auto& prePassShaderData = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-mesh.slang", (ShaderReflectionData*)nullptr);
+		const auto& prePassShaderData = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-mesh.slang", (ShaderReflectionData*)nullptr, false);
 
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.colorOutput = false;
@@ -430,7 +430,7 @@ namespace HBL2
 			.renderPass = m_DepthOnlyRenderPass,
 		});
 
-		const auto& prePassSpriteShaderData = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-sprite.slang", (ShaderReflectionData*)nullptr);
+		const auto& prePassSpriteShaderData = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-sprite.slang", (ShaderReflectionData*)nullptr, false);
 
 		m_DepthOnlySpriteShader = ResourceManager::Instance->CreateShader({
 			.debugName = "sprite-pre-pass-shader",
@@ -567,7 +567,7 @@ namespace HBL2
 		});
 
 		// Compile compute shader.
-        const auto& compilationData = ShaderUtilities::Get().Compile("assets/shaders/equirectangular-to-skybox.slang", nullptr);
+        const auto& compilationData = ShaderUtilities::Get().Compile("assets/shaders/equirectangular-to-skybox.slang", nullptr, false);
         
 		// Create compute bind group layout.
 		m_EquirectToSkyboxBindGroupLayout = m_ResourceManager->CreateBindGroupLayout({
@@ -649,7 +649,7 @@ namespace HBL2
 		});
 
 		// Create skybox shader.
-		const auto& skyboxShaderData = ShaderUtilities::Get().Compile("assets/shaders/skybox.slang", (ShaderReflectionData*)nullptr);
+		const auto& skyboxShaderData = ShaderUtilities::Get().Compile("assets/shaders/skybox.slang", (ShaderReflectionData*)nullptr, false);
 
 		m_SkyboxVariant.blendEnabled = false;
 		m_SkyboxVariant.depthWrite = false;
@@ -850,7 +850,7 @@ namespace HBL2
 		});
 
 		// Create pre-pass shaders.
-		const auto& postProcessShaderData = ShaderUtilities::Get().Compile("assets/shaders/post-process-tone-mapping.slang", (ShaderReflectionData*)nullptr);
+		const auto& postProcessShaderData = ShaderUtilities::Get().Compile("assets/shaders/post-process-tone-mapping.slang", (ShaderReflectionData*)nullptr, false);
 
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.blendEnabled = false;
@@ -912,7 +912,7 @@ namespace HBL2
 		variant.frontFace = (packed_size)FrontFace::CLOCKWISE;
 
 		// Compile present shaders.
-		const auto& presentShaderData = ShaderUtilities::Get().Compile("assets/shaders/present.slang", (ShaderReflectionData*)nullptr);
+		const auto& presentShaderData = ShaderUtilities::Get().Compile("assets/shaders/present.slang", (ShaderReflectionData*)nullptr, false);
 
 		// Create present bind group layout.
 		m_PresentShader = ResourceManager::Instance->CreateShader({
@@ -947,7 +947,7 @@ namespace HBL2
 	}
 
 	// Gathering.
-	void ForwardSceneRenderer::GatherDraws(SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::GatherDraws(ForwardSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1179,7 +1179,7 @@ namespace HBL2
 		}
 	}
 
-	void ForwardSceneRenderer::GatherLights(SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::GatherLights(ForwardSceneRenderData* sceneRenderData)
 	{
 		sceneRenderData->m_LightData.LightCount = 0;
 
@@ -1264,7 +1264,7 @@ namespace HBL2
 	}
 
 	// Pass rendering.
-	void ForwardSceneRenderer::ShadowPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::ShadowPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1327,7 +1327,7 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().ShadowPassTime);
 	}
 
-	void ForwardSceneRenderer::DepthPrePass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::DepthPrePass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1354,7 +1354,7 @@ namespace HBL2
         END_PROFILE_PASS(Renderer::Instance->GetStats().PrePassTime);
     }
 
-    void ForwardSceneRenderer::GeometryPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData, RenderPassPool& renderPassPool)
+    void ForwardSceneRenderer::GeometryPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData, RenderPassPool& renderPassPool)
     {
         ScratchArena scratch(Allocator::FrameArenaRT);
         DrawList skyboxDraws(scratch, 32);
@@ -1378,7 +1378,7 @@ namespace HBL2
         commandBuffer->EndRenderPass(*passRenderer);
     }
 
-    void ForwardSceneRenderer::OpaquePass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData)
+    void ForwardSceneRenderer::OpaquePass(RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData)
     {
         BEGIN_PROFILE_PASS();
         
@@ -1402,7 +1402,7 @@ namespace HBL2
         END_PROFILE_PASS(Renderer::Instance->GetStats().OpaquePassTime);
 	}
 
-	void ForwardSceneRenderer::TransparentPass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::TransparentPass(RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1548,7 +1548,7 @@ namespace HBL2
         END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxComputePassTime);
     }
 
-	void ForwardSceneRenderer::SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData)
 	{
         BEGIN_PROFILE_PASS();
 
@@ -1565,7 +1565,7 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxPassTime);
 	}
 
-	void ForwardSceneRenderer::PostProcessPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::PostProcessPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1607,7 +1607,7 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().DebugPassTime);
 	}
 
-	void ForwardSceneRenderer::PresentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::PresentPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1641,7 +1641,7 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PresentPassTime);
 	}
 
-	void ForwardSceneRenderer::GetViewProjection(SceneRenderData* sceneRenderData, Entity mainCamera)
+	void ForwardSceneRenderer::GetViewProjection(ForwardSceneRenderData* sceneRenderData, Entity mainCamera)
 	{
 		Scene* scene = (Context::Mode == Mode::Editor ? m_EditorScene : m_Scene);
 
@@ -1671,7 +1671,7 @@ namespace HBL2
 		sceneRenderData->m_CameraProjection = camera.Projection;
 	}
 
-	void ForwardSceneRenderer::CreateAlignedMatrixArray(SceneRenderData* sceneRenderData, const glm::mat4* matrices, size_t count, uint32_t alignedSize)
+	void ForwardSceneRenderer::CreateAlignedMatrixArray(ForwardSceneRenderData* sceneRenderData, const glm::mat4* matrices, size_t count, uint32_t alignedSize)
 	{
 		// Calculate total size
 		size_t totalSize = alignedSize * count;

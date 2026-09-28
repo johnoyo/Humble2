@@ -1,5 +1,9 @@
 // Common definitions
 
+import lighting_common;
+
+extern struct LightProvider : ILightProvider;
+
 struct Camera
 {
     float4x4 ViewProjection;
@@ -12,19 +16,6 @@ struct Object
     float4 Color;
 };
 
-struct Light
-{
-    float4 ViewPosition;
-    float4 Positions[16];
-    float4 Directions[16];
-    float4 Colors[16];
-    float4 Metadata[16];
-    float4 ShadowData[16];
-    float4x4 LightSpaceMatrices[16];
-    float4 TileUVRange[16];
-    float Count;
-};
-
 struct Material
 {
     float4 Color;
@@ -34,9 +25,6 @@ struct Material
 
 [[vk::binding(0, 0)]]
 ConstantBuffer<Camera> u_Camera;
-
-[[vk::binding(1, 0)]]
-ConstantBuffer<Light> u_Light;
 
 [[vk::binding(2, 0)]]
 Sampler2D u_ShadowAltasMap;
@@ -306,6 +294,9 @@ float3 fresnelSchlick(float cosTheta, float3 F0)
 [shader("fragment")]
 float4 mainPS(PSInput input) : SV_Target0
 {
+    LightQuery q = { float3(0), uint2(0) };
+    LightProvider provider;
+
     float3 albedo = pow(u_AlbedoMap.Sample(input.v_TextureCoord).rgb, float3(2.2, 2.2, 2.2));
     float metallic = u_MetallicMap.Sample(input.v_TextureCoord).r;
     float roughness = u_RoughnessMap.Sample(input.v_TextureCoord).r;
@@ -317,7 +308,7 @@ float4 mainPS(PSInput input) : SV_Target0
     F0 = lerp(F0, albedo, metallic);
 
     float3 Lo = float3(0.0, 0.0, 0.0);
-    for (int i = 0; i < int(u_Light.Count); ++i)
+    for (int i = 0; i < int(provider.GetLightCount(q)); ++i)
     {
         float lightIntensity = u_Light.Metadata[i].x;
         float3 lightColor = u_Light.Colors[i].xyz;

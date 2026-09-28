@@ -142,7 +142,7 @@ namespace HBL2
 		wireTriVariant.frontFace = Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL ? (packed_size)FrontFace::COUNTER_CLOCKWISE : (packed_size)FrontFace::CLOCKWISE; // TODO: Fix discrepancy.
 
 		// Compile debug shader.
-		const auto& debugShaderData = ShaderUtilities::Get().Compile("assets/shaders/debug-draw.slang", (ShaderReflectionData*)nullptr);
+		const auto& debugShaderData = ShaderUtilities::Get().Compile("assets/shaders/debug-draw.slang", (ShaderReflectionData*)nullptr, false);
 
 		// Create debug shader handle.
 		m_DebugShader = m_ResourceManager->CreateShader({

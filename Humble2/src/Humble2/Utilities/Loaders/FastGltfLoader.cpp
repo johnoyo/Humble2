@@ -57,7 +57,7 @@ namespace HBL2
 			const auto& shaderFileSystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
 			const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
 
-			shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
+			shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
 		}
 	}
 

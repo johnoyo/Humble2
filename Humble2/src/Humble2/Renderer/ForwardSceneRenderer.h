@@ -24,14 +24,7 @@ namespace HBL2
 		glm::vec4 Color = { 0.0f, 0.0f, 0.0f, 0.0f };
 	};
 
-	struct PerMaterialData
-	{
-		glm::vec4 Color;
-		float Roughness;
-		float Metalicness;
-	};
-
-	struct SceneRenderData
+	struct ForwardSceneRenderData
 	{
 		LightData m_LightData{};
 		CameraData m_CameraData{};
@@ -77,23 +70,23 @@ namespace HBL2
 		void DebugPassSetup();
 		void PresentPassSetup();
 
-		void GatherDraws(SceneRenderData* sceneRenderData);
-		void GatherLights(SceneRenderData* sceneRenderData);
+		void GatherDraws(ForwardSceneRenderData* sceneRenderData);
+		void GatherLights(ForwardSceneRenderData* sceneRenderData);
 
-		void ShadowPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
-		void DepthPrePass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
-        void GeometryPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData, RenderPassPool& renderPassPool);
-		void OpaquePass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
-		void TransparentPass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
+		void ShadowPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
+		void DepthPrePass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
+        void GeometryPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData, RenderPassPool& renderPassPool);
+		void OpaquePass(RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData);
+		void TransparentPass(RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData);
         void SkyboxComputePass(CommandBuffer* commandBuffer, DrawList* skyboxDraws);
-		void SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
-		void PostProcessPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
+		void SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData);
+		void PostProcessPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
 		void DebugPass(CommandBuffer* commandBuffer, void* debugRenderData);
-		void PresentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
+		void PresentPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
 
-		void GetViewProjection(SceneRenderData* sceneRenderData, Entity mainCamera);
+		void GetViewProjection(ForwardSceneRenderData* sceneRenderData, Entity mainCamera);
 
-		void CreateAlignedMatrixArray(SceneRenderData* sceneRenderData, const glm::mat4* matrices, size_t count, uint32_t alignedSize);
+		void CreateAlignedMatrixArray(ForwardSceneRenderData* sceneRenderData, const glm::mat4* matrices, size_t count, uint32_t alignedSize);
 
 	private:
 		PoolReservation* m_Reservation = nullptr;
@@ -103,7 +96,7 @@ namespace HBL2
 		UniformRingBuffer* m_UniformRingBuffer = nullptr;
 
 		Scene* m_EditorScene = nullptr;
-		SceneRenderData m_RenderData[Renderer::FrameCount]{};
+		ForwardSceneRenderData m_RenderData[Renderer::FrameCount]{};
 		
 		Handle<RenderPassLayout> m_RenderPassLayout;
 

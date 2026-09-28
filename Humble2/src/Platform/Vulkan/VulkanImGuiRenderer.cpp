@@ -53,8 +53,8 @@ namespace HBL2
 		initInfo.Device = m_Device->Get();
 		initInfo.Queue = m_Renderer->GetGraphicsQueue();
 		initInfo.DescriptorPool = m_ImGuiPool;
-		initInfo.MinImageCount = 2l;
-		initInfo.ImageCount = 2;
+		initInfo.MinImageCount = m_Renderer->FrameCount;
+		initInfo.ImageCount = m_Renderer->FrameCount;
 		initInfo.PipelineInfoMain =
 		{
 			.RenderPass = renderPass->RenderPass,

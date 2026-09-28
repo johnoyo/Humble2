@@ -14,6 +14,8 @@
 #include "Systems/TerrainSystem.h"
 #include "Systems/AnimationCurveSystem.h"
 
+#include "Renderer/ForwardSceneRenderer.h"
+
 #include "Prefab/PrefabSerializer.h"
 
 namespace HBL2
@@ -1166,7 +1168,8 @@ namespace HBL2
 
 		// Compile Shader.
 		ShaderReflectionData outReflectionData;
-		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath.string(), &outReflectionData);
+		bool attachLightingModules = (type == 1 || type == 2);
+		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath.string(), &outReflectionData, attachLightingModules);
 
 		if (!compilationData.IsValid())
 		{
@@ -1501,7 +1504,7 @@ namespace HBL2
 			// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 			//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
 
-			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
+			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
 
 			Handle<BindGroup> materialBindGroup;
 
@@ -2034,10 +2037,12 @@ namespace HBL2
 
 		StaticDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> shaderVariants;
 
+		uint32_t type = UINT32_MAX;
+
 		const auto& shaderProperties = data["Shader"];
 		if (shaderProperties)
 		{
-			uint32_t type = shaderProperties["Type"].as<uint32_t>();
+			type = shaderProperties["Type"].as<uint32_t>();
 
 			switch (type)
 			{
@@ -2124,7 +2129,8 @@ namespace HBL2
 
 		// Compile Shader.
 		ShaderReflectionData outReflectionData;
-		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath.string(), &outReflectionData, true);
+		bool attachLightingModules = (type == 1 || type == 2);
+		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath.string(), &outReflectionData, attachLightingModules, true);
 
 		if (!compilationData.IsValid())
 		{
@@ -2426,7 +2432,7 @@ namespace HBL2
 			// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 			//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
 
-			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
+			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
 
 			Handle<BindGroup> materialBindGroup;
 

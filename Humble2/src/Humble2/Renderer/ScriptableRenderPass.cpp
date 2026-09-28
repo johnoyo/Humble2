@@ -57,7 +57,7 @@ namespace HBL2
 
 		// Create srp shaders.
 		ShaderReflectionData outReflectionData;
-		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath, &outReflectionData);
+		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath, &outReflectionData, false);
 
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.blendEnabled = false;

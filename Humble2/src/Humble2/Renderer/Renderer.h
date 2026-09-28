@@ -63,7 +63,6 @@ namespace HBL2
 	{
 		Forward = 0,
 		ForwardPlus,
-		Deferred,
 		Custom,
 	};
 

@@ -82,8 +82,8 @@ namespace HBL2
 		static void Shutdown();
 
 		std::string ReadFile(const std::string& filepath);
-		CompilationResultData Compile(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool forceRecompile = false);
-		ShaderReflectionData Reflect(const std::string& shaderFilePath);
+		CompilationResultData Compile(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool attachLightingModules, bool forceRecompile = false);
+		ShaderReflectionData Reflect(const std::string& shaderFilePath, bool attachLightingModules);
 
 		void LoadBuiltInShaders();
 		void DeleteBuiltInShaders();

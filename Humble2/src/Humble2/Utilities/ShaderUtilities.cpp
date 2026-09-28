@@ -143,7 +143,7 @@ namespace HBL2
         return result;
     }
 
-    CompilationResultData ShaderUtilities::Compile(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool forceRecompile)
+    CompilationResultData ShaderUtilities::Compile(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool attachLightingModules, bool forceRecompile)
     {
         HBL2_FUNC_PROFILE();
 
@@ -275,6 +275,64 @@ namespace HBL2
             return {};
         }
 
+        Slang::ComPtr<slang::IModule> lightingCommonModule;
+        if (attachLightingModules)
+        {
+            const auto& shaderFilePathAsPath0 = std::filesystem::path("assets/shaders/lighting_common.slang");
+            auto shaderPath0 = std::filesystem::exists(shaderFilePathAsPath0) ? shaderFilePathAsPath0 : workingDir / "assets/shaders/lighting_common.slang";
+
+            if (!std::filesystem::exists(shaderPath0))
+            {
+                shaderPath0 = Project::GetAssetFileSystemPath("assets/shaders/lighting_common.slang");
+            }
+
+            const std::string& shaderSource0 = ReadFile(shaderPath0.string());
+
+            Slang::ComPtr<slang::IBlob> diagnostics0;
+            lightingCommonModule = session->loadModuleFromSourceString(shaderPath0.filename().stem().string().c_str(), shaderPath0.string().c_str(), shaderSource0.c_str(), diagnostics0.writeRef());
+
+            if (diagnostics0)
+            {
+                HBL2_CORE_WARN("Slang diagnostics: {}", (const char*)diagnostics0->getBufferPointer());
+                diagnostics0 = nullptr;
+            }
+
+            if (!lightingCommonModule)
+            {
+                HBL2_CORE_ERROR("Slang: Failed to load shader module");
+                return {};
+            }
+        }
+
+        Slang::ComPtr<slang::IModule> lightingForwardModule;
+        if (attachLightingModules)
+        {
+            const auto& shaderFilePathAsPath1 = std::filesystem::path("assets/shaders/lighting_forward.slang");
+            auto shaderPath1 = std::filesystem::exists(shaderFilePathAsPath1) ? shaderFilePathAsPath1 : workingDir / "assets/shaders/lighting_forward.slang";
+
+            if (!std::filesystem::exists(shaderPath1))
+            {
+                shaderPath1 = Project::GetAssetFileSystemPath("assets/shaders/lighting_forward.slang");
+            }
+
+            const std::string& shaderSource1 = ReadFile(shaderPath1.string());
+
+            Slang::ComPtr<slang::IBlob> diagnostics1;
+            lightingForwardModule = session->loadModuleFromSourceString(shaderPath1.filename().stem().string().c_str(), shaderPath1.string().c_str(), shaderSource1.c_str(), diagnostics1.writeRef());
+
+            if (diagnostics1)
+            {
+                HBL2_CORE_WARN("Slang diagnostics: {}", (const char*)diagnostics1->getBufferPointer());
+                diagnostics1 = nullptr;
+            }
+
+            if (!lightingForwardModule)
+            {
+                HBL2_CORE_ERROR("Slang: Failed to load shader module");
+                return {};
+            }
+        }
+
         // Entry points.
         SlangInt32 entryPointCount = slangModule->getDefinedEntryPointCount();
         if (entryPointCount == 0)
@@ -294,6 +352,13 @@ namespace HBL2
         // Composite + link.
         StaticDArray<slang::IComponentType*, 6> components;
         components.push_back(slangModule);
+
+        if (attachLightingModules)
+        {
+            components.push_back(lightingCommonModule);
+            components.push_back(lightingForwardModule);
+        }
+
         for (auto& ep : entryPoints)
         {
             components.push_back(ep.get());
@@ -470,7 +535,7 @@ namespace HBL2
         return compilationResultData;
     }
 
-    ShaderReflectionData ShaderUtilities::Reflect(const std::string& shaderFilePath)
+    ShaderReflectionData ShaderUtilities::Reflect(const std::string& shaderFilePath, bool attachLightingModules)
     {
         HBL2_FUNC_PROFILE();
 
@@ -574,6 +639,51 @@ namespace HBL2
             return {};
         }
 
+        Slang::ComPtr<slang::IModule> lightingCommonModule;
+        if (attachLightingModules)
+        {
+            const auto& shaderPath0 = std::filesystem::path("assets/shaders/lighting_common.slang");
+            const std::string& shaderSource0 = ReadFile(shaderPath0.string());
+
+            Slang::ComPtr<slang::IBlob> diagnostics0;
+            lightingCommonModule = session->loadModuleFromSourceString(shaderPath0.filename().stem().string().c_str(), shaderPath0.string().c_str(), shaderSource0.c_str(), diagnostics0.writeRef());
+
+            if (diagnostics0)
+            {
+                HBL2_CORE_WARN("Slang diagnostics: {}", (const char*)diagnostics0->getBufferPointer());
+                diagnostics0 = nullptr;
+            }
+
+            if (!lightingCommonModule)
+            {
+                HBL2_CORE_ERROR("Slang: Failed to load shader module");
+                return {};
+            }
+        }
+
+        Slang::ComPtr<slang::IModule> lightingForwardModule;
+        if (attachLightingModules)
+        {
+            const auto& shaderPath1 = std::filesystem::path("assets/shaders/lighting_forward.slang");
+
+            const std::string& shaderSource1 = ReadFile(shaderPath1.string());
+
+            Slang::ComPtr<slang::IBlob> diagnostics1;
+            lightingForwardModule = session->loadModuleFromSourceString(shaderPath1.filename().stem().string().c_str(), shaderPath1.string().c_str(), shaderSource1.c_str(), diagnostics1.writeRef());
+
+            if (diagnostics1)
+            {
+                HBL2_CORE_WARN("Slang diagnostics: {}", (const char*)diagnostics1->getBufferPointer());
+                diagnostics1 = nullptr;
+            }
+
+            if (!lightingForwardModule)
+            {
+                HBL2_CORE_ERROR("Slang: Failed to load shader module");
+                return {};
+            }
+        }
+
         // Entry points.
         SlangInt32 entryPointCount = slangModule->getDefinedEntryPointCount();
         if (entryPointCount == 0)
@@ -593,6 +703,13 @@ namespace HBL2
         // Composite + link.
         StaticDArray<slang::IComponentType*, 6> components;
         components.push_back(slangModule);
+
+        if (attachLightingModules)
+        {
+            components.push_back(lightingCommonModule);
+            components.push_back(lightingForwardModule);
+        }
+
         for (auto& ep : entryPoints)
         {
             components.push_back(ep.get());
@@ -762,7 +879,8 @@ namespace HBL2
         out << YAML::Key << "BindGroup" << YAML::BeginSeq;
         out << YAML::BeginMap;
 
-        const auto& reflectionData = Reflect(path.string());
+        bool attachLightingModules = (shaderType == 1 || shaderType == 2);
+        const auto& reflectionData = Reflect(path.string(), attachLightingModules);
 
         for (const auto& descriptorSet : reflectionData.descriptorSets)
         {
@@ -915,7 +1033,9 @@ namespace HBL2
         YAML::Node bindGroup = root["Shader"]["BindGroup"];
 
         // Get reflection data.
-        const auto& reflectionData = Reflect(filePath.string());
+        uint32_t type = root["Shader"]["Type"].as<uint32_t>();
+        bool attachLightingModules = (type == 1 || type == 2);
+        const auto& reflectionData = Reflect(filePath.string(), attachLightingModules);
 
         for (const auto& descriptorSet : reflectionData.descriptorSets)
         {

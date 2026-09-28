@@ -3,6 +3,8 @@
 #include "Project/Project.h"
 #include "Core/Application.h"
 #include "Renderer/DebugRenderer.h"
+#include "Renderer/ForwardSceneRenderer.h"
+#include "Renderer/ForwardPlusSceneRenderer.h"
 
 namespace HBL2
 {
@@ -18,10 +20,14 @@ namespace HBL2
 		switch (projectSettings.Renderer)
 		{
 		case RendererType::Forward:
-		case RendererType::ForwardPlus:
-		case RendererType::Deferred:
-		case RendererType::Custom:
 			m_SceneRenderer = new ForwardSceneRenderer;
+			break;
+		case RendererType::ForwardPlus:
+			m_SceneRenderer = new ForwardPlusSceneRenderer;
+			break;
+		case RendererType::Custom:
+			// TODO: Retrieve scene renderer script from project settings.
+			HBL2_CORE_ASSERT(false, "Custom scene renderers are not yet supported!");
 			break;
 		}
 
