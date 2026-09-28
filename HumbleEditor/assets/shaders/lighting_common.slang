@@ -13,6 +13,9 @@ public struct Light
     public float Count;
 };
 
+[[vk::binding(1, 0)]]
+public ConstantBuffer<Light> u_Light : register(b1);
+
 public struct LightQuery
 {
     public float3 worldPosition;
@@ -24,6 +27,3 @@ public interface ILightProvider
     uint GetLightCount(LightQuery q);
     Light GetLight(LightQuery q, uint index);
 }
-
-[[vk::binding(1, 0)]]
-public ConstantBuffer<Light> u_Light;

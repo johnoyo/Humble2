@@ -3,10 +3,10 @@ module lighting_forward_plus;
 import lighting_common;
 
 [[vk::binding(3, 0)]]
-StructuredBuffer<uint> u_LightIndexList;
+public StructuredBuffer<uint> u_LightIndexList : register(t2);
 
 [[vk::binding(4, 0)]]
-Texture2D<uint2> u_LightGrid;
+public Texture2D<uint2> u_LightGrid : register(t1);
 
 static const uint TILE_SIZE = 16;
 
