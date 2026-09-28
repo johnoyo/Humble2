@@ -160,6 +160,9 @@ namespace HBL2
         {
             shaderPath = Project::GetAssetFileSystemPath(shaderFilePath);
         }
+
+        const std::string modulesDir = (workingDir / "assets" / "shaders").string();
+        const char* searchPaths[] = { modulesDir.c_str() };
         
         const auto& cacheDirectory = GetCacheDirectory(target);
 
@@ -187,6 +190,8 @@ namespace HBL2
 
         // Session description.
         slang::SessionDesc sessionDesc = {};
+        sessionDesc.searchPaths = searchPaths;
+        sessionDesc.searchPathCount = 1;
         sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR;
 
         // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/08-compiling.html
@@ -215,7 +220,7 @@ namespace HBL2
                 options[3] = slang::CompilerOptionEntry
                 {
                     .name = slang::CompilerOptionName::Optimization,
-                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_DEFAULT }
                 };
                 
                 sessionDesc.compilerOptionEntries = options.data();
@@ -233,7 +238,7 @@ namespace HBL2
                 options[1] = slang::CompilerOptionEntry
                 {
                     .name = slang::CompilerOptionName::Optimization,
-                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_DEFAULT }
                 };
                 
                 sessionDesc.compilerOptionEntries = options.data();
@@ -278,18 +283,8 @@ namespace HBL2
         Slang::ComPtr<slang::IModule> lightingCommonModule;
         if (attachLightingModules)
         {
-            const auto& shaderFilePathAsPath0 = std::filesystem::path("assets/shaders/lighting_common.slang");
-            auto shaderPath0 = std::filesystem::exists(shaderFilePathAsPath0) ? shaderFilePathAsPath0 : workingDir / "assets/shaders/lighting_common.slang";
-
-            if (!std::filesystem::exists(shaderPath0))
-            {
-                shaderPath0 = Project::GetAssetFileSystemPath("assets/shaders/lighting_common.slang");
-            }
-
-            const std::string& shaderSource0 = ReadFile(shaderPath0.string());
-
             Slang::ComPtr<slang::IBlob> diagnostics0;
-            lightingCommonModule = session->loadModuleFromSourceString(shaderPath0.filename().stem().string().c_str(), shaderPath0.string().c_str(), shaderSource0.c_str(), diagnostics0.writeRef());
+            lightingCommonModule = session->loadModule("lighting_common", diagnostics0.writeRef());
 
             if (diagnostics0)
             {
@@ -307,18 +302,8 @@ namespace HBL2
         Slang::ComPtr<slang::IModule> lightingForwardModule;
         if (attachLightingModules)
         {
-            const auto& shaderFilePathAsPath1 = std::filesystem::path("assets/shaders/lighting_forward.slang");
-            auto shaderPath1 = std::filesystem::exists(shaderFilePathAsPath1) ? shaderFilePathAsPath1 : workingDir / "assets/shaders/lighting_forward.slang";
-
-            if (!std::filesystem::exists(shaderPath1))
-            {
-                shaderPath1 = Project::GetAssetFileSystemPath("assets/shaders/lighting_forward.slang");
-            }
-
-            const std::string& shaderSource1 = ReadFile(shaderPath1.string());
-
             Slang::ComPtr<slang::IBlob> diagnostics1;
-            lightingForwardModule = session->loadModuleFromSourceString(shaderPath1.filename().stem().string().c_str(), shaderPath1.string().c_str(), shaderSource1.c_str(), diagnostics1.writeRef());
+            lightingForwardModule = session->loadModule("lighting_forward", diagnostics1.writeRef());
 
             if (diagnostics1)
             {
@@ -545,6 +530,10 @@ namespace HBL2
 
         std::filesystem::path shaderPath = shaderFilePath;
 
+        const auto& workingDir = Project::GetProjectDirectory().parent_path();
+        const std::string modulesDir = (workingDir / "assets" / "shaders").string();
+        const char* searchPaths[] = { modulesDir.c_str() };
+
         uint32_t workerIndex = JobSystem::Get().GetWorkerIndex();
 
         // Target description.
@@ -568,6 +557,8 @@ namespace HBL2
 
         // Session description.
         slang::SessionDesc sessionDesc = {};
+        sessionDesc.searchPaths = searchPaths;
+        sessionDesc.searchPathCount = 1;
         sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR;
         
         // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/08-compiling.html
@@ -597,7 +588,7 @@ namespace HBL2
                 options[3] = slang::CompilerOptionEntry
                 {
                     .name = slang::CompilerOptionName::Optimization,
-                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_DEFAULT }
                 };
                 
                 break;
@@ -642,11 +633,8 @@ namespace HBL2
         Slang::ComPtr<slang::IModule> lightingCommonModule;
         if (attachLightingModules)
         {
-            const auto& shaderPath0 = std::filesystem::path("assets/shaders/lighting_common.slang");
-            const std::string& shaderSource0 = ReadFile(shaderPath0.string());
-
             Slang::ComPtr<slang::IBlob> diagnostics0;
-            lightingCommonModule = session->loadModuleFromSourceString(shaderPath0.filename().stem().string().c_str(), shaderPath0.string().c_str(), shaderSource0.c_str(), diagnostics0.writeRef());
+            lightingCommonModule = session->loadModule("lighting_common", diagnostics0.writeRef());
 
             if (diagnostics0)
             {
@@ -664,12 +652,8 @@ namespace HBL2
         Slang::ComPtr<slang::IModule> lightingForwardModule;
         if (attachLightingModules)
         {
-            const auto& shaderPath1 = std::filesystem::path("assets/shaders/lighting_forward.slang");
-
-            const std::string& shaderSource1 = ReadFile(shaderPath1.string());
-
             Slang::ComPtr<slang::IBlob> diagnostics1;
-            lightingForwardModule = session->loadModuleFromSourceString(shaderPath1.filename().stem().string().c_str(), shaderPath1.string().c_str(), shaderSource1.c_str(), diagnostics1.writeRef());
+            lightingForwardModule = session->loadModule("lighting_forward", diagnostics1.writeRef());
 
             if (diagnostics1)
             {
