@@ -74,13 +74,14 @@ namespace HBL2
 
 	using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
 
-	void ForwardSceneRenderer::Initialize(Scene* scene)
+	void ForwardSceneRenderer::Initialize(Scene* scene, uint32_t maxLights)
 	{
 		uint32_t maxEntities = scene->GetDescriptor().maxEntities;
 
-		// Calculate space needed for the 8 draw lists per frame in flight.
+		// Calculate space needed for the 8 draw lists and 1 light buffer per frame in flight.
 		uint64_t totalBytes = ArenaLayout::Create()
 			.Add<LocalDrawStream>(Renderer::Instance->FrameCount * 8 * maxEntities)
+			.Add<Light>(Renderer::Instance->FrameCount * maxLights)
 			.Total();
 
 		m_Reservation = Allocator::Arena.Reserve("ForwardSceneRendererPool", totalBytes);
@@ -88,6 +89,9 @@ namespace HBL2
 
 		for (auto& sceneRenderData : m_RenderData)
 		{
+			sceneRenderData.m_LightData = FixedArray<Light>(&m_Arena, maxLights);
+			sceneRenderData.m_LightData.resize(maxLights);
+
 			sceneRenderData.m_PrePassSpriteDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_PrePassStaticMeshDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_ShadowPassSpriteDraws.Initialize(m_Arena, maxEntities);
@@ -169,7 +173,7 @@ namespace HBL2
 
 		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
 		rm->MapBufferData(uniformRingBuffer->GetBuffer(), sceneRenderData->m_UBOStartingOffset, sceneRenderData->m_UBOEndingOffset - sceneRenderData->m_UBOStartingOffset);
-
+		
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
@@ -634,7 +638,6 @@ namespace HBL2
 		auto cameraBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "skybox-camera-uniform-buffer",
 			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::GPU_CPU,
 			.byteSize = 64,
 			.initialData = nullptr,
@@ -758,7 +761,6 @@ namespace HBL2
 		m_PostProcessBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "camera-settings-buffer",
 			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
 			.byteSize = sizeof(CameraSettings),
 		});
 
@@ -833,7 +835,6 @@ namespace HBL2
 			m_PostProcessBuffer = m_ResourceManager->CreateBuffer({
 				.debugName = "camera-settings-buffer",
 				.usage = BufferUsage::UNIFORM,
-				.usageHint = BufferUsageHint::DYNAMIC,
 				.byteSize = sizeof(CameraSettings),
 			});
 
@@ -1250,7 +1251,7 @@ namespace HBL2
 						if (light.FollowMainCamera)
 						{
 							// Center the shadow volume on the camera so shadows follow the player.
-							focus = glm::vec3(sceneRenderData->m_CameraData.ViewPosition);
+							focus = glm::vec3(sceneRenderData->m_FrameData.ViewPosition);
 						}
 						else
 						{
@@ -1277,6 +1278,8 @@ namespace HBL2
 					lightIndex++;
 				}
 			});
+
+		sceneRenderData->m_FrameData.LightCount = lightIndex;
 	}
 
 	// Pass rendering.
@@ -1341,14 +1344,14 @@ namespace HBL2
 
 		// Depth only pre pass for opaque static meshes.
 		{
-			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassStaticMeshDraws);
 		}
 
 		// Depth only pre pass for opaque sprites.
 		{
-			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassSpriteDraws);
 		}
@@ -1367,6 +1370,10 @@ namespace HBL2
         
         RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_GeometryRenderPass);
         {
+			// Set and map storage buffer for light data.
+			ResourceManager::Instance->SetBufferData(Renderer::Instance->GetGlobalBindings3D(), 1, (void*)sceneRenderData->m_LightData.data());
+			ResourceManager::Instance->MapBufferData(Renderer::Instance->GetGlobalBindings3D(), 1, 0, sceneRenderData->m_FrameData.LightCount * sizeof(Light));
+
             renderPassPool.Execute(RenderPassEvent::BeforeRenderingOpaques);
             OpaquePass(passRenderer, sceneRenderData);
             renderPassPool.Execute(RenderPassEvent::AfterRenderingOpaques);
@@ -1389,8 +1396,7 @@ namespace HBL2
         // Render opaque meshes.
         {
             Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
-            ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData);
-            ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&sceneRenderData->m_LightData);
+            ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
             GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
             passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshOpaqueDraws);
         }
@@ -1398,7 +1404,7 @@ namespace HBL2
         // Render opaque sprites.
         {
             Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
-            ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
+            ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
             GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
             passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_SpriteOpaqueDraws);
         }
@@ -1413,8 +1419,7 @@ namespace HBL2
 		// Render transparent meshes.
 		{
 			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
-			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData);
-			ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&sceneRenderData->m_LightData);
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshTransparentDraws);
 		}
@@ -1422,7 +1427,7 @@ namespace HBL2
 		// Render transparent sprites.
 		{
 			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
-			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_SpriteTransparentDraws);
 		}
@@ -1652,8 +1657,8 @@ namespace HBL2
 		if (scene == nullptr || mainCamera == Entity::Null)
 		{
 			sceneRenderData->m_OnlyRotationInViewProjection = glm::mat4(1.0f);
-			sceneRenderData->m_CameraData.ViewProjection = glm::mat4(1.0f);
-			sceneRenderData->m_CameraData.ViewPosition = glm::vec4(0.0f);
+			sceneRenderData->m_FrameData.ViewProjection = glm::mat4(1.0f);
+			sceneRenderData->m_FrameData.ViewPosition = glm::vec4(0.0f);
 			sceneRenderData->m_CameraProjection = glm::mat4(1.0f);
 			sceneRenderData->m_CameraSettings.Exposure = 1.0f;
 			sceneRenderData->m_CameraSettings.Gamma = 2.2f;
@@ -1665,11 +1670,11 @@ namespace HBL2
 		Component::Camera& camera = scene->GetComponent<Component::Camera>(mainCamera);
 		sceneRenderData->m_CameraSettings.Exposure = camera.Exposure;
 		sceneRenderData->m_CameraSettings.Gamma = camera.Gamma;
-		sceneRenderData->m_CameraData.ViewProjection = camera.ViewProjectionMatrix;
+		sceneRenderData->m_FrameData.ViewProjection = camera.ViewProjectionMatrix;
 		sceneRenderData->m_CameraFrustum = camera.Frustum;
 
 		Component::Transform& tr = scene->GetComponent<Component::Transform>(mainCamera);
-		sceneRenderData->m_CameraData.ViewPosition = tr.WorldMatrix[3];
+		sceneRenderData->m_FrameData.ViewPosition = tr.WorldMatrix[3];
 		sceneRenderData->m_OnlyRotationInViewProjection = camera.Projection * glm::mat4(glm::mat3(camera.View));
 		sceneRenderData->m_CameraProjection = camera.Projection;
 	}

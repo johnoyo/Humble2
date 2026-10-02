@@ -1306,7 +1306,6 @@ namespace HBL2
 							auto userBuffer = ResourceManager::Instance->CreateBuffer({
 								.debugName = "shader-uniform-buffer",
 								.usage = BufferUsage::UNIFORM,
-								.usageHint = BufferUsageHint::DYNAMIC,
 								.memoryUsage = MemoryUsage::GPU_CPU,
 								.byteSize = (uint32_t)b.size,
 								.initialData = (void*)uniformBufferBytes.data(),
@@ -1630,7 +1629,6 @@ namespace HBL2
 							auto userBuffer = ResourceManager::Instance->CreateBuffer({
 								.debugName = "material-uniform-buffer",
 								.usage = BufferUsage::UNIFORM,
-								.usageHint = BufferUsageHint::DYNAMIC,
 								.memoryUsage = MemoryUsage::GPU_CPU,
 								.byteSize = (uint32_t)b.size,
 								.initialData = (void*)uniformBufferBytes.data(),
@@ -2265,7 +2263,6 @@ namespace HBL2
 							auto userBuffer = ResourceManager::Instance->CreateBuffer({
 								.debugName = "shader-uniform-buffer",
 								.usage = BufferUsage::UNIFORM,
-								.usageHint = BufferUsageHint::DYNAMIC,
 								.memoryUsage = MemoryUsage::GPU_CPU,
 								.byteSize = (uint32_t)b.size,
 								.initialData = (void*)uniformBufferBytes.data(),
@@ -2555,7 +2552,6 @@ namespace HBL2
 							auto userBuffer = ResourceManager::Instance->CreateBuffer({
 								.debugName = "user-uniform-buffer",
 								.usage = BufferUsage::UNIFORM,
-								.usageHint = BufferUsageHint::DYNAMIC,
 								.memoryUsage = MemoryUsage::GPU_CPU,
 								.byteSize = (uint32_t)b.size,
 								.initialData = (void*)uniformBufferBytes.data(),

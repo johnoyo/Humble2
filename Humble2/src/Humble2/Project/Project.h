@@ -23,7 +23,7 @@ namespace HBL2
 		RendererType Renderer = RendererType::Forward;
 		GraphicsAPI EditorGraphicsAPI = GraphicsAPI::OPENGL;
 		GraphicsAPI RuntimeGraphicsAPI = GraphicsAPI::VULKAN;
-		uint32_t MaxLights = 2048;
+		uint32_t MaxLights = 256;
 		
 		Physics2DEngineImpl Physics2DImpl = Physics2DEngineImpl::BOX2D;
 		PhysicsEngine2DSpecification PhysicsEngine2DSpec = {};

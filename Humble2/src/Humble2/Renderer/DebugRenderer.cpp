@@ -89,7 +89,6 @@ namespace HBL2
 		m_DebugLineVertexBuffer = ResourceManager::Instance->CreateBuffer({
 			.debugName = "debug-line-vertex-buffer",
 			.usage = BufferUsage::VERTEX,
-			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::CPU_GPU,
 			.byteSize = s_MaxDebugVertices * sizeof(DebugVertex),
 			.initialData = nullptr,
@@ -98,7 +97,6 @@ namespace HBL2
 		m_DebugFillTriVertexBuffer = ResourceManager::Instance->CreateBuffer({
 			.debugName = "debug-line-vertex-buffer",
 			.usage = BufferUsage::VERTEX,
-			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::CPU_GPU,
 			.byteSize = s_MaxDebugVertices * sizeof(DebugVertex),
 			.initialData = nullptr,
@@ -107,7 +105,6 @@ namespace HBL2
 		m_DebugWireTriVertexBuffer = ResourceManager::Instance->CreateBuffer({
 			.debugName = "debug-line-vertex-buffer",
 			.usage = BufferUsage::VERTEX,
-			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::CPU_GPU,
 			.byteSize = s_MaxDebugVertices * sizeof(DebugVertex),
 			.initialData = nullptr,

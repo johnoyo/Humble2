@@ -41,19 +41,17 @@ namespace HBL2
 		// Global bindings for the 3D rendering.
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
-			auto cameraBuffer3D = m_ResourceManager->CreateBuffer({
-				.debugName = "camera-uniform-buffer",
+			auto frameBuffer3D = m_ResourceManager->CreateBuffer({
+				.debugName = "frame-uniform-buffer",
 				.usage = BufferUsage::UNIFORM,
-				.usageHint = BufferUsageHint::DYNAMIC,
 				.memoryUsage = MemoryUsage::CPU_GPU,
-				.byteSize = sizeof(CameraData),
+				.byteSize = sizeof(FrameData),
 				.initialData = nullptr,
 			});
 
 			auto lightBuffer = m_ResourceManager->CreateBuffer({
 				.debugName = "light-ssbo",
 				.usage = BufferUsage::STORAGE,
-				.usageHint = BufferUsageHint::DYNAMIC,
 				.memoryUsage = MemoryUsage::CPU_GPU,
 				.byteSize = (uint32_t)sizeof(Light) * m_MaxLights,
 				.initialData = nullptr,
@@ -64,7 +62,7 @@ namespace HBL2
 				.layout = m_GlobalBindingsLayout3D,
 				.textures = { { ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY } },
 				.buffers = {
-					{ .buffer = cameraBuffer3D },
+					{ .buffer = frameBuffer3D },
 					{ .buffer = lightBuffer },
 				}
 			});
@@ -918,7 +916,6 @@ namespace HBL2
 			auto cameraBuffer2D = m_ResourceManager->CreateBuffer({
 				.debugName = "camera-uniform-buffer",
 				.usage = BufferUsage::UNIFORM,
-				.usageHint = BufferUsageHint::DYNAMIC,
 				.memoryUsage = MemoryUsage::CPU_GPU,
 				.byteSize = 64,
 				.initialData = nullptr,
@@ -939,7 +936,6 @@ namespace HBL2
 			auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
 				.debugName = "light-space-buffer",
 				.usage = BufferUsage::UNIFORM,
-				.usageHint = BufferUsageHint::DYNAMIC,
 				.memoryUsage = MemoryUsage::CPU_GPU,
 				.byteSize = sizeof(glm::mat4),
 				.initialData = nullptr
@@ -960,7 +956,6 @@ namespace HBL2
 			auto cameraBuffer = m_ResourceManager->CreateBuffer({
 				.debugName = "debug-draw-camera-uniform-buffer",
 				.usage = BufferUsage::UNIFORM,
-				.usageHint = BufferUsageHint::DYNAMIC,
 				.memoryUsage = MemoryUsage::CPU_GPU,
 				.byteSize = sizeof(glm::mat4),
 				.initialData = nullptr,

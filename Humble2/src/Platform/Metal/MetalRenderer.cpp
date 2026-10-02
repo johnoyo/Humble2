@@ -156,12 +156,12 @@ namespace HBL2
         // Global bindings for the 3D rendering.
         for (int i = 0; i < FRAME_OVERLAP; i++)
         {
-            auto cameraBuffer3D = m_ResourceManager->CreateBuffer({
-                .debugName = "camera-uniform-buffer",
+            auto frameBuffer3D = m_ResourceManager->CreateBuffer({
+                .debugName = "frame-uniform-buffer",
                 .usage = BufferUsage::UNIFORM,
                 .usageHint = BufferUsageHint::DYNAMIC,
                 .memoryUsage = MemoryUsage::CPU_GPU,
-                .byteSize = sizeof(CameraData),
+                .byteSize = sizeof(FrameData),
                 .initialData = nullptr,
             });
 
@@ -179,7 +179,7 @@ namespace HBL2
                 .layout = m_GlobalBindingsLayout3D,
                 .textures = { { ShadowAtlasTexture } },
                 .buffers = {
-                    { .buffer = cameraBuffer3D },
+                    { .buffer = frameBuffer3D },
                     { .buffer = lightBuffer },
                 }
             });

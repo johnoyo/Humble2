@@ -24,10 +24,12 @@ namespace HBL2
 
     constexpr unsigned int FRAME_OVERLAP = 2;
 
-	struct CameraData
+	struct FrameData
 	{
 		glm::mat4 ViewProjection;
 		glm::vec4 ViewPosition;
+		float LightCount;
+		float _padding[3];
 	};
 
 	struct alignas(16) CameraSettings
@@ -102,7 +104,7 @@ namespace HBL2
 		}
 	};
 
-	struct FrameData
+	struct RendererFrameData
 	{
 		SceneRenderer* Renderer = nullptr;
 		void* RenderData = nullptr;
@@ -133,8 +135,8 @@ namespace HBL2
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
 
-		void Render(const FrameData& frameData);
-		FrameData* WaitAndRender();
+		void Render(const RendererFrameData& frameData);
+		RendererFrameData* WaitAndRender();
 		void WaitAndBegin();
 		void MarkAndSubmit();
 		void WaitForRenderThreadIdle();
@@ -225,10 +227,10 @@ namespace HBL2
 		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 
 	protected:
-		FrameData m_Frames[FrameCount];
+		RendererFrameData m_Frames[FrameCount];
 		uint32_t m_UniformRingBufferSize = 32_MB * FrameCount;
 		uint32_t m_UniformRingBufferFrameOffsets[FrameCount];
-		uint32_t m_MaxLights = 2048;
+		uint32_t m_MaxLights = 256;
 
 		bool m_FrameReady[FrameCount];
 		bool m_FrameInUse[FrameCount];

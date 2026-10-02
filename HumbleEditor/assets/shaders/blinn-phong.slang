@@ -4,10 +4,11 @@ import lighting_common;
 
 extern struct LightProvider : ILightProvider;
 
-struct Camera
+struct FrameData
 {
     float4x4 ViewProjection;
     float4 ViewPosition;
+    float LightCount;
 };
 
 struct Object
@@ -24,7 +25,7 @@ struct Material
 };
 
 [[vk::binding(0, 0)]]
-ConstantBuffer<Camera> u_Camera;
+ConstantBuffer<FrameData> u_FrameData;
 
 [[vk::binding(2, 0)]]
 Sampler2D u_ShadowAltasMap;
@@ -68,7 +69,7 @@ VSOutput mainVS(VSInput input)
     output.v_Glossiness = u_Material.Glossiness;
     output.v_TextureCoord = input.a_TextureCoord;
     output.v_Normal = normalize(mul(u_Object.InverseModel, float4(input.a_Normal, 0.0)).xyz);
-    output.position = mul(u_Camera.ViewProjection, mul(u_Object.Model, float4(input.a_Position, 1.0)));
+    output.position = mul(u_FrameData.ViewProjection, mul(u_Object.Model, float4(input.a_Position, 1.0)));
 
     return output;
 }
@@ -243,12 +244,12 @@ float ShadowCalculation(float4 fragPosLightSpace, float4 tileUVRange, int index,
 [shader("fragment")]
 float4 mainPS(PSInput input) : SV_Target0
 {
-    LightQuery q = { float3(0), uint2(0) };
+    LightQuery q = { float3(0), uint2(0), uint(u_FrameData.LightCount) };
     LightProvider provider;
 
     float3 textureColor = u_AlbedoMap.Sample(input.v_TextureCoord).rgb;
     float3 normal = normalize(input.v_Normal);
-    float3 camDir = normalize(u_Camera.ViewPosition.xyz - input.v_Position);
+    float3 camDir = normalize(u_FrameData.ViewPosition.xyz - input.v_Position);
 
     float3 ambient = 0.1 * textureColor;
     float3 diffuseAcc = float3(0.0, 0.0, 0.0);

@@ -15,7 +15,7 @@ namespace HBL2
 		// Retrieve project settings.
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
-		m_MaxLights = 16;// projectSettings.MaxLights;
+		m_MaxLights = projectSettings.MaxLights;
 		m_UniformRingBufferSize = (uint32_t)MB(projectSettings.MaxUniformBufferMemory) * FrameCount;
 
 		uint32_t offset = 0;
@@ -184,7 +184,7 @@ namespace HBL2
 		});
 	}
 
-	void Renderer::Render(const FrameData& frameData)
+	void Renderer::Render(const RendererFrameData& frameData)
 	{
 		if (frameData.Renderer == nullptr)
 		{
@@ -194,7 +194,7 @@ namespace HBL2
 		frameData.Renderer->Render(frameData.RenderData, frameData.DebugRenderData);
 	}
 
-	FrameData* Renderer::WaitAndRender()
+	RendererFrameData* Renderer::WaitAndRender()
 	{
 		for (;;)
 		{
@@ -226,7 +226,7 @@ namespace HBL2
 			}
 
 			// If we have a frame, consume it now.
-			FrameData* frame = nullptr;
+			RendererFrameData* frame = nullptr;
 			int acquiredIndex = -1;
 			if (m_FrameReady[m_ReadIndex])
 			{

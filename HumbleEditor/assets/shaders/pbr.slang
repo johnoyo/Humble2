@@ -4,10 +4,11 @@ import lighting_common;
 
 extern struct LightProvider : ILightProvider;
 
-struct Camera
+struct FrameData
 {
     float4x4 ViewProjection;
     float4 ViewPosition;
+    float LightCount;
 };
 
 struct Object
@@ -25,7 +26,7 @@ struct Material
 };
 
 [[vk::binding(0, 0)]]
-ConstantBuffer<Camera> u_Camera;
+ConstantBuffer<FrameData> u_FrameData;
 
 [[vk::binding(2, 0)]]
 Sampler2D u_ShadowAltasMap;
@@ -76,7 +77,7 @@ VSOutput mainVS(VSInput input)
     output.v_Color = u_Material.Color * u_Object.Color;
     output.v_TextureCoord = input.a_TextureCoord;
     output.v_Normal = mul(u_Object.InverseModel, float4(input.a_Normal, 0.0)).xyz;
-    output.position = mul(u_Camera.ViewProjection, mul(u_Object.Model, float4(input.a_Position, 1.0)));
+    output.position = mul(u_FrameData.ViewProjection, mul(u_Object.Model, float4(input.a_Position, 1.0)));
 
     return output;
 }
@@ -307,7 +308,7 @@ float3 fresnelSchlick(float cosTheta, float3 F0)
 [shader("fragment")]
 float4 mainPS(PSInput input) : SV_Target0
 {
-    LightQuery q = { float3(0), uint2(0) };
+    LightQuery q = { float3(0), uint2(0), uint(u_FrameData.LightCount) };
     LightProvider provider;
 
     float3 albedo = pow(u_AlbedoMap.Sample(input.v_TextureCoord).rgb, float3(2.2, 2.2, 2.2));
@@ -315,7 +316,7 @@ float4 mainPS(PSInput input) : SV_Target0
     float roughness = u_RoughnessMap.Sample(input.v_TextureCoord).r;
 
     float3 N = getNormalFromMap(input);
-    float3 V = normalize(u_Camera.ViewPosition.xyz - input.v_Position);
+    float3 V = normalize(u_FrameData.ViewPosition.xyz - input.v_Position);
 
     float3 F0 = float3(0.04, 0.04, 0.04);
     F0 = lerp(F0, albedo, metallic);

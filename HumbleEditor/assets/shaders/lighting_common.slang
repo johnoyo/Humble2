@@ -18,6 +18,7 @@ public struct LightQuery
 {
     public float3 worldPosition;
     public uint2 pixelCoord;
+    public uint lightCount;
 }
 
 public interface ILightProvider

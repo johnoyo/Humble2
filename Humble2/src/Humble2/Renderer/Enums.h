@@ -232,12 +232,6 @@ namespace HBL2
 		INDIRECT = 256,
 		QUERY_RESOLVE = 512,
 	};
-
-	enum class BufferUsageHint
-	{
-		STATIC = 1,
-		DYNAMIC = 2,
-	};
 	
 	enum class TextureType
 	{

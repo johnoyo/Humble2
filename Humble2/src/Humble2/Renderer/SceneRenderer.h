@@ -10,7 +10,7 @@ namespace HBL2
 	public:
 		virtual ~SceneRenderer() = default;
 
-		virtual void Initialize(Scene* scene) = 0;
+		virtual void Initialize(Scene* scene, uint32_t maxLights) = 0;
 		virtual void Gather(Entity mainCamera) = 0;
 		virtual void Render(void* renderData, void* debugRenderData) = 0;
 		virtual void CleanUp() = 0;

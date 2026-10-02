@@ -7,6 +7,7 @@ Project:
     Type: 0
     Editor API: 2
     Runtime API: 2
+    Max Lights: 256
   Physics2D:
     Gravity Force: [0, -9.81000042]
     Enable Debug Draw: false

@@ -31,7 +31,7 @@ namespace HBL2
 			break;
 		}
 
-		m_SceneRenderer->Initialize(m_Context);
+		m_SceneRenderer->Initialize(m_Context, projectSettings.MaxLights);
 	}
 
 	void RenderingSystem::OnUpdate(float ts)

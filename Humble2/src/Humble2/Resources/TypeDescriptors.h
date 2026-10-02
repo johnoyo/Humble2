@@ -66,7 +66,6 @@ namespace HBL2
 	{
 		const char* debugName;
 		BufferUsage usage = BufferUsage::UNIFORM;
-		BufferUsageHint usageHint = BufferUsageHint::STATIC;
 		MemoryUsage memoryUsage = MemoryUsage::CPU_GPU;
 		uint32_t byteSize = 0;
 		void* initialData = nullptr;

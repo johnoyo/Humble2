@@ -9,6 +9,8 @@
 #include "Renderer/Renderer.h"
 #include "Resources/ResourceManager.h"
 
+#include "Utilities/Collections/FixedArray.h"
+
 namespace HBL2
 {
 	struct PerDrawData
@@ -26,8 +28,8 @@ namespace HBL2
 
 	struct ForwardSceneRenderData
 	{
-		Light m_LightData[16];
-		CameraData m_CameraData{};
+		FixedArray<Light> m_LightData;
+		FrameData m_FrameData{};
 		CameraSettings m_CameraSettings{};
 		Component::Camera::CameraFrustum m_CameraFrustum{};
 		glm::mat4 m_OnlyRotationInViewProjection = glm::mat4(1.0f);
@@ -51,7 +53,7 @@ namespace HBL2
 	public:
 		virtual ~ForwardSceneRenderer() = default;
 
-		virtual void Initialize(Scene* scene) override;
+		virtual void Initialize(Scene* scene, uint32_t maxLights) override;
 		virtual void Gather(Entity mainCamera) override;
 		virtual void Render(void* renderData, void* debugRenderData) override;
 		virtual void CleanUp() override;

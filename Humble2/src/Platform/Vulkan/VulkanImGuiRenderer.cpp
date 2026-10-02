@@ -130,7 +130,7 @@ namespace HBL2
 		m_Renderer->CollectImGuiRenderData(ImGui::GetDrawData(), ImGui::GetTime());
 	}
 
-	void VulkanImGuiRenderer::Render(const FrameData& frameData)
+	void VulkanImGuiRenderer::Render(const RendererFrameData& frameData)
 	{
         BEGIN_PROFILE_PASS();
         

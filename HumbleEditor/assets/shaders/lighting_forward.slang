@@ -6,7 +6,7 @@ export struct LightProvider : ILightProvider
 {
     uint GetLightCount(LightQuery q)
     {
-        return uint(1);
+        return q.lightCount;
     }
 
     Light GetLight(LightQuery q, uint index)

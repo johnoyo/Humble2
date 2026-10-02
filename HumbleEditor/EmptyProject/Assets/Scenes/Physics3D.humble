@@ -1,6 +1,6 @@
 Scene: Physics3D
 Entities:
-  - Entity: 14
+  - Entity: 1
     Component::Tag:
       Tag: Camera
     Component::ID:
@@ -10,18 +10,22 @@ Entities:
       Rotation: [-45, 90, 0]
       Scale: [1, 1, 1]
       Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
     Component::Camera:
       Enabled: true
       Primary: true
       Far: 1000
       Near: 0.100000001
       FOV: 30
-      Aspect Ratio: 2.11653113
+      Aspect Ratio: 2.47244096
       Exposure: 1
       Gamma: 2.20000005
       Zoom Level: 300
       Type: 0
-  - Entity: 13
+  - Entity: 2
     Component::Tag:
       Tag: Sun
     Component::ID:
@@ -31,6 +35,10 @@ Entities:
       Rotation: [3.02067133e-06, 1.51860104e-06, -20.4400005]
       Scale: [1, 1, 1]
       Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
     Component::Light:
       Enabled: true
       CastsShadows: true
@@ -41,11 +49,11 @@ Entities:
       Distance: 50
       InnerCutOff: 12.5
       OuterCutOff: 17.5
-      ConstantBias: 0.00200000009
-      SlopeBias: 0.122000001
-      NormalOffsetScale: 0.5
-      FieldOfView: 61.3349991
-  - Entity: 12
+      ConstantBias: 0
+      SlopeBias: 0
+      NormalOffsetScale: 0
+      FieldOfView: 35
+  - Entity: 3
     Component::Tag:
       Tag: Sky
     Component::ID:
@@ -55,10 +63,14 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
       Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
     Component::SkyLight:
       Enabled: true
       EquirectangularMap: 6203812838040720333
-  - Entity: 11
+  - Entity: 4
     Component::Tag:
       Tag: Cube
     Component::ID:
@@ -93,7 +105,7 @@ Entities:
     Component::BoxCollider:
       Enabled: true
       Size: [1, 1, 1]
-  - Entity: 10
+  - Entity: 5
     Component::Tag:
       Tag: Cube(Clone)
     Component::ID:
@@ -128,7 +140,7 @@ Entities:
     Component::BoxCollider:
       Enabled: true
       Size: [1, 1, 1]
-  - Entity: 9
+  - Entity: 6
     Component::Tag:
       Tag: Cube(Clone)(Clone)
     Component::ID:
@@ -163,7 +175,7 @@ Entities:
     Component::BoxCollider:
       Enabled: true
       Size: [1, 1, 1]
-  - Entity: 8
+  - Entity: 7
     Component::Tag:
       Tag: Cube(Clone)(Clone)
     Component::ID:
@@ -198,7 +210,7 @@ Entities:
     Component::BoxCollider:
       Enabled: true
       Size: [1, 1, 1]
-  - Entity: 7
+  - Entity: 8
     Component::Tag:
       Tag: Cube(Clone)(Clone)(Clone)
     Component::ID:
@@ -233,7 +245,7 @@ Entities:
     Component::BoxCollider:
       Enabled: true
       Size: [1, 1, 1]
-  - Entity: 6
+  - Entity: 9
     Component::Tag:
       Tag: Base
     Component::ID:
@@ -251,7 +263,7 @@ Entities:
         - 751340220887560064
         - 7668479049059885056
         - 7022661491485889536
-  - Entity: 5
+  - Entity: 10
     Component::Tag:
       Tag: Sphere
     Component::ID:
@@ -286,7 +298,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 4
+  - Entity: 11
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
@@ -321,7 +333,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 3
+  - Entity: 12
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
@@ -356,7 +368,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 2
+  - Entity: 13
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
@@ -391,7 +403,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 1
+  - Entity: 14
     Component::Tag:
       Tag: Sphere(Clone)
     Component::ID:
@@ -426,7 +438,7 @@ Entities:
     Component::SphereCollider:
       Enabled: true
       Radius: 0.5
-  - Entity: 0
+  - Entity: 15
     Component::Tag:
       Tag: Capsule
     Component::ID:
@@ -436,6 +448,10 @@ Entities:
       Rotation: [89.9999771, 0, 0]
       Scale: [2.30999994, 2.3099997, 2.3099997]
       Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
     Component::StaticMesh:
       Enabled: true
       Material: 7648240370554952727

@@ -2,7 +2,7 @@
 
 namespace HBL2
 {
-	void ForwardPlusSceneRenderer::Initialize(Scene* scene)
+	void ForwardPlusSceneRenderer::Initialize(Scene* scene, uint32_t maxLights)
 	{
 
 	}
