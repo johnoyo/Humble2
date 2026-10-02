@@ -933,9 +933,6 @@ namespace HBL2
 		}
 
 		// Bindings for shadow rendering.
-		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
-		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), (uint32_t)uniformOffset);
-
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
 			auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
@@ -943,7 +940,7 @@ namespace HBL2
 				.usage = BufferUsage::UNIFORM,
 				.usageHint = BufferUsageHint::DYNAMIC,
 				.memoryUsage = MemoryUsage::GPU_CPU,
-				.byteSize = 16 * alignedSize,
+				.byteSize = sizeof(glm::mat4),
 				.initialData = nullptr
 			});
 
@@ -951,7 +948,7 @@ namespace HBL2
 				.debugName = "shadow-bind-group",
 				.layout = m_ShadowBindingsLayout,
 				.buffers = {
-					{ .buffer = lightSpaceBuffer, .range = 64 }, // TODO: Investigate if '.range' should be alignedSize! 
+					{ .buffer = lightSpaceBuffer },
 				}
 			});
 		}		

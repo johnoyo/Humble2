@@ -47,14 +47,7 @@ namespace HBL2
                 MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
                 memcpy(buffer->Buffer->contents(), buffer->Data, buffer->ByteSize);
                 
-                if (globalDraw.GlobalBufferOffset != UINT32_MAX)
-                {
-                    argTable->setAddress(buffer->Buffer->gpuAddress() + globalDraw.GlobalBufferOffset, bufferIndexForGlobal);
-                }
-                else
-                {
-                    argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndexForGlobal);
-                }
+                argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndexForGlobal);
                 
                 bufferIndexForGlobal++;
             }

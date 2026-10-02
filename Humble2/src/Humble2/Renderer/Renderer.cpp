@@ -76,7 +76,7 @@ namespace HBL2
 				{
 					.slot = 0,
 					.visibility = ShaderStage::VERTEX,
-					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+					.type = BufferBindingType::UNIFORM,
 				},
 			},
 		});

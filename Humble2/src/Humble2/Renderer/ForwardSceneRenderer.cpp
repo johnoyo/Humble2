@@ -1270,14 +1270,6 @@ namespace HBL2
 
 		uint32_t index = 0;
 
-		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
-		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), (uint32_t)uniformOffset);
-
-		CreateAlignedMatrixArray(sceneRenderData, sceneRenderData->m_LightData.LightSpaceMatrices, 16, alignedSize);
-
-		Handle<BindGroup> globalBindings = Renderer::Instance->GetShadowBindings();
-		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)sceneRenderData->m_LightSpaceMatricesData.data());
-
 		m_Scene->Filter<Component::Light, Component::Transform>()
 			.ForEach([&](Component::Light& light, Component::Transform& transform)
 			{
@@ -1299,13 +1291,9 @@ namespace HBL2
 
 						RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_ShadowRenderPass, { tileX, tileY, g_TileSize, g_TileSize });
 
-						GlobalDrawStream globalDrawStream =
-						{
-							.BindGroup = globalBindings,
-							.GlobalBufferSize = alignedSize,
-							.GlobalBufferOffset = index * alignedSize,
-							.UsesDynamicOffset = true,
-						};
+						Handle<BindGroup> globalShadowBindings = Renderer::Instance->GetShadowBindings();
+						ResourceManager::Instance->SetBufferData(globalShadowBindings, 0, (void*)&sceneRenderData->m_LightData.LightSpaceMatrices[index]);
+						GlobalDrawStream globalDrawStream = { .BindGroup = globalShadowBindings, .UsesDynamicOffset = true, };
 						passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_ShadowPassStaticMeshDraws);
 
 						commandBuffer->EndRenderPass(*passRenderer);
