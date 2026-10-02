@@ -96,8 +96,8 @@ namespace HBL2
                 .debugName = "camera-uniform-buffer",
                 .usage = BufferUsage::UNIFORM,
                 .usageHint = BufferUsageHint::DYNAMIC,
-                .memoryUsage = MemoryUsage::GPU_CPU,
-                .byteSize = 64,
+                .memoryUsage = MemoryUsage::CPU_GPU,
+                .byteSize = sizeof(glm::mat4),
                 .initialData = nullptr,
             });
 
@@ -117,7 +117,7 @@ namespace HBL2
                 .debugName = "light-space-buffer",
                 .usage = BufferUsage::UNIFORM,
                 .usageHint = BufferUsageHint::DYNAMIC,
-                .memoryUsage = MemoryUsage::GPU_CPU,
+                .memoryUsage = MemoryUsage::CPU_GPU,
                 .byteSize = sizeof(glm::mat4),
                 .initialData = nullptr
             });
@@ -138,7 +138,7 @@ namespace HBL2
                 .debugName = "debug-draw-camera-uniform-buffer",
                 .usage = BufferUsage::UNIFORM,
                 .usageHint = BufferUsageHint::DYNAMIC,
-                .memoryUsage = MemoryUsage::GPU_CPU,
+                .memoryUsage = MemoryUsage::CPU_GPU,
                 .byteSize = sizeof(glm::mat4),
                 .initialData = nullptr,
             });
@@ -160,7 +160,7 @@ namespace HBL2
                 .debugName = "camera-uniform-buffer",
                 .usage = BufferUsage::UNIFORM,
                 .usageHint = BufferUsageHint::DYNAMIC,
-                .memoryUsage = MemoryUsage::GPU_CPU,
+                .memoryUsage = MemoryUsage::CPU_GPU,
                 .byteSize = sizeof(CameraData),
                 .initialData = nullptr,
             });
@@ -169,7 +169,7 @@ namespace HBL2
                 .debugName = "light-ssbo",
                 .usage = BufferUsage::STORAGE,
                 .usageHint = BufferUsageHint::DYNAMIC,
-                .memoryUsage = MemoryUsage::GPU_CPU,
+                .memoryUsage = MemoryUsage::CPU_GPU,
                 .byteSize = (uint32_t)sizeof(Light) * m_MaxLights,
                 .initialData = nullptr,
             });
