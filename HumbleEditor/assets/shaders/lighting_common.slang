@@ -2,19 +2,17 @@ module lighting_common;
 
 public struct Light
 {
-    public float4 ViewPosition;
-    public float4 Positions[16];
-    public float4 Directions[16];
-    public float4 Colors[16];
-    public float4 Metadata[16];
-    public float4 ShadowData[16];
-    public float4x4 LightSpaceMatrices[16];
-    public float4 TileUVRange[16];
-    public float Count;
+    public float4 Position;
+    public float4 Direction;
+    public float4 Color;
+    public float4 Metadata;
+    public float4 ShadowData;
+    public float4x4 LightSpaceMatrix;
+    public float4 TileUVRange;
 };
 
 [[vk::binding(1, 0)]]
-public ConstantBuffer<Light> u_Light : register(b1);
+public StructuredBuffer<Light> u_Light : register(t1);
 
 public struct LightQuery
 {

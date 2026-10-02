@@ -78,7 +78,7 @@ namespace HBL2
 		struct TextureBinding
 		{
 			uint32_t slot = 0;
-			ShaderStage visibility = ShaderStage::VERTEX;
+			BitFlags<ShaderStage> visibility = { ShaderStage::VERTEX };
 			TextureBindingType type = TextureBindingType::IMAGE_SAMPLER;
 		};
 		Span<const TextureBinding> textureBindings;
@@ -86,7 +86,7 @@ namespace HBL2
 		struct BufferBinding
 		{
 			uint32_t slot = 0;
-			ShaderStage visibility = ShaderStage::VERTEX;
+			BitFlags<ShaderStage> visibility = { ShaderStage::VERTEX };
 			BufferBindingType type = BufferBindingType::UNIFORM;
 		};
 		Span<const BufferBinding> bufferBindings;

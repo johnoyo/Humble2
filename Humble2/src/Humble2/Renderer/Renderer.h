@@ -27,6 +27,7 @@ namespace HBL2
 	struct CameraData
 	{
 		glm::mat4 ViewProjection;
+		glm::vec4 ViewPosition;
 	};
 
 	struct alignas(16) CameraSettings
@@ -36,18 +37,15 @@ namespace HBL2
 		float _padding[2];
 	};
 
-	struct LightData
+	struct Light
 	{
-		glm::vec4 ViewPosition;
-		glm::vec4 LightPositions[16];
-		glm::vec4 LightDirections[16];
-		glm::vec4 LightColors[16];
-		glm::vec4 LightMetadata[16];
-		glm::vec4 LightShadowData[16];
-		glm::mat4 LightSpaceMatrices[16];
-		glm::vec4 TileUVRange[16];
-		float LightCount;
-		float _padding[3];
+		glm::vec4 Position;
+		glm::vec4 Direction;
+		glm::vec4 Color;
+		glm::vec4 Metadata;
+		glm::vec4 LightShadowData;
+		glm::mat4 LightSpaceMatrix;
+		glm::vec4 TileUVRange;
 	};
 
 	enum class HBL2_API GraphicsAPI
@@ -227,10 +225,10 @@ namespace HBL2
 		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 
 	protected:
-
 		FrameData m_Frames[FrameCount];
 		uint32_t m_UniformRingBufferSize = 32_MB * FrameCount;
 		uint32_t m_UniformRingBufferFrameOffsets[FrameCount];
+		uint32_t m_MaxLights = 2048;
 
 		bool m_FrameReady[FrameCount];
 		bool m_FrameInUse[FrameCount];

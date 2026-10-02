@@ -247,26 +247,11 @@ namespace HBL2
 
             for (const auto& b : descriptorSet.bindings)
             {
-                ShaderStage shaderStage = ShaderStage::NONE;
-
-                if (b.stageMask.IsSet(ShaderStage::VERTEX))
-                {
-                    shaderStage = ShaderStage::VERTEX;
-                }
-                else if (b.stageMask.IsSet(ShaderStage::FRAGMENT))
-                {
-                    shaderStage = ShaderStage::FRAGMENT;
-                }
-                else if (b.stageMask.IsSet(ShaderStage::COMPUTE))
-                {
-                    shaderStage = ShaderStage::COMPUTE;
-                }
-
                 if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::StorageTexture)
                 {
                     textureBindings.push_back({
                         .slot = b.binding,
-                        .visibility = shaderStage,
+                        .visibility = b.stageMask,
                         .type = b.type == ShaderResourceType::SampledTexture ? TextureBindingType::IMAGE_SAMPLER : TextureBindingType::STORAGE_IMAGE,
                     });
                 }
@@ -274,7 +259,7 @@ namespace HBL2
                 {
                     bufferBindings.push_back({
                         .slot = b.binding,
-                        .visibility = shaderStage,
+                        .visibility = b.stageMask,
                         .type = b.type == ShaderResourceType::UniformBuffer ? BufferBindingType::UNIFORM : BufferBindingType::STORAGE,
                     });
                 }

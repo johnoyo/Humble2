@@ -6,11 +6,11 @@ export struct LightProvider : ILightProvider
 {
     uint GetLightCount(LightQuery q)
     {
-        return uint(u_Light.Count);
+        return uint(1);
     }
 
     Light GetLight(LightQuery q, uint index)
     {
-        return u_Light;
+        return u_Light[index];
     }
 }

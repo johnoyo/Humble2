@@ -363,14 +363,17 @@ namespace HBL2::Editor
 				ImGui::SliderFloat("ConstantBias", &light.ConstantBias, 0.0f, 2.5f, "%.3f");
 				ImGui::SliderFloat("SlopeBias", &light.SlopeBias, 0.0f, 2.5f, "%.3f");
 				ImGui::SliderFloat("NormalOffsetScale", &light.NormalOffsetScale, 0.0f, 0.5f, "%.3f");
-				ImGui::SliderFloat("FieldOfView", &light.FieldOfView, 0.0f, 120.0f);
+				ImGui::SliderFloat("FieldOfView", &light.FieldOfView, 0.0f, 170.0f);
 
-				// Set type back.
 				if (light.Type == HBL2::Component::Light::EType::Spot)
 				{
 					ImGui::SliderFloat("Distance", &light.Distance, 0, 150);
 					ImGui::SliderFloat("InnerCutOff", &light.InnerCutOff, 0, 50);
 					ImGui::SliderFloat("OuterCutOff", &light.OuterCutOff, 0, 50);
+				}
+				else if (light.Type == HBL2::Component::Light::EType::Directional)
+				{
+					ImGui::Checkbox("FollowMainCamera", &light.FollowMainCamera);
 				}
 			});
 

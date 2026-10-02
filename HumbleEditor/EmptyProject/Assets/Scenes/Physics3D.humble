@@ -28,12 +28,13 @@ Entities:
       ID: 10979612935761795072
     Component::Transform:
       Translation: [27.9343605, 56.3301201, 1.79611823e-06]
-      Rotation: [3.02067133e-06, 1.51860104e-06, -26.6901436]
+      Rotation: [3.02067133e-06, 1.51860104e-06, -20.4400005]
       Scale: [1, 1, 1]
       Static: false
     Component::Light:
       Enabled: true
       CastsShadows: true
+      FollowMainCamera: false
       Intensity: 1
       Color: [1, 1, 1]
       Type: 0

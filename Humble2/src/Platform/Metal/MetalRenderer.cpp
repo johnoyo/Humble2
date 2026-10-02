@@ -139,7 +139,7 @@ namespace HBL2
                 .usage = BufferUsage::UNIFORM,
                 .usageHint = BufferUsageHint::DYNAMIC,
                 .memoryUsage = MemoryUsage::GPU_CPU,
-                .byteSize = sizeof(CameraData),
+                .byteSize = sizeof(glm::mat4),
                 .initialData = nullptr,
             });
 
@@ -166,11 +166,11 @@ namespace HBL2
             });
 
             auto lightBuffer = m_ResourceManager->CreateBuffer({
-                .debugName = "light-uniform-buffer",
-                .usage = BufferUsage::UNIFORM,
+                .debugName = "light-ssbo",
+                .usage = BufferUsage::STORAGE,
                 .usageHint = BufferUsageHint::DYNAMIC,
                 .memoryUsage = MemoryUsage::GPU_CPU,
-                .byteSize = sizeof(LightData),
+                .byteSize = (uint32_t)sizeof(Light) * m_MaxLights,
                 .initialData = nullptr,
             });
 

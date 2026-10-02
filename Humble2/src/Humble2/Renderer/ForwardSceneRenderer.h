@@ -26,14 +26,12 @@ namespace HBL2
 
 	struct ForwardSceneRenderData
 	{
-		LightData m_LightData{};
+		Light m_LightData[16];
 		CameraData m_CameraData{};
 		CameraSettings m_CameraSettings{};
 		Component::Camera::CameraFrustum m_CameraFrustum{};
 		glm::mat4 m_OnlyRotationInViewProjection = glm::mat4(1.0f);
 		glm::mat4 m_CameraProjection = glm::mat4(1.0f);
-
-		std::vector<uint8_t> m_LightSpaceMatricesData;
 
 		uint32_t m_UBOStartingOffset = 0;
 		uint32_t m_UBOEndingOffset = 0;
@@ -85,8 +83,6 @@ namespace HBL2
 		void PresentPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
 
 		void GetViewProjection(ForwardSceneRenderData* sceneRenderData, Entity mainCamera);
-
-		void CreateAlignedMatrixArray(ForwardSceneRenderData* sceneRenderData, const glm::mat4* matrices, size_t count, uint32_t alignedSize);
 
 	private:
 		PoolReservation* m_Reservation = nullptr;

@@ -45,17 +45,17 @@ namespace HBL2
 				.debugName = "camera-uniform-buffer",
 				.usage = BufferUsage::UNIFORM,
 				.usageHint = BufferUsageHint::DYNAMIC,
-				.memoryUsage = MemoryUsage::GPU_CPU,
+				.memoryUsage = MemoryUsage::CPU_GPU,
 				.byteSize = sizeof(CameraData),
 				.initialData = nullptr,
 			});
 
 			auto lightBuffer = m_ResourceManager->CreateBuffer({
-				.debugName = "light-uniform-buffer",
-				.usage = BufferUsage::UNIFORM,
+				.debugName = "light-ssbo",
+				.usage = BufferUsage::STORAGE,
 				.usageHint = BufferUsageHint::DYNAMIC,
-				.memoryUsage = MemoryUsage::GPU_CPU,
-				.byteSize = sizeof(LightData),
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = (uint32_t)sizeof(Light) * m_MaxLights,
 				.initialData = nullptr,
 			});
 
@@ -890,6 +890,7 @@ namespace HBL2
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, poolSize },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolSize },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolSize },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolSize },
 		};
 
 		VkDescriptorPoolCreateInfo tDescriptorPoolInfo =
@@ -918,7 +919,7 @@ namespace HBL2
 				.debugName = "camera-uniform-buffer",
 				.usage = BufferUsage::UNIFORM,
 				.usageHint = BufferUsageHint::DYNAMIC,
-				.memoryUsage = MemoryUsage::GPU_CPU,
+				.memoryUsage = MemoryUsage::CPU_GPU,
 				.byteSize = 64,
 				.initialData = nullptr,
 			});
@@ -939,7 +940,7 @@ namespace HBL2
 				.debugName = "light-space-buffer",
 				.usage = BufferUsage::UNIFORM,
 				.usageHint = BufferUsageHint::DYNAMIC,
-				.memoryUsage = MemoryUsage::GPU_CPU,
+				.memoryUsage = MemoryUsage::CPU_GPU,
 				.byteSize = sizeof(glm::mat4),
 				.initialData = nullptr
 			});
@@ -960,8 +961,8 @@ namespace HBL2
 				.debugName = "debug-draw-camera-uniform-buffer",
 				.usage = BufferUsage::UNIFORM,
 				.usageHint = BufferUsageHint::DYNAMIC,
-				.memoryUsage = MemoryUsage::GPU_CPU,
-				.byteSize = sizeof(CameraData),
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = sizeof(glm::mat4),
 				.initialData = nullptr,
 			});
 

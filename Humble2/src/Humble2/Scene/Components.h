@@ -162,6 +162,8 @@ namespace HBL2
 			float OuterCutOff = 17.5f;
 			float Distance = 50.0f;
 
+			bool FollowMainCamera = true;
+
 			float ConstantBias = 0.002f;
 			float SlopeBias = 0.0f;
 			float NormalOffsetScale = 0.0f;

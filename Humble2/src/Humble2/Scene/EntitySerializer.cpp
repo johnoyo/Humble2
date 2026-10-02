@@ -164,6 +164,7 @@ namespace HBL2
 
 			out << YAML::Key << "Enabled" << YAML::Value << light.Enabled;
 			out << YAML::Key << "CastsShadows" << YAML::Value << light.CastsShadows;
+			out << YAML::Key << "FollowMainCamera" << YAML::Value << light.FollowMainCamera;
 			out << YAML::Key << "Intensity" << YAML::Value << light.Intensity;
 			out << YAML::Key << "Color" << YAML::Value << light.Color;
 			out << YAML::Key << "Type" << YAML::Value << (int)light.Type;
@@ -538,6 +539,12 @@ namespace HBL2
 			auto& light = m_Scene->AddComponent<Component::Light>(m_Entity);
 			light.Enabled = light_NewComponent["Enabled"].as<bool>();
 			light.CastsShadows = light_NewComponent["CastsShadows"].as<bool>();
+
+			if (light_NewComponent["FollowMainCamera"].IsDefined())
+			{
+				light.FollowMainCamera = light_NewComponent["FollowMainCamera"].as<bool>();
+			}
+
 			light.Intensity = light_NewComponent["Intensity"].as<float>();
 			light.Distance = light_NewComponent["Distance"].as<float>();
 			light.InnerCutOff = light_NewComponent["InnerCutOff"].as<float>();

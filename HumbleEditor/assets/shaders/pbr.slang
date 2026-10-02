@@ -7,6 +7,7 @@ extern struct LightProvider : ILightProvider;
 struct Camera
 {
     float4x4 ViewProjection;
+    float4 ViewPosition;
 };
 
 struct Object
@@ -156,13 +157,25 @@ float ShadowCalculation(float4 fragPosLightSpace, float4 tileUVRange, int index,
     }
 
     float3 normal = normalize(input.v_Normal);
-    float3 lightPos = u_Light.Positions[index].xyz;
-    float3 lightDir = normalize(lightPos - input.v_Position);
-    float  lightDistance = length(lightPos - input.v_Position);
+    float3 lightDir;
+    float lightDistance;
 
-    float constantBias = u_Light.ShadowData[index].y;
-    float slopeBias = u_Light.ShadowData[index].z;
-    float baseNormalOffset = u_Light.ShadowData[index].w;
+    if (u_Light[index].Position.w == 0.0)
+    {
+        // For directional lights, parallel rays, so the position is irrelevant.
+        lightDir = normalize(-u_Light[index].Direction.xyz);
+        lightDistance = 0.0;
+    }
+    else
+    {
+        float3 toLight = u_Light[index].Position.xyz - input.v_Position;
+        lightDistance = length(toLight);
+        lightDir = toLight / lightDistance;
+    }
+
+    float constantBias = u_Light[index].ShadowData.y;
+    float slopeBias = u_Light[index].ShadowData.z;
+    float baseNormalOffset = u_Light[index].ShadowData.w;
 
     float adaptiveNormalOffset = CalculateAdaptiveNormalOffset(normal, lightDir, baseNormalOffset, lightDistance);
 
@@ -187,7 +200,7 @@ float ShadowCalculation(float4 fragPosLightSpace, float4 tileUVRange, int index,
     if (offsetWeight > 0.3)
     {
         float3 offsetWorldPos = input.v_Position + normal * adaptiveNormalOffset;
-        float4 offsetLightSpace = mul(u_Light.LightSpaceMatrices[index], float4(offsetWorldPos, 1.0));
+        float4 offsetLightSpace = mul(u_Light[index].LightSpaceMatrix, float4(offsetWorldPos, 1.0));
         float3 offsetNDC = offsetLightSpace.xyz / offsetLightSpace.w;
 
         float offsetU = offsetNDC.x * 0.5 + 0.5;
@@ -302,7 +315,7 @@ float4 mainPS(PSInput input) : SV_Target0
     float roughness = u_RoughnessMap.Sample(input.v_TextureCoord).r;
 
     float3 N = getNormalFromMap(input);
-    float3 V = normalize(u_Light.ViewPosition.xyz - input.v_Position);
+    float3 V = normalize(u_Camera.ViewPosition.xyz - input.v_Position);
 
     float3 F0 = float3(0.04, 0.04, 0.04);
     F0 = lerp(F0, albedo, metallic);
@@ -310,47 +323,47 @@ float4 mainPS(PSInput input) : SV_Target0
     float3 Lo = float3(0.0, 0.0, 0.0);
     for (int i = 0; i < int(provider.GetLightCount(q)); ++i)
     {
-        float lightIntensity = u_Light.Metadata[i].x;
-        float3 lightColor = u_Light.Colors[i].xyz;
+        float lightIntensity = u_Light[i].Metadata[i].x;
+        float3 lightColor = u_Light[i].Color.xyz;
 
         float3 L = float3(0.0, 0.0, 0.0);
         float attenuation = 1.0;
         bool lit = true;
         float shadow = 0.0;
 
-        if (u_Light.Positions[i].w == 0.0)
+        if (u_Light[i].Position.w == 0.0)
         {
-            L = normalize(-u_Light.Directions[i].xyz);
+            L = normalize(-u_Light[i].Direction.xyz);
             lit = (max(dot(N, L), 0.0) > 0.0);
 
-            if (u_Light.ShadowData[i].x == 1.0 && lit)
+            if (u_Light[i].ShadowData.x == 1.0 && lit)
             {
-                float4 fragPosLightSpace = mul(u_Light.LightSpaceMatrices[i], float4(input.v_Position, 1.0));
-                shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i, input);
+                float4 fragPosLightSpace = mul(u_Light[i].LightSpaceMatrix, float4(input.v_Position, 1.0));
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light[i].TileUVRange, i, input);
             }
         }
-        else if (u_Light.Positions[i].w == 1.0)
+        else if (u_Light[i].Position.w == 1.0)
         {
-            float3 toLight = u_Light.Positions[i].xyz - input.v_Position;
+            float3 toLight = u_Light[i].Position.xyz - input.v_Position;
             float  distance = length(toLight);
             L = toLight / max(distance, 1e-6);
 
-            float constant = u_Light.Metadata[i].y;
-            float linear = u_Light.Metadata[i].z;
-            float quadratic = u_Light.Metadata[i].w;
+            float constant = u_Light[i].Metadata.y;
+            float linear = u_Light[i].Metadata.z;
+            float quadratic = u_Light[i].Metadata.w;
             attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
 
             lit = (attenuation > 0.0) && (max(dot(N, L), 0.0) > 0.0);
 
-            if (u_Light.ShadowData[i].x == 1.0 && lit)
+            if (u_Light[i].ShadowData.x == 1.0 && lit)
             {
-                float4 fragPosLightSpace = mul(u_Light.LightSpaceMatrices[i], float4(input.v_Position, 1.0));
-                shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i, input);
+                float4 fragPosLightSpace = mul(u_Light[i].LightSpaceMatrix, float4(input.v_Position, 1.0));
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light[i].TileUVRange, i, input);
             }
         }
-        else if (u_Light.Positions[i].w == 2.0)
+        else if (u_Light[i].Position.w == 2.0)
         {
-            float3 toLight = u_Light.Positions[i].xyz - input.v_Position;
+            float3 toLight = u_Light[i].Position.xyz - input.v_Position;
             float  distance = length(toLight);
             L = toLight / max(distance, 1e-6);
 
@@ -359,9 +372,9 @@ float4 mainPS(PSInput input) : SV_Target0
             float quadratic = 0.032;
             attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
 
-            float innerCutoff = u_Light.Metadata[i].y;
-            float outerCutoff = u_Light.Metadata[i].z;
-            float theta = dot(L, normalize(-u_Light.Directions[i].xyz));
+            float innerCutoff = u_Light[i].Metadata.y;
+            float outerCutoff = u_Light[i].Metadata.z;
+            float theta = dot(L, normalize(-u_Light[i].Direction.xyz));
             float epsilon = max(innerCutoff - outerCutoff, 1e-6);
 
             float spotFactor = clamp((theta - outerCutoff) / epsilon, 0.0, 1.0);
@@ -369,10 +382,10 @@ float4 mainPS(PSInput input) : SV_Target0
 
             lit = (spotFactor > 0.0) && (attenuation > 0.0) && (max(dot(N, L), 0.0) > 0.0);
 
-            if (u_Light.ShadowData[i].x == 1.0 && lit)
+            if (u_Light[i].ShadowData[i].x == 1.0 && lit)
             {
-                float4 fragPosLightSpace = mul(u_Light.LightSpaceMatrices[i], float4(input.v_Position, 1.0));
-                shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i, input);
+                float4 fragPosLightSpace = mul(u_Light[i].LightSpaceMatrix, float4(input.v_Position, 1.0));
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light[i].TileUVRange, i, input);
             }
         }
 

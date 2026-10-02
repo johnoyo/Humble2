@@ -575,19 +575,19 @@ namespace HBL2
 			.textureBindings = {
 				{
 					.slot = 0,
-					.visibility = ShaderStage::COMPUTE,
+					.visibility = { ShaderStage::COMPUTE },
 					.type = TextureBindingType::IMAGE_SAMPLER,
 				},
 				{
 					.slot = 1,
-					.visibility = ShaderStage::COMPUTE,
+					.visibility = { ShaderStage::COMPUTE },
 					.type = TextureBindingType::STORAGE_IMAGE,
 				},
 			},
 			.bufferBindings = {
 				{
 					.slot = 2,
-					.visibility = ShaderStage::COMPUTE,
+					.visibility = { ShaderStage::COMPUTE },
 					.type = BufferBindingType::UNIFORM,
 				},
 			},
@@ -613,7 +613,7 @@ namespace HBL2
 			.textureBindings = {
 				{
 					.slot = 0,
-					.visibility = ShaderStage::FRAGMENT,
+					.visibility = { ShaderStage::FRAGMENT },
 					.type = TextureBindingType::IMAGE_SAMPLER,
 				},
 			},
@@ -625,7 +625,7 @@ namespace HBL2
 			.bufferBindings = {
 				{
 					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
+					.visibility = { ShaderStage::VERTEX },
 					.type = BufferBindingType::UNIFORM,
 				},
 			},
@@ -768,13 +768,13 @@ namespace HBL2
 			.textureBindings = {
 				{
 					.slot = 0,
-					.visibility = ShaderStage::FRAGMENT,
+					.visibility = { ShaderStage::FRAGMENT },
 				},
 			},
 			.bufferBindings = {
 				{
 					.slot = 1,
-					.visibility = ShaderStage::FRAGMENT,
+					.visibility = { ShaderStage::FRAGMENT },
 					.type = BufferBindingType::UNIFORM,
 				},
 			},
@@ -1181,47 +1181,47 @@ namespace HBL2
 
 	void ForwardSceneRenderer::GatherLights(ForwardSceneRenderData* sceneRenderData)
 	{
-		sceneRenderData->m_LightData.LightCount = 0;
-
+		int lightIndex = 0;
 		m_Scene->Filter<Component::Light, Component::Transform>()
 			.ForEach([&](Component::Light& light, Component::Transform& transform)
 			{
 				if (light.Enabled)
 				{
+					Light& data = sceneRenderData->m_LightData[lightIndex];
+					data = {};
+
 					float lightType = 0.0f;
 
 					const Attenuation& attenuation = GetClosestAttenuation(light.Distance);
 
-					int lightIndex = (int)sceneRenderData->m_LightData.LightCount;
-
-					sceneRenderData->m_LightData.LightShadowData[lightIndex].x = light.CastsShadows ? 1.0f : 0.0f;
+					sceneRenderData->m_LightData[lightIndex].LightShadowData.x = light.CastsShadows ? 1.0f : 0.0f;
 
 					switch (light.Type)
 					{
 					case Component::Light::EType::Directional:
 						lightType = 0.0f;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].y = light.ConstantBias;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].z = light.SlopeBias;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].w = light.NormalOffsetScale;
+						data.LightShadowData.y = light.ConstantBias;
+						data.LightShadowData.z = light.SlopeBias;
+						data.LightShadowData.w = light.NormalOffsetScale;
 						break;
 					case Component::Light::EType::Point:
 						lightType = 1.0f;
-						sceneRenderData->m_LightData.LightMetadata[lightIndex].y = attenuation.constant;
-						sceneRenderData->m_LightData.LightMetadata[lightIndex].z = attenuation.linear;
-						sceneRenderData->m_LightData.LightMetadata[lightIndex].w = attenuation.quadratic;
+						data.Metadata.y = attenuation.constant;
+						data.Metadata.z = attenuation.linear;
+						data.Metadata.w = attenuation.quadratic;
 
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].y = light.ConstantBias;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].z = light.SlopeBias;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].w = light.NormalOffsetScale;
+						data.LightShadowData.y = light.ConstantBias;
+						data.LightShadowData.z = light.SlopeBias;
+						data.LightShadowData.w = light.NormalOffsetScale;
 						break;
 					case Component::Light::EType::Spot:
 						lightType = 2.0f;
-						sceneRenderData->m_LightData.LightMetadata[lightIndex].y = glm::cos(glm::radians(light.InnerCutOff));
-						sceneRenderData->m_LightData.LightMetadata[lightIndex].z = glm::cos(glm::radians(light.OuterCutOff));
+						data.Metadata.y = glm::cos(glm::radians(light.InnerCutOff));
+						data.Metadata.z = glm::cos(glm::radians(light.OuterCutOff));
 
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].y = light.ConstantBias;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].z = light.SlopeBias;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].w = light.NormalOffsetScale;
+						data.LightShadowData.y = light.ConstantBias;
+						data.LightShadowData.z = light.SlopeBias;
+						data.LightShadowData.w = light.NormalOffsetScale;
 						break;
 					}
 
@@ -1229,36 +1229,52 @@ namespace HBL2
 					glm::vec3 rotationRadians = glm::radians(transform.Rotation);
 					glm::mat4 localRotation = glm::eulerAngleYXZ(rotationRadians.y, rotationRadians.x, rotationRadians.z);
 					glm::vec3 localForward = glm::vec3(0.0f, -1.0f, 0.0f);
-					glm::vec4 rotatedDirection = localRotation * glm::vec4(localForward, 0.0f); // w = 0 to avoid translation
-					glm::mat3 worldRotation = glm::mat3(transform.WorldMatrix);// Extract rotation part of world matrix (3x3)
-					glm::vec3 worldDirection = glm::normalize(worldRotation * glm::vec3(rotatedDirection));
+					glm::vec3 worldDirection = glm::normalize(glm::mat3(transform.WorldMatrix) * glm::vec3(localRotation * glm::vec4(localForward, 0.0f)));
 
-					float near_plane = 0.1f, far_plane = 1000.0f;
-					//glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-					glm::mat4 lightProjection = glm::perspectiveRH_ZO(light.FieldOfView, 1.0f, near_plane, far_plane);
+					glm::vec3 lightDir = worldDirection;
+					glm::vec3 lightPos = glm::vec3(transform.WorldMatrix[3]);
+					glm::vec3 lightUp = glm::abs(lightDir.y) > 0.99f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
 
-					glm::vec3 lightPos = glm::vec3(transform.WorldMatrix * glm::vec4(0.0, 0.0, 0.0, 1.0));
-					glm::vec3 lightDir = normalize(worldDirection);
-					glm::vec3 lightTarget = lightPos + lightDir; // look towards this point
+					glm::mat4 lightView, lightProjection;
 
-					// Choose an up vector thats not colinear with your direction:
-					glm::vec3 lightUp = glm::abs(glm::dot(lightDir, glm::vec3(0, 1, 0))) > 0.99f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
-
-					// If your light direction is nearly parallel to up, pick a different up vector:
-					if (fabs(glm::dot(lightDir, lightUp)) > 0.99f)
+					if (light.Type == Component::Light::EType::Directional)
 					{
-						lightUp = glm::vec3(1.0f, 0.0f, 0.0f);
+						// Half-size of the area covered by the shadow map.
+						const float extent = light.FieldOfView;
+						
+						// How far back along -lightDir the eye sits.
+						const float distance = 100.0f;
+
+						glm::vec3 focus;
+
+						if (light.FollowMainCamera)
+						{
+							// Center the shadow volume on the camera so shadows follow the player.
+							focus = glm::vec3(sceneRenderData->m_CameraData.ViewPosition);
+						}
+						else
+						{
+							focus = lightPos;
+						}
+
+						glm::vec3 eye = focus - lightDir * distance;
+
+						lightView = glm::lookAt(eye, focus, lightUp);
+						lightProjection = glm::orthoRH_ZO(-extent, extent, -extent, extent, 0.1f, 1000.0f);
+					}
+					else
+					{
+						lightView = glm::lookAt(lightPos, lightPos + lightDir, lightUp);
+						lightProjection = glm::perspectiveRH_ZO(light.FieldOfView, 1.0f, 0.1f, 1000.0f);
 					}
 
-					glm::mat4 lightView = glm::lookAt(lightPos, lightTarget, lightUp);
+					data.Position = glm::vec4(lightPos, lightType);
+					data.Direction = glm::vec4(worldDirection, 0.0f);
+					data.Metadata.x = light.Intensity;
+					data.Color = glm::vec4(light.Color, 1.0f);
+					data.LightSpaceMatrix = lightProjection * lightView;
 
-					sceneRenderData->m_LightData.LightPositions[lightIndex] = transform.WorldMatrix * glm::vec4(transform.Translation, 1.0f);
-					sceneRenderData->m_LightData.LightPositions[lightIndex].w = lightType;
-					sceneRenderData->m_LightData.LightDirections[lightIndex] = glm::vec4(worldDirection, 0.0f);
-					sceneRenderData->m_LightData.LightMetadata[lightIndex].x = light.Intensity;
-					sceneRenderData->m_LightData.LightColors[lightIndex] = glm::vec4(light.Color, 1.0f);
-					sceneRenderData->m_LightData.LightSpaceMatrices[lightIndex] = lightProjection * lightView;
-					sceneRenderData->m_LightData.LightCount++;
+					lightIndex++;
 				}
 			});
 	}
@@ -1284,7 +1300,7 @@ namespace HBL2
 							return; // NOTE: Exceeded max number of shadow casting lights!
 						}
 
-						sceneRenderData->m_LightData.TileUVRange[index] = tile.GetUVRange();
+						sceneRenderData->m_LightData[index].TileUVRange = tile.GetUVRange();
 
 						uint32_t tileX = tile.x * g_TileSize;
 						uint32_t tileY = tile.y * g_TileSize;
@@ -1292,7 +1308,7 @@ namespace HBL2
 						RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_ShadowRenderPass, { tileX, tileY, g_TileSize, g_TileSize });
 
 						Handle<BindGroup> globalShadowBindings = Renderer::Instance->GetShadowBindings();
-						ResourceManager::Instance->SetBufferData(globalShadowBindings, 0, (void*)&sceneRenderData->m_LightData.LightSpaceMatrices[index]);
+						ResourceManager::Instance->SetBufferData(globalShadowBindings, 0, (void*)&sceneRenderData->m_LightData[index].LightSpaceMatrix);
 						GlobalDrawStream globalDrawStream = { .BindGroup = globalShadowBindings, .UsesDynamicOffset = true, };
 						passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_ShadowPassStaticMeshDraws);
 
@@ -1637,7 +1653,7 @@ namespace HBL2
 		{
 			sceneRenderData->m_OnlyRotationInViewProjection = glm::mat4(1.0f);
 			sceneRenderData->m_CameraData.ViewProjection = glm::mat4(1.0f);
-			sceneRenderData->m_LightData.ViewPosition = glm::vec4(0.0f);
+			sceneRenderData->m_CameraData.ViewPosition = glm::vec4(0.0f);
 			sceneRenderData->m_CameraProjection = glm::mat4(1.0f);
 			sceneRenderData->m_CameraSettings.Exposure = 1.0f;
 			sceneRenderData->m_CameraSettings.Gamma = 2.2f;
@@ -1653,22 +1669,8 @@ namespace HBL2
 		sceneRenderData->m_CameraFrustum = camera.Frustum;
 
 		Component::Transform& tr = scene->GetComponent<Component::Transform>(mainCamera);
-		//m_LightData.ViewPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
-		sceneRenderData->m_LightData.ViewPosition = tr.WorldMatrix[3];
+		sceneRenderData->m_CameraData.ViewPosition = tr.WorldMatrix[3];
 		sceneRenderData->m_OnlyRotationInViewProjection = camera.Projection * glm::mat4(glm::mat3(camera.View));
 		sceneRenderData->m_CameraProjection = camera.Projection;
-	}
-
-	void ForwardSceneRenderer::CreateAlignedMatrixArray(ForwardSceneRenderData* sceneRenderData, const glm::mat4* matrices, size_t count, uint32_t alignedSize)
-	{
-		// Calculate total size
-		size_t totalSize = alignedSize * count;
-		sceneRenderData->m_LightSpaceMatricesData.resize(totalSize, 0);
-
-		for (size_t i = 0; i < count; ++i)
-		{
-			size_t offset = i * alignedSize;
-			std::memcpy(sceneRenderData->m_LightSpaceMatricesData.data() + offset, &matrices[i], sizeof(glm::mat4));
-		}
 	}
 }

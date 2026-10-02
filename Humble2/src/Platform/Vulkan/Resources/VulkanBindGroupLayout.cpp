@@ -48,19 +48,21 @@ namespace HBL2
 				break;
 			}
 
-			VkShaderStageFlags stage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+			VkShaderStageFlags stage = 0;
 
-			switch (BufferBindings[i].visibility)
+			if (BufferBindings[i].visibility.IsSet(ShaderStage::VERTEX))
 			{
-			case ShaderStage::VERTEX:
-				stage = VK_SHADER_STAGE_VERTEX_BIT;
-				break;
-			case ShaderStage::FRAGMENT:
-				stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-				break;
-			case ShaderStage::COMPUTE:
-				stage = VK_SHADER_STAGE_COMPUTE_BIT;
-				break;
+				stage |= VK_SHADER_STAGE_VERTEX_BIT;
+			}
+
+			if (BufferBindings[i].visibility.IsSet(ShaderStage::FRAGMENT))
+			{
+				stage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+			}
+
+			if (BufferBindings[i].visibility.IsSet(ShaderStage::COMPUTE))
+			{
+				stage |= VK_SHADER_STAGE_COMPUTE_BIT;
 			}
 
 			bindings[i] =
@@ -87,19 +89,21 @@ namespace HBL2
 				break;
 			}
 
-			VkShaderStageFlags stage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+			VkShaderStageFlags stage = 0;
 
-			switch (TextureBindings[i].visibility)
+			if (TextureBindings[i].visibility.IsSet(ShaderStage::VERTEX))
 			{
-			case ShaderStage::VERTEX:
-				stage = VK_SHADER_STAGE_VERTEX_BIT;
-				break;
-			case ShaderStage::FRAGMENT:
-				stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-				break;
-			case ShaderStage::COMPUTE:
-				stage = VK_SHADER_STAGE_COMPUTE_BIT;
-				break;
+				stage |= VK_SHADER_STAGE_VERTEX_BIT;
+			}
+
+			if (TextureBindings[i].visibility.IsSet(ShaderStage::FRAGMENT))
+			{
+				stage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+			}
+
+			if (TextureBindings[i].visibility.IsSet(ShaderStage::COMPUTE))
+			{
+				stage |= VK_SHADER_STAGE_COMPUTE_BIT;
 			}
 
 			bindings[BufferBindings.size() + i] =

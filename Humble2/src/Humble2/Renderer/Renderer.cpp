@@ -15,6 +15,7 @@ namespace HBL2
 		// Retrieve project settings.
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
+		m_MaxLights = 16;// projectSettings.MaxLights;
 		m_UniformRingBufferSize = (uint32_t)MB(projectSettings.MaxUniformBufferMemory) * FrameCount;
 
 		uint32_t offset = 0;
@@ -40,7 +41,7 @@ namespace HBL2
 			.bufferBindings = {
 				{
 					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
+					.visibility = { ShaderStage::VERTEX },
 					.type = BufferBindingType::UNIFORM,
 				},
 			},
@@ -52,19 +53,19 @@ namespace HBL2
 			.textureBindings = {
 				{
 					.slot = 2,
-					.visibility = ShaderStage::FRAGMENT,
+					.visibility = { ShaderStage::FRAGMENT },
 				},
 			},
 			.bufferBindings = {
 				{
 					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
+					.visibility = { ShaderStage::VERTEX, ShaderStage::FRAGMENT },
 					.type = BufferBindingType::UNIFORM,
 				},
 				{
 					.slot = 1,
-					.visibility = ShaderStage::FRAGMENT,
-					.type = BufferBindingType::UNIFORM,
+					.visibility = { ShaderStage::FRAGMENT },
+					.type = BufferBindingType::STORAGE,
 				},
 			},
 		});
@@ -75,7 +76,7 @@ namespace HBL2
 			.bufferBindings = {
 				{
 					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
+					.visibility = { ShaderStage::VERTEX },
 					.type = BufferBindingType::UNIFORM,
 				},
 			},
@@ -87,7 +88,7 @@ namespace HBL2
 			.bufferBindings = {
 				{
 					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
+					.visibility = { ShaderStage::VERTEX },
 					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
 				},
 			},
@@ -99,7 +100,7 @@ namespace HBL2
 			.textureBindings = {
 				{
 					.slot = 0,
-					.visibility = ShaderStage::FRAGMENT,
+					.visibility = { ShaderStage::FRAGMENT },
 				},
 			},
 		});
