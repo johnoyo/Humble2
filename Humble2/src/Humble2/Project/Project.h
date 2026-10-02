@@ -21,6 +21,7 @@ namespace HBL2
 	struct ProjectSettings
 	{
 		RendererType Renderer = RendererType::Forward;
+		UUID RendererUUID;
 		GraphicsAPI EditorGraphicsAPI = GraphicsAPI::OPENGL;
 		GraphicsAPI RuntimeGraphicsAPI = GraphicsAPI::VULKAN;
 		uint32_t MaxLights = 256;

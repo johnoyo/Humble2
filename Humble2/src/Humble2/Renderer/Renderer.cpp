@@ -16,6 +16,7 @@ namespace HBL2
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
 		m_MaxLights = projectSettings.MaxLights;
+		m_RendererType = projectSettings.Renderer;
 		m_UniformRingBufferSize = (uint32_t)MB(projectSettings.MaxUniformBufferMemory) * FrameCount;
 
 		uint32_t offset = 0;

@@ -127,6 +127,7 @@ namespace HBL2
 		std::string componentIncludes;
 		std::string helperScriptsIncludes;
 		std::string systemIncludes;
+		std::string sceneRendererIncludes;
 		std::string projectIncludes;
 
 		for (const auto assetHandle : AssetManager::Instance->GetRegisteredAssets())
@@ -157,6 +158,10 @@ namespace HBL2
 					else if (script->Type == ScriptType::HELPER_SCRIPT)
 					{
 						helperScriptsIncludes += std::format("#include \"{}\"\n", script->Path.string());
+					}
+					else if (script->Type == ScriptType::SCENE_RENDERER)
+					{
+						sceneRendererIncludes += std::format("#include \"{}\"\n", script->Path.string());
 					}
 
 					projectIncludes += std::format("  <ClInclude Include=\"..\\Assets\\{}\" />\n", script->Path.string());
@@ -198,6 +203,18 @@ namespace HBL2
 			{
 				((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), systemIncludes);
 				pos = m_UnityBuildSourceFinal.find(placeholder, pos + systemIncludes.length());
+			}
+		}
+
+		{
+			const std::string& placeholder = "{SceneRendererIncludes}";
+
+			size_t pos = m_UnityBuildSourceFinal.find(placeholder);
+
+			while (pos != std::string::npos)
+			{
+				((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), sceneRendererIncludes);
+				pos = m_UnityBuildSourceFinal.find(placeholder, pos + sceneRendererIncludes.length());
 			}
 		}
 

@@ -5,6 +5,7 @@
 #include "Renderer/DebugRenderer.h"
 #include "Renderer/ForwardSceneRenderer.h"
 #include "Renderer/ForwardPlusSceneRenderer.h"
+#include "Script/BuildEngine.h"
 
 namespace HBL2
 {
@@ -26,28 +27,46 @@ namespace HBL2
 			m_SceneRenderer = new ForwardPlusSceneRenderer;
 			break;
 		case RendererType::Custom:
-			// TODO: Retrieve scene renderer script from project settings.
-			HBL2_CORE_ASSERT(false, "Custom scene renderers are not yet supported!");
-			break;
+			{
+				Handle<Script> sceneRendererHandle = AssetManager::Instance->GetAsset<Script>(projectSettings.RendererUUID);
+				if (sceneRendererHandle.IsValid())
+				{
+					Script* sceneRendererScript = ResourceManager::Instance->GetScript(sceneRendererHandle);
+					m_SceneRenderer = BuildEngine::Instance->RegisterSceneRenderer(sceneRendererScript->Name);
+				}
+
+				break;
+			}
 		}
 
-		m_SceneRenderer->Initialize(m_Context, projectSettings.MaxLights);
+		if (m_SceneRenderer != nullptr)
+		{
+			m_SceneRenderer->Initialize(m_Context, projectSettings.MaxLights);
+		}
 	}
 
 	void RenderingSystem::OnUpdate(float ts)
 	{
 		BEGIN_PROFILE_SYSTEM();
 
-		Entity mainCamera = GetMainCamera();
+		if (m_SceneRenderer != nullptr)
+		{
+			Entity mainCamera = GetMainCamera();
 
-		m_SceneRenderer->Gather(mainCamera);
-		Renderer::Instance->CollectRenderData(m_SceneRenderer, m_SceneRenderer->GetRenderData());
+			m_SceneRenderer->Gather(mainCamera);
+			Renderer::Instance->CollectRenderData(m_SceneRenderer, m_SceneRenderer->GetRenderData());
+		}
 
 		END_PROFILE_SYSTEM(RunningTime);
 	}
 
 	void RenderingSystem::OnDestroy()
 	{
+		if (m_SceneRenderer == nullptr)
+		{
+			return;
+		}
+
 		m_SceneRenderer->CleanUp();
 
 		delete m_SceneRenderer;

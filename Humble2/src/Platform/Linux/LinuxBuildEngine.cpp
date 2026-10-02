@@ -317,6 +317,7 @@ const std::filesystem::path LinuxBuildEngine::GetUnityBuildBasePath(Configuratio
         std::string componentIncludes;
         std::string helperScriptsIncludes;
         std::string systemIncludes;
+        std::string sceneRendererIncludes;
 
         for (const auto assetHandle : AssetManager::Instance->GetRegisteredAssets())
         {
@@ -346,6 +347,10 @@ const std::filesystem::path LinuxBuildEngine::GetUnityBuildBasePath(Configuratio
                     else if (script->Type == ScriptType::HELPER_SCRIPT)
                     {
                         helperScriptsIncludes += std::format("#include \"{}\"\n", script->Path.string());
+                    }
+                    else if (script->Type == ScriptType::SCENE_RENDERER)
+                    {
+                        sceneRendererIncludes += std::format("#include \"{}\"\n", script->Path.string());
                     }
                 }
             }
@@ -385,6 +390,18 @@ const std::filesystem::path LinuxBuildEngine::GetUnityBuildBasePath(Configuratio
             {
                 ((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), systemIncludes);
                 pos = m_UnityBuildSourceFinal.find(placeholder, pos + systemIncludes.length());
+            }
+        }
+
+        {
+            const std::string& placeholder = "{SceneRendererIncludes}";
+
+            size_t pos = m_UnityBuildSourceFinal.find(placeholder);
+
+            while (pos != std::string::npos)
+            {
+                ((std::string&)m_UnityBuildSourceFinal).replace(pos, placeholder.length(), sceneRendererIncludes);
+                pos = m_UnityBuildSourceFinal.find(placeholder, pos + sceneRendererIncludes.length());
             }
         }
     }

@@ -41,12 +41,46 @@ namespace HBL2::Editor
 		if (rOpened)
 		{
 			{
-				const char* options[] = { "Forward", "ForwardPlus", "Deffered", "Custom" };
+				const char* options[] = { "Forward", "ForwardPlus", "Custom" };
 				int currentItem = (int)spec.Settings.Renderer;
 
 				if (ImGui::Combo("Renderer Type", &currentItem, options, IM_ARRAYSIZE(options)))
 				{
 					spec.Settings.Renderer = (RendererType)currentItem;
+				}
+
+				if (spec.Settings.Renderer == RendererType::Custom)
+				{
+					uint32_t scriptHandlePacked = AssetManager::Instance->GetHandleFromUUID(spec.Settings.RendererUUID).Pack();
+
+					ImGui::InputScalar("Renderer Script", ImGuiDataType_U32, (void*)(intptr_t*)&scriptHandlePacked);
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Script"))
+						{
+							uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+							Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+							Handle<Script> scriptHandle = AssetManager::Instance->GetAsset<Script>(assetHandle);
+
+							Script* script = ResourceManager::Instance->GetScript(scriptHandle);
+							if (script != nullptr)
+							{
+								if (script->Type == ScriptType::SCENE_RENDERER)
+								{
+									Asset* asset = AssetManager::Instance->GetAssetMetadata(assetHandle);
+									spec.Settings.RendererUUID = asset->UUID;
+								}
+								else
+								{
+									HBL2_CORE_ERROR("Provided script is not of type SceneRenderer!");
+								}
+							}
+						}
+
+						ImGui::EndDragDropTarget();
+					}
 				}
 
 				ImGui::SameLine();

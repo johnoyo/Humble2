@@ -47,6 +47,7 @@ namespace HBL2::Editor
 
 		char m_ShaderNameBuffer[MaxCharBufferSize] = "NewShader";
 		char m_ScriptNameBuffer[MaxCharBufferSize] = "NewHelperScript";
+		char m_SceneRendererNameBuffer[MaxCharBufferSize] = "NewSceneRenderer";
 		char m_ComponentNameBuffer[MaxCharBufferSize] = "NewComponent";
 		char m_SystemNameBuffer[MaxCharBufferSize] = "NewSystem";
 		char m_SceneNameBuffer[MaxCharBufferSize] = "NewScene";
@@ -58,6 +59,7 @@ namespace HBL2::Editor
 		bool m_OpenScriptSetupPopup = false;
 		bool m_OpenComponentSetupPopup = false;
 		bool m_OpenHelperScriptSetupPopup = false;
+		bool m_OpenSceneRendererSetupPopup = false;
 
 		bool m_OpenDeleteConfirmationWindow = false;
 		Handle<Asset> m_AssetToBeDeleted;

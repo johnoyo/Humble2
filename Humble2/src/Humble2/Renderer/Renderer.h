@@ -185,6 +185,7 @@ namespace HBL2
 		const Handle<BindGroupLayout> GetEmptyBindingsLayout() const { return m_EmptyBindingsLayout; }
 
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
+		RendererType GetRendererType() const { return m_RendererType; }
 
 		UniformRingBuffer* TempUniformRingBuffer = nullptr;
 		ShadowAtlasAllocator ShadowAtlasAllocator{};
@@ -211,6 +212,7 @@ namespace HBL2
 	protected:
 		std::atomic_int64_t m_FrameNumber = { 0 };
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::NONE;
+		RendererType m_RendererType = RendererType::Forward;
 		RendererStats m_CurrentStats{};
 		RendererStats m_PreviousStats{};
 		RenderPassPool m_RenderPassPool;

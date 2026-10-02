@@ -150,7 +150,9 @@ namespace HBL2
         // https://docs.shader-slang.org/en/stable/coming-from-glsl.html
 
         GraphicsAPI target = Renderer::Instance->GetAPI();
-        CreateCacheDirectoryIfNeeded(target);
+        RendererType rendererType = Renderer::Instance->GetRendererType();
+
+        CreateCacheDirectoryIfNeeded(target, rendererType);
 
         const auto& shaderFilePathAsPath = std::filesystem::path(shaderFilePath);
         const auto& workingDir = Project::GetProjectDirectory().parent_path();
@@ -164,7 +166,7 @@ namespace HBL2
         const std::string modulesDir = (workingDir / "assets" / "shaders").string();
         const char* searchPaths[] = { modulesDir.c_str() };
         
-        const auto& cacheDirectory = GetCacheDirectory(target);
+        const auto& cacheDirectory = GetCacheDirectory(target, rendererType);
 
         uint32_t workerIndex = JobSystem::Get().GetWorkerIndex();
 
@@ -1424,27 +1426,40 @@ namespace HBL2
         ioStream.close();
     }
 
-    std::filesystem::path ShaderUtilities::GetCacheDirectory(GraphicsAPI target)
+    std::filesystem::path ShaderUtilities::GetCacheDirectory(GraphicsAPI target, RendererType rendererType)
     {
         const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
         
+        const char* renderer;
+
+        switch (rendererType)
+        {
+        case RendererType::Forward:
+            renderer = "forward";
+            break;
+        case RendererType::ForwardPlus:
+            renderer = "forward_plus";
+            break;
+        case RendererType::Custom:
+            renderer = "custom";
+            break;
+        }
+
         switch (target)
         {
-        case GraphicsAPI::OPENGL:
-            return workingDirectory / "assets/cache/shader/opengl";
         case GraphicsAPI::VULKAN:
-            return workingDirectory / "assets/cache/shader/vulkan";
+            return workingDirectory / "assets" / "cache" / "shader" / renderer / "vulkan";
         case GraphicsAPI::METAL:
-            return workingDirectory / "assets/cache/shader/metal";
+            return workingDirectory / "assets" / "cache" / "shader" / renderer / "metal";
         default:
-            HBL2_CORE_ASSERT(false, "Stage not supported");
+            HBL2_CORE_ASSERT(false, "Unsupported graphics backend!");
             return "";
         }
     }
 
-    void ShaderUtilities::CreateCacheDirectoryIfNeeded(GraphicsAPI target)
+    void ShaderUtilities::CreateCacheDirectoryIfNeeded(GraphicsAPI target, RendererType rendererType)
     {
-        const auto& cacheDirectory = GetCacheDirectory(target);
+        const auto& cacheDirectory = GetCacheDirectory(target, rendererType);
 
         if (!std::filesystem::exists(cacheDirectory))
         {

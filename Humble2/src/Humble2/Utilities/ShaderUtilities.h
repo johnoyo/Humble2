@@ -108,8 +108,8 @@ namespace HBL2
 	private:
 		ShaderUtilities();
 
-        std::filesystem::path GetCacheDirectory(GraphicsAPI target);
-		void CreateCacheDirectoryIfNeeded(GraphicsAPI target);
+        std::filesystem::path GetCacheDirectory(GraphicsAPI target, RendererType rendererType);
+		void CreateCacheDirectoryIfNeeded(GraphicsAPI target, RendererType rendererType);
 
 		bool IsVertexStage(int64_t entryPointIndex, int32_t entryPointCount);
 		bool IsFragmentStage(int64_t entryPointIndex, int32_t entryPointCount);

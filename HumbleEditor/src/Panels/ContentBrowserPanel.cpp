@@ -492,6 +492,11 @@ namespace HBL2::Editor
 					m_OpenHelperScriptSetupPopup = true;
 				}
 
+				if (ImGui::MenuItem("Scene Renderer"))
+				{
+					m_OpenSceneRendererSetupPopup = true;
+				}
+
 				ImGui::EndMenu();
 			}
 
@@ -690,6 +695,47 @@ namespace HBL2::Editor
 			{
 				m_OpenHelperScriptSetupPopup = false;
 				snprintf(m_ScriptNameBuffer, sizeof(m_ScriptNameBuffer), "%s", "NewHelperScript");
+			}
+
+			ImGui::End();
+		}
+
+		if (m_OpenSceneRendererSetupPopup)
+		{
+			ImGui::Begin("Scene Renderer Setup", &m_OpenSceneRendererSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+			ImGui::InputText("Scene Renderer Name", m_SceneRendererNameBuffer, MaxCharBufferSize);
+
+			ImGui::NewLine();
+
+			if (ImGui::Button("OK"))
+			{
+				// Create .h file with placeholder code.
+				auto sceneRendererAssetHandle = BuildEngine::Instance->CreateSceneRendererFile(m_Owner->m_CurrentDirectory, m_SceneRendererNameBuffer);
+
+				// Import script.
+				AssetManager::Instance->GetAsset<Script>(sceneRendererAssetHandle);
+
+				if (Context::Mode == Mode::Runtime)
+				{
+					HBL2_WARN("Hot reloading is not available yet. Skipping requested recompilation. Recompile script after leaving Play mode.");
+				}
+				else
+				{
+					// Save script (build).
+					editorAssetManager->SaveAsset(sceneRendererAssetHandle);
+				}
+
+				m_OpenSceneRendererSetupPopup = false;
+				snprintf(m_SceneRendererNameBuffer, sizeof(m_SceneRendererNameBuffer), "%s", "NewSceneRenderer");
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel"))
+			{
+				m_OpenSceneRendererSetupPopup = false;
+				snprintf(m_SceneRendererNameBuffer, sizeof(m_SceneRendererNameBuffer), "%s", "NewSceneRenderer");
 			}
 
 			ImGui::End();
