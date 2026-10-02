@@ -95,7 +95,6 @@ namespace HBL2
             auto cameraBuffer2D = m_ResourceManager->CreateBuffer({
                 .debugName = "camera-uniform-buffer",
                 .usage = BufferUsage::UNIFORM,
-                .usageHint = BufferUsageHint::DYNAMIC,
                 .memoryUsage = MemoryUsage::CPU_GPU,
                 .byteSize = sizeof(glm::mat4),
                 .initialData = nullptr,
@@ -116,7 +115,6 @@ namespace HBL2
             auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
                 .debugName = "light-space-buffer",
                 .usage = BufferUsage::UNIFORM,
-                .usageHint = BufferUsageHint::DYNAMIC,
                 .memoryUsage = MemoryUsage::CPU_GPU,
                 .byteSize = sizeof(glm::mat4),
                 .initialData = nullptr
@@ -137,7 +135,6 @@ namespace HBL2
             auto cameraBuffer = m_ResourceManager->CreateBuffer({
                 .debugName = "debug-draw-camera-uniform-buffer",
                 .usage = BufferUsage::UNIFORM,
-                .usageHint = BufferUsageHint::DYNAMIC,
                 .memoryUsage = MemoryUsage::CPU_GPU,
                 .byteSize = sizeof(glm::mat4),
                 .initialData = nullptr,
@@ -159,7 +156,6 @@ namespace HBL2
             auto frameBuffer3D = m_ResourceManager->CreateBuffer({
                 .debugName = "frame-uniform-buffer",
                 .usage = BufferUsage::UNIFORM,
-                .usageHint = BufferUsageHint::DYNAMIC,
                 .memoryUsage = MemoryUsage::CPU_GPU,
                 .byteSize = sizeof(FrameData),
                 .initialData = nullptr,
@@ -168,7 +164,6 @@ namespace HBL2
             auto lightBuffer = m_ResourceManager->CreateBuffer({
                 .debugName = "light-ssbo",
                 .usage = BufferUsage::STORAGE,
-                .usageHint = BufferUsageHint::DYNAMIC,
                 .memoryUsage = MemoryUsage::CPU_GPU,
                 .byteSize = (uint32_t)sizeof(Light) * m_MaxLights,
                 .initialData = nullptr,

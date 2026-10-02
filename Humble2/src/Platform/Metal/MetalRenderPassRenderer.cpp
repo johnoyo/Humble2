@@ -45,15 +45,13 @@ namespace HBL2
             for (const auto& bufferEntry : globalBindGroupCold->Buffers)
             {
                 MetalBufferCold* bufferCold = rm->GetBufferCold(bufferEntry.buffer);
-
-                // Skip storage buffers.
-                if (bufferCold->Usage == BufferUsage::STORAGE)
-                {
-                    continue;
-                }
-
                 MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
-                memcpy(buffer->Buffer->contents(), buffer->Data, buffer->ByteSize);
+
+                // Skip storage buffers memcpy.
+                if (bufferCold->Usage != BufferUsage::STORAGE)
+                {
+                    memcpy(buffer->Buffer->contents(), buffer->Data, buffer->ByteSize);
+                }
                 
                 argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndexForGlobal);
                 
