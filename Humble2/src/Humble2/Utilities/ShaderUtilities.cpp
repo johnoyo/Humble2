@@ -154,6 +154,21 @@ namespace HBL2
 
         CreateCacheDirectoryIfNeeded(target, rendererType);
 
+        const char* lightingProvider;
+
+        switch (rendererType)
+        {
+        case RendererType::Forward:
+            lightingProvider = "lighting_forward";
+            break;
+        case RendererType::ForwardPlus:
+            lightingProvider = "lighting_forward_plus";
+            break;
+        case RendererType::Custom:
+            lightingProvider = "lighting_custom";
+            break;
+        }
+
         const auto& shaderFilePathAsPath = std::filesystem::path(shaderFilePath);
         const auto& workingDir = Project::GetProjectDirectory().parent_path();
         auto shaderPath = std::filesystem::exists(shaderFilePathAsPath) ? shaderFilePathAsPath : workingDir / shaderFilePath;
@@ -305,7 +320,7 @@ namespace HBL2
         if (attachLightingModules)
         {
             Slang::ComPtr<slang::IBlob> diagnostics1;
-            lightingForwardModule = session->loadModule("lighting_forward", diagnostics1.writeRef());
+            lightingForwardModule = session->loadModule(lightingProvider, diagnostics1.writeRef());
 
             if (diagnostics1)
             {
@@ -529,6 +544,22 @@ namespace HBL2
         // https://docs.shader-slang.org/en/stable/coming-from-glsl.html
 
         GraphicsAPI target = Renderer::Instance->GetAPI();
+        RendererType rendererType = Renderer::Instance->GetRendererType();
+
+        const char* lightingProvider;
+
+        switch (rendererType)
+        {
+        case RendererType::Forward:
+            lightingProvider = "lighting_forward";
+            break;
+        case RendererType::ForwardPlus:
+            lightingProvider = "lighting_forward_plus";
+            break;
+        case RendererType::Custom:
+            lightingProvider = "lighting_custom";
+            break;
+        }
 
         std::filesystem::path shaderPath = shaderFilePath;
 
@@ -655,7 +686,7 @@ namespace HBL2
         if (attachLightingModules)
         {
             Slang::ComPtr<slang::IBlob> diagnostics1;
-            lightingForwardModule = session->loadModule("lighting_forward", diagnostics1.writeRef());
+            lightingForwardModule = session->loadModule(lightingProvider, diagnostics1.writeRef());
 
             if (diagnostics1)
             {
