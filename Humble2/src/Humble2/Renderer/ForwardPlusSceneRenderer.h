@@ -39,6 +39,8 @@ namespace HBL2
 		void RenderPassSetup();
 		void BindingsSetup();
 
+		void GatherDraws(ForwardPlusSceneRenderData* sceneRenderData);
+
 		void PostProcessPassSetup();
 		void PresentPassSetup();
 

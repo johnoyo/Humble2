@@ -28,7 +28,6 @@ namespace HBL2
 
 	private:
 		void RenderPassSetup();
-		void BindingsSetup();
 
 		void PinkQuadPassSetup();
 		void PresentPassSetup();
@@ -49,10 +48,6 @@ namespace HBL2
 		uint32_t m_MaxLights = 0;
 
 		Handle<RenderPassLayout> m_RenderPassLayout;
-
-		RefHandle<BindGroupLayout> m_ShadowBindingsLayout;
-		RefHandle<BindGroupLayout> m_GlobalBindingsLayout2D;
-		RefHandle<BindGroupLayout> m_GlobalBindingsLayout3D;
 
 		// Pink quad pass resources.
 		Handle<RenderPass> m_PinkQuadRenderPass;

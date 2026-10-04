@@ -341,10 +341,12 @@ namespace HBL2
             }
         }
         
-        // Release old cache reflected bind group layout (set 2).
+        // Release old cache reflected bind group layout (set 0 and 2).
         // We need to do that in case no material ends up using this descriptor,
         // so the layout of the set will not get released, but it was created from reflection.
-        m_ReflectedBindGroupLayout.Release();
+        // Also, in the case of set 0, it is needed because of InvalidSceneRenderer so that clean up is complete.
+        m_ReflectedSet0BindGroupLayout.Release();
+        m_ReflectedSet2BindGroupLayout.Release();
     }
 
     void MetalShader::Initialize(const ShaderDescriptor&& desc)
@@ -438,10 +440,12 @@ namespace HBL2
             }
         }
         
-        // Release old cache reflected bind group layout (set 2).
+        // Release old cache reflected bind group layout (set 0 and 2).
         // We need to do that in case no material ends up using this descriptor,
         // so the layout of the set will not get released, but it was created from reflection.
-        Cold->m_ReflectedBindGroupLayout.Release();
+        // Also, in the case of set 0, it is needed because of InvalidSceneRenderer so that clean up is complete.
+        Cold->m_ReflectedSet0BindGroupLayout.Release();
+        Cold->m_ReflectedSet2BindGroupLayout.Release();
 
         // Hold a reference to the bind groups of the shader that come from reflection.
         uint32_t bindGroupLayoutIndex = 0;
@@ -450,12 +454,21 @@ namespace HBL2
         {
             if (bindGroup.IsValid())
             {
+                if (bindGroupLayoutIndex == 0 && desc.bindGroups.size() == 4)
+                {
+                    if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout())
+                    {
+                        // Keep reference to the reflected bind group layout of set 0.
+                        Cold->m_ReflectedSet0BindGroupLayout = bindGroup;
+                    }
+                }
+
                 if (bindGroupLayoutIndex == 2 && desc.bindGroups.size() == 4)
                 {
                     if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout())
                     {
                         // Keep reference to the reflected bind group layout of set 2.
-                        Cold->m_ReflectedBindGroupLayout = bindGroup;
+                        Cold->m_ReflectedSet2BindGroupLayout = bindGroup;
                     }
                 }
             }

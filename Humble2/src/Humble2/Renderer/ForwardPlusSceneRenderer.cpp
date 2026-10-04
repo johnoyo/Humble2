@@ -27,6 +27,10 @@ namespace HBL2
 	void ForwardPlusSceneRenderer::Gather(Entity mainCamera)
 	{
 		ForwardPlusSceneRenderData* sceneRenderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
+
+		GetViewProjection(sceneRenderData, mainCamera);
+
+		GatherDraws(sceneRenderData);
 	}
 
 	void ForwardPlusSceneRenderer::Render(void* renderData, void* debugRenderData)
@@ -188,6 +192,12 @@ namespace HBL2
 				},
 			},
 		});
+	}
+
+	// Gathering.
+	void ForwardPlusSceneRenderer::GatherDraws(ForwardPlusSceneRenderData* sceneRenderData)
+	{
+
 	}
 
 	// Pass set up.

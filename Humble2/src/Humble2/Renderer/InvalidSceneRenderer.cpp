@@ -17,7 +17,6 @@ namespace HBL2
 		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 
 		RenderPassSetup();
-		BindingsSetup();
 
 		// Setup render passes.
 		PinkQuadPassSetup();
@@ -86,11 +85,6 @@ namespace HBL2
 			{
 				sprite.Material.Release();
 			});
-
-		// Scene renderer clean up.
-		m_ShadowBindingsLayout.Release();
-		m_GlobalBindingsLayout2D.Release();
-		m_GlobalBindingsLayout3D.Release();
 	}
 
 	void* InvalidSceneRenderer::GetRenderData()
@@ -107,56 +101,6 @@ namespace HBL2
 			.depthTargetFormat = Format::D32_FLOAT,
 			.subPasses = {
 				{ .depthTarget = true, .colorTargets = 1, },
-			},
-		});
-	}
-
-	void InvalidSceneRenderer::BindingsSetup()
-	{
-		// Global bindings layout for the 2D rendering.
-		m_GlobalBindingsLayout2D = ResourceManager::Instance->CreateBindGroupLayout({
-			.debugName = "global-bind-group-layout-2d",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = { ShaderStage::VERTEX },
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
-		// Global bindings layout for the 3D rendering.
-		m_GlobalBindingsLayout3D = ResourceManager::Instance->CreateBindGroupLayout({
-			.debugName = "global-bind-group-layout-3d",
-			.textureBindings = {
-				{
-					.slot = 2,
-					.visibility = { ShaderStage::FRAGMENT },
-				},
-			},
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = { ShaderStage::VERTEX, ShaderStage::FRAGMENT },
-					.type = BufferBindingType::UNIFORM,
-				},
-				{
-					.slot = 1,
-					.visibility = { ShaderStage::FRAGMENT },
-					.type = BufferBindingType::STORAGE,
-				},
-			},
-		});
-
-		// Bindings layout for shadow rendering.
-		m_ShadowBindingsLayout = ResourceManager::Instance->CreateBindGroupLayout({
-			.debugName = "shadow-bindings-layout",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = { ShaderStage::VERTEX },
-					.type = BufferBindingType::UNIFORM,
-				},
 			},
 		});
 	}
