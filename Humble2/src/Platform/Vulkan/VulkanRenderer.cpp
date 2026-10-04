@@ -33,38 +33,25 @@ namespace HBL2
 		CreateCommands();
 		CreateRenderPasses();
 		CreateDescriptorPool();
-		CreateDescriptorSets();
 	}
 
 	void VulkanRenderer::PostInitialize()
 	{
-		// Global bindings for the 3D rendering.
+		// Bindings for debug rendering.
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
-			auto frameBuffer3D = m_ResourceManager->CreateBuffer({
-				.debugName = "frame-uniform-buffer",
+			auto cameraBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "debug-draw-camera-uniform-buffer",
 				.usage = BufferUsage::UNIFORM,
 				.memoryUsage = MemoryUsage::CPU_GPU,
-				.byteSize = sizeof(FrameData),
+				.byteSize = sizeof(glm::mat4),
 				.initialData = nullptr,
 			});
 
-			auto lightBuffer = m_ResourceManager->CreateBuffer({
-				.debugName = "light-ssbo",
-				.usage = BufferUsage::STORAGE,
-				.memoryUsage = MemoryUsage::CPU_GPU,
-				.byteSize = (uint32_t)sizeof(Light) * m_MaxLights,
-				.initialData = nullptr,
-			});
-
-			m_VkFrames[i].GlobalBindings3D = m_ResourceManager->CreateBindGroup({
-				.debugName = "global-bind-group",
-				.layout = m_GlobalBindingsLayout3D,
-				.textures = { { ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY } },
-				.buffers = {
-					{ .buffer = frameBuffer3D },
-					{ .buffer = lightBuffer },
-				}
+			m_VkFrames[i].DebugBindings = m_ResourceManager->CreateBindGroup({
+				.debugName = "debug-draw-bind-group",
+				.layout = m_DebugBindingsLayout,
+				.buffers = { {.buffer = cameraBuffer } }
 			});
 		}
 
@@ -177,9 +164,6 @@ namespace HBL2
 
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 
-		m_ResourceManager->DeleteBindGroupLayout(m_ShadowBindingsLayout);
-		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
-		m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
 		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
 		m_ResourceManager->DeleteBindGroupLayout(m_EmptyBindingsLayout);
 		m_ResourceManager->DeleteBindGroupLayout(m_DynamicBindingsLayout);
@@ -188,16 +172,6 @@ namespace HBL2
 
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
-			VulkanBindGroupCold* shadowBindGroupCold = m_ResourceManager->GetBindGroupCold(m_VkFrames[i].ShadowBindings);
-
-			for (auto& bufferEntry : shadowBindGroupCold->Buffers)
-			{
-				m_ResourceManager->DeleteBuffer(bufferEntry.buffer);
-			}
-
-			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].ShadowBindings);
-			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].GlobalBindings2D);
-			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].GlobalBindings3D);
 			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].GlobalPresentBindings);
 			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].DebugBindings);
 		}
@@ -906,67 +880,6 @@ namespace HBL2
 		{
 			vkDestroyDescriptorPool(m_Device->Get(), m_DescriptorPool, nullptr);
 		});
-	}
-
-	void VulkanRenderer::CreateDescriptorSets()
-	{
-		// Global bindings for the 2D rendering.
-		for (int i = 0; i < FRAME_OVERLAP; i++)
-		{
-			auto cameraBuffer2D = m_ResourceManager->CreateBuffer({
-				.debugName = "camera-uniform-buffer",
-				.usage = BufferUsage::UNIFORM,
-				.memoryUsage = MemoryUsage::CPU_GPU,
-				.byteSize = 64,
-				.initialData = nullptr,
-			});
-
-			m_VkFrames[i].GlobalBindings2D = m_ResourceManager->CreateBindGroup({
-				.debugName = "unlit-colored-bind-group",
-				.layout = m_GlobalBindingsLayout2D,
-				.buffers = {
-					{ .buffer = cameraBuffer2D },
-				}
-			});
-		}
-
-		// Bindings for shadow rendering.
-		for (int i = 0; i < FRAME_OVERLAP; i++)
-		{
-			auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
-				.debugName = "light-space-buffer",
-				.usage = BufferUsage::UNIFORM,
-				.memoryUsage = MemoryUsage::CPU_GPU,
-				.byteSize = sizeof(glm::mat4),
-				.initialData = nullptr
-			});
-
-			m_VkFrames[i].ShadowBindings = m_ResourceManager->CreateBindGroup({
-				.debugName = "shadow-bind-group",
-				.layout = m_ShadowBindingsLayout,
-				.buffers = {
-					{ .buffer = lightSpaceBuffer },
-				}
-			});
-		}		
-
-		// Bindings for debug rendering.
-		for (int i = 0; i < FRAME_OVERLAP; i++)
-		{
-			auto cameraBuffer = m_ResourceManager->CreateBuffer({
-				.debugName = "debug-draw-camera-uniform-buffer",
-				.usage = BufferUsage::UNIFORM,
-				.memoryUsage = MemoryUsage::CPU_GPU,
-				.byteSize = sizeof(glm::mat4),
-				.initialData = nullptr,
-			});
-
-			m_VkFrames[i].DebugBindings = m_ResourceManager->CreateBindGroup({
-				.debugName = "debug-draw-bind-group",
-				.layout = m_GlobalBindingsLayout2D,
-				.buffers = { { .buffer = cameraBuffer } }
-			});
-		}
 	}
 
 	// Helper

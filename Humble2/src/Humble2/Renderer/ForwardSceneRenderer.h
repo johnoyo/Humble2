@@ -35,6 +35,10 @@ namespace HBL2
 		glm::mat4 m_OnlyRotationInViewProjection = glm::mat4(1.0f);
 		glm::mat4 m_CameraProjection = glm::mat4(1.0f);
 
+		Handle<BindGroup> ShadowBindings;
+		Handle<BindGroup> GlobalBindings2D;
+		Handle<BindGroup> GlobalBindings3D;
+
 		uint32_t m_UBOStartingOffset = 0;
 		uint32_t m_UBOEndingOffset = 0;
 		DrawList m_StaticMeshOpaqueDraws;
@@ -61,6 +65,13 @@ namespace HBL2
 		virtual void* GetRenderData() override;
 
 	protected:
+		void RenderPassSetup();
+		void BindingsSetup();
+
+		Handle<BindGroup> GetShadowBindings() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].ShadowBindings; }
+		Handle<BindGroup> GetGlobalBindings2D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindings2D; }
+		Handle<BindGroup> GetGlobalBindings3D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindings3D; }
+
 		void ShadowPassSetup();
 		void DepthPrePassSetup();
 		void GeometryPassSetup();
@@ -95,6 +106,12 @@ namespace HBL2
 
 		Scene* m_EditorScene = nullptr;
 		ForwardSceneRenderData m_RenderData[Renderer::FrameCount]{};
+
+		uint32_t m_MaxLights = 0;
+
+		RefHandle<BindGroupLayout> m_ShadowBindingsLayout;
+		RefHandle<BindGroupLayout> m_GlobalBindingsLayout2D;
+		RefHandle<BindGroupLayout> m_GlobalBindingsLayout3D;
 		
 		Handle<RenderPassLayout> m_RenderPassLayout;
 

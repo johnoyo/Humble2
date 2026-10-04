@@ -15,7 +15,6 @@ namespace HBL2
 		// Retrieve project settings.
 		const auto& projectSettings = Project::GetActive()->GetSpecification().Settings;
 
-		m_MaxLights = projectSettings.MaxLights;
 		m_RendererType = projectSettings.Renderer;
 		m_UniformRingBufferSize = (uint32_t)MB(projectSettings.MaxUniformBufferMemory) * FrameCount;
 
@@ -36,44 +35,9 @@ namespace HBL2
 		 * - Bindings in each set should start from zero and increase from there.
 		 */
 
-		// Global bindings layout for the 2D rendering.
-		m_GlobalBindingsLayout2D = ResourceManager::Instance->CreateBindGroupLayout({
-			.debugName = "global-bind-group-layout-2d",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = { ShaderStage::VERTEX },
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
-		// Global bindings layout for the 3D rendering.
-		m_GlobalBindingsLayout3D = ResourceManager::Instance->CreateBindGroupLayout({
-			.debugName = "global-bind-group-layout-3d",
-			.textureBindings = {
-				{
-					.slot = 2,
-					.visibility = { ShaderStage::FRAGMENT },
-				},
-			},
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = { ShaderStage::VERTEX, ShaderStage::FRAGMENT },
-					.type = BufferBindingType::UNIFORM,
-				},
-				{
-					.slot = 1,
-					.visibility = { ShaderStage::FRAGMENT },
-					.type = BufferBindingType::STORAGE,
-				},
-			},
-		});
-
-		// Bindings layout for shadow rendering.
-		m_ShadowBindingsLayout = ResourceManager::Instance->CreateBindGroupLayout({
-			.debugName = "shadow-bindings-layout",
+		// Global bindings layout for the debug rendering.
+		m_DebugBindingsLayout = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "debug-bind-group-layout",
 			.bufferBindings = {
 				{
 					.slot = 0,

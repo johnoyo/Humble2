@@ -18,6 +18,25 @@ namespace HBL2
 
 		ForwardPlusSceneRenderData* sceneRenderData = (ForwardPlusSceneRenderData*)renderData;
 
+		// Shadow pre-pass
+		
+		// Depth pre-pass
+
+		// Grid Frustums Compute Shader
+		// RWStructuredBuffer<Frustum> out_Frustums : register(u0);
+
+		// Light Culling Compute Shader
+		// Texture2D DepthTextureVS : register(t3);
+		// StructuredBuffer<Frustum> in_Frustums : register(t9);
+
+		// Geometry pass
+
+		// Post process pass
+
+		// Debug pass
+
+		// Present pass
+
 		END_PROFILE_PASS(Renderer::Instance->GetStats().MainPassTime);
 	}
 

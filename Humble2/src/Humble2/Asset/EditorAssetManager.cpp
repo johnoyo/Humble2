@@ -1073,8 +1073,6 @@ namespace HBL2
 
 		const std::string& shaderName = asset->FilePath.filename().stem().string();
 
-		Handle<BindGroupLayout> globalBindGroupLayout;
-
 		StaticDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> shaderVariants;
 		uint32_t type = 0;
 
@@ -1082,21 +1080,6 @@ namespace HBL2
 		if (shaderProperties)
 		{
 			type = shaderProperties["Type"].as<uint32_t>();
-
-			switch (type)
-			{
-			case 0:
-				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout2D();
-				break;
-			case 1:
-			case 2:
-				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
-				break;
-			default:
-				HBL2_CORE_ERROR("Unknown Shader type: {0}", asset->DebugName);
-				stream.close();
-				return Handle<Shader>();
-			}
 
 			// Retrieve shader variants.
 			const auto& shaderVariantsProperty = shaderProperties["Variants"];
@@ -1366,7 +1349,7 @@ namespace HBL2
 			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
 			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
 			.bindGroups {
-				globalBindGroupLayout,							// Global bind group			(0)
+				outReflectionData.GetBindGroupLayout(0),		// Global bind group			(0)
 				outReflectionData.GetBindGroupLayout(1),		// Global user bind group		(1)
 				outReflectionData.GetBindGroupLayout(2),		// Material / user bind group	(2)
 				Renderer::Instance->GetDynamicBindingsLayout(),	// Draw bind group				(3)
@@ -2030,9 +2013,6 @@ namespace HBL2
 
 		const std::string& shaderName = asset->FilePath.filename().stem().string();
 
-		Handle<BindGroupLayout> globalBindGroupLayout;
-		Handle<BindGroupLayout> drawBindGroupLayout;
-
 		StaticDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> shaderVariants;
 
 		uint32_t type = UINT32_MAX;
@@ -2041,21 +2021,6 @@ namespace HBL2
 		if (shaderProperties)
 		{
 			type = shaderProperties["Type"].as<uint32_t>();
-
-			switch (type)
-			{
-			case 0:
-				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout2D();
-				break;
-			case 1:
-			case 2:
-				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
-				break;
-			default:
-				HBL2_CORE_ERROR("Unknown Shader type: {0}", asset->DebugName);
-				stream.close();
-				return Handle<Shader>();
-			}
 
 			// Retrieve shader variants.
 			const auto& shaderVariantsProperty = shaderProperties["Variants"];
@@ -2315,7 +2280,7 @@ namespace HBL2
 			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
 			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
 			.bindGroups {
-				globalBindGroupLayout,							// Global bind group			(0)
+				outReflectionData.GetBindGroupLayout(0),		// Global bind group			(0)
 				outReflectionData.GetBindGroupLayout(1),		// Global user bind group		(1)
 				outReflectionData.GetBindGroupLayout(2),		// Material / user bind group	(2)
 				Renderer::Instance->GetDynamicBindingsLayout(),	// Draw bind group				(3)

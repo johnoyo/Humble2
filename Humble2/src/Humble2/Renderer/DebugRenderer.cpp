@@ -147,7 +147,7 @@ namespace HBL2
 			.VS { .code = debugShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = debugShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
+				Renderer::Instance->GetDebugBindingsLayout(),	// Global bind group (0)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = {

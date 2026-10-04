@@ -255,12 +255,12 @@ namespace HBL2
                         .type = b.type == ShaderResourceType::SampledTexture ? TextureBindingType::IMAGE_SAMPLER : TextureBindingType::STORAGE_IMAGE,
                     });
                 }
-                else if (b.type == ShaderResourceType::UniformBuffer || b.type == ShaderResourceType::StorageBuffer)
+                else if (b.type == ShaderResourceType::UniformBuffer || b.type == ShaderResourceType::StorageBuffer || b.type == ShaderResourceType::StorageBufferReadOnly)
                 {
                     bufferBindings.push_back({
                         .slot = b.binding,
                         .visibility = b.stageMask,
-                        .type = b.type == ShaderResourceType::UniformBuffer ? BufferBindingType::UNIFORM : BufferBindingType::STORAGE,
+                        .type = (b.type == ShaderResourceType::UniformBuffer) ? BufferBindingType::UNIFORM : BufferBindingType::STORAGE,
                     });
                 }
             }

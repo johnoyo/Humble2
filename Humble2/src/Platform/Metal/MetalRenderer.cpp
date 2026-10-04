@@ -88,46 +88,6 @@ namespace HBL2
         
         // Create render passes.
         CreateRenderPasses();
-        
-        // Global bindings for the 2D rendering.
-        for (int i = 0; i < FRAME_OVERLAP; i++)
-        {
-            auto cameraBuffer2D = m_ResourceManager->CreateBuffer({
-                .debugName = "camera-uniform-buffer",
-                .usage = BufferUsage::UNIFORM,
-                .memoryUsage = MemoryUsage::CPU_GPU,
-                .byteSize = sizeof(glm::mat4),
-                .initialData = nullptr,
-            });
-
-            m_MtlFrames[i].GlobalBindings2D = m_ResourceManager->CreateBindGroup({
-                .debugName = "unlit-colored-bind-group",
-                .layout = m_GlobalBindingsLayout2D,
-                .buffers = {
-                    { .buffer = cameraBuffer2D },
-                }
-            });
-        }
-
-        // Bindings for shadow rendering.
-        for (int i = 0; i < FRAME_OVERLAP; i++)
-        {
-            auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
-                .debugName = "light-space-buffer",
-                .usage = BufferUsage::UNIFORM,
-                .memoryUsage = MemoryUsage::CPU_GPU,
-                .byteSize = sizeof(glm::mat4),
-                .initialData = nullptr
-            });
-
-            m_MtlFrames[i].ShadowBindings = m_ResourceManager->CreateBindGroup({
-                .debugName = "shadow-bind-group",
-                .layout = m_ShadowBindingsLayout,
-                .buffers = {
-                    { .buffer = lightSpaceBuffer },
-                }
-            });
-        }
 
         // Bindings for debug rendering.
         for (int i = 0; i < FRAME_OVERLAP; i++)
@@ -150,36 +110,6 @@ namespace HBL2
 
     void MetalRenderer::PostInitialize()
     {
-        // Global bindings for the 3D rendering.
-        for (int i = 0; i < FRAME_OVERLAP; i++)
-        {
-            auto frameBuffer3D = m_ResourceManager->CreateBuffer({
-                .debugName = "frame-uniform-buffer",
-                .usage = BufferUsage::UNIFORM,
-                .memoryUsage = MemoryUsage::CPU_GPU,
-                .byteSize = sizeof(FrameData),
-                .initialData = nullptr,
-            });
-
-            auto lightBuffer = m_ResourceManager->CreateBuffer({
-                .debugName = "light-ssbo",
-                .usage = BufferUsage::STORAGE,
-                .memoryUsage = MemoryUsage::CPU_GPU,
-                .byteSize = (uint32_t)sizeof(Light) * m_MaxLights,
-                .initialData = nullptr,
-            });
-
-            m_MtlFrames[i].GlobalBindings3D = m_ResourceManager->CreateBindGroup({
-                .debugName = "global-bind-group",
-                .layout = m_GlobalBindingsLayout3D,
-                .textures = { { ShadowAtlasTexture } },
-                .buffers = {
-                    { .buffer = frameBuffer3D },
-                    { .buffer = lightBuffer },
-                }
-            });
-        }
-
         // Global bindings for presenting.
         for (int i = 0; i < FRAME_OVERLAP; i++)
         {
@@ -268,9 +198,6 @@ namespace HBL2
         m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
         
         // Delete bind group layouts.
-        m_ResourceManager->DeleteBindGroupLayout(m_ShadowBindingsLayout);
-        m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
-        m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
         m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
         m_ResourceManager->DeleteBindGroupLayout(m_EmptyBindingsLayout);
         m_ResourceManager->DeleteBindGroupLayout(m_DynamicBindingsLayout);
@@ -280,16 +207,6 @@ namespace HBL2
 
         for (int i = 0; i < FRAME_OVERLAP; i++)
         {
-            MetalBindGroupCold* shadowBindGroupCold = m_ResourceManager->GetBindGroupCold(m_MtlFrames[i].ShadowBindings);
-
-            for (auto& bufferEntry : shadowBindGroupCold->Buffers)
-            {
-                m_ResourceManager->DeleteBuffer(bufferEntry.buffer);
-            }
-
-            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].ShadowBindings);
-            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].GlobalBindings2D);
-            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].GlobalBindings3D);
             m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].GlobalPresentBindings);
             m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].DebugBindings);
         }

@@ -39,34 +39,29 @@ namespace HBL2
 			}
 		}
 
-		if (m_SceneRenderer != nullptr)
+		if (m_SceneRenderer == nullptr)
 		{
-			m_SceneRenderer->Initialize(m_Context, projectSettings.MaxLights);
+			// Change to dummy scene renderer (outputs pink).
+			m_SceneRenderer = new ForwardSceneRenderer;
 		}
+
+		m_SceneRenderer->Initialize(m_Context, projectSettings.MaxLights);
 	}
 
 	void RenderingSystem::OnUpdate(float ts)
 	{
 		BEGIN_PROFILE_SYSTEM();
 
-		if (m_SceneRenderer != nullptr)
-		{
-			Entity mainCamera = GetMainCamera();
+		Entity mainCamera = GetMainCamera();
 
-			m_SceneRenderer->Gather(mainCamera);
-			Renderer::Instance->CollectRenderData(m_SceneRenderer, m_SceneRenderer->GetRenderData());
-		}
+		m_SceneRenderer->Gather(mainCamera);
+		Renderer::Instance->CollectRenderData(m_SceneRenderer, m_SceneRenderer->GetRenderData());
 
 		END_PROFILE_SYSTEM(RunningTime);
 	}
 
 	void RenderingSystem::OnDestroy()
 	{
-		if (m_SceneRenderer == nullptr)
-		{
-			return;
-		}
-
 		m_SceneRenderer->CleanUp();
 
 		delete m_SceneRenderer;

@@ -169,17 +169,12 @@ namespace HBL2
 		virtual Handle<RenderPass> GetMainRenderPass() = 0;
         virtual Handle<RenderPass> GetImGuiRenderPass() = 0;
         virtual Handle<RenderPass> GetRenderingRenderPass() = 0;
-        
-		virtual Handle<BindGroup> GetShadowBindings() = 0;
-		virtual Handle<BindGroup> GetGlobalBindings2D() = 0;
-		virtual Handle<BindGroup> GetGlobalBindings3D() = 0;
+
 		virtual Handle<BindGroup> GetGlobalPresentBindings() = 0;
 		virtual Handle<BindGroup> GetDebugBindings() = 0;
+        
 		const Handle<BindGroup> GetEmptyBindings() const { return m_EmptyBindings; }
-
-		const Handle<BindGroupLayout> GetShadowBindingsLayout() const { return m_ShadowBindingsLayout; }
-		const Handle<BindGroupLayout> GetGlobalBindingsLayout2D() const { return m_GlobalBindingsLayout2D; }
-		const Handle<BindGroupLayout> GetGlobalBindingsLayout3D() const { return m_GlobalBindingsLayout3D; }
+		const Handle<BindGroupLayout> GetDebugBindingsLayout() const { return m_DebugBindingsLayout; }
 		const Handle<BindGroupLayout> GetDynamicBindingsLayout() const { return m_DynamicBindingsLayout; }
 		const Handle<BindGroupLayout> GetGlobalPresentBindingsLayout() const { return m_GlobalPresentBindingsLayout; }
 		const Handle<BindGroupLayout> GetEmptyBindingsLayout() const { return m_EmptyBindingsLayout; }
@@ -217,13 +212,10 @@ namespace HBL2
 		RendererStats m_PreviousStats{};
 		RenderPassPool m_RenderPassPool;
 
-		Handle<BindGroupLayout> m_ShadowBindingsLayout;
-		Handle<BindGroupLayout> m_GlobalBindingsLayout2D;
-		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
+		Handle<BindGroupLayout> m_DebugBindingsLayout;
 		Handle<BindGroupLayout> m_DynamicBindingsLayout;
 		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
 		Handle<BindGroupLayout> m_EmptyBindingsLayout;
-
 		Handle<BindGroup> m_EmptyBindings;
 
 		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
@@ -232,7 +224,6 @@ namespace HBL2
 		RendererFrameData m_Frames[FrameCount];
 		uint32_t m_UniformRingBufferSize = 32_MB * FrameCount;
 		uint32_t m_UniformRingBufferFrameOffsets[FrameCount];
-		uint32_t m_MaxLights = 256;
 
 		bool m_FrameReady[FrameCount];
 		bool m_FrameInUse[FrameCount];

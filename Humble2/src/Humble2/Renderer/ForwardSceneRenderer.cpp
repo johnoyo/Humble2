@@ -76,6 +76,7 @@ namespace HBL2
 
 	void ForwardSceneRenderer::Initialize(Scene* scene, uint32_t maxLights)
 	{
+		m_MaxLights = maxLights;
 		uint32_t maxEntities = scene->GetDescriptor().maxEntities;
 
 		// Calculate space needed for the 8 draw lists and 1 light buffer per frame in flight.
@@ -108,40 +109,8 @@ namespace HBL2
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 
-		// Create color render pass.
-		m_RenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
-			.debugName = "main-renderpass-layout",
-			.depthTargetFormat = Format::D32_FLOAT,
-			.subPasses = {
-				{ .depthTarget = true, .colorTargets = 1, },
-			},
-		});
-
-		// Create depth only render pass layout.
-		m_DepthOnlyRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
-			.debugName = "pre-pass-renderpass-layout",
-			.depthTargetFormat = Format::D32_FLOAT,
-			.subPasses = {
-				{ .depthTarget = true },
-			},
-		});
-
-		// Create pre-pass bind groups.
-		m_DepthOnlyMeshBindGroup = ResourceManager::Instance->CreateBindGroup({
-			.debugName = "pre-pass-mesh-bind-group",
-			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
-			.buffers = {
-				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawData) },
-			}
-		});
-
-		m_DepthOnlySpriteBindGroup = ResourceManager::Instance->CreateBindGroup({
-			.debugName = "pre-pass-sprite-bind-group",
-			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
-			.buffers = {
-				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawDataSprite) },
-			}
-		});
+		RenderPassSetup();
+		BindingsSetup();
 
 		// Setup render passes.
 		ShadowPassSetup();
@@ -291,11 +260,180 @@ namespace HBL2
 		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
 		m_ResourceManager->DeleteShader(m_PresentShader);
 		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
+
+		m_ShadowBindingsLayout.Release();
+		m_GlobalBindingsLayout2D.Release();
+		m_GlobalBindingsLayout3D.Release();
+
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			m_ResourceManager->DeleteBindGroup(m_RenderData[i].ShadowBindings);
+			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindings2D);
+			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindings3D);
+		}
 	}
 
 	void* ForwardSceneRenderer::GetRenderData()
 	{
 		return &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
+	}
+
+	void ForwardSceneRenderer::RenderPassSetup()
+	{
+		// Create color render pass.
+		m_RenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
+			.debugName = "main-renderpass-layout",
+			.depthTargetFormat = Format::D32_FLOAT,
+			.subPasses = {
+				{.depthTarget = true, .colorTargets = 1, },
+			},
+		});
+
+		// Create depth only render pass layout.
+		m_DepthOnlyRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
+			.debugName = "pre-pass-renderpass-layout",
+			.depthTargetFormat = Format::D32_FLOAT,
+			.subPasses = {
+				{.depthTarget = true },
+			},
+		});
+	}
+
+	void ForwardSceneRenderer::BindingsSetup()
+	{
+		// Global bindings layout for the 2D rendering.
+		m_GlobalBindingsLayout2D = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "global-bind-group-layout-2d",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = { ShaderStage::VERTEX },
+					.type = BufferBindingType::UNIFORM,
+				},
+			},
+		});
+
+		// Global bindings layout for the 3D rendering.
+		m_GlobalBindingsLayout3D = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "global-bind-group-layout-3d",
+			.textureBindings = {
+				{
+					.slot = 2,
+					.visibility = { ShaderStage::FRAGMENT },
+				},
+			},
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = { ShaderStage::VERTEX, ShaderStage::FRAGMENT },
+					.type = BufferBindingType::UNIFORM,
+				},
+				{
+					.slot = 1,
+					.visibility = { ShaderStage::FRAGMENT },
+					.type = BufferBindingType::STORAGE,
+				},
+			},
+		});
+
+		// Bindings layout for shadow rendering.
+		m_ShadowBindingsLayout = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "shadow-bindings-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = { ShaderStage::VERTEX },
+					.type = BufferBindingType::UNIFORM,
+				},
+			},
+		});
+
+		// Global bindings for the 3D rendering.
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			auto frameBuffer3D = m_ResourceManager->CreateBuffer({
+				.debugName = "frame-uniform-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = sizeof(FrameData),
+				.initialData = nullptr,
+			});
+
+			auto lightBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "light-ssbo",
+				.usage = BufferUsage::STORAGE,
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = (uint32_t)sizeof(Light) * m_MaxLights,
+				.initialData = nullptr,
+			});
+
+			m_RenderData[i].GlobalBindings3D = m_ResourceManager->CreateBindGroup({
+				.debugName = "global-bind-group",
+				.layout = m_GlobalBindingsLayout3D.Get(),
+				.textures = { { Renderer::Instance->ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY } },
+				.buffers = {
+					{ .buffer = frameBuffer3D },
+					{ .buffer = lightBuffer },
+				}
+			});
+		}
+
+		// Global bindings for the 2D rendering.
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			auto cameraBuffer2D = m_ResourceManager->CreateBuffer({
+				.debugName = "camera-uniform-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = 64,
+				.initialData = nullptr,
+			});
+
+			m_RenderData[i].GlobalBindings2D = m_ResourceManager->CreateBindGroup({
+				.debugName = "unlit-colored-bind-group",
+				.layout = m_GlobalBindingsLayout2D.Get(),
+				.buffers = {
+					{.buffer = cameraBuffer2D },
+				}
+			});
+		}
+
+		// Bindings for shadow rendering.
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "light-space-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = sizeof(glm::mat4),
+				.initialData = nullptr
+			});
+
+			m_RenderData[i].ShadowBindings = m_ResourceManager->CreateBindGroup({
+				.debugName = "shadow-bind-group",
+				.layout = m_ShadowBindingsLayout.Get(),
+				.buffers = {
+					{.buffer = lightSpaceBuffer },
+				}
+			});
+		}
+
+		// Create pre-pass bind groups.
+		m_DepthOnlyMeshBindGroup = ResourceManager::Instance->CreateBindGroup({
+			.debugName = "pre-pass-mesh-bind-group",
+			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
+			.buffers = {
+				{.buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawData) },
+			}
+		});
+
+		m_DepthOnlySpriteBindGroup = ResourceManager::Instance->CreateBindGroup({
+			.debugName = "pre-pass-sprite-bind-group",
+			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
+			.buffers = {
+				{.buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawDataSprite) },
+			}
+		});
 	}
 
 	// Pass setup.
@@ -335,7 +473,7 @@ namespace HBL2
 			.VS { .code = shadowPrePassShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = shadowPrePassShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				Renderer::Instance->GetShadowBindingsLayout(),	// Global bind group (0)
+				m_ShadowBindingsLayout.Get(),					// Global bind group (0)
 				Renderer::Instance->GetEmptyBindingsLayout(),	// Unused (1)
 				Renderer::Instance->GetEmptyBindingsLayout(),	// Unused (2)
 				Renderer::Instance->GetDynamicBindingsLayout(), // (3)
@@ -413,7 +551,7 @@ namespace HBL2
 			.VS { .code = prePassShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = prePassShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
+				m_GlobalBindingsLayout2D.Get(),						// Global bind group (0)
 				Renderer::Instance->GetEmptyBindingsLayout(),		// Unused (1)
 				Renderer::Instance->GetEmptyBindingsLayout(),		// Unused (2)
 				Renderer::Instance->GetDynamicBindingsLayout(),		// (3)
@@ -441,7 +579,7 @@ namespace HBL2
 			.VS { .code = prePassSpriteShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = prePassSpriteShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
+				m_GlobalBindingsLayout2D.Get(),						// Global bind group (0)
 				Renderer::Instance->GetEmptyBindingsLayout(),		// Unused (1)
 				Renderer::Instance->GetEmptyBindingsLayout(),		// Unused (2)
 				Renderer::Instance->GetDynamicBindingsLayout(),		// (3)
@@ -1310,7 +1448,7 @@ namespace HBL2
 
 						RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_ShadowRenderPass, { tileX, tileY, g_TileSize, g_TileSize });
 
-						Handle<BindGroup> globalShadowBindings = Renderer::Instance->GetShadowBindings();
+						Handle<BindGroup> globalShadowBindings = GetShadowBindings();
 						ResourceManager::Instance->SetBufferData(globalShadowBindings, 0, (void*)&sceneRenderData->m_LightData[index].LightSpaceMatrix);
 						GlobalDrawStream globalDrawStream = { .BindGroup = globalShadowBindings, .UsesDynamicOffset = true, };
 						passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_ShadowPassStaticMeshDraws);
@@ -1340,7 +1478,7 @@ namespace HBL2
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DepthOnlyRenderPass);
 
-		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
+		Handle<BindGroup> globalBindings = GetGlobalBindings2D();
 
 		// Depth only pre pass for opaque static meshes.
 		{
@@ -1371,8 +1509,8 @@ namespace HBL2
         RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_GeometryRenderPass);
         {
 			// Set and map storage buffer for light data.
-			ResourceManager::Instance->SetBufferData(Renderer::Instance->GetGlobalBindings3D(), 1, (void*)sceneRenderData->m_LightData.data());
-			ResourceManager::Instance->MapBufferData(Renderer::Instance->GetGlobalBindings3D(), 1, 0, sceneRenderData->m_FrameData.LightCount * sizeof(Light));
+			ResourceManager::Instance->SetBufferData(GetGlobalBindings3D(), 1, (void*)sceneRenderData->m_LightData.data());
+			ResourceManager::Instance->MapBufferData(GetGlobalBindings3D(), 1, 0, sceneRenderData->m_FrameData.LightCount * sizeof(Light));
 
             renderPassPool.Execute(RenderPassEvent::BeforeRenderingOpaques);
             OpaquePass(passRenderer, sceneRenderData);
@@ -1395,7 +1533,7 @@ namespace HBL2
         
         // Render opaque meshes.
         {
-            Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
+            Handle<BindGroup> globalBindings = GetGlobalBindings3D();
             ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
             GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
             passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshOpaqueDraws);
@@ -1403,7 +1541,7 @@ namespace HBL2
 
         // Render opaque sprites.
         {
-            Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
+            Handle<BindGroup> globalBindings = GetGlobalBindings2D();
             ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
             GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
             passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_SpriteOpaqueDraws);
@@ -1418,7 +1556,7 @@ namespace HBL2
 
 		// Render transparent meshes.
 		{
-			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
+			Handle<BindGroup> globalBindings = GetGlobalBindings3D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshTransparentDraws);
@@ -1426,7 +1564,7 @@ namespace HBL2
 
 		// Render transparent sprites.
 		{
-			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
+			Handle<BindGroup> globalBindings = GetGlobalBindings2D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_SpriteTransparentDraws);

@@ -12,6 +12,9 @@ namespace HBL2
 {
 	struct ForwardPlusSceneRenderData
 	{
+		Handle<BindGroup> ShadowBindings;
+		Handle<BindGroup> GlobalBindings2D;
+		Handle<BindGroup> GlobalBindings3D;
 	};
 
 	class HBL2_API ForwardPlusSceneRenderer final : public SceneRenderer
