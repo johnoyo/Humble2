@@ -3,6 +3,7 @@
 #include "Project/Project.h"
 #include "Core/Application.h"
 #include "Renderer/DebugRenderer.h"
+#include "Renderer/InvalidSceneRenderer.h"
 #include "Renderer/ForwardSceneRenderer.h"
 #include "Renderer/ForwardPlusSceneRenderer.h"
 #include "Script/BuildEngine.h"
@@ -41,8 +42,8 @@ namespace HBL2
 
 		if (m_SceneRenderer == nullptr)
 		{
-			// Change to dummy scene renderer (outputs pink).
-			m_SceneRenderer = new ForwardSceneRenderer;
+			// Placeholder invalid scene renderer (outputs pink).
+			m_SceneRenderer = new InvalidSceneRenderer;
 		}
 
 		m_SceneRenderer->Initialize(m_Context, projectSettings.MaxLights);

@@ -316,11 +316,11 @@ namespace HBL2
             }
         }
 
-        Slang::ComPtr<slang::IModule> lightingForwardModule;
+        Slang::ComPtr<slang::IModule> lightingProviderModule;
         if (attachLightingModules)
         {
             Slang::ComPtr<slang::IBlob> diagnostics1;
-            lightingForwardModule = session->loadModule(lightingProvider, diagnostics1.writeRef());
+            lightingProviderModule = session->loadModule(lightingProvider, diagnostics1.writeRef());
 
             if (diagnostics1)
             {
@@ -328,7 +328,7 @@ namespace HBL2
                 diagnostics1 = nullptr;
             }
 
-            if (!lightingForwardModule)
+            if (!lightingProviderModule)
             {
                 HBL2_CORE_ERROR("Slang: Failed to load shader module");
                 return {};
@@ -358,7 +358,7 @@ namespace HBL2
         if (attachLightingModules)
         {
             components.push_back(lightingCommonModule);
-            components.push_back(lightingForwardModule);
+            components.push_back(lightingProviderModule);
         }
 
         for (auto& ep : entryPoints)
@@ -682,11 +682,11 @@ namespace HBL2
             }
         }
 
-        Slang::ComPtr<slang::IModule> lightingForwardModule;
+        Slang::ComPtr<slang::IModule> lightingProviderModule;
         if (attachLightingModules)
         {
             Slang::ComPtr<slang::IBlob> diagnostics1;
-            lightingForwardModule = session->loadModule(lightingProvider, diagnostics1.writeRef());
+            lightingProviderModule = session->loadModule(lightingProvider, diagnostics1.writeRef());
 
             if (diagnostics1)
             {
@@ -694,7 +694,7 @@ namespace HBL2
                 diagnostics1 = nullptr;
             }
 
-            if (!lightingForwardModule)
+            if (!lightingProviderModule)
             {
                 HBL2_CORE_ERROR("Slang: Failed to load shader module");
                 return {};
@@ -724,7 +724,7 @@ namespace HBL2
         if (attachLightingModules)
         {
             components.push_back(lightingCommonModule);
-            components.push_back(lightingForwardModule);
+            components.push_back(lightingProviderModule);
         }
 
         for (auto& ep : entryPoints)

@@ -1,4 +1,4 @@
-#include "ForwardPlusSceneRenderer.h"
+#include "InvalidSceneRenderer.h"
 
 #include "Core/Window.h"
 #include "Core/Context.h"
@@ -8,7 +8,7 @@ namespace HBL2
 {
 	using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
 
-	void ForwardPlusSceneRenderer::Initialize(Scene* scene, uint32_t maxLights)
+	void InvalidSceneRenderer::Initialize(Scene* scene, uint32_t maxLights)
 	{
 		m_Scene = scene;
 
@@ -20,49 +20,29 @@ namespace HBL2
 		BindingsSetup();
 
 		// Setup render passes.
-		PostProcessPassSetup();
+		PinkQuadPassSetup();
 		PresentPassSetup();
 	}
 
-	void ForwardPlusSceneRenderer::Gather(Entity mainCamera)
+	void InvalidSceneRenderer::Gather(Entity mainCamera)
 	{
-		ForwardPlusSceneRenderData* sceneRenderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
+		InvalidSceneRenderData* sceneRenderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
 	}
 
-	void ForwardPlusSceneRenderer::Render(void* renderData, void* debugRenderData)
+	void InvalidSceneRenderer::Render(void* renderData, void* debugRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
-		ForwardPlusSceneRenderData* sceneRenderData = (ForwardPlusSceneRenderData*)renderData;
+		InvalidSceneRenderData* sceneRenderData = (InvalidSceneRenderData*)renderData;
 		ResourceManager* rm = ResourceManager::Instance;
 
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
-		// rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_ATTACHMENT);		
-
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainDepthTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_READ_ONLY);
 
-		// Shadow pre-pass
-		
-		// Depth pre-pass
-
-		// Grid Frustums Compute Shader
-		// RWStructuredBuffer<Frustum> out_Frustums : register(u0);
-
-		// Light Culling Compute Shader
-		// Texture2D DepthTextureVS : register(t3);
-		// StructuredBuffer<Frustum> in_Frustums : register(t9);
-
-		// Geometry pass
-
-		// Post process pass
-		PostProcessPass(commandBuffer, sceneRenderData);
-
-		// Debug pass
-
-		// Present pass
+		PinkQuadPass(commandBuffer, sceneRenderData);
 		PresentPass(commandBuffer, sceneRenderData);
 
 		commandBuffer->EndCommandRecording();
@@ -71,18 +51,16 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().MainPassTime);
 	}
 
-	void ForwardPlusSceneRenderer::CleanUp()
+	void InvalidSceneRenderer::CleanUp()
 	{
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
 
 		// Post process pass clean up.
-		m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
-		m_ResourceManager->DeleteShader(m_PostProcessShader);
-		m_ResourceManager->DeleteBindGroupLayout(m_PostProcessBindGroupLayout);
-		m_ResourceManager->DeleteBindGroup(m_PostProcessBindGroup);
-		m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback(std::string("Post-Process-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
-		m_ResourceManager->DeleteBuffer(m_PostProcessQuadVertexBuffer);
+		m_ResourceManager->DeleteBuffer(m_PinkQuadBuffer);
+		m_ResourceManager->DeleteShader(m_PinkQuadShader);
+		m_ResourceManager->DeleteRenderPass(m_PinkQuadRenderPass);
+		Renderer::Instance->RemoveOnResizeCallback(std::string("Invalid-Renderer-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
+		m_ResourceManager->DeleteBuffer(m_PinkQuadVertexBuffer);
 
 		// Present pass clean up.
 		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
@@ -113,22 +91,15 @@ namespace HBL2
 		m_ShadowBindingsLayout.Release();
 		m_GlobalBindingsLayout2D.Release();
 		m_GlobalBindingsLayout3D.Release();
-
-		for (int i = 0; i < FRAME_OVERLAP; i++)
-		{
-			m_ResourceManager->DeleteBindGroup(m_RenderData[i].ShadowBindings);
-			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindings2D);
-			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindings3D);
-		}
 	}
 
-	void* ForwardPlusSceneRenderer::GetRenderData()
+	void* InvalidSceneRenderer::GetRenderData()
 	{
 		return &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
 	}
 
 	// Scene renderer set up.
-	void ForwardPlusSceneRenderer::RenderPassSetup()
+	void InvalidSceneRenderer::RenderPassSetup()
 	{
 		// Create color render pass.
 		m_RenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
@@ -139,8 +110,8 @@ namespace HBL2
 			},
 		});
 	}
-	
-	void ForwardPlusSceneRenderer::BindingsSetup()
+
+	void InvalidSceneRenderer::BindingsSetup()
 	{
 		// Global bindings layout for the 2D rendering.
 		m_GlobalBindingsLayout2D = ResourceManager::Instance->CreateBindGroupLayout({
@@ -191,62 +162,26 @@ namespace HBL2
 	}
 
 	// Pass set up.
-	void ForwardPlusSceneRenderer::PostProcessPassSetup()
+	void InvalidSceneRenderer::PinkQuadPassSetup()
 	{
-		float* vertexBuffer = new float[24] {
-			-1.0, -1.0, 0.0, 0.0, // Bottom left
-			 1.0, -1.0, 1.0, 0.0, // Bottom right
-			 1.0,  1.0, 1.0, 1.0, // Top right
-			 1.0,  1.0, 1.0, 1.0, // Top right
-			-1.0,  1.0, 0.0, 1.0, // Top left
-			-1.0, -1.0, 0.0, 0.0  // Bottom left
+		float* vertexBuffer = new float[12] {
+			-1.0, -1.0, // Bottom left
+			 1.0, -1.0, // Bottom right
+			 1.0,  1.0, // Top right
+			 1.0,  1.0, // Top right
+			-1.0,  1.0, // Top left
+			-1.0, -1.0, // Bottom left
 		};
 
-		m_PostProcessQuadVertexBuffer = m_ResourceManager->CreateBuffer({
+		m_PinkQuadVertexBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "quad-vertex-buffer",
 			.usage = BufferUsage::VERTEX,
-			.byteSize = sizeof(float) * 24,
+			.byteSize = sizeof(float) * 12,
 			.initialData = vertexBuffer,
 		});
 
-		// Create camera settings buffer.
-		m_PostProcessBuffer = m_ResourceManager->CreateBuffer({
-			.debugName = "camera-settings-buffer",
-			.usage = BufferUsage::UNIFORM,
-			.byteSize = sizeof(CameraSettings),
-		});
-
-		// Create post-process bind group.
-		m_PostProcessBindGroupLayout = m_ResourceManager->CreateBindGroupLayout({
-			.debugName = "post-process-bind-group-layout",
-			.textureBindings = {
-				{
-					.slot = 0,
-					.visibility = { ShaderStage::FRAGMENT },
-				},
-			},
-			.bufferBindings = {
-				{
-					.slot = 1,
-					.visibility = { ShaderStage::FRAGMENT },
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
-		m_PostProcessBindGroup = ResourceManager::Instance->CreateBindGroup({
-			.debugName = "post-process-bind-group",
-			.layout = m_PostProcessBindGroupLayout,
-			.textures = {
-				{ Renderer::Instance->IntermediateColorTexture, TextureLayout::SHADER_READ_ONLY }
-			},
-			.buffers = {
-				{.buffer = m_PostProcessBuffer },
-			}
-		});
-
 		// Create post-process renderpass and framebuffer.
-		m_PostProcessRenderPass = m_ResourceManager->CreateRenderPass({
+		m_PinkQuadRenderPass = m_ResourceManager->CreateRenderPass({
 			.debugName = "post-process-renderpass",
 			.layout = m_RenderPassLayout,
 			.depthTarget = {
@@ -273,70 +208,48 @@ namespace HBL2
 			}
 		});
 
-		Renderer::Instance->AddCallbackOnResize(std::string("Post-Process-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
+		Renderer::Instance->AddCallbackOnResize(std::string("Invalid-Renderer-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
 		{
-			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PostProcessRenderPass, {
+			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PinkQuadRenderPass, {
 				.width = width,
 				.height = height,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 				.colorTargets = { Renderer::Instance->MainColorTexture },
 			});
-
-			ResourceManager::Instance->DeleteBindGroup(m_PostProcessBindGroup);
-
-			m_PostProcessBuffer = m_ResourceManager->CreateBuffer({
-				.debugName = "camera-settings-buffer",
-				.usage = BufferUsage::UNIFORM,
-				.byteSize = sizeof(CameraSettings),
-			});
-
-			m_PostProcessBindGroup = ResourceManager::Instance->CreateBindGroup({
-				.debugName = "post-process-bind-group",
-				.layout = m_PostProcessBindGroupLayout,
-				.textures = {
-					{ Renderer::Instance->IntermediateColorTexture, TextureLayout::SHADER_READ_ONLY }
-				},
-				.buffers = {
-					{.buffer = m_PostProcessBuffer },
-				}
-			});
 		});
 
-		// Create pre-pass shaders.
-		const auto& postProcessShaderData = ShaderUtilities::Get().Compile("assets/shaders/post-process-tone-mapping.slang", (ShaderReflectionData*)nullptr, false);
+		// Create invalid-renderer shader.
+		const auto& invalidShaderData = ShaderUtilities::Get().Compile("assets/shaders/invalid-renderer.slang", (ShaderReflectionData*)nullptr, false);
 
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.blendEnabled = false;
 		variant.depthWrite = false;
 		variant.frontFace = (packed_size)FrontFace::CLOCKWISE;
 
-		m_PostProcessShader = ResourceManager::Instance->CreateShader({
-			.debugName = "post-process-shader",
-			.VS {.code = postProcessShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
-			.FS {.code = postProcessShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
-			.bindGroups {
-				m_PostProcessBindGroupLayout,	// Global bind group (0)
-			},
+		m_PinkQuadShader = ResourceManager::Instance->CreateShader({
+			.debugName = "invalid-renderer-shader",
+			.VS { .code = invalidShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
+			.FS { .code = invalidShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
+			.bindGroups { },
 			.renderPipeline {
 				.vertexBufferBindings = {
 					{
-						.byteStride = 16,
+						.byteStride = 8,
 						.attributes = {
-							{.byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
-							{.byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
+							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},
 				.variants = { variant },
 			},
-			.renderPass = m_PostProcessRenderPass,
+			.renderPass = m_PinkQuadRenderPass,
 		});
 
 		// Cache post-process variant hash.
-		m_PostProcessShaderVariantHash = variant;
+		m_PinkQuadShaderVariantHash = variant;
 	}
 
-	void ForwardPlusSceneRenderer::PresentPassSetup()
+	void InvalidSceneRenderer::PresentPassSetup()
 	{
 		float* vertexBuffer = new float[24] {
 			-1.0, -1.0, 0.0, 1.0, // Bottom left
@@ -376,8 +289,8 @@ namespace HBL2
 					{
 						.byteStride = 16,
 						.attributes = {
-							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
-							{ .byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
+							{.byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
+							{.byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},
@@ -396,7 +309,7 @@ namespace HBL2
 	}
 
 	// Pass rendering.
-	void ForwardPlusSceneRenderer::PostProcessPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData)
+	void InvalidSceneRenderer::PinkQuadPass(CommandBuffer* commandBuffer, InvalidSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -408,20 +321,19 @@ namespace HBL2
 			TextureLayout::SHADER_READ_ONLY
 		);
 
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PostProcessRenderPass);
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_PinkQuadRenderPass);
 
 		ScratchArena scratch(Allocator::FrameArenaRT);
 		DrawList draws(scratch, 1);
 
 		draws.Insert({
-			.Shader = m_PostProcessShader,
-			.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_PostProcessShader, m_PostProcessShaderVariantHash),
-			.VertexBuffer = m_PostProcessQuadVertexBuffer,
+			.Shader = m_PinkQuadShader,
+			.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_PinkQuadShader, m_PinkQuadShaderVariantHash),
+			.VertexBuffer = m_PinkQuadVertexBuffer,
 			.VertexCount = 6,
 		});
 
-		ResourceManager::Instance->SetBufferData(m_PostProcessBindGroup, 0, (void*)&sceneRenderData->m_CameraSettings);
-		GlobalDrawStream globalDrawStream = { .BindGroup = m_PostProcessBindGroup };
+		GlobalDrawStream globalDrawStream = { };
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 
 		commandBuffer->EndRenderPass(*passRenderer);
@@ -429,7 +341,7 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PostProcessPassTime);
 	}
 
-	void ForwardPlusSceneRenderer::PresentPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData)
+	void InvalidSceneRenderer::PresentPass(CommandBuffer* commandBuffer, InvalidSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -461,10 +373,5 @@ namespace HBL2
 		commandBuffer->EndRenderPass(*passRenderer);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PresentPassTime);
-	}
-
-	void ForwardPlusSceneRenderer::GetViewProjection(ForwardPlusSceneRenderData* sceneRenderData, Entity mainCamera)
-	{
-
 	}
 }
