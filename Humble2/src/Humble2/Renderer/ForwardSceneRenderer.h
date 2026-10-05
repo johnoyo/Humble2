@@ -13,19 +13,6 @@
 
 namespace HBL2
 {
-	struct PerDrawData
-	{
-		glm::mat4 Model = glm::mat4(1.0f);
-		glm::mat4 InverseModel = glm::mat4(1.0f);
-		glm::vec4 Color = { 0.0f, 0.0f, 0.0f, 0.0f };
-	};
-
-	struct PerDrawDataSprite
-	{
-		glm::mat4 Model = glm::mat4(1.0f);
-		glm::vec4 Color = { 0.0f, 0.0f, 0.0f, 0.0f };
-	};
-
 	struct ForwardSceneRenderData
 	{
 		FixedArray<Light> m_LightData;
@@ -49,7 +36,6 @@ namespace HBL2
 		DrawList m_SpriteOpaqueDraws;
 		DrawList m_SpriteTransparentDraws;
 		DrawList m_PrePassSpriteDraws;
-		DrawList m_ShadowPassSpriteDraws;
 	};
 
 	class HBL2_API ForwardSceneRenderer final : public SceneRenderer

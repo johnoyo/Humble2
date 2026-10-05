@@ -78,6 +78,8 @@ VSOutput mainVS(VSInput input)
 
 struct PSInput
 {
+    float4 position : SV_Position;
+
     [[vk::location(0)]] float4 v_Color;
     [[vk::location(1)]] float3 v_Position;
     [[vk::location(2)]] float3 v_Normal;
@@ -244,7 +246,7 @@ float ShadowCalculation(float4 fragPosLightSpace, float4 tileUVRange, int index,
 [shader("fragment")]
 float4 mainPS(PSInput input) : SV_Target0
 {
-    LightQuery q = { float3(0), uint2(0), uint(u_FrameData.LightCount) };
+    LightQuery q = { input.position.xyz, uint(u_FrameData.LightCount) };
     LightProvider provider;
 
     float3 textureColor = u_AlbedoMap.Sample(input.v_TextureCoord).rgb;
@@ -255,16 +257,18 @@ float4 mainPS(PSInput input) : SV_Target0
     float3 diffuseAcc = float3(0.0, 0.0, 0.0);
     float3 specularAcc = float3(0.0, 0.0, 0.0);
 
-    for (int i = 0; i < int(provider.GetLightCount(q)); ++i)
+    for (uint i = 0; i < provider.GetLightCount(q); ++i)
     {
-        float intensity = u_Light[i].Metadata.x;
-        float3 lightCol = u_Light[i].Color.xyz;
+        uint lightIndex = provider.GetLightIndex(q, i);
+
+        float intensity = u_Light[lightIndex].Metadata.x;
+        float3 lightCol = u_Light[lightIndex].Color.xyz;
 
         float shadow = 0.0;
 
-        if (u_Light[i].Position.w == 0.0)
+        if (u_Light[lightIndex].Position.w == 0.0)
         {
-            float3 L = normalize(-u_Light[i].Direction.xyz);
+            float3 L = normalize(-u_Light[lightIndex].Direction.xyz);
 
             float diff = max(dot(normal, L), 0.0);
             float3 D = diff * lightCol * intensity;
@@ -273,22 +277,22 @@ float4 mainPS(PSInput input) : SV_Target0
             float spec = pow(max(dot(normal, H), 0.0), 32.0) * input.v_Glossiness;
             float3 S = lightCol * spec * intensity;
 
-            if (u_Light[i].ShadowData.x == 1.0 && diff > 0.0)
+            if (u_Light[lightIndex].ShadowData.x == 1.0 && diff > 0.0)
             {
-                float4 fragPosLightSpace = mul(u_Light[i].LightSpaceMatrix, float4(input.v_Position, 1.0));
-                shadow = ShadowCalculation(fragPosLightSpace, u_Light[i].TileUVRange, i, input);
+                float4 fragPosLightSpace = mul(u_Light[lightIndex].LightSpaceMatrix, float4(input.v_Position, 1.0));
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light[lightIndex].TileUVRange, lightIndex, input);
             }
 
             diffuseAcc += (1.0 - shadow) * D;
             specularAcc += (1.0 - shadow) * S;
         }
-        else if (u_Light[i].Position.w == 1.0)
+        else if (u_Light[lightIndex].Position.w == 1.0)
         {
-            float3 toLight = u_Light[i].Position.xyz - input.v_Position;
+            float3 toLight = u_Light[lightIndex].Position.xyz - input.v_Position;
             float dist = length(toLight);
             float3 L = toLight / dist;
 
-            float att = 1.0 / (u_Light[i].Metadata.y + u_Light[i].Metadata.z * dist + u_Light[i].Metadata.w * dist * dist);
+            float att = 1.0 / (u_Light[lightIndex].Metadata.y + u_Light[lightIndex].Metadata.z * dist + u_Light[lightIndex].Metadata.w * dist * dist);
 
             float diff = max(dot(normal, L), 0.0);
             float3 D = diff * lightCol * intensity * att;
@@ -297,24 +301,24 @@ float4 mainPS(PSInput input) : SV_Target0
             float spec = pow(max(dot(normal, H), 0.0), 32.0) * input.v_Glossiness;
             float3 S = lightCol * spec * intensity * att;
 
-            if (u_Light[i].ShadowData.x == 1.0 && diff > 0.0)
+            if (u_Light[lightIndex].ShadowData.x == 1.0 && diff > 0.0)
             {
-                float4 fragPosLightSpace = mul(u_Light[i].LightSpaceMatrix, float4(input.v_Position, 1.0));
-                shadow = ShadowCalculation(fragPosLightSpace, u_Light[i].TileUVRange, i, input);
+                float4 fragPosLightSpace = mul(u_Light[lightIndex].LightSpaceMatrix, float4(input.v_Position, 1.0));
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light[lightIndex].TileUVRange, lightIndex, input);
             }
 
             diffuseAcc += (1.0 - shadow) * D;
             specularAcc += (1.0 - shadow) * S;
         }
-        else if (u_Light[i].Position.w == 2.0)
+        else if (u_Light[lightIndex].Position.w == 2.0)
         {
-            float3 toLight = u_Light[i].Position.xyz - input.v_Position;
+            float3 toLight = u_Light[lightIndex].Position.xyz - input.v_Position;
             float dist = length(toLight);
             float3 L = toLight / dist;
 
-            float inner = u_Light[i].Metadata.y;
-            float outer = u_Light[i].Metadata.z;
-            float theta = dot(L, normalize(-u_Light[i].Direction.xyz));
+            float inner = u_Light[lightIndex].Metadata.y;
+            float outer = u_Light[lightIndex].Metadata.z;
+            float theta = dot(L, normalize(-u_Light[lightIndex].Direction.xyz));
             float spotFrac = clamp((theta - outer) / (inner - outer), 0.0, 1.0);
 
             float att = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
@@ -328,10 +332,10 @@ float4 mainPS(PSInput input) : SV_Target0
 
             bool lit = (spotFrac > 0.0) && (diff > 0.0) && (att > 0.0);
 
-            if (u_Light[i].ShadowData.x == 1.0 && lit)
+            if (u_Light[lightIndex].ShadowData.x == 1.0 && lit)
             {
-                float4 fragPosLightSpace = mul(u_Light[i].LightSpaceMatrix, float4(input.v_Position, 1.0));
-                shadow = ShadowCalculation(fragPosLightSpace, u_Light[i].TileUVRange, i, input);
+                float4 fragPosLightSpace = mul(u_Light[lightIndex].LightSpaceMatrix, float4(input.v_Position, 1.0));
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light[lightIndex].TileUVRange, lightIndex, input);
             }
 
             diffuseAcc += (1.0 - shadow) * D;

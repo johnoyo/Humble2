@@ -79,9 +79,9 @@ namespace HBL2
 		m_MaxLights = maxLights;
 		uint32_t maxEntities = scene->GetDescriptor().maxEntities;
 
-		// Calculate space needed for the 8 draw lists and 1 light buffer per frame in flight.
+		// Calculate space needed for the 7 draw lists and 1 light buffer per frame in flight.
 		uint64_t totalBytes = ArenaLayout::Create()
-			.Add<LocalDrawStream>(Renderer::Instance->FrameCount * 8 * maxEntities)
+			.Add<LocalDrawStream>(Renderer::Instance->FrameCount * 7 * maxEntities)
 			.Add<Light>(Renderer::Instance->FrameCount * maxLights)
 			.Total();
 
@@ -95,7 +95,6 @@ namespace HBL2
 
 			sceneRenderData.m_PrePassSpriteDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_PrePassStaticMeshDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_ShadowPassSpriteDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_ShadowPassStaticMeshDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_SpriteOpaqueDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_SpriteTransparentDraws.Initialize(m_Arena, maxEntities);
@@ -1330,6 +1329,7 @@ namespace HBL2
 					data = {};
 
 					float lightType = 0.0f;
+					float lightRange = 1.0f;
 
 					const Attenuation& attenuation = GetClosestAttenuation(light.Distance);
 
@@ -1349,14 +1349,20 @@ namespace HBL2
 						data.Metadata.z = attenuation.linear;
 						data.Metadata.w = attenuation.quadratic;
 
+						lightRange = light.Distance;
+
 						data.LightShadowData.y = light.ConstantBias;
 						data.LightShadowData.z = light.SlopeBias;
 						data.LightShadowData.w = light.NormalOffsetScale;
+
 						break;
 					case Component::Light::EType::Spot:
 						lightType = 2.0f;
 						data.Metadata.y = glm::cos(glm::radians(light.InnerCutOff));
 						data.Metadata.z = glm::cos(glm::radians(light.OuterCutOff));
+						data.Metadata.w = 0.0f; // Spotlight angle
+
+						lightRange = light.Distance;
 
 						data.LightShadowData.y = light.ConstantBias;
 						data.LightShadowData.z = light.SlopeBias;
@@ -1410,7 +1416,7 @@ namespace HBL2
 					data.Position = glm::vec4(lightPos, lightType);
 					data.Direction = glm::vec4(worldDirection, 0.0f);
 					data.Metadata.x = light.Intensity;
-					data.Color = glm::vec4(light.Color, 1.0f);
+					data.Color = glm::vec4(light.Color, lightRange);
 					data.LightSpaceMatrix = lightProjection * lightView;
 
 					lightIndex++;

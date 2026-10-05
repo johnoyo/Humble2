@@ -14,11 +14,16 @@ export struct LightProvider : ILightProvider
 {
     uint GetLightCount(LightQuery q)
     {
-        return 0;
+        uint2 tileIndex = uint2(floor(q.worldPosition.xy / TILE_SIZE));
+        uint lightCount = u_LightGrid[tileIndex].y;
+        return lightCount;
     }
 
-    Light GetLight(LightQuery q, uint index)
+    uint GetLightIndex(LightQuery q, uint index)
     {
-        return u_Light[index];
+        uint2 tileIndex = uint2(floor(q.worldPosition.xy / TILE_SIZE));
+        uint startOffset = u_LightGrid[tileIndex].x;
+        uint lightIndex = u_LightIndexList[startOffset + index];
+        return lightIndex;
     }
 }

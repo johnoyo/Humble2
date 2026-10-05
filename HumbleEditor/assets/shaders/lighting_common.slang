@@ -17,12 +17,11 @@ public StructuredBuffer<Light> u_Light : register(t1);
 public struct LightQuery
 {
     public float3 worldPosition;
-    public uint2 pixelCoord;
     public uint lightCount;
 }
 
 public interface ILightProvider
 {
     uint GetLightCount(LightQuery q);
-    Light GetLight(LightQuery q, uint index);
+    uint GetLightIndex(LightQuery q, uint index);
 }

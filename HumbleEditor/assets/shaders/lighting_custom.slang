@@ -9,8 +9,8 @@ export struct LightProvider : ILightProvider
         return 0;
     }
 
-    Light GetLight(LightQuery q, uint index)
+    uint GetLightIndex(LightQuery q, uint index)
     {
-        return u_Light[index];
+        return index;
     }
 }

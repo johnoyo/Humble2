@@ -601,7 +601,16 @@ namespace HBL2
 			}
 		}
 
-		Cold->RenderPass = rm->GetRenderPass(desc.renderPass)->RenderPass;
+		VulkanRenderPass* renderPassObj = rm->GetRenderPass(desc.renderPass);
+
+		if (renderPassObj != nullptr)
+		{
+			Cold->RenderPass = renderPassObj->RenderPass;
+		}
+		else
+		{
+			Cold->RenderPass = VK_NULL_HANDLE;
+		}
 
 		std::array<VkShaderModule, 2> shaderModules{};
 		std::array<const char*, 2> entryPoints{};

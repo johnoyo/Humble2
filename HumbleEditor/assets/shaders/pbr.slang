@@ -86,6 +86,8 @@ VSOutput mainVS(VSInput input)
 
 struct PSInput
 {
+    float4 position : SV_Position;
+
     [[vk::location(0)]] float4 v_Color;
     [[vk::location(1)]] float3 v_Position;
     [[vk::location(2)]] float3 v_Normal;
@@ -308,7 +310,7 @@ float3 fresnelSchlick(float cosTheta, float3 F0)
 [shader("fragment")]
 float4 mainPS(PSInput input) : SV_Target0
 {
-    LightQuery q = { float3(0), uint2(0), uint(u_FrameData.LightCount) };
+    LightQuery q = { input.position.xyz, uint(u_FrameData.LightCount) };
     LightProvider provider;
 
     float3 albedo = pow(u_AlbedoMap.Sample(input.v_TextureCoord).rgb, float3(2.2, 2.2, 2.2));
@@ -322,49 +324,51 @@ float4 mainPS(PSInput input) : SV_Target0
     F0 = lerp(F0, albedo, metallic);
 
     float3 Lo = float3(0.0, 0.0, 0.0);
-    for (int i = 0; i < int(provider.GetLightCount(q)); ++i)
+    for (uint i = 0; i < provider.GetLightCount(q); ++i)
     {
-        float lightIntensity = u_Light[i].Metadata[i].x;
-        float3 lightColor = u_Light[i].Color.xyz;
+        uint lightIndex = provider.GetLightIndex(q, i);
+
+        float lightIntensity = u_Light[lightIndex].Metadata.x;
+        float3 lightColor = u_Light[lightIndex].Color.xyz;
 
         float3 L = float3(0.0, 0.0, 0.0);
         float attenuation = 1.0;
         bool lit = true;
         float shadow = 0.0;
 
-        if (u_Light[i].Position.w == 0.0)
+        if (u_Light[lightIndex].Position.w == 0.0)
         {
-            L = normalize(-u_Light[i].Direction.xyz);
+            L = normalize(-u_Light[lightIndex].Direction.xyz);
             lit = (max(dot(N, L), 0.0) > 0.0);
 
-            if (u_Light[i].ShadowData.x == 1.0 && lit)
+            if (u_Light[lightIndex].ShadowData.x == 1.0 && lit)
             {
-                float4 fragPosLightSpace = mul(u_Light[i].LightSpaceMatrix, float4(input.v_Position, 1.0));
-                shadow = ShadowCalculation(fragPosLightSpace, u_Light[i].TileUVRange, i, input);
+                float4 fragPosLightSpace = mul(u_Light[lightIndex].LightSpaceMatrix, float4(input.v_Position, 1.0));
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light[lightIndex].TileUVRange, lightIndex, input);
             }
         }
-        else if (u_Light[i].Position.w == 1.0)
+        else if (u_Light[lightIndex].Position.w == 1.0)
         {
-            float3 toLight = u_Light[i].Position.xyz - input.v_Position;
+            float3 toLight = u_Light[lightIndex].Position.xyz - input.v_Position;
             float  distance = length(toLight);
             L = toLight / max(distance, 1e-6);
 
-            float constant = u_Light[i].Metadata.y;
-            float linear = u_Light[i].Metadata.z;
-            float quadratic = u_Light[i].Metadata.w;
+            float constant = u_Light[lightIndex].Metadata.y;
+            float linear = u_Light[lightIndex].Metadata.z;
+            float quadratic = u_Light[lightIndex].Metadata.w;
             attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
 
             lit = (attenuation > 0.0) && (max(dot(N, L), 0.0) > 0.0);
 
-            if (u_Light[i].ShadowData.x == 1.0 && lit)
+            if (u_Light[lightIndex].ShadowData.x == 1.0 && lit)
             {
-                float4 fragPosLightSpace = mul(u_Light[i].LightSpaceMatrix, float4(input.v_Position, 1.0));
-                shadow = ShadowCalculation(fragPosLightSpace, u_Light[i].TileUVRange, i, input);
+                float4 fragPosLightSpace = mul(u_Light[lightIndex].LightSpaceMatrix, float4(input.v_Position, 1.0));
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light[lightIndex].TileUVRange, lightIndex, input);
             }
         }
-        else if (u_Light[i].Position.w == 2.0)
+        else if (u_Light[lightIndex].Position.w == 2.0)
         {
-            float3 toLight = u_Light[i].Position.xyz - input.v_Position;
+            float3 toLight = u_Light[lightIndex].Position.xyz - input.v_Position;
             float  distance = length(toLight);
             L = toLight / max(distance, 1e-6);
 
@@ -373,9 +377,9 @@ float4 mainPS(PSInput input) : SV_Target0
             float quadratic = 0.032;
             attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
 
-            float innerCutoff = u_Light[i].Metadata.y;
-            float outerCutoff = u_Light[i].Metadata.z;
-            float theta = dot(L, normalize(-u_Light[i].Direction.xyz));
+            float innerCutoff = u_Light[lightIndex].Metadata.y;
+            float outerCutoff = u_Light[lightIndex].Metadata.z;
+            float theta = dot(L, normalize(-u_Light[lightIndex].Direction.xyz));
             float epsilon = max(innerCutoff - outerCutoff, 1e-6);
 
             float spotFactor = clamp((theta - outerCutoff) / epsilon, 0.0, 1.0);
@@ -383,10 +387,10 @@ float4 mainPS(PSInput input) : SV_Target0
 
             lit = (spotFactor > 0.0) && (attenuation > 0.0) && (max(dot(N, L), 0.0) > 0.0);
 
-            if (u_Light[i].ShadowData[i].x == 1.0 && lit)
+            if (u_Light[lightIndex].ShadowData[i].x == 1.0 && lit)
             {
-                float4 fragPosLightSpace = mul(u_Light[i].LightSpaceMatrix, float4(input.v_Position, 1.0));
-                shadow = ShadowCalculation(fragPosLightSpace, u_Light[i].TileUVRange, i, input);
+                float4 fragPosLightSpace = mul(u_Light[lightIndex].LightSpaceMatrix, float4(input.v_Position, 1.0));
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light[lightIndex].TileUVRange, lightIndex, input);
             }
         }
 

@@ -257,10 +257,25 @@ namespace HBL2
                 }
                 else if (b.type == ShaderResourceType::UniformBuffer || b.type == ShaderResourceType::StorageBuffer || b.type == ShaderResourceType::StorageBufferReadOnly)
                 {
+                    BufferBindingType bufferType;
+
+                    switch (b.type)
+                    {
+                    case ShaderResourceType::UniformBuffer:
+                        bufferType = BufferBindingType::UNIFORM;
+                        break;
+                    case ShaderResourceType::StorageBuffer:
+                        bufferType = BufferBindingType::STORAGE;
+                        break;
+                    case ShaderResourceType::StorageBufferReadOnly:
+                        bufferType = BufferBindingType::READ_ONLY_STORAGE;
+                        break;
+                    }
+
                     bufferBindings.push_back({
                         .slot = b.binding,
                         .visibility = b.stageMask,
-                        .type = (b.type == ShaderResourceType::UniformBuffer) ? BufferBindingType::UNIFORM : BufferBindingType::STORAGE,
+                        .type = bufferType,
                     });
                 }
             }
