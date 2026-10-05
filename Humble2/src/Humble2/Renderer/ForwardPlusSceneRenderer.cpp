@@ -126,6 +126,7 @@ namespace HBL2
 		DepthPrePassSetup();
 		GridFrustumsComputePassSetup();
 		LightCullingComputePassSetup();
+		GeometryPassSetup();
 		PostProcessPassSetup();
 		PresentPassSetup();
 	}
@@ -154,16 +155,10 @@ namespace HBL2
 
 		ShadowPass(commandBuffer, sceneRenderData);		
 		DepthPrePass(commandBuffer, sceneRenderData);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainDepthTexture, TextureLayout::DEPTH_STENCIL_ATTACHMENT, TextureLayout::DEPTH_STENCIL_READ_ONLY);
 		GridFrustumsComputePass(commandBuffer, sceneRenderData);
 		LightCullingComputePass(commandBuffer, sceneRenderData);
-
-		// Geometry pass
-
+		GeometryPass(commandBuffer, sceneRenderData);
 		PostProcessPass(commandBuffer, sceneRenderData);
-
-		// Debug pass
-
 		PresentPass(commandBuffer, sceneRenderData);
 
 		commandBuffer->EndCommandRecording();
@@ -204,6 +199,12 @@ namespace HBL2
 		// Light culling compute pass clean up.
 		m_ResourceManager->DeleteShader(m_LightCullingComputeShader);
 		m_ResourceManager->DeleteBindGroup(m_LightCullingBindGroup);
+
+		// Geometry pass clean up.
+		m_ResourceManager->DeleteRenderPass(m_GeometryRenderPass);
+		Renderer::Instance->RemoveOnResizeCallback(std::string("Resize-Geometry-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
+		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
+		m_ResourceManager->DeleteMesh(m_SpriteMesh);
 
 		// Post process pass clean up.
 		m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
@@ -293,7 +294,8 @@ namespace HBL2
 			},
 		});
 
-		// Global bindings layout for the 3D rendering.
+		// TODO: Update with new entries!
+		// Global bindings layout for the 3D rendering. 
 		m_GlobalBindingsLayout3D = ResourceManager::Instance->CreateBindGroupLayout({
 			.debugName = "global-bind-group-layout-3d",
 			.textureBindings = {
@@ -328,6 +330,37 @@ namespace HBL2
 			},
 		});
 
+		// TODO: Update with new entries!
+		// Global bindings for the 3D rendering.
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			auto frameBuffer3D = m_ResourceManager->CreateBuffer({
+				.debugName = "frame-uniform-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = sizeof(FrameData),
+				.initialData = nullptr,
+			});
+
+			auto lightBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "light-ssbo",
+				.usage = BufferUsage::STORAGE,
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = (uint32_t)sizeof(Light) * m_MaxLights,
+				.initialData = nullptr,
+			});
+
+			m_RenderData[i].GlobalBindings3D = m_ResourceManager->CreateBindGroup({
+				.debugName = "global-bind-group",
+				.layout = m_GlobalBindingsLayout3D.Get(),
+				.textures = { { Renderer::Instance->ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY } },
+				.buffers = {
+					{ .buffer = frameBuffer3D },
+					{ .buffer = lightBuffer },
+				}
+			});
+		}
+
 		// Global bindings for the 2D rendering.
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
@@ -344,6 +377,26 @@ namespace HBL2
 				.layout = m_GlobalBindingsLayout2D.Get(),
 				.buffers = {
 					{ .buffer = cameraBuffer2D },
+				}
+			});
+		}
+
+		// Bindings for shadow rendering.
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "light-space-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = sizeof(glm::mat4),
+				.initialData = nullptr
+			});
+
+			m_RenderData[i].ShadowBindings = m_ResourceManager->CreateBindGroup({
+				.debugName = "shadow-bind-group",
+				.layout = m_ShadowBindingsLayout.Get(),
+				.buffers = {
+					{ .buffer = lightSpaceBuffer },
 				}
 			});
 		}
@@ -627,6 +680,82 @@ namespace HBL2
 		});
 	}
 
+	void ForwardPlusSceneRenderer::GeometryPassSetup()
+	{
+		// Renderpass and framebuffer for geometry.
+		m_GeometryRenderPass = m_ResourceManager->CreateRenderPass({
+			.debugName = "opaques-renderpass",
+			.layout = m_RenderPassLayout,
+			.depthTarget = {
+				.loadOp = LoadOperation::LOAD,
+				.storeOp = StoreOperation::STORE,
+				.stencilLoadOp = LoadOperation::DONT_CARE,
+				.stencilStoreOp = StoreOperation::DONT_CARE,
+				.prevUsage = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
+				.nextUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
+			},
+			.colorTargets = {
+				{
+					.format = Format::RGBA16_FLOAT,
+					.loadOp = LoadOperation::CLEAR,
+					.storeOp = StoreOperation::STORE,
+					.prevUsage = TextureLayout::UNDEFINED,
+					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
+				},
+			},
+			.frameBufferDesc = {
+				.width = Window::Instance->GetExtents().x,
+				.height = Window::Instance->GetExtents().y,
+				.depthTarget = Renderer::Instance->MainDepthTexture,
+				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
+			}
+		});
+
+		// Resize geometry framebuffer callback.
+		Renderer::Instance->AddCallbackOnResize(std::string("Resize-Geometry-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
+		{
+			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_GeometryRenderPass, {
+				.width = width,
+				.height = height,
+				.depthTarget = Renderer::Instance->MainDepthTexture,
+				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
+			});
+		});
+
+		// Sprite rendering resources.
+		float* vertexBuffer = new float[30] {
+			-0.5, -0.5, 0.0, 0.0, 1.0, // 0 - Bottom left
+			 0.5, -0.5, 0.0, 1.0, 1.0, // 1 - Bottom right
+			 0.5,  0.5, 0.0, 1.0, 0.0, // 2 - Top right
+			 0.5,  0.5, 0.0, 1.0, 0.0, // 2 - Top right
+			-0.5,  0.5, 0.0, 0.0, 0.0, // 3 - Top left
+			-0.5, -0.5, 0.0, 0.0, 1.0, // 0 - Bottom left
+		};
+
+		m_VertexBuffer = m_ResourceManager->CreateBuffer({
+			.debugName = "quad-vertex-buffer",
+			.usage = BufferUsage::VERTEX,
+			.byteSize = sizeof(float) * 30,
+			.initialData = vertexBuffer,
+		});
+
+		m_SpriteMesh = m_ResourceManager->CreateMesh({
+			.debugName = "quad-mesh",
+			.meshes = {
+				{
+					.debugName = "quad-sub-mesh",
+					.subMeshes = {
+						{
+							.vertexOffset = 0,
+							.vertexCount = 6,
+						}
+					},
+					.vertexBuffers = { m_VertexBuffer },
+				}
+			}
+		});
+	}
+
 	void ForwardPlusSceneRenderer::PostProcessPassSetup()
 	{
 		float* vertexBuffer = new float[24] {
@@ -842,7 +971,7 @@ namespace HBL2
 		// Static meshes
 		{
 			uint64_t depthOnlyVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlyShader, m_DepthOnlyMaterialHash);
-			// uint64_t shadowPrePassVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_ShadowPrePassShader, m_ShadowPrePassMaterialHash);
+			uint64_t shadowPrePassVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_ShadowPrePassShader, m_ShadowPrePassMaterialHash);
 
 			sceneRenderData->m_StaticMeshOpaqueDraws.Reset();
 			sceneRenderData->m_StaticMeshTransparentDraws.Reset();
@@ -948,7 +1077,7 @@ namespace HBL2
 							});
 						}
 
-						/*if (material->ReceiveShadows)
+						if (material->ReceiveShadows)
 						{
 							sceneRenderData->m_ShadowPassStaticMeshDraws.Insert({
 								.Shader = m_ShadowPrePassShader,
@@ -966,7 +1095,7 @@ namespace HBL2
 								.InstanceCount = subMesh.InstanceCount,
 								.InstanceOffset = subMesh.InstanceOffset,
 							});
-						}*/
+						}
 					}
 				});
 		}
@@ -1310,6 +1439,80 @@ namespace HBL2
 		commandBuffer->EndComputePass(*computePassRenderer);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxComputePassTime);
+	}
+
+	void ForwardPlusSceneRenderer::GeometryPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData)
+	{
+		ScratchArena scratch(Allocator::FrameArenaRT);
+		DrawList skyboxDraws(scratch, 32);
+
+		SkyboxComputePass(commandBuffer, &skyboxDraws);
+
+		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_GeometryRenderPass);
+		{
+			// Set and map storage buffer for light data.
+			ResourceManager::Instance->SetBufferData(GetGlobalBindings3D(), 1, (void*)sceneRenderData->m_LightData.data());
+			ResourceManager::Instance->MapBufferData(GetGlobalBindings3D(), 1, 0, sceneRenderData->m_FrameData.LightCount * sizeof(Light));
+
+			OpaquePass(passRenderer, sceneRenderData);
+			SkyboxPass(skyboxDraws, passRenderer, sceneRenderData);
+			TransparentPass(passRenderer, sceneRenderData);
+		}
+		commandBuffer->EndRenderPass(*passRenderer);
+	}
+
+	void ForwardPlusSceneRenderer::OpaquePass(RenderPassRenderer* passRenderer, ForwardPlusSceneRenderData* sceneRenderData)
+	{
+		BEGIN_PROFILE_PASS();
+
+		// Render opaque meshes.
+		{
+			Handle<BindGroup> globalBindings = GetGlobalBindings3D();
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
+			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshOpaqueDraws);
+		}
+
+		// Render opaque sprites.
+		{
+			Handle<BindGroup> globalBindings = GetGlobalBindings2D();
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
+			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_SpriteOpaqueDraws);
+		}
+
+		END_PROFILE_PASS(Renderer::Instance->GetStats().OpaquePassTime);
+	}
+
+	void ForwardPlusSceneRenderer::TransparentPass(RenderPassRenderer* passRenderer, ForwardPlusSceneRenderData* sceneRenderData)
+	{
+		BEGIN_PROFILE_PASS();
+
+		// Render transparent meshes.
+		{
+			Handle<BindGroup> globalBindings = GetGlobalBindings3D();
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
+			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshTransparentDraws);
+		}
+
+		// Render transparent sprites.
+		{
+			Handle<BindGroup> globalBindings = GetGlobalBindings2D();
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
+			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
+			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_SpriteTransparentDraws);
+		}
+
+		END_PROFILE_PASS(Renderer::Instance->GetStats().TransparentPassTime);
+	}
+
+	void ForwardPlusSceneRenderer::SkyboxComputePass(CommandBuffer* commandBuffer, DrawList* skyboxDraws)
+	{
+	}
+
+	void ForwardPlusSceneRenderer::SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardPlusSceneRenderData* sceneRenderData)
+	{
 	}
 
 	void ForwardPlusSceneRenderer::PostProcessPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData)

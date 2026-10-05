@@ -57,6 +57,7 @@ namespace HBL2
 		void DepthPrePassSetup();
 		void GridFrustumsComputePassSetup();
 		void LightCullingComputePassSetup();
+		void GeometryPassSetup();
 		void PostProcessPassSetup();
 		void PresentPassSetup();
 
@@ -67,6 +68,11 @@ namespace HBL2
 		void DepthPrePass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData);
 		void GridFrustumsComputePass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData);
 		void LightCullingComputePass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData);
+		void GeometryPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData);
+		void OpaquePass(RenderPassRenderer* passRenderer, ForwardPlusSceneRenderData* sceneRenderData);
+		void TransparentPass(RenderPassRenderer* passRenderer, ForwardPlusSceneRenderData* sceneRenderData);
+		void SkyboxComputePass(CommandBuffer* commandBuffer, DrawList* skyboxDraws);
+		void SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardPlusSceneRenderData* sceneRenderData);
 		void PostProcessPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData);
 		void PresentPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData);
 
@@ -92,7 +98,6 @@ namespace HBL2
 		RefHandle<BindGroupLayout> m_GlobalBindingsLayout3D;
 
 		Handle<RenderPassLayout> m_RenderPassLayout;
-		Handle<Buffer> m_VertexBuffer;
 
 		// Shadow pass resources.
 		Handle<Texture> m_ShadowDepthTexture;
@@ -125,6 +130,11 @@ namespace HBL2
 		ShaderDescriptor::RenderPipeline::PackedVariant m_LightCullingComputeVariant{};
 		Handle<BindGroupLayout> m_LightCullingBindGroupLayout;
 		Handle<BindGroup> m_LightCullingBindGroup;
+
+		// Geometry pass resources.
+		Handle<RenderPass> m_GeometryRenderPass;
+		Handle<Mesh> m_SpriteMesh;
+		Handle<Buffer> m_VertexBuffer;
 
 		// Post process pass resources.
 		Handle<RenderPass> m_PostProcessRenderPass;
