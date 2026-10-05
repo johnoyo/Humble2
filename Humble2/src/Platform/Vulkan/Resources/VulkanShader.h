@@ -59,7 +59,6 @@ namespace HBL2
 
 		void BuildSpecializationInfo(ShaderStage stage, SpecializationData& specializationData, const PipelineConfig& config);
 
-		std::vector<VkPipeline> m_RetiredPipelines; // TODO: Remove!
 		std::atomic<uint32_t> m_Count{ 0 };
 		mutable std::mutex m_WriteMutex;
 		

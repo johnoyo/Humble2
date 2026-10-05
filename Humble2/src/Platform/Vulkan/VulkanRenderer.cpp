@@ -407,7 +407,7 @@ namespace HBL2
 			.dimensions = { width, height, 1 },
 			.format = Format::D32_FLOAT,
 			.internalFormat = Format::D32_FLOAT,
-			.usage = TextureUsage::DEPTH_STENCIL,
+			.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
 			.aspect = TextureAspect::DEPTH,
 			.createSampler = true,
 			.sampler =

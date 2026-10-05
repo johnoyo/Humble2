@@ -12,7 +12,7 @@ namespace HBL2
     struct MetalBindGroupLayout
     {
         static constexpr uint32_t MaxTextureEntries = 6;
-        static constexpr uint32_t MaxBufferEntries = 6;
+        static constexpr uint32_t MaxBufferEntries = 8;
         
         MetalBindGroupLayout() = default;
         MetalBindGroupLayout(const BindGroupLayoutDescriptor&& desc);

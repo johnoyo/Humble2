@@ -247,12 +247,31 @@ namespace HBL2
 
             for (const auto& b : descriptorSet.bindings)
             {
-                if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::StorageTexture)
+                if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler ||
+                    b.type == ShaderResourceType::StorageTexture || b.type == ShaderResourceType::Sampler)
                 {
+                    TextureBindingType textureType;
+
+                    switch (b.type)
+                    {
+                    case ShaderResourceType::SampledTexture:
+                        textureType = TextureBindingType::SAMPLED_IMAGE;
+                        break;
+                    case ShaderResourceType::StorageTexture:
+                        textureType = TextureBindingType::STORAGE_IMAGE;
+                        break;
+                    case ShaderResourceType::Sampler:
+                        textureType = TextureBindingType::SAMPLER;
+                        break;
+                    case ShaderResourceType::CombinedTextureSampler:
+                        textureType = TextureBindingType::COMBINED_IMAGE_SAMPLER;
+                        break;
+                    }
+
                     textureBindings.push_back({
                         .slot = b.binding,
                         .visibility = b.stageMask,
-                        .type = b.type == ShaderResourceType::SampledTexture ? TextureBindingType::IMAGE_SAMPLER : TextureBindingType::STORAGE_IMAGE,
+                        .type = textureType,
                     });
                 }
                 else if (b.type == ShaderResourceType::UniformBuffer || b.type == ShaderResourceType::StorageBuffer || b.type == ShaderResourceType::StorageBufferReadOnly)
@@ -647,7 +666,6 @@ namespace HBL2
             }
 
             // Determine which stage this binding is used in.
-            ShaderStage usedInStage = ShaderStage::NONE;
             BitFlags<ShaderStage> stageMask = { ShaderStage::NONE };
             for (uint32_t ep = 0; ep < layout->getEntryPointCount(); ++ep)
             {
@@ -809,9 +827,7 @@ namespace HBL2
         case Kind::Resource:
         {
             SlangResourceAccess access = type->getResourceAccess();
-            SlangResourceShape  shape  = (SlangResourceShape)(type->getResourceShape() & SLANG_RESOURCE_BASE_SHAPE_MASK);
-
-            const bool isSampler = (type->getResourceShape() & SLANG_TEXTURE_COMBINED_FLAG) != 0 || shape == SLANG_TEXTURE_2D;
+            SlangResourceShape shape = (SlangResourceShape)(type->getResourceShape() & SLANG_RESOURCE_BASE_SHAPE_MASK);
 
             if (access == SLANG_RESOURCE_ACCESS_READ_WRITE)
             {
@@ -825,6 +841,11 @@ namespace HBL2
 
             if (shape == SLANG_TEXTURE_2D || shape == SLANG_TEXTURE_3D || shape == SLANG_TEXTURE_CUBE || shape == SLANG_TEXTURE_2D_ARRAY)
             {
+                if ((type->getResourceShape() & SLANG_TEXTURE_COMBINED_FLAG) != 0)
+                {
+                    return ShaderResourceType::CombinedTextureSampler;
+                }
+
                 return ShaderResourceType::SampledTexture;
             }
 
@@ -953,6 +974,7 @@ namespace HBL2
         case ShaderResourceType::UniformBuffer:  return "UniformBuffer";
         case ShaderResourceType::StorageBuffer:  return "StorageBuffer";
         case ShaderResourceType::SampledTexture: return "SampledTexture";
+        case ShaderResourceType::CombinedTextureSampler: return "CombinedTextureSampler";
         case ShaderResourceType::StorageTexture: return "StorageTexture";
         case ShaderResourceType::Sampler:        return "Sampler";
         default:                           return "Unknown";

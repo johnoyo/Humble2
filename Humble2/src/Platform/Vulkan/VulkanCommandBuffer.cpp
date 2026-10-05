@@ -95,9 +95,19 @@ namespace HBL2
         m_CurrentPassType = VulkanPassType::None;
     }
 
-	ComputePassRenderer* VulkanCommandBuffer::BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite)
+	ComputePassRenderer* VulkanCommandBuffer::BeginComputePass(const Span<const Handle<Texture>> texturesWrite, const Span<const Handle<Buffer>> buffersWrite, const Span<const Handle<Buffer>> buffersZero)
 	{
+		VulkanResourceManager* rm = (VulkanResourceManager*)ResourceManager::Instance;
+
 		m_CurrentComputePassRenderer.m_CommandBuffer = CommandBuffer;
+		
+		for (auto buffer : buffersZero)
+		{
+			VulkanBufferHot* vkBuffer = rm->GetBufferHot(buffer);
+			vkCmdFillBuffer(CommandBuffer, vkBuffer->Buffer, 0, vkBuffer->ByteSize, 0);
+
+			MemoryBufferBarrier(buffer, TextureLayout::COPY_DST, TextureLayout::GENERAL);
+		}
         
         m_CurrentPassType = VulkanPassType::Compute;
         

@@ -78,7 +78,7 @@ namespace HBL2
 		{
 			uint32_t slot = 0;
 			BitFlags<ShaderStage> visibility = { ShaderStage::VERTEX };
-			TextureBindingType type = TextureBindingType::IMAGE_SAMPLER;
+			TextureBindingType type = TextureBindingType::COMBINED_IMAGE_SAMPLER;
 		};
 		Span<const TextureBinding> textureBindings;
 

@@ -113,7 +113,7 @@ namespace HBL2
 			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
 			.format = Format::D32_FLOAT,
 			.internalFormat = Format::D32_FLOAT,
-			.usage = TextureUsage::DEPTH_STENCIL,
+			.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
 			.aspect = TextureAspect::DEPTH,
 			.createSampler = true,
 			.sampler =

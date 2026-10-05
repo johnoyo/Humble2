@@ -143,13 +143,22 @@ namespace HBL2
         m_CurrentEncoderStages = 0;
     }
 
-    ComputePassRenderer* MetalCommandBuffer::BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite)
+    ComputePassRenderer* MetalCommandBuffer::BeginComputePass(const Span<const Handle<Texture>> texturesWrite, const Span<const Handle<Buffer>> buffersWrite, const Span<const Handle<Buffer>> buffersZero)
     {
-        m_CurrentComputePassRenderer.Encoder = CommandBuffer->computeCommandEncoder();
-        
-        m_BarrierTracker.Flush(m_CurrentComputePassRenderer.Encoder);
+        MetalResourceManager* rm = (MetalResourceManager*)ResourceManager::Instance;
 
+        m_CurrentComputePassRenderer.Encoder = CommandBuffer->computeCommandEncoder();        
+        m_BarrierTracker.Flush(m_CurrentComputePassRenderer.Encoder);
         m_CurrentEncoder = m_CurrentComputePassRenderer.Encoder;
+
+        for (auto buffer : buffersZero)
+        {
+            MetalBufferHot* mtlBuffer = rm->GetBufferHot(buffer);
+            m_CurrentEncoder->fillBuffer(mtlBuffer->Buffer, NS::Range::Make(0, mtlBuffer->ByteSize), 0);
+
+            m_CurrentEncoder->barrierAfterEncoderStages(MTL::StageBlit, MTL::StageDispatch, MTL4::VisibilityOptionDevice);
+        }
+
         m_CurrentEncoderStages = MTL::StageDispatch | MTL::StageBlit;
         
         m_TexturesWrite = texturesWrite;

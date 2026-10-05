@@ -971,7 +971,7 @@ namespace HBL2
 
                     out << YAML::EndMap;
                 }
-                else if (b.type == ShaderResourceType::SampledTexture)
+                else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
                 {
                     out << YAML::Key << b.name.c_str() << YAML::Value << (UUID)0;
                 }
@@ -1132,7 +1132,7 @@ namespace HBL2
                         }
                     }
                 }
-                else if (b.type == ShaderResourceType::SampledTexture)
+                else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
                 {
                     Handle<Asset> textureAssetHandle = Handle<Asset>::UnPack(desc.TextureAssets[textureIndex++]);
 
@@ -1350,7 +1350,7 @@ namespace HBL2
 
                     out << YAML::EndMap;
                 }
-                else if (b.type == ShaderResourceType::SampledTexture)
+                else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
                 {
                     Handle<Asset> textureAssetHandle = Handle<Asset>::UnPack(desc.TextureAssets[textureIndex++]);
 

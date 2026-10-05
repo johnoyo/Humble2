@@ -19,7 +19,8 @@ namespace HBL2
         UniformBuffer,   // ConstantBuffer<T>
         StorageBuffer,   // RWStructuredBuffer / StructuredBuffer
         StorageBufferReadOnly,   // RWStructuredBuffer / StructuredBuffer
-        SampledTexture,  // Texture2D / Sampler2D (combined)
+        SampledTexture,  // Texture2D
+        CombinedTextureSampler,  // Sampler2D (combined)
         StorageTexture,  // RWTexture2D
         Sampler,         // SamplerState
         Unknown,

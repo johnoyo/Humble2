@@ -8,13 +8,13 @@ namespace HBL2
 	{
 		DebugName = desc.debugName;
 
-		HBL2_CORE_ASSERT(desc.bufferBindings.size() < BufferBindings.capacity(), "Exceeded max number of buffer bindings in a bind group layout!");
+		HBL2_CORE_ASSERT(desc.bufferBindings.size() <= BufferBindings.capacity(), "Exceeded max number of buffer bindings in a bind group layout!");
 		for (const auto& bufferBinding : desc.bufferBindings)
 		{
 			BufferBindings.emplace_back(bufferBinding);
 		}
 
-		HBL2_CORE_ASSERT(desc.textureBindings.size() < TextureBindings.capacity(), "Exceeded max number of texture bindings in a bind group layout!");
+		HBL2_CORE_ASSERT(desc.textureBindings.size() <= TextureBindings.capacity(), "Exceeded max number of texture bindings in a bind group layout!");
 		for (const auto& textureBinding : desc.textureBindings)
 		{
 			TextureBindings.emplace_back(textureBinding);
@@ -81,11 +81,17 @@ namespace HBL2
 
 			switch (TextureBindings[i].type)
 			{
-			case TextureBindingType::IMAGE_SAMPLER:
+			case TextureBindingType::SAMPLED_IMAGE:
+				type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+				break;
+			case TextureBindingType::COMBINED_IMAGE_SAMPLER:
 				type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				break;
 			case TextureBindingType::STORAGE_IMAGE:
 				type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+				break;
+			case TextureBindingType::SAMPLER:
+				type = VK_DESCRIPTOR_TYPE_SAMPLER;
 				break;
 			}
 

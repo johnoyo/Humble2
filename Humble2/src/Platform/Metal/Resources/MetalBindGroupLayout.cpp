@@ -8,13 +8,13 @@ namespace HBL2
     {
         DebugName = desc.debugName;
         
-        HBL2_CORE_ASSERT(desc.bufferBindings.size() < BufferBindings.capacity(), "Exceeded max number of buffer bindings in a bind group layout!");
+        HBL2_CORE_ASSERT(desc.bufferBindings.size() <= BufferBindings.capacity(), "Exceeded max number of buffer bindings in a bind group layout!");
         for (const auto& bufferBinding : desc.bufferBindings)
         {
             BufferBindings.emplace_back(bufferBinding);
         }
 
-        HBL2_CORE_ASSERT(desc.textureBindings.size() < TextureBindings.capacity(), "Exceeded max number of texture bindings in a bind group layout!");
+        HBL2_CORE_ASSERT(desc.textureBindings.size() <= TextureBindings.capacity(), "Exceeded max number of texture bindings in a bind group layout!");
         for (const auto& textureBinding : desc.textureBindings)
         {
             TextureBindings.emplace_back(textureBinding);

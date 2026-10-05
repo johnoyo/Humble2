@@ -258,6 +258,8 @@ namespace HBL2
 				return VK_FORMAT_B8G8R8A8_UNORM;
 			case Format::RG16_FLOAT:
 				return VK_FORMAT_R16G16_SFLOAT;
+			case Format::RG32_UINT:
+				return VK_FORMAT_R32G32_UINT;
 			case Format::RGBA16_FLOAT:
 				return VK_FORMAT_R16G16B16A16_SFLOAT;
 			case Format::RGB32_FLOAT:
@@ -435,7 +437,7 @@ namespace HBL2
                 case TextureLayout::DEPTH_STENCIL_ATTACHMENT:
                     return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                 case TextureLayout::DEPTH_STENCIL_READ_ONLY:
-                    return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+					return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT;
                 case TextureLayout::SHADER_READ_ONLY:
                     return VK_ACCESS_SHADER_READ_BIT;
                 case TextureLayout::GENERAL:
@@ -459,7 +461,7 @@ namespace HBL2
                     return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                 case TextureLayout::DEPTH_STENCIL_ATTACHMENT:
                 case TextureLayout::DEPTH_STENCIL_READ_ONLY:
-                    return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+					return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
                 case TextureLayout::SHADER_READ_ONLY:
                 case TextureLayout::GENERAL:
                     return VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;

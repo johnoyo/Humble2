@@ -1297,7 +1297,7 @@ namespace HBL2
 							bufferBindings.push_back({ .buffer = userBuffer, });
 						}
 					}
-					else if (b.type == ShaderResourceType::SampledTexture)
+					else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
 					{
 						const auto& textureProp = shaderProperties["BindGroup"][bindingIndex];
 
@@ -1620,7 +1620,7 @@ namespace HBL2
 							bufferBindings.push_back({ .buffer = userBuffer, });
 						}
 					}
-					else if (b.type == ShaderResourceType::SampledTexture)
+					else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
 					{
 						const auto& textureProp = materialProperties[b.name];
 
@@ -2236,7 +2236,7 @@ namespace HBL2
 							bufferBindings.push_back({ .buffer = userBuffer, });
 						}
 					}
-					else if (b.type == ShaderResourceType::SampledTexture)
+					else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
 					{
 						const auto& textureProp = shaderProperties["BindGroup"][bindingIndex];
 
@@ -2525,7 +2525,7 @@ namespace HBL2
 							bufferBindings.push_back({ .buffer = userBuffer, });
 						}
 					}
-					else if (b.type == ShaderResourceType::SampledTexture)
+					else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
 					{
 						const auto& textureProp = materialProperties[b.name];
 

@@ -63,6 +63,8 @@ namespace HBL2
                 return MTL::PixelFormatBGRA8Unorm;
             case Format::RG16_FLOAT:
                 return MTL::PixelFormatRG16Float;
+            case Format::RG32_UINT:
+                return MTL::PixelFormatInvalid; // TODO: Fix!
             case Format::RGBA16_FLOAT:
                 return MTL::PixelFormatRGBA16Float;
             case Format::RGB32_FLOAT:

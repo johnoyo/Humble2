@@ -319,6 +319,7 @@ namespace HBL2
 				{
 					.slot = 2,
 					.visibility = { ShaderStage::FRAGMENT },
+					.type = TextureBindingType::COMBINED_IMAGE_SAMPLER,
 				},
 			},
 			.bufferBindings = {
@@ -330,7 +331,7 @@ namespace HBL2
 				{
 					.slot = 1,
 					.visibility = { ShaderStage::FRAGMENT },
-					.type = BufferBindingType::STORAGE,
+					.type = BufferBindingType::READ_ONLY_STORAGE,
 				},
 			},
 		});
@@ -717,7 +718,7 @@ namespace HBL2
 				{
 					.slot = 0,
 					.visibility = { ShaderStage::COMPUTE },
-					.type = TextureBindingType::IMAGE_SAMPLER,
+					.type = TextureBindingType::COMBINED_IMAGE_SAMPLER,
 				},
 				{
 					.slot = 1,
@@ -755,7 +756,7 @@ namespace HBL2
 				{
 					.slot = 0,
 					.visibility = { ShaderStage::FRAGMENT },
-					.type = TextureBindingType::IMAGE_SAMPLER,
+					.type = TextureBindingType::COMBINED_IMAGE_SAMPLER,
 				},
 			},
 		});
@@ -1650,7 +1651,7 @@ namespace HBL2
                             .VariantHandle = skyboxVariantHandle,
                         };
 
-                        ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.CubeMap }, {});
+						ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.CubeMap }, {}, {});
                         computePassRenderer->Dispatch({ dispatch });
                         commandBuffer->EndComputePass(*computePassRenderer);
                         
