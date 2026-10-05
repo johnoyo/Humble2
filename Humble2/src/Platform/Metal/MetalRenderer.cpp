@@ -102,7 +102,7 @@ namespace HBL2
 
             m_MtlFrames[i].DebugBindings = m_ResourceManager->CreateBindGroup({
                 .debugName = "debug-draw-bind-group",
-                .layout = m_GlobalBindingsLayout2D,
+                .layout = m_DebugBindingsLayout,
                 .buffers = { { .buffer = cameraBuffer } }
             });
         }
