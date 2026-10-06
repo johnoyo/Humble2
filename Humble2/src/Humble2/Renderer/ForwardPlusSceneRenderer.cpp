@@ -2207,7 +2207,7 @@ namespace HBL2
 				}
 			});
 
-			m_RenderData[i].GlobalBindingsOpaque3D = m_ResourceManager->CreateBindGroup({
+			m_RenderData[i].GlobalBindingsTransparent3D = m_ResourceManager->CreateBindGroup({
 				.debugName = "global-bind-group",
 				.layout = m_GlobalBindingsLayout3D.Get(),
 				.textures = {
