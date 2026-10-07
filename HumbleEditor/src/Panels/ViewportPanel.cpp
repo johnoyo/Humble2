@@ -76,7 +76,7 @@ namespace HBL2::Editor
 
 		if (viewportTexture != 0)
 		{
-			ImGui::Image(viewportTexture, ImVec2{ m_Owner->m_ViewportSize.x, m_Owner->m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+			ImGui::Image(viewportTexture, ImVec2{ m_Owner->m_ViewportSize.x, m_Owner->m_ViewportSize.y });
 
 			if (ImGui::BeginDragDropTarget())
 			{

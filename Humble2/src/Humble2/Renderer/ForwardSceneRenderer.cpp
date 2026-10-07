@@ -886,12 +886,12 @@ namespace HBL2
 	void ForwardSceneRenderer::PostProcessPassSetup()
 	{
 		float* vertexBuffer = new float[24] {
-			-1.0, -1.0, 0.0, 0.0, // Bottom left
-			 1.0, -1.0, 1.0, 0.0, // Bottom right
-			 1.0,  1.0, 1.0, 1.0, // Top right
-			 1.0,  1.0, 1.0, 1.0, // Top right
-			-1.0,  1.0, 0.0, 1.0, // Top left
-			-1.0, -1.0, 0.0, 0.0  // Bottom left
+			-1.0, -1.0, 0.0, 1.0, // Bottom left
+			 1.0, -1.0, 1.0, 1.0, // Bottom right
+			 1.0,  1.0, 1.0, 0.0, // Top right
+			 1.0,  1.0, 1.0, 0.0, // Top right
+			-1.0,  1.0, 0.0, 0.0, // Top left
+			-1.0, -1.0, 0.0, 1.0  // Bottom left
 		};
 
 		m_PostProcessQuadVertexBuffer = m_ResourceManager->CreateBuffer({

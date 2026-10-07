@@ -550,9 +550,6 @@ namespace HBL2
 
 		Component::Camera& camera = scene->GetComponent<Component::Camera>(mainCamera);
 
-		// TODO: Investigate why is this still needed.
-		auto proj = camera.Projection;
-		proj[1][1] *= -1.0f;
-		return proj * camera.View;
+		return camera.Projection * camera.View;
 	}
 }
