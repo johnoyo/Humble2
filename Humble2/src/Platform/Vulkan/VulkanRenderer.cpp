@@ -860,9 +860,10 @@ namespace HBL2
 		{
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolSize },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, poolSize },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolSize },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolSize },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolSize },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolSize },
+            { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, poolSize },
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolSize },
+            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolSize },
 		};
 
 		VkDescriptorPoolCreateInfo tDescriptorPoolInfo =

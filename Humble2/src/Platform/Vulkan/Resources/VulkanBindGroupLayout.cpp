@@ -43,9 +43,6 @@ namespace HBL2
 			case BufferBindingType::READ_ONLY_STORAGE:
 				type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 				break;
-			case BufferBindingType::STORAGE_IMAGE:
-				type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-				break;
 			}
 
 			VkShaderStageFlags stage = 0;

@@ -154,7 +154,7 @@ namespace HBL2
         for (auto buffer : buffersZero)
         {
             MetalBufferHot* mtlBuffer = rm->GetBufferHot(buffer);
-            m_CurrentEncoder->fillBuffer(mtlBuffer->Buffer, NS::Range::Make(0, mtlBuffer->ByteSize), 0);
+            m_CurrentComputePassRenderer.Encoder->fillBuffer(mtlBuffer->Buffer, NS::Range::Make(0, mtlBuffer->ByteSize), 0);
 
             m_CurrentEncoder->barrierAfterEncoderStages(MTL::StageBlit, MTL::StageDispatch, MTL4::VisibilityOptionDevice);
         }

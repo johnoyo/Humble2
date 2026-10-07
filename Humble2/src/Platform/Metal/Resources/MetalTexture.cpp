@@ -13,6 +13,7 @@ namespace HBL2
         case Format::RGBA8_UNORM:
         case Format::BGRA8_UNORM:
         case Format::RG16_FLOAT:
+        case Format::RG32_UINT:
             return { 1, 1, 4 };
         case Format::RGBA32_FLOAT:
             return { 1, 1, 16 };

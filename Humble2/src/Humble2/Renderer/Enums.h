@@ -87,7 +87,6 @@ namespace HBL2
 		UNIFORM_DYNAMIC_OFFSET = 1,
 		STORAGE = 2,
 		READ_ONLY_STORAGE = 3,
-		STORAGE_IMAGE = 4,
 	};
 
 	enum class TextureBindingType

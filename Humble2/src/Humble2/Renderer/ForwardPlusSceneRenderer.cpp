@@ -668,6 +668,7 @@ namespace HBL2
 			.renderPipeline {
 				.variants = { m_GridFrustumsComputeVariant },
 			},
+            .threadsPerThreadGroup = { 16, 16, 1 },
 		});
 
 		Renderer::Instance->AddCallbackOnResize(std::string("Grid-Frustums-BindGroup-Resize-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
@@ -713,6 +714,7 @@ namespace HBL2
 			.renderPipeline {
 				.variants = { m_LightCullingComputeVariant },
 			},
+            .threadsPerThreadGroup = { 16, 16, 1 },
 		});
 
 		Renderer::Instance->AddCallbackOnResize(std::string("Light-Culling-BindGroup-Resize-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
