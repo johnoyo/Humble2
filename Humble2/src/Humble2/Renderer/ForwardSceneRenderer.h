@@ -66,7 +66,6 @@ namespace HBL2
 		void SpriteRenderingSetup();
 		void SkyboxPassSetup();
 		void PostProcessPassSetup();
-		void DebugPassSetup();
 		void PresentPassSetup();
 
 		void GatherDraws(ForwardSceneRenderData* sceneRenderData);

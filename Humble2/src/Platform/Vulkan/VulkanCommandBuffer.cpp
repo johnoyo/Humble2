@@ -68,9 +68,9 @@ namespace HBL2
 		VkViewport viewport =
 		{
 			.x = (float)drawArea.x,
-			.y = (float)drawArea.y,
+			.y = (float)(drawArea.y + drawArea.height),   // start at the bottom edge
 			.width = (float)drawArea.width,
-			.height = (float)drawArea.height,
+			.height = -(float)drawArea.height,             // negative = flip Y
 			.minDepth = 0.0f,
 			.maxDepth = 1.0f,
 		};

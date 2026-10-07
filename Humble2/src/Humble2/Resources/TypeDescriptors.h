@@ -200,7 +200,7 @@ namespace HBL2
 				packed_size topology : 3 = (packed_size)Topology::TRIANGLE_LIST;
 				packed_size polygonMode : 2 = (packed_size)PolygonMode::FILL;
 				packed_size cullMode : 2 = (packed_size)CullMode::BACK;
-				packed_size frontFace : 1 = (packed_size)FrontFace::CLOCKWISE;
+				packed_size frontFace : 1 = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 				// Blend
 				packed_size blendEnabled : 1 = 0; // false

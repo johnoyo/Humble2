@@ -801,6 +801,7 @@ namespace HBL2
 		m_SkyboxVariant.depthWrite = false;
 		m_SkyboxVariant.depthCompare = (packed_size)Compare::LESS_OR_EQUAL;
 		m_SkyboxVariant.cullMode = (packed_size)CullMode::FRONT;
+		m_SkyboxVariant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 		m_SkyboxShader = ResourceManager::Instance->CreateShader({
 			.debugName = "skybox-shader",
@@ -999,7 +1000,7 @@ namespace HBL2
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.blendEnabled = false;
 		variant.depthWrite = false;
-		variant.frontFace = (packed_size)FrontFace::CLOCKWISE;
+		variant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 		m_PostProcessShader = ResourceManager::Instance->CreateShader({
 			.debugName = "post-process-shader",
@@ -1027,10 +1028,6 @@ namespace HBL2
 		m_PostProcessShaderVariantHash = variant;
 	}
 
-	void ForwardSceneRenderer::DebugPassSetup()
-	{
-	}
-
 	void ForwardSceneRenderer::PresentPassSetup()
 	{
 		float* vertexBuffer = new float[24] {
@@ -1053,7 +1050,7 @@ namespace HBL2
 		variant.blendEnabled = false;
 		variant.depthEnabled = false;
 		variant.depthWrite = true;
-		variant.frontFace = (packed_size)FrontFace::CLOCKWISE;
+		variant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 		// Compile present shaders.
 		const auto& presentShaderData = ShaderUtilities::Get().Compile("assets/shaders/present.slang", (ShaderReflectionData*)nullptr, false);

@@ -19,7 +19,7 @@ Material:
     Topology: 3
     PolygonMode: 0
     CullMode: 2
-    FrontFace: 1
+    FrontFace: 0
   BlendState:
     Enabled: false
     ColorOutputEnabled: true

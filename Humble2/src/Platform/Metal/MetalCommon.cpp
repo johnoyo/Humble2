@@ -297,14 +297,12 @@ namespace HBL2
 
     MTL::Winding MtlUtils::FrontFaceToMTLWinding(FrontFace frontFace)
     {
-        // NOTE: Front face inverted to match vulkan setup.
-        
         switch (frontFace)
         {
         case HBL2::FrontFace::COUNTER_CLOCKWISE:
-            return MTL::WindingClockwise;
-        case HBL2::FrontFace::CLOCKWISE:
             return MTL::WindingCounterClockwise;
+        case HBL2::FrontFace::CLOCKWISE:
+            return MTL::WindingClockwise;
         }
 
         return (MTL::Winding)NS::UInteger(-1);

@@ -30,9 +30,15 @@ namespace HBL2
 		for (auto& renderData : m_RenderData)
 		{
 			renderData.Draws.Initialize(m_Arena, 3);
+
 			renderData.LineVerts = FixedArray<DebugVertex>(&m_Arena, s_MaxDebugVertices);
+			renderData.LineVerts.resize(s_MaxDebugVertices);
+
 			renderData.FillTrisVerts = FixedArray<DebugVertex>(&m_Arena, s_MaxDebugVertices);
+			renderData.FillTrisVerts.resize(s_MaxDebugVertices);
+
 			renderData.WireTrisVerts = FixedArray<DebugVertex>(&m_Arena, s_MaxDebugVertices);
+			renderData.WireTrisVerts.resize(s_MaxDebugVertices);
 		}
 
 		m_ResourceManager = ResourceManager::Instance;
@@ -127,7 +133,7 @@ namespace HBL2
 		fillTriVariant.depthEnabled = false;
 		fillTriVariant.depthWrite = false;
 		fillTriVariant.stencilEnabled = false;
-		fillTriVariant.frontFace = Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL ? (packed_size)FrontFace::COUNTER_CLOCKWISE : (packed_size)FrontFace::CLOCKWISE; // TODO: Fix discrepancy.
+		fillTriVariant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 		ShaderDescriptor::RenderPipeline::PackedVariant wireTriVariant = {};
 		wireTriVariant.topology = (packed_size)Topology::TRIANGLE_LIST;
@@ -136,7 +142,7 @@ namespace HBL2
 		wireTriVariant.depthEnabled = false;
 		wireTriVariant.depthWrite = false;
 		wireTriVariant.stencilEnabled = false;
-		wireTriVariant.frontFace = Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL ? (packed_size)FrontFace::COUNTER_CLOCKWISE : (packed_size)FrontFace::CLOCKWISE; // TODO: Fix discrepancy.
+		wireTriVariant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 		// Compile debug shader.
 		const auto& debugShaderData = ShaderUtilities::Get().Compile("assets/shaders/debug-draw.slang", (ShaderReflectionData*)nullptr, false);
@@ -544,19 +550,9 @@ namespace HBL2
 
 		Component::Camera& camera = scene->GetComponent<Component::Camera>(mainCamera);
 
-		// TODO: Fix once and for all the viewport discrepencies between the APIs!
-		switch (Renderer::Instance->GetAPI())
-		{
-		case GraphicsAPI::OPENGL:
-            {
-                auto proj = camera.Projection;
-                proj[1][1] *= -1.0f;
-                return proj * camera.View;
-            }
-		case GraphicsAPI::VULKAN:
-			return camera.ViewProjectionMatrix;
-		}
-
-		return glm::mat4(1.0f);
+		// TODO: Investigate why is this still needed.
+		auto proj = camera.Projection;
+		proj[1][1] *= -1.0f;
+		return proj * camera.View;
 	}
 }
