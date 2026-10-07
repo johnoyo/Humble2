@@ -124,9 +124,9 @@ namespace HBL2
 			.initialData = vertexBuffer,
 		});
 
-		// Create post-process renderpass and framebuffer.
+		// Create renderpass and framebuffer.
 		m_PinkQuadRenderPass = m_ResourceManager->CreateRenderPass({
-			.debugName = "post-process-renderpass",
+			.debugName = "pink-quad-renderpass",
 			.layout = m_RenderPassLayout,
 			.depthTarget = {
 				.loadOp = LoadOperation::LOAD,
@@ -168,7 +168,7 @@ namespace HBL2
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.blendEnabled = false;
 		variant.depthWrite = false;
-		variant.frontFace = (packed_size)FrontFace::CLOCKWISE;
+		variant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 		m_PinkQuadShader = ResourceManager::Instance->CreateShader({
 			.debugName = "invalid-renderer-shader",
@@ -215,7 +215,7 @@ namespace HBL2
 		variant.blendEnabled = false;
 		variant.depthEnabled = false;
 		variant.depthWrite = true;
-		variant.frontFace = (packed_size)FrontFace::CLOCKWISE;
+		variant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 		// Compile present shaders.
 		const auto& presentShaderData = ShaderUtilities::Get().Compile("assets/shaders/present.slang", (ShaderReflectionData*)nullptr, false);

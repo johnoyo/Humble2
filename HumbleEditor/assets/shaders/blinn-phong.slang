@@ -257,7 +257,9 @@ float4 mainPS(PSInput input) : SV_Target0
     float3 diffuseAcc = float3(0.0, 0.0, 0.0);
     float3 specularAcc = float3(0.0, 0.0, 0.0);
 
-    for (uint i = 0; i < provider.GetLightCount(q); ++i)
+    uint lightCount = provider.GetLightCount(q);
+
+    for (uint i = 0; i < lightCount; ++i)
     {
         uint lightIndex = provider.GetLightIndex(q, i);
 

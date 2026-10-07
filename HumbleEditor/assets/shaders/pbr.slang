@@ -324,7 +324,10 @@ float4 mainPS(PSInput input) : SV_Target0
     F0 = lerp(F0, albedo, metallic);
 
     float3 Lo = float3(0.0, 0.0, 0.0);
-    for (uint i = 0; i < provider.GetLightCount(q); ++i)
+
+    uint lightCount = provider.GetLightCount(q);
+
+    for (uint i = 0; i < lightCount; ++i)
     {
         uint lightIndex = provider.GetLightIndex(q, i);
 

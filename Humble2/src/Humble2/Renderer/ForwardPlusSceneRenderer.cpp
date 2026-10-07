@@ -1476,7 +1476,7 @@ namespace HBL2
 						lightType = 2.0f;
 						data.Metadata.y = glm::cos(glm::radians(light.InnerCutOff));
 						data.Metadata.z = glm::cos(glm::radians(light.OuterCutOff));
-						data.Metadata.w = 0.0f; // TODO: Calculate spot light angle.
+						data.Metadata.w = light.OuterCutOff;
 
 						lightRange = light.Distance;
 
@@ -2131,6 +2131,7 @@ namespace HBL2
 		});
 
 		// Create ScreenToViewParams uniform buffer.
+		// NOTE: Do we need a buffer per frame in flight?
 		ScreenToViewParams screenToViewParams =
 		{
 			.InverseProjection = glm::inverse(sceneRenderData->m_CameraProjection),
