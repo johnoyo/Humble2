@@ -25,6 +25,7 @@ struct DispatchParams
 struct ScreenToViewParams
 {
     float4x4 InverseProjection;
+    float4x4 View;
     float2 ScreenDimensions;
     float LightCount;
     // float padding; // implicit padding to 16 bytes.

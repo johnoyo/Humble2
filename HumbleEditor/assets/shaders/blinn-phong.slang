@@ -261,12 +261,19 @@ float4 mainPS(PSInput input) : SV_Target0
     {
         uint lightIndex = provider.GetLightIndex(q, i);
 
+        uint lightType = uint(u_Light[lightIndex].Position.w);
         float intensity = u_Light[lightIndex].Metadata.x;
         float3 lightCol = u_Light[lightIndex].Color.xyz;
 
+        // Skip point and spot lights that are out of range of the point being shaded.
+        if (lightType != 0 && length(u_Light[lightIndex].Position.xyz - input.v_Position) > u_Light[lightIndex].Color.a)
+        {
+            continue;
+        }
+
         float shadow = 0.0;
 
-        if (u_Light[lightIndex].Position.w == 0.0)
+        if (lightType == 0)
         {
             float3 L = normalize(-u_Light[lightIndex].Direction.xyz);
 
@@ -286,7 +293,7 @@ float4 mainPS(PSInput input) : SV_Target0
             diffuseAcc += (1.0 - shadow) * D;
             specularAcc += (1.0 - shadow) * S;
         }
-        else if (u_Light[lightIndex].Position.w == 1.0)
+        else if (lightType == 1)
         {
             float3 toLight = u_Light[lightIndex].Position.xyz - input.v_Position;
             float dist = length(toLight);
@@ -310,7 +317,7 @@ float4 mainPS(PSInput input) : SV_Target0
             diffuseAcc += (1.0 - shadow) * D;
             specularAcc += (1.0 - shadow) * S;
         }
-        else if (u_Light[lightIndex].Position.w == 2.0)
+        else if (lightType == 2)
         {
             float3 toLight = u_Light[lightIndex].Position.xyz - input.v_Position;
             float dist = length(toLight);

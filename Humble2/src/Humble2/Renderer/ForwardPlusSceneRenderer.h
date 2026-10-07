@@ -18,6 +18,7 @@ namespace HBL2
 		Component::Camera::CameraFrustum m_CameraFrustum{};
 		glm::mat4 m_OnlyRotationInViewProjection = glm::mat4(1.0f);
 		glm::mat4 m_CameraProjection = glm::mat4(1.0f);
+		glm::mat4 m_CameraView = glm::mat4(1.0f);
 
 		Handle<Buffer> LightsSSBO;
 		Handle<Buffer> LightSpaceBuffer;

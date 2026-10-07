@@ -328,15 +328,22 @@ float4 mainPS(PSInput input) : SV_Target0
     {
         uint lightIndex = provider.GetLightIndex(q, i);
 
+        uint lightType = uint(u_Light[lightIndex].Position.w);
         float lightIntensity = u_Light[lightIndex].Metadata.x;
         float3 lightColor = u_Light[lightIndex].Color.xyz;
+
+        // Skip point and spot lights that are out of range of the point being shaded.
+        if (lightType != 0 && length(u_Light[lightIndex].Position.xyz - input.v_Position) > u_Light[lightIndex].Color.a)
+        {
+            continue;
+        }
 
         float3 L = float3(0.0, 0.0, 0.0);
         float attenuation = 1.0;
         bool lit = true;
         float shadow = 0.0;
 
-        if (u_Light[lightIndex].Position.w == 0.0)
+        if (lightType == 0)
         {
             L = normalize(-u_Light[lightIndex].Direction.xyz);
             lit = (max(dot(N, L), 0.0) > 0.0);
@@ -347,7 +354,7 @@ float4 mainPS(PSInput input) : SV_Target0
                 shadow = ShadowCalculation(fragPosLightSpace, u_Light[lightIndex].TileUVRange, lightIndex, input);
             }
         }
-        else if (u_Light[lightIndex].Position.w == 1.0)
+        else if (lightType == 1)
         {
             float3 toLight = u_Light[lightIndex].Position.xyz - input.v_Position;
             float  distance = length(toLight);
@@ -366,7 +373,7 @@ float4 mainPS(PSInput input) : SV_Target0
                 shadow = ShadowCalculation(fragPosLightSpace, u_Light[lightIndex].TileUVRange, lightIndex, input);
             }
         }
-        else if (u_Light[lightIndex].Position.w == 2.0)
+        else if (lightType == 2)
         {
             float3 toLight = u_Light[lightIndex].Position.xyz - input.v_Position;
             float  distance = length(toLight);

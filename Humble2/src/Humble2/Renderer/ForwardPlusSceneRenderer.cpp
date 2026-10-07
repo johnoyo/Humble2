@@ -87,6 +87,7 @@ namespace HBL2
 	struct ScreenToViewParams
 	{
 		glm::mat4 InverseProjection;
+		glm::mat4 View;
 		glm::vec2 ScreenDimensions;
 		float LightCount;
 		float _padding;
@@ -1709,6 +1710,7 @@ namespace HBL2
 		ScreenToViewParams screenToViewParams =
 		{
 			.InverseProjection = glm::inverse(sceneRenderData->m_CameraProjection),
+			.View = sceneRenderData->m_CameraView,
 			.ScreenDimensions = { extents.x, extents.y },
 			.LightCount = sceneRenderData->m_FrameData.LightCount,
 		};
@@ -2030,6 +2032,7 @@ namespace HBL2
 			sceneRenderData->m_FrameData.ViewProjection = glm::mat4(1.0f);
 			sceneRenderData->m_FrameData.ViewPosition = glm::vec4(0.0f);
 			sceneRenderData->m_CameraProjection = glm::mat4(1.0f);
+			sceneRenderData->m_CameraView = glm::mat4(1.0f);
 			sceneRenderData->m_CameraSettings.Exposure = 1.0f;
 			sceneRenderData->m_CameraSettings.Gamma = 2.2f;
 			sceneRenderData->m_CameraFrustum = {};
@@ -2047,6 +2050,7 @@ namespace HBL2
 		sceneRenderData->m_FrameData.ViewPosition = tr.WorldMatrix[3];
 		sceneRenderData->m_OnlyRotationInViewProjection = camera.Projection * glm::mat4(glm::mat3(camera.View));
 		sceneRenderData->m_CameraProjection = camera.Projection;
+		sceneRenderData->m_CameraView = camera.View;
 	}
 
 	void ForwardPlusSceneRenderer::CreateGridFrustumsComputeBindGroup(uint32_t blockSize, uint32_t width, uint32_t height, const glm::mat4& cameraProjection)
@@ -2130,6 +2134,7 @@ namespace HBL2
 		ScreenToViewParams screenToViewParams =
 		{
 			.InverseProjection = glm::inverse(sceneRenderData->m_CameraProjection),
+			.View = sceneRenderData->m_CameraView,
 			.ScreenDimensions = { width, height },
 			.LightCount = sceneRenderData->m_FrameData.LightCount,
 		};

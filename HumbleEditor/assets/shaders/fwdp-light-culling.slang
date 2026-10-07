@@ -16,6 +16,7 @@ struct DispatchParams
 struct ScreenToViewParams
 {
     float4x4 InverseProjection;
+    float4x4 View;
     float2 ScreenDimensions;
     float LightCount;
     // float padding; // implicit padding to 16 bytes.
@@ -298,6 +299,9 @@ void mainCS(ComputeShaderInput input)
         {
             Light light = u_Lights[i];
 
+            float3 lightPositionVS = mul(u_ScreenToViewParams.View, float4(light.Position.xyz, 1.0)).xyz;
+            float3 lightDirectionVS = normalize(mul(u_ScreenToViewParams.View, float4(light.Direction.xyz, 0.0)).xyz);
+
             uint lightType = uint(light.Position.w);
             float lightRange = light.Color.w;
 
@@ -311,9 +315,9 @@ void mainCS(ComputeShaderInput input)
                     o_AppendLight(i);
                     break;
                 }
-            case 1: // Point light
+                case 1: // Point light
                 {
-                    Sphere sphere = { light.Position.xyz, lightRange };
+                    Sphere sphere = { lightPositionVS, lightRange };
                     if (SphereInsideFrustum(sphere, GroupFrustum, nearClipVS, maxDepthVS))
                     {
                         // Add light to light list for transparent geometry.
@@ -331,7 +335,7 @@ void mainCS(ComputeShaderInput input)
                 {
                     float spotlightAngle = light.Metadata.w;
                     float coneRadius = tan(radians(spotlightAngle)) * lightRange;
-                    Cone cone = { light.Position.xyz, lightRange, light.Direction.xyz, coneRadius };
+                    Cone cone = { lightPositionVS, lightRange, lightDirectionVS, coneRadius };
                     if (ConeInsideFrustum(cone, GroupFrustum, nearClipVS, maxDepthVS))
                     {
                         // Add light to light list for transparent geometry.
