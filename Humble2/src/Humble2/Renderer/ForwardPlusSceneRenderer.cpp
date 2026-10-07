@@ -303,6 +303,8 @@ namespace HBL2
 
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
+			m_ResourceManager->DeleteBuffer(m_RenderData[i].LightSpaceBuffer);
+
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].ShadowBindings);
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindings2D);
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindingsOpaque3D);
@@ -394,7 +396,7 @@ namespace HBL2
 				{
 					.slot = 0,
 					.visibility = { ShaderStage::VERTEX },
-					.type = BufferBindingType::UNIFORM,
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
 				},
 			},
 		});
@@ -420,13 +422,16 @@ namespace HBL2
 		}
 
 		// Bindings for shadow rendering.
+		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
+		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), (uint32_t)uniformOffset);
+
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
-			auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
+			m_RenderData[i].LightSpaceBuffer = m_ResourceManager->CreateBuffer({
 				.debugName = "light-space-buffer",
 				.usage = BufferUsage::UNIFORM,
 				.memoryUsage = MemoryUsage::CPU_GPU,
-				.byteSize = sizeof(glm::mat4),
+				.byteSize = g_MaxTiles * alignedSize,
 				.initialData = nullptr
 			});
 
@@ -434,7 +439,7 @@ namespace HBL2
 				.debugName = "shadow-bind-group",
 				.layout = m_ShadowBindingsLayout.Get(),
 				.buffers = {
-					{ .buffer = lightSpaceBuffer },
+					{ .buffer = m_RenderData[i].LightSpaceBuffer, .range = sizeof(glm::mat4) },
 				}
 			});
 		}
@@ -1538,7 +1543,26 @@ namespace HBL2
 	{
 		BEGIN_PROFILE_PASS();
 
-		uint32_t index = 0;
+		uint32_t lightIndex = 0;
+		uint32_t shadowCastingLightIndex = 0;
+
+		// Combine all light space matrices into one buffer with correct minimum alignment.
+		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
+		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), (uint32_t)uniformOffset);
+
+		ScratchArena scratch(Allocator::FrameArenaRT);
+
+		uint8_t* lightSpaceMatricesBuffer = (uint8_t*)scratch.Alloc(g_MaxTiles * alignedSize);
+		std::memset(lightSpaceMatricesBuffer, 0, g_MaxTiles * alignedSize);
+
+		for (size_t i = 0; i < g_MaxTiles; ++i)
+		{
+			size_t offset = i * alignedSize;
+			std::memcpy(lightSpaceMatricesBuffer + offset, &(sceneRenderData->m_LightData[i].LightSpaceMatrix), sizeof(glm::mat4));
+		}
+
+		Handle<BindGroup> globalShadowBindings = GetShadowBindings();
+		ResourceManager::Instance->SetBufferData(globalShadowBindings, 0, (void*)lightSpaceMatricesBuffer);
 
 		m_Scene->Filter<Component::Light, Component::Transform>()
 			.ForEach([&](Component::Light& light, Component::Transform& transform)
@@ -1554,22 +1578,29 @@ namespace HBL2
 							return; // NOTE: Exceeded max number of shadow casting lights!
 						}
 
-						sceneRenderData->m_LightData[index].TileUVRange = tile.GetUVRange();
+						sceneRenderData->m_LightData[lightIndex].TileUVRange = tile.GetUVRange();
 
 						uint32_t tileX = tile.x * g_TileSize;
 						uint32_t tileY = tile.y * g_TileSize;
 
 						RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_ShadowRenderPass, { tileX, tileY, g_TileSize, g_TileSize });
 
-						Handle<BindGroup> globalShadowBindings = GetShadowBindings();
-						ResourceManager::Instance->SetBufferData(globalShadowBindings, 0, (void*)&sceneRenderData->m_LightData[index].LightSpaceMatrix);
-						GlobalDrawStream globalDrawStream = { .BindGroup = globalShadowBindings, .UsesDynamicOffset = true, };
+						GlobalDrawStream globalDrawStream =
+						{
+							.BindGroup = globalShadowBindings,
+							.GlobalBufferSize = alignedSize,
+							.GlobalBufferOffset = shadowCastingLightIndex * alignedSize,
+							.UsesDynamicOffset = true,
+						};
+
 						passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_ShadowPassStaticMeshDraws);
 
 						commandBuffer->EndRenderPass(*passRenderer);
+
+						shadowCastingLightIndex++;
 					}
 
-					index++;
+					lightIndex++;
 				}
 			});
 

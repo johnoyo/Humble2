@@ -83,7 +83,9 @@ namespace HBL2
 				{
 					if (globalBindGroupHot != nullptr)
 					{
-						vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 0, 1, &globalBindGroupHot->DescriptorSet, 0, nullptr);
+						uint32_t offsetCount = (globalDraw.GlobalBufferOffset == UINT32_MAX ? 0 : 1);
+						const uint32_t* offset = (globalDraw.GlobalBufferOffset == UINT32_MAX ? nullptr : &globalDraw.GlobalBufferOffset);
+						vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->PipelineLayout, 0, 1, &globalBindGroupHot->DescriptorSet, offsetCount, offset);
 					}
 
 					prevBindGroupLayoutHash = shader->GlobalBindGroupLayoutHash;

@@ -554,22 +554,10 @@ namespace HBL2
 			light.NormalOffsetScale = light_NewComponent["NormalOffsetScale"].as<float>();
 			light.FieldOfView = light_NewComponent["FieldOfView"].as<float>();
 			light.Color = light_NewComponent["Color"].as<glm::vec3>();
-			if (light_NewComponent["Type"])
+
+			if (light_NewComponent["Type"].IsDefined())
 			{
-				switch (light_NewComponent["Type"].as<int>())
-				{
-				case 1:
-					light.Type = Component::Light::EType::Directional;
-					break;
-				case 2:
-					light.Type = Component::Light::EType::Point;
-					break;
-				case 3:
-					light.Type = Component::Light::EType::Spot;
-					break;
-				default:
-					break;
-				}
+				light.Type = (Component::Light::EType)light_NewComponent["Type"].as<int>();
 			}
 		}
 

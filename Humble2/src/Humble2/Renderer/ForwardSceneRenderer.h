@@ -22,6 +22,8 @@ namespace HBL2
 		glm::mat4 m_OnlyRotationInViewProjection = glm::mat4(1.0f);
 		glm::mat4 m_CameraProjection = glm::mat4(1.0f);
 
+		Handle<Buffer> LightSpaceBuffer;
+
 		Handle<BindGroup> ShadowBindings;
 		Handle<BindGroup> GlobalBindings2D;
 		Handle<BindGroup> GlobalBindings3D;

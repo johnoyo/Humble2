@@ -53,7 +53,14 @@ namespace HBL2
                     memcpy(buffer->Buffer->contents(), buffer->Data, buffer->ByteSize);
                 }
                 
-                argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndexForGlobal);
+                if (globalDraw.GlobalBufferOffset != UINT32_MAX)
+                {
+                    argTable->setAddress(buffer->Buffer->gpuAddress() + globalDraw.GlobalBufferOffset, bufferIndexForGlobal);
+                }
+                else
+                {
+                    argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndexForGlobal);
+                }
                 
                 bufferIndexForGlobal++;
             }

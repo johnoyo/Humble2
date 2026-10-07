@@ -371,6 +371,10 @@ namespace HBL2::Editor
 					ImGui::SliderFloat("InnerCutOff", &light.InnerCutOff, 0, 50);
 					ImGui::SliderFloat("OuterCutOff", &light.OuterCutOff, 0, 50);
 				}
+				else if (light.Type == HBL2::Component::Light::EType::Point)
+				{
+					ImGui::SliderFloat("Distance", &light.Distance, 0, 150);
+				}
 				else if (light.Type == HBL2::Component::Light::EType::Directional)
 				{
 					ImGui::Checkbox("FollowMainCamera", &light.FollowMainCamera);

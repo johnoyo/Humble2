@@ -20,6 +20,7 @@ namespace HBL2
 		glm::mat4 m_CameraProjection = glm::mat4(1.0f);
 
 		Handle<Buffer> LightsSSBO;
+		Handle<Buffer> LightSpaceBuffer;
 
 		Handle<BindGroup> ShadowBindings;
 		Handle<BindGroup> GlobalBindings2D;
