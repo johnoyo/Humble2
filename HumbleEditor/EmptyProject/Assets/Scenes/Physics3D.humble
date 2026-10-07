@@ -474,9 +474,37 @@ Entities:
       Enabled: true
       Height: 2.30999994
       Radius: 1.20000005
+  - Entity: 16
+    Component::Tag:
+      Tag: PointLight
+    Component::ID:
+      ID: 1259697538139923712
+    Component::Transform:
+      Translation: [-1.18717647, 27.4897232, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+      Static: false
+    Component::Link:
+      Parent: 0
+      Children:
+        []
+    Component::Light:
+      Enabled: true
+      CastsShadows: true
+      FollowMainCamera: false
+      Intensity: 14.9289999
+      Color: [1, 1, 1]
+      Type: 1
+      Distance: 50
+      InnerCutOff: 12.5
+      OuterCutOff: 17.5
+      ConstantBias: 0.00200000009
+      SlopeBias: 0
+      NormalOffsetScale: 0
+      FieldOfView: 61.5180016
 User Systems:
   - 1446947720767051862
 User Components:
   - 7276202125255088842
 User Helper Scripts:
-  - 14679799005195782872
+  []
