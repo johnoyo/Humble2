@@ -509,9 +509,9 @@ namespace HBL2
 					{
 						.byteStride = 32,
 						.attributes = {
-							{.byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
-							{.byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
-							{.byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
+							{ .byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
+							{ .byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
+							{ .byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},
@@ -1558,7 +1558,7 @@ namespace HBL2
 		for (size_t i = 0; i < g_MaxTiles; ++i)
 		{
 			size_t offset = i * alignedSize;
-			std::memcpy(lightSpaceMatricesBuffer + offset, &(sceneRenderData->m_LightData[i].LightSpaceMatrix), sizeof(glm::mat4));
+			std::memcpy(lightSpaceMatricesBuffer + offset, &(sceneRenderData->m_LightData[(uint32_t)i].LightSpaceMatrix), sizeof(glm::mat4));
 		}
 
 		Handle<BindGroup> globalShadowBindings = GetShadowBindings();
