@@ -492,16 +492,16 @@ Entities:
       Enabled: true
       CastsShadows: true
       FollowMainCamera: false
-      Intensity: 14.9289999
+      Intensity: 20
       Color: [1, 1, 1]
       Type: 1
-      Distance: 50
+      Distance: 75
       InnerCutOff: 12.5
       OuterCutOff: 17.5
       ConstantBias: 0.00200000009
       SlopeBias: 0
       NormalOffsetScale: 0
-      FieldOfView: 61.5180016
+      FieldOfView: 65
 User Systems:
   - 1446947720767051862
 User Components:

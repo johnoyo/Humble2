@@ -1540,6 +1540,7 @@ namespace HBL2
 			});
 
 		sceneRenderData->m_FrameData.LightCount = lightIndex;
+		Renderer::Instance->GetStats().Lights = lightIndex;
 	}
 
 	// Pass rendering.
@@ -1656,7 +1657,7 @@ namespace HBL2
 
 	void ForwardPlusSceneRenderer::GridFrustumsComputePass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData)
 	{
-		BEGIN_PROFILE_PASS();
+		// BEGIN_PROFILE_PASS();
 
 		if (!m_GridFrustumsBindGroup.IsValid())
 		{
@@ -1688,7 +1689,7 @@ namespace HBL2
 			commandBuffer->EndComputePass(*computePassRenderer);
 		}
 
-		END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxPassTime);
+		// END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxPassTime);
 	}
 
 	void ForwardPlusSceneRenderer::LightCullingComputePass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData)
@@ -1739,7 +1740,7 @@ namespace HBL2
 
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainDepthTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
 
-		END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxComputePassTime);
+		END_PROFILE_PASS(Renderer::Instance->GetStats().LightCullingPassTime);
 	}
 
 	void ForwardPlusSceneRenderer::GeometryPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData)

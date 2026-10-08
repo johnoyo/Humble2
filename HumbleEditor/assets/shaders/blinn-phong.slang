@@ -266,6 +266,7 @@ float4 mainPS(PSInput input) : SV_Target0
         uint lightType = uint(u_Light[lightIndex].Position.w);
         float intensity = u_Light[lightIndex].Metadata.x;
         float3 lightCol = u_Light[lightIndex].Color.xyz;
+        float range = u_Light[lightIndex].Color.a;
 
         // Skip point and spot lights that are out of range of the point being shaded.
         if (lightType != 0 && length(u_Light[lightIndex].Position.xyz - input.v_Position) > u_Light[lightIndex].Color.a)
@@ -295,13 +296,22 @@ float4 mainPS(PSInput input) : SV_Target0
             diffuseAcc += (1.0 - shadow) * D;
             specularAcc += (1.0 - shadow) * S;
         }
-        else if (lightType == 1)
+        else if (lightType == 1) // Point Light
         {
             float3 toLight = u_Light[lightIndex].Position.xyz - input.v_Position;
             float dist = length(toLight);
-            float3 L = toLight / dist;
+            float3 L = toLight / max(dist, 1e-6);
 
-            float att = 1.0 / (u_Light[lightIndex].Metadata.y + u_Light[lightIndex].Metadata.z * dist + u_Light[lightIndex].Metadata.w * dist * dist);
+            // Calculate standard base attenuation.
+            float att = 1.0 / max(u_Light[lightIndex].Metadata.y + u_Light[lightIndex].Metadata.z * dist + u_Light[lightIndex].Metadata.w * dist * dist, 1e-4);
+
+            // Smoothly forces attenuation to 0.0 as distance approaches lightRange.
+            if (range > 0.0)
+            {
+                float distRatio = clamp(dist / range, 0.0, 1.0);
+                float window = 1.0 - distRatio;
+                att *= (window * window);
+            }
 
             float diff = max(dot(normal, L), 0.0);
             float3 D = diff * lightCol * intensity * att;
@@ -310,7 +320,7 @@ float4 mainPS(PSInput input) : SV_Target0
             float spec = pow(max(dot(normal, H), 0.0), 32.0) * input.v_Glossiness;
             float3 S = lightCol * spec * intensity * att;
 
-            if (u_Light[lightIndex].ShadowData.x == 1.0 && diff > 0.0)
+            if (u_Light[lightIndex].ShadowData.x == 1.0 && diff > 0.0 && att > 0.0)
             {
                 float4 fragPosLightSpace = mul(u_Light[lightIndex].LightSpaceMatrix, float4(input.v_Position, 1.0));
                 shadow = ShadowCalculation(fragPosLightSpace, u_Light[lightIndex].TileUVRange, lightIndex, input);

@@ -1427,6 +1427,7 @@ namespace HBL2
 			});
 
 		sceneRenderData->m_FrameData.LightCount = lightIndex;
+		Renderer::Instance->GetStats().Lights = lightIndex;
 	}
 
 	// Pass rendering.
