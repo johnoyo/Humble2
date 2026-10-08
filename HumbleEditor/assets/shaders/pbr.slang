@@ -255,9 +255,9 @@ float3 getNormalFromMap(PSInput input)
     float3 tangentNormal = u_NormalMap.Sample(input.v_TextureCoord).xyz * 2.0 - 1.0;
 
     float3 Q1 = ddx(input.v_Position);
-    float3 Q2 = ddy(input.v_Position);
+    float3 Q2 = -ddy(input.v_Position);
     float2 st1 = ddx(input.v_TextureCoord);
-    float2 st2 = ddy(input.v_TextureCoord);
+    float2 st2 = -ddy(input.v_TextureCoord);
 
     float3 N = normalize(input.v_Normal);
     float3 T = normalize(Q1 * st2.y - Q2 * st1.y);
