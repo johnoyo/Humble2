@@ -46,6 +46,7 @@ namespace HBL2::Editor
 		static constexpr int MaxCharBufferSize = 128;
 
 		char m_ShaderNameBuffer[MaxCharBufferSize] = "NewShader";
+		char m_MaterialNameBuffer[MaxCharBufferSize] = "NewMaterial";
 		char m_ScriptNameBuffer[MaxCharBufferSize] = "NewHelperScript";
 		char m_SceneRendererNameBuffer[MaxCharBufferSize] = "NewSceneRenderer";
 		char m_ComponentNameBuffer[MaxCharBufferSize] = "NewComponent";
@@ -54,7 +55,6 @@ namespace HBL2::Editor
 		char m_FolderNameBuffer[MaxCharBufferSize] = "NewFolder";
 
 		uint32_t m_ShaderAssetHandlePacked = 0;
-		std::string m_MaterialNameBuffer = "New-Material";
 
 		bool m_OpenScriptSetupPopup = false;
 		bool m_OpenComponentSetupPopup = false;

@@ -146,7 +146,7 @@ namespace HBL2::Editor
 					else
 					{
 						HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
-						m_Owner->m_SelectedAsset = {};
+						m_Owner->m_SelectedAsset.Release();
 					}
 				}
 
@@ -803,7 +803,7 @@ namespace HBL2::Editor
 		{
 			ImGui::Begin("Material Setup", &m_OpenMaterialSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-			ImGui::InputText("Material Name", m_MaterialNameBuffer.data(), 256);
+			ImGui::InputText("Material Name", m_MaterialNameBuffer, MaxCharBufferSize);
 
 			ImGui::NewLine();
 
@@ -876,7 +876,7 @@ namespace HBL2::Editor
 
 			// Front face.
 			{
-				const char* options[] = { "Clockwise", "Counter Clockwise" };
+				const char* options[] = { "Counter Clockwise", "Clockwise" };
 				int currentItem = (int)m_FrontFace;
 
 				if (ImGui::Combo("Front Face", &currentItem, options, IM_ARRAYSIZE(options)))
@@ -1056,7 +1056,7 @@ namespace HBL2::Editor
 				}
 				else
 				{
-					const auto& relativePath = std::filesystem::relative(m_Owner->m_CurrentDirectory / (m_MaterialNameBuffer + ".mat"), HBL2::Project::GetAssetDirectory());
+					const auto& relativePath = std::filesystem::relative(m_Owner->m_CurrentDirectory / (std::string(m_MaterialNameBuffer) + ".mat"), HBL2::Project::GetAssetDirectory());
 
 					auto materialAssetHandle = editorAssetManager->CreateAsset({
 						.debugName = "material-asset",
@@ -1079,6 +1079,7 @@ namespace HBL2::Editor
 							.stencilEnabled = m_StencilEnabled,
 							.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)(Compare)m_DepthTest,
 						},
+						.ReflectionData = &m_ShaderReflectionData,
 						.Buffers = { m_ShaderUniformBufferData.data(), m_ShaderUniformBufferSize },
 						.TextureAssets = { m_ShaderUniformTextureData.data(), m_ShaderUniformTextureSize },
 					});
@@ -1111,7 +1112,7 @@ namespace HBL2::Editor
 	{
 		m_ShaderAssetHandlePacked = 0;
 
-		m_MaterialNameBuffer = "New-Material";
+		snprintf(m_MaterialNameBuffer, sizeof(m_MaterialNameBuffer), "%s", "NewMaterial");
 
 		for (auto& data : m_ShaderUniformBufferData)
 		{
