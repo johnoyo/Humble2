@@ -1345,6 +1345,9 @@ namespace HBL2
 						data.LightShadowData.y = light.ConstantBias;
 						data.LightShadowData.z = light.SlopeBias;
 						data.LightShadowData.w = light.NormalOffsetScale;
+
+						data.Metadata.x = light.Intensity;
+
 						break;
 					case Component::Light::EType::Point:
 						lightType = 1.0f;
@@ -1358,18 +1361,23 @@ namespace HBL2
 						data.LightShadowData.z = light.SlopeBias;
 						data.LightShadowData.w = light.NormalOffsetScale;
 
+						data.Metadata.x = light.Intensity;
+
 						break;
 					case Component::Light::EType::Spot:
 						lightType = 2.0f;
 						data.Metadata.y = glm::cos(glm::radians(light.InnerCutOff));
 						data.Metadata.z = glm::cos(glm::radians(light.OuterCutOff));
-						data.Metadata.w = 0.0f; // Spotlight angle
+						data.Metadata.w = light.OuterCutOff;
 
 						lightRange = light.Distance;
 
 						data.LightShadowData.y = light.ConstantBias;
 						data.LightShadowData.z = light.SlopeBias;
 						data.LightShadowData.w = light.NormalOffsetScale;
+
+						data.Metadata.x = light.Intensity;
+
 						break;
 					}
 
@@ -1389,7 +1397,7 @@ namespace HBL2
 					{
 						// Half-size of the area covered by the shadow map.
 						const float extent = light.FieldOfView;
-						
+
 						// How far back along -lightDir the eye sits.
 						const float distance = 100.0f;
 
@@ -1418,7 +1426,6 @@ namespace HBL2
 
 					data.Position = glm::vec4(lightPos, lightType);
 					data.Direction = glm::vec4(worldDirection, 0.0f);
-					data.Metadata.x = light.Intensity;
 					data.Color = glm::vec4(light.Color, lightRange);
 					data.LightSpaceMatrix = lightProjection * lightView;
 

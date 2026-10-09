@@ -4,7 +4,6 @@ Material:
   u_Material:
     Color: [1, 0.376237631, 0, 1]
     Glossiness: 1
-    _Unused: 0
   RasterState:
     Topology: 3
     PolygonMode: 0

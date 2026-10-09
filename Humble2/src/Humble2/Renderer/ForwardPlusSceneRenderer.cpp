@@ -1458,6 +1458,9 @@ namespace HBL2
 						data.LightShadowData.y = light.ConstantBias;
 						data.LightShadowData.z = light.SlopeBias;
 						data.LightShadowData.w = light.NormalOffsetScale;
+
+						data.Metadata.x = light.Intensity;
+
 						break;
 					case Component::Light::EType::Point:
 						lightType = 1.0f;
@@ -1471,6 +1474,8 @@ namespace HBL2
 						data.LightShadowData.z = light.SlopeBias;
 						data.LightShadowData.w = light.NormalOffsetScale;
 
+						data.Metadata.x = light.Intensity;
+
 						break;
 					case Component::Light::EType::Spot:
 						lightType = 2.0f;
@@ -1483,6 +1488,9 @@ namespace HBL2
 						data.LightShadowData.y = light.ConstantBias;
 						data.LightShadowData.z = light.SlopeBias;
 						data.LightShadowData.w = light.NormalOffsetScale;
+
+						data.Metadata.x = light.Intensity;
+						
 						break;
 					}
 
@@ -1531,7 +1539,6 @@ namespace HBL2
 
 					data.Position = glm::vec4(lightPos, lightType);
 					data.Direction = glm::vec4(worldDirection, 0.0f);
-					data.Metadata.x = light.Intensity;
 					data.Color = glm::vec4(light.Color, lightRange);
 					data.LightSpaceMatrix = lightProjection * lightView;
 

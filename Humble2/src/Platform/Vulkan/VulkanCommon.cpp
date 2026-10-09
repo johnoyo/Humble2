@@ -280,6 +280,10 @@ namespace HBL2
 				return VK_FORMAT_BC3_SRGB_BLOCK;
 			case Format::BC3_UNORM:
 				return VK_FORMAT_BC3_UNORM_BLOCK;
+			case Format::BC4_R_UNORM:
+				return VK_FORMAT_BC4_UNORM_BLOCK;
+			case Format::BC5_RG_UNORM:
+				return VK_FORMAT_BC5_UNORM_BLOCK;
             case Format::BC7_SRGB:
 				return VK_FORMAT_BC7_SRGB_BLOCK;
 			case Format::BC7_UNORM:

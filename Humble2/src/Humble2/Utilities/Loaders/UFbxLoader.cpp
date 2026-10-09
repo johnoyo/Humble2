@@ -273,8 +273,10 @@ namespace HBL2
                 float* colorOffset = (float*)uniformBufferBytes.data();
                 colorOffset[0] = albedoColor[0]; colorOffset[1] = albedoColor[1];
                 colorOffset[2] = albedoColor[2]; colorOffset[3] = albedoColor[3];
-                float* glossinessOffset = (float*)uniformBufferBytes.data() + 16;
-                *glossinessOffset = roughness;
+                float* roughnessOffset = (float*)uniformBufferBytes.data() + 16;
+                *roughnessOffset = roughness;
+                float* metalicnessOffset = (float*)uniformBufferBytes.data() + 20;
+                *metalicnessOffset = metallicness;
 
                 Handle<Asset> shaderAssetHandle;
                 ShaderReflectionData shaderReflectionData;
@@ -372,8 +374,10 @@ namespace HBL2
             float* colorOffset = (float*)uniformBufferBytes.data();
             colorOffset[0] = albedoColor[0]; colorOffset[1] = albedoColor[1];
             colorOffset[2] = albedoColor[2]; colorOffset[3] = albedoColor[3];
-            float* glossinessOffset = (float*)uniformBufferBytes.data() + 16;
-            *glossinessOffset = roughness;
+            float* roughnessOffset = (float*)uniformBufferBytes.data() + 16;
+            *roughnessOffset = roughness;
+            float* metalicnessOffset = (float*)uniformBufferBytes.data() + 20;
+            *metalicnessOffset = metallicness;
 
             Handle<Asset> shaderAssetHandle;
             ShaderReflectionData shaderReflectionData;

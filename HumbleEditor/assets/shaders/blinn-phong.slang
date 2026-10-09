@@ -99,6 +99,22 @@ static const float2 poissonDisk[16] =
     float2(0.19984126, 0.78641367), float2(0.14383161, -0.14100790)
 };
 
+static const float3 SKY_AMBIENT = float3(0.12, 0.14, 0.20);
+static const float3 GROUND_AMBIENT = float3(0.05, 0.04, 0.03);
+static const float AMBIENT_INTENSITY = 2.0;
+
+float DistanceWindow(float dist, float range)
+{
+    float r = saturate(dist / max(range, 1e-4));
+    float f = saturate(1.0 - r * r * r * r);
+    return f * f;
+}
+
+float PointAttenuation(float dist, float range)
+{
+    return DistanceWindow(dist, range) / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+}
+
 float CalculateAdaptiveNormalOffset(float3 normal, float3 lightDir, float baseOffset, float lightDistance)
 {
     float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
@@ -253,7 +269,9 @@ float4 mainPS(PSInput input) : SV_Target0
     float3 normal = normalize(input.v_Normal);
     float3 camDir = normalize(u_FrameData.ViewPosition.xyz - input.v_Position);
 
-    float3 ambient = 0.1 * textureColor;
+    float up = normal.y * 0.5 + 0.5; // world is Y-up.
+    float3 ambient = (lerp(GROUND_AMBIENT, SKY_AMBIENT, up) * AMBIENT_INTENSITY) * textureColor;
+
     float3 diffuseAcc = float3(0.0, 0.0, 0.0);
     float3 specularAcc = float3(0.0, 0.0, 0.0);
 
@@ -302,22 +320,13 @@ float4 mainPS(PSInput input) : SV_Target0
             float dist = length(toLight);
             float3 L = toLight / max(dist, 1e-6);
 
-            // Calculate standard base attenuation.
-            float att = 1.0 / max(u_Light[lightIndex].Metadata.y + u_Light[lightIndex].Metadata.z * dist + u_Light[lightIndex].Metadata.w * dist * dist, 1e-4);
-
-            // Smoothly forces attenuation to 0.0 as distance approaches lightRange.
-            if (range > 0.0)
-            {
-                float distRatio = clamp(dist / range, 0.0, 1.0);
-                float window = 1.0 - distRatio;
-                att *= (window * window);
-            }
+            float att = PointAttenuation(dist, range);
 
             float diff = max(dot(normal, L), 0.0);
-            float3 D = diff * lightCol * intensity * att;
-
             float3 H = normalize(L + camDir);
-            float spec = pow(max(dot(normal, H), 0.0), 32.0) * input.v_Glossiness;
+            float spec = (diff > 0.0 ? pow(max(dot(normal, H), 0.0), 32.0) : 0.0) * input.v_Glossiness;
+
+            float3 D = diff * lightCol * intensity * att;
             float3 S = lightCol * spec * intensity * att;
 
             if (u_Light[lightIndex].ShadowData.x == 1.0 && diff > 0.0 && att > 0.0)
@@ -338,9 +347,9 @@ float4 mainPS(PSInput input) : SV_Target0
             float inner = u_Light[lightIndex].Metadata.y;
             float outer = u_Light[lightIndex].Metadata.z;
             float theta = dot(L, normalize(-u_Light[lightIndex].Direction.xyz));
-            float spotFrac = clamp((theta - outer) / (inner - outer), 0.0, 1.0);
+            float spotFrac = clamp((theta - outer) / (max(inner - outer, 1e-6)), 0.0, 1.0);
 
-            float att = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+            float att = PointAttenuation(dist, range);
 
             float diff = max(dot(normal, L), 0.0);
             float3 D = diff * lightCol * intensity * att * spotFrac;
@@ -362,6 +371,6 @@ float4 mainPS(PSInput input) : SV_Target0
         }
     }
 
-    float3 result = ambient + (textureColor * diffuseAcc + specularAcc);
-    return float4(result * input.v_Color.rgb, 1.0);
+    float3 result = (ambient + textureColor * diffuseAcc) * input.v_Color.rgb + specularAcc;
+    return float4(result, 1.0);
 }

@@ -77,7 +77,6 @@ VSOutput mainVS(VSInput input)
     output.v_Color = u_Material.Color * u_Object.Color;
     output.v_TextureCoord = input.a_TextureCoord;
     output.v_Normal = mul(u_Object.InverseModel, float4(input.a_Normal, 0.0)).xyz;
-    // output.v_Normal = mul(float4(input.a_Normal, 0.0), u_Object.InverseModel).xyz;
     output.position = mul(u_FrameData.ViewProjection, mul(u_Object.Model, float4(input.a_Position, 1.0)));
 
     return output;
@@ -108,6 +107,22 @@ static const float2 poissonDisk[16] =
 };
 
 static const float PI = 3.14159265359;
+
+static const float3 SKY_AMBIENT = float3(0.12, 0.14, 0.20);
+static const float3 GROUND_AMBIENT = float3(0.05, 0.04, 0.03);
+static const float AMBIENT_INTENSITY = 2.0;
+
+float DistanceWindow(float dist, float range)
+{
+    float r = saturate(dist / max(range, 1e-4));
+    float f = saturate(1.0 - r * r * r * r);
+    return f * f;
+}
+
+float PointAttenuation(float dist, float range)
+{
+    return DistanceWindow(dist, range) / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+}
 
 float CalculateAdaptiveNormalOffset(float3 normal, float3 lightDir, float baseOffset, float lightDistance)
 {
@@ -315,9 +330,10 @@ float4 mainPS(PSInput input) : SV_Target0
     LightProvider provider;
 
     // Apply vertex and material colors to linear albedo before lighting calculations.
-    float3 albedo = pow(u_AlbedoMap.Sample(input.v_TextureCoord).rgb, float3(2.2, 2.2, 2.2)) * input.v_Color.rgb;
-    float metallic = u_MetallicMap.Sample(input.v_TextureCoord).r;
-    float roughness = u_RoughnessMap.Sample(input.v_TextureCoord).r;
+    // float3 albedo = pow(u_AlbedoMap.Sample(input.v_TextureCoord).rgb, float3(2.2, 2.2, 2.2)) * input.v_Color.rgb;
+    float3 albedo = u_AlbedoMap.Sample(input.v_TextureCoord).rgb * input.v_Color.rgb;
+    float metallic = saturate(u_MetallicMap.Sample(input.v_TextureCoord).r * u_Material.Metalicness);
+    float roughness = clamp(u_RoughnessMap.Sample(input.v_TextureCoord).r * u_Material.Roughness, 0.045, 1.0);
 
     float3 N = getNormalFromMap(input);
     float3 V = normalize(u_FrameData.ViewPosition.xyz - input.v_Position);
@@ -334,7 +350,7 @@ float4 mainPS(PSInput input) : SV_Target0
         uint lightIndex = provider.GetLightIndex(q, i);
 
         uint lightType = uint(u_Light[lightIndex].Position.w);
-        float lightIntensity = u_Light[lightIndex].Metadata.x;
+        float lightIntensity = u_Light[lightIndex].Metadata.x * 10.f;
         float3 lightColor = u_Light[lightIndex].Color.xyz;
         float lightRange = u_Light[lightIndex].Color.a;
 
@@ -372,16 +388,7 @@ float4 mainPS(PSInput input) : SV_Target0
             float linear = u_Light[lightIndex].Metadata.z;
             float quadratic = u_Light[lightIndex].Metadata.w;
 
-            // Calculate standard base attenuation.
-            attenuation = 1.0 / max(constant + linear * distance + quadratic * distance * distance, 1e-4);
-
-            // Smoothly forces attenuation to 0.0 as distance approaches lightRange.
-            if (lightRange > 0.0)
-            {
-                float distanceRatio = clamp(distance / lightRange, 0.0, 1.0);
-                float window = 1.0 - distanceRatio;
-                attenuation *= (window * window);
-            }
+            attenuation = PointAttenuation(distance, lightRange);
 
             lit = (attenuation > 0.0) && (max(dot(N, L), 0.0) > 0.0);
 
@@ -396,18 +403,14 @@ float4 mainPS(PSInput input) : SV_Target0
             float3 toLight = lightPos - input.v_Position;
             L = toLight / max(distance, 1e-6);
 
-            float constant = 1.0;
-            float linear = 0.09;
-            float quadratic = 0.032;
-            attenuation = 1.0 / max(constant + linear * distance + quadratic * distance * distance, 1e-4);
-
             float innerCutoff = u_Light[lightIndex].Metadata.y;
             float outerCutoff = u_Light[lightIndex].Metadata.z;
             float theta = dot(L, normalize(-u_Light[lightIndex].Direction.xyz));
             float epsilon = max(innerCutoff - outerCutoff, 1e-6);
 
             float spotFactor = clamp((theta - outerCutoff) / epsilon, 0.0, 1.0);
-            attenuation *= spotFactor;
+
+            attenuation = PointAttenuation(distance, lightRange) * spotFactor;
 
             lit = (spotFactor > 0.0) && (attenuation > 0.0) && (max(dot(N, L), 0.0) > 0.0);
 
@@ -444,14 +447,11 @@ float4 mainPS(PSInput input) : SV_Target0
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 
-    float3 ambient = float3(0.015, 0.015, 0.015) * albedo;
+    float up = N.y * 0.5 + 0.5; // world is Y-up.
+    float3 ambientLight = lerp(GROUND_AMBIENT, SKY_AMBIENT, up) * AMBIENT_INTENSITY;
+    float3 ambient = ambientLight * albedo * (1.0 - metallic);
+
     float3 color = ambient + Lo;
-
-    // HDR tonemapping
-    color = color / (color + float3(1.0, 1.0, 1.0));
-
-    // Gamma correct
-    color = pow(color, float3(1.0 / 2.2, 1.0 / 2.2, 1.0 / 2.2));
 
     return float4(color, 1.0);
 }

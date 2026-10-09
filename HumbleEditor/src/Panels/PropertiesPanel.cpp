@@ -2258,8 +2258,8 @@ namespace HBL2::Editor
 				{
 					if (m_TextureSettings.PlatformCompressionMethod[i] == CompressionMethod::BASISU)
 					{
-						StaticDArray<Format, 5> transcodingFormats;
-						StaticDArray<const char*, 5> transcodingFormatLabels;
+						StaticDArray<Format, 7> transcodingFormats;
+						StaticDArray<const char*, 7> transcodingFormatLabels;
 
 						auto supportedTranscodingFormats = PlatformManager::Instance->GetSupportedTranscodingFormats(platform);
 
@@ -2273,6 +2273,18 @@ namespace HBL2::Editor
 						{
 							transcodingFormats.push_back(Format::BC3_SRGB);
 							transcodingFormatLabels.push_back("BC3");
+						}
+
+						if (supportedTranscodingFormats.IsSet(Format::BC4_R_UNORM))
+						{
+							transcodingFormats.push_back(Format::BC4_R_UNORM);
+							transcodingFormatLabels.push_back("BC4_R");
+						}
+
+						if (supportedTranscodingFormats.IsSet(Format::BC5_RG_UNORM))
+						{
+							transcodingFormats.push_back(Format::BC5_RG_UNORM);
+							transcodingFormatLabels.push_back("BC5_RG");
 						}
 
 						if (supportedTranscodingFormats.IsSet(Format::BC7_SRGB))

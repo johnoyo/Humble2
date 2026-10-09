@@ -10,12 +10,114 @@
 #include "Utilities/TextureUtilities.h"
 #include "Utilities/FileDialogs.h"
 
+#include <stb_image/stb_image_write.h>
+
 namespace HBL2
 {
 	thread_local std::vector<Vertex> FastGltfLoader::s_Vertices;
 	thread_local std::vector<uint32_t> FastGltfLoader::s_Indices;
 	thread_local std::vector<Handle<Asset>> FastGltfLoader::s_Textures;
 	thread_local std::unordered_map<const char*, Handle<Asset>> FastGltfLoader::s_MaterialNameToAssetHandle;
+
+	static bool SplitMetalRoughImage(uint32_t imageIndex, Handle<Asset> metallicRoughnessMapAssetHandle, Handle<Asset>& roughnessMapAssetHandle, Handle<Asset>& metallicMapAssetHandle, bool reload)
+	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
+		Asset* metallicRoughnessMapAsset = AssetManager::Instance->GetAssetMetadata(metallicRoughnessMapAssetHandle);
+
+		const auto& fileSystemPath = Project::GetAssetFileSystemPath(metallicRoughnessMapAsset->FilePath);
+		const auto& relativeRoughPath = metallicRoughnessMapAsset->FilePath.parent_path() / (std::to_string(imageIndex) + "_rough.png");
+		const auto& relativeMetalPath = metallicRoughnessMapAsset->FilePath.parent_path() / (std::to_string(imageIndex) + "_metal.png");
+
+		UUID roughTextureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeRoughPath);
+		roughnessMapAssetHandle = AssetManager::Instance->GetHandleFromUUID(roughTextureAssetUUID);
+
+		UUID metalTextureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeMetalPath);
+		metallicMapAssetHandle = AssetManager::Instance->GetHandleFromUUID(metalTextureAssetUUID);
+
+		if (AssetManager::Instance->IsAssetValid(roughnessMapAssetHandle) && AssetManager::Instance->IsAssetValid(metallicMapAssetHandle) && !reload)
+		{
+			return true;
+		}
+
+		if (reload)
+		{
+			AssetManager::Instance->DeleteAsset(roughnessMapAssetHandle);
+			AssetManager::Instance->DeleteAsset(metallicMapAssetHandle);
+		}
+
+		int w = 0, h = 0, c = 0;
+		stbi_uc* src = stbi_load(fileSystemPath.string().c_str(), &w, &h, &c, STBI_rgb_alpha);
+		if (!src)
+		{
+			return false;
+		}
+
+		std::vector<stbi_uc> rough((size_t)w * h * 4);
+		std::vector<stbi_uc> metal((size_t)w * h * 4);
+
+		for (size_t i = 0; i < (size_t)w * h; ++i)
+		{
+			const stbi_uc g = src[i * 4 + 1]; // roughness
+			const stbi_uc b = src[i * 4 + 2]; // metallic
+
+			// Replicate into RGB so .r works and the image previews correctly.
+			rough[i * 4 + 0] = g; rough[i * 4 + 1] = g; rough[i * 4 + 2] = g; rough[i * 4 + 3] = 255;
+			metal[i * 4 + 0] = b; metal[i * 4 + 1] = b; metal[i * 4 + 2] = b; metal[i * 4 + 3] = 255;
+		}
+
+		stbi_image_free(src);
+
+		const auto& parentPath = fileSystemPath.parent_path();
+		const auto& absoluteRoughPath = parentPath / (std::to_string(imageIndex) + "_rough.png");
+		const auto& absoluteMetalPath = parentPath / (std::to_string(imageIndex) + "_metal.png");
+
+		int roughOk = stbi_write_png(absoluteRoughPath.string().c_str(), w, h, 4, rough.data(), w * 4);
+
+		if (roughOk)
+		{
+			roughnessMapAssetHandle = editorAssetManager->CreateAsset({
+				.debugName = "texture-asset",
+				.filePath = relativeRoughPath,
+				.type = AssetType::Texture,
+			});
+
+			if (roughnessMapAssetHandle.IsValid())
+			{
+				TextureUtilities::Get().CreateAssetMetadataFile(roughnessMapAssetHandle);
+			}
+
+			AssetManager::Instance->GetAsset<Texture>(roughnessMapAssetHandle);
+		}
+		else
+		{
+			HBL2_CORE_ERROR("Failed to write image data to {}.", absoluteRoughPath);
+		}
+
+		int metalOk = stbi_write_png(absoluteMetalPath.string().c_str(), w, h, 4, metal.data(), w * 4);
+
+		if (metalOk)
+		{
+			metallicMapAssetHandle = editorAssetManager->CreateAsset({
+				.debugName = "texture-asset",
+				.filePath = relativeMetalPath,
+				.type = AssetType::Texture,
+			});
+
+			if (metallicMapAssetHandle.IsValid())
+			{
+				TextureUtilities::Get().CreateAssetMetadataFile(metallicMapAssetHandle);
+			}
+
+			AssetManager::Instance->GetAsset<Texture>(metallicMapAssetHandle);
+		}
+		else
+		{
+			HBL2_CORE_ERROR("Failed to write image data to {}.", absoluteMetalPath);
+		}
+
+		return roughOk && metalOk;
+	}
 
 	static void GetShaderAssetHandleAndReflectionData(Handle<Asset>& shaderAssetHandle, ShaderReflectionData& shaderReflectionData, bool isPBR)
 	{
@@ -571,11 +673,14 @@ namespace HBL2
 				// diffuse color aka base color factor used as constant color, if no diffuse texture is provided
 				glm::vec4 albedoColor = glm::make_vec4(glTFMaterial.pbrData.baseColorFactor.data());
 				float roughness = glTFMaterial.pbrData.roughnessFactor;
-//				float metalicness = glTFMaterial.pbrData.metallicFactor;
+				float metallicness = glTFMaterial.pbrData.metallicFactor;
 
 				Handle<Asset> albedoMapAssetHandle;
 				Handle<Asset> normalMapAssetHandle;
 				Handle<Asset> metallicRoughnessMapAssetHandle;
+
+				Handle<Asset> roughnessMapAssetHandle;
+				Handle<Asset> metallicMapAssetHandle;
 
 				// diffuse map aka basecolor aka albedo
 				if (glTFMaterial.pbrData.baseColorTexture.has_value())
@@ -606,17 +711,28 @@ namespace HBL2
 
 				AssetManager::Instance->WaitForAsyncJobs();
 
+				bool isPBR = (normalMapAssetHandle.IsValid() && metallicRoughnessMapAssetHandle.IsValid());
+
+				if (isPBR)
+				{
+					uint32_t metallicRoughnessMapIndex = (uint32_t)glTFMaterial.pbrData.metallicRoughnessTexture.value().textureIndex;
+					uint32_t imageIndex = (uint32_t)asset.textures[metallicRoughnessMapIndex].imageIndex.value();
+
+					SplitMetalRoughImage(imageIndex, metallicRoughnessMapAssetHandle, roughnessMapAssetHandle, metallicMapAssetHandle, false);
+				}
+
 				// Get material uniform buffer data.
 				std::vector<uint8_t> uniformBufferBytes(24, 0);
 				float* colorOffset = (float*)uniformBufferBytes.data();
 				colorOffset[0] = albedoColor[0]; colorOffset[1] = albedoColor[1];
 				colorOffset[2] = albedoColor[2]; colorOffset[3] = albedoColor[3];
-				float* glossinessOffset = (float*)uniformBufferBytes.data() + 16;
-				*glossinessOffset = roughness;
+				float* roughnessOffset = (float*)uniformBufferBytes.data() + 16;
+				*roughnessOffset = roughness;
+				float* metalicnessOffset = (float*)uniformBufferBytes.data() + 20;
+				*metalicnessOffset = metallicness;
 
 				Handle<Asset> shaderAssetHandle;
 				ShaderReflectionData shaderReflectionData;
-				bool isPBR = normalMapAssetHandle.IsValid() && metallicRoughnessMapAssetHandle.IsValid() && metallicRoughnessMapAssetHandle.IsValid();
 
 				GetShaderAssetHandleAndReflectionData(shaderAssetHandle, shaderReflectionData, isPBR);
 
@@ -630,7 +746,7 @@ namespace HBL2
 					},
 					.ReflectionData = &shaderReflectionData,
 					.Buffers = { uniformBufferBytes },
-					.TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), metallicRoughnessMapAssetHandle.Pack(), metallicRoughnessMapAssetHandle.Pack() },
+					.TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), roughnessMapAssetHandle.Pack(), metallicMapAssetHandle.Pack() },
 				});
 
 				if (materialAssetHandle.IsValid())
@@ -686,11 +802,14 @@ namespace HBL2
 			// diffuse color aka base color factor used as constant color, if no diffuse texture is provided
 			glm::vec4 albedoColor = glm::make_vec4(glTFMaterial.pbrData.baseColorFactor.data());
 			float roughness = glTFMaterial.pbrData.roughnessFactor;
-//			float metalicness = glTFMaterial.pbrData.metallicFactor;
+			float metallicness = glTFMaterial.pbrData.metallicFactor;
 
 			Handle<Asset> albedoMapAssetHandle;
 			Handle<Asset> normalMapAssetHandle;
 			Handle<Asset> metallicRoughnessMapAssetHandle;
+
+			Handle<Asset> roughnessMapAssetHandle;
+			Handle<Asset> metallicMapAssetHandle;
 
 			// diffuse map aka basecolor aka albedo
 			if (glTFMaterial.pbrData.baseColorTexture.has_value())
@@ -719,17 +838,28 @@ namespace HBL2
 				metallicRoughnessMapAssetHandle = s_Textures[imageIndex];
 			}
 
+			bool isPBR = (normalMapAssetHandle.IsValid() && metallicRoughnessMapAssetHandle.IsValid());
+
+			if (isPBR)
+			{
+				uint32_t metallicRoughnessMapIndex = (uint32_t)glTFMaterial.pbrData.metallicRoughnessTexture.value().textureIndex;
+				uint32_t imageIndex = (uint32_t)asset.textures[metallicRoughnessMapIndex].imageIndex.value();
+
+				SplitMetalRoughImage(imageIndex, metallicRoughnessMapAssetHandle, roughnessMapAssetHandle, metallicMapAssetHandle, true);
+			}
+
 			// Get material uniform buffer data.
 			std::vector<uint8_t> uniformBufferBytes(24, 0);
 			float* colorOffset = (float*)uniformBufferBytes.data();
 			colorOffset[0] = albedoColor[0]; colorOffset[1] = albedoColor[1];
 			colorOffset[2] = albedoColor[2]; colorOffset[3] = albedoColor[3];
-			float* glossinessOffset = (float*)uniformBufferBytes.data() + 16;
-			*glossinessOffset = roughness;
+			float* roughnessOffset = (float*)uniformBufferBytes.data() + 16;
+			*roughnessOffset = roughness;
+			float* metalicnessOffset = (float*)uniformBufferBytes.data() + 20;
+			*metalicnessOffset = metallicness;
 
 			Handle<Asset> shaderAssetHandle;
 			ShaderReflectionData shaderReflectionData;
-			bool isPBR = normalMapAssetHandle.IsValid() && metallicRoughnessMapAssetHandle.IsValid() && metallicRoughnessMapAssetHandle.IsValid();
 				
 			GetShaderAssetHandleAndReflectionData(shaderAssetHandle, shaderReflectionData, isPBR);
 
@@ -751,7 +881,7 @@ namespace HBL2
 					},
 					.ReflectionData = &shaderReflectionData,
 					.Buffers = { uniformBufferBytes },
-					.TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), metallicRoughnessMapAssetHandle.Pack(), metallicRoughnessMapAssetHandle.Pack() },
+					.TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), roughnessMapAssetHandle.Pack(), metallicMapAssetHandle.Pack() },
 				});
 
 				if (materialAssetHandle.IsValid())
