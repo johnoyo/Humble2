@@ -82,9 +82,9 @@ namespace HBL2
             case Format::BC3_UNORM:
                 return MTL::PixelFormatBC3_RGBA;
             case Format::BC4_R_UNORM:
-                return PixelFormatInvalid; // TODO: Fix
+                return MTL::PixelFormatBC4_RUnorm;
             case Format::BC5_RG_UNORM:
-                return PixelFormatInvalid; // TODO: Fix
+                return MTL::PixelFormatBC5_RGUnorm;
             case Format::BC7_SRGB:
                 return MTL::PixelFormatBC7_RGBAUnorm_sRGB;
             case Format::BC7_UNORM:

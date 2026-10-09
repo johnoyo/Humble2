@@ -1,3 +1,20 @@
 Texture:
   UUID: 15569852088505032425
   Flip: false
+  Compression:
+    Windows:
+      Method: 0
+      Format: 512
+      Quality: 2
+    MacOS:
+      Method: 0
+      Format: 1073741824
+      Quality: 0
+    Linux:
+      Method: 0
+      Format: 512
+      Quality: 2
+    Web:
+      Method: 0
+      Format: 512
+      Quality: 2

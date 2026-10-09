@@ -50,7 +50,7 @@ Project:
       Textures Pool Size: 128
       Shaders Pool Size: 64
       Buffers Pool Size: 1024
-      BindGroups Pool Size: 64
+      BindGroups Pool Size: 128
       BindGroupLayouts Pool Size: 32
       RenderPass Pool Size: 256
       RenderPassLayouts Pool Size: 64
