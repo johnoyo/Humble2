@@ -13,6 +13,7 @@ namespace HBL2
         case Format::RGBA8_UNORM:
         case Format::BGRA8_UNORM:
         case Format::RG16_FLOAT:
+        case Format::RG32_UINT:
             return { 1, 1, 4 };
         case Format::RGBA32_FLOAT:
             return { 1, 1, 16 };
@@ -40,16 +41,15 @@ namespace HBL2
         case Format::BC1_RGB_UNORM:
         case Format::BC1_RGBA_SRGB:
         case Format::BC1_RGBA_UNORM:
+        case Format::BC4_R_UNORM:
 			return { 4, 4, 8 };
         case Format::BC3_SRGB:
         case Format::BC3_UNORM:
+        case Format::BC5_RG_UNORM:
         case Format::BC7_SRGB:
         case Format::BC7_UNORM:
         case Format::BC6H_UF:
 			return { 4, 4, 16 };
-
-        // case Format::BC1_RGBA_UNORM: return { 4, 4, 8 };  // BC1/BC4
-        // case Format::BC3_RGBA_UNORM: return { 4, 4, 16 }; // BC2/3/5/6H/7
 
         default:
             return { 1, 1, 4 };

@@ -28,10 +28,7 @@ namespace HBL2
 		VkCommandBuffer MainCommandBuffer;
 		VkCommandBuffer ImGuiCommandBuffer;
 
-		Handle<BindGroup> ShadowBindings;
 		Handle<BindGroup> DebugBindings;
-		Handle<BindGroup> GlobalBindings2D;
-		Handle<BindGroup> GlobalBindings3D;
 		Handle<BindGroup> GlobalPresentBindings;
 	};
 
@@ -57,9 +54,6 @@ namespace HBL2
 		virtual void SetViewportAttachment(void* viewportTextureRef) override { m_ColorAttachmentID = (VkDescriptorSet)viewportTextureRef; }
 		virtual void* GetViewportAttachment() override { return m_ColorAttachmentID; }
 
-		virtual Handle<BindGroup> GetShadowBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].ShadowBindings; }
-		virtual Handle<BindGroup> GetGlobalBindings2D() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalBindings2D; }
-		virtual Handle<BindGroup> GetGlobalBindings3D() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalBindings3D; }
 		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalPresentBindings; }
 		virtual Handle<BindGroup> GetDebugBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].DebugBindings; }
 
@@ -97,7 +91,6 @@ namespace HBL2
 		void CreateUploadContextCommands();
 		void CreateRenderPasses();
 		void CreateDescriptorPool();
-		void CreateDescriptorSets();
 
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool verticalSync);

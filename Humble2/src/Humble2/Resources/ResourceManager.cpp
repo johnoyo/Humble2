@@ -196,14 +196,14 @@ namespace HBL2
 		{
 			HashCombine(bufferHash, bufferEntry.slot);
 			HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.type));
-			HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.visibility));
+			HashCombine(bufferHash, static_cast<uint64_t>(bufferEntry.visibility.GetRaw()));
 		}
 
 		for (const auto& texture : desc.textureBindings)
 		{
 			HashCombine(textureHash, texture.slot);
 			HashCombine(textureHash, static_cast<uint64_t>(texture.type));
-			HashCombine(textureHash, static_cast<uint64_t>(texture.visibility));
+			HashCombine(textureHash, static_cast<uint64_t>(texture.visibility.GetRaw()));
 		}
 
 		HashCombine(hash, bufferHash);

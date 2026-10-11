@@ -9,38 +9,24 @@
 #include "Renderer/Renderer.h"
 #include "Resources/ResourceManager.h"
 
+#include "Utilities/Collections/FixedArray.h"
+
 namespace HBL2
 {
-	struct PerDrawData
+	struct ForwardSceneRenderData
 	{
-		glm::mat4 Model = glm::mat4(1.0f);
-		glm::mat4 InverseModel = glm::mat4(1.0f);
-		glm::vec4 Color = { 0.0f, 0.0f, 0.0f, 0.0f };
-	};
-
-	struct PerDrawDataSprite
-	{
-		glm::mat4 Model = glm::mat4(1.0f);
-		glm::vec4 Color = { 0.0f, 0.0f, 0.0f, 0.0f };
-	};
-
-	struct PerMaterialData
-	{
-		glm::vec4 Color;
-		float Roughness;
-		float Metalicness;
-	};
-
-	struct SceneRenderData
-	{
-		LightData m_LightData{};
-		CameraData m_CameraData{};
+		FixedArray<Light> m_LightData;
+		FrameData m_FrameData{};
 		CameraSettings m_CameraSettings{};
 		Component::Camera::CameraFrustum m_CameraFrustum{};
 		glm::mat4 m_OnlyRotationInViewProjection = glm::mat4(1.0f);
 		glm::mat4 m_CameraProjection = glm::mat4(1.0f);
 
-		std::vector<uint8_t> m_LightSpaceMatricesData;
+		Handle<Buffer> LightSpaceBuffer;
+
+		Handle<BindGroup> ShadowBindings;
+		Handle<BindGroup> GlobalBindings2D;
+		Handle<BindGroup> GlobalBindings3D;
 
 		uint32_t m_UBOStartingOffset = 0;
 		uint32_t m_UBOEndingOffset = 0;
@@ -52,7 +38,6 @@ namespace HBL2
 		DrawList m_SpriteOpaqueDraws;
 		DrawList m_SpriteTransparentDraws;
 		DrawList m_PrePassSpriteDraws;
-		DrawList m_ShadowPassSpriteDraws;
 	};
 
 	class HBL2_API ForwardSceneRenderer final : public SceneRenderer
@@ -60,7 +45,7 @@ namespace HBL2
 	public:
 		virtual ~ForwardSceneRenderer() = default;
 
-		virtual void Initialize(Scene* scene) override;
+		virtual void Initialize(Scene* scene, uint32_t maxLights) override;
 		virtual void Gather(Entity mainCamera) override;
 		virtual void Render(void* renderData, void* debugRenderData) override;
 		virtual void CleanUp() override;
@@ -68,32 +53,36 @@ namespace HBL2
 		virtual void* GetRenderData() override;
 
 	protected:
+		void RenderPassSetup();
+		void BindingsSetup();
+
+		Handle<BindGroup> GetShadowBindings() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].ShadowBindings; }
+		Handle<BindGroup> GetGlobalBindings2D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindings2D; }
+		Handle<BindGroup> GetGlobalBindings3D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindings3D; }
+
 		void ShadowPassSetup();
 		void DepthPrePassSetup();
 		void GeometryPassSetup();
 		void SpriteRenderingSetup();
 		void SkyboxPassSetup();
 		void PostProcessPassSetup();
-		void DebugPassSetup();
 		void PresentPassSetup();
 
-		void GatherDraws(SceneRenderData* sceneRenderData);
-		void GatherLights(SceneRenderData* sceneRenderData);
+		void GatherDraws(ForwardSceneRenderData* sceneRenderData);
+		void GatherLights(ForwardSceneRenderData* sceneRenderData);
 
-		void ShadowPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
-		void DepthPrePass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
-        void GeometryPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData, RenderPassPool& renderPassPool);
-		void OpaquePass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
-		void TransparentPass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
+		void ShadowPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
+		void DepthPrePass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
+        void GeometryPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData, RenderPassPool& renderPassPool);
+		void OpaquePass(RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData);
+		void TransparentPass(RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData);
         void SkyboxComputePass(CommandBuffer* commandBuffer, DrawList* skyboxDraws);
-		void SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData);
-		void PostProcessPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
+		void SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData);
+		void PostProcessPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
 		void DebugPass(CommandBuffer* commandBuffer, void* debugRenderData);
-		void PresentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData);
+		void PresentPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
 
-		void GetViewProjection(SceneRenderData* sceneRenderData, Entity mainCamera);
-
-		void CreateAlignedMatrixArray(SceneRenderData* sceneRenderData, const glm::mat4* matrices, size_t count, uint32_t alignedSize);
+		void GetViewProjection(ForwardSceneRenderData* sceneRenderData, Entity mainCamera);
 
 	private:
 		PoolReservation* m_Reservation = nullptr;
@@ -103,12 +92,19 @@ namespace HBL2
 		UniformRingBuffer* m_UniformRingBuffer = nullptr;
 
 		Scene* m_EditorScene = nullptr;
-		SceneRenderData m_RenderData[Renderer::FrameCount]{};
+		ForwardSceneRenderData m_RenderData[Renderer::FrameCount]{};
+
+		uint32_t m_MaxLights = 0;
+
+		RefHandle<BindGroupLayout> m_ShadowBindingsLayout;
+		RefHandle<BindGroupLayout> m_GlobalBindingsLayout2D;
+		RefHandle<BindGroupLayout> m_GlobalBindingsLayout3D;
 		
 		Handle<RenderPassLayout> m_RenderPassLayout;
 
 		Handle<Texture> m_ShadowDepthTexture;
-		Handle<RenderPass> m_ShadowRenderPass;
+        Handle<RenderPass> m_ShadowRenderPassClear;
+		Handle<RenderPass> m_ShadowRenderPassLoad;
 		Handle<Shader> m_ShadowPrePassShader;
 		Handle<Material> m_ShadowPrePassMaterial;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_ShadowPrePassMaterialHash = g_NullVariant;

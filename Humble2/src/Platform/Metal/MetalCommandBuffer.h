@@ -37,7 +37,7 @@ namespace HBL2
         virtual RenderPassRenderer* BeginRenderPass(Handle<RenderPass> renderPass, Viewport&& drawArea = {}) override;
         virtual void EndRenderPass(const RenderPassRenderer& renderPassRenderer) override;
 
-        virtual ComputePassRenderer* BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite) override;
+        virtual ComputePassRenderer* BeginComputePass(const Span<const Handle<Texture>> texturesWrite, const Span<const Handle<Buffer>> buffersWrite, const Span<const Handle<Buffer>> buffersZero) override;
         virtual void EndComputePass(const ComputePassRenderer& computePassRenderer) override;
 
         virtual void EndCommandRecording() override;

@@ -10,31 +10,13 @@ namespace HBL2
         float scaleY = (float)(g_TileSize) / g_ShadowAtlasSize;
         float offsetY = (float)(y * g_TileSize) / g_ShadowAtlasSize;
 
-        switch (Renderer::Instance->GetAPI())
+        return
         {
-        case GraphicsAPI::OPENGL:
-        case GraphicsAPI::METAL:
-            return
-            {
-                (float)(x * g_TileSize) / g_ShadowAtlasSize,    // offset X
-                offsetY,                                        // offset Y
-                (float)(g_TileSize) / g_ShadowAtlasSize,        // scale X
-                scaleY                                          // scale Y
-            };
-        case GraphicsAPI::VULKAN:
-            return
-            {
-                (float)(x * g_TileSize) / g_ShadowAtlasSize,    // offset X
-                offsetY + scaleY,                               // offset Y
-                (float)(g_TileSize) / g_ShadowAtlasSize,        // scale X
-                -scaleY                                         // scale Y
-            };
-        default:
-            break;
-        }
-
-        HBL2_CORE_ASSERT(false, "Unsupported graphics API!");
-        return glm::vec4();
+            (float)(x * g_TileSize) / g_ShadowAtlasSize,    // offset X
+            offsetY,                                        // offset Y
+            (float)(g_TileSize) / g_ShadowAtlasSize,        // scale X
+            scaleY                                          // scale Y
+        };
     }
 
     ShadowAtlasAllocator::ShadowAtlasAllocator()

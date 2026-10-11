@@ -8,8 +8,8 @@ Features:
 - Supports multiple graphics APIs **Metal 4** and **Vulkan**.
     - **WebGPU** support is planned for the future.
     - **OpenGL** backend is deprecated and will be removed in the near future.
-- Forward, API agnostic, PBR renderer that features shadow maps, equirectangular skyboxes and various post processing effects.
-    - Forward Plus renderer backend is planned for the future, with the ability to switch between renderer backends.
+- Flexible, API agnostic, PBR renderer that features shadow maps, equirectangular skyboxes and various post processing effects.
+    - **Forward** and **Forward Plus** renderer backends are implemented, with the ability to switch between them and to define custom renderer backends.
 - Utilizes the [Slang](https://github.com/shader-slang/slang) shader language for seamless cross api integration and advanced reflection and tooling.
 - Texture compression utilizing the [KTX-Software](https://github.com/KhronosGroup/KTX-Software) library.
 - Flexible and performant reference counting system for assets and resources.

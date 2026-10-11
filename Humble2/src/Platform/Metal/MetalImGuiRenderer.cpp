@@ -47,7 +47,7 @@ namespace HBL2
         m_Renderer->CollectImGuiRenderData(ImGui::GetDrawData(), ImGui::GetTime());
     }
 
-    void MetalImGuiRenderer::Render(const FrameData& frameData)
+    void MetalImGuiRenderer::Render(const RendererFrameData& frameData)
     {
         BEGIN_PROFILE_PASS();
         

@@ -146,7 +146,7 @@ namespace HBL2::Editor
 					else
 					{
 						HBL2::Component::EditorVisible::SelectedEntity = Entity::Null;
-						m_Owner->m_SelectedAsset = {};
+						m_Owner->m_SelectedAsset.Release();
 					}
 				}
 
@@ -309,6 +309,7 @@ namespace HBL2::Editor
 
 	void ContentBrowserPanel::OnDestroy()
 	{
+        m_Owner->m_SelectedAsset.Release();
 	}
 
 	void ContentBrowserPanel::HandleContentBrowserDragAndDrop()
@@ -490,6 +491,11 @@ namespace HBL2::Editor
 				if (ImGui::MenuItem("Helper Script"))
 				{
 					m_OpenHelperScriptSetupPopup = true;
+				}
+
+				if (ImGui::MenuItem("Scene Renderer"))
+				{
+					m_OpenSceneRendererSetupPopup = true;
 				}
 
 				ImGui::EndMenu();
@@ -695,6 +701,47 @@ namespace HBL2::Editor
 			ImGui::End();
 		}
 
+		if (m_OpenSceneRendererSetupPopup)
+		{
+			ImGui::Begin("Scene Renderer Setup", &m_OpenSceneRendererSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+			ImGui::InputText("Scene Renderer Name", m_SceneRendererNameBuffer, MaxCharBufferSize);
+
+			ImGui::NewLine();
+
+			if (ImGui::Button("OK"))
+			{
+				// Create .h file with placeholder code.
+				auto sceneRendererAssetHandle = BuildEngine::Instance->CreateSceneRendererFile(m_Owner->m_CurrentDirectory, m_SceneRendererNameBuffer);
+
+				// Import script.
+				AssetManager::Instance->GetAsset<Script>(sceneRendererAssetHandle);
+
+				if (Context::Mode == Mode::Runtime)
+				{
+					HBL2_WARN("Hot reloading is not available yet. Skipping requested recompilation. Recompile script after leaving Play mode.");
+				}
+				else
+				{
+					// Save script (build).
+					editorAssetManager->SaveAsset(sceneRendererAssetHandle);
+				}
+
+				m_OpenSceneRendererSetupPopup = false;
+				snprintf(m_SceneRendererNameBuffer, sizeof(m_SceneRendererNameBuffer), "%s", "NewSceneRenderer");
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel"))
+			{
+				m_OpenSceneRendererSetupPopup = false;
+				snprintf(m_SceneRendererNameBuffer, sizeof(m_SceneRendererNameBuffer), "%s", "NewSceneRenderer");
+			}
+
+			ImGui::End();
+		}
+
 		if (m_OpenShaderSetupPopup)
 		{
 			ImGui::Begin("Shader Setup", &m_OpenShaderSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
@@ -757,7 +804,7 @@ namespace HBL2::Editor
 		{
 			ImGui::Begin("Material Setup", &m_OpenMaterialSetupPopup, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-			ImGui::InputText("Material Name", m_MaterialNameBuffer.data(), 256);
+			ImGui::InputText("Material Name", m_MaterialNameBuffer, MaxCharBufferSize);
 
 			ImGui::NewLine();
 
@@ -778,7 +825,7 @@ namespace HBL2::Editor
 					const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : shaderAsset->FilePath;
 
 					// Reflect Shader.
-					m_ShaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
+					m_ShaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
 
 					// Clear reflection data.
 					for (auto& data : m_ShaderUniformBufferData)
@@ -830,7 +877,7 @@ namespace HBL2::Editor
 
 			// Front face.
 			{
-				const char* options[] = { "Clockwise", "Counter Clockwise" };
+				const char* options[] = { "Counter Clockwise", "Clockwise" };
 				int currentItem = (int)m_FrontFace;
 
 				if (ImGui::Combo("Front Face", &currentItem, options, IM_ARRAYSIZE(options)))
@@ -957,7 +1004,7 @@ namespace HBL2::Editor
 								}
 							}
 						}
-						else if (b.type == ShaderResourceType::SampledTexture)
+						else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
 						{
 							auto& userMapHandlePacked = m_ShaderUniformTextureData[m_ShaderUniformTextureSize++];
 
@@ -1010,7 +1057,7 @@ namespace HBL2::Editor
 				}
 				else
 				{
-					const auto& relativePath = std::filesystem::relative(m_Owner->m_CurrentDirectory / (m_MaterialNameBuffer + ".mat"), HBL2::Project::GetAssetDirectory());
+					const auto& relativePath = std::filesystem::relative(m_Owner->m_CurrentDirectory / (std::string(m_MaterialNameBuffer) + ".mat"), HBL2::Project::GetAssetDirectory());
 
 					auto materialAssetHandle = editorAssetManager->CreateAsset({
 						.debugName = "material-asset",
@@ -1033,6 +1080,7 @@ namespace HBL2::Editor
 							.stencilEnabled = m_StencilEnabled,
 							.depthCompare = (ShaderDescriptor::RenderPipeline::packed_size)(Compare)m_DepthTest,
 						},
+						.ReflectionData = &m_ShaderReflectionData,
 						.Buffers = { m_ShaderUniformBufferData.data(), m_ShaderUniformBufferSize },
 						.TextureAssets = { m_ShaderUniformTextureData.data(), m_ShaderUniformTextureSize },
 					});
@@ -1065,7 +1113,7 @@ namespace HBL2::Editor
 	{
 		m_ShaderAssetHandlePacked = 0;
 
-		m_MaterialNameBuffer = "New-Material";
+		snprintf(m_MaterialNameBuffer, sizeof(m_MaterialNameBuffer), "%s", "NewMaterial");
 
 		for (auto& data : m_ShaderUniformBufferData)
 		{

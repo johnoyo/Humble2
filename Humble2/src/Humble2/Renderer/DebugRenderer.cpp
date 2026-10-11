@@ -30,9 +30,15 @@ namespace HBL2
 		for (auto& renderData : m_RenderData)
 		{
 			renderData.Draws.Initialize(m_Arena, 3);
+
 			renderData.LineVerts = FixedArray<DebugVertex>(&m_Arena, s_MaxDebugVertices);
+			renderData.LineVerts.resize(s_MaxDebugVertices);
+
 			renderData.FillTrisVerts = FixedArray<DebugVertex>(&m_Arena, s_MaxDebugVertices);
+			renderData.FillTrisVerts.resize(s_MaxDebugVertices);
+
 			renderData.WireTrisVerts = FixedArray<DebugVertex>(&m_Arena, s_MaxDebugVertices);
+			renderData.WireTrisVerts.resize(s_MaxDebugVertices);
 		}
 
 		m_ResourceManager = ResourceManager::Instance;
@@ -89,7 +95,6 @@ namespace HBL2
 		m_DebugLineVertexBuffer = ResourceManager::Instance->CreateBuffer({
 			.debugName = "debug-line-vertex-buffer",
 			.usage = BufferUsage::VERTEX,
-			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::CPU_GPU,
 			.byteSize = s_MaxDebugVertices * sizeof(DebugVertex),
 			.initialData = nullptr,
@@ -98,7 +103,6 @@ namespace HBL2
 		m_DebugFillTriVertexBuffer = ResourceManager::Instance->CreateBuffer({
 			.debugName = "debug-line-vertex-buffer",
 			.usage = BufferUsage::VERTEX,
-			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::CPU_GPU,
 			.byteSize = s_MaxDebugVertices * sizeof(DebugVertex),
 			.initialData = nullptr,
@@ -107,7 +111,6 @@ namespace HBL2
 		m_DebugWireTriVertexBuffer = ResourceManager::Instance->CreateBuffer({
 			.debugName = "debug-line-vertex-buffer",
 			.usage = BufferUsage::VERTEX,
-			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::CPU_GPU,
 			.byteSize = s_MaxDebugVertices * sizeof(DebugVertex),
 			.initialData = nullptr,
@@ -130,7 +133,7 @@ namespace HBL2
 		fillTriVariant.depthEnabled = false;
 		fillTriVariant.depthWrite = false;
 		fillTriVariant.stencilEnabled = false;
-		fillTriVariant.frontFace = Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL ? (packed_size)FrontFace::COUNTER_CLOCKWISE : (packed_size)FrontFace::CLOCKWISE; // TODO: Fix discrepancy.
+		fillTriVariant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 		ShaderDescriptor::RenderPipeline::PackedVariant wireTriVariant = {};
 		wireTriVariant.topology = (packed_size)Topology::TRIANGLE_LIST;
@@ -139,10 +142,10 @@ namespace HBL2
 		wireTriVariant.depthEnabled = false;
 		wireTriVariant.depthWrite = false;
 		wireTriVariant.stencilEnabled = false;
-		wireTriVariant.frontFace = Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL ? (packed_size)FrontFace::COUNTER_CLOCKWISE : (packed_size)FrontFace::CLOCKWISE; // TODO: Fix discrepancy.
+		wireTriVariant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 		// Compile debug shader.
-		const auto& debugShaderData = ShaderUtilities::Get().Compile("assets/shaders/debug-draw.slang", (ShaderReflectionData*)nullptr);
+		const auto& debugShaderData = ShaderUtilities::Get().Compile("assets/shaders/debug-draw.slang", (ShaderReflectionData*)nullptr, false);
 
 		// Create debug shader handle.
 		m_DebugShader = m_ResourceManager->CreateShader({
@@ -150,7 +153,7 @@ namespace HBL2
 			.VS { .code = debugShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = debugShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
+				Renderer::Instance->GetDebugBindingsLayout(),	// Global bind group (0)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = {
@@ -547,19 +550,6 @@ namespace HBL2
 
 		Component::Camera& camera = scene->GetComponent<Component::Camera>(mainCamera);
 
-		// TODO: Fix once and for all the viewport discrepencies between the APIs!
-		switch (Renderer::Instance->GetAPI())
-		{
-		case GraphicsAPI::OPENGL:
-            {
-                auto proj = camera.Projection;
-                proj[1][1] *= -1.0f;
-                return proj * camera.View;
-            }
-		case GraphicsAPI::VULKAN:
-			return camera.ViewProjectionMatrix;
-		}
-
-		return glm::mat4(1.0f);
+		return camera.Projection * camera.View;
 	}
 }

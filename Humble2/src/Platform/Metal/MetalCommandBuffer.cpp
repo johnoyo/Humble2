@@ -77,6 +77,7 @@ namespace HBL2
 
     RenderPassRenderer* MetalCommandBuffer::BeginRenderPass(Handle<RenderPass> renderPass, Viewport&& drawArea)
     {
+        MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
         MetalResourceManager* rm = (MetalResourceManager*)ResourceManager::Instance;
         
         m_CurrentRenderPassRenderer.m_CommandBuffer = CommandBuffer;
@@ -97,6 +98,11 @@ namespace HBL2
                 mtlRenderPass->Width,
                 mtlRenderPass->Height
             };
+        }
+        
+        if (renderPass == renderer->GetMainRenderPass())
+        {
+            renderer->EnsureDrawableAcquired();
         }
         
         m_CurrentRenderPassRenderer.Encoder = CommandBuffer->renderCommandEncoder(mtlRenderPass->PassDesc);
@@ -143,13 +149,22 @@ namespace HBL2
         m_CurrentEncoderStages = 0;
     }
 
-    ComputePassRenderer* MetalCommandBuffer::BeginComputePass(const Span<const Handle<Texture>>& texturesWrite, const Span<const Handle<Buffer>>& buffersWrite)
+    ComputePassRenderer* MetalCommandBuffer::BeginComputePass(const Span<const Handle<Texture>> texturesWrite, const Span<const Handle<Buffer>> buffersWrite, const Span<const Handle<Buffer>> buffersZero)
     {
-        m_CurrentComputePassRenderer.Encoder = CommandBuffer->computeCommandEncoder();
-        
-        m_BarrierTracker.Flush(m_CurrentComputePassRenderer.Encoder);
+        MetalResourceManager* rm = (MetalResourceManager*)ResourceManager::Instance;
 
+        m_CurrentComputePassRenderer.Encoder = CommandBuffer->computeCommandEncoder();        
+        m_BarrierTracker.Flush(m_CurrentComputePassRenderer.Encoder);
         m_CurrentEncoder = m_CurrentComputePassRenderer.Encoder;
+
+        for (auto buffer : buffersZero)
+        {
+            MetalBufferHot* mtlBuffer = rm->GetBufferHot(buffer);
+            m_CurrentComputePassRenderer.Encoder->fillBuffer(mtlBuffer->Buffer, NS::Range::Make(0, mtlBuffer->ByteSize), 0);
+
+            m_CurrentEncoder->barrierAfterEncoderStages(MTL::StageBlit, MTL::StageDispatch, MTL4::VisibilityOptionDevice);
+        }
+
         m_CurrentEncoderStages = MTL::StageDispatch | MTL::StageBlit;
         
         m_TexturesWrite = texturesWrite;
@@ -182,7 +197,6 @@ namespace HBL2
         
         if (m_Type == CommandBufferType::MAIN)
         {
-            renderer->EnsureDrawableAcquired();
             renderer->GetCommandQueue()->wait(renderer->GetCurrentSurface());
             
             renderer->GetCommandQueue()->commit(&CommandBuffer, 1);

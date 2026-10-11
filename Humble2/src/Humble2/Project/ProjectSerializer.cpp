@@ -28,8 +28,12 @@ namespace HBL2
 		out << YAML::Key << "Renderer" << YAML::Value;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Type" << YAML::Value << (int)spec.Settings.Renderer;
+
+		out << YAML::Key << "Script" << YAML::Value << spec.Settings.RendererUUID;
+
 		out << YAML::Key << "Editor API" << YAML::Value << (int)spec.Settings.EditorGraphicsAPI;
 		out << YAML::Key << "Runtime API" << YAML::Value << (int)spec.Settings.RuntimeGraphicsAPI;
+		out << YAML::Key << "Max Lights" << YAML::Value << (uint32_t)spec.Settings.MaxLights;
 		out << YAML::EndMap;
 
 		out << YAML::Key << "Physics2D" << YAML::Value;
@@ -151,8 +155,18 @@ namespace HBL2
 		}
 
 		spec.Settings.Renderer = (RendererType)data["Project"]["Renderer"]["Type"].as<int>();
+
+		if (data["Project"]["Renderer"]["Script"].IsDefined())
+		{
+			spec.Settings.RendererUUID = data["Project"]["Renderer"]["Script"].as<UUID>();
+		}
+
 		spec.Settings.EditorGraphicsAPI = (GraphicsAPI)data["Project"]["Renderer"]["Editor API"].as<int>();
 		spec.Settings.RuntimeGraphicsAPI = (GraphicsAPI)data["Project"]["Renderer"]["Runtime API"].as<int>();
+		if (data["Project"]["Renderer"]["Max Lights"].IsDefined())
+		{
+			spec.Settings.MaxLights = data["Project"]["Renderer"]["Max Lights"].as<uint32_t>();
+		}
 
 		spec.Settings.PhysicsEngine2DSpec.GravityForce = data["Project"]["Physics2D"]["Gravity Force"].as<glm::vec2>();
 		spec.Settings.EnableDebugDraw2D = data["Project"]["Physics2D"]["Enable Debug Draw"].as<bool>();

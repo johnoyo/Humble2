@@ -46,18 +46,20 @@ namespace HBL2::Editor
 		static constexpr int MaxCharBufferSize = 128;
 
 		char m_ShaderNameBuffer[MaxCharBufferSize] = "NewShader";
+		char m_MaterialNameBuffer[MaxCharBufferSize] = "NewMaterial";
 		char m_ScriptNameBuffer[MaxCharBufferSize] = "NewHelperScript";
+		char m_SceneRendererNameBuffer[MaxCharBufferSize] = "NewSceneRenderer";
 		char m_ComponentNameBuffer[MaxCharBufferSize] = "NewComponent";
 		char m_SystemNameBuffer[MaxCharBufferSize] = "NewSystem";
 		char m_SceneNameBuffer[MaxCharBufferSize] = "NewScene";
 		char m_FolderNameBuffer[MaxCharBufferSize] = "NewFolder";
 
 		uint32_t m_ShaderAssetHandlePacked = 0;
-		std::string m_MaterialNameBuffer = "New-Material";
 
 		bool m_OpenScriptSetupPopup = false;
 		bool m_OpenComponentSetupPopup = false;
 		bool m_OpenHelperScriptSetupPopup = false;
+		bool m_OpenSceneRendererSetupPopup = false;
 
 		bool m_OpenDeleteConfirmationWindow = false;
 		Handle<Asset> m_AssetToBeDeleted;

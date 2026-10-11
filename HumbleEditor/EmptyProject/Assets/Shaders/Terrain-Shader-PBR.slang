@@ -1,8 +1,14 @@
 // Common definitions
 
-struct Camera
+import lighting_common;
+
+extern struct LightProvider : ILightProvider;
+
+struct FrameData
 {
     float4x4 ViewProjection;
+    float4 ViewPosition;
+    float LightCount;
 };
 
 struct Object
@@ -10,19 +16,6 @@ struct Object
     float4x4 Model;
     float4x4 InverseModel;
     float4 Color;
-};
-
-struct Light
-{
-    float4 ViewPosition;
-    float4 Positions[16];
-    float4 Directions[16];
-    float4 Colors[16];
-    float4 Metadata[16];
-    float4 ShadowData[16];
-    float4x4 LightSpaceMatrices[16];
-    float4 TileUVRange[16];
-    float Count;
 };
 
 struct Material
@@ -40,10 +33,7 @@ struct Terrain
 };
 
 [[vk::binding(0, 0)]]
-ConstantBuffer<Camera> u_Camera;
-
-[[vk::binding(1, 0)]]
-ConstantBuffer<Light> u_Light;
+ConstantBuffer<FrameData> u_FrameData;
 
 [[vk::binding(2, 0)]]
 Sampler2D u_ShadowAltasMap;
@@ -97,7 +87,7 @@ VSOutput mainVS(VSInput input)
     output.v_Color = u_Material.Color * u_Object.Color;
     output.v_TextureCoord = input.a_TextureCoord;
     output.v_Normal = mul(u_Object.InverseModel, float4(input.a_Normal, 0.0)).xyz;
-    output.position = mul(u_Camera.ViewProjection, mul(u_Object.Model, float4(input.a_Position, 1.0)));
+    output.position = mul(u_FrameData.ViewProjection, mul(u_Object.Model, float4(input.a_Position, 1.0)));
 
     return output;
 }
@@ -106,6 +96,8 @@ VSOutput mainVS(VSInput input)
 
 struct PSInput
 {
+    float4 position : SV_Position;
+
     [[vk::location(0)]] float4 v_Color;
     [[vk::location(1)]] float3 v_Position;
     [[vk::location(2)]] float3 v_Normal;
@@ -125,6 +117,22 @@ static const float2 poissonDisk[16] =
 };
 
 static const float PI = 3.14159265359;
+
+static const float3 SKY_AMBIENT = float3(0.12, 0.14, 0.20);
+static const float3 GROUND_AMBIENT = float3(0.05, 0.04, 0.03);
+static const float AMBIENT_INTENSITY = 2.0;
+
+float DistanceWindow(float dist, float range)
+{
+    float r = saturate(dist / max(range, 1e-4));
+    float f = saturate(1.0 - r * r * r * r);
+    return f * f;
+}
+
+float PointAttenuation(float dist, float range)
+{
+    return DistanceWindow(dist, range) / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+}
 
 float CalculateAdaptiveNormalOffset(float3 normal, float3 lightDir, float baseOffset, float lightDistance)
 {
@@ -178,13 +186,25 @@ float ShadowCalculation(float4 fragPosLightSpace, float4 tileUVRange, int index,
     }
 
     float3 normal = normalize(input.v_Normal);
-    float3 lightPos = u_Light.Positions[index].xyz;
-    float3 lightDir = normalize(lightPos - input.v_Position);
-    float  lightDistance = length(lightPos - input.v_Position);
+    float3 lightDir;
+    float lightDistance;
 
-    float constantBias = u_Light.ShadowData[index].y;
-    float slopeBias = u_Light.ShadowData[index].z;
-    float baseNormalOffset = u_Light.ShadowData[index].w;
+    if (u_Light[index].Position.w == 0.0)
+    {
+        // For directional lights, parallel rays, so the position is irrelevant.
+        lightDir = normalize(-u_Light[index].Direction.xyz);
+        lightDistance = 0.0;
+    }
+    else
+    {
+        float3 toLight = u_Light[index].Position.xyz - input.v_Position;
+        lightDistance = length(toLight);
+        lightDir = toLight / lightDistance;
+    }
+
+    float constantBias = u_Light[index].ShadowData.y;
+    float slopeBias = u_Light[index].ShadowData.z;
+    float baseNormalOffset = u_Light[index].ShadowData.w;
 
     float adaptiveNormalOffset = CalculateAdaptiveNormalOffset(normal, lightDir, baseNormalOffset, lightDistance);
 
@@ -209,7 +229,7 @@ float ShadowCalculation(float4 fragPosLightSpace, float4 tileUVRange, int index,
     if (offsetWeight > 0.3)
     {
         float3 offsetWorldPos = input.v_Position + normal * adaptiveNormalOffset;
-        float4 offsetLightSpace = mul(u_Light.LightSpaceMatrices[index], float4(offsetWorldPos, 1.0));
+        float4 offsetLightSpace = mul(u_Light[index].LightSpaceMatrix, float4(offsetWorldPos, 1.0));
         float3 offsetNDC = offsetLightSpace.xyz / offsetLightSpace.w;
 
         float offsetU = offsetNDC.x * 0.5 + 0.5;
@@ -261,19 +281,16 @@ float3 getNormalFromMap(PSInput input)
     float3 tangentNormal = u_NormalMap.Sample(input.v_TextureCoord).xyz * 2.0 - 1.0;
 
     float3 Q1 = ddx(input.v_Position);
-    float3 Q2 = ddy(input.v_Position);
+    float3 Q2 = -ddy(input.v_Position);
     float2 st1 = ddx(input.v_TextureCoord);
-    float2 st2 = ddy(input.v_TextureCoord);
+    float2 st2 = -ddy(input.v_TextureCoord);
 
     float3 N = normalize(input.v_Normal);
-    float det = (st1.x * st2.y - st1.y * st2.x);
-    float signDet = det < 0.0 ? -1.0 : 1.0;
-
-    float3 T = normalize((Q1 * st2.y - Q2 * st1.y) * signDet);
-    float3 B = normalize((Q2 * st1.x - Q1 * st2.x) * signDet);
-
+    float3 T = normalize(Q1 * st2.y - Q2 * st1.y);
+    float3 B = -normalize(cross(N, T));
     float3x3 TBN = float3x3(T, B, N);
-    return normalize(mul(tangentNormal, TBN));
+
+    return normalize(mul(TBN, tangentNormal));
 }
 
 float DistributionGGX(float3 N, float3 H, float roughness)
@@ -326,82 +343,98 @@ static const float epsilon = 0.00001;
 [shader("fragment")]
 float4 mainPS(PSInput input) : SV_Target0
 {
-    float3 albedo = pow(u_AlbedoMap.Sample(input.v_TextureCoord).rgb, float3(2.2, 2.2, 2.2));
-    float metallic = u_MetallicMap.Sample(input.v_TextureCoord).r;
-    float roughness = u_RoughnessMap.Sample(input.v_TextureCoord).r;
+    LightQuery q = { input.position.xyz, uint(u_FrameData.LightCount) };
+    LightProvider provider;
+
+    // Apply vertex and material colors to linear albedo before lighting calculations.
+    // float3 albedo = pow(u_AlbedoMap.Sample(input.v_TextureCoord).rgb, float3(2.2, 2.2, 2.2)) * input.v_Color.rgb;
+    float3 albedo = u_AlbedoMap.Sample(input.v_TextureCoord).rgb * input.v_Color.rgb;
+    float metallic = saturate(u_MetallicMap.Sample(input.v_TextureCoord).r * u_Material.Metalicness);
+    float roughness = clamp(u_RoughnessMap.Sample(input.v_TextureCoord).r * u_Material.Roughness, 0.045, 1.0);
 
     float3 N = getNormalFromMap(input);
-    float3 V = normalize(u_Light.ViewPosition.xyz - input.v_Position);
+    float3 V = normalize(u_FrameData.ViewPosition.xyz - input.v_Position);
 
     float3 F0 = float3(0.04, 0.04, 0.04);
     F0 = lerp(F0, albedo, metallic);
 
     float3 Lo = float3(0.0, 0.0, 0.0);
-    for (int i = 0; i < int(u_Light.Count); ++i)
+
+    uint lightCount = provider.GetLightCount(q);
+
+    for (uint i = 0; i < lightCount; ++i)
     {
-        float lightIntensity = u_Light.Metadata[i].x;
-        float3 lightColor = u_Light.Colors[i].xyz;
+        uint lightIndex = provider.GetLightIndex(q, i);
+
+        uint lightType = uint(u_Light[lightIndex].Position.w);
+        float lightIntensity = u_Light[lightIndex].Metadata.x * 10.f;
+        float3 lightColor = u_Light[lightIndex].Color.xyz;
+        float lightRange = u_Light[lightIndex].Color.a;
+
+        float3 lightPos = u_Light[lightIndex].Position.xyz;
+        float distance = length(lightPos - input.v_Position);
+
+        // Skip point and spot lights that are out of range of the point being shaded.
+        if (lightType != 0 && lightRange > 0.0 && distance > lightRange)
+        {
+            continue;
+        }
 
         float3 L = float3(0.0, 0.0, 0.0);
         float attenuation = 1.0;
         bool lit = true;
         float shadow = 0.0;
 
-        if (u_Light.Positions[i].w == 0.0)
+        if (lightType == 0) // Directional Light
         {
-            L = normalize(-u_Light.Directions[i].xyz);
+            L = normalize(-u_Light[lightIndex].Direction.xyz);
             lit = (max(dot(N, L), 0.0) > 0.0);
 
-            if (u_Light.ShadowData[i].x == 1.0 && lit)
+            if (u_Light[lightIndex].ShadowData.x == 1.0 && lit)
             {
-                float4 fragPosLightSpace = mul(u_Light.LightSpaceMatrices[i], float4(input.v_Position, 1.0));
-                shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i, input);
+                float4 fragPosLightSpace = mul(u_Light[lightIndex].LightSpaceMatrix, float4(input.v_Position, 1.0));
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light[lightIndex].TileUVRange, lightIndex, input);
             }
         }
-        else if (u_Light.Positions[i].w == 1.0)
+        else if (lightType == 1) // Point Light
         {
-            float3 toLight = u_Light.Positions[i].xyz - input.v_Position;
-            float  distance = length(toLight);
+            float3 toLight = lightPos - input.v_Position;
             L = toLight / max(distance, 1e-6);
 
-            float constant = u_Light.Metadata[i].y;
-            float linear = u_Light.Metadata[i].z;
-            float quadratic = u_Light.Metadata[i].w;
-            attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
+            float constant = u_Light[lightIndex].Metadata.y;
+            float linear = u_Light[lightIndex].Metadata.z;
+            float quadratic = u_Light[lightIndex].Metadata.w;
+
+            attenuation = PointAttenuation(distance, lightRange);
 
             lit = (attenuation > 0.0) && (max(dot(N, L), 0.0) > 0.0);
 
-            if (u_Light.ShadowData[i].x == 1.0 && lit)
+            if (u_Light[lightIndex].ShadowData.x == 1.0 && lit)
             {
-                float4 fragPosLightSpace = mul(u_Light.LightSpaceMatrices[i], float4(input.v_Position, 1.0));
-                shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i, input);
+                float4 fragPosLightSpace = mul(u_Light[lightIndex].LightSpaceMatrix, float4(input.v_Position, 1.0));
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light[lightIndex].TileUVRange, lightIndex, input);
             }
         }
-        else if (u_Light.Positions[i].w == 2.0)
+        else if (lightType == 2) // Spot Light
         {
-            float3 toLight = u_Light.Positions[i].xyz - input.v_Position;
-            float  distance = length(toLight);
+            float3 toLight = lightPos - input.v_Position;
             L = toLight / max(distance, 1e-6);
 
-            float constant = 1.0;
-            float linear = 0.09;
-            float quadratic = 0.032;
-            attenuation = 1.0 / (constant + linear * distance + quadratic * distance * distance);
-
-            float innerCutoff = u_Light.Metadata[i].y;
-            float outerCutoff = u_Light.Metadata[i].z;
-            float theta = dot(L, normalize(-u_Light.Directions[i].xyz));
+            float innerCutoff = u_Light[lightIndex].Metadata.y;
+            float outerCutoff = u_Light[lightIndex].Metadata.z;
+            float theta = dot(L, normalize(-u_Light[lightIndex].Direction.xyz));
             float epsilon = max(innerCutoff - outerCutoff, 1e-6);
 
             float spotFactor = clamp((theta - outerCutoff) / epsilon, 0.0, 1.0);
-            attenuation *= spotFactor;
+
+            attenuation = PointAttenuation(distance, lightRange) * spotFactor;
 
             lit = (spotFactor > 0.0) && (attenuation > 0.0) && (max(dot(N, L), 0.0) > 0.0);
 
-            if (u_Light.ShadowData[i].x == 1.0 && lit)
+            if (u_Light[lightIndex].ShadowData.x == 1.0 && lit)
             {
-                float4 fragPosLightSpace = mul(u_Light.LightSpaceMatrices[i], float4(input.v_Position, 1.0));
-                shadow = ShadowCalculation(fragPosLightSpace, u_Light.TileUVRange[i], i, input);
+                float4 fragPosLightSpace = mul(u_Light[lightIndex].LightSpaceMatrix, float4(input.v_Position, 1.0));
+                shadow = ShadowCalculation(fragPosLightSpace, u_Light[lightIndex].TileUVRange, lightIndex, input);
             }
         }
 
@@ -410,7 +443,7 @@ float4 mainPS(PSInput input) : SV_Target0
             continue;
         }
 
-        float  visibility = 1.0 - clamp(shadow, 0.0, 1.0);
+        float visibility = 1.0 - clamp(shadow, 0.0, 1.0);
         float3 radiance = lightColor * attenuation * lightIntensity * visibility;
 
         float3 H = normalize(V + L);
@@ -431,7 +464,10 @@ float4 mainPS(PSInput input) : SV_Target0
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 
-    float3 ambient = float3(0.015, 0.015, 0.015) * albedo;
+    float up = N.y * 0.5 + 0.5; // world is Y-up.
+    float3 ambientLight = lerp(GROUND_AMBIENT, SKY_AMBIENT, up) * AMBIENT_INTENSITY;
+    float3 ambient = ambientLight * albedo * (1.0 - metallic);
+
     float3 color = ambient + Lo;
 
     float minHeight = 0.0;
@@ -448,11 +484,5 @@ float4 mainPS(PSInput input) : SV_Target0
 
     color = color * terrainColor;
 
-    // HDR tonemapping
-    color = color / (color + float3(1.0, 1.0, 1.0));
-
-    // Gamma correct
-    color = pow(color, float3(1.0 / 2.2, 1.0 / 2.2, 1.0 / 2.2));
-
-    return float4(color * input.v_Color.rgb, 1.0);
+    return float4(color, 1.0);
 }

@@ -74,13 +74,15 @@ namespace HBL2
 
 	using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
 
-	void ForwardSceneRenderer::Initialize(Scene* scene)
+	void ForwardSceneRenderer::Initialize(Scene* scene, uint32_t maxLights)
 	{
+		m_MaxLights = maxLights;
 		uint32_t maxEntities = scene->GetDescriptor().maxEntities;
 
-		// Calculate space needed for the 8 draw lists per frame in flight.
+		// Calculate space needed for the 7 draw lists and 1 light buffer per frame in flight.
 		uint64_t totalBytes = ArenaLayout::Create()
-			.Add<LocalDrawStream>(Renderer::Instance->FrameCount * 8 * maxEntities)
+			.Add<LocalDrawStream>(Renderer::Instance->FrameCount * 7 * maxEntities)
+			.Add<Light>(Renderer::Instance->FrameCount * maxLights)
 			.Total();
 
 		m_Reservation = Allocator::Arena.Reserve("ForwardSceneRendererPool", totalBytes);
@@ -88,9 +90,11 @@ namespace HBL2
 
 		for (auto& sceneRenderData : m_RenderData)
 		{
+			sceneRenderData.m_LightData = FixedArray<Light>(&m_Arena, maxLights);
+			sceneRenderData.m_LightData.resize(maxLights);
+
 			sceneRenderData.m_PrePassSpriteDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_PrePassStaticMeshDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_ShadowPassSpriteDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_ShadowPassStaticMeshDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_SpriteOpaqueDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_SpriteTransparentDraws.Initialize(m_Arena, maxEntities);
@@ -104,40 +108,8 @@ namespace HBL2
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 
-		// Create color render pass.
-		m_RenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
-			.debugName = "main-renderpass-layout",
-			.depthTargetFormat = Format::D32_FLOAT,
-			.subPasses = {
-				{ .depthTarget = true, .colorTargets = 1, },
-			},
-		});
-
-		// Create depth only render pass layout.
-		m_DepthOnlyRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
-			.debugName = "pre-pass-renderpass-layout",
-			.depthTargetFormat = Format::D32_FLOAT,
-			.subPasses = {
-				{ .depthTarget = true },
-			},
-		});
-
-		// Create pre-pass bind groups.
-		m_DepthOnlyMeshBindGroup = ResourceManager::Instance->CreateBindGroup({
-			.debugName = "pre-pass-mesh-bind-group",
-			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
-			.buffers = {
-				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawData) },
-			}
-		});
-
-		m_DepthOnlySpriteBindGroup = ResourceManager::Instance->CreateBindGroup({
-			.debugName = "pre-pass-sprite-bind-group",
-			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
-			.buffers = {
-				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawDataSprite) },
-			}
-		});
+		RenderPassSetup();
+		BindingsSetup();
 
 		// Setup render passes.
 		ShadowPassSetup();
@@ -151,7 +123,7 @@ namespace HBL2
 
 	void ForwardSceneRenderer::Gather(Entity mainCamera)
 	{
-		SceneRenderData* sceneRenderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
+		ForwardSceneRenderData* sceneRenderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
 
 		GetViewProjection(sceneRenderData, mainCamera);
 
@@ -163,13 +135,13 @@ namespace HBL2
 	{
         BEGIN_PROFILE_PASS();
         
-		SceneRenderData* sceneRenderData = (SceneRenderData*)renderData;
+		ForwardSceneRenderData* sceneRenderData = (ForwardSceneRenderData*)renderData;
 		UniformRingBuffer* uniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 		ResourceManager* rm = ResourceManager::Instance;
 
 		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
 		rm->MapBufferData(uniformRingBuffer->GetBuffer(), sceneRenderData->m_UBOStartingOffset, sceneRenderData->m_UBOEndingOffset - sceneRenderData->m_UBOStartingOffset);
-
+		
 		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
@@ -215,7 +187,8 @@ namespace HBL2
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
 
 		m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
-		m_ResourceManager->DeleteRenderPass(m_ShadowRenderPass);
+        m_ResourceManager->DeleteRenderPass(m_ShadowRenderPassClear);
+		m_ResourceManager->DeleteRenderPass(m_ShadowRenderPassLoad);
 		m_ResourceManager->DeleteShader(m_ShadowPrePassShader);
 		m_ResourceManager->DeleteMaterial(m_ShadowPrePassMaterial);
 
@@ -287,6 +260,19 @@ namespace HBL2
 		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
 		m_ResourceManager->DeleteShader(m_PresentShader);
 		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
+
+		m_ShadowBindingsLayout.Release();
+		m_GlobalBindingsLayout2D.Release();
+		m_GlobalBindingsLayout3D.Release();
+
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			m_ResourceManager->DeleteBuffer(m_RenderData[i].LightSpaceBuffer);
+
+			m_ResourceManager->DeleteBindGroup(m_RenderData[i].ShadowBindings);
+			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindings2D);
+			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindings3D);
+		}
 	}
 
 	void* ForwardSceneRenderer::GetRenderData()
@@ -294,12 +280,174 @@ namespace HBL2
 		return &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
 	}
 
+	void ForwardSceneRenderer::RenderPassSetup()
+	{
+		// Create color render pass.
+		m_RenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
+			.debugName = "main-renderpass-layout",
+			.depthTargetFormat = Format::D32_FLOAT,
+			.subPasses = {
+				{.depthTarget = true, .colorTargets = 1, },
+			},
+		});
+
+		// Create depth only render pass layout.
+		m_DepthOnlyRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
+			.debugName = "pre-pass-renderpass-layout",
+			.depthTargetFormat = Format::D32_FLOAT,
+			.subPasses = {
+				{.depthTarget = true },
+			},
+		});
+	}
+
+	void ForwardSceneRenderer::BindingsSetup()
+	{
+		// Global bindings layout for the 2D rendering.
+		m_GlobalBindingsLayout2D = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "global-bind-group-layout-2d",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = { ShaderStage::VERTEX },
+					.type = BufferBindingType::UNIFORM,
+				},
+			},
+		});
+
+		// Global bindings layout for the 3D rendering.
+		m_GlobalBindingsLayout3D = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "global-bind-group-layout-3d",
+			.textureBindings = {
+				{
+					.slot = 2,
+					.visibility = { ShaderStage::FRAGMENT },
+					.type = TextureBindingType::COMBINED_IMAGE_SAMPLER,
+				},
+			},
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = { ShaderStage::VERTEX, ShaderStage::FRAGMENT },
+					.type = BufferBindingType::UNIFORM,
+				},
+				{
+					.slot = 1,
+					.visibility = { ShaderStage::FRAGMENT },
+					.type = BufferBindingType::READ_ONLY_STORAGE,
+				},
+			},
+		});
+
+		// Bindings layout for shadow rendering.
+		m_ShadowBindingsLayout = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "shadow-bindings-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = { ShaderStage::VERTEX },
+					.type = BufferBindingType::UNIFORM_DYNAMIC_OFFSET,
+				},
+			},
+		});
+
+		// Global bindings for the 3D rendering.
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			auto frameBuffer3D = m_ResourceManager->CreateBuffer({
+				.debugName = "frame-uniform-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = sizeof(FrameData),
+				.initialData = nullptr,
+			});
+
+			auto lightBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "light-ssbo",
+				.usage = BufferUsage::STORAGE,
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = (uint32_t)sizeof(Light) * m_MaxLights,
+				.initialData = nullptr,
+			});
+
+			m_RenderData[i].GlobalBindings3D = m_ResourceManager->CreateBindGroup({
+				.debugName = "global-bind-group",
+				.layout = m_GlobalBindingsLayout3D.Get(),
+				.textures = { { Renderer::Instance->ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY } },
+				.buffers = {
+					{ .buffer = frameBuffer3D },
+					{ .buffer = lightBuffer },
+				}
+			});
+		}
+
+		// Global bindings for the 2D rendering.
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			auto cameraBuffer2D = m_ResourceManager->CreateBuffer({
+				.debugName = "camera-uniform-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = 64,
+				.initialData = nullptr,
+			});
+
+			m_RenderData[i].GlobalBindings2D = m_ResourceManager->CreateBindGroup({
+				.debugName = "unlit-colored-bind-group",
+				.layout = m_GlobalBindingsLayout2D.Get(),
+				.buffers = {
+					{.buffer = cameraBuffer2D },
+				}
+			});
+		}
+
+		// Bindings for shadow rendering.
+		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
+		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), (uint32_t)uniformOffset);
+
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			m_RenderData[i].LightSpaceBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "light-space-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = g_MaxTiles * alignedSize,
+				.initialData = nullptr
+			});
+
+			m_RenderData[i].ShadowBindings = m_ResourceManager->CreateBindGroup({
+				.debugName = "shadow-bind-group",
+				.layout = m_ShadowBindingsLayout.Get(),
+				.buffers = {
+					{ .buffer = m_RenderData[i].LightSpaceBuffer, .range = sizeof(glm::mat4) },
+				}
+			});
+		}
+
+		// Create pre-pass bind groups.
+		m_DepthOnlyMeshBindGroup = ResourceManager::Instance->CreateBindGroup({
+			.debugName = "pre-pass-mesh-bind-group",
+			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
+			.buffers = {
+				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawData) },
+			}
+		});
+
+		m_DepthOnlySpriteBindGroup = ResourceManager::Instance->CreateBindGroup({
+			.debugName = "pre-pass-sprite-bind-group",
+			.layout = Renderer::Instance->GetDynamicBindingsLayout(),
+			.buffers = {
+				{ .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = sizeof(PerDrawDataSprite) },
+			}
+		});
+	}
+
 	// Pass setup.
 	void ForwardSceneRenderer::ShadowPassSetup()
 	{
 		// Create shadow framebuffer.
-		m_ShadowRenderPass = m_ResourceManager->CreateRenderPass({
-			.debugName = "shadow-load-renderpass",
+		m_ShadowRenderPassClear = m_ResourceManager->CreateRenderPass({
+			.debugName = "shadow-clear-renderpass",
 			.layout = m_DepthOnlyRenderPassLayout,
 			.depthTarget = {
 				.loadOp = LoadOperation::CLEAR,
@@ -309,15 +457,33 @@ namespace HBL2
 				.prevUsage = TextureLayout::UNDEFINED,
 				.nextUsage = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
 			},
+			.frameBufferDesc = {
+				.width = g_ShadowAtlasSize,
+				.height = g_ShadowAtlasSize,
+				.depthTarget = Renderer::Instance->ShadowAtlasTexture,
+			}
+		});
+        
+        m_ShadowRenderPassLoad = m_ResourceManager->CreateRenderPass({
+            .debugName = "shadow-load-renderpass",
+            .layout = m_DepthOnlyRenderPassLayout,
+            .depthTarget = {
+                .loadOp = LoadOperation::LOAD,
+                .storeOp = StoreOperation::STORE,
+                .stencilLoadOp = LoadOperation::DONT_CARE,
+                .stencilStoreOp = StoreOperation::DONT_CARE,
+                .prevUsage = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
+                .nextUsage = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
+            },
             .frameBufferDesc = {
                 .width = g_ShadowAtlasSize,
                 .height = g_ShadowAtlasSize,
                 .depthTarget = Renderer::Instance->ShadowAtlasTexture,
             }
-		});
+        });
 
 		// Create shadow pre-pass shader.
-		const auto& shadowPrePassShaderData = ShaderUtilities::Get().Compile("assets/shaders/shadow-mapping-pre-pass.slang", (ShaderReflectionData*)nullptr);
+		const auto& shadowPrePassShaderData = ShaderUtilities::Get().Compile("assets/shaders/shadow-mapping-pre-pass.slang", (ShaderReflectionData*)nullptr, false);
 
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.colorOutput = false;
@@ -331,7 +497,7 @@ namespace HBL2
 			.VS { .code = shadowPrePassShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = shadowPrePassShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				Renderer::Instance->GetShadowBindingsLayout(),	// Global bind group (0)
+				m_ShadowBindingsLayout.Get(),					// Global bind group (0)
 				Renderer::Instance->GetEmptyBindingsLayout(),	// Unused (1)
 				Renderer::Instance->GetEmptyBindingsLayout(),	// Unused (2)
 				Renderer::Instance->GetDynamicBindingsLayout(), // (3)
@@ -349,7 +515,7 @@ namespace HBL2
 				},
 				.variants = { variant },
 			},
-			.renderPass = m_ShadowRenderPass,
+			.renderPass = m_ShadowRenderPassClear,
 		});
 
 		// Create shadow pre-pass material.
@@ -396,7 +562,7 @@ namespace HBL2
 		});
 
 		// Create pre-pass shaders.
-		const auto& prePassShaderData = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-mesh.slang", (ShaderReflectionData*)nullptr);
+		const auto& prePassShaderData = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-mesh.slang", (ShaderReflectionData*)nullptr, false);
 
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.colorOutput = false;
@@ -409,7 +575,7 @@ namespace HBL2
 			.VS { .code = prePassShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = prePassShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
+				m_GlobalBindingsLayout2D.Get(),						// Global bind group (0)
 				Renderer::Instance->GetEmptyBindingsLayout(),		// Unused (1)
 				Renderer::Instance->GetEmptyBindingsLayout(),		// Unused (2)
 				Renderer::Instance->GetDynamicBindingsLayout(),		// (3)
@@ -430,14 +596,14 @@ namespace HBL2
 			.renderPass = m_DepthOnlyRenderPass,
 		});
 
-		const auto& prePassSpriteShaderData = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-sprite.slang", (ShaderReflectionData*)nullptr);
+		const auto& prePassSpriteShaderData = ShaderUtilities::Get().Compile("assets/shaders/depth-pre-pass-sprite.slang", (ShaderReflectionData*)nullptr, false);
 
 		m_DepthOnlySpriteShader = ResourceManager::Instance->CreateShader({
 			.debugName = "sprite-pre-pass-shader",
 			.VS { .code = prePassSpriteShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = prePassSpriteShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				Renderer::Instance->GetGlobalBindingsLayout2D(),	// Global bind group (0)
+				m_GlobalBindingsLayout2D.Get(),						// Global bind group (0)
 				Renderer::Instance->GetEmptyBindingsLayout(),		// Unused (1)
 				Renderer::Instance->GetEmptyBindingsLayout(),		// Unused (2)
 				Renderer::Instance->GetDynamicBindingsLayout(),		// (3)
@@ -567,7 +733,7 @@ namespace HBL2
 		});
 
 		// Compile compute shader.
-        const auto& compilationData = ShaderUtilities::Get().Compile("assets/shaders/equirectangular-to-skybox.slang", nullptr);
+        const auto& compilationData = ShaderUtilities::Get().Compile("assets/shaders/equirectangular-to-skybox.slang", nullptr, false);
         
 		// Create compute bind group layout.
 		m_EquirectToSkyboxBindGroupLayout = m_ResourceManager->CreateBindGroupLayout({
@@ -575,19 +741,19 @@ namespace HBL2
 			.textureBindings = {
 				{
 					.slot = 0,
-					.visibility = ShaderStage::COMPUTE,
-					.type = TextureBindingType::IMAGE_SAMPLER,
+					.visibility = { ShaderStage::COMPUTE },
+					.type = TextureBindingType::COMBINED_IMAGE_SAMPLER,
 				},
 				{
 					.slot = 1,
-					.visibility = ShaderStage::COMPUTE,
+					.visibility = { ShaderStage::COMPUTE },
 					.type = TextureBindingType::STORAGE_IMAGE,
 				},
 			},
 			.bufferBindings = {
 				{
 					.slot = 2,
-					.visibility = ShaderStage::COMPUTE,
+					.visibility = { ShaderStage::COMPUTE },
 					.type = BufferBindingType::UNIFORM,
 				},
 			},
@@ -613,8 +779,8 @@ namespace HBL2
 			.textureBindings = {
 				{
 					.slot = 0,
-					.visibility = ShaderStage::FRAGMENT,
-					.type = TextureBindingType::IMAGE_SAMPLER,
+					.visibility = { ShaderStage::FRAGMENT },
+					.type = TextureBindingType::COMBINED_IMAGE_SAMPLER,
 				},
 			},
 		});
@@ -625,7 +791,7 @@ namespace HBL2
 			.bufferBindings = {
 				{
 					.slot = 0,
-					.visibility = ShaderStage::VERTEX,
+					.visibility = { ShaderStage::VERTEX },
 					.type = BufferBindingType::UNIFORM,
 				},
 			},
@@ -634,7 +800,6 @@ namespace HBL2
 		auto cameraBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "skybox-camera-uniform-buffer",
 			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::GPU_CPU,
 			.byteSize = 64,
 			.initialData = nullptr,
@@ -649,12 +814,13 @@ namespace HBL2
 		});
 
 		// Create skybox shader.
-		const auto& skyboxShaderData = ShaderUtilities::Get().Compile("assets/shaders/skybox.slang", (ShaderReflectionData*)nullptr);
+		const auto& skyboxShaderData = ShaderUtilities::Get().Compile("assets/shaders/skybox.slang", (ShaderReflectionData*)nullptr, false);
 
 		m_SkyboxVariant.blendEnabled = false;
 		m_SkyboxVariant.depthWrite = false;
 		m_SkyboxVariant.depthCompare = (packed_size)Compare::LESS_OR_EQUAL;
 		m_SkyboxVariant.cullMode = (packed_size)CullMode::FRONT;
+		m_SkyboxVariant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 		m_SkyboxShader = ResourceManager::Instance->CreateShader({
 			.debugName = "skybox-shader",
@@ -739,12 +905,12 @@ namespace HBL2
 	void ForwardSceneRenderer::PostProcessPassSetup()
 	{
 		float* vertexBuffer = new float[24] {
-			-1.0, -1.0, 0.0, 0.0, // Bottom left
-			 1.0, -1.0, 1.0, 0.0, // Bottom right
-			 1.0,  1.0, 1.0, 1.0, // Top right
-			 1.0,  1.0, 1.0, 1.0, // Top right
-			-1.0,  1.0, 0.0, 1.0, // Top left
-			-1.0, -1.0, 0.0, 0.0  // Bottom left
+			-1.0, -1.0, 0.0, 1.0, // Bottom left
+			 1.0, -1.0, 1.0, 1.0, // Bottom right
+			 1.0,  1.0, 1.0, 0.0, // Top right
+			 1.0,  1.0, 1.0, 0.0, // Top right
+			-1.0,  1.0, 0.0, 0.0, // Top left
+			-1.0, -1.0, 0.0, 1.0  // Bottom left
 		};
 
 		m_PostProcessQuadVertexBuffer = m_ResourceManager->CreateBuffer({
@@ -758,7 +924,6 @@ namespace HBL2
 		m_PostProcessBuffer = m_ResourceManager->CreateBuffer({
 			.debugName = "camera-settings-buffer",
 			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
 			.byteSize = sizeof(CameraSettings),
 		});
 
@@ -768,13 +933,13 @@ namespace HBL2
 			.textureBindings = {
 				{
 					.slot = 0,
-					.visibility = ShaderStage::FRAGMENT,
+					.visibility = { ShaderStage::FRAGMENT },
 				},
 			},
 			.bufferBindings = {
 				{
 					.slot = 1,
-					.visibility = ShaderStage::FRAGMENT,
+					.visibility = { ShaderStage::FRAGMENT },
 					.type = BufferBindingType::UNIFORM,
 				},
 			},
@@ -833,7 +998,6 @@ namespace HBL2
 			m_PostProcessBuffer = m_ResourceManager->CreateBuffer({
 				.debugName = "camera-settings-buffer",
 				.usage = BufferUsage::UNIFORM,
-				.usageHint = BufferUsageHint::DYNAMIC,
 				.byteSize = sizeof(CameraSettings),
 			});
 
@@ -850,12 +1014,12 @@ namespace HBL2
 		});
 
 		// Create pre-pass shaders.
-		const auto& postProcessShaderData = ShaderUtilities::Get().Compile("assets/shaders/post-process-tone-mapping.slang", (ShaderReflectionData*)nullptr);
+		const auto& postProcessShaderData = ShaderUtilities::Get().Compile("assets/shaders/post-process-tone-mapping.slang", (ShaderReflectionData*)nullptr, false);
 
 		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
 		variant.blendEnabled = false;
 		variant.depthWrite = false;
-		variant.frontFace = (packed_size)FrontFace::CLOCKWISE;
+		variant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 		m_PostProcessShader = ResourceManager::Instance->CreateShader({
 			.debugName = "post-process-shader",
@@ -883,10 +1047,6 @@ namespace HBL2
 		m_PostProcessShaderVariantHash = variant;
 	}
 
-	void ForwardSceneRenderer::DebugPassSetup()
-	{
-	}
-
 	void ForwardSceneRenderer::PresentPassSetup()
 	{
 		float* vertexBuffer = new float[24] {
@@ -909,10 +1069,10 @@ namespace HBL2
 		variant.blendEnabled = false;
 		variant.depthEnabled = false;
 		variant.depthWrite = true;
-		variant.frontFace = (packed_size)FrontFace::CLOCKWISE;
+		variant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 		// Compile present shaders.
-		const auto& presentShaderData = ShaderUtilities::Get().Compile("assets/shaders/present.slang", (ShaderReflectionData*)nullptr);
+		const auto& presentShaderData = ShaderUtilities::Get().Compile("assets/shaders/present.slang", (ShaderReflectionData*)nullptr, false);
 
 		// Create present bind group layout.
 		m_PresentShader = ResourceManager::Instance->CreateShader({
@@ -947,7 +1107,7 @@ namespace HBL2
 	}
 
 	// Gathering.
-	void ForwardSceneRenderer::GatherDraws(SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::GatherDraws(ForwardSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1179,49 +1339,64 @@ namespace HBL2
 		}
 	}
 
-	void ForwardSceneRenderer::GatherLights(SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::GatherLights(ForwardSceneRenderData* sceneRenderData)
 	{
-		sceneRenderData->m_LightData.LightCount = 0;
-
+		int lightIndex = 0;
 		m_Scene->Filter<Component::Light, Component::Transform>()
 			.ForEach([&](Component::Light& light, Component::Transform& transform)
 			{
 				if (light.Enabled)
 				{
+					Light& data = sceneRenderData->m_LightData[lightIndex];
+					data = {};
+
 					float lightType = 0.0f;
+					float lightRange = 1.0f;
 
 					const Attenuation& attenuation = GetClosestAttenuation(light.Distance);
 
-					int lightIndex = (int)sceneRenderData->m_LightData.LightCount;
-
-					sceneRenderData->m_LightData.LightShadowData[lightIndex].x = light.CastsShadows ? 1.0f : 0.0f;
+					sceneRenderData->m_LightData[lightIndex].LightShadowData.x = light.CastsShadows ? 1.0f : 0.0f;
 
 					switch (light.Type)
 					{
 					case Component::Light::EType::Directional:
 						lightType = 0.0f;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].y = light.ConstantBias;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].z = light.SlopeBias;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].w = light.NormalOffsetScale;
+						data.LightShadowData.y = light.ConstantBias;
+						data.LightShadowData.z = light.SlopeBias;
+						data.LightShadowData.w = light.NormalOffsetScale;
+
+						data.Metadata.x = light.Intensity;
+
 						break;
 					case Component::Light::EType::Point:
 						lightType = 1.0f;
-						sceneRenderData->m_LightData.LightMetadata[lightIndex].y = attenuation.constant;
-						sceneRenderData->m_LightData.LightMetadata[lightIndex].z = attenuation.linear;
-						sceneRenderData->m_LightData.LightMetadata[lightIndex].w = attenuation.quadratic;
+						data.Metadata.y = attenuation.constant;
+						data.Metadata.z = attenuation.linear;
+						data.Metadata.w = attenuation.quadratic;
 
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].y = light.ConstantBias;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].z = light.SlopeBias;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].w = light.NormalOffsetScale;
+						lightRange = light.Distance;
+
+						data.LightShadowData.y = light.ConstantBias;
+						data.LightShadowData.z = light.SlopeBias;
+						data.LightShadowData.w = light.NormalOffsetScale;
+
+						data.Metadata.x = light.Intensity;
+
 						break;
 					case Component::Light::EType::Spot:
 						lightType = 2.0f;
-						sceneRenderData->m_LightData.LightMetadata[lightIndex].y = glm::cos(glm::radians(light.InnerCutOff));
-						sceneRenderData->m_LightData.LightMetadata[lightIndex].z = glm::cos(glm::radians(light.OuterCutOff));
+						data.Metadata.y = glm::cos(glm::radians(light.InnerCutOff));
+						data.Metadata.z = glm::cos(glm::radians(light.OuterCutOff));
+						data.Metadata.w = light.OuterCutOff;
 
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].y = light.ConstantBias;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].z = light.SlopeBias;
-						sceneRenderData->m_LightData.LightShadowData[lightIndex].w = light.NormalOffsetScale;
+						lightRange = light.Distance;
+
+						data.LightShadowData.y = light.ConstantBias;
+						data.LightShadowData.z = light.SlopeBias;
+						data.LightShadowData.w = light.NormalOffsetScale;
+
+						data.Metadata.x = light.Intensity;
+
 						break;
 					}
 
@@ -1229,54 +1404,83 @@ namespace HBL2
 					glm::vec3 rotationRadians = glm::radians(transform.Rotation);
 					glm::mat4 localRotation = glm::eulerAngleYXZ(rotationRadians.y, rotationRadians.x, rotationRadians.z);
 					glm::vec3 localForward = glm::vec3(0.0f, -1.0f, 0.0f);
-					glm::vec4 rotatedDirection = localRotation * glm::vec4(localForward, 0.0f); // w = 0 to avoid translation
-					glm::mat3 worldRotation = glm::mat3(transform.WorldMatrix);// Extract rotation part of world matrix (3x3)
-					glm::vec3 worldDirection = glm::normalize(worldRotation * glm::vec3(rotatedDirection));
+					glm::vec3 worldDirection = glm::normalize(glm::mat3(transform.WorldMatrix) * glm::vec3(localRotation * glm::vec4(localForward, 0.0f)));
 
-					float near_plane = 0.1f, far_plane = 1000.0f;
-					//glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-					glm::mat4 lightProjection = glm::perspectiveRH_ZO(light.FieldOfView, 1.0f, near_plane, far_plane);
+					glm::vec3 lightDir = worldDirection;
+					glm::vec3 lightPos = glm::vec3(transform.WorldMatrix[3]);
+					glm::vec3 lightUp = glm::abs(lightDir.y) > 0.99f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
 
-					glm::vec3 lightPos = glm::vec3(transform.WorldMatrix * glm::vec4(0.0, 0.0, 0.0, 1.0));
-					glm::vec3 lightDir = normalize(worldDirection);
-					glm::vec3 lightTarget = lightPos + lightDir; // look towards this point
+					glm::mat4 lightView, lightProjection;
 
-					// Choose an up vector thats not colinear with your direction:
-					glm::vec3 lightUp = glm::abs(glm::dot(lightDir, glm::vec3(0, 1, 0))) > 0.99f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
-
-					// If your light direction is nearly parallel to up, pick a different up vector:
-					if (fabs(glm::dot(lightDir, lightUp)) > 0.99f)
+					if (light.Type == Component::Light::EType::Directional)
 					{
-						lightUp = glm::vec3(1.0f, 0.0f, 0.0f);
+						// Half-size of the area covered by the shadow map.
+						const float extent = light.FieldOfView;
+
+						// How far back along -lightDir the eye sits.
+						const float distance = 100.0f;
+
+						glm::vec3 focus;
+
+						if (light.FollowMainCamera)
+						{
+							// Center the shadow volume on the camera so shadows follow the player.
+							focus = glm::vec3(sceneRenderData->m_FrameData.ViewPosition);
+						}
+						else
+						{
+							focus = lightPos;
+						}
+
+						glm::vec3 eye = focus - lightDir * distance;
+
+						lightView = glm::lookAt(eye, focus, lightUp);
+						lightProjection = glm::orthoRH_ZO(-extent, extent, -extent, extent, 0.1f, 1000.0f);
+					}
+					else
+					{
+						lightView = glm::lookAt(lightPos, lightPos + lightDir, lightUp);
+						lightProjection = glm::perspectiveRH_ZO(light.FieldOfView, 1.0f, 0.1f, 1000.0f);
 					}
 
-					glm::mat4 lightView = glm::lookAt(lightPos, lightTarget, lightUp);
+					data.Position = glm::vec4(lightPos, lightType);
+					data.Direction = glm::vec4(worldDirection, 0.0f);
+					data.Color = glm::vec4(light.Color, lightRange);
+					data.LightSpaceMatrix = lightProjection * lightView;
 
-					sceneRenderData->m_LightData.LightPositions[lightIndex] = transform.WorldMatrix * glm::vec4(transform.Translation, 1.0f);
-					sceneRenderData->m_LightData.LightPositions[lightIndex].w = lightType;
-					sceneRenderData->m_LightData.LightDirections[lightIndex] = glm::vec4(worldDirection, 0.0f);
-					sceneRenderData->m_LightData.LightMetadata[lightIndex].x = light.Intensity;
-					sceneRenderData->m_LightData.LightColors[lightIndex] = glm::vec4(light.Color, 1.0f);
-					sceneRenderData->m_LightData.LightSpaceMatrices[lightIndex] = lightProjection * lightView;
-					sceneRenderData->m_LightData.LightCount++;
+					lightIndex++;
 				}
 			});
+
+		sceneRenderData->m_FrameData.LightCount = lightIndex;
+		Renderer::Instance->GetStats().Lights = lightIndex;
 	}
 
 	// Pass rendering.
-	void ForwardSceneRenderer::ShadowPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::ShadowPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
-		uint32_t index = 0;
+		uint32_t lightIndex = 0;
+		uint32_t shadowCastingLightIndex = 0;
 
+		// Combine all light space matrices into one buffer with correct minimum alignment.
 		uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
 		uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), (uint32_t)uniformOffset);
 
-		CreateAlignedMatrixArray(sceneRenderData, sceneRenderData->m_LightData.LightSpaceMatrices, 16, alignedSize);
+		ScratchArena scratch(Allocator::FrameArenaRT);
 
-		Handle<BindGroup> globalBindings = Renderer::Instance->GetShadowBindings();
-		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)sceneRenderData->m_LightSpaceMatricesData.data());
+		uint8_t* lightSpaceMatricesBuffer = (uint8_t*)scratch.Alloc(g_MaxTiles * alignedSize);
+		std::memset(lightSpaceMatricesBuffer, 0, g_MaxTiles * alignedSize);
+
+		for (size_t i = 0; i < g_MaxTiles; ++i)
+		{
+			size_t offset = i * alignedSize;
+			std::memcpy(lightSpaceMatricesBuffer + offset, &(sceneRenderData->m_LightData[(uint32_t)i].LightSpaceMatrix), sizeof(glm::mat4));
+		}
+
+		Handle<BindGroup> globalShadowBindings = GetShadowBindings();
+		ResourceManager::Instance->SetBufferData(globalShadowBindings, 0, (void*)lightSpaceMatricesBuffer);
 
 		m_Scene->Filter<Component::Light, Component::Transform>()
 			.ForEach([&](Component::Light& light, Component::Transform& transform)
@@ -1292,26 +1496,31 @@ namespace HBL2
 							return; // NOTE: Exceeded max number of shadow casting lights!
 						}
 
-						sceneRenderData->m_LightData.TileUVRange[index] = tile.GetUVRange();
+						sceneRenderData->m_LightData[lightIndex].TileUVRange = tile.GetUVRange();
 
 						uint32_t tileX = tile.x * g_TileSize;
 						uint32_t tileY = tile.y * g_TileSize;
 
-						RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_ShadowRenderPass, { tileX, tileY, g_TileSize, g_TileSize });
+                        auto renderPass = (shadowCastingLightIndex == 0) ? m_ShadowRenderPassClear : m_ShadowRenderPassLoad;
+                        
+						auto* passRenderer = commandBuffer->BeginRenderPass(renderPass, { tileX, tileY, g_TileSize, g_TileSize });
 
 						GlobalDrawStream globalDrawStream =
 						{
-							.BindGroup = globalBindings,
+							.BindGroup = globalShadowBindings,
 							.GlobalBufferSize = alignedSize,
-							.GlobalBufferOffset = index * alignedSize,
+							.GlobalBufferOffset = shadowCastingLightIndex * alignedSize,
 							.UsesDynamicOffset = true,
 						};
+
 						passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_ShadowPassStaticMeshDraws);
 
 						commandBuffer->EndRenderPass(*passRenderer);
+
+						shadowCastingLightIndex++;
 					}
 
-					index++;
+					lightIndex++;
 				}
 			});
 
@@ -1327,24 +1536,24 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().ShadowPassTime);
 	}
 
-	void ForwardSceneRenderer::DepthPrePass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::DepthPrePass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DepthOnlyRenderPass);
 
-		Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
+		Handle<BindGroup> globalBindings = GetGlobalBindings2D();
 
 		// Depth only pre pass for opaque static meshes.
 		{
-			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassStaticMeshDraws);
 		}
 
 		// Depth only pre pass for opaque sprites.
 		{
-			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassSpriteDraws);
 		}
@@ -1354,7 +1563,7 @@ namespace HBL2
         END_PROFILE_PASS(Renderer::Instance->GetStats().PrePassTime);
     }
 
-    void ForwardSceneRenderer::GeometryPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData, RenderPassPool& renderPassPool)
+    void ForwardSceneRenderer::GeometryPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData, RenderPassPool& renderPassPool)
     {
         ScratchArena scratch(Allocator::FrameArenaRT);
         DrawList skyboxDraws(scratch, 32);
@@ -1363,6 +1572,10 @@ namespace HBL2
         
         RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_GeometryRenderPass);
         {
+			// Set and map storage buffer for light data.
+			ResourceManager::Instance->SetBufferData(GetGlobalBindings3D(), 1, (void*)sceneRenderData->m_LightData.data());
+			ResourceManager::Instance->MapBufferData(GetGlobalBindings3D(), 1, 0, sceneRenderData->m_FrameData.LightCount * sizeof(Light));
+
             renderPassPool.Execute(RenderPassEvent::BeforeRenderingOpaques);
             OpaquePass(passRenderer, sceneRenderData);
             renderPassPool.Execute(RenderPassEvent::AfterRenderingOpaques);
@@ -1378,23 +1591,22 @@ namespace HBL2
         commandBuffer->EndRenderPass(*passRenderer);
     }
 
-    void ForwardSceneRenderer::OpaquePass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData)
+    void ForwardSceneRenderer::OpaquePass(RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData)
     {
         BEGIN_PROFILE_PASS();
         
         // Render opaque meshes.
         {
-            Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
-            ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData);
-            ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&sceneRenderData->m_LightData);
+            Handle<BindGroup> globalBindings = GetGlobalBindings3D();
+            ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
             GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
             passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshOpaqueDraws);
         }
 
         // Render opaque sprites.
         {
-            Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
-            ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
+            Handle<BindGroup> globalBindings = GetGlobalBindings2D();
+            ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
             GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
             passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_SpriteOpaqueDraws);
         }
@@ -1402,23 +1614,22 @@ namespace HBL2
         END_PROFILE_PASS(Renderer::Instance->GetStats().OpaquePassTime);
 	}
 
-	void ForwardSceneRenderer::TransparentPass(RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::TransparentPass(RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
 		// Render transparent meshes.
 		{
-			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings3D();
-			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData);
-			ResourceManager::Instance->SetBufferData(globalBindings, 1, (void*)&sceneRenderData->m_LightData);
+			Handle<BindGroup> globalBindings = GetGlobalBindings3D();
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshTransparentDraws);
 		}
 
 		// Render transparent sprites.
 		{
-			Handle<BindGroup> globalBindings = Renderer::Instance->GetGlobalBindings2D();
-			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_CameraData.ViewProjection);
+			Handle<BindGroup> globalBindings = GetGlobalBindings2D();
+			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_SpriteTransparentDraws);
 		}
@@ -1497,7 +1708,7 @@ namespace HBL2
                             .VariantHandle = skyboxVariantHandle,
                         };
 
-                        ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.CubeMap }, {});
+						ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.CubeMap }, {}, {});
                         computePassRenderer->Dispatch({ dispatch });
                         commandBuffer->EndComputePass(*computePassRenderer);
                         
@@ -1548,7 +1759,7 @@ namespace HBL2
         END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxComputePassTime);
     }
 
-	void ForwardSceneRenderer::SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData)
 	{
         BEGIN_PROFILE_PASS();
 
@@ -1565,7 +1776,7 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxPassTime);
 	}
 
-	void ForwardSceneRenderer::PostProcessPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::PostProcessPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1607,7 +1818,7 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().DebugPassTime);
 	}
 
-	void ForwardSceneRenderer::PresentPass(CommandBuffer* commandBuffer, SceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::PresentPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -1641,15 +1852,15 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PresentPassTime);
 	}
 
-	void ForwardSceneRenderer::GetViewProjection(SceneRenderData* sceneRenderData, Entity mainCamera)
+	void ForwardSceneRenderer::GetViewProjection(ForwardSceneRenderData* sceneRenderData, Entity mainCamera)
 	{
 		Scene* scene = (Context::Mode == Mode::Editor ? m_EditorScene : m_Scene);
 
 		if (scene == nullptr || mainCamera == Entity::Null)
 		{
 			sceneRenderData->m_OnlyRotationInViewProjection = glm::mat4(1.0f);
-			sceneRenderData->m_CameraData.ViewProjection = glm::mat4(1.0f);
-			sceneRenderData->m_LightData.ViewPosition = glm::vec4(0.0f);
+			sceneRenderData->m_FrameData.ViewProjection = glm::mat4(1.0f);
+			sceneRenderData->m_FrameData.ViewPosition = glm::vec4(0.0f);
 			sceneRenderData->m_CameraProjection = glm::mat4(1.0f);
 			sceneRenderData->m_CameraSettings.Exposure = 1.0f;
 			sceneRenderData->m_CameraSettings.Gamma = 2.2f;
@@ -1661,26 +1872,12 @@ namespace HBL2
 		Component::Camera& camera = scene->GetComponent<Component::Camera>(mainCamera);
 		sceneRenderData->m_CameraSettings.Exposure = camera.Exposure;
 		sceneRenderData->m_CameraSettings.Gamma = camera.Gamma;
-		sceneRenderData->m_CameraData.ViewProjection = camera.ViewProjectionMatrix;
+		sceneRenderData->m_FrameData.ViewProjection = camera.ViewProjectionMatrix;
 		sceneRenderData->m_CameraFrustum = camera.Frustum;
 
 		Component::Transform& tr = scene->GetComponent<Component::Transform>(mainCamera);
-		//m_LightData.ViewPosition = tr.WorldMatrix * glm::vec4(tr.Translation, 1.0f);
-		sceneRenderData->m_LightData.ViewPosition = tr.WorldMatrix[3];
+		sceneRenderData->m_FrameData.ViewPosition = tr.WorldMatrix[3];
 		sceneRenderData->m_OnlyRotationInViewProjection = camera.Projection * glm::mat4(glm::mat3(camera.View));
 		sceneRenderData->m_CameraProjection = camera.Projection;
-	}
-
-	void ForwardSceneRenderer::CreateAlignedMatrixArray(SceneRenderData* sceneRenderData, const glm::mat4* matrices, size_t count, uint32_t alignedSize)
-	{
-		// Calculate total size
-		size_t totalSize = alignedSize * count;
-		sceneRenderData->m_LightSpaceMatricesData.resize(totalSize, 0);
-
-		for (size_t i = 0; i < count; ++i)
-		{
-			size_t offset = i * alignedSize;
-			std::memcpy(sceneRenderData->m_LightSpaceMatricesData.data() + offset, &matrices[i], sizeof(glm::mat4));
-		}
 	}
 }

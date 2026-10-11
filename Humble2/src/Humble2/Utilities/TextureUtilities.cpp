@@ -71,6 +71,10 @@ namespace HBL2
         case Format::BC3_SRGB:
         case Format::BC3_UNORM:
             return KTX_TTF_BC3_RGBA;
+        case Format::BC4_R_UNORM:
+            return KTX_TTF_BC4_R;
+        case Format::BC5_RG_UNORM:
+            return KTX_TTF_BC5_RG;
         case Format::BC6H_UF:
             return KTX_TTF_BC6HU;
         case Format::BC7_SRGB:
@@ -355,7 +359,16 @@ namespace HBL2
 
                 if (settings.PlatformCompressionMethod[(int)platform] == CompressionMethod::NONE)
                 {
-                    settings.PixelFormat = Format::RGBA8_RGB;
+                    if (path.find("_rough.") != path.npos || path.find("_metal.") != path.npos ||
+                        path.find("-rough.") != path.npos || path.find("-metal.") != path.npos)
+                    {
+                        settings.PixelFormat = Format::RGBA8_UNORM;
+                    }
+                    else
+                    {
+                        settings.PixelFormat = Format::RGBA8_RGB;
+                    }
+
                 }
                 else
                 {

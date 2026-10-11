@@ -44,8 +44,14 @@ namespace HBL2
             // Map global buffers per frame data (i.e.: Camera and lighting data)
             for (const auto& bufferEntry : globalBindGroupCold->Buffers)
             {
+                MetalBufferCold* bufferCold = rm->GetBufferCold(bufferEntry.buffer);
                 MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
-                memcpy(buffer->Buffer->contents(), buffer->Data, buffer->ByteSize);
+
+                // Skip storage buffers memcpy.
+                if (bufferCold->Usage != BufferUsage::STORAGE)
+                {
+                    memcpy(buffer->Buffer->contents(), buffer->Data, buffer->ByteSize);
+                }
                 
                 if (globalDraw.GlobalBufferOffset != UINT32_MAX)
                 {

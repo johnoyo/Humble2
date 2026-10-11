@@ -18,7 +18,7 @@ namespace HBL2
 	struct VulkanBindGroupCold
 	{
 		static constexpr uint32_t MaxTextureEntries = 6;
-		static constexpr uint32_t MaxBufferEntries = 6;
+		static constexpr uint32_t MaxBufferEntries = 8;
 
 		struct TextureEntry
 		{

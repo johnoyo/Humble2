@@ -22,8 +22,20 @@ namespace HBL2::Editor
 		virtual void OnDestroy() override;
 
 	private:
+		void DrawShaderProperties(Asset* asset);
+		void DrawMaterialProperties(Asset* asset);
+		void DrawTextureProperties(Asset* asset);
+		void DrawSceneProperties(Asset* asset);
+		void DrawPrefabProperties(Asset* asset);
+		void DrawSoundProperties(Asset* asset);
+		void DrawMeshProperties(Asset* asset);
+		void DrawScriptProperties(Asset* asset);
+
+	private:
 		Handle<Asset> m_PreviouslySelectedAsset;
 		bool m_PinAsset = false;
+
+		bool m_UseDefaultSaveButton = true;
 
 		bool m_ReimportTexture = false;
 		bool m_UpdateTexture = false;
@@ -47,9 +59,17 @@ namespace HBL2::Editor
 		bool m_MaterialNeedsReimport = false;
 		bool m_MaterialShaderReflectionStarted = false;
 		bool m_MaterialBindGroupNeedsReimport = false;
-		ResourceTask<Material> m_MaterialTask = {};
 
-		bool m_ShaderNeedsReimport = false;
+		ResourceTask<Material> m_MaterialTask = {};
+        bool m_MaterialTaskStarted = false;
+        bool m_PreviousMaterialTaskStillRunning = false;
+        JobContext m_MaterialTaskCtx = {};
+
+        bool m_SelectedShaderChanged = false;
+        bool m_ShaderNeedsReimport = false;
+        bool m_ShaderBindGroupNeedsReimport = false;
+        bool m_ShaderTaskStarted = false;
+        bool m_PreviousShaderTaskStillRunning = false;
 		ResourceTask<Shader> m_ShaderTask = {};
 	};
 }

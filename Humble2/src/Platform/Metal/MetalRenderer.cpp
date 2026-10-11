@@ -88,51 +88,6 @@ namespace HBL2
         
         // Create render passes.
         CreateRenderPasses();
-        
-        // Global bindings for the 2D rendering.
-        for (int i = 0; i < FRAME_OVERLAP; i++)
-        {
-            auto cameraBuffer2D = m_ResourceManager->CreateBuffer({
-                .debugName = "camera-uniform-buffer",
-                .usage = BufferUsage::UNIFORM,
-                .usageHint = BufferUsageHint::DYNAMIC,
-                .memoryUsage = MemoryUsage::GPU_CPU,
-                .byteSize = 64,
-                .initialData = nullptr,
-            });
-
-            m_MtlFrames[i].GlobalBindings2D = m_ResourceManager->CreateBindGroup({
-                .debugName = "unlit-colored-bind-group",
-                .layout = m_GlobalBindingsLayout2D,
-                .buffers = {
-                    { .buffer = cameraBuffer2D },
-                }
-            });
-        }
-
-        // Bindings for shadow rendering.
-        uint64_t uniformOffset = Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment;
-        uint32_t alignedSize = UniformRingBuffer::CeilToNextMultiple(sizeof(glm::mat4), (uint32_t)uniformOffset);
-
-        for (int i = 0; i < FRAME_OVERLAP; i++)
-        {
-            auto lightSpaceBuffer = m_ResourceManager->CreateBuffer({
-                .debugName = "light-space-buffer",
-                .usage = BufferUsage::UNIFORM,
-                .usageHint = BufferUsageHint::DYNAMIC,
-                .memoryUsage = MemoryUsage::GPU_CPU,
-                .byteSize = 16 * alignedSize,
-                .initialData = nullptr
-            });
-
-            m_MtlFrames[i].ShadowBindings = m_ResourceManager->CreateBindGroup({
-                .debugName = "shadow-bind-group",
-                .layout = m_ShadowBindingsLayout,
-                .buffers = {
-                    { .buffer = lightSpaceBuffer, .range = 64 }, // TODO: Investigate if '.range' should be alignedSize!
-                }
-            });
-        }
 
         // Bindings for debug rendering.
         for (int i = 0; i < FRAME_OVERLAP; i++)
@@ -140,15 +95,14 @@ namespace HBL2
             auto cameraBuffer = m_ResourceManager->CreateBuffer({
                 .debugName = "debug-draw-camera-uniform-buffer",
                 .usage = BufferUsage::UNIFORM,
-                .usageHint = BufferUsageHint::DYNAMIC,
-                .memoryUsage = MemoryUsage::GPU_CPU,
-                .byteSize = sizeof(CameraData),
+                .memoryUsage = MemoryUsage::CPU_GPU,
+                .byteSize = sizeof(glm::mat4),
                 .initialData = nullptr,
             });
 
             m_MtlFrames[i].DebugBindings = m_ResourceManager->CreateBindGroup({
                 .debugName = "debug-draw-bind-group",
-                .layout = m_GlobalBindingsLayout2D,
+                .layout = m_DebugBindingsLayout,
                 .buffers = { { .buffer = cameraBuffer } }
             });
         }
@@ -156,38 +110,6 @@ namespace HBL2
 
     void MetalRenderer::PostInitialize()
     {
-        // Global bindings for the 3D rendering.
-        for (int i = 0; i < FRAME_OVERLAP; i++)
-        {
-            auto cameraBuffer3D = m_ResourceManager->CreateBuffer({
-                .debugName = "camera-uniform-buffer",
-                .usage = BufferUsage::UNIFORM,
-                .usageHint = BufferUsageHint::DYNAMIC,
-                .memoryUsage = MemoryUsage::GPU_CPU,
-                .byteSize = sizeof(CameraData),
-                .initialData = nullptr,
-            });
-
-            auto lightBuffer = m_ResourceManager->CreateBuffer({
-                .debugName = "light-uniform-buffer",
-                .usage = BufferUsage::UNIFORM,
-                .usageHint = BufferUsageHint::DYNAMIC,
-                .memoryUsage = MemoryUsage::GPU_CPU,
-                .byteSize = sizeof(LightData),
-                .initialData = nullptr,
-            });
-
-            m_MtlFrames[i].GlobalBindings3D = m_ResourceManager->CreateBindGroup({
-                .debugName = "global-bind-group",
-                .layout = m_GlobalBindingsLayout3D,
-                .textures = { { ShadowAtlasTexture } },
-                .buffers = {
-                    { .buffer = cameraBuffer3D },
-                    { .buffer = lightBuffer },
-                }
-            });
-        }
-
         // Global bindings for presenting.
         for (int i = 0; i < FRAME_OVERLAP; i++)
         {
@@ -240,6 +162,7 @@ namespace HBL2
     {
         if (!m_SurfaceRef)
         {
+            m_AutoReleasePool->release();
             return;
         }
         
@@ -276,9 +199,6 @@ namespace HBL2
         m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
         
         // Delete bind group layouts.
-        m_ResourceManager->DeleteBindGroupLayout(m_ShadowBindingsLayout);
-        m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout2D);
-        m_ResourceManager->DeleteBindGroupLayout(m_GlobalBindingsLayout3D);
         m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
         m_ResourceManager->DeleteBindGroupLayout(m_EmptyBindingsLayout);
         m_ResourceManager->DeleteBindGroupLayout(m_DynamicBindingsLayout);
@@ -288,16 +208,6 @@ namespace HBL2
 
         for (int i = 0; i < FRAME_OVERLAP; i++)
         {
-            MetalBindGroupCold* shadowBindGroupCold = m_ResourceManager->GetBindGroupCold(m_MtlFrames[i].ShadowBindings);
-
-            for (auto& bufferEntry : shadowBindGroupCold->Buffers)
-            {
-                m_ResourceManager->DeleteBuffer(bufferEntry.buffer);
-            }
-
-            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].ShadowBindings);
-            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].GlobalBindings2D);
-            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].GlobalBindings3D);
             m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].GlobalPresentBindings);
             m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].DebugBindings);
         }
@@ -426,7 +336,7 @@ namespace HBL2
             .dimensions = { width, height, 1 },
             .format = Format::D32_FLOAT,
             .internalFormat = Format::D32_FLOAT,
-            .usage = TextureUsage::DEPTH_STENCIL,
+            .usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
             .aspect = TextureAspect::DEPTH,
             .createSampler = true,
             .sampler =

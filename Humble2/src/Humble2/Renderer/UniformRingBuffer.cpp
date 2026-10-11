@@ -14,7 +14,6 @@ namespace HBL2
 		m_Buffer = ResourceManager::Instance->CreateBuffer({
 			.debugName = "dynamic-uniform-buffer",
 			.usage = BufferUsage::UNIFORM,
-			.usageHint = BufferUsageHint::DYNAMIC,
 			.memoryUsage = MemoryUsage::CPU_GPU,
 			.byteSize = m_BufferSize,
 			.initialData = nullptr,

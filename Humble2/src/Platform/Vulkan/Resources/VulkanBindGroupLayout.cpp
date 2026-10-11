@@ -8,13 +8,13 @@ namespace HBL2
 	{
 		DebugName = desc.debugName;
 
-		HBL2_CORE_ASSERT(desc.bufferBindings.size() < BufferBindings.capacity(), "Exceeded max number of buffer bindings in a bind group layout!");
+		HBL2_CORE_ASSERT(desc.bufferBindings.size() <= BufferBindings.capacity(), "Exceeded max number of buffer bindings in a bind group layout!");
 		for (const auto& bufferBinding : desc.bufferBindings)
 		{
 			BufferBindings.emplace_back(bufferBinding);
 		}
 
-		HBL2_CORE_ASSERT(desc.textureBindings.size() < TextureBindings.capacity(), "Exceeded max number of texture bindings in a bind group layout!");
+		HBL2_CORE_ASSERT(desc.textureBindings.size() <= TextureBindings.capacity(), "Exceeded max number of texture bindings in a bind group layout!");
 		for (const auto& textureBinding : desc.textureBindings)
 		{
 			TextureBindings.emplace_back(textureBinding);
@@ -43,24 +43,23 @@ namespace HBL2
 			case BufferBindingType::READ_ONLY_STORAGE:
 				type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 				break;
-			case BufferBindingType::STORAGE_IMAGE:
-				type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-				break;
 			}
 
-			VkShaderStageFlags stage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+			VkShaderStageFlags stage = 0;
 
-			switch (BufferBindings[i].visibility)
+			if (BufferBindings[i].visibility.IsSet(ShaderStage::VERTEX))
 			{
-			case ShaderStage::VERTEX:
-				stage = VK_SHADER_STAGE_VERTEX_BIT;
-				break;
-			case ShaderStage::FRAGMENT:
-				stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-				break;
-			case ShaderStage::COMPUTE:
-				stage = VK_SHADER_STAGE_COMPUTE_BIT;
-				break;
+				stage |= VK_SHADER_STAGE_VERTEX_BIT;
+			}
+
+			if (BufferBindings[i].visibility.IsSet(ShaderStage::FRAGMENT))
+			{
+				stage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+			}
+
+			if (BufferBindings[i].visibility.IsSet(ShaderStage::COMPUTE))
+			{
+				stage |= VK_SHADER_STAGE_COMPUTE_BIT;
 			}
 
 			bindings[i] =
@@ -79,27 +78,35 @@ namespace HBL2
 
 			switch (TextureBindings[i].type)
 			{
-			case TextureBindingType::IMAGE_SAMPLER:
+			case TextureBindingType::SAMPLED_IMAGE:
+				type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+				break;
+			case TextureBindingType::COMBINED_IMAGE_SAMPLER:
 				type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				break;
 			case TextureBindingType::STORAGE_IMAGE:
 				type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 				break;
+			case TextureBindingType::SAMPLER:
+				type = VK_DESCRIPTOR_TYPE_SAMPLER;
+				break;
 			}
 
-			VkShaderStageFlags stage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+			VkShaderStageFlags stage = 0;
 
-			switch (TextureBindings[i].visibility)
+			if (TextureBindings[i].visibility.IsSet(ShaderStage::VERTEX))
 			{
-			case ShaderStage::VERTEX:
-				stage = VK_SHADER_STAGE_VERTEX_BIT;
-				break;
-			case ShaderStage::FRAGMENT:
-				stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-				break;
-			case ShaderStage::COMPUTE:
-				stage = VK_SHADER_STAGE_COMPUTE_BIT;
-				break;
+				stage |= VK_SHADER_STAGE_VERTEX_BIT;
+			}
+
+			if (TextureBindings[i].visibility.IsSet(ShaderStage::FRAGMENT))
+			{
+				stage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+			}
+
+			if (TextureBindings[i].visibility.IsSet(ShaderStage::COMPUTE))
+			{
+				stage |= VK_SHADER_STAGE_COMPUTE_BIT;
 			}
 
 			bindings[BufferBindings.size() + i] =

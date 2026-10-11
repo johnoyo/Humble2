@@ -66,7 +66,6 @@ namespace HBL2
 	{
 		const char* debugName;
 		BufferUsage usage = BufferUsage::UNIFORM;
-		BufferUsageHint usageHint = BufferUsageHint::STATIC;
 		MemoryUsage memoryUsage = MemoryUsage::CPU_GPU;
 		uint32_t byteSize = 0;
 		void* initialData = nullptr;
@@ -78,15 +77,15 @@ namespace HBL2
 		struct TextureBinding
 		{
 			uint32_t slot = 0;
-			ShaderStage visibility = ShaderStage::VERTEX;
-			TextureBindingType type = TextureBindingType::IMAGE_SAMPLER;
+			BitFlags<ShaderStage> visibility = { ShaderStage::VERTEX };
+			TextureBindingType type = TextureBindingType::COMBINED_IMAGE_SAMPLER;
 		};
 		Span<const TextureBinding> textureBindings;
 
 		struct BufferBinding
 		{
 			uint32_t slot = 0;
-			ShaderStage visibility = ShaderStage::VERTEX;
+			BitFlags<ShaderStage> visibility = { ShaderStage::VERTEX };
 			BufferBindingType type = BufferBindingType::UNIFORM;
 		};
 		Span<const BufferBinding> bufferBindings;
@@ -201,7 +200,7 @@ namespace HBL2
 				packed_size topology : 3 = (packed_size)Topology::TRIANGLE_LIST;
 				packed_size polygonMode : 2 = (packed_size)PolygonMode::FILL;
 				packed_size cullMode : 2 = (packed_size)CullMode::BACK;
-				packed_size frontFace : 1 = (packed_size)FrontFace::CLOCKWISE;
+				packed_size frontFace : 1 = (packed_size)FrontFace::COUNTER_CLOCKWISE;
 
 				// Blend
 				packed_size blendEnabled : 1 = 0; // false

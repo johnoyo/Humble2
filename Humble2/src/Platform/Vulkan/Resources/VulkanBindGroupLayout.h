@@ -12,7 +12,7 @@ namespace HBL2
 	struct VulkanBindGroupLayout
 	{
 		static constexpr uint32_t MaxTextureEntries = 6;
-		static constexpr uint32_t MaxBufferEntries = 6;
+		static constexpr uint32_t MaxBufferEntries = 8;
 
 		VulkanBindGroupLayout() = default;
 		VulkanBindGroupLayout(const BindGroupLayoutDescriptor&& desc);

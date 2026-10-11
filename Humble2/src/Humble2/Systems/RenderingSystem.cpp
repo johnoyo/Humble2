@@ -3,6 +3,10 @@
 #include "Project/Project.h"
 #include "Core/Application.h"
 #include "Renderer/DebugRenderer.h"
+#include "Renderer/InvalidSceneRenderer.h"
+#include "Renderer/ForwardSceneRenderer.h"
+#include "Renderer/ForwardPlusSceneRenderer.h"
+#include "Script/BuildEngine.h"
 
 namespace HBL2
 {
@@ -18,14 +22,31 @@ namespace HBL2
 		switch (projectSettings.Renderer)
 		{
 		case RendererType::Forward:
-		case RendererType::ForwardPlus:
-		case RendererType::Deferred:
-		case RendererType::Custom:
 			m_SceneRenderer = new ForwardSceneRenderer;
 			break;
+		case RendererType::ForwardPlus:
+			m_SceneRenderer = new ForwardPlusSceneRenderer;
+			break;
+		case RendererType::Custom:
+			{
+				Handle<Script> sceneRendererHandle = AssetManager::Instance->GetAsset<Script>(projectSettings.RendererUUID);
+				if (sceneRendererHandle.IsValid())
+				{
+					Script* sceneRendererScript = ResourceManager::Instance->GetScript(sceneRendererHandle);
+					m_SceneRenderer = BuildEngine::Instance->RegisterSceneRenderer(sceneRendererScript->Name);
+				}
+
+				break;
+			}
 		}
 
-		m_SceneRenderer->Initialize(m_Context);
+		if (m_SceneRenderer == nullptr)
+		{
+			// Placeholder invalid scene renderer (outputs pink).
+			m_SceneRenderer = new InvalidSceneRenderer;
+		}
+
+		m_SceneRenderer->Initialize(m_Context, projectSettings.MaxLights);
 	}
 
 	void RenderingSystem::OnUpdate(float ts)

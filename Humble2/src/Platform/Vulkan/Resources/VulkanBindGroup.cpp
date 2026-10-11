@@ -45,13 +45,13 @@ namespace HBL2
 
 		Cold->DebugName = desc.debugName;
 
-		HBL2_CORE_ASSERT(desc.buffers.size() < Cold->Buffers.capacity(), "Exceeded max number of buffers in a bind group!");
+		HBL2_CORE_ASSERT(desc.buffers.size() <= Cold->Buffers.capacity(), "Exceeded max number of buffers in a bind group!");
 		for (const auto& bufferEntry : desc.buffers)
 		{
 			Cold->Buffers.push_back({ bufferEntry.buffer, bufferEntry.byteOffset, bufferEntry.range });
 		}
 
-		HBL2_CORE_ASSERT(desc.textures.size() < Cold->Textures.capacity(), "Exceeded max number of textures in a bind group!");
+		HBL2_CORE_ASSERT(desc.textures.size() <= Cold->Textures.capacity(), "Exceeded max number of textures in a bind group!");
 		for (const auto& textureEntry : desc.textures)
 		{
 			Handle<ReimportDependency> dependencyHandle = rm->AddReimportDependency(textureEntry.texture, self);
@@ -155,11 +155,17 @@ namespace HBL2
 
 			switch (bindGroupLayout->TextureBindings[i].type)
 			{
-			case TextureBindingType::IMAGE_SAMPLER:
+			case TextureBindingType::SAMPLED_IMAGE:
+				type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+				break;
+			case TextureBindingType::COMBINED_IMAGE_SAMPLER:
 				type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				break;
 			case TextureBindingType::STORAGE_IMAGE:
 				type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+				break;
+			case TextureBindingType::SAMPLER:
+				type = VK_DESCRIPTOR_TYPE_SAMPLER;
 				break;
 			}
 

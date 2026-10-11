@@ -485,7 +485,7 @@ namespace HBL2
                 }
                 else
                 {
-                    m_Registry.AddOrReplaceComponent<Component>(newEntity, std::forward<Component>(component));
+                    m_Registry.GetOrAddComponent<Component>(newEntity) = component;
                 }
 
             }
@@ -596,7 +596,7 @@ namespace HBL2
                 }
                 else
                 {
-                    m_Registry.AddOrReplaceComponent<Component>(newEntity, std::forward<Component>(component));
+                    m_Registry.GetOrAddComponent<Component>(newEntity) = component;
                 }
 
             }

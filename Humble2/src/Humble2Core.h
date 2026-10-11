@@ -49,3 +49,19 @@
             ctx->RegisterSystem(new##TYPE, HBL2::SystemType::User);                                                                 \
         }
 #endif
+
+#ifdef HBL2_PLATFORM_WINDOWS
+#define REGISTER_HBL2_SCENE_RENDERER(TYPE)                                                                                          \
+        extern "C" __declspec(dllexport) HBL2::SceneRenderer* RegisterSceneRenderer_##TYPE()                                        \
+        {                                                                                                                           \
+            TYPE* new##TYPE = new TYPE();                                                                                           \
+            return new##TYPE;                                                                                                       \
+        }
+#else
+#define REGISTER_HBL2_SCENE_RENDERER(TYPE)                                                                                          \
+        extern "C" __attribute__((visibility("default"))) HBL2::SceneRenderer* RegisterSceneRenderer_##TYPE()                       \
+        {                                                                                                                           \
+            TYPE* new##TYPE = new TYPE();                                                                                           \
+            return new##TYPE;                                                                                                       \
+        }
+#endif

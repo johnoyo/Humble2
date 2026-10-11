@@ -29,6 +29,8 @@ namespace HBL2
 		typedef void (*RegisterSystemFunc)(Scene*);
 
 		typedef void (*RegisterComponentFunc)();
+
+		typedef SceneRenderer* (*RegisterSceneRendererFunc)();
 	}
 
 	void BuildEngine::Initialize()
@@ -267,6 +269,40 @@ namespace HBL2
 		return scriptAssetHandle;
 	}
 
+	Handle<Asset> BuildEngine::CreateSceneRendererFile(const std::filesystem::path& currentDir, const std::string& sceneRendererName)
+	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
+		auto relativePath = std::filesystem::relative(currentDir / (sceneRendererName + ".h"), HBL2::Project::GetAssetDirectory());
+
+		auto scriptAssetHandle = editorAssetManager->CreateAsset({
+			.debugName = "script-asset",
+			.filePath = relativePath,
+			.type = AssetType::Script,
+		});
+
+		if (scriptAssetHandle.IsValid())
+		{
+			std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(relativePath).string() + ".hblscript", std::ios_base::out);
+			YAML::Emitter out;
+			out << YAML::BeginMap;
+			out << YAML::Key << "Script" << YAML::Value;
+			out << YAML::BeginMap;
+			out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(scriptAssetHandle)->UUID;
+			out << YAML::Key << "Type" << YAML::Value << (uint32_t)ScriptType::SCENE_RENDERER;
+			out << YAML::EndMap;
+			out << YAML::EndMap;
+			fout << out.c_str();
+			fout.close();
+		}
+
+		std::ofstream fout(currentDir / (sceneRendererName + ".h"), std::ios_base::out);
+		fout << GetDefaultSceneRendererCode(sceneRendererName);
+		fout.close();
+
+		return scriptAssetHandle;
+	}
+
 	std::string BuildEngine::GetDefaultSystemCode(const std::string& systemName)
 	{
 		const std::string& placeholder = "{SystemName}";
@@ -359,6 +395,67 @@ class {ScriptName}
 		return scriptCode;
 	}
 
+	std::string BuildEngine::GetDefaultSceneRendererCode(const std::string& sceneRendererName)
+	{
+		const std::string& placeholder = "{SceneRendererName}";
+
+		const std::string& sceneRendererCode = R"(#pragma once
+
+#include "Humble2Core.h"
+
+struct {SceneRendererName}Data
+{
+};
+
+class {SceneRendererName} final : public HBL2::SceneRenderer
+{
+public:
+	virtual ~{SceneRendererName}() = default;
+
+	virtual void Initialize(HBL2::Scene* scene, uint32_t maxLights) override
+	{
+	}
+
+	virtual void Gather(HBL2::Entity mainCamera) override
+	{
+		auto* sceneRenderData = &m_RenderData[HBL2::Renderer::Instance->GetFrameWriteIndex()];
+	}
+
+	virtual void Render(void* renderData, void* debugRenderData) override
+	{
+		BEGIN_PROFILE_PASS();
+
+		auto* sceneRenderData = ({SceneRendererName}Data*)renderData;
+
+		END_PROFILE_PASS(HBL2::Renderer::Instance->GetStats().MainPassTime);
+	}
+
+	virtual void CleanUp() override
+	{
+	}
+
+	virtual void* GetRenderData() override
+	{
+		return &m_RenderData[HBL2::Renderer::Instance->GetFrameWriteIndex()];
+	}
+
+private:
+	{SceneRendererName}Data m_RenderData[HBL2::Renderer::FrameCount]{};
+};
+
+REGISTER_HBL2_SCENE_RENDERER({SceneRendererName})
+)";
+		size_t pos = sceneRendererCode.find(placeholder);
+
+		while (pos != std::string::npos)
+		{
+			((std::string&)sceneRendererCode).replace(pos, placeholder.length(), sceneRendererName);
+			pos = sceneRendererCode.find(placeholder, pos + sceneRendererName.length());
+		}
+
+		return sceneRendererCode;
+	}
+
 	void BuildEngine::RegisterSystem(const std::string& name, Scene* ctx)
 	{
 		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
@@ -391,6 +488,28 @@ class {ScriptName}
 
 		// Register the component.
 		registerComponent();
+	}
+
+	SceneRenderer* BuildEngine::RegisterSceneRenderer(const std::string& name)
+	{
+		const auto& path = GetUnityBuildPath(m_CurrentConfiguration);
+
+		// Retrieve if dll is not loaded.
+		if (!m_DynamicLibrary.IsLoaded())
+		{
+			m_DynamicLibrary = DynamicLibrary(path.string());
+		}
+
+		// Retrieve function that creates the system from the dll.
+		auto registerSceneRenderer = m_DynamicLibrary.GetFunction<RegisterSceneRendererFunc>("RegisterSceneRenderer_" + name);
+
+		if (registerSceneRenderer == nullptr)
+		{
+			return nullptr;
+		}
+
+		// Create the system
+		return registerSceneRenderer();
 	}
 
 	void BuildEngine::LoadBuild(Configuration config)

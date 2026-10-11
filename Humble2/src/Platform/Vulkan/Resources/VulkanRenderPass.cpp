@@ -15,10 +15,8 @@ namespace HBL2
 
 		VulkanRenderPassLayout* layout = rm->GetRenderPassLayout(desc.layout);
 
-		std::vector<VkAttachmentDescription> attachments;
-		attachments.reserve(desc.colorTargets.size());
-		std::vector<VkAttachmentReference> colorAttachmentRefs;
-		colorAttachmentRefs.reserve(desc.colorTargets.size());
+		StaticDArray<VkAttachmentDescription, MaxColorTargets + 1> attachments;
+		StaticDArray<VkAttachmentReference, MaxColorTargets> colorAttachmentRefs;
         
 		uint32_t index = 0;
 
@@ -46,7 +44,7 @@ namespace HBL2
 			});
 		}
 
-		std::vector<VkSubpassDependency> dependencies;
+		StaticDArray<VkSubpassDependency, MaxSubPassAttachments> dependencies;
 
 		if (desc.colorTargets.size() != 0)
 		{
@@ -140,7 +138,15 @@ namespace HBL2
     {
         Width = desc.width;
         Height = desc.height;
-        ColorTargets = desc.colorTargets;
+        
+		ColorTargets.clear();
+
+        HBL2_CORE_ASSERT(desc.colorTargets.size() <= ColorTargets.capacity(), "Exceeded max number of render pass color targets!");
+        for (const auto& colorTarget : desc.colorTargets)
+        {
+            ColorTargets.push_back(colorTarget);
+        }
+        
         DepthTarget = desc.depthTarget;
         
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
@@ -160,7 +166,7 @@ namespace HBL2
 			FrameBuffer = VK_NULL_HANDLE;
         }
 
-        std::vector<VkImageView> attachments;
+        StaticDArray<VkImageView, MaxColorTargets + 1> attachments;
 
         for (const auto& colorTarget : ColorTargets)
         {
@@ -197,4 +203,15 @@ namespace HBL2
 
         VK_VALIDATE(vkCreateFramebuffer(device->Get(), &frameBufferInfo, nullptr, &FrameBuffer), "vkCreateFramebuffer");
     }
+
+	void VulkanRenderPass::Destroy()
+	{
+		VulkanDevice* device = (VulkanDevice*)Device::Instance;
+
+		vkDestroyRenderPass(device->Get(), RenderPass, nullptr);
+		vkDestroyFramebuffer(device->Get(), FrameBuffer, nullptr);
+
+		ColorClearValues.clear();
+		ColorTargets.clear();
+	}
 }

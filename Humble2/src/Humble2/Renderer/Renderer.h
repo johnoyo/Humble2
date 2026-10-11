@@ -24,9 +24,12 @@ namespace HBL2
 
     constexpr unsigned int FRAME_OVERLAP = 2;
 
-	struct CameraData
+	struct FrameData
 	{
 		glm::mat4 ViewProjection;
+		glm::vec4 ViewPosition;
+		float LightCount;
+		float _padding[3];
 	};
 
 	struct alignas(16) CameraSettings
@@ -36,18 +39,15 @@ namespace HBL2
 		float _padding[2];
 	};
 
-	struct LightData
+	struct Light
 	{
-		glm::vec4 ViewPosition;
-		glm::vec4 LightPositions[16];
-		glm::vec4 LightDirections[16];
-		glm::vec4 LightColors[16];
-		glm::vec4 LightMetadata[16];
-		glm::vec4 LightShadowData[16];
-		glm::mat4 LightSpaceMatrices[16];
-		glm::vec4 TileUVRange[16];
-		float LightCount;
-		float _padding[3];
+		glm::vec4 Position;
+		glm::vec4 Direction;
+		glm::vec4 Color;
+		glm::vec4 Metadata;
+		glm::vec4 LightShadowData;
+		glm::mat4 LightSpaceMatrix;
+		glm::vec4 TileUVRange;
 	};
 
 	enum class HBL2_API GraphicsAPI
@@ -63,17 +63,18 @@ namespace HBL2
 	{
 		Forward = 0,
 		ForwardPlus,
-		Deferred,
 		Custom,
 	};
 
 	struct RendererStats
 	{
+		uint32_t Lights = 0;
 		uint32_t DrawCalls = 0;
 		float GatherTime = 0.f;
 		float SortingTime = 0.f;
 		float ShadowPassTime = 0.f;
 		float PrePassTime = 0.f;
+		float LightCullingPassTime = 0.0f;
 		float OpaquePassTime = 0.f;
         float SkyboxComputePassTime = 0.f;
 		float SkyboxPassTime = 0.f;
@@ -87,11 +88,13 @@ namespace HBL2
 
 		void Reset()
 		{
+			Lights = 0;
 			DrawCalls = 0;
 			GatherTime = 0.f;
 			SortingTime = 0.f;
 			ShadowPassTime = 0.f;
 			PrePassTime = 0.f;
+			LightCullingPassTime = 0.f;
 			OpaquePassTime = 0.f;
             SkyboxPassTime = 0.f;
             SkyboxComputePassTime = 0.f;
@@ -105,7 +108,7 @@ namespace HBL2
 		}
 	};
 
-	struct FrameData
+	struct RendererFrameData
 	{
 		SceneRenderer* Renderer = nullptr;
 		void* RenderData = nullptr;
@@ -136,8 +139,8 @@ namespace HBL2
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
 
-		void Render(const FrameData& frameData);
-		FrameData* WaitAndRender();
+		void Render(const RendererFrameData& frameData);
+		RendererFrameData* WaitAndRender();
 		void WaitAndBegin();
 		void MarkAndSubmit();
 		void WaitForRenderThreadIdle();
@@ -170,22 +173,18 @@ namespace HBL2
 		virtual Handle<RenderPass> GetMainRenderPass() = 0;
         virtual Handle<RenderPass> GetImGuiRenderPass() = 0;
         virtual Handle<RenderPass> GetRenderingRenderPass() = 0;
-        
-		virtual Handle<BindGroup> GetShadowBindings() = 0;
-		virtual Handle<BindGroup> GetGlobalBindings2D() = 0;
-		virtual Handle<BindGroup> GetGlobalBindings3D() = 0;
+
 		virtual Handle<BindGroup> GetGlobalPresentBindings() = 0;
 		virtual Handle<BindGroup> GetDebugBindings() = 0;
+        
 		const Handle<BindGroup> GetEmptyBindings() const { return m_EmptyBindings; }
-
-		const Handle<BindGroupLayout> GetShadowBindingsLayout() const { return m_ShadowBindingsLayout; }
-		const Handle<BindGroupLayout> GetGlobalBindingsLayout2D() const { return m_GlobalBindingsLayout2D; }
-		const Handle<BindGroupLayout> GetGlobalBindingsLayout3D() const { return m_GlobalBindingsLayout3D; }
+		const Handle<BindGroupLayout> GetDebugBindingsLayout() const { return m_DebugBindingsLayout; }
 		const Handle<BindGroupLayout> GetDynamicBindingsLayout() const { return m_DynamicBindingsLayout; }
 		const Handle<BindGroupLayout> GetGlobalPresentBindingsLayout() const { return m_GlobalPresentBindingsLayout; }
 		const Handle<BindGroupLayout> GetEmptyBindingsLayout() const { return m_EmptyBindingsLayout; }
 
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
+		RendererType GetRendererType() const { return m_RendererType; }
 
 		UniformRingBuffer* TempUniformRingBuffer = nullptr;
 		ShadowAtlasAllocator ShadowAtlasAllocator{};
@@ -212,24 +211,21 @@ namespace HBL2
 	protected:
 		std::atomic_int64_t m_FrameNumber = { 0 };
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::NONE;
+		RendererType m_RendererType = RendererType::Forward;
 		RendererStats m_CurrentStats{};
 		RendererStats m_PreviousStats{};
 		RenderPassPool m_RenderPassPool;
 
-		Handle<BindGroupLayout> m_ShadowBindingsLayout;
-		Handle<BindGroupLayout> m_GlobalBindingsLayout2D;
-		Handle<BindGroupLayout> m_GlobalBindingsLayout3D;
+		Handle<BindGroupLayout> m_DebugBindingsLayout;
 		Handle<BindGroupLayout> m_DynamicBindingsLayout;
 		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
 		Handle<BindGroupLayout> m_EmptyBindingsLayout;
-
 		Handle<BindGroup> m_EmptyBindings;
 
 		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 
 	protected:
-
-		FrameData m_Frames[FrameCount];
+		RendererFrameData m_Frames[FrameCount];
 		uint32_t m_UniformRingBufferSize = 32_MB * FrameCount;
 		uint32_t m_UniformRingBufferFrameOffsets[FrameCount];
 

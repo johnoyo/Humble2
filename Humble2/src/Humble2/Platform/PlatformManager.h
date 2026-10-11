@@ -40,7 +40,7 @@ namespace HBL2
         const BitFlags<Format> GetSupportedTranscodingFormats(Platform platform) const;
         const BitFlags<Format> GetSupportedCompressionFormats(Platform platform) const;
 
-        Platform GetPlatform();
+        Platform GetPlatform() const;
         
     protected:
         std::string m_AppDataDirectory;
@@ -48,6 +48,6 @@ namespace HBL2
         std::string m_ResourcesDirectory;
         std::string m_EmptyDirectory = "";
 
-        Platform m_Platform;
+        Platform m_Platform = Platform::None;
     };
 }

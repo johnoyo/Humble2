@@ -14,6 +14,8 @@
 #include "Systems/TerrainSystem.h"
 #include "Systems/AnimationCurveSystem.h"
 
+#include "Renderer/ForwardSceneRenderer.h"
+
 #include "Prefab/PrefabSerializer.h"
 
 namespace HBL2
@@ -1071,8 +1073,6 @@ namespace HBL2
 
 		const std::string& shaderName = asset->FilePath.filename().stem().string();
 
-		Handle<BindGroupLayout> globalBindGroupLayout;
-
 		StaticDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> shaderVariants;
 		uint32_t type = 0;
 
@@ -1080,21 +1080,6 @@ namespace HBL2
 		if (shaderProperties)
 		{
 			type = shaderProperties["Type"].as<uint32_t>();
-
-			switch (type)
-			{
-			case 0:
-				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout2D();
-				break;
-			case 1:
-			case 2:
-				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
-				break;
-			default:
-				HBL2_CORE_ERROR("Unknown Shader type: {0}", asset->DebugName);
-				stream.close();
-				return Handle<Shader>();
-			}
 
 			// Retrieve shader variants.
 			const auto& shaderVariantsProperty = shaderProperties["Variants"];
@@ -1166,7 +1151,8 @@ namespace HBL2
 
 		// Compile Shader.
 		ShaderReflectionData outReflectionData;
-		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath.string(), &outReflectionData);
+		bool attachLightingModules = (type == 1 || type == 2);
+		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath.string(), &outReflectionData, attachLightingModules);
 
 		if (!compilationData.IsValid())
 		{
@@ -1303,7 +1289,6 @@ namespace HBL2
 							auto userBuffer = ResourceManager::Instance->CreateBuffer({
 								.debugName = "shader-uniform-buffer",
 								.usage = BufferUsage::UNIFORM,
-								.usageHint = BufferUsageHint::DYNAMIC,
 								.memoryUsage = MemoryUsage::GPU_CPU,
 								.byteSize = (uint32_t)b.size,
 								.initialData = (void*)uniformBufferBytes.data(),
@@ -1312,7 +1297,7 @@ namespace HBL2
 							bufferBindings.push_back({ .buffer = userBuffer, });
 						}
 					}
-					else if (b.type == ShaderResourceType::SampledTexture)
+					else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
 					{
 						const auto& textureProp = shaderProperties["BindGroup"][bindingIndex];
 
@@ -1364,7 +1349,7 @@ namespace HBL2
 			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
 			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
 			.bindGroups {
-				globalBindGroupLayout,							// Global bind group			(0)
+				outReflectionData.GetBindGroupLayout(0),		// Global bind group			(0)
 				outReflectionData.GetBindGroupLayout(1),		// Global user bind group		(1)
 				outReflectionData.GetBindGroupLayout(2),		// Material / user bind group	(2)
 				Renderer::Instance->GetDynamicBindingsLayout(),	// Draw bind group				(3)
@@ -1501,7 +1486,7 @@ namespace HBL2
 			// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 			//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
 
-			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
+			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
 
 			Handle<BindGroup> materialBindGroup;
 
@@ -1627,7 +1612,6 @@ namespace HBL2
 							auto userBuffer = ResourceManager::Instance->CreateBuffer({
 								.debugName = "material-uniform-buffer",
 								.usage = BufferUsage::UNIFORM,
-								.usageHint = BufferUsageHint::DYNAMIC,
 								.memoryUsage = MemoryUsage::GPU_CPU,
 								.byteSize = (uint32_t)b.size,
 								.initialData = (void*)uniformBufferBytes.data(),
@@ -1636,7 +1620,7 @@ namespace HBL2
 							bufferBindings.push_back({ .buffer = userBuffer, });
 						}
 					}
-					else if (b.type == ShaderResourceType::SampledTexture)
+					else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
 					{
 						const auto& textureProp = materialProperties[b.name];
 
@@ -2029,30 +2013,14 @@ namespace HBL2
 
 		const std::string& shaderName = asset->FilePath.filename().stem().string();
 
-		Handle<BindGroupLayout> globalBindGroupLayout;
-		Handle<BindGroupLayout> drawBindGroupLayout;
-
 		StaticDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> shaderVariants;
+
+		uint32_t type = UINT32_MAX;
 
 		const auto& shaderProperties = data["Shader"];
 		if (shaderProperties)
 		{
-			uint32_t type = shaderProperties["Type"].as<uint32_t>();
-
-			switch (type)
-			{
-			case 0:
-				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout2D();
-				break;
-			case 1:
-			case 2:
-				globalBindGroupLayout = Renderer::Instance->GetGlobalBindingsLayout3D();
-				break;
-			default:
-				HBL2_CORE_ERROR("Unknown Shader type: {0}", asset->DebugName);
-				stream.close();
-				return Handle<Shader>();
-			}
+			type = shaderProperties["Type"].as<uint32_t>();
 
 			// Retrieve shader variants.
 			const auto& shaderVariantsProperty = shaderProperties["Variants"];
@@ -2124,7 +2092,8 @@ namespace HBL2
 
 		// Compile Shader.
 		ShaderReflectionData outReflectionData;
-		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath.string(), &outReflectionData, true);
+		bool attachLightingModules = (type == 1 || type == 2);
+		const auto& compilationData = ShaderUtilities::Get().Compile(shaderPath.string(), &outReflectionData, attachLightingModules, true);
 
 		if (!compilationData.IsValid())
 		{
@@ -2259,7 +2228,6 @@ namespace HBL2
 							auto userBuffer = ResourceManager::Instance->CreateBuffer({
 								.debugName = "shader-uniform-buffer",
 								.usage = BufferUsage::UNIFORM,
-								.usageHint = BufferUsageHint::DYNAMIC,
 								.memoryUsage = MemoryUsage::GPU_CPU,
 								.byteSize = (uint32_t)b.size,
 								.initialData = (void*)uniformBufferBytes.data(),
@@ -2268,7 +2236,7 @@ namespace HBL2
 							bufferBindings.push_back({ .buffer = userBuffer, });
 						}
 					}
-					else if (b.type == ShaderResourceType::SampledTexture)
+					else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
 					{
 						const auto& textureProp = shaderProperties["BindGroup"][bindingIndex];
 
@@ -2312,7 +2280,7 @@ namespace HBL2
 			.VS { .code = compilationData.vertexShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[0].name.c_str() },
 			.FS { .code = compilationData.fragmentShaderCode.AsSpan(), .entryPoint = outReflectionData.entryPoints[1].name.c_str() },
 			.bindGroups {
-				globalBindGroupLayout,							// Global bind group			(0)
+				outReflectionData.GetBindGroupLayout(0),		// Global bind group			(0)
 				outReflectionData.GetBindGroupLayout(1),		// Global user bind group		(1)
 				outReflectionData.GetBindGroupLayout(2),		// Material / user bind group	(2)
 				Renderer::Instance->GetDynamicBindingsLayout(),	// Draw bind group				(3)
@@ -2426,7 +2394,7 @@ namespace HBL2
 			// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 			//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
 
-			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string());
+			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
 
 			Handle<BindGroup> materialBindGroup;
 
@@ -2549,7 +2517,6 @@ namespace HBL2
 							auto userBuffer = ResourceManager::Instance->CreateBuffer({
 								.debugName = "user-uniform-buffer",
 								.usage = BufferUsage::UNIFORM,
-								.usageHint = BufferUsageHint::DYNAMIC,
 								.memoryUsage = MemoryUsage::GPU_CPU,
 								.byteSize = (uint32_t)b.size,
 								.initialData = (void*)uniformBufferBytes.data(),
@@ -2558,7 +2525,7 @@ namespace HBL2
 							bufferBindings.push_back({ .buffer = userBuffer, });
 						}
 					}
-					else if (b.type == ShaderResourceType::SampledTexture)
+					else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
 					{
 						const auto& textureProp = materialProperties[b.name];
 

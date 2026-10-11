@@ -163,6 +163,11 @@ namespace HBL2
 			m_AssetDeleteCallbacks.enqueue(StaticFunction<void(void), 64>([this, handle]()
 			{
 				UnloadAsset(handle);
+                
+                // Unloading an asset does not remove the asset from the pool.
+                // So when we want to load the asset again, we will not be able to aquire a new ref
+                // and it will cause a dangling reference, so we reopen the slot.
+                m_AssetPool.Reopen(handle);
 			}));
 		}
 	}

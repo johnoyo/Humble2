@@ -82,8 +82,8 @@ namespace HBL2
 		static void Shutdown();
 
 		std::string ReadFile(const std::string& filepath);
-		CompilationResultData Compile(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool forceRecompile = false);
-		ShaderReflectionData Reflect(const std::string& shaderFilePath);
+		CompilationResultData Compile(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool attachLightingModules, bool forceRecompile = false);
+		ShaderReflectionData Reflect(const std::string& shaderFilePath, bool attachLightingModules);
 
 		void LoadBuiltInShaders();
 		void DeleteBuiltInShaders();
@@ -108,8 +108,8 @@ namespace HBL2
 	private:
 		ShaderUtilities();
 
-        std::filesystem::path GetCacheDirectory(GraphicsAPI target);
-		void CreateCacheDirectoryIfNeeded(GraphicsAPI target);
+        std::filesystem::path GetCacheDirectory(GraphicsAPI target, RendererType rendererType);
+		void CreateCacheDirectoryIfNeeded(GraphicsAPI target, RendererType rendererType);
 
 		bool IsVertexStage(int64_t entryPointIndex, int32_t entryPointCount);
 		bool IsFragmentStage(int64_t entryPointIndex, int32_t entryPointCount);

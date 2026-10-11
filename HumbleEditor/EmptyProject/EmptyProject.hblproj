@@ -7,6 +7,7 @@ Project:
     Type: 0
     Editor API: 2
     Runtime API: 2
+    Max Lights: 256
   Physics2D:
     Gravity Force: [0, -9.81000042]
     Enable Debug Draw: false
@@ -49,7 +50,7 @@ Project:
       Textures Pool Size: 128
       Shaders Pool Size: 64
       Buffers Pool Size: 1024
-      BindGroups Pool Size: 64
+      BindGroups Pool Size: 128
       BindGroupLayouts Pool Size: 32
       RenderPass Pool Size: 256
       RenderPassLayouts Pool Size: 64

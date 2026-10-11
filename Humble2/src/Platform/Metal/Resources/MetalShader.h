@@ -69,7 +69,8 @@ namespace HBL2
         std::array<VariantEntry, MaxVariants> m_Entries;
         std::array<BitFlags<ShaderStage>, MaxSpecializationConstants> m_SpecializationConstantStages;
         
-        RefHandle<BindGroupLayout> m_ReflectedBindGroupLayout;
+        RefHandle<BindGroupLayout> m_ReflectedSet0BindGroupLayout;
+        RefHandle<BindGroupLayout> m_ReflectedSet2BindGroupLayout;
         
         uint32_t ColorAttachmentCount = 0;
         StaticDArray<MTL::PixelFormat, 4> ColorAttachmentFormats;

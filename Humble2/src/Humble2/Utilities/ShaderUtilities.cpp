@@ -143,14 +143,31 @@ namespace HBL2
         return result;
     }
 
-    CompilationResultData ShaderUtilities::Compile(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool forceRecompile)
+    CompilationResultData ShaderUtilities::Compile(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool attachLightingModules, bool forceRecompile)
     {
         HBL2_FUNC_PROFILE();
 
         // https://docs.shader-slang.org/en/stable/coming-from-glsl.html
 
         GraphicsAPI target = Renderer::Instance->GetAPI();
-        CreateCacheDirectoryIfNeeded(target);
+        RendererType rendererType = Renderer::Instance->GetRendererType();
+
+        CreateCacheDirectoryIfNeeded(target, rendererType);
+
+        const char* lightingProvider;
+
+        switch (rendererType)
+        {
+        case RendererType::Forward:
+            lightingProvider = "lighting_forward";
+            break;
+        case RendererType::ForwardPlus:
+            lightingProvider = "lighting_forward_plus";
+            break;
+        case RendererType::Custom:
+            lightingProvider = "lighting_custom";
+            break;
+        }
 
         const auto& shaderFilePathAsPath = std::filesystem::path(shaderFilePath);
         const auto& workingDir = Project::GetProjectDirectory().parent_path();
@@ -160,8 +177,11 @@ namespace HBL2
         {
             shaderPath = Project::GetAssetFileSystemPath(shaderFilePath);
         }
+
+        const std::string modulesDir = (workingDir / "assets" / "shaders").string();
+        const char* searchPaths[] = { modulesDir.c_str() };
         
-        const auto& cacheDirectory = GetCacheDirectory(target);
+        const auto& cacheDirectory = GetCacheDirectory(target, rendererType);
 
         uint32_t workerIndex = JobSystem::Get().GetWorkerIndex();
 
@@ -187,6 +207,8 @@ namespace HBL2
 
         // Session description.
         slang::SessionDesc sessionDesc = {};
+        sessionDesc.searchPaths = searchPaths;
+        sessionDesc.searchPathCount = 1;
         sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR;
 
         // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/08-compiling.html
@@ -215,7 +237,7 @@ namespace HBL2
                 options[3] = slang::CompilerOptionEntry
                 {
                     .name = slang::CompilerOptionName::Optimization,
-                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_DEFAULT }
                 };
                 
                 sessionDesc.compilerOptionEntries = options.data();
@@ -233,7 +255,7 @@ namespace HBL2
                 options[1] = slang::CompilerOptionEntry
                 {
                     .name = slang::CompilerOptionName::Optimization,
-                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_DEFAULT }
                 };
                 
                 sessionDesc.compilerOptionEntries = options.data();
@@ -275,6 +297,44 @@ namespace HBL2
             return {};
         }
 
+        Slang::ComPtr<slang::IModule> lightingCommonModule;
+        if (attachLightingModules)
+        {
+            Slang::ComPtr<slang::IBlob> diagnostics0;
+            lightingCommonModule = session->loadModule("lighting_common", diagnostics0.writeRef());
+
+            if (diagnostics0)
+            {
+                HBL2_CORE_WARN("Slang diagnostics: {}", (const char*)diagnostics0->getBufferPointer());
+                diagnostics0 = nullptr;
+            }
+
+            if (!lightingCommonModule)
+            {
+                HBL2_CORE_ERROR("Slang: Failed to load shader module");
+                return {};
+            }
+        }
+
+        Slang::ComPtr<slang::IModule> lightingProviderModule;
+        if (attachLightingModules)
+        {
+            Slang::ComPtr<slang::IBlob> diagnostics1;
+            lightingProviderModule = session->loadModule(lightingProvider, diagnostics1.writeRef());
+
+            if (diagnostics1)
+            {
+                HBL2_CORE_WARN("Slang diagnostics: {}", (const char*)diagnostics1->getBufferPointer());
+                diagnostics1 = nullptr;
+            }
+
+            if (!lightingProviderModule)
+            {
+                HBL2_CORE_ERROR("Slang: Failed to load shader module");
+                return {};
+            }
+        }
+
         // Entry points.
         SlangInt32 entryPointCount = slangModule->getDefinedEntryPointCount();
         if (entryPointCount == 0)
@@ -294,6 +354,13 @@ namespace HBL2
         // Composite + link.
         StaticDArray<slang::IComponentType*, 6> components;
         components.push_back(slangModule);
+
+        if (attachLightingModules)
+        {
+            components.push_back(lightingCommonModule);
+            components.push_back(lightingProviderModule);
+        }
+
         for (auto& ep : entryPoints)
         {
             components.push_back(ep.get());
@@ -470,15 +537,35 @@ namespace HBL2
         return compilationResultData;
     }
 
-    ShaderReflectionData ShaderUtilities::Reflect(const std::string& shaderFilePath)
+    ShaderReflectionData ShaderUtilities::Reflect(const std::string& shaderFilePath, bool attachLightingModules)
     {
         HBL2_FUNC_PROFILE();
 
         // https://docs.shader-slang.org/en/stable/coming-from-glsl.html
 
         GraphicsAPI target = Renderer::Instance->GetAPI();
+        RendererType rendererType = Renderer::Instance->GetRendererType();
+
+        const char* lightingProvider;
+
+        switch (rendererType)
+        {
+        case RendererType::Forward:
+            lightingProvider = "lighting_forward";
+            break;
+        case RendererType::ForwardPlus:
+            lightingProvider = "lighting_forward_plus";
+            break;
+        case RendererType::Custom:
+            lightingProvider = "lighting_custom";
+            break;
+        }
 
         std::filesystem::path shaderPath = shaderFilePath;
+
+        const auto& workingDir = Project::GetProjectDirectory().parent_path();
+        const std::string modulesDir = (workingDir / "assets" / "shaders").string();
+        const char* searchPaths[] = { modulesDir.c_str() };
 
         uint32_t workerIndex = JobSystem::Get().GetWorkerIndex();
 
@@ -503,6 +590,8 @@ namespace HBL2
 
         // Session description.
         slang::SessionDesc sessionDesc = {};
+        sessionDesc.searchPaths = searchPaths;
+        sessionDesc.searchPathCount = 1;
         sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR;
         
         // https://docs.shader-slang.org/en/latest/external/slang/docs/user-guide/08-compiling.html
@@ -532,7 +621,7 @@ namespace HBL2
                 options[3] = slang::CompilerOptionEntry
                 {
                     .name = slang::CompilerOptionName::Optimization,
-                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE }
+                    .value = { .kind = slang::CompilerOptionValueKind::Int, .intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_DEFAULT }
                 };
                 
                 break;
@@ -574,6 +663,44 @@ namespace HBL2
             return {};
         }
 
+        Slang::ComPtr<slang::IModule> lightingCommonModule;
+        if (attachLightingModules)
+        {
+            Slang::ComPtr<slang::IBlob> diagnostics0;
+            lightingCommonModule = session->loadModule("lighting_common", diagnostics0.writeRef());
+
+            if (diagnostics0)
+            {
+                HBL2_CORE_WARN("Slang diagnostics: {}", (const char*)diagnostics0->getBufferPointer());
+                diagnostics0 = nullptr;
+            }
+
+            if (!lightingCommonModule)
+            {
+                HBL2_CORE_ERROR("Slang: Failed to load shader module");
+                return {};
+            }
+        }
+
+        Slang::ComPtr<slang::IModule> lightingProviderModule;
+        if (attachLightingModules)
+        {
+            Slang::ComPtr<slang::IBlob> diagnostics1;
+            lightingProviderModule = session->loadModule(lightingProvider, diagnostics1.writeRef());
+
+            if (diagnostics1)
+            {
+                HBL2_CORE_WARN("Slang diagnostics: {}", (const char*)diagnostics1->getBufferPointer());
+                diagnostics1 = nullptr;
+            }
+
+            if (!lightingProviderModule)
+            {
+                HBL2_CORE_ERROR("Slang: Failed to load shader module");
+                return {};
+            }
+        }
+
         // Entry points.
         SlangInt32 entryPointCount = slangModule->getDefinedEntryPointCount();
         if (entryPointCount == 0)
@@ -593,6 +720,13 @@ namespace HBL2
         // Composite + link.
         StaticDArray<slang::IComponentType*, 6> components;
         components.push_back(slangModule);
+
+        if (attachLightingModules)
+        {
+            components.push_back(lightingCommonModule);
+            components.push_back(lightingProviderModule);
+        }
+
         for (auto& ep : entryPoints)
         {
             components.push_back(ep.get());
@@ -762,7 +896,8 @@ namespace HBL2
         out << YAML::Key << "BindGroup" << YAML::BeginSeq;
         out << YAML::BeginMap;
 
-        const auto& reflectionData = Reflect(path.string());
+        bool attachLightingModules = (shaderType == 1 || shaderType == 2);
+        const auto& reflectionData = Reflect(path.string(), attachLightingModules);
 
         for (const auto& descriptorSet : reflectionData.descriptorSets)
         {
@@ -836,7 +971,7 @@ namespace HBL2
 
                     out << YAML::EndMap;
                 }
-                else if (b.type == ShaderResourceType::SampledTexture)
+                else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
                 {
                     out << YAML::Key << b.name.c_str() << YAML::Value << (UUID)0;
                 }
@@ -915,7 +1050,9 @@ namespace HBL2
         YAML::Node bindGroup = root["Shader"]["BindGroup"];
 
         // Get reflection data.
-        const auto& reflectionData = Reflect(filePath.string());
+        uint32_t type = root["Shader"]["Type"].as<uint32_t>();
+        bool attachLightingModules = (type == 1 || type == 2);
+        const auto& reflectionData = Reflect(filePath.string(), attachLightingModules);
 
         for (const auto& descriptorSet : reflectionData.descriptorSets)
         {
@@ -995,7 +1132,7 @@ namespace HBL2
                         }
                     }
                 }
-                else if (b.type == ShaderResourceType::SampledTexture)
+                else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
                 {
                     Handle<Asset> textureAssetHandle = Handle<Asset>::UnPack(desc.TextureAssets[textureIndex++]);
 
@@ -1213,7 +1350,7 @@ namespace HBL2
 
                     out << YAML::EndMap;
                 }
-                else if (b.type == ShaderResourceType::SampledTexture)
+                else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
                 {
                     Handle<Asset> textureAssetHandle = Handle<Asset>::UnPack(desc.TextureAssets[textureIndex++]);
 
@@ -1320,27 +1457,40 @@ namespace HBL2
         ioStream.close();
     }
 
-    std::filesystem::path ShaderUtilities::GetCacheDirectory(GraphicsAPI target)
+    std::filesystem::path ShaderUtilities::GetCacheDirectory(GraphicsAPI target, RendererType rendererType)
     {
         const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
         
+        const char* renderer;
+
+        switch (rendererType)
+        {
+        case RendererType::Forward:
+            renderer = "forward";
+            break;
+        case RendererType::ForwardPlus:
+            renderer = "forward_plus";
+            break;
+        case RendererType::Custom:
+            renderer = "custom";
+            break;
+        }
+
         switch (target)
         {
-        case GraphicsAPI::OPENGL:
-            return workingDirectory / "assets/cache/shader/opengl";
         case GraphicsAPI::VULKAN:
-            return workingDirectory / "assets/cache/shader/vulkan";
+            return workingDirectory / "assets" / "cache" / "shader" / renderer / "vulkan";
         case GraphicsAPI::METAL:
-            return workingDirectory / "assets/cache/shader/metal";
+            return workingDirectory / "assets" / "cache" / "shader" / renderer / "metal";
         default:
-            HBL2_CORE_ASSERT(false, "Stage not supported");
+            HBL2_CORE_ASSERT(false, "Unsupported graphics backend!");
             return "";
         }
     }
 
-    void ShaderUtilities::CreateCacheDirectoryIfNeeded(GraphicsAPI target)
+    void ShaderUtilities::CreateCacheDirectoryIfNeeded(GraphicsAPI target, RendererType rendererType)
     {
-        const auto& cacheDirectory = GetCacheDirectory(target);
+        const auto& cacheDirectory = GetCacheDirectory(target, rendererType);
 
         if (!std::filesystem::exists(cacheDirectory))
         {

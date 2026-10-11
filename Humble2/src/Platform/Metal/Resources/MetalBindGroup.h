@@ -18,7 +18,7 @@ namespace HBL2
     struct MetalBindGroupCold
     {
         static constexpr uint32_t MaxTextureEntries = 6;
-        static constexpr uint32_t MaxBufferEntries = 6;
+        static constexpr uint32_t MaxBufferEntries = 8;
         
         uint64_t Hash = 0;
         const char* DebugName = "";

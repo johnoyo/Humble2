@@ -24,6 +24,7 @@ namespace HBL2
         MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
         
         Cold->DebugName = desc.debugName;
+        Cold->Usage = desc.usage;
         Hot->ByteSize = desc.byteSize;
         
         MTL::ResourceOptions resourceOptions = MtlUtils::MemoryUsageToMTLResourceOptions(desc.memoryUsage);

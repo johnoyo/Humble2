@@ -63,6 +63,8 @@ namespace HBL2
                 return MTL::PixelFormatBGRA8Unorm;
             case Format::RG16_FLOAT:
                 return MTL::PixelFormatRG16Float;
+            case Format::RG32_UINT:
+                return MTL::PixelFormatRG32Uint;
             case Format::RGBA16_FLOAT:
                 return MTL::PixelFormatRGBA16Float;
             case Format::RGB32_FLOAT:
@@ -79,6 +81,10 @@ namespace HBL2
                 return MTL::PixelFormatBC3_RGBA_sRGB;
             case Format::BC3_UNORM:
                 return MTL::PixelFormatBC3_RGBA;
+            case Format::BC4_R_UNORM:
+                return MTL::PixelFormatBC4_RUnorm;
+            case Format::BC5_RG_UNORM:
+                return MTL::PixelFormatBC5_RGUnorm;
             case Format::BC7_SRGB:
                 return MTL::PixelFormatBC7_RGBAUnorm_sRGB;
             case Format::BC7_UNORM:
@@ -295,14 +301,12 @@ namespace HBL2
 
     MTL::Winding MtlUtils::FrontFaceToMTLWinding(FrontFace frontFace)
     {
-        // NOTE: Front face inverted to match vulkan setup.
-        
         switch (frontFace)
         {
         case HBL2::FrontFace::COUNTER_CLOCKWISE:
-            return MTL::WindingClockwise;
-        case HBL2::FrontFace::CLOCKWISE:
             return MTL::WindingCounterClockwise;
+        case HBL2::FrontFace::CLOCKWISE:
+            return MTL::WindingClockwise;
         }
 
         return (MTL::Winding)NS::UInteger(-1);

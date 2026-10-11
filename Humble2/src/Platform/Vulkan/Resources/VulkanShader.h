@@ -59,7 +59,6 @@ namespace HBL2
 
 		void BuildSpecializationInfo(ShaderStage stage, SpecializationData& specializationData, const PipelineConfig& config);
 
-		std::vector<VkPipeline> m_RetiredPipelines; // TODO: Remove!
 		std::atomic<uint32_t> m_Count{ 0 };
 		mutable std::mutex m_WriteMutex;
 		
@@ -74,7 +73,8 @@ namespace HBL2
 
 		alignas(64) std::array<VariantEntry, MaxVariants> m_Entries;
 		std::array<BitFlags<ShaderStage>, MaxSpecializationConstants> m_SpecializationConstantStages;
-		RefHandle<BindGroupLayout> m_ReflectedBindGroupLayout;
+		RefHandle<BindGroupLayout> m_ReflectedSet0BindGroupLayout;
+		RefHandle<BindGroupLayout> m_ReflectedSet2BindGroupLayout;
 
 		friend class VulkanShader;
 	};

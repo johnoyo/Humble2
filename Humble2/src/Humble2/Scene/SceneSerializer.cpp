@@ -1,5 +1,6 @@
 #include "SceneSerializer.h"
 
+#include "Scene/ISystem.h"
 #include "Script/Script.h"
 #include "Script/BuildEngine.h"
 #include "Resources/ResourceManager.h"
@@ -37,6 +38,29 @@ namespace HBL2
 			});
 		out << YAML::EndSeq;
 
+		// Get registered systems.
+		std::vector<std::string> registeredSystemNames;
+
+		for (ISystem* system : m_Scene->GetSystems())
+		{
+			if (system != nullptr)
+			{
+				if (system->GetType() == SystemType::User)
+				{
+					registeredSystemNames.push_back(system->Name);
+				}
+			}
+		}
+
+		// Get registered components.
+		std::vector<std::string> registeredComponentNames;
+
+		Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
+		{
+			registeredComponentNames.emplace_back(BuildEngine::Instance->CleanComponentNameO3(entry.typeName.data()));
+		});
+
+		// Retrieve script asset UUIDs.
 		std::vector<UUID> componentUUIDs;
 		std::vector<UUID> helperScriptUUIDs;
 		std::vector<UUID> systemUUIDs;
@@ -55,11 +79,17 @@ namespace HBL2
 				{
 					if (script->Type == ScriptType::SYSTEM)
 					{
-						systemUUIDs.push_back(asset->UUID);
+						if (std::find(registeredSystemNames.begin(), registeredSystemNames.end(), script->Name) != registeredSystemNames.end())
+						{
+							systemUUIDs.push_back(asset->UUID);
+						}
 					}
 					else if (script->Type == ScriptType::COMPONENT)
 					{
-						componentUUIDs.push_back(asset->UUID);
+						if (std::find(registeredComponentNames.begin(), registeredComponentNames.end(), script->Name) != registeredComponentNames.end())
+						{
+							componentUUIDs.push_back(asset->UUID);
+						}
 					}
 					else if (script->Type == ScriptType::HELPER_SCRIPT)
 					{
@@ -69,6 +99,7 @@ namespace HBL2
 			}
 		}
 
+		// Serialize script asset UUIDs.
 		out << YAML::Key << "User Systems" << YAML::BeginSeq;
 		for (UUID systemUUID : systemUUIDs)
 		{

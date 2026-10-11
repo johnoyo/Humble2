@@ -42,18 +42,12 @@ namespace HBL2
 			vkDestroyPipeline(device->Get(), variantEntry.Pipeline, nullptr);
 		}
 
-		// Release old cache reflected bind group layout (set 2).
+		// Release old cache reflected bind group layout (set 0 and 2).
 		// We need to do that in case no material ends up using this descriptor,
 		// so the layout of the set will not get released, but it was created from reflection.
-		m_ReflectedBindGroupLayout.Release();
-
-		// TODO: Remove!
-		for (const auto& pipeline : m_RetiredPipelines)
-		{
-			vkDestroyPipeline(device->Get(), pipeline, nullptr);
-		}
-
-		m_RetiredPipelines.clear();
+		// Also, in the case of set 0, it is needed because of InvalidSceneRenderer so that clean up is complete.
+		m_ReflectedSet0BindGroupLayout.Release();
+		m_ReflectedSet2BindGroupLayout.Release();
 	}
 
 	VkPipeline VulkanShaderCold::GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld)
@@ -100,8 +94,12 @@ namespace HBL2
 			// Update number of entries.
 			m_Count.store(last, std::memory_order_release);
 
-			// Append pipeline to retired array for cleanup.
-			m_RetiredPipelines.push_back(p);  // TODO: Remove! Use deletion queue.
+			// Schedule retired pipeline for cleanup.
+			ResourceManager::Instance->GetDeletionQueue().Push(Renderer::Instance->GetFrameNumber(), [=]()
+			{
+				VulkanDevice* device = (VulkanDevice*)Device::Instance;
+				vkDestroyPipeline(device->Get(), p, nullptr);
+			});
 		}
 
 		// Create pipeline
@@ -599,7 +597,16 @@ namespace HBL2
 			}
 		}
 
-		Cold->RenderPass = rm->GetRenderPass(desc.renderPass)->RenderPass;
+		VulkanRenderPass* renderPassObj = rm->GetRenderPass(desc.renderPass);
+
+		if (renderPassObj != nullptr)
+		{
+			Cold->RenderPass = renderPassObj->RenderPass;
+		}
+		else
+		{
+			Cold->RenderPass = VK_NULL_HANDLE;
+		}
 
 		std::array<VkShaderModule, 2> shaderModules{};
 		std::array<const char*, 2> entryPoints{};
@@ -659,10 +666,12 @@ namespace HBL2
 		StaticDArray<VkDescriptorSetLayout, 8> setLayouts;
 		uint32_t bindGroupLayoutIndex = 0;
 
-		// Release old cache reflected bind group layout (set 2).
+		// Release old cache reflected bind group layout (set 0 and 2).
 		// We need to do that in case no material ends up using this descriptor,
 		// so the layout of the set will not get released, but it was created from reflection.
-		Cold->m_ReflectedBindGroupLayout.Release();
+		// Also, in the case of set 0, it is needed because of InvalidSceneRenderer so that clean up is complete.
+		Cold->m_ReflectedSet0BindGroupLayout.Release();
+		Cold->m_ReflectedSet2BindGroupLayout.Release();
 
 		for (const auto& bindGroup : desc.bindGroups)
 		{
@@ -671,6 +680,15 @@ namespace HBL2
 				if (bindGroupLayoutIndex == 0)
 				{
 					Hot->GlobalBindGroupLayoutHash = bindGroup.HashKey();
+
+					if (desc.bindGroups.size() == 4)
+					{
+						if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout())
+						{
+							// Keep reference to the reflected bind group layout of set 0.
+							Cold->m_ReflectedSet0BindGroupLayout = bindGroup;
+						}
+					}
 				}
 
 				if (bindGroupLayoutIndex == 2 && desc.bindGroups.size() == 4)
@@ -678,7 +696,7 @@ namespace HBL2
 					if (bindGroup != Renderer::Instance->GetEmptyBindingsLayout())
 					{
 						// Keep reference to the reflected bind group layout of set 2.
-						Cold->m_ReflectedBindGroupLayout = bindGroup;
+						Cold->m_ReflectedSet2BindGroupLayout = bindGroup;
 					}
 				}
 

@@ -80,7 +80,7 @@ namespace HBL2
 			bool m_ProjectChanged = false;
 			std::filesystem::path m_EditorScenePath;
 			std::filesystem::path m_CurrentDirectory;
-			Handle<Asset> m_SelectedAsset;
+			RefHandle<Asset> m_SelectedAsset;
 
 			friend class TrayPanel;
 			friend class PlayStopPanel;

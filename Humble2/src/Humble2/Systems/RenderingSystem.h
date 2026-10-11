@@ -4,7 +4,7 @@
 #include "Scene/ISystem.h"
 #include "Core/Context.h"
 #include "Resources/ResourceManager.h"
-#include "Renderer/ForwardSceneRenderer.h"
+#include "Renderer/SceneRenderer.h"
 
 namespace HBL2
 {
