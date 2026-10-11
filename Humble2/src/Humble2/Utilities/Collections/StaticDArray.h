@@ -3,7 +3,12 @@
 #include "Base.h"
 
 #include <cstdint>
+#include <cstring>
 #include <initializer_list>
+#include <memory>
+#include <new>
+#include <type_traits>
+#include <utility>
 
 namespace HBL2
 {
@@ -17,7 +22,7 @@ namespace HBL2
 		static constexpr uint32_t Capacity = N;
 
 		/// Default constructor
-		StaticDArray() = default;
+		StaticDArray() noexcept {}
 
 		/// Constructor from initializer list
 		explicit StaticDArray(std::initializer_list<T> inList)
@@ -25,7 +30,7 @@ namespace HBL2
 			HBL2_CORE_ASSERT(inList.size() <= N, "");
 			for (const T& v : inList)
 			{
-				new (reinterpret_cast<T*>(&m_Elements[m_Size++])) T(v);
+				new (std::addressof(m_Elements[m_Size++])) T(v);
 			}
 		}
 
@@ -34,7 +39,7 @@ namespace HBL2
 		{
 			while (m_Size < inRHS.m_Size)
 			{
-				new (&m_Elements[m_Size]) T(inRHS[m_Size]);
+				new (std::addressof(m_Elements[m_Size])) T(inRHS[m_Size]);
 				++m_Size;
 			}
 		}
@@ -44,7 +49,7 @@ namespace HBL2
 		{
 			if constexpr (!std::is_trivially_destructible<T>())
 			{
-				for (T* e = reinterpret_cast<T*>(m_Elements), *end = e + m_Size; e < end; ++e)
+				for (T* e = m_Elements, *end = e + m_Size; e < end; ++e)
 				{
 					e->~T();
 				}
@@ -56,7 +61,7 @@ namespace HBL2
 		{
 			if constexpr (!std::is_trivially_destructible<T>())
 			{
-				for (T* e = reinterpret_cast<T*>(m_Elements), *end = e + m_Size; e < end; ++e)
+				for (T* e = m_Elements, *end = e + m_Size; e < end; ++e)
 				{
 					e->~T();
 				}
@@ -68,7 +73,7 @@ namespace HBL2
 		void push_back(const T& inElement)
 		{
 			HBL2_CORE_ASSERT(m_Size < N, "");
-			new (&m_Elements[m_Size++]) T(inElement);
+			new (std::addressof(m_Elements[m_Size++])) T(inElement);
 		}
 
 		/// Construct element at the back of the array
@@ -76,14 +81,14 @@ namespace HBL2
 		void emplace_back(A &&... inElement)
 		{
 			HBL2_CORE_ASSERT(m_Size < N, "");
-			new (&m_Elements[m_Size++]) T(std::forward<A>(inElement)...);
+			new (std::addressof(m_Elements[m_Size++])) T(std::forward<A>(inElement)...);
 		}
 
 		/// Remove element from the back of the array
 		void pop_back()
 		{
 			HBL2_CORE_ASSERT(m_Size > 0, "");
-			reinterpret_cast<T&>(m_Elements[--m_Size]).~T();
+			m_Elements[--m_Size].~T();
 		}
 
 		/// Returns true if there are no elements in the array
@@ -110,15 +115,15 @@ namespace HBL2
 			HBL2_CORE_ASSERT(inNewSize <= N, "");
 			if constexpr (!std::is_trivially_constructible<T>())
 			{
-				for (T* element = reinterpret_cast<T*>(m_Elements) + m_Size, *element_end = reinterpret_cast<T*>(m_Elements) + inNewSize; element < element_end; ++element)
+				for (T* element = m_Elements + m_Size, *element_end = m_Elements + inNewSize; element < element_end; ++element)
 				{
 					new (element) T;
 				}
 			}
-			
+
 			if constexpr (!std::is_trivially_destructible<T>())
 			{
-				for (T* element = reinterpret_cast<T*>(m_Elements) + inNewSize, *element_end = reinterpret_cast<T*>(m_Elements) + m_Size; element < element_end; ++element)
+				for (T* element = m_Elements + inNewSize, *element_end = m_Elements + m_Size; element < element_end; ++element)
 				{
 					element->~T();
 				}
@@ -132,86 +137,86 @@ namespace HBL2
 		/// Iterators
 		const_iterator begin() const
 		{
-			return reinterpret_cast<const T*>(m_Elements);
+			return m_Elements;
 		}
 
 		const_iterator end() const
 		{
-			return reinterpret_cast<const T*>(m_Elements + m_Size);
+			return m_Elements + m_Size;
 		}
 
 		using iterator = T*;
 
 		iterator begin()
 		{
-			return reinterpret_cast<T*>(m_Elements);
+			return m_Elements;
 		}
 
 		iterator end()
 		{
-			return reinterpret_cast<T*>(m_Elements + m_Size);
+			return m_Elements + m_Size;
 		}
 
 		const T* data() const
 		{
-			return reinterpret_cast<const T*>(m_Elements);
+			return m_Elements;
 		}
 
 		T* data()
 		{
-			return reinterpret_cast<T*>(m_Elements);
+			return m_Elements;
 		}
 
 		/// Access element
 		T& operator [] (size_type inIdx)
 		{
 			HBL2_CORE_ASSERT(inIdx < m_Size, "");
-			return reinterpret_cast<T&>(m_Elements[inIdx]);
+			return m_Elements[inIdx];
 		}
 
 		const T& operator [] (size_type inIdx) const
 		{
 			HBL2_CORE_ASSERT(inIdx < m_Size, "");
-			return reinterpret_cast<const T&>(m_Elements[inIdx]);
+			return m_Elements[inIdx];
 		}
 
 		/// Access element
 		T& at(size_type inIdx)
 		{
 			HBL2_CORE_ASSERT(inIdx < m_Size, "");
-			return reinterpret_cast<T&>(m_Elements[inIdx]);
+			return m_Elements[inIdx];
 		}
 
 		const T& at(size_type inIdx) const
 		{
 			HBL2_CORE_ASSERT(inIdx < m_Size, "");
-			return reinterpret_cast<const T&>(m_Elements[inIdx]);
+			return m_Elements[inIdx];
 		}
 
 		/// First element in the array
 		const T& front() const
 		{
 			HBL2_CORE_ASSERT(m_Size > 0, "");
-			return reinterpret_cast<const T&>(m_Elements[0]);
+			return m_Elements[0];
 		}
 
 		T& front()
 		{
 			HBL2_CORE_ASSERT(m_Size > 0, "");
-			return reinterpret_cast<T&>(m_Elements[0]);
+			return m_Elements[0];
 		}
 
 		/// Last element in the array
 		const T& back() const
 		{
 			HBL2_CORE_ASSERT(m_Size > 0, "");
-			return reinterpret_cast<const T&>(m_Elements[m_Size - 1]);
+			return m_Elements[m_Size - 1];
 		}
 
 		T& back()
 		{
 			HBL2_CORE_ASSERT(m_Size > 0, "");
-			return reinterpret_cast<T&>(m_Elements[m_Size - 1]);
+			return m_Elements[m_Size - 1];
 		}
 
 		/// Remove one element from the array
@@ -219,10 +224,10 @@ namespace HBL2
 		{
 			size_type p = size_type(inIter - begin());
 			HBL2_CORE_ASSERT(p < m_Size, "");
-			reinterpret_cast<T&>(m_Elements[p]).~T();
+			m_Elements[p].~T();
 			if (p + 1 < m_Size)
 			{
-				std::memmove(m_Elements + p, m_Elements + p + 1, (m_Size - p - 1) * sizeof(T));
+				std::memmove(static_cast<void*>(m_Elements + p), static_cast<const void*>(m_Elements + p + 1), (m_Size - p - 1) * sizeof(T));
 			}
 			--m_Size;
 		}
@@ -235,12 +240,12 @@ namespace HBL2
 			HBL2_CORE_ASSERT(inEnd <= end(), "");
 			for (size_type i = 0; i < n; ++i)
 			{
-				reinterpret_cast<T&>(m_Elements[p + i]).~T();
+				m_Elements[p + i].~T();
 			}
 
 			if (p + n < m_Size)
 			{
-				std::memmove(m_Elements + p, m_Elements + p + n, (m_Size - p - n) * sizeof(T));
+				std::memmove(static_cast<void*>(m_Elements + p), static_cast<const void*>(m_Elements + p + n), (m_Size - p - n) * sizeof(T));
 			}
 			m_Size -= n;
 		}
@@ -256,7 +261,7 @@ namespace HBL2
 
 				while (m_Size < rhs_size)
 				{
-					new (&m_Elements[m_Size]) T(inRHS[m_Size]);
+					new (std::addressof(m_Elements[m_Size])) T(inRHS[m_Size]);
 					++m_Size;
 				}
 			}
@@ -277,7 +282,7 @@ namespace HBL2
 
 				while (m_Size < rhs_size)
 				{
-					new (&m_Elements[m_Size]) T(inRHS[m_Size]);
+					new (std::addressof(m_Elements[m_Size])) T(inRHS[m_Size]);
 					++m_Size;
 				}
 			}
@@ -295,7 +300,7 @@ namespace HBL2
 
 			for (size_type i = 0; i < m_Size; ++i)
 			{
-				if (!(reinterpret_cast<const T&>(m_Elements[i]) == reinterpret_cast<const T&>(inRHS.m_Elements[i])))
+				if (!(m_Elements[i] == inRHS.m_Elements[i]))
 				{
 					return false;
 				}
@@ -313,7 +318,7 @@ namespace HBL2
 
 			for (size_type i = 0; i < m_Size; ++i)
 			{
-				if (reinterpret_cast<const T&>(m_Elements[i]) != reinterpret_cast<const T&>(inRHS.m_Elements[i]))
+				if (m_Elements[i] != inRHS.m_Elements[i])
 				{
 					return true;
 				}
@@ -323,15 +328,14 @@ namespace HBL2
 		}
 
 	protected:
-		struct alignas(T) Storage
-		{
-			uint8_t m_Data[sizeof(T)];
-		};
-
-		static_assert(sizeof(T) == sizeof(Storage), "Mismatch in size");
-		static_assert(alignof(T) == alignof(Storage), "Mismatch in alignment");
-
 		size_type m_Size = 0;
-		Storage m_Elements[N];
+
+		// Anonymous union: the compiler neither constructs nor destroys the elements
+		// automatically, so lifetimes stay under manual control (placement new / explicit ~T()),
+		// while debuggers see a real T[N] instead of raw bytes.
+		union
+		{
+			T m_Elements[N];
+		};
 	};
 }
