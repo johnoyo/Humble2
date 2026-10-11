@@ -61,11 +61,15 @@ namespace HBL2::Editor
 		bool m_MaterialBindGroupNeedsReimport = false;
 
 		ResourceTask<Material> m_MaterialTask = {};
-		bool m_MaterialTaskStarted = false;
-		bool m_PreviousMaterialTaskStillRunning = false;
-		JobContext m_MaterialTaskCtx = {};
+        bool m_MaterialTaskStarted = false;
+        bool m_PreviousMaterialTaskStillRunning = false;
+        JobContext m_MaterialTaskCtx = {};
 
-		bool m_ShaderNeedsReimport = false;
+        bool m_SelectedShaderChanged = false;
+        bool m_ShaderNeedsReimport = false;
+        bool m_ShaderBindGroupNeedsReimport = false;
+        bool m_ShaderTaskStarted = false;
+        bool m_PreviousShaderTaskStillRunning = false;
 		ResourceTask<Shader> m_ShaderTask = {};
 	};
 }
