@@ -22,14 +22,8 @@ namespace HBL2
 		VulkanRenderPass() = default;
 		VulkanRenderPass(const RenderPassDescriptor&& desc);
 
-        void CreateFrameBuffer(const FrameBufferDescriptor&& desc);
-        
-		void Destroy()
-		{
-			VulkanDevice* device = (VulkanDevice*)Device::Instance;
-			vkDestroyRenderPass(device->Get(), RenderPass, nullptr);
-            vkDestroyFramebuffer(device->Get(), FrameBuffer, nullptr);
-		}
+        void CreateFrameBuffer(const FrameBufferDescriptor&& desc);        
+		void Destroy();		
         
         static constexpr uint32_t MaxColorTargets = 4;
         static constexpr uint32_t MaxSubPassAttachments = 4;

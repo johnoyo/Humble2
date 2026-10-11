@@ -203,4 +203,15 @@ namespace HBL2
 
         VK_VALIDATE(vkCreateFramebuffer(device->Get(), &frameBufferInfo, nullptr, &FrameBuffer), "vkCreateFramebuffer");
     }
+
+	void VulkanRenderPass::Destroy()
+	{
+		VulkanDevice* device = (VulkanDevice*)Device::Instance;
+
+		vkDestroyRenderPass(device->Get(), RenderPass, nullptr);
+		vkDestroyFramebuffer(device->Get(), FrameBuffer, nullptr);
+
+		ColorClearValues.clear();
+		ColorTargets.clear();
+	}
 }
