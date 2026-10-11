@@ -14,20 +14,14 @@ namespace HBL2
 	struct VulkanRenderPassLayout
 	{
 		VulkanRenderPassLayout() = default;
-		VulkanRenderPassLayout(const RenderPassLayoutDescriptor&& desc)
-		{
-			DebugName = desc.debugName;
+		VulkanRenderPassLayout(const RenderPassLayoutDescriptor&& desc);
 
-			DepthTargetFormat = desc.depthTargetFormat;
+		void Destroy();
 
-			for (const auto& subPass : desc.subPasses)
-			{
-				SubPasses.push_back(subPass);
-			}
-		}
+		static constexpr uint32_t MaxSubPasses = 4;
 
 		const char* DebugName = "";
 		Format DepthTargetFormat = Format::D32_FLOAT;
-        StaticDArray<RenderPassLayoutDescriptor::SubPass, 4> SubPasses;
+        StaticDArray<RenderPassLayoutDescriptor::SubPass, MaxSubPasses> SubPasses;
 	};
 }
