@@ -17,7 +17,7 @@ namespace HBL2
         {
             m_MetalLayer->setDevice(m_Device);
             m_MetalLayer->setPixelFormat(MTL::PixelFormatBGRA8Unorm);
-            m_MetalLayer->setMaximumDrawableCount(FRAME_OVERLAP);
+            m_MetalLayer->setMaximumDrawableCount(3);
             m_MetalLayer->setFramebufferOnly(true);
             m_MetalLayer->setDisplaySyncEnabled(Window::Instance->GetSpec().VerticalSync);
         }

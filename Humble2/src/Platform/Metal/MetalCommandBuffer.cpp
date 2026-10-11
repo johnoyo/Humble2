@@ -77,6 +77,7 @@ namespace HBL2
 
     RenderPassRenderer* MetalCommandBuffer::BeginRenderPass(Handle<RenderPass> renderPass, Viewport&& drawArea)
     {
+        MetalRenderer* renderer = (MetalRenderer*)Renderer::Instance;
         MetalResourceManager* rm = (MetalResourceManager*)ResourceManager::Instance;
         
         m_CurrentRenderPassRenderer.m_CommandBuffer = CommandBuffer;
@@ -97,6 +98,11 @@ namespace HBL2
                 mtlRenderPass->Width,
                 mtlRenderPass->Height
             };
+        }
+        
+        if (renderPass == renderer->GetMainRenderPass())
+        {
+            renderer->EnsureDrawableAcquired();
         }
         
         m_CurrentRenderPassRenderer.Encoder = CommandBuffer->renderCommandEncoder(mtlRenderPass->PassDesc);
@@ -191,7 +197,6 @@ namespace HBL2
         
         if (m_Type == CommandBufferType::MAIN)
         {
-            renderer->EnsureDrawableAcquired();
             renderer->GetCommandQueue()->wait(renderer->GetCurrentSurface());
             
             renderer->GetCommandQueue()->commit(&CommandBuffer, 1);

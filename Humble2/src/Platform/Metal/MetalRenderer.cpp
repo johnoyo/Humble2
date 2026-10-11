@@ -162,6 +162,7 @@ namespace HBL2
     {
         if (!m_SurfaceRef)
         {
+            m_AutoReleasePool->release();
             return;
         }
         
