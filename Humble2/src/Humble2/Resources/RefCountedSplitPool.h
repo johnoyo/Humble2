@@ -1,33 +1,28 @@
 #pragma once
 
 #include "Handle.h"
-#include "RefCounted.h"
+#include "PoolSlotMeta.h"
 #include "LockFreeIndexStack.h"
 #include "Utilities/Collections/Span.h"
 
 #include "Core/Allocators.h"
 #include "Utilities/Allocators/Arena.h"
 
-#include <atomic>
-#include <cstdint>
 #include <new>
+#include <atomic>
+#include <utility>
 #include <type_traits>
+#include <cstdint>
+#include <cstring>
 
 namespace HBL2
 {
     template <typename THot, typename TCold, typename H>
     class RefCountedSplitPool
     {
-        struct PoolSlotMeta
-        {
-            std::atomic<uint16_t> GenerationalCounter{ 0 };
-            RefCounted ReferenceCounter{ 0 };
-        };
-
     public:
         static constexpr uint16_t InvalidIndex = LockFreeIndexStack::InvalidIndex;
-        static constexpr uint16_t MaxReferenceCount = 4096;
-
+        
         RefCountedSplitPool() = default;
 
         explicit RefCountedSplitPool(uint32_t size)
@@ -72,8 +67,7 @@ namespace HBL2
 
             for (uint32_t i = 0; i < m_Size; ++i)
             {
-                m_Meta[i].ReferenceCounter.RefCount.store(0, std::memory_order_relaxed);
-                m_Meta[i].GenerationalCounter.store(1, std::memory_order_relaxed);
+                m_Meta[i].InitFree(1);
             }
 
             m_FreeList.Initialize(m_NextFree, m_Size);
@@ -93,8 +87,8 @@ namespace HBL2
 
             *outHot = &m_HotData[index];
             *outCold = &m_ColdData[index];
-
-            const uint16_t gen = m_Meta[index].GenerationalCounter.load(std::memory_order_relaxed);
+            
+            const uint16_t gen = m_Meta[index].Open();
             return { index, gen };
         }
 
@@ -108,19 +102,14 @@ namespace HBL2
             const uint16_t idx = handle.m_ArrayIndex;
             if (idx == InvalidIndex || idx >= m_Size)
             {
+                HBL2_CORE_ASSERT(false, "Handle index out of range!");
                 return;
             }
 
-            const uint16_t cur = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
-            if (cur != handle.m_GenerationalCounter)
+            if (m_Meta[idx].TryRetire(handle.m_GenerationalCounter))
             {
-                return;
+                m_FreeList.Push(idx);
             }
-
-            m_Meta[idx].GenerationalCounter.fetch_add(1, std::memory_order_acq_rel);
-            m_Meta[idx].ReferenceCounter.RefCount.store(0, std::memory_order_release);
-
-            m_FreeList.Push(idx);
         }
 
         THot* GetHot(Handle<H> handle) const
@@ -133,12 +122,11 @@ namespace HBL2
             const uint16_t idx = handle.m_ArrayIndex;
             if (idx == InvalidIndex || idx >= m_Size)
             {
-                HBL2_CORE_ASSERT(false, "Exhausted available Pool indeces!");
+                HBL2_CORE_ASSERT(false, "Handle index out of range!");
                 return nullptr;
             }
-
-            const uint16_t gen = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
-            if (gen != handle.m_GenerationalCounter)
+            
+            if (!m_Meta[idx].Matches(handle.m_GenerationalCounter))
             {
                 return nullptr;
             }
@@ -156,12 +144,11 @@ namespace HBL2
             const uint16_t idx = handle.m_ArrayIndex;
             if (idx == InvalidIndex || idx >= m_Size)
             {
-                HBL2_CORE_ASSERT(false, "Exhausted available Pool indeces!");
+                HBL2_CORE_ASSERT(false, "Handle index out of range!");
                 return nullptr;
             }
 
-            const uint16_t gen = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
-            if (gen != handle.m_GenerationalCounter)
+            if (!m_Meta[idx].Matches(handle.m_GenerationalCounter))
             {
                 return nullptr;
             }
@@ -179,13 +166,15 @@ namespace HBL2
             const uint16_t idx = handle.m_ArrayIndex;
             if (idx == InvalidIndex || idx >= m_Size)
             {
-                HBL2_CORE_ASSERT(false, "Exhausted available Pool indeces!");
+                HBL2_CORE_ASSERT(false, "Handle index out of range!");
                 return false;
             }
 
-            const uint16_t gen = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
-            if (gen != handle.m_GenerationalCounter)
+            if (!m_Meta[idx].Matches(handle.m_GenerationalCounter))
             {
+                *outHot = nullptr;
+                *outCold = nullptr;
+                
                 return false;
             }
 
@@ -205,16 +194,11 @@ namespace HBL2
             const uint16_t idx = handle.m_ArrayIndex;
             if (idx == InvalidIndex || idx >= m_Size)
             {
+                HBL2_CORE_ASSERT(false, "Handle index out of range!");
                 return false;
             }
 
-            const uint16_t cur = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
-            if (cur != handle.m_GenerationalCounter)
-            {
-                return false;
-            }
-
-            return m_Meta[idx].ReferenceCounter.TryAddRef();
+            return m_Meta[idx].TryAddRef(handle.m_GenerationalCounter);
         }
 
         bool Release(Handle<H> handle)
@@ -227,16 +211,28 @@ namespace HBL2
             const uint16_t idx = handle.m_ArrayIndex;
             if (idx == InvalidIndex || idx >= m_Size)
             {
+                HBL2_CORE_ASSERT(false, "Handle index out of range!");
                 return false;
             }
 
-            const uint16_t cur = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
-            if (cur != handle.m_GenerationalCounter)
+            return m_Meta[idx].TryReleaseRef(handle.m_GenerationalCounter);
+        }
+        
+        bool Reopen(Handle<H> handle)
+        {
+            if (!handle.IsValid())
             {
                 return false;
             }
 
-            return m_Meta[idx].ReferenceCounter.TryReleaseRef();
+            const uint16_t idx = handle.m_ArrayIndex;
+            if (idx == InvalidIndex || idx >= m_Size)
+            {
+                HBL2_CORE_ASSERT(false, "Handle index out of range!");
+                return false;
+            }
+
+            return m_Meta[idx].TryReopen(handle.m_GenerationalCounter);
         }
 
         bool IsAlive(Handle<H> handle)
@@ -249,22 +245,11 @@ namespace HBL2
             const uint16_t idx = handle.m_ArrayIndex;
             if (idx == InvalidIndex || idx >= m_Size)
             {
+                HBL2_CORE_ASSERT(false, "Handle index out of range!");
                 return false;
             }
 
-            const uint16_t cur = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
-            if (cur != handle.m_GenerationalCounter)
-            {
-                return false;
-            }
-
-            const uint16_t rc = m_Meta[idx].ReferenceCounter.RefCount.load(std::memory_order_acquire);
-            if (rc >= 1 && rc < MaxReferenceCount)
-            {
-                return true;
-            }
-
-            return false;
+            return m_Meta[idx].IsAlive(handle.m_GenerationalCounter);
         }
 
         bool IsClosing(Handle<H> handle)
@@ -277,16 +262,11 @@ namespace HBL2
             const uint16_t idx = handle.m_ArrayIndex;
             if (idx == InvalidIndex || idx >= m_Size)
             {
+                HBL2_CORE_ASSERT(false, "Handle index out of range!");
                 return true;
             }
 
-            const uint16_t cur = m_Meta[idx].GenerationalCounter.load(std::memory_order_acquire);
-            if (cur != handle.m_GenerationalCounter)
-            {
-                return true;
-            }
-
-            return m_Meta[idx].ReferenceCounter.IsClosing();
+            return m_Meta[idx].IsClosing(handle.m_GenerationalCounter);
         }
 
         const Span<THot> GetDataHotPool() const
@@ -306,7 +286,7 @@ namespace HBL2
                 return {};
             }
 
-            return { index, m_Meta[index].GenerationalCounter.load(std::memory_order_acquire) };
+            return { index, m_Meta[index].Generation() };
         }
 
         uint32_t Capacity() const { return m_Size; }

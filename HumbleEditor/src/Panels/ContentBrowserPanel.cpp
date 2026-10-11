@@ -309,6 +309,7 @@ namespace HBL2::Editor
 
 	void ContentBrowserPanel::OnDestroy()
 	{
+        m_Owner->m_SelectedAsset.Release();
 	}
 
 	void ContentBrowserPanel::HandleContentBrowserDragAndDrop()
