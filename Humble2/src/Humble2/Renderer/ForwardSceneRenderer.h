@@ -103,7 +103,8 @@ namespace HBL2
 		Handle<RenderPassLayout> m_RenderPassLayout;
 
 		Handle<Texture> m_ShadowDepthTexture;
-		Handle<RenderPass> m_ShadowRenderPass;
+        Handle<RenderPass> m_ShadowRenderPassClear;
+		Handle<RenderPass> m_ShadowRenderPassLoad;
 		Handle<Shader> m_ShadowPrePassShader;
 		Handle<Material> m_ShadowPrePassMaterial;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_ShadowPrePassMaterialHash = g_NullVariant;

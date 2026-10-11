@@ -27,36 +27,51 @@ namespace HBL2
 			};
 		}
 
-		std::vector<VkClearValue> clearValues;
+		StaticDArray<VkClearValue, VulkanRenderPass::MaxColorTargets> clearValues;
 
-		for (auto clearValue : vkRenderPass->ColorClearValues)
+        // Metal clears the whole attachment whenever a clear load action is used, so match it:
+        // a pass that clears on load gets the full framebuffer as its render area.
+        bool clearsOnLoad = vkRenderPass->DepthClearValue || vkRenderPass->StencilClearValue;
+        
+		for (bool shouldClear : vkRenderPass->ColorClearValues)
 		{
-			if (clearValue)
-			{
-				VkClearValue clearValue;
-				clearValue.color = { { vkRenderPass->ClearColor.r, vkRenderPass->ClearColor.g, vkRenderPass->ClearColor.b, vkRenderPass->ClearColor.a } };
-				clearValues.push_back(clearValue);
-			}
+            clearsOnLoad |= shouldClear;
+            
+            VkClearValue clearValue{};
+            
+            if (shouldClear)
+            {
+				clearValue.color = {
+                    {
+                        vkRenderPass->ClearColor.r,
+                        vkRenderPass->ClearColor.g,
+                        vkRenderPass->ClearColor.b,
+                        vkRenderPass->ClearColor.a
+                    }
+                };
+            }
+            
+            clearValues.push_back(clearValue);
 		}
 
 		if (vkRenderPass->DepthClearValue)
 		{
-			VkClearValue depthClear;
+            VkClearValue depthClear{};
 			depthClear.depthStencil.depth = vkRenderPass->ClearDepth;
 			clearValues.push_back(depthClear);
 		}
 
+       VkRect2D renderArea = clearsOnLoad
+           ? VkRect2D{ { 0, 0 }, { vkRenderPass->Width, vkRenderPass->Height } }
+           : VkRect2D{ { (int32_t)drawArea.x, (int32_t)drawArea.y }, { drawArea.width, drawArea.height } };
+        
 		VkRenderPassBeginInfo rpInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 			.pNext = nullptr,
 			.renderPass = vkRenderPass->RenderPass,
 			.framebuffer = vkRenderPass->FrameBuffer,
-			.renderArea =
-			{
-				.offset = { (int32_t)drawArea.x, (int32_t)drawArea.y },
-				.extent = { drawArea.width, drawArea.height },
-			},
+			.renderArea = renderArea,
 			.clearValueCount = (uint32_t)clearValues.size(),
 			.pClearValues = clearValues.data(),
 		};

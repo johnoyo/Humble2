@@ -10,6 +10,8 @@
 
 #include "VulkanRenderPassLayout.h"
 
+#include "Utilities/Collections/StaticDArray.h"
+
 #include <string>
 #include <stdint.h>
 
@@ -28,10 +30,12 @@ namespace HBL2
 			vkDestroyRenderPass(device->Get(), RenderPass, nullptr);
             vkDestroyFramebuffer(device->Get(), FrameBuffer, nullptr);
 		}
+        
+        static constexpr uint32_t MaxColorTargets = 4;
 
 		const char* DebugName = "";
 		VkRenderPass RenderPass = VK_NULL_HANDLE;
-		std::vector<bool> ColorClearValues;
+        StaticDArray<bool, MaxColorTargets> ColorClearValues;
 		glm::vec4 ClearColor = {};
 
 		bool DepthClearValue = false;
@@ -44,7 +48,7 @@ namespace HBL2
         VkFramebuffer FrameBuffer = VK_NULL_HANDLE;
         uint32_t Width = 0;
         uint32_t Height = 0;
-        std::vector<Handle<Texture>> ColorTargets;
+        StaticDArray<Handle<Texture>, MaxColorTargets> ColorTargets;
         Handle<Texture> DepthTarget;
 	};
 }

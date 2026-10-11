@@ -202,7 +202,8 @@ namespace HBL2
 
 		// Shadow pass clean up.
 		m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
-		m_ResourceManager->DeleteRenderPass(m_ShadowRenderPass);
+        m_ResourceManager->DeleteRenderPass(m_ShadowRenderPassClear);
+		m_ResourceManager->DeleteRenderPass(m_ShadowRenderPassLoad);
 		m_ResourceManager->DeleteShader(m_ShadowPrePassShader);
 		m_ResourceManager->DeleteMaterial(m_ShadowPrePassMaterial);
 
@@ -467,8 +468,8 @@ namespace HBL2
 	void ForwardPlusSceneRenderer::ShadowPassSetup()
 	{
 		// Create shadow framebuffer.
-		m_ShadowRenderPass = m_ResourceManager->CreateRenderPass({
-			.debugName = "shadow-load-renderpass",
+		m_ShadowRenderPassClear = m_ResourceManager->CreateRenderPass({
+			.debugName = "shadow-clear-renderpass",
 			.layout = m_DepthOnlyRenderPassLayout,
 			.depthTarget = {
 				.loadOp = LoadOperation::CLEAR,
@@ -484,6 +485,24 @@ namespace HBL2
 				.depthTarget = Renderer::Instance->ShadowAtlasTexture,
 			}
 		});
+        
+        m_ShadowRenderPassLoad = m_ResourceManager->CreateRenderPass({
+            .debugName = "shadow-load-renderpass",
+            .layout = m_DepthOnlyRenderPassLayout,
+            .depthTarget = {
+                .loadOp = LoadOperation::LOAD,
+                .storeOp = StoreOperation::STORE,
+                .stencilLoadOp = LoadOperation::DONT_CARE,
+                .stencilStoreOp = StoreOperation::DONT_CARE,
+                .prevUsage = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
+                .nextUsage = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
+            },
+            .frameBufferDesc = {
+                .width = g_ShadowAtlasSize,
+                .height = g_ShadowAtlasSize,
+                .depthTarget = Renderer::Instance->ShadowAtlasTexture,
+            }
+        });
 
 		// Create shadow pre-pass shader.
 		const auto& shadowPrePassShaderData = ShaderUtilities::Get().Compile("assets/shaders/shadow-mapping-pre-pass.slang", (ShaderReflectionData*)nullptr, false);
@@ -518,7 +537,7 @@ namespace HBL2
 				},
 				.variants = { variant },
 			},
-			.renderPass = m_ShadowRenderPass,
+			.renderPass = m_ShadowRenderPassClear,
 		});
 
 		// Create shadow pre-pass material.
@@ -1595,7 +1614,9 @@ namespace HBL2
 						uint32_t tileX = tile.x * g_TileSize;
 						uint32_t tileY = tile.y * g_TileSize;
 
-						RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_ShadowRenderPass, { tileX, tileY, g_TileSize, g_TileSize });
+                        auto renderPass = (shadowCastingLightIndex == 0) ? m_ShadowRenderPassClear : m_ShadowRenderPassLoad;
+                        
+                        auto* passRenderer = commandBuffer->BeginRenderPass(renderPass, { tileX, tileY, g_TileSize, g_TileSize });
 
 						GlobalDrawStream globalDrawStream =
 						{

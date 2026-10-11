@@ -140,7 +140,13 @@ namespace HBL2
     {
         Width = desc.width;
         Height = desc.height;
-        ColorTargets = desc.colorTargets;
+        
+        HBL2_CORE_ASSERT(desc.colorTargets.size() <= ColorTargets.capacity(), "Exceeded max number of render pass color targets!");
+        for (const auto& colorTarget : desc.colorTargets)
+        {
+            ColorTargets.push_back(colorTarget);
+        }
+        
         DepthTarget = desc.depthTarget;
         
 		VulkanDevice* device = (VulkanDevice*)Device::Instance;
