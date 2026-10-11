@@ -360,7 +360,8 @@ namespace HBL2
                 if (settings.PlatformCompressionMethod[(int)platform] == CompressionMethod::NONE)
                 {
                     if (path.find("_rough.") != path.npos || path.find("_metal.") != path.npos ||
-                        path.find("-rough.") != path.npos || path.find("-metal.") != path.npos)
+                        path.find("-rough.") != path.npos || path.find("-metal.") != path.npos ||
+                        path.find("_Roughness.") != path.npos || path.find("_Metalness.") != path.npos)
                     {
                         settings.PixelFormat = Format::RGBA8_UNORM;
                     }

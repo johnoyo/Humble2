@@ -19,15 +19,15 @@ namespace HBL2
 	thread_local std::vector<Handle<Asset>> FastGltfLoader::s_Textures;
 	thread_local std::unordered_map<const char*, Handle<Asset>> FastGltfLoader::s_MaterialNameToAssetHandle;
 
-	static bool SplitMetalRoughImage(uint32_t imageIndex, Handle<Asset> metallicRoughnessMapAssetHandle, Handle<Asset>& roughnessMapAssetHandle, Handle<Asset>& metallicMapAssetHandle, bool reload)
+	static bool SplitMetalRoughImage(uint32_t imageIndex, const std::filesystem::path& autoImportedPath, Handle<Asset> metallicRoughnessMapAssetHandle, Handle<Asset>& roughnessMapAssetHandle, Handle<Asset>& metallicMapAssetHandle, bool reload)
 	{
 		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
 		Asset* metallicRoughnessMapAsset = AssetManager::Instance->GetAssetMetadata(metallicRoughnessMapAssetHandle);
 
-		const auto& fileSystemPath = Project::GetAssetFileSystemPath(metallicRoughnessMapAsset->FilePath);
-		const auto& relativeRoughPath = metallicRoughnessMapAsset->FilePath.parent_path() / (std::to_string(imageIndex) + "_rough.png");
-		const auto& relativeMetalPath = metallicRoughnessMapAsset->FilePath.parent_path() / (std::to_string(imageIndex) + "_metal.png");
+		const auto& metallicRoughnessFileSystemPath = Project::GetAssetFileSystemPath(metallicRoughnessMapAsset->FilePath);
+		const auto& relativeRoughPath = autoImportedPath / "Textures" / (std::to_string(imageIndex) + "_rough.png");
+		const auto& relativeMetalPath = autoImportedPath / "Textures" / (std::to_string(imageIndex) + "_metal.png");
 
 		UUID roughTextureAssetUUID = editorAssetManager->GetUUIDFromPath(relativeRoughPath);
 		roughnessMapAssetHandle = AssetManager::Instance->GetHandleFromUUID(roughTextureAssetUUID);
@@ -37,6 +37,7 @@ namespace HBL2
 
 		if (AssetManager::Instance->IsAssetValid(roughnessMapAssetHandle) && AssetManager::Instance->IsAssetValid(metallicMapAssetHandle) && !reload)
 		{
+			AssetManager::Instance->DeleteAsset(metallicRoughnessMapAssetHandle);
 			return true;
 		}
 
@@ -44,10 +45,10 @@ namespace HBL2
 		{
 			AssetManager::Instance->DeleteAsset(roughnessMapAssetHandle);
 			AssetManager::Instance->DeleteAsset(metallicMapAssetHandle);
-		}
+		}		
 
 		int w = 0, h = 0, c = 0;
-		stbi_uc* src = stbi_load(fileSystemPath.string().c_str(), &w, &h, &c, STBI_rgb_alpha);
+		stbi_uc* src = stbi_load(metallicRoughnessFileSystemPath.string().c_str(), &w, &h, &c, STBI_rgb_alpha);
 		if (!src)
 		{
 			return false;
@@ -68,52 +69,82 @@ namespace HBL2
 
 		stbi_image_free(src);
 
-		const auto& parentPath = fileSystemPath.parent_path();
-		const auto& absoluteRoughPath = parentPath / (std::to_string(imageIndex) + "_rough.png");
-		const auto& absoluteMetalPath = parentPath / (std::to_string(imageIndex) + "_metal.png");
+		const auto& autoImportedTexturesPath = Project::GetAssetFileSystemPath(autoImportedPath) / "Textures";
 
-		int roughOk = stbi_write_png(absoluteRoughPath.string().c_str(), w, h, 4, rough.data(), w * 4);
-
-		if (roughOk)
+		// Ensure auto imported textures path exists.
+		if (!std::filesystem::exists(autoImportedTexturesPath))
 		{
-			roughnessMapAssetHandle = editorAssetManager->CreateAsset({
-				.debugName = "texture-asset",
-				.filePath = relativeRoughPath,
-				.type = AssetType::Texture,
-			});
-
-			if (roughnessMapAssetHandle.IsValid())
+			try
 			{
-				TextureUtilities::Get().CreateAssetMetadataFile(roughnessMapAssetHandle);
+				std::filesystem::create_directories(autoImportedTexturesPath);
 			}
-
-			AssetManager::Instance->GetAsset<Texture>(roughnessMapAssetHandle);
-		}
-		else
-		{
-			HBL2_CORE_ERROR("Failed to write image data to {}.", absoluteRoughPath);
-		}
-
-		int metalOk = stbi_write_png(absoluteMetalPath.string().c_str(), w, h, 4, metal.data(), w * 4);
-
-		if (metalOk)
-		{
-			metallicMapAssetHandle = editorAssetManager->CreateAsset({
-				.debugName = "texture-asset",
-				.filePath = relativeMetalPath,
-				.type = AssetType::Texture,
-			});
-
-			if (metallicMapAssetHandle.IsValid())
+			catch (std::exception& e)
 			{
-				TextureUtilities::Get().CreateAssetMetadataFile(metallicMapAssetHandle);
+				HBL2_ERROR("Auto imported textures directory creation failed: {0}", e.what());
 			}
-
-			AssetManager::Instance->GetAsset<Texture>(metallicMapAssetHandle);
 		}
-		else
+
+		int roughOk = 1;
+
+		if (!AssetManager::Instance->IsAssetValid(roughnessMapAssetHandle))
 		{
-			HBL2_CORE_ERROR("Failed to write image data to {}.", absoluteMetalPath);
+			const auto& absoluteRoughPath = autoImportedTexturesPath / (std::to_string(imageIndex) + "_rough.png");
+
+			roughOk = stbi_write_png(absoluteRoughPath.string().c_str(), w, h, 4, rough.data(), w * 4);
+
+			if (roughOk)
+			{
+				roughnessMapAssetHandle = editorAssetManager->CreateAsset({
+					.debugName = "texture-asset",
+					.filePath = relativeRoughPath,
+					.type = AssetType::Texture,
+				});
+
+				if (roughnessMapAssetHandle.IsValid())
+				{
+					TextureUtilities::Get().CreateAssetMetadataFile(roughnessMapAssetHandle);
+				}
+
+				AssetManager::Instance->GetAsset<Texture>(roughnessMapAssetHandle);
+			}
+			else
+			{
+				HBL2_CORE_ERROR("Failed to write image data to {}.", absoluteRoughPath);
+			}
+		}
+
+		int metalOk = 1;
+
+		if (!AssetManager::Instance->IsAssetValid(metallicMapAssetHandle))
+		{
+			const auto& absoluteMetalPath = autoImportedTexturesPath / (std::to_string(imageIndex) + "_metal.png");
+
+			metalOk = stbi_write_png(absoluteMetalPath.string().c_str(), w, h, 4, metal.data(), w * 4);
+
+			if (metalOk)
+			{
+				metallicMapAssetHandle = editorAssetManager->CreateAsset({
+					.debugName = "texture-asset",
+					.filePath = relativeMetalPath,
+					.type = AssetType::Texture,
+				});
+
+				if (metallicMapAssetHandle.IsValid())
+				{
+					TextureUtilities::Get().CreateAssetMetadataFile(metallicMapAssetHandle);
+				}
+
+				AssetManager::Instance->GetAsset<Texture>(metallicMapAssetHandle);
+			}
+			else
+			{
+				HBL2_CORE_ERROR("Failed to write image data to {}.", absoluteMetalPath);
+			}
+		}
+
+		if (roughOk && metalOk)
+		{
+			AssetManager::Instance->DeleteAsset(metallicRoughnessMapAssetHandle);
 		}
 
 		return roughOk && metalOk;
@@ -174,7 +205,7 @@ namespace HBL2
 
 		constexpr auto gltfOptions =
             fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble |
-			fastgltf::Options::LoadExternalBuffers | fastgltf::Options::LoadExternalImages | fastgltf::Options::GenerateMeshIndices;
+			fastgltf::Options::LoadExternalBuffers | fastgltf::Options::GenerateMeshIndices;
 
 		// Initialize fastgltf parser
 		fastgltf::GltfDataBuffer dataBuffer;
@@ -345,7 +376,7 @@ namespace HBL2
 
 			if (auto* filePath = std::get_if<fastgltf::sources::URI>(&glTFImage.data))
 			{
-				const auto& texturePath = std::filesystem::path(filePath->uri.string());
+				const auto texturePath = path.parent_path() / filePath->uri.fspath();
 
 				if (std::filesystem::exists(texturePath))
 				{
@@ -504,7 +535,7 @@ namespace HBL2
 
 			if (auto* filePath = std::get_if<fastgltf::sources::URI>(&glTFImage.data))
 			{
-				const auto& texturePath = std::filesystem::path(filePath->uri.string());
+				const auto texturePath = path.parent_path() / filePath->uri.fspath();
 
 				if (std::filesystem::exists(texturePath))
 				{
@@ -660,7 +691,8 @@ namespace HBL2
 			Handle<Asset> materialAssetHandle;
 			Handle<Material> materialHandle;
 
-			const auto& relativePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Materials" / (std::string(glTFMaterial.name) + std::to_string(materialIndex) + ".mat");
+			const auto& relativeBasePath = std::filesystem::path("AutoImported") / path.filename().stem();
+			const auto& relativePath = relativeBasePath / "Materials" / (std::string(glTFMaterial.name) + std::to_string(materialIndex) + ".mat");
 
 			if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativePath)))
 			{
@@ -718,7 +750,7 @@ namespace HBL2
 					uint32_t metallicRoughnessMapIndex = (uint32_t)glTFMaterial.pbrData.metallicRoughnessTexture.value().textureIndex;
 					uint32_t imageIndex = (uint32_t)asset.textures[metallicRoughnessMapIndex].imageIndex.value();
 
-					SplitMetalRoughImage(imageIndex, metallicRoughnessMapAssetHandle, roughnessMapAssetHandle, metallicMapAssetHandle, false);
+					SplitMetalRoughImage(imageIndex, relativeBasePath, metallicRoughnessMapAssetHandle, roughnessMapAssetHandle, metallicMapAssetHandle, false);
 				}
 
 				// Get material uniform buffer data.
@@ -746,7 +778,7 @@ namespace HBL2
 					},
 					.ReflectionData = &shaderReflectionData,
 					.Buffers = { uniformBufferBytes },
-					.TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), roughnessMapAssetHandle.Pack(), metallicMapAssetHandle.Pack() },
+					.TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), metallicMapAssetHandle.Pack(), roughnessMapAssetHandle.Pack() },
 				});
 
 				if (materialAssetHandle.IsValid())
@@ -797,7 +829,8 @@ namespace HBL2
 			Handle<Asset> materialAssetHandle;
 			Handle<Material> materialHandle;
 
-			const auto& relativePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Materials" / (std::string(glTFMaterial.name) + std::to_string(materialIndex) + ".mat");
+			const auto& relativeBasePath = std::filesystem::path("AutoImported") / path.filename().stem();
+			const auto& relativePath = relativeBasePath / "Materials" / (std::string(glTFMaterial.name) + std::to_string(materialIndex) + ".mat");
 
 			// diffuse color aka base color factor used as constant color, if no diffuse texture is provided
 			glm::vec4 albedoColor = glm::make_vec4(glTFMaterial.pbrData.baseColorFactor.data());
@@ -845,7 +878,7 @@ namespace HBL2
 				uint32_t metallicRoughnessMapIndex = (uint32_t)glTFMaterial.pbrData.metallicRoughnessTexture.value().textureIndex;
 				uint32_t imageIndex = (uint32_t)asset.textures[metallicRoughnessMapIndex].imageIndex.value();
 
-				SplitMetalRoughImage(imageIndex, metallicRoughnessMapAssetHandle, roughnessMapAssetHandle, metallicMapAssetHandle, true);
+				SplitMetalRoughImage(imageIndex, relativeBasePath, metallicRoughnessMapAssetHandle, roughnessMapAssetHandle, metallicMapAssetHandle, true);
 			}
 
 			// Get material uniform buffer data.
@@ -881,7 +914,7 @@ namespace HBL2
 					},
 					.ReflectionData = &shaderReflectionData,
 					.Buffers = { uniformBufferBytes },
-					.TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), roughnessMapAssetHandle.Pack(), metallicMapAssetHandle.Pack() },
+					.TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), metallicMapAssetHandle.Pack(), roughnessMapAssetHandle.Pack() },
 				});
 
 				if (materialAssetHandle.IsValid())
