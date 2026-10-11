@@ -32,6 +32,7 @@ namespace HBL2
 		}
         
         static constexpr uint32_t MaxColorTargets = 4;
+        static constexpr uint32_t MaxSubPassAttachments = 4;
 
 		const char* DebugName = "";
 		VkRenderPass RenderPass = VK_NULL_HANDLE;
