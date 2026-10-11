@@ -10,6 +10,8 @@
 
 namespace HBL2
 {
+	// Implementation inspired by this awesome blog post: https://www.3dgep.com/forward-plus/#Forward
+
 	struct ForwardPlusSceneRenderData
 	{
 		FixedArray<Light> m_LightData;
