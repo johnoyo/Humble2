@@ -2,7 +2,9 @@
 
 #include "Base.h"
 #include "Asset/Asset.h"
+#include "Asset/AssetManager.h"
 #include "Resources/Types.h"
+#include "Utilities/TextureUtilities.h"
 #include "Utilities/Result.h"
 #include "Utilities/Collections/Span.h"
 
@@ -21,6 +23,9 @@ namespace HBL2
         void Reload(Asset* asset);
 
 	private:
+        Handle<Asset> LoadTexture(const std::filesystem::path& path, const fastgltf::Asset& asset, uint32_t imageIndex, const TextureSettings& settings, JobContext& ctx);
+        Handle<Asset> ReloadTexture(const std::filesystem::path& path, const fastgltf::Asset& asset, uint32_t imageIndex, const TextureSettings& settings, JobContext& ctx);
+
         void LoadTextures(const std::filesystem::path& path, const fastgltf::Asset& asset);
         void ReloadTextures(const std::filesystem::path& path, const fastgltf::Asset& asset);
         void LoadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset);

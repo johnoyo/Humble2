@@ -94,7 +94,7 @@ namespace HBL2
             if (node->is_root)
             {
                 continue;
-            }
+            } 
 
             HBL2_CORE_TRACE("Object: {0}\n", node->name.data);
             if (node->mesh)
@@ -196,7 +196,7 @@ namespace HBL2
         std::vector<Handle<Buffer>> indexBuffers;
         std::vector<Handle<Buffer>> vertexBuffers;
 
-        // Collect previous buffers and embeded material.
+        // Collect previous buffers.
         for (const MeshPart& meshPart : mesh->Meshes)
         {
             indexBuffers.push_back(meshPart.IndexBuffer);
@@ -212,7 +212,7 @@ namespace HBL2
             .meshes = std::move(meshes),
         });
 
-        // Delete previous buffers and embeded material.
+        // Delete previous buffers.
         for (Handle<Buffer> ib : indexBuffers)
         {
             ResourceManager::Instance->DeleteBuffer(ib);
@@ -238,11 +238,6 @@ namespace HBL2
             Handle<Asset> materialAssetHandle;
             Handle<Material> materialHandle;
 
-            ResourceTask<Texture> albedoMapTask = {};
-            ResourceTask<Texture> normalMapTask = {};
-            ResourceTask<Texture> roughnessMapTask = {};
-            ResourceTask<Texture> metallicMapTask = {};
-
             const auto& relativePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Materials" / (std::string(fbxMaterial->name.data) + ".mat");
 
             if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativePath)))
@@ -256,27 +251,24 @@ namespace HBL2
                 JobContext ctx;
 
                 glm::vec4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-                Handle<Asset> albedoMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_BASE_COLOR, ctx, albedoMapTask, false, &albedoColor);
+                Handle<Asset> albedoMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_BASE_COLOR, ctx, false, &albedoColor);
 
                 double roughness = 1.0;
-                Handle<Asset> roughnessMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_ROUGHNESS, ctx, roughnessMapTask, false, &roughness);
+                Handle<Asset> roughnessMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_ROUGHNESS, ctx, false, &roughness);
 
                 double metallicness = 1.0;
-                Handle<Asset> metallicMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_METALNESS, ctx, metallicMapTask, false, &metallicness);
+                Handle<Asset> metallicMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_METALNESS, ctx, false, &metallicness);
 
-                Handle<Asset> normalMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_NORMAL_MAP, ctx, normalMapTask, false);
+                Handle<Asset> normalMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_NORMAL_MAP, ctx, false);
 
                 AssetManager::Instance->WaitForAsyncJobs(&ctx);
 
                 // Get material uniform buffer data.
-                std::vector<uint8_t> uniformBufferBytes(24, 0);
-                float* colorOffset = (float*)uniformBufferBytes.data();
-                colorOffset[0] = albedoColor[0]; colorOffset[1] = albedoColor[1];
-                colorOffset[2] = albedoColor[2]; colorOffset[3] = albedoColor[3];
-                float* roughnessOffset = (float*)uniformBufferBytes.data() + 16;
-                *roughnessOffset = roughness;
-                float* metalicnessOffset = (float*)uniformBufferBytes.data() + 20;
-                *metalicnessOffset = metallicness;
+                struct MaterialParams { glm::vec4 Color; float Roughness; float Metallic; };
+                MaterialParams params{ albedoColor, (float)roughness, (float)metallicness };
+
+                std::vector<uint8_t> uniformBufferBytes(sizeof(MaterialParams));
+                memcpy(uniformBufferBytes.data(), &params, sizeof(params));
 
                 Handle<Asset> shaderAssetHandle;
                 ShaderReflectionData shaderReflectionData;
@@ -294,7 +286,7 @@ namespace HBL2
                     },
                     .ReflectionData = &shaderReflectionData,
                     .Buffers = { uniformBufferBytes },
-                    .TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), roughnessMapAssetHandle.Pack(), metallicMapAssetHandle.Pack() },
+                    .TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), metallicMapAssetHandle.Pack(), roughnessMapAssetHandle.Pack() },
                 });
 
                 if (materialAssetHandle.IsValid())
@@ -347,37 +339,29 @@ namespace HBL2
             Handle<Asset> materialAssetHandle;
             Handle<Material> materialHandle;
 
-            ResourceTask<Texture> albedoMapTask = {};
-            ResourceTask<Texture> normalMapTask = {};
-            ResourceTask<Texture> roughnessMapTask = {};
-            ResourceTask<Texture> metallicMapTask = {};
-
             const auto& relativePath = std::filesystem::path("AutoImported") / path.filename().stem() / "Materials" / (std::string(fbxMaterial->name.data) + ".mat");
 
             JobContext ctx;
 
             glm::vec4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-            Handle<Asset> albedoMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_BASE_COLOR, ctx, albedoMapTask, true, &albedoColor);
+            Handle<Asset> albedoMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_BASE_COLOR, ctx, true, &albedoColor);
 
             double roughness = 1.0;
-            Handle<Asset> roughnessMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_ROUGHNESS, ctx, roughnessMapTask, true, &roughness);
+            Handle<Asset> roughnessMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_ROUGHNESS, ctx, true, &roughness);
 
             double metallicness = 1.0;
-            Handle<Asset> metallicMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_METALNESS, ctx, metallicMapTask, true, &metallicness);
+            Handle<Asset> metallicMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_METALNESS, ctx, true, &metallicness);
 
-            Handle<Asset> normalMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_NORMAL_MAP, ctx, normalMapTask, true);
+            Handle<Asset> normalMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_NORMAL_MAP, ctx, true);
 
             AssetManager::Instance->WaitForAsyncJobs(&ctx);
 
             // Get material uniform buffer data.
-            std::vector<uint8_t> uniformBufferBytes(24, 0);
-            float* colorOffset = (float*)uniformBufferBytes.data();
-            colorOffset[0] = albedoColor[0]; colorOffset[1] = albedoColor[1];
-            colorOffset[2] = albedoColor[2]; colorOffset[3] = albedoColor[3];
-            float* roughnessOffset = (float*)uniformBufferBytes.data() + 16;
-            *roughnessOffset = roughness;
-            float* metalicnessOffset = (float*)uniformBufferBytes.data() + 20;
-            *metalicnessOffset = metallicness;
+            struct MaterialParams { glm::vec4 Color; float Roughness; float Metallic; };
+            MaterialParams params{ albedoColor, (float)roughness, (float)metallicness };
+
+            std::vector<uint8_t> uniformBufferBytes(sizeof(MaterialParams));
+            memcpy(uniformBufferBytes.data(), &params, sizeof(params));
 
             Handle<Asset> shaderAssetHandle;
             ShaderReflectionData shaderReflectionData;
@@ -403,7 +387,7 @@ namespace HBL2
                     },
                     .ReflectionData = &shaderReflectionData,
                     .Buffers = { uniformBufferBytes },
-                    .TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), roughnessMapAssetHandle.Pack(), metallicMapAssetHandle.Pack() },
+                    .TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), metallicMapAssetHandle.Pack(), roughnessMapAssetHandle.Pack() },
                 });
 
                 if (materialAssetHandle.IsValid())
@@ -445,7 +429,7 @@ namespace HBL2
                     },
                     .ReflectionData = &shaderReflectionData,
                     .Buffers = { uniformBufferBytes },
-                    .TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), roughnessMapAssetHandle.Pack(), metallicMapAssetHandle.Pack() },
+                    .TextureAssets = { albedoMapAssetHandle.Pack(), normalMapAssetHandle.Pack(), metallicMapAssetHandle.Pack(), roughnessMapAssetHandle.Pack() },
                 });
 
                 // Reload material now that we have set the new resourses.
@@ -456,7 +440,7 @@ namespace HBL2
         }
     }
 
-    Handle<Asset> UFbxLoader::LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, JobContext& ctx, ResourceTask<Texture>& textureTask, bool reload, void* internalData)
+    Handle<Asset> UFbxLoader::LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, JobContext& ctx, bool reload, void* internalData)
     {
         Handle<Asset> textureAssetHandle;
 
@@ -473,11 +457,11 @@ namespace HBL2
                     {
                         if (reload)
                         {
-                            textureAssetHandle = ReloadTexture(materialMap.texture, ctx, textureTask);
+                            textureAssetHandle = ReloadTexture(materialMap.texture, ctx);
                         }
                         else
                         {
-                            textureAssetHandle = LoadTexture(materialMap.texture, ctx, textureTask);
+                            textureAssetHandle = LoadTexture(materialMap.texture, ctx);
                         }
 
                         (*((glm::vec4*)internalData)).r = baseFactor;
@@ -504,11 +488,11 @@ namespace HBL2
                     {
                         if (reload)
                         {
-                            textureAssetHandle = ReloadTexture(materialMap.texture, ctx, textureTask);
+                            textureAssetHandle = ReloadTexture(materialMap.texture, ctx);
                         }
                         else
                         {
-                            textureAssetHandle = LoadTexture(materialMap.texture, ctx, textureTask);
+                            textureAssetHandle = LoadTexture(materialMap.texture, ctx);
                         }
 
                         (*((double*)internalData)) = 1.0;
@@ -529,11 +513,11 @@ namespace HBL2
                     {
                         if (reload)
                         {
-                            textureAssetHandle = ReloadTexture(materialMap.texture, ctx, textureTask);
+                            textureAssetHandle = ReloadTexture(materialMap.texture, ctx);
                         }
                         else
                         {
-                            textureAssetHandle = LoadTexture(materialMap.texture, ctx, textureTask);
+                            textureAssetHandle = LoadTexture(materialMap.texture, ctx);
                         }
 
                         (*((double*)internalData)) = 1.0;
@@ -552,11 +536,11 @@ namespace HBL2
                 {
                     if (reload)
                     {
-                        textureAssetHandle = ReloadTexture(materialMap.texture, ctx, textureTask);
+                        textureAssetHandle = ReloadTexture(materialMap.texture, ctx);
                     }
                     else
                     {
-                        textureAssetHandle = LoadTexture(materialMap.texture, ctx, textureTask);
+                        textureAssetHandle = LoadTexture(materialMap.texture, ctx);
                     }
                 }
                 break;
@@ -571,7 +555,7 @@ namespace HBL2
         return textureAssetHandle;
     }
 
-    Handle<Asset> UFbxLoader::LoadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>& resourceTask)
+    Handle<Asset> UFbxLoader::LoadTexture(const ufbx_texture* texture, JobContext& ctx)
     {
         auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
@@ -602,7 +586,7 @@ namespace HBL2
                 TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
             }
 
-            AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &resourceTask, &ctx);
+            AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
             return textureAssetHandle;
         }
 
@@ -633,7 +617,7 @@ namespace HBL2
                     TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
                 }
 
-                AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &resourceTask, &ctx);
+                AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
                 return textureAssetHandle;
             }
         }
@@ -643,7 +627,7 @@ namespace HBL2
         return textureAssetHandle;
     }
 
-    Handle<Asset> UFbxLoader::ReloadTexture(const ufbx_texture* texture, JobContext& ctx, ResourceTask<Texture>& resourceTask)
+    Handle<Asset> UFbxLoader::ReloadTexture(const ufbx_texture* texture, JobContext& ctx)
     {
         auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
@@ -679,7 +663,7 @@ namespace HBL2
                 AssetManager::Instance->DeleteAsset(textureAssetHandle);
             }
 
-            AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &resourceTask, &ctx);
+            AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
             return textureAssetHandle;
         }
 
@@ -715,7 +699,7 @@ namespace HBL2
                     AssetManager::Instance->DeleteAsset(textureAssetHandle);
                 }
 
-                AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &resourceTask, &ctx);
+                AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
                 return textureAssetHandle;
             }
         }
