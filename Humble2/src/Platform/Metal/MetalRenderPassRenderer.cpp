@@ -198,7 +198,7 @@ namespace HBL2
                 MetalBufferHot* indexBuffer = rm->GetBufferHot(draw.IndexBuffer);
                 
                 Encoder->drawIndexedPrimitives(topology, NS::UInteger(draw.IndexCount), MTL::IndexTypeUInt32,
-                                               indexBuffer->Buffer->gpuAddress() + draw.IndexOffset,
+                                               indexBuffer->Buffer->gpuAddress() + draw.IndexOffset * sizeof(uint32_t),
                                                NS::UInteger(draw.IndexCount * sizeof(uint32_t)), NS::UInteger(draw.InstanceCount),
                                                NS::UInteger(draw.VertexOffset), NS::UInteger(draw.InstanceOffset));
             }
