@@ -5,6 +5,9 @@
 #include "BaseTypeDefinitions.h"
 #include "Asset/Asset.h"
 
+#include "Animation/AnimationClip.h"
+#include "Animation/AnimationSkeleton.h"
+
 #include "Utilities/Collections/Span.h"
 #include "Utilities/Collections/BitFlags.h"
 
@@ -360,6 +363,9 @@ namespace HBL2
 	{
 		const char* debugName;
 		std::vector<MeshPartDescriptor> meshes;
+
+		Handle<Skeleton> skeleton;
+		std::vector<Handle<AnimationClip>> animationClips;
 	};
 
 	struct MeshDescriptorSettings

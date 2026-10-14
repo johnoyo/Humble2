@@ -5,6 +5,8 @@
 #include "TypeDescriptors.h"
 #include "RefHandle.h"
 
+#include "Animation/AnimationSkeleton.h"
+
 #include <glm/glm.hpp>
 
 #include <string>
@@ -114,6 +116,7 @@ namespace HBL2
 
 		const char* DebugName = "";
 		std::vector<MeshPart> Meshes;
+		Handle<Skeleton> Skeleton;
 		MeshExtents Extents;
 
 	private:

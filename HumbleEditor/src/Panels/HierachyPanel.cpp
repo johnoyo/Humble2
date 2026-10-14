@@ -376,17 +376,7 @@ namespace HBL2::Editor
 
 				if (!std::filesystem::exists(metadataPath))
 				{
-					std::ofstream fout(metadataPath, std::ios_base::out);
-
-					YAML::Emitter out;
-					out << YAML::BeginMap;
-					out << YAML::Key << "Mesh" << YAML::Value;
-					out << YAML::BeginMap;
-					out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(assetHandle)->UUID;
-					out << YAML::EndMap;
-					out << YAML::EndMap;
-					fout << out.c_str();
-					fout.close();
+					MeshUtilities::Get().CreateMeshMetadataFile(assetHandle);
 				}
 
 				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(assetHandle);

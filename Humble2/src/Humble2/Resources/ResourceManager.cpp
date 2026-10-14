@@ -14,11 +14,13 @@ namespace HBL2
 		m_ScriptPool.Initialize(m_Spec.Scripts);
 		m_SoundPool.Initialize(m_Spec.Sounds);
 		m_PrefabPool.Initialize(m_Spec.Prefabs);
+		m_AnimationClipPool.Initialize(m_Spec.AnimationClips);
+		m_SkeletonPool.Initialize(m_Spec.Skeletons);
 	}
 
 	void ResourceManager::HashCombine(uint64_t& hash, uint64_t value)
 	{
-		// Golden ratio constant — spreads bits and breaks commutativity
+		// Golden ratio constant, spreads bits and breaks commutativity
 		hash ^= value + 0x9e3779b97f4a7c15ULL + (hash << 6) + (hash >> 2);
 	}
 
@@ -159,6 +161,39 @@ namespace HBL2
 	{
 		return m_PrefabPool.Get(handle);
 	}
+
+	// AnimationClips
+	Handle<AnimationClip> ResourceManager::CreateAnimationClip(const AnimationClipDescriptor&& desc)
+	{
+		return m_AnimationClipPool.Insert(std::forward<const AnimationClipDescriptor>(desc));
+	}
+
+	void ResourceManager::DeleteAnimationClip(Handle<AnimationClip> handle)
+	{
+		m_AnimationClipPool.Remove(handle);
+	}
+
+	AnimationClip* ResourceManager::GetAnimationClip(Handle<AnimationClip> handle) const
+	{
+		return m_AnimationClipPool.Get(handle);
+	}
+
+	// Skeletons
+	Handle<Skeleton> ResourceManager::CreateSkeleton(const SkeletonDescriptor&& desc)
+	{
+		return m_SkeletonPool.Insert(std::forward<const SkeletonDescriptor>(desc));
+	}
+
+	void ResourceManager::DeleteSkeleton(Handle<Skeleton> handle)
+	{
+		m_SkeletonPool.Remove(handle);
+	}
+
+	Skeleton* ResourceManager::GetSkeleton(Handle<Skeleton> handle) const
+	{
+		return m_SkeletonPool.Get(handle);
+	}
+
 	uint64_t ResourceManager::GetBindGroupHash(const BindGroupDescriptor& desc)
 	{
 		uint64_t hash = 0;

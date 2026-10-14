@@ -199,6 +199,11 @@ namespace HBL2
 
 		LoadMaterials(path, asset.get());
 
+		Handle<Skeleton> skeleton;
+		std::vector<Handle<AnimationClip>> animationClips;
+
+		LoadAnimations(path, asset.get(), animationClips);
+
 		std::vector<MeshPartDescriptor> meshes;
 		uint32_t meshIndex = 0;
 
@@ -224,6 +229,8 @@ namespace HBL2
 		Handle<Mesh> handle = ResourceManager::Instance->CreateMesh({
 			.debugName = strdup(path.filename().stem().string().c_str()),
 			.meshes = std::move(meshes),
+			.skeleton = skeleton,
+			.animationClips = std::move(animationClips),
 		});
 
 		return handle;
@@ -954,6 +961,114 @@ namespace HBL2
 			}
 
 			s_MaterialNameToAssetHandle[glTFMaterial.name.c_str()] = materialAssetHandle;
+		}
+	}
+
+	void FastGltfLoader::LoadAnimations(const std::filesystem::path& path, const fastgltf::Asset& asset, std::vector<Handle<AnimationClip>>& animationClips)
+	{
+		animationClips.reserve(asset.animations.size());
+
+		// Load animations
+		for (const auto& anim : asset.animations)
+		{
+			std::vector<AnimationSampler> samplers(anim.samplers.size());
+			std::vector<AnimationChannel> channels(anim.channels.size());
+
+			// Load keyframe data
+			for (const auto& sampler : anim.samplers)
+			{
+				AnimationSampler out_sampler;
+
+				// Parse the interpolation type from the glTF string
+				if (sampler.interpolation == fastgltf::AnimationInterpolation::Linear) out_sampler.interpolation = AnimationSampler::InterpolationType::LINEAR;
+				else if (sampler.interpolation == fastgltf::AnimationInterpolation::Step) out_sampler.interpolation = AnimationSampler::InterpolationType::STEP;
+				else if (sampler.interpolation == fastgltf::AnimationInterpolation::CubicSpline) out_sampler.interpolation = AnimationSampler::InterpolationType::CUBICSPLINE;
+
+				// Load the input timestamps (these are always plain floats, no tangents)
+				size_t inputCount = 0;
+				const float* inputBuffer = nullptr;
+				auto& inputAccessor = asset.accessors[sampler.inputAccessor];
+				LoadAccessor<float>(asset, inputAccessor, inputBuffer, &inputCount);
+
+				out_sampler.inputs.resize(inputCount);
+				for (size_t i = 0; i < inputCount; ++i)
+				{
+					out_sampler.inputs[i] = inputBuffer[i];
+				}
+
+				// For CUBICSPLINE, the output accessor contains 3 values per timestamp:
+				// [in_tangent, value, out_tangent]. The total count is 3 * keyframe_count.
+				// For LINEAR/STEP, the output count equals the keyframe count.
+				size_t outputCount = 0;
+				const glm::vec4* outputBuffer = nullptr;
+				auto& outputAccessor = asset.accessors[sampler.outputAccessor];
+				LoadAccessor<glm::vec4>(asset, outputAccessor, outputBuffer, &outputCount);
+
+				out_sampler.outputs_raw.resize(outputCount);
+				for (size_t i = 0; i < outputCount; ++i)
+				{
+					out_sampler.outputs_raw[i] = outputBuffer[i];
+				}
+
+				if (out_sampler.interpolation == AnimationSampler::InterpolationType::CUBICSPLINE)
+				{
+					// Split the interleaved data into separate arrays
+					size_t keyframe_count = out_sampler.inputs.size();
+					out_sampler.in_tangents.resize(keyframe_count);
+					out_sampler.values.resize(keyframe_count);
+					out_sampler.out_tangents.resize(keyframe_count);
+
+					for (size_t i = 0; i < keyframe_count; ++i)
+					{
+						out_sampler.in_tangents[i] = out_sampler.outputs_raw[i * 3 + 0];
+						out_sampler.values[i] = out_sampler.outputs_raw[i * 3 + 1];
+						out_sampler.out_tangents[i] = out_sampler.outputs_raw[i * 3 + 2];
+					}
+				}
+				else
+				{
+					out_sampler.values = out_sampler.outputs_raw;
+				}
+
+				samplers.push_back(out_sampler);
+			}
+
+			// Connect samplers to node properties
+			for (const auto& channel : anim.channels)
+			{
+				AnimationChannel out_channel;
+
+				out_channel.SamplerIndex = channel.samplerIndex;
+				out_channel.JointIndex = channel.nodeIndex.value();
+
+				// Parse target path
+				if (channel.path == fastgltf::AnimationPath::Translation)
+				{
+					out_channel.Path = AnimationChannel::PathType::TRANSLATION;
+				}
+				else if (channel.path == fastgltf::AnimationPath::Rotation)
+				{
+					out_channel.Path = AnimationChannel::PathType::ROTATION;
+				}
+				else if (channel.path == fastgltf::AnimationPath::Scale)
+				{
+					out_channel.Path = AnimationChannel::PathType::SCALE;
+				}
+				else if (channel.path == fastgltf::AnimationPath::Weights)
+				{
+					out_channel.Path = AnimationChannel::PathType::WEIGHTS;
+				}
+
+				channels.push_back(out_channel);
+			}
+
+			Handle<AnimationClip> clipHandle = ResourceManager::Instance->CreateAnimationClip({
+				.name = "animation-clip",
+				.samplers = samplers,
+				.channels = channels,
+			});
+
+			animationClips.push_back(clipHandle);
 		}
 	}
 

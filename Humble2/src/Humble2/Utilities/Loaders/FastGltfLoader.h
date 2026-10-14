@@ -29,6 +29,8 @@ namespace HBL2
         void LoadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset);
         void ReloadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset, Asset* sourceAsset);
 
+        void LoadAnimations(const std::filesystem::path& path, const fastgltf::Asset& asset, std::vector<Handle<AnimationClip>>& animationClips);
+
 		Result<MeshPartDescriptor> LoadMeshData(const fastgltf::Asset& asset, const fastgltf::Node& node, uint32_t meshIndex);
 		Result<SubMeshDescriptor> LoadSubMeshVertexData(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, uint32_t subMeshIndex);
 

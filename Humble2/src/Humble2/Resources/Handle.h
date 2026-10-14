@@ -20,6 +20,8 @@ namespace HBL2
 		Script,
 		Sound,
 		Prefab,
+		AnimationClip,
+		Skeleton,
 	};
 
 	template<typename T>
