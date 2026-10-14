@@ -6,6 +6,8 @@
 #include "Loaders/UFbxLoader.h"
 #include "Loaders/FastGltfLoader.h"
 
+#include "Utilities/ShaderUtilities.h"
+
 #include <filesystem>
 
 namespace HBL2
@@ -19,6 +21,13 @@ namespace HBL2
 		CYLINDER,
 		CAPSULE,
 		TORUS,
+	};
+
+	struct MeshSettings
+	{
+		bool PreserveHierachy = true;
+		bool GenerateColliders = false;
+		bool ReimportTexturesOnReload = false;
 	};
 
 	class HBL2_API MeshUtilities
@@ -40,8 +49,12 @@ namespace HBL2
 		Handle<Asset> GetBuiltInLoadedMeshAssetHandle(BuiltInMesh builtInMesh);
 		Span<const Handle<Asset>> GetBuiltInMeshAssets();
 
-	private:
 		void CreateMeshMetadataFile(Handle<Asset> handle);
+		void SerializeAssetMetadataFile(Handle<Asset> handle, const MeshSettings& settings);
+		MeshSettings DeserializeAssetMetadataFile(Handle<Asset> handle);
+		MeshSettings DeserializeAssetMetadataFile(Asset* asset);
+
+		void GetShaderAssetHandleAndReflectionData(Handle<Asset>& shaderAssetHandle, ShaderReflectionData& shaderReflectionData, bool isPBR);
 
 	private:
 		MeshUtilities();

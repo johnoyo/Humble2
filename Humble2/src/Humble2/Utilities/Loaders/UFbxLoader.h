@@ -20,8 +20,10 @@ namespace HBL2
 
 	private:
 		void LoadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path);
-		void ReloadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path);
+		void ReloadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path, Asset* sourceAsset);
+
 		Handle<Asset> LoadMaterial(const std::filesystem::path& path, const ufbx_material* fbxMaterial, ufbx_material_pbr_map materialProperty, JobContext& ctx, bool reload, void* internalData = nullptr);
+
 		Handle<Asset> LoadTexture(const ufbx_texture* texture, JobContext& ctx);
 		Handle<Asset> ReloadTexture(const ufbx_texture* texture, JobContext& ctx);
 

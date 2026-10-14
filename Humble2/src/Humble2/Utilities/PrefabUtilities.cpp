@@ -433,7 +433,7 @@ namespace HBL2
 		fout.close();
     }
 
-	void PrefabUtilities::UpdateMetadataFile(Handle<Asset> handle, PrefabDescriptor& desc)
+	void PrefabUtilities::SerializeAssetMetadataFile(Handle<Asset> handle, const PrefabDescriptor& desc)
 	{
 		if (!AssetManager::Instance->IsAssetValid(handle))
 		{
@@ -458,5 +458,57 @@ namespace HBL2
 		out << YAML::EndMap;
 		fout << out.c_str();
 		fout.close();
+	}
+
+	PrefabDescriptor PrefabUtilities::DeserializeAssetMetadataFile(Handle<Asset> handle)
+	{
+		if (!AssetManager::Instance->IsAssetValid(handle))
+		{
+			return {};
+		}
+
+		Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+
+		return DeserializeAssetMetadataFile(asset);
+	}
+
+	PrefabDescriptor PrefabUtilities::DeserializeAssetMetadataFile(Asset* asset)
+	{
+		if (asset == nullptr)
+		{
+			return {};
+		}
+
+		PrefabDescriptor desc = {};
+
+		const std::filesystem::path& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblprefab";
+
+		if (!std::filesystem::exists(filePath))
+		{
+			return desc;
+		}
+
+		std::ifstream stream(filePath);
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Prefab"].IsDefined())
+		{
+			HBL2_CORE_TRACE("Prefab meta data file not valid: {0}", ss.str());
+			return {};
+		}
+
+		const auto& prefabProperties = data["Prefab"];
+		if (prefabProperties)
+		{
+			desc.uuid = prefabProperties["UUID"].as<UUID>();
+			desc.baseEntityUUID = prefabProperties["BaseEntityUUID"].as<UUID>();
+			desc.version = prefabProperties["Version"].as<uint32_t>();
+			desc.maxEntities = prefabProperties["MaxEntities"].as<uint32_t>();
+			desc.maxComponents = prefabProperties["MaxComponents"].as<uint32_t>();
+		}
+
+		return desc;
 	}
 }

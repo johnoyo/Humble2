@@ -3,6 +3,7 @@
 #include "EditorPanel.h"
 
 #include "Asset/AssetManager.h"
+#include "Utilities/MeshUtilities.h"
 #include "Utilities/TextureUtilities.h"
 #include "Utilities/SlangReflection.h"
 #include "Utilities/Collections/StaticArray.h"
@@ -34,15 +35,28 @@ namespace HBL2::Editor
 	private:
 		Handle<Asset> m_PreviouslySelectedAsset;
 		bool m_PinAsset = false;
+		bool m_IsAssetDirty = false;
 
 		bool m_UseDefaultSaveButton = true;
 
+		// Texture asset resources.
 		bool m_ReimportTexture = false;
 		bool m_UpdateTexture = false;
 		TextureSettings m_TextureSettings = {};
-
 		bool m_TextureFlip = false;
 		StaticArray<int, 4> m_CurrentCompressionFormatItem = { 0, 0, 0, 0 };
+
+		// Scene asset resources.
+		bool m_ReimportScene = false;
+		SceneDescriptor m_SceneDescriptor = {};
+
+		// Prefab asset resources.
+		bool m_ReimportPrefab = false;
+		PrefabDescriptor m_PrefabDescriptor = {};
+
+		// Mesh asset resources.
+		bool m_ReimportMesh = false;
+		MeshSettings m_MeshSettings = {};
 
 		JobContext m_MaterialShaderReflectionCtx;
 		ShaderReflectionData m_ShaderReflectionData;

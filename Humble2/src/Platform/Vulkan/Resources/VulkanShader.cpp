@@ -48,6 +48,13 @@ namespace HBL2
 		// Also, in the case of set 0, it is needed because of InvalidSceneRenderer so that clean up is complete.
 		m_ReflectedSet0BindGroupLayout.Release();
 		m_ReflectedSet2BindGroupLayout.Release();
+
+		for (const auto& pipeline : m_RetiredPipelines)
+		{
+			vkDestroyPipeline(device->Get(), pipeline, nullptr);
+		}
+
+		m_RetiredPipelines.clear();
 	}
 
 	VkPipeline VulkanShaderCold::GetOrCreatePipeline(const PipelineConfig& config, bool forceCreateNewAndRemoveOld)
@@ -94,12 +101,8 @@ namespace HBL2
 			// Update number of entries.
 			m_Count.store(last, std::memory_order_release);
 
-			// Schedule retired pipeline for cleanup.
-			ResourceManager::Instance->GetDeletionQueue().Push(Renderer::Instance->GetFrameNumber(), [=]()
-			{
-				VulkanDevice* device = (VulkanDevice*)Device::Instance;
-				vkDestroyPipeline(device->Get(), p, nullptr);
-			});
+			// Append pipeline to retired array for cleanup.
+			m_RetiredPipelines.push_back(p);
 		}
 
 		// Create pipeline

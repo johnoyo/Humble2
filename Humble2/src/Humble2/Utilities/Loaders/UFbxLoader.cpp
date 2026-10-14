@@ -4,6 +4,7 @@
 #include "Asset/EditorAssetManager.h"
 #include "Resources/ResourceManager.h"
 
+#include "Utilities/MeshUtilities.h"
 #include "Utilities/ShaderUtilities.h"
 #include "Utilities/TextureUtilities.h"
 #include "Utilities/FileDialogs.h"
@@ -13,50 +14,6 @@ namespace HBL2
     thread_local std::vector<Vertex> UFbxLoader::s_Vertices;
     thread_local std::vector<uint32_t> UFbxLoader::s_Indeces;
     thread_local std::unordered_map<std::string, Handle<Asset>> UFbxLoader::s_MaterialNameToAssetHandle;
-
-    static void GetShaderAssetHandleAndReflectionData(Handle<Asset>& shaderAssetHandle, ShaderReflectionData& shaderReflectionData, bool isPBR)
-    {
-        if (!isPBR)
-        {
-            auto shaderAssetHandles = ShaderUtilities::Get().GetBuiltInShaderAssets();
-            auto blinnPhongHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::BLINN_PHONG);
-
-            for (auto h : shaderAssetHandles)
-            {
-                Asset* asset = AssetManager::Instance->GetAssetMetadata(h);
-                if (asset != nullptr && asset->Indentifier == blinnPhongHandle.Pack())
-                {
-                    shaderAssetHandle = h;
-                    break;
-                }
-            }
-        }
-        else
-        {
-            auto shaderAssetHandles = ShaderUtilities::Get().GetBuiltInShaderAssets();
-            auto pbrHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PBR);
-
-            for (auto h : shaderAssetHandles)
-            {
-                Asset* asset = AssetManager::Instance->GetAssetMetadata(h);
-                if (asset != nullptr && asset->Indentifier == pbrHandle.Pack())
-                {
-                    shaderAssetHandle = h;
-                    break;
-                }
-            }
-        }
-
-        if (shaderAssetHandle.IsValid())
-        {
-            Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
-
-            const auto& shaderFileSystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
-            const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
-
-            shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
-        }
-    }
 
     Handle<Mesh> UFbxLoader::Load(const std::filesystem::path& path)
 	{
@@ -151,7 +108,7 @@ namespace HBL2
             return;
         }
 
-        ReloadMaterials(ufbxScene, meshPath);
+        ReloadMaterials(ufbxScene, meshPath, asset);
 
         std::vector<MeshPartDescriptor> meshes;
         uint32_t meshIndex = 0;
@@ -274,7 +231,7 @@ namespace HBL2
                 ShaderReflectionData shaderReflectionData;
                 bool isPBR = normalMapAssetHandle.IsValid() && roughnessMapAssetHandle.IsValid() && metallicMapAssetHandle.IsValid();
 
-                GetShaderAssetHandleAndReflectionData(shaderAssetHandle, shaderReflectionData, isPBR);
+                MeshUtilities::Get().GetShaderAssetHandleAndReflectionData(shaderAssetHandle, shaderReflectionData, isPBR);
 
                 ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
                     .ShaderAssetHandle = shaderAssetHandle,
@@ -324,11 +281,13 @@ namespace HBL2
         }
     }
 
-    void UFbxLoader::ReloadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path)
+    void UFbxLoader::ReloadMaterials(ufbx_scene* ufbxScene, const std::filesystem::path& path, Asset* sourceAsset)
     {
         auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
         s_MaterialNameToAssetHandle.clear();
+
+        MeshSettings meshSettings = MeshUtilities::Get().DeserializeAssetMetadataFile(sourceAsset);
 
         uint32_t numMaterials = (uint32_t)ufbxScene->materials.count;
 
@@ -344,15 +303,15 @@ namespace HBL2
             JobContext ctx;
 
             glm::vec4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-            Handle<Asset> albedoMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_BASE_COLOR, ctx, true, &albedoColor);
+            Handle<Asset> albedoMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_BASE_COLOR, ctx, meshSettings.ReimportTexturesOnReload, &albedoColor);
 
             double roughness = 1.0;
-            Handle<Asset> roughnessMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_ROUGHNESS, ctx, true, &roughness);
+            Handle<Asset> roughnessMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_ROUGHNESS, ctx, meshSettings.ReimportTexturesOnReload, &roughness);
 
             double metallicness = 1.0;
-            Handle<Asset> metallicMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_METALNESS, ctx, true, &metallicness);
+            Handle<Asset> metallicMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_METALNESS, ctx, meshSettings.ReimportTexturesOnReload, &metallicness);
 
-            Handle<Asset> normalMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_NORMAL_MAP, ctx, true);
+            Handle<Asset> normalMapAssetHandle = LoadMaterial(path, fbxMaterial, UFBX_MATERIAL_PBR_NORMAL_MAP, ctx, meshSettings.ReimportTexturesOnReload);
 
             AssetManager::Instance->WaitForAsyncJobs(&ctx);
 
@@ -367,7 +326,7 @@ namespace HBL2
             ShaderReflectionData shaderReflectionData;
             bool isPBR = normalMapAssetHandle.IsValid() && roughnessMapAssetHandle.IsValid() && metallicMapAssetHandle.IsValid();
 
-            GetShaderAssetHandleAndReflectionData(shaderAssetHandle, shaderReflectionData, isPBR);
+            MeshUtilities::Get().GetShaderAssetHandleAndReflectionData(shaderAssetHandle, shaderReflectionData, isPBR);
 
             if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativePath)))
             {
@@ -651,19 +610,14 @@ namespace HBL2
                     .filePath = relativeTexturePath,
                     .type = AssetType::Texture,
                 });
-
-                if (textureAssetHandle.IsValid())
-                {
-                    TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
-                }
             }
-            else
+
+            if (textureAssetHandle.IsValid())
             {
-                // Delete (unload) old texture asset.
-                AssetManager::Instance->DeleteAsset(textureAssetHandle);
+                TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
             }
 
-            AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
+            editorAssetManager->ReloadAssetAsync<Texture>(textureAssetHandle, &ctx);
             return textureAssetHandle;
         }
 
@@ -687,19 +641,14 @@ namespace HBL2
                         .filePath = relativeTexturePath,
                         .type = AssetType::Texture,
                     });
-
-                    if (textureAssetHandle.IsValid())
-                    {
-                        TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
-                    }
                 }
-                else
+
+                if (textureAssetHandle.IsValid())
                 {
-                    // Delete (unload) old texture asset.
-                    AssetManager::Instance->DeleteAsset(textureAssetHandle);
+                    TextureUtilities::Get().CreateAssetMetadataFile(textureAssetHandle);
                 }
 
-                AssetManager::Instance->GetAssetAsync<Texture>(textureAssetHandle, &ctx);
+                editorAssetManager->ReloadAssetAsync<Texture>(textureAssetHandle, &ctx);
                 return textureAssetHandle;
             }
         }

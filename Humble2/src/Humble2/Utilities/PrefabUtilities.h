@@ -28,7 +28,9 @@ namespace HBL2
 
 		void CreateMetadataFile(Handle<Asset> assetHandle, UUID baseEntityUUID, uint32_t version = 1, uint32_t maxEntities = 4096, uint32_t maxComponents = 32);
 		void CreateMetadataFile(Asset* prefabAsset, UUID baseEntityUUID, uint32_t version = 1, uint32_t maxEntities = 4096, uint32_t maxComponents = 32);
-		void UpdateMetadataFile(Handle<Asset> handle, PrefabDescriptor& desc);
+		void SerializeAssetMetadataFile(Handle<Asset> handle, const PrefabDescriptor& desc);
+		PrefabDescriptor DeserializeAssetMetadataFile(Handle<Asset> handle);
+		PrefabDescriptor DeserializeAssetMetadataFile(Asset* asset);
 
 	private:
 		PrefabUtilities() = default;

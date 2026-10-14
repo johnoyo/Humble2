@@ -263,10 +263,142 @@ namespace HBL2
 		out << YAML::Key << "Mesh" << YAML::Value;
 		out << YAML::BeginMap;
 		out << YAML::Key << "UUID" << YAML::Value << asset->UUID;
+		out << YAML::Key << "PreserveHierachy" << YAML::Value << true;
+		out << YAML::Key << "GenerateColliders" << YAML::Value << false;
+		out << YAML::Key << "ReimportTexturesOnReload" << YAML::Value << false;
 		out << YAML::EndMap;
 		out << YAML::EndMap;
 		fout << out.c_str();
 		fout.close();
+	}
+
+	void MeshUtilities::SerializeAssetMetadataFile(Handle<Asset> handle, const MeshSettings& settings)
+	{
+		Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+
+		if (asset == nullptr)
+		{
+			HBL2_CORE_ERROR("Error creating asset metadata file for mesh, invalid asset handle passed.");
+			return;
+		}
+
+		const auto& assetFilePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& workingDirectory = Project::GetAssetDirectory().parent_path().parent_path();
+		const auto& path = std::filesystem::exists(assetFilePath) ? assetFilePath : workingDirectory / asset->FilePath;
+
+		std::ofstream fout(path.string() + ".hblmesh", std::ios_base::out);
+
+		YAML::Emitter out;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Mesh" << YAML::Value;
+		out << YAML::BeginMap;
+		out << YAML::Key << "UUID" << YAML::Value << asset->UUID;
+		out << YAML::Key << "PreserveHierachy" << YAML::Value << settings.PreserveHierachy;
+		out << YAML::Key << "GenerateColliders" << YAML::Value << settings.GenerateColliders;
+		out << YAML::Key << "ReimportTexturesOnReload" << YAML::Value << settings.ReimportTexturesOnReload;
+		out << YAML::EndMap;
+		out << YAML::EndMap;
+		fout << out.c_str();
+		fout.close();
+	}
+
+	MeshSettings MeshUtilities::DeserializeAssetMetadataFile(Handle<Asset> handle)
+	{
+		if (!AssetManager::Instance->IsAssetValid(handle))
+		{
+			return {};
+		}
+
+		Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+
+		return DeserializeAssetMetadataFile(asset);
+	}
+
+	MeshSettings MeshUtilities::DeserializeAssetMetadataFile(Asset* asset)
+	{
+		if (asset == nullptr)
+		{
+			return {};
+		}
+
+		const std::filesystem::path& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmesh";
+
+		MeshSettings settings = {};
+
+		if (!std::filesystem::exists(filePath))
+		{
+			return settings;
+		}
+
+		YAML::Node data = YAML::LoadFile(filePath.string());
+
+		YAML::Node meshNode = data["Mesh"];
+
+		if (!meshNode)
+		{
+			return settings;
+		}
+
+		if (meshNode["PreserveHierachy"])
+		{
+			settings.PreserveHierachy = meshNode["PreserveHierachy"].as<bool>();
+		}
+
+		if (meshNode["GenerateColliders"])
+		{
+			settings.GenerateColliders = meshNode["GenerateColliders"].as<bool>();
+		}
+
+		if (meshNode["ReimportTexturesOnReload"])
+		{
+			settings.ReimportTexturesOnReload = meshNode["ReimportTexturesOnReload"].as<bool>();
+		}
+
+		return settings;
+	}
+
+	void MeshUtilities::GetShaderAssetHandleAndReflectionData(Handle<Asset>& shaderAssetHandle, ShaderReflectionData& shaderReflectionData, bool isPBR)
+	{
+		if (!isPBR)
+		{
+			auto shaderAssetHandles = ShaderUtilities::Get().GetBuiltInShaderAssets();
+			auto blinnPhongHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::BLINN_PHONG);
+
+			for (auto h : shaderAssetHandles)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(h);
+				if (asset != nullptr && asset->Indentifier == blinnPhongHandle.Pack())
+				{
+					shaderAssetHandle = h;
+					break;
+				}
+			}
+		}
+		else
+		{
+			auto shaderAssetHandles = ShaderUtilities::Get().GetBuiltInShaderAssets();
+			auto pbrHandle = ShaderUtilities::Get().GetBuiltInShader(BuiltInShader::PBR);
+
+			for (auto h : shaderAssetHandles)
+			{
+				Asset* asset = AssetManager::Instance->GetAssetMetadata(h);
+				if (asset != nullptr && asset->Indentifier == pbrHandle.Pack())
+				{
+					shaderAssetHandle = h;
+					break;
+				}
+			}
+		}
+
+		if (shaderAssetHandle.IsValid())
+		{
+			Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+			const auto& shaderFileSystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+			const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
+
+			shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
+		}
 	}
 }
 

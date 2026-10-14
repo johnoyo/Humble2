@@ -39,26 +39,21 @@ namespace HBL2
 		}
 
 		template<typename T>
-		Handle<T> ReloadAsset(Handle<Asset> handle)
+		Handle<T> ReloadAsset(Handle<Asset> assetHandle)
 		{
-			if (!IsAssetValid(handle))
+			if (!IsAssetValid(assetHandle))
 			{
 				return Handle<T>();
 			}
 
-			Asset* asset = GetAssetMetadata(handle);
-			if (asset->Loaded)
+			// Load from scratch first, if the asset is not loaded.
+			if (!IsAssetLoaded(assetHandle))
 			{
-				uint32_t packedHandle = ReloadAsset(handle);
-				return Handle<T>::UnPack(packedHandle);
-			}
-			else
-			{
-				uint32_t packedHandle = LoadAsset(handle);
-				return Handle<T>::UnPack(packedHandle);
+				LoadAsset(assetHandle);
 			}
 
-			return Handle<T>();
+			uint32_t packedHandle = ReloadAsset(assetHandle);
+			return Handle<T>::UnPack(packedHandle);
 		}
 
 		template<typename T>
@@ -84,11 +79,14 @@ namespace HBL2
 
 			resourceTask->m_Finished.store(false, std::memory_order_release);
 
-			// Load from scratch if the asset is not loaded.
+			// Load from scratch first, if the asset is not loaded.
 			if (!IsAssetLoaded(assetHandle))
 			{
-				GetAssetAsync<T>(assetHandle, resourceTask, customJobCtx);
-				return;
+				JobContext assetLoadCtx;
+
+				GetAssetAsync<T>(assetHandle, &assetLoadCtx);
+
+				WaitForAsyncJobs(&assetLoadCtx);
 			}
 
 			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);
@@ -126,11 +124,14 @@ namespace HBL2
 				return;
 			}
 
-			// Load from scratch if the asset is not loaded.
+			// Load from scratch first, if the asset is not loaded.
 			if (!IsAssetLoaded(assetHandle))
 			{
-				GetAssetAsync<T>(assetHandle, customJobCtx);
-				return;
+				JobContext assetLoadCtx;
+
+				GetAssetAsync<T>(assetHandle, &assetLoadCtx);
+
+				WaitForAsyncJobs(&assetLoadCtx);
 			}
 
 			JobContext& ctx = (customJobCtx == nullptr ? m_ResourceJobCtx : *customJobCtx);

@@ -76,6 +76,8 @@ namespace HBL2
 		RefHandle<BindGroupLayout> m_ReflectedSet0BindGroupLayout;
 		RefHandle<BindGroupLayout> m_ReflectedSet2BindGroupLayout;
 
+		std::vector<VkPipeline> m_RetiredPipelines;
+
 		friend class VulkanShader;
 	};
 

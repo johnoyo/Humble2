@@ -23,13 +23,11 @@ namespace HBL2
         void Reload(Asset* asset);
 
 	private:
-        Handle<Asset> LoadTexture(const std::filesystem::path& path, const fastgltf::Asset& asset, uint32_t imageIndex, const TextureSettings& settings, JobContext& ctx);
-        Handle<Asset> ReloadTexture(const std::filesystem::path& path, const fastgltf::Asset& asset, uint32_t imageIndex, const TextureSettings& settings, JobContext& ctx);
+        Handle<Asset> LoadTexture(const std::filesystem::path& path, const fastgltf::Asset& asset, uint32_t imageIndex, JobContext& ctx);
+        Handle<Asset> ReloadTexture(const std::filesystem::path& path, const fastgltf::Asset& asset, uint32_t imageIndex, JobContext& ctx);
 
-        void LoadTextures(const std::filesystem::path& path, const fastgltf::Asset& asset);
-        void ReloadTextures(const std::filesystem::path& path, const fastgltf::Asset& asset);
         void LoadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset);
-        void ReloadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset);
+        void ReloadMaterials(const std::filesystem::path& path, const fastgltf::Asset& asset, Asset* sourceAsset);
 
 		Result<MeshPartDescriptor> LoadMeshData(const fastgltf::Asset& asset, const fastgltf::Node& node, uint32_t meshIndex);
 		Result<SubMeshDescriptor> LoadSubMeshVertexData(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, uint32_t subMeshIndex);
@@ -56,7 +54,6 @@ namespace HBL2
 
 		static thread_local std::vector<Vertex> s_Vertices;
 		static thread_local std::vector<uint32_t> s_Indices;
-        static thread_local std::vector<Handle<Asset>> s_Textures;
         static thread_local std::unordered_map<const char*, Handle<Asset>> s_MaterialNameToAssetHandle;
 	};
 }

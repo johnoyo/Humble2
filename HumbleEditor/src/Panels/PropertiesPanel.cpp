@@ -71,7 +71,7 @@ namespace HBL2::Editor
 		}
 	}
 
-	static void UpdateSceneAssetMetadataFile(Handle<Asset> handle, SceneDescriptor& desc)
+	static void SerializeSceneAssetMetadataFile(Handle<Asset> handle, SceneDescriptor& desc)
 	{
 		if (!AssetManager::Instance->IsAssetValid(handle))
 		{
@@ -98,6 +98,59 @@ namespace HBL2::Editor
 		out << YAML::EndMap;
 		fout << out.c_str();
 		fout.close();
+	}
+
+	static SceneDescriptor DeserializeSceneAssetMetadataFile(Asset* asset)
+	{
+		if (asset == nullptr)
+		{
+			return {};
+		}
+
+		SceneDescriptor desc = {};
+
+		const std::filesystem::path& filePath = HBL2::Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblscene";
+
+		if (!std::filesystem::exists(filePath))
+		{
+			return desc;
+		}
+
+		std::ifstream stream(filePath);
+		std::stringstream ss;
+		ss << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Scene"].IsDefined())
+		{
+			HBL2_CORE_TRACE("Scene meta data file not valid: {0}", ss.str());
+			return {};
+		}
+
+		const auto& sceneProperties = data["Scene"];
+		if (sceneProperties)
+		{
+			desc.maxEntities = sceneProperties["MaxEntities"].as<uint32_t>();
+			desc.maxComponents = sceneProperties["MaxComponents"].as<uint32_t>();
+			desc.maxSystems = sceneProperties["MaxSystems"].as<uint32_t>();
+			desc.maxJobsPerSystem = sceneProperties["MaxJobsPerSystem"].as<uint32_t>();
+			desc.maxStructuralCommandsPerFramePerThread = sceneProperties["MaxStructuralCommandsPerFramePerThread"].as<uint32_t>();
+			desc.useStructuralCommandBuffer = sceneProperties["UseStructuralCommandBuffer"].as<bool>();
+		}
+
+		return desc;
+	}
+
+	static SceneDescriptor DeserializeSceneAssetMetadataFile(Handle<Asset> handle)
+	{
+		if (!AssetManager::Instance->IsAssetValid(handle))
+		{
+			return {};
+		}
+
+		Asset* asset = AssetManager::Instance->GetAssetMetadata(handle);
+
+		return DeserializeSceneAssetMetadataFile(asset);
 	}
 
 	static bool GetVariantShaderConstantValueFromIndex(const ShaderDescriptor::RenderPipeline::PackedVariant& variant, uint32_t i)
@@ -898,6 +951,12 @@ namespace HBL2::Editor
 				auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 				Asset* asset = AssetManager::Instance->GetAssetMetadata(m_Owner->m_SelectedAsset.Get());
 
+				// If selected asset changed reset dirty flag.
+				if (m_Owner->m_SelectedAsset.Get() != m_PreviouslySelectedAsset)
+				{
+					m_IsAssetDirty = false;
+				}
+
 				m_UseDefaultSaveButton = true;
 
 				if (asset == nullptr)
@@ -1419,10 +1478,10 @@ namespace HBL2::Editor
 
 							// Submit map to render thread, to avoid modifying the data while the render thread renders the previous frame.
 							Renderer::Instance->Submit([index = m_ShaderUniformBufferSize, handle]()
-								{
-									Handle<BindGroup> shaderBindGroup = ResourceManager::Instance->GetShaderGlobalBindGroup(handle);
-									ResourceManager::Instance->MapBufferData(shaderBindGroup, index);
-								});
+							{
+								Handle<BindGroup> shaderBindGroup = ResourceManager::Instance->GetShaderGlobalBindGroup(handle);
+								ResourceManager::Instance->MapBufferData(shaderBindGroup, index);
+							});
 
 							m_ShaderNeedsReimport = true;
 						}
@@ -2173,7 +2232,7 @@ namespace HBL2::Editor
 						.ReflectionData = &m_ShaderReflectionData,
 						.Buffers = { m_ShaderUniformBufferData.data(), m_ShaderUniformBufferData.size() },
 						.TextureAssets = { m_ShaderUniformTextureData.data(), m_ShaderUniformTextureData.size() },
-						});
+					});
 
 					m_MaterialNeedsReimport = false;
 				}
@@ -2225,11 +2284,9 @@ namespace HBL2::Editor
 			m_TextureSettings = TextureUtilities::Get().DeserializeAssetMetadataFile(m_Owner->m_SelectedAsset.Get());
 		}
 
-		bool dirty = false;
-
 		if (ImGui::Checkbox("Flip", &m_TextureSettings.Flip))
 		{
-			dirty = true;
+			m_IsAssetDirty = true;
 			m_UpdateTexture = true;
 		}
 
@@ -2270,7 +2327,7 @@ namespace HBL2::Editor
 
 					if (ImGui::Combo("Method", (int*)&m_TextureSettings.PlatformCompressionMethod[i], compressionMethods.data(), compressionMethods.size()))
 					{
-						dirty = true;
+						m_IsAssetDirty = true;
 						m_ReimportTexture = true;
 					}
 				}
@@ -2343,13 +2400,13 @@ namespace HBL2::Editor
 
 						if (!newFormatSet)
 						{
-							dirty = true;
+							m_IsAssetDirty = true;
 							m_ReimportTexture = true;
 						}
 
 						if (ImGui::Combo("Format", &m_CurrentCompressionFormatItem[i], transcodingFormatLabels.data(), transcodingFormatLabels.size()))
 						{
-							dirty = true;
+							m_IsAssetDirty = true;
 							m_ReimportTexture = true;
 							m_TextureSettings.PlatformCompressionFormat[i] = transcodingFormats[m_CurrentCompressionFormatItem[i]];
 						}
@@ -2414,13 +2471,13 @@ namespace HBL2::Editor
 
 						if (!newFormatSet)
 						{
-							dirty = true;
+							m_IsAssetDirty = true;
 							m_ReimportTexture = true;
 						}
 
 						if (ImGui::Combo("Format", &m_CurrentCompressionFormatItem[i], astcFormatLabels.data(), astcFormatLabels.size()))
 						{
-							dirty = true;
+							m_IsAssetDirty = true;
 							m_ReimportTexture = true;
 							m_TextureSettings.PlatformCompressionFormat[i] = astcFormats[m_CurrentCompressionFormatItem[i]];
 						}
@@ -2435,7 +2492,7 @@ namespace HBL2::Editor
 
 						if (ImGui::Combo("Quality Level", (int*)&m_TextureSettings.PlatformCompressionQuality[i], options, IM_ARRAYSIZE(options)))
 						{
-							dirty = true;
+							m_IsAssetDirty = true;
 							m_UpdateTexture = true;
 						}
 					}
@@ -2445,12 +2502,21 @@ namespace HBL2::Editor
 			}
 		}
 
-		if (dirty)
+		if (ImGui::Button("Save"))
 		{
-			TextureUtilities::Get().SerializeAssetMetadataFile(m_Owner->m_SelectedAsset.Get(), m_TextureSettings);
+			if (m_IsAssetDirty)
+			{
+				TextureUtilities::Get().SerializeAssetMetadataFile(m_Owner->m_SelectedAsset.Get(), m_TextureSettings);
+			}
+
+			m_IsAssetDirty = false;
 		}
 
-		if (ImGui::Button("Save"))
+		ImGui::SameLine();
+
+		ImGui::BeginDisabled(!m_ReimportTexture && !m_UpdateTexture);
+				
+		if (ImGui::Button("Apply"))
 		{
 			if (m_ReimportTexture)
 			{
@@ -2464,44 +2530,89 @@ namespace HBL2::Editor
 			m_ReimportTexture = false;
 			m_UpdateTexture = false;
 		}
+
+		ImGui::EndDisabled();
 	}
 
 	void PropertiesPanel::DrawSceneProperties(Asset* asset)
 	{
-		Handle<Scene> handle = AssetManager::Instance->GetAsset<Scene>(m_Owner->m_SelectedAsset.Get());
-		Scene* scene = ResourceManager::Instance->GetScene(handle);
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+		
+		m_UseDefaultSaveButton = false;
 
-		SceneDescriptor& desc = scene->GetDescriptor();
-
-		bool dirty = false;
-		dirty |= ImGui::InputInt("MaxEntities", (int*)&desc.maxEntities, 4096, 4096);
-		dirty |= ImGui::InputInt("MaxComponents", (int*)&desc.maxComponents);
-		dirty |= ImGui::InputInt("MaxSystems", (int*)&desc.maxSystems);
-		dirty |= ImGui::InputInt("MaxJobsPerSystem", (int*)&desc.maxJobsPerSystem);
-		dirty |= ImGui::InputInt("MaxStructuralCommandsPerFramePerThread", (int*)&desc.maxStructuralCommandsPerFramePerThread);
-		dirty |= ImGui::Checkbox("UseStructuralCommandBuffer", &desc.useStructuralCommandBuffer);
-
-		if (dirty)
+		// If selected prefab changed update settings and reset flags.
+		if (m_Owner->m_SelectedAsset.Get() != m_PreviouslySelectedAsset)
 		{
-			UpdateSceneAssetMetadataFile(m_Owner->m_SelectedAsset.Get(), desc);
+			m_SceneDescriptor = DeserializeSceneAssetMetadataFile(m_Owner->m_SelectedAsset.Get());
+		}
+
+		m_IsAssetDirty |= ImGui::InputInt("MaxEntities", (int*)&m_SceneDescriptor.maxEntities, 4096, 4096);
+		m_IsAssetDirty |= ImGui::InputInt("MaxComponents", (int*)&m_SceneDescriptor.maxComponents);
+		m_IsAssetDirty |= ImGui::InputInt("MaxSystems", (int*)&m_SceneDescriptor.maxSystems);
+		m_IsAssetDirty |= ImGui::InputInt("MaxJobsPerSystem", (int*)&m_SceneDescriptor.maxJobsPerSystem);
+		m_IsAssetDirty |= ImGui::InputInt("MaxStructuralCommandsPerFramePerThread", (int*)&m_SceneDescriptor.maxStructuralCommandsPerFramePerThread);
+		m_IsAssetDirty |= ImGui::Checkbox("UseStructuralCommandBuffer", &m_SceneDescriptor.useStructuralCommandBuffer);
+
+		if (ImGui::Button("Save"))
+		{
+			if (m_IsAssetDirty)
+			{
+				SerializeSceneAssetMetadataFile(m_Owner->m_SelectedAsset.Get(), m_SceneDescriptor);
+			}
+
+			m_IsAssetDirty = false;
 		}
 	}
 
 	void PropertiesPanel::DrawPrefabProperties(Asset* asset)
 	{
-		Handle<Prefab> handle = AssetManager::Instance->GetAsset<Prefab>(m_Owner->m_SelectedAsset.Get());
-		Prefab* prefab = ResourceManager::Instance->GetPrefab(handle);
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
-		PrefabDescriptor& desc = prefab->GetDescriptor();
+		m_UseDefaultSaveButton = false;
 
-		bool dirty = false;
-		dirty |= ImGui::InputInt("MaxEntities", (int*)&desc.maxEntities, 4096);
-		dirty |= ImGui::InputInt("MaxComponents", (int*)&desc.maxComponents);
-
-		if (dirty)
+		// If selected prefab changed update settings and reset flags.
+		if (m_Owner->m_SelectedAsset.Get() != m_PreviouslySelectedAsset)
 		{
-			PrefabUtilities::Get().UpdateMetadataFile(m_Owner->m_SelectedAsset.Get(), desc);
+			m_PrefabDescriptor = PrefabUtilities::Get().DeserializeAssetMetadataFile(m_Owner->m_SelectedAsset.Get());
 		}
+
+		if (ImGui::InputInt("MaxEntities", (int*)&m_PrefabDescriptor.maxEntities, 4096))
+		{
+			m_IsAssetDirty = true;
+			m_ReimportPrefab = true;
+		}
+		
+		if (ImGui::InputInt("MaxComponents", (int*)&m_PrefabDescriptor.maxComponents))
+		{
+			m_IsAssetDirty = true;
+			m_ReimportPrefab = true;
+		}
+
+		if (ImGui::Button("Save"))
+		{
+			if (m_IsAssetDirty)
+			{
+				PrefabUtilities::Get().SerializeAssetMetadataFile(m_Owner->m_SelectedAsset.Get(), m_PrefabDescriptor);
+			}
+
+			m_IsAssetDirty = false;
+		}
+
+		ImGui::SameLine();
+
+		ImGui::BeginDisabled(!m_ReimportPrefab);
+
+		if (ImGui::Button("Apply"))
+		{
+			if (m_ReimportPrefab)
+			{
+				editorAssetManager->ReloadAssetAsync<Prefab>(m_Owner->m_SelectedAsset.Get());
+			}
+
+			m_ReimportPrefab = false;
+		}
+
+		ImGui::EndDisabled();
 	}
 
 	void PropertiesPanel::DrawSoundProperties(Asset* asset)
@@ -2519,7 +2630,61 @@ namespace HBL2::Editor
 	
 	void PropertiesPanel::DrawMeshProperties(Asset* asset)
 	{
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
+		m_UseDefaultSaveButton = false;
+
+		// If selected mesh changed update settings and reset flags.
+		if (m_Owner->m_SelectedAsset.Get() != m_PreviouslySelectedAsset)
+		{
+			m_ReimportMesh = false;
+
+			m_MeshSettings = MeshUtilities::Get().DeserializeAssetMetadataFile(m_Owner->m_SelectedAsset.Get());
+		}
+
+		if (ImGui::Checkbox("Preserve Hierachy", &m_MeshSettings.PreserveHierachy))
+		{
+			m_IsAssetDirty = true;
+			m_ReimportMesh = true;
+		}
+
+		if (ImGui::Checkbox("Generate Colliders", &m_MeshSettings.GenerateColliders))
+		{
+			m_IsAssetDirty = true;
+			m_ReimportMesh = true;
+		}
+
+		if (ImGui::Checkbox("Reimport Textures on Reload", &m_MeshSettings.ReimportTexturesOnReload))
+		{
+			m_IsAssetDirty = true;
+			m_ReimportMesh = true;
+		}
+
+		if (ImGui::Button("Save"))
+		{
+			if (m_IsAssetDirty)
+			{
+				MeshUtilities::Get().SerializeAssetMetadataFile(m_Owner->m_SelectedAsset.Get(), m_MeshSettings);
+			}
+
+			m_IsAssetDirty = false;
+		}
+
+		ImGui::SameLine();
+
+		ImGui::BeginDisabled(!m_ReimportMesh);
+
+		if (ImGui::Button("Apply"))
+		{
+			if (m_ReimportMesh)
+			{
+				editorAssetManager->ReloadAssetAsync<Mesh>(m_Owner->m_SelectedAsset.Get());
+			}
+
+			m_ReimportMesh = false;
+		}
+
+		ImGui::EndDisabled();
 	}
 
 	void PropertiesPanel::DrawScriptProperties(Asset * asset)

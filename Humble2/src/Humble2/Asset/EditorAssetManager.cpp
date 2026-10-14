@@ -1949,7 +1949,7 @@ namespace HBL2
 		auto textureProperties = data["Texture"];
 		if (textureProperties)
 		{
-			// Load the texture
+			// Load the texture settings.
 			TextureSettings textureSettings = TextureUtilities::Get().DeserializeAssetMetadataFile(asset);
 
 			// Mark for reload so that the cache gets updated.
