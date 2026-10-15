@@ -9,17 +9,6 @@ namespace HBL2
 {
 	namespace Component
 	{
-		struct SkinnedMesh
-		{
-			RefHandle<Asset> Mesh;
-			uint32_t MeshIndex = 0;
-			uint32_t SubMeshIndex = 0;
-
-			RefHandle<Asset> Material;
-
-			bool Enabled = true;
-		};
-
 		struct Animation
 		{
 			Handle<Asset> Mesh;

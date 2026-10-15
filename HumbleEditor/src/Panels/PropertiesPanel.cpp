@@ -385,6 +385,55 @@ namespace HBL2::Editor
 				}
 			});
 
+			DrawComponent<HBL2::Component::SkinnedMesh>("SkinnedMesh", activeScene, [this](HBL2::Component::SkinnedMesh& mesh)
+			{
+				// ...
+			});
+
+			DrawComponent<HBL2::Component::SkinnedSubMesh>("SkinnedSubMesh", activeScene, [this](HBL2::Component::SkinnedSubMesh& mesh)
+			{
+				uint32_t meshHandle = mesh.Mesh.Get().Pack();
+				uint32_t materialHandle = mesh.Material.Get().Pack();
+
+				ImGui::Checkbox("Enabled", &mesh.Enabled);
+				ImGui::InputScalar("Mesh", ImGuiDataType_U32, (void*)(intptr_t*)&meshHandle);
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
+					{
+						uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+						Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+						if (assetHandle.IsValid())
+						{
+							MeshUtilities::Get().CreateMeshMetadataFile(assetHandle);
+						}
+
+						mesh.Mesh = assetHandle;
+						AssetManager::Instance->GetAsset<Mesh>(assetHandle);
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+
+				ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
+					{
+						uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+						Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+						mesh.Material = assetHandle;
+						AssetManager::Instance->GetAsset<Material>(assetHandle);
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+			});
+
 			DrawComponent<HBL2::Component::Animation>("Animation", activeScene, [this](HBL2::Component::Animation& animation)
 			{
 				ImGui::Checkbox("Enabled", &animation.Enabled);
@@ -913,6 +962,8 @@ namespace HBL2::Editor
 			{
 				AddComponentButton<HBL2::Component::Sprite>("Sprite", activeScene);
 				AddComponentButton<HBL2::Component::StaticMesh>("StaticMesh", activeScene);
+				AddComponentButton<HBL2::Component::SkinnedSubMesh>("SkinnedSubMesh", activeScene);
+				AddComponentButton<HBL2::Component::Animation>("Animation", activeScene);
 				AddComponentButton<HBL2::Component::Camera>("Camera", activeScene);
 				AddComponentButton<HBL2::Component::Link>("Link", activeScene);
 				AddComponentButton<HBL2::Component::Light>("Light", activeScene);
@@ -981,6 +1032,8 @@ namespace HBL2::Editor
 					{
 						AssetManager::Instance->UnpinAsset(m_Owner->m_SelectedAsset.Get());
 					}
+
+					m_IsAssetDirty = true;
 				}
 
 				ImGui::NewLine();

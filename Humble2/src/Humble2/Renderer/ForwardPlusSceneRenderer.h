@@ -33,10 +33,10 @@ namespace HBL2
 
 		uint32_t m_UBOStartingOffset = 0;
 		uint32_t m_UBOEndingOffset = 0;
-		DrawList m_StaticMeshOpaqueDraws;
-		DrawList m_StaticMeshTransparentDraws;
-		DrawList m_PrePassStaticMeshDraws;
-		DrawList m_ShadowPassStaticMeshDraws;
+		DrawList m_MeshOpaqueDraws;
+		DrawList m_MeshTransparentDraws;
+		DrawList m_PrePassMeshDraws;
+		DrawList m_ShadowPassMeshDraws;
 
 		DrawList m_SpriteOpaqueDraws;
 		DrawList m_SpriteTransparentDraws;

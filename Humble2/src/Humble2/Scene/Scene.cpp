@@ -153,6 +153,8 @@ namespace HBL2
         copy_component(Component::EditorVisible{});
         copy_component(Component::Sprite{});
         copy_component(Component::StaticMesh{});
+        copy_component(Component::SkinnedMesh{});
+        copy_component(Component::SkinnedSubMesh{});
         copy_component(Component::Light{});
         copy_component(Component::SkyLight{});
         copy_component(Component::AudioListener{});
@@ -168,6 +170,7 @@ namespace HBL2
         copy_component(Component::PrefabEntity{});
         copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
+        copy_component(Component::Animation{});
         // Do not copy the TerrainChunk component
 
         // Clone systems.
@@ -501,6 +504,8 @@ namespace HBL2
         copy_component(Component::EditorVisible{});
         copy_component(Component::Sprite{});
         copy_component(Component::StaticMesh{});
+        copy_component(Component::SkinnedMesh{});
+        copy_component(Component::SkinnedSubMesh{});
         copy_component(Component::Light{});
         copy_component(Component::SkyLight{});
         copy_component(Component::AudioListener{});
@@ -517,6 +522,7 @@ namespace HBL2
         copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
         copy_component(Component::TerrainChunk{});
+        copy_component(Component::Animation{});
 
         // Copy user defined components.
         Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
@@ -612,6 +618,8 @@ namespace HBL2
         copy_component(Component::EditorVisible{});
         copy_component(Component::Sprite{});
         copy_component(Component::StaticMesh{});
+        copy_component(Component::SkinnedMesh{});
+        copy_component(Component::SkinnedSubMesh{});
         copy_component(Component::Light{});
         copy_component(Component::SkyLight{});
         copy_component(Component::AudioListener{});
@@ -628,6 +636,7 @@ namespace HBL2
         copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
         copy_component(Component::TerrainChunk{});
+        copy_component(Component::Animation{});
 
         // Copy user defined components.
         Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)

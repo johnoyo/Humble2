@@ -101,7 +101,6 @@ namespace HBL2
 		std::vector<SubMesh> SubMeshes;
 		Handle<Buffer> IndexBuffer;
 		std::vector<Handle<Buffer>> VertexBuffers;
-		Handle<Buffer> SkinnedVertexBuffer;
 		Handle<Buffer> SkinBuffer;
 		uint32_t VertexCount = 0;
 

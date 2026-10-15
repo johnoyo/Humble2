@@ -27,14 +27,13 @@ namespace HBL2
 		Handle<BindGroup> ShadowBindings;
 		Handle<BindGroup> GlobalBindings2D;
 		Handle<BindGroup> GlobalBindings3D;
-		Handle<BindGroup> SkinningBindings;
 
 		uint32_t m_UBOStartingOffset = 0;
 		uint32_t m_UBOEndingOffset = 0;
-		DrawList m_StaticMeshOpaqueDraws;
-		DrawList m_StaticMeshTransparentDraws;
-		DrawList m_PrePassStaticMeshDraws;
-		DrawList m_ShadowPassStaticMeshDraws;
+		DrawList m_MeshOpaqueDraws;
+		DrawList m_MeshTransparentDraws;
+		DrawList m_PrePassMeshDraws;
+		DrawList m_ShadowPassMeshDraws;
 
 		DrawList m_SpriteOpaqueDraws;
 		DrawList m_SpriteTransparentDraws;
@@ -60,7 +59,6 @@ namespace HBL2
 		Handle<BindGroup> GetShadowBindings() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].ShadowBindings; }
 		Handle<BindGroup> GetGlobalBindings2D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindings2D; }
 		Handle<BindGroup> GetGlobalBindings3D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindings3D; }
-		Handle<BindGroup> GetSkinningBindings() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].SkinningBindings; }
 
 		void SkinningPassSetup();
 		void ShadowPassSetup();

@@ -414,6 +414,7 @@ namespace HBL2::Editor
 				{
 					auto meshEntity = activeScene->CreateEntity(meshPart.DebugName);
 					activeScene->AddComponent<HBL2::Component::EditorVisible>(meshEntity);
+					activeScene->AddComponent<HBL2::Component::SkinnedMesh>(meshEntity);
 					auto& link = activeScene->GetComponent<HBL2::Component::Link>(meshEntity);
 
 					link.Parent = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
@@ -430,16 +431,24 @@ namespace HBL2::Editor
 						transform.Rotation = meshPart.ImportedLocalTransform.rotation;
 						transform.Scale = meshPart.ImportedLocalTransform.scale;
 
-						auto& staticMesh = activeScene->AddComponent<HBL2::Component::StaticMesh>(subMeshEntity);
-						staticMesh.Mesh = assetHandle;
-						staticMesh.MeshIndex = meshIndex;
-						staticMesh.SubMeshIndex = subMeshIndex;
-						staticMesh.Material = subMesh.EmbededMaterial;
-
-						// TODO: Fixme!
-						if (mesh->Skeleton.IsValid())
+						if (meshPart.IsSkinned())
 						{
-							staticMesh.AnimatorId = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
+							auto& skinnedMesh = activeScene->AddComponent<HBL2::Component::SkinnedSubMesh>(subMeshEntity);
+							skinnedMesh.Mesh = assetHandle;
+							skinnedMesh.MeshIndex = meshIndex;
+							skinnedMesh.SubMeshIndex = subMeshIndex;
+							skinnedMesh.Material = subMesh.EmbededMaterial;
+
+							skinnedMesh.SkinnedMeshId = activeScene->GetComponent<HBL2::Component::ID>(meshEntity).Identifier;
+							skinnedMesh.AnimatorId = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
+						}
+						else
+						{
+							auto& staticMesh = activeScene->AddComponent<HBL2::Component::StaticMesh>(subMeshEntity);
+							staticMesh.Mesh = assetHandle;
+							staticMesh.MeshIndex = meshIndex;
+							staticMesh.SubMeshIndex = subMeshIndex;
+							staticMesh.Material = subMesh.EmbededMaterial;
 						}
 
 						subMeshIndex++;

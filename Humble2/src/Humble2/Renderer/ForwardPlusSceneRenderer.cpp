@@ -126,12 +126,12 @@ namespace HBL2
 			sceneRenderData.m_LightData.resize(maxLights);
 
 			sceneRenderData.m_PrePassSpriteDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_PrePassStaticMeshDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_ShadowPassStaticMeshDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_PrePassMeshDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_ShadowPassMeshDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_SpriteOpaqueDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_SpriteTransparentDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_StaticMeshOpaqueDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_StaticMeshTransparentDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_MeshOpaqueDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_MeshTransparentDraws.Initialize(m_Arena, maxEntities);
 		}
 
 		m_Scene = scene;
@@ -1224,10 +1224,10 @@ namespace HBL2
 			uint64_t depthOnlyVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlyShader, m_DepthOnlyMaterialHash);
 			uint64_t shadowPrePassVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_ShadowPrePassShader, m_ShadowPrePassMaterialHash);
 
-			sceneRenderData->m_StaticMeshOpaqueDraws.Reset();
-			sceneRenderData->m_StaticMeshTransparentDraws.Reset();
-			sceneRenderData->m_PrePassStaticMeshDraws.Reset();
-			sceneRenderData->m_ShadowPassStaticMeshDraws.Reset();
+			sceneRenderData->m_MeshOpaqueDraws.Reset();
+			sceneRenderData->m_MeshTransparentDraws.Reset();
+			sceneRenderData->m_PrePassMeshDraws.Reset();
+			sceneRenderData->m_ShadowPassMeshDraws.Reset();
 
 			m_Scene->Filter<Component::StaticMesh, Component::Transform>()
 				.ForEach([&](Component::StaticMesh& staticMesh, Component::Transform& transform)
@@ -1273,7 +1273,7 @@ namespace HBL2
 						// Fill draw lists.
 						if (!material->VariantHash.blendEnabled)
 						{
-							sceneRenderData->m_StaticMeshOpaqueDraws.Insert({
+							sceneRenderData->m_MeshOpaqueDraws.Insert({
 								.Shader = material->Shader,
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.IndexBuffer = meshPart.IndexBuffer,
@@ -1291,7 +1291,7 @@ namespace HBL2
 							});
 
 							// Include only opaque objects in depth pre-pass.
-							sceneRenderData->m_PrePassStaticMeshDraws.Insert({
+							sceneRenderData->m_PrePassMeshDraws.Insert({
 								.Shader = m_DepthOnlyShader,
 								.VariantHandle = depthOnlyVariantHandle,
 								.IndexBuffer = meshPart.IndexBuffer,
@@ -1310,7 +1310,7 @@ namespace HBL2
 						}
 						else
 						{
-							sceneRenderData->m_StaticMeshTransparentDraws.Insert({
+							sceneRenderData->m_MeshTransparentDraws.Insert({
 								.Shader = material->Shader,
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.IndexBuffer = meshPart.IndexBuffer,
@@ -1330,7 +1330,7 @@ namespace HBL2
 
 						if (material->ReceiveShadows)
 						{
-							sceneRenderData->m_ShadowPassStaticMeshDraws.Insert({
+							sceneRenderData->m_ShadowPassMeshDraws.Insert({
 								.Shader = m_ShadowPrePassShader,
 								.VariantHandle = shadowPrePassVariantHandle,
 								.IndexBuffer = meshPart.IndexBuffer,
@@ -1432,10 +1432,10 @@ namespace HBL2
 		{
 			BEGIN_PROFILE_PASS();
 
-			sceneRenderData->m_StaticMeshOpaqueDraws.Sort();
-			sceneRenderData->m_PrePassStaticMeshDraws.Sort();
-			sceneRenderData->m_StaticMeshTransparentDraws.Sort();
-			sceneRenderData->m_ShadowPassStaticMeshDraws.Sort();
+			sceneRenderData->m_MeshOpaqueDraws.Sort();
+			sceneRenderData->m_PrePassMeshDraws.Sort();
+			sceneRenderData->m_MeshTransparentDraws.Sort();
+			sceneRenderData->m_ShadowPassMeshDraws.Sort();
 			sceneRenderData->m_SpriteOpaqueDraws.Sort();
 			sceneRenderData->m_PrePassSpriteDraws.Sort();
 			sceneRenderData->m_SpriteTransparentDraws.Sort();
@@ -1618,7 +1618,7 @@ namespace HBL2
 							.UsesDynamicOffset = true,
 						};
 
-						passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_ShadowPassStaticMeshDraws);
+						passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_ShadowPassMeshDraws);
 
 						commandBuffer->EndRenderPass(*passRenderer);
 
@@ -1660,7 +1660,7 @@ namespace HBL2
 		{
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
-			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassStaticMeshDraws);
+			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassMeshDraws);
 		}
 
 		// Depth only pre pass for opaque sprites.
@@ -1788,7 +1788,7 @@ namespace HBL2
 			Handle<BindGroup> globalBindings = GetGlobalBindingsOpaque3D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
-			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshOpaqueDraws);
+			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_MeshOpaqueDraws);
 		}
 
 		// Render opaque sprites.
@@ -1811,7 +1811,7 @@ namespace HBL2
 			Handle<BindGroup> globalBindings = GetGlobalBindingsTransparent3D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
-			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshTransparentDraws);
+			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_MeshTransparentDraws);
 		}
 
 		// Render transparent sprites.

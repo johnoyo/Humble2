@@ -96,12 +96,12 @@ namespace HBL2
 			sceneRenderData.m_LightData.resize(maxLights);
 
 			sceneRenderData.m_PrePassSpriteDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_PrePassStaticMeshDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_ShadowPassStaticMeshDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_PrePassMeshDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_ShadowPassMeshDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_SpriteOpaqueDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_SpriteTransparentDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_StaticMeshOpaqueDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_StaticMeshTransparentDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_MeshOpaqueDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_MeshTransparentDraws.Initialize(m_Arena, maxEntities);
 		}
 
 		m_Scene = scene;
@@ -225,6 +225,23 @@ namespace HBL2
 				staticMesh.Material.Release();
 			});
 
+		m_Scene->Filter<Component::SkinnedMesh>()
+			.ForEach([&](Component::SkinnedMesh& skinnedMesh)
+			{
+				m_ResourceManager->DeleteBuffer(skinnedMesh.SkinnedVertexBuffer);
+				skinnedMesh.SkinnedVertexBuffer = {};
+			});
+
+		m_Scene->Filter<Component::SkinnedSubMesh>()
+			.ForEach([&](Component::SkinnedSubMesh& skinnedSubMesh)
+			{
+				skinnedSubMesh.Mesh.Release();
+				skinnedSubMesh.Material.Release();
+
+				//m_ResourceManager->DeleteBindGroup(skinnedSubMesh.SkinningBindings);
+				//skinnedSubMesh.SkinningBindings = {};
+			});
+
 		m_Scene->Filter<Component::Sprite>()
 			.ForEach([&](Component::Sprite& sprite)
 			{
@@ -286,7 +303,6 @@ namespace HBL2
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].ShadowBindings);
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindings2D);
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindings3D);
-			m_ResourceManager->DeleteBindGroup(m_RenderData[i].SkinningBindings);
 		}
 	}
 
@@ -302,7 +318,7 @@ namespace HBL2
 			.debugName = "main-renderpass-layout",
 			.depthTargetFormat = Format::D32_FLOAT,
 			.subPasses = {
-				{.depthTarget = true, .colorTargets = 1, },
+				{ .depthTarget = true, .colorTargets = 1, },
 			},
 		});
 
@@ -311,7 +327,7 @@ namespace HBL2
 			.debugName = "pre-pass-renderpass-layout",
 			.depthTargetFormat = Format::D32_FLOAT,
 			.subPasses = {
-				{.depthTarget = true },
+				{ .depthTarget = true },
 			},
 		});
 	}
@@ -411,7 +427,7 @@ namespace HBL2
 				.debugName = "unlit-colored-bind-group",
 				.layout = m_GlobalBindingsLayout2D.Get(),
 				.buffers = {
-					{.buffer = cameraBuffer2D },
+					{ .buffer = cameraBuffer2D },
 				}
 			});
 		}
@@ -468,6 +484,7 @@ namespace HBL2
 				{ .slot = 1, .visibility = ShaderStage::COMPUTE, .type = BufferBindingType::STORAGE },
 				{ .slot = 2, .visibility = ShaderStage::COMPUTE, .type = BufferBindingType::READ_ONLY_STORAGE },
 				{ .slot = 3, .visibility = ShaderStage::COMPUTE, .type = BufferBindingType::READ_ONLY_STORAGE },
+				{ .slot = 4, .visibility = ShaderStage::COMPUTE, .type = BufferBindingType::UNIFORM },
 			}
 		});
 
@@ -487,10 +504,11 @@ namespace HBL2
 			.threadsPerThreadGroup = { 64, 1, 1 },
 		});
 
-		m_Scene->Filter<Component::StaticMesh>()
-			.ForEach([this](Entity entity, Component::StaticMesh& skinnedMesh)
+		m_Scene->Filter<Component::SkinnedSubMesh>()
+			.ForEach([this](Entity entity, Component::SkinnedSubMesh& skinnedSubMesh)
 			{
-				Entity animationEntity = m_Scene->FindEntityByUUID(skinnedMesh.AnimatorId);
+				// Retireve animation component.
+				Entity animationEntity = m_Scene->FindEntityByUUID(skinnedSubMesh.AnimatorId);
 
 				if (animationEntity == Entity::Null)
 				{
@@ -499,47 +517,59 @@ namespace HBL2
 
 				auto& anim = m_Scene->GetComponent<Component::Animation>(animationEntity);
 
+				// Retrieve skinned mesh component.
+				Entity meshEntity = m_Scene->FindEntityByUUID(skinnedSubMesh.SkinnedMeshId);
+
+				if (meshEntity == Entity::Null)
+				{
+					return;
+				}
+
+				auto& skinnedMesh = m_Scene->GetComponent<Component::SkinnedMesh>(meshEntity);
+
 				// Retrieve mesh.
-				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedMesh.Mesh.Get());
+				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedSubMesh.Mesh.Get());
 				Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
+
+				MeshPart& part = mesh->Meshes[skinnedSubMesh.MeshIndex];
 
 				// Retrieve skeleton.
 				const Skeleton* skeleton = ResourceManager::Instance->GetSkeleton(mesh->Skeleton);
 
 				anim.JointCount = (uint32_t)skeleton->Parents.size();
+				
+				Handle<Buffer> jointMatricesBuffer = ResourceManager::Instance->CreateBuffer({
+					.debugName = "joint-matrices-buffer",
+					.usage = BufferUsage::STORAGE,
+					.memoryUsage = MemoryUsage::CPU_GPU,
+					.byteSize = Renderer::Instance->FrameCount * anim.JointCount * (uint32_t)sizeof(glm::mat4),
+				});
 
-				for (uint32_t i = 0; i < mesh->Meshes.size(); ++i)
-				{
-					MeshPart& part = mesh->Meshes[i];
+				Handle<Buffer> jointMatricesOffsetBuffer = ResourceManager::Instance->CreateBuffer({
+					.debugName = "joint-matrices-offset-buffer",
+					.usage = BufferUsage::UNIFORM,
+					.memoryUsage = MemoryUsage::CPU_GPU,
+					.byteSize = sizeof(uint32_t),
+				});
 
-					part.SkinnedVertexBuffer = ResourceManager::Instance->CreateBuffer({
-						.debugName = "skinned-vertex-buffer",
-						.usage = { BufferUsage::VERTEX, BufferUsage::STORAGE },
-						.memoryUsage = MemoryUsage::GPU_ONLY,
-						.byteSize = part.VertexCount * (uint32_t)sizeof(Vertex),
-					});
+				skinnedMesh.SkinnedVertexBuffer = ResourceManager::Instance->CreateBuffer({
+					.debugName = "skinned-vertex-buffer",
+					.usage = { BufferUsage::VERTEX, BufferUsage::STORAGE },
+					.memoryUsage = MemoryUsage::GPU_ONLY,
+					.byteSize = static_cast<uint32_t>(part.VertexCount * sizeof(Vertex)),
+				});
 
-					for (int i = 0; i < Renderer::Instance->FrameCount; i++)
-					{
-						Handle<Buffer> jointmatricesBuffer = ResourceManager::Instance->CreateBuffer({
-							.debugName = "joint-matrices",
-							.usage = BufferUsage::STORAGE,
-							.memoryUsage = MemoryUsage::CPU_GPU,
-							.byteSize = anim.JointCount * (uint32_t)sizeof(glm::mat4),
-						});
-
-						m_RenderData[i].SkinningBindings = ResourceManager::Instance->CreateBindGroup({
-							.debugName = "skinning-bind-group",
-							.layout = m_SkinningBindGroupLayout,
-							.buffers = {
-								{ part.VertexBuffers[0] },
-								{ part.SkinnedVertexBuffer },
-								{ jointmatricesBuffer },
-								{ part.SkinBuffer },
-							}
-						});
+				skinnedSubMesh.SkinningBindings = ResourceManager::Instance->CreateBindGroup({
+					.debugName = "skinning-bind-group",
+					.layout = m_SkinningBindGroupLayout,
+					.buffers = {
+						{ part.VertexBuffers[0] }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
+						{ skinnedMesh.SkinnedVertexBuffer },
+						{ jointMatricesBuffer },
+						{ part.SkinBuffer }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
+						{ jointMatricesOffsetBuffer },
 					}
-				}
+				});
 			});
 	}
 
@@ -1214,15 +1244,16 @@ namespace HBL2
 		// Store the offset that the objects start from in the dynamic uniform buffer.
 		sceneRenderData->m_UBOStartingOffset = m_UniformRingBuffer->GetCurrentOffset();
 
+		uint64_t depthOnlyVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlyShader, m_DepthOnlyMaterialHash);
+		uint64_t shadowPrePassVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_ShadowPrePassShader, m_ShadowPrePassMaterialHash);
+		uint64_t depthOnlySpriteVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlySpriteShader, m_DepthOnlySpriteMaterialHash);
+
 		// Static meshes
 		{
-			uint64_t depthOnlyVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlyShader, m_DepthOnlyMaterialHash);
-			uint64_t shadowPrePassVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_ShadowPrePassShader, m_ShadowPrePassMaterialHash);
-
-			sceneRenderData->m_StaticMeshOpaqueDraws.Reset();
-			sceneRenderData->m_StaticMeshTransparentDraws.Reset();
-			sceneRenderData->m_PrePassStaticMeshDraws.Reset();
-			sceneRenderData->m_ShadowPassStaticMeshDraws.Reset();
+			sceneRenderData->m_MeshOpaqueDraws.Reset();
+			sceneRenderData->m_MeshTransparentDraws.Reset();
+			sceneRenderData->m_PrePassMeshDraws.Reset();
+			sceneRenderData->m_ShadowPassMeshDraws.Reset();
 
 			m_Scene->Filter<Component::StaticMesh, Component::Transform>()
 				.ForEach([&](Component::StaticMesh& staticMesh, Component::Transform& transform)
@@ -1265,17 +1296,146 @@ namespace HBL2
 						alloc.Data->InverseModel = glm::transpose(glm::inverse(glm::mat3(transform.WorldMatrix)));
 						alloc.Data->Color = glm::vec4(1.0f);
 
-						Handle<Buffer> vertexBuffer = meshPart.IsSkinned() ? meshPart.SkinnedVertexBuffer : meshPart.VertexBuffers[0];
-
-						if (!meshPart.SkinnedVertexBuffer.IsValid())
+						// Fill draw lists.
+						if (!material->VariantHash.blendEnabled)
 						{
-							vertexBuffer = meshPart.VertexBuffers[0];
+							sceneRenderData->m_MeshOpaqueDraws.Insert({
+								.Shader = material->Shader,
+								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = meshPart.VertexBuffers[0],
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
+								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
+							});
+
+							// Include only opaque objects in depth pre-pass.
+							sceneRenderData->m_PrePassMeshDraws.Insert({
+								.Shader = m_DepthOnlyShader,
+								.VariantHandle = depthOnlyVariantHandle,
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = meshPart.VertexBuffers[0],
+								.MaterialBindGroup = Renderer::Instance->GetEmptyBindings(),
+								.BindGroup = m_DepthOnlyMeshBindGroup,
+								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
+							});
 						}
+						else
+						{
+							sceneRenderData->m_MeshTransparentDraws.Insert({
+								.Shader = material->Shader,
+								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = meshPart.VertexBuffers[0],
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
+								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
+							});
+						}
+
+						if (material->ReceiveShadows)
+						{
+							sceneRenderData->m_ShadowPassMeshDraws.Insert({
+								.Shader = m_ShadowPrePassShader,
+								.VariantHandle = shadowPrePassVariantHandle,
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = meshPart.VertexBuffers[0],
+								.MaterialBindGroup = Renderer::Instance->GetEmptyBindings(),
+								.BindGroup = m_DepthOnlyMeshBindGroup,
+								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
+							});
+						}
+					}
+				});
+		}
+
+		// Skinned meshes
+		{
+			m_Scene->Filter<Component::SkinnedSubMesh, Component::Transform>()
+				.ForEach([&](Component::SkinnedSubMesh& skinnedSubMesh, Component::Transform& transform)
+				{
+					if (skinnedSubMesh.Enabled)
+					{
+						if (!skinnedSubMesh.Material.IsValid() || !skinnedSubMesh.Mesh.IsValid())
+						{
+							return;
+						}
+
+						Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(skinnedSubMesh.Material.Get());
+						Material* material = ResourceManager::Instance->GetMaterial(materialHandle);
+
+						if (material == nullptr)
+						{
+							return;
+						}
+
+						// Retrieve skinned mesh component.
+						Entity meshEntity = m_Scene->FindEntityByUUID(skinnedSubMesh.SkinnedMeshId);
+
+						if (meshEntity == Entity::Null)
+						{
+							return;
+						}
+
+						auto& skinnedMesh = m_Scene->GetComponent<Component::SkinnedMesh>(meshEntity);
+
+						Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedSubMesh.Mesh.Get());
+						Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
+
+						if (mesh == nullptr || mesh->IsEmpty())
+						{
+							return;
+						}
+
+						const auto& meshPart = mesh->Meshes[skinnedSubMesh.MeshIndex];
+
+						if (meshPart.IsEmpty())
+						{
+							return;
+						}
+
+						const auto& subMesh = meshPart.SubMeshes[skinnedSubMesh.SubMeshIndex];
+
+						// Bump allocate and set per draw data.
+						auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawData>();
+						alloc.Data->Model = transform.WorldMatrix;
+						alloc.Data->InverseModel = glm::transpose(glm::inverse(glm::mat3(transform.WorldMatrix)));
+						alloc.Data->Color = glm::vec4(1.0f);
+
+						Handle<Buffer> vertexBuffer = skinnedMesh.SkinnedVertexBuffer.IsValid() ? skinnedMesh.SkinnedVertexBuffer : meshPart.VertexBuffers[0];
 
 						// Fill draw lists.
 						if (!material->VariantHash.blendEnabled)
 						{
-							sceneRenderData->m_StaticMeshOpaqueDraws.Insert({
+							sceneRenderData->m_MeshOpaqueDraws.Insert({
 								.Shader = material->Shader,
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.IndexBuffer = meshPart.IndexBuffer,
@@ -1293,7 +1453,7 @@ namespace HBL2
 							});
 
 							// Include only opaque objects in depth pre-pass.
-							sceneRenderData->m_PrePassStaticMeshDraws.Insert({
+							sceneRenderData->m_PrePassMeshDraws.Insert({
 								.Shader = m_DepthOnlyShader,
 								.VariantHandle = depthOnlyVariantHandle,
 								.IndexBuffer = meshPart.IndexBuffer,
@@ -1312,7 +1472,7 @@ namespace HBL2
 						}
 						else
 						{
-							sceneRenderData->m_StaticMeshTransparentDraws.Insert({
+							sceneRenderData->m_MeshTransparentDraws.Insert({
 								.Shader = material->Shader,
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.IndexBuffer = meshPart.IndexBuffer,
@@ -1332,7 +1492,7 @@ namespace HBL2
 
 						if (material->ReceiveShadows)
 						{
-							sceneRenderData->m_ShadowPassStaticMeshDraws.Insert({
+							sceneRenderData->m_ShadowPassMeshDraws.Insert({
 								.Shader = m_ShadowPrePassShader,
 								.VariantHandle = shadowPrePassVariantHandle,
 								.IndexBuffer = meshPart.IndexBuffer,
@@ -1355,8 +1515,6 @@ namespace HBL2
 
 		// Sprites
 		{
-			uint64_t depthOnlySpriteVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlySpriteShader, m_DepthOnlySpriteMaterialHash);
-
 			sceneRenderData->m_SpriteOpaqueDraws.Reset();
 			sceneRenderData->m_SpriteTransparentDraws.Reset();
 			sceneRenderData->m_PrePassSpriteDraws.Reset();
@@ -1434,10 +1592,10 @@ namespace HBL2
 		{
 			BEGIN_PROFILE_PASS();
 
-			sceneRenderData->m_StaticMeshOpaqueDraws.Sort();
-			sceneRenderData->m_PrePassStaticMeshDraws.Sort();
-			sceneRenderData->m_StaticMeshTransparentDraws.Sort();
-			sceneRenderData->m_ShadowPassStaticMeshDraws.Sort();
+			sceneRenderData->m_MeshOpaqueDraws.Sort();
+			sceneRenderData->m_PrePassMeshDraws.Sort();
+			sceneRenderData->m_MeshTransparentDraws.Sort();
+			sceneRenderData->m_ShadowPassMeshDraws.Sort();
 			sceneRenderData->m_SpriteOpaqueDraws.Sort();
 			sceneRenderData->m_PrePassSpriteDraws.Sort();
 			sceneRenderData->m_SpriteTransparentDraws.Sort();
@@ -1570,10 +1728,15 @@ namespace HBL2
 
 		uint64_t computeVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_SkinningComputeShader, m_SkinningComputeVariant);
 
-		m_Scene->Filter<Component::StaticMesh>()
-			.ForEach([this, commandBuffer, computeVariantHandle](Entity entity, Component::StaticMesh& skinnedMesh)
+		ScratchArena scratch(Allocator::FrameArenaRT);
+		FixedArray<Dispatch> dispatches = FixedArray<Dispatch>(&scratch, 4096);
+		FixedArray<Handle<Buffer>> outputBuffers = FixedArray<Handle<Buffer>>(&scratch, 4096);
+
+		m_Scene->Filter<Component::SkinnedSubMesh>()
+			.ForEach([this, commandBuffer, computeVariantHandle, &dispatches, &outputBuffers](Entity entity, Component::SkinnedSubMesh& skinnedSubMesh)
 			{
-				Entity animationEntity = m_Scene->FindEntityByUUID(skinnedMesh.AnimatorId);
+				// Retireve animation component.
+				Entity animationEntity = m_Scene->FindEntityByUUID(skinnedSubMesh.AnimatorId);
 
 				if (animationEntity == Entity::Null)
 				{
@@ -1582,89 +1745,116 @@ namespace HBL2
 
 				auto& anim = m_Scene->GetComponent<Component::Animation>(animationEntity);
 
+				// Retrieve skinned mesh component.
+				Entity meshEntity = m_Scene->FindEntityByUUID(skinnedSubMesh.SkinnedMeshId);
+
+				if (meshEntity == Entity::Null)
+				{
+					return;
+				}
+
+				auto& skinnedMesh = m_Scene->GetComponent<Component::SkinnedMesh>(meshEntity);
+
 				// Retrieve mesh.
-				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedMesh.Mesh.Get());
+				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedSubMesh.Mesh.Get());
 				Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
 
-				// TODO: Fixme!
-				if (anim.JointCount == 0)
+				MeshPart& part = mesh->Meshes[skinnedSubMesh.MeshIndex];
+
+				if (!skinnedSubMesh.SkinningBindings.IsValid())
 				{
 					// Retrieve skeleton.
 					const Skeleton* skeleton = ResourceManager::Instance->GetSkeleton(mesh->Skeleton);
 
 					anim.JointCount = (uint32_t)skeleton->Parents.size();
 
-					for (uint32_t i = 0; i < mesh->Meshes.size(); ++i)
-					{
-						MeshPart& part = mesh->Meshes[i];
+					Handle<Buffer> jointMatricesBuffer = ResourceManager::Instance->CreateBuffer({
+						.debugName = "joint-matrices-buffer",
+						.usage = BufferUsage::STORAGE,
+						.memoryUsage = MemoryUsage::CPU_GPU,
+						.byteSize = Renderer::Instance->FrameCount * anim.JointCount * (uint32_t)sizeof(glm::mat4),
+					});
 
-						part.SkinnedVertexBuffer = ResourceManager::Instance->CreateBuffer({
-							.debugName = "skinned-vertex-buffer",
-							.usage = { BufferUsage::VERTEX, BufferUsage::STORAGE },
-							.memoryUsage = MemoryUsage::GPU_ONLY,
-							.byteSize = part.VertexCount * (uint32_t)sizeof(Vertex),
-						});
+					Handle<Buffer> jointMatricesOffsetBuffer = ResourceManager::Instance->CreateBuffer({
+						.debugName = "joint-matrices-offset-buffer",
+						.usage = BufferUsage::UNIFORM,
+						.memoryUsage = MemoryUsage::CPU_GPU,
+						.byteSize = sizeof(uint32_t),
+					});
 
-						for (int i = 0; i < Renderer::Instance->FrameCount; i++)
-						{
-							Handle<Buffer> jointmatricesBuffer = ResourceManager::Instance->CreateBuffer({
-								.debugName = "joint-matrices",
-								.usage = BufferUsage::STORAGE,
-								.memoryUsage = MemoryUsage::CPU_GPU,
-								.byteSize = anim.JointCount * (uint32_t)sizeof(glm::mat4),
-							});
+					skinnedMesh.SkinnedVertexBuffer = ResourceManager::Instance->CreateBuffer({
+						.debugName = "skinned-vertex-buffer",
+						.usage = { BufferUsage::VERTEX, BufferUsage::STORAGE },
+						.memoryUsage = MemoryUsage::GPU_ONLY,
+						.byteSize = static_cast<uint32_t>(part.VertexCount * sizeof(Vertex)),
+					});
 
-							m_RenderData[i].SkinningBindings = ResourceManager::Instance->CreateBindGroup({
-								.debugName = "skinning-bind-group",
-								.layout = m_SkinningBindGroupLayout,
-								.buffers = {
-									{ part.VertexBuffers[0] },
-									{ part.SkinnedVertexBuffer },
-									{ jointmatricesBuffer },
-									{ part.SkinBuffer },
-								}
-							});
+					skinnedSubMesh.SkinningBindings = ResourceManager::Instance->CreateBindGroup({
+						.debugName = "skinning-bind-group",
+						.layout = m_SkinningBindGroupLayout,
+						.buffers = {
+							{ part.VertexBuffers[0] }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
+							{ skinnedMesh.SkinnedVertexBuffer },
+							{ jointMatricesBuffer },
+							{ part.SkinBuffer }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
+							{ jointMatricesOffsetBuffer },
 						}
-					}
+					});
 				}
 
-				Handle<BindGroup> skinningBindings = GetSkinningBindings();
-
-				// Dispatch compute skinning for each skinned mesh
-				for (uint32_t i = 0; i < mesh->Meshes.size(); ++i)
+				// TODO: Fixme!
+				if (anim.Pose.Skinning.empty())
 				{
-					MeshPart& part = mesh->Meshes[i];
-
-					if (!skinningBindings.IsValid())
-					{
-						continue;
-					}
-
-					// TODO: Fixme!
-					if (anim.Pose.Skinning.empty())
-					{
-						continue;
-					}
-
-					// Set and map storage buffer for skinning data.
-					ResourceManager::Instance->SetBufferData(skinningBindings, 2, (void*)anim.Pose.Skinning.data());
-					ResourceManager::Instance->MapBufferData(skinningBindings, 2, 0, anim.JointCount * (uint32_t)sizeof(glm::mat4));
-
-					glm::uvec3 numThreadGroups = glm::vec3((part.VertexCount + 63) / 64, 1, 1);
-
-					Dispatch dispatch =
-					{
-						.Shader = m_SkinningComputeShader,
-						.BindGroup = skinningBindings,
-						.ThreadGroupCount = numThreadGroups,
-						.VariantHandle = computeVariantHandle,
-					};
-
-					ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({}, { part.SkinnedVertexBuffer }, {});
-					computePassRenderer->Dispatch({ dispatch });
-					commandBuffer->EndComputePass(*computePassRenderer);
+					return;
 				}
+
+				// Combine all joint matrices into one buffer.
+				ScratchArena scratch(Allocator::FrameArenaRT);
+
+				uint32_t jointMatricesBufferSize = Renderer::Instance->FrameCount * anim.JointCount * sizeof(glm::mat4);
+
+				uint8_t* jointMatricesBuffer = (uint8_t*)scratch.Alloc(jointMatricesBufferSize);
+				std::memset(jointMatricesBuffer, 0, jointMatricesBufferSize);
+
+				uint32_t frameIndex = Renderer::Instance->GetFrameIndex();
+				uint32_t startingOffset = frameIndex * (anim.JointCount * sizeof(glm::mat4));
+				uint32_t jointMatricesBufferBase = frameIndex * anim.JointCount;
+
+				for (size_t i = 0; i < anim.JointCount; ++i)
+				{
+					size_t offset = i * sizeof(glm::mat4);
+					std::memcpy(jointMatricesBuffer + startingOffset + offset, &anim.Pose.Skinning[i], sizeof(glm::mat4));
+				}
+
+				// Set and map storage buffer for skinning data.
+				ResourceManager::Instance->SetBufferData(skinnedSubMesh.SkinningBindings, 2, (void*)jointMatricesBuffer);
+				ResourceManager::Instance->MapBufferData(skinnedSubMesh.SkinningBindings, 2, startingOffset, anim.JointCount * (uint32_t)sizeof(glm::mat4));
+
+				// Set and map storage buffer starting offset.
+				ResourceManager::Instance->SetBufferData(skinnedSubMesh.SkinningBindings, 4, (void*)&jointMatricesBufferBase);
+				ResourceManager::Instance->MapBufferData(skinnedSubMesh.SkinningBindings, 4, 0, sizeof(uint32_t));
+								
+				// Dispatch compute skinning for each skinned mesh.
+				glm::uvec3 numThreadGroups = glm::vec3((part.VertexCount + 63) / 64, 1, 1);
+
+				Dispatch dispatch =
+				{
+					.Shader = m_SkinningComputeShader,
+					.BindGroup = skinnedSubMesh.SkinningBindings,
+					.ThreadGroupCount = numThreadGroups,
+					.VariantHandle = computeVariantHandle,
+				};
+
+				dispatches.push_back(dispatch);
+				outputBuffers.push_back(skinnedMesh.SkinnedVertexBuffer);
 			});
+
+		if (!dispatches.empty())
+		{
+			ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({}, { outputBuffers.data(), outputBuffers.size() }, {});
+			computePassRenderer->Dispatch({ dispatches.data(), dispatches.size() });
+			commandBuffer->EndComputePass(*computePassRenderer);
+		}
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PrePassTime);
 	}
@@ -1725,7 +1915,7 @@ namespace HBL2
 							.UsesDynamicOffset = true,
 						};
 
-						passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_ShadowPassStaticMeshDraws);
+						passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_ShadowPassMeshDraws);
 
 						commandBuffer->EndRenderPass(*passRenderer);
 
@@ -1760,7 +1950,7 @@ namespace HBL2
 		{
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
-			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassStaticMeshDraws);
+			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassMeshDraws);
 		}
 
 		// Depth only pre pass for opaque sprites.
@@ -1812,7 +2002,7 @@ namespace HBL2
             Handle<BindGroup> globalBindings = GetGlobalBindings3D();
             ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
             GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
-            passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshOpaqueDraws);
+            passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_MeshOpaqueDraws);
         }
 
         // Render opaque sprites.
@@ -1835,7 +2025,7 @@ namespace HBL2
 			Handle<BindGroup> globalBindings = GetGlobalBindings3D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
-			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshTransparentDraws);
+			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_MeshTransparentDraws);
 		}
 
 		// Render transparent sprites.

@@ -9,7 +9,7 @@ namespace HBL2
 		DebugName = desc.debugName;
 		FilePath = desc.filePath;
 		Type = desc.type;
-		Pinned = desc.Pin;
+		Pinned = desc.pin;
 	}
 
 	Asset::Asset(const MemoryOnlyAssetDescriptor&& desc)
@@ -17,8 +17,8 @@ namespace HBL2
 		DebugName = desc.debugName;
 		FilePath = std::filesystem::path("");
 		Type = desc.type;
-		Indentifier = desc.PackedAssetResourceHandle;
-		Pinned = desc.Pin;
+		Indentifier = desc.packedAssetResourceHandle;
+		Pinned = desc.pin;
 
 		UUID = Random::UInt64();
 
