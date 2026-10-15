@@ -7,6 +7,7 @@
 
 #include "Systems/HierachySystem.h"
 #include "Systems/CameraSystem.h"
+#include "Animation/AnimationSystem.h"
 #include "Systems/RenderingSystem.h"
 #include "Systems/SoundSystem.h"
 #include "Systems/Physics2dSystem.h"
@@ -1751,6 +1752,7 @@ namespace HBL2
 
 		scene->RegisterSystem<HierachySystem>();
 		scene->RegisterSystem<CameraSystem>(SystemType::Runtime);
+		scene->RegisterSystem<AnimationSystem>();
 		scene->RegisterSystem<TerrainSystem>();
 		scene->RegisterSystem<RenderingSystem>();
 		scene->RegisterSystem<SoundSystem>(SystemType::Runtime);
@@ -2748,6 +2750,7 @@ namespace HBL2
 
 			scene->RegisterSystem<HierachySystem>();
 			scene->RegisterSystem<CameraSystem>(SystemType::Runtime);
+			scene->RegisterSystem<AnimationSystem>();
 			scene->RegisterSystem<TerrainSystem>();
 			scene->RegisterSystem<RenderingSystem>();
 			scene->RegisterSystem<SoundSystem>(SystemType::Runtime);

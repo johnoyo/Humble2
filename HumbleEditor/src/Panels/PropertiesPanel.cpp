@@ -4,6 +4,8 @@
 #include "ImGui/ImGuiRenderer.h"
 #include "Systems/EditorPanelSystem.h"
 
+#include "Animation/AnimationComponent.h"
+
 #include "Platform/PlatformManager.h"
 
 #include "UI/UserInterfaceUtilities.h"
@@ -356,17 +358,7 @@ namespace HBL2::Editor
 
 						if (assetHandle.IsValid())
 						{
-							std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(assetHandle)->FilePath).string() + ".hblmesh", std::ios_base::out);
-
-							YAML::Emitter out;
-							out << YAML::BeginMap;
-							out << YAML::Key << "Mesh" << YAML::Value;
-							out << YAML::BeginMap;
-							out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(assetHandle)->UUID;
-							out << YAML::EndMap;
-							out << YAML::EndMap;
-							fout << out.c_str();
-							fout.close();
+							MeshUtilities::Get().CreateMeshMetadataFile(assetHandle);
 						}
 
 						mesh.Mesh = assetHandle;
@@ -391,6 +383,14 @@ namespace HBL2::Editor
 
 					ImGui::EndDragDropTarget();
 				}
+			});
+
+			DrawComponent<HBL2::Component::Animation>("Animation", activeScene, [this](HBL2::Component::Animation& animation)
+			{
+				ImGui::Checkbox("Enabled", &animation.Enabled);
+				ImGui::Checkbox("Enable Looping", &animation.EnableLooping);
+				ImGui::DragInt("DefaultClip", &animation.DefaultClip, 1.0f, 0, animation.Clips.size() - 1);
+				ImGui::InputFloat("Speed", &animation.Speed);
 			});
 
 			DrawComponent<HBL2::Component::Light>("Light", activeScene, [this](HBL2::Component::Light& light)

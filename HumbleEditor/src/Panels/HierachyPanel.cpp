@@ -3,6 +3,7 @@
 #include "ImGui/ImGuiRenderer.h"
 #include "Systems/EditorPanelSystem.h"
 #include "Utilities/PrefabUtilities.h"
+#include "Animation/AnimationComponent.h"
 
 namespace HBL2::Editor
 {
@@ -392,6 +393,20 @@ namespace HBL2::Editor
 				auto mainMeshEntity = activeScene->CreateEntity(mesh->DebugName);
 				activeScene->AddComponent<HBL2::Component::EditorVisible>(mainMeshEntity);
 
+				// TODO: Fixme!
+				if (mesh->Skeleton.IsValid())
+				{
+					auto& animation = activeScene->AddComponent<HBL2::Component::Animation>(mainMeshEntity);
+
+					animation.Mesh = assetHandle;                  // the animation/skinning systems read the mesh from here
+					animation.Clips = mesh->AnimationClips;        // handles, shared
+					animation.DefaultClip = 0;
+					animation.CurrentClip = 0;
+					animation.PlayAutomatically = !mesh->AnimationClips.empty();
+					animation.EnableLooping = true;
+					animation.Enabled = true;
+				}
+
 				uint32_t meshIndex = 0;
 				uint32_t subMeshIndex = 0;
 
@@ -420,6 +435,12 @@ namespace HBL2::Editor
 						staticMesh.MeshIndex = meshIndex;
 						staticMesh.SubMeshIndex = subMeshIndex;
 						staticMesh.Material = subMesh.EmbededMaterial;
+
+						// TODO: Fixme!
+						if (mesh->Skeleton.IsValid())
+						{
+							staticMesh.AnimatorId = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
+						}
 
 						subMeshIndex++;
 					}

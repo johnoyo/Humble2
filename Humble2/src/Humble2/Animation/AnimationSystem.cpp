@@ -2,6 +2,7 @@
 
 #include "Asset/AssetManager.h"
 #include "Resources/ResourceManager.h"
+#include "Utilities/ShaderUtilities.h"
 
 namespace HBL2
 {
@@ -154,9 +155,8 @@ namespace HBL2
 	{
 		BEGIN_PROFILE_SYSTEM();
 
-
-		m_Context->Filter<Component::Animation, Component::SkinnedMesh>()
-			.ForEach([this, ts](Entity entity, Component::Animation& anim, Component::SkinnedMesh& skinnedMesh)
+		m_Context->Filter<Component::Animation>()
+			.ForEach([this, ts](Entity entity, Component::Animation& anim)
 			{
 				if (!anim.Enabled || anim.CurrentClip < 0)
 				{
@@ -164,7 +164,7 @@ namespace HBL2
 				}
 
 				// Retrieve mesh.
-				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedMesh.Mesh.Get());
+				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(anim.Mesh);
 				Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
 
 				// Retrieve skeleton and current animation clip.
@@ -184,19 +184,27 @@ namespace HBL2
 				// Sample animation clip.
 				SampleClip(clip, anim.Time, anim.Pose.Local);
 
+				{
+					// TODO: Fixme!
+
+					if (anim.Pose.Model.empty())
+					{
+						anim.Pose.Model.resize(skel->Parents.size());
+					}
+
+					if (anim.Pose.Skinning.empty())
+					{
+						anim.Pose.Skinning.resize(skel->Parents.size());
+					}
+				}
+
 				// Convert from local to world.
 				for (size_t i = 0; i < skel->Parents.size(); ++i)
 				{
 					glm::mat4 local = ToMat4(anim.Pose.Local[i]);
-					anim.Pose.Model[i] = skel->Parents[i] < 0 ? local : anim.Pose.Model[skel->Parents[i]] * local;
+					anim.Pose.Model[i] = skel->Parents[i] < 0 ? skel->RootTransform * local : anim.Pose.Model[skel->Parents[i]] * local;
 					anim.Pose.Skinning[i] = anim.Pose.Model[i] * skel->InverseBind[i];
 				}
-
-				// Upload anim.Pose.Skinning to the bone buffer
-				// ...
-
-				// Dispatch compute skinning for each skinned mesh
-				// ...
 			});
 
 		END_PROFILE_SYSTEM(RunningTime);

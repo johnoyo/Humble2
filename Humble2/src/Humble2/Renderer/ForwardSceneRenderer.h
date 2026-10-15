@@ -27,6 +27,7 @@ namespace HBL2
 		Handle<BindGroup> ShadowBindings;
 		Handle<BindGroup> GlobalBindings2D;
 		Handle<BindGroup> GlobalBindings3D;
+		Handle<BindGroup> SkinningBindings;
 
 		uint32_t m_UBOStartingOffset = 0;
 		uint32_t m_UBOEndingOffset = 0;
@@ -59,7 +60,9 @@ namespace HBL2
 		Handle<BindGroup> GetShadowBindings() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].ShadowBindings; }
 		Handle<BindGroup> GetGlobalBindings2D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindings2D; }
 		Handle<BindGroup> GetGlobalBindings3D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindings3D; }
+		Handle<BindGroup> GetSkinningBindings() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].SkinningBindings; }
 
+		void SkinningPassSetup();
 		void ShadowPassSetup();
 		void DepthPrePassSetup();
 		void GeometryPassSetup();
@@ -71,6 +74,7 @@ namespace HBL2
 		void GatherDraws(ForwardSceneRenderData* sceneRenderData);
 		void GatherLights(ForwardSceneRenderData* sceneRenderData);
 
+		void SkinningPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
 		void ShadowPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
 		void DepthPrePass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
         void GeometryPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData, RenderPassPool& renderPassPool);
@@ -102,6 +106,12 @@ namespace HBL2
 		
 		Handle<RenderPassLayout> m_RenderPassLayout;
 
+		// Skinning compute pass resources.
+		Handle<Shader> m_SkinningComputeShader;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_SkinningComputeVariant{};
+		Handle<BindGroupLayout> m_SkinningBindGroupLayout;
+
+		// Shadow pass resources.
 		Handle<Texture> m_ShadowDepthTexture;
         Handle<RenderPass> m_ShadowRenderPassClear;
 		Handle<RenderPass> m_ShadowRenderPassLoad;
@@ -109,6 +119,7 @@ namespace HBL2
 		Handle<Material> m_ShadowPrePassMaterial;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_ShadowPrePassMaterialHash = g_NullVariant;
 
+		// Depth pre pass resources.
 		Handle<RenderPassLayout> m_DepthOnlyRenderPassLayout;
 		Handle<RenderPass> m_DepthOnlyRenderPass;
 		Handle<Material> m_DepthOnlyMaterial;
@@ -120,8 +131,12 @@ namespace HBL2
 		Handle<Shader> m_DepthOnlyShader;
 		Handle<Shader> m_DepthOnlySpriteShader;
 
+		// Geometry pass resources.
 		Handle<RenderPass> m_GeometryRenderPass;
+		Handle<Mesh> m_SpriteMesh;
+		Handle<Buffer> m_VertexBuffer;
 
+		// Skybox pass resources.
 		Handle<BindGroupLayout> m_EquirectToSkyboxBindGroupLayout;
 		Handle<Buffer> m_CaptureMatricesBuffer;
 		Handle<Shader> m_EquirectToSkyboxShader;
@@ -132,21 +147,19 @@ namespace HBL2
 		Handle<BindGroup> m_ComputeBindGroup;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_SkyboxVariant{};
 		ShaderDescriptor::RenderPipeline::PackedVariant m_ComputeVariant{};
+		Handle<Buffer> m_CubeMeshBuffer;
+		Handle<Mesh> m_CubeMesh;
 
+		// Post process pass resources.
 		Handle<RenderPass> m_PostProcessRenderPass;
 		Handle<Buffer> m_PostProcessBuffer;
 		Handle<BindGroup> m_PostProcessBindGroup;
 		Handle<BindGroupLayout> m_PostProcessBindGroupLayout;
 		Handle<Shader> m_PostProcessShader;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_PostProcessShaderVariantHash;
-		Handle<Buffer> m_CubeMeshBuffer;
-		Handle<Mesh> m_CubeMesh;
-
-		Handle<Mesh> m_SpriteMesh;
-		Handle<Buffer> m_VertexBuffer;
-
 		Handle<Buffer> m_PostProcessQuadVertexBuffer;
 
+		// Present pass resources.
 		Handle<Buffer> m_QuadVertexBuffer;
 		Handle<Material> m_QuadMaterial;
 		Handle<Shader> m_PresentShader;		

@@ -1,10 +1,10 @@
 #pragma once
 
+#include "AnimationSkeleton.h"
+
 #include "Utilities/Collections/Span.h"
 
 #include <glm/glm.hpp>
-
-#include <string>
 
 namespace HBL2
 {
@@ -24,7 +24,6 @@ namespace HBL2
         enum InterpolationType { LINEAR, STEP, CUBICSPLINE };
         InterpolationType interpolation = LINEAR;
         std::vector<float> inputs;              // Timestamps in seconds
-        std::vector<glm::vec4> outputs_raw;     // Packed: for CUBICSPLINE stores in_tan/value/out_tan triples
 
         // For CUBICSPLINE, we split the raw data for easier interpolation
         std::vector<glm::vec4> in_tangents;
@@ -34,9 +33,12 @@ namespace HBL2
 
     struct AnimationClipDescriptor
     {
-        const char* name;
-        Span<const AnimationSampler> samplers;
-        Span<const AnimationChannel> channels;
+        std::string name;
+        std::vector<AnimationSampler> samplers;
+        std::vector<AnimationChannel> channels;
+        float duration = 0.0f;
+
+        Handle<Skeleton> skeleton;
     };
 
     // Structure for animation clip
@@ -55,6 +57,8 @@ namespace HBL2
             {
                 Channels.push_back(channel);
             }
+
+            Duration = desc.duration;
         }
 
         std::string name;

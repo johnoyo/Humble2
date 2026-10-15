@@ -8,6 +8,7 @@
 
 #include "Systems/HierachySystem.h"
 #include "Systems/CameraSystem.h"
+#include "Animation/AnimationSystem.h"
 #include "Systems/RenderingSystem.h"
 #include "Systems/SoundSystem.h"
 #include "Systems/Physics2dSystem.h"
@@ -172,6 +173,7 @@ namespace HBL2
         // Clone systems.
         dst->RegisterSystem<HierachySystem>();
         dst->RegisterSystem<CameraSystem>(SystemType::Runtime);
+        dst->RegisterSystem<AnimationSystem>();
         dst->RegisterSystem<TerrainSystem>();
         dst->RegisterSystem<RenderingSystem>();
         dst->RegisterSystem<SoundSystem>(SystemType::Runtime);

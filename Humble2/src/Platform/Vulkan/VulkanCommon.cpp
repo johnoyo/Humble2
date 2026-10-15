@@ -371,7 +371,8 @@ namespace HBL2
 				VkImageUsageFlags vkFlag;
 			};
 
-			static constexpr UsageMapping mappings[] = {
+			static constexpr UsageMapping mappings[] =
+			{
 				{ TextureUsage::COPY_SRC,         VK_IMAGE_USAGE_TRANSFER_SRC_BIT },
 				{ TextureUsage::COPY_DST,         VK_IMAGE_USAGE_TRANSFER_DST_BIT },
 				{ TextureUsage::TEXTURE_BINDING,  VK_ACCESS_INPUT_ATTACHMENT_READ_BIT },
@@ -526,33 +527,45 @@ namespace HBL2
 			return VMA_MEMORY_USAGE_MAX_ENUM;
 		}
 
-		VkBufferUsageFlags BufferUsageToVkBufferUsageFlags(BufferUsage bufferUsage)
+		VkBufferUsageFlags BufferUsageToVkBufferUsageFlags(BitFlags<BufferUsage> bufferUsageFlags)
 		{
-			switch (bufferUsage)
+			struct UsageMapping
 			{
-			case HBL2::BufferUsage::MAP_READ:
-				break;
-			case HBL2::BufferUsage::MAP_WRITE:
-				break;
-			case HBL2::BufferUsage::COPY_SRC:
-				return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-			case HBL2::BufferUsage::COPY_DST:
-				return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-			case HBL2::BufferUsage::INDEX:
-				return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-			case HBL2::BufferUsage::VERTEX:
-				return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-			case HBL2::BufferUsage::UNIFORM:
-				return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-			case HBL2::BufferUsage::STORAGE:
-				return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-			case HBL2::BufferUsage::INDIRECT:
-				return VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-			case HBL2::BufferUsage::QUERY_RESOLVE:
-				break;
+				BufferUsage usage;
+				VkBufferUsageFlags vkFlag;
+			};
+
+			static constexpr UsageMapping mappings[] =
+			{
+				{ BufferUsage::COPY_SRC,	VK_BUFFER_USAGE_TRANSFER_SRC_BIT },
+				{ BufferUsage::COPY_DST,	VK_BUFFER_USAGE_TRANSFER_DST_BIT },
+				{ BufferUsage::INDEX,		VK_BUFFER_USAGE_INDEX_BUFFER_BIT },
+				{ BufferUsage::VERTEX,		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT },
+				{ BufferUsage::UNIFORM,		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT },
+				{ BufferUsage::STORAGE,		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT },
+				{ BufferUsage::INDIRECT,	VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT },
+			};
+
+			bool firstFlag = true;
+			VkBufferUsageFlags vkBufferUsageFlags = 0;
+
+			for (const auto& mapping : mappings)
+			{
+				if (bufferUsageFlags.IsSet(mapping.usage))
+				{
+					if (firstFlag)
+					{
+						vkBufferUsageFlags = mapping.vkFlag;
+						firstFlag = false;
+					}
+					else
+					{
+						vkBufferUsageFlags |= mapping.vkFlag;
+					}
+				}
 			}
 
-			return VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
+			return vkBufferUsageFlags;
 		}
 
 		VkPipelineStageFlags PipelineStageToVkPipelineStageFlags(PipelineStage pipelineStage)

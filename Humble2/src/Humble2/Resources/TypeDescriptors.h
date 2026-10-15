@@ -68,7 +68,7 @@ namespace HBL2
 	struct BufferDescriptor
 	{
 		const char* debugName;
-		BufferUsage usage = BufferUsage::UNIFORM;
+		BitFlags<BufferUsage> usage = BufferUsage::UNIFORM;
 		MemoryUsage memoryUsage = MemoryUsage::CPU_GPU;
 		uint32_t byteSize = 0;
 		void* initialData = nullptr;
@@ -350,6 +350,7 @@ namespace HBL2
 		std::vector<SubMeshDescriptor> subMeshes;
 		Handle<Buffer> indexBuffer;
 		std::vector<Handle<Buffer>> vertexBuffers;
+		Handle<Buffer> skinBuffer;
 
 		struct LocalTransform
 		{

@@ -22,6 +22,8 @@ namespace HBL2
 
 		struct Animation
 		{
+			Handle<Asset> Mesh;
+
 			std::vector<Handle<AnimationClip>> Clips;
 
 			int DefaultClip = 0;
@@ -34,6 +36,8 @@ namespace HBL2
 			bool PlayAutomatically;
 			bool ApplyRootMotion;
 			bool Enabled;
+
+			uint32_t JointCount = 0;
 
 			Pose Pose;
 		};

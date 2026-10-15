@@ -97,6 +97,8 @@ namespace HBL2
 
 			RefHandle<Asset> Material;
 
+			UUID AnimatorId = 0;
+
 			bool Enabled = true;
 		};
 

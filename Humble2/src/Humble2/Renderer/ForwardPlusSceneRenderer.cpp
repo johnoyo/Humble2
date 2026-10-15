@@ -238,6 +238,19 @@ namespace HBL2
 		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
 		m_ResourceManager->DeleteMesh(m_SpriteMesh);
 
+		m_Scene->Filter<Component::StaticMesh>()
+			.ForEach([&](Component::StaticMesh& staticMesh)
+			{
+				staticMesh.Mesh.Release();
+				staticMesh.Material.Release();
+			});
+
+		m_Scene->Filter<Component::Sprite>()
+			.ForEach([&](Component::Sprite& sprite)
+			{
+				sprite.Material.Release();
+			});
+
 		// Skybox pass clean up.
 		m_ResourceManager->DeleteBindGroupLayout(m_EquirectToSkyboxBindGroupLayout);
 		m_ResourceManager->DeleteShader(m_EquirectToSkyboxShader);
@@ -260,7 +273,6 @@ namespace HBL2
 				skyLight.CubeMapMaterial = {};
 
 				skyLight.EquirectangularMap.Release();
-
 				skyLight.Converted = false;
 			});
 
@@ -277,27 +289,7 @@ namespace HBL2
 		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
 		m_ResourceManager->DeleteShader(m_PresentShader);
 		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
-
-		m_Scene->Filter<Component::SkyLight>()
-			.ForEach([&](Component::SkyLight& skyLight)
-			{
-				skyLight.EquirectangularMap.Release();
-				skyLight.Converted = false;
-			});
-
-		m_Scene->Filter<Component::StaticMesh>()
-			.ForEach([&](Component::StaticMesh& staticMesh)
-			{
-				staticMesh.Mesh.Release();
-				staticMesh.Material.Release();
-			});
-
-		m_Scene->Filter<Component::Sprite>()
-			.ForEach([&](Component::Sprite& sprite)
-			{
-				sprite.Material.Release();
-			});
-
+		
 		// Scene renderer clean up.
 		m_ShadowBindingsLayout.Release();
 		m_GlobalBindingsLayout2D.Release();

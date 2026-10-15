@@ -64,10 +64,13 @@ namespace HBL2
 			DebugName = desc.debugName;
 			IndexBuffer = desc.indexBuffer;
 			VertexBuffers = desc.vertexBuffers;
+			SkinBuffer = desc.skinBuffer;
+			VertexCount = 0;
 
 			for (const SubMeshDescriptor& subMeshDescriptor : desc.subMeshes)
 			{
-				SubMeshes.emplace_back(std::forward<const SubMeshDescriptor>(subMeshDescriptor));
+				auto& subMesh = SubMeshes.emplace_back(std::forward<const SubMeshDescriptor>(subMeshDescriptor));
+				VertexCount += subMesh.VertexCount;
 			}
 
 			for (const SubMesh& subMesh : SubMeshes)
@@ -89,10 +92,19 @@ namespace HBL2
 			return SubMeshes.empty();
 		}
 
+		bool IsSkinned() const
+		{
+			return SkinBuffer.IsValid();
+		}
+
 		const char* DebugName = "";
 		std::vector<SubMesh> SubMeshes;
 		Handle<Buffer> IndexBuffer;
 		std::vector<Handle<Buffer>> VertexBuffers;
+		Handle<Buffer> SkinnedVertexBuffer;
+		Handle<Buffer> SkinBuffer;
+		uint32_t VertexCount = 0;
+
 		MeshExtents Extents;
 
 		struct LocalTransform
@@ -116,8 +128,10 @@ namespace HBL2
 
 		const char* DebugName = "";
 		std::vector<MeshPart> Meshes;
-		Handle<Skeleton> Skeleton;
 		MeshExtents Extents;
+
+		Handle<Skeleton> Skeleton;
+		std::vector<Handle<AnimationClip>> AnimationClips;
 
 	private:
 		std::atomic<bool> m_HasItems{ false };

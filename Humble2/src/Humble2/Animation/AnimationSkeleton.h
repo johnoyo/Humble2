@@ -25,7 +25,13 @@ namespace HBL2
 
     struct SkeletonDescriptor
     {
-
+        const char* debugName = "";
+        std::vector<int16_t> parents;
+        std::vector<uint32_t> nameHashes;
+        std::vector<std::string> names;
+        std::vector<glm::mat4> inverseBind;
+        std::vector<JointTransform> bindPose;
+        glm::mat4 rootTransform = glm::mat4(1.0f);
     };
 
     // Resource: shared, immutable
@@ -33,7 +39,12 @@ namespace HBL2
     {
         Skeleton(const SkeletonDescriptor&& desc)
         {
-
+            Parents = desc.parents;
+            NameHashes = desc.nameHashes;
+            Names = desc.names;
+            InverseBind = desc.inverseBind;
+            BindPose = desc.bindPose;
+            RootTransform = desc.rootTransform;
         }
 
         std::vector<int16_t> Parents;       // -1 = root, parent index < child index
@@ -41,5 +52,6 @@ namespace HBL2
         std::vector<std::string> Names;         // debug / editor
         std::vector<glm::mat4> InverseBind;
         std::vector<JointTransform> BindPose;
+        glm::mat4 RootTransform = glm::mat4(1.0f); // static non-joint ancestors of the root joints
     };
 }
