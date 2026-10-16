@@ -2701,22 +2701,11 @@ namespace HBL2::Editor
 			m_MeshSettings = MeshUtilities::Get().DeserializeAssetMetadataFile(m_Owner->m_SelectedAsset.Get());
 		}
 
-		const char* options[] = { "Static", "Skinned" };
-
-		if (ImGui::Combo("Type", (int*)&m_MeshSettings.Type, options, IM_ARRAYSIZE(options)))
-		{
-			m_IsAssetDirty = true;
-			m_ReimportMesh = true;
-		}
-
-		if (m_MeshSettings.Type == MeshSettings::MeshType::STATIC)
-		{
-			if (ImGui::Checkbox("Preserve Hierachy", &m_MeshSettings.PreserveHierachy))
-			{
-				m_IsAssetDirty = true;
-				m_ReimportMesh = true;
-			}
-		}
+        if (ImGui::Checkbox("Preserve Hierachy", &m_MeshSettings.PreserveHierachy))
+        {
+            m_IsAssetDirty = true;
+            m_ReimportMesh = true;
+        }
 
 		if (ImGui::Checkbox("Generate Colliders", &m_MeshSettings.GenerateColliders))
 		{

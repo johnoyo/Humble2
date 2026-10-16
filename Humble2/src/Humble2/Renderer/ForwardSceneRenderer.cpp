@@ -61,6 +61,12 @@ namespace HBL2
 		float _padding[3];
 	};
 
+    struct SkinningPushData
+    {
+        uint32_t JointMatricesOffset;
+        uint32_t VertexCount;
+    };
+
 	static CaptureMatrices g_CaptureMatrices =
 	{
 		.View =
@@ -531,11 +537,11 @@ namespace HBL2
 					.byteSize = Renderer::Instance->FrameCount * skinnedMesh.JointCount * (uint32_t)sizeof(glm::mat4),
 				});
 
-				Handle<Buffer> jointMatricesOffsetBuffer = ResourceManager::Instance->CreateBuffer({
-					.debugName = "joint-matrices-offset-buffer",
+				Handle<Buffer> skinningPushDataBuffer = ResourceManager::Instance->CreateBuffer({
+					.debugName = "skinning-push-data-buffer",
 					.usage = BufferUsage::UNIFORM,
 					.memoryUsage = MemoryUsage::CPU_GPU,
-					.byteSize = sizeof(uint32_t),
+					.byteSize = sizeof(SkinningPushData),
 				});
 
 				skinnedMesh.SkinnedVertexBuffer = ResourceManager::Instance->CreateBuffer({
@@ -553,7 +559,7 @@ namespace HBL2
 						{ skinnedMesh.SkinnedVertexBuffer },
 						{ jointMatricesBuffer },
 						{ part.SkinBuffer }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
-						{ jointMatricesOffsetBuffer },
+						{ skinningPushDataBuffer },
 					}
 				});
 			});
@@ -1758,12 +1764,12 @@ namespace HBL2
 						.byteSize = Renderer::Instance->FrameCount * skinnedMesh.JointCount * (uint32_t)sizeof(glm::mat4),
 					});
 
-					Handle<Buffer> jointMatricesOffsetBuffer = ResourceManager::Instance->CreateBuffer({
-						.debugName = "joint-matrices-offset-buffer",
-						.usage = BufferUsage::UNIFORM,
-						.memoryUsage = MemoryUsage::CPU_GPU,
-						.byteSize = sizeof(uint32_t),
-					});
+                    Handle<Buffer> skinningPushDataBuffer = ResourceManager::Instance->CreateBuffer({
+                        .debugName = "skinning-push-data-buffer",
+                        .usage = BufferUsage::UNIFORM,
+                        .memoryUsage = MemoryUsage::CPU_GPU,
+                        .byteSize = sizeof(SkinningPushData),
+                    });
 
 					skinnedMesh.SkinnedVertexBuffer = ResourceManager::Instance->CreateBuffer({
 						.debugName = "skinned-vertex-buffer",
@@ -1780,7 +1786,7 @@ namespace HBL2
 							{ skinnedMesh.SkinnedVertexBuffer },
 							{ jointMatricesBuffer },
 							{ part.SkinBuffer }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
-							{ jointMatricesOffsetBuffer },
+							{ skinningPushDataBuffer },
 						}
 					});
 				}
@@ -1807,9 +1813,16 @@ namespace HBL2
 				ResourceManager::Instance->SetBufferData(skinnedMesh.SkinningBindings, 2, (void*)jointMatricesBuffer);
 				ResourceManager::Instance->MapBufferData(skinnedMesh.SkinningBindings, 2, startingOffset, skinnedMesh.JointCount * (uint32_t)sizeof(glm::mat4));
 
-				// Set and map storage buffer starting offset.
-				ResourceManager::Instance->SetBufferData(skinnedMesh.SkinningBindings, 4, (void*)&jointMatricesBufferBase);
-				ResourceManager::Instance->MapBufferData(skinnedMesh.SkinningBindings, 4, 0, sizeof(uint32_t));
+                // Create and initialize skinning push data.
+                SkinningPushData pushData =
+                {
+                    .JointMatricesOffset = jointMatricesBufferBase,
+                    .VertexCount = part.VertexCount,
+                };
+                
+				// Set and map uniform buffer containing the skinning push data.
+				ResourceManager::Instance->SetBufferData(skinnedMesh.SkinningBindings, 4, (void*)&pushData);
+				ResourceManager::Instance->MapBufferData(skinnedMesh.SkinningBindings, 4, 0, sizeof(SkinningPushData));
 								
 				// Dispatch compute skinning for each skinned mesh.
 				glm::uvec3 numThreadGroups = glm::uvec3((part.VertexCount + 63) / 64, 1, 1);
