@@ -225,13 +225,6 @@ namespace HBL2
 		return true;
 	}
 
-	static uint32_t HashJointName(std::string_view s)
-	{
-		uint32_t h = 2166136261u;
-		for (char c : s) { h ^= (uint8_t)c; h *= 16777619u; }
-		return h;
-	}
-
 	Handle<Mesh> FastGltfLoader::Load(const std::filesystem::path& path)
 	{
 		HBL2_FUNC_PROFILE();
@@ -1615,7 +1608,7 @@ namespace HBL2
 			{
 				const std::vector<uint16_t>& remap = skeleton.SkinJointRemap;
 
-				// 5. Joint indices (ubyte or ushort in the file, converted to u16), remapped to the final joint order.
+				// Joint indices (ubyte or ushort in the file, converted to u16), remapped to the final joint order.
 				fastgltf::iterateAccessorWithIndex<fastgltf::math::u16vec4>(asset, asset.accessors[jointsIt->accessorIndex],
 					[&](const fastgltf::math::u16vec4& j, size_t i)
 					{

@@ -8,6 +8,8 @@
 #include "Utilities/Result.h"
 #include "Utilities/Collections/Span.h"
 
+#include "ModelLoaderCommon.h"
+
 #include <fastgltf/core.hpp>
 #include <fastgltf/types.hpp>
 #include <fastgltf/tools.hpp>
@@ -16,21 +18,6 @@
 
 namespace HBL2
 {
-    struct SkinVertex
-    {
-        uint16_t Joints[4] = { 0, 0, 0, 0 };
-        float Weights[4] = { 1.f, 0.f, 0.f, 0.f };
-    };
-
-    struct SkeletonImport
-    {
-        bool Valid = false;
-        uint32_t SkinIndex = 0;
-        std::vector<int32_t> NodeToJoint;      // glTF node -> final joint index, -1 if not a joint
-        std::vector<uint16_t> SkinJointRemap;  // skin.joints[k] (what JOINTS_0 indexes) -> final joint index
-        SkeletonDescriptor Descriptor;
-    };
-
 	class FastGltfLoader
 	{
 	public:
