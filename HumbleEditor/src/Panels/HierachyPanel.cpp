@@ -393,15 +393,16 @@ namespace HBL2::Editor
 				auto mainMeshEntity = activeScene->CreateEntity(mesh->DebugName);
 				activeScene->AddComponent<HBL2::Component::EditorVisible>(mainMeshEntity);
 
-				// TODO: Fixme!
 				if (mesh->Skeleton.IsValid())
 				{
+					auto& pose = activeScene->AddComponent<HBL2::Component::SkeletonPose>(mainMeshEntity);
+					pose.Mesh = assetHandle;
+
 					auto& animation = activeScene->AddComponent<HBL2::Component::Animation>(mainMeshEntity);
 
-					animation.Mesh = assetHandle;                  // the animation/skinning systems read the mesh from here
-					animation.Clips = mesh->AnimationClips;        // handles, shared
 					animation.DefaultClip = 0;
-					animation.CurrentClip = 0;
+					animation.CurrentClip = mesh->AnimationClips.empty() ? -1 : 0;
+					animation.ClipsCount = mesh->AnimationClips.size();
 					animation.PlayAutomatically = !mesh->AnimationClips.empty();
 					animation.EnableLooping = true;
 					animation.Enabled = true;
@@ -414,9 +415,13 @@ namespace HBL2::Editor
 				{
 					auto meshEntity = activeScene->CreateEntity(meshPart.DebugName);
 					activeScene->AddComponent<HBL2::Component::EditorVisible>(meshEntity);
-					activeScene->AddComponent<HBL2::Component::SkinnedMesh>(meshEntity);
-					auto& link = activeScene->GetComponent<HBL2::Component::Link>(meshEntity);
 
+					auto& skinnedMesh = activeScene->AddComponent<HBL2::Component::SkinnedMesh>(meshEntity);
+					skinnedMesh.Mesh = assetHandle;
+					skinnedMesh.MeshIndex = meshIndex;
+					skinnedMesh.PoseEntityId = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
+
+					auto& link = activeScene->GetComponent<HBL2::Component::Link>(meshEntity);
 					link.Parent = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
 
 					for (auto& subMesh : meshPart.SubMeshes)
@@ -433,14 +438,13 @@ namespace HBL2::Editor
 
 						if (meshPart.IsSkinned())
 						{
-							auto& skinnedMesh = activeScene->AddComponent<HBL2::Component::SkinnedSubMesh>(subMeshEntity);
-							skinnedMesh.Mesh = assetHandle;
-							skinnedMesh.MeshIndex = meshIndex;
-							skinnedMesh.SubMeshIndex = subMeshIndex;
-							skinnedMesh.Material = subMesh.EmbededMaterial;
+							auto& skinnedSubMesh = activeScene->AddComponent<HBL2::Component::SkinnedSubMesh>(subMeshEntity);
+							skinnedSubMesh.Mesh = assetHandle;
+							skinnedSubMesh.MeshIndex = meshIndex;
+							skinnedSubMesh.SubMeshIndex = subMeshIndex;
+							skinnedSubMesh.Material = subMesh.EmbededMaterial;
 
-							skinnedMesh.SkinnedMeshId = activeScene->GetComponent<HBL2::Component::ID>(meshEntity).Identifier;
-							skinnedMesh.AnimatorId = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
+							skinnedSubMesh.SkinnedMeshId = activeScene->GetComponent<HBL2::Component::ID>(meshEntity).Identifier;
 						}
 						else
 						{

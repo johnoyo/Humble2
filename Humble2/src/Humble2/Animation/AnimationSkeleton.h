@@ -15,14 +15,6 @@ namespace HBL2
         glm::vec3 S;
     };
 
-    struct Pose
-    {
-        std::vector<JointTransform> Local;
-        std::vector<glm::mat4> Model;
-        std::vector<glm::mat4> Skinning;   // Model * InverseBind, what the GPU gets
-        Handle<Buffer> BoneBuffer; // or an offset into a shared per-frame buffer
-    };
-
     struct SkeletonDescriptor
     {
         const char* debugName = "";
@@ -54,4 +46,6 @@ namespace HBL2
         std::vector<JointTransform> BindPose;
         glm::mat4 RootTransform = glm::mat4(1.0f); // static non-joint ancestors of the root joints
     };
+
+    
 }

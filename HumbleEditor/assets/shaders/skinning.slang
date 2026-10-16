@@ -34,6 +34,9 @@ StructuredBuffer<float4x4> u_JointMatrices;
 [[vk::binding(3, 0)]]
 StructuredBuffer<SkinVertex> u_SkinVertices;
 
+[[vk::binding(4, 0)]]
+ConstantBuffer<uint> u_JointMatricesOffset;
+
 [shader("compute")]
 [numthreads(64, 1, 1)]
 void mainCS(uint3 tid : SV_DispatchThreadID)
@@ -57,7 +60,10 @@ void mainCS(uint3 tid : SV_DispatchThreadID)
     // Build the blended skin matrix from the four joint influences.
     // This is the core of the Linear Blend Skinning (LBS) equation:
     // SkinMatrix = sum(weight_i * JointMatrix_i) for i in [0, 3]
-    float4x4 m = w.x * u_JointMatrices[j.x] + w.y * u_JointMatrices[j.y] + w.z * u_JointMatrices[j.z] + w.w * u_JointMatrices[j.w];
+    float4x4 m = w.x * u_JointMatrices[u_JointMatricesOffset + j.x]
+			   + w.y * u_JointMatrices[u_JointMatricesOffset + j.y]
+			   + w.z * u_JointMatrices[u_JointMatricesOffset + j.z]
+			   + w.w * u_JointMatrices[u_JointMatricesOffset + j.w];
 
     // Transform the position using the full 4x4 skin matrix.
 	float3 pos = mul(m, float4(v.p[0], v.p[1], v.p[2], 1.0)).xyz;

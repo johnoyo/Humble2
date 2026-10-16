@@ -438,8 +438,14 @@ namespace HBL2::Editor
 			{
 				ImGui::Checkbox("Enabled", &animation.Enabled);
 				ImGui::Checkbox("Enable Looping", &animation.EnableLooping);
-				ImGui::DragInt("DefaultClip", &animation.DefaultClip, 1.0f, 0, animation.Clips.size() - 1);
+				ImGui::SliderInt("DefaultClip", &animation.DefaultClip, 0, animation.ClipsCount - 1);
+				ImGui::SliderInt("CurrentClip", &animation.CurrentClip, 0, animation.ClipsCount - 1);
 				ImGui::InputFloat("Speed", &animation.Speed);
+			});
+
+			DrawComponent<HBL2::Component::SkeletonPose>("SkeletonPose", activeScene, [this](HBL2::Component::SkeletonPose& skeletonPose)
+			{
+				// ...
 			});
 
 			DrawComponent<HBL2::Component::Light>("Light", activeScene, [this](HBL2::Component::Light& light)
@@ -2695,10 +2701,21 @@ namespace HBL2::Editor
 			m_MeshSettings = MeshUtilities::Get().DeserializeAssetMetadataFile(m_Owner->m_SelectedAsset.Get());
 		}
 
-		if (ImGui::Checkbox("Preserve Hierachy", &m_MeshSettings.PreserveHierachy))
+		const char* options[] = { "Static", "Skinned" };
+
+		if (ImGui::Combo("Type", (int*)&m_MeshSettings.Type, options, IM_ARRAYSIZE(options)))
 		{
 			m_IsAssetDirty = true;
 			m_ReimportMesh = true;
+		}
+
+		if (m_MeshSettings.Type == MeshSettings::MeshType::STATIC)
+		{
+			if (ImGui::Checkbox("Preserve Hierachy", &m_MeshSettings.PreserveHierachy))
+			{
+				m_IsAssetDirty = true;
+				m_ReimportMesh = true;
+			}
 		}
 
 		if (ImGui::Checkbox("Generate Colliders", &m_MeshSettings.GenerateColliders))

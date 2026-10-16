@@ -228,8 +228,10 @@ namespace HBL2
 		m_Scene->Filter<Component::SkinnedMesh>()
 			.ForEach([&](Component::SkinnedMesh& skinnedMesh)
 			{
-				m_ResourceManager->DeleteBuffer(skinnedMesh.SkinnedVertexBuffer);
-				skinnedMesh.SkinnedVertexBuffer = {};
+				skinnedMesh.Mesh.Release();
+
+				// m_ResourceManager->DeleteBindGroup(skinnedMesh.SkinningBindings);
+				// skinnedMesh.SkinningBindings = {};
 			});
 
 		m_Scene->Filter<Component::SkinnedSubMesh>()
@@ -237,9 +239,6 @@ namespace HBL2
 			{
 				skinnedSubMesh.Mesh.Release();
 				skinnedSubMesh.Material.Release();
-
-				//m_ResourceManager->DeleteBindGroup(skinnedSubMesh.SkinningBindings);
-				//skinnedSubMesh.SkinningBindings = {};
 			});
 
 		m_Scene->Filter<Component::Sprite>()
@@ -504,45 +503,32 @@ namespace HBL2
 			.threadsPerThreadGroup = { 64, 1, 1 },
 		});
 
-		m_Scene->Filter<Component::SkinnedSubMesh>()
-			.ForEach([this](Entity entity, Component::SkinnedSubMesh& skinnedSubMesh)
+		m_Scene->Filter<Component::SkinnedMesh>()
+			.ForEach([this](Entity entity, Component::SkinnedMesh& skinnedMesh)
 			{
-				// Retireve animation component.
-				Entity animationEntity = m_Scene->FindEntityByUUID(skinnedSubMesh.AnimatorId);
+				// Retireve skeleton pose component.
+				Entity poseEntity = m_Scene->FindEntityByUUID(skinnedMesh.PoseEntityId);
 
-				if (animationEntity == Entity::Null)
+				if (poseEntity == Entity::Null)
 				{
 					return;
 				}
 
-				auto& anim = m_Scene->GetComponent<Component::Animation>(animationEntity);
-
-				// Retrieve skinned mesh component.
-				Entity meshEntity = m_Scene->FindEntityByUUID(skinnedSubMesh.SkinnedMeshId);
-
-				if (meshEntity == Entity::Null)
-				{
-					return;
-				}
-
-				auto& skinnedMesh = m_Scene->GetComponent<Component::SkinnedMesh>(meshEntity);
+				auto& pose = m_Scene->GetComponent<Component::SkeletonPose>(poseEntity);
 
 				// Retrieve mesh.
-				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedSubMesh.Mesh.Get());
+				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedMesh.Mesh.Get());
 				Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
 
-				MeshPart& part = mesh->Meshes[skinnedSubMesh.MeshIndex];
+				MeshPart& part = mesh->Meshes[skinnedMesh.MeshIndex];
 
-				// Retrieve skeleton.
-				const Skeleton* skeleton = ResourceManager::Instance->GetSkeleton(mesh->Skeleton);
+				skinnedMesh.JointCount = (uint32_t)pose.Skinning.size();
 
-				anim.JointCount = (uint32_t)skeleton->Parents.size();
-				
 				Handle<Buffer> jointMatricesBuffer = ResourceManager::Instance->CreateBuffer({
 					.debugName = "joint-matrices-buffer",
 					.usage = BufferUsage::STORAGE,
 					.memoryUsage = MemoryUsage::CPU_GPU,
-					.byteSize = Renderer::Instance->FrameCount * anim.JointCount * (uint32_t)sizeof(glm::mat4),
+					.byteSize = Renderer::Instance->FrameCount * skinnedMesh.JointCount * (uint32_t)sizeof(glm::mat4),
 				});
 
 				Handle<Buffer> jointMatricesOffsetBuffer = ResourceManager::Instance->CreateBuffer({
@@ -559,7 +545,7 @@ namespace HBL2
 					.byteSize = static_cast<uint32_t>(part.VertexCount * sizeof(Vertex)),
 				});
 
-				skinnedSubMesh.SkinningBindings = ResourceManager::Instance->CreateBindGroup({
+				skinnedMesh.SkinningBindings = ResourceManager::Instance->CreateBindGroup({
 					.debugName = "skinning-bind-group",
 					.layout = m_SkinningBindGroupLayout,
 					.buffers = {
@@ -1732,47 +1718,44 @@ namespace HBL2
 		FixedArray<Dispatch> dispatches = FixedArray<Dispatch>(&scratch, 4096);
 		FixedArray<Handle<Buffer>> outputBuffers = FixedArray<Handle<Buffer>>(&scratch, 4096);
 
-		m_Scene->Filter<Component::SkinnedSubMesh>()
-			.ForEach([this, commandBuffer, computeVariantHandle, &dispatches, &outputBuffers](Entity entity, Component::SkinnedSubMesh& skinnedSubMesh)
+		m_Scene->Filter<Component::SkinnedMesh>()
+			.ForEach([this, commandBuffer, computeVariantHandle, &dispatches, &outputBuffers](Entity entity, Component::SkinnedMesh& skinnedMesh)
 			{
-				// Retireve animation component.
-				Entity animationEntity = m_Scene->FindEntityByUUID(skinnedSubMesh.AnimatorId);
+				// Retireve skeleton pose component.
+				Entity poseEntity = m_Scene->FindEntityByUUID(skinnedMesh.PoseEntityId);
 
-				if (animationEntity == Entity::Null)
+				if (poseEntity == Entity::Null)
 				{
 					return;
 				}
 
-				auto& anim = m_Scene->GetComponent<Component::Animation>(animationEntity);
+				auto& pose = m_Scene->GetComponent<Component::SkeletonPose>(poseEntity);
 
-				// Retrieve skinned mesh component.
-				Entity meshEntity = m_Scene->FindEntityByUUID(skinnedSubMesh.SkinnedMeshId);
-
-				if (meshEntity == Entity::Null)
+				if (pose.Skinning.empty())
 				{
 					return;
 				}
 
-				auto& skinnedMesh = m_Scene->GetComponent<Component::SkinnedMesh>(meshEntity);
-
-				// Retrieve mesh.
-				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedSubMesh.Mesh.Get());
+				// Retrieve mesh resource.
+				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedMesh.Mesh.Get());
 				Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
 
-				MeshPart& part = mesh->Meshes[skinnedSubMesh.MeshIndex];
-
-				if (!skinnedSubMesh.SkinningBindings.IsValid())
+				if (mesh == nullptr)
 				{
-					// Retrieve skeleton.
-					const Skeleton* skeleton = ResourceManager::Instance->GetSkeleton(mesh->Skeleton);
+					return;
+				}
 
-					anim.JointCount = (uint32_t)skeleton->Parents.size();
+				MeshPart& part = mesh->Meshes[skinnedMesh.MeshIndex];
+
+				if (!skinnedMesh.SkinningBindings.IsValid())
+				{
+					skinnedMesh.JointCount = (uint32_t)pose.Skinning.size();
 
 					Handle<Buffer> jointMatricesBuffer = ResourceManager::Instance->CreateBuffer({
 						.debugName = "joint-matrices-buffer",
 						.usage = BufferUsage::STORAGE,
 						.memoryUsage = MemoryUsage::CPU_GPU,
-						.byteSize = Renderer::Instance->FrameCount * anim.JointCount * (uint32_t)sizeof(glm::mat4),
+						.byteSize = Renderer::Instance->FrameCount * skinnedMesh.JointCount * (uint32_t)sizeof(glm::mat4),
 					});
 
 					Handle<Buffer> jointMatricesOffsetBuffer = ResourceManager::Instance->CreateBuffer({
@@ -1789,7 +1772,7 @@ namespace HBL2
 						.byteSize = static_cast<uint32_t>(part.VertexCount * sizeof(Vertex)),
 					});
 
-					skinnedSubMesh.SkinningBindings = ResourceManager::Instance->CreateBindGroup({
+					skinnedMesh.SkinningBindings = ResourceManager::Instance->CreateBindGroup({
 						.debugName = "skinning-bind-group",
 						.layout = m_SkinningBindGroupLayout,
 						.buffers = {
@@ -1802,45 +1785,39 @@ namespace HBL2
 					});
 				}
 
-				// TODO: Fixme!
-				if (anim.Pose.Skinning.empty())
-				{
-					return;
-				}
-
 				// Combine all joint matrices into one buffer.
 				ScratchArena scratch(Allocator::FrameArenaRT);
 
-				uint32_t jointMatricesBufferSize = Renderer::Instance->FrameCount * anim.JointCount * sizeof(glm::mat4);
+				uint32_t jointMatricesBufferSize = Renderer::Instance->FrameCount * skinnedMesh.JointCount * sizeof(glm::mat4);
 
 				uint8_t* jointMatricesBuffer = (uint8_t*)scratch.Alloc(jointMatricesBufferSize);
 				std::memset(jointMatricesBuffer, 0, jointMatricesBufferSize);
 
 				uint32_t frameIndex = Renderer::Instance->GetFrameIndex();
-				uint32_t startingOffset = frameIndex * (anim.JointCount * sizeof(glm::mat4));
-				uint32_t jointMatricesBufferBase = frameIndex * anim.JointCount;
+				uint32_t startingOffset = frameIndex * (skinnedMesh.JointCount * sizeof(glm::mat4));
+				uint32_t jointMatricesBufferBase = frameIndex * skinnedMesh.JointCount;
 
-				for (size_t i = 0; i < anim.JointCount; ++i)
+				for (size_t i = 0; i < skinnedMesh.JointCount; ++i)
 				{
 					size_t offset = i * sizeof(glm::mat4);
-					std::memcpy(jointMatricesBuffer + startingOffset + offset, &anim.Pose.Skinning[i], sizeof(glm::mat4));
+					std::memcpy(jointMatricesBuffer + startingOffset + offset, &pose.Skinning[i], sizeof(glm::mat4));
 				}
 
 				// Set and map storage buffer for skinning data.
-				ResourceManager::Instance->SetBufferData(skinnedSubMesh.SkinningBindings, 2, (void*)jointMatricesBuffer);
-				ResourceManager::Instance->MapBufferData(skinnedSubMesh.SkinningBindings, 2, startingOffset, anim.JointCount * (uint32_t)sizeof(glm::mat4));
+				ResourceManager::Instance->SetBufferData(skinnedMesh.SkinningBindings, 2, (void*)jointMatricesBuffer);
+				ResourceManager::Instance->MapBufferData(skinnedMesh.SkinningBindings, 2, startingOffset, skinnedMesh.JointCount * (uint32_t)sizeof(glm::mat4));
 
 				// Set and map storage buffer starting offset.
-				ResourceManager::Instance->SetBufferData(skinnedSubMesh.SkinningBindings, 4, (void*)&jointMatricesBufferBase);
-				ResourceManager::Instance->MapBufferData(skinnedSubMesh.SkinningBindings, 4, 0, sizeof(uint32_t));
+				ResourceManager::Instance->SetBufferData(skinnedMesh.SkinningBindings, 4, (void*)&jointMatricesBufferBase);
+				ResourceManager::Instance->MapBufferData(skinnedMesh.SkinningBindings, 4, 0, sizeof(uint32_t));
 								
 				// Dispatch compute skinning for each skinned mesh.
-				glm::uvec3 numThreadGroups = glm::vec3((part.VertexCount + 63) / 64, 1, 1);
+				glm::uvec3 numThreadGroups = glm::uvec3((part.VertexCount + 63) / 64, 1, 1);
 
 				Dispatch dispatch =
 				{
 					.Shader = m_SkinningComputeShader,
-					.BindGroup = skinnedSubMesh.SkinningBindings,
+					.BindGroup = skinnedMesh.SkinningBindings,
 					.ThreadGroupCount = numThreadGroups,
 					.VariantHandle = computeVariantHandle,
 				};

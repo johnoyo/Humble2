@@ -11,12 +11,9 @@ namespace HBL2
 	{
 		struct Animation
 		{
-			Handle<Asset> Mesh;
-
-			std::vector<Handle<AnimationClip>> Clips;
-
 			int DefaultClip = 0;
 			int CurrentClip = -1;
+			int ClipsCount = 0;
 
 			float Time = 0.f;
 			float Speed = 1.f;
@@ -25,10 +22,15 @@ namespace HBL2
 			bool PlayAutomatically;
 			bool ApplyRootMotion;
 			bool Enabled;
+		};
 
-			uint32_t JointCount = 0;
+		struct SkeletonPose
+		{
+			RefHandle<Asset> Mesh;
 
-			Pose Pose;
+			std::vector<JointTransform> Local;
+			std::vector<glm::mat4> Model;
+			std::vector<glm::mat4> Skinning;
 		};
 
 		// Important: The attachment system runs after animation evaluation.

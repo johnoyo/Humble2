@@ -14,6 +14,7 @@
 #include "Systems/Physics3dSystem.h"
 #include "Systems/TerrainSystem.h"
 #include "Systems/AnimationCurveSystem.h"
+#include "Animation/SkeletonPoseSystem.h"
 
 #include "Renderer/ForwardSceneRenderer.h"
 
@@ -1754,11 +1755,12 @@ namespace HBL2
 		scene->RegisterSystem<CameraSystem>(SystemType::Runtime);
 		scene->RegisterSystem<AnimationSystem>();
 		scene->RegisterSystem<TerrainSystem>();
-		scene->RegisterSystem<RenderingSystem>();
 		scene->RegisterSystem<SoundSystem>(SystemType::Runtime);
 		scene->RegisterSystem<Physics2dSystem>(SystemType::Runtime);
 		scene->RegisterSystem<Physics3dSystem>(SystemType::Runtime);
 		scene->RegisterSystem<AnimationCurveSystem>();
+		scene->RegisterSystem<SkeletonPoseSystem>();
+		scene->RegisterSystem<RenderingSystem>();
 
 		SceneSerializer sceneSerializer(scene);
 		sceneSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
@@ -2752,11 +2754,12 @@ namespace HBL2
 			scene->RegisterSystem<CameraSystem>(SystemType::Runtime);
 			scene->RegisterSystem<AnimationSystem>();
 			scene->RegisterSystem<TerrainSystem>();
-			scene->RegisterSystem<RenderingSystem>();
 			scene->RegisterSystem<SoundSystem>(SystemType::Runtime);
 			scene->RegisterSystem<Physics2dSystem>(SystemType::Runtime);
 			scene->RegisterSystem<Physics3dSystem>(SystemType::Runtime);
 			scene->RegisterSystem<AnimationCurveSystem>();
+			scene->RegisterSystem<SkeletonPoseSystem>();
+			scene->RegisterSystem<RenderingSystem>();
 
 			asset->Indentifier = sceneHandle.Pack();
 			asset->Loaded = true;

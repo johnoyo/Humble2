@@ -102,7 +102,13 @@ namespace HBL2
 
 		struct HBL2_API SkinnedMesh
 		{
+			RefHandle<Asset> Mesh;
+			uint32_t MeshIndex = 0;
+			UUID PoseEntityId = 0;
+
+			uint32_t JointCount = 0;
 			Handle<Buffer> SkinnedVertexBuffer;
+			Handle<BindGroup> SkinningBindings;
 		};
 
 		struct HBL2_API SkinnedSubMesh
@@ -112,10 +118,7 @@ namespace HBL2
 			uint32_t SubMeshIndex = 0;
 
 			RefHandle<Asset> Material;
-
-			UUID AnimatorId = 0;
 			UUID SkinnedMeshId = 0;
-			Handle<BindGroup> SkinningBindings;
 
 			bool Enabled = true;
 		};

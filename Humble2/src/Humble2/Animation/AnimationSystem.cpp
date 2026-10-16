@@ -6,15 +6,6 @@
 
 namespace HBL2
 {
-	static glm::mat4 ToMat4(const JointTransform& tr)
-	{
-		glm::mat4 T = glm::translate(glm::mat4(1.0f), tr.T);
-		glm::mat4 R = glm::mat4_cast(tr.R);
-		glm::mat4 S = glm::scale(glm::mat4(1.0f), tr.S);
-
-		return T * R * S;
-	}
-
 	struct KeyframeSpan
 	{
 		uint32_t K0 = 0, K1 = 0;
@@ -155,8 +146,8 @@ namespace HBL2
 	{
 		BEGIN_PROFILE_SYSTEM();
 
-		m_Context->Filter<Component::Animation>()
-			.ForEach([this, ts](Entity entity, Component::Animation& anim)
+		m_Context->Filter<Component::Animation, Component::SkeletonPose>()
+			.ForEach([this, ts](Entity entity, Component::Animation& anim, Component::SkeletonPose& pose)
 			{
 				if (!anim.Enabled || anim.CurrentClip < 0)
 				{
@@ -164,12 +155,17 @@ namespace HBL2
 				}
 
 				// Retrieve mesh.
-				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(anim.Mesh);
+				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(pose.Mesh.Get());
 				Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
+
+				if (mesh == nullptr)
+				{
+					return;
+				}
 
 				// Retrieve skeleton and current animation clip.
 				Skeleton* skel = ResourceManager::Instance->GetSkeleton(mesh->Skeleton);
-				AnimationClip* clip = ResourceManager::Instance->GetAnimationClip(anim.Clips[anim.CurrentClip]);
+				AnimationClip* clip = ResourceManager::Instance->GetAnimationClip(mesh->AnimationClips[anim.CurrentClip]);
 
 				// Advance animation time.
 				anim.Time += ts * anim.Speed;
@@ -179,32 +175,12 @@ namespace HBL2
 				}
 
 				// Start from bind pose so joints without channels stay valid.
-				anim.Pose.Local = skel->BindPose;
+				pose.Local = skel->BindPose;
+				pose.Model.resize(skel->Parents.size());
+				pose.Skinning.resize(skel->Parents.size());
 
 				// Sample animation clip.
-				SampleClip(clip, anim.Time, anim.Pose.Local);
-
-				{
-					// TODO: Fixme!
-
-					if (anim.Pose.Model.empty())
-					{
-						anim.Pose.Model.resize(skel->Parents.size());
-					}
-
-					if (anim.Pose.Skinning.empty())
-					{
-						anim.Pose.Skinning.resize(skel->Parents.size());
-					}
-				}
-
-				// Convert from local to world.
-				for (size_t i = 0; i < skel->Parents.size(); ++i)
-				{
-					glm::mat4 local = ToMat4(anim.Pose.Local[i]);
-					anim.Pose.Model[i] = skel->Parents[i] < 0 ? skel->RootTransform * local : anim.Pose.Model[skel->Parents[i]] * local;
-					anim.Pose.Skinning[i] = anim.Pose.Model[i] * skel->InverseBind[i];
-				}
+				SampleClip(clip, anim.Time, pose.Local);
 			});
 
 		END_PROFILE_SYSTEM(RunningTime);

@@ -15,6 +15,7 @@
 #include "Systems/Physics3dSystem.h"
 #include "Systems/TerrainSystem.h"
 #include "Systems/AnimationCurveSystem.h"
+#include "Animation/SkeletonPoseSystem.h"
 
 #include "StructuralCommandBuffer.h"
 
@@ -171,6 +172,7 @@ namespace HBL2
         copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
         copy_component(Component::Animation{});
+        copy_component(Component::SkeletonPose{});
         // Do not copy the TerrainChunk component
 
         // Clone systems.
@@ -178,11 +180,12 @@ namespace HBL2
         dst->RegisterSystem<CameraSystem>(SystemType::Runtime);
         dst->RegisterSystem<AnimationSystem>();
         dst->RegisterSystem<TerrainSystem>();
-        dst->RegisterSystem<RenderingSystem>();
         dst->RegisterSystem<SoundSystem>(SystemType::Runtime);
         dst->RegisterSystem<Physics2dSystem>(SystemType::Runtime);
         dst->RegisterSystem<Physics3dSystem>(SystemType::Runtime);
         dst->RegisterSystem<AnimationCurveSystem>();
+        dst->RegisterSystem<SkeletonPoseSystem>();
+        dst->RegisterSystem<RenderingSystem>();
 
         // Register any user systems to new scene.
         for (ISystem* system : src->m_RuntimeSystems)
@@ -523,6 +526,7 @@ namespace HBL2
         copy_component(Component::Terrain{});
         copy_component(Component::TerrainChunk{});
         copy_component(Component::Animation{});
+        copy_component(Component::SkeletonPose{});
 
         // Copy user defined components.
         Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
@@ -637,6 +641,7 @@ namespace HBL2
         copy_component(Component::Terrain{});
         copy_component(Component::TerrainChunk{});
         copy_component(Component::Animation{});
+        copy_component(Component::SkeletonPose{});
 
         // Copy user defined components.
         Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
