@@ -12,14 +12,14 @@
 
 namespace HBL2
 {
-	static inline const JPH::BodyID& GetBodyIDFromPhysicsID(Physics::ID id)
+	static inline const JPH::BodyID GetBodyIDFromPhysicsID(Physics::ID id)
 	{
-		return *((JPH::BodyID*)id);
+		return JPH::BodyID((uint32_t)id);
 	}
 
 	static inline Physics::ID GetPhysicsIDFromBodyID(const JPH::BodyID& bodyId)
 	{
-		return (Physics::ID)&bodyId;
+		return (Physics::ID)bodyId.GetIndexAndSequenceNumber();
 	}
 
 	class HumbleContactListener : public JPH::ContactListener
@@ -209,6 +209,10 @@ namespace HBL2
 						// NOTE: There is a bug when adding collider after rigidbody at runtime, the collider settings wont apply.
 						bodyInterface.RemoveBody(bodyID);
 						bodyInterface.DestroyBody(bodyID);
+
+						// Invalidate old body id.
+						rb.BodyID = Physics::InvalidID;
+
 						AddRigidBody(entity, rb, transform, bodyInterface);
 						bodyInterface.AddBody(GetBodyIDFromPhysicsID(rb.BodyID), JPH::EActivation::Activate);
 					}
@@ -253,6 +257,11 @@ namespace HBL2
 		m_Context->Filter<Component::Rigidbody, Component::Transform>()
 			.ForEach([this, &bodyInterface](Entity entity, Component::Rigidbody& rb, Component::Transform& transform)
 			{
+				if (rb.BodyID == Physics::InvalidID)
+				{
+					return;
+				}
+
 				glm::vec3 originalScale = transform.Scale;
 
 				JPH::Vec3 outPosition;
@@ -644,7 +653,7 @@ namespace HBL2
 
 		if (body == nullptr)
 		{
-			HBL2_CORE_ERROR("Exceeded maximum number of supported rigudbodies");
+			HBL2_CORE_ERROR("Exceeded maximum number of supported rigidbodies");
 			return;
 		}
 
