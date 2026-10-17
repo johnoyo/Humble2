@@ -170,7 +170,7 @@ namespace HBL2
 					{
 						if (anim.CurrentClip >= 0 && anim.CurrentClip < animationClips.size())
 						{
-							EventDispatcher::Get().Post(AnimationPausedEvent(anim.Time, animationClips[anim.CurrentClip]));
+							EventDispatcher::Get().Post(AnimationStoppedEvent(anim.Time, animationClips[anim.CurrentClip]));
 						}
 					}
 					else
@@ -268,7 +268,7 @@ namespace HBL2
 						const float weight = t * t * (3.f - 2.f * t);   // smoothstep: eases in and out
 
 						// We blend from the pose that we had when we first started the transition
-						// and we blend towards the new pose that we have now, every frame we use the 
+						// and we blend towards the new pose that we have now, i.e. every frame we use the 
 						// up to date pose that is sampled from the clip as the blend target.
 						AnimationBlender::LinearBlendLocal(anim.BlendFrom, pose.Local, weight, pose.Local);
 

@@ -24,7 +24,7 @@ namespace HBL2
 			bool ApplyRootMotion;
 			bool Enabled = true;
 
-			bool LastEnabled = false;
+			bool LastEnabled = true;
 			int LastClip = -1;
 			float BlendElapsed = 0.0f;
 			float BlendDuration = 0.0f;

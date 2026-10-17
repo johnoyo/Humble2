@@ -27,25 +27,25 @@ namespace HBL2
 		Handle<AnimationClip> Animation;
 	};
 
-	struct AnimationPausedEvent final : public EventType<AnimationPausedEvent>
+	struct AnimationStoppedEvent final : public EventType<AnimationStoppedEvent>
 	{
-		AnimationPausedEvent(float progress, Handle<AnimationClip> animation)
-			: Progress(progress), Animation(animation)
+		AnimationStoppedEvent(float timestamp, Handle<AnimationClip> animation)
+			: Timestamp(timestamp), Animation(animation)
 		{
 		}
 
-		float Progress;
+		float Timestamp;
 		Handle<AnimationClip> Animation;
 	};
 
 	struct AnimationResumedEvent final : public EventType<AnimationResumedEvent>
 	{
-		AnimationResumedEvent(float progress, Handle<AnimationClip> animation)
-			: Progress(progress), Animation(animation)
+		AnimationResumedEvent(float timestamp, Handle<AnimationClip> animation)
+			: Timestamp(timestamp), Animation(animation)
 		{
 		}
 
-		float Progress;
+		float Timestamp;
 		Handle<AnimationClip> Animation;
 	};
 
