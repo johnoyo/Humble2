@@ -344,6 +344,7 @@ namespace HBL2
 
 			BEGIN_APP_PROFILE(appUpdate);
 			AssetManager::Instance->Dispatch();
+			EventDispatcher::Get().Flush();
 			m_Specification.Context->OnUpdate(Time::DeltaTime);
 			m_Specification.Context->OnFixedUpdate();
 			END_APP_PROFILE(appUpdate, m_CurrentStats.AppUpdateTime);

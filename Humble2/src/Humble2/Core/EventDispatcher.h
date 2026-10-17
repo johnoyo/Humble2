@@ -1,12 +1,15 @@
 #pragma once
 
 #include "Base.h"
+#include "Allocators.h"
+#include "EventDispatcher.h"
+#include "Resources/Pool.h"
 #include "Utilities/Random.h"
+#include "Utilities/Allocators/Arena.h"
+#include "Utilities/Collections/FixedArray.h"
+#include "Utilities/Collections/FixedHashMap.h"
+#include "Utilities/Collections/StaticFunction.h"
 
-#include <unordered_map>
-#include <vector>
-#include <functional>
-#include <memory>
 #include <typeindex>
 
 namespace HBL2
@@ -14,7 +17,7 @@ namespace HBL2
     class HBL2_API Event
     {
     public:
-        virtual ~Event() = default;
+        ~Event() = default;
     };
 
     template <typename T>
@@ -22,12 +25,24 @@ namespace HBL2
 
     struct HBL2_API EventPayload
     {
+        EventPayload() = default;
+        EventPayload(const EventPayload&) = delete;
+        EventPayload& operator=(const EventPayload&) = delete;
+        EventPayload(EventPayload&&) noexcept = default;
+        EventPayload& operator=(EventPayload&&) noexcept = default;
+        ~EventPayload() = default;
+
         UUID Id = 0;
-        std::function<void(const Event&)> Callback;
+        StaticFunction<void(const Event&), 64> Callback;
+        bool OneShot = false;
+        bool Dead = false;
     };
 
     class HBL2_API EventDispatcher
     {
+        static constexpr uint32_t MaxEventTypes = 256;
+        static constexpr uint32_t MaxEntriesPerEventType = 1024;
+
     public:
         EventDispatcher(const EventDispatcher&) = delete;
         static EventDispatcher& Get();
@@ -35,70 +50,85 @@ namespace HBL2
         static void Initialize();
         static void Shutdown();
 
-        template <typename T>
-        void Register(UUID id, std::function<void(const T&)>&& callback)
+        template <typename T, typename F>
+        UUID Register(F&& callback)
         {
             static_assert(std::is_base_of_v<Event, T>, "T must derive from Event.");
+            static_assert(std::is_invocable_v<F&, const T&>, "Callback must be callable with (const T&).");
 
             std::type_index type = std::type_index(typeid(T));
+            UUID id = Random::UInt64();
 
-            auto wrapper = [cb = std::forward<std::function<void(const T&)>>(callback)](const Event& e)
+            EventPayload payload;
+            payload.Id = id;
+            payload.OneShot = false;
+            payload.Dead = false;
+
+            auto wrapper = [cb = std::forward<F>(callback)](const Event& e) mutable
             {
                 cb(static_cast<const T&>(e));
             };
 
-            m_CallbackSlots[type].push_back({ id, std::move(wrapper) });
+            payload.Callback = std::move(wrapper);
+
+            auto& slot = GetOrCreateSlot(type);
+            HBL2_CORE_ASSERT(slot.size() < MaxEntriesPerEventType, "Too many listeners for this event type.");
+            slot.emplace_back(std::move(payload));
+
+            return id;
         }
 
-        template <typename T>
-        void Register(std::function<void(const T&)>&& callback, bool oneShot = false)
+        template <typename T, typename F>
+        UUID RegisterOneShot(F&& callback)
         {
             static_assert(std::is_base_of_v<Event, T>, "T must derive from Event.");
+            static_assert(std::is_invocable_v<F&, const T&>, "Callback must be callable with (const T&).");
 
             std::type_index type = std::type_index(typeid(T));
+            UUID id = Random::UInt64();
 
-            auto wrapper = [cb = std::forward<std::function<void(const T&)>>(callback)](const Event& e)
+            EventPayload payload;
+            payload.Id = id;
+            payload.OneShot = true;
+            payload.Dead = false;
+
+            auto wrapper = [cb = std::forward<F>(callback)](const Event& e) mutable
             {
                 cb(static_cast<const T&>(e));
             };
 
-            if (oneShot)
-            {
-                m_OneShotCallbacks[type].push_back({ Random::UInt64(), std::move(wrapper) });
-            }
-            else
-            {
-                m_CallbackSlots[type].push_back({ Random::UInt64(), std::move(wrapper) });
-            }
+            payload.Callback = std::move(wrapper);
+
+            auto& slot = GetOrCreateSlot(type);
+            HBL2_CORE_ASSERT(slot.size() < MaxEntriesPerEventType, "Too many listeners for this event type.");
+            slot.emplace_back(std::move(payload));
+
+            return id;
         }
 
         template <typename T>
-        void Deregister(UUID id)
+        bool Deregister(UUID id)
         {
             static_assert(std::is_base_of_v<Event, T>, "T must derive from Event.");
 
             auto it = m_CallbackSlots.find(std::type_index(typeid(T)));
-            if (it != m_CallbackSlots.end())
+            if (it == m_CallbackSlots.end())
             {
-                bool eventFound = false;
-                std::vector<EventPayload>::iterator eit;
+                return false;
+            }
 
-                auto& callbacks = it->second;
-
-                for (eit = callbacks.begin(); eit != callbacks.end(); ++eit)
+            for (EventPayload& p : it->second)
+            {
+                if (p.Id == id && !p.Dead)
                 {
-                    if (id == eit->Id)
-                    {
-                        eventFound = true;
-                        break;
-                    }
-                }
+                    p.Dead = true;
+                    m_DeadCount++;
 
-                if (eventFound)
-                {
-                    callbacks.erase(eit);
+                    return true;
                 }
             }
+
+            return false;
         }
 
         template <typename T>
@@ -107,30 +137,54 @@ namespace HBL2
             static_assert(std::is_base_of_v<Event, T>, "T must derive from Event.");
 
             auto it = m_CallbackSlots.find(std::type_index(typeid(T)));
-            if (it != m_CallbackSlots.end())
+            if (it == m_CallbackSlots.end())
             {
-                for (auto&& payload : it->second)
-                {
-                    payload.Callback(event);
-                }
+                return;
             }
 
-            auto oneShotIt = m_OneShotCallbacks.find(std::type_index(typeid(T)));
-            if (oneShotIt != m_OneShotCallbacks.end())
+            auto& callbacks = it->second;
+            
+            // Listeners added by callbacks start next Post.
+            const size_t count = callbacks.size();
+
+            m_DispatchDepth++;
+
+            for (size_t i = 0; i < count; i++)
             {
-                for (auto&& payload : oneShotIt->second)
+                EventPayload& listener = callbacks[i];
+
+                if (listener.Dead)
                 {
-                    payload.Callback(event);
+                    continue;
                 }
-                m_OneShotCallbacks.erase(oneShotIt);
+
+                if (listener.OneShot)
+                {
+                    // Before invoking, so a recursive Post can not re-fire it.
+                    listener.Dead = true;
+                    m_DeadCount++;
+                }
+
+                listener.Callback(event);
             }
+
+            m_DispatchDepth--;
         }
+
+        void Flush();
 
     private:
         EventDispatcher() = default;
+        FixedArray<EventPayload>& GetOrCreateSlot(std::type_index type);
 
-        std::unordered_map<std::type_index, std::vector<EventPayload>> m_CallbackSlots;
-        std::unordered_map<std::type_index, std::vector<EventPayload>> m_OneShotCallbacks;
+    private:
+        PoolReservation* m_Reservation = nullptr;
+        Arena m_Arena;
+
+        FixedHashMap<std::type_index, FixedArray<EventPayload>> m_CallbackSlots;
+
+        uint32_t m_DispatchDepth = 0;
+        uint32_t m_DeadCount = 0;
 
         static EventDispatcher* s_Instance;
     };

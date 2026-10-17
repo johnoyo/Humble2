@@ -1,10 +1,12 @@
 #include "AnimationSystem.h"
 
+#include "AnimationEvent.h"
+#include "AnimationBlender.h"
+
+#include "Core/EventDispatcher.h"
 #include "Asset/AssetManager.h"
 #include "Resources/ResourceManager.h"
 #include "Utilities/ShaderUtilities.h"
-
-#include "AnimationBlender.h"
 
 namespace HBL2
 {
@@ -151,11 +153,6 @@ namespace HBL2
 		m_Context->Filter<Component::Animation, Component::SkeletonPose>()
 			.ForEach([this, ts](Entity entity, Component::Animation& anim, Component::SkeletonPose& pose)
 			{
-				if (!anim.Enabled || anim.CurrentClip < 0)
-				{
-					return;
-				}
-
 				// Retrieve mesh.
 				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(pose.Mesh.Get());
 				Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
@@ -164,14 +161,43 @@ namespace HBL2
 					return;
 				}
 
-				// Retrieve skeleton and current animation clip.
-				Skeleton* skel = ResourceManager::Instance->GetSkeleton(mesh->Skeleton);
-				if (skel == nullptr || anim.CurrentClip >= (int)mesh->AnimationClips.size())
+				const auto& animationClips = mesh->AnimationClips;
+
+				// Emitted events for pause and resume if needed.
+				if (anim.Enabled != anim.LastEnabled)
+				{
+					if (anim.LastEnabled)
+					{
+						if (anim.CurrentClip >= 0 && anim.CurrentClip < animationClips.size())
+						{
+							EventDispatcher::Get().Post(AnimationPausedEvent(anim.Time, animationClips[anim.CurrentClip]));
+						}
+					}
+					else
+					{
+						if (anim.CurrentClip >= 0 && anim.CurrentClip < animationClips.size())
+						{
+							EventDispatcher::Get().Post(AnimationResumedEvent(anim.Time, animationClips[anim.CurrentClip]));
+						}
+					}
+
+					anim.LastEnabled = anim.Enabled;
+				}
+
+				// Abort if animation is not enabled or current clip is invalid.
+				if (!anim.Enabled || anim.CurrentClip < 0 || anim.CurrentClip >= animationClips.size())
 				{
 					return;
 				}
 
-				AnimationClip* clip = ResourceManager::Instance->GetAnimationClip(mesh->AnimationClips[anim.CurrentClip]);
+				// Retrieve skeleton and current animation clip.
+				Skeleton* skel = ResourceManager::Instance->GetSkeleton(mesh->Skeleton);
+				if (skel == nullptr)
+				{
+					return;
+				}
+
+				AnimationClip* clip = ResourceManager::Instance->GetAnimationClip(animationClips[anim.CurrentClip]);
 				if (clip == nullptr)
 				{
 					return;
@@ -182,10 +208,16 @@ namespace HBL2
 				{
 					if (anim.LastClip >= 0 && anim.TransitionDuration > 0.f && pose.Local.size() == skel->Parents.size())
 					{
-						anim.BlendFrom = pose.Local;     // last frame's result, before it gets overwritten below
+						EventDispatcher::Get().Post(AnimationBlendingStartedEvent(animationClips[anim.LastClip], animationClips[anim.CurrentClip]));
+
+						// Store last frame's result, before it gets overwritten below.
+						anim.BlendFrom = pose.Local;
 						anim.BlendElapsed = 0.f;
 						anim.BlendDuration = anim.TransitionDuration;
 					}
+
+					Handle<AnimationClip> previousClip = (anim.LastClip > 0 && anim.LastClip < animationClips.size()) ? animationClips[anim.LastClip] : Handle<AnimationClip>();
+					EventDispatcher::Get().Post(AnimationChangedEvent(previousClip, animationClips[anim.CurrentClip]));
 
 					anim.Time = 0.f;
 					anim.LastClip = anim.CurrentClip;
@@ -194,6 +226,16 @@ namespace HBL2
 				// Advance animation time.
 				if (clip->Duration > 0.f)
 				{
+					if (anim.Time == 0.0f)
+					{
+						EventDispatcher::Get().Post(AnimationStartedEvent(anim.EnableLooping, animationClips[anim.CurrentClip]));
+					}
+
+					if (anim.Time >= clip->Duration)
+					{
+						EventDispatcher::Get().Post(AnimationEndedEvent(anim.EnableLooping, animationClips[anim.CurrentClip]));
+					}
+
 					anim.Time += ts * anim.Speed;
 					anim.Time = anim.EnableLooping ? fmod(anim.Time, clip->Duration) : glm::min(anim.Time, clip->Duration);
 				}
@@ -215,7 +257,8 @@ namespace HBL2
 				{
 					if (anim.BlendFrom.size() != pose.Local.size())
 					{
-						anim.BlendDuration = 0.f;        // skeleton changed (reimport), drop the fade
+						// Skeleton changed (reimport), drop the fade.
+						anim.BlendDuration = 0.f;
 						anim.BlendFrom.clear();
 					}
 					else
@@ -224,12 +267,17 @@ namespace HBL2
 						const float t = glm::clamp(anim.BlendElapsed / anim.BlendDuration, 0.f, 1.f);
 						const float weight = t * t * (3.f - 2.f * t);   // smoothstep: eases in and out
 
+						// We blend from the pose that we had when we first started the transition
+						// and we blend towards the new pose that we have now, every frame we use the 
+						// up to date pose that is sampled from the clip as the blend target.
 						AnimationBlender::LinearBlendLocal(anim.BlendFrom, pose.Local, weight, pose.Local);
 
 						if (t >= 1.f)
 						{
 							anim.BlendDuration = 0.f;
 							anim.BlendFrom.clear();
+
+							EventDispatcher::Get().Post(AnimationBlendingEndedEvent(animationClips[anim.CurrentClip]));
 						}
 					}
 				}

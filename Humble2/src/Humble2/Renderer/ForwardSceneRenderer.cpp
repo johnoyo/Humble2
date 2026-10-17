@@ -236,8 +236,8 @@ namespace HBL2
 			{
 				skinnedMesh.Mesh.Release();
 
-				m_ResourceManager->DeleteBindGroup(skinnedMesh.SkinningBindings);
-				skinnedMesh.SkinningBindings = {};
+				// m_ResourceManager->DeleteBindGroup(skinnedMesh.SkinningBindings);
+				// skinnedMesh.SkinningBindings = {};
 			});
 
 		m_Scene->Filter<Component::SkinnedSubMesh>()
