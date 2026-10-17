@@ -17,11 +17,17 @@ namespace HBL2
 
 			float Time = 0.f;
 			float Speed = 1.f;
+			float TransitionDuration = 0.2f;
 
 			bool EnableLooping;
 			bool PlayAutomatically;
 			bool ApplyRootMotion;
 			bool Enabled;
+
+			int LastClip = -1;
+			float BlendElapsed = 0.0f;
+			float BlendDuration = 0.0f;
+			std::vector<JointTransform> BlendFrom;
 		};
 
 		struct SkeletonPose

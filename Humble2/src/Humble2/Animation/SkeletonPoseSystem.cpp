@@ -43,7 +43,7 @@ namespace HBL2
 					return;
 				}
 
-				// Convert from local to world.
+				// Convert from local to world (turn the final local pose into matrices).
 				for (size_t i = 0; i < skel->Parents.size(); ++i)
 				{
 					const glm::mat4 local = ToMat4(pose.Local[i]);

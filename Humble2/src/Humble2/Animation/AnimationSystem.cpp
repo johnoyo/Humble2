@@ -4,6 +4,8 @@
 #include "Resources/ResourceManager.h"
 #include "Utilities/ShaderUtilities.h"
 
+#include "AnimationBlender.h"
+
 namespace HBL2
 {
 	struct KeyframeSpan
@@ -157,7 +159,6 @@ namespace HBL2
 				// Retrieve mesh.
 				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(pose.Mesh.Get());
 				Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
-
 				if (mesh == nullptr)
 				{
 					return;
@@ -165,13 +166,40 @@ namespace HBL2
 
 				// Retrieve skeleton and current animation clip.
 				Skeleton* skel = ResourceManager::Instance->GetSkeleton(mesh->Skeleton);
+				if (skel == nullptr || anim.CurrentClip >= (int)mesh->AnimationClips.size())
+				{
+					return;
+				}
+
 				AnimationClip* clip = ResourceManager::Instance->GetAnimationClip(mesh->AnimationClips[anim.CurrentClip]);
+				if (clip == nullptr)
+				{
+					return;
+				}
+
+				// The clip changed, so capture the starting state, restart the clip.
+				if (anim.CurrentClip != anim.LastClip)
+				{
+					if (anim.LastClip >= 0 && anim.TransitionDuration > 0.f && pose.Local.size() == skel->Parents.size())
+					{
+						anim.BlendFrom = pose.Local;     // last frame's result, before it gets overwritten below
+						anim.BlendElapsed = 0.f;
+						anim.BlendDuration = anim.TransitionDuration;
+					}
+
+					anim.Time = 0.f;
+					anim.LastClip = anim.CurrentClip;
+				}
 
 				// Advance animation time.
-				anim.Time += ts * anim.Speed;
-				if (anim.Time > clip->Duration)
+				if (clip->Duration > 0.f)
 				{
-					anim.Time = anim.EnableLooping ? fmod(anim.Time, clip->Duration) : clip->Duration;
+					anim.Time += ts * anim.Speed;
+					anim.Time = anim.EnableLooping ? fmod(anim.Time, clip->Duration) : glm::min(anim.Time, clip->Duration);
+				}
+				else
+				{
+					anim.Time = 0.f;
 				}
 
 				// Start from bind pose so joints without channels stay valid.
@@ -179,8 +207,32 @@ namespace HBL2
 				pose.Model.resize(skel->Parents.size());
 				pose.Skinning.resize(skel->Parents.size());
 
-				// Sample animation clip.
+				// Sample current animation clip.
 				SampleClip(clip, anim.Time, pose.Local);
+
+				// While fading, blend the snapshot toward the freshly sampled pose.
+				if (anim.BlendDuration > 0.f)
+				{
+					if (anim.BlendFrom.size() != pose.Local.size())
+					{
+						anim.BlendDuration = 0.f;        // skeleton changed (reimport), drop the fade
+						anim.BlendFrom.clear();
+					}
+					else
+					{
+						anim.BlendElapsed += ts;
+						const float t = glm::clamp(anim.BlendElapsed / anim.BlendDuration, 0.f, 1.f);
+						const float weight = t * t * (3.f - 2.f * t);   // smoothstep: eases in and out
+
+						AnimationBlender::LinearBlendLocal(anim.BlendFrom, pose.Local, weight, pose.Local);
+
+						if (t >= 1.f)
+						{
+							anim.BlendDuration = 0.f;
+							anim.BlendFrom.clear();
+						}
+					}
+				}
 			});
 
 		END_PROFILE_SYSTEM(RunningTime);

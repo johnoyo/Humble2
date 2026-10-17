@@ -318,6 +318,10 @@ namespace HBL2
 	{
 		if (!m_BindGroupSplitPool.IsAlive(handle))
 		{
+			// From now on IsClosing(handle) is true, so CreateBindGroup's cache
+			// lookup skips this slot during the deletion delay.
+			m_BindGroupSplitPool.MarkClosed(handle);
+
 			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 			{
 				VulkanBindGroupCold* bindGroupCold = GetBindGroupCold(handle);
@@ -391,6 +395,10 @@ namespace HBL2
 	{
 		if (!m_BindGroupLayoutPool.IsAlive(handle))
 		{
+			// From now on IsClosing(handle) is true, so CreateBindGroupLayout's cache
+			// lookup skips this slot during the deletion delay.
+			m_BindGroupLayoutPool.MarkClosed(handle);
+
 			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 			{
 				VulkanBindGroupLayout* bindGroupLayout = GetBindGroupLayout(handle);

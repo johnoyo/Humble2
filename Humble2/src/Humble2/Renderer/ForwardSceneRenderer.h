@@ -107,7 +107,7 @@ namespace HBL2
 		// Skinning compute pass resources.
 		Handle<Shader> m_SkinningComputeShader;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_SkinningComputeVariant{};
-		Handle<BindGroupLayout> m_SkinningBindGroupLayout;
+		RefHandle<BindGroupLayout> m_SkinningBindGroupLayout;
 
 		// Shadow pass resources.
 		Handle<Texture> m_ShadowDepthTexture;
@@ -135,13 +135,13 @@ namespace HBL2
 		Handle<Buffer> m_VertexBuffer;
 
 		// Skybox pass resources.
-		Handle<BindGroupLayout> m_EquirectToSkyboxBindGroupLayout;
+		RefHandle<BindGroupLayout> m_EquirectToSkyboxBindGroupLayout;
 		Handle<Buffer> m_CaptureMatricesBuffer;
 		Handle<Shader> m_EquirectToSkyboxShader;
-		Handle<BindGroupLayout> m_SkyboxGlobalBindGroupLayout;
+		RefHandle<BindGroupLayout> m_SkyboxGlobalBindGroupLayout;
 		Handle<BindGroup> m_SkyboxGlobalBindGroup;
 		Handle<Shader> m_SkyboxShader;
-		Handle<BindGroupLayout> m_SkyboxBindGroupLayout;
+		RefHandle<BindGroupLayout> m_SkyboxBindGroupLayout;
 		Handle<BindGroup> m_ComputeBindGroup;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_SkyboxVariant{};
 		ShaderDescriptor::RenderPipeline::PackedVariant m_ComputeVariant{};
@@ -152,7 +152,7 @@ namespace HBL2
 		Handle<RenderPass> m_PostProcessRenderPass;
 		Handle<Buffer> m_PostProcessBuffer;
 		Handle<BindGroup> m_PostProcessBindGroup;
-		Handle<BindGroupLayout> m_PostProcessBindGroupLayout;
+		RefHandle<BindGroupLayout> m_PostProcessBindGroupLayout;
 		Handle<Shader> m_PostProcessShader;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_PostProcessShaderVariantHash;
 		Handle<Buffer> m_PostProcessQuadVertexBuffer;

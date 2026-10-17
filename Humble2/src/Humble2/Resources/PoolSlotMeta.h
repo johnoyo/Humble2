@@ -146,6 +146,31 @@ namespace HBL2
             }
         }
 
+        // Mark the slot as closed. Meant to be called when the slot is not alive (count 0).
+        // Idempotent: already closed is fine. Keeps the count bits untouched, so it can never
+        // corrupt the state. Returns false only if the generation doesn't match (stale handle).
+        bool MarkClosed(uint16_t gen)
+        {
+            uint32_t cur = State.load(std::memory_order_acquire);
+            for (;;)
+            {
+                if (GenOf(cur) != gen)
+                {
+                    return false;
+                }
+
+                if (LowOf(cur) & CLOSING)
+                {
+                    return true; // already closed
+                }
+
+                if (State.compare_exchange_weak(cur, cur | CLOSING, std::memory_order_acq_rel, std::memory_order_acquire))
+                {
+                    return true;
+                }
+            }
+        }
+
 		uint16_t Generation() const
 		{
 			return GenOf(State.load(std::memory_order_acquire));

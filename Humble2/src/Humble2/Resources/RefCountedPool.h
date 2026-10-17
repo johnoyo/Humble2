@@ -177,6 +177,22 @@ namespace HBL2
             return m_Meta[idx].TryReopen(handle.m_GenerationalCounter);
         }
 
+        bool MarkClosed(Handle<H> handle)
+        {
+            if (!handle.IsValid())
+            {
+                return false;
+            }
+
+            const uint16_t idx = handle.m_ArrayIndex;
+            if (idx == InvalidIndex || idx >= m_Size)
+            {
+                return false;
+            }
+
+            return m_Meta[idx].MarkClosed(handle.m_GenerationalCounter);
+        }
+
         bool IsAlive(Handle<H> handle)
         {
             if (!handle.IsValid())

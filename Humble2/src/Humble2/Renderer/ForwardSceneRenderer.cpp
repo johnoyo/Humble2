@@ -236,8 +236,8 @@ namespace HBL2
 			{
 				skinnedMesh.Mesh.Release();
 
-				// m_ResourceManager->DeleteBindGroup(skinnedMesh.SkinningBindings);
-				// skinnedMesh.SkinningBindings = {};
+				m_ResourceManager->DeleteBindGroup(skinnedMesh.SkinningBindings);
+				skinnedMesh.SkinningBindings = {};
 			});
 
 		m_Scene->Filter<Component::SkinnedSubMesh>()
@@ -254,13 +254,13 @@ namespace HBL2
 			});
 
 		// Skybox pass clean up.
-		m_ResourceManager->DeleteBindGroupLayout(m_EquirectToSkyboxBindGroupLayout);
+		m_EquirectToSkyboxBindGroupLayout.Release();
 		m_ResourceManager->DeleteShader(m_EquirectToSkyboxShader);
 		m_ResourceManager->DeleteBuffer(m_CaptureMatricesBuffer);
-		m_ResourceManager->DeleteBindGroupLayout(m_SkyboxGlobalBindGroupLayout);
+		m_SkyboxGlobalBindGroupLayout.Release();
 		m_ResourceManager->DeleteBindGroup(m_SkyboxGlobalBindGroup);
 		m_ResourceManager->DeleteShader(m_SkyboxShader);
-		m_ResourceManager->DeleteBindGroupLayout(m_SkyboxBindGroupLayout);
+		m_SkyboxBindGroupLayout.Release();
 		m_ResourceManager->DeleteBuffer(m_CubeMeshBuffer);
 		m_ResourceManager->DeleteMesh(m_CubeMesh);
 
@@ -281,7 +281,7 @@ namespace HBL2
 		// Post process pass clean up.
 		m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
 		m_ResourceManager->DeleteShader(m_PostProcessShader);
-		m_ResourceManager->DeleteBindGroupLayout(m_PostProcessBindGroupLayout);
+		m_PostProcessBindGroupLayout.Release();
 		m_ResourceManager->DeleteBindGroup(m_PostProcessBindGroup);
 		m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
 		Renderer::Instance->RemoveOnResizeCallback(std::string("Post-Process-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
@@ -294,7 +294,7 @@ namespace HBL2
 
 		// Skinning compute pass clean up.
 		m_ResourceManager->DeleteShader(m_SkinningComputeShader);
-		m_ResourceManager->DeleteBindGroupLayout(m_SkinningBindGroupLayout);
+		m_SkinningBindGroupLayout.Release();
 
 		// Scene renderer clean up.
 		m_ShadowBindingsLayout.Release();
@@ -501,7 +501,7 @@ namespace HBL2
 			.type = ShaderType::COMPUTE,
 			.CS { .code = compilationData.computeShaderCode.AsSpan(), .entryPoint = "mainCS" },
 			.bindGroups {
-				m_SkinningBindGroupLayout,	// (0)
+				m_SkinningBindGroupLayout.Get(),	// (0)
 			},
 			.renderPipeline {
 				.variants = { m_SkinningComputeVariant },
@@ -553,7 +553,7 @@ namespace HBL2
 
 				skinnedMesh.SkinningBindings = ResourceManager::Instance->CreateBindGroup({
 					.debugName = "skinning-bind-group",
-					.layout = m_SkinningBindGroupLayout,
+					.layout = m_SkinningBindGroupLayout.Get(),
 					.buffers = {
 						{ part.VertexBuffers[0] }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
 						{ skinnedMesh.SkinnedVertexBuffer },
@@ -886,7 +886,7 @@ namespace HBL2
 			.type = ShaderType::COMPUTE,
 			.CS { .code = compilationData.computeShaderCode.AsSpan(), .entryPoint = "mainCS" },
 			.bindGroups {
-				m_EquirectToSkyboxBindGroupLayout,	// (0)
+				m_EquirectToSkyboxBindGroupLayout.Get(),	// (0)
 			},
 			.renderPipeline {
 				.variants = { m_ComputeVariant },
@@ -929,7 +929,7 @@ namespace HBL2
 
 		m_SkyboxGlobalBindGroup = m_ResourceManager->CreateBindGroup({
 			.debugName = "skybox-global-bind-group",
-			.layout = m_SkyboxGlobalBindGroupLayout,
+			.layout = m_SkyboxGlobalBindGroupLayout.Get(),
 			.buffers = {
 				{ .buffer = cameraBuffer },
 			}
@@ -949,9 +949,9 @@ namespace HBL2
 			.VS { .code = skyboxShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = skyboxShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				m_SkyboxGlobalBindGroupLayout,					// Global bind group (0)
+				m_SkyboxGlobalBindGroupLayout.Get(),					// Global bind group (0)
 				Renderer::Instance->GetEmptyBindingsLayout(),	// Unused
-				m_SkyboxBindGroupLayout,						// (2)
+				m_SkyboxBindGroupLayout.Get(),						// (2)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = {
@@ -1069,7 +1069,7 @@ namespace HBL2
 
 		m_PostProcessBindGroup = ResourceManager::Instance->CreateBindGroup({
 			.debugName = "post-process-bind-group",
-			.layout = m_PostProcessBindGroupLayout,
+			.layout = m_PostProcessBindGroupLayout.Get(),
 			.textures = {
 				{ Renderer::Instance->IntermediateColorTexture, TextureLayout::SHADER_READ_ONLY }
 			},
@@ -1125,7 +1125,7 @@ namespace HBL2
 
 			m_PostProcessBindGroup = ResourceManager::Instance->CreateBindGroup({
 				.debugName = "post-process-bind-group",
-				.layout = m_PostProcessBindGroupLayout,
+				.layout = m_PostProcessBindGroupLayout.Get(),
 				.textures = {
 					{ Renderer::Instance->IntermediateColorTexture, TextureLayout::SHADER_READ_ONLY }
 				},
@@ -1148,7 +1148,7 @@ namespace HBL2
 			.VS { .code = postProcessShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = postProcessShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				m_PostProcessBindGroupLayout,	// Global bind group (0)
+				m_PostProcessBindGroupLayout.Get(),	// Global bind group (0)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = {
@@ -1780,7 +1780,7 @@ namespace HBL2
 
 					skinnedMesh.SkinningBindings = ResourceManager::Instance->CreateBindGroup({
 						.debugName = "skinning-bind-group",
-						.layout = m_SkinningBindGroupLayout,
+						.layout = m_SkinningBindGroupLayout.Get(),
 						.buffers = {
 							{ part.VertexBuffers[0] }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
 							{ skinnedMesh.SkinnedVertexBuffer },
@@ -2087,7 +2087,7 @@ namespace HBL2
                         // FIXME: When entering the playmode multiple times in the session we create new descriptor sets in vk, so it exceeds the max in the pool.
                         m_ComputeBindGroup = m_ResourceManager->CreateBindGroup({
                             .debugName = "compute-bind-group",
-                            .layout = m_EquirectToSkyboxBindGroupLayout,
+                            .layout = m_EquirectToSkyboxBindGroupLayout.Get(),
                             .textures = { { equirectangularMapHandle }, { skyLight.CubeMap } },
                             .buffers = { { .buffer = m_CaptureMatricesBuffer, } }
                         });
@@ -2114,7 +2114,7 @@ namespace HBL2
 
                         auto skyboxBindGroup = m_ResourceManager->CreateBindGroup({
                             .debugName = "skybox-bind-group",
-                            .layout = m_SkyboxBindGroupLayout,
+                            .layout = m_SkyboxBindGroupLayout.Get(),
                             .textures = { { skyLight.CubeMap } }
                         });
 

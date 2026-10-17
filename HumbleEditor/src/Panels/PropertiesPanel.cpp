@@ -440,7 +440,8 @@ namespace HBL2::Editor
 				ImGui::Checkbox("Enable Looping", &animation.EnableLooping);
 				ImGui::SliderInt("DefaultClip", &animation.DefaultClip, 0, animation.ClipsCount - 1);
 				ImGui::SliderInt("CurrentClip", &animation.CurrentClip, 0, animation.ClipsCount - 1);
-				ImGui::InputFloat("Speed", &animation.Speed);
+				ImGui::DragFloat("Speed", &animation.Speed, 0.05f, 0.0f);
+				ImGui::DragFloat("TransitionDuration", &animation.TransitionDuration, 0.05f, 0.0f);
 			});
 
 			DrawComponent<HBL2::Component::SkeletonPose>("SkeletonPose", activeScene, [this](HBL2::Component::SkeletonPose& skeletonPose)
