@@ -95,7 +95,7 @@ namespace HBL2
 		Console::Instance = new Console;
 		Console::Instance->Initialize();
 
-		EventDispatcher::Initialize();
+		EventDispatcher::Initialize({ projectSettings.MaxEventTypes, projectSettings.MaxListenersPerEventType });
 		JobSystem::Initialize({ projectSettings.MaxWorkerMemory });
 		MeshUtilities::Initialize();
 		PrefabUtilities::Initialize();

@@ -10,22 +10,24 @@ namespace HBL2
 		return *s_Instance;
 	}
 
-	void EventDispatcher::Initialize()
+	void EventDispatcher::Initialize(const EventDispatcherSpecification& spec)
 	{
 		HBL2_CORE_ASSERT(s_Instance == nullptr, "EventDispatcher s_Instance is not null! EventDispatcher::Initialize has been called twice.");
 		s_Instance = new EventDispatcher;
 
-		uint32_t entiyMapBytes = FixedHashMap<std::type_index, FixedArray<EventPayload>>::RequiredBytes(MaxEventTypes);
+		s_Instance->m_Spec = spec;
+
+		uint32_t entiyMapBytes = FixedHashMap<std::type_index, FixedArray<EventPayload>>::RequiredBytes(s_Instance->m_Spec.MaxEventTypes);
 
 		uint64_t totalBytes = ArenaLayout::Create()
-			.Add<EventPayload>(MaxEventTypes * MaxListenersPerEventType)
+			.Add<EventPayload>(s_Instance->m_Spec.MaxEventTypes * s_Instance->m_Spec.MaxListenersPerEventType)
 			.AddRaw(entiyMapBytes, alignof(std::pair<std::type_index, FixedArray<EventPayload>>))
 			.Total();
 
-		Get().m_Reservation = Allocator::Arena.Reserve("EventDispatcherPool", totalBytes);
-		Get().m_Arena.Initialize(&Allocator::Arena, totalBytes, Get().m_Reservation);
+		s_Instance->m_Reservation = Allocator::Arena.Reserve("EventDispatcherPool", totalBytes);
+		s_Instance->m_Arena.Initialize(&Allocator::Arena, totalBytes, s_Instance->m_Reservation);
 
-		Get().m_CallbackSlots = FixedHashMap<std::type_index, FixedArray<EventPayload>>(&Get().m_Arena, MaxEventTypes);
+		s_Instance->m_CallbackSlots = FixedHashMap<std::type_index, FixedArray<EventPayload>>(&s_Instance->m_Arena, s_Instance->m_Spec.MaxEventTypes);
 	}
 
 	void EventDispatcher::Shutdown()
@@ -89,7 +91,7 @@ namespace HBL2
 			return it->second;
 		}
 
-		m_CallbackSlots[type] = FixedArray<EventPayload>(&m_Arena, MaxListenersPerEventType);
+		m_CallbackSlots[type] = FixedArray<EventPayload>(&m_Arena, m_Spec.MaxListenersPerEventType);
 		return m_CallbackSlots[type];
 	}
 }

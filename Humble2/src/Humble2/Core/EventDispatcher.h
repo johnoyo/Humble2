@@ -38,16 +38,19 @@ namespace HBL2
         bool Dead = false;
     };
 
+    struct EventDispatcherSpecification
+    {
+        uint32_t MaxEventTypes = 256;
+        uint32_t MaxListenersPerEventType = 1024;
+    };
+
     class HBL2_API EventDispatcher
     {
-        static constexpr uint32_t MaxEventTypes = 256;
-        static constexpr uint32_t MaxListenersPerEventType = 1024;
-
     public:
         EventDispatcher(const EventDispatcher&) = delete;
         static EventDispatcher& Get();
 
-        static void Initialize();
+        static void Initialize(const EventDispatcherSpecification& spec);
         static void Shutdown();
 
         template <typename T, typename F>
@@ -72,7 +75,7 @@ namespace HBL2
             payload.Callback = std::move(wrapper);
 
             auto& slot = GetOrCreateSlot(type);
-            HBL2_CORE_ASSERT(slot.size() < MaxListenersPerEventType, "Too many listeners for this event type.");
+            HBL2_CORE_ASSERT(slot.size() < m_Spec.MaxListenersPerEventType, "Too many listeners for this event type.");
             slot.emplace_back(std::move(payload));
 
             return id;
@@ -100,7 +103,7 @@ namespace HBL2
             payload.Callback = std::move(wrapper);
 
             auto& slot = GetOrCreateSlot(type);
-            HBL2_CORE_ASSERT(slot.size() < MaxListenersPerEventType, "Too many listeners for this event type.");
+            HBL2_CORE_ASSERT(slot.size() < m_Spec.MaxListenersPerEventType, "Too many listeners for this event type.");
             slot.emplace_back(std::move(payload));
 
             return id;
@@ -180,6 +183,8 @@ namespace HBL2
     private:
         PoolReservation* m_Reservation = nullptr;
         Arena m_Arena;
+
+        EventDispatcherSpecification m_Spec;
 
         FixedHashMap<std::type_index, FixedArray<EventPayload>> m_CallbackSlots;
 
