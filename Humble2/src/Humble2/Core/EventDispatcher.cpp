@@ -18,7 +18,7 @@ namespace HBL2
 		uint32_t entiyMapBytes = FixedHashMap<std::type_index, FixedArray<EventPayload>>::RequiredBytes(MaxEventTypes);
 
 		uint64_t totalBytes = ArenaLayout::Create()
-			.Add<EventPayload>(MaxEventTypes * MaxEntriesPerEventType)
+			.Add<EventPayload>(MaxEventTypes * MaxListenersPerEventType)
 			.AddRaw(entiyMapBytes, alignof(std::pair<std::type_index, FixedArray<EventPayload>>))
 			.Total();
 
@@ -89,7 +89,7 @@ namespace HBL2
 			return it->second;
 		}
 
-		m_CallbackSlots[type] = FixedArray<EventPayload>(&m_Arena, MaxEntriesPerEventType);
+		m_CallbackSlots[type] = FixedArray<EventPayload>(&m_Arena, MaxListenersPerEventType);
 		return m_CallbackSlots[type];
 	}
 }

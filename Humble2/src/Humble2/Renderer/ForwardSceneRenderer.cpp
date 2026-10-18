@@ -2,6 +2,7 @@
 
 #include "Core/Window.h"
 #include "Core/Context.h"
+#include "Core/EventDispatcher.h"
 #include "Renderer/DebugRenderer.h"
 #include "Renderer/Device.h"
 #include "Utilities/ShaderUtilities.h"
@@ -216,11 +217,11 @@ namespace HBL2
 
 		m_ResourceManager->DeleteRenderPassLayout(m_DepthOnlyRenderPassLayout);
 		m_ResourceManager->DeleteRenderPass(m_DepthOnlyRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback(std::string("Depth-Only-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_DepthPassResizeEventHandle);
 
 		// Geometry pass clean up.
 		m_ResourceManager->DeleteRenderPass(m_GeometryRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback(std::string("Resize-Geometry-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_GeometryPassResizeEventHandle);
 		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
 		m_ResourceManager->DeleteMesh(m_SpriteMesh);
 
@@ -284,7 +285,7 @@ namespace HBL2
 		m_PostProcessBindGroupLayout.Release();
 		m_ResourceManager->DeleteBindGroup(m_PostProcessBindGroup);
 		m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback(std::string("Post-Process-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_PostProcessPassResizeEventHandle);
 		m_ResourceManager->DeleteBuffer(m_PostProcessQuadVertexBuffer);
 
 		// Present pass clean up.
@@ -674,11 +675,11 @@ namespace HBL2
             }
         });
 
-		Renderer::Instance->AddCallbackOnResize(std::string("Depth-Only-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
+		m_DepthPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DepthOnlyRenderPass, {
-				.width = width,
-				.height = height,
+				.width = event.Width,
+				.height = event.Height,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 			});
 		});
@@ -800,15 +801,15 @@ namespace HBL2
 		});
 
 		// Resize opaque framebuffer callback.
-		Renderer::Instance->AddCallbackOnResize(std::string("Resize-Geometry-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
-        {
-            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_GeometryRenderPass, {
-                .width = width,
-                .height = height,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->IntermediateColorTexture },
-            });
-        });
+		m_GeometryPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
+		{
+			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_GeometryRenderPass, {
+				.width = event.Width,
+				.height = event.Height,
+				.depthTarget = Renderer::Instance->MainDepthTexture,
+				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
+			});
+		});
 	}
 
 	void ForwardSceneRenderer::SpriteRenderingSetup()
@@ -1106,14 +1107,14 @@ namespace HBL2
             }
 		});
 
-		Renderer::Instance->AddCallbackOnResize(std::string("Post-Process-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
+		m_PostProcessPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
-            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PostProcessRenderPass, {
-                .width = width,
-                .height = height,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->MainColorTexture },
-            });
+			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PostProcessRenderPass, {
+				.width = event.Width,
+				.height = event.Height,
+				.depthTarget = Renderer::Instance->MainDepthTexture,
+				.colorTargets = { Renderer::Instance->MainColorTexture },
+			});
 
 			ResourceManager::Instance->DeleteBindGroup(m_PostProcessBindGroup);
 
@@ -1846,7 +1847,7 @@ namespace HBL2
 			commandBuffer->EndComputePass(*computePassRenderer);
 		}
 
-		END_PROFILE_PASS(Renderer::Instance->GetStats().PrePassTime);
+		END_PROFILE_PASS(Renderer::Instance->GetStats().SkinningPassTime);
 	}
 
 	void ForwardSceneRenderer::ShadowPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData)

@@ -158,13 +158,13 @@ namespace HBL2
 
         switch (rendererType)
         {
-        case RendererType::Forward:
+        case RendererType::FORWARD:
             lightingProvider = "lighting_forward";
             break;
-        case RendererType::ForwardPlus:
+        case RendererType::FORWARD_PLUS:
             lightingProvider = "lighting_forward_plus";
             break;
-        case RendererType::Custom:
+        case RendererType::CUSTOM:
             lightingProvider = "lighting_custom";
             break;
         }
@@ -550,13 +550,13 @@ namespace HBL2
 
         switch (rendererType)
         {
-        case RendererType::Forward:
+        case RendererType::FORWARD:
             lightingProvider = "lighting_forward";
             break;
-        case RendererType::ForwardPlus:
+        case RendererType::FORWARD_PLUS:
             lightingProvider = "lighting_forward_plus";
             break;
-        case RendererType::Custom:
+        case RendererType::CUSTOM:
             lightingProvider = "lighting_custom";
             break;
         }
@@ -1465,13 +1465,13 @@ namespace HBL2
 
         switch (rendererType)
         {
-        case RendererType::Forward:
+        case RendererType::FORWARD:
             renderer = "forward";
             break;
-        case RendererType::ForwardPlus:
+        case RendererType::FORWARD_PLUS:
             renderer = "forward_plus";
             break;
-        case RendererType::Custom:
+        case RendererType::CUSTOM:
             renderer = "custom";
             break;
         }

@@ -21,13 +21,13 @@ namespace HBL2
 		// Switch on the renderer type.
 		switch (projectSettings.Renderer)
 		{
-		case RendererType::Forward:
+		case RendererType::FORWARD:
 			m_SceneRenderer = new ForwardSceneRenderer;
 			break;
-		case RendererType::ForwardPlus:
+		case RendererType::FORWARD_PLUS:
 			m_SceneRenderer = new ForwardPlusSceneRenderer;
 			break;
-		case RendererType::Custom:
+		case RendererType::CUSTOM:
 			{
 				Handle<Script> sceneRendererHandle = AssetManager::Instance->GetAsset<Script>(projectSettings.RendererUUID);
 				if (sceneRendererHandle.IsValid())

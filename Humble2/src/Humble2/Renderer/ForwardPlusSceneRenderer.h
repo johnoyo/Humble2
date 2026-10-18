@@ -132,6 +132,7 @@ namespace HBL2
 		Handle<BindGroup> m_DepthOnlySpriteBindGroup;
 		Handle<Shader> m_DepthOnlyShader;
 		Handle<Shader> m_DepthOnlySpriteShader;
+		UUID m_DepthPassResizeEventHandle = 0;
 
 		// Grid frustums compute pass resources.
 		Handle<Shader> m_GridFrustumsComputeShader;
@@ -139,11 +140,13 @@ namespace HBL2
 		RefHandle<BindGroupLayout> m_GridFrustumsBindGroupLayout;
 		Handle<Buffer> m_FrustumsBuffer;
 		Handle<BindGroup> m_GridFrustumsBindGroup;
+		UUID m_GridFrustumsPassResizeEventHandle = 0;
 
 		// Light culling compute pass resources.
 		Handle<Shader> m_LightCullingComputeShader;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_LightCullingComputeVariant{};
 		RefHandle<BindGroupLayout> m_LightCullingBindGroupLayout;
+		UUID m_LightCullingPassResizeEventHandle = 0;
 
 		Handle<Buffer> o_LightIndexCounter;
 		Handle<Buffer> t_LightIndexCounter;
@@ -156,6 +159,7 @@ namespace HBL2
 		Handle<RenderPass> m_GeometryRenderPass;
 		Handle<Mesh> m_SpriteMesh;
 		Handle<Buffer> m_VertexBuffer;
+		UUID m_GeometryPassResizeEventHandle = 0;
 
 		// Skybox pass resources.
 		RefHandle<BindGroupLayout> m_EquirectToSkyboxBindGroupLayout;
@@ -179,6 +183,7 @@ namespace HBL2
 		Handle<Shader> m_PostProcessShader;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_PostProcessShaderVariantHash;
 		Handle<Buffer> m_PostProcessQuadVertexBuffer;
+		UUID m_PostProcessPassResizeEventHandle = 0;
 
 		// Present pass resources.
 		Handle<Buffer> m_QuadVertexBuffer;

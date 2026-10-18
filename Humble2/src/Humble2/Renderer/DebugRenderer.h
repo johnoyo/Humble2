@@ -96,6 +96,8 @@ namespace HBL2
 		Handle<Buffer> m_DebugFillTriVertexBuffer;
 		Handle<Buffer> m_DebugWireTriVertexBuffer;
 
+		UUID m_DebugPassResizeEventHandle = 0;
+
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_Arena;
 

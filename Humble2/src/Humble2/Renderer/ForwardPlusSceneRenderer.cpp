@@ -2,6 +2,7 @@
 
 #include "Core/Window.h"
 #include "Core/Context.h"
+#include "Core/EventDispatcher.h"
 #include "Renderer/DebugRenderer.h"
 #include "Utilities/ShaderUtilities.h"
 
@@ -219,22 +220,22 @@ namespace HBL2
 
 		m_ResourceManager->DeleteRenderPassLayout(m_DepthOnlyRenderPassLayout);
 		m_ResourceManager->DeleteRenderPass(m_DepthOnlyRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback(std::string("Depth-Only-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_DepthPassResizeEventHandle);
 
 		// Grid frustums compute pass clean up.
 		m_ResourceManager->DeleteShader(m_GridFrustumsComputeShader);
 		m_ResourceManager->DeleteBindGroup(m_GridFrustumsBindGroup);
-		Renderer::Instance->RemoveOnResizeCallback(std::string("Grid-Frustums-BindGroup-Resize-") + m_Scene->GetDescriptor().name.c_str());
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_GridFrustumsPassResizeEventHandle);
 
 		// Light culling compute pass clean up.
 		m_ResourceManager->DeleteShader(m_LightCullingComputeShader);
 		m_ResourceManager->DeleteTexture(o_LightGrid);
 		m_ResourceManager->DeleteTexture(t_LightGrid);
-		Renderer::Instance->RemoveOnResizeCallback(std::string("Light-Culling-BindGroup-Resize-") + m_Scene->GetDescriptor().name.c_str());
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_LightCullingPassResizeEventHandle);
 
 		// Geometry pass clean up.
 		m_ResourceManager->DeleteRenderPass(m_GeometryRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback(std::string("Resize-Geometry-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_GeometryPassResizeEventHandle);
 		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
 		m_ResourceManager->DeleteMesh(m_SpriteMesh);
 
@@ -282,7 +283,7 @@ namespace HBL2
 		m_PostProcessBindGroupLayout.Release();
 		m_ResourceManager->DeleteBindGroup(m_PostProcessBindGroup);
 		m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback(std::string("Post-Process-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_PostProcessPassResizeEventHandle);
 		m_ResourceManager->DeleteBuffer(m_PostProcessQuadVertexBuffer);
 
 		// Present pass clean up.
@@ -566,11 +567,11 @@ namespace HBL2
 			}
 		});
 
-		Renderer::Instance->AddCallbackOnResize(std::string("Depth-Only-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
+		m_DepthPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DepthOnlyRenderPass, {
-				.width = width,
-				.height = height,
+				.width = event.Width,
+				.height = event.Height,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 			});
 		});
@@ -688,7 +689,7 @@ namespace HBL2
             .threadsPerThreadGroup = { 16, 16, 1 },
 		});
 
-		Renderer::Instance->AddCallbackOnResize(std::string("Grid-Frustums-BindGroup-Resize-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
+		m_GridFrustumsPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
 			// Delete and invalidate old bind group.
 			ResourceManager::Instance->DeleteBindGroup(m_GridFrustumsBindGroup);
@@ -734,7 +735,7 @@ namespace HBL2
             .threadsPerThreadGroup = { 16, 16, 1 },
 		});
 
-		Renderer::Instance->AddCallbackOnResize(std::string("Light-Culling-BindGroup-Resize-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
+		m_LightCullingPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
 			// Delete and invalidate old bind groups.
 			for (int i = 0; i < FRAME_OVERLAP; i++)
@@ -783,11 +784,11 @@ namespace HBL2
 		});
 
 		// Resize geometry framebuffer callback.
-		Renderer::Instance->AddCallbackOnResize(std::string("Resize-Geometry-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
+		m_GeometryPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_GeometryRenderPass, {
-				.width = width,
-				.height = height,
+				.width = event.Width,
+				.height = event.Height,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
 			});
@@ -1087,11 +1088,11 @@ namespace HBL2
 			}
 		});
 
-		Renderer::Instance->AddCallbackOnResize(std::string("Post-Process-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
+		m_PostProcessPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PostProcessRenderPass, {
-				.width = width,
-				.height = height,
+				.width = event.Width,
+				.height = event.Height,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 				.colorTargets = { Renderer::Instance->MainColorTexture },
 			});

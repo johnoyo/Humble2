@@ -57,6 +57,7 @@ namespace HBL2
 		Handle<Shader> m_PinkQuadShader;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_PinkQuadShaderVariantHash;
 		Handle<Buffer> m_PinkQuadVertexBuffer;
+		UUID m_PinkQuadPassResizeEventHandle = 0;
 
 		// Present pass resources.
 		Handle<Buffer> m_QuadVertexBuffer;

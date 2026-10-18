@@ -128,11 +128,13 @@ namespace HBL2
 		Handle<BindGroup> m_DepthOnlySpriteBindGroup;
 		Handle<Shader> m_DepthOnlyShader;
 		Handle<Shader> m_DepthOnlySpriteShader;
+		UUID m_DepthPassResizeEventHandle = 0;
 
 		// Geometry pass resources.
 		Handle<RenderPass> m_GeometryRenderPass;
 		Handle<Mesh> m_SpriteMesh;
 		Handle<Buffer> m_VertexBuffer;
+		UUID m_GeometryPassResizeEventHandle = 0;
 
 		// Skybox pass resources.
 		RefHandle<BindGroupLayout> m_EquirectToSkyboxBindGroupLayout;
@@ -156,6 +158,7 @@ namespace HBL2
 		Handle<Shader> m_PostProcessShader;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_PostProcessShaderVariantHash;
 		Handle<Buffer> m_PostProcessQuadVertexBuffer;
+		UUID m_PostProcessPassResizeEventHandle = 0;
 
 		// Present pass resources.
 		Handle<Buffer> m_QuadVertexBuffer;

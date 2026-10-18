@@ -78,6 +78,7 @@ namespace HBL2::Editor
 		ImGui::Text("Draw calls: %d", stats.DrawCalls);
 		ImGui::Text("GatherTime: %f ms", stats.GatherTime);
 		ImGui::Text("SortingTime: %f ms", stats.SortingTime);
+		ImGui::Text("SkinningPass: %f ms", stats.SkinningPassTime);
 		ImGui::Text("ShadowPass: %f ms", stats.ShadowPassTime);
 		ImGui::Text("PrePass: %f ms", stats.PrePassTime);
 		ImGui::Text("LightCullingPass: %f ms", stats.LightCullingPassTime);

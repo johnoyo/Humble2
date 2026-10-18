@@ -54,11 +54,11 @@ namespace HBL2
 	{
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
 
-		// Post process pass clean up.
+		// Pink quad pass clean up.
 		m_ResourceManager->DeleteBuffer(m_PinkQuadBuffer);
 		m_ResourceManager->DeleteShader(m_PinkQuadShader);
 		m_ResourceManager->DeleteRenderPass(m_PinkQuadRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback(std::string("Invalid-Renderer-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_PinkQuadPassResizeEventHandle);
 		m_ResourceManager->DeleteBuffer(m_PinkQuadVertexBuffer);
 
 		// Present pass clean up.
@@ -152,11 +152,11 @@ namespace HBL2
 			}
 		});
 
-		Renderer::Instance->AddCallbackOnResize(std::string("Invalid-Renderer-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
+		m_PinkQuadPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PinkQuadRenderPass, {
-				.width = width,
-				.height = height,
+				.width = event.Width,
+				.height = event.Height,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
 				.colorTargets = { Renderer::Instance->MainColorTexture },
 			});

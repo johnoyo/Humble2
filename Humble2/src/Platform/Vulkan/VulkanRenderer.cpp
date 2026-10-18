@@ -442,10 +442,7 @@ namespace HBL2
 		m_ColorAttachmentID = ImGui_ImplVulkan_AddTexture(viewportTexture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		// Call on resize callbacks.
-		for (auto&& [name, callback] : m_OnResizeCallbacks)
-		{
-			callback(width, height);
-		}
+		EventDispatcher::Get().Post(RendererResizedEvent(width, height));
 
 		m_Resize = false;
 	}

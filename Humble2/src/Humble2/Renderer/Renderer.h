@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Core/EventDispatcher.h"
+
 #include "Resources/Types.h"
 #include "Resources/Handle.h"
 
@@ -61,9 +63,9 @@ namespace HBL2
 
 	enum class RendererType
 	{
-		Forward = 0,
-		ForwardPlus,
-		Custom,
+		FORWARD = 0,
+		FORWARD_PLUS,
+		CUSTOM,
 	};
 
 	struct RendererStats
@@ -72,6 +74,7 @@ namespace HBL2
 		uint32_t DrawCalls = 0;
 		float GatherTime = 0.f;
 		float SortingTime = 0.f;
+		float SkinningPassTime = 0.f;
 		float ShadowPassTime = 0.f;
 		float PrePassTime = 0.f;
 		float LightCullingPassTime = 0.0f;
@@ -92,6 +95,7 @@ namespace HBL2
 			DrawCalls = 0;
 			GatherTime = 0.f;
 			SortingTime = 0.f;
+			SkinningPassTime = 0.f;
 			ShadowPassTime = 0.f;
 			PrePassTime = 0.f;
 			LightCullingPassTime = 0.f;
@@ -122,6 +126,17 @@ namespace HBL2
 	{
 		std::function<void()> Fn;
 		std::function<void()> Done;
+	};
+
+	struct RendererResizedEvent final : public EventType<RendererResizedEvent>
+	{
+		RendererResizedEvent(uint32_t width, uint32_t height)
+			: Width(width), Height(height)
+		{
+		}
+
+		uint32_t Width;
+		uint32_t Height;
 	};
 
 	class HBL2_API Renderer
@@ -194,16 +209,6 @@ namespace HBL2
 		Handle<Texture> MainDepthTexture;
 		Handle<Texture> ShadowAtlasTexture;
 
-		void AddCallbackOnResize(const std::string& callbackName, std::function<void(uint32_t, uint32_t)>&& callback)
-		{
-			m_OnResizeCallbacks[callbackName] = callback;
-		}
-
-		void RemoveOnResizeCallback(const std::string& callbackName)
-		{
-			m_OnResizeCallbacks.erase(callbackName);
-		}
-
 	protected:
 		virtual void PreInitialize() = 0;
 		virtual void PostInitialize() = 0;
@@ -211,7 +216,7 @@ namespace HBL2
 	protected:
 		std::atomic_int64_t m_FrameNumber = { 0 };
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::NONE;
-		RendererType m_RendererType = RendererType::Forward;
+		RendererType m_RendererType = RendererType::FORWARD;
 		RendererStats m_CurrentStats{};
 		RendererStats m_PreviousStats{};
 		RenderPassPool m_RenderPassPool;
@@ -221,8 +226,6 @@ namespace HBL2
 		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
 		Handle<BindGroupLayout> m_EmptyBindingsLayout;
 		Handle<BindGroup> m_EmptyBindings;
-
-		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 
 	protected:
 		RendererFrameData m_Frames[FrameCount];

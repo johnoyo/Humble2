@@ -2,6 +2,7 @@
 
 #include "Core/Context.h"
 #include "Core/Window.h"
+#include "Core/EventDispatcher.h"
 
 #include "Physics/PhysicsEngine2D.h"
 #include "Physics/PhysicsEngine3D.h"
@@ -81,14 +82,14 @@ namespace HBL2
 		});
 
 		// Resize debug draw framebuffer callback.
-		Renderer::Instance->AddCallbackOnResize("Resize-Debug-FrameBuffer", [this](uint32_t width, uint32_t height)
+		m_DebugPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
-            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DebugRenderPass, {
-                .width = width,
-                .height = height,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->MainColorTexture },
-            });
+			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DebugRenderPass, {
+				.width = event.Width,
+				.height = event.Height,
+				.depthTarget = Renderer::Instance->MainDepthTexture,
+				.colorTargets = { Renderer::Instance->MainColorTexture },
+			});
 		});
 
 		// Debug vertex buffers.
@@ -313,7 +314,7 @@ namespace HBL2
 
 	void DebugRenderer::Clean()
 	{
-		Renderer::Instance->RemoveOnResizeCallback("Resize-Debug-FrameBuffer");
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_DebugPassResizeEventHandle);
 
 		m_ResourceManager->DeleteBuffer(m_DebugLineVertexBuffer);
 		m_ResourceManager->DeleteBuffer(m_DebugFillTriVertexBuffer);

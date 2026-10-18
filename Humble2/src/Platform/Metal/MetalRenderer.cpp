@@ -363,10 +363,7 @@ namespace HBL2
         SetViewportAttachment((void*)viewportTexture->Texture);
         
         // Call on resize callbacks.
-        for (auto&& [name, callback] : m_OnResizeCallbacks)
-        {
-            callback(width, height);
-        }
+        EventDispatcher::Get().Post(RendererResizedEvent(width, height));
         
         // Replenish tokens so frame rendering can resume cleanly.
         for (uint32_t i = 0; i < FRAME_OVERLAP; ++i)

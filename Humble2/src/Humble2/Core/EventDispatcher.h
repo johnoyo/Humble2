@@ -41,7 +41,7 @@ namespace HBL2
     class HBL2_API EventDispatcher
     {
         static constexpr uint32_t MaxEventTypes = 256;
-        static constexpr uint32_t MaxEntriesPerEventType = 1024;
+        static constexpr uint32_t MaxListenersPerEventType = 1024;
 
     public:
         EventDispatcher(const EventDispatcher&) = delete;
@@ -72,7 +72,7 @@ namespace HBL2
             payload.Callback = std::move(wrapper);
 
             auto& slot = GetOrCreateSlot(type);
-            HBL2_CORE_ASSERT(slot.size() < MaxEntriesPerEventType, "Too many listeners for this event type.");
+            HBL2_CORE_ASSERT(slot.size() < MaxListenersPerEventType, "Too many listeners for this event type.");
             slot.emplace_back(std::move(payload));
 
             return id;
@@ -100,7 +100,7 @@ namespace HBL2
             payload.Callback = std::move(wrapper);
 
             auto& slot = GetOrCreateSlot(type);
-            HBL2_CORE_ASSERT(slot.size() < MaxEntriesPerEventType, "Too many listeners for this event type.");
+            HBL2_CORE_ASSERT(slot.size() < MaxListenersPerEventType, "Too many listeners for this event type.");
             slot.emplace_back(std::move(payload));
 
             return id;

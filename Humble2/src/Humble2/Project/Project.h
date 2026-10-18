@@ -20,7 +20,7 @@ namespace HBL2
 {
 	struct ProjectSettings
 	{
-		RendererType Renderer = RendererType::Forward;
+		RendererType Renderer = RendererType::FORWARD;
 		UUID RendererUUID;
 		GraphicsAPI EditorGraphicsAPI = GraphicsAPI::OPENGL;
 		GraphicsAPI RuntimeGraphicsAPI = GraphicsAPI::VULKAN;
