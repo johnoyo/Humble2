@@ -197,9 +197,6 @@ namespace HBL2
 		{
 			// no-op
 		}
-
-		// Setup a render context for main thread.
-		Device::Instance->SetContext(ContextType::FETCH);
 	}
 
 	void Application::WaitForRenderThreadShutdown()
