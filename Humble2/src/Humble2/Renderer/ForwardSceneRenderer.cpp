@@ -7,8 +7,6 @@
 #include "Renderer/Device.h"
 #include "Utilities/ShaderUtilities.h"
 
-#include "Animation/AnimationComponent.h"
-
 #include <glm/gtx/euler_angles.hpp>
 
 namespace HBL2
@@ -514,7 +512,7 @@ namespace HBL2
 			.ForEach([this](Entity entity, Component::SkinnedMesh& skinnedMesh)
 			{
 				// Retireve skeleton pose component.
-				Entity poseEntity = m_Scene->FindEntityByUUID(skinnedMesh.PoseEntityId);
+				Entity poseEntity = m_Scene->FindEntityByUUID(skinnedMesh.SkeletonPoseUUID);
 
 				if (poseEntity == Entity::Null)
 				{
@@ -530,6 +528,11 @@ namespace HBL2
 				MeshPart& part = mesh->Meshes[skinnedMesh.MeshIndex];
 
 				skinnedMesh.JointCount = (uint32_t)pose.Skinning.size();
+
+				if (skinnedMesh.JointCount == 0)
+				{
+					return;
+				}
 
 				Handle<Buffer> jointMatricesBuffer = ResourceManager::Instance->CreateBuffer({
 					.debugName = "joint-matrices-buffer",
@@ -1391,7 +1394,7 @@ namespace HBL2
 						}
 
 						// Retrieve skinned mesh component.
-						Entity meshEntity = m_Scene->FindEntityByUUID(skinnedSubMesh.SkinnedMeshId);
+						Entity meshEntity = m_Scene->FindEntityByUUID(skinnedSubMesh.SkinnedMeshUUID);
 
 						if (meshEntity == Entity::Null)
 						{
@@ -1729,7 +1732,7 @@ namespace HBL2
 			.ForEach([this, commandBuffer, computeVariantHandle, &dispatches, &outputBuffers](Entity entity, Component::SkinnedMesh& skinnedMesh)
 			{
 				// Retireve skeleton pose component.
-				Entity poseEntity = m_Scene->FindEntityByUUID(skinnedMesh.PoseEntityId);
+				Entity poseEntity = m_Scene->FindEntityByUUID(skinnedMesh.SkeletonPoseUUID);
 
 				if (poseEntity == Entity::Null)
 				{

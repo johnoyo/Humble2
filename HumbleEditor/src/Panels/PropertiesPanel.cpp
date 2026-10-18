@@ -4,8 +4,6 @@
 #include "ImGui/ImGuiRenderer.h"
 #include "Systems/EditorPanelSystem.h"
 
-#include "Animation/AnimationComponent.h"
-
 #include "Platform/PlatformManager.h"
 
 #include "UI/UserInterfaceUtilities.h"

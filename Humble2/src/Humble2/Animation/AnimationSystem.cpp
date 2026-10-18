@@ -142,6 +142,21 @@ namespace HBL2
 
 	void AnimationSystem::OnCreate()
 	{
+		m_Context->Filter<Component::Animation, Component::SkeletonPose>()
+			.ForEach([this](Entity entity, Component::Animation& anim, Component::SkeletonPose& pose)
+			{
+				// Retrieve mesh.
+				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(pose.Mesh.Get());
+				Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
+				if (mesh == nullptr)
+				{
+					return;
+				}
+
+				// Set up animation state.
+				anim.CurrentClip = mesh->AnimationClips.empty() ? -1 : anim.DefaultClip;
+				anim.ClipsCount = mesh->AnimationClips.size();
+			});
 	}
 
 	// https://github.com/KhronosGroup/Vulkan-Tutorial/blob/main/attachments/advanced_gltf/animation_component.cpp
@@ -163,7 +178,7 @@ namespace HBL2
 
 				const auto& animationClips = mesh->AnimationClips;
 
-				// Emitted events for pause and resume if needed.
+				// Emit events for pause and resume if needed.
 				if (anim.Enabled != anim.LastEnabled)
 				{
 					if (anim.LastEnabled)

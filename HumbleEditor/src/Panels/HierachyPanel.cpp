@@ -3,7 +3,6 @@
 #include "ImGui/ImGuiRenderer.h"
 #include "Systems/EditorPanelSystem.h"
 #include "Utilities/PrefabUtilities.h"
-#include "Animation/AnimationComponent.h"
 
 namespace HBL2::Editor
 {
@@ -419,7 +418,7 @@ namespace HBL2::Editor
 					auto& skinnedMesh = activeScene->AddComponent<HBL2::Component::SkinnedMesh>(meshEntity);
 					skinnedMesh.Mesh = assetHandle;
 					skinnedMesh.MeshIndex = meshIndex;
-					skinnedMesh.PoseEntityId = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
+					skinnedMesh.SkeletonPoseUUID = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
 
 					auto& link = activeScene->GetComponent<HBL2::Component::Link>(meshEntity);
 					link.Parent = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
@@ -444,7 +443,7 @@ namespace HBL2::Editor
 							skinnedSubMesh.SubMeshIndex = subMeshIndex;
 							skinnedSubMesh.Material = subMesh.EmbededMaterial;
 
-							skinnedSubMesh.SkinnedMeshId = activeScene->GetComponent<HBL2::Component::ID>(meshEntity).Identifier;
+							skinnedSubMesh.SkinnedMeshUUID = activeScene->GetComponent<HBL2::Component::ID>(meshEntity).Identifier;
 						}
 						else
 						{

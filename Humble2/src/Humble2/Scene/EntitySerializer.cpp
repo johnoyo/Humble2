@@ -154,6 +154,85 @@ namespace HBL2
 			out << YAML::EndMap;
 		}
 
+		if (m_Scene->HasComponent<Component::SkinnedMesh>(m_Entity))
+		{
+			out << YAML::Key << "Component::SkinnedMesh";
+			out << YAML::BeginMap;
+
+			auto& skinnedMesh = m_Scene->GetComponent<Component::SkinnedMesh>(m_Entity);
+
+			Asset* meshAsset = AssetManager::Instance->GetAssetMetadata(skinnedMesh.Mesh.Get());
+
+			out << YAML::Key << "Mesh" << YAML::Value;
+			out << YAML::BeginMap;
+			out << YAML::Key << "UUID" << YAML::Value << (meshAsset != nullptr ? meshAsset->UUID : (UUID)0);
+			out << YAML::Key << "MeshIndex" << YAML::Value << skinnedMesh.MeshIndex;
+			out << YAML::EndMap;
+
+			out << YAML::Key << "SkeletonPoseUUID" << YAML::Value << skinnedMesh.SkeletonPoseUUID;
+
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::SkinnedSubMesh>(m_Entity))
+		{
+			out << YAML::Key << "Component::SkinnedSubMesh";
+			out << YAML::BeginMap;
+
+			auto& skinnedSubMesh = m_Scene->GetComponent<Component::SkinnedSubMesh>(m_Entity);
+
+			out << YAML::Key << "Enabled" << YAML::Value << skinnedSubMesh.Enabled;
+
+			Asset* materialAsset = AssetManager::Instance->GetAssetMetadata(skinnedSubMesh.Material.Get());
+			Asset* meshAsset = AssetManager::Instance->GetAssetMetadata(skinnedSubMesh.Mesh.Get());
+
+			out << YAML::Key << "Material" << YAML::Value << (materialAsset != nullptr ? materialAsset->UUID : (UUID)0);
+
+			out << YAML::Key << "Mesh" << YAML::Value;
+			out << YAML::BeginMap;
+			out << YAML::Key << "UUID" << YAML::Value << (meshAsset != nullptr ? meshAsset->UUID : (UUID)0);
+			out << YAML::Key << "MeshIndex" << YAML::Value << skinnedSubMesh.MeshIndex;
+			out << YAML::Key << "SubMeshIndex" << YAML::Value << skinnedSubMesh.SubMeshIndex;
+			out << YAML::EndMap;
+
+			out << YAML::Key << "SkinnedMeshUUID" << YAML::Value << skinnedSubMesh.SkinnedMeshUUID;
+			
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::Animation>(m_Entity))
+		{
+			auto& animation = m_Scene->GetComponent<Component::Animation>(m_Entity);
+
+			out << YAML::Key << "Component::Animation";
+
+			out << YAML::BeginMap;
+
+			out << YAML::Key << "Enabled" << YAML::Value << animation.Enabled;
+			out << YAML::Key << "DefaultClip" << YAML::Value << animation.DefaultClip;
+			out << YAML::Key << "Speed" << YAML::Value << animation.Speed;
+			out << YAML::Key << "TransitionDuration" << YAML::Value << animation.TransitionDuration;
+			out << YAML::Key << "EnableLooping" << YAML::Value << animation.EnableLooping;
+			out << YAML::Key << "PlayAutomatically" << YAML::Value << animation.PlayAutomatically;
+			out << YAML::Key << "ApplyRootMotion" << YAML::Value << animation.ApplyRootMotion;
+
+			out << YAML::EndMap;
+		}
+
+		if (m_Scene->HasComponent<Component::SkeletonPose>(m_Entity))
+		{
+			out << YAML::Key << "Component::SkeletonPose";
+			out << YAML::BeginMap;
+
+			auto& skeletonPose = m_Scene->GetComponent<Component::SkeletonPose>(m_Entity);
+
+			Asset* meshAsset = AssetManager::Instance->GetAssetMetadata(skeletonPose.Mesh.Get());
+
+			out << YAML::Key << "Mesh" << YAML::Value << (meshAsset != nullptr ? meshAsset->UUID : (UUID)0);
+
+			out << YAML::EndMap;
+		}
+
 		if (m_Scene->HasComponent<Component::Light>(m_Entity))
 		{
 			auto& light = m_Scene->GetComponent<Component::Light>(m_Entity);
@@ -531,6 +610,63 @@ namespace HBL2
 
 			staticMesh.Material = AssetManager::Instance->GetHandleFromUUID(staticMesh_NewComponent["Material"].as<UUID>());
 			AssetManager::Instance->GetAsset<Material>(staticMesh.Material.Get());
+		}
+
+		auto skinnedMesh_NewComponent = entityNode["Component::SkinnedMesh"];
+		if (skinnedMesh_NewComponent)
+		{
+			auto& skinnedMesh = m_Scene->AddComponent<Component::SkinnedMesh>(m_Entity);
+
+			if (skinnedMesh_NewComponent["Mesh"].IsDefined())
+			{
+				skinnedMesh.Mesh = AssetManager::Instance->GetHandleFromUUID(skinnedMesh_NewComponent["Mesh"]["UUID"].as<UUID>());
+				AssetManager::Instance->GetAsset<Mesh>(skinnedMesh.Mesh.Get());
+				skinnedMesh.MeshIndex = skinnedMesh_NewComponent["Mesh"]["MeshIndex"].as<uint32_t>();
+			}
+
+			skinnedMesh.SkeletonPoseUUID = skinnedMesh_NewComponent["SkeletonPoseUUID"].as<UUID>();
+		}
+
+		auto skinnedSubMesh_NewComponent = entityNode["Component::SkinnedSubMesh"];
+		if (skinnedSubMesh_NewComponent)
+		{
+			auto& skinnedSubMesh = m_Scene->AddComponent<Component::SkinnedSubMesh>(m_Entity);
+			skinnedSubMesh.Enabled = skinnedSubMesh_NewComponent["Enabled"].as<bool>();
+
+			if (skinnedSubMesh_NewComponent["Mesh"].IsDefined())
+			{
+				skinnedSubMesh.Mesh = AssetManager::Instance->GetHandleFromUUID(skinnedSubMesh_NewComponent["Mesh"]["UUID"].as<UUID>());
+				AssetManager::Instance->GetAsset<Mesh>(skinnedSubMesh.Mesh.Get());
+				skinnedSubMesh.MeshIndex = skinnedSubMesh_NewComponent["Mesh"]["MeshIndex"].as<uint32_t>();
+				skinnedSubMesh.SubMeshIndex = skinnedSubMesh_NewComponent["Mesh"]["SubMeshIndex"].as<uint32_t>();
+			}
+
+			skinnedSubMesh.Material = AssetManager::Instance->GetHandleFromUUID(skinnedSubMesh_NewComponent["Material"].as<UUID>());
+			AssetManager::Instance->GetAsset<Material>(skinnedSubMesh.Material.Get());
+
+			skinnedSubMesh.SkinnedMeshUUID = skinnedSubMesh_NewComponent["SkinnedMeshUUID"].as<UUID>();
+		}
+
+		auto animation_NewComponent = entityNode["Component::Animation"];
+		if (animation_NewComponent)
+		{
+			auto& animation = m_Scene->AddComponent<Component::Animation>(m_Entity);
+			animation.Enabled = animation_NewComponent["Enabled"].as<bool>();
+			animation.DefaultClip = animation_NewComponent["DefaultClip"].as<int>();
+			animation.Speed = animation_NewComponent["Speed"].as<float>();
+			animation.TransitionDuration = animation_NewComponent["TransitionDuration"].as<float>();
+			animation.EnableLooping = animation_NewComponent["EnableLooping"].as<bool>();
+			animation.PlayAutomatically = animation_NewComponent["PlayAutomatically"].as<bool>();
+			animation.ApplyRootMotion = animation_NewComponent["ApplyRootMotion"].as<bool>();
+		}
+
+		auto skeletonPose_NewComponent = entityNode["Component::SkeletonPose"];
+		if (skeletonPose_NewComponent)
+		{
+			auto& skeletonPose = m_Scene->AddComponent<Component::SkeletonPose>(m_Entity);
+
+			skeletonPose.Mesh = AssetManager::Instance->GetHandleFromUUID(skeletonPose_NewComponent["Mesh"].as<UUID>());
+			AssetManager::Instance->GetAsset<Material>(skeletonPose.Mesh.Get());
 		}
 
 		auto light_NewComponent = entityNode["Component::Light"];

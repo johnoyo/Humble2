@@ -104,7 +104,7 @@ namespace HBL2
 		{
 			RefHandle<Asset> Mesh;
 			uint32_t MeshIndex = 0;
-			UUID PoseEntityId = 0;
+			UUID SkeletonPoseUUID = 0;
 
 			uint32_t JointCount = 0;
 			Handle<Buffer> SkinnedVertexBuffer;
@@ -118,7 +118,7 @@ namespace HBL2
 			uint32_t SubMeshIndex = 0;
 
 			RefHandle<Asset> Material;
-			UUID SkinnedMeshId = 0;
+			UUID SkinnedMeshUUID = 0;
 
 			bool Enabled = true;
 		};
@@ -167,6 +167,37 @@ namespace HBL2
 			static inline Entity SelectedEntity = Entity::Null;
 
 			bool Enabled = true;
+		};
+
+		struct Animation
+		{
+			int DefaultClip = 0;
+
+			float Speed = 1.f;
+			float TransitionDuration = 0.2f;
+
+			bool EnableLooping;
+			bool PlayAutomatically;
+			bool ApplyRootMotion;
+			bool Enabled = true;
+
+			int CurrentClip = -1;
+			float Time = 0.f;
+			int ClipsCount = 0;
+			bool LastEnabled = true;
+			int LastClip = -1;
+			float BlendElapsed = 0.0f;
+			float BlendDuration = 0.0f;
+			std::vector<JointTransform> BlendFrom;
+		};
+
+		struct SkeletonPose
+		{
+			RefHandle<Asset> Mesh;
+
+			std::vector<JointTransform> Local;
+			std::vector<glm::mat4> Model;
+			std::vector<glm::mat4> Skinning;
 		};
 
 		struct HBL2_API Light
