@@ -8,7 +8,7 @@
 
 #include "Asset/AssetManager.h"
 #include "Scene/SceneManager.h"
-#include "Utilities/EntityPresets.h"
+#include "Scene/EntityPresets.h"
 #include "ImGui/ImGuiRenderer.h"
 
 namespace HBL2

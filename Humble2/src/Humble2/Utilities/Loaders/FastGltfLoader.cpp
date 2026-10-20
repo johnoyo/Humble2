@@ -802,7 +802,7 @@ namespace HBL2
 				Handle<Asset> shaderAssetHandle;
 				ShaderReflectionData shaderReflectionData;
 
-				MeshUtilities::Get().GetShaderAssetHandleAndReflectionData(shaderAssetHandle, shaderReflectionData, isPBR);
+				MeshUtilities::Get().GetShaderAssetHandleAndReflectionData(shaderAssetHandle, &shaderReflectionData, isPBR);
 
 				bool blendEnbled = false;
 
@@ -962,7 +962,7 @@ namespace HBL2
 			Handle<Asset> shaderAssetHandle;
 			ShaderReflectionData shaderReflectionData;
 				
-			MeshUtilities::Get().GetShaderAssetHandleAndReflectionData(shaderAssetHandle, shaderReflectionData, isPBR);
+			MeshUtilities::Get().GetShaderAssetHandleAndReflectionData(shaderAssetHandle, &shaderReflectionData, isPBR);
 
 			if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativePath)))
 			{

@@ -1488,7 +1488,8 @@ namespace HBL2
 			// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 			//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
 
-			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
+			ShaderReflectionData shaderReflectionData;
+			ShaderUtilities::Get().Reflect(shaderPath.string(), &shaderReflectionData, true);
 
 			Handle<BindGroup> materialBindGroup;
 
@@ -2398,7 +2399,8 @@ namespace HBL2
 			// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 			//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
 
-			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
+			ShaderReflectionData shaderReflectionData;
+			ShaderUtilities::Get().Reflect(shaderPath.string(), &shaderReflectionData, true);
 
 			Handle<BindGroup> materialBindGroup;
 

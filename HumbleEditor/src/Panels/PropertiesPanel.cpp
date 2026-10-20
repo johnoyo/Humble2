@@ -1202,7 +1202,7 @@ namespace HBL2::Editor
                 const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
 
                 // TODO: When user defined compute shaders are a thing, update this so that it passes 'false' for them.
-                m_ShaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
+                ShaderUtilities::Get().Reflect(shaderPath.string(), &m_ShaderReflectionData, true);
 
                 // Clear uniform buffer data.
                 for (auto& data : m_ShaderUniformBufferData)
@@ -1942,7 +1942,7 @@ namespace HBL2::Editor
                             const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
 
                             // Reflect.
-                            m_ShaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
+                            ShaderUtilities::Get().Reflect(shaderPath.string(), &m_ShaderReflectionData, true);
 
                             // Retrieve new uniform buffer data.
                             for (const auto& descriptorSet : m_ShaderReflectionData.descriptorSets)

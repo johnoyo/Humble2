@@ -369,7 +369,7 @@ namespace HBL2
                 ShaderReflectionData shaderReflectionData;
                 bool isPBR = normalMapAssetHandle.IsValid() && roughnessMapAssetHandle.IsValid() && metallicMapAssetHandle.IsValid();
 
-                MeshUtilities::Get().GetShaderAssetHandleAndReflectionData(shaderAssetHandle, shaderReflectionData, isPBR);
+                MeshUtilities::Get().GetShaderAssetHandleAndReflectionData(shaderAssetHandle, &shaderReflectionData, isPBR);
 
                 ShaderUtilities::Get().CreateMaterialAssetFile(materialAssetHandle, {
                     .ShaderAssetHandle = shaderAssetHandle,
@@ -464,7 +464,7 @@ namespace HBL2
             ShaderReflectionData shaderReflectionData;
             bool isPBR = normalMapAssetHandle.IsValid() && roughnessMapAssetHandle.IsValid() && metallicMapAssetHandle.IsValid();
 
-            MeshUtilities::Get().GetShaderAssetHandleAndReflectionData(shaderAssetHandle, shaderReflectionData, isPBR);
+            MeshUtilities::Get().GetShaderAssetHandleAndReflectionData(shaderAssetHandle, &shaderReflectionData, isPBR);
 
             if (!std::filesystem::exists(Project::GetAssetFileSystemPath(relativePath)))
             {

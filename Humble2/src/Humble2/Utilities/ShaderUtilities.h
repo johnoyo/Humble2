@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Base.h"
-#include "SlangReflection.h"
+#include "ShaderReflectionTypes.h"
 
 #include "Renderer/Renderer.h"
 #include "Renderer/Enums.h"
@@ -15,12 +15,6 @@
 
 namespace HBL2
 {
-	enum class HBL2_API ShaderType2
-	{
-		D2 = 0,
-		D3 = 1,
-	};
-
 	enum class HBL2_API BuiltInShader
 	{
 		INVALID = 0,
@@ -83,7 +77,7 @@ namespace HBL2
 
 		std::string ReadFile(const std::string& filepath);
 		CompilationResultData Compile(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool attachLightingModules, bool forceRecompile = false);
-		ShaderReflectionData Reflect(const std::string& shaderFilePath, bool attachLightingModules);
+		bool Reflect(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool attachLightingModules);
 
 		void LoadBuiltInShaders();
 		void DeleteBuiltInShaders();
