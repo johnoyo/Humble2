@@ -296,7 +296,7 @@ namespace HBL2
 
 				BEGIN_APP_PROFILE(render);
 				Renderer::Instance->BeginFrame();
-				Renderer::Instance->Render(*frameData);
+				m_Specification.Context->OnRender(frameData);
 				ImGuiRenderer::Instance->Render(*frameData);
 				Renderer::Instance->EndFrame();
 				END_APP_PROFILE(render, m_CurrentStats.RenderTime);

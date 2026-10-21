@@ -157,7 +157,6 @@ namespace HBL2
 
 		m_MainDeletionQueue.Flush();
 
-		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
 		m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
@@ -359,7 +358,6 @@ namespace HBL2
 		m_ResourceManager->DeleteTexture(m_DepthImage);
 
 		// Destroy old offscreen textures.
-		m_ResourceManager->DeleteTexture(IntermediateColorTexture);
 		m_ResourceManager->DeleteTexture(MainColorTexture);
 		m_ResourceManager->DeleteTexture(MainDepthTexture);
 
@@ -373,21 +371,7 @@ namespace HBL2
 		// Destroy the old swapchain.
 		vkDestroySwapchainKHR(m_Device->Get(), oldSwapchain, nullptr);
 
-		// Recreate the offscreen texture (render target).
-		IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
-			.debugName = "intermediate-color-target",
-			.dimensions = { width, height, 1 },
-			.format = Format::RGBA16_FLOAT,
-			.internalFormat = Format::RGBA16_FLOAT,
-			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
-			.aspect = TextureAspect::COLOR,
-			.sampler =
-			{
-				.filter = TextureFilter::LINEAR,
-				.wrap = Wrap::CLAMP_TO_EDGE,
-			}
-		});
-
+		// Recreate the offscreen textures (render targets).
 		MainColorTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "viewport-color-target",
 			.dimensions = { width, height, 1 },
@@ -427,9 +411,6 @@ namespace HBL2
 				.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
 				.textures = { { MainColorTexture, TextureLayout::SHADER_READ_ONLY } },  // Updated with new size
 			});
-
-			VulkanBindGroup vkGlobalPresentBindings = m_ResourceManager->GetBindGroup(m_VkFrames[i].GlobalPresentBindings);
-			vkGlobalPresentBindings.Update(m_VkFrames[i].GlobalPresentBindings);
 		}
 
 		// Update imgui viewport texture.

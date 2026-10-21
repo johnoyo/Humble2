@@ -2,6 +2,7 @@
 
 #include "Base.h"
 #include "Scene/Scene.h"
+#include "Renderer/CommandBuffer.h"
 
 namespace HBL2
 {
@@ -25,15 +26,15 @@ namespace HBL2
 
 		virtual void Initialize(Scene* scene, uint32_t maxLights) = 0;
 		virtual void Gather(Entity mainCamera) = 0;
-		virtual void Render(void* renderData, void* debugRenderData) = 0;
+		virtual void Render(CommandBuffer* commandBuffer, void* renderData, void* debugRenderData) = 0;
 		virtual void CleanUp() = 0;
 
 		virtual void* GetRenderData() = 0;
 
-		Handle<Texture> GetTexture() const { return m_Texture; }
+		Handle<Texture> GetTexture() const { return m_TargetTexture; }
 
 	protected:
-		Handle<Texture> m_Texture;
+		Handle<Texture> m_TargetTexture;
 		Scene* m_Scene = nullptr;
 	};
 }

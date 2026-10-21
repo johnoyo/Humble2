@@ -16,11 +16,11 @@ namespace HBL2
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 
+		TextureSetup();
 		RenderPassSetup();
 
 		// Setup render passes.
 		PinkQuadPassSetup();
-		PresentPassSetup();
 	}
 
 	void InvalidSceneRenderer::Gather(Entity mainCamera)
@@ -28,24 +28,18 @@ namespace HBL2
 		InvalidSceneRenderData* sceneRenderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
 	}
 
-	void InvalidSceneRenderer::Render(void* renderData, void* debugRenderData)
+	void InvalidSceneRenderer::Render(CommandBuffer* commandBuffer, void* renderData, void* debugRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
 		InvalidSceneRenderData* sceneRenderData = (InvalidSceneRenderData*)renderData;
 		ResourceManager* rm = ResourceManager::Instance;
 
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
-
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, m_TargetTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainDepthTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_READ_ONLY);
 
 		PinkQuadPass(commandBuffer, sceneRenderData);
-		PresentPass(commandBuffer, sceneRenderData);
-
-		commandBuffer->EndCommandRecording();
-		commandBuffer->Submit();
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().MainPassTime);
 	}
@@ -53,6 +47,8 @@ namespace HBL2
 	void InvalidSceneRenderer::CleanUp()
 	{
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
+		m_ResourceManager->DeleteTexture(m_TargetTexture);
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_TargetTextureResizeEventHandle);
 
 		// Pink quad pass clean up.
 		m_ResourceManager->DeleteBuffer(m_PinkQuadBuffer);
@@ -60,11 +56,6 @@ namespace HBL2
 		m_ResourceManager->DeleteRenderPass(m_PinkQuadRenderPass);
 		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_PinkQuadPassResizeEventHandle);
 		m_ResourceManager->DeleteBuffer(m_PinkQuadVertexBuffer);
-
-		// Present pass clean up.
-		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
-		m_ResourceManager->DeleteShader(m_PresentShader);
-		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
 
 		m_Scene->Filter<Component::SkyLight>()
 			.ForEach([&](Component::SkyLight& skyLight)
@@ -78,6 +69,22 @@ namespace HBL2
 			{
 				staticMesh.Mesh.Release();
 				staticMesh.Material.Release();
+			});
+
+		m_Scene->Filter<Component::SkinnedMesh>()
+			.ForEach([&](Component::SkinnedMesh& skinnedMesh)
+			{
+				skinnedMesh.Mesh.Release();
+
+				// m_ResourceManager->DeleteBindGroup(skinnedMesh.SkinningBindings);
+				// skinnedMesh.SkinningBindings = {};
+			});
+
+		m_Scene->Filter<Component::SkinnedSubMesh>()
+			.ForEach([&](Component::SkinnedSubMesh& skinnedSubMesh)
+			{
+				skinnedSubMesh.Mesh.Release();
+				skinnedSubMesh.Material.Release();
 			});
 
 		m_Scene->Filter<Component::Sprite>()
@@ -193,63 +200,40 @@ namespace HBL2
 		m_PinkQuadShaderVariantHash = variant;
 	}
 
-	void InvalidSceneRenderer::PresentPassSetup()
+	void InvalidSceneRenderer::TextureSetup()
 	{
-		float* vertexBuffer = new float[24] {
-			-1.0, -1.0, 0.0, 1.0, // Bottom left
-			 1.0, -1.0, 1.0, 1.0, // Bottom right
-			 1.0,  1.0, 1.0, 0.0, // Top right
-			 1.0,  1.0, 1.0, 0.0, // Top right
-			-1.0,  1.0, 0.0, 0.0, // Top left
-			-1.0, -1.0, 0.0, 1.0  // Bottom left
-		};
-
-		m_QuadVertexBuffer = m_ResourceManager->CreateBuffer({
-			.debugName = "quad-vertex-buffer",
-			.usage = BufferUsage::VERTEX,
-			.byteSize = sizeof(float) * 24,
-			.initialData = vertexBuffer,
+		m_TargetTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "intermediate-color-target",
+			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+			.format = Format::RGBA16_FLOAT,
+			.internalFormat = Format::RGBA16_FLOAT,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::COLOR,
+			.sampler =
+			{
+				.filter = TextureFilter::LINEAR,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
 		});
 
-		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
-		variant.blendEnabled = false;
-		variant.depthEnabled = false;
-		variant.depthWrite = true;
-		variant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
+		m_TargetTextureResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
+		{
+			ResourceManager::Instance->DeleteTexture(m_TargetTexture);
 
-		// Compile present shaders.
-		const auto& presentShaderData = ShaderUtilities::Get().Compile("assets/shaders/present.slang", (ShaderReflectionData*)nullptr, false);
-
-		// Create present bind group layout.
-		m_PresentShader = ResourceManager::Instance->CreateShader({
-			.debugName = "present-shader",
-			.VS {.code = presentShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
-			.FS {.code = presentShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
-			.bindGroups {
-				Renderer::Instance->GetGlobalPresentBindingsLayout(),	// Global bind group (0)
-			},
-			.renderPipeline {
-				.vertexBufferBindings = {
-					{
-						.byteStride = 16,
-						.attributes = {
-							{.byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
-							{.byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
-						},
-					}
-				},
-				.variants = { variant },
-			},
-			.renderPass = Renderer::Instance->GetMainRenderPass(),
+			m_TargetTexture = ResourceManager::Instance->CreateTexture({
+				.debugName = "intermediate-color-target",
+				.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+				.format = Format::RGBA16_FLOAT,
+				.internalFormat = Format::RGBA16_FLOAT,
+				.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+				.aspect = TextureAspect::COLOR,
+				.sampler =
+				{
+					.filter = TextureFilter::LINEAR,
+					.wrap = Wrap::CLAMP_TO_EDGE,
+				}
+				});
 		});
-
-		m_QuadMaterial = m_ResourceManager->CreateMaterial({
-			.debugName = "fullscreen-quad-material",
-			.shader = m_PresentShader,
-		});
-
-		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
-		mat->VariantHash = variant;
 	}
 
 	// Pass rendering.
@@ -260,7 +244,7 @@ namespace HBL2
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
 			commandBuffer,
-			Renderer::Instance->IntermediateColorTexture,
+			m_TargetTexture,
 			TextureLayout::RENDER_ATTACHMENT,
 			TextureLayout::SHADER_READ_ONLY
 		);
@@ -283,39 +267,5 @@ namespace HBL2
 		commandBuffer->EndRenderPass(*passRenderer);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PostProcessPassTime);
-	}
-
-	void InvalidSceneRenderer::PresentPass(CommandBuffer* commandBuffer, InvalidSceneRenderData* sceneRenderData)
-	{
-		BEGIN_PROFILE_PASS();
-
-		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(
-			commandBuffer,
-			Renderer::Instance->MainColorTexture,
-			TextureLayout::RENDER_ATTACHMENT,
-			TextureLayout::SHADER_READ_ONLY
-		);
-
-		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
-
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass());
-
-		ScratchArena scratch(Allocator::FrameArenaRT);
-		DrawList draws(scratch, 1);
-
-		draws.Insert({
-			.Shader = m_PresentShader,
-			.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_PresentShader, mat->VariantHash),
-			.VertexBuffer = m_QuadVertexBuffer,
-			.VertexCount = 6,
-		});
-
-		GlobalDrawStream globalDrawStream = { .BindGroup = Renderer::Instance->GetGlobalPresentBindings() };
-		passRenderer->DrawSubPass(globalDrawStream, draws);
-
-		commandBuffer->EndRenderPass(*passRenderer);
-
-		END_PROFILE_PASS(Renderer::Instance->GetStats().PresentPassTime);
 	}
 }

@@ -50,7 +50,7 @@ namespace HBL2
 
 		virtual void Initialize(Scene* scene, uint32_t maxLights) override;
 		virtual void Gather(Entity mainCamera) override;
-		virtual void Render(void* renderData, void* debugRenderData) override;
+		virtual void Render(CommandBuffer* commandBuffer, void* renderData, void* debugRenderData) override;
 		virtual void CleanUp() override;
 
 		virtual void* GetRenderData() override;
@@ -62,6 +62,7 @@ namespace HBL2
 		Handle<BindGroup> GetGlobalBindingsTransparent3D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindingsTransparent3D; }
 		Handle<BindGroup> GetLightCullingBindings() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].LightCullingBindings; }
 
+		void TextureSetup();
 		void RenderPassSetup();
 		void BindingsSetup();
 
@@ -72,7 +73,6 @@ namespace HBL2
 		void GeometryPassSetup();
 		void SkyboxPassSetup();
 		void PostProcessPassSetup();
-		void PresentPassSetup();
 
 		void GatherDraws(ForwardPlusSceneRenderData* sceneRenderData);
 		void GatherLights(ForwardPlusSceneRenderData* sceneRenderData);
@@ -88,7 +88,6 @@ namespace HBL2
 		void SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardPlusSceneRenderData* sceneRenderData);
 		void PostProcessPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData);
 		void DebugPass(CommandBuffer* commandBuffer, void* debugRenderData);
-		void PresentPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData);
 
 		void GetViewProjection(ForwardPlusSceneRenderData* sceneRenderData, Entity mainCamera);
 		void CreateGridFrustumsComputeBindGroup(uint32_t blockSize, uint32_t width, uint32_t height, const glm::mat4& cameraProjection);
@@ -112,6 +111,7 @@ namespace HBL2
 		RefHandle<BindGroupLayout> m_GlobalBindingsLayout3D;
 
 		Handle<RenderPassLayout> m_RenderPassLayout;
+		UUID m_TargetTextureResizeEventHandle = 0;
 
 		// Shadow pass resources.
 		Handle<Texture> m_ShadowDepthTexture;
@@ -184,10 +184,5 @@ namespace HBL2
 		ShaderDescriptor::RenderPipeline::PackedVariant m_PostProcessShaderVariantHash;
 		Handle<Buffer> m_PostProcessQuadVertexBuffer;
 		UUID m_PostProcessPassResizeEventHandle = 0;
-
-		// Present pass resources.
-		Handle<Buffer> m_QuadVertexBuffer;
-		Handle<Material> m_QuadMaterial;
-		Handle<Shader> m_PresentShader;
 	};
 }

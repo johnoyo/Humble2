@@ -21,19 +21,16 @@ namespace HBL2
 
 		virtual void Initialize(Scene* scene, uint32_t maxLights) override;
 		virtual void Gather(Entity mainCamera) override;
-		virtual void Render(void* renderData, void* debugRenderData) override;
+		virtual void Render(CommandBuffer* commandBuffer, void* renderData, void* debugRenderData) override;
 		virtual void CleanUp() override;
 
 		virtual void* GetRenderData() override;
 
 	private:
+		void TextureSetup();
 		void RenderPassSetup();
-
 		void PinkQuadPassSetup();
-		void PresentPassSetup();
-
 		void PinkQuadPass(CommandBuffer* commandBuffer, InvalidSceneRenderData* sceneRenderData);
-		void PresentPass(CommandBuffer* commandBuffer, InvalidSceneRenderData* sceneRenderData);
 
 	private:
 		PoolReservation* m_Reservation = nullptr;
@@ -48,6 +45,7 @@ namespace HBL2
 		uint32_t m_MaxLights = 0;
 
 		Handle<RenderPassLayout> m_RenderPassLayout;
+		UUID m_TargetTextureResizeEventHandle = 0;
 
 		// Pink quad pass resources.
 		Handle<RenderPass> m_PinkQuadRenderPass;
@@ -58,10 +56,5 @@ namespace HBL2
 		ShaderDescriptor::RenderPipeline::PackedVariant m_PinkQuadShaderVariantHash;
 		Handle<Buffer> m_PinkQuadVertexBuffer;
 		UUID m_PinkQuadPassResizeEventHandle = 0;
-
-		// Present pass resources.
-		Handle<Buffer> m_QuadVertexBuffer;
-		Handle<Material> m_QuadMaterial;
-		Handle<Shader> m_PresentShader;
 	};
 }

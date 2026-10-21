@@ -80,20 +80,6 @@ namespace HBL2
 		// With 32MB per frame in flight, we can bump allocate data for ~200K draws, should be plenty enough for almost all use cases.
 		TempUniformRingBuffer = new UniformRingBuffer(m_UniformRingBufferSize, (uint32_t)Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
 
-		IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
-			.debugName = "intermediate-color-target",
-			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
-			.format = Format::RGBA16_FLOAT,
-			.internalFormat = Format::RGBA16_FLOAT,
-			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
-			.aspect = TextureAspect::COLOR,
-			.sampler =
-			{
-				.filter = TextureFilter::LINEAR,
-				.wrap = Wrap::CLAMP_TO_EDGE,
-			}
-		});
-
 		MainColorTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "viewport-color-target",
 			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
@@ -147,16 +133,6 @@ namespace HBL2
 			.debugName = "empty-bind-group",
 			.layout = m_EmptyBindingsLayout,
 		});
-	}
-
-	void Renderer::Render(const RendererFrameData& frameData)
-	{
-		if (frameData.Renderer == nullptr)
-		{
-			return;
-		}
-
-		frameData.Renderer->Render(frameData.RenderData, frameData.DebugRenderData);
 	}
 
 	RendererFrameData* Renderer::WaitAndRender()
@@ -282,9 +258,8 @@ namespace HBL2
 		});
 	}
 
-	void Renderer::CollectRenderData(SceneRenderer* renderer, void* renderData)
+	void Renderer::CollectRenderData(void* renderData)
 	{
-		m_Frames[m_ReservedWriteIndex].Renderer = renderer;
 		m_Frames[m_ReservedWriteIndex].RenderData = renderData;
 	}
 
@@ -319,7 +294,6 @@ namespace HBL2
 		for (int i = 0; i < FrameCount; i++)
 		{
 			m_Frames[i].ImGuiRenderData.Clear();
-			m_Frames[i].Renderer = nullptr;
 			m_Frames[i].RenderData = nullptr;
 		}
 	}

@@ -141,6 +141,7 @@ namespace HBL2
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 
+		TextureSetup();
 		RenderPassSetup();
 		BindingsSetup();
 
@@ -152,7 +153,6 @@ namespace HBL2
 		GeometryPassSetup();
 		SkyboxPassSetup();
 		PostProcessPassSetup();
-		PresentPassSetup();
 	}
 
 	void ForwardPlusSceneRenderer::Gather(Entity mainCamera)
@@ -165,7 +165,7 @@ namespace HBL2
 		GatherLights(sceneRenderData);
 	}
 
-	void ForwardPlusSceneRenderer::Render(void* renderData, void* debugRenderData)
+	void ForwardPlusSceneRenderer::Render(CommandBuffer* commandBuffer, void* renderData, void* debugRenderData)
 	{
 		BEGIN_PROFILE_PASS();
 
@@ -176,9 +176,7 @@ namespace HBL2
 		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
 		rm->MapBufferData(uniformRingBuffer->GetBuffer(), sceneRenderData->m_UBOStartingOffset, sceneRenderData->m_UBOEndingOffset - sceneRenderData->m_UBOStartingOffset);
 
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
-
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, m_TargetTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
 
@@ -189,10 +187,6 @@ namespace HBL2
 		GeometryPass(commandBuffer, sceneRenderData);
 		PostProcessPass(commandBuffer, sceneRenderData);
 		DebugPass(commandBuffer, debugRenderData);
-		PresentPass(commandBuffer, sceneRenderData);
-
-		commandBuffer->EndCommandRecording();
-		commandBuffer->Submit();
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().MainPassTime);
 	}
@@ -200,6 +194,8 @@ namespace HBL2
 	void ForwardPlusSceneRenderer::CleanUp()
 	{
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
+		m_ResourceManager->DeleteTexture(m_TargetTexture);
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_TargetTextureResizeEventHandle);
 
 		// Shadow pass clean up.
 		m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
@@ -246,6 +242,22 @@ namespace HBL2
 				staticMesh.Material.Release();
 			});
 
+		m_Scene->Filter<Component::SkinnedMesh>()
+			.ForEach([&](Component::SkinnedMesh& skinnedMesh)
+			{
+				skinnedMesh.Mesh.Release();
+
+				// m_ResourceManager->DeleteBindGroup(skinnedMesh.SkinningBindings);
+				// skinnedMesh.SkinningBindings = {};
+			});
+
+		m_Scene->Filter<Component::SkinnedSubMesh>()
+			.ForEach([&](Component::SkinnedSubMesh& skinnedSubMesh)
+			{
+				skinnedSubMesh.Mesh.Release();
+				skinnedSubMesh.Material.Release();
+			});
+
 		m_Scene->Filter<Component::Sprite>()
 			.ForEach([&](Component::Sprite& sprite)
 			{
@@ -285,12 +297,7 @@ namespace HBL2
 		m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
 		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_PostProcessPassResizeEventHandle);
 		m_ResourceManager->DeleteBuffer(m_PostProcessQuadVertexBuffer);
-
-		// Present pass clean up.
-		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
-		m_ResourceManager->DeleteShader(m_PresentShader);
-		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
-		
+				
 		// Scene renderer clean up.
 		m_ShadowBindingsLayout.Release();
 		m_GlobalBindingsLayout2D.Release();
@@ -315,6 +322,42 @@ namespace HBL2
 	}
 
 	// Scene renderer set up.
+	void ForwardPlusSceneRenderer::TextureSetup()
+	{
+		m_TargetTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "intermediate-color-target",
+			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+			.format = Format::RGBA16_FLOAT,
+			.internalFormat = Format::RGBA16_FLOAT,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::COLOR,
+			.sampler =
+			{
+				.filter = TextureFilter::LINEAR,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
+		m_TargetTextureResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
+		{
+			ResourceManager::Instance->DeleteTexture(m_TargetTexture);
+
+			m_TargetTexture = ResourceManager::Instance->CreateTexture({
+				.debugName = "intermediate-color-target",
+				.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+				.format = Format::RGBA16_FLOAT,
+				.internalFormat = Format::RGBA16_FLOAT,
+				.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+				.aspect = TextureAspect::COLOR,
+				.sampler =
+				{
+					.filter = TextureFilter::LINEAR,
+					.wrap = Wrap::CLAMP_TO_EDGE,
+				}
+			});
+		});
+	}
+
 	void ForwardPlusSceneRenderer::RenderPassSetup()
 	{
 		// Create color render pass.
@@ -779,7 +822,7 @@ namespace HBL2
 				.width = Window::Instance->GetExtents().x,
 				.height = Window::Instance->GetExtents().y,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
+				.colorTargets = { m_TargetTexture },
 			}
 		});
 
@@ -790,7 +833,7 @@ namespace HBL2
 				.width = event.Width,
 				.height = event.Height,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
+				.colorTargets = { m_TargetTexture },
 			});
 		});
 
@@ -1053,7 +1096,7 @@ namespace HBL2
 			.debugName = "post-process-bind-group",
 			.layout = m_PostProcessBindGroupLayout.Get(),
 			.textures = {
-				{ Renderer::Instance->IntermediateColorTexture, TextureLayout::SHADER_READ_ONLY }
+				{ m_TargetTexture, TextureLayout::SHADER_READ_ONLY }
 			},
 			.buffers = {
 				{ .buffer = m_PostProcessBuffer },
@@ -1109,7 +1152,7 @@ namespace HBL2
 				.debugName = "post-process-bind-group",
 				.layout = m_PostProcessBindGroupLayout.Get(),
 				.textures = {
-					{ Renderer::Instance->IntermediateColorTexture, TextureLayout::SHADER_READ_ONLY }
+					{ m_TargetTexture, TextureLayout::SHADER_READ_ONLY }
 				},
 				.buffers = {
 					{ .buffer = m_PostProcessBuffer },
@@ -1150,66 +1193,6 @@ namespace HBL2
 
 		// Cache post-process variant hash.
 		m_PostProcessShaderVariantHash = variant;
-	}
-
-	void ForwardPlusSceneRenderer::PresentPassSetup()
-	{
-		float* vertexBuffer = new float[24] {
-			-1.0, -1.0, 0.0, 1.0, // Bottom left
-			 1.0, -1.0, 1.0, 1.0, // Bottom right
-			 1.0,  1.0, 1.0, 0.0, // Top right
-			 1.0,  1.0, 1.0, 0.0, // Top right
-			-1.0,  1.0, 0.0, 0.0, // Top left
-			-1.0, -1.0, 0.0, 1.0  // Bottom left
-		};
-
-		m_QuadVertexBuffer = m_ResourceManager->CreateBuffer({
-			.debugName = "quad-vertex-buffer",
-			.usage = BufferUsage::VERTEX,
-			.byteSize = sizeof(float) * 24,
-			.initialData = vertexBuffer,
-		});
-
-		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
-		variant.blendEnabled = false;
-		variant.depthEnabled = false;
-		variant.depthWrite = true;
-		variant.cullMode = (packed_size)CullMode::BACK;
-		variant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
-
-		// Compile present shaders.
-		const auto& presentShaderData = ShaderUtilities::Get().Compile("assets/shaders/present.slang", (ShaderReflectionData*)nullptr, false);
-
-		// Create present bind group layout.
-		m_PresentShader = ResourceManager::Instance->CreateShader({
-			.debugName = "present-shader",
-			.VS { .code = presentShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
-			.FS { .code = presentShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
-			.bindGroups {
-				Renderer::Instance->GetGlobalPresentBindingsLayout(),	// Global bind group (0)
-			},
-			.renderPipeline {
-				.vertexBufferBindings = {
-					{
-						.byteStride = 16,
-						.attributes = {
-							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
-							{ .byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
-						},
-					}
-				},
-				.variants = { variant },
-			},
-			.renderPass = Renderer::Instance->GetMainRenderPass(),
-		});
-
-		m_QuadMaterial = m_ResourceManager->CreateMaterial({
-			.debugName = "fullscreen-quad-material",
-			.shader = m_PresentShader,
-		});
-
-		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
-		mat->VariantHash = variant;
 	}
 	
 	// Gathering.
@@ -1972,7 +1955,7 @@ namespace HBL2
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
 			commandBuffer,
-			Renderer::Instance->IntermediateColorTexture,
+			m_TargetTexture,
 			TextureLayout::RENDER_ATTACHMENT,
 			TextureLayout::SHADER_READ_ONLY
 		);
@@ -2005,40 +1988,6 @@ namespace HBL2
 		DebugRenderer::Instance->Render(commandBuffer, debugRenderData);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().DebugPassTime);
-	}
-
-	void ForwardPlusSceneRenderer::PresentPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData)
-	{
-		BEGIN_PROFILE_PASS();
-
-		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(
-			commandBuffer,
-			Renderer::Instance->MainColorTexture,
-			TextureLayout::RENDER_ATTACHMENT,
-			TextureLayout::SHADER_READ_ONLY
-		);
-
-		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
-
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass());
-
-		ScratchArena scratch(Allocator::FrameArenaRT);
-		DrawList draws(scratch, 1);
-
-		draws.Insert({
-			.Shader = m_PresentShader,
-			.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_PresentShader, mat->VariantHash),
-			.VertexBuffer = m_QuadVertexBuffer,
-			.VertexCount = 6,
-		});
-
-		GlobalDrawStream globalDrawStream = { .BindGroup = Renderer::Instance->GetGlobalPresentBindings() };
-		passRenderer->DrawSubPass(globalDrawStream, draws);
-
-		commandBuffer->EndRenderPass(*passRenderer);
-
-		END_PROFILE_PASS(Renderer::Instance->GetStats().PresentPassTime);
 	}
 
 	// Helper.

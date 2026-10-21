@@ -205,6 +205,39 @@ namespace HBL2
 			}
 		}
 
+		void EditorContext::OnRender(const RendererFrameData* renderData)
+		{
+			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+			{
+				system->OnRender(renderData);
+			}
+
+			if (!IsActiveSceneValid())
+			{
+				HBL2_CORE_TRACE("Active Scene is null.");
+				return;
+			}
+
+			for (HBL2::ISystem* system : m_ActiveScene->GetCoreSystems())
+			{
+				if (system->GetState() == SystemState::Play)
+				{
+					system->OnRender(renderData);
+				}
+			}
+
+			if (Mode == Mode::Runtime)
+			{
+				for (HBL2::ISystem* system : m_ActiveScene->GetRuntimeSystems())
+				{
+					if (system->GetState() == SystemState::Play)
+					{
+						system->OnRender(renderData);
+					}
+				}
+			}
+		}
+
 		void EditorContext::OnDestroy()
 		{
 			if (m_EditorScene != nullptr)

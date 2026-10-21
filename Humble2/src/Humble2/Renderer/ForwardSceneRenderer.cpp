@@ -60,12 +60,6 @@ namespace HBL2
 		float _padding[3];
 	};
 
-    struct SkinningPushData
-    {
-        uint32_t JointMatricesOffset;
-        uint32_t VertexCount;
-    };
-
 	static CaptureMatrices g_CaptureMatrices =
 	{
 		.View =
@@ -115,18 +109,17 @@ namespace HBL2
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 
+		TextureSetup();
 		RenderPassSetup();
 		BindingsSetup();
 
 		// Setup render passes.
-		SkinningPassSetup();
 		ShadowPassSetup();
 		DepthPrePassSetup();
         GeometryPassSetup();
 		SpriteRenderingSetup();
 		PostProcessPassSetup();
 		SkyboxPassSetup();
-		PresentPassSetup();
 	}
 
 	void ForwardSceneRenderer::Gather(Entity mainCamera)
@@ -139,7 +132,7 @@ namespace HBL2
 		GatherLights(sceneRenderData);
 	}
 
-	void ForwardSceneRenderer::Render(void* renderData, void* debugRenderData)
+	void ForwardSceneRenderer::Render(CommandBuffer* commandBuffer, void* renderData, void* debugRenderData)
 	{
         BEGIN_PROFILE_PASS();
         
@@ -147,20 +140,18 @@ namespace HBL2
 		UniformRingBuffer* uniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 		ResourceManager* rm = ResourceManager::Instance;
 
-		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
-		rm->MapBufferData(uniformRingBuffer->GetBuffer(), sceneRenderData->m_UBOStartingOffset, sceneRenderData->m_UBOEndingOffset - sceneRenderData->m_UBOStartingOffset);
-		
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
+		//CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
+		rm->MapBufferData(uniformRingBuffer->GetBuffer(), sceneRenderData->m_UBOStartingOffset, sceneRenderData->m_UBOEndingOffset - sceneRenderData->m_UBOStartingOffset);		
+
+		rm->TransitionTextureLayout(commandBuffer, m_TargetTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
 
 		auto& renderPassPool = Renderer::Instance->GetRenderPassPool();
 
 		renderPassPool.Execute(RenderPassEvent::BeforeRendering);
-
-		SkinningPass(commandBuffer, sceneRenderData);
 
 		renderPassPool.Execute(RenderPassEvent::BeforeRenderingShadows);
 		ShadowPass(commandBuffer, sceneRenderData);
@@ -183,11 +174,9 @@ namespace HBL2
 		renderPassPool.Execute(RenderPassEvent::AfterDebugRendering);
 
 		renderPassPool.Execute(RenderPassEvent::BeforePresenting);
-		PresentPass(commandBuffer, sceneRenderData);
-		renderPassPool.Execute(RenderPassEvent::AfterRendering);
 
-		commandBuffer->EndCommandRecording();
-		commandBuffer->Submit();
+		//commandBuffer->EndCommandRecording();
+		//commandBuffer->Submit();
         
         END_PROFILE_PASS(Renderer::Instance->GetStats().MainPassTime);
 	}
@@ -195,6 +184,8 @@ namespace HBL2
 	void ForwardSceneRenderer::CleanUp()
 	{
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
+		m_ResourceManager->DeleteTexture(m_TargetTexture);
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_TargetTextureResizeEventHandle);
 
 		// Shadow pass clean up.
 		m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
@@ -286,15 +277,6 @@ namespace HBL2
 		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_PostProcessPassResizeEventHandle);
 		m_ResourceManager->DeleteBuffer(m_PostProcessQuadVertexBuffer);
 
-		// Present pass clean up.
-		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
-		m_ResourceManager->DeleteShader(m_PresentShader);
-		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
-
-		// Skinning compute pass clean up.
-		m_ResourceManager->DeleteShader(m_SkinningComputeShader);
-		m_SkinningBindGroupLayout.Release();
-
 		// Scene renderer clean up.
 		m_ShadowBindingsLayout.Release();
 		m_GlobalBindingsLayout2D.Release();
@@ -313,6 +295,42 @@ namespace HBL2
 	void* ForwardSceneRenderer::GetRenderData()
 	{
 		return &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
+	}
+
+	void ForwardSceneRenderer::TextureSetup()
+	{
+		m_TargetTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "intermediate-color-target",
+			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+			.format = Format::RGBA16_FLOAT,
+			.internalFormat = Format::RGBA16_FLOAT,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::COLOR,
+			.sampler =
+			{
+				.filter = TextureFilter::LINEAR,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
+		m_TargetTextureResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
+		{
+			ResourceManager::Instance->DeleteTexture(m_TargetTexture);
+
+			m_TargetTexture = ResourceManager::Instance->CreateTexture({
+				.debugName = "intermediate-color-target",
+				.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+				.format = Format::RGBA16_FLOAT,
+				.internalFormat = Format::RGBA16_FLOAT,
+				.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+				.aspect = TextureAspect::COLOR,
+				.sampler =
+				{
+					.filter = TextureFilter::LINEAR,
+					.wrap = Wrap::CLAMP_TO_EDGE,
+				}
+			});
+		});
 	}
 
 	void ForwardSceneRenderer::RenderPassSetup()
@@ -478,97 +496,6 @@ namespace HBL2
 	}
 
 	// Pass setup.
-	void ForwardSceneRenderer::SkinningPassSetup()
-	{
-		// Create compute bind group layout.
-		m_SkinningBindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
-			.debugName = "skinning-bind-group-layout",
-			.bufferBindings = {
-				{ .slot = 0, .visibility = ShaderStage::COMPUTE, .type = BufferBindingType::READ_ONLY_STORAGE },
-				{ .slot = 1, .visibility = ShaderStage::COMPUTE, .type = BufferBindingType::STORAGE },
-				{ .slot = 2, .visibility = ShaderStage::COMPUTE, .type = BufferBindingType::READ_ONLY_STORAGE },
-				{ .slot = 3, .visibility = ShaderStage::COMPUTE, .type = BufferBindingType::READ_ONLY_STORAGE },
-				{ .slot = 4, .visibility = ShaderStage::COMPUTE, .type = BufferBindingType::UNIFORM },
-			}
-		});
-
-		// Compile compute shader.
-		const auto& compilationData = ShaderUtilities::Get().Compile("assets/shaders/skinning.slang", nullptr, false);
-
-		m_SkinningComputeShader = ResourceManager::Instance->CreateShader({
-			.debugName = "skinning-compute-shader",
-			.type = ShaderType::COMPUTE,
-			.CS { .code = compilationData.computeShaderCode.AsSpan(), .entryPoint = "mainCS" },
-			.bindGroups {
-				m_SkinningBindGroupLayout.Get(),	// (0)
-			},
-			.renderPipeline {
-				.variants = { m_SkinningComputeVariant },
-			},
-			.threadsPerThreadGroup = { 64, 1, 1 },
-		});
-
-		m_Scene->Filter<Component::SkinnedMesh>()
-			.ForEach([this](Entity entity, Component::SkinnedMesh& skinnedMesh)
-			{
-				// Retireve skeleton pose component.
-				Entity poseEntity = m_Scene->FindEntityByUUID(skinnedMesh.SkeletonPoseUUID);
-
-				if (poseEntity == Entity::Null)
-				{
-					return;
-				}
-
-				auto& pose = m_Scene->GetComponent<Component::SkeletonPose>(poseEntity);
-
-				// Retrieve mesh.
-				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedMesh.Mesh.Get());
-				Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
-
-				MeshPart& part = mesh->Meshes[skinnedMesh.MeshIndex];
-
-				skinnedMesh.JointCount = (uint32_t)pose.Skinning.size();
-
-				if (skinnedMesh.JointCount == 0)
-				{
-					return;
-				}
-
-				Handle<Buffer> jointMatricesBuffer = ResourceManager::Instance->CreateBuffer({
-					.debugName = "joint-matrices-buffer",
-					.usage = BufferUsage::STORAGE,
-					.memoryUsage = MemoryUsage::CPU_GPU,
-					.byteSize = Renderer::Instance->FrameCount * skinnedMesh.JointCount * (uint32_t)sizeof(glm::mat4),
-				});
-
-				Handle<Buffer> skinningPushDataBuffer = ResourceManager::Instance->CreateBuffer({
-					.debugName = "skinning-push-data-buffer",
-					.usage = BufferUsage::UNIFORM,
-					.memoryUsage = MemoryUsage::CPU_GPU,
-					.byteSize = sizeof(SkinningPushData),
-				});
-
-				skinnedMesh.SkinnedVertexBuffer = ResourceManager::Instance->CreateBuffer({
-					.debugName = "skinned-vertex-buffer",
-					.usage = { BufferUsage::VERTEX, BufferUsage::STORAGE },
-					.memoryUsage = MemoryUsage::GPU_ONLY,
-					.byteSize = static_cast<uint32_t>(part.VertexCount * sizeof(Vertex)),
-				});
-
-				skinnedMesh.SkinningBindings = ResourceManager::Instance->CreateBindGroup({
-					.debugName = "skinning-bind-group",
-					.layout = m_SkinningBindGroupLayout.Get(),
-					.buffers = {
-						{ part.VertexBuffers[0] }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
-						{ skinnedMesh.SkinnedVertexBuffer },
-						{ jointMatricesBuffer },
-						{ part.SkinBuffer }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
-						{ skinningPushDataBuffer },
-					}
-				});
-			});
-	}
-
 	void ForwardSceneRenderer::ShadowPassSetup()
 	{
 		// Create shadow framebuffer.
@@ -799,7 +726,7 @@ namespace HBL2
                 .width = Window::Instance->GetExtents().x,
                 .height = Window::Instance->GetExtents().y,
                 .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->IntermediateColorTexture },
+                .colorTargets = { m_TargetTexture },
             }
 		});
 
@@ -810,7 +737,7 @@ namespace HBL2
 				.width = event.Width,
 				.height = event.Height,
 				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->IntermediateColorTexture },
+				.colorTargets = { m_TargetTexture },
 			});
 		});
 	}
@@ -1075,7 +1002,7 @@ namespace HBL2
 			.debugName = "post-process-bind-group",
 			.layout = m_PostProcessBindGroupLayout.Get(),
 			.textures = {
-				{ Renderer::Instance->IntermediateColorTexture, TextureLayout::SHADER_READ_ONLY }
+				{ m_TargetTexture, TextureLayout::SHADER_READ_ONLY }
 			},
 			.buffers = {
 				{ .buffer = m_PostProcessBuffer },
@@ -1131,7 +1058,7 @@ namespace HBL2
 				.debugName = "post-process-bind-group",
 				.layout = m_PostProcessBindGroupLayout.Get(),
 				.textures = {
-					{ Renderer::Instance->IntermediateColorTexture, TextureLayout::SHADER_READ_ONLY }
+					{ m_TargetTexture, TextureLayout::SHADER_READ_ONLY }
 				},
 				.buffers = {
 					{ .buffer = m_PostProcessBuffer },
@@ -1171,65 +1098,6 @@ namespace HBL2
 
 		// Cache post-process variant hash.
 		m_PostProcessShaderVariantHash = variant;
-	}
-
-	void ForwardSceneRenderer::PresentPassSetup()
-	{
-		float* vertexBuffer = new float[24] {
-			-1.0, -1.0, 0.0, 1.0, // Bottom left
-			 1.0, -1.0, 1.0, 1.0, // Bottom right
-			 1.0,  1.0, 1.0, 0.0, // Top right
-			 1.0,  1.0, 1.0, 0.0, // Top right
-			-1.0,  1.0, 0.0, 0.0, // Top left
-			-1.0, -1.0, 0.0, 1.0  // Bottom left
-		};
-
-		m_QuadVertexBuffer = m_ResourceManager->CreateBuffer({
-			.debugName = "quad-vertex-buffer",
-			.usage = BufferUsage::VERTEX,
-			.byteSize = sizeof(float) * 24,
-			.initialData = vertexBuffer,
-		});
-
-		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
-		variant.blendEnabled = false;
-		variant.depthEnabled = false;
-		variant.depthWrite = true;
-		variant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
-
-		// Compile present shaders.
-		const auto& presentShaderData = ShaderUtilities::Get().Compile("assets/shaders/present.slang", (ShaderReflectionData*)nullptr, false);
-
-		// Create present bind group layout.
-		m_PresentShader = ResourceManager::Instance->CreateShader({
-			.debugName = "present-shader",
-			.VS { .code = presentShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
-			.FS { .code = presentShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
-			.bindGroups {
-				Renderer::Instance->GetGlobalPresentBindingsLayout(),	// Global bind group (0)
-			},
-			.renderPipeline {
-				.vertexBufferBindings = {
-					{
-						.byteStride = 16,
-						.attributes = {
-							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
-							{ .byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
-						},
-					}
-				},
-				.variants = { variant },
-			},
-			.renderPass = Renderer::Instance->GetMainRenderPass(),
-		});
-
-		m_QuadMaterial = m_ResourceManager->CreateMaterial({
-			.debugName = "fullscreen-quad-material",
-			.shader = m_PresentShader,
-		});
-
-		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
-		mat->VariantHash = variant;
 	}
 
 	// Gathering.
@@ -1718,141 +1586,6 @@ namespace HBL2
 	}
 
 	// Pass rendering.
-	void ForwardSceneRenderer::SkinningPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData)
-	{
-		BEGIN_PROFILE_PASS();
-
-		uint64_t computeVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_SkinningComputeShader, m_SkinningComputeVariant);
-
-		ScratchArena scratch(Allocator::FrameArenaRT);
-		FixedArray<Dispatch> dispatches = FixedArray<Dispatch>(&scratch, 4096);
-		FixedArray<Handle<Buffer>> outputBuffers = FixedArray<Handle<Buffer>>(&scratch, 4096);
-
-		m_Scene->Filter<Component::SkinnedMesh>()
-			.ForEach([this, commandBuffer, computeVariantHandle, &dispatches, &outputBuffers](Entity entity, Component::SkinnedMesh& skinnedMesh)
-			{
-				// Retireve skeleton pose component.
-				Entity poseEntity = m_Scene->FindEntityByUUID(skinnedMesh.SkeletonPoseUUID);
-
-				if (poseEntity == Entity::Null)
-				{
-					return;
-				}
-
-				auto& pose = m_Scene->GetComponent<Component::SkeletonPose>(poseEntity);
-
-				if (pose.Skinning.empty())
-				{
-					return;
-				}
-
-				// Retrieve mesh resource.
-				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedMesh.Mesh.Get());
-				Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
-
-				if (mesh == nullptr)
-				{
-					return;
-				}
-
-				MeshPart& part = mesh->Meshes[skinnedMesh.MeshIndex];
-
-				if (!skinnedMesh.SkinningBindings.IsValid())
-				{
-					skinnedMesh.JointCount = (uint32_t)pose.Skinning.size();
-
-					Handle<Buffer> jointMatricesBuffer = ResourceManager::Instance->CreateBuffer({
-						.debugName = "joint-matrices-buffer",
-						.usage = BufferUsage::STORAGE,
-						.memoryUsage = MemoryUsage::CPU_GPU,
-						.byteSize = Renderer::Instance->FrameCount * skinnedMesh.JointCount * (uint32_t)sizeof(glm::mat4),
-					});
-
-                    Handle<Buffer> skinningPushDataBuffer = ResourceManager::Instance->CreateBuffer({
-                        .debugName = "skinning-push-data-buffer",
-                        .usage = BufferUsage::UNIFORM,
-                        .memoryUsage = MemoryUsage::CPU_GPU,
-                        .byteSize = sizeof(SkinningPushData),
-                    });
-
-					skinnedMesh.SkinnedVertexBuffer = ResourceManager::Instance->CreateBuffer({
-						.debugName = "skinned-vertex-buffer",
-						.usage = { BufferUsage::VERTEX, BufferUsage::STORAGE },
-						.memoryUsage = MemoryUsage::GPU_ONLY,
-						.byteSize = static_cast<uint32_t>(part.VertexCount * sizeof(Vertex)),
-					});
-
-					skinnedMesh.SkinningBindings = ResourceManager::Instance->CreateBindGroup({
-						.debugName = "skinning-bind-group",
-						.layout = m_SkinningBindGroupLayout.Get(),
-						.buffers = {
-							{ part.VertexBuffers[0] }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
-							{ skinnedMesh.SkinnedVertexBuffer },
-							{ jointMatricesBuffer },
-							{ part.SkinBuffer }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
-							{ skinningPushDataBuffer },
-						}
-					});
-				}
-
-				// Combine all joint matrices into one buffer.
-				ScratchArena scratch(Allocator::FrameArenaRT);
-
-				uint32_t jointMatricesBufferSize = Renderer::Instance->FrameCount * skinnedMesh.JointCount * sizeof(glm::mat4);
-
-				uint8_t* jointMatricesBuffer = (uint8_t*)scratch.Alloc(jointMatricesBufferSize);
-				std::memset(jointMatricesBuffer, 0, jointMatricesBufferSize);
-
-				uint32_t frameIndex = Renderer::Instance->GetFrameIndex();
-				uint32_t startingOffset = frameIndex * (skinnedMesh.JointCount * sizeof(glm::mat4));
-				uint32_t jointMatricesBufferBase = frameIndex * skinnedMesh.JointCount;
-
-				for (size_t i = 0; i < skinnedMesh.JointCount; ++i)
-				{
-					size_t offset = i * sizeof(glm::mat4);
-					std::memcpy(jointMatricesBuffer + startingOffset + offset, &pose.Skinning[i], sizeof(glm::mat4));
-				}
-
-				// Set and map storage buffer for skinning data.
-				ResourceManager::Instance->SetBufferData(skinnedMesh.SkinningBindings, 2, (void*)jointMatricesBuffer);
-				ResourceManager::Instance->MapBufferData(skinnedMesh.SkinningBindings, 2, startingOffset, skinnedMesh.JointCount * (uint32_t)sizeof(glm::mat4));
-
-                // Create and initialize skinning push data.
-                SkinningPushData pushData =
-                {
-                    .JointMatricesOffset = jointMatricesBufferBase,
-                    .VertexCount = part.VertexCount,
-                };
-                
-				// Set and map uniform buffer containing the skinning push data.
-				ResourceManager::Instance->SetBufferData(skinnedMesh.SkinningBindings, 4, (void*)&pushData);
-				ResourceManager::Instance->MapBufferData(skinnedMesh.SkinningBindings, 4, 0, sizeof(SkinningPushData));
-								
-				// Dispatch compute skinning for each skinned mesh.
-				glm::uvec3 numThreadGroups = glm::uvec3((part.VertexCount + 63) / 64, 1, 1);
-
-				Dispatch dispatch =
-				{
-					.Shader = m_SkinningComputeShader,
-					.BindGroup = skinnedMesh.SkinningBindings,
-					.ThreadGroupCount = numThreadGroups,
-					.VariantHandle = computeVariantHandle,
-				};
-
-				dispatches.push_back(dispatch);
-				outputBuffers.push_back(skinnedMesh.SkinnedVertexBuffer);
-			});
-
-		if (!dispatches.empty())
-		{
-			ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({}, { outputBuffers.data(), outputBuffers.size() }, {});
-			computePassRenderer->Dispatch({ dispatches.data(), dispatches.size() });
-			commandBuffer->EndComputePass(*computePassRenderer);
-		}
-
-		END_PROFILE_PASS(Renderer::Instance->GetStats().SkinningPassTime);
-	}
-
 	void ForwardSceneRenderer::ShadowPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData)
 	{
 		BEGIN_PROFILE_PASS();
@@ -2179,7 +1912,7 @@ namespace HBL2
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
             commandBuffer,
-            Renderer::Instance->IntermediateColorTexture,
+            m_TargetTexture,
             TextureLayout::RENDER_ATTACHMENT,
             TextureLayout::SHADER_READ_ONLY
         );
@@ -2212,40 +1945,6 @@ namespace HBL2
 		DebugRenderer::Instance->Render(commandBuffer, debugRenderData);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().DebugPassTime);
-	}
-
-	void ForwardSceneRenderer::PresentPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData)
-	{
-		BEGIN_PROFILE_PASS();
-
-		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(
-            commandBuffer,
-            Renderer::Instance->MainColorTexture,
-            TextureLayout::RENDER_ATTACHMENT,
-            TextureLayout::SHADER_READ_ONLY
-        );
-
-		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
-
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass());
-
-		ScratchArena scratch(Allocator::FrameArenaRT);
-		DrawList draws(scratch, 1);
-
-		draws.Insert({
-			.Shader = m_PresentShader,
-			.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_PresentShader, mat->VariantHash),
-			.VertexBuffer = m_QuadVertexBuffer,
-			.VertexCount = 6,
-		});
-
-		GlobalDrawStream globalDrawStream = { .BindGroup = Renderer::Instance->GetGlobalPresentBindings() };
-		passRenderer->DrawSubPass(globalDrawStream, draws);
-
-		commandBuffer->EndRenderPass(*passRenderer);
-
-		END_PROFILE_PASS(Renderer::Instance->GetStats().PresentPassTime);
 	}
 
 	void ForwardSceneRenderer::GetViewProjection(ForwardSceneRenderData* sceneRenderData, Entity mainCamera)

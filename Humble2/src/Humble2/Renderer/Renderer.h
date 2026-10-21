@@ -114,7 +114,6 @@ namespace HBL2
 
 	struct RendererFrameData
 	{
-		SceneRenderer* Renderer = nullptr;
 		void* RenderData = nullptr;
 		void* DebugRenderData = nullptr;
 		int32_t AcquiredIndex = -1;
@@ -154,12 +153,11 @@ namespace HBL2
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
 
-		void Render(const RendererFrameData& frameData);
 		RendererFrameData* WaitAndRender();
 		void WaitAndBegin();
 		void MarkAndSubmit();
 		void WaitForRenderThreadIdle();
-		void CollectRenderData(SceneRenderer* renderer, void* renderData);
+		void CollectRenderData(void* renderData);
 		void CollectDebugRenderData(void* renderData);
 		void CollectImGuiRenderData(void* renderData, double currentTime);
 		void ReleaseFrameSlot(int32_t acquiredIndex);
@@ -204,7 +202,6 @@ namespace HBL2
 		UniformRingBuffer* TempUniformRingBuffer = nullptr;
 		ShadowAtlasAllocator ShadowAtlasAllocator{};
 
-		Handle<Texture> IntermediateColorTexture;
 		Handle<Texture> MainColorTexture;
 		Handle<Texture> MainDepthTexture;
 		Handle<Texture> ShadowAtlasTexture;

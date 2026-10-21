@@ -193,7 +193,6 @@ namespace HBL2
         m_MainDeletionQueue.Flush();
 
         // Delete offscreen render targets.
-        m_ResourceManager->DeleteTexture(IntermediateColorTexture);
         m_ResourceManager->DeleteTexture(MainColorTexture);
         m_ResourceManager->DeleteTexture(MainDepthTexture);
         m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
@@ -298,25 +297,10 @@ namespace HBL2
         CreateRenderPasses();
         
         // Destroy old offscreen textures.
-        m_ResourceManager->DeleteTexture(IntermediateColorTexture);
         m_ResourceManager->DeleteTexture(MainColorTexture);
         m_ResourceManager->DeleteTexture(MainDepthTexture);
         
         // Recreate the offscreen textures (render targets).
-        IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
-            .debugName = "intermediate-color-target",
-            .dimensions = { width, height, 1 },
-            .format = Format::RGBA16_FLOAT,
-            .internalFormat = Format::RGBA16_FLOAT,
-            .usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
-            .aspect = TextureAspect::COLOR,
-            .sampler =
-            {
-                .filter = TextureFilter::LINEAR,
-                .wrap = Wrap::CLAMP_TO_EDGE,
-            }
-        });
-
         MainColorTexture = ResourceManager::Instance->CreateTexture({
             .debugName = "viewport-color-target",
             .dimensions = { width, height, 1 },

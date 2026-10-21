@@ -14,6 +14,8 @@ namespace HBL2
 		Editor,
 	};
 
+	struct RendererFrameData;
+
 	class HBL2_API Context
 	{
 	public:
@@ -25,6 +27,7 @@ namespace HBL2
 		virtual void OnFixedUpdate() {}
 		virtual void OnGuiRender(float ts) {}
 		virtual void OnGizmoRender(float ts) {}
+		virtual void OnRender(const RendererFrameData* renderData) {}
 		virtual void OnDestroy() {}
 		virtual void OnDetach() {}
 

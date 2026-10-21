@@ -32,19 +32,22 @@ namespace HBL2
 		Idle,
 	};
 
+	struct RendererFrameData;
+
 	class HBL2_API ISystem
 	{
 	public:
 		virtual ~ISystem() = default;
 
-		virtual void OnAttach()				 {};
-		virtual void OnCreate()				 = 0;
-		virtual void OnUpdate(float ts)		 = 0;
-		virtual void OnFixedUpdate()         {}
-		virtual void OnGuiRender(float ts)	 {}
+		virtual void OnAttach() {};
+		virtual void OnCreate() = 0;
+		virtual void OnUpdate(float ts) = 0;
+		virtual void OnFixedUpdate() {}
+		virtual void OnGuiRender(float ts) {}
 		virtual void OnGizmoRender(float ts) {}
-		virtual void OnDestroy()			 {}
-		virtual void OnDetach()				 {}
+		virtual void OnRender(const RendererFrameData* renderData) {}
+		virtual void OnDestroy() {}
+		virtual void OnDetach() {}
 
 		void SetContext(Scene* context, uint32_t maxComponents)
 		{

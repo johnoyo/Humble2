@@ -47,12 +47,13 @@ namespace HBL2
 
 		virtual void Initialize(Scene* scene, uint32_t maxLights) override;
 		virtual void Gather(Entity mainCamera) override;
-		virtual void Render(void* renderData, void* debugRenderData) override;
+		virtual void Render(CommandBuffer* commandBuffer, void* renderData, void* debugRenderData) override;
 		virtual void CleanUp() override;
 
 		virtual void* GetRenderData() override;
 
 	protected:
+		void TextureSetup();
 		void RenderPassSetup();
 		void BindingsSetup();
 
@@ -60,19 +61,16 @@ namespace HBL2
 		Handle<BindGroup> GetGlobalBindings2D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindings2D; }
 		Handle<BindGroup> GetGlobalBindings3D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindings3D; }
 
-		void SkinningPassSetup();
 		void ShadowPassSetup();
 		void DepthPrePassSetup();
 		void GeometryPassSetup();
 		void SpriteRenderingSetup();
 		void SkyboxPassSetup();
 		void PostProcessPassSetup();
-		void PresentPassSetup();
 
 		void GatherDraws(ForwardSceneRenderData* sceneRenderData);
 		void GatherLights(ForwardSceneRenderData* sceneRenderData);
 
-		void SkinningPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
 		void ShadowPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
 		void DepthPrePass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
         void GeometryPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData, RenderPassPool& renderPassPool);
@@ -82,7 +80,6 @@ namespace HBL2
 		void SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData);
 		void PostProcessPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
 		void DebugPass(CommandBuffer* commandBuffer, void* debugRenderData);
-		void PresentPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
 
 		void GetViewProjection(ForwardSceneRenderData* sceneRenderData, Entity mainCamera);
 
@@ -103,11 +100,7 @@ namespace HBL2
 		RefHandle<BindGroupLayout> m_GlobalBindingsLayout3D;
 		
 		Handle<RenderPassLayout> m_RenderPassLayout;
-
-		// Skinning compute pass resources.
-		Handle<Shader> m_SkinningComputeShader;
-		ShaderDescriptor::RenderPipeline::PackedVariant m_SkinningComputeVariant{};
-		RefHandle<BindGroupLayout> m_SkinningBindGroupLayout;
+		UUID m_TargetTextureResizeEventHandle = 0;
 
 		// Shadow pass resources.
 		Handle<Texture> m_ShadowDepthTexture;
@@ -159,10 +152,5 @@ namespace HBL2
 		ShaderDescriptor::RenderPipeline::PackedVariant m_PostProcessShaderVariantHash;
 		Handle<Buffer> m_PostProcessQuadVertexBuffer;
 		UUID m_PostProcessPassResizeEventHandle = 0;
-
-		// Present pass resources.
-		Handle<Buffer> m_QuadVertexBuffer;
-		Handle<Material> m_QuadMaterial;
-		Handle<Shader> m_PresentShader;		
 	};
 }
