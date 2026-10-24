@@ -47,7 +47,7 @@ namespace HBL2
 
 		virtual void Initialize(Scene* scene, uint32_t maxLights) override;
 		virtual void Gather(Entity mainCamera) override;
-		virtual void Render(CommandBuffer* commandBuffer, void* renderData, void* debugRenderData) override;
+		virtual void Render(CommandBuffer* commandBuffer, uint32_t renderDataIndex) override;
 		virtual void CleanUp() override;
 
 		virtual void* GetRenderData() override;
@@ -79,7 +79,6 @@ namespace HBL2
         void SkyboxComputePass(CommandBuffer* commandBuffer, DrawList* skyboxDraws);
 		void SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData);
 		void PostProcessPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
-		void DebugPass(CommandBuffer* commandBuffer, void* debugRenderData);
 
 		void GetViewProjection(ForwardSceneRenderData* sceneRenderData, Entity mainCamera);
 
@@ -100,7 +99,7 @@ namespace HBL2
 		RefHandle<BindGroupLayout> m_GlobalBindingsLayout3D;
 		
 		Handle<RenderPassLayout> m_RenderPassLayout;
-		UUID m_TargetTextureResizeEventHandle = 0;
+		UUID m_RendererResizeEventHandle = 0;
 
 		// Shadow pass resources.
 		Handle<Texture> m_ShadowDepthTexture;

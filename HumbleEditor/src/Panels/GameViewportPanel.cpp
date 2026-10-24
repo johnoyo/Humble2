@@ -1,28 +1,28 @@
-#include "ViewportPanel.h"
+#include "GameViewportPanel.h"
 
 #include "Systems/EditorPanelSystem.h"
 
 namespace HBL2::Editor
 {
-	ViewportPanel::ViewportPanel(const std::string& name, EditorPanelSystem* owner)
+	GameViewportPanel::GameViewportPanel(const std::string& name, EditorPanelSystem* owner)
 	{
 		m_Owner = owner;
 		Name = name;
 	}
 
-	void ViewportPanel::OnAttach()
+	void GameViewportPanel::OnAttach()
 	{
 	}
 
-	void ViewportPanel::OnCreate()
+	void GameViewportPanel::OnCreate()
 	{
 	}
 
-	void ViewportPanel::OnOpen()
+	void GameViewportPanel::OnOpen()
 	{
 	}
 
-	void ViewportPanel::OnRender(float ts)
+	void GameViewportPanel::OnRender(float ts)
 	{
 		Scene* ctx = m_Owner->m_Context;
 		Scene* activeScene = m_Owner->m_ActiveScene;
@@ -72,7 +72,7 @@ namespace HBL2::Editor
 				});
 		}
 
-		ImTextureID viewportTexture = (ImTextureID)HBL2::Renderer::Instance->GetViewportAttachment();
+		ImTextureID viewportTexture = (ImTextureID)HBL2::Renderer::Instance->GetGameViewAttachment();
 
 		if (viewportTexture != 0)
 		{
@@ -256,11 +256,11 @@ namespace HBL2::Editor
 		ImGui::PopStyleVar();
 	}
 
-	void ViewportPanel::OnClose()
+	void GameViewportPanel::OnClose()
 	{
 	}
 
-	void ViewportPanel::OnDestroy()
+	void GameViewportPanel::OnDestroy()
 	{
 	}
 }

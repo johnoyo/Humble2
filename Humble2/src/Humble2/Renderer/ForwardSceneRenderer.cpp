@@ -132,21 +132,19 @@ namespace HBL2
 		GatherLights(sceneRenderData);
 	}
 
-	void ForwardSceneRenderer::Render(CommandBuffer* commandBuffer, void* renderData, void* debugRenderData)
+	void ForwardSceneRenderer::Render(CommandBuffer* commandBuffer, uint32_t renderDataIndex)
 	{
         BEGIN_PROFILE_PASS();
         
-		ForwardSceneRenderData* sceneRenderData = (ForwardSceneRenderData*)renderData;
+		ForwardSceneRenderData* sceneRenderData = (ForwardSceneRenderData*)&m_RenderData[renderDataIndex];
 		UniformRingBuffer* uniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 		ResourceManager* rm = ResourceManager::Instance;
-
-		//CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
 		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
 		rm->MapBufferData(uniformRingBuffer->GetBuffer(), sceneRenderData->m_UBOStartingOffset, sceneRenderData->m_UBOEndingOffset - sceneRenderData->m_UBOStartingOffset);		
 
+		rm->TransitionTextureLayout(commandBuffer, m_IntermediateTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, m_TargetTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
 
 		auto& renderPassPool = Renderer::Instance->GetRenderPassPool();
@@ -169,14 +167,7 @@ namespace HBL2
 		PostProcessPass(commandBuffer, sceneRenderData);
 		renderPassPool.Execute(RenderPassEvent::AfterRenderingPostProcess);
 
-		renderPassPool.Execute(RenderPassEvent::BeforeDebugRendering);
-		DebugPass(commandBuffer, debugRenderData);
-		renderPassPool.Execute(RenderPassEvent::AfterDebugRendering);
-
 		renderPassPool.Execute(RenderPassEvent::BeforePresenting);
-
-		//commandBuffer->EndCommandRecording();
-		//commandBuffer->Submit();
         
         END_PROFILE_PASS(Renderer::Instance->GetStats().MainPassTime);
 	}
@@ -184,8 +175,8 @@ namespace HBL2
 	void ForwardSceneRenderer::CleanUp()
 	{
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
-		m_ResourceManager->DeleteTexture(m_TargetTexture);
-		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_TargetTextureResizeEventHandle);
+		m_ResourceManager->DeleteTexture(m_IntermediateTexture);
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_RendererResizeEventHandle);
 
 		// Shadow pass clean up.
 		m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
@@ -299,7 +290,23 @@ namespace HBL2
 
 	void ForwardSceneRenderer::TextureSetup()
 	{
+		// Main color texture.
 		m_TargetTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "viewport-color-target",
+			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+			.format = Format::BGRA8_UNORM,
+			.internalFormat = Format::BGRA8_UNORM,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::COLOR,
+			.sampler =
+			{
+				.filter = TextureFilter::LINEAR,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
+		// Intermediate color texture.
+		m_IntermediateTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "intermediate-color-target",
 			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
 			.format = Format::RGBA16_FLOAT,
@@ -313,13 +320,47 @@ namespace HBL2
 			}
 		});
 
-		m_TargetTextureResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
+		// Main depth texture.
+		m_DepthTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "viewport-depth-target",
+			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+			.format = Format::D32_FLOAT,
+			.internalFormat = Format::D32_FLOAT,
+			.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::DEPTH,
+			.createSampler = true,
+			.sampler =
+			{
+				.filter = TextureFilter::NEAREST,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
+		m_RendererResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
+			// Main color texture recreation.
 			ResourceManager::Instance->DeleteTexture(m_TargetTexture);
 
 			m_TargetTexture = ResourceManager::Instance->CreateTexture({
+				.debugName = "viewport-color-target",
+				.dimensions = { event.Width, event.Height, 1 },
+				.format = Format::BGRA8_UNORM,
+				.internalFormat = Format::BGRA8_UNORM,
+				.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+				.aspect = TextureAspect::COLOR,
+				.sampler =
+				{
+					.filter = TextureFilter::LINEAR,
+					.wrap = Wrap::CLAMP_TO_EDGE,
+				}
+			});
+
+			// Intermediate color texture recreation.
+			ResourceManager::Instance->DeleteTexture(m_IntermediateTexture);
+
+			m_IntermediateTexture = ResourceManager::Instance->CreateTexture({
 				.debugName = "intermediate-color-target",
-				.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+				.dimensions = { event.Width, event.Height, 1 },
 				.format = Format::RGBA16_FLOAT,
 				.internalFormat = Format::RGBA16_FLOAT,
 				.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
@@ -327,6 +368,24 @@ namespace HBL2
 				.sampler =
 				{
 					.filter = TextureFilter::LINEAR,
+					.wrap = Wrap::CLAMP_TO_EDGE,
+				}
+			});
+
+			// Main depth texture recreation.
+			ResourceManager::Instance->DeleteTexture(m_DepthTexture);
+
+			m_DepthTexture = ResourceManager::Instance->CreateTexture({
+				.debugName = "viewport-depth-target",
+				.dimensions = { event.Width, event.Height, 1 },
+				.format = Format::D32_FLOAT,
+				.internalFormat = Format::D32_FLOAT,
+				.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
+				.aspect = TextureAspect::DEPTH,
+				.createSampler = true,
+				.sampler =
+				{
+					.filter = TextureFilter::NEAREST,
 					.wrap = Wrap::CLAMP_TO_EDGE,
 				}
 			});
@@ -601,7 +660,7 @@ namespace HBL2
             .frameBufferDesc = {
                 .width = Window::Instance->GetExtents().x,
                 .height = Window::Instance->GetExtents().y,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
+                .depthTarget = m_DepthTexture,
             }
         });
 
@@ -610,7 +669,7 @@ namespace HBL2
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DepthOnlyRenderPass, {
 				.width = event.Width,
 				.height = event.Height,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
+				.depthTarget = m_DepthTexture,
 			});
 		});
 
@@ -725,8 +784,8 @@ namespace HBL2
             .frameBufferDesc = {
                 .width = Window::Instance->GetExtents().x,
                 .height = Window::Instance->GetExtents().y,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { m_TargetTexture },
+                .depthTarget = m_DepthTexture,
+                .colorTargets = { m_IntermediateTexture },
             }
 		});
 
@@ -736,8 +795,8 @@ namespace HBL2
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_GeometryRenderPass, {
 				.width = event.Width,
 				.height = event.Height,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { m_TargetTexture },
+				.depthTarget = m_DepthTexture,
+				.colorTargets = { m_IntermediateTexture },
 			});
 		});
 	}
@@ -1002,7 +1061,7 @@ namespace HBL2
 			.debugName = "post-process-bind-group",
 			.layout = m_PostProcessBindGroupLayout.Get(),
 			.textures = {
-				{ m_TargetTexture, TextureLayout::SHADER_READ_ONLY }
+				{ m_IntermediateTexture, TextureLayout::SHADER_READ_ONLY }
 			},
 			.buffers = {
 				{ .buffer = m_PostProcessBuffer },
@@ -1032,8 +1091,8 @@ namespace HBL2
             .frameBufferDesc = {
                 .width = Window::Instance->GetExtents().x,
                 .height = Window::Instance->GetExtents().y,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->MainColorTexture },
+                .depthTarget = m_DepthTexture,
+                .colorTargets = { m_TargetTexture },
             }
 		});
 
@@ -1042,8 +1101,8 @@ namespace HBL2
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PostProcessRenderPass, {
 				.width = event.Width,
 				.height = event.Height,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->MainColorTexture },
+				.depthTarget = m_DepthTexture,
+				.colorTargets = { m_TargetTexture },
 			});
 
 			ResourceManager::Instance->DeleteBindGroup(m_PostProcessBindGroup);
@@ -1058,7 +1117,7 @@ namespace HBL2
 				.debugName = "post-process-bind-group",
 				.layout = m_PostProcessBindGroupLayout.Get(),
 				.textures = {
-					{ m_TargetTexture, TextureLayout::SHADER_READ_ONLY }
+					{ m_IntermediateTexture, TextureLayout::SHADER_READ_ONLY }
 				},
 				.buffers = {
 					{ .buffer = m_PostProcessBuffer },
@@ -1912,7 +1971,7 @@ namespace HBL2
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
             commandBuffer,
-            m_TargetTexture,
+            m_IntermediateTexture,
             TextureLayout::RENDER_ATTACHMENT,
             TextureLayout::SHADER_READ_ONLY
         );
@@ -1936,15 +1995,6 @@ namespace HBL2
 		commandBuffer->EndRenderPass(*passRenderer);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PostProcessPassTime);
-	}
-
-	void ForwardSceneRenderer::DebugPass(CommandBuffer* commandBuffer, void* debugRenderData)
-	{
-		BEGIN_PROFILE_PASS();
-
-		DebugRenderer::Instance->Render(commandBuffer, debugRenderData);
-
-		END_PROFILE_PASS(Renderer::Instance->GetStats().DebugPassTime);
 	}
 
 	void ForwardSceneRenderer::GetViewProjection(ForwardSceneRenderData* sceneRenderData, Entity mainCamera)

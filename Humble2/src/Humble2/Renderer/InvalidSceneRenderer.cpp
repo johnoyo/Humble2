@@ -28,16 +28,16 @@ namespace HBL2
 		InvalidSceneRenderData* sceneRenderData = &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
 	}
 
-	void InvalidSceneRenderer::Render(CommandBuffer* commandBuffer, void* renderData, void* debugRenderData)
+	void InvalidSceneRenderer::Render(CommandBuffer* commandBuffer, uint32_t renderDataIndex)
 	{
 		BEGIN_PROFILE_PASS();
 
-		InvalidSceneRenderData* sceneRenderData = (InvalidSceneRenderData*)renderData;
+		InvalidSceneRenderData* sceneRenderData = (InvalidSceneRenderData*)&m_RenderData[renderDataIndex];
 		ResourceManager* rm = ResourceManager::Instance;
 
+		rm->TransitionTextureLayout(commandBuffer, m_IntermediateTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, m_TargetTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainDepthTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_READ_ONLY);
+		rm->TransitionTextureLayout(commandBuffer, m_DepthTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_READ_ONLY);
 
 		PinkQuadPass(commandBuffer, sceneRenderData);
 
@@ -47,8 +47,8 @@ namespace HBL2
 	void InvalidSceneRenderer::CleanUp()
 	{
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
-		m_ResourceManager->DeleteTexture(m_TargetTexture);
-		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_TargetTextureResizeEventHandle);
+		m_ResourceManager->DeleteTexture(m_IntermediateTexture);
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_RendererResizeEventHandle);
 
 		// Pink quad pass clean up.
 		m_ResourceManager->DeleteBuffer(m_PinkQuadBuffer);
@@ -154,8 +154,8 @@ namespace HBL2
 			.frameBufferDesc = {
 				.width = Window::Instance->GetExtents().x,
 				.height = Window::Instance->GetExtents().y,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->MainColorTexture },
+				.depthTarget = m_DepthTexture,
+				.colorTargets = { m_TargetTexture },
 			}
 		});
 
@@ -164,8 +164,8 @@ namespace HBL2
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PinkQuadRenderPass, {
 				.width = event.Width,
 				.height = event.Height,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->MainColorTexture },
+				.depthTarget = m_DepthTexture,
+				.colorTargets = { m_TargetTexture },
 			});
 		});
 
@@ -202,7 +202,7 @@ namespace HBL2
 
 	void InvalidSceneRenderer::TextureSetup()
 	{
-		m_TargetTexture = ResourceManager::Instance->CreateTexture({
+		m_IntermediateTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "intermediate-color-target",
 			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
 			.format = Format::RGBA16_FLOAT,
@@ -216,11 +216,11 @@ namespace HBL2
 			}
 		});
 
-		m_TargetTextureResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
+		m_RendererResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
-			ResourceManager::Instance->DeleteTexture(m_TargetTexture);
+			ResourceManager::Instance->DeleteTexture(m_IntermediateTexture);
 
-			m_TargetTexture = ResourceManager::Instance->CreateTexture({
+			m_IntermediateTexture = ResourceManager::Instance->CreateTexture({
 				.debugName = "intermediate-color-target",
 				.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
 				.format = Format::RGBA16_FLOAT,
@@ -244,7 +244,7 @@ namespace HBL2
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
 			commandBuffer,
-			m_TargetTexture,
+			m_IntermediateTexture,
 			TextureLayout::RENDER_ATTACHMENT,
 			TextureLayout::SHADER_READ_ONLY
 		);

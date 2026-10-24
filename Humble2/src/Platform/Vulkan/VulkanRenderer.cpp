@@ -51,17 +51,7 @@ namespace HBL2
 			m_VkFrames[i].DebugBindings = m_ResourceManager->CreateBindGroup({
 				.debugName = "debug-draw-bind-group",
 				.layout = m_DebugBindingsLayout,
-				.buffers = { {.buffer = cameraBuffer } }
-			});
-		}
-
-		// Global bindings for presenting.
-		for (int i = 0; i < FRAME_OVERLAP; i++)
-		{
-			m_VkFrames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
-				.debugName = "global-present-bind-group",
-				.layout = GetGlobalPresentBindingsLayout(),
-				.textures = { { MainColorTexture, TextureLayout::SHADER_READ_ONLY } },
+				.buffers = { { .buffer = cameraBuffer } }
 			});
 		}
 
@@ -157,13 +147,10 @@ namespace HBL2
 
 		m_MainDeletionQueue.Flush();
 
-		m_ResourceManager->DeleteTexture(MainColorTexture);
-		m_ResourceManager->DeleteTexture(MainDepthTexture);
 		m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
 
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 
-		m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
 		m_ResourceManager->DeleteBindGroupLayout(m_EmptyBindingsLayout);
 		m_ResourceManager->DeleteBindGroupLayout(m_DynamicBindingsLayout);
 
@@ -171,7 +158,6 @@ namespace HBL2
 
 		for (int i = 0; i < FRAME_OVERLAP; i++)
 		{
-			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].GlobalPresentBindings);
 			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].DebugBindings);
 		}
         
@@ -357,10 +343,6 @@ namespace HBL2
 		// Destroy the depth buffer.
 		m_ResourceManager->DeleteTexture(m_DepthImage);
 
-		// Destroy old offscreen textures.
-		m_ResourceManager->DeleteTexture(MainColorTexture);
-		m_ResourceManager->DeleteTexture(MainDepthTexture);
-
 		m_Device->UpdateSwapChainSupportDetails();
 
 		// Recreate swapchain and associated resources.
@@ -371,59 +353,29 @@ namespace HBL2
 		// Destroy the old swapchain.
 		vkDestroySwapchainKHR(m_Device->Get(), oldSwapchain, nullptr);
 
-		// Recreate the offscreen textures (render targets).
-		MainColorTexture = ResourceManager::Instance->CreateTexture({
-			.debugName = "viewport-color-target",
-			.dimensions = { width, height, 1 },
-			.format = Format::BGRA8_UNORM,
-			.internalFormat = Format::BGRA8_UNORM,
-			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
-			.aspect = TextureAspect::COLOR,
-			.sampler =
-			{
-				.filter = TextureFilter::LINEAR,
-				.wrap = Wrap::CLAMP_TO_EDGE,
-			}
-		});
-
-		MainDepthTexture = ResourceManager::Instance->CreateTexture({
-			.debugName = "viewport-depth-target",
-			.dimensions = { width, height, 1 },
-			.format = Format::D32_FLOAT,
-			.internalFormat = Format::D32_FLOAT,
-			.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
-			.aspect = TextureAspect::DEPTH,
-			.createSampler = true,
-			.sampler =
-			{
-				.filter = TextureFilter::NEAREST,
-				.wrap = Wrap::CLAMP_TO_EDGE,
-			}
-		});
-
-		// Update descriptor sets (for the quad shader).
-		for (int i = 0; i < FRAME_OVERLAP; i++)
-		{
-			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].GlobalPresentBindings);
-
-			m_VkFrames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
-				.debugName = "global-present-bind-group",
-				.layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
-				.textures = { { MainColorTexture, TextureLayout::SHADER_READ_ONLY } },  // Updated with new size
-			});
-		}
-
-		// Update imgui viewport texture.
-		VkDescriptorSet oldColorAttachmentID = m_ColorAttachmentID;
-		m_ResourceManager->GetDeletionQueue().Push(GetFrameNumber(), [=]()
-		{
-			ImGui_ImplVulkan_RemoveTexture(oldColorAttachmentID);
-		});
-		VulkanTexture* viewportTexture = m_ResourceManager->GetTexture(MainColorTexture);
-		m_ColorAttachmentID = ImGui_ImplVulkan_AddTexture(viewportTexture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
 		// Call on resize callbacks.
 		EventDispatcher::Get().Post(RendererResizedEvent(width, height));
+
+		// Update imgui viewport textures.
+		VkDescriptorSet oldSceneViewAttachmentID = m_SceneViewAttachmentID;
+		VkDescriptorSet oldGameViewAttachmentID = m_GameViewAttachmentID;
+		m_ResourceManager->GetDeletionQueue().Push(GetFrameNumber(), [=]()
+		{
+			ImGui_ImplVulkan_RemoveTexture(oldSceneViewAttachmentID);
+			ImGui_ImplVulkan_RemoveTexture(oldGameViewAttachmentID);
+		});
+
+		VulkanTexture* sceneViewTexture = m_ResourceManager->GetTexture(SceneViewTexture);
+		if (sceneViewTexture != nullptr)
+		{
+			m_SceneViewAttachmentID = ImGui_ImplVulkan_AddTexture(sceneViewTexture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		}
+
+		VulkanTexture* gameViewTexture = m_ResourceManager->GetTexture(GameViewTexture);
+		if (gameViewTexture != nullptr)
+		{
+			m_GameViewAttachmentID = ImGui_ImplVulkan_AddTexture(gameViewTexture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		}
 
 		m_Resize = false;
 	}

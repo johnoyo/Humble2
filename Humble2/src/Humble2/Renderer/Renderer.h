@@ -114,9 +114,8 @@ namespace HBL2
 
 	struct RendererFrameData
 	{
-		void* RenderData = nullptr;
-		void* DebugRenderData = nullptr;
 		int32_t AcquiredIndex = -1;
+		int32_t RenderIndex = -1;
 
 		ImDrawDataSnapshot ImGuiRenderData;
 	};
@@ -157,8 +156,6 @@ namespace HBL2
 		void WaitAndBegin();
 		void MarkAndSubmit();
 		void WaitForRenderThreadIdle();
-		void CollectRenderData(void* renderData);
-		void CollectDebugRenderData(void* renderData);
 		void CollectImGuiRenderData(void* renderData, double currentTime);
 		void ReleaseFrameSlot(int32_t acquiredIndex);
 		void ClearFrameDataBuffer();
@@ -172,8 +169,11 @@ namespace HBL2
 
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) = 0;
 
-		virtual void SetViewportAttachment(void* viewportTextureRef) = 0;
-		virtual void* GetViewportAttachment() = 0;
+		virtual void SetGameViewAttachment(void* viewportTextureRef) = 0;
+		virtual void* GetGameViewAttachment() = 0;
+
+		virtual void SetSceneViewAttachment(void* viewportTextureRef) = 0;
+		virtual void* GetSceneViewAttachment() = 0;
 
 		RenderPassPool& GetRenderPassPool() { return m_RenderPassPool; }
 
@@ -187,13 +187,11 @@ namespace HBL2
         virtual Handle<RenderPass> GetImGuiRenderPass() = 0;
         virtual Handle<RenderPass> GetRenderingRenderPass() = 0;
 
-		virtual Handle<BindGroup> GetGlobalPresentBindings() = 0;
 		virtual Handle<BindGroup> GetDebugBindings() = 0;
         
 		const Handle<BindGroup> GetEmptyBindings() const { return m_EmptyBindings; }
 		const Handle<BindGroupLayout> GetDebugBindingsLayout() const { return m_DebugBindingsLayout; }
 		const Handle<BindGroupLayout> GetDynamicBindingsLayout() const { return m_DynamicBindingsLayout; }
-		const Handle<BindGroupLayout> GetGlobalPresentBindingsLayout() const { return m_GlobalPresentBindingsLayout; }
 		const Handle<BindGroupLayout> GetEmptyBindingsLayout() const { return m_EmptyBindingsLayout; }
 
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
@@ -202,8 +200,10 @@ namespace HBL2
 		UniformRingBuffer* TempUniformRingBuffer = nullptr;
 		ShadowAtlasAllocator ShadowAtlasAllocator{};
 
-		Handle<Texture> MainColorTexture;
-		Handle<Texture> MainDepthTexture;
+		Handle<Texture> SceneViewDepthTexture;
+		Handle<Texture> SceneViewTexture;
+		Handle<Texture> GameViewTexture;
+
 		Handle<Texture> ShadowAtlasTexture;
 
 	protected:
@@ -220,7 +220,6 @@ namespace HBL2
 
 		Handle<BindGroupLayout> m_DebugBindingsLayout;
 		Handle<BindGroupLayout> m_DynamicBindingsLayout;
-		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
 		Handle<BindGroupLayout> m_EmptyBindingsLayout;
 		Handle<BindGroup> m_EmptyBindings;
 

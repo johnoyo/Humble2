@@ -165,19 +165,19 @@ namespace HBL2
 		GatherLights(sceneRenderData);
 	}
 
-	void ForwardPlusSceneRenderer::Render(CommandBuffer* commandBuffer, void* renderData, void* debugRenderData)
+	void ForwardPlusSceneRenderer::Render(CommandBuffer* commandBuffer, uint32_t renderDataIndex)
 	{
 		BEGIN_PROFILE_PASS();
 
-		ForwardPlusSceneRenderData* sceneRenderData = (ForwardPlusSceneRenderData*)renderData;
+		ForwardPlusSceneRenderData* sceneRenderData = (ForwardPlusSceneRenderData*)&m_RenderData[renderDataIndex];
 		UniformRingBuffer* uniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 		ResourceManager* rm = ResourceManager::Instance;
 
 		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
 		rm->MapBufferData(uniformRingBuffer->GetBuffer(), sceneRenderData->m_UBOStartingOffset, sceneRenderData->m_UBOEndingOffset - sceneRenderData->m_UBOStartingOffset);
 
-		rm->TransitionTextureLayout(commandBuffer, m_TargetTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, m_IntermediateTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, m_DepthTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
 
 		GridFrustumsComputePass(commandBuffer, sceneRenderData);
@@ -186,7 +186,6 @@ namespace HBL2
 		LightCullingComputePass(commandBuffer, sceneRenderData);
 		GeometryPass(commandBuffer, sceneRenderData);
 		PostProcessPass(commandBuffer, sceneRenderData);
-		DebugPass(commandBuffer, debugRenderData);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().MainPassTime);
 	}
@@ -194,8 +193,8 @@ namespace HBL2
 	void ForwardPlusSceneRenderer::CleanUp()
 	{
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
-		m_ResourceManager->DeleteTexture(m_TargetTexture);
-		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_TargetTextureResizeEventHandle);
+		m_ResourceManager->DeleteTexture(m_IntermediateTexture);
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_RendererResizeEventHandle);
 
 		// Shadow pass clean up.
 		m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
@@ -324,7 +323,7 @@ namespace HBL2
 	// Scene renderer set up.
 	void ForwardPlusSceneRenderer::TextureSetup()
 	{
-		m_TargetTexture = ResourceManager::Instance->CreateTexture({
+		m_IntermediateTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "intermediate-color-target",
 			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
 			.format = Format::RGBA16_FLOAT,
@@ -338,11 +337,11 @@ namespace HBL2
 			}
 		});
 
-		m_TargetTextureResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
+		m_RendererResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
-			ResourceManager::Instance->DeleteTexture(m_TargetTexture);
+			ResourceManager::Instance->DeleteTexture(m_IntermediateTexture);
 
-			m_TargetTexture = ResourceManager::Instance->CreateTexture({
+			m_IntermediateTexture = ResourceManager::Instance->CreateTexture({
 				.debugName = "intermediate-color-target",
 				.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
 				.format = Format::RGBA16_FLOAT,
@@ -606,7 +605,7 @@ namespace HBL2
 			.frameBufferDesc = {
 				.width = Window::Instance->GetExtents().x,
 				.height = Window::Instance->GetExtents().y,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
+				.depthTarget = m_DepthTexture,
 			}
 		});
 
@@ -615,7 +614,7 @@ namespace HBL2
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DepthOnlyRenderPass, {
 				.width = event.Width,
 				.height = event.Height,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
+				.depthTarget = m_DepthTexture,
 			});
 		});
 
@@ -821,8 +820,8 @@ namespace HBL2
 			.frameBufferDesc = {
 				.width = Window::Instance->GetExtents().x,
 				.height = Window::Instance->GetExtents().y,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { m_TargetTexture },
+				.depthTarget = m_DepthTexture,
+				.colorTargets = { m_IntermediateTexture },
 			}
 		});
 
@@ -832,8 +831,8 @@ namespace HBL2
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_GeometryRenderPass, {
 				.width = event.Width,
 				.height = event.Height,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { m_TargetTexture },
+				.depthTarget = m_DepthTexture,
+				.colorTargets = { m_IntermediateTexture },
 			});
 		});
 
@@ -1096,7 +1095,7 @@ namespace HBL2
 			.debugName = "post-process-bind-group",
 			.layout = m_PostProcessBindGroupLayout.Get(),
 			.textures = {
-				{ m_TargetTexture, TextureLayout::SHADER_READ_ONLY }
+				{ m_IntermediateTexture, TextureLayout::SHADER_READ_ONLY }
 			},
 			.buffers = {
 				{ .buffer = m_PostProcessBuffer },
@@ -1126,8 +1125,8 @@ namespace HBL2
 			.frameBufferDesc = {
 				.width = Window::Instance->GetExtents().x,
 				.height = Window::Instance->GetExtents().y,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->MainColorTexture },
+				.depthTarget = m_DepthTexture,
+				.colorTargets = { m_TargetTexture },
 			}
 		});
 
@@ -1136,8 +1135,8 @@ namespace HBL2
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PostProcessRenderPass, {
 				.width = event.Width,
 				.height = event.Height,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->MainColorTexture },
+				.depthTarget = m_DepthTexture,
+				.colorTargets = { m_TargetTexture },
 			});
 
 			ResourceManager::Instance->DeleteBindGroup(m_PostProcessBindGroup);
@@ -1152,7 +1151,7 @@ namespace HBL2
 				.debugName = "post-process-bind-group",
 				.layout = m_PostProcessBindGroupLayout.Get(),
 				.textures = {
-					{ m_TargetTexture, TextureLayout::SHADER_READ_ONLY }
+					{ m_IntermediateTexture, TextureLayout::SHADER_READ_ONLY }
 				},
 				.buffers = {
 					{ .buffer = m_PostProcessBuffer },
@@ -1702,7 +1701,7 @@ namespace HBL2
 		
 		ResourceManager* rm = ResourceManager::Instance;
 
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainDepthTexture, TextureLayout::DEPTH_STENCIL_ATTACHMENT, TextureLayout::DEPTH_STENCIL_READ_ONLY);
+		rm->TransitionTextureLayout(commandBuffer, m_DepthTexture, TextureLayout::DEPTH_STENCIL_ATTACHMENT, TextureLayout::DEPTH_STENCIL_READ_ONLY);
 		rm->TransitionTextureLayout(commandBuffer, o_LightGrid, TextureLayout::UNDEFINED, TextureLayout::GENERAL);
 		rm->TransitionTextureLayout(commandBuffer, t_LightGrid, TextureLayout::UNDEFINED, TextureLayout::GENERAL);
 
@@ -1742,7 +1741,7 @@ namespace HBL2
 		computePassRenderer->Dispatch({ dispatch });
 		commandBuffer->EndComputePass(*computePassRenderer);
 
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainDepthTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, m_DepthTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().LightCullingPassTime);
 	}
@@ -1955,7 +1954,7 @@ namespace HBL2
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
 			commandBuffer,
-			m_TargetTexture,
+			m_IntermediateTexture,
 			TextureLayout::RENDER_ATTACHMENT,
 			TextureLayout::SHADER_READ_ONLY
 		);
@@ -1979,15 +1978,6 @@ namespace HBL2
 		commandBuffer->EndRenderPass(*passRenderer);
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PostProcessPassTime);
-	}
-
-	void ForwardPlusSceneRenderer::DebugPass(CommandBuffer* commandBuffer, void* debugRenderData)
-	{
-		BEGIN_PROFILE_PASS();
-
-		DebugRenderer::Instance->Render(commandBuffer, debugRenderData);
-
-		END_PROFILE_PASS(Renderer::Instance->GetStats().DebugPassTime);
 	}
 
 	// Helper.
@@ -2239,7 +2229,7 @@ namespace HBL2
 				.debugName = "grid-frustums-bind-group",
 				.layout = m_LightCullingBindGroupLayout.Get(),
 				.textures = {
-					{ Renderer::Instance->MainDepthTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY },
+					{ m_DepthTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY },
 					{ o_LightGrid, TextureLayout::GENERAL },
 					{ t_LightGrid, TextureLayout::GENERAL },
 				},

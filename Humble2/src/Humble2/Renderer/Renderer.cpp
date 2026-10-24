@@ -59,17 +59,6 @@ namespace HBL2
 			},
 		});
 
-		// Global bindings layout for presenting to offscreen texture
-		m_GlobalPresentBindingsLayout = ResourceManager::Instance->CreateBindGroupLayout({
-			.debugName = "global-present-bind-group-layout",
-			.textureBindings = {
-				{
-					.slot = 0,
-					.visibility = { ShaderStage::FRAGMENT },
-				},
-			},
-		});
-
 		// Empty bindings layout.
 		m_EmptyBindingsLayout = ResourceManager::Instance->CreateBindGroupLayout({
 			.debugName = "empty-bind-group-layout",
@@ -79,35 +68,6 @@ namespace HBL2
 
 		// With 32MB per frame in flight, we can bump allocate data for ~200K draws, should be plenty enough for almost all use cases.
 		TempUniformRingBuffer = new UniformRingBuffer(m_UniformRingBufferSize, (uint32_t)Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
-
-		MainColorTexture = ResourceManager::Instance->CreateTexture({
-			.debugName = "viewport-color-target",
-			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
-			.format = Format::BGRA8_UNORM,
-			.internalFormat = Format::BGRA8_UNORM,
-			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
-			.aspect = TextureAspect::COLOR,
-			.sampler =
-			{
-				.filter = TextureFilter::LINEAR,
-				.wrap = Wrap::CLAMP_TO_EDGE,
-			}
-		});
-
-		MainDepthTexture = ResourceManager::Instance->CreateTexture({
-			.debugName = "viewport-depth-target",
-			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
-			.format = Format::D32_FLOAT,
-			.internalFormat = Format::D32_FLOAT,
-			.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
-			.aspect = TextureAspect::DEPTH,
-			.createSampler = true,
-			.sampler =
-			{
-				.filter = TextureFilter::NEAREST,
-				.wrap = Wrap::CLAMP_TO_EDGE,
-			}
-		});
 
 		// Create shadow depth texture (huge shadow atlas containing all the shadow textures).
 		ShadowAtlasTexture = ResourceManager::Instance->CreateTexture({
@@ -234,6 +194,8 @@ namespace HBL2
 		HBL2_CORE_ASSERT(!m_FrameReady[m_ReservedWriteIndex], "!m_FrameReady[m_ReservedWriteIndex]");
 		HBL2_CORE_ASSERT(!m_FrameInUse[m_ReservedWriteIndex], "!m_FrameInUse[m_ReservedWriteIndex]");
 
+		m_Frames[m_ReservedWriteIndex].RenderIndex = m_ReservedWriteIndex;
+
 		// Mark frame ready.
 		m_FrameReady[m_ReservedWriteIndex] = true;
 
@@ -256,16 +218,6 @@ namespace HBL2
 		{
 			return !m_Busy && m_SubmitQueue.empty() && !m_FrameReady[m_ReadIndex];
 		});
-	}
-
-	void Renderer::CollectRenderData(void* renderData)
-	{
-		m_Frames[m_ReservedWriteIndex].RenderData = renderData;
-	}
-
-	void Renderer::CollectDebugRenderData(void* renderData)
-	{
-		m_Frames[m_ReservedWriteIndex].DebugRenderData = renderData;
 	}
 
 	void Renderer::CollectImGuiRenderData(void* renderData, double currentTime)
@@ -294,7 +246,6 @@ namespace HBL2
 		for (int i = 0; i < FrameCount; i++)
 		{
 			m_Frames[i].ImGuiRenderData.Clear();
-			m_Frames[i].RenderData = nullptr;
 		}
 	}
 

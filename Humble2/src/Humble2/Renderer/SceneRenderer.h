@@ -26,7 +26,7 @@ namespace HBL2
 
 		virtual void Initialize(Scene* scene, uint32_t maxLights) = 0;
 		virtual void Gather(Entity mainCamera) = 0;
-		virtual void Render(CommandBuffer* commandBuffer, void* renderData, void* debugRenderData) = 0;
+		virtual void Render(CommandBuffer* commandBuffer, uint32_t renderDataIndex) = 0;
 		virtual void CleanUp() = 0;
 
 		virtual void* GetRenderData() = 0;
@@ -35,6 +35,8 @@ namespace HBL2
 
 	protected:
 		Handle<Texture> m_TargetTexture;
+		Handle<Texture> m_IntermediateTexture;
+		Handle<Texture> m_DepthTexture;
 		Scene* m_Scene = nullptr;
 	};
 }

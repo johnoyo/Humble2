@@ -67,7 +67,6 @@ namespace HBL2
 		Entity mainCamera = GetMainCamera();
 
 		m_SceneRenderer->Gather(mainCamera);
-		Renderer::Instance->CollectRenderData(m_SceneRenderer->GetRenderData());
 
 		END_PROFILE_SYSTEM(RunningTime);
 	}
@@ -78,7 +77,7 @@ namespace HBL2
 
 		SkinningPass(commandBuffer);
 
-		m_SceneRenderer->Render(commandBuffer, renderData->RenderData, renderData->DebugRenderData);
+		m_SceneRenderer->Render(commandBuffer, renderData->RenderIndex);
 
 		PresentPass(commandBuffer);
 
@@ -89,6 +88,15 @@ namespace HBL2
 	void RenderingSystem::OnDestroy()
 	{
 		// Present pass clean up.
+		m_PresentBindGroupLayout.Release();
+
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			m_PresentBindGroups[i].Release();
+		}
+
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_RendererResizeEventHandle);
+
 		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
 		m_ResourceManager->DeleteShader(m_PresentShader);
 		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
@@ -196,6 +204,46 @@ namespace HBL2
 
 	void RenderingSystem::PresentPassSetup()
 	{
+		// Bindings layout for presenting to offscreen texture.
+		m_PresentBindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
+			.debugName = "present-bind-group-layout",
+			.textureBindings = {
+				{
+					.slot = 0,
+					.visibility = { ShaderStage::FRAGMENT },
+				},
+			},
+		});
+
+		// Bindings for presenting.
+		for (int i = 0; i < FRAME_OVERLAP; i++)
+		{
+			m_PresentBindGroups[i] = m_ResourceManager->CreateBindGroup({
+				.debugName = "present-bind-group",
+				.layout = m_PresentBindGroupLayout.Get(),
+				.textures = { { m_SceneRenderer->GetTexture(), TextureLayout::SHADER_READ_ONLY } },
+			});
+		}
+
+		// Set the renderers' game view texture.
+		Renderer::Instance->GameViewTexture = m_SceneRenderer->GetTexture();
+
+		m_RendererResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
+		{
+			for (int i = 0; i < FRAME_OVERLAP; i++)
+			{
+				m_PresentBindGroups[i].Release();
+
+				m_PresentBindGroups[i] = m_ResourceManager->CreateBindGroup({
+					.debugName = "present-bind-group",
+					.layout = m_PresentBindGroupLayout.Get(),
+					.textures = { { m_SceneRenderer->GetTexture(), TextureLayout::SHADER_READ_ONLY } },
+				});
+			}
+
+			Renderer::Instance->GameViewTexture = m_SceneRenderer->GetTexture();
+		});
+
 		float* vertexBuffer = new float[24] {
 			-1.0, -1.0, 0.0, 1.0, // Bottom left
 			 1.0, -1.0, 1.0, 1.0, // Bottom right
@@ -227,7 +275,7 @@ namespace HBL2
 			.VS {.code = presentShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS {.code = presentShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				Renderer::Instance->GetGlobalPresentBindingsLayout(),	// Global bind group (0)
+				m_PresentBindGroupLayout.Get(),	// Global bind group (0)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = {
@@ -275,6 +323,11 @@ namespace HBL2
 		}
 
 		return Entity::Null;
+	}
+
+	Handle<BindGroup> RenderingSystem::GetPresentBindings() const
+	{
+		return m_PresentBindGroups[Renderer::Instance->GetFrameIndex()].Get();
 	}
 
 	void RenderingSystem::SkinningPass(CommandBuffer* commandBuffer)
@@ -419,7 +472,7 @@ namespace HBL2
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
 			commandBuffer,
-			Renderer::Instance->MainColorTexture,
+			m_SceneRenderer->GetTexture(),
 			TextureLayout::RENDER_ATTACHMENT,
 			TextureLayout::SHADER_READ_ONLY
 		);
@@ -438,7 +491,7 @@ namespace HBL2
 			.VertexCount = 6,
 		});
 
-		GlobalDrawStream globalDrawStream = { .BindGroup = Renderer::Instance->GetGlobalPresentBindings() };
+		GlobalDrawStream globalDrawStream = { .BindGroup = GetPresentBindings() };
 		passRenderer->DrawSubPass(globalDrawStream, draws);
 
 		commandBuffer->EndRenderPass(*passRenderer);

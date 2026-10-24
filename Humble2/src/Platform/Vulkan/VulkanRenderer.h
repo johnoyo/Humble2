@@ -29,7 +29,6 @@ namespace HBL2
 		VkCommandBuffer ImGuiCommandBuffer;
 
 		Handle<BindGroup> DebugBindings;
-		Handle<BindGroup> GlobalPresentBindings;
 	};
 
 	struct UploadContext
@@ -51,10 +50,12 @@ namespace HBL2
 
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
 
-		virtual void SetViewportAttachment(void* viewportTextureRef) override { m_ColorAttachmentID = (VkDescriptorSet)viewportTextureRef; }
-		virtual void* GetViewportAttachment() override { return m_ColorAttachmentID; }
+		virtual void SetGameViewAttachment(void* viewportTextureRef) override { m_GameViewAttachmentID = (VkDescriptorSet)viewportTextureRef; }
+		virtual void* GetGameViewAttachment() override { return m_GameViewAttachmentID; }
 
-		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalPresentBindings; }
+		virtual void SetSceneViewAttachment(void* viewportTextureRef) override { m_SceneViewAttachmentID = (VkDescriptorSet)viewportTextureRef; }
+		virtual void* GetSceneViewAttachment() override { return m_SceneViewAttachmentID; }
+
 		virtual Handle<BindGroup> GetDebugBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].DebugBindings; }
 
         virtual Handle<RenderPass> GetMainRenderPass() override { return m_RenderPasses[m_SwapchainImageIndex]; }
@@ -132,7 +133,8 @@ namespace HBL2
         Handle<RenderPassLayout> m_RenderPassLayout;
         
 		VkDescriptorPool m_DescriptorPool;
-		VkDescriptorSet m_ColorAttachmentID = VK_NULL_HANDLE;
+		VkDescriptorSet m_SceneViewAttachmentID = VK_NULL_HANDLE;
+		VkDescriptorSet m_GameViewAttachmentID = VK_NULL_HANDLE;
 
 		bool m_Resize = false;
 		glm::uvec2 m_NewSize{};

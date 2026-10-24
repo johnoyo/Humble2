@@ -76,8 +76,8 @@ namespace HBL2
             .frameBufferDesc = {
                 .width = Window::Instance->GetExtents().x,
                 .height = Window::Instance->GetExtents().y,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->MainColorTexture },
+                .depthTarget = Renderer::Instance->SceneViewDepthTexture,
+                .colorTargets = { Renderer::Instance->SceneViewTexture },
             }
 		});
 
@@ -87,8 +87,8 @@ namespace HBL2
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DebugRenderPass, {
 				.width = event.Width,
 				.height = event.Height,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
-				.colorTargets = { Renderer::Instance->MainColorTexture },
+				.depthTarget = Renderer::Instance->SceneViewDepthTexture,
+				.colorTargets = { Renderer::Instance->SceneViewTexture },
 			});
 		});
 
@@ -267,13 +267,11 @@ namespace HBL2
 				.VertexCount = renderData->CurrentWireIndex,
 			});
 		}
-
-		Renderer::Instance->CollectDebugRenderData(renderData);
 	}
 
-	void DebugRenderer::Render(CommandBuffer* commandBuffer, void* debugRenderData)
+	void DebugRenderer::Render(CommandBuffer* commandBuffer, uint32_t debugRenderDataIndex)
 	{
-		DebugRenderData* renderData = (DebugRenderData*)debugRenderData;
+		DebugRenderData* renderData = &m_RenderData[debugRenderDataIndex];
 
 		m_ResourceManager->SetBufferData(m_DebugLineVertexBuffer, 0, renderData->LineVerts.data());
 

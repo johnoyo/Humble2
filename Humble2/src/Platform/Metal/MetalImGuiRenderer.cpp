@@ -28,10 +28,6 @@ namespace HBL2
 
         ImGui_ImplGlfw_InitForOther(Window::Instance->GetHandle(), true);
         ImGui_ImplMetal4_Init(m_Device->Get(), m_Renderer->GetCommandQueue(), FRAME_OVERLAP);
-        
-        // Set viewport texture.
-        MetalTexture* viewportTexture = m_ResourceManager->GetTexture(m_Renderer->MainColorTexture);
-        m_Renderer->SetViewportAttachment((void*)viewportTexture->Texture);
     }
 
     void MetalImGuiRenderer::BeginFrame()
@@ -39,6 +35,26 @@ namespace HBL2
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
+
+        if (!m_SceneViewTextureInitialized)
+        {
+            MetalTexture* sceneViewTexture = m_ResourceManager->GetTexture(m_Renderer->SceneViewTexture);
+            if (sceneViewTexture != nullptr)
+            {
+                m_Renderer->SetSceneViewAttachment((void*)sceneViewTexture->Texture);
+                m_SceneViewTextureInitialized = true;
+            }
+        }
+
+        if (!m_GameViewTextureInitialized)
+        {
+            MetalTexture* gameViewTexture = m_ResourceManager->GetTexture(m_Renderer->GameViewTexture);
+            if (gameViewTexture != nullptr)
+            {
+                m_Renderer->SetGameViewAttachment((void*)gameViewTexture->Texture);
+                m_GameViewTextureInitialized = true;
+            }
+        }
     }
 
     void MetalImGuiRenderer::EndFrame()

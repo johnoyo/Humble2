@@ -28,7 +28,6 @@ namespace HBL2
         MTL4::ArgumentTable* GlobalComputeArgumentTable = nullptr;
         
         Handle<BindGroup> DebugBindings;
-        Handle<BindGroup> GlobalPresentBindings;
     };
 
     struct MtlUploadContext
@@ -51,10 +50,12 @@ namespace HBL2
         
         virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
         
-        virtual void SetViewportAttachment(void* viewportTextureRef) override { m_ColorAttachmentID = (MTL::Texture*)viewportTextureRef; }
-        virtual void* GetViewportAttachment() override { return m_ColorAttachmentID; }
+        virtual void SetGameViewAttachment(void* viewportTextureRef) override { m_GameViewAttachmentID = (MTL::Texture*)viewportTextureRef; }
+        virtual void* GetGameViewAttachment() override { return m_GameViewAttachmentID; }
 
-        virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_MtlFrames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalPresentBindings; }
+        virtual void SetSceneViewAttachment(void* viewportTextureRef) override { m_SceneViewAttachmentID = (MTL::Texture*)viewportTextureRef; }
+        virtual void* GetSceneViewAttachment() override { return m_SceneViewAttachmentID; }
+
         virtual Handle<BindGroup> GetDebugBindings() override { return m_MtlFrames[m_FrameNumber.load() % FRAME_OVERLAP].DebugBindings; }
 
         virtual Handle<RenderPass> GetMainRenderPass() override { return m_RenderPasses[m_FrameNumber.load() % FRAME_OVERLAP]; }
@@ -121,7 +122,8 @@ namespace HBL2
         Handle<RenderPass> m_RenderingRenderPass;
         Handle<RenderPassLayout> m_RenderPassLayout;
         
-        MTL::Texture* m_ColorAttachmentID = nullptr;
+        MTL::Texture* m_SceneViewAttachmentID = nullptr;
+        MTL::Texture* m_GameViewAttachmentID = nullptr;
         
         bool m_ResizeRequested = false;
         int m_Width = 0;

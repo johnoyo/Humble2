@@ -86,7 +86,8 @@ namespace HBL2
 			friend class PlayStopPanel;
 			friend class SystemsPanel;
 			friend class StatsPanel;
-			friend class ViewportPanel;
+			friend class GameViewportPanel;
+			friend class SceneViewportPanel;
 			friend class TopBarPanel;
 			friend class EditorSettingsPanel;
 			friend class ProjectSettingsPanel;

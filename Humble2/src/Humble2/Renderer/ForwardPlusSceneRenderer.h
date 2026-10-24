@@ -50,7 +50,7 @@ namespace HBL2
 
 		virtual void Initialize(Scene* scene, uint32_t maxLights) override;
 		virtual void Gather(Entity mainCamera) override;
-		virtual void Render(CommandBuffer* commandBuffer, void* renderData, void* debugRenderData) override;
+		virtual void Render(CommandBuffer* commandBuffer, uint32_t renderDataIndex) override;
 		virtual void CleanUp() override;
 
 		virtual void* GetRenderData() override;
@@ -87,7 +87,6 @@ namespace HBL2
 		void SkyboxComputePass(CommandBuffer* commandBuffer, DrawList* skyboxDraws);
 		void SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardPlusSceneRenderData* sceneRenderData);
 		void PostProcessPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData);
-		void DebugPass(CommandBuffer* commandBuffer, void* debugRenderData);
 
 		void GetViewProjection(ForwardPlusSceneRenderData* sceneRenderData, Entity mainCamera);
 		void CreateGridFrustumsComputeBindGroup(uint32_t blockSize, uint32_t width, uint32_t height, const glm::mat4& cameraProjection);
@@ -111,7 +110,7 @@ namespace HBL2
 		RefHandle<BindGroupLayout> m_GlobalBindingsLayout3D;
 
 		Handle<RenderPassLayout> m_RenderPassLayout;
-		UUID m_TargetTextureResizeEventHandle = 0;
+		UUID m_RendererResizeEventHandle = 0;
 
 		// Shadow pass resources.
 		Handle<Texture> m_ShadowDepthTexture;

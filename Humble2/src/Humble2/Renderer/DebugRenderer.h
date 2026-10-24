@@ -54,7 +54,7 @@ namespace HBL2
 		virtual void Initialize();
 		virtual void BeginFrame();
 		virtual void EndFrame();
-		virtual void Render(CommandBuffer* commandBuffer, void* debugRenderData);
+		virtual void Render(CommandBuffer* commandBuffer, uint32_t debugRenderDataIndex);
 		virtual void Clean();
 
 		// Public API
