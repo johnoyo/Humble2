@@ -35,18 +35,6 @@ namespace HBL2
 		 * - Bindings in each set should start from zero and increase from there.
 		 */
 
-		// Global bindings layout for the debug rendering.
-		m_DebugBindingsLayout = ResourceManager::Instance->CreateBindGroupLayout({
-			.debugName = "debug-bind-group-layout",
-			.bufferBindings = {
-				{
-					.slot = 0,
-					.visibility = { ShaderStage::VERTEX },
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
 		// Dynamic bindings layout for rendering.
 		m_DynamicBindingsLayout = ResourceManager::Instance->CreateBindGroupLayout({
 			.debugName = "dynamic-bind-group-layout",

@@ -41,6 +41,8 @@ namespace HBL2
 		uint32_t CurrentWireIndex = 0;
 		FixedArray<DebugVertex> WireTrisVerts;
 		//FixedArray<uint32_t> WireTrisIndices;
+
+		Handle<BindGroup> DebugBindings;
 	};
 
 	class HBL2_API DebugRenderer
@@ -96,6 +98,8 @@ namespace HBL2
 		Handle<Buffer> m_DebugLineVertexBuffer;
 		Handle<Buffer> m_DebugFillTriVertexBuffer;
 		Handle<Buffer> m_DebugWireTriVertexBuffer;
+
+		RefHandle<BindGroupLayout> m_DebugBindingsLayout;
 
 		UUID m_DebugPassResizeEventHandle = 0;
 		UUID m_DebugPassSceneChangeEventHandle = 0;

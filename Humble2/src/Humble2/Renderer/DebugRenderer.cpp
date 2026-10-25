@@ -27,6 +27,20 @@ namespace HBL2
 		m_Reservation = Allocator::Arena.Reserve("DebugRendererPool", totalBytes);
 		m_Arena.Initialize(&Allocator::Arena, totalBytes, m_Reservation);
 
+		m_ResourceManager = ResourceManager::Instance;
+
+		// Bindings layout for the debug rendering.
+		m_DebugBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "debug-bind-group-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = { ShaderStage::VERTEX },
+					.type = BufferBindingType::UNIFORM,
+				},
+			},
+		});
+
 		// Reserve max space for the draws and vertices cpu storage to avoid allocations.
 		for (auto& renderData : m_RenderData)
 		{
@@ -40,9 +54,22 @@ namespace HBL2
 
 			renderData.WireTrisVerts = FixedArray<DebugVertex>(&m_Arena, s_MaxDebugVertices);
 			renderData.WireTrisVerts.resize(s_MaxDebugVertices);
-		}
 
-		m_ResourceManager = ResourceManager::Instance;
+			// Bindings for debug rendering.
+			auto cameraBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "debug-draw-camera-uniform-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = sizeof(glm::mat4),
+				.initialData = nullptr,
+			});
+
+			renderData.DebugBindings = m_ResourceManager->CreateBindGroup({
+				.debugName = "debug-draw-bind-group",
+				.layout = m_DebugBindingsLayout.Get(),
+				.buffers = { { .buffer = cameraBuffer } }
+			});
+		}
 
 		m_DebugRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
 			.debugName = "debug-renderpass-layout",
@@ -76,8 +103,6 @@ namespace HBL2
 			.byteSize = s_MaxDebugVertices * sizeof(DebugVertex),
 			.initialData = nullptr,
 		});
-
-		
 
 		// Initialize sphere mesh data.
 		InitSphereMesh(8, 4);
@@ -176,12 +201,11 @@ namespace HBL2
 
 		const auto& cameraMVP = GetCameraMVP();
 
-		Handle<BindGroup> globalBindings = Renderer::Instance->GetDebugBindings();
-		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&cameraMVP);
+		ResourceManager::Instance->SetBufferData(renderData->DebugBindings, 0, (void*)&cameraMVP);
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DebugRenderPass);
 
-		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
+		GlobalDrawStream globalDrawStream = { .BindGroup = renderData->DebugBindings };
 		passRenderer->DrawSubPass(globalDrawStream, renderData->Draws);
 
 		commandBuffer->EndRenderPass(*passRenderer);
@@ -204,12 +228,16 @@ namespace HBL2
 		m_ResourceManager->DeleteMaterial(m_DebugFillMaterial);
 		m_ResourceManager->DeleteMaterial(m_DebugWireMaterial);
 
+		m_DebugBindingsLayout.Release();
+
 		for (auto& renderData : m_RenderData)
 		{
 			renderData.Draws.Reset();
 			renderData.LineVerts.clear();
 			renderData.FillTrisVerts.clear();
 			renderData.WireTrisVerts.clear();
+
+			m_ResourceManager->DeleteBindGroup(renderData.DebugBindings);
 		}
 
 		s_SphereIndices.clear();
@@ -435,7 +463,7 @@ namespace HBL2
 				.VS { .code = debugShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 				.FS { .code = debugShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 				.bindGroups {
-					Renderer::Instance->GetDebugBindingsLayout(),	// Global bind group (0)
+					m_DebugBindingsLayout.Get(),	// Global bind group (0)
 				},
 				.renderPipeline {
 					.vertexBufferBindings = {

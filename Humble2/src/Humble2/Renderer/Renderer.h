@@ -169,11 +169,9 @@ namespace HBL2
 
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) = 0;
 
-		virtual void SetGameViewAttachment(void* viewportTextureRef) = 0;
 		virtual void* GetGameViewAttachment() = 0;
 		virtual void InvalidateGameViewTexture() = 0;
 
-		virtual void SetSceneViewAttachment(void* viewportTextureRef) = 0;
 		virtual void* GetSceneViewAttachment() = 0;
 		virtual void InvalidateSceneViewTexture() = 0;
 
@@ -188,11 +186,8 @@ namespace HBL2
 		virtual Handle<RenderPass> GetMainRenderPass() = 0;
         virtual Handle<RenderPass> GetImGuiRenderPass() = 0;
         virtual Handle<RenderPass> GetRenderingRenderPass() = 0;
-
-		virtual Handle<BindGroup> GetDebugBindings() = 0;
         
 		const Handle<BindGroup> GetEmptyBindings() const { return m_EmptyBindings; }
-		const Handle<BindGroupLayout> GetDebugBindingsLayout() const { return m_DebugBindingsLayout; }
 		const Handle<BindGroupLayout> GetDynamicBindingsLayout() const { return m_DynamicBindingsLayout; }
 		const Handle<BindGroupLayout> GetEmptyBindingsLayout() const { return m_EmptyBindingsLayout; }
 
@@ -217,7 +212,6 @@ namespace HBL2
 		RendererStats m_PreviousStats{};
 		RenderPassPool m_RenderPassPool;
 
-		Handle<BindGroupLayout> m_DebugBindingsLayout;
 		Handle<BindGroupLayout> m_DynamicBindingsLayout;
 		Handle<BindGroupLayout> m_EmptyBindingsLayout;
 		Handle<BindGroup> m_EmptyBindings;

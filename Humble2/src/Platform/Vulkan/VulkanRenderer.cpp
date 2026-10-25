@@ -37,24 +37,6 @@ namespace HBL2
 
 	void VulkanRenderer::PostInitialize()
 	{
-		// Bindings for debug rendering.
-		for (int i = 0; i < FRAME_OVERLAP; i++)
-		{
-			auto cameraBuffer = m_ResourceManager->CreateBuffer({
-				.debugName = "debug-draw-camera-uniform-buffer",
-				.usage = BufferUsage::UNIFORM,
-				.memoryUsage = MemoryUsage::CPU_GPU,
-				.byteSize = sizeof(glm::mat4),
-				.initialData = nullptr,
-			});
-
-			m_VkFrames[i].DebugBindings = m_ResourceManager->CreateBindGroup({
-				.debugName = "debug-draw-bind-group",
-				.layout = m_DebugBindingsLayout,
-				.buffers = { { .buffer = cameraBuffer } }
-			});
-		}
-
 		EventDispatcher::Get().Register<FramebufferSizeEvent>([this](const FramebufferSizeEvent& e)
 		{
 			m_Resize = true;
@@ -151,11 +133,6 @@ namespace HBL2
 		m_ResourceManager->DeleteBindGroupLayout(m_DynamicBindingsLayout);
 
 		m_ResourceManager->DeleteBindGroup(m_EmptyBindings);
-
-		for (int i = 0; i < FRAME_OVERLAP; i++)
-		{
-			m_ResourceManager->DeleteBindGroup(m_VkFrames[i].DebugBindings);
-		}
         
         const uint32_t swapChainImageCount = (uint32_t)m_SwapChainImages.size();
 
