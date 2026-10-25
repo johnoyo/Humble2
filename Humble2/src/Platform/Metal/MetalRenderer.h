@@ -43,8 +43,8 @@ namespace HBL2
     public:
         virtual ~MetalRenderer() = default;
         
-        virtual void BeginFrame() override;
-        virtual void EndFrame() override;
+        virtual CommandBuffer* BeginFrame() override;
+        virtual void EndFrame(CommandBuffer* commandBuffer) override;
         virtual void Present() override;
         virtual void Clean() override;
         

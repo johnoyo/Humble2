@@ -147,8 +147,8 @@ namespace HBL2
 		static constexpr uint32_t FrameCount = FRAME_OVERLAP;
 
 		void Initialize();
-		virtual void BeginFrame() = 0;
-		virtual void EndFrame() = 0;
+		virtual CommandBuffer* BeginFrame() = 0;
+		virtual void EndFrame(CommandBuffer* commandBuffer) = 0;
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
 
@@ -198,13 +198,10 @@ namespace HBL2
 		RendererType GetRendererType() const { return m_RendererType; }
 
 		UniformRingBuffer* TempUniformRingBuffer = nullptr;
-		ShadowAtlasAllocator ShadowAtlasAllocator{};
 
 		Handle<Texture> SceneViewDepthTexture;
 		Handle<Texture> SceneViewTexture;
 		Handle<Texture> GameViewTexture;
-
-		Handle<Texture> ShadowAtlasTexture;
 
 	protected:
 		virtual void PreInitialize() = 0;

@@ -177,7 +177,7 @@ namespace HBL2
 
         // Clone systems.
         dst->RegisterSystem<HierachySystem>();
-        dst->RegisterSystem<CameraSystem>(SystemType::Runtime);
+        dst->RegisterSystem<CameraSystem>();
         dst->RegisterSystem<AnimationSystem>();
         dst->RegisterSystem<TerrainSystem>();
         dst->RegisterSystem<SoundSystem>(SystemType::Runtime);

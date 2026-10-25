@@ -1753,7 +1753,7 @@ namespace HBL2
 		}
 
 		scene->RegisterSystem<HierachySystem>();
-		scene->RegisterSystem<CameraSystem>(SystemType::Runtime);
+		scene->RegisterSystem<CameraSystem>();
 		scene->RegisterSystem<AnimationSystem>();
 		scene->RegisterSystem<TerrainSystem>();
 		scene->RegisterSystem<SoundSystem>(SystemType::Runtime);
@@ -2753,7 +2753,7 @@ namespace HBL2
 			}
 
 			scene->RegisterSystem<HierachySystem>();
-			scene->RegisterSystem<CameraSystem>(SystemType::Runtime);
+			scene->RegisterSystem<CameraSystem>();
 			scene->RegisterSystem<AnimationSystem>();
 			scene->RegisterSystem<TerrainSystem>();
 			scene->RegisterSystem<SoundSystem>(SystemType::Runtime);

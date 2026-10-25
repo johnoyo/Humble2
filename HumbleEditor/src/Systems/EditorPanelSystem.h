@@ -75,7 +75,8 @@ namespace HBL2
 
 			Scene* m_ActiveScene = nullptr;
 			Handle<Scene> m_ActiveSceneTemp;
-			glm::vec2 m_ViewportSize = { 0.f, 0.f };
+			glm::vec2 m_SceneViewportSize = { 0.f, 0.f };
+			glm::vec2 m_GameViewportSize = { 0.f, 0.f };
 			ImGuizmo::MODE m_GizmoMode = ImGuizmo::MODE::LOCAL;
 			bool m_ProjectChanged = false;
 			std::filesystem::path m_EditorScenePath;

@@ -17,14 +17,13 @@ namespace HBL2
 
 		virtual void OnCreate() override;
 		virtual void OnUpdate(float ts) override;
-		virtual void OnRender(const RendererFrameData* renderData) override;
+		virtual void OnRender(CommandBuffer* commandBuffer, const RendererFrameData* renderData) override;
 		virtual void OnDestroy() override;
 
 	private:
 		void SkinningPassSetup();
 		void PresentPassSetup();
 
-		Entity GetMainCamera();
 		Handle<BindGroup> GetPresentBindings() const;
 
 		void SkinningPass(CommandBuffer* commandBuffer);
@@ -48,6 +47,5 @@ namespace HBL2
 		Handle<Buffer> m_QuadVertexBuffer;
 		Handle<Material> m_QuadMaterial;
 		Handle<Shader> m_PresentShader;
-
 	};
 }

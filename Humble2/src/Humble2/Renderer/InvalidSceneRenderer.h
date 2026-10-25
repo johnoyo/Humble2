@@ -19,7 +19,7 @@ namespace HBL2
 	public:
 		virtual ~InvalidSceneRenderer() = default;
 
-		virtual void Initialize(Scene* scene, uint32_t maxLights) override;
+		virtual void Initialize(Scene* scene, uint32_t maxLights, bool useEditorCamera) override;
 		virtual void Gather(Entity mainCamera) override;
 		virtual void Render(CommandBuffer* commandBuffer, uint32_t renderDataIndex) override;
 		virtual void CleanUp() override;

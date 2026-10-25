@@ -54,7 +54,7 @@ namespace HBL2
 			m_SceneRenderer = new InvalidSceneRenderer;
 		}
 
-		m_SceneRenderer->Initialize(m_Context, projectSettings.MaxLights);
+		m_SceneRenderer->Initialize(m_Context, projectSettings.MaxLights, false);
 
 		SkinningPassSetup();
 		PresentPassSetup();
@@ -64,25 +64,18 @@ namespace HBL2
 	{
 		BEGIN_PROFILE_SYSTEM();
 
-		Entity mainCamera = GetMainCamera();
-
-		m_SceneRenderer->Gather(mainCamera);
+		m_SceneRenderer->Gather(m_Context->MainCamera);
 
 		END_PROFILE_SYSTEM(RunningTime);
 	}
 
-	void RenderingSystem::OnRender(const RendererFrameData* renderData)
+	void RenderingSystem::OnRender(CommandBuffer* commandBuffer, const RendererFrameData* renderData)
 	{
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
-
 		SkinningPass(commandBuffer);
 
 		m_SceneRenderer->Render(commandBuffer, renderData->RenderIndex);
 
 		PresentPass(commandBuffer);
-
-		commandBuffer->EndCommandRecording();
-		commandBuffer->Submit();
 	}
 
 	void RenderingSystem::OnDestroy()
@@ -299,30 +292,6 @@ namespace HBL2
 
 		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
 		mat->VariantHash = variant;
-	}
-
-	Entity RenderingSystem::GetMainCamera()
-	{
-		if (Context::Mode == Mode::Runtime)
-		{
-			if (m_Context->MainCamera != Entity::Null)
-			{
-				return m_Context->MainCamera;
-			}
-
-			HBL2_CORE_WARN("No main camera set for runtime context.");
-		}
-		else if (Context::Mode == Mode::Editor)
-		{
-			if (m_EditorScene->MainCamera != Entity::Null)
-			{
-				return m_EditorScene->MainCamera;
-			}
-
-			HBL2_CORE_WARN("No main camera set for editor context.");
-		}
-
-		return Entity::Null;
 	}
 
 	Handle<BindGroup> RenderingSystem::GetPresentBindings() const

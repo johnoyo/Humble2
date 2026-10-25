@@ -43,8 +43,8 @@ namespace HBL2
 	public:
 		virtual ~VulkanRenderer() = default;
 
-		virtual void BeginFrame() override;
-		virtual void EndFrame() override;
+		virtual CommandBuffer* BeginFrame() override;
+		virtual void EndFrame(CommandBuffer* commandBuffer) override;
 		virtual void Present() override;
 		virtual void Clean() override;
 
@@ -96,8 +96,6 @@ namespace HBL2
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool verticalSync);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-
-		void StubRenderPass();
 
 	private:
 		VulkanDevice* m_Device;

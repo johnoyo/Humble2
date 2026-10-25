@@ -69,23 +69,6 @@ namespace HBL2
 		// With 32MB per frame in flight, we can bump allocate data for ~200K draws, should be plenty enough for almost all use cases.
 		TempUniformRingBuffer = new UniformRingBuffer(m_UniformRingBufferSize, (uint32_t)Device::Instance->GetGPUProperties().limits.minUniformBufferOffsetAlignment);
 
-		// Create shadow depth texture (huge shadow atlas containing all the shadow textures).
-		ShadowAtlasTexture = ResourceManager::Instance->CreateTexture({
-			.debugName = "shadow-depth-target",
-			.dimensions = { g_ShadowAtlasSize, g_ShadowAtlasSize, 1 },
-			.format = Format::D32_FLOAT,
-			.internalFormat = Format::D32_FLOAT,
-			.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
-			.aspect = TextureAspect::DEPTH,
-			.createSampler = true,
-			.sampler =
-			{
-				.filter = TextureFilter::NEAREST,
-				.wrap = Wrap::CLAMP_TO_BORDER,
-			},
-			.initialLayout = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
-		});
-
 		PostInitialize();
 
 		// Create empty bindings.

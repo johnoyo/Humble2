@@ -8,7 +8,7 @@ namespace HBL2
 {
 	using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
 
-	void InvalidSceneRenderer::Initialize(Scene* scene, uint32_t maxLights)
+	void InvalidSceneRenderer::Initialize(Scene* scene, uint32_t maxLights, bool useEditorCamera)
 	{
 		m_Scene = scene;
 
@@ -21,6 +21,8 @@ namespace HBL2
 
 		// Setup render passes.
 		PinkQuadPassSetup();
+
+		m_Initialized = true;
 	}
 
 	void InvalidSceneRenderer::Gather(Entity mainCamera)
@@ -92,6 +94,8 @@ namespace HBL2
 			{
 				sprite.Material.Release();
 			});
+
+		m_Initialized = false;
 	}
 
 	void* InvalidSceneRenderer::GetRenderData()

@@ -107,8 +107,9 @@ namespace HBL2
 
 	using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
 
-	void ForwardPlusSceneRenderer::Initialize(Scene* scene, uint32_t maxLights)
+	void ForwardPlusSceneRenderer::Initialize(Scene* scene, uint32_t maxLights, bool useEditorCamera)
 	{
+		m_UseEditorCamera = useEditorCamera;
 		m_MaxLights = maxLights;
 		uint32_t maxEntities = scene->GetDescriptor().maxEntities;
 
@@ -153,6 +154,8 @@ namespace HBL2
 		GeometryPassSetup();
 		SkyboxPassSetup();
 		PostProcessPassSetup();
+
+		m_Initialized = true;
 	}
 
 	void ForwardPlusSceneRenderer::Gather(Entity mainCamera)
@@ -178,7 +181,7 @@ namespace HBL2
 
 		rm->TransitionTextureLayout(commandBuffer, m_IntermediateTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, m_DepthTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, m_ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
 
 		GridFrustumsComputePass(commandBuffer, sceneRenderData);
 		ShadowPass(commandBuffer, sceneRenderData);		
@@ -197,7 +200,7 @@ namespace HBL2
 		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_RendererResizeEventHandle);
 
 		// Shadow pass clean up.
-		m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
+		m_ResourceManager->DeleteTexture(m_ShadowAtlasTexture);
         m_ResourceManager->DeleteRenderPass(m_ShadowRenderPassClear);
 		m_ResourceManager->DeleteRenderPass(m_ShadowRenderPassLoad);
 		m_ResourceManager->DeleteShader(m_ShadowPrePassShader);
@@ -313,6 +316,8 @@ namespace HBL2
 
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].LightCullingBindings);
 		}
+
+		m_Initialized = false;
 	}
 
 	void* ForwardPlusSceneRenderer::GetRenderData()
@@ -502,6 +507,23 @@ namespace HBL2
 	// Pass set up.
 	void ForwardPlusSceneRenderer::ShadowPassSetup()
 	{
+		// Create shadow depth texture (huge shadow atlas containing all the shadow textures).
+		m_ShadowAtlasTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "shadow-depth-target",
+			.dimensions = { g_ShadowAtlasSize, g_ShadowAtlasSize, 1 },
+			.format = Format::D32_FLOAT,
+			.internalFormat = Format::D32_FLOAT,
+			.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::DEPTH,
+			.createSampler = true,
+			.sampler =
+			{
+				.filter = TextureFilter::NEAREST,
+				.wrap = Wrap::CLAMP_TO_BORDER,
+			},
+			.initialLayout = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
+		});
+
 		// Create shadow framebuffer.
 		m_ShadowRenderPassClear = m_ResourceManager->CreateRenderPass({
 			.debugName = "shadow-clear-renderpass",
@@ -517,7 +539,7 @@ namespace HBL2
 			.frameBufferDesc = {
 				.width = g_ShadowAtlasSize,
 				.height = g_ShadowAtlasSize,
-				.depthTarget = Renderer::Instance->ShadowAtlasTexture,
+				.depthTarget = m_ShadowAtlasTexture,
 			}
 		});
         
@@ -535,7 +557,7 @@ namespace HBL2
             .frameBufferDesc = {
                 .width = g_ShadowAtlasSize,
                 .height = g_ShadowAtlasSize,
-                .depthTarget = Renderer::Instance->ShadowAtlasTexture,
+                .depthTarget = m_ShadowAtlasTexture,
             }
         });
 
@@ -1577,7 +1599,7 @@ namespace HBL2
 				{
 					if (light.CastsShadows)
 					{
-						ShadowTile tile = Renderer::Instance->ShadowAtlasAllocator.AllocateTile();
+						ShadowTile tile = m_ShadowAtlasAllocator.AllocateTile();
 
 						if (tile == ShadowTile::Invalid)
 						{
@@ -1612,11 +1634,11 @@ namespace HBL2
 				}
 			});
 
-		Renderer::Instance->ShadowAtlasAllocator.Clear();
+		m_ShadowAtlasAllocator.Clear();
 
 		ResourceManager::Instance->TransitionTextureLayout(
 			commandBuffer,
-			Renderer::Instance->ShadowAtlasTexture,
+			m_ShadowAtlasTexture,
 			TextureLayout::DEPTH_STENCIL_ATTACHMENT,
 			TextureLayout::DEPTH_STENCIL_READ_ONLY
 		);
@@ -1983,7 +2005,7 @@ namespace HBL2
 	// Helper.
 	void ForwardPlusSceneRenderer::GetViewProjection(ForwardPlusSceneRenderData* sceneRenderData, Entity mainCamera)
 	{
-		Scene* scene = (Context::Mode == Mode::Editor ? m_EditorScene : m_Scene);
+		Scene* scene = (m_UseEditorCamera ? m_EditorScene : m_Scene);
 
 		m_MainCamera = mainCamera;
 
@@ -2200,7 +2222,7 @@ namespace HBL2
 				.debugName = "global-bind-group",
 				.layout = m_GlobalBindingsLayout3D.Get(),
 				.textures = {
-					{ Renderer::Instance->ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY },
+					{ m_ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY },
 					{ o_LightGrid, TextureLayout::SHADER_READ_ONLY },
 				},
 				.buffers = {
@@ -2214,7 +2236,7 @@ namespace HBL2
 				.debugName = "global-bind-group",
 				.layout = m_GlobalBindingsLayout3D.Get(),
 				.textures = {
-					{ Renderer::Instance->ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY },
+					{ m_ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY },
 					{ t_LightGrid, TextureLayout::SHADER_READ_ONLY },
 				},
 				.buffers = {

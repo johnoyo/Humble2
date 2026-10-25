@@ -126,7 +126,7 @@ namespace HBL2
 			}
 		}
 
-		void RuntimeContext::OnRender(const RendererFrameData* renderData)
+		void RuntimeContext::OnRender(CommandBuffer* commandBuffer, const RendererFrameData* renderData)
 		{
 			if (m_ActiveScene == nullptr)
 			{
@@ -137,7 +137,7 @@ namespace HBL2
 			{
 				if (system->GetState() == HBL2::SystemState::Play)
 				{
-					system->OnRender(renderData);
+					system->OnRender(commandBuffer, renderData);
 				}
 			}
 		}

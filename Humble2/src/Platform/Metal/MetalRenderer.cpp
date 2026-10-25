@@ -119,7 +119,7 @@ namespace HBL2
         m_CaptureManager = MTL::CaptureManager::sharedCaptureManager();
     }
 
-    void MetalRenderer::BeginFrame()
+    CommandBuffer* MetalRenderer::BeginFrame()
     {
         m_AutoReleasePool = NS::AutoreleasePool::alloc()->init();
         
@@ -136,16 +136,15 @@ namespace HBL2
         m_SurfaceRef = nullptr;
         
         SwapAndResetStats();
+
+        CommandBuffer* commandBuffer = BeginCommandRecording(CommandBufferType::MAIN);
+        return commandBuffer;
     }
 
-    void MetalRenderer::EndFrame()
+    void MetalRenderer::EndFrame(CommandBuffer* commandBuffer)
     {
-        if (!m_SurfaceRef)
-        {
-            return;
-        }
-        
-        m_CommandQueue->signalDrawable(m_SurfaceRef);
+        commandBuffer->EndCommandRecording();
+        commandBuffer->Submit();
     }
 
     void MetalRenderer::Present()
@@ -155,6 +154,8 @@ namespace HBL2
             m_AutoReleasePool->release();
             return;
         }
+
+        m_CommandQueue->signalDrawable(m_SurfaceRef);
         
         m_SurfaceRef->present();
         m_FrameNumber++;

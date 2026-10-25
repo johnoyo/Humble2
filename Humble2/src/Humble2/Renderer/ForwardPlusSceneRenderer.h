@@ -48,7 +48,7 @@ namespace HBL2
 	public:
 		virtual ~ForwardPlusSceneRenderer() = default;
 
-		virtual void Initialize(Scene* scene, uint32_t maxLights) override;
+		virtual void Initialize(Scene* scene, uint32_t maxLights, bool useEditorCamera) override;
 		virtual void Gather(Entity mainCamera) override;
 		virtual void Render(CommandBuffer* commandBuffer, uint32_t renderDataIndex) override;
 		virtual void CleanUp() override;
@@ -104,6 +104,7 @@ namespace HBL2
 
 		uint32_t m_MaxLights = 0;
 		Entity m_MainCamera = Entity::Null;
+		bool m_UseEditorCamera = false;
 
 		RefHandle<BindGroupLayout> m_ShadowBindingsLayout;
 		RefHandle<BindGroupLayout> m_GlobalBindingsLayout2D;
@@ -113,7 +114,8 @@ namespace HBL2
 		UUID m_RendererResizeEventHandle = 0;
 
 		// Shadow pass resources.
-		Handle<Texture> m_ShadowDepthTexture;
+		ShadowAtlasAllocator m_ShadowAtlasAllocator{};
+		Handle<Texture> m_ShadowAtlasTexture;
         Handle<RenderPass> m_ShadowRenderPassClear;
 		Handle<RenderPass> m_ShadowRenderPassLoad;
 		Handle<Shader> m_ShadowPrePassShader;

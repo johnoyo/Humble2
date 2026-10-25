@@ -62,7 +62,7 @@ namespace HBL2
 		});
 	}
 
-	void VulkanRenderer::BeginFrame()
+	CommandBuffer* VulkanRenderer::BeginFrame()
 	{
 		// Wait until the GPU has finished rendering the last frame. Timeout of 1 second
 		VK_VALIDATE(vkWaitForFences(m_Device->Get(), 1, &GetCurrentFrame().InFlightFence, VK_TRUE, UINT64_MAX), "vkWaitForFences");
@@ -92,17 +92,15 @@ namespace HBL2
 		SwapAndResetStats();
         
         m_ImGuiCommandBuffers[m_FrameNumber.load() % FRAME_OVERLAP].SetSignalSemophore(m_ImGuiRenderFinishedSemaphores[m_SwapchainImageIndex]);
+
+		CommandBuffer* commandBuffer = BeginCommandRecording(CommandBufferType::MAIN);
+		return commandBuffer;
 	}
 
-	void VulkanRenderer::EndFrame()
+	void VulkanRenderer::EndFrame(CommandBuffer* commandBuffer)
 	{
-		// In the 1st frame there is no active scene, the rendering systems do not get called.
-		// So the semaphores that renderer waits on are never updated so there are validation errors.
-		// To prevent this, we have a stub pass that does no rendering but follows the flow that the renderer expects.
-		if (!Context::ActiveScene.IsValid())
-		{
-			StubRenderPass();
-		}
+		commandBuffer->EndCommandRecording();
+		commandBuffer->Submit();
 	}
 
 	void VulkanRenderer::Present()
@@ -146,8 +144,6 @@ namespace HBL2
 		VK_VALIDATE(vkDeviceWaitIdle(m_Device->Get()), "vkDeviceWaitIdle");
 
 		m_MainDeletionQueue.Flush();
-
-		m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
 
 		vkDestroySwapchainKHR(m_Device->Get(), m_SwapChain, nullptr);
 
@@ -193,17 +189,6 @@ namespace HBL2
 		m_ResourceManager->FlushAll();
 
 		vmaDestroyAllocator(m_Allocator);
-	}
-
-	void VulkanRenderer::StubRenderPass()
-	{
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
-
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(GetMainRenderPass());
-		commandBuffer->EndRenderPass(*passRenderer);
-
-		commandBuffer->EndCommandRecording();
-		commandBuffer->Submit();
 	}
 
 	CommandBuffer* VulkanRenderer::BeginCommandRecording(CommandBufferType type)

@@ -53,7 +53,7 @@ namespace HBL2
 		Handle<Scene> newSceneHandle = LoadNewScene();
 
 		// Emit scene change event.
-		EventDispatcher::Get().Post(SceneChangeEvent(m_CurrentSceneHandle, newSceneHandle));
+		EventDispatcher::Get().Post(SceneChangeEvent(m_CurrentSceneHandle, newSceneHandle, m_SceneChangeSource == SceneChangeSource::ResourcePlayMode));
 
 		// State management.
 		ManageSceneChangeState();

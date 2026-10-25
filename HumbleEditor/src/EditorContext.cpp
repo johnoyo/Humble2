@@ -30,6 +30,7 @@ namespace HBL2
 			m_EditorScene->RegisterSystem(new TransformSystem);
 			m_EditorScene->RegisterSystem(new CameraSystem);
 			m_EditorScene->RegisterSystem(new EditorCameraSystem);
+			m_EditorScene->RegisterSystem(new SceneViewRenderingSystem);
 
 			// Editor camera set up.
 			auto editorCameraEntity = m_EditorScene->CreateEntity("Hidden");
@@ -66,11 +67,6 @@ namespace HBL2
 
 		void EditorContext::OnUpdate(float ts)
 		{
-			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
-			{
-				system->OnUpdate(ts);
-			}
-
 			if (!IsActiveSceneValid())
 			{
 				HBL2_CORE_TRACE("Active Scene is null.");
@@ -95,6 +91,11 @@ namespace HBL2
 					}
 				}
 			}
+
+			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+			{
+				system->OnUpdate(ts);
+			}
 		}
 
 		void EditorContext::OnFixedUpdate()
@@ -103,11 +104,6 @@ namespace HBL2
 
 			while (m_AccumulatedTime >= Time::FixedTimeStep)
 			{
-				for (HBL2::ISystem* system : m_EditorScene->GetSystems())
-				{
-					system->OnFixedUpdate();
-				}
-
 				if (!IsActiveSceneValid())
 				{
 					HBL2_CORE_TRACE("Active Scene is null.");
@@ -133,6 +129,11 @@ namespace HBL2
 					}
 				}
 
+				for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+				{
+					system->OnFixedUpdate();
+				}
+
 				m_AccumulatedTime -= Time::FixedTimeStep;
 			}
 		}
@@ -140,11 +141,6 @@ namespace HBL2
 		void EditorContext::OnGuiRender(float ts)
 		{
 			ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
-
-			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
-			{
-				system->OnGuiRender(ts);
-			}
 
 			if (!IsActiveSceneValid())
 			{
@@ -170,15 +166,15 @@ namespace HBL2
 					}
 				}
 			}
+
+			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+			{
+				system->OnGuiRender(ts);
+			}
 		}
 
 		void EditorContext::OnGizmoRender(float ts)
 		{
-			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
-			{
-				system->OnGizmoRender(ts);
-			}
-
 			if (!IsActiveSceneValid())
 			{
 				HBL2_CORE_TRACE("Active Scene is null.");
@@ -203,15 +199,15 @@ namespace HBL2
 					}
 				}
 			}
-		}
 
-		void EditorContext::OnRender(const RendererFrameData* renderData)
-		{
 			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
 			{
-				system->OnRender(renderData);
+				system->OnGizmoRender(ts);
 			}
+		}
 
+		void EditorContext::OnRender(CommandBuffer* commandBuffer, const RendererFrameData* renderData)
+		{
 			if (!IsActiveSceneValid())
 			{
 				HBL2_CORE_TRACE("Active Scene is null.");
@@ -222,7 +218,7 @@ namespace HBL2
 			{
 				if (system->GetState() == SystemState::Play)
 				{
-					system->OnRender(renderData);
+					system->OnRender(commandBuffer, renderData);
 				}
 			}
 
@@ -232,25 +228,31 @@ namespace HBL2
 				{
 					if (system->GetState() == SystemState::Play)
 					{
-						system->OnRender(renderData);
+						system->OnRender(commandBuffer, renderData);
 					}
 				}
+			}
+
+			// Invoke editor systems OnRender last.
+			for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+			{
+				system->OnRender(commandBuffer, renderData);
 			}
 		}
 
 		void EditorContext::OnDestroy()
 		{
-			if (m_EditorScene != nullptr)
+			if (IsActiveSceneValid())
 			{
-				for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+				for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 				{
 					system->OnDestroy();
 				}
 			}
 
-			if (IsActiveSceneValid())
+			if (m_EditorScene != nullptr)
 			{
-				for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+				for (HBL2::ISystem* system : m_EditorScene->GetSystems())
 				{
 					system->OnDestroy();
 				}
@@ -265,17 +267,17 @@ namespace HBL2
 
 		void EditorContext::OnDetach()
 		{
-			if (m_EditorScene != nullptr)
+			if (IsActiveSceneValid())
 			{
-				for (HBL2::ISystem* system : m_EditorScene->GetSystems())
+				for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
 				{
 					system->OnDetach();
 				}
 			}
 
-			if (IsActiveSceneValid())
+			if (m_EditorScene != nullptr)
 			{
-				for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+				for (HBL2::ISystem* system : m_EditorScene->GetSystems())
 				{
 					system->OnDetach();
 				}

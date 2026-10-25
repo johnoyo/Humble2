@@ -273,7 +273,7 @@ namespace HBL2
 
 			Renderer::Instance->Initialize();
 			ImGuiRenderer::Instance->Initialize();
-			DebugRenderer::Instance->Initialize();
+			//DebugRenderer::Instance->Initialize();
 
 			TextureUtilities::Get().LoadWhiteTexture();
 			ShaderUtilities::Get().LoadBuiltInShaders();
@@ -295,10 +295,11 @@ namespace HBL2
                 ABORT_RT_FRAME_IF_NEEDED();
 
 				BEGIN_APP_PROFILE(render);
-				Renderer::Instance->BeginFrame();
-				m_Specification.Context->OnRender(frameData);
+				CommandBuffer* cmd = Renderer::Instance->BeginFrame();
+				m_Specification.Context->OnRender(cmd, frameData);
+				Renderer::Instance->EndFrame(cmd);
+
 				ImGuiRenderer::Instance->Render(*frameData);
-				Renderer::Instance->EndFrame();
 				END_APP_PROFILE(render, m_CurrentStats.RenderTime);
 
 				BEGIN_APP_PROFILE(present);
@@ -334,9 +335,9 @@ namespace HBL2
 			END_APP_PROFILE(gameThreadWait, m_CurrentStats.GameThreadWaitTime);
 
 			BEGIN_APP_PROFILE(debugDraw);
-			DebugRenderer::Instance->BeginFrame();
+			//DebugRenderer::Instance->BeginFrame();
 			m_Specification.Context->OnGizmoRender(Time::DeltaTime);
-			DebugRenderer::Instance->EndFrame();
+			//DebugRenderer::Instance->EndFrame();
 			END_APP_PROFILE(debugDraw, m_CurrentStats.DebugDrawTime);
 
 			BEGIN_APP_PROFILE(appUpdate);

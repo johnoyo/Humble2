@@ -16,6 +16,7 @@ namespace HBL2
 		class EditorPanelSystem;
 		class PlayStopPanel;
 		class GameViewportPanel;
+		class SceneViewportPanel;
 		class TopBarPanel;
 		class ContentBrowserPanel;
 	}
@@ -70,6 +71,7 @@ namespace HBL2
 		friend class Editor::EditorPanelSystem;
 		friend class Editor::PlayStopPanel;
 		friend class Editor::GameViewportPanel;
+		friend class Editor::SceneViewportPanel;
 		friend class Editor::TopBarPanel;
 		friend class Editor::ContentBrowserPanel;
 	};

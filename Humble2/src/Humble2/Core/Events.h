@@ -50,12 +50,22 @@ namespace HBL2
 		int Height = 0;
 	};
 
-	class HBL2_API ViewportSizeEvent final : public EventType<ViewportSizeEvent>
+	class HBL2_API SceneViewportSizeEvent final : public EventType<SceneViewportSizeEvent>
 	{
 	public:
-		ViewportSizeEvent(int width, int height) : Width(width), Height(height)
+		SceneViewportSizeEvent(int width, int height) : Width(width), Height(height)
 		{
 		}
+
+		int Width = 0;
+		int Height = 0;
+	};
+
+	class HBL2_API GameViewportSizeEvent final : public EventType<GameViewportSizeEvent>
+	{
+	public:
+		GameViewportSizeEvent(int width, int height) : Width(width), Height(height)
+		{}
 
 		int Width = 0;
 		int Height = 0;
@@ -170,12 +180,13 @@ namespace HBL2
 	class HBL2_API SceneChangeEvent final : public EventType<SceneChangeEvent>
 	{
 	public:
-		SceneChangeEvent(Handle<Scene> oldScene, Handle<Scene> newScene) : OldScene(oldScene), NewScene(newScene)
+		SceneChangeEvent(Handle<Scene> oldScene, Handle<Scene> newScene, bool playModeSceneChange) : OldScene(oldScene), NewScene(newScene), PlayModeSceneChange(playModeSceneChange)
 		{
 		}
 
 		Handle<Scene> OldScene;
 		Handle<Scene> NewScene;
+		bool PlayModeSceneChange;
 	};
 
 	class HBL2_API SystemStateChangeEvent final : public EventType<SystemStateChangeEvent>
