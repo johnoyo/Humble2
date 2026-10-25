@@ -27,7 +27,18 @@ namespace HBL2::Editor
 				m_SceneRenderer->CleanUp();
 			}
 			m_SceneRenderer->Initialize(m_RuntimeScene, maxLights, true);
+			Renderer::Instance->SceneViewDepthTexture = m_SceneRenderer->GetDepthTexture();
 			Renderer::Instance->SceneViewTexture = m_SceneRenderer->GetTexture();
+			Renderer::Instance->InvalidateSceneViewTexture();
+
+			EventDispatcher::Get().Deregister<RendererResizedEvent>(m_RendererResizeEventHandle);
+
+			m_RendererResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& e)
+			{
+				Renderer::Instance->SceneViewDepthTexture = m_SceneRenderer->GetDepthTexture();
+				Renderer::Instance->SceneViewTexture = m_SceneRenderer->GetTexture();
+				Renderer::Instance->InvalidateSceneViewTexture();
+			});
 		});
 
 		// Switch on the renderer type.
@@ -57,11 +68,6 @@ namespace HBL2::Editor
 			// Placeholder invalid scene renderer (outputs pink).
 			m_SceneRenderer = new InvalidSceneRenderer;
 		}
-
-		m_RendererResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& e)
-		{
-			Renderer::Instance->SceneViewTexture = m_SceneRenderer->GetTexture();
-		});
 	}
 
 	void SceneViewRenderingSystem::OnUpdate(float ts)
@@ -76,6 +82,8 @@ namespace HBL2::Editor
 	void SceneViewRenderingSystem::OnRender(CommandBuffer* commandBuffer, const RendererFrameData* renderData)
 	{
 		m_SceneRenderer->Render(commandBuffer, renderData->RenderIndex);
+
+		DebugRenderer::Instance->Render(commandBuffer, renderData->RenderIndex);
 
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(

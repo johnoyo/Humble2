@@ -59,7 +59,7 @@ namespace HBL2
 
 			EventDispatcher::Get().Register<ScrollEvent>([&](const ScrollEvent& e)
 			{
-				if (m_EditorCamera == nullptr || m_Transform == nullptr || Context::Mode == Mode::Runtime)
+				if (m_EditorCamera == nullptr || m_Transform == nullptr)
 				{
 					return;
 				}
@@ -75,7 +75,7 @@ namespace HBL2
 
 			EventDispatcher::Get().Register<CursorPositionEvent>([&](const CursorPositionEvent& e)
 			{
-				if (m_EditorCamera == nullptr || m_Transform == nullptr || Context::Mode == Mode::Runtime)
+				if (m_EditorCamera == nullptr || m_Transform == nullptr)
 				{
 					return;
 				}
@@ -130,11 +130,6 @@ namespace HBL2
 
 		void EditorCameraSystem::OnUpdate(float ts)
 		{
-			if (Context::Mode == Mode::Runtime)
-			{
-				return;
-			}
-
 			m_Context->Filter<Component::EditorCamera, HBL2::Component::Transform>()
 				.ForEach([&](Component::EditorCamera& editorCamera, HBL2::Component::Transform& transform)
 				{

@@ -70,6 +70,7 @@ namespace HBL2
 		virtual void DrawWireTriangle(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3);
 
 	private:
+		void CreateRenderingResourcesIfNeeded();
 		void InitSphereMesh(int segments = 16, int rings = 12);
 		glm::mat4 GetCameraMVP();
 
@@ -97,6 +98,8 @@ namespace HBL2
 		Handle<Buffer> m_DebugWireTriVertexBuffer;
 
 		UUID m_DebugPassResizeEventHandle = 0;
+		UUID m_DebugPassSceneChangeEventHandle = 0;
+		bool m_RenderingResourcesCreated = false;
 
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_Arena;

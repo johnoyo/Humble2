@@ -42,6 +42,7 @@ namespace HBL2
 		// Present pass resources.
 		RefHandle<BindGroupLayout> m_PresentBindGroupLayout;
 		RefHandle<BindGroup> m_PresentBindGroups[Renderer::FrameCount];
+		UUID m_SceneChangeEventHandle = 0;
 		UUID m_RendererResizeEventHandle = 0;
 
 		Handle<Buffer> m_QuadVertexBuffer;

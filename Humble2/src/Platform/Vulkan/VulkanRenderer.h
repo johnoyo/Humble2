@@ -52,9 +52,11 @@ namespace HBL2
 
 		virtual void SetGameViewAttachment(void* viewportTextureRef) override { m_GameViewAttachmentID = (VkDescriptorSet)viewportTextureRef; }
 		virtual void* GetGameViewAttachment() override { return m_GameViewAttachmentID; }
+		virtual void InvalidateGameViewTexture() override;
 
 		virtual void SetSceneViewAttachment(void* viewportTextureRef) override { m_SceneViewAttachmentID = (VkDescriptorSet)viewportTextureRef; }
 		virtual void* GetSceneViewAttachment() override { return m_SceneViewAttachmentID; }
+		virtual void InvalidateSceneViewTexture() override;
 
 		virtual Handle<BindGroup> GetDebugBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].DebugBindings; }
 

@@ -180,13 +180,20 @@ namespace HBL2
 	class HBL2_API SceneChangeEvent final : public EventType<SceneChangeEvent>
 	{
 	public:
-		SceneChangeEvent(Handle<Scene> oldScene, Handle<Scene> newScene, bool playModeSceneChange) : OldScene(oldScene), NewScene(newScene), PlayModeSceneChange(playModeSceneChange)
+		enum class Type
+		{
+			REGULAR,
+			ENTER_PLAY_MODE,
+			EXIT_PLAY_MODE,
+		};
+
+		SceneChangeEvent(Handle<Scene> oldScene, Handle<Scene> newScene, Type type) : OldScene(oldScene), NewScene(newScene), SceneChangeType(type)
 		{
 		}
 
 		Handle<Scene> OldScene;
 		Handle<Scene> NewScene;
-		bool PlayModeSceneChange;
+		Type SceneChangeType;
 	};
 
 	class HBL2_API SystemStateChangeEvent final : public EventType<SystemStateChangeEvent>

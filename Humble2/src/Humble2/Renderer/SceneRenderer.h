@@ -32,6 +32,7 @@ namespace HBL2
 		virtual void* GetRenderData() = 0;
 
 		Handle<Texture> GetTexture() const { return m_TargetTexture; }
+		Handle<Texture> GetDepthTexture() const { return m_DepthTexture; }
 		bool IsInitialized() const { return m_Initialized; }
 
 	protected:

@@ -230,6 +230,24 @@ namespace HBL2
         m_ResourceManager->FlushAll();
     }
 
+    void MetalRenderer::InvalidateGameViewTexture()
+    {
+        MetalTexture* gameViewTexture = m_ResourceManager->GetTexture(GameViewTexture);
+        if (gameViewTexture != nullptr)
+        {
+            SetSceneViewAttachment((void*)gameViewTexture->Texture);
+        }
+    }
+
+    void MetalRenderer::InvalidateSceneViewTexture()
+    {
+        MetalTexture* sceneViewTexture = m_ResourceManager->GetTexture(SceneViewTexture);
+        if (sceneViewTexture != nullptr)
+        {
+            SetSceneViewAttachment((void*)sceneViewTexture->Texture);
+        }
+    }
+
     void MetalRenderer::Resize(int width, int height)
     {
         // Skip resize if width or height are 0.
@@ -285,19 +303,6 @@ namespace HBL2
 
         // Call on resize callbacks.
         EventDispatcher::Get().Post(RendererResizedEvent(width, height));
-        
-        // Update viewport texture attachment (used in imgui).
-        MetalTexture* sceneViewTexture = m_ResourceManager->GetTexture(SceneViewTexture);
-        if (sceneViewTexture != nullptr)
-        {
-            SetSceneViewAttachment((void*)sceneViewTexture->Texture);
-        }
-
-        MetalTexture* gameViewTexture = m_ResourceManager->GetTexture(GameViewTexture);
-        if (gameViewTexture != nullptr)
-        {
-            SetSceneViewAttachment((void*)gameViewTexture->Texture);
-        }
         
         // Replenish tokens so frame rendering can resume cleanly.
         for (uint32_t i = 0; i < FRAME_OVERLAP; ++i)

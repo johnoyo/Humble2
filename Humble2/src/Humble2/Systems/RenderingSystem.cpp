@@ -58,6 +58,27 @@ namespace HBL2
 
 		SkinningPassSetup();
 		PresentPassSetup();
+
+		// Set the renderers' game view texture.
+		Renderer::Instance->GameViewTexture = m_SceneRenderer->GetTexture();
+		Renderer::Instance->InvalidateGameViewTexture();
+
+		m_SceneChangeEventHandle = EventDispatcher::Get().Register<SceneChangeEvent>([this](const HBL2::SceneChangeEvent& e)
+		{
+			// When exiting play mode, the scene used to enter play mode is restored rather than
+			// recreated (play mode runs on a duplicate), so OnCreate is not invoked again.
+			// As a result, GameViewTexture is not refreshed automatically and must be updated
+			// manually in this path.
+			if (e.SceneChangeType == SceneChangeEvent::Type::EXIT_PLAY_MODE)
+			{
+				Scene* newScene = m_ResourceManager->GetScene(e.NewScene);
+				if (newScene == m_Context)
+				{
+					Renderer::Instance->GameViewTexture = m_SceneRenderer->GetTexture();
+					Renderer::Instance->InvalidateGameViewTexture();
+				}
+			}
+		});
 	}
 
 	void RenderingSystem::OnUpdate(float ts)
@@ -89,6 +110,7 @@ namespace HBL2
 		}
 
 		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_RendererResizeEventHandle);
+		EventDispatcher::Get().Deregister<SceneChangeEvent>(m_SceneChangeEventHandle);
 
 		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
 		m_ResourceManager->DeleteShader(m_PresentShader);
@@ -98,10 +120,47 @@ namespace HBL2
 		m_ResourceManager->DeleteShader(m_SkinningComputeShader);
 		m_SkinningBindGroupLayout.Release();
 
+		// Scene renderer clean up.
 		m_SceneRenderer->CleanUp();
-
 		delete m_SceneRenderer;
 		m_SceneRenderer = nullptr;
+
+		// Scene component clean up.
+		m_Context->Filter<Component::StaticMesh>()
+			.ForEach([&](Component::StaticMesh& staticMesh)
+			{
+				staticMesh.Mesh.Release();
+				staticMesh.Material.Release();
+			});
+
+		m_Context->Filter<Component::SkinnedMesh>()
+			.ForEach([&](Component::SkinnedMesh& skinnedMesh)
+			{
+				skinnedMesh.Mesh.Release();
+
+				// m_ResourceManager->DeleteBindGroup(skinnedMesh.SkinningBindings);
+				// skinnedMesh.SkinningBindings = {};
+			});
+
+		m_Context->Filter<Component::SkinnedSubMesh>()
+			.ForEach([&](Component::SkinnedSubMesh& skinnedSubMesh)
+			{
+				skinnedSubMesh.Mesh.Release();
+				skinnedSubMesh.Material.Release();
+			});
+
+		m_Context->Filter<Component::Sprite>()
+			.ForEach([&](Component::Sprite& sprite)
+			{
+				sprite.Material.Release();
+			});
+
+		m_Context->Filter<Component::SkyLight>()
+			.ForEach([&](Component::SkyLight& skyLight)
+			{
+				skyLight.EquirectangularMap.Release();
+				skyLight.Converted = false;
+			});
 	}
 
 	void RenderingSystem::SkinningPassSetup()
@@ -218,10 +277,7 @@ namespace HBL2
 			});
 		}
 
-		// Set the renderers' game view texture.
-		Renderer::Instance->GameViewTexture = m_SceneRenderer->GetTexture();
-
-		m_RendererResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
+		m_RendererResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& e)
 		{
 			for (int i = 0; i < FRAME_OVERLAP; i++)
 			{
@@ -235,6 +291,7 @@ namespace HBL2
 			}
 
 			Renderer::Instance->GameViewTexture = m_SceneRenderer->GetTexture();
+			Renderer::Instance->InvalidateGameViewTexture();
 		});
 
 		float* vertexBuffer = new float[24] {

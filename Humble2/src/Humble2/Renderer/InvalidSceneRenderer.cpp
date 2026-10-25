@@ -59,42 +59,6 @@ namespace HBL2
 		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_PinkQuadPassResizeEventHandle);
 		m_ResourceManager->DeleteBuffer(m_PinkQuadVertexBuffer);
 
-		m_Scene->Filter<Component::SkyLight>()
-			.ForEach([&](Component::SkyLight& skyLight)
-			{
-				skyLight.EquirectangularMap.Release();
-				skyLight.Converted = false;
-			});
-
-		m_Scene->Filter<Component::StaticMesh>()
-			.ForEach([&](Component::StaticMesh& staticMesh)
-			{
-				staticMesh.Mesh.Release();
-				staticMesh.Material.Release();
-			});
-
-		m_Scene->Filter<Component::SkinnedMesh>()
-			.ForEach([&](Component::SkinnedMesh& skinnedMesh)
-			{
-				skinnedMesh.Mesh.Release();
-
-				// m_ResourceManager->DeleteBindGroup(skinnedMesh.SkinningBindings);
-				// skinnedMesh.SkinningBindings = {};
-			});
-
-		m_Scene->Filter<Component::SkinnedSubMesh>()
-			.ForEach([&](Component::SkinnedSubMesh& skinnedSubMesh)
-			{
-				skinnedSubMesh.Mesh.Release();
-				skinnedSubMesh.Material.Release();
-			});
-
-		m_Scene->Filter<Component::Sprite>()
-			.ForEach([&](Component::Sprite& sprite)
-			{
-				sprite.Material.Release();
-			});
-
 		m_Initialized = false;
 	}
 

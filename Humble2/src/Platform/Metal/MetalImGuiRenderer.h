@@ -31,9 +31,6 @@ namespace HBL2
         MetalDevice* m_Device = nullptr;
         MetalRenderer* m_Renderer = nullptr;
         MetalResourceManager* m_ResourceManager = nullptr;
-
-        bool m_SceneViewTextureInitialized = false;
-        bool m_GameViewTextureInitialized = false;
     };
 }
 

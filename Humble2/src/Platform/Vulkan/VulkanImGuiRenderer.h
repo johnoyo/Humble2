@@ -38,8 +38,5 @@ namespace HBL2
 
 		Handle<RenderPass> m_ImGuiRenderPass;
 		VkDescriptorPool m_ImGuiPool;
-
-		bool m_SceneViewTextureInitialized = false;
-		bool m_GameViewTextureInitialized = false;
 	};
 }

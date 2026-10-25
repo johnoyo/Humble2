@@ -171,9 +171,11 @@ namespace HBL2
 
 		virtual void SetGameViewAttachment(void* viewportTextureRef) = 0;
 		virtual void* GetGameViewAttachment() = 0;
+		virtual void InvalidateGameViewTexture() = 0;
 
 		virtual void SetSceneViewAttachment(void* viewportTextureRef) = 0;
 		virtual void* GetSceneViewAttachment() = 0;
+		virtual void InvalidateSceneViewTexture() = 0;
 
 		RenderPassPool& GetRenderPassPool() { return m_RenderPassPool; }
 

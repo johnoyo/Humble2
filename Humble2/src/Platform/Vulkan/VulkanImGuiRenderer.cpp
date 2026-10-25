@@ -69,26 +69,6 @@ namespace HBL2
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
-
-		if (!m_SceneViewTextureInitialized)
-		{
-			VulkanTexture* sceneViewTexture = m_ResourceManager->GetTexture(m_Renderer->SceneViewTexture);
-			if (sceneViewTexture != nullptr)
-			{
-				m_Renderer->SetSceneViewAttachment(ImGui_ImplVulkan_AddTexture(sceneViewTexture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-				m_SceneViewTextureInitialized = true;
-			}
-		}
-
-		if (!m_GameViewTextureInitialized)
-		{
-			VulkanTexture* gameViewTexture = m_ResourceManager->GetTexture(m_Renderer->GameViewTexture);
-			if (gameViewTexture != nullptr)
-			{
-				m_Renderer->SetGameViewAttachment(ImGui_ImplVulkan_AddTexture(gameViewTexture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-				m_GameViewTextureInitialized = true;
-			}
-		}
 	}
 
 	void VulkanImGuiRenderer::EndFrame()

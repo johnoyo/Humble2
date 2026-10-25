@@ -227,6 +227,42 @@ namespace HBL2
 		return vkCmdObj;
 	}
 
+	void VulkanRenderer::InvalidateGameViewTexture()
+	{
+		if (m_GameViewAttachmentID != nullptr)
+		{
+			VkDescriptorSet oldGameViewAttachmentID = m_GameViewAttachmentID;
+			m_ResourceManager->GetDeletionQueue().Push(GetFrameNumber(), [=]()
+			{
+				ImGui_ImplVulkan_RemoveTexture(oldGameViewAttachmentID);
+			});
+		}
+
+		VulkanTexture* gameViewTexture = m_ResourceManager->GetTexture(GameViewTexture);
+		if (gameViewTexture != nullptr)
+		{
+			m_GameViewAttachmentID = ImGui_ImplVulkan_AddTexture(gameViewTexture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		}
+	}
+
+	void VulkanRenderer::InvalidateSceneViewTexture()
+	{
+		if (m_SceneViewAttachmentID != nullptr)
+		{
+			VkDescriptorSet oldSceneViewAttachmentID = m_SceneViewAttachmentID;
+			m_ResourceManager->GetDeletionQueue().Push(GetFrameNumber(), [=]()
+			{
+				ImGui_ImplVulkan_RemoveTexture(oldSceneViewAttachmentID);
+			});
+		}
+
+		VulkanTexture* sceneViewTexture = m_ResourceManager->GetTexture(SceneViewTexture);
+		if (sceneViewTexture != nullptr)
+		{
+			m_SceneViewAttachmentID = ImGui_ImplVulkan_AddTexture(sceneViewTexture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		}
+	}
+
 	void VulkanRenderer::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function)
 	{
 		if (s_UploadContext.CommandBuffer == VK_NULL_HANDLE)
@@ -340,27 +376,6 @@ namespace HBL2
 
 		// Call on resize callbacks.
 		EventDispatcher::Get().Post(RendererResizedEvent(width, height));
-
-		// Update imgui viewport textures.
-		VkDescriptorSet oldSceneViewAttachmentID = m_SceneViewAttachmentID;
-		VkDescriptorSet oldGameViewAttachmentID = m_GameViewAttachmentID;
-		m_ResourceManager->GetDeletionQueue().Push(GetFrameNumber(), [=]()
-		{
-			ImGui_ImplVulkan_RemoveTexture(oldSceneViewAttachmentID);
-			ImGui_ImplVulkan_RemoveTexture(oldGameViewAttachmentID);
-		});
-
-		VulkanTexture* sceneViewTexture = m_ResourceManager->GetTexture(SceneViewTexture);
-		if (sceneViewTexture != nullptr)
-		{
-			m_SceneViewAttachmentID = ImGui_ImplVulkan_AddTexture(sceneViewTexture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		}
-
-		VulkanTexture* gameViewTexture = m_ResourceManager->GetTexture(GameViewTexture);
-		if (gameViewTexture != nullptr)
-		{
-			m_GameViewAttachmentID = ImGui_ImplVulkan_AddTexture(gameViewTexture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		}
 
 		m_Resize = false;
 	}
