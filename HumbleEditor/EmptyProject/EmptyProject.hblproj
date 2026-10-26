@@ -46,6 +46,8 @@ Project:
     Max Render Thread Frame Arena Memory (MB): 8
     Max Worker Memory (MB): 2
     Max UniformBuffer Memory (MB): 32
+    Max Event Types: 256
+    Max Listeners Per Event Type: 1024
     Resource Manager:
       Textures Pool Size: 128
       Shaders Pool Size: 64
