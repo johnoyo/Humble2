@@ -26,8 +26,6 @@ namespace HBL2
         MTL4::CommandAllocator* CommandAllocator = nullptr;
         MTL4::ArgumentTable* GlobalArgumentTable = nullptr;
         MTL4::ArgumentTable* GlobalComputeArgumentTable = nullptr;
-        
-        Handle<BindGroup> DebugBindings;
     };
 
     struct MtlUploadContext

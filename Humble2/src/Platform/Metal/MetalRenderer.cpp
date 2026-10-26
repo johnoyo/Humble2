@@ -164,9 +164,6 @@ namespace HBL2
         m_FrameSemaphore = nullptr;
         
         m_MainDeletionQueue.Flush();
-
-        // Delete offscreen render targets.
-        m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
         
         // Delete bind group layouts.
         m_ResourceManager->DeleteBindGroupLayout(m_EmptyBindingsLayout);
@@ -212,7 +209,7 @@ namespace HBL2
         MetalTexture* gameViewTexture = m_ResourceManager->GetTexture(GameViewTexture);
         if (gameViewTexture != nullptr)
         {
-            SetSceneViewAttachment((void*)gameViewTexture->Texture);
+            m_GameViewAttachmentID = gameViewTexture->Texture;
         }
     }
 
@@ -221,7 +218,7 @@ namespace HBL2
         MetalTexture* sceneViewTexture = m_ResourceManager->GetTexture(SceneViewTexture);
         if (sceneViewTexture != nullptr)
         {
-            SetSceneViewAttachment((void*)sceneViewTexture->Texture);
+            m_SceneViewAttachmentID = sceneViewTexture->Texture;
         }
     }
 
