@@ -15,11 +15,6 @@ namespace HBL2
 		return T * R * S;
 	}
 
-	void SkeletonPoseSystem::OnAttach()
-	{
-
-	}
-
 	void SkeletonPoseSystem::OnCreate()
 	{
 

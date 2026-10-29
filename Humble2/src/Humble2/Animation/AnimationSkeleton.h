@@ -26,7 +26,6 @@ namespace HBL2
         glm::mat4 rootTransform = glm::mat4(1.0f);
     };
 
-    // Resource: shared, immutable
     struct Skeleton
     {
         Skeleton(const SkeletonDescriptor&& desc)
@@ -41,10 +40,23 @@ namespace HBL2
 
         std::vector<int16_t> Parents;       // -1 = root, parent index < child index
         std::vector<uint32_t> NameHashes;
-        std::vector<std::string> Names;         // debug / editor
+        std::vector<std::string> Names;
+
+        // Per-joint inverse of the joint's model-space transform in the bind pose (the pose the mesh was authored in).
+        // Computed once at import and never changes at runtime.
+        // Moves a bind-pose vertex into the joint's local frame, so that multiplying by the animated
+        // pose.Model[i] carries it to its current position: Skinning[i] = Model[i] * InverseBind[i].
+        // With the pose equal to the bind pose, Skinning[i] is the identity matrix.
+        // 
+        // NOTE: The joint’s local frame is the coordinate system with its origin at the joint and its axes pointing the way the joint points,
+        // so it moves and rotates with the joint.
         std::vector<glm::mat4> InverseBind;
+
+        // Per-joint local transform (relative to the parent) in the rest pose the mesh was authored in.
+        // Starting point for every pose, so joints without animation channels stay valid.
         std::vector<JointTransform> BindPose;
-        glm::mat4 RootTransform = glm::mat4(1.0f); // static non-joint ancestors of the root joints
+
+        glm::mat4 RootTransform = glm::mat4(1.0f);
     };
 
     

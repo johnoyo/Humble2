@@ -24,8 +24,6 @@ namespace HBL2
 		virtual void Render(CommandBuffer* commandBuffer, uint32_t renderDataIndex) override;
 		virtual void CleanUp() override;
 
-		virtual void* GetRenderData() override;
-
 	private:
 		void TextureSetup();
 		void RenderPassSetup();

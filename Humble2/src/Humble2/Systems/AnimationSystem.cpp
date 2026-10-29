@@ -1,7 +1,7 @@
 #include "AnimationSystem.h"
 
-#include "AnimationEvent.h"
-#include "AnimationBlender.h"
+#include "Animation/AnimationEvent.h"
+#include "Animation/AnimationBlender.h"
 
 #include "Core/EventDispatcher.h"
 #include "Asset/AssetManager.h"
@@ -134,10 +134,6 @@ namespace HBL2
 				}
 			}
 		}
-	}
-
-	void AnimationSystem::OnAttach()
-	{
 	}
 
 	void AnimationSystem::OnCreate()

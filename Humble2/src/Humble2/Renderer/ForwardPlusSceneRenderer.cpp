@@ -196,7 +196,9 @@ namespace HBL2
 	void ForwardPlusSceneRenderer::CleanUp()
 	{
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
+		m_ResourceManager->DeleteTexture(m_TargetTexture);
 		m_ResourceManager->DeleteTexture(m_IntermediateTexture);
+		m_ResourceManager->DeleteTexture(m_DepthTexture);
 		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_RendererResizeEventHandle);
 
 		// Shadow pass clean up.
@@ -288,14 +290,25 @@ namespace HBL2
 		m_Initialized = false;
 	}
 
-	void* ForwardPlusSceneRenderer::GetRenderData()
-	{
-		return &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
-	}
-
 	// Scene renderer set up.
 	void ForwardPlusSceneRenderer::TextureSetup()
 	{
+		// Main color texture.
+		m_TargetTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "viewport-color-target",
+			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+			.format = Format::BGRA8_UNORM,
+			.internalFormat = Format::BGRA8_UNORM,
+			.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::COLOR,
+			.sampler =
+			{
+				.filter = TextureFilter::LINEAR,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
+		// Intermediate color texture.
 		m_IntermediateTexture = ResourceManager::Instance->CreateTexture({
 			.debugName = "intermediate-color-target",
 			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
@@ -310,13 +323,47 @@ namespace HBL2
 			}
 		});
 
+		// Main depth texture.
+		m_DepthTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "viewport-depth-target",
+			.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+			.format = Format::D32_FLOAT,
+			.internalFormat = Format::D32_FLOAT,
+			.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::DEPTH,
+			.createSampler = true,
+			.sampler =
+			{
+				.filter = TextureFilter::NEAREST,
+				.wrap = Wrap::CLAMP_TO_EDGE,
+			}
+		});
+
 		m_RendererResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
+			// Main color texture recreation.
+			ResourceManager::Instance->DeleteTexture(m_TargetTexture);
+
+			m_TargetTexture = ResourceManager::Instance->CreateTexture({
+				.debugName = "viewport-color-target",
+				.dimensions = { event.Width, event.Height, 1 },
+				.format = Format::BGRA8_UNORM,
+				.internalFormat = Format::BGRA8_UNORM,
+				.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
+				.aspect = TextureAspect::COLOR,
+				.sampler =
+				{
+					.filter = TextureFilter::LINEAR,
+					.wrap = Wrap::CLAMP_TO_EDGE,
+				}
+			});
+
+			// Intermediate color texture recreation.
 			ResourceManager::Instance->DeleteTexture(m_IntermediateTexture);
 
 			m_IntermediateTexture = ResourceManager::Instance->CreateTexture({
 				.debugName = "intermediate-color-target",
-				.dimensions = { Window::Instance->GetExtents().x, Window::Instance->GetExtents().y, 1 },
+				.dimensions = { event.Width, event.Height, 1 },
 				.format = Format::RGBA16_FLOAT,
 				.internalFormat = Format::RGBA16_FLOAT,
 				.usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
@@ -327,6 +374,41 @@ namespace HBL2
 					.wrap = Wrap::CLAMP_TO_EDGE,
 				}
 			});
+
+			// Main depth texture recreation.
+			ResourceManager::Instance->DeleteTexture(m_DepthTexture);
+
+			m_DepthTexture = ResourceManager::Instance->CreateTexture({
+				.debugName = "viewport-depth-target",
+				.dimensions = { event.Width, event.Height, 1 },
+				.format = Format::D32_FLOAT,
+				.internalFormat = Format::D32_FLOAT,
+				.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
+				.aspect = TextureAspect::DEPTH,
+				.createSampler = true,
+				.sampler =
+				{
+					.filter = TextureFilter::NEAREST,
+					.wrap = Wrap::CLAMP_TO_EDGE,
+				}
+			});
+		});
+
+		// Create shadow depth texture (huge shadow atlas containing all the shadow textures).
+		m_ShadowAtlasTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "shadow-depth-target",
+			.dimensions = { g_ShadowAtlasSize, g_ShadowAtlasSize, 1 },
+			.format = Format::D32_FLOAT,
+			.internalFormat = Format::D32_FLOAT,
+			.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::DEPTH,
+			.createSampler = true,
+			.sampler =
+			{
+				.filter = TextureFilter::NEAREST,
+				.wrap = Wrap::CLAMP_TO_BORDER,
+			},
+			.initialLayout = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
 		});
 	}
 

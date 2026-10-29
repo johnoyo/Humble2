@@ -53,8 +53,6 @@ namespace HBL2
 		virtual void Render(CommandBuffer* commandBuffer, uint32_t renderDataIndex) override;
 		virtual void CleanUp() override;
 
-		virtual void* GetRenderData() override;
-
 	private:
 		Handle<BindGroup> GetShadowBindings() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].ShadowBindings; }
 		Handle<BindGroup> GetGlobalBindings2D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindings2D; }

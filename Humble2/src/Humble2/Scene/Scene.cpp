@@ -8,14 +8,14 @@
 
 #include "Systems/HierachySystem.h"
 #include "Systems/CameraSystem.h"
-#include "Animation/AnimationSystem.h"
+#include "Systems/AnimationSystem.h"
 #include "Systems/RenderingSystem.h"
 #include "Systems/SoundSystem.h"
 #include "Systems/Physics2dSystem.h"
 #include "Systems/Physics3dSystem.h"
 #include "Systems/TerrainSystem.h"
 #include "Systems/AnimationCurveSystem.h"
-#include "Animation/SkeletonPoseSystem.h"
+#include "Systems/SkeletonPoseSystem.h"
 
 #include "StructuralCommandBuffer.h"
 

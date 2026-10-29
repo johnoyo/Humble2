@@ -195,8 +195,17 @@ namespace HBL2
 		{
 			RefHandle<Asset> Mesh;
 
+			// Per-joint local transform (relative to the parent joint). Source of truth for the pose:
+			// animation, blending and ragdolls write it. Model and Skinning are derived from it.
 			std::vector<JointTransform> Local;
+
+			// Per-joint transform in the character's model space, derived from Local by walking the hierarchy
+			// (parent Model * Local). Used for attachments, debug drawing and ragdolls.
 			std::vector<glm::mat4> Model;
+
+			// Per-joint matrix the GPU uses to deform vertices: Model * InverseBind.
+			// Takes a bind-pose vertex to its current animated position. Identity when the pose equals the bind pose.
+			// It shows how far has a joint moved from where it was in the bind pose.
 			std::vector<glm::mat4> Skinning;
 		};
 

@@ -178,7 +178,9 @@ namespace HBL2
 	void ForwardSceneRenderer::CleanUp()
 	{
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
+		m_ResourceManager->DeleteTexture(m_TargetTexture);
 		m_ResourceManager->DeleteTexture(m_IntermediateTexture);
+		m_ResourceManager->DeleteTexture(m_DepthTexture);
 		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_RendererResizeEventHandle);
 
 		// Shadow pass clean up.
@@ -254,11 +256,6 @@ namespace HBL2
 		}
 
 		m_Initialized = false;
-	}
-
-	void* ForwardSceneRenderer::GetRenderData()
-	{
-		return &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
 	}
 
 	void ForwardSceneRenderer::TextureSetup()
