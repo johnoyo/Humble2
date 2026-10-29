@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Core/EventDispatcher.h"
-
 #include "Resources/Types.h"
 #include "Resources/Handle.h"
 
@@ -124,17 +122,6 @@ namespace HBL2
 	{
 		std::function<void()> Fn;
 		std::function<void()> Done;
-	};
-
-	struct RendererResizedEvent final : public EventType<RendererResizedEvent>
-	{
-		RendererResizedEvent(uint32_t width, uint32_t height)
-			: Width(width), Height(height)
-		{
-		}
-
-		uint32_t Width;
-		uint32_t Height;
 	};
 
 	class HBL2_API Renderer

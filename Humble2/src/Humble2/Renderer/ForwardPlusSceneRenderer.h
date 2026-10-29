@@ -109,7 +109,6 @@ namespace HBL2
 		RefHandle<BindGroupLayout> m_GlobalBindingsLayout3D;
 
 		Handle<RenderPassLayout> m_RenderPassLayout;
-		UUID m_RendererResizeEventHandle = 0;
 
 		// Shadow pass resources.
 		ShadowAtlasAllocator m_ShadowAtlasAllocator{};

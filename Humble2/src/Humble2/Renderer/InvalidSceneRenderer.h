@@ -43,7 +43,6 @@ namespace HBL2
 		uint32_t m_MaxLights = 0;
 
 		Handle<RenderPassLayout> m_RenderPassLayout;
-		UUID m_RendererResizeEventHandle = 0;
 
 		// Pink quad pass resources.
 		Handle<RenderPass> m_PinkQuadRenderPass;

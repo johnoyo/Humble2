@@ -4,6 +4,8 @@
 #include "Scene/Scene.h"
 #include "Renderer/CommandBuffer.h"
 
+#include "Core/EventDispatcher.h"
+
 namespace HBL2
 {
 	struct PerDrawData
@@ -17,6 +19,16 @@ namespace HBL2
 	{
 		glm::mat4 Model = glm::mat4(1.0f);
 		glm::vec4 Color = { 0.0f, 0.0f, 0.0f, 0.0f };
+	};
+
+	struct RendererResizedEvent final : public EventType<RendererResizedEvent>
+	{
+		RendererResizedEvent(uint32_t width, uint32_t height)
+			: Width(width), Height(height)
+		{}
+
+		uint32_t Width;
+		uint32_t Height;
 	};
 
 	class HBL2_API SceneRenderer
@@ -34,9 +46,15 @@ namespace HBL2
 		bool IsInitialized() const { return m_Initialized; }
 
 	protected:
+		void CreateTextures();
+
+	protected:
 		Handle<Texture> m_TargetTexture;
 		Handle<Texture> m_IntermediateTexture;
 		Handle<Texture> m_DepthTexture;
+
+		UUID m_RendererResizeEventHandle = 0;
+
 		Scene* m_Scene = nullptr;
 		bool m_Initialized = false;
 	};
