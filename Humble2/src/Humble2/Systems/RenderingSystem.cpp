@@ -138,8 +138,8 @@ namespace HBL2
 			{
 				skinnedMesh.Mesh.Release();
 
-				// m_ResourceManager->DeleteBindGroup(skinnedMesh.SkinningBindings);
-				// skinnedMesh.SkinningBindings = {};
+				m_ResourceManager->DeleteBindGroup(skinnedMesh.SkinningBindings);
+				skinnedMesh.SkinningBindings = {};
 			});
 
 		m_Context->Filter<Component::SkinnedSubMesh>()
@@ -244,10 +244,10 @@ namespace HBL2
 					.debugName = "skinning-bind-group",
 					.layout = m_SkinningBindGroupLayout.Get(),
 					.buffers = {
-						{ part.VertexBuffers[0] }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
+						{ part.VertexBuffers[0] },
 						{ skinnedMesh.SkinnedVertexBuffer },
 						{ jointMatricesBuffer },
-						{ part.SkinBuffer }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
+						{ part.SkinBuffer },
 						{ skinningPushDataBuffer },
 					}
 				});
@@ -424,10 +424,10 @@ namespace HBL2
 						.debugName = "skinning-bind-group",
 						.layout = m_SkinningBindGroupLayout.Get(),
 						.buffers = {
-							{ part.VertexBuffers[0] }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
+							{ part.VertexBuffers[0] },
 							{ skinnedMesh.SkinnedVertexBuffer },
 							{ jointMatricesBuffer },
-							{ part.SkinBuffer }, // NOTE: Shared across bind groups, deleting this bind group will invalidate buffer on the others.
+							{ part.SkinBuffer },
 							{ skinningPushDataBuffer },
 						}
 					});

@@ -28,7 +28,7 @@ namespace HBL2
 		};
 		struct BufferEntry
 		{
-			Handle<Buffer> buffer;
+			RefHandle<Buffer> buffer;
 			uint32_t byteOffset = 0;
 			uint32_t range = 0;
 		};

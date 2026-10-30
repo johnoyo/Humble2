@@ -40,7 +40,7 @@ namespace HBL2
 			// Map global buffers per frame data (i.e.: Camera and lighting data)
 			for (const auto& bufferEntry : globalBindGroupCold->Buffers)
 			{
-				VulkanBufferCold* bufferCold = rm->GetBufferCold(bufferEntry.buffer);
+				VulkanBufferCold* bufferCold = rm->GetBufferCold(bufferEntry.buffer.Get());
 
 				// Skip storage buffers.
 				if (bufferCold->BufferUsageFlags & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
@@ -48,7 +48,7 @@ namespace HBL2
 					continue;
 				}
 
-				VulkanBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
+				VulkanBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer.Get());
 
 				void* data;
 				vmaMapMemory(renderer->GetAllocator(), buffer->Allocation, &data);

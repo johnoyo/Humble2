@@ -144,7 +144,7 @@ namespace HBL2
 		ResourceManager* rm = ResourceManager::Instance;
 
 		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
-		rm->MapBufferData(uniformRingBuffer->GetBuffer(), sceneRenderData->m_UBOStartingOffset, sceneRenderData->m_UBOEndingOffset - sceneRenderData->m_UBOStartingOffset);		
+		rm->MapBufferData(uniformRingBuffer->GetBuffer(), sceneRenderData->m_UBOStartingOffset, sceneRenderData->m_UBOEndingOffset - sceneRenderData->m_UBOStartingOffset);
 
 		rm->TransitionTextureLayout(commandBuffer, m_IntermediateTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, m_TargetTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
