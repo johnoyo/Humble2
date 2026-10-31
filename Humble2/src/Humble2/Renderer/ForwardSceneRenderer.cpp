@@ -53,26 +53,6 @@ namespace HBL2
 		return *closest;
 	}
 
-	struct CaptureMatrices
-	{
-		glm::mat4 View[6];
-		float FaceSize = 2048.f;
-		float _padding[3];
-	};
-
-	static CaptureMatrices g_CaptureMatrices =
-	{
-		.View =
-		{
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		}
-	};
-
 	using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
 
 	void ForwardSceneRenderer::Initialize(Scene* scene, uint32_t maxLights, bool useEditorCamera)
@@ -211,26 +191,12 @@ namespace HBL2
 		m_ResourceManager->DeleteMesh(m_SpriteMesh);
 
 		// Skybox pass clean up.
-		m_EquirectToSkyboxBindGroupLayout.Release();
-		m_ResourceManager->DeleteShader(m_EquirectToSkyboxShader);
-		m_ResourceManager->DeleteBuffer(m_CaptureMatricesBuffer);
 		m_SkyboxGlobalBindGroupLayout.Release();
 		m_ResourceManager->DeleteBindGroup(m_SkyboxGlobalBindGroup);
 		m_ResourceManager->DeleteShader(m_SkyboxShader);
 		m_SkyboxBindGroupLayout.Release();
 		m_ResourceManager->DeleteBuffer(m_CubeMeshBuffer);
 		m_ResourceManager->DeleteMesh(m_CubeMesh);
-
-		m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
-		m_Scene->Filter<Component::SkyLight>()
-			.ForEach([&](Component::SkyLight& skyLight)
-			{
-				m_ResourceManager->DeleteTexture(skyLight.CubeMap);
-				skyLight.CubeMap = {};
-
-				m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
-				skyLight.CubeMapMaterial = {};
-			});
 
 		// Post process pass clean up.
 		m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
@@ -726,53 +692,6 @@ namespace HBL2
 
 	void ForwardSceneRenderer::SkyboxPassSetup()
 	{
-		m_CaptureMatricesBuffer = m_ResourceManager->CreateBuffer({
-			.debugName = "capture-matrices-buffer",
-			.byteSize = sizeof(CaptureMatrices),
-			.initialData = &g_CaptureMatrices,
-		});
-
-		// Compile compute shader.
-        const auto& compilationData = ShaderUtilities::Get().Compile("assets/shaders/equirectangular-to-skybox.slang", nullptr, false);
-        
-		// Create compute bind group layout.
-		m_EquirectToSkyboxBindGroupLayout = m_ResourceManager->CreateBindGroupLayout({
-			.debugName = "compute-bind-group-layout",
-			.textureBindings = {
-				{
-					.slot = 0,
-					.visibility = { ShaderStage::COMPUTE },
-					.type = TextureBindingType::COMBINED_IMAGE_SAMPLER,
-				},
-				{
-					.slot = 1,
-					.visibility = { ShaderStage::COMPUTE },
-					.type = TextureBindingType::STORAGE_IMAGE,
-				},
-			},
-			.bufferBindings = {
-				{
-					.slot = 2,
-					.visibility = { ShaderStage::COMPUTE },
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
-		m_EquirectToSkyboxShader = ResourceManager::Instance->CreateShader({
-			.debugName = "compute-shader",
-			.type = ShaderType::COMPUTE,
-			.CS { .code = compilationData.computeShaderCode.AsSpan(), .entryPoint = "mainCS" },
-			.bindGroups {
-				m_EquirectToSkyboxBindGroupLayout.Get(),	// (0)
-			},
-			.renderPipeline {
-				.variants = { m_ComputeVariant },
-			},
-			.renderPass = m_PostProcessRenderPass,
-            .threadsPerThreadGroup = { 16, 16, 1 },
-		});
-
 		// Skybox bind group.
 		m_SkyboxBindGroupLayout = m_ResourceManager->CreateBindGroupLayout({
 			.debugName = "skybox-global-layout",
@@ -827,9 +746,9 @@ namespace HBL2
 			.VS { .code = skyboxShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = skyboxShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				m_SkyboxGlobalBindGroupLayout.Get(),					// Global bind group (0)
-				Renderer::Instance->GetEmptyBindingsLayout(),	// Unused
-				m_SkyboxBindGroupLayout.Get(),						// (2)
+				m_SkyboxGlobalBindGroupLayout.Get(),			// Global bind group (0)
+				Renderer::Instance->GetEmptyBindingsLayout(),	// Unused (1)
+				m_SkyboxBindGroupLayout.Get(),					// (2)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = {
@@ -892,14 +811,6 @@ namespace HBL2
 				}
 			}
 		});
-
-		m_Scene->Filter<Component::SkyLight>()
-			.ForEach([&](Component::SkyLight& skyLight)
-			{
-				skyLight.CubeMapMaterial = {};
-				skyLight.CubeMap = {};
-				skyLight.Converted = false;
-			});
 	}
 
 	void ForwardSceneRenderer::PostProcessPassSetup()
@@ -1641,11 +1552,6 @@ namespace HBL2
 
     void ForwardSceneRenderer::GeometryPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData, RenderPassPool& renderPassPool)
     {
-        ScratchArena scratch(Allocator::FrameArenaRT);
-        DrawList skyboxDraws(scratch, 32);
-        
-        SkyboxComputePass(commandBuffer, &skyboxDraws);
-        
         RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_GeometryRenderPass);
         {
 			// Set and map storage buffer for light data.
@@ -1657,7 +1563,7 @@ namespace HBL2
             renderPassPool.Execute(RenderPassEvent::AfterRenderingOpaques);
             
             renderPassPool.Execute(RenderPassEvent::BeforeRenderingSkybox);
-            SkyboxPass(skyboxDraws, passRenderer, sceneRenderData);
+            SkyboxPass(passRenderer, sceneRenderData);
             renderPassPool.Execute(RenderPassEvent::AfterRenderingSkybox);
             
             renderPassPool.Execute(RenderPassEvent::BeforeRenderingTransparents);
@@ -1713,141 +1619,71 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().TransparentPassTime);
 	}
 
-    void ForwardSceneRenderer::SkyboxComputePass(CommandBuffer* commandBuffer, DrawList* skyboxDraws)
-    {
-        BEGIN_PROFILE_PASS();
-
-        uint64_t skyboxVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_EquirectToSkyboxShader, m_ComputeVariant);
-
-        m_Scene->Filter<Component::SkyLight>()
-            .ForEach([&](Component::SkyLight& skyLight)
-            {
-                if (skyLight.Enabled)
-                {
-                    if (!skyLight.EquirectangularMap.IsValid())
-                    {
-                        return;
-                    }
-
-                    if (!skyLight.Converted)
-                    {
-                        if (skyLight.CubeMapMaterial.IsValid())
-                        {
-                            m_ResourceManager->DeleteTexture(skyLight.CubeMap);
-                            m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
-                            m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
-
-                            m_CaptureMatricesBuffer = m_ResourceManager->CreateBuffer({
-                                .debugName = "capture-matrices-buffer",
-                                .byteSize = sizeof(CaptureMatrices),
-                                .initialData = &g_CaptureMatrices,
-                            });
-                        }
-
-                        skyLight.CubeMap = m_ResourceManager->CreateTexture({
-                            .debugName = "skybox-texture",
-                            .dimensions = { (uint32_t)g_CaptureMatrices.FaceSize, (uint32_t)g_CaptureMatrices.FaceSize, 1 },
-                            .format = Format::RGBA16_FLOAT,
-                            .internalFormat = Format::RGBA16_FLOAT,
-                            .usage = { TextureUsage::TEXTURE_BINDING, TextureUsage::SAMPLED, TextureUsage::STORAGE_BINDING },
-                            .type = TextureType::D2_ARRAY,
-                            .aspect = TextureAspect::COLOR,
-                            .layerCount = 6,
-                            .sampler = { .filter = TextureFilter::LINEAR, .wrap = Wrap::CLAMP_TO_EDGE, },
-                            .initialLayout = TextureLayout::GENERAL,
-                            .dynamicTextureView = true,
-                            .bindSampler = false,
-                        });
-
-                        ResourceManager::Instance->TransitionTextureLayout(
-                            commandBuffer,
-                            skyLight.CubeMap,
-                            TextureLayout::UNDEFINED,
-                            TextureLayout::GENERAL
-                        );
-
-                        Handle<Texture> equirectangularMapHandle = AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap.Get());
-
-                        // FIXME: When entering the playmode multiple times in the session we create new descriptor sets in vk, so it exceeds the max in the pool.
-                        m_ComputeBindGroup = m_ResourceManager->CreateBindGroup({
-                            .debugName = "compute-bind-group",
-                            .layout = m_EquirectToSkyboxBindGroupLayout.Get(),
-                            .textures = { { equirectangularMapHandle }, { skyLight.CubeMap } },
-                            .buffers = { { .buffer = m_CaptureMatricesBuffer, } }
-                        });
-
-                        Dispatch dispatch =
-                        {
-                            .Shader = m_EquirectToSkyboxShader,
-                            .BindGroup = m_ComputeBindGroup,
-                            .ThreadGroupCount = { (uint32_t)g_CaptureMatrices.FaceSize / 16, (uint32_t)g_CaptureMatrices.FaceSize / 16, 6 },
-                            .VariantHandle = skyboxVariantHandle,
-                        };
-
-						ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.CubeMap }, {}, {});
-                        computePassRenderer->Dispatch({ dispatch });
-                        commandBuffer->EndComputePass(*computePassRenderer);
-                        
-                        ResourceManager::Instance->ChangeTextureView(skyLight.CubeMap, TextureViewDescriptor{
-                            .type = TextureType::CUBE,
-                            .format = Format::RGBA16_FLOAT,
-                            .aspect = TextureAspect::COLOR,
-                            .layerCount = 6,
-                            .bindSampler = true,
-                        });
-
-                        auto skyboxBindGroup = m_ResourceManager->CreateBindGroup({
-                            .debugName = "skybox-bind-group",
-                            .layout = m_SkyboxBindGroupLayout.Get(),
-                            .textures = { { skyLight.CubeMap } }
-                        });
-
-                        // Create skybox material.
-                        skyLight.CubeMapMaterial = ResourceManager::Instance->CreateMaterial({
-                            .debugName = "skybox-material",
-                            .shader = m_SkyboxShader,
-                            .materialBindGroup = skyboxBindGroup,
-                        });
-
-                        Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
-                        mat->VariantHash = m_SkyboxVariant;
-
-                        skyLight.Converted = true;
-                    }
-
-                    if (!skyLight.CubeMapMaterial.IsValid())
-                    {
-                        return;
-                    }
-
-                    Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
-
-                    skyboxDraws->Insert({
-                        .Shader = m_SkyboxShader,
-                        .VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_SkyboxShader, mat->VariantHash),
-                        .VertexBuffer = m_CubeMeshBuffer,
-                        .MaterialBindGroup = mat->MaterialBindGroup.Get(),
-                        .VertexCount = 36,
-                    });
-                }
-            });
-        
-        END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxComputePassTime);
-    }
-
-	void ForwardSceneRenderer::SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::SkyboxPass(RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData)
 	{
         BEGIN_PROFILE_PASS();
 
-		if (skyboxDraws.GetCount() == 0)
-		{
-			return;
-		}
+		ScratchArena scratch(Allocator::FrameArenaRT);
+		DrawList skyboxDraws(scratch, 32);
 
-		// Render Skybox.
-		ResourceManager::Instance->SetBufferData(m_SkyboxGlobalBindGroup, 0, (void*)&sceneRenderData->m_OnlyRotationInViewProjection);
-		GlobalDrawStream globalDrawStream = { .BindGroup = m_SkyboxGlobalBindGroup };
-		passRenderer->DrawSubPass(globalDrawStream, skyboxDraws);
+		m_Scene->Filter<Component::SkyLight>()
+			.ForEach([&](Component::SkyLight& skyLight)
+			{
+				if (skyLight.Enabled)
+				{
+					if (!skyLight.EquirectangularMap.IsValid())
+					{
+						return;
+					}
+
+					// NOTE (John): The scene renderer can be ran multiple times for the same scene,
+					// but this is ok since the SkyLight material will be created once thanks to the flag
+					// guard, so the first one that gets executed will create it and the others will already have it.
+					if (skyLight.RecreateCubeMapMaterial)
+					{
+						auto skyboxBindGroup = m_ResourceManager->CreateBindGroup({
+							.debugName = "skybox-bind-group",
+							.layout = m_SkyboxBindGroupLayout.Get(),
+							.textures = { { skyLight.CubeMap } }
+						});
+
+						// Create skybox material.
+						skyLight.CubeMapMaterial = ResourceManager::Instance->CreateMaterial({
+							.debugName = "skybox-material",
+							.shader = m_SkyboxShader,
+							.materialBindGroup = skyboxBindGroup,
+						});
+
+						Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
+						mat->VariantHash = m_SkyboxVariant;
+
+						skyLight.RecreateCubeMapMaterial = false;
+					}
+
+					if (!skyLight.CubeMapMaterial.IsValid())
+					{
+						return;
+					}
+
+					Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
+
+					skyboxDraws.Insert({
+						.Shader = m_SkyboxShader,
+						.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_SkyboxShader, mat->VariantHash),
+						.VertexBuffer = m_CubeMeshBuffer,
+						.MaterialBindGroup = mat->MaterialBindGroup.Get(),
+						.VertexCount = 36,
+					});
+				}
+			});
+
+		if (skyboxDraws.GetCount() != 0)
+		{
+			// Render Skybox.
+			ResourceManager::Instance->SetBufferData(m_SkyboxGlobalBindGroup, 0, (void*)&sceneRenderData->m_OnlyRotationInViewProjection);
+			GlobalDrawStream globalDrawStream = { .BindGroup = m_SkyboxGlobalBindGroup };
+			passRenderer->DrawSubPass(globalDrawStream, skyboxDraws);
+		}
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxPassTime);
 	}

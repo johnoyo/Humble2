@@ -82,8 +82,7 @@ namespace HBL2
 		void GeometryPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData);
 		void OpaquePass(RenderPassRenderer* passRenderer, ForwardPlusSceneRenderData* sceneRenderData);
 		void TransparentPass(RenderPassRenderer* passRenderer, ForwardPlusSceneRenderData* sceneRenderData);
-		void SkyboxComputePass(CommandBuffer* commandBuffer, DrawList* skyboxDraws);
-		void SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardPlusSceneRenderData* sceneRenderData);
+		void SkyboxPass(RenderPassRenderer* passRenderer, ForwardPlusSceneRenderData* sceneRenderData);
 		void PostProcessPass(CommandBuffer* commandBuffer, ForwardPlusSceneRenderData* sceneRenderData);
 
 		void GetViewProjection(ForwardPlusSceneRenderData* sceneRenderData, Entity mainCamera);
@@ -160,16 +159,11 @@ namespace HBL2
 		UUID m_GeometryPassResizeEventHandle = 0;
 
 		// Skybox pass resources.
-		RefHandle<BindGroupLayout> m_EquirectToSkyboxBindGroupLayout;
-		Handle<Buffer> m_CaptureMatricesBuffer;
-		Handle<Shader> m_EquirectToSkyboxShader;
 		RefHandle<BindGroupLayout> m_SkyboxGlobalBindGroupLayout;
 		Handle<BindGroup> m_SkyboxGlobalBindGroup;
 		Handle<Shader> m_SkyboxShader;
 		RefHandle<BindGroupLayout> m_SkyboxBindGroupLayout;
-		Handle<BindGroup> m_ComputeBindGroup;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_SkyboxVariant{};
-		ShaderDescriptor::RenderPipeline::PackedVariant m_ComputeVariant{};
 		Handle<Buffer> m_CubeMeshBuffer;
 		Handle<Mesh> m_CubeMesh;
 

@@ -22,11 +22,13 @@ namespace HBL2
 
 	private:
 		void SkinningPassSetup();
+		void SkyboxComputePassSetup();
 		void PresentPassSetup();
 
 		Handle<BindGroup> GetPresentBindings() const;
 
 		void SkinningPass(CommandBuffer* commandBuffer);
+		void SkyboxComputePass(CommandBuffer* commandBuffer);
 		void PresentPass(CommandBuffer* commandBuffer) const;
 
 	private:
@@ -38,6 +40,12 @@ namespace HBL2
 		Handle<Shader> m_SkinningComputeShader;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_SkinningComputeVariant{};
 		RefHandle<BindGroupLayout> m_SkinningBindGroupLayout;
+
+		// Skybox pass resources.
+		RefHandle<BindGroupLayout> m_EquirectToSkyboxBindGroupLayout;
+		Handle<Shader> m_EquirectToSkyboxShader;
+		Handle<BindGroup> m_ComputeBindGroup;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_ComputeVariant{};
 
 		// Present pass resources.
 		RefHandle<BindGroupLayout> m_PresentBindGroupLayout;

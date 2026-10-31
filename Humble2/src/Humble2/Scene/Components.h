@@ -243,6 +243,7 @@ namespace HBL2
 			Handle<Material> CubeMapMaterial;
 			RefHandle<Asset> EquirectangularMap;
 			bool Converted = false;
+			bool RecreateCubeMapMaterial = false;
 			bool Enabled = true;
 		};
 

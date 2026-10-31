@@ -165,6 +165,16 @@ namespace HBL2
 
 		m_ResourceManager->FlushAll();
 
+#if DEBUG
+		char* statsString = nullptr;
+		vmaBuildStatsString(m_Allocator, &statsString, VK_TRUE);
+
+		FILE* f = fopen("vma_dump.json", "w");
+		fputs(statsString, f);
+		fclose(f);
+
+		vmaFreeStatsString(m_Allocator, statsString);
+#endif
 		vmaDestroyAllocator(m_Allocator);
 	}
 

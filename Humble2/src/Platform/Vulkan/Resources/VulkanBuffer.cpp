@@ -39,7 +39,13 @@ namespace HBL2
 
 		VmaAllocationCreateInfo vmaAllocCreateInfo =
 		{
+#if DEBUG
+			.flags = VMA_ALLOCATION_CREATE_USER_DATA_COPY_STRING_BIT,
+#endif
 			.usage = Cold->MemoryUsage,
+#if DEBUG
+			.pUserData = (void*)Cold->DebugName,
+#endif
 		};
 
 		VK_VALIDATE(vmaCreateBuffer(renderer->GetAllocator(), &bufferCreateInfo, &vmaAllocCreateInfo, &Hot->Buffer, &Hot->Allocation, nullptr), "vmaCreateBuffer");
