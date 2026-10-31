@@ -579,6 +579,8 @@ namespace HBL2
 
 	void RenderingSystem::SkyboxComputePass(CommandBuffer* commandBuffer)
 	{
+		BEGIN_PROFILE_PASS();
+
 		uint64_t skyboxVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_EquirectToSkyboxShader, m_ComputeVariant);
 
 		m_Context->Filter<Component::SkyLight>()
@@ -663,6 +665,8 @@ namespace HBL2
 					}
 				}
 			});
+
+		END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxComputePassTime);
 	}
 
 	void RenderingSystem::PresentPass(CommandBuffer* commandBuffer) const

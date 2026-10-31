@@ -491,6 +491,36 @@ namespace HBL2
                         newLink.Children.push_back(GetComponent<HBL2::Component::ID>(newChildEntity).Identifier);
                     }
                 }
+                else if (typeid(Component) == typeid(HBL2::Component::SkeletonPose))
+                {
+                    m_Registry.GetOrAddComponent<Component>(newEntity) = component;
+
+                    auto& skeletonPose = m_Registry.GetComponent<HBL2::Component::SkeletonPose>(newEntity);
+                    UUID skeletonPoseUUID = m_Registry.GetComponent<HBL2::Component::ID>(newEntity).Identifier;
+                    HBL2::Component::Link& link = m_Registry.GetComponent<HBL2::Component::Link>(newEntity);
+
+                    for (auto child : link.Children)
+                    {
+                        Entity childEntity = FindEntityByUUID(child);
+
+                        auto& skinnedMesh = m_Registry.GetComponent<HBL2::Component::SkinnedMesh>(childEntity);
+                        skinnedMesh.SkeletonPoseUUID = skeletonPoseUUID;
+                        skinnedMesh.SkinnedVertexBuffer = {};
+                        skinnedMesh.SkinningBindings = {};
+                        skinnedMesh.JointCount = 0;
+
+                        UUID skinnedMeshUUID = m_Registry.GetComponent<HBL2::Component::ID>(childEntity).Identifier;
+                        HBL2::Component::Link& childLink = m_Registry.GetComponent<HBL2::Component::Link>(childEntity);
+
+                        for (auto grandChild : childLink.Children)
+                        {
+                            Entity grandChildEntity = FindEntityByUUID(grandChild);
+
+                            auto& skinnedSubMesh = m_Registry.GetComponent<HBL2::Component::SkinnedSubMesh>(grandChildEntity);
+                            skinnedSubMesh.SkinnedMeshUUID = skinnedMeshUUID;
+                        }
+                    }
+                }
                 else
                 {
                     m_Registry.GetOrAddComponent<Component>(newEntity) = component;
@@ -606,11 +636,40 @@ namespace HBL2
                         newLink.Children.push_back(GetComponent<HBL2::Component::ID>(newChildEntity).Identifier);
                     }
                 }
+                else if (typeid(Component) == typeid(HBL2::Component::SkeletonPose))
+                {
+                    m_Registry.GetOrAddComponent<Component>(newEntity) = component;
+
+                    auto& skeletonPose = m_Registry.GetComponent<HBL2::Component::SkeletonPose>(newEntity);
+                    UUID skeletonPoseUUID = m_Registry.GetComponent<HBL2::Component::ID>(newEntity).Identifier;
+                    HBL2::Component::Link& link = m_Registry.GetComponent<HBL2::Component::Link>(newEntity);
+
+                    for (auto child : link.Children)
+                    {
+                        Entity childEntity = FindEntityByUUID(child);
+
+                        auto& skinnedMesh = m_Registry.GetComponent<HBL2::Component::SkinnedMesh>(childEntity);
+                        skinnedMesh.SkeletonPoseUUID = skeletonPoseUUID;
+                        skinnedMesh.SkinnedVertexBuffer = {};
+                        skinnedMesh.SkinningBindings = {};
+                        skinnedMesh.JointCount = 0;
+
+                        UUID skinnedMeshUUID = m_Registry.GetComponent<HBL2::Component::ID>(childEntity).Identifier;
+                        HBL2::Component::Link& childLink = m_Registry.GetComponent<HBL2::Component::Link>(childEntity);
+
+                        for (auto grandChild : childLink.Children)
+                        {
+                            Entity grandChildEntity = FindEntityByUUID(grandChild);
+
+                            auto& skinnedSubMesh = m_Registry.GetComponent<HBL2::Component::SkinnedSubMesh>(grandChildEntity);
+                            skinnedSubMesh.SkinnedMeshUUID = skinnedMeshUUID;
+                        }
+                    }
+                }
                 else
                 {
                     m_Registry.GetOrAddComponent<Component>(newEntity) = component;
                 }
-
             }
         };
 

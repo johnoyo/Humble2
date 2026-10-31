@@ -31,6 +31,9 @@ namespace HBL2::Editor
 			Renderer::Instance->SceneViewTexture = m_SceneRenderer->GetTexture();
 			Renderer::Instance->InvalidateSceneViewTexture();
 
+			// NOTE (John): We de-register and re-register the resize event so that it will be invoked after
+			// the resize callback inside the SceneRenderer::Initialize, so the SceneRenderer::m_TargetTexture 
+			// and SceneRenderer::m_DepthTexture will be the new up to date ones.
 			EventDispatcher::Get().Deregister<RendererResizedEvent>(m_RendererResizeEventHandle);
 
 			m_RendererResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& e)
@@ -38,6 +41,8 @@ namespace HBL2::Editor
 				Renderer::Instance->SceneViewDepthTexture = m_SceneRenderer->GetDepthTexture();
 				Renderer::Instance->SceneViewTexture = m_SceneRenderer->GetTexture();
 				Renderer::Instance->InvalidateSceneViewTexture();
+
+				DebugRenderer::Instance->RecreateFrameBuffer(e.Width, e.Height);
 			});
 		});
 

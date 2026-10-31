@@ -59,6 +59,8 @@ namespace HBL2
 		virtual void Render(CommandBuffer* commandBuffer, uint32_t debugRenderDataIndex);
 		virtual void Clean();
 
+		virtual void RecreateFrameBuffer(uint32_t width, uint32_t height);
+
 		// Public API
 		uint32_t Color = Color::White;
 
@@ -101,7 +103,6 @@ namespace HBL2
 
 		RefHandle<BindGroupLayout> m_DebugBindingsLayout;
 
-		UUID m_DebugPassResizeEventHandle = 0;
 		UUID m_DebugPassSceneChangeEventHandle = 0;
 		bool m_RenderingResourcesCreated = false;
 

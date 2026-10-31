@@ -213,7 +213,6 @@ namespace HBL2
 
 	void DebugRenderer::Clean()
 	{
-		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_DebugPassResizeEventHandle);
 		EventDispatcher::Get().Deregister<SceneChangeEvent>(m_DebugPassSceneChangeEventHandle);
 
 		m_ResourceManager->DeleteBuffer(m_DebugLineVertexBuffer);
@@ -242,6 +241,16 @@ namespace HBL2
 
 		s_SphereIndices.clear();
 		s_SphereVerts.clear();
+	}
+
+	void DebugRenderer::RecreateFrameBuffer(uint32_t width, uint32_t height)
+	{
+		ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DebugRenderPass, {
+			.width = width,
+			.height = height,
+			.depthTarget = Renderer::Instance->SceneViewDepthTexture,
+			.colorTargets = { Renderer::Instance->SceneViewTexture },
+		});
 	}
 
 	void DebugRenderer::DrawLine(const glm::vec3& from, const glm::vec3& to)
@@ -402,17 +411,6 @@ namespace HBL2
 					.depthTarget = Renderer::Instance->SceneViewDepthTexture,
 					.colorTargets = { Renderer::Instance->SceneViewTexture },
 				}
-			});
-
-			// Resize debug draw framebuffer callback.
-			m_DebugPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& e)
-			{
-				ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DebugRenderPass, {
-					.width = e.Width,
-					.height = e.Height,
-					.depthTarget = Renderer::Instance->SceneViewDepthTexture,
-					.colorTargets = { Renderer::Instance->SceneViewTexture },
-				});
 			});
 
 			// Update debug draw framebuffer targets on scene change.

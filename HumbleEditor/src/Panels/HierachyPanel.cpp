@@ -415,10 +415,13 @@ namespace HBL2::Editor
 					auto meshEntity = activeScene->CreateEntity(meshPart.DebugName);
 					activeScene->AddComponent<HBL2::Component::EditorVisible>(meshEntity);
 
-					auto& skinnedMesh = activeScene->AddComponent<HBL2::Component::SkinnedMesh>(meshEntity);
-					skinnedMesh.Mesh = assetHandle;
-					skinnedMesh.MeshIndex = meshIndex;
-					skinnedMesh.SkeletonPoseUUID = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
+					if (mesh->Skeleton.IsValid())
+					{
+						auto& skinnedMesh = activeScene->AddComponent<HBL2::Component::SkinnedMesh>(meshEntity);
+						skinnedMesh.Mesh = assetHandle;
+						skinnedMesh.MeshIndex = meshIndex;
+						skinnedMesh.SkeletonPoseUUID = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
+					}
 
 					auto& link = activeScene->GetComponent<HBL2::Component::Link>(meshEntity);
 					link.Parent = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
