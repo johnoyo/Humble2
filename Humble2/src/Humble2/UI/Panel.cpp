@@ -322,12 +322,7 @@ namespace HBL2
                     UUID assetUUID = editorAssetManager->GetUUIDFromPath(m_Configuration.id);
 					Handle<Texture> textureHandle = AssetManager::Instance->GetAsset<Texture>(assetUUID);
 #if false
-					if (Renderer::Instance->GetAPI() == GraphicsAPI::OPENGL)
-					{
-						OpenGLTexture* texture = ((OpenGLResourceManager*)ResourceManager::Instance)->GetTexture(textureHandle);
-						ImGui::Image((void*)texture->RendererId, ImVec2{ m_Configuration.layout.sizing.width.Value, m_Configuration.layout.sizing.height.Value });
-					}
-					else if (Renderer::Instance->GetAPI() == GraphicsAPI::VULKAN)
+					if (Renderer::Instance->GetAPI() == GraphicsAPI::VULKAN)
 					{
 						VulkanTexture* texture = ((VulkanResourceManager*)ResourceManager::Instance)->GetTexture(textureHandle);
 						auto textureID = ImGui_ImplVulkan_AddTexture(texture->Sampler, texture->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);

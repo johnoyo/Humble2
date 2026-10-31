@@ -26,7 +26,6 @@ project "HumbleApp"
         "../Humble2/src/Vendor/fastgltf/include",
         "../Humble2/src/Vendor",
         "../Dependencies/GLFW/include",
-        "../Dependencies/GLEW/include",
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
         "../Dependencies/ImGuizmo/src",

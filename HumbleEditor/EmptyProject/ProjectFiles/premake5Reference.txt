@@ -54,7 +54,6 @@ project "UnityBuild"
         "../../../Humble2/src/Vendor/spdlog-1.x/include",
         "../../../Humble2/src/Vendor/fastgltf/include",
         "../../../Dependencies/GLFW/include",
-        "../../../Dependencies/GLEW/include",
         "../../../Dependencies/ImGui/imgui",
         "../../../Dependencies/ImGui/imgui/backends",
         "../../../Dependencies/ImGuizmo",

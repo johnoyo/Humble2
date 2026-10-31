@@ -22,7 +22,7 @@ namespace HBL2
 	{
 		RendererType Renderer = RendererType::FORWARD;
 		UUID RendererUUID;
-		GraphicsAPI EditorGraphicsAPI = GraphicsAPI::OPENGL;
+		GraphicsAPI EditorGraphicsAPI = GraphicsAPI::VULKAN;
 		GraphicsAPI RuntimeGraphicsAPI = GraphicsAPI::VULKAN;
 		uint32_t MaxLights = 256;
 		

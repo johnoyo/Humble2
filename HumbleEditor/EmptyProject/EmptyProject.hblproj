@@ -5,8 +5,8 @@ Project:
   ScriptDirectory: ""
   Renderer:
     Type: 0
-    Editor API: 2
-    Runtime API: 2
+    Editor API: 1
+    Runtime API: 1
     Max Lights: 256
   Physics2D:
     Gravity Force: [0, -9.81000042]

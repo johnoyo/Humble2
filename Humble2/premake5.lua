@@ -38,7 +38,6 @@ project "Humble2"
         "../Humble2/src/Vendor/spdlog-1.x/include",
         "../Humble2/src/Vendor/fastgltf/include",
         "../Dependencies/GLFW/include",
-        "../Dependencies/GLEW/include",
         "../Dependencies/ImGui/imgui",
         "../Dependencies/ImGui/imgui/backends",
         "../Dependencies/ImGuizmo/src",
@@ -73,9 +72,6 @@ project "Humble2"
 
         removefiles
         {
-            "src/Platform/OpenGL/**.h",
-            "src/Platform/OpenGL/**.cpp",
-
             "src/Platform/Metal/**.h",
             "src/Platform/Metal/**.cpp",
         }
@@ -83,7 +79,6 @@ project "Humble2"
         libdirs
         {
             "../Dependencies/GLFW/glfw-3.4.bin.WIN64/lib-vc2022",
-            "../Dependencies/GLEW/lib/Release/x64",
             "../Dependencies/FMOD/Windows/core/lib/x64",
             "../Dependencies/SLang/slang-2026.16-windows-x86_64/lib",
             "%{VULKAN_SDK}/Lib"
@@ -91,9 +86,7 @@ project "Humble2"
 
         links
         {
-            "glew32.lib",
             "glfw3.lib",
-            "opengl32.lib",
 
             "vulkan-1.lib",
 
@@ -111,16 +104,14 @@ project "Humble2"
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleApp"),
             
-            -- Ensure the GLEW and SLang DLLs are copied to HumbleEditor
+            -- Ensure the SLang DLLs are copied to HumbleEditor
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
-            ("{COPY} ../Dependencies/GLEW/bin/Release/x64/glew32.dll ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/SLang/slang-2026.16-windows-x86_64/bin/slang.dll ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/SLang/slang-2026.16-windows-x86_64/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/SLang/slang-2026.16-windows-x86_64/bin/slang-glslang.dll ../bin/" .. outputdir .. "/HumbleEditor"),
             
-            -- Ensure the GLEW and SLang DLLs are copied to HumbleApp
+            -- Ensure the SLang DLLs are copied to HumbleApp
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
-            ("{COPY} ../Dependencies/GLEW/bin/Release/x64/glew32.dll ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} ../Dependencies/SLang/slang-2026.16-windows-x86_64/bin/slang.dll ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} ../Dependencies/SLang/slang-2026.16-windows-x86_64/bin/slang-compiler.dll ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} ../Dependencies/SLang/slang-2026.16-windows-x86_64/bin/slang-glslang.dll ../bin/" .. outputdir .. "/HumbleApp"),
@@ -228,12 +219,6 @@ project "Humble2"
         files 
         {
             "src/**.mm",
-        }
-
-        removefiles
-        {
-            "src/Platform/OpenGL/**.h",
-            "src/Platform/OpenGL/**.cpp"
         }
 
         externalincludedirs
@@ -361,9 +346,6 @@ project "Humble2"
 
         removefiles
         {
-            "src/Platform/OpenGL/**.h",
-            "src/Platform/OpenGL/**.cpp",
-
             "src/Platform/Metal/**.h",
             "src/Platform/Metal/**.cpp"
         }
@@ -411,14 +393,14 @@ project "Humble2"
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/HumbleApp"),
             
-            -- Ensure the GLEW and SLang DLLs are copied to HumbleEditor
+            -- Ensure the SLang DLLs are copied to HumbleEditor
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang.so ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang-compiler.so ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang-compiler.so.0.2026.16 ../bin/" .. outputdir .. "/HumbleEditor"),
             ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang-glslang-2026.16.so ../bin/" .. outputdir .. "/HumbleEditor"),
             
-            -- Ensure the GLEW and SLang DLLs are copied to HumbleApp
+            -- Ensure the SLang DLLs are copied to HumbleApp
             ("{MKDIR} ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang.so ../bin/" .. outputdir .. "/HumbleApp"),
             ("{COPY} ../Dependencies/SLang/slang-2026.16-linux-x86_64/lib/libslang-compiler.so ../bin/" .. outputdir .. "/HumbleApp"),
