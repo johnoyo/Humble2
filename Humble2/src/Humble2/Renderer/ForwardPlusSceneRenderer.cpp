@@ -160,7 +160,7 @@ namespace HBL2
 		rm->MapBufferData(uniformRingBuffer->GetBuffer(), sceneRenderData->m_UBOStartingOffset, sceneRenderData->m_UBOEndingOffset - sceneRenderData->m_UBOStartingOffset);
 
 		rm->TransitionTextureLayout(commandBuffer, m_IntermediateTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
-		rm->TransitionTextureLayout(commandBuffer, m_DepthTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, m_TargetTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
 		rm->TransitionTextureLayout(commandBuffer, m_ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
 
 		GridFrustumsComputePass(commandBuffer, sceneRenderData);
@@ -205,6 +205,7 @@ namespace HBL2
 		// Grid frustums compute pass clean up.
 		m_ResourceManager->DeleteShader(m_GridFrustumsComputeShader);
 		m_ResourceManager->DeleteBindGroup(m_GridFrustumsBindGroup);
+		m_GridFrustumsBindGroup = {};
 		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_GridFrustumsPassResizeEventHandle);
 
 		// Light culling compute pass clean up.
@@ -245,12 +246,26 @@ namespace HBL2
 		{
 			m_ResourceManager->DeleteBuffer(m_RenderData[i].LightSpaceBuffer);
 
+			// NOTE (John): It's important to set the bind groups to an empty handle, since they
+			// get created during the first frame and not in the initialization phase and only
+			// if the handle is not valid, so if we dont set to an invalid handle, that logic
+			// will skip the creation and we will use a stale handle.
+			// That flow will happen if the scene renderer object is cleaned and then re-initialized,
+			// which happens in the SceneViewRenderingSystem in EditorContext.
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].ShadowBindings);
+			m_RenderData[i].ShadowBindings = {};
+
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindings2D);
+			m_RenderData[i].GlobalBindings2D = {};
+
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindingsOpaque3D);
+			m_RenderData[i].GlobalBindingsOpaque3D = {};
+
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindingsTransparent3D);
+			m_RenderData[i].GlobalBindingsTransparent3D = {};
 
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].LightCullingBindings);
+			m_RenderData[i].LightCullingBindings = {};
 		}
 
 		m_Initialized = false;
@@ -424,23 +439,6 @@ namespace HBL2
 	// Pass set up.
 	void ForwardPlusSceneRenderer::ShadowPassSetup()
 	{
-		// Create shadow depth texture (huge shadow atlas containing all the shadow textures).
-		m_ShadowAtlasTexture = ResourceManager::Instance->CreateTexture({
-			.debugName = "shadow-depth-target",
-			.dimensions = { g_ShadowAtlasSize, g_ShadowAtlasSize, 1 },
-			.format = Format::D32_FLOAT,
-			.internalFormat = Format::D32_FLOAT,
-			.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
-			.aspect = TextureAspect::DEPTH,
-			.createSampler = true,
-			.sampler =
-			{
-				.filter = TextureFilter::NEAREST,
-				.wrap = Wrap::CLAMP_TO_BORDER,
-			},
-			.initialLayout = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
-		});
-
 		// Create shadow framebuffer.
 		m_ShadowRenderPassClear = m_ResourceManager->CreateRenderPass({
 			.debugName = "shadow-clear-renderpass",
@@ -581,9 +579,9 @@ namespace HBL2
 					{
 						.byteStride = 32,
 						.attributes = {
-							{.byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
-							{.byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
-							{.byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
+							{ .byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
+							{ .byteOffset = 12, .format = VertexFormat::FLOAT32x3 },
+							{ .byteOffset = 24, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},
@@ -609,8 +607,8 @@ namespace HBL2
 					{
 						.byteStride = 20,
 						.attributes = {
-							{.byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
-							{.byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
+							{ .byteOffset = 0,  .format = VertexFormat::FLOAT32x3 },
+							{ .byteOffset = 12, .format = VertexFormat::FLOAT32x2 },
 						},
 					}
 				},
@@ -865,9 +863,9 @@ namespace HBL2
 			.VS { .code = skyboxShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = skyboxShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				m_SkyboxGlobalBindGroupLayout.Get(),					// Global bind group (0)
+				m_SkyboxGlobalBindGroupLayout.Get(),			// Global bind group (0)
 				Renderer::Instance->GetEmptyBindingsLayout(),	// Unused
-				m_SkyboxBindGroupLayout.Get(),						// (2)
+				m_SkyboxBindGroupLayout.Get(),					// (2)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = {
@@ -930,14 +928,6 @@ namespace HBL2
 				}
 			}
 		});
-
-		m_Scene->Filter<Component::SkyLight>()
-			.ForEach([&](Component::SkyLight& skyLight)
-			{
-				skyLight.CubeMapMaterial = {};
-				skyLight.CubeMap = {};
-				skyLight.Converted = false;
-			});
 	}
 
 	void ForwardPlusSceneRenderer::PostProcessPassSetup()
@@ -1094,11 +1084,12 @@ namespace HBL2
 		// Store the offset that the objects start from in the dynamic uniform buffer.
 		sceneRenderData->m_UBOStartingOffset = m_UniformRingBuffer->GetCurrentOffset();
 
+		uint64_t depthOnlyVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlyShader, m_DepthOnlyMaterialHash);
+		uint64_t shadowPrePassVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_ShadowPrePassShader, m_ShadowPrePassMaterialHash);
+		uint64_t depthOnlySpriteVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlySpriteShader, m_DepthOnlySpriteMaterialHash);
+
 		// Static meshes
 		{
-			uint64_t depthOnlyVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlyShader, m_DepthOnlyMaterialHash);
-			uint64_t shadowPrePassVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_ShadowPrePassShader, m_ShadowPrePassMaterialHash);
-
 			sceneRenderData->m_MeshOpaqueDraws.Reset();
 			sceneRenderData->m_MeshTransparentDraws.Reset();
 			sceneRenderData->m_PrePassMeshDraws.Reset();
@@ -1226,10 +1217,144 @@ namespace HBL2
 				});
 		}
 
+		// Skinned meshes
+		{
+			m_Scene->Filter<Component::SkinnedSubMesh, Component::Transform>()
+				.ForEach([&](Component::SkinnedSubMesh& skinnedSubMesh, Component::Transform& transform)
+				{
+					if (skinnedSubMesh.Enabled)
+					{
+						if (!skinnedSubMesh.Material.IsValid() || !skinnedSubMesh.Mesh.IsValid())
+						{
+							return;
+						}
+
+						Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(skinnedSubMesh.Material.Get());
+						Material* material = ResourceManager::Instance->GetMaterial(materialHandle);
+
+						if (material == nullptr)
+						{
+							return;
+						}
+
+						// Retrieve skinned mesh component.
+						Entity meshEntity = m_Scene->FindEntityByUUID(skinnedSubMesh.SkinnedMeshUUID);
+
+						if (meshEntity == Entity::Null)
+						{
+							return;
+						}
+
+						auto& skinnedMesh = m_Scene->GetComponent<Component::SkinnedMesh>(meshEntity);
+
+						Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedSubMesh.Mesh.Get());
+						Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
+
+						if (mesh == nullptr || mesh->IsEmpty())
+						{
+							return;
+						}
+
+						const auto& meshPart = mesh->Meshes[skinnedSubMesh.MeshIndex];
+
+						if (meshPart.IsEmpty())
+						{
+							return;
+						}
+
+						const auto& subMesh = meshPart.SubMeshes[skinnedSubMesh.SubMeshIndex];
+
+						// Bump allocate and set per draw data.
+						auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawData>();
+						alloc.Data->Model = transform.WorldMatrix;
+						alloc.Data->InverseModel = glm::transpose(glm::inverse(glm::mat3(transform.WorldMatrix)));
+						alloc.Data->Color = glm::vec4(1.0f);
+
+						Handle<Buffer> vertexBuffer = skinnedMesh.SkinnedVertexBuffer.IsValid() ? skinnedMesh.SkinnedVertexBuffer : meshPart.VertexBuffers[0];
+
+						// Fill draw lists.
+						if (!material->VariantHash.blendEnabled)
+						{
+							sceneRenderData->m_MeshOpaqueDraws.Insert({
+								.Shader = material->Shader,
+								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = vertexBuffer,
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
+								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
+							});
+
+							// Include only opaque objects in depth pre-pass.
+							sceneRenderData->m_PrePassMeshDraws.Insert({
+								.Shader = m_DepthOnlyShader,
+								.VariantHandle = depthOnlyVariantHandle,
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = vertexBuffer,
+								.MaterialBindGroup = Renderer::Instance->GetEmptyBindings(),
+								.BindGroup = m_DepthOnlyMeshBindGroup,
+								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
+							});
+						}
+						else
+						{
+							sceneRenderData->m_MeshTransparentDraws.Insert({
+								.Shader = material->Shader,
+								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = vertexBuffer,
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
+								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
+							});
+						}
+
+						if (material->ReceiveShadows)
+						{
+							sceneRenderData->m_ShadowPassMeshDraws.Insert({
+								.Shader = m_ShadowPrePassShader,
+								.VariantHandle = shadowPrePassVariantHandle,
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = vertexBuffer,
+								.MaterialBindGroup = Renderer::Instance->GetEmptyBindings(),
+								.BindGroup = m_DepthOnlyMeshBindGroup,
+								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
+							});
+						}
+					}
+				});
+		}
+
 		// Sprites
 		{
-			uint64_t depthOnlySpriteVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlySpriteShader, m_DepthOnlySpriteMaterialHash);
-
 			sceneRenderData->m_SpriteOpaqueDraws.Reset();
 			sceneRenderData->m_SpriteTransparentDraws.Reset();
 			sceneRenderData->m_PrePassSpriteDraws.Reset();
@@ -1523,24 +1648,26 @@ namespace HBL2
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DepthOnlyRenderPass);
 
 		// Set and map storage buffer for light data.
-		ResourceManager::Instance->SetBufferData(GetGlobalBindingsOpaque3D(), 1, (void*)sceneRenderData->m_LightData.data());
-		ResourceManager::Instance->MapBufferData(GetGlobalBindingsOpaque3D(), 1, 0, sceneRenderData->m_FrameData.LightCount * sizeof(Light));
+		Handle<BindGroup> globalBindingsOpaque3D = GetGlobalBindingsOpaque3D();
+		ResourceManager::Instance->SetBufferData(globalBindingsOpaque3D, 1, (void*)sceneRenderData->m_LightData.data());
+		ResourceManager::Instance->MapBufferData(globalBindingsOpaque3D, 1, 0, sceneRenderData->m_FrameData.LightCount * sizeof(Light));
 
-		ResourceManager::Instance->SetBufferData(GetGlobalBindingsTransparent3D(), 1, (void*)sceneRenderData->m_LightData.data());
-		ResourceManager::Instance->MapBufferData(GetGlobalBindingsTransparent3D(), 1, 0, sceneRenderData->m_FrameData.LightCount * sizeof(Light));
+		Handle<BindGroup> globalBindingsTransparent3D = GetGlobalBindingsTransparent3D();
+		ResourceManager::Instance->SetBufferData(globalBindingsTransparent3D, 1, (void*)sceneRenderData->m_LightData.data());
+		ResourceManager::Instance->MapBufferData(globalBindingsTransparent3D, 1, 0, sceneRenderData->m_FrameData.LightCount * sizeof(Light));
 
+		// Set buffer for camera view projection data.
 		Handle<BindGroup> globalBindings = GetGlobalBindings2D();
+		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
 
 		// Depth only pre pass for opaque static meshes.
 		{
-			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassMeshDraws);
 		}
 
 		// Depth only pre pass for opaque sprites.
 		{
-			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
 			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassSpriteDraws);
 		}
@@ -2014,7 +2141,7 @@ namespace HBL2
 
 			// Global bindings for the 3D rendering.
 			m_RenderData[i].GlobalBindingsOpaque3D = m_ResourceManager->CreateBindGroup({
-				.debugName = "global-bind-group",
+				.debugName = "o-global-bind-group",
 				.layout = m_GlobalBindingsLayout3D.Get(),
 				.textures = {
 					{ m_ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY },
@@ -2028,7 +2155,7 @@ namespace HBL2
 			});
 
 			m_RenderData[i].GlobalBindingsTransparent3D = m_ResourceManager->CreateBindGroup({
-				.debugName = "global-bind-group",
+				.debugName = "t-global-bind-group",
 				.layout = m_GlobalBindingsLayout3D.Get(),
 				.textures = {
 					{ m_ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY },
@@ -2062,6 +2189,5 @@ namespace HBL2
 				}
 			});
 		}
-
 	}
 }

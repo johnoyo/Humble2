@@ -54,11 +54,11 @@ namespace HBL2
 		virtual void CleanUp() override;
 
 	private:
-		Handle<BindGroup> GetShadowBindings() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].ShadowBindings; }
-		Handle<BindGroup> GetGlobalBindings2D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindings2D; }
-		Handle<BindGroup> GetGlobalBindingsOpaque3D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindingsOpaque3D; }
-		Handle<BindGroup> GetGlobalBindingsTransparent3D() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].GlobalBindingsTransparent3D; }
-		Handle<BindGroup> GetLightCullingBindings() const { return m_RenderData[Renderer::Instance->GetFrameNumber() % Renderer::FrameCount].LightCullingBindings; }
+		Handle<BindGroup> GetShadowBindings() const { return m_RenderData[Renderer::Instance->GetFrameIndex()].ShadowBindings; }
+		Handle<BindGroup> GetGlobalBindings2D() const { return m_RenderData[Renderer::Instance->GetFrameIndex()].GlobalBindings2D; }
+		Handle<BindGroup> GetGlobalBindingsOpaque3D() const { return m_RenderData[Renderer::Instance->GetFrameIndex()].GlobalBindingsOpaque3D; }
+		Handle<BindGroup> GetGlobalBindingsTransparent3D() const { return m_RenderData[Renderer::Instance->GetFrameIndex()].GlobalBindingsTransparent3D; }
+		Handle<BindGroup> GetLightCullingBindings() const { return m_RenderData[Renderer::Instance->GetFrameIndex()].LightCullingBindings; }
 
 		void TextureSetup();
 		void RenderPassSetup();
