@@ -27,7 +27,7 @@ namespace HBL2
 
                 for (const auto& bufferEntry : dispatchBindGroupCold->Buffers)
                 {
-                    MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
+                    MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer.Get());
                     argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndex);
                     
                     bufferIndex++;

@@ -177,7 +177,7 @@ namespace HBL2
                 MetalBindGroupCold* drawBindGroupCold = rm->GetBindGroupCold(draw.BindGroup);
                 
                 // Per draw bind group should only ever hold the one bump-allocated UBO.
-                MetalBufferHot* buffer = rm->GetBufferHot(drawBindGroupCold->Buffers[0].buffer);
+                MetalBufferHot* buffer = rm->GetBufferHot(drawBindGroupCold->Buffers[0].buffer.Get());
                 if (globalDraw.UsesDynamicOffset)
                 {
                     argTable->setAddress(buffer->Buffer->gpuAddress() + draw.Offset, bufferIndex);
