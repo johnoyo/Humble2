@@ -7,7 +7,6 @@ Features:
 
 - Supports multiple graphics APIs **Metal 4** and **Vulkan**.
     - **WebGPU** support is planned for the future.
-    - **OpenGL** backend is deprecated and will be removed in the near future.
 - Flexible, API agnostic, PBR renderer that features shadow maps, equirectangular skyboxes and various post processing effects.
     - **Forward** and **Forward Plus** renderering paths are implemented, with the ability to switch between them and to define custom renderering paths.
 - Utilizes the [Slang](https://github.com/shader-slang/slang) shader language for seamless cross api integration and advanced reflection and tooling.
