@@ -12,6 +12,7 @@ Features:
     - **Forward** and **Forward Plus** renderering paths are implemented, with the ability to switch between them and to define custom renderering paths.
 - Utilizes the [Slang](https://github.com/shader-slang/slang) shader language for seamless cross api integration and advanced reflection and tooling.
 - Texture compression utilizing the [KTX-Software](https://github.com/KhronosGroup/KTX-Software) library.
+- Custom compute skinning solution for supporting skinned / skeletal meshes with animation blending.
 - Flexible and performant reference counting system for assets and resources.
 - Complete UI Editor for creating applications / games.
 - Uses an ECS architecture featuring a custom flexible implementation.

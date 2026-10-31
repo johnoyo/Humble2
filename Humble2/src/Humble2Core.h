@@ -4,6 +4,7 @@
 #include "Scene/ISystem.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
+#include "Scene/EntityPresets.h"
 
 #include "Core/Input.h"
 #include "Core/InputMapping.h"
@@ -25,6 +26,7 @@
 #include "Console/Console.h"
 
 #include "Utilities/MeshUtilities.h"
+#include "Utilities/ShaderUtilities.h"
 #include "Utilities/Collections/StaticArray.h"
 #include "Utilities/Collections/BitFlags.h"
 #include "Utilities/Math.h"

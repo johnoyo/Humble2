@@ -16,6 +16,7 @@ namespace HBL2
 			virtual void OnUpdate(float ts) override;
 			virtual void OnFixedUpdate() override;
 			virtual void OnGuiRender(float ts) override;
+			virtual void OnRender(CommandBuffer* commandBuffer, const RendererFrameData* renderData) override;
 			virtual void OnDestroy() override;
 			virtual void OnDetach() override;
 

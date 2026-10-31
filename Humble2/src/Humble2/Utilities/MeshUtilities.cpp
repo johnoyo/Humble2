@@ -2,6 +2,7 @@
 
 #include "Project/Project.h"
 #include "Asset/EditorAssetManager.h"
+#include "Utilities/ShaderUtilities.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -357,7 +358,7 @@ namespace HBL2
 		return settings;
 	}
 
-	void MeshUtilities::GetShaderAssetHandleAndReflectionData(Handle<Asset>& shaderAssetHandle, ShaderReflectionData& shaderReflectionData, bool isPBR)
+	void MeshUtilities::GetShaderAssetHandleAndReflectionData(Handle<Asset>& shaderAssetHandle, ShaderReflectionData* shaderReflectionData, bool isPBR)
 	{
 		if (!isPBR)
 		{
@@ -397,7 +398,7 @@ namespace HBL2
 			const auto& shaderFileSystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
 			const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
 
-			shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
+			ShaderUtilities::Get().Reflect(shaderPath.string(), shaderReflectionData, true);
 		}
 	}
 }

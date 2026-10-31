@@ -43,7 +43,6 @@ project "HumbleApp"
         "../Dependencies/KTX-Software/ktx/lib/include",
         "../Dependencies/KTX-Software/ktx/external/dfdutils",
         "%{VULKAN_SDK}/Include",
-        "%{VULKAN_SDK}/include",
     }
 
     links
@@ -86,6 +85,7 @@ project "HumbleApp"
             "{COPY} %{wks.location}/bin/" .. outputdir .. "/Humble2/libHumble2.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
 
             -- Third party
+            "{COPY} %{wks.location}/Dependencies/FMOD/MacOS/core/lib/libfmod.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
             "{COPY} %{wks.location}/Dependencies/FMOD/MacOS/core/lib/libfmodL.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
             "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.16-macos-aarch64/lib/libslang.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",
             "{COPY} %{wks.location}/Dependencies/SLang/slang-2026.16-macos-aarch64/lib/libslang-compiler.dylib %{cfg.targetdir}/%{prj.name}.app/Contents/Frameworks/",

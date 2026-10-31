@@ -95,7 +95,7 @@ namespace HBL2
 		Console::Instance = new Console;
 		Console::Instance->Initialize();
 
-		EventDispatcher::Initialize();
+		EventDispatcher::Initialize({ projectSettings.MaxEventTypes, projectSettings.MaxListenersPerEventType });
 		JobSystem::Initialize({ projectSettings.MaxWorkerMemory });
 		MeshUtilities::Initialize();
 		PrefabUtilities::Initialize();
@@ -197,9 +197,6 @@ namespace HBL2
 		{
 			// no-op
 		}
-
-		// Setup a render context for main thread.
-		Device::Instance->SetContext(ContextType::FETCH);
 	}
 
 	void Application::WaitForRenderThreadShutdown()
@@ -298,10 +295,11 @@ namespace HBL2
                 ABORT_RT_FRAME_IF_NEEDED();
 
 				BEGIN_APP_PROFILE(render);
-				Renderer::Instance->BeginFrame();
-				Renderer::Instance->Render(*frameData);
+				CommandBuffer* cmd = Renderer::Instance->BeginFrame();
+				m_Specification.Context->OnRender(cmd, frameData);
+				Renderer::Instance->EndFrame(cmd);
+
 				ImGuiRenderer::Instance->Render(*frameData);
-				Renderer::Instance->EndFrame();
 				END_APP_PROFILE(render, m_CurrentStats.RenderTime);
 
 				BEGIN_APP_PROFILE(present);
@@ -344,6 +342,7 @@ namespace HBL2
 
 			BEGIN_APP_PROFILE(appUpdate);
 			AssetManager::Instance->Dispatch();
+			EventDispatcher::Get().Flush();
 			m_Specification.Context->OnUpdate(Time::DeltaTime);
 			m_Specification.Context->OnFixedUpdate();
 			END_APP_PROFILE(appUpdate, m_CurrentStats.AppUpdateTime);

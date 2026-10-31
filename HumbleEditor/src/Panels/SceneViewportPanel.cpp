@@ -1,28 +1,25 @@
-#include "ViewportPanel.h"
+#include "SceneViewportPanel.h"
 
 #include "Systems/EditorPanelSystem.h"
 
 namespace HBL2::Editor
 {
-	ViewportPanel::ViewportPanel(const std::string& name, EditorPanelSystem* owner)
+	SceneViewportPanel::SceneViewportPanel(const std::string& name, EditorPanelSystem* owner)
 	{
 		m_Owner = owner;
 		Name = name;
 	}
 
-	void ViewportPanel::OnAttach()
-	{
-	}
+	void SceneViewportPanel::OnAttach()
+	{}
 
-	void ViewportPanel::OnCreate()
-	{
-	}
+	void SceneViewportPanel::OnCreate()
+	{}
 
-	void ViewportPanel::OnOpen()
-	{
-	}
+	void SceneViewportPanel::OnOpen()
+	{}
 
-	void ViewportPanel::OnRender(float ts)
+	void SceneViewportPanel::OnRender(float ts)
 	{
 		Scene* ctx = m_Owner->m_Context;
 		Scene* activeScene = m_Owner->m_ActiveScene;
@@ -35,48 +32,39 @@ namespace HBL2::Editor
 		Context::ViewportPosition = { ImGui::GetWindowPos().x, ImGui::GetWindowPos().y };
 
 		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-        
-        ctx->Filter<Component::EditorCamera, HBL2::Component::Camera>()
-            .ForEach([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera)
-            {
-                if (editorCamera.Enabled)
-                {
-                    editorCamera.EnableInput = ImGui::IsWindowHovered();
-                }
-            });
 
-		if (m_Owner->m_ViewportSize != *(glm::vec2*)&viewportPanelSize)
-		{
-			m_Owner->m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-			EventDispatcher::Get().Post(ViewportSizeEvent(m_Owner->m_ViewportSize.x, m_Owner->m_ViewportSize.y));
-
-			if (activeScene != nullptr)
+		ctx->Filter<Component::EditorCamera, HBL2::Component::Camera>()
+			.ForEach([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera)
 			{
-				activeScene->Filter<HBL2::Component::Camera>()
-					.ForEach([&](HBL2::Component::Camera& camera)
-					{
-						if (camera.Enabled)
-						{
-							camera.AspectRatio = m_Owner->m_ViewportSize.x / m_Owner->m_ViewportSize.y;
-						}
-					});
-			}
+				if (editorCamera.Enabled)
+				{
+					editorCamera.EnableInput = ImGui::IsWindowHovered();
+				}
+			});
+
+		if (m_Owner->m_SceneViewportSize != *(glm::vec2*)&viewportPanelSize)
+		{
+			m_Owner->m_SceneViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+			EventDispatcher::Get().Post(SceneViewportSizeEvent(m_Owner->m_SceneViewportSize.x, m_Owner->m_SceneViewportSize.y));
 
 			ctx->Filter<Component::EditorCamera, HBL2::Component::Camera>()
 				.ForEach([&](Component::EditorCamera& editorCamera, HBL2::Component::Camera& camera)
 				{
 					if (editorCamera.Enabled)
 					{
-						camera.AspectRatio = m_Owner->m_ViewportSize.x / m_Owner->m_ViewportSize.y;
+						if (m_Owner->m_SceneViewportSize.y != 0.0f)
+						{
+							camera.AspectRatio = m_Owner->m_SceneViewportSize.x / m_Owner->m_SceneViewportSize.y;
+						}
 					}
 				});
 		}
 
-		ImTextureID viewportTexture = (ImTextureID)HBL2::Renderer::Instance->GetViewportAttachment();
+		ImTextureID viewportTexture = (ImTextureID)HBL2::Renderer::Instance->GetSceneViewAttachment();
 
 		if (viewportTexture != 0)
 		{
-			ImGui::Image(viewportTexture, ImVec2{ m_Owner->m_ViewportSize.x, m_Owner->m_ViewportSize.y });
+			ImGui::Image(viewportTexture, ImVec2{ m_Owner->m_SceneViewportSize.x, m_Owner->m_SceneViewportSize.y });
 
 			if (ImGui::BeginDragDropTarget())
 			{
@@ -119,7 +107,7 @@ namespace HBL2::Editor
 		}
 
 		// Gizmos
-		if (ctx->MainCamera != Entity::Null && Context::Mode == Mode::Editor)
+		if (ctx->MainCamera != Entity::Null)
 		{
 			auto selectedEntity = HBL2::Component::EditorVisible::SelectedEntity;
 
@@ -256,11 +244,9 @@ namespace HBL2::Editor
 		ImGui::PopStyleVar();
 	}
 
-	void ViewportPanel::OnClose()
-	{
-	}
+	void SceneViewportPanel::OnClose()
+	{}
 
-	void ViewportPanel::OnDestroy()
-	{
-	}
+	void SceneViewportPanel::OnDestroy()
+	{}
 }

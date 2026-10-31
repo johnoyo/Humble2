@@ -32,11 +32,11 @@ namespace HBL2
 		void CreateRenderPass();
 
 	private:
-		Handle<RenderPass> m_ImGuiRenderPass;
-		VkDescriptorPool m_ImGuiPool;
-
 		VulkanDevice* m_Device = nullptr;
 		VulkanRenderer* m_Renderer = nullptr;
 		VulkanResourceManager* m_ResourceManager = nullptr;
+
+		Handle<RenderPass> m_ImGuiRenderPass;
+		VkDescriptorPool m_ImGuiPool;
 	};
 }

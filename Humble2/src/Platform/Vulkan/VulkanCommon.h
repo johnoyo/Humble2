@@ -67,7 +67,7 @@ namespace HBL2
 
 		VmaMemoryUsage MemoryUsageToVmaMemoryUsage(MemoryUsage memoryUsage);
 
-		VkBufferUsageFlags BufferUsageToVkBufferUsageFlags(BufferUsage bufferUsage);
+		VkBufferUsageFlags BufferUsageToVkBufferUsageFlags(BitFlags<BufferUsage> bufferUsageFlags);
 
 		VkPipelineStageFlags PipelineStageToVkPipelineStageFlags(PipelineStage pipelineStage);
 	}

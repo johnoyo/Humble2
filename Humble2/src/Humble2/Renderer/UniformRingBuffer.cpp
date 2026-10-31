@@ -22,7 +22,7 @@ namespace HBL2
 		m_BufferData = m_Arena.Alloc(m_BufferSize);
 		memset(m_BufferData, 0, m_BufferSize);
 
-		ResourceManager::Instance->SetBufferData(m_Buffer, 0, m_BufferData);
+		ResourceManager::Instance->SetBufferData(m_Buffer.Get(), 0, m_BufferData);
 	}
 
 	void UniformRingBuffer::Invalidate(uint32_t startOffset)
@@ -32,7 +32,7 @@ namespace HBL2
 
 	void UniformRingBuffer::Free()
 	{
-		ResourceManager::Instance->DeleteBuffer(m_Buffer);
+		m_Buffer.Release();
 	}
 
 	uint32_t UniformRingBuffer::CeilToNextMultiple(uint32_t value, uint32_t step)

@@ -42,7 +42,6 @@ namespace HBL2
         // Buffers
         virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) override;
         virtual void DeleteBuffer(Handle<Buffer> handle) override;
-        virtual void ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset) override;
         virtual void* GetBufferData(Handle<Buffer> handle) override;
         virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override;
         virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
@@ -94,7 +93,7 @@ namespace HBL2
 
     private:
         Pool<MetalTexture, Texture> m_TexturePool;
-        SplitPool<MetalBufferHot, MetalBufferCold, Buffer> m_BufferSplitPool;
+        RefCountedSplitPool<MetalBufferHot, MetalBufferCold, Buffer> m_BufferSplitPool;
         SplitPool<MetalShaderHot, MetalShaderCold, Shader> m_ShaderSplitPool;
         RefCountedSplitPool<MetalBindGroupHot, MetalBindGroupCold, BindGroup> m_BindGroupSplitPool;
         RefCountedPool<MetalBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;

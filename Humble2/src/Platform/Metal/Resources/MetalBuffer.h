@@ -23,7 +23,7 @@ namespace HBL2
     {
         const char* DebugName = "";
         uint32_t ByteOffset = 0;
-        BufferUsage Usage;
+        BitFlags<BufferUsage> Usage;
     };
 
     struct MetalBuffer

@@ -356,17 +356,7 @@ namespace HBL2::Editor
 
 						if (assetHandle.IsValid())
 						{
-							std::ofstream fout(HBL2::Project::GetAssetFileSystemPath(AssetManager::Instance->GetAssetMetadata(assetHandle)->FilePath).string() + ".hblmesh", std::ios_base::out);
-
-							YAML::Emitter out;
-							out << YAML::BeginMap;
-							out << YAML::Key << "Mesh" << YAML::Value;
-							out << YAML::BeginMap;
-							out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(assetHandle)->UUID;
-							out << YAML::EndMap;
-							out << YAML::EndMap;
-							fout << out.c_str();
-							fout.close();
+							MeshUtilities::Get().CreateMeshMetadataFile(assetHandle);
 						}
 
 						mesh.Mesh = assetHandle;
@@ -391,6 +381,70 @@ namespace HBL2::Editor
 
 					ImGui::EndDragDropTarget();
 				}
+			});
+
+			DrawComponent<HBL2::Component::SkinnedMesh>("SkinnedMesh", activeScene, [this](HBL2::Component::SkinnedMesh& mesh)
+			{
+				// ...
+			});
+
+			DrawComponent<HBL2::Component::SkinnedSubMesh>("SkinnedSubMesh", activeScene, [this](HBL2::Component::SkinnedSubMesh& mesh)
+			{
+				uint32_t meshHandle = mesh.Mesh.Get().Pack();
+				uint32_t materialHandle = mesh.Material.Get().Pack();
+
+				ImGui::Checkbox("Enabled", &mesh.Enabled);
+				ImGui::InputScalar("Mesh", ImGuiDataType_U32, (void*)(intptr_t*)&meshHandle);
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Mesh"))
+					{
+						uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+						Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+						if (assetHandle.IsValid())
+						{
+							MeshUtilities::Get().CreateMeshMetadataFile(assetHandle);
+						}
+
+						mesh.Mesh = assetHandle;
+						AssetManager::Instance->GetAsset<Mesh>(assetHandle);
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+
+				ImGui::InputScalar("Material", ImGuiDataType_U32, (void*)(intptr_t*)&materialHandle);
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Content_Browser_Item_Material"))
+					{
+						uint32_t packedAssetHandle = *((uint32_t*)payload->Data);
+						Handle<Asset> assetHandle = Handle<Asset>::UnPack(packedAssetHandle);
+
+						mesh.Material = assetHandle;
+						AssetManager::Instance->GetAsset<Material>(assetHandle);
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+			});
+
+			DrawComponent<HBL2::Component::Animation>("Animation", activeScene, [this](HBL2::Component::Animation& animation)
+			{
+				ImGui::Checkbox("Enabled", &animation.Enabled);
+				ImGui::Checkbox("Enable Looping", &animation.EnableLooping);
+				ImGui::SliderInt("DefaultClip", &animation.DefaultClip, 0, animation.ClipsCount - 1);
+				ImGui::SliderInt("CurrentClip", &animation.CurrentClip, 0, animation.ClipsCount - 1);
+				ImGui::DragFloat("Speed", &animation.Speed, 0.05f, 0.0f);
+				ImGui::DragFloat("TransitionDuration", &animation.TransitionDuration, 0.05f, 0.0f);
+			});
+
+			DrawComponent<HBL2::Component::SkeletonPose>("SkeletonPose", activeScene, [this](HBL2::Component::SkeletonPose& skeletonPose)
+			{
+				// ...
 			});
 
 			DrawComponent<HBL2::Component::Light>("Light", activeScene, [this](HBL2::Component::Light& light)
@@ -913,6 +967,8 @@ namespace HBL2::Editor
 			{
 				AddComponentButton<HBL2::Component::Sprite>("Sprite", activeScene);
 				AddComponentButton<HBL2::Component::StaticMesh>("StaticMesh", activeScene);
+				AddComponentButton<HBL2::Component::SkinnedSubMesh>("SkinnedSubMesh", activeScene);
+				AddComponentButton<HBL2::Component::Animation>("Animation", activeScene);
 				AddComponentButton<HBL2::Component::Camera>("Camera", activeScene);
 				AddComponentButton<HBL2::Component::Link>("Link", activeScene);
 				AddComponentButton<HBL2::Component::Light>("Light", activeScene);
@@ -981,6 +1037,8 @@ namespace HBL2::Editor
 					{
 						AssetManager::Instance->UnpinAsset(m_Owner->m_SelectedAsset.Get());
 					}
+
+					m_IsAssetDirty = true;
 				}
 
 				ImGui::NewLine();
@@ -1144,7 +1202,7 @@ namespace HBL2::Editor
                 const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
 
                 // TODO: When user defined compute shaders are a thing, update this so that it passes 'false' for them.
-                m_ShaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
+                ShaderUtilities::Get().Reflect(shaderPath.string(), &m_ShaderReflectionData, true);
 
                 // Clear uniform buffer data.
                 for (auto& data : m_ShaderUniformBufferData)
@@ -1884,7 +1942,7 @@ namespace HBL2::Editor
                             const std::filesystem::path& shaderPath = std::filesystem::exists(shaderFileSystemPath) ? shaderFileSystemPath : shaderAsset->FilePath;
 
                             // Reflect.
-                            m_ShaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
+                            ShaderUtilities::Get().Reflect(shaderPath.string(), &m_ShaderReflectionData, true);
 
                             // Retrieve new uniform buffer data.
                             for (const auto& descriptorSet : m_ShaderReflectionData.descriptorSets)
@@ -2642,11 +2700,11 @@ namespace HBL2::Editor
 			m_MeshSettings = MeshUtilities::Get().DeserializeAssetMetadataFile(m_Owner->m_SelectedAsset.Get());
 		}
 
-		if (ImGui::Checkbox("Preserve Hierachy", &m_MeshSettings.PreserveHierachy))
-		{
-			m_IsAssetDirty = true;
-			m_ReimportMesh = true;
-		}
+        if (ImGui::Checkbox("Preserve Hierachy", &m_MeshSettings.PreserveHierachy))
+        {
+            m_IsAssetDirty = true;
+            m_ReimportMesh = true;
+        }
 
 		if (ImGui::Checkbox("Generate Colliders", &m_MeshSettings.GenerateColliders))
 		{

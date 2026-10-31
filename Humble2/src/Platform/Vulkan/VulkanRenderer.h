@@ -27,9 +27,6 @@ namespace HBL2
 		VkCommandPool CommandPool;
 		VkCommandBuffer MainCommandBuffer;
 		VkCommandBuffer ImGuiCommandBuffer;
-
-		Handle<BindGroup> DebugBindings;
-		Handle<BindGroup> GlobalPresentBindings;
 	};
 
 	struct UploadContext
@@ -44,18 +41,18 @@ namespace HBL2
 	public:
 		virtual ~VulkanRenderer() = default;
 
-		virtual void BeginFrame() override;
-		virtual void EndFrame() override;
+		virtual CommandBuffer* BeginFrame() override;
+		virtual void EndFrame(CommandBuffer* commandBuffer) override;
 		virtual void Present() override;
 		virtual void Clean() override;
 
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) override;
 
-		virtual void SetViewportAttachment(void* viewportTextureRef) override { m_ColorAttachmentID = (VkDescriptorSet)viewportTextureRef; }
-		virtual void* GetViewportAttachment() override { return m_ColorAttachmentID; }
+		virtual void* GetGameViewAttachment() override { return m_GameViewAttachmentID; }
+		virtual void InvalidateGameViewTexture() override;
 
-		virtual Handle<BindGroup> GetGlobalPresentBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].GlobalPresentBindings; }
-		virtual Handle<BindGroup> GetDebugBindings() override { return m_VkFrames[m_FrameNumber.load() % FRAME_OVERLAP].DebugBindings; }
+		virtual void* GetSceneViewAttachment() override { return m_SceneViewAttachmentID; }
+		virtual void InvalidateSceneViewTexture() override;
 
         virtual Handle<RenderPass> GetMainRenderPass() override { return m_RenderPasses[m_SwapchainImageIndex]; }
         virtual Handle<RenderPass> GetImGuiRenderPass() override { return m_ImGuiRenderPasses[m_SwapchainImageIndex]; }
@@ -96,8 +93,6 @@ namespace HBL2
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool verticalSync);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
-		void StubRenderPass();
-
 	private:
 		VulkanDevice* m_Device;
 		VulkanResourceManager* m_ResourceManager;
@@ -132,7 +127,8 @@ namespace HBL2
         Handle<RenderPassLayout> m_RenderPassLayout;
         
 		VkDescriptorPool m_DescriptorPool;
-		VkDescriptorSet m_ColorAttachmentID = VK_NULL_HANDLE;
+		VkDescriptorSet m_SceneViewAttachmentID = VK_NULL_HANDLE;
+		VkDescriptorSet m_GameViewAttachmentID = VK_NULL_HANDLE;
 
 		bool m_Resize = false;
 		glm::uvec2 m_NewSize{};

@@ -2,6 +2,7 @@
 
 #include "Core/Context.h"
 #include "Core/Window.h"
+#include "Core/EventDispatcher.h"
 
 #include "Physics/PhysicsEngine2D.h"
 #include "Physics/PhysicsEngine3D.h"
@@ -26,6 +27,20 @@ namespace HBL2
 		m_Reservation = Allocator::Arena.Reserve("DebugRendererPool", totalBytes);
 		m_Arena.Initialize(&Allocator::Arena, totalBytes, m_Reservation);
 
+		m_ResourceManager = ResourceManager::Instance;
+
+		// Bindings layout for the debug rendering.
+		m_DebugBindingsLayout = m_ResourceManager->CreateBindGroupLayout({
+			.debugName = "debug-bind-group-layout",
+			.bufferBindings = {
+				{
+					.slot = 0,
+					.visibility = { ShaderStage::VERTEX },
+					.type = BufferBindingType::UNIFORM,
+				},
+			},
+		});
+
 		// Reserve max space for the draws and vertices cpu storage to avoid allocations.
 		for (auto& renderData : m_RenderData)
 		{
@@ -39,9 +54,22 @@ namespace HBL2
 
 			renderData.WireTrisVerts = FixedArray<DebugVertex>(&m_Arena, s_MaxDebugVertices);
 			renderData.WireTrisVerts.resize(s_MaxDebugVertices);
-		}
 
-		m_ResourceManager = ResourceManager::Instance;
+			// Bindings for debug rendering.
+			auto cameraBuffer = m_ResourceManager->CreateBuffer({
+				.debugName = "debug-draw-camera-uniform-buffer",
+				.usage = BufferUsage::UNIFORM,
+				.memoryUsage = MemoryUsage::CPU_GPU,
+				.byteSize = sizeof(glm::mat4),
+				.initialData = nullptr,
+			});
+
+			renderData.DebugBindings = m_ResourceManager->CreateBindGroup({
+				.debugName = "debug-draw-bind-group",
+				.layout = m_DebugBindingsLayout.Get(),
+				.buffers = { { .buffer = cameraBuffer } }
+			});
+		}
 
 		m_DebugRenderPassLayout = m_ResourceManager->CreateRenderPassLayout({
 			.debugName = "debug-renderpass-layout",
@@ -49,46 +77,6 @@ namespace HBL2
 			.subPasses = {
 				{ .depthTarget = true, .colorTargets = 1, },
 			},
-		});
-
-		// Renderpass and framebuffer for debug drawing.
-		m_DebugRenderPass = m_ResourceManager->CreateRenderPass({
-			.debugName = "debug-renderpass",
-			.layout = m_DebugRenderPassLayout,
-			.depthTarget = {
-				.loadOp = LoadOperation::LOAD,
-				.storeOp = StoreOperation::STORE,
-				.stencilLoadOp = LoadOperation::DONT_CARE,
-				.stencilStoreOp = StoreOperation::DONT_CARE,
-				.prevUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
-				.nextUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
-			},
-			.colorTargets = {
-				{
-					.format = Format::BGRA8_UNORM,
-					.loadOp = LoadOperation::LOAD,
-					.storeOp = StoreOperation::STORE,
-					.prevUsage = TextureLayout::RENDER_ATTACHMENT,
-					.nextUsage = TextureLayout::RENDER_ATTACHMENT,
-				},
-			},
-            .frameBufferDesc = {
-                .width = Window::Instance->GetExtents().x,
-                .height = Window::Instance->GetExtents().y,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->MainColorTexture },
-            }
-		});
-
-		// Resize debug draw framebuffer callback.
-		Renderer::Instance->AddCallbackOnResize("Resize-Debug-FrameBuffer", [this](uint32_t width, uint32_t height)
-		{
-            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DebugRenderPass, {
-                .width = width,
-                .height = height,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->MainColorTexture },
-            });
 		});
 
 		// Debug vertex buffers.
@@ -116,93 +104,6 @@ namespace HBL2
 			.initialData = nullptr,
 		});
 
-		// Shader variant descriptions.
-		using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
-
-		ShaderDescriptor::RenderPipeline::PackedVariant lineVariant = {};
-		lineVariant.topology = (packed_size)Topology::LINE_LIST;
-		lineVariant.blendEnabled = false;
-		lineVariant.depthEnabled = false;
-		lineVariant.depthWrite = false;
-		lineVariant.stencilEnabled = false;
-
-		ShaderDescriptor::RenderPipeline::PackedVariant fillTriVariant = {};
-		fillTriVariant.topology = (packed_size)Topology::TRIANGLE_LIST;
-		fillTriVariant.polygonMode = (packed_size)PolygonMode::FILL;
-		fillTriVariant.blendEnabled = false;
-		fillTriVariant.depthEnabled = false;
-		fillTriVariant.depthWrite = false;
-		fillTriVariant.stencilEnabled = false;
-		fillTriVariant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
-
-		ShaderDescriptor::RenderPipeline::PackedVariant wireTriVariant = {};
-		wireTriVariant.topology = (packed_size)Topology::TRIANGLE_LIST;
-		wireTriVariant.polygonMode = (packed_size)PolygonMode::LINE;
-		wireTriVariant.blendEnabled = false;
-		wireTriVariant.depthEnabled = false;
-		wireTriVariant.depthWrite = false;
-		wireTriVariant.stencilEnabled = false;
-		wireTriVariant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
-
-		// Compile debug shader.
-		const auto& debugShaderData = ShaderUtilities::Get().Compile("assets/shaders/debug-draw.slang", (ShaderReflectionData*)nullptr, false);
-
-		// Create debug shader handle.
-		m_DebugShader = m_ResourceManager->CreateShader({
-			.debugName = "debug-draw-shader",
-			.VS { .code = debugShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
-			.FS { .code = debugShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
-			.bindGroups {
-				Renderer::Instance->GetDebugBindingsLayout(),	// Global bind group (0)
-			},
-			.renderPipeline {
-				.vertexBufferBindings = {
-					{
-						.byteStride = 16,
-						.attributes = {
-							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
-							{ .byteOffset = 12, .format = VertexFormat::UINT32 },
-						},
-					}
-				},
-				.variants = { lineVariant, fillTriVariant, wireTriVariant },
-			},
-			.renderPass = m_DebugRenderPass,
-		});
-
-		// Debug line material.
-		m_DebugLineMaterial = m_ResourceManager->CreateMaterial({
-			.debugName = "debug-line-material",
-			.shader = m_DebugShader,
-			// No per line(draw) bindgroup, since we only use a global one.
-		});
-
-		Material* lineMat = m_ResourceManager->GetMaterial(m_DebugLineMaterial);
-		lineMat->VariantHash = lineVariant;
-		m_DebugLineMaterialVariantHash = lineMat->VariantHash;
-
-		// Debug fill triangle material.
-		m_DebugFillMaterial = m_ResourceManager->CreateMaterial({
-			.debugName = "debug-fill-tri-material",
-			.shader = m_DebugShader,
-			// No per line(draw) bindgroup, since we only use a global one.
-		});
-
-		Material* fillMat = m_ResourceManager->GetMaterial(m_DebugFillMaterial);
-		fillMat->VariantHash = fillTriVariant;
-		m_DebugFillMaterialVariantHash = fillMat->VariantHash;
-
-		// Debug wire triangle material.
-		m_DebugWireMaterial = m_ResourceManager->CreateMaterial({
-			.debugName = "debug-wire-tri-material",
-			.shader = m_DebugShader,
-			// No per line(draw) bindgroup, since we only use a global one.
-		});
-
-		Material* wireMat = m_ResourceManager->GetMaterial(m_DebugWireMaterial);
-		wireMat->VariantHash = wireTriVariant;
-		m_DebugWireMaterialVariantHash = wireMat->VariantHash;
-
 		// Initialize sphere mesh data.
 		InitSphereMesh(8, 4);
 	}
@@ -225,6 +126,8 @@ namespace HBL2
 		{
 			PhysicsEngine3D::Instance->OnDebugDraw();
 		}
+
+		CreateRenderingResourcesIfNeeded();
 	}
 
 	void DebugRenderer::EndFrame()
@@ -266,13 +169,11 @@ namespace HBL2
 				.VertexCount = renderData->CurrentWireIndex,
 			});
 		}
-
-		Renderer::Instance->CollectDebugRenderData(renderData);
 	}
 
-	void DebugRenderer::Render(CommandBuffer* commandBuffer, void* debugRenderData)
+	void DebugRenderer::Render(CommandBuffer* commandBuffer, uint32_t debugRenderDataIndex)
 	{
-		DebugRenderData* renderData = (DebugRenderData*)debugRenderData;
+		DebugRenderData* renderData = &m_RenderData[debugRenderDataIndex];
 
 		m_ResourceManager->SetBufferData(m_DebugLineVertexBuffer, 0, renderData->LineVerts.data());
 
@@ -300,12 +201,11 @@ namespace HBL2
 
 		const auto& cameraMVP = GetCameraMVP();
 
-		Handle<BindGroup> globalBindings = Renderer::Instance->GetDebugBindings();
-		ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&cameraMVP);
+		ResourceManager::Instance->SetBufferData(renderData->DebugBindings, 0, (void*)&cameraMVP);
 
 		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_DebugRenderPass);
 
-		GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings };
+		GlobalDrawStream globalDrawStream = { .BindGroup = renderData->DebugBindings };
 		passRenderer->DrawSubPass(globalDrawStream, renderData->Draws);
 
 		commandBuffer->EndRenderPass(*passRenderer);
@@ -313,7 +213,7 @@ namespace HBL2
 
 	void DebugRenderer::Clean()
 	{
-		Renderer::Instance->RemoveOnResizeCallback("Resize-Debug-FrameBuffer");
+		EventDispatcher::Get().Deregister<SceneChangeEvent>(m_DebugPassSceneChangeEventHandle);
 
 		m_ResourceManager->DeleteBuffer(m_DebugLineVertexBuffer);
 		m_ResourceManager->DeleteBuffer(m_DebugFillTriVertexBuffer);
@@ -327,16 +227,30 @@ namespace HBL2
 		m_ResourceManager->DeleteMaterial(m_DebugFillMaterial);
 		m_ResourceManager->DeleteMaterial(m_DebugWireMaterial);
 
+		m_DebugBindingsLayout.Release();
+
 		for (auto& renderData : m_RenderData)
 		{
 			renderData.Draws.Reset();
 			renderData.LineVerts.clear();
 			renderData.FillTrisVerts.clear();
 			renderData.WireTrisVerts.clear();
+
+			m_ResourceManager->DeleteBindGroup(renderData.DebugBindings);
 		}
 
 		s_SphereIndices.clear();
 		s_SphereVerts.clear();
+	}
+
+	void DebugRenderer::RecreateFrameBuffer(uint32_t width, uint32_t height)
+	{
+		ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DebugRenderPass, {
+			.width = width,
+			.height = height,
+			.depthTarget = Renderer::Instance->SceneViewDepthTexture,
+			.colorTargets = { Renderer::Instance->SceneViewTexture },
+		});
 	}
 
 	void DebugRenderer::DrawLine(const glm::vec3& from, const glm::vec3& to)
@@ -461,6 +375,146 @@ namespace HBL2
 		renderData->WireTrisVerts[renderData->CurrentWireIndex++] = { v3, Color };
 	}
 	
+	void DebugRenderer::CreateRenderingResourcesIfNeeded()
+	{
+		if (m_RenderingResourcesCreated)
+		{
+			return;
+		}
+
+		if (Renderer::Instance->SceneViewDepthTexture.IsValid() && Renderer::Instance->SceneViewTexture.IsValid())
+		{
+			// Renderpass and framebuffer for debug drawing.
+			m_DebugRenderPass = m_ResourceManager->CreateRenderPass({
+				.debugName = "debug-renderpass",
+				.layout = m_DebugRenderPassLayout,
+				.depthTarget = {
+					.loadOp = LoadOperation::LOAD,
+					.storeOp = StoreOperation::STORE,
+					.stencilLoadOp = LoadOperation::DONT_CARE,
+					.stencilStoreOp = StoreOperation::DONT_CARE,
+					.prevUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
+					.nextUsage = TextureLayout::DEPTH_STENCIL_READ_ONLY,
+				},
+				.colorTargets = {
+					{
+						.format = Format::BGRA8_UNORM,
+						.loadOp = LoadOperation::LOAD,
+						.storeOp = StoreOperation::STORE,
+						.prevUsage = TextureLayout::RENDER_ATTACHMENT,
+						.nextUsage = TextureLayout::RENDER_ATTACHMENT,
+					},
+				},
+				.frameBufferDesc = {
+					.width = Window::Instance->GetExtents().x,
+					.height = Window::Instance->GetExtents().y,
+					.depthTarget = Renderer::Instance->SceneViewDepthTexture,
+					.colorTargets = { Renderer::Instance->SceneViewTexture },
+				}
+			});
+
+			// Update debug draw framebuffer targets on scene change.
+			m_DebugPassSceneChangeEventHandle = EventDispatcher::Get().Register<SceneChangeEvent>([this](const HBL2::SceneChangeEvent& e)
+			{
+				ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DebugRenderPass, {
+					.width = Window::Instance->GetExtents().x,
+					.height = Window::Instance->GetExtents().y,
+					.depthTarget = Renderer::Instance->SceneViewDepthTexture,
+					.colorTargets = { Renderer::Instance->SceneViewTexture },
+				});
+			});
+
+			// Shader variant descriptions.
+			using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
+
+			ShaderDescriptor::RenderPipeline::PackedVariant lineVariant = {};
+			lineVariant.topology = (packed_size)Topology::LINE_LIST;
+			lineVariant.blendEnabled = false;
+			lineVariant.depthEnabled = false;
+			lineVariant.depthWrite = false;
+			lineVariant.stencilEnabled = false;
+
+			ShaderDescriptor::RenderPipeline::PackedVariant fillTriVariant = {};
+			fillTriVariant.topology = (packed_size)Topology::TRIANGLE_LIST;
+			fillTriVariant.polygonMode = (packed_size)PolygonMode::FILL;
+			fillTriVariant.blendEnabled = false;
+			fillTriVariant.depthEnabled = false;
+			fillTriVariant.depthWrite = false;
+			fillTriVariant.stencilEnabled = false;
+			fillTriVariant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
+
+			ShaderDescriptor::RenderPipeline::PackedVariant wireTriVariant = {};
+			wireTriVariant.topology = (packed_size)Topology::TRIANGLE_LIST;
+			wireTriVariant.polygonMode = (packed_size)PolygonMode::LINE;
+			wireTriVariant.blendEnabled = false;
+			wireTriVariant.depthEnabled = false;
+			wireTriVariant.depthWrite = false;
+			wireTriVariant.stencilEnabled = false;
+			wireTriVariant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
+
+			// Compile debug shader.
+			const auto& debugShaderData = ShaderUtilities::Get().Compile("assets/shaders/debug-draw.slang", (ShaderReflectionData*)nullptr, false);
+
+			// Create debug shader handle.
+			m_DebugShader = m_ResourceManager->CreateShader({
+				.debugName = "debug-draw-shader",
+				.VS { .code = debugShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
+				.FS { .code = debugShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
+				.bindGroups {
+					m_DebugBindingsLayout.Get(),	// Global bind group (0)
+				},
+				.renderPipeline {
+					.vertexBufferBindings = {
+						{
+							.byteStride = 16,
+							.attributes = {
+								{ .byteOffset = 0, .format = VertexFormat::FLOAT32x3 },
+								{ .byteOffset = 12, .format = VertexFormat::UINT32 },
+							},
+						}
+					},
+					.variants = { lineVariant, fillTriVariant, wireTriVariant },
+				},
+				.renderPass = m_DebugRenderPass,
+			});
+
+			// Debug line material.
+			m_DebugLineMaterial = m_ResourceManager->CreateMaterial({
+				.debugName = "debug-line-material",
+				.shader = m_DebugShader,
+				// No per line(draw) bindgroup, since we only use a global one.
+			});
+
+			Material* lineMat = m_ResourceManager->GetMaterial(m_DebugLineMaterial);
+			lineMat->VariantHash = lineVariant;
+			m_DebugLineMaterialVariantHash = lineMat->VariantHash;
+
+			// Debug fill triangle material.
+			m_DebugFillMaterial = m_ResourceManager->CreateMaterial({
+				.debugName = "debug-fill-tri-material",
+				.shader = m_DebugShader,
+				// No per line(draw) bindgroup, since we only use a global one.
+			});
+
+			Material* fillMat = m_ResourceManager->GetMaterial(m_DebugFillMaterial);
+			fillMat->VariantHash = fillTriVariant;
+			m_DebugFillMaterialVariantHash = fillMat->VariantHash;
+
+			// Debug wire triangle material.
+			m_DebugWireMaterial = m_ResourceManager->CreateMaterial({
+				.debugName = "debug-wire-tri-material",
+				.shader = m_DebugShader,
+				// No per line(draw) bindgroup, since we only use a global one.
+			});
+
+			Material* wireMat = m_ResourceManager->GetMaterial(m_DebugWireMaterial);
+			wireMat->VariantHash = wireTriVariant;
+			m_DebugWireMaterialVariantHash = wireMat->VariantHash;
+
+			m_RenderingResourcesCreated = true;
+		}
+	}
+
 	void DebugRenderer::InitSphereMesh(int segments, int rings)
 	{
 		constexpr float PI = glm::pi<float>();
@@ -514,33 +568,15 @@ namespace HBL2
 	glm::mat4 DebugRenderer::GetCameraMVP()
 	{
 		Entity mainCamera = Entity::Null;
-		Scene* scene = nullptr;
+		Scene* scene = m_ResourceManager->GetScene(Context::EditorScene);
 
-		if (Context::Mode == Mode::Runtime)
+		if (scene->MainCamera != Entity::Null)
 		{
-			scene = m_ResourceManager->GetScene(Context::ActiveScene);
-
-			if (scene->MainCamera != Entity::Null)
-			{
-				mainCamera = scene->MainCamera;
-			}
-			else
-			{
-				HBL2_CORE_WARN("No main camera set for runtime context.");
-			}
+			mainCamera = scene->MainCamera;
 		}
-		else if (Context::Mode == Mode::Editor)
+		else
 		{
-			scene = m_ResourceManager->GetScene(Context::EditorScene);
-
-			if (scene->MainCamera != Entity::Null)
-			{
-				mainCamera = scene->MainCamera;
-			}
-			else
-			{
-				HBL2_CORE_WARN("No main camera set for editor context.");
-			}
+			HBL2_CORE_WARN("No main camera set for editor context.");
 		}
 
 		if (scene == nullptr || mainCamera == Entity::Null)

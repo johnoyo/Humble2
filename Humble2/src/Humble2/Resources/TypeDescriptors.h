@@ -5,6 +5,9 @@
 #include "BaseTypeDefinitions.h"
 #include "Asset/Asset.h"
 
+#include "Animation/AnimationClip.h"
+#include "Animation/AnimationSkeleton.h"
+
 #include "Utilities/Collections/Span.h"
 #include "Utilities/Collections/BitFlags.h"
 
@@ -65,7 +68,7 @@ namespace HBL2
 	struct BufferDescriptor
 	{
 		const char* debugName;
-		BufferUsage usage = BufferUsage::UNIFORM;
+		BitFlags<BufferUsage> usage = BufferUsage::UNIFORM;
 		MemoryUsage memoryUsage = MemoryUsage::CPU_GPU;
 		uint32_t byteSize = 0;
 		void* initialData = nullptr;
@@ -347,6 +350,7 @@ namespace HBL2
 		std::vector<SubMeshDescriptor> subMeshes;
 		Handle<Buffer> indexBuffer;
 		std::vector<Handle<Buffer>> vertexBuffers;
+		Handle<Buffer> skinBuffer;
 
 		struct LocalTransform
 		{
@@ -360,6 +364,9 @@ namespace HBL2
 	{
 		const char* debugName;
 		std::vector<MeshPartDescriptor> meshes;
+
+		Handle<Skeleton> skeleton;
+		std::vector<Handle<AnimationClip>> animationClips;
 	};
 
 	struct MeshDescriptorSettings

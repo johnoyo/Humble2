@@ -825,7 +825,7 @@ namespace HBL2::Editor
 					const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : shaderAsset->FilePath;
 
 					// Reflect Shader.
-					m_ShaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
+					ShaderUtilities::Get().Reflect(shaderPath.string(), &m_ShaderReflectionData, true);
 
 					// Clear reflection data.
 					for (auto& data : m_ShaderUniformBufferData)

@@ -61,9 +61,9 @@ namespace HBL2
 
 	enum class RendererType
 	{
-		Forward = 0,
-		ForwardPlus,
-		Custom,
+		FORWARD = 0,
+		FORWARD_PLUS,
+		CUSTOM,
 	};
 
 	struct RendererStats
@@ -72,6 +72,7 @@ namespace HBL2
 		uint32_t DrawCalls = 0;
 		float GatherTime = 0.f;
 		float SortingTime = 0.f;
+		float SkinningPassTime = 0.f;
 		float ShadowPassTime = 0.f;
 		float PrePassTime = 0.f;
 		float LightCullingPassTime = 0.0f;
@@ -92,6 +93,7 @@ namespace HBL2
 			DrawCalls = 0;
 			GatherTime = 0.f;
 			SortingTime = 0.f;
+			SkinningPassTime = 0.f;
 			ShadowPassTime = 0.f;
 			PrePassTime = 0.f;
 			LightCullingPassTime = 0.f;
@@ -110,10 +112,8 @@ namespace HBL2
 
 	struct RendererFrameData
 	{
-		SceneRenderer* Renderer = nullptr;
-		void* RenderData = nullptr;
-		void* DebugRenderData = nullptr;
 		int32_t AcquiredIndex = -1;
+		int32_t RenderIndex = -1;
 
 		ImDrawDataSnapshot ImGuiRenderData;
 	};
@@ -134,18 +134,15 @@ namespace HBL2
 		static constexpr uint32_t FrameCount = FRAME_OVERLAP;
 
 		void Initialize();
-		virtual void BeginFrame() = 0;
-		virtual void EndFrame() = 0;
+		virtual CommandBuffer* BeginFrame() = 0;
+		virtual void EndFrame(CommandBuffer* commandBuffer) = 0;
 		virtual void Present() = 0;
 		virtual void Clean() = 0;
 
-		void Render(const RendererFrameData& frameData);
 		RendererFrameData* WaitAndRender();
 		void WaitAndBegin();
 		void MarkAndSubmit();
 		void WaitForRenderThreadIdle();
-		void CollectRenderData(SceneRenderer* renderer, void* renderData);
-		void CollectDebugRenderData(void* renderData);
 		void CollectImGuiRenderData(void* renderData, double currentTime);
 		void ReleaseFrameSlot(int32_t acquiredIndex);
 		void ClearFrameDataBuffer();
@@ -159,8 +156,11 @@ namespace HBL2
 
 		virtual CommandBuffer* BeginCommandRecording(CommandBufferType type) = 0;
 
-		virtual void SetViewportAttachment(void* viewportTextureRef) = 0;
-		virtual void* GetViewportAttachment() = 0;
+		virtual void* GetGameViewAttachment() = 0;
+		virtual void InvalidateGameViewTexture() = 0;
+
+		virtual void* GetSceneViewAttachment() = 0;
+		virtual void InvalidateSceneViewTexture() = 0;
 
 		RenderPassPool& GetRenderPassPool() { return m_RenderPassPool; }
 
@@ -173,36 +173,19 @@ namespace HBL2
 		virtual Handle<RenderPass> GetMainRenderPass() = 0;
         virtual Handle<RenderPass> GetImGuiRenderPass() = 0;
         virtual Handle<RenderPass> GetRenderingRenderPass() = 0;
-
-		virtual Handle<BindGroup> GetGlobalPresentBindings() = 0;
-		virtual Handle<BindGroup> GetDebugBindings() = 0;
         
 		const Handle<BindGroup> GetEmptyBindings() const { return m_EmptyBindings; }
-		const Handle<BindGroupLayout> GetDebugBindingsLayout() const { return m_DebugBindingsLayout; }
 		const Handle<BindGroupLayout> GetDynamicBindingsLayout() const { return m_DynamicBindingsLayout; }
-		const Handle<BindGroupLayout> GetGlobalPresentBindingsLayout() const { return m_GlobalPresentBindingsLayout; }
 		const Handle<BindGroupLayout> GetEmptyBindingsLayout() const { return m_EmptyBindingsLayout; }
 
 		GraphicsAPI GetAPI() const { return m_GraphicsAPI; }
 		RendererType GetRendererType() const { return m_RendererType; }
 
 		UniformRingBuffer* TempUniformRingBuffer = nullptr;
-		ShadowAtlasAllocator ShadowAtlasAllocator{};
 
-		Handle<Texture> IntermediateColorTexture;
-		Handle<Texture> MainColorTexture;
-		Handle<Texture> MainDepthTexture;
-		Handle<Texture> ShadowAtlasTexture;
-
-		void AddCallbackOnResize(const std::string& callbackName, std::function<void(uint32_t, uint32_t)>&& callback)
-		{
-			m_OnResizeCallbacks[callbackName] = callback;
-		}
-
-		void RemoveOnResizeCallback(const std::string& callbackName)
-		{
-			m_OnResizeCallbacks.erase(callbackName);
-		}
+		Handle<Texture> SceneViewDepthTexture;
+		Handle<Texture> SceneViewTexture;
+		Handle<Texture> GameViewTexture;
 
 	protected:
 		virtual void PreInitialize() = 0;
@@ -211,18 +194,14 @@ namespace HBL2
 	protected:
 		std::atomic_int64_t m_FrameNumber = { 0 };
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::NONE;
-		RendererType m_RendererType = RendererType::Forward;
+		RendererType m_RendererType = RendererType::FORWARD;
 		RendererStats m_CurrentStats{};
 		RendererStats m_PreviousStats{};
 		RenderPassPool m_RenderPassPool;
 
-		Handle<BindGroupLayout> m_DebugBindingsLayout;
 		Handle<BindGroupLayout> m_DynamicBindingsLayout;
-		Handle<BindGroupLayout> m_GlobalPresentBindingsLayout;
 		Handle<BindGroupLayout> m_EmptyBindingsLayout;
 		Handle<BindGroup> m_EmptyBindings;
-
-		std::unordered_map<std::string, std::function<void(uint32_t, uint32_t)>> m_OnResizeCallbacks;
 
 	protected:
 		RendererFrameData m_Frames[FrameCount];

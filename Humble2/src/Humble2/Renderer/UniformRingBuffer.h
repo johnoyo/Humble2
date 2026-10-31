@@ -37,7 +37,7 @@ namespace HBL2
 			return { .Data = (T*)((char*)m_BufferData + blockIndex), .Offset = blockIndex, };
 		}
 
-		Handle<Buffer> GetBuffer() const { return m_Buffer; }
+		Handle<Buffer> GetBuffer() const { return m_Buffer.Get(); }
 		uint32_t GetBufferSize() const { return m_BufferSize; }
 
 		const uint32_t GetCurrentOffset() const { return m_CurrentOffset; }
@@ -50,7 +50,7 @@ namespace HBL2
 		static uint32_t CeilToNextMultiple(uint32_t value, uint32_t step);
 
 	private:
-		Handle<Buffer> m_Buffer;
+		RefHandle<Buffer> m_Buffer;
 		void* m_BufferData;
 		uint32_t m_BufferSize;
 		uint32_t m_CurrentOffset;

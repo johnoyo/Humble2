@@ -98,6 +98,13 @@ namespace HBL2
 			Extents.Max.z = glm::max(meshPart.Extents.Max.z, Extents.Max.z);
 		}
 
+		for (const auto animationClip : desc.animationClips)
+		{
+			AnimationClips.push_back(animationClip);
+		}
+
+		Skeleton = desc.skeleton;
+
 		m_HasItems.store(true, std::memory_order_release);
 	}
 

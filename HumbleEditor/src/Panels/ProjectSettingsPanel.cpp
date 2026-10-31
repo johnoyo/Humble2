@@ -49,7 +49,7 @@ namespace HBL2::Editor
 					spec.Settings.Renderer = (RendererType)currentItem;
 				}
 
-				if (spec.Settings.Renderer == RendererType::Custom)
+				if (spec.Settings.Renderer == RendererType::CUSTOM)
 				{
 					uint32_t scriptHandlePacked = AssetManager::Instance->GetHandleFromUUID(spec.Settings.RendererUUID).Pack();
 

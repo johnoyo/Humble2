@@ -12,11 +12,12 @@ namespace HBL2
         
         for (int i = 0; i < Buffers.size(); i++)
         {
-            // If the range is not 0, this means its a dynamic uniform buffer meaning that is shared across bindgroup, so do not delete.
-            if (Buffers[i].range == 0)
-            {
-                rm->DeleteBuffer(Buffers[i].buffer);
-            }
+            Buffers[i].buffer.Release();
+        }
+
+        for (int i = 0; i < Textures.size(); i++)
+        {
+            // Textures[i].texture.Release();
         }
         
         DebugName = nullptr;
@@ -36,13 +37,13 @@ namespace HBL2
         HBL2_CORE_ASSERT(desc.buffers.size() <= Cold->Buffers.capacity(), "Exceeded max number of buffers in a bind group!");
         for (const auto& bufferEntry : desc.buffers)
         {
-            Cold->Buffers.push_back(bufferEntry);
+            Cold->Buffers.push_back({ bufferEntry.buffer, bufferEntry.byteOffset, bufferEntry.range });
         }
 
         HBL2_CORE_ASSERT(desc.textures.size() <= Cold->Textures.capacity(), "Exceeded max number of textures in a bind group!");
         for (const auto& textureEntry : desc.textures)
         {
-            Cold->Textures.push_back(textureEntry);
+            Cold->Textures.push_back({ textureEntry.texture, textureEntry.desiredLayout });
         }
         
         Cold->Hash = ResourceManager::Instance->GetBindGroupHash(std::forward<const BindGroupDescriptor>(desc));

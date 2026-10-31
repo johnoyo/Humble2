@@ -8,7 +8,7 @@
 
 #include "Asset/AssetManager.h"
 #include "Scene/SceneManager.h"
-#include "Utilities/EntityPresets.h"
+#include "Scene/EntityPresets.h"
 #include "ImGui/ImGuiRenderer.h"
 
 namespace HBL2
@@ -75,7 +75,8 @@ namespace HBL2
 
 			Scene* m_ActiveScene = nullptr;
 			Handle<Scene> m_ActiveSceneTemp;
-			glm::vec2 m_ViewportSize = { 0.f, 0.f };
+			glm::vec2 m_SceneViewportSize = { 0.f, 0.f };
+			glm::vec2 m_GameViewportSize = { 0.f, 0.f };
 			ImGuizmo::MODE m_GizmoMode = ImGuizmo::MODE::LOCAL;
 			bool m_ProjectChanged = false;
 			std::filesystem::path m_EditorScenePath;
@@ -86,7 +87,8 @@ namespace HBL2
 			friend class PlayStopPanel;
 			friend class SystemsPanel;
 			friend class StatsPanel;
-			friend class ViewportPanel;
+			friend class GameViewportPanel;
+			friend class SceneViewportPanel;
 			friend class TopBarPanel;
 			friend class EditorSettingsPanel;
 			friend class ProjectSettingsPanel;

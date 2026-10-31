@@ -122,19 +122,20 @@ namespace HBL2
     }
     void MetalResourceManager::DeleteBuffer(Handle<Buffer> handle)
     {
-        m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
+        if (!m_BufferSplitPool.IsAlive(handle))
         {
-            MetalBuffer buffer = GetBuffer(handle);
-            if (buffer.IsValid())
+            m_BufferSplitPool.MarkClosed(handle);
+
+            m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
             {
-                buffer.Destroy();
-                m_BufferSplitPool.Remove(handle);
-            }
-        });
-    }
-    void MetalResourceManager::ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset)
-    {
-        // deprecated to be removed.
+                MetalBuffer buffer = GetBuffer(handle);
+                if (buffer.IsValid())
+                {
+                    buffer.Destroy();
+                    m_BufferSplitPool.Remove(handle);
+                }
+            });
+        }
     }
     void* MetalResourceManager::GetBufferData(Handle<Buffer> handle)
     {
@@ -150,7 +151,7 @@ namespace HBL2
         MetalBindGroupCold* mtlBindGroupCold = GetBindGroupCold(bindGroup);
         if (bufferIndex < mtlBindGroupCold->Buffers.size())
         {
-            SetBufferData(mtlBindGroupCold->Buffers[bufferIndex].buffer, mtlBindGroupCold->Buffers[bufferIndex].byteOffset, newData);
+            SetBufferData(mtlBindGroupCold->Buffers[bufferIndex].buffer.Get(), mtlBindGroupCold->Buffers[bufferIndex].byteOffset, newData);
         }
     }
     void MetalResourceManager::MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size)
@@ -171,15 +172,15 @@ namespace HBL2
         {
             if (size != 0)
             {
-                MapBufferData(mtlBindGroupCold->Buffers[bufferIndex].buffer, offset, size);
+                MapBufferData(mtlBindGroupCold->Buffers[bufferIndex].buffer.Get(), offset, size);
                 return;
             }
 
-            MetalBufferHot* mtlBuffer = GetBufferHot(mtlBindGroupCold->Buffers[bufferIndex].buffer);
+            MetalBufferHot* mtlBuffer = GetBufferHot(mtlBindGroupCold->Buffers[bufferIndex].buffer.Get());
 
             if (mtlBuffer != nullptr)
             {
-                MapBufferData(mtlBindGroupCold->Buffers[bufferIndex].buffer, offset, mtlBuffer->ByteSize);
+                MapBufferData(mtlBindGroupCold->Buffers[bufferIndex].buffer.Get(), offset, mtlBuffer->ByteSize);
             }
         }
     }
@@ -303,6 +304,10 @@ namespace HBL2
     {
         if (!m_BindGroupSplitPool.IsAlive(handle))
         {
+            // From now on IsClosing(handle) is true, so CreateBindGroup's cache
+            // lookup skips this slot during the deletion delay.
+            m_BindGroupSplitPool.MarkClosed(handle);
+
             m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
             {
                 MetalBindGroupCold* bindGroupCold = GetBindGroupCold(handle);
@@ -376,6 +381,10 @@ namespace HBL2
     {
         if (!m_BindGroupLayoutPool.IsAlive(handle))
         {
+            // From now on IsClosing(handle) is true, so CreateBindGroupLayout's cache
+            // lookup skips this slot during the deletion delay.
+            m_BindGroupLayoutPool.MarkClosed(handle);
+
             m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
             {
                 MetalBindGroupLayout* bindGroupLayout = GetBindGroupLayout(handle);
@@ -462,10 +471,10 @@ namespace HBL2
             Handle<BindGroupLayout> handle = Handle<BindGroupLayout>::UnPack(packedHandle);
             m_BindGroupLayoutPool.Acquire(handle);
         }
-        else if (resourceType == ResourceType::Texture)
+        else if (resourceType == ResourceType::Buffer)
         {
-//            Handle<Texture> handle = Handle<Texture>::UnPack(packedHandle);
-//            m_TexturePool.Acquire(handle);
+            Handle<Buffer> handle = Handle<Buffer>::UnPack(packedHandle);
+            m_BufferSplitPool.Acquire(handle);
         }
     }
     void MetalResourceManager::Release(uint32_t packedHandle, ResourceType resourceType)
@@ -488,14 +497,14 @@ namespace HBL2
                 DeleteBindGroupLayout(handle);
             }
         }
-        else if (resourceType == ResourceType::Texture)
+        else if (resourceType == ResourceType::Buffer)
         {
-//            Handle<Texture> handle = Handle<Texture>::UnPack(packedHandle);
-//
-//            if (m_TexturePool.Release(handle))
-//            {
-//                DeleteTexture(handle);
-//            }
+            Handle<Buffer> handle = Handle<Buffer>::UnPack(packedHandle);
+
+            if (m_BufferSplitPool.Release(handle))
+            {
+                DeleteBuffer(handle);
+            }
         }
     }
 }

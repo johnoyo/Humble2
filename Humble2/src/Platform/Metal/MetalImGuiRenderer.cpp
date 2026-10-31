@@ -28,10 +28,6 @@ namespace HBL2
 
         ImGui_ImplGlfw_InitForOther(Window::Instance->GetHandle(), true);
         ImGui_ImplMetal4_Init(m_Device->Get(), m_Renderer->GetCommandQueue(), FRAME_OVERLAP);
-        
-        // Set viewport texture.
-        MetalTexture* viewportTexture = m_ResourceManager->GetTexture(m_Renderer->MainColorTexture);
-        m_Renderer->SetViewportAttachment((void*)viewportTexture->Texture);
     }
 
     void MetalImGuiRenderer::BeginFrame()

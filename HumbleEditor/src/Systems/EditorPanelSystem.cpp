@@ -18,7 +18,8 @@
 #include "Panels/SystemsPanel.h"
 #include "Panels/TrayPanel.h"
 #include "Panels/StatsPanel.h"
-#include "Panels/ViewportPanel.h"
+#include "Panels/SceneViewportPanel.h"
+#include "Panels/GameViewportPanel.h"
 #include "Panels/ConsolePanel.h"
 #include "Panels/TopBarPanel.h"
 #include "Panels/EditorSettingsPanel.h"
@@ -37,7 +38,8 @@ namespace HBL2
 			m_EditorScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
 
 			m_EditorPanels.push_back(new PlayStopPanel("Play / Stop", this));
-			m_EditorPanels.push_back(new ViewportPanel("Viewport", this));
+			m_EditorPanels.push_back(new SceneViewportPanel("Scene Viewport", this));
+			m_EditorPanels.push_back(new GameViewportPanel("Game Viewport", this));
 			m_EditorPanels.push_back(new HierachyPanel("Hierachy", this));
 			m_EditorPanels.push_back(new SystemsPanel("Systems", this));
 			m_EditorPanels.push_back(new StatsPanel("Stats", this));
@@ -79,7 +81,10 @@ namespace HBL2
 						{
 							if (camera.Enabled)
 							{
-								camera.AspectRatio = m_ViewportSize.x / m_ViewportSize.y;
+								if (m_GameViewportSize.y != 0.0f)
+								{
+									camera.AspectRatio = m_GameViewportSize.x / m_GameViewportSize.y;
+								}
 							}
 						});
 				}

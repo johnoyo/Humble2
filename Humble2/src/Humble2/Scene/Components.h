@@ -100,6 +100,29 @@ namespace HBL2
 			bool Enabled = true;
 		};
 
+		struct HBL2_API SkinnedMesh
+		{
+			RefHandle<Asset> Mesh;
+			uint32_t MeshIndex = 0;
+			UUID SkeletonPoseUUID = 0;
+
+			uint32_t JointCount = 0;
+			Handle<Buffer> SkinnedVertexBuffer;
+			Handle<BindGroup> SkinningBindings;
+		};
+
+		struct HBL2_API SkinnedSubMesh
+		{
+			RefHandle<Asset> Mesh;
+			uint32_t MeshIndex = 0;
+			uint32_t SubMeshIndex = 0;
+
+			RefHandle<Asset> Material;
+			UUID SkinnedMeshUUID = 0;
+
+			bool Enabled = true;
+		};
+
 		struct HBL2_API Camera
 		{
 			enum class EType
@@ -146,6 +169,46 @@ namespace HBL2
 			bool Enabled = true;
 		};
 
+		struct Animation
+		{
+			int DefaultClip = 0;
+
+			float Speed = 1.f;
+			float TransitionDuration = 0.2f;
+
+			bool EnableLooping;
+			bool PlayAutomatically;
+			bool ApplyRootMotion;
+			bool Enabled = true;
+
+			int CurrentClip = -1;
+			float Time = 0.f;
+			int ClipsCount = 0;
+			bool LastEnabled = true;
+			int LastClip = -1;
+			float BlendElapsed = 0.0f;
+			float BlendDuration = 0.0f;
+			std::vector<JointTransform> BlendFrom;
+		};
+
+		struct SkeletonPose
+		{
+			RefHandle<Asset> Mesh;
+
+			// Per-joint local transform (relative to the parent joint). Source of truth for the pose:
+			// animation, blending and ragdolls write it. Model and Skinning are derived from it.
+			std::vector<JointTransform> Local;
+
+			// Per-joint transform in the character's model space, derived from Local by walking the hierarchy
+			// (parent Model * Local). Used for attachments, debug drawing and ragdolls.
+			std::vector<glm::mat4> Model;
+
+			// Per-joint matrix the GPU uses to deform vertices: Model * InverseBind.
+			// Takes a bind-pose vertex to its current animated position. Identity when the pose equals the bind pose.
+			// It shows how far has a joint moved from where it was in the bind pose.
+			std::vector<glm::mat4> Skinning;
+		};
+
 		struct HBL2_API Light
 		{
 			enum class EType
@@ -180,6 +243,7 @@ namespace HBL2
 			Handle<Material> CubeMapMaterial;
 			RefHandle<Asset> EquirectangularMap;
 			bool Converted = false;
+			bool RecreateCubeMapMaterial = false;
 			bool Enabled = true;
 		};
 

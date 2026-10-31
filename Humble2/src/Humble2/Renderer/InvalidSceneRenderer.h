@@ -19,21 +19,16 @@ namespace HBL2
 	public:
 		virtual ~InvalidSceneRenderer() = default;
 
-		virtual void Initialize(Scene* scene, uint32_t maxLights) override;
+		virtual void Initialize(Scene* scene, uint32_t maxLights, bool useEditorCamera) override;
 		virtual void Gather(Entity mainCamera) override;
-		virtual void Render(void* renderData, void* debugRenderData) override;
+		virtual void Render(CommandBuffer* commandBuffer, uint32_t renderDataIndex) override;
 		virtual void CleanUp() override;
 
-		virtual void* GetRenderData() override;
-
 	private:
+		void TextureSetup();
 		void RenderPassSetup();
-
 		void PinkQuadPassSetup();
-		void PresentPassSetup();
-
 		void PinkQuadPass(CommandBuffer* commandBuffer, InvalidSceneRenderData* sceneRenderData);
-		void PresentPass(CommandBuffer* commandBuffer, InvalidSceneRenderData* sceneRenderData);
 
 	private:
 		PoolReservation* m_Reservation = nullptr;
@@ -57,10 +52,6 @@ namespace HBL2
 		Handle<Shader> m_PinkQuadShader;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_PinkQuadShaderVariantHash;
 		Handle<Buffer> m_PinkQuadVertexBuffer;
-
-		// Present pass resources.
-		Handle<Buffer> m_QuadVertexBuffer;
-		Handle<Material> m_QuadMaterial;
-		Handle<Shader> m_PresentShader;
+		UUID m_PinkQuadPassResizeEventHandle = 0;
 	};
 }

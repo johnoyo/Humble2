@@ -6,8 +6,6 @@
 #include "Loaders/UFbxLoader.h"
 #include "Loaders/FastGltfLoader.h"
 
-#include "Utilities/ShaderUtilities.h"
-
 #include <filesystem>
 
 namespace HBL2
@@ -29,6 +27,8 @@ namespace HBL2
 		bool GenerateColliders = false;
 		bool ReimportTexturesOnReload = false;
 	};
+
+	struct ShaderReflectionData;
 
 	class HBL2_API MeshUtilities
 	{
@@ -54,7 +54,7 @@ namespace HBL2
 		MeshSettings DeserializeAssetMetadataFile(Handle<Asset> handle);
 		MeshSettings DeserializeAssetMetadataFile(Asset* asset);
 
-		void GetShaderAssetHandleAndReflectionData(Handle<Asset>& shaderAssetHandle, ShaderReflectionData& shaderReflectionData, bool isPBR);
+		void GetShaderAssetHandleAndReflectionData(Handle<Asset>& shaderAssetHandle, ShaderReflectionData* shaderReflectionData, bool isPBR);
 
 	private:
 		MeshUtilities();

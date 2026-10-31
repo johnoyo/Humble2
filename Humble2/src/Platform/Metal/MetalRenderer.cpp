@@ -88,38 +88,10 @@ namespace HBL2
         
         // Create render passes.
         CreateRenderPasses();
-
-        // Bindings for debug rendering.
-        for (int i = 0; i < FRAME_OVERLAP; i++)
-        {
-            auto cameraBuffer = m_ResourceManager->CreateBuffer({
-                .debugName = "debug-draw-camera-uniform-buffer",
-                .usage = BufferUsage::UNIFORM,
-                .memoryUsage = MemoryUsage::CPU_GPU,
-                .byteSize = sizeof(glm::mat4),
-                .initialData = nullptr,
-            });
-
-            m_MtlFrames[i].DebugBindings = m_ResourceManager->CreateBindGroup({
-                .debugName = "debug-draw-bind-group",
-                .layout = m_DebugBindingsLayout,
-                .buffers = { { .buffer = cameraBuffer } }
-            });
-        }
     }
 
     void MetalRenderer::PostInitialize()
     {
-        // Global bindings for presenting.
-        for (int i = 0; i < FRAME_OVERLAP; i++)
-        {
-            m_MtlFrames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
-                .debugName = "global-present-bind-group",
-                .layout = GetGlobalPresentBindingsLayout(),
-                .textures = { { MainColorTexture, TextureLayout::SHADER_READ_ONLY } },
-            });
-        }
-        
         // Register event to update the drawble size on resize.
         EventDispatcher::Get().Register<FramebufferSizeEvent>([this](const FramebufferSizeEvent& e)
         {
@@ -129,7 +101,7 @@ namespace HBL2
         m_CaptureManager = MTL::CaptureManager::sharedCaptureManager();
     }
 
-    void MetalRenderer::BeginFrame()
+    CommandBuffer* MetalRenderer::BeginFrame()
     {
         m_AutoReleasePool = NS::AutoreleasePool::alloc()->init();
         
@@ -146,16 +118,15 @@ namespace HBL2
         m_SurfaceRef = nullptr;
         
         SwapAndResetStats();
+
+        CommandBuffer* commandBuffer = BeginCommandRecording(CommandBufferType::MAIN);
+        return commandBuffer;
     }
 
-    void MetalRenderer::EndFrame()
+    void MetalRenderer::EndFrame(CommandBuffer* commandBuffer)
     {
-        if (!m_SurfaceRef)
-        {
-            return;
-        }
-        
-        m_CommandQueue->signalDrawable(m_SurfaceRef);
+        commandBuffer->EndCommandRecording();
+        commandBuffer->Submit();
     }
 
     void MetalRenderer::Present()
@@ -165,6 +136,8 @@ namespace HBL2
             m_AutoReleasePool->release();
             return;
         }
+
+        m_CommandQueue->signalDrawable(m_SurfaceRef);
         
         m_SurfaceRef->present();
         m_FrameNumber++;
@@ -191,26 +164,13 @@ namespace HBL2
         m_FrameSemaphore = nullptr;
         
         m_MainDeletionQueue.Flush();
-
-        // Delete offscreen render targets.
-        m_ResourceManager->DeleteTexture(IntermediateColorTexture);
-        m_ResourceManager->DeleteTexture(MainColorTexture);
-        m_ResourceManager->DeleteTexture(MainDepthTexture);
-        m_ResourceManager->DeleteTexture(ShadowAtlasTexture);
         
         // Delete bind group layouts.
-        m_ResourceManager->DeleteBindGroupLayout(m_GlobalPresentBindingsLayout);
         m_ResourceManager->DeleteBindGroupLayout(m_EmptyBindingsLayout);
         m_ResourceManager->DeleteBindGroupLayout(m_DynamicBindingsLayout);
 
         // Delete bind groups.
         m_ResourceManager->DeleteBindGroup(m_EmptyBindings);
-
-        for (int i = 0; i < FRAME_OVERLAP; i++)
-        {
-            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].GlobalPresentBindings);
-            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].DebugBindings);
-        }
         
         // Delete render passes.
         for (auto& rp : m_RenderPasses)
@@ -242,6 +202,24 @@ namespace HBL2
         TempUniformRingBuffer = nullptr;
 
         m_ResourceManager->FlushAll();
+    }
+
+    void MetalRenderer::InvalidateGameViewTexture()
+    {
+        MetalTexture* gameViewTexture = m_ResourceManager->GetTexture(GameViewTexture);
+        if (gameViewTexture != nullptr)
+        {
+            m_GameViewAttachmentID = gameViewTexture->Texture;
+        }
+    }
+
+    void MetalRenderer::InvalidateSceneViewTexture()
+    {
+        MetalTexture* sceneViewTexture = m_ResourceManager->GetTexture(SceneViewTexture);
+        if (sceneViewTexture != nullptr)
+        {
+            m_SceneViewAttachmentID = sceneViewTexture->Texture;
+        }
     }
 
     void MetalRenderer::Resize(int width, int height)
@@ -296,77 +274,9 @@ namespace HBL2
         
         // Recreate swapchain and associated resources.
         CreateRenderPasses();
-        
-        // Destroy old offscreen textures.
-        m_ResourceManager->DeleteTexture(IntermediateColorTexture);
-        m_ResourceManager->DeleteTexture(MainColorTexture);
-        m_ResourceManager->DeleteTexture(MainDepthTexture);
-        
-        // Recreate the offscreen textures (render targets).
-        IntermediateColorTexture = ResourceManager::Instance->CreateTexture({
-            .debugName = "intermediate-color-target",
-            .dimensions = { width, height, 1 },
-            .format = Format::RGBA16_FLOAT,
-            .internalFormat = Format::RGBA16_FLOAT,
-            .usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
-            .aspect = TextureAspect::COLOR,
-            .sampler =
-            {
-                .filter = TextureFilter::LINEAR,
-                .wrap = Wrap::CLAMP_TO_EDGE,
-            }
-        });
 
-        MainColorTexture = ResourceManager::Instance->CreateTexture({
-            .debugName = "viewport-color-target",
-            .dimensions = { width, height, 1 },
-            .format = Format::BGRA8_UNORM,
-            .internalFormat = Format::BGRA8_UNORM,
-            .usage = { TextureUsage::RENDER_ATTACHMENT, TextureUsage::SAMPLED },
-            .aspect = TextureAspect::COLOR,
-            .sampler =
-            {
-                .filter = TextureFilter::LINEAR,
-                .wrap = Wrap::CLAMP_TO_EDGE,
-            }
-        });
-
-        MainDepthTexture = ResourceManager::Instance->CreateTexture({
-            .debugName = "viewport-depth-target",
-            .dimensions = { width, height, 1 },
-            .format = Format::D32_FLOAT,
-            .internalFormat = Format::D32_FLOAT,
-            .usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
-            .aspect = TextureAspect::DEPTH,
-            .createSampler = true,
-            .sampler =
-            {
-                .filter = TextureFilter::NEAREST,
-                .wrap = Wrap::CLAMP_TO_EDGE,
-            }
-        });
-        
-        // Update descriptor sets (for the full screen quad shader).
-        for (int i = 0; i < FRAME_OVERLAP; i++)
-        {
-            m_ResourceManager->DeleteBindGroup(m_MtlFrames[i].GlobalPresentBindings);
-
-            m_MtlFrames[i].GlobalPresentBindings = m_ResourceManager->CreateBindGroup({
-                .debugName = "global-present-bind-group",
-                .layout = Renderer::Instance->GetGlobalPresentBindingsLayout(),
-                .textures = { { MainColorTexture, TextureLayout::SHADER_READ_ONLY } },  // Updated with new size
-            });
-        }
-        
-        // Update viewport texture attachment (used in imgui).
-        MetalTexture* viewportTexture = m_ResourceManager->GetTexture(MainColorTexture);
-        SetViewportAttachment((void*)viewportTexture->Texture);
-        
         // Call on resize callbacks.
-        for (auto&& [name, callback] : m_OnResizeCallbacks)
-        {
-            callback(width, height);
-        }
+        EventDispatcher::Get().Post(RendererResizedEvent(width, height));
         
         // Replenish tokens so frame rendering can resume cleanly.
         for (uint32_t i = 0; i < FRAME_OVERLAP; ++i)

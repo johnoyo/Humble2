@@ -8,12 +8,14 @@
 
 #include "Systems/HierachySystem.h"
 #include "Systems/CameraSystem.h"
+#include "Systems/AnimationSystem.h"
 #include "Systems/RenderingSystem.h"
 #include "Systems/SoundSystem.h"
 #include "Systems/Physics2dSystem.h"
 #include "Systems/Physics3dSystem.h"
 #include "Systems/TerrainSystem.h"
 #include "Systems/AnimationCurveSystem.h"
+#include "Systems/SkeletonPoseSystem.h"
 
 #include "StructuralCommandBuffer.h"
 
@@ -152,6 +154,8 @@ namespace HBL2
         copy_component(Component::EditorVisible{});
         copy_component(Component::Sprite{});
         copy_component(Component::StaticMesh{});
+        copy_component(Component::SkinnedMesh{});
+        copy_component(Component::SkinnedSubMesh{});
         copy_component(Component::Light{});
         copy_component(Component::SkyLight{});
         copy_component(Component::AudioListener{});
@@ -167,17 +171,21 @@ namespace HBL2
         copy_component(Component::PrefabEntity{});
         copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
+        copy_component(Component::Animation{});
+        copy_component(Component::SkeletonPose{});
         // Do not copy the TerrainChunk component
 
         // Clone systems.
         dst->RegisterSystem<HierachySystem>();
-        dst->RegisterSystem<CameraSystem>(SystemType::Runtime);
+        dst->RegisterSystem<CameraSystem>();
+        dst->RegisterSystem<AnimationSystem>();
         dst->RegisterSystem<TerrainSystem>();
-        dst->RegisterSystem<RenderingSystem>();
         dst->RegisterSystem<SoundSystem>(SystemType::Runtime);
         dst->RegisterSystem<Physics2dSystem>(SystemType::Runtime);
         dst->RegisterSystem<Physics3dSystem>(SystemType::Runtime);
         dst->RegisterSystem<AnimationCurveSystem>();
+        dst->RegisterSystem<SkeletonPoseSystem>();
+        dst->RegisterSystem<RenderingSystem>();
 
         // Register any user systems to new scene.
         for (ISystem* system : src->m_RuntimeSystems)
@@ -483,6 +491,36 @@ namespace HBL2
                         newLink.Children.push_back(GetComponent<HBL2::Component::ID>(newChildEntity).Identifier);
                     }
                 }
+                else if (typeid(Component) == typeid(HBL2::Component::SkeletonPose))
+                {
+                    m_Registry.GetOrAddComponent<Component>(newEntity) = component;
+
+                    auto& skeletonPose = m_Registry.GetComponent<HBL2::Component::SkeletonPose>(newEntity);
+                    UUID skeletonPoseUUID = m_Registry.GetComponent<HBL2::Component::ID>(newEntity).Identifier;
+                    HBL2::Component::Link& link = m_Registry.GetComponent<HBL2::Component::Link>(newEntity);
+
+                    for (auto child : link.Children)
+                    {
+                        Entity childEntity = FindEntityByUUID(child);
+
+                        auto& skinnedMesh = m_Registry.GetComponent<HBL2::Component::SkinnedMesh>(childEntity);
+                        skinnedMesh.SkeletonPoseUUID = skeletonPoseUUID;
+                        skinnedMesh.SkinnedVertexBuffer = {};
+                        skinnedMesh.SkinningBindings = {};
+                        skinnedMesh.JointCount = 0;
+
+                        UUID skinnedMeshUUID = m_Registry.GetComponent<HBL2::Component::ID>(childEntity).Identifier;
+                        HBL2::Component::Link& childLink = m_Registry.GetComponent<HBL2::Component::Link>(childEntity);
+
+                        for (auto grandChild : childLink.Children)
+                        {
+                            Entity grandChildEntity = FindEntityByUUID(grandChild);
+
+                            auto& skinnedSubMesh = m_Registry.GetComponent<HBL2::Component::SkinnedSubMesh>(grandChildEntity);
+                            skinnedSubMesh.SkinnedMeshUUID = skinnedMeshUUID;
+                        }
+                    }
+                }
                 else
                 {
                     m_Registry.GetOrAddComponent<Component>(newEntity) = component;
@@ -499,6 +537,8 @@ namespace HBL2
         copy_component(Component::EditorVisible{});
         copy_component(Component::Sprite{});
         copy_component(Component::StaticMesh{});
+        copy_component(Component::SkinnedMesh{});
+        copy_component(Component::SkinnedSubMesh{});
         copy_component(Component::Light{});
         copy_component(Component::SkyLight{});
         copy_component(Component::AudioListener{});
@@ -515,6 +555,8 @@ namespace HBL2
         copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
         copy_component(Component::TerrainChunk{});
+        copy_component(Component::Animation{});
+        copy_component(Component::SkeletonPose{});
 
         // Copy user defined components.
         Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)
@@ -594,11 +636,40 @@ namespace HBL2
                         newLink.Children.push_back(GetComponent<HBL2::Component::ID>(newChildEntity).Identifier);
                     }
                 }
+                else if (typeid(Component) == typeid(HBL2::Component::SkeletonPose))
+                {
+                    m_Registry.GetOrAddComponent<Component>(newEntity) = component;
+
+                    auto& skeletonPose = m_Registry.GetComponent<HBL2::Component::SkeletonPose>(newEntity);
+                    UUID skeletonPoseUUID = m_Registry.GetComponent<HBL2::Component::ID>(newEntity).Identifier;
+                    HBL2::Component::Link& link = m_Registry.GetComponent<HBL2::Component::Link>(newEntity);
+
+                    for (auto child : link.Children)
+                    {
+                        Entity childEntity = FindEntityByUUID(child);
+
+                        auto& skinnedMesh = m_Registry.GetComponent<HBL2::Component::SkinnedMesh>(childEntity);
+                        skinnedMesh.SkeletonPoseUUID = skeletonPoseUUID;
+                        skinnedMesh.SkinnedVertexBuffer = {};
+                        skinnedMesh.SkinningBindings = {};
+                        skinnedMesh.JointCount = 0;
+
+                        UUID skinnedMeshUUID = m_Registry.GetComponent<HBL2::Component::ID>(childEntity).Identifier;
+                        HBL2::Component::Link& childLink = m_Registry.GetComponent<HBL2::Component::Link>(childEntity);
+
+                        for (auto grandChild : childLink.Children)
+                        {
+                            Entity grandChildEntity = FindEntityByUUID(grandChild);
+
+                            auto& skinnedSubMesh = m_Registry.GetComponent<HBL2::Component::SkinnedSubMesh>(grandChildEntity);
+                            skinnedSubMesh.SkinnedMeshUUID = skinnedMeshUUID;
+                        }
+                    }
+                }
                 else
                 {
                     m_Registry.GetOrAddComponent<Component>(newEntity) = component;
                 }
-
             }
         };
 
@@ -610,6 +681,8 @@ namespace HBL2
         copy_component(Component::EditorVisible{});
         copy_component(Component::Sprite{});
         copy_component(Component::StaticMesh{});
+        copy_component(Component::SkinnedMesh{});
+        copy_component(Component::SkinnedSubMesh{});
         copy_component(Component::Light{});
         copy_component(Component::SkyLight{});
         copy_component(Component::AudioListener{});
@@ -626,6 +699,8 @@ namespace HBL2
         copy_component(Component::AnimationCurve{});
         copy_component(Component::Terrain{});
         copy_component(Component::TerrainChunk{});
+        copy_component(Component::Animation{});
+        copy_component(Component::SkeletonPose{});
 
         // Copy user defined components.
         Reflect::ForEachRegisteredType([&](const Reflect::TypeEntry& entry)

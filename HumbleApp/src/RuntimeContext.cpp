@@ -126,6 +126,22 @@ namespace HBL2
 			}
 		}
 
+		void RuntimeContext::OnRender(CommandBuffer* commandBuffer, const RendererFrameData* renderData)
+		{
+			if (m_ActiveScene == nullptr)
+			{
+				return;
+			}
+
+			for (HBL2::ISystem* system : m_ActiveScene->GetSystems())
+			{
+				if (system->GetState() == HBL2::SystemState::Play)
+				{
+					system->OnRender(commandBuffer, renderData);
+				}
+			}
+		}
+
 		void RuntimeContext::OnDestroy()
 		{
 			if (m_ActiveScene == nullptr)

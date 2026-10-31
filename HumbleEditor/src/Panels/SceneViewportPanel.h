@@ -7,10 +7,10 @@
 
 namespace HBL2::Editor
 {
-	class ViewportPanel final : public EditorPanel
+	class SceneViewportPanel final : public EditorPanel
 	{
 	public:
-		ViewportPanel(const std::string& name, EditorPanelSystem* owner);
+		SceneViewportPanel(const std::string& name, EditorPanelSystem* owner);
 
 		virtual void OnAttach() override;
 		virtual void OnCreate() override;

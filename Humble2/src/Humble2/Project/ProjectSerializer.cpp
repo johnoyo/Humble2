@@ -87,6 +87,8 @@ namespace HBL2
 		out << YAML::Key << "Max Render Thread Frame Arena Memory (MB)" << YAML::Value << spec.Settings.MaxRenderThreadFrameArenaMemory;
 		out << YAML::Key << "Max Worker Memory (MB)" << YAML::Value << spec.Settings.MaxWorkerMemory;
 		out << YAML::Key << "Max UniformBuffer Memory (MB)" << YAML::Value << spec.Settings.MaxUniformBufferMemory;
+		out << YAML::Key << "Max Event Types" << YAML::Value << spec.Settings.MaxEventTypes;
+		out << YAML::Key << "Max Listeners Per Event Type" << YAML::Value << spec.Settings.MaxListenersPerEventType;
 
 		out << YAML::Key << "Resource Manager" << YAML::Value;
 		out << YAML::BeginMap;
@@ -204,6 +206,8 @@ namespace HBL2
 		spec.Settings.MaxMainThreadFrameArenaMemory = data["Project"]["Advanced"]["Max Main Thread Frame Arena Memory (MB)"].as<uint32_t>();
 		spec.Settings.MaxRenderThreadFrameArenaMemory = data["Project"]["Advanced"]["Max Render Thread Frame Arena Memory (MB)"].as<uint32_t>();
 		spec.Settings.MaxUniformBufferMemory = data["Project"]["Advanced"]["Max UniformBuffer Memory (MB)"].as<uint32_t>();
+		spec.Settings.MaxEventTypes = data["Project"]["Advanced"]["Max Event Types"].as<uint32_t>();
+		spec.Settings.MaxListenersPerEventType = data["Project"]["Advanced"]["Max Listeners Per Event Type"].as<uint32_t>();
 
 		if (!data["Project"]["Advanced"]["Resource Manager"].IsDefined() || !data["Project"]["Advanced"]["Asset Manager"].IsDefined())
 		{

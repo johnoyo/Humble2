@@ -9,6 +9,7 @@
 #include "Systems/TransformSystem.h"
 #include "Systems/EditorPanelSystem.h"
 #include "Systems/EditorCameraSystem.h"
+#include "Systems/SceneViewRenderingSystem.h"
 
 namespace HBL2
 {
@@ -25,6 +26,7 @@ namespace HBL2
 			virtual void OnFixedUpdate() override;
 			virtual void OnGuiRender(float ts) override;
 			virtual void OnGizmoRender(float ts) override;
+			virtual void OnRender(CommandBuffer* commandBuffer, const RendererFrameData* renderData) override;
 			virtual void OnDestroy() override;
 			virtual void OnDetach() override;
 

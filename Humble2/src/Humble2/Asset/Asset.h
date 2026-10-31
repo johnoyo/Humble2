@@ -26,15 +26,15 @@ namespace HBL2
 		const char* debugName = "";
 		std::filesystem::path filePath;
 		AssetType type = AssetType::None;
-		bool Pin = false;
+		bool pin = false;
 	};
 
 	struct HBL2_API MemoryOnlyAssetDescriptor
 	{
 		const char* debugName = "";
 		AssetType type = AssetType::None;
-		uint32_t PackedAssetResourceHandle = 0;
-		bool Pin = false;
+		uint32_t packedAssetResourceHandle = 0;
+		bool pin = false;
 	};
 
 	struct HBL2_API Asset

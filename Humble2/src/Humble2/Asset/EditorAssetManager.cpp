@@ -7,12 +7,14 @@
 
 #include "Systems/HierachySystem.h"
 #include "Systems/CameraSystem.h"
+#include "Systems/AnimationSystem.h"
 #include "Systems/RenderingSystem.h"
 #include "Systems/SoundSystem.h"
 #include "Systems/Physics2dSystem.h"
 #include "Systems/Physics3dSystem.h"
 #include "Systems/TerrainSystem.h"
 #include "Systems/AnimationCurveSystem.h"
+#include "Systems/SkeletonPoseSystem.h"
 
 #include "Renderer/ForwardSceneRenderer.h"
 
@@ -1486,7 +1488,8 @@ namespace HBL2
 			// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 			//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
 
-			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
+			ShaderReflectionData shaderReflectionData;
+			ShaderUtilities::Get().Reflect(shaderPath.string(), &shaderReflectionData, true);
 
 			Handle<BindGroup> materialBindGroup;
 
@@ -1750,13 +1753,15 @@ namespace HBL2
 		}
 
 		scene->RegisterSystem<HierachySystem>();
-		scene->RegisterSystem<CameraSystem>(SystemType::Runtime);
+		scene->RegisterSystem<CameraSystem>();
+		scene->RegisterSystem<AnimationSystem>();
 		scene->RegisterSystem<TerrainSystem>();
-		scene->RegisterSystem<RenderingSystem>();
 		scene->RegisterSystem<SoundSystem>(SystemType::Runtime);
 		scene->RegisterSystem<Physics2dSystem>(SystemType::Runtime);
 		scene->RegisterSystem<Physics3dSystem>(SystemType::Runtime);
 		scene->RegisterSystem<AnimationCurveSystem>();
+		scene->RegisterSystem<SkeletonPoseSystem>();
+		scene->RegisterSystem<RenderingSystem>();
 
 		SceneSerializer sceneSerializer(scene);
 		sceneSerializer.Deserialize(Project::GetAssetFileSystemPath(asset->FilePath));
@@ -2394,7 +2399,8 @@ namespace HBL2
 			// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
 			//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
 
-			auto shaderReflectionData = ShaderUtilities::Get().Reflect(shaderPath.string(), true);
+			ShaderReflectionData shaderReflectionData;
+			ShaderUtilities::Get().Reflect(shaderPath.string(), &shaderReflectionData, true);
 
 			Handle<BindGroup> materialBindGroup;
 
@@ -2747,13 +2753,15 @@ namespace HBL2
 			}
 
 			scene->RegisterSystem<HierachySystem>();
-			scene->RegisterSystem<CameraSystem>(SystemType::Runtime);
+			scene->RegisterSystem<CameraSystem>();
+			scene->RegisterSystem<AnimationSystem>();
 			scene->RegisterSystem<TerrainSystem>();
-			scene->RegisterSystem<RenderingSystem>();
 			scene->RegisterSystem<SoundSystem>(SystemType::Runtime);
 			scene->RegisterSystem<Physics2dSystem>(SystemType::Runtime);
 			scene->RegisterSystem<Physics3dSystem>(SystemType::Runtime);
 			scene->RegisterSystem<AnimationCurveSystem>();
+			scene->RegisterSystem<SkeletonPoseSystem>();
+			scene->RegisterSystem<RenderingSystem>();
 
 			asset->Indentifier = sceneHandle.Pack();
 			asset->Loaded = true;

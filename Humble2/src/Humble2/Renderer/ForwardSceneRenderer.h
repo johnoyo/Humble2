@@ -30,10 +30,10 @@ namespace HBL2
 
 		uint32_t m_UBOStartingOffset = 0;
 		uint32_t m_UBOEndingOffset = 0;
-		DrawList m_StaticMeshOpaqueDraws;
-		DrawList m_StaticMeshTransparentDraws;
-		DrawList m_PrePassStaticMeshDraws;
-		DrawList m_ShadowPassStaticMeshDraws;
+		DrawList m_MeshOpaqueDraws;
+		DrawList m_MeshTransparentDraws;
+		DrawList m_PrePassMeshDraws;
+		DrawList m_ShadowPassMeshDraws;
 
 		DrawList m_SpriteOpaqueDraws;
 		DrawList m_SpriteTransparentDraws;
@@ -45,14 +45,13 @@ namespace HBL2
 	public:
 		virtual ~ForwardSceneRenderer() = default;
 
-		virtual void Initialize(Scene* scene, uint32_t maxLights) override;
+		virtual void Initialize(Scene* scene, uint32_t maxLights, bool useEditorCamera) override;
 		virtual void Gather(Entity mainCamera) override;
-		virtual void Render(void* renderData, void* debugRenderData) override;
+		virtual void Render(CommandBuffer* commandBuffer, uint32_t renderDataIndex) override;
 		virtual void CleanUp() override;
 
-		virtual void* GetRenderData() override;
-
 	protected:
+		void TextureSetup();
 		void RenderPassSetup();
 		void BindingsSetup();
 
@@ -66,7 +65,6 @@ namespace HBL2
 		void SpriteRenderingSetup();
 		void SkyboxPassSetup();
 		void PostProcessPassSetup();
-		void PresentPassSetup();
 
 		void GatherDraws(ForwardSceneRenderData* sceneRenderData);
 		void GatherLights(ForwardSceneRenderData* sceneRenderData);
@@ -76,11 +74,8 @@ namespace HBL2
         void GeometryPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData, RenderPassPool& renderPassPool);
 		void OpaquePass(RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData);
 		void TransparentPass(RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData);
-        void SkyboxComputePass(CommandBuffer* commandBuffer, DrawList* skyboxDraws);
-		void SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData);
+		void SkyboxPass(RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData);
 		void PostProcessPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
-		void DebugPass(CommandBuffer* commandBuffer, void* debugRenderData);
-		void PresentPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData);
 
 		void GetViewProjection(ForwardSceneRenderData* sceneRenderData, Entity mainCamera);
 
@@ -95,20 +90,24 @@ namespace HBL2
 		ForwardSceneRenderData m_RenderData[Renderer::FrameCount]{};
 
 		uint32_t m_MaxLights = 0;
+		bool m_UseEditorCamera = false;
 
 		RefHandle<BindGroupLayout> m_ShadowBindingsLayout;
 		RefHandle<BindGroupLayout> m_GlobalBindingsLayout2D;
 		RefHandle<BindGroupLayout> m_GlobalBindingsLayout3D;
-		
+
 		Handle<RenderPassLayout> m_RenderPassLayout;
 
-		Handle<Texture> m_ShadowDepthTexture;
+		// Shadow pass resources.
+		ShadowAtlasAllocator m_ShadowAtlasAllocator{};
+		Handle<Texture> m_ShadowAtlasTexture;
         Handle<RenderPass> m_ShadowRenderPassClear;
 		Handle<RenderPass> m_ShadowRenderPassLoad;
 		Handle<Shader> m_ShadowPrePassShader;
 		Handle<Material> m_ShadowPrePassMaterial;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_ShadowPrePassMaterialHash = g_NullVariant;
 
+		// Depth pre pass resources.
 		Handle<RenderPassLayout> m_DepthOnlyRenderPassLayout;
 		Handle<RenderPass> m_DepthOnlyRenderPass;
 		Handle<Material> m_DepthOnlyMaterial;
@@ -119,36 +118,31 @@ namespace HBL2
 		Handle<BindGroup> m_DepthOnlySpriteBindGroup;
 		Handle<Shader> m_DepthOnlyShader;
 		Handle<Shader> m_DepthOnlySpriteShader;
+		UUID m_DepthPassResizeEventHandle = 0;
 
+		// Geometry pass resources.
 		Handle<RenderPass> m_GeometryRenderPass;
+		Handle<Mesh> m_SpriteMesh;
+		Handle<Buffer> m_VertexBuffer;
+		UUID m_GeometryPassResizeEventHandle = 0;
 
-		Handle<BindGroupLayout> m_EquirectToSkyboxBindGroupLayout;
-		Handle<Buffer> m_CaptureMatricesBuffer;
-		Handle<Shader> m_EquirectToSkyboxShader;
-		Handle<BindGroupLayout> m_SkyboxGlobalBindGroupLayout;
+		// Skybox pass resources.
+		RefHandle<BindGroupLayout> m_SkyboxGlobalBindGroupLayout;
 		Handle<BindGroup> m_SkyboxGlobalBindGroup;
 		Handle<Shader> m_SkyboxShader;
-		Handle<BindGroupLayout> m_SkyboxBindGroupLayout;
-		Handle<BindGroup> m_ComputeBindGroup;
+		RefHandle<BindGroupLayout> m_SkyboxBindGroupLayout;
 		ShaderDescriptor::RenderPipeline::PackedVariant m_SkyboxVariant{};
-		ShaderDescriptor::RenderPipeline::PackedVariant m_ComputeVariant{};
-
-		Handle<RenderPass> m_PostProcessRenderPass;
-		Handle<Buffer> m_PostProcessBuffer;
-		Handle<BindGroup> m_PostProcessBindGroup;
-		Handle<BindGroupLayout> m_PostProcessBindGroupLayout;
-		Handle<Shader> m_PostProcessShader;
-		ShaderDescriptor::RenderPipeline::PackedVariant m_PostProcessShaderVariantHash;
 		Handle<Buffer> m_CubeMeshBuffer;
 		Handle<Mesh> m_CubeMesh;
 
-		Handle<Mesh> m_SpriteMesh;
-		Handle<Buffer> m_VertexBuffer;
-
+		// Post process pass resources.
+		Handle<RenderPass> m_PostProcessRenderPass;
+		Handle<Buffer> m_PostProcessBuffer;
+		Handle<BindGroup> m_PostProcessBindGroup;
+		RefHandle<BindGroupLayout> m_PostProcessBindGroupLayout;
+		Handle<Shader> m_PostProcessShader;
+		ShaderDescriptor::RenderPipeline::PackedVariant m_PostProcessShaderVariantHash;
 		Handle<Buffer> m_PostProcessQuadVertexBuffer;
-
-		Handle<Buffer> m_QuadVertexBuffer;
-		Handle<Material> m_QuadMaterial;
-		Handle<Shader> m_PresentShader;		
+		UUID m_PostProcessPassResizeEventHandle = 0;
 	};
 }

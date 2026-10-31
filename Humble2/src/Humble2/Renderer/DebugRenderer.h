@@ -41,6 +41,8 @@ namespace HBL2
 		uint32_t CurrentWireIndex = 0;
 		FixedArray<DebugVertex> WireTrisVerts;
 		//FixedArray<uint32_t> WireTrisIndices;
+
+		Handle<BindGroup> DebugBindings;
 	};
 
 	class HBL2_API DebugRenderer
@@ -54,8 +56,10 @@ namespace HBL2
 		virtual void Initialize();
 		virtual void BeginFrame();
 		virtual void EndFrame();
-		virtual void Render(CommandBuffer* commandBuffer, void* debugRenderData);
+		virtual void Render(CommandBuffer* commandBuffer, uint32_t debugRenderDataIndex);
 		virtual void Clean();
+
+		virtual void RecreateFrameBuffer(uint32_t width, uint32_t height);
 
 		// Public API
 		uint32_t Color = Color::White;
@@ -70,6 +74,7 @@ namespace HBL2
 		virtual void DrawWireTriangle(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3);
 
 	private:
+		void CreateRenderingResourcesIfNeeded();
 		void InitSphereMesh(int segments = 16, int rings = 12);
 		glm::mat4 GetCameraMVP();
 
@@ -95,6 +100,11 @@ namespace HBL2
 		Handle<Buffer> m_DebugLineVertexBuffer;
 		Handle<Buffer> m_DebugFillTriVertexBuffer;
 		Handle<Buffer> m_DebugWireTriVertexBuffer;
+
+		RefHandle<BindGroupLayout> m_DebugBindingsLayout;
+
+		UUID m_DebugPassSceneChangeEventHandle = 0;
+		bool m_RenderingResourcesCreated = false;
 
 		PoolReservation* m_Reservation = nullptr;
 		Arena m_Arena;

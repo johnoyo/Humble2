@@ -20,7 +20,7 @@ namespace HBL2
 {
 	struct ProjectSettings
 	{
-		RendererType Renderer = RendererType::Forward;
+		RendererType Renderer = RendererType::FORWARD;
 		UUID RendererUUID;
 		GraphicsAPI EditorGraphicsAPI = GraphicsAPI::OPENGL;
 		GraphicsAPI RuntimeGraphicsAPI = GraphicsAPI::VULKAN;
@@ -59,6 +59,8 @@ namespace HBL2
 		uint32_t MaxRenderThreadFrameArenaMemory = 8; // In MB
 		uint32_t MaxWorkerMemory = 2; // In MB
 		uint32_t MaxUniformBufferMemory = 32; // In MB
+		uint32_t MaxEventTypes = 256;
+		uint32_t MaxListenersPerEventType = 1024;
 		ResourceManagerSpecification ResourceManagerSpec = {};
 		AssetManagerSpecification AssetManagerSpec = {};
 	};

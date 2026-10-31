@@ -2,7 +2,7 @@
 
 #include "AnimationCurveSystem.h"
 #include "Utilities/Math.h"
-#include "Utilities/EntityPresets.h"
+#include "Scene/EntityPresets.h"
 #include "Project/Project.h"
 
 namespace HBL2

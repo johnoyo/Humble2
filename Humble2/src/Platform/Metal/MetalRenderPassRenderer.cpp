@@ -44,8 +44,8 @@ namespace HBL2
             // Map global buffers per frame data (i.e.: Camera and lighting data)
             for (const auto& bufferEntry : globalBindGroupCold->Buffers)
             {
-                MetalBufferCold* bufferCold = rm->GetBufferCold(bufferEntry.buffer);
-                MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
+                MetalBufferCold* bufferCold = rm->GetBufferCold(bufferEntry.buffer.Get());
+                MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer.Get());
 
                 // Skip storage buffers memcpy.
                 if (bufferCold->Usage != BufferUsage::STORAGE)
@@ -120,7 +120,7 @@ namespace HBL2
 
                 for (const auto& bufferEntry : shaderBindGroupCold->Buffers)
                 {
-                    MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
+                    MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer.Get());
                     argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndex);
                     
                     bufferIndex++;
@@ -147,7 +147,7 @@ namespace HBL2
 
                 for (const auto& bufferEntry : materialBindGroupCold->Buffers)
                 {
-                    MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer);
+                    MetalBufferHot* buffer = rm->GetBufferHot(bufferEntry.buffer.Get());
                     argTable->setAddress(buffer->Buffer->gpuAddress(), bufferIndex);
                     
                     bufferIndex++;
@@ -177,7 +177,7 @@ namespace HBL2
                 MetalBindGroupCold* drawBindGroupCold = rm->GetBindGroupCold(draw.BindGroup);
                 
                 // Per draw bind group should only ever hold the one bump-allocated UBO.
-                MetalBufferHot* buffer = rm->GetBufferHot(drawBindGroupCold->Buffers[0].buffer);
+                MetalBufferHot* buffer = rm->GetBufferHot(drawBindGroupCold->Buffers[0].buffer.Get());
                 if (globalDraw.UsesDynamicOffset)
                 {
                     argTable->setAddress(buffer->Buffer->gpuAddress() + draw.Offset, bufferIndex);

@@ -19,12 +19,24 @@ namespace HBL2
     {
         static constexpr uint32_t MaxTextureEntries = 6;
         static constexpr uint32_t MaxBufferEntries = 8;
+
+        struct TextureEntry
+        {
+            Handle<Texture> texture;
+            TextureLayout desiredLayout = TextureLayout::UNDEFINED;
+        };
+        struct BufferEntry
+        {
+            RefHandle<Buffer> buffer;
+            uint32_t byteOffset = 0;
+            uint32_t range = 0;
+        };
         
         uint64_t Hash = 0;
         const char* DebugName = "";
         RefHandle<BindGroupLayout> BindGroupLayout;
-        StaticDArray<BindGroupDescriptor::BufferEntry, MaxBufferEntries> Buffers;
-        StaticDArray<BindGroupDescriptor::TextureEntry, MaxTextureEntries> Textures;
+        StaticDArray<BufferEntry, MaxBufferEntries> Buffers;
+        StaticDArray<TextureEntry, MaxTextureEntries> Textures;
 
         void Destroy();
     };

@@ -131,20 +131,20 @@ namespace HBL2
 	}
 	void VulkanResourceManager::DeleteBuffer(Handle<Buffer> handle)
 	{
-		m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
+		if (!m_BufferSplitPool.IsAlive(handle))
 		{
-			VulkanBuffer buffer = GetBuffer(handle);
-			if (buffer.IsValid())
+			m_BufferSplitPool.MarkClosed(handle);
+
+			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 			{
-				buffer.Destroy();
-				m_BufferSplitPool.Remove(handle);
-			}
-		});
-	}
-	void VulkanResourceManager::ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset)
-	{
-		VulkanBuffer buffer = GetBuffer(handle);
-		buffer.ReAllocate(currentOffset);
+				VulkanBuffer buffer = GetBuffer(handle);
+				if (buffer.IsValid())
+				{
+					buffer.Destroy();
+					m_BufferSplitPool.Remove(handle);
+				}
+			});
+		}
 	}
 	void* VulkanResourceManager::GetBufferData(Handle<Buffer> handle)
 	{
@@ -160,7 +160,7 @@ namespace HBL2
 		VulkanBindGroupCold* vulkanBindGroupCold = GetBindGroupCold(bindGroup);
 		if (bufferIndex < vulkanBindGroupCold->Buffers.size())
 		{
-			SetBufferData(vulkanBindGroupCold->Buffers[bufferIndex].buffer, vulkanBindGroupCold->Buffers[bufferIndex].byteOffset, newData);
+			SetBufferData(vulkanBindGroupCold->Buffers[bufferIndex].buffer.Get(), vulkanBindGroupCold->Buffers[bufferIndex].byteOffset, newData);
 		}
 	}
 	void VulkanResourceManager::MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size)
@@ -186,15 +186,15 @@ namespace HBL2
 		{
 			if (size != 0)
 			{
-				MapBufferData(vulkanBindGroupCold->Buffers[bufferIndex].buffer, offset, size);
+				MapBufferData(vulkanBindGroupCold->Buffers[bufferIndex].buffer.Get(), offset, size);
 				return;
 			}
 
-			VulkanBufferHot* vulkanBuffer = GetBufferHot(vulkanBindGroupCold->Buffers[bufferIndex].buffer);
+			VulkanBufferHot* vulkanBuffer = GetBufferHot(vulkanBindGroupCold->Buffers[bufferIndex].buffer.Get());
 
 			if (vulkanBuffer != nullptr)
 			{
-				MapBufferData(vulkanBindGroupCold->Buffers[bufferIndex].buffer, offset, vulkanBuffer->ByteSize);
+				MapBufferData(vulkanBindGroupCold->Buffers[bufferIndex].buffer.Get(), offset, vulkanBuffer->ByteSize);
 			}
 		}
 	}
@@ -318,6 +318,10 @@ namespace HBL2
 	{
 		if (!m_BindGroupSplitPool.IsAlive(handle))
 		{
+			// From now on IsClosing(handle) is true, so CreateBindGroup's cache
+			// lookup skips this slot during the deletion delay.
+			m_BindGroupSplitPool.MarkClosed(handle);
+
 			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 			{
 				VulkanBindGroupCold* bindGroupCold = GetBindGroupCold(handle);
@@ -391,6 +395,10 @@ namespace HBL2
 	{
 		if (!m_BindGroupLayoutPool.IsAlive(handle))
 		{
+			// From now on IsClosing(handle) is true, so CreateBindGroupLayout's cache
+			// lookup skips this slot during the deletion delay.
+			m_BindGroupLayoutPool.MarkClosed(handle);
+
 			m_DeletionQueue.Push(Renderer::Instance->GetFrameNumber(), [=, this]()
 			{
 				VulkanBindGroupLayout* bindGroupLayout = GetBindGroupLayout(handle);
@@ -477,10 +485,10 @@ namespace HBL2
 			Handle<BindGroupLayout> handle = Handle<BindGroupLayout>::UnPack(packedHandle);
 			m_BindGroupLayoutPool.Acquire(handle);
 		}
-		else if (resourceType == ResourceType::Texture)
+		else if (resourceType == ResourceType::Buffer)
 		{
-			Handle<Texture> handle = Handle<Texture>::UnPack(packedHandle);
-			// m_TexturePool.Acquire(handle);
+			Handle<Buffer> handle = Handle<Buffer>::UnPack(packedHandle);
+			m_BufferSplitPool.Acquire(handle);
 		}
 	}
 	void VulkanResourceManager::Release(uint32_t packedHandle, ResourceType resourceType)
@@ -503,14 +511,14 @@ namespace HBL2
 				DeleteBindGroupLayout(handle);
 			}
 		}
-		else if (resourceType == ResourceType::Texture)
+		else if (resourceType == ResourceType::Buffer)
 		{
-			Handle<Texture> handle = Handle<Texture>::UnPack(packedHandle);
+			Handle<Buffer> handle = Handle<Buffer>::UnPack(packedHandle);
 
-			/*if (m_TexturePool.Release(handle))
+			if (m_BufferSplitPool.Release(handle))
 			{
-				DeleteTexture(handle);
-			}*/
+				DeleteBuffer(handle);
+			}
 		}
 	}
 }

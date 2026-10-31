@@ -42,7 +42,6 @@ namespace HBL2
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) override;
 		virtual void DeleteBuffer(Handle<Buffer> handle) override;
-		virtual void ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset) override;
 		virtual void* GetBufferData(Handle<Buffer> handle) override;
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override;
 		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
@@ -94,7 +93,7 @@ namespace HBL2
 
 	private:
 		Pool<VulkanTexture, Texture> m_TexturePool;
-		SplitPool<VulkanBufferHot, VulkanBufferCold, Buffer> m_BufferSplitPool;
+		RefCountedSplitPool<VulkanBufferHot, VulkanBufferCold, Buffer> m_BufferSplitPool;
 		SplitPool<VulkanShaderHot, VulkanShaderCold, Shader> m_ShaderSplitPool;
 		RefCountedSplitPool<VulkanBindGroupHot, VulkanBindGroupCold, BindGroup> m_BindGroupSplitPool;
 		RefCountedPool<VulkanBindGroupLayout, BindGroupLayout> m_BindGroupLayoutPool;

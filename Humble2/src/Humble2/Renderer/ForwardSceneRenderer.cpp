@@ -2,6 +2,7 @@
 
 #include "Core/Window.h"
 #include "Core/Context.h"
+#include "Core/EventDispatcher.h"
 #include "Renderer/DebugRenderer.h"
 #include "Renderer/Device.h"
 #include "Utilities/ShaderUtilities.h"
@@ -52,30 +53,11 @@ namespace HBL2
 		return *closest;
 	}
 
-	struct CaptureMatrices
-	{
-		glm::mat4 View[6];
-		float FaceSize = 2048.f;
-		float _padding[3];
-	};
-
-	static CaptureMatrices g_CaptureMatrices =
-	{
-		.View =
-		{
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		}
-	};
-
 	using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
 
-	void ForwardSceneRenderer::Initialize(Scene* scene, uint32_t maxLights)
+	void ForwardSceneRenderer::Initialize(Scene* scene, uint32_t maxLights, bool useEditorCamera)
 	{
+		m_UseEditorCamera = useEditorCamera;
 		m_MaxLights = maxLights;
 		uint32_t maxEntities = scene->GetDescriptor().maxEntities;
 
@@ -94,12 +76,12 @@ namespace HBL2
 			sceneRenderData.m_LightData.resize(maxLights);
 
 			sceneRenderData.m_PrePassSpriteDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_PrePassStaticMeshDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_ShadowPassStaticMeshDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_PrePassMeshDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_ShadowPassMeshDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_SpriteOpaqueDraws.Initialize(m_Arena, maxEntities);
 			sceneRenderData.m_SpriteTransparentDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_StaticMeshOpaqueDraws.Initialize(m_Arena, maxEntities);
-			sceneRenderData.m_StaticMeshTransparentDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_MeshOpaqueDraws.Initialize(m_Arena, maxEntities);
+			sceneRenderData.m_MeshTransparentDraws.Initialize(m_Arena, maxEntities);
 		}
 
 		m_Scene = scene;
@@ -108,6 +90,7 @@ namespace HBL2
 		m_EditorScene = m_ResourceManager->GetScene(Context::EditorScene);
 		m_UniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 
+		TextureSetup();
 		RenderPassSetup();
 		BindingsSetup();
 
@@ -118,7 +101,8 @@ namespace HBL2
 		SpriteRenderingSetup();
 		PostProcessPassSetup();
 		SkyboxPassSetup();
-		PresentPassSetup();
+
+		m_Initialized = true;
 	}
 
 	void ForwardSceneRenderer::Gather(Entity mainCamera)
@@ -131,22 +115,20 @@ namespace HBL2
 		GatherLights(sceneRenderData);
 	}
 
-	void ForwardSceneRenderer::Render(void* renderData, void* debugRenderData)
+	void ForwardSceneRenderer::Render(CommandBuffer* commandBuffer, uint32_t renderDataIndex)
 	{
         BEGIN_PROFILE_PASS();
         
-		ForwardSceneRenderData* sceneRenderData = (ForwardSceneRenderData*)renderData;
+		ForwardSceneRenderData* sceneRenderData = (ForwardSceneRenderData*)&m_RenderData[renderDataIndex];
 		UniformRingBuffer* uniformRingBuffer = Renderer::Instance->TempUniformRingBuffer;
 		ResourceManager* rm = ResourceManager::Instance;
 
 		// Map dynamic uniform buffer data (i.e.: Bump allocated per object data)
 		rm->MapBufferData(uniformRingBuffer->GetBuffer(), sceneRenderData->m_UBOStartingOffset, sceneRenderData->m_UBOEndingOffset - sceneRenderData->m_UBOStartingOffset);
-		
-		CommandBuffer* commandBuffer = Renderer::Instance->BeginCommandRecording(CommandBufferType::MAIN);
 
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->IntermediateColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->MainColorTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
-		rm->TransitionTextureLayout(commandBuffer, Renderer::Instance->ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, m_IntermediateTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, m_TargetTexture, TextureLayout::UNDEFINED, TextureLayout::RENDER_ATTACHMENT);
+		rm->TransitionTextureLayout(commandBuffer, m_ShadowAtlasTexture, TextureLayout::UNDEFINED, TextureLayout::DEPTH_STENCIL_ATTACHMENT);
 
 		auto& renderPassPool = Renderer::Instance->GetRenderPassPool();
 
@@ -168,16 +150,7 @@ namespace HBL2
 		PostProcessPass(commandBuffer, sceneRenderData);
 		renderPassPool.Execute(RenderPassEvent::AfterRenderingPostProcess);
 
-		renderPassPool.Execute(RenderPassEvent::BeforeDebugRendering);
-		DebugPass(commandBuffer, debugRenderData);
-		renderPassPool.Execute(RenderPassEvent::AfterDebugRendering);
-
 		renderPassPool.Execute(RenderPassEvent::BeforePresenting);
-		PresentPass(commandBuffer, sceneRenderData);
-		renderPassPool.Execute(RenderPassEvent::AfterRendering);
-
-		commandBuffer->EndCommandRecording();
-		commandBuffer->Submit();
         
         END_PROFILE_PASS(Renderer::Instance->GetStats().MainPassTime);
 	}
@@ -185,13 +158,19 @@ namespace HBL2
 	void ForwardSceneRenderer::CleanUp()
 	{
 		m_ResourceManager->DeleteRenderPassLayout(m_RenderPassLayout);
+		m_ResourceManager->DeleteTexture(m_TargetTexture);
+		m_ResourceManager->DeleteTexture(m_IntermediateTexture);
+		m_ResourceManager->DeleteTexture(m_DepthTexture);
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_RendererResizeEventHandle);
 
-		m_ResourceManager->DeleteTexture(m_ShadowDepthTexture);
+		// Shadow pass clean up.
+		m_ResourceManager->DeleteTexture(m_ShadowAtlasTexture);
         m_ResourceManager->DeleteRenderPass(m_ShadowRenderPassClear);
 		m_ResourceManager->DeleteRenderPass(m_ShadowRenderPassLoad);
 		m_ResourceManager->DeleteShader(m_ShadowPrePassShader);
 		m_ResourceManager->DeleteMaterial(m_ShadowPrePassMaterial);
 
+		// Depth pre pass clean up.
 		m_ResourceManager->DeleteShader(m_DepthOnlyShader);
 		m_ResourceManager->DeleteShader(m_DepthOnlySpriteShader);
 
@@ -203,64 +182,32 @@ namespace HBL2
 
 		m_ResourceManager->DeleteRenderPassLayout(m_DepthOnlyRenderPassLayout);
 		m_ResourceManager->DeleteRenderPass(m_DepthOnlyRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback(std::string("Depth-Only-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_DepthPassResizeEventHandle);
 
+		// Geometry pass clean up.
 		m_ResourceManager->DeleteRenderPass(m_GeometryRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback(std::string("Resize-Geometry-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
-
-		m_ResourceManager->DeleteBindGroupLayout(m_EquirectToSkyboxBindGroupLayout);
-		m_ResourceManager->DeleteShader(m_EquirectToSkyboxShader);
-		m_ResourceManager->DeleteBuffer(m_CaptureMatricesBuffer);
-		m_ResourceManager->DeleteBindGroupLayout(m_SkyboxGlobalBindGroupLayout);
-		m_ResourceManager->DeleteBindGroup(m_SkyboxGlobalBindGroup);
-		m_ResourceManager->DeleteShader(m_SkyboxShader);
-		m_ResourceManager->DeleteBindGroupLayout(m_SkyboxBindGroupLayout);
-		m_ResourceManager->DeleteBuffer(m_CubeMeshBuffer);
-		m_ResourceManager->DeleteMesh(m_CubeMesh);
-
-		m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
-		m_Scene->Filter<Component::SkyLight>()
-			.ForEach([&](Component::SkyLight& skyLight)
-			{
-				m_ResourceManager->DeleteTexture(skyLight.CubeMap);
-				skyLight.CubeMap = {};
-
-				m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
-				skyLight.CubeMapMaterial = {};
-
-				skyLight.EquirectangularMap.Release();
-
-				skyLight.Converted = false;
-			});
-
-		m_Scene->Filter<Component::StaticMesh>()
-			.ForEach([&](Component::StaticMesh& staticMesh)
-			{
-				staticMesh.Mesh.Release();
-				staticMesh.Material.Release();
-			});
-
-		m_Scene->Filter<Component::Sprite>()
-			.ForEach([&](Component::Sprite& sprite)
-			{
-				sprite.Material.Release();
-			});
-
-		m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
-		m_ResourceManager->DeleteShader(m_PostProcessShader);
-		m_ResourceManager->DeleteBindGroupLayout(m_PostProcessBindGroupLayout);
-		m_ResourceManager->DeleteBindGroup(m_PostProcessBindGroup);
-		m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
-		Renderer::Instance->RemoveOnResizeCallback(std::string("Post-Process-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str());
-
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_GeometryPassResizeEventHandle);
 		m_ResourceManager->DeleteBuffer(m_VertexBuffer);
 		m_ResourceManager->DeleteMesh(m_SpriteMesh);
 
-		m_ResourceManager->DeleteBuffer(m_PostProcessQuadVertexBuffer);
-		m_ResourceManager->DeleteBuffer(m_QuadVertexBuffer);
-		m_ResourceManager->DeleteShader(m_PresentShader);
-		m_ResourceManager->DeleteMaterial(m_QuadMaterial);
+		// Skybox pass clean up.
+		m_SkyboxGlobalBindGroupLayout.Release();
+		m_ResourceManager->DeleteBindGroup(m_SkyboxGlobalBindGroup);
+		m_ResourceManager->DeleteShader(m_SkyboxShader);
+		m_SkyboxBindGroupLayout.Release();
+		m_ResourceManager->DeleteBuffer(m_CubeMeshBuffer);
+		m_ResourceManager->DeleteMesh(m_CubeMesh);
 
+		// Post process pass clean up.
+		m_ResourceManager->DeleteBuffer(m_PostProcessBuffer);
+		m_ResourceManager->DeleteShader(m_PostProcessShader);
+		m_PostProcessBindGroupLayout.Release();
+		m_ResourceManager->DeleteBindGroup(m_PostProcessBindGroup);
+		m_ResourceManager->DeleteRenderPass(m_PostProcessRenderPass);
+		EventDispatcher::Get().Deregister<RendererResizedEvent>(m_PostProcessPassResizeEventHandle);
+		m_ResourceManager->DeleteBuffer(m_PostProcessQuadVertexBuffer);
+
+		// Scene renderer clean up.
 		m_ShadowBindingsLayout.Release();
 		m_GlobalBindingsLayout2D.Release();
 		m_GlobalBindingsLayout3D.Release();
@@ -273,11 +220,30 @@ namespace HBL2
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindings2D);
 			m_ResourceManager->DeleteBindGroup(m_RenderData[i].GlobalBindings3D);
 		}
+
+		m_Initialized = false;
 	}
 
-	void* ForwardSceneRenderer::GetRenderData()
+	void ForwardSceneRenderer::TextureSetup()
 	{
-		return &m_RenderData[Renderer::Instance->GetFrameWriteIndex()];
+		CreateTextures();
+
+		// Create shadow depth texture (huge shadow atlas containing all the shadow textures).
+		m_ShadowAtlasTexture = ResourceManager::Instance->CreateTexture({
+			.debugName = "shadow-depth-target",
+			.dimensions = { g_ShadowAtlasSize, g_ShadowAtlasSize, 1 },
+			.format = Format::D32_FLOAT,
+			.internalFormat = Format::D32_FLOAT,
+			.usage = { TextureUsage::DEPTH_STENCIL, TextureUsage::SAMPLED },
+			.aspect = TextureAspect::DEPTH,
+			.createSampler = true,
+			.sampler =
+			{
+				.filter = TextureFilter::NEAREST,
+				.wrap = Wrap::CLAMP_TO_BORDER,
+			},
+			.initialLayout = TextureLayout::DEPTH_STENCIL_ATTACHMENT,
+		});
 	}
 
 	void ForwardSceneRenderer::RenderPassSetup()
@@ -287,7 +253,7 @@ namespace HBL2
 			.debugName = "main-renderpass-layout",
 			.depthTargetFormat = Format::D32_FLOAT,
 			.subPasses = {
-				{.depthTarget = true, .colorTargets = 1, },
+				{ .depthTarget = true, .colorTargets = 1, },
 			},
 		});
 
@@ -296,7 +262,7 @@ namespace HBL2
 			.debugName = "pre-pass-renderpass-layout",
 			.depthTargetFormat = Format::D32_FLOAT,
 			.subPasses = {
-				{.depthTarget = true },
+				{ .depthTarget = true },
 			},
 		});
 	}
@@ -373,7 +339,7 @@ namespace HBL2
 			m_RenderData[i].GlobalBindings3D = m_ResourceManager->CreateBindGroup({
 				.debugName = "global-bind-group",
 				.layout = m_GlobalBindingsLayout3D.Get(),
-				.textures = { { Renderer::Instance->ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY } },
+				.textures = { { m_ShadowAtlasTexture, TextureLayout::DEPTH_STENCIL_READ_ONLY } },
 				.buffers = {
 					{ .buffer = frameBuffer3D },
 					{ .buffer = lightBuffer },
@@ -396,7 +362,7 @@ namespace HBL2
 				.debugName = "unlit-colored-bind-group",
 				.layout = m_GlobalBindingsLayout2D.Get(),
 				.buffers = {
-					{.buffer = cameraBuffer2D },
+					{ .buffer = cameraBuffer2D },
 				}
 			});
 		}
@@ -460,7 +426,7 @@ namespace HBL2
 			.frameBufferDesc = {
 				.width = g_ShadowAtlasSize,
 				.height = g_ShadowAtlasSize,
-				.depthTarget = Renderer::Instance->ShadowAtlasTexture,
+				.depthTarget = m_ShadowAtlasTexture,
 			}
 		});
         
@@ -478,7 +444,7 @@ namespace HBL2
             .frameBufferDesc = {
                 .width = g_ShadowAtlasSize,
                 .height = g_ShadowAtlasSize,
-                .depthTarget = Renderer::Instance->ShadowAtlasTexture,
+                .depthTarget = m_ShadowAtlasTexture,
             }
         });
 
@@ -548,16 +514,16 @@ namespace HBL2
             .frameBufferDesc = {
                 .width = Window::Instance->GetExtents().x,
                 .height = Window::Instance->GetExtents().y,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
+                .depthTarget = m_DepthTexture,
             }
         });
 
-		Renderer::Instance->AddCallbackOnResize(std::string("Depth-Only-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
+		m_DepthPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
 			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_DepthOnlyRenderPass, {
-				.width = width,
-				.height = height,
-				.depthTarget = Renderer::Instance->MainDepthTexture,
+				.width = event.Width,
+				.height = event.Height,
+				.depthTarget = m_DepthTexture,
 			});
 		});
 
@@ -672,21 +638,21 @@ namespace HBL2
             .frameBufferDesc = {
                 .width = Window::Instance->GetExtents().x,
                 .height = Window::Instance->GetExtents().y,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->IntermediateColorTexture },
+                .depthTarget = m_DepthTexture,
+                .colorTargets = { m_IntermediateTexture },
             }
 		});
 
 		// Resize opaque framebuffer callback.
-		Renderer::Instance->AddCallbackOnResize(std::string("Resize-Geometry-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
-        {
-            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_GeometryRenderPass, {
-                .width = width,
-                .height = height,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->IntermediateColorTexture },
-            });
-        });
+		m_GeometryPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
+		{
+			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_GeometryRenderPass, {
+				.width = event.Width,
+				.height = event.Height,
+				.depthTarget = m_DepthTexture,
+				.colorTargets = { m_IntermediateTexture },
+			});
+		});
 	}
 
 	void ForwardSceneRenderer::SpriteRenderingSetup()
@@ -726,53 +692,6 @@ namespace HBL2
 
 	void ForwardSceneRenderer::SkyboxPassSetup()
 	{
-		m_CaptureMatricesBuffer = m_ResourceManager->CreateBuffer({
-			.debugName = "capture-matrices-buffer",
-			.byteSize = sizeof(CaptureMatrices),
-			.initialData = &g_CaptureMatrices,
-		});
-
-		// Compile compute shader.
-        const auto& compilationData = ShaderUtilities::Get().Compile("assets/shaders/equirectangular-to-skybox.slang", nullptr, false);
-        
-		// Create compute bind group layout.
-		m_EquirectToSkyboxBindGroupLayout = m_ResourceManager->CreateBindGroupLayout({
-			.debugName = "compute-bind-group-layout",
-			.textureBindings = {
-				{
-					.slot = 0,
-					.visibility = { ShaderStage::COMPUTE },
-					.type = TextureBindingType::COMBINED_IMAGE_SAMPLER,
-				},
-				{
-					.slot = 1,
-					.visibility = { ShaderStage::COMPUTE },
-					.type = TextureBindingType::STORAGE_IMAGE,
-				},
-			},
-			.bufferBindings = {
-				{
-					.slot = 2,
-					.visibility = { ShaderStage::COMPUTE },
-					.type = BufferBindingType::UNIFORM,
-				},
-			},
-		});
-
-		m_EquirectToSkyboxShader = ResourceManager::Instance->CreateShader({
-			.debugName = "compute-shader",
-			.type = ShaderType::COMPUTE,
-			.CS { .code = compilationData.computeShaderCode.AsSpan(), .entryPoint = "mainCS" },
-			.bindGroups {
-				m_EquirectToSkyboxBindGroupLayout,	// (0)
-			},
-			.renderPipeline {
-				.variants = { m_ComputeVariant },
-			},
-			.renderPass = m_PostProcessRenderPass,
-            .threadsPerThreadGroup = { 16, 16, 1 },
-		});
-
 		// Skybox bind group.
 		m_SkyboxBindGroupLayout = m_ResourceManager->CreateBindGroupLayout({
 			.debugName = "skybox-global-layout",
@@ -807,7 +726,7 @@ namespace HBL2
 
 		m_SkyboxGlobalBindGroup = m_ResourceManager->CreateBindGroup({
 			.debugName = "skybox-global-bind-group",
-			.layout = m_SkyboxGlobalBindGroupLayout,
+			.layout = m_SkyboxGlobalBindGroupLayout.Get(),
 			.buffers = {
 				{ .buffer = cameraBuffer },
 			}
@@ -827,9 +746,9 @@ namespace HBL2
 			.VS { .code = skyboxShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = skyboxShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				m_SkyboxGlobalBindGroupLayout,					// Global bind group (0)
-				Renderer::Instance->GetEmptyBindingsLayout(),	// Unused
-				m_SkyboxBindGroupLayout,						// (2)
+				m_SkyboxGlobalBindGroupLayout.Get(),			// Global bind group (0)
+				Renderer::Instance->GetEmptyBindingsLayout(),	// Unused (1)
+				m_SkyboxBindGroupLayout.Get(),					// (2)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = {
@@ -892,14 +811,6 @@ namespace HBL2
 				}
 			}
 		});
-
-		m_Scene->Filter<Component::SkyLight>()
-			.ForEach([&](Component::SkyLight& skyLight)
-			{
-				skyLight.CubeMapMaterial = {};
-				skyLight.CubeMap = {};
-				skyLight.Converted = false;
-			});
 	}
 
 	void ForwardSceneRenderer::PostProcessPassSetup()
@@ -947,9 +858,9 @@ namespace HBL2
 
 		m_PostProcessBindGroup = ResourceManager::Instance->CreateBindGroup({
 			.debugName = "post-process-bind-group",
-			.layout = m_PostProcessBindGroupLayout,
+			.layout = m_PostProcessBindGroupLayout.Get(),
 			.textures = {
-				{ Renderer::Instance->IntermediateColorTexture, TextureLayout::SHADER_READ_ONLY }
+				{ m_IntermediateTexture, TextureLayout::SHADER_READ_ONLY }
 			},
 			.buffers = {
 				{ .buffer = m_PostProcessBuffer },
@@ -979,19 +890,19 @@ namespace HBL2
             .frameBufferDesc = {
                 .width = Window::Instance->GetExtents().x,
                 .height = Window::Instance->GetExtents().y,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->MainColorTexture },
+                .depthTarget = m_DepthTexture,
+                .colorTargets = { m_TargetTexture },
             }
 		});
 
-		Renderer::Instance->AddCallbackOnResize(std::string("Post-Process-Resize-FrameBuffer-") + m_Scene->GetDescriptor().name.c_str(), [this](uint32_t width, uint32_t height)
+		m_PostProcessPassResizeEventHandle = EventDispatcher::Get().Register<RendererResizedEvent>([this](const RendererResizedEvent& event)
 		{
-            ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PostProcessRenderPass, {
-                .width = width,
-                .height = height,
-                .depthTarget = Renderer::Instance->MainDepthTexture,
-                .colorTargets = { Renderer::Instance->MainColorTexture },
-            });
+			ResourceManager::Instance->RecreateRenderPassFrameBuffer(m_PostProcessRenderPass, {
+				.width = event.Width,
+				.height = event.Height,
+				.depthTarget = m_DepthTexture,
+				.colorTargets = { m_TargetTexture },
+			});
 
 			ResourceManager::Instance->DeleteBindGroup(m_PostProcessBindGroup);
 
@@ -1003,9 +914,9 @@ namespace HBL2
 
 			m_PostProcessBindGroup = ResourceManager::Instance->CreateBindGroup({
 				.debugName = "post-process-bind-group",
-				.layout = m_PostProcessBindGroupLayout,
+				.layout = m_PostProcessBindGroupLayout.Get(),
 				.textures = {
-					{ Renderer::Instance->IntermediateColorTexture, TextureLayout::SHADER_READ_ONLY }
+					{ m_IntermediateTexture, TextureLayout::SHADER_READ_ONLY }
 				},
 				.buffers = {
 					{ .buffer = m_PostProcessBuffer },
@@ -1026,7 +937,7 @@ namespace HBL2
 			.VS { .code = postProcessShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
 			.FS { .code = postProcessShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
 			.bindGroups {
-				m_PostProcessBindGroupLayout,	// Global bind group (0)
+				m_PostProcessBindGroupLayout.Get(),	// Global bind group (0)
 			},
 			.renderPipeline {
 				.vertexBufferBindings = {
@@ -1047,65 +958,6 @@ namespace HBL2
 		m_PostProcessShaderVariantHash = variant;
 	}
 
-	void ForwardSceneRenderer::PresentPassSetup()
-	{
-		float* vertexBuffer = new float[24] {
-			-1.0, -1.0, 0.0, 1.0, // Bottom left
-			 1.0, -1.0, 1.0, 1.0, // Bottom right
-			 1.0,  1.0, 1.0, 0.0, // Top right
-			 1.0,  1.0, 1.0, 0.0, // Top right
-			-1.0,  1.0, 0.0, 0.0, // Top left
-			-1.0, -1.0, 0.0, 1.0  // Bottom left
-		};
-
-		m_QuadVertexBuffer = m_ResourceManager->CreateBuffer({
-			.debugName = "quad-vertex-buffer",
-			.usage = BufferUsage::VERTEX,
-			.byteSize = sizeof(float) * 24,
-			.initialData = vertexBuffer,
-		});
-
-		ShaderDescriptor::RenderPipeline::PackedVariant variant = {};
-		variant.blendEnabled = false;
-		variant.depthEnabled = false;
-		variant.depthWrite = true;
-		variant.frontFace = (packed_size)FrontFace::COUNTER_CLOCKWISE;
-
-		// Compile present shaders.
-		const auto& presentShaderData = ShaderUtilities::Get().Compile("assets/shaders/present.slang", (ShaderReflectionData*)nullptr, false);
-
-		// Create present bind group layout.
-		m_PresentShader = ResourceManager::Instance->CreateShader({
-			.debugName = "present-shader",
-			.VS { .code = presentShaderData.vertexShaderCode.AsSpan(), .entryPoint = "mainVS" },
-			.FS { .code = presentShaderData.fragmentShaderCode.AsSpan(), .entryPoint = "mainPS" },
-			.bindGroups {
-				Renderer::Instance->GetGlobalPresentBindingsLayout(),	// Global bind group (0)
-			},
-			.renderPipeline {
-				.vertexBufferBindings = {
-					{
-						.byteStride = 16,
-						.attributes = {
-							{ .byteOffset = 0, .format = VertexFormat::FLOAT32x2 },
-							{ .byteOffset = 8, .format = VertexFormat::FLOAT32x2 },
-						},
-					}
-				},
-				.variants = { variant },
-			},
-			.renderPass = Renderer::Instance->GetMainRenderPass(),
-		});
-
-		m_QuadMaterial = m_ResourceManager->CreateMaterial({
-			.debugName = "fullscreen-quad-material",
-			.shader = m_PresentShader,
-		});
-
-		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
-		mat->VariantHash = variant;
-	}
-
 	// Gathering.
 	void ForwardSceneRenderer::GatherDraws(ForwardSceneRenderData* sceneRenderData)
 	{
@@ -1114,15 +966,16 @@ namespace HBL2
 		// Store the offset that the objects start from in the dynamic uniform buffer.
 		sceneRenderData->m_UBOStartingOffset = m_UniformRingBuffer->GetCurrentOffset();
 
+		uint64_t depthOnlyVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlyShader, m_DepthOnlyMaterialHash);
+		uint64_t shadowPrePassVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_ShadowPrePassShader, m_ShadowPrePassMaterialHash);
+		uint64_t depthOnlySpriteVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlySpriteShader, m_DepthOnlySpriteMaterialHash);
+
 		// Static meshes
 		{
-			uint64_t depthOnlyVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlyShader, m_DepthOnlyMaterialHash);
-			uint64_t shadowPrePassVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_ShadowPrePassShader, m_ShadowPrePassMaterialHash);
-
-			sceneRenderData->m_StaticMeshOpaqueDraws.Reset();
-			sceneRenderData->m_StaticMeshTransparentDraws.Reset();
-			sceneRenderData->m_PrePassStaticMeshDraws.Reset();
-			sceneRenderData->m_ShadowPassStaticMeshDraws.Reset();
+			sceneRenderData->m_MeshOpaqueDraws.Reset();
+			sceneRenderData->m_MeshTransparentDraws.Reset();
+			sceneRenderData->m_PrePassMeshDraws.Reset();
+			sceneRenderData->m_ShadowPassMeshDraws.Reset();
 
 			m_Scene->Filter<Component::StaticMesh, Component::Transform>()
 				.ForEach([&](Component::StaticMesh& staticMesh, Component::Transform& transform)
@@ -1168,7 +1021,7 @@ namespace HBL2
 						// Fill draw lists.
 						if (!material->VariantHash.blendEnabled)
 						{
-							sceneRenderData->m_StaticMeshOpaqueDraws.Insert({
+							sceneRenderData->m_MeshOpaqueDraws.Insert({
 								.Shader = material->Shader,
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.IndexBuffer = meshPart.IndexBuffer,
@@ -1186,7 +1039,7 @@ namespace HBL2
 							});
 
 							// Include only opaque objects in depth pre-pass.
-							sceneRenderData->m_PrePassStaticMeshDraws.Insert({
+							sceneRenderData->m_PrePassMeshDraws.Insert({
 								.Shader = m_DepthOnlyShader,
 								.VariantHandle = depthOnlyVariantHandle,
 								.IndexBuffer = meshPart.IndexBuffer,
@@ -1205,7 +1058,7 @@ namespace HBL2
 						}
 						else
 						{
-							sceneRenderData->m_StaticMeshTransparentDraws.Insert({
+							sceneRenderData->m_MeshTransparentDraws.Insert({
 								.Shader = material->Shader,
 								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
 								.IndexBuffer = meshPart.IndexBuffer,
@@ -1225,7 +1078,7 @@ namespace HBL2
 
 						if (material->ReceiveShadows)
 						{
-							sceneRenderData->m_ShadowPassStaticMeshDraws.Insert({
+							sceneRenderData->m_ShadowPassMeshDraws.Insert({
 								.Shader = m_ShadowPrePassShader,
 								.VariantHandle = shadowPrePassVariantHandle,
 								.IndexBuffer = meshPart.IndexBuffer,
@@ -1246,10 +1099,144 @@ namespace HBL2
 				});
 		}
 
+		// Skinned meshes
+		{
+			m_Scene->Filter<Component::SkinnedSubMesh, Component::Transform>()
+				.ForEach([&](Component::SkinnedSubMesh& skinnedSubMesh, Component::Transform& transform)
+				{
+					if (skinnedSubMesh.Enabled)
+					{
+						if (!skinnedSubMesh.Material.IsValid() || !skinnedSubMesh.Mesh.IsValid())
+						{
+							return;
+						}
+
+						Handle<Material> materialHandle = AssetManager::Instance->GetAsset<Material>(skinnedSubMesh.Material.Get());
+						Material* material = ResourceManager::Instance->GetMaterial(materialHandle);
+
+						if (material == nullptr)
+						{
+							return;
+						}
+
+						// Retrieve skinned mesh component.
+						Entity meshEntity = m_Scene->FindEntityByUUID(skinnedSubMesh.SkinnedMeshUUID);
+
+						if (meshEntity == Entity::Null)
+						{
+							return;
+						}
+
+						auto& skinnedMesh = m_Scene->GetComponent<Component::SkinnedMesh>(meshEntity);
+
+						Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(skinnedSubMesh.Mesh.Get());
+						Mesh* mesh = ResourceManager::Instance->GetMesh(meshHandle);
+
+						if (mesh == nullptr || mesh->IsEmpty())
+						{
+							return;
+						}
+
+						const auto& meshPart = mesh->Meshes[skinnedSubMesh.MeshIndex];
+
+						if (meshPart.IsEmpty())
+						{
+							return;
+						}
+
+						const auto& subMesh = meshPart.SubMeshes[skinnedSubMesh.SubMeshIndex];
+
+						// Bump allocate and set per draw data.
+						auto alloc = m_UniformRingBuffer->BumpAllocate<PerDrawData>();
+						alloc.Data->Model = transform.WorldMatrix;
+						alloc.Data->InverseModel = glm::transpose(glm::inverse(glm::mat3(transform.WorldMatrix)));
+						alloc.Data->Color = glm::vec4(1.0f);
+
+						Handle<Buffer> vertexBuffer = skinnedMesh.SkinnedVertexBuffer.IsValid() ? skinnedMesh.SkinnedVertexBuffer : meshPart.VertexBuffers[0];
+
+						// Fill draw lists.
+						if (!material->VariantHash.blendEnabled)
+						{
+							sceneRenderData->m_MeshOpaqueDraws.Insert({
+								.Shader = material->Shader,
+								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = vertexBuffer,
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
+								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
+							});
+
+							// Include only opaque objects in depth pre-pass.
+							sceneRenderData->m_PrePassMeshDraws.Insert({
+								.Shader = m_DepthOnlyShader,
+								.VariantHandle = depthOnlyVariantHandle,
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = vertexBuffer,
+								.MaterialBindGroup = Renderer::Instance->GetEmptyBindings(),
+								.BindGroup = m_DepthOnlyMeshBindGroup,
+								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
+							});
+						}
+						else
+						{
+							sceneRenderData->m_MeshTransparentDraws.Insert({
+								.Shader = material->Shader,
+								.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(material->Shader, material->VariantHash),
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = vertexBuffer,
+								.MaterialBindGroup = material->MaterialBindGroup.Get(),
+								.BindGroup = material->DrawBindGroup.Get(),
+								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
+							});
+						}
+
+						if (material->ReceiveShadows)
+						{
+							sceneRenderData->m_ShadowPassMeshDraws.Insert({
+								.Shader = m_ShadowPrePassShader,
+								.VariantHandle = shadowPrePassVariantHandle,
+								.IndexBuffer = meshPart.IndexBuffer,
+								.VertexBuffer = vertexBuffer,
+								.MaterialBindGroup = Renderer::Instance->GetEmptyBindings(),
+								.BindGroup = m_DepthOnlyMeshBindGroup,
+								.Size = sizeof(PerDrawData),
+								.Offset = alloc.Offset,
+								.IndexCount = subMesh.IndexCount,
+								.IndexOffset = subMesh.IndexOffset,
+								.VertexCount = subMesh.VertexCount,
+								.VertexOffset = subMesh.VertexOffset,
+								.InstanceCount = subMesh.InstanceCount,
+								.InstanceOffset = subMesh.InstanceOffset,
+							});
+						}
+					}
+				});
+		}
+
 		// Sprites
 		{
-			uint64_t depthOnlySpriteVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_DepthOnlySpriteShader, m_DepthOnlySpriteMaterialHash);
-
 			sceneRenderData->m_SpriteOpaqueDraws.Reset();
 			sceneRenderData->m_SpriteTransparentDraws.Reset();
 			sceneRenderData->m_PrePassSpriteDraws.Reset();
@@ -1327,10 +1314,10 @@ namespace HBL2
 		{
 			BEGIN_PROFILE_PASS();
 
-			sceneRenderData->m_StaticMeshOpaqueDraws.Sort();
-			sceneRenderData->m_PrePassStaticMeshDraws.Sort();
-			sceneRenderData->m_StaticMeshTransparentDraws.Sort();
-			sceneRenderData->m_ShadowPassStaticMeshDraws.Sort();
+			sceneRenderData->m_MeshOpaqueDraws.Sort();
+			sceneRenderData->m_PrePassMeshDraws.Sort();
+			sceneRenderData->m_MeshTransparentDraws.Sort();
+			sceneRenderData->m_ShadowPassMeshDraws.Sort();
 			sceneRenderData->m_SpriteOpaqueDraws.Sort();
 			sceneRenderData->m_PrePassSpriteDraws.Sort();
 			sceneRenderData->m_SpriteTransparentDraws.Sort();
@@ -1489,7 +1476,7 @@ namespace HBL2
 				{
 					if (light.CastsShadows)
 					{
-						ShadowTile tile = Renderer::Instance->ShadowAtlasAllocator.AllocateTile();
+						ShadowTile tile = m_ShadowAtlasAllocator.AllocateTile();
 
 						if (tile == ShadowTile::Invalid)
 						{
@@ -1513,7 +1500,7 @@ namespace HBL2
 							.UsesDynamicOffset = true,
 						};
 
-						passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_ShadowPassStaticMeshDraws);
+						passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_ShadowPassMeshDraws);
 
 						commandBuffer->EndRenderPass(*passRenderer);
 
@@ -1524,11 +1511,11 @@ namespace HBL2
 				}
 			});
 
-		Renderer::Instance->ShadowAtlasAllocator.Clear();
+		m_ShadowAtlasAllocator.Clear();
         
         ResourceManager::Instance->TransitionTextureLayout(
             commandBuffer,
-            Renderer::Instance->ShadowAtlasTexture,
+            m_ShadowAtlasTexture,
             TextureLayout::DEPTH_STENCIL_ATTACHMENT,
             TextureLayout::DEPTH_STENCIL_READ_ONLY
         );
@@ -1548,7 +1535,7 @@ namespace HBL2
 		{
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData.ViewProjection);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
-			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassStaticMeshDraws);
+			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_PrePassMeshDraws);
 		}
 
 		// Depth only pre pass for opaque sprites.
@@ -1565,11 +1552,6 @@ namespace HBL2
 
     void ForwardSceneRenderer::GeometryPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData, RenderPassPool& renderPassPool)
     {
-        ScratchArena scratch(Allocator::FrameArenaRT);
-        DrawList skyboxDraws(scratch, 32);
-        
-        SkyboxComputePass(commandBuffer, &skyboxDraws);
-        
         RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(m_GeometryRenderPass);
         {
 			// Set and map storage buffer for light data.
@@ -1581,7 +1563,7 @@ namespace HBL2
             renderPassPool.Execute(RenderPassEvent::AfterRenderingOpaques);
             
             renderPassPool.Execute(RenderPassEvent::BeforeRenderingSkybox);
-            SkyboxPass(skyboxDraws, passRenderer, sceneRenderData);
+            SkyboxPass(passRenderer, sceneRenderData);
             renderPassPool.Execute(RenderPassEvent::AfterRenderingSkybox);
             
             renderPassPool.Execute(RenderPassEvent::BeforeRenderingTransparents);
@@ -1600,7 +1582,7 @@ namespace HBL2
             Handle<BindGroup> globalBindings = GetGlobalBindings3D();
             ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
             GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
-            passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshOpaqueDraws);
+            passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_MeshOpaqueDraws);
         }
 
         // Render opaque sprites.
@@ -1623,7 +1605,7 @@ namespace HBL2
 			Handle<BindGroup> globalBindings = GetGlobalBindings3D();
 			ResourceManager::Instance->SetBufferData(globalBindings, 0, (void*)&sceneRenderData->m_FrameData);
 			GlobalDrawStream globalDrawStream = { .BindGroup = globalBindings, .UsesDynamicOffset = true };
-			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_StaticMeshTransparentDraws);
+			passRenderer->DrawSubPass(globalDrawStream, sceneRenderData->m_MeshTransparentDraws);
 		}
 
 		// Render transparent sprites.
@@ -1637,141 +1619,71 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().TransparentPassTime);
 	}
 
-    void ForwardSceneRenderer::SkyboxComputePass(CommandBuffer* commandBuffer, DrawList* skyboxDraws)
-    {
-        BEGIN_PROFILE_PASS();
-
-        uint64_t skyboxVariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_EquirectToSkyboxShader, m_ComputeVariant);
-
-        m_Scene->Filter<Component::SkyLight>()
-            .ForEach([&](Component::SkyLight& skyLight)
-            {
-                if (skyLight.Enabled)
-                {
-                    if (!skyLight.EquirectangularMap.IsValid())
-                    {
-                        return;
-                    }
-
-                    if (!skyLight.Converted)
-                    {
-                        if (skyLight.CubeMapMaterial.IsValid())
-                        {
-                            m_ResourceManager->DeleteTexture(skyLight.CubeMap);
-                            m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
-                            m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
-
-                            m_CaptureMatricesBuffer = m_ResourceManager->CreateBuffer({
-                                .debugName = "capture-matrices-buffer",
-                                .byteSize = sizeof(CaptureMatrices),
-                                .initialData = &g_CaptureMatrices,
-                            });
-                        }
-
-                        skyLight.CubeMap = m_ResourceManager->CreateTexture({
-                            .debugName = "skybox-texture",
-                            .dimensions = { (uint32_t)g_CaptureMatrices.FaceSize, (uint32_t)g_CaptureMatrices.FaceSize, 1 },
-                            .format = Format::RGBA16_FLOAT,
-                            .internalFormat = Format::RGBA16_FLOAT,
-                            .usage = { TextureUsage::TEXTURE_BINDING, TextureUsage::SAMPLED, TextureUsage::STORAGE_BINDING },
-                            .type = TextureType::D2_ARRAY,
-                            .aspect = TextureAspect::COLOR,
-                            .layerCount = 6,
-                            .sampler = { .filter = TextureFilter::LINEAR, .wrap = Wrap::CLAMP_TO_EDGE, },
-                            .initialLayout = TextureLayout::GENERAL,
-                            .dynamicTextureView = true,
-                            .bindSampler = false,
-                        });
-
-                        ResourceManager::Instance->TransitionTextureLayout(
-                            commandBuffer,
-                            skyLight.CubeMap,
-                            TextureLayout::UNDEFINED,
-                            TextureLayout::GENERAL
-                        );
-
-                        Handle<Texture> equirectangularMapHandle = AssetManager::Instance->GetAsset<Texture>(skyLight.EquirectangularMap.Get());
-
-                        // FIXME: When entering the playmode multiple times in the session we create new descriptor sets in vk, so it exceeds the max in the pool.
-                        m_ComputeBindGroup = m_ResourceManager->CreateBindGroup({
-                            .debugName = "compute-bind-group",
-                            .layout = m_EquirectToSkyboxBindGroupLayout,
-                            .textures = { { equirectangularMapHandle }, { skyLight.CubeMap } },
-                            .buffers = { { .buffer = m_CaptureMatricesBuffer, } }
-                        });
-
-                        Dispatch dispatch =
-                        {
-                            .Shader = m_EquirectToSkyboxShader,
-                            .BindGroup = m_ComputeBindGroup,
-                            .ThreadGroupCount = { (uint32_t)g_CaptureMatrices.FaceSize / 16, (uint32_t)g_CaptureMatrices.FaceSize / 16, 6 },
-                            .VariantHandle = skyboxVariantHandle,
-                        };
-
-						ComputePassRenderer* computePassRenderer = commandBuffer->BeginComputePass({ skyLight.CubeMap }, {}, {});
-                        computePassRenderer->Dispatch({ dispatch });
-                        commandBuffer->EndComputePass(*computePassRenderer);
-                        
-                        ResourceManager::Instance->ChangeTextureView(skyLight.CubeMap, TextureViewDescriptor{
-                            .type = TextureType::CUBE,
-                            .format = Format::RGBA16_FLOAT,
-                            .aspect = TextureAspect::COLOR,
-                            .layerCount = 6,
-                            .bindSampler = true,
-                        });
-
-                        auto skyboxBindGroup = m_ResourceManager->CreateBindGroup({
-                            .debugName = "skybox-bind-group",
-                            .layout = m_SkyboxBindGroupLayout,
-                            .textures = { { skyLight.CubeMap } }
-                        });
-
-                        // Create skybox material.
-                        skyLight.CubeMapMaterial = ResourceManager::Instance->CreateMaterial({
-                            .debugName = "skybox-material",
-                            .shader = m_SkyboxShader,
-                            .materialBindGroup = skyboxBindGroup,
-                        });
-
-                        Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
-                        mat->VariantHash = m_SkyboxVariant;
-
-                        skyLight.Converted = true;
-                    }
-
-                    if (!skyLight.CubeMapMaterial.IsValid())
-                    {
-                        return;
-                    }
-
-                    Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
-
-                    skyboxDraws->Insert({
-                        .Shader = m_SkyboxShader,
-                        .VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_SkyboxShader, mat->VariantHash),
-                        .VertexBuffer = m_CubeMeshBuffer,
-                        .MaterialBindGroup = mat->MaterialBindGroup.Get(),
-                        .VertexCount = 36,
-                    });
-                }
-            });
-        
-        END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxComputePassTime);
-    }
-
-	void ForwardSceneRenderer::SkyboxPass(DrawList& skyboxDraws, RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData)
+	void ForwardSceneRenderer::SkyboxPass(RenderPassRenderer* passRenderer, ForwardSceneRenderData* sceneRenderData)
 	{
         BEGIN_PROFILE_PASS();
 
-		if (skyboxDraws.GetCount() == 0)
-		{
-			return;
-		}
+		ScratchArena scratch(Allocator::FrameArenaRT);
+		DrawList skyboxDraws(scratch, 32);
 
-		// Render Skybox.
-		ResourceManager::Instance->SetBufferData(m_SkyboxGlobalBindGroup, 0, (void*)&sceneRenderData->m_OnlyRotationInViewProjection);
-		GlobalDrawStream globalDrawStream = { .BindGroup = m_SkyboxGlobalBindGroup };
-		passRenderer->DrawSubPass(globalDrawStream, skyboxDraws);
+		m_Scene->Filter<Component::SkyLight>()
+			.ForEach([&](Component::SkyLight& skyLight)
+			{
+				if (skyLight.Enabled)
+				{
+					if (!skyLight.EquirectangularMap.IsValid())
+					{
+						return;
+					}
+
+					// NOTE (John): The scene renderer can be ran multiple times for the same scene,
+					// but this is ok since the SkyLight material will be created once thanks to the flag
+					// guard, so the first one that gets executed will create it and the others will already have it.
+					if (skyLight.RecreateCubeMapMaterial)
+					{
+						auto skyboxBindGroup = m_ResourceManager->CreateBindGroup({
+							.debugName = "skybox-bind-group",
+							.layout = m_SkyboxBindGroupLayout.Get(),
+							.textures = { { skyLight.CubeMap } }
+						});
+
+						// Create skybox material.
+						skyLight.CubeMapMaterial = ResourceManager::Instance->CreateMaterial({
+							.debugName = "skybox-material",
+							.shader = m_SkyboxShader,
+							.materialBindGroup = skyboxBindGroup,
+						});
+
+						Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
+						mat->VariantHash = m_SkyboxVariant;
+
+						skyLight.RecreateCubeMapMaterial = false;
+					}
+
+					if (!skyLight.CubeMapMaterial.IsValid())
+					{
+						return;
+					}
+
+					Material* mat = ResourceManager::Instance->GetMaterial(skyLight.CubeMapMaterial);
+
+					skyboxDraws.Insert({
+						.Shader = m_SkyboxShader,
+						.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_SkyboxShader, mat->VariantHash),
+						.VertexBuffer = m_CubeMeshBuffer,
+						.MaterialBindGroup = mat->MaterialBindGroup.Get(),
+						.VertexCount = 36,
+					});
+				}
+			});
+
+		if (skyboxDraws.GetCount() != 0)
+		{
+			// Render Skybox.
+			ResourceManager::Instance->SetBufferData(m_SkyboxGlobalBindGroup, 0, (void*)&sceneRenderData->m_OnlyRotationInViewProjection);
+			GlobalDrawStream globalDrawStream = { .BindGroup = m_SkyboxGlobalBindGroup };
+			passRenderer->DrawSubPass(globalDrawStream, skyboxDraws);
+		}
 
 		END_PROFILE_PASS(Renderer::Instance->GetStats().SkyboxPassTime);
 	}
@@ -1783,7 +1695,7 @@ namespace HBL2
 		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
 		ResourceManager::Instance->TransitionTextureLayout(
             commandBuffer,
-            Renderer::Instance->IntermediateColorTexture,
+            m_IntermediateTexture,
             TextureLayout::RENDER_ATTACHMENT,
             TextureLayout::SHADER_READ_ONLY
         );
@@ -1809,52 +1721,9 @@ namespace HBL2
 		END_PROFILE_PASS(Renderer::Instance->GetStats().PostProcessPassTime);
 	}
 
-	void ForwardSceneRenderer::DebugPass(CommandBuffer* commandBuffer, void* debugRenderData)
-	{
-		BEGIN_PROFILE_PASS();
-
-		DebugRenderer::Instance->Render(commandBuffer, debugRenderData);
-
-		END_PROFILE_PASS(Renderer::Instance->GetStats().DebugPassTime);
-	}
-
-	void ForwardSceneRenderer::PresentPass(CommandBuffer* commandBuffer, ForwardSceneRenderData* sceneRenderData)
-	{
-		BEGIN_PROFILE_PASS();
-
-		// Transition the layout of the texture that the scene is rendered to, in order to be sampled in the shader.
-		ResourceManager::Instance->TransitionTextureLayout(
-            commandBuffer,
-            Renderer::Instance->MainColorTexture,
-            TextureLayout::RENDER_ATTACHMENT,
-            TextureLayout::SHADER_READ_ONLY
-        );
-
-		Material* mat = ResourceManager::Instance->GetMaterial(m_QuadMaterial);
-
-		RenderPassRenderer* passRenderer = commandBuffer->BeginRenderPass(Renderer::Instance->GetMainRenderPass());
-
-		ScratchArena scratch(Allocator::FrameArenaRT);
-		DrawList draws(scratch, 1);
-
-		draws.Insert({
-			.Shader = m_PresentShader,
-			.VariantHandle = ResourceManager::Instance->GetOrAddShaderVariant(m_PresentShader, mat->VariantHash),
-			.VertexBuffer = m_QuadVertexBuffer,
-			.VertexCount = 6,
-		});
-
-		GlobalDrawStream globalDrawStream = { .BindGroup = Renderer::Instance->GetGlobalPresentBindings() };
-		passRenderer->DrawSubPass(globalDrawStream, draws);
-
-		commandBuffer->EndRenderPass(*passRenderer);
-
-		END_PROFILE_PASS(Renderer::Instance->GetStats().PresentPassTime);
-	}
-
 	void ForwardSceneRenderer::GetViewProjection(ForwardSceneRenderData* sceneRenderData, Entity mainCamera)
 	{
-		Scene* scene = (Context::Mode == Mode::Editor ? m_EditorScene : m_Scene);
+		Scene* scene = (m_UseEditorCamera ? m_EditorScene : m_Scene);
 
 		if (scene == nullptr || mainCamera == Entity::Null)
 		{

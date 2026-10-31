@@ -7,6 +7,9 @@
 #include "TypeDescriptors.h"
 #include "ResourceDeletionQueue.h"
 
+#include "Animation/AnimationClip.h"
+#include "Animation/AnimationSkeleton.h"
+
 #include "Scene/Scene.h"
 #include "Sound/Sound.h"
 #include "Script/Script.h"
@@ -34,6 +37,8 @@ namespace HBL2
 		uint32_t Scripts = 32;
 		uint32_t Sounds = 32;
 		uint32_t Prefabs = 64;
+		uint32_t AnimationClips = 64;
+		uint32_t Skeletons = 64;
 		uint32_t ReimportDependencies = 1024;
 	};
 
@@ -101,6 +106,8 @@ namespace HBL2
 			if constexpr (std::same_as<T, BindGroupLayout>) return ResourceType::BindGroupLayout;
 			if constexpr (std::same_as<T, RenderPass>) return ResourceType::RenderPass;
 			if constexpr (std::same_as<T, RenderPassLayout>) return ResourceType::RenderPassLayout;
+			if constexpr (std::same_as<T, AnimationClip>) return ResourceType::AnimationClip;
+			if constexpr (std::same_as<T, Skeleton>) return ResourceType::Skeleton;
 
 			return ResourceType::None;
 		}
@@ -127,7 +134,6 @@ namespace HBL2
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) = 0;
 		virtual void DeleteBuffer(Handle<Buffer> handle) = 0;
-		virtual void ReAllocateBuffer(Handle<Buffer> handle, uint32_t currentOffset) = 0;
 		virtual void* GetBufferData(Handle<Buffer> handle) = 0;
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) = 0;
 		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) = 0;
@@ -198,6 +204,16 @@ namespace HBL2
 		void DeletePrefab(Handle<Prefab> handle);
 		Prefab* GetPrefab(Handle<Prefab> handle) const;
 
+		// AnimationClips
+		Handle<AnimationClip> CreateAnimationClip(const AnimationClipDescriptor&& desc);
+		void DeleteAnimationClip(Handle<AnimationClip> handle);
+		AnimationClip* GetAnimationClip(Handle<AnimationClip> handle) const;
+
+		// Skeletons
+		Handle<Skeleton> CreateSkeleton(const SkeletonDescriptor&& desc);
+		void DeleteSkeleton(Handle<Skeleton> handle);
+		Skeleton* GetSkeleton(Handle<Skeleton> handle) const;
+
 		virtual void Acquire(uint32_t packedHandle, ResourceType resourceType) = 0;
 		virtual void Release(uint32_t packedHandle, ResourceType resourceType) = 0;
 
@@ -214,6 +230,8 @@ namespace HBL2
 		Pool<Script, Script> m_ScriptPool;
 		Pool<Sound, Sound> m_SoundPool;
 		Pool<Prefab, Prefab> m_PrefabPool;
+		Pool<AnimationClip, AnimationClip> m_AnimationClipPool;
+		Pool<Skeleton, Skeleton> m_SkeletonPool;
 
 		Pool<ReimportDependency, ReimportDependency> m_ReimportDependenciesPool;
 	};

@@ -1,5 +1,6 @@
 #include "ShaderUtilities.h"
 
+#include "SlangReflection.h"
 #include "YamlUtilities.h"
 #include "Asset/EditorAssetManager.h"
 #include "Collections/StaticDArray.h"
@@ -158,13 +159,13 @@ namespace HBL2
 
         switch (rendererType)
         {
-        case RendererType::Forward:
+        case RendererType::FORWARD:
             lightingProvider = "lighting_forward";
             break;
-        case RendererType::ForwardPlus:
+        case RendererType::FORWARD_PLUS:
             lightingProvider = "lighting_forward_plus";
             break;
-        case RendererType::Custom:
+        case RendererType::CUSTOM:
             lightingProvider = "lighting_custom";
             break;
         }
@@ -537,7 +538,7 @@ namespace HBL2
         return compilationResultData;
     }
 
-    ShaderReflectionData ShaderUtilities::Reflect(const std::string& shaderFilePath, bool attachLightingModules)
+    bool ShaderUtilities::Reflect(const std::string& shaderFilePath, ShaderReflectionData* outReflectionData, bool attachLightingModules)
     {
         HBL2_FUNC_PROFILE();
 
@@ -550,13 +551,13 @@ namespace HBL2
 
         switch (rendererType)
         {
-        case RendererType::Forward:
+        case RendererType::FORWARD:
             lightingProvider = "lighting_forward";
             break;
-        case RendererType::ForwardPlus:
+        case RendererType::FORWARD_PLUS:
             lightingProvider = "lighting_forward_plus";
             break;
-        case RendererType::Custom:
+        case RendererType::CUSTOM:
             lightingProvider = "lighting_custom";
             break;
         }
@@ -641,7 +642,7 @@ namespace HBL2
         if (SLANG_FAILED(g_SLangGlobalSessions[workerIndex]->createSession(sessionDesc, session.writeRef())))
         {
             HBL2_CORE_ERROR("Slang: Failed to create session");
-            return {};
+            return false;
         }
 
         // Module.
@@ -660,7 +661,7 @@ namespace HBL2
         if (!slangModule)
         {
             HBL2_CORE_ERROR("Slang: Failed to load shader module");
-            return {};
+            return false;
         }
 
         Slang::ComPtr<slang::IModule> lightingCommonModule;
@@ -678,7 +679,7 @@ namespace HBL2
             if (!lightingCommonModule)
             {
                 HBL2_CORE_ERROR("Slang: Failed to load shader module");
-                return {};
+                return false;
             }
         }
 
@@ -697,7 +698,7 @@ namespace HBL2
             if (!lightingProviderModule)
             {
                 HBL2_CORE_ERROR("Slang: Failed to load shader module");
-                return {};
+                return false;
             }
         }
 
@@ -706,7 +707,7 @@ namespace HBL2
         if (entryPointCount == 0)
         {
             HBL2_CORE_ERROR("Slang: No entry points found in shader source");
-            return {};
+            return false;
         }
 
         StaticDArray<Slang::ComPtr<slang::IEntryPoint>, 6> entryPoints;
@@ -741,10 +742,12 @@ namespace HBL2
             }
 
             HBL2_CORE_ERROR("Slang: Failed to link shader program");
-            return {};
+            return false;
         }
 
-        return ShaderReflector::Reflect(linkedProgram, shaderFilePath);
+        *outReflectionData = ShaderReflector::Reflect(linkedProgram, shaderFilePath);
+
+        return true;
     }
 
     void ShaderUtilities::LoadBuiltInShaders()
@@ -897,7 +900,9 @@ namespace HBL2
         out << YAML::BeginMap;
 
         bool attachLightingModules = (shaderType == 1 || shaderType == 2);
-        const auto& reflectionData = Reflect(path.string(), attachLightingModules);
+
+        ShaderReflectionData reflectionData;
+        Reflect(path.string(), &reflectionData, attachLightingModules);
 
         for (const auto& descriptorSet : reflectionData.descriptorSets)
         {
@@ -1052,7 +1057,9 @@ namespace HBL2
         // Get reflection data.
         uint32_t type = root["Shader"]["Type"].as<uint32_t>();
         bool attachLightingModules = (type == 1 || type == 2);
-        const auto& reflectionData = Reflect(filePath.string(), attachLightingModules);
+
+        ShaderReflectionData reflectionData;
+        Reflect(filePath.string(), &reflectionData, attachLightingModules);
 
         for (const auto& descriptorSet : reflectionData.descriptorSets)
         {
@@ -1465,13 +1472,13 @@ namespace HBL2
 
         switch (rendererType)
         {
-        case RendererType::Forward:
+        case RendererType::FORWARD:
             renderer = "forward";
             break;
-        case RendererType::ForwardPlus:
+        case RendererType::FORWARD_PLUS:
             renderer = "forward_plus";
             break;
-        case RendererType::Custom:
+        case RendererType::CUSTOM:
             renderer = "custom";
             break;
         }

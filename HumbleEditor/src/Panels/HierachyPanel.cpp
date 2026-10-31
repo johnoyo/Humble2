@@ -376,17 +376,7 @@ namespace HBL2::Editor
 
 				if (!std::filesystem::exists(metadataPath))
 				{
-					std::ofstream fout(metadataPath, std::ios_base::out);
-
-					YAML::Emitter out;
-					out << YAML::BeginMap;
-					out << YAML::Key << "Mesh" << YAML::Value;
-					out << YAML::BeginMap;
-					out << YAML::Key << "UUID" << YAML::Value << AssetManager::Instance->GetAssetMetadata(assetHandle)->UUID;
-					out << YAML::EndMap;
-					out << YAML::EndMap;
-					fout << out.c_str();
-					fout.close();
+					MeshUtilities::Get().CreateMeshMetadataFile(assetHandle);
 				}
 
 				Handle<Mesh> meshHandle = AssetManager::Instance->GetAsset<Mesh>(assetHandle);
@@ -402,6 +392,21 @@ namespace HBL2::Editor
 				auto mainMeshEntity = activeScene->CreateEntity(mesh->DebugName);
 				activeScene->AddComponent<HBL2::Component::EditorVisible>(mainMeshEntity);
 
+				if (mesh->Skeleton.IsValid())
+				{
+					auto& pose = activeScene->AddComponent<HBL2::Component::SkeletonPose>(mainMeshEntity);
+					pose.Mesh = assetHandle;
+
+					auto& animation = activeScene->AddComponent<HBL2::Component::Animation>(mainMeshEntity);
+
+					animation.DefaultClip = 0;
+					animation.CurrentClip = mesh->AnimationClips.empty() ? -1 : 0;
+					animation.ClipsCount = mesh->AnimationClips.size();
+					animation.PlayAutomatically = !mesh->AnimationClips.empty();
+					animation.EnableLooping = true;
+					animation.Enabled = true;
+				}
+
 				uint32_t meshIndex = 0;
 				uint32_t subMeshIndex = 0;
 
@@ -409,8 +414,16 @@ namespace HBL2::Editor
 				{
 					auto meshEntity = activeScene->CreateEntity(meshPart.DebugName);
 					activeScene->AddComponent<HBL2::Component::EditorVisible>(meshEntity);
-					auto& link = activeScene->GetComponent<HBL2::Component::Link>(meshEntity);
 
+					if (mesh->Skeleton.IsValid())
+					{
+						auto& skinnedMesh = activeScene->AddComponent<HBL2::Component::SkinnedMesh>(meshEntity);
+						skinnedMesh.Mesh = assetHandle;
+						skinnedMesh.MeshIndex = meshIndex;
+						skinnedMesh.SkeletonPoseUUID = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
+					}
+
+					auto& link = activeScene->GetComponent<HBL2::Component::Link>(meshEntity);
 					link.Parent = activeScene->GetComponent<HBL2::Component::ID>(mainMeshEntity).Identifier;
 
 					for (auto& subMesh : meshPart.SubMeshes)
@@ -425,11 +438,24 @@ namespace HBL2::Editor
 						transform.Rotation = meshPart.ImportedLocalTransform.rotation;
 						transform.Scale = meshPart.ImportedLocalTransform.scale;
 
-						auto& staticMesh = activeScene->AddComponent<HBL2::Component::StaticMesh>(subMeshEntity);
-						staticMesh.Mesh = assetHandle;
-						staticMesh.MeshIndex = meshIndex;
-						staticMesh.SubMeshIndex = subMeshIndex;
-						staticMesh.Material = subMesh.EmbededMaterial;
+						if (meshPart.IsSkinned())
+						{
+							auto& skinnedSubMesh = activeScene->AddComponent<HBL2::Component::SkinnedSubMesh>(subMeshEntity);
+							skinnedSubMesh.Mesh = assetHandle;
+							skinnedSubMesh.MeshIndex = meshIndex;
+							skinnedSubMesh.SubMeshIndex = subMeshIndex;
+							skinnedSubMesh.Material = subMesh.EmbededMaterial;
+
+							skinnedSubMesh.SkinnedMeshUUID = activeScene->GetComponent<HBL2::Component::ID>(meshEntity).Identifier;
+						}
+						else
+						{
+							auto& staticMesh = activeScene->AddComponent<HBL2::Component::StaticMesh>(subMeshEntity);
+							staticMesh.Mesh = assetHandle;
+							staticMesh.MeshIndex = meshIndex;
+							staticMesh.SubMeshIndex = subMeshIndex;
+							staticMesh.Material = subMesh.EmbededMaterial;
+						}
 
 						subMeshIndex++;
 					}
