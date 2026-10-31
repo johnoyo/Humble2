@@ -126,7 +126,6 @@ namespace HBL2
             ImGuiRenderer::Instance = new MetalImGuiRenderer;
 #endif
             break;
-        case GraphicsAPI::OPENGL:
         case GraphicsAPI::WEBGPU:
 		case GraphicsAPI::NONE:
 			HBL2_CORE_ERROR("No valid RendererAPI specified. Please choose between Metal, or Vulkan depending on your target platform.");

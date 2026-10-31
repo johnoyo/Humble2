@@ -30,7 +30,6 @@ project "HumbleEditor"
         "../Dependencies/ImGui/imgui/backends",
         "../Dependencies/ImGuizmo/src",
         "../Dependencies/GLFW/include",
-        "../Dependencies/GLEW/include",
         "../Dependencies/stb_image",
         "../Dependencies/GLM",
         "../Dependencies/YAML-Cpp/yaml-cpp/include",

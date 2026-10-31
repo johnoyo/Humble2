@@ -53,7 +53,6 @@ namespace HBL2
 	enum class HBL2_API GraphicsAPI
 	{
 		NONE,
-		OPENGL,
 		VULKAN,
         METAL,
 		WEBGPU,
