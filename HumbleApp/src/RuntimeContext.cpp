@@ -206,9 +206,7 @@ namespace HBL2
 
 		void RuntimeContext::LoadProject()
 		{
-			HBL2::Project::OpenStartingScene(true);
-
-			Project::ApplySettings();
+			HBL2::Project::OpenRuntimeStartingScene();
 		}
 	}
 }

@@ -2,6 +2,7 @@
 
 #include "Platform/PlatformManager.h"
 #include "Asset/EditorAssetManager.h"
+#include "Asset/RuntimeAssetManager.h"
 #include "Script/BuildEngine.h"
 
 #include "Physics/JoltPhysicsEngine.h"
@@ -83,7 +84,7 @@ namespace HBL2
 			gfxAPI = projectSettings.EditorGraphicsAPI;
 			break;
 		case Mode::Runtime:
-			AssetManager::Instance = new EditorAssetManager; // TODO: Change to RuntimeAssetManager when implemented.
+			AssetManager::Instance = new RuntimeAssetManager;
 			Log::SetOutputs({ LogContexts::FILE });
 			gfxAPI = projectSettings.RuntimeGraphicsAPI;
 			break;

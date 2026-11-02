@@ -3,7 +3,6 @@
 #include "Base.h"
 
 #include "Scene/Scene.h"
-#include "Scene/SceneSerializer.h"
 #include "Scene/SceneManager.h"
 
 #include "Renderer/Renderer.h"
@@ -112,7 +111,8 @@ namespace HBL2
 		static Project* Load(const std::filesystem::path& path);
 		static void Save(const std::filesystem::path& path = "");
 
-		static void OpenStartingScene(bool runtime = false);
+		static void OpenStartingScene();
+		static void OpenRuntimeStartingScene();
 		static void ApplySettings();
 
 	private:

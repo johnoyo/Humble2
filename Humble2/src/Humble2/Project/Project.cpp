@@ -1,5 +1,6 @@
 #include "Project.h"
 
+#include "Scene/SceneSerializer.h"
 #include "ProjectSerializer.h"
 #include "Core/Context.h"
 #include "Asset/EditorAssetManager.h"
@@ -63,7 +64,7 @@ namespace HBL2
 		serializer.Serialize(path);
 	}
 
-	void Project::OpenStartingScene(bool runtime)
+	void Project::OpenStartingScene()
 	{
 		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
@@ -117,7 +118,53 @@ namespace HBL2
 			return;
 		}
 
-		SceneManager::Get().LoadScene(sceneHandle, runtime);
+		SceneManager::Get().LoadScene(sceneHandle, false);
+	}
+
+	void Project::OpenRuntimeStartingScene()
+	{
+		AssetManager::Instance->RegisterAssets();
+
+		const auto& startingScenePath = s_ActiveProject->GetSpecification().StartingScene;
+		const auto& startingSceneMetadataPath = Project::GetAssetFileSystemPath(startingScenePath).string() + ".hblscene";
+
+		// Open metadata file to retrieve asset UUID.
+		std::ifstream stream(startingSceneMetadataPath);
+
+		UUID assetUUID = 0;
+
+		if (stream.is_open())
+		{
+			std::stringstream ss;
+			ss << stream.rdbuf();
+
+			YAML::Node dataMetadata = YAML::Load(ss.str());
+			if (!dataMetadata["Scene"].IsDefined())
+			{
+				HBL2_CORE_TRACE("Scene not found in metadata file: {0}, not a valid file format.", ss.str());
+				stream.close();
+				return;
+			}
+
+			auto sceneMetadataProperties = dataMetadata["Scene"];
+			if (sceneMetadataProperties)
+			{
+				assetUUID = sceneMetadataProperties["UUID"].as<UUID>();
+			}
+
+			stream.close();
+		}
+
+		// Load scene asset.
+		Handle<Scene> sceneHandle = AssetManager::Instance->GetAsset<Scene>(assetUUID);
+
+		if (!sceneHandle.IsValid())
+		{
+			HBL2_CORE_ERROR("Scene asset handle of \"{0}\" is invalid, aborting scene load.", s_ActiveProject->GetSpecification().StartingScene.string());
+			return;
+		}
+
+		SceneManager::Get().LoadScene(sceneHandle, true);
 	}
 
 	void Project::ApplySettings()
