@@ -30,19 +30,9 @@ namespace HBL2
 		for (auto& [assetUUID, assetInfo] : m_Context->Assets)
 		{
 			// Serialize asset.
-			AssetSerializationInfo serializationInfo;
-
-			if (AssetPack::Serialize(assetUUID, serializer, serializationInfo))
-			{
-				m_Context->Assets[assetUUID].PackedOffset = serializationInfo.Offset;
-				m_Context->Assets[assetUUID].PackedSize = serializationInfo.Size;
-			}
-			else
+			if (!m_Context->Serialize(assetUUID, serializer))
 			{
 				HBL2_CORE_ERROR("Failed to serialize asset with handle {}", assetUUID);
-
-				m_Context->Assets[assetUUID].PackedOffset = 0;
-				m_Context->Assets[assetUUID].PackedSize = 0;
 			}
 
 			progress = progress + progressIncrement;
@@ -54,12 +44,21 @@ namespace HBL2
 		serializer.SetStreamPosition(indexPos);
 		
 		// Write asset map data.
-		serializer.WriteMap(m_Context->Assets);
+		serializer.WriteRaw<uint32_t>((uint32_t)m_Context->Assets.size());
+
+		for (auto& [assetUUID, assetInfo] : m_Context->Assets)
+		{
+			serializer.WriteRaw<uint64_t>(assetUUID);
+			serializer.WriteRaw<uint64_t>(assetInfo.PackedOffset);
+			serializer.WriteRaw<uint64_t>(assetInfo.PackedSize);
+			serializer.WriteRaw<uint16_t>(assetInfo.Type);
+			serializer.WriteRaw<uint16_t>(assetInfo.Flags);
+		}
 
 		progress = progress + 0.1f;
 	}
 
-	bool AssetPackSerializer::DeserializeIndex(const std::filesystem::path& path)
+	bool AssetPackSerializer::Deserialize(const std::filesystem::path& path)
 	{
 		HBL2_CORE_TRACE("[AssetPack] Deserializing Asset Pack from {}", path.string());
 
@@ -70,17 +69,16 @@ namespace HBL2
 		}
 
 		stream.ReadRaw<AssetPack::FileHeader>(m_Context->Header);
-		bool validHeader = memcmp(m_Context->Header.Header, "HBLAP", 4) == 0;
+		bool validHeader = memcmp(m_Context->Header.Header, "HBLAP", 5) == 0;
 		HBL2_CORE_ASSERT(validHeader, "Invalid asset pack header, aborting asset pack load!");
 		if (!validHeader)
 		{
 			return false;
 		}
 
-		AssetPack current;
-		if (m_Context->Header.Version != current.Header.Version)
+		if (m_Context->Header.Version != AssetPack::CurrentVersion)
 		{
-			HBL2_CORE_ERROR("AssetPack version {} is not compatible with current version {}", m_Context->Header.Version, current.Header.Version);
+			HBL2_CORE_ERROR("AssetPack version {} is not compatible with current version {}", m_Context->Header.Version, AssetPack::CurrentVersion);
 			return false;
 		}
 

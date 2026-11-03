@@ -62,7 +62,7 @@ namespace HBL2
 		AssetManager() = default;
 		virtual ~AssetManager() = default;
 
-		void Initialize(const AssetManagerSpecification& spec);
+		virtual void Initialize(const AssetManagerSpecification& spec) = 0;
 		void Dispatch();
 		void Clean();
 
@@ -240,7 +240,6 @@ namespace HBL2
 		JobContext m_ResourceJobCtx;
 
 		FixedHashMap<UUID, Handle<Asset>> m_RegisteredAssetMap;
-		FixedHashMap<std::filesystem::path, UUID> m_RegisteredAssetPathToUUIDMap;
 		FixedArray<Handle<Asset>> m_RegisteredAssets;
 
 		moodycamel::ConcurrentQueue<StaticFunction<void(void), 128>> m_MainThreadCallbacks;

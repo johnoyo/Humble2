@@ -8,29 +8,6 @@ namespace HBL2
 {
 	AssetManager* AssetManager::Instance = nullptr;
 
-	void AssetManager::Initialize(const AssetManagerSpecification& spec)
-	{
-		m_Spec = spec;
-
-		m_AssetPool.Initialize(m_Spec.Assets);
-
-		size_t registeredAssetMapBytes = FixedHashMap<UUID, Handle<Asset>>::RequiredBytes(m_Spec.Assets);
-		size_t registeredAssetPathToUUIDMap = FixedHashMap<std::filesystem::path, UUID>::RequiredBytes(m_Spec.Assets);
-
-		uint64_t bytes = ArenaLayout::Create()
-			.AddRaw(registeredAssetMapBytes, alignof(std::pair<UUID, Handle<Asset>>))
-			.AddRaw(registeredAssetPathToUUIDMap, alignof(std::pair<std::filesystem::path, UUID>))
-			.Add<Handle<Asset>>(m_Spec.Assets)
-			.Total();
-
-		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", bytes);
-		m_PoolArena.Initialize(&Allocator::Arena, bytes, m_Reservation);
-
-        m_RegisteredAssetMap = FixedHashMap<UUID, Handle<Asset>>(&m_PoolArena, m_Spec.Assets);
-		m_RegisteredAssetPathToUUIDMap = FixedHashMap<std::filesystem::path, UUID>(&m_PoolArena, m_Spec.Assets);
-		m_RegisteredAssets = FixedArray<Handle<Asset>>(&m_PoolArena, m_Spec.Assets);
-	}
-
 	void AssetManager::Dispatch()
 	{
 		{

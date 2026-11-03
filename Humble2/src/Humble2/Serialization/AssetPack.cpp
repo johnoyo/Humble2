@@ -4,74 +4,85 @@
 
 namespace HBL2
 {
-    bool AssetPack::Serialize(UUID assetUUID, FileStreamWriter& stream, AssetSerializationInfo& outInfo)
+    bool AssetPack::Serialize(UUID assetUUID, FileStreamWriter& stream)
     {
         EditorAssetManager* assetManager = (EditorAssetManager*)AssetManager::Instance;
 
         Handle<Asset> assetHandle = assetManager->GetHandleFromUUID(assetUUID);
         Asset* asset = assetManager->GetAssetMetadata(assetHandle);
 
+		bool result = false;
+
         switch (asset->Type)
         {
 		case AssetType::Texture:
-			return SerializeTexture(asset, stream, outInfo);
+			result = SerializeTexture(asset, stream);
+			break;
 		case AssetType::Shader:
-			return SerializeShader(asset, stream, outInfo);
+			result = SerializeShader(asset, stream);
+			break;
 		case AssetType::Material:
-			return SerializeMaterial(asset, stream, outInfo);
+			result = SerializeMaterial(asset, stream);
+			break;
 		case AssetType::Mesh:
-			return SerializeMesh(asset, stream, outInfo);
+			result = SerializeMesh(asset, stream);
+			break;
 		case AssetType::Scene:
-			return SerializeScene(asset, stream, outInfo);
+			result = SerializeScene(asset, stream);
+			break;
 		case AssetType::Script:
-			return SerializeScript(asset, stream, outInfo);
+			result = SerializeScript(asset, stream);
+			break;
 		case AssetType::Sound:
-			return SerializeSound(asset, stream, outInfo);
+			result = SerializeSound(asset, stream);
+			break;
 		case AssetType::Prefab:
-			return SerializePrefab(asset, stream, outInfo);
+			result = SerializePrefab(asset, stream);
+			break;
 		case AssetType::None:
-			return false;
+			result = false;
+			break;
         }
 
-        return false;
+        return result;
     }
 
-	bool AssetPack::SerializeTexture(Asset* asset, FileStreamWriter& stream, AssetSerializationInfo& outInfo)
+	bool AssetPack::SerializeTexture(Asset* asset, FileStreamWriter& stream)
 	{
 		return false;
 	}
 
-	bool AssetPack::SerializeShader(Asset* asset, FileStreamWriter& stream, AssetSerializationInfo& outInfo)
+	bool AssetPack::SerializeShader(Asset* asset, FileStreamWriter& stream)
 	{
 		return false;
 	}
 
-	bool AssetPack::SerializeMaterial(Asset* asset, FileStreamWriter& stream, AssetSerializationInfo& outInfo)
+	bool AssetPack::SerializeMaterial(Asset* asset, FileStreamWriter& stream)
 	{
 		return false;
 	}
 
-	bool AssetPack::SerializeMesh(Asset* asset, FileStreamWriter& stream, AssetSerializationInfo& outInfo)
+	bool AssetPack::SerializeMesh(Asset* asset, FileStreamWriter& stream)
 	{
 		return false;
 	}
 
-	bool AssetPack::SerializeScene(Asset* asset, FileStreamWriter& stream, AssetSerializationInfo& outInfo)
+	bool AssetPack::SerializeScene(Asset* asset, FileStreamWriter& stream)
 	{
 		return false;
 	}
 
-	bool AssetPack::SerializePrefab(Asset* asset, FileStreamWriter& stream, AssetSerializationInfo& outInfo)
+	bool AssetPack::SerializePrefab(Asset* asset, FileStreamWriter& stream)
 	{
 		return false;
 	}
 
-	bool AssetPack::SerializeScript(Asset* asset, FileStreamWriter& stream, AssetSerializationInfo& outInfo)
+	bool AssetPack::SerializeScript(Asset* asset, FileStreamWriter& stream)
 	{
 		return false;
 	}
 
-	bool AssetPack::SerializeSound(Asset* asset, FileStreamWriter& stream, AssetSerializationInfo& outInfo)
+	bool AssetPack::SerializeSound(Asset* asset, FileStreamWriter& stream)
 	{
 		return false;
 	}

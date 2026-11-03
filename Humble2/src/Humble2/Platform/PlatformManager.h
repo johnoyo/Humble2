@@ -40,6 +40,9 @@ namespace HBL2
         const BitFlags<Format> GetSupportedTranscodingFormats(Platform platform) const;
         const BitFlags<Format> GetSupportedCompressionFormats(Platform platform) const;
 
+        uint64_t GetCurrentDateTimeU64();
+        std::string GetCurrentDateTimeString();
+
         Platform GetPlatform() const;
         
     protected:

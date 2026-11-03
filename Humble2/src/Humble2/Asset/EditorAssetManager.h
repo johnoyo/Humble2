@@ -21,6 +21,8 @@ namespace HBL2
 	public:
 		virtual ~EditorAssetManager() = default;
 
+		virtual void Initialize(const AssetManagerSpecification& spec) override;
+
 		virtual bool IsAssetValid(Handle<Asset> handle) override;
 		virtual bool IsAssetLoaded(Handle<Asset> handle) override;
 
@@ -29,6 +31,7 @@ namespace HBL2
 
 		Handle<Asset> CreateAsset(const AssetDescriptor&& desc);
 		Handle<Asset> RegisterAsset(const std::filesystem::path& assetPath);
+		void CreateAssetPack();
 
 		UUID GetUUIDFromPath(const std::filesystem::path& assetPath);
 
@@ -210,5 +213,8 @@ namespace HBL2
 		void UnloadScene(Asset* asset);
 		void UnloadSound(Asset* asset);
 		void UnloadPrefab(Asset* asset);
+
+	private:
+		FixedHashMap<std::filesystem::path, UUID> m_RegisteredAssetPathToUUIDMap;
 	};
 }

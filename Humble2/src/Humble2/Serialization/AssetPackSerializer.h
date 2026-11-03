@@ -12,7 +12,7 @@ namespace HBL2
 		AssetPackSerializer(AssetPack* assetPack);
 
 		void Serialize(const std::filesystem::path& path, std::atomic<float>& progress);
-		bool DeserializeIndex(const std::filesystem::path& path);
+		bool Deserialize(const std::filesystem::path& path);
 
 	private:
 		uint64_t CalculateIndexTableSize();

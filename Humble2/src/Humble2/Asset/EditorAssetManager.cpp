@@ -19,10 +19,35 @@
 #include "Renderer/ForwardSceneRenderer.h"
 
 #include "Prefab/PrefabSerializer.h"
+#include "Serialization/AssetPackSerializer.h"
+#include "Platform/PlatformManager.h"
 
 namespace HBL2
 {
 	using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
+
+	void EditorAssetManager::Initialize(const AssetManagerSpecification& spec)
+	{
+		m_Spec = spec;
+
+		m_AssetPool.Initialize(m_Spec.Assets);
+
+		size_t registeredAssetMapBytes = FixedHashMap<UUID, Handle<Asset>>::RequiredBytes(m_Spec.Assets);
+		size_t registeredAssetPathToUUIDMap = FixedHashMap<std::filesystem::path, UUID>::RequiredBytes(m_Spec.Assets);
+
+		uint64_t bytes = ArenaLayout::Create()
+			.AddRaw(registeredAssetMapBytes, alignof(std::pair<UUID, Handle<Asset>>))
+			.AddRaw(registeredAssetPathToUUIDMap, alignof(std::pair<std::filesystem::path, UUID>))
+			.Add<Handle<Asset>>(m_Spec.Assets)
+			.Total();
+
+		m_Reservation = Allocator::Arena.Reserve("AssetManagerPool", bytes);
+		m_PoolArena.Initialize(&Allocator::Arena, bytes, m_Reservation);
+
+		m_RegisteredAssetMap = FixedHashMap<UUID, Handle<Asset>>(&m_PoolArena, m_Spec.Assets);
+		m_RegisteredAssetPathToUUIDMap = FixedHashMap<std::filesystem::path, UUID>(&m_PoolArena, m_Spec.Assets);
+		m_RegisteredAssets = FixedArray<Handle<Asset>>(&m_PoolArena, m_Spec.Assets);
+	}
 
     uint32_t EditorAssetManager::LoadAsset(Handle<Asset> handle)
     {
@@ -280,7 +305,7 @@ namespace HBL2
         return;
     }
 
-    bool EditorAssetManager::IsAssetValid(Handle<Asset> handle)
+	bool EditorAssetManager::IsAssetValid(Handle<Asset> handle)
     {
         return handle.IsValid() && GetAssetMetadata(handle) != nullptr;
     }
@@ -358,13 +383,22 @@ namespace HBL2
 		m_RegisteredAssetPathToUUIDMap.clear();
 		m_RegisteredAssetMap.clear();
 
-		// Reregister built in shader assets.
+		// Reregister built-in shader assets.
 		for (const auto shaderAssetHandle : builtInShaderAssets)
 		{
 			m_RegisteredAssets.push_back(shaderAssetHandle);
 			Asset* asset = GetAssetMetadata(shaderAssetHandle);
 			m_RegisteredAssetPathToUUIDMap[asset->FilePath] = asset->UUID;
 			m_RegisteredAssetMap[asset->UUID] = shaderAssetHandle;
+		}
+
+		// Reregister built-in mesh assets.
+		for (const auto meshAssetHandle : builtInMeshAssets)
+		{
+			m_RegisteredAssets.push_back(meshAssetHandle);
+			Asset* asset = GetAssetMetadata(meshAssetHandle);
+			m_RegisteredAssetPathToUUIDMap[asset->FilePath] = asset->UUID;
+			m_RegisteredAssetMap[asset->UUID] = meshAssetHandle;
 		}
 
 		// Reregister built-in lit material asset.
@@ -516,6 +550,45 @@ namespace HBL2
 		}
 
 		return assetHandle;
+	}
+
+	void EditorAssetManager::CreateAssetPack()
+	{
+		ScratchArena scratch(Allocator::FrameArenaMT);
+		uint32_t assetMapSize = FixedHashMap<UUID, AssetPack::AssetInfo>::BucketCountFor(m_RegisteredAssets.size());
+
+		// Build Asset pack data.
+		AssetPack assetPack;
+
+		assetPack.Header.Version = AssetPack::CurrentVersion;
+		assetPack.Header.BuildVersion = PlatformManager::Instance->GetCurrentDateTimeU64();
+		assetPack.Assets = FixedHashMap<UUID, AssetPack::AssetInfo>(scratch.GetArena(), assetMapSize);
+
+		for (const auto handle : m_RegisteredAssets)
+		{
+			Asset* asset = GetAssetMetadata(handle);
+
+			assetPack.Assets[asset->UUID] = {
+				.Type = (uint16_t)asset->Type,
+				.Flags = 0,
+			};
+		}
+
+		// Serialize Asset pack.
+		std::atomic<float> progress = { 0.0f };
+
+		AssetPackSerializer serializer(&assetPack);
+		serializer.Serialize(Project::GetAssetDirectory() / "AssetPack.hblap", progress);
+
+		{
+			AssetPack deserializedAssetPack;
+			deserializedAssetPack.Assets = FixedHashMap<UUID, AssetPack::AssetInfo>(scratch.GetArena(), assetMapSize);
+
+			AssetPackSerializer serializer(&deserializedAssetPack);
+			serializer.Deserialize(Project::GetAssetDirectory() / "AssetPack.hblap");
+
+			HBL2_CORE_ASSERT(deserializedAssetPack.Header.BuildVersion == assetPack.Header.BuildVersion, "");
+		}
 	}
 
 	UUID EditorAssetManager::GetUUIDFromPath(const std::filesystem::path& assetPath)

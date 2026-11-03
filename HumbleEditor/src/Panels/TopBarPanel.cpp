@@ -193,6 +193,10 @@ namespace HBL2::Editor
 						m_Owner->m_EditorScenePath = filepath;
 					}
 				}
+				else if (ImGui::MenuItem("Build Asset Pack"))
+				{
+					editorAssetManager->CreateAssetPack();
+				}
 				else if (ImGui::MenuItem("Build (Desktop - Debug)"))
 				{
 					// Build.
