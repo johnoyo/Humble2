@@ -12,6 +12,73 @@
 
 namespace HBL2
 {
+    static BlockFormatInfo GetBlockFormatInfo(Format format)
+    {
+        switch (format)
+        {
+        case Format::D32_FLOAT:
+        case Format::RGBA8_RGB:
+        case Format::RGBA8_UNORM:
+        case Format::BGRA8_UNORM:
+        case Format::RG16_FLOAT:
+        case Format::RG32_UINT:
+            return { 1, 1, 4 };
+        case Format::RGBA32_FLOAT:
+            return { 1, 1, 16 };
+        case Format::RGBA16_FLOAT:
+        case Format::RGB32_FLOAT:
+            return { 1, 1, 8 };
+        case Format::R10G10B10A2_UNORM:
+            return { 1, 1, 8 }; // TODO: same open question as the Vulkan version.
+        case Format::ASTC_4x4_SRGB:
+        case Format::ASTC_4x4_UNORM:
+            return { 4, 4, 16 };
+        case Format::ASTC_6x6_SRGB:
+        case Format::ASTC_6x6_UNORM:
+            return { 6, 6, 16 };
+        case Format::ASTC_8x8_SRGB:
+        case Format::ASTC_8x8_UNORM:
+            return { 8, 8, 16 };
+        case Format::ASTC_10x10_SRGB:
+        case Format::ASTC_10x10_UNORM:
+            return { 10, 10, 16 };
+        case Format::ASTC_12x12_SRGB:
+        case Format::ASTC_12x12_UNORM:
+            return { 12, 12, 16 };
+        case Format::BC1_RGB_SRGB:
+        case Format::BC1_RGB_UNORM:
+        case Format::BC1_RGBA_SRGB:
+        case Format::BC1_RGBA_UNORM:
+        case Format::BC4_R_UNORM:
+            return { 4, 4, 8 };
+        case Format::BC3_SRGB:
+        case Format::BC3_UNORM:
+        case Format::BC5_RG_UNORM:
+        case Format::BC7_SRGB:
+        case Format::BC7_UNORM:
+        case Format::BC6H_UF:
+            return { 4, 4, 16 };
+
+        default:
+            return { 1, 1, 4 };
+        }
+    }
+
+    static inline uint32_t DivRoundUp(uint32_t value, uint32_t divisor)
+    {
+        return (value + divisor - 1) / divisor;
+    }
+
+    static inline size_t RowPitch(uint32_t width, const BlockFormatInfo& info)
+    {
+        return (size_t)DivRoundUp(width, info.blockWidth) * info.bytesPerBlock;
+    }
+
+    static inline size_t ImageSize(uint32_t width, uint32_t height, const BlockFormatInfo& info)
+    {
+        return RowPitch(width, info) * DivRoundUp(height, info.blockHeight);
+    }
+
     static uint16_t FloatToHalf(float f)
     {
         uint32_t bits;
@@ -551,6 +618,11 @@ namespace HBL2
 
 		return true;
 	}
+
+    size_t TextureUtilities::GetTextureByteSize(TextureSettings& settings)
+    {
+        return ImageSize(settings.Width, settings.Height, GetBlockFormatInfo(settings.PixelFormat));
+    }
 
 	void TextureUtilities::CreateAssetMetadataFile(Handle<Asset> handle)
 	{

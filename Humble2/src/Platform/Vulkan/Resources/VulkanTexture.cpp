@@ -131,7 +131,7 @@ namespace HBL2
 
 		VkImageUsageFlags usage = VkUtils::TextureUsageFlagToVkImageUsageFlags(desc.usage);
 
-		// Allocate Image
+		// Allocate Image.
 		VkImageCreateInfo imageCreateInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -167,7 +167,7 @@ namespace HBL2
 
 			uint32_t whiteTexture = 0xffffffff;
 
-			// Transfer initiaData to staging buffer
+			// Transfer initiaData to staging buffer.
 			void* mappedData;
 			vmaMapMemory(renderer->GetAllocator(), stagingBufferAllocation, &mappedData);
 			memcpy(mappedData, &whiteTexture, (size_t)imageSize);
@@ -187,7 +187,7 @@ namespace HBL2
 			VkDeviceSize faceSize = (VkDeviceSize)ImageSize(Extent.width, Extent.height, m_BlockInfo);
 			VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : LayerCount);
 
-			// Transfer initiaData to staging buffer
+			// Transfer initiaData to staging buffer.
 			void* mappedData;
 			vmaMapMemory(renderer->GetAllocator(), stagingBufferAllocation, &mappedData);
 			memcpy(mappedData, desc.initialData, (size_t)imageSize);
@@ -200,7 +200,7 @@ namespace HBL2
 			vmaDestroyBuffer(renderer->GetAllocator(), stagingBuffer, stagingBufferAllocation);
 		}
 
-		// Allocate ImageView
+		// Allocate ImageView.
 		VkImageViewCreateInfo imageViewCreateInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -222,7 +222,7 @@ namespace HBL2
 
 		if (desc.createSampler)
 		{
-			// Create sampler
+			// Create sampler.
 			VkSamplerCreateInfo samplerInfo =
 			{
 				.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -256,13 +256,37 @@ namespace HBL2
         VkDeviceSize faceSize = (VkDeviceSize)ImageSize(Extent.width, Extent.height, m_BlockInfo);
 		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : LayerCount);
 
-		// Transfer initiaData to staging buffer
+		// Transfer initiaData to staging buffer.
 		void* mappedData;
 		vmaMapMemory(renderer->GetAllocator(), stagingBufferAllocation, &mappedData);
 		memcpy(mappedData, bytes.data(), (size_t)imageSize);
 		vmaUnmapMemory(renderer->GetAllocator(), stagingBufferAllocation);
 
 		CopyBufferToTexture(renderer, stagingBuffer);
+
+		vmaDestroyBuffer(renderer->GetAllocator(), stagingBuffer, stagingBufferAllocation);
+	}
+
+	void VulkanTexture::CopyToHostBuffer(ByteSpan& outBuffer)
+	{
+		VulkanRenderer* renderer = (VulkanRenderer*)Renderer::Instance;
+
+		VkBuffer stagingBuffer = VK_NULL_HANDLE;
+		VmaAllocation stagingBufferAllocation = VK_NULL_HANDLE;
+
+		CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation);
+
+		VkDeviceSize faceSize = (VkDeviceSize)ImageSize(Extent.width, Extent.height, m_BlockInfo);
+		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : LayerCount);
+		
+		CopyTextureToBuffer(renderer, stagingBuffer);
+
+		// Copy data from staging buffer.
+		void* sourceData = nullptr;
+		vmaInvalidateAllocation(renderer->GetAllocator(), stagingBufferAllocation, 0, VK_WHOLE_SIZE);
+		vmaMapMemory(renderer->GetAllocator(), stagingBufferAllocation, &sourceData);
+		memcpy(outBuffer.data(), sourceData, (size_t)imageSize);
+		vmaUnmapMemory(renderer->GetAllocator(), stagingBufferAllocation);
 
 		vmaDestroyBuffer(renderer->GetAllocator(), stagingBuffer, stagingBufferAllocation);
 	}
@@ -407,6 +431,80 @@ namespace HBL2
 			};
 
 			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrierToReadable);
+		});
+	}
+
+	void VulkanTexture::CopyTextureToBuffer(VulkanRenderer* renderer, VkBuffer stagingBuffer)
+	{
+		// Copy the contents of Image into outBuffer (GPU -> buffer)
+		renderer->ImmediateSubmit([=, this](VkCommandBuffer cmd)
+		{
+			uint32_t faceCount = (ImageType == TextureType::CUBE ? 6 : LayerCount);
+
+			VkImageSubresourceRange range =
+			{
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = faceCount,
+			};
+
+			// From SHADER_READ_ONLY to TRANSFER_SRC, so it keep contents.
+			VkImageMemoryBarrier toTransferSrc =
+			{
+				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask = VK_ACCESS_SHADER_READ_BIT,
+				.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+				.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.image = Image,
+				.subresourceRange = range,
+			};
+
+			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toTransferSrc);
+
+			VkDeviceSize faceSize = (VkDeviceSize)ImageSize(Extent.width, Extent.height, m_BlockInfo);
+			StaticArray<VkBufferImageCopy, 6> copyRegions{}; // NOTE: overflows if LayerCount > 6
+
+			for (uint32_t face = 0; face < faceCount; ++face)
+			{
+				copyRegions[face] =
+				{
+					.bufferOffset = faceSize * face,
+					.bufferRowLength = 0,
+					.bufferImageHeight = 0,
+					.imageSubresource =
+					{
+						.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+						.mipLevel = 0,
+						.baseArrayLayer = face,
+						.layerCount = 1,
+					},
+					.imageOffset = { 0, 0, 0 },
+					.imageExtent = Extent,
+				};
+			}
+
+			vkCmdCopyImageToBuffer(cmd, Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, stagingBuffer, faceCount, copyRegions.data());
+
+			// From TRANSFER_SRC to SHADER_READ_ONLY, to restore.
+			VkImageMemoryBarrier toShaderRead =
+			{
+				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+				.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+				.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.image = Image,
+				.subresourceRange = range,
+			};
+
+			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toShaderRead);
 		});
 	}
 }

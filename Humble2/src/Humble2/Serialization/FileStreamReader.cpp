@@ -77,4 +77,17 @@ namespace HBL2
 
         return 0;
     }
+
+    void FileStreamReader::ReadBytes(ByteSpan& bytes, uint32_t size)
+    {
+        uint64_t bufferSize = size;
+        if (size == 0)
+        {
+            ReadRaw(bufferSize);
+        }
+
+        bytes.set_data(std::malloc(bufferSize), bufferSize);
+
+        ReadData((char*)bytes.data(), bytes.size());
+    }
 }

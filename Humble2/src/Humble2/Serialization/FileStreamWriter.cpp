@@ -34,6 +34,16 @@ namespace HBL2
         return true;
     }
 
+    void FileStreamWriter::WriteBytes(ByteSpan& bytes, bool writeSize)
+    {
+        if (writeSize)
+        {
+            WriteRaw(bytes.size());
+        }
+
+        WriteData((char*)bytes.data(), bytes.size());
+    }
+
     void FileStreamWriter::WriteZero(uint64_t size)
     {
         char zero = 0;

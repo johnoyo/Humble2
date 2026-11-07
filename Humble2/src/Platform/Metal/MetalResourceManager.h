@@ -33,6 +33,7 @@ namespace HBL2
         virtual void ReimportTexture(Handle<Texture> handle, const TextureDescriptor&& desc) override;
         virtual void DeleteTexture(Handle<Texture> handle) override;
         virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) override;
+        virtual void CopyTextureToHostBuffer(Handle<Texture> handle, ByteSpan& outBuffer) override;
         virtual void ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc) override;
         virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout) override;
         virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) override;

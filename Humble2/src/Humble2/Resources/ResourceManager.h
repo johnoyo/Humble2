@@ -15,6 +15,8 @@
 #include "Script/Script.h"
 #include "Prefab/Prefab.h"
 
+#include "Utilities/Collections/ByteSpan.h"
+
 #include <cstring>
 #include <stdint.h>
 
@@ -126,6 +128,7 @@ namespace HBL2
 		virtual void ReimportTexture(Handle<Texture> handle, const TextureDescriptor&& desc) = 0;
 		virtual void DeleteTexture(Handle<Texture> handle) = 0;
 		virtual void UpdateTexture(Handle<Texture> handle, const Span<const std::byte>& bytes) = 0;
+		virtual void CopyTextureToHostBuffer(Handle<Texture> handle, ByteSpan& outBuffer) = 0;
 		virtual void ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc) = 0;
 		virtual void TransitionTextureLayout(CommandBuffer* commandBuffer, Handle<Texture> handle, TextureLayout currentLayout, TextureLayout newLayout) = 0;
 		virtual glm::vec3 GetTextureDimensions(Handle<Texture> handle) = 0;

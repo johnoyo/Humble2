@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Utilities/Collections/ByteSpan.h"
 #include "Utilities/Collections/FixedHashMap.h"
 
 #include <filesystem>
@@ -21,6 +22,8 @@ namespace HBL2
 		bool ReadData(char* destination, size_t size);
 		size_t GetStreamLength();
 		size_t ReadAsString(std::string& outString);
+
+		void ReadBytes(ByteSpan& bytes, uint32_t size = 0);
 
 		template<typename T>
 		void ReadRaw(T& type)

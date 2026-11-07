@@ -19,6 +19,7 @@ namespace HBL2
 
 		void Reimport(const TextureDescriptor&& desc, bool destroyOld);
 		void Update(const Span<const std::byte>& bytes);
+		void CopyToHostBuffer(ByteSpan& outBuffer);
 		void ChangeTextureView(const TextureViewDescriptor&& desc);
 		void TransitionLayout(VulkanCommandBuffer* commandBuffer, TextureLayout currentLayout, TextureLayout newLayout);
 		void Destroy();
@@ -38,6 +39,7 @@ namespace HBL2
 	private:
 		void CreateStagingBuffer(VulkanRenderer* renderer, VkBuffer* stagingBuffer, VmaAllocation* stagingBufferAllocation);
 		void CopyBufferToTexture(VulkanRenderer* renderer, VkBuffer stagingBuffer);
+		void CopyTextureToBuffer(VulkanRenderer* renderer, VkBuffer stagingBuffer);
 
 		friend class Pool<VulkanTexture, Texture>; // This is required for a hack to create the swapchain images in the VulkanRenderer
 		VulkanTexture(const VulkanTexture&& other) noexcept;

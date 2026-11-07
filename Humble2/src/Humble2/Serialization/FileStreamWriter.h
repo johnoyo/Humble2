@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Utilities/Collections/ByteSpan.h"
 #include "Utilities/Collections/FixedHashMap.h"
 
 #include <filesystem>
@@ -22,6 +23,7 @@ namespace HBL2
 
 		operator bool() const { return IsStreamGood(); }
 
+		void WriteBytes(ByteSpan& bytes, bool writeSize = true);
 		void WriteZero(uint64_t size);
 
 		template<typename T>

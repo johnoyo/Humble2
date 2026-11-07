@@ -47,6 +47,8 @@ namespace HBL2
 		void* Load(const std::string& path, TextureSettings& settings);
 		bool Save(const std::filesystem::path& path, const Span<const std::byte>& bytes, bool flip = false);
 
+		size_t GetTextureByteSize(TextureSettings& settings);
+
 		void CreateAssetMetadataFile(Handle<Asset> handle);
 		void SerializeAssetMetadataFile(Handle<Asset> handle, const TextureSettings& settings);
 		TextureSettings DeserializeAssetMetadataFile(Handle<Asset> handle);

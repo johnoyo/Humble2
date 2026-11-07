@@ -86,6 +86,14 @@ namespace HBL2
 			texture->Update(bytes);
 		}
 	}
+	void VulkanResourceManager::CopyTextureToHostBuffer(Handle<Texture> handle, ByteSpan& outBuffer)
+	{
+		VulkanTexture* texture = GetTexture(handle);
+		if (texture != nullptr)
+		{
+			texture->CopyToHostBuffer(outBuffer);
+		}
+	}
 	void VulkanResourceManager::ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc)
 	{
 		VulkanTexture* texture = GetTexture(handle);

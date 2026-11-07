@@ -76,6 +76,10 @@ namespace HBL2
             texture->Update(bytes);
         }
     }
+    void MetalResourceManager::CopyTextureToHostBuffer(Handle<Texture> handle, ByteSpan& outBuffer)
+    {
+
+    }
     void MetalResourceManager::ChangeTextureView(Handle<Texture> handle, const TextureViewDescriptor&& desc)
     {
         MetalTexture* texture = GetTexture(handle);

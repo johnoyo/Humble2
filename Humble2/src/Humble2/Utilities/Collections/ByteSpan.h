@@ -15,6 +15,12 @@ namespace HBL2
         ByteSpan(const T& value) noexcept
             : m_Data(reinterpret_cast<std::byte*>(std::addressof(value))), m_Size(sizeof(T)) {}
 
+        void set_data(void* bytes, size_t byte_size)
+        {
+            m_Data = static_cast<std::byte*>(bytes);
+            m_Size = byte_size;
+        }
+
         const std::byte* data() const { return m_Data; }
         const size_t size() const { return m_Size; }
 

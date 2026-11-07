@@ -187,7 +187,28 @@ namespace HBL2
 
     Handle<Texture> RuntimeAssetManager::ImportTexture(Asset* asset, FileStreamReader& stream)
     {
-        return Handle<Texture>();
+        int width, height;
+        uint64_t format;
+
+        stream.ReadRaw(width);
+        stream.ReadRaw(height);
+        stream.ReadRaw(format);
+
+        ByteSpan textureData;
+        stream.ReadBytes(textureData);
+
+        // Create the texture.
+        auto texture = ResourceManager::Instance->CreateTexture({
+            .dimensions = { width, height, 1 },
+            .format = (Format)format,
+            .internalFormat = (Format)format,
+            .usage = { TextureUsage::SAMPLED, TextureUsage::COPY_DST },
+            .aspect = TextureAspect::COLOR,
+            .sampler = { .filter = TextureFilter::LINEAR },
+            .initialData = textureData.data(),
+        });
+
+        return texture;
     }
 
     Handle<Shader> RuntimeAssetManager::ImportShader(Asset* asset, FileStreamReader& stream)

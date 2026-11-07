@@ -37,9 +37,6 @@ namespace HBL2
         /**
          * @brief Allocate @p size bytes with @p alignment from this arena.
          *
-         * Fast path: allocate from current chunk (no locks). When current chunk
-         * cannot satisfy the request, the arena requests a new chunk from MainArena reservation.
-         *
          * @param size Number of bytes.
          * @param alignment Required alignment.
          * @return Pointer to allocated memory.
@@ -200,8 +197,6 @@ namespace HBL2
         inline size_t HighWater() const { return m_HighWater.load(); }
 
     private:
-        bool AcquireChunk(size_t minCapacity);
-
         void UpdateStats(size_t delta);
 
         void RecalcStats();

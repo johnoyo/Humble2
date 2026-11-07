@@ -1,6 +1,7 @@
 #include "AssetPack.h"
 
 #include "Asset/EditorAssetManager.h"
+#include "Utilities/Collections/ByteSpan.h"
 
 namespace HBL2
 {
@@ -49,7 +50,34 @@ namespace HBL2
 
 	bool AssetPack::SerializeTexture(Asset* asset, FileStreamWriter& stream)
 	{
-		return false;
+		// Retireve texture handle.
+		Handle<Texture> handle = Handle<Texture>::UnPack(asset->Indentifier);
+
+		// Load the texture settings.
+		TextureSettings textureSettings = TextureUtilities::Get().DeserializeAssetMetadataFile(asset);
+
+		// Load texture data to buffer.
+		size_t textureByteSize = TextureUtilities::Get().GetTextureByteSize(textureSettings);
+		void* textureBytes = Allocator::FrameArenaMT.Alloc(textureByteSize, alignof(std::byte));
+
+		ByteSpan textureData(textureBytes, textureByteSize);
+		ResourceManager::Instance->CopyTextureToHostBuffer(handle, textureData);
+
+		// Serialize to stream.
+		uint64_t startPosition = stream.GetStreamPosition();
+
+		stream.WriteRaw(textureSettings.Width);
+		stream.WriteRaw(textureSettings.Height);
+		stream.WriteRaw((uint64_t)textureSettings.PixelFormat);
+		stream.WriteBytes(textureData);
+
+		uint64_t writtenSize = stream.GetStreamPosition() - startPosition;
+
+		// Store offsets in binary blob.
+		Assets[asset->UUID].PackedOffset = startPosition;
+		Assets[asset->UUID].PackedSize = writtenSize;
+
+		return true;
 	}
 
 	bool AssetPack::SerializeShader(Asset* asset, FileStreamWriter& stream)
