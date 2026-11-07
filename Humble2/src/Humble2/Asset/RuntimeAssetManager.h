@@ -32,9 +32,18 @@ namespace HBL2
 		Handle<Material> ImportMaterial(Asset* asset, FileStreamReader& stream);
 		Handle<Mesh> ImportMesh(Asset* asset, FileStreamReader& stream);
 		Handle<Scene> ImportScene(Asset* asset, FileStreamReader& stream);
-		Handle<Script> ImportScript(Asset* asset, FileStreamReader& stream);
 		Handle<Sound> ImportSound(Asset* asset, FileStreamReader& stream);
 		Handle<Prefab> ImportPrefab(Asset* asset, FileStreamReader& stream);
+		Handle<Script> ImportScript(Asset* asset, FileStreamReader& stream);
+
+		void UnloadTexture(Asset* asset);
+		void UnloadShader(Asset* asset);
+		void UnloadMesh(Asset* asset);
+		void UnloadMaterial(Asset* asset);
+		void UnloadScene(Asset* asset);
+		void UnloadSound(Asset* asset);
+		void UnloadPrefab(Asset* asset);
+		void UnloadScript(Asset* asset);
 
 	private:
 		AssetPack m_AssetPack;

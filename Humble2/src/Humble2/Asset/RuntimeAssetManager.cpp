@@ -161,16 +161,16 @@ namespace HBL2
             asset->Indentifier = ImportScene(asset, stream).Pack();
             asset->Loaded = (asset->Indentifier != 0);
             return asset->Indentifier;
-        case AssetType::Script:
-            asset->Indentifier = ImportScript(asset, stream).Pack();
-            asset->Loaded = (asset->Indentifier != 0);
-            return asset->Indentifier;
         case AssetType::Sound:
             asset->Indentifier = ImportSound(asset, stream).Pack();
             asset->Loaded = (asset->Indentifier != 0);
             return asset->Indentifier;
         case AssetType::Prefab:
             asset->Indentifier = ImportPrefab(asset, stream).Pack();
+            asset->Loaded = (asset->Indentifier != 0);
+            return asset->Indentifier;
+        case AssetType::Script:
+            asset->Indentifier = ImportScript(asset, stream).Pack();
             asset->Loaded = (asset->Indentifier != 0);
             return asset->Indentifier;
         case AssetType::None:
@@ -182,8 +182,45 @@ namespace HBL2
 
     void RuntimeAssetManager::UnloadAsset(Handle<Asset> handle)
     {
+        Asset* asset = GetAssetMetadata(handle);
 
+        if (asset == nullptr)
+        {
+            return;
+        }
+
+        switch (asset->Type)
+        {
+        case AssetType::Texture:
+            UnloadTexture(asset);
+            break;
+        case AssetType::Shader:
+            UnloadShader(asset);
+            break;
+        case AssetType::Mesh:
+            UnloadMesh(asset);
+            break;
+        case AssetType::Material:
+            UnloadMaterial(asset);
+            break;
+        case AssetType::Scene:
+            UnloadScene(asset);
+            break;
+        case AssetType::Sound:
+            UnloadSound(asset);
+            break;
+        case AssetType::Prefab:
+            UnloadPrefab(asset);
+            break;
+        case AssetType::Script:
+            UnloadScript(asset);
+            break;
+        case AssetType::None:
+            break;
+        }
     }
+
+    /// Import methods
 
     Handle<Texture> RuntimeAssetManager::ImportTexture(Asset* asset, FileStreamReader& stream)
     {
@@ -231,11 +268,6 @@ namespace HBL2
         return Handle<Scene>();
     }
 
-    Handle<Script> RuntimeAssetManager::ImportScript(Asset* asset, FileStreamReader& stream)
-    {
-        return Handle<Script>();
-    }
-
     Handle<Sound> RuntimeAssetManager::ImportSound(Asset* asset, FileStreamReader& stream)
     {
         return Handle<Sound>();
@@ -244,5 +276,69 @@ namespace HBL2
     Handle<Prefab> RuntimeAssetManager::ImportPrefab(Asset* asset, FileStreamReader& stream)
     {
         return Handle<Prefab>();
+    }
+
+    Handle<Script> RuntimeAssetManager::ImportScript(Asset* asset, FileStreamReader& stream)
+    {
+        return Handle<Script>();
+    }
+
+    /// Unload methods
+
+    void RuntimeAssetManager::UnloadTexture(Asset* asset)
+    {
+        Handle<Texture> textureAssetHandle = Handle<Texture>::UnPack(asset->Indentifier);
+
+        if (!textureAssetHandle.IsValid())
+        {
+            HBL2_CORE_WARN("Asset \"{0}\" has an invalid handle, skipping unload operation.", asset->DebugName);
+            return;
+        }
+
+        if (!asset->Loaded)
+        {
+            HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+            return;
+        }
+
+        ResourceManager::Instance->DeleteTexture(textureAssetHandle);
+
+        asset->Loaded = false;
+        asset->Indentifier = 0;
+    }
+
+    void RuntimeAssetManager::UnloadShader(Asset * asset)
+    {
+
+    }
+
+    void RuntimeAssetManager::UnloadMesh(Asset * asset)
+    {
+
+    }
+
+    void RuntimeAssetManager::UnloadMaterial(Asset * asset)
+    {
+
+    }
+
+    void RuntimeAssetManager::UnloadScene(Asset * asset)
+    {
+
+    }
+
+    void RuntimeAssetManager::UnloadSound(Asset * asset)
+    {
+
+    }
+
+    void RuntimeAssetManager::UnloadPrefab(Asset * asset)
+    {
+
+    }
+
+    void RuntimeAssetManager::UnloadScript(Asset* asset)
+    {
+
     }
 }
