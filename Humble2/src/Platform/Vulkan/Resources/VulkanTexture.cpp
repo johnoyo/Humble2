@@ -131,6 +131,11 @@ namespace HBL2
 
 		VkImageUsageFlags usage = VkUtils::TextureUsageFlagToVkImageUsageFlags(desc.usage);
 
+		if (Context::Mode == Mode::Editor)
+		{
+			usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		}
+
 		// Allocate Image.
 		VkImageCreateInfo imageCreateInfo =
 		{
@@ -274,7 +279,7 @@ namespace HBL2
 		VkBuffer stagingBuffer = VK_NULL_HANDLE;
 		VmaAllocation stagingBufferAllocation = VK_NULL_HANDLE;
 
-		CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation);
+		CreateStagingBuffer(renderer, &stagingBuffer, &stagingBufferAllocation, true);
 
 		VkDeviceSize faceSize = (VkDeviceSize)ImageSize(Extent.width, Extent.height, m_BlockInfo);
 		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : LayerCount);
@@ -343,17 +348,18 @@ namespace HBL2
 		vmaDestroyImage(renderer->GetAllocator(), Image, Allocation);
 	}
 
-	void VulkanTexture::CreateStagingBuffer(VulkanRenderer* renderer, VkBuffer* stagingBuffer, VmaAllocation* stagingBufferAllocation)
+	void VulkanTexture::CreateStagingBuffer(VulkanRenderer* renderer, VkBuffer* stagingBuffer, VmaAllocation* stagingBufferAllocation, bool readback)
 	{
 		// Allocate staging buffer
-        VkDeviceSize faceSize = (VkDeviceSize)ImageSize(Extent.width, Extent.height, m_BlockInfo);
+		VkDeviceSize faceSize = (VkDeviceSize)ImageSize(Extent.width, Extent.height, m_BlockInfo);
 		VkDeviceSize imageSize = faceSize * (ImageType == TextureType::CUBE ? 6 : LayerCount);
+		VkBufferUsageFlags usage = readback ? VK_BUFFER_USAGE_TRANSFER_DST_BIT : VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
 		VkBufferCreateInfo stagingBufferCreateInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 			.size = imageSize,
-			.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			.usage = usage,
 			.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 			.queueFamilyIndexCount = 0,
 			.pQueueFamilyIndices = nullptr,
@@ -361,7 +367,7 @@ namespace HBL2
 
 		VmaAllocationCreateInfo vmaStagingAllocCreateInfo =
 		{
-			.usage = VMA_MEMORY_USAGE_CPU_ONLY,
+			.usage = readback ? VMA_MEMORY_USAGE_GPU_TO_CPU : VMA_MEMORY_USAGE_CPU_ONLY,
 		};
 
 		VK_VALIDATE(vmaCreateBuffer(renderer->GetAllocator(), &stagingBufferCreateInfo, &vmaStagingAllocCreateInfo, stagingBuffer, stagingBufferAllocation, nullptr), "vmaCreateBuffer");

@@ -758,6 +758,12 @@ namespace HBL2
 
         TextureSettings settings = {};
 
+        int channels;
+        if (!stbi_info(HBL2::Project::GetAssetFileSystemPath(asset->FilePath).string().c_str(), &settings.Width, &settings.Height, &channels))
+        {
+            HBL2_CORE_ERROR("Could not retireve texture dimentions for texture: {}", asset->FilePath.string());
+        }
+
         if (!std::filesystem::exists(filePath))
         {
             return settings;

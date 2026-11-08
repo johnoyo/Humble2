@@ -37,7 +37,7 @@ namespace HBL2
 		VkImageAspectFlags Aspect = 0;
 
 	private:
-		void CreateStagingBuffer(VulkanRenderer* renderer, VkBuffer* stagingBuffer, VmaAllocation* stagingBufferAllocation);
+		void CreateStagingBuffer(VulkanRenderer* renderer, VkBuffer* stagingBuffer, VmaAllocation* stagingBufferAllocation, bool readback = false);
 		void CopyBufferToTexture(VulkanRenderer* renderer, VkBuffer stagingBuffer);
 		void CopyTextureToBuffer(VulkanRenderer* renderer, VkBuffer stagingBuffer);
 

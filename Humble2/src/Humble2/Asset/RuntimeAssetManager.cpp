@@ -298,6 +298,7 @@ namespace HBL2
         {
             uint32_t bindGroupLayoutDescriptorSize = 0;
             stream.ReadRaw<uint32_t>(bindGroupLayoutDescriptorSize);
+            shaderAssetPackFormat.Data.BindGroupLayoutDescriptors.resize(bindGroupLayoutDescriptorSize);
             for (uint32_t i = 0; i < bindGroupLayoutDescriptorSize; i++)
             {
                 auto& textureBindings = shaderAssetPackFormat.Data.BindGroupLayoutDescriptors[i].textureBindings;
@@ -320,14 +321,14 @@ namespace HBL2
                 auto& textureBindings = bindGroupLayoutDescriptor.textureBindings;
                 auto& bufferBindings = bindGroupLayoutDescriptor.bufferBindings;
 
-                // Create the shader bind group layout resource.
-                Handle<BindGroupLayout> bindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
-                    .textureBindings = { (const BindGroupLayoutDescriptor::TextureBinding*)textureBindings.data(), textureBindings.size() },
-                    .bufferBindings = { (const BindGroupLayoutDescriptor::BufferBinding*)bufferBindings.data(), bufferBindings.size() },
-                });
-
-                if (bindGroupLayout.IsValid())
+                if (!textureBindings.empty() || !bufferBindings.empty())
                 {
+                    // Create the shader bind group layout resource.
+                    Handle<BindGroupLayout> bindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
+                        .textureBindings = { (const BindGroupLayoutDescriptor::TextureBinding*)textureBindings.data(), textureBindings.size() },
+                        .bufferBindings = { (const BindGroupLayoutDescriptor::BufferBinding*)bufferBindings.data(), bufferBindings.size() },
+                    });
+
                     bindGroupLayouts.push_back(bindGroupLayout);
                 }
                 else

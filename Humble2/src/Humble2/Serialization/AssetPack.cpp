@@ -62,7 +62,7 @@ namespace HBL2
 
 		// Load texture data to buffer.
 		size_t textureByteSize = TextureUtilities::Get().GetTextureByteSize(textureSettings);
-		void* textureBytes = Allocator::FrameArenaMT.Alloc(textureByteSize, alignof(std::byte));
+		void* textureBytes = std::malloc(textureByteSize);
 
 		ByteSpan textureData(textureBytes, textureByteSize);
 		ResourceManager::Instance->CopyTextureToHostBuffer(handle, textureData);
@@ -80,6 +80,8 @@ namespace HBL2
 		// Store offsets in binary blob.
 		Assets[asset->UUID].PackedOffset = startPosition;
 		Assets[asset->UUID].PackedSize = writtenSize;
+
+		std::free(textureBytes);
 
 		return true;
 	}
@@ -152,12 +154,13 @@ namespace HBL2
 							variant.colorOutput = blendStateProp["ColorOutputEnabled"].as<bool>();
 							variant.blendEnabled = blendStateProp["Enabled"].as<bool>();
 						
-							variant.colorOp = (packed_size)(BlendOperation)blendStateProp["ColorOp"].as<int>();
-							variant.alphaOp = (packed_size)(BlendOperation)blendStateProp["AlphaOp"].as<int>();
-							variant.srcColorFactor = (packed_size)(BlendFactor)blendStateProp["SrcColorFactor"].as<int>();
-							variant.dstColorFactor = (packed_size)(BlendFactor)blendStateProp["DstColorFactor"].as<int>();
-							variant.srcAlphaFactor = (packed_size)(BlendFactor)blendStateProp["SrcAlphaFactor"].as<int>();
-							variant.dstAlphaFactor = (packed_size)(BlendFactor)blendStateProp["DstAlphaFactor"].as<int>();
+							// TODO: Remove if statements in the future.
+							if (blendStateProp["ColorOp"].IsDefined())			variant.colorOp = (packed_size)(BlendOperation)blendStateProp["ColorOp"].as<int>();
+							if (blendStateProp["AlphaOp"].IsDefined())			variant.alphaOp = (packed_size)(BlendOperation)blendStateProp["AlphaOp"].as<int>();
+							if (blendStateProp["SrcColorFactor"].IsDefined())	variant.srcColorFactor = (packed_size)(BlendFactor)blendStateProp["SrcColorFactor"].as<int>();
+							if (blendStateProp["DstColorFactor"].IsDefined())	variant.dstColorFactor = (packed_size)(BlendFactor)blendStateProp["DstColorFactor"].as<int>();
+							if (blendStateProp["SrcAlphaFactor"].IsDefined())	variant.srcAlphaFactor = (packed_size)(BlendFactor)blendStateProp["SrcAlphaFactor"].as<int>();
+							if (blendStateProp["DstAlphaFactor"].IsDefined())	variant.dstAlphaFactor = (packed_size)(BlendFactor)blendStateProp["DstAlphaFactor"].as<int>();
 						}
 
 						// Retrieve depth state.
@@ -214,6 +217,7 @@ namespace HBL2
 
 		// Retrieve shader bind group layouts.
 		{
+			shaderAssetPackFormat.Data.BindGroupLayoutDescriptors.resize(4);
 			for (const auto& descriptorSet : outReflectionData.descriptorSets)
 			{
 				if (descriptorSet.set > 3)
