@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Utilities/Collections/Span.h"
 #include "Utilities/Collections/ByteSpan.h"
 #include "Utilities/Collections/FixedHashMap.h"
 
@@ -9,6 +10,9 @@
 
 namespace HBL2
 {
+	template<typename T>
+	struct Serializer;
+
 	class FileStreamWriter
 	{
 	public:
@@ -36,7 +40,28 @@ namespace HBL2
 		template<typename T>
 		void WriteObject(const T& obj)
 		{
-			// T::Serialize(this, obj);
+			Serializer<T>::Serialize(this, obj);
+		}
+
+		template<typename T>
+		void WriteSpan(Span<T> span, bool writeSize = true)
+		{
+			if (writeSize)
+			{
+				WriteRaw<uint32_t>((uint32_t)span.size());
+			}
+
+			for (auto& elem : span)
+			{
+				if constexpr (std::is_trivial<T>())
+				{
+					WriteRaw<T>(elem);
+				}
+				else
+				{
+					WriteObject<T>(elem);
+				}
+			}
 		}
 
 		template<typename Key, typename Value>

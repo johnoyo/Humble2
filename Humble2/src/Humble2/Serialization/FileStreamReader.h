@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Utilities/Collections/Span.h"
 #include "Utilities/Collections/ByteSpan.h"
 #include "Utilities/Collections/FixedHashMap.h"
 
@@ -9,6 +10,9 @@
 
 namespace HBL2
 {
+	template<typename T>
+	struct Serializer;
+
 	class FileStreamReader
 	{
 	public:
@@ -35,7 +39,33 @@ namespace HBL2
 		template<typename T>
 		void ReadObject(T& obj)
 		{
-			T::Deserialize(this, obj);
+			Serializer<T>::Deserialize(this, obj);
+		}
+
+		template<typename T>
+		void ReadSpan(Span<T> span, uint32_t size = 0)
+		{
+			if (size == 0)
+			{
+				ReadRaw<uint32_t>(size);
+			}
+
+			if (span.size() < size)
+			{
+				return;
+			}
+
+			for (uint32_t i = 0; i < size; i++)
+			{
+				if constexpr (std::is_trivial<T>())
+				{
+					ReadRaw<T>(span[i]);
+				}
+				else
+				{
+					ReadRaw<T>(span[i]);
+				}
+			}
 		}
 
 		template<typename Key, typename Value>
