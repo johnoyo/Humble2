@@ -215,10 +215,14 @@ namespace HBL2
 		Time::DeltaTime = time - m_LastTime;
 		Time::FixedDeltaTime += (time - m_LastTime) / Time::FixedTimeStep;
 		m_LastTime = time;
+
+		m_Specification.Context->OnBeginFrame();
 	}
 
 	void Application::EndFrame()
 	{
+		m_Specification.Context->OnEndFrame();
+
 		m_Frames++;
 
 		if (Window::Instance->GetTime() - m_Timer > 1.0)

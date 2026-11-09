@@ -109,6 +109,13 @@ namespace HBL2
 
 		void EditorPanelSystem::OnUpdate(float ts)
 		{
+			if (m_ProjectChanged)
+			{
+				m_EditorScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
+				m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
+
+				m_ProjectChanged = false;
+			}
 		}
 
 		void EditorPanelSystem::OnGuiRender(float ts)
@@ -123,12 +130,6 @@ namespace HBL2
 				if (editorPanel->Enabled)
 				{
 					editorPanel->OnRender(ts);
-				}
-
-				if (m_ProjectChanged)
-				{
-					m_ProjectChanged = false;
-					return;
 				}
 
 				if (editorPanel->GotDisabled())

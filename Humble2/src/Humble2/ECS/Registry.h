@@ -29,6 +29,8 @@ namespace HBL2
             m_MaxEntities = maxEntities;
             m_MaxComponents = maxComponents;
 
+            uint32_t typeResolverMapBytes = FixedHashMap<std::type_index, uint32_t>::RequiredBytes(m_MaxComponents);
+
             uint64_t bytes = ArenaLayout::Create()
                 // Bytes for EntityManager memory.
                 .Add<bool>(maxEntities)                     // m_Used
@@ -39,9 +41,8 @@ namespace HBL2
                 .Add<void*>(m_MaxComponents)                // m_ConcreteStorages
                 .AddRaw(m_MaxComponents * 512_B * 64, 1)    // Reserve space for allocating the storages (in the EnsureArray method).
                 // Bytes for type resolver.
-                .Add<std::type_index>(m_MaxComponents)      // TypeResolver::m_TypeMap
-                .Add<uint32_t>(m_MaxComponents)             // TypeResolver::m_FreeList
-                .Add<uint32_t>(m_MaxComponents)             // TypeResolver::m_Next
+                .AddRaw(typeResolverMapBytes, alignof(std::pair<std::type_index, uint32_t>))    // TypeResolver::m_TypeMap
+                .Add<uint32_t>(m_MaxComponents)                                                 // TypeResolver::m_FreeList
                 .Total();
 
             uint64_t registryArenaBytes = bytes;

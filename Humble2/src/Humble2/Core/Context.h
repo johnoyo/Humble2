@@ -22,6 +22,9 @@ namespace HBL2
 	public:
 		virtual ~Context() {}
 
+		virtual void OnBeginFrame() {}
+		virtual void OnEndFrame() {}
+
 		virtual void OnAttach() {}
 		virtual void OnCreate() {}
 		virtual void OnUpdate(float ts) {}

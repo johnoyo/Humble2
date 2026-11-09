@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Utilities/Collections/Collections.h"
+#include "Utilities/Collections/FixedArray.h"
+#include "Utilities/Collections/FixedHashMap.h"
 
 #include <cstdint>
 #include <typeindex>
@@ -14,8 +15,8 @@ namespace HBL2
 
 		void Initialize(Arena* arena, uint32_t maxComponents)
 		{
-			m_TypeMap = MakeHMap<std::type_index, uint32_t>(*arena, maxComponents);
-			m_FreeList = MakeDArray<uint32_t>(*arena, maxComponents);
+			m_TypeMap = FixedHashMap<std::type_index, uint32_t>(arena, maxComponents);
+			m_FreeList = FixedArray<uint32_t>(arena, maxComponents);
 		}
 
 		void Clear()
@@ -60,7 +61,7 @@ namespace HBL2
 				id = m_Next++;
 			}
 
-			m_TypeMap.emplace(key, id);
+			m_TypeMap[key] = id;
 			return id;
 		}
 
@@ -80,8 +81,8 @@ namespace HBL2
 		uint32_t Count() const { return m_Next.load(); }
 
 	private:
-		HMap<std::type_index, uint32_t> m_TypeMap = MakeEmptyHMap<std::type_index, uint32_t>();
-		DArray<uint32_t> m_FreeList = MakeEmptyDArray<uint32_t>();
+		FixedHashMap<std::type_index, uint32_t> m_TypeMap;
+		FixedArray<uint32_t> m_FreeList;
 		std::atomic<uint32_t> m_Next = 0;
 	};
 }

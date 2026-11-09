@@ -16,6 +16,12 @@ namespace HBL2
 
 	Project* Project::Create(const std::string& name)
 	{
+		if (s_ActiveProject != nullptr)
+		{
+			delete s_ActiveProject;
+			s_ActiveProject = nullptr;
+		}
+
 		s_ActiveProject = new Project;
 
 		s_ActiveProject->m_Spec.StartingScene = std::filesystem::path("Scenes") / std::filesystem::path("EmptyScene.humble");
@@ -62,6 +68,9 @@ namespace HBL2
 
 		ProjectSerializer serializer(s_ActiveProject);
 		serializer.Serialize(path);
+
+		s_ActiveProject->m_ProjectDirectory = path.parent_path();
+		s_ActiveProject->m_ProjectFilePath = path;
 	}
 
 	void Project::OpenStartingScene()
@@ -78,7 +87,7 @@ namespace HBL2
 
 		UUID assetUUID = 0;
 
-		if (!stream.is_open())
+		if (!stream.good())
 		{
 			// If it is a newly created project and the starting scene file is not created, create them.
 			HBL2_CORE_ERROR("Scene metadata file of starting scene not found: {0}", startingSceneMetadataPath);

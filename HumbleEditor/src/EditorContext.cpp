@@ -1,5 +1,6 @@
 #include "EditorContext.h"
 
+#include "Script/BuildEngine.h"
 #include "Utilities/FileDialogs.h"
 
 namespace HBL2
@@ -10,6 +11,66 @@ namespace HBL2
         {
             Mode = HBL2::Mode::Editor;
         }
+
+		void EditorContext::OnEndFrame()
+		{
+			if (m_ProjectChanged)
+			{
+				auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
+				// Ensure current frame is done rendering before resetting.
+				Renderer::Instance->WaitForRenderThreadIdle();
+
+				// Clean up registered systems.
+				for (ISystem* system : m_ActiveScene->GetSystems())
+				{
+					system->OnDestroy();
+				}
+
+				// Free unity build dll.
+				BuildEngine::Instance->UnloadBuild(m_ActiveScene);
+
+				// Unload all registered assets.
+				editorAssetManager->DeregisterAssets();
+
+				switch (m_ProjectChangedContext)
+				{
+				case ProjectChangedContext::New:
+				{
+					const std::string& projectName = std::filesystem::path(m_ProjectFilePath).filename().stem().string();
+
+					// Create and open new project
+					HBL2::Project::Create(projectName)->Save(m_ProjectFilePath);
+
+					editorAssetManager->CreateAsset({
+						.debugName = "Empty Scene",
+						.filePath = HBL2::Project::GetActive()->GetSpecification().StartingScene,
+						.type = AssetType::Scene,
+					});
+
+					HBL2::Project::OpenStartingScene();
+
+					break;
+				}
+				case ProjectChangedContext::Open:
+				{
+					if (HBL2::Project::Load(std::filesystem::path(m_ProjectFilePath)) != nullptr)
+					{
+						HBL2::Project::OpenStartingScene();
+					}
+					else
+					{
+						HBL2_ERROR("Could not open specified project at path \"{0}\".", m_ProjectFilePath);
+					}
+
+					break;
+				}
+				}
+
+				m_ProjectFilePath = "";
+				m_ProjectChanged = false;
+			}
+		}
     
         void EditorContext::OnAttach()
         {

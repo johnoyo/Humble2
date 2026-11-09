@@ -1,5 +1,7 @@
 #include "TopBarPanel.h"
 
+#include "EditorContext.h"
+
 #include "Script/BuildEngine.h"
 #include "Utilities/FileDialogs.h"
 #include "Physics/PhysicsEngine2D.h"
@@ -31,6 +33,8 @@ namespace HBL2::Editor
 
 	void TopBarPanel::OnRender(float ts)
 	{
+		EditorContext* ctx = (EditorContext*)Application::Get().GetSpec().Context;
+
 		Scene* activeScene = m_Owner->m_ActiveScene;
 		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
@@ -40,69 +44,28 @@ namespace HBL2::Editor
 			{
 				if (ImGui::MenuItem("New Project"))
 				{
-					const std::string& filepath = HBL2::FileDialogs::SaveFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), { "Humble Project Files (*.hblproj)", "*.hblproj" });
+					ctx->m_ProjectFilePath = HBL2::FileDialogs::SaveFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), { "Humble Project Files (*.hblproj)", "*.hblproj" });
 
-					if (!filepath.empty())
+					if (!ctx->m_ProjectFilePath.empty())
 					{
-						const std::string& projectName = std::filesystem::path(filepath).filename().stem().string();
-
-						// Clean up registered systems.
-						for (ISystem* system : activeScene->GetSystems())
-						{
-							system->OnDestroy();
-						}
-
-						// Unload all registered assets.
-						editorAssetManager->DeregisterAssets();
-
-						// Free unity build dll.
-						BuildEngine::Instance->UnloadBuild(activeScene);
-
-						// Create and open new project
-						HBL2::Project::Create(projectName)->Save(filepath);
-
-						editorAssetManager->CreateAsset({
-							.debugName = "Empty Scene",
-							.filePath = HBL2::Project::GetActive()->GetSpecification().StartingScene,
-							.type = AssetType::Scene,
-						});
-
-						HBL2::Project::OpenStartingScene();
+						// Set up state for project change which will be done deferred in EditorPanelSystem.
+						ctx->m_ProjectChangedContext = ProjectChangedContext::New;
+						ctx->m_ProjectChanged = true;
 
 						m_Owner->m_ProjectChanged = true;
-						m_Owner->m_EditorScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
-						m_Owner->m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
 					}
 				}
 				else if (ImGui::MenuItem("Open Project"))
 				{
-					const std::string& filepath = HBL2::FileDialogs::OpenFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), { "Humble Project Files (*.hblproj)", "*.hblproj" });
+					ctx->m_ProjectFilePath = HBL2::FileDialogs::OpenFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), { "Humble Project Files (*.hblproj)", "*.hblproj" });
 
-					if (!filepath.empty())
+					if (!ctx->m_ProjectFilePath.empty())
 					{
-						for (ISystem* system : activeScene->GetSystems())
-						{
-							system->OnDestroy();
-						}
+						// Set up state for project change which will be done deferred in EditorPanelSystem.
+						ctx->m_ProjectChangedContext = ProjectChangedContext::Open;
+						ctx->m_ProjectChanged = true;
 
-						// Unload all registered assets.
-						editorAssetManager->DeregisterAssets();
-
-						// Free unity build dll.
-						BuildEngine::Instance->UnloadBuild(activeScene);
-
-						if (HBL2::Project::Load(std::filesystem::path(filepath)) != nullptr)
-						{
-							HBL2::Project::OpenStartingScene();
-
-							m_Owner->m_ProjectChanged = true;
-							m_Owner->m_EditorScenePath = HBL2::Project::GetAssetFileSystemPath(HBL2::Project::GetActive()->GetSpecification().StartingScene);
-							m_Owner->m_CurrentDirectory = HBL2::Project::GetAssetDirectory();
-						}
-						else
-						{
-							HBL2_ERROR("Could not open specified project at path \"{0}\".", filepath);
-						}
+						m_Owner->m_ProjectChanged = true;
 					}
 				}
 				else if (ImGui::MenuItem("Save Scene"))

@@ -15,11 +15,19 @@ namespace HBL2
 {
 	namespace Editor
 	{
+		enum class ProjectChangedContext
+		{
+			New,
+			Open
+		};
+
 		class EditorContext final : public HBL2::Context
 		{
 		public:
             EditorContext();
             
+			virtual void OnEndFrame() override;
+
 			virtual void OnAttach() override;
 			virtual void OnCreate() override;
 			virtual void OnUpdate(float ts) override;
@@ -40,6 +48,12 @@ namespace HBL2
 			Scene* m_ActiveScene = nullptr;
 			Scene* m_EmptyScene = nullptr;
 			float m_AccumulatedTime = 0.0f;
+
+			friend class TopBarPanel;
+
+			bool m_ProjectChanged = false;
+			ProjectChangedContext m_ProjectChangedContext = ProjectChangedContext::New;
+			std::string m_ProjectFilePath;
 		};
 	}
 }
