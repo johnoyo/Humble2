@@ -131,10 +131,9 @@ namespace HBL2
 
 		VkImageUsageFlags usage = VkUtils::TextureUsageFlagToVkImageUsageFlags(desc.usage);
 
-		if (Context::Mode == Mode::Editor)
-		{
+#ifndef DIST
 			usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-		}
+#endif
 
 		// Allocate Image.
 		VkImageCreateInfo imageCreateInfo =

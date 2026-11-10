@@ -53,6 +53,7 @@ namespace HBL2
 		{
 			texture->Reimport(std::forward<const TextureDescriptor>(desc), true);
 
+			// TODO: Add a device wait idle here, sicne we get a crash if we update the bind group while the command buffer is in a pending state.
 			for (const auto& dependencyDesc : m_ReimportDependenciesPool.GetDataPool())
 			{
 				if (dependencyDesc.Resource.ResourceType == ResourceType::Texture && dependencyDesc.Resource.PackedResource == handle.Pack())

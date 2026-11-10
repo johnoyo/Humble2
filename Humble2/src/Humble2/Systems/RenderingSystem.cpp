@@ -599,7 +599,6 @@ namespace HBL2
 						{
 							m_ResourceManager->DeleteTexture(skyLight.CubeMap);
 							m_ResourceManager->DeleteMaterial(skyLight.CubeMapMaterial);
-							m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
 						}
 
 						skyLight.CubeMap = m_ResourceManager->CreateTexture({
@@ -632,7 +631,6 @@ namespace HBL2
 							.initialData = &g_CaptureMatrices,
 						});
 
-						// FIXME: When entering the playmode multiple times in the session we create new descriptor sets in vk, so it exceeds the max in the pool.
 						m_ComputeBindGroup = m_ResourceManager->CreateBindGroup({
 							.debugName = "compute-bind-group",
 							.layout = m_EquirectToSkyboxBindGroupLayout.Get(),
@@ -659,6 +657,9 @@ namespace HBL2
 							.layerCount = 6,
 							.bindSampler = true,
 						});
+
+						// Clean up resources needed for the compute pass.
+						m_ResourceManager->DeleteBindGroup(m_ComputeBindGroup);
 
 						skyLight.Converted = true;
 						skyLight.RecreateCubeMapMaterial = true;

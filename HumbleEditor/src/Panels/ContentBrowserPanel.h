@@ -69,7 +69,7 @@ namespace HBL2::Editor
         uint64_t m_Topology = 3;
         uint64_t m_PolygonMode = 0;
         uint64_t m_CullMode = 2;
-        uint64_t m_FrontFace = 1;
+        uint64_t m_FrontFace = 0;
 		bool m_BlendEnabled = false;
 		bool m_ColorOutput = true;
 		bool m_DepthEnabled = true;
