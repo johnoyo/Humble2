@@ -179,4 +179,51 @@ namespace HBL2
 	void Project::ApplySettings()
 	{
 	}
+
+	void Project::ChangeDeferred()
+	{
+		if (!s_ActiveProject->m_ProjectChanged || s_ActiveProject->m_ProjectChangedContext == ProjectChangedContext::None)
+		{
+			return;
+		}
+
+		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
+
+		switch (s_ActiveProject->m_ProjectChangedContext)
+		{
+		case ProjectChangedContext::New:
+		{
+			const std::string& projectName = std::filesystem::path(s_ActiveProject->m_ProjectFilePath).filename().stem().string();
+
+			// Create and open new project
+			HBL2::Project::Create(projectName)->Save(s_ActiveProject->m_ProjectFilePath);
+
+			editorAssetManager->CreateAsset({
+				.debugName = "Empty Scene",
+				.filePath = s_ActiveProject->GetSpecification().StartingScene,
+				.type = AssetType::Scene,
+			});
+
+			HBL2::Project::OpenStartingScene();
+
+			break;
+		}
+		case ProjectChangedContext::Open:
+		{
+			if (HBL2::Project::Load(std::filesystem::path(s_ActiveProject->m_ProjectFilePath)) != nullptr)
+			{
+				HBL2::Project::OpenStartingScene();
+			}
+			else
+			{
+				HBL2_ERROR("Could not open specified project at path \"{0}\".", s_ActiveProject->m_ProjectFilePath);
+			}
+
+			break;
+		}
+		}
+
+		s_ActiveProject->m_ProjectChanged = false;
+		s_ActiveProject->m_ProjectChangedContext = ProjectChangedContext::None;
+	}
 }

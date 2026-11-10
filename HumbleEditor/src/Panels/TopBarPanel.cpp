@@ -33,8 +33,6 @@ namespace HBL2::Editor
 
 	void TopBarPanel::OnRender(float ts)
 	{
-		EditorContext* ctx = (EditorContext*)Application::Get().GetSpec().Context;
-
 		Scene* activeScene = m_Owner->m_ActiveScene;
 		auto* editorAssetManager = (EditorAssetManager*)AssetManager::Instance;
 
@@ -44,27 +42,21 @@ namespace HBL2::Editor
 			{
 				if (ImGui::MenuItem("New Project"))
 				{
-					ctx->m_ProjectFilePath = HBL2::FileDialogs::SaveFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), { "Humble Project Files (*.hblproj)", "*.hblproj" });
+					const auto& projectFilePath = HBL2::FileDialogs::SaveFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), { "Humble Project Files (*.hblproj)", "*.hblproj" });
 
-					if (!ctx->m_ProjectFilePath.empty())
+					if (!projectFilePath.empty())
 					{
-						// Set up state for project change which will be done deferred in EditorPanelSystem.
-						ctx->m_ProjectChangedContext = ProjectChangedContext::New;
-						ctx->m_ProjectChanged = true;
-
+						Project::Change(ProjectChangedContext::New, projectFilePath);
 						m_Owner->m_ProjectChanged = true;
 					}
 				}
 				else if (ImGui::MenuItem("Open Project"))
 				{
-					ctx->m_ProjectFilePath = HBL2::FileDialogs::OpenFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), { "Humble Project Files (*.hblproj)", "*.hblproj" });
+					const auto& projectFilePath = HBL2::FileDialogs::OpenFile("Humble Project", Project::GetProjectDirectory().parent_path().string(), { "Humble Project Files (*.hblproj)", "*.hblproj" });
 
-					if (!ctx->m_ProjectFilePath.empty())
+					if (!projectFilePath.empty())
 					{
-						// Set up state for project change which will be done deferred in EditorPanelSystem.
-						ctx->m_ProjectChangedContext = ProjectChangedContext::Open;
-						ctx->m_ProjectChanged = true;
-
+						Project::Change(ProjectChangedContext::Open, projectFilePath);
 						m_Owner->m_ProjectChanged = true;
 					}
 				}

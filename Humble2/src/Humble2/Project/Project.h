@@ -17,6 +17,13 @@
 
 namespace HBL2
 {
+	enum class ProjectChangedContext
+	{
+		None,
+		New,
+		Open,
+	};
+
 	struct ProjectSettings
 	{
 		RendererType Renderer = RendererType::FORWARD;
@@ -114,11 +121,29 @@ namespace HBL2
 		static void OpenStartingScene();
 		static void OpenRuntimeStartingScene();
 		static void ApplySettings();
+		static void ChangeDeferred();
+
+		static void Change(ProjectChangedContext ctx, const std::filesystem::path& projectFilePath)
+		{
+			HBL2_CORE_ASSERT(s_ActiveProject, "Active project is null.");
+			s_ActiveProject->m_ProjectChangedContext = ctx;
+			s_ActiveProject->m_ProjectFilePath = projectFilePath;
+			s_ActiveProject->m_ProjectChanged = true;
+		}
+
+		static bool HasChanged()
+		{
+			HBL2_CORE_ASSERT(s_ActiveProject, "Active project is null.");
+			return s_ActiveProject->m_ProjectChanged;
+		}
 
 	private:
 		ProjectSpecification m_Spec;
 		std::filesystem::path m_ProjectDirectory;
 		std::filesystem::path m_ProjectFilePath;
+
+		bool m_ProjectChanged = false;
+		ProjectChangedContext m_ProjectChangedContext = ProjectChangedContext::None;
 
 		static Project* s_ActiveProject;
 	};
