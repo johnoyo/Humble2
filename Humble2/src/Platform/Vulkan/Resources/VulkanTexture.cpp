@@ -132,7 +132,7 @@ namespace HBL2
 		VkImageUsageFlags usage = VkUtils::TextureUsageFlagToVkImageUsageFlags(desc.usage);
 
 #ifndef DIST
-			usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 #endif
 
 		// Allocate Image.
