@@ -115,9 +115,9 @@ namespace HBL2
 	};
 
 	template<>
-	struct Serializer<ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::TextureBinding>
+	struct Serializer<AssetPackFormat::BindGroupLayoutDescriptor::TextureBinding>
 	{
-		static bool Serialize(FileStreamWriter* stream, const ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::TextureBinding& obj)
+		static bool Serialize(FileStreamWriter* stream, const AssetPackFormat::BindGroupLayoutDescriptor::TextureBinding& obj)
 		{
 			stream->WriteRaw(obj.slot);
 			stream->WriteRaw((uint32_t)obj.type);
@@ -126,7 +126,7 @@ namespace HBL2
 			return true;
 		}
 
-		static bool Deserialize(FileStreamReader* stream, ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::TextureBinding& obj)
+		static bool Deserialize(FileStreamReader* stream, AssetPackFormat::BindGroupLayoutDescriptor::TextureBinding& obj)
 		{
 			stream->ReadRaw(obj.slot);
 
@@ -143,9 +143,9 @@ namespace HBL2
 	};
 
 	template<>
-	struct Serializer<ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::BufferBinding>
+	struct Serializer<AssetPackFormat::BindGroupLayoutDescriptor::BufferBinding>
 	{
-		static bool Serialize(FileStreamWriter* stream, const ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::BufferBinding& obj)
+		static bool Serialize(FileStreamWriter* stream, const AssetPackFormat::BindGroupLayoutDescriptor::BufferBinding& obj)
 		{
 			stream->WriteRaw(obj.slot);
 			stream->WriteRaw((uint32_t)obj.type);
@@ -154,7 +154,7 @@ namespace HBL2
 			return true;
 		}
 
-		static bool Deserialize(FileStreamReader* stream, ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::BufferBinding& obj)
+		static bool Deserialize(FileStreamReader* stream, AssetPackFormat::BindGroupLayoutDescriptor::BufferBinding& obj)
 		{
 			stream->ReadRaw(obj.slot);
 

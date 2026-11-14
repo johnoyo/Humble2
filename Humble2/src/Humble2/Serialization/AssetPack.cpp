@@ -7,8 +7,6 @@
 
 namespace HBL2
 {
-	using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
-
     bool AssetPack::Serialize(UUID assetUUID, FileStreamWriter& stream)
     {
         EditorAssetManager* assetManager = (EditorAssetManager*)AssetManager::Instance;
@@ -116,7 +114,7 @@ namespace HBL2
 
 		const std::string& shaderName = asset->FilePath.filename().stem().string();
 
-		ShaderAssetPackFormat shaderAssetPackFormat;
+		AssetPackFormat::Shader shaderAssetPackFormat;
 		uint32_t type = 0;
 
 		// Retrieve shader variants.
@@ -217,10 +215,10 @@ namespace HBL2
 
 		// Retrieve shader bind group layouts.
 		{
-			shaderAssetPackFormat.Data.BindGroupLayoutDescriptors.resize(4);
+			shaderAssetPackFormat.Data.BindGroupLayoutDescriptors.resize(3);
 			for (const auto& descriptorSet : outReflectionData.descriptorSets)
 			{
-				if (descriptorSet.set > 3)
+				if (descriptorSet.set >= 3)
 				{
 					continue;
 				}
@@ -460,7 +458,7 @@ namespace HBL2
 		uint64_t startPosition = stream.GetStreamPosition();
 
 		// Serialize ShaderAssetPackFormat header.
-		stream.WriteRaw<ShaderAssetPackFormat::FileHeader>(shaderAssetPackFormat.Header);
+		stream.WriteRaw<AssetPackFormat::Shader::FileHeader>(shaderAssetPackFormat.Header);
 
 		// Serialize ShaderVariants.
 		stream.WriteSpan<ShaderDescriptor::RenderPipeline::PackedVariant>(shaderAssetPackFormat.Data.ShaderVariants);
@@ -478,15 +476,12 @@ namespace HBL2
 		stream.WriteRaw<uint32_t>((uint32_t)shaderAssetPackFormat.Data.BindGroupLayoutDescriptors.size());
 		for (auto& elem : shaderAssetPackFormat.Data.BindGroupLayoutDescriptors)
 		{
-			stream.WriteSpan<ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::TextureBinding>(elem.textureBindings);
-			stream.WriteSpan<ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::BufferBinding>(elem.bufferBindings);
+			stream.WriteSpan<AssetPackFormat::BindGroupLayoutDescriptor::TextureBinding>(elem.textureBindings);
+			stream.WriteSpan<AssetPackFormat::BindGroupLayoutDescriptor::BufferBinding>(elem.bufferBindings);
 		}
 
 		// Serialize ShaderBindGroupDescriptor.
-		stream.WriteSpan<ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::TextureBinding>(shaderAssetPackFormat.Data.ShaderBindGroupDescriptor.layout.textureBindings);
-		stream.WriteSpan<ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::BufferBinding>(shaderAssetPackFormat.Data.ShaderBindGroupDescriptor.layout.bufferBindings);
-
-		stream.WriteSpan<ShaderAssetPackFormat::Metadata::BindGroupDescriptor::TextureEntry>(shaderAssetPackFormat.Data.ShaderBindGroupDescriptor.textures);
+		stream.WriteSpan<AssetPackFormat::Shader::Metadata::BindGroupDescriptor::TextureEntry>(shaderAssetPackFormat.Data.ShaderBindGroupDescriptor.textures);
 
 		for (auto& buffer : shaderAssetPackFormat.Data.ShaderBindGroupDescriptor.buffers)
 		{
@@ -524,7 +519,376 @@ namespace HBL2
 
 	bool AssetPack::SerializeMaterial(Asset* asset, FileStreamWriter& stream)
 	{
-		return false;
+		const auto& fileSystemPath = Project::GetAssetFileSystemPath(asset->FilePath);
+		const auto& workingDirectory = Project::GetProjectDirectory().parent_path();
+		const std::filesystem::path& materialPath = std::filesystem::exists(fileSystemPath) ? fileSystemPath : workingDirectory / asset->FilePath;
+
+		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
+		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
+				
+		AssetPackFormat::Material materialAssetPackFormat;
+
+		// Retrieve material type from metadata file.
+		{
+			// Open metadata file.
+			std::ifstream metaDataStream(materialPath.string() + ".hblmat");
+
+			if (!metaDataStream.is_open())
+			{
+				HBL2_CORE_ERROR("Material metadata file not found: {0}", Project::GetAssetFileSystemPath(asset->FilePath).string() + ".hblmat");
+				return false;
+			}
+
+			std::stringstream ssMetadata;
+			ssMetadata << metaDataStream.rdbuf();
+
+			YAML::Node dataMetadata = YAML::Load(ssMetadata.str());
+			if (!dataMetadata["Material"].IsDefined())
+			{
+				HBL2_CORE_ERROR("Material not found in metadata file: {0}", ssMetadata.str());
+				metaDataStream.close();
+				return false;
+			}
+
+			auto materialMetadataProperties = dataMetadata["Material"];
+			if (materialMetadataProperties)
+			{
+				materialAssetPackFormat.Data.Type = materialMetadataProperties["Type"].as<uint32_t>();
+			}
+
+			metaDataStream.close();
+		}
+
+		// Open regular material file.
+		std::ifstream dataStream(materialPath);
+
+		if (!dataStream.is_open())
+		{
+			HBL2_CORE_ERROR("Material file not found: {0}", materialPath);
+			return false;
+		}
+
+		std::stringstream ss;
+		ss << dataStream.rdbuf();
+
+		YAML::Node data = YAML::Load(ss.str());
+		if (!data["Material"].IsDefined())
+		{
+			HBL2_CORE_ERROR("Material not found: {0}", ss.str());
+			dataStream.close();
+			return false;
+		}
+
+		auto materialProperties = data["Material"];
+
+		// Retrieve shader UUID and variant.
+		ShaderDescriptor::RenderPipeline::PackedVariant variantDesc = {};
+		{
+			if (materialProperties)
+			{
+				materialAssetPackFormat.Data.ShaderUUID = materialProperties["Shader"].as<UUID>();
+
+				if (materialProperties["RasterState"].IsDefined())
+				{
+					variantDesc.topology = (packed_size)(Topology)materialProperties["RasterState"]["Topology"].as<int>();
+					variantDesc.polygonMode = (packed_size)(PolygonMode)materialProperties["RasterState"]["PolygonMode"].as<int>();
+					variantDesc.cullMode = (packed_size)(CullMode)materialProperties["RasterState"]["CullMode"].as<int>();
+					variantDesc.frontFace = (packed_size)(FrontFace)materialProperties["RasterState"]["FrontFace"].as<int>();
+				}
+
+				if (materialProperties["BlendState"].IsDefined())
+				{
+					variantDesc.colorOutput = materialProperties["BlendState"]["ColorOutputEnabled"].as<bool>();
+					variantDesc.blendEnabled = materialProperties["BlendState"]["Enabled"].as<bool>();
+				}
+
+				if (materialProperties["DepthState"].IsDefined())
+				{
+					variantDesc.depthEnabled = materialProperties["DepthState"]["Enabled"].as<bool>();
+					variantDesc.depthWrite = materialProperties["DepthState"]["WriteEnabled"].as<bool>();
+					variantDesc.stencilEnabled = materialProperties["DepthState"]["StencilEnabled"].as<bool>();
+					variantDesc.depthCompare = (packed_size)(Compare)materialProperties["DepthState"]["DepthTest"].as<int>();
+				}
+
+				if (materialProperties["ShaderConstantsState"].IsDefined())
+				{
+					variantDesc.shaderConstantBool0 = materialProperties["ShaderConstantsState"]["ShaderConstantBool0"].as<bool>();
+					variantDesc.shaderConstantBool1 = materialProperties["ShaderConstantsState"]["ShaderConstantBool1"].as<bool>();
+					variantDesc.shaderConstantBool2 = materialProperties["ShaderConstantsState"]["ShaderConstantBool2"].as<bool>();
+					variantDesc.shaderConstantBool3 = materialProperties["ShaderConstantsState"]["ShaderConstantBool3"].as<bool>();
+					variantDesc.shaderConstantBool4 = materialProperties["ShaderConstantsState"]["ShaderConstantBool4"].as<bool>();
+					variantDesc.shaderConstantBool5 = materialProperties["ShaderConstantsState"]["ShaderConstantBool5"].as<bool>();
+					variantDesc.shaderConstantBool6 = materialProperties["ShaderConstantsState"]["ShaderConstantBool6"].as<bool>();
+					variantDesc.shaderConstantBool7 = materialProperties["ShaderConstantsState"]["ShaderConstantBool7"].as<bool>();
+				}
+			}
+		}
+
+		auto shaderAssetHandle = AssetManager::Instance->GetHandleFromUUID(materialAssetPackFormat.Data.ShaderUUID);
+		Asset* shaderAsset = AssetManager::Instance->GetAssetMetadata(shaderAssetHandle);
+
+		if (shaderAsset == nullptr)
+		{
+			HBL2_CORE_ERROR("Shader with UUID: {0}, of material: {1}, not found!", materialAssetPackFormat.Data.ShaderUUID, materialPath);
+			dataStream.close();
+			return false;
+		}
+
+		auto shaderHandle = AssetManager::Instance->GetAsset<Shader>(shaderAssetHandle);
+
+		const auto& filesystemPath = Project::GetAssetFileSystemPath(shaderAsset->FilePath);
+		const std::filesystem::path& shaderPath = std::filesystem::exists(filesystemPath) ? filesystemPath : workingDirectory / shaderAsset->FilePath;
+
+		// NOTE: This^ is done to handle built in assets that are outside of the project assets folder,
+		//		 meaning that the Project::GetAssetFileSystemPath will return an invalid path for them.
+
+		ShaderReflectionData shaderReflectionData;
+		ShaderUtilities::Get().Reflect(shaderPath.string(), &shaderReflectionData, true);
+
+		// Retrieve material bind group.
+		ScratchArena scratch(Allocator::FrameArenaMT);
+		{
+			for (const auto& descriptorSet : shaderReflectionData.descriptorSets)
+			{
+				if (descriptorSet.set != 2)
+				{
+					continue;
+				}
+
+				// Retrieve bind group layout description.
+				for (const auto& b : descriptorSet.bindings)
+				{
+					if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler ||
+						b.type == ShaderResourceType::StorageTexture || b.type == ShaderResourceType::Sampler)
+					{
+						TextureBindingType textureType;
+
+						switch (b.type)
+						{
+						case ShaderResourceType::SampledTexture:
+							textureType = TextureBindingType::SAMPLED_IMAGE;
+							break;
+						case ShaderResourceType::StorageTexture:
+							textureType = TextureBindingType::STORAGE_IMAGE;
+							break;
+						case ShaderResourceType::Sampler:
+							textureType = TextureBindingType::SAMPLER;
+							break;
+						case ShaderResourceType::CombinedTextureSampler:
+							textureType = TextureBindingType::COMBINED_IMAGE_SAMPLER;
+							break;
+						}
+
+						materialAssetPackFormat.Data.MaterialBindGroupDescriptor.layout.textureBindings.push_back({
+							.slot = b.binding,
+							.visibility = b.stageMask,
+							.type = textureType,
+						});
+					}
+					else if (b.type == ShaderResourceType::UniformBuffer || b.type == ShaderResourceType::StorageBuffer || b.type == ShaderResourceType::StorageBufferReadOnly)
+					{
+						BufferBindingType bufferType;
+
+						switch (b.type)
+						{
+						case ShaderResourceType::UniformBuffer:
+							bufferType = BufferBindingType::UNIFORM;
+							break;
+						case ShaderResourceType::StorageBuffer:
+							bufferType = BufferBindingType::STORAGE;
+							break;
+						case ShaderResourceType::StorageBufferReadOnly:
+							bufferType = BufferBindingType::READ_ONLY_STORAGE;
+							break;
+						}
+
+						materialAssetPackFormat.Data.MaterialBindGroupDescriptor.layout.bufferBindings.push_back({
+							.slot = b.binding,
+							.visibility = b.stageMask,
+							.type = bufferType,
+						});
+					}
+				}
+
+				// Retrieve bind group description.
+				for (const auto& b : descriptorSet.bindings)
+				{
+					if (b.type == ShaderResourceType::UniformBuffer)
+					{
+						FixedArray<uint8_t> uniformBufferBytes = FixedArray<uint8_t>(scratch.GetArena(), b.size);
+						uniformBufferBytes.resize(b.size);
+
+						const auto& bufferProp = materialProperties[b.name];
+
+						if (bufferProp.IsDefined())
+						{
+							for (const auto& m : b.members)
+							{
+								const auto& memberProp = bufferProp[m.name];
+
+								if (!memberProp.IsDefined())
+								{
+									continue;
+								}
+
+								uint8_t* memberPtr = uniformBufferBytes.data() + m.offset;
+
+								switch (m.typeInfo.base)
+								{
+								case MemberBaseType::Float:
+								{
+									if (m.typeInfo.isArray)
+									{
+										const uint32_t stride = m.typeInfo.arrayCount > 0 ? m.size / m.typeInfo.arrayCount : 0;
+
+										for (uint32_t i = 0; i < m.typeInfo.arrayCount; ++i)
+										{
+											if (!memberProp[i].IsDefined())
+											{
+												continue;
+											}
+
+											float* f = reinterpret_cast<float*>(memberPtr + i * stride);
+
+											if (m.typeInfo.cols == 1)
+											{
+												*f = memberProp[i].as<float>();
+											}
+											else if (m.typeInfo.cols == 2)
+											{
+												const glm::vec2& vec2 = memberProp[i].as<glm::vec2>();
+
+												f[0] = vec2.x;
+												f[1] = vec2.y;
+											}
+											else if (m.typeInfo.cols == 3)
+											{
+												const glm::vec3& vec3 = memberProp[i].as<glm::vec3>();
+
+												f[0] = vec3.x;
+												f[1] = vec3.y;
+												f[2] = vec3.z;
+											}
+											else if (m.typeInfo.cols == 4)
+											{
+												const glm::vec4& vec4 = memberProp[i].as<glm::vec4>();
+
+												f[0] = vec4.x;
+												f[1] = vec4.y;
+												f[2] = vec4.z;
+												f[3] = vec4.w;
+											}
+										}
+									}
+									else
+									{
+										float* f = reinterpret_cast<float*>(memberPtr);
+
+										if (m.typeInfo.cols == 1)
+										{
+											*f = memberProp.as<float>();
+										}
+										else if (m.typeInfo.cols == 2)
+										{
+											const glm::vec2& vec2 = memberProp.as<glm::vec2>();
+
+											f[0] = vec2.x;
+											f[1] = vec2.y;
+										}
+										else if (m.typeInfo.cols == 3)
+										{
+											const glm::vec3& vec3 = memberProp.as<glm::vec3>();
+
+											f[0] = vec3.x;
+											f[1] = vec3.y;
+											f[2] = vec3.z;
+										}
+										else if (m.typeInfo.cols == 4)
+										{
+											const glm::vec4& vec4 = memberProp.as<glm::vec4>();
+
+											f[0] = vec4.x;
+											f[1] = vec4.y;
+											f[2] = vec4.z;
+											f[3] = vec4.w;
+										}
+									}
+									break;
+								}
+								}
+							}
+
+							void* bufferData = scratch.Alloc(uniformBufferBytes.size(), alignof(uint8_t));
+							std::memcpy(bufferData, uniformBufferBytes.data(), uniformBufferBytes.size());
+
+							materialAssetPackFormat.Data.MaterialBindGroupDescriptor.buffers.push_back({
+								.buffer = {
+									.debugName = "material-uniform-buffer",
+									.usage = BufferUsage::UNIFORM,
+									.memoryUsage = MemoryUsage::GPU_CPU,
+									.byteSize = (uint32_t)b.size,
+									.initialData = bufferData,
+								}
+							});
+						}
+					}
+					else if (b.type == ShaderResourceType::SampledTexture || b.type == ShaderResourceType::CombinedTextureSampler || b.type == ShaderResourceType::StorageTexture)
+					{
+						const auto& textureProp = materialProperties[b.name];
+
+						if (textureProp.IsDefined())
+						{
+							UUID textureMapUUID = textureProp.as<UUID>();
+
+							materialAssetPackFormat.Data.MaterialBindGroupDescriptor.textures.push_back({
+								.texture = textureMapUUID,
+							});
+						}
+					}
+				}
+			}
+		}
+
+		// Serialize to stream.
+		uint64_t startPosition = stream.GetStreamPosition();
+
+		// Serialize MaterialAssetPackFormat header.
+		stream.WriteRaw<AssetPackFormat::Material::FileHeader>(materialAssetPackFormat.Header);
+
+		// Serialize material type and shader uuid.
+		stream.WriteRaw<uint32_t>(materialAssetPackFormat.Data.Type);
+		stream.WriteRaw<UUID>(materialAssetPackFormat.Data.ShaderUUID);
+
+		// Serialize MaterialBindGroupDescriptor.
+		stream.WriteSpan<AssetPackFormat::BindGroupLayoutDescriptor::TextureBinding>(materialAssetPackFormat.Data.MaterialBindGroupDescriptor.layout.textureBindings);
+		stream.WriteSpan<AssetPackFormat::BindGroupLayoutDescriptor::BufferBinding>(materialAssetPackFormat.Data.MaterialBindGroupDescriptor.layout.bufferBindings);
+
+		stream.WriteSpan<AssetPackFormat::Material::Metadata::BindGroupDescriptor::TextureEntry>(materialAssetPackFormat.Data.MaterialBindGroupDescriptor.textures);
+
+		for (auto& buffer : materialAssetPackFormat.Data.MaterialBindGroupDescriptor.buffers)
+		{
+			stream.WriteRaw<uint32_t>(buffer.byteOffset);
+			stream.WriteRaw<uint32_t>(buffer.range);
+
+			stream.WriteRaw<uint32_t>(buffer.buffer.usage.GetRaw());
+			stream.WriteRaw<uint32_t>((uint32_t)buffer.buffer.memoryUsage);
+			stream.WriteRaw<uint32_t>(buffer.buffer.byteSize);
+
+			ByteSpan bufferBytes(buffer.buffer.initialData, buffer.buffer.byteSize);
+			stream.WriteBytes(bufferBytes);
+		}
+
+		// Serialize material variant hash.
+		stream.WriteRaw<packed_size>(variantDesc.Key());
+
+		uint64_t writtenSize = stream.GetStreamPosition() - startPosition;
+
+		// Store offsets in binary blob.
+		Assets[asset->UUID].PackedOffset = startPosition;
+		Assets[asset->UUID].PackedSize = writtenSize;
+
+		dataStream.close();
+		return true;
 	}
 
 	bool AssetPack::SerializeMesh(Asset* asset, FileStreamWriter& stream)

@@ -12,6 +12,8 @@
 
 namespace HBL2
 {
+	using packed_size = ShaderDescriptor::RenderPipeline::packed_size;
+
 	struct AssetPack
 	{
 		static constexpr uint32_t CurrentVersion = 0;
@@ -47,113 +49,155 @@ namespace HBL2
 		bool SerializeSound(Asset* asset, FileStreamWriter& stream);
 	};
 
-	struct ShaderAssetPackFormat
+	namespace AssetPackFormat
 	{
-		static constexpr uint32_t CurrentVersion = 0;
-
-		struct Metadata
+		struct BindGroupLayoutDescriptor
 		{
-			struct BindGroupLayoutDescriptor
+			struct TextureBinding
 			{
-				struct TextureBinding
-				{
-					uint32_t slot = 0;
-					BitFlags<ShaderStage> visibility = { ShaderStage::VERTEX };
-					TextureBindingType type = TextureBindingType::COMBINED_IMAGE_SAMPLER;
-				};
-				StaticDArray<TextureBinding, 8> textureBindings;
+				uint32_t slot = 0;
+				BitFlags<ShaderStage> visibility = { ShaderStage::VERTEX };
+				TextureBindingType type = TextureBindingType::COMBINED_IMAGE_SAMPLER;
+			};
+			StaticDArray<TextureBinding, 8> textureBindings;
 
-				struct BufferBinding
-				{
-					uint32_t slot = 0;
-					BitFlags<ShaderStage> visibility = { ShaderStage::VERTEX };
-					BufferBindingType type = BufferBindingType::UNIFORM;
-				};
-
-				StaticDArray<BufferBinding, 8> bufferBindings;
+			struct BufferBinding
+			{
+				uint32_t slot = 0;
+				BitFlags<ShaderStage> visibility = { ShaderStage::VERTEX };
+				BufferBindingType type = BufferBindingType::UNIFORM;
 			};
 
-			struct BindGroupDescriptor
+			StaticDArray<BufferBinding, 8> bufferBindings;
+		};
+
+		struct Shader
+		{
+			static constexpr uint32_t CurrentVersion = 0;
+
+			struct Metadata
 			{
-				BindGroupLayoutDescriptor layout;
-
-				struct TextureEntry
+				struct BindGroupDescriptor
 				{
-					UUID texture;
+					struct TextureEntry
+					{
+						UUID texture;
+					};
+
+					StaticDArray<TextureEntry, 8> textures;
+					struct BufferEntry
+					{
+						BufferDescriptor buffer;
+						uint32_t byteOffset = 0;
+						uint32_t range = 0;
+					};
+					StaticDArray<BufferEntry, 8> buffers;
 				};
 
-				StaticDArray<TextureEntry, 8> textures;
-				struct BufferEntry
-				{
-					BufferDescriptor buffer;
-					uint32_t byteOffset = 0;
-					uint32_t range = 0;
-				};
-				StaticDArray<BufferEntry, 8> buffers;
+				StaticDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> ShaderVariants;
+				StaticDArray<ShaderDescriptor::RenderPipeline::VertexBufferBinding, 2> VertexBufferBindings;
+				StaticDArray<BindGroupLayoutDescriptor, 3> BindGroupLayoutDescriptors;
+				BindGroupDescriptor ShaderBindGroupDescriptor;
+				StaticDArray<StaticDArray<ShaderConstant, 8>, 16> SpecializationConstantsPerVariant;
+				ByteSpan VertexShaderCode;
+				ByteSpan FragmentShaderCode;
+				ByteSpan ComputeShaderCode;
 			};
 
-			StaticDArray<ShaderDescriptor::RenderPipeline::PackedVariant, 16> ShaderVariants;
-			StaticDArray<ShaderDescriptor::RenderPipeline::VertexBufferBinding, 2> VertexBufferBindings;
-			StaticDArray<BindGroupLayoutDescriptor, 4> BindGroupLayoutDescriptors;
-			BindGroupDescriptor ShaderBindGroupDescriptor;
-			StaticDArray<StaticDArray<ShaderConstant, 8>, 16> SpecializationConstantsPerVariant;
-			ByteSpan VertexShaderCode;
-			ByteSpan FragmentShaderCode;
-			ByteSpan ComputeShaderCode;
+			struct FileHeader
+			{
+				const char HEADER[5] = { 'H','B','L','S','D' };
+				uint32_t Version = CurrentVersion;
+			};
+
+			FileHeader Header;
+			Metadata Data;
 		};
 
-		struct FileHeader
+		struct Material
 		{
-			const char HEADER[5] = { 'H','B','L','S','D' };
-			uint32_t Version = CurrentVersion;
+			static constexpr uint32_t CurrentVersion = 0;
+
+			struct Metadata
+			{
+				struct BindGroupDescriptor
+				{
+					BindGroupLayoutDescriptor layout;
+
+					struct TextureEntry
+					{
+						UUID texture;
+					};
+
+					StaticDArray<TextureEntry, 8> textures;
+					struct BufferEntry
+					{
+						BufferDescriptor buffer;
+						uint32_t byteOffset = 0;
+						uint32_t range = 0;
+					};
+					StaticDArray<BufferEntry, 8> buffers;
+				};
+
+				uint32_t Type;
+				UUID ShaderUUID;
+				BindGroupDescriptor MaterialBindGroupDescriptor;
+				packed_size MaterialVariantHash;
+			};
+
+			struct FileHeader
+			{
+				const char HEADER[5] = { 'H','B','L','M','T' };
+				uint32_t Version = CurrentVersion;
+			};
+
+			FileHeader Header;
+			Metadata Data;
 		};
 
-		FileHeader Header;
-		Metadata Data;
-	};
-
-	struct MeshAssetPackFormat
-	{
-		static constexpr uint32_t CurrentVersion = 0;
-
-		enum class MeshFlags : uint32_t
+		struct Mesh
 		{
-			HasMaterials = 1,
-			HasAnimation = 2,
-			HasSkeleton = 4,
+			static constexpr uint32_t CurrentVersion = 0;
+
+			enum class MeshFlags : uint32_t
+			{
+				HasMaterials = 1,
+				HasAnimation = 2,
+				HasSkeleton = 4,
+			};
+
+			struct Metadata
+			{
+				uint32_t Flags;
+				// AABB BoundingBox;
+
+				uint64_t NodeArrayOffset;
+				uint64_t NodeArraySize;
+
+				uint64_t SubmeshArrayOffset;
+				uint64_t SubmeshArraySize;
+
+				uint64_t MaterialArrayOffset;
+				uint64_t MaterialArraySize;
+
+				uint64_t VertexBufferOffset;
+				uint64_t VertexBufferSize;
+
+				uint64_t IndexBufferOffset;
+				uint64_t IndexBufferSize;
+
+				uint64_t AnimationDataOffset;
+				uint64_t AnimationDataSize;
+			};
+
+			struct FileHeader
+			{
+				const char HEADER[5] = { 'H','B','L','M','S' };
+				uint32_t Version = CurrentVersion;
+			};
+
+			FileHeader Header;
+			Metadata Data;
 		};
-
-		struct Metadata
-		{
-			uint32_t Flags;
-			// AABB BoundingBox;
-
-			uint64_t NodeArrayOffset;
-			uint64_t NodeArraySize;
-
-			uint64_t SubmeshArrayOffset;
-			uint64_t SubmeshArraySize;
-
-			uint64_t MaterialArrayOffset;
-			uint64_t MaterialArraySize;
-
-			uint64_t VertexBufferOffset;
-			uint64_t VertexBufferSize;
-
-			uint64_t IndexBufferOffset;
-			uint64_t IndexBufferSize;
-
-			uint64_t AnimationDataOffset;
-			uint64_t AnimationDataSize;
-		};
-
-		struct FileHeader
-		{
-			const char HEADER[5] = { 'H','B','L','M','S' };
-			uint32_t Version = CurrentVersion;
-		};
-
-		FileHeader Header;
-		Metadata Data;
-	};
+	}
 }

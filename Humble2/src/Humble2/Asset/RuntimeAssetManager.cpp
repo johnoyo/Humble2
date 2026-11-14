@@ -250,9 +250,9 @@ namespace HBL2
 
     Handle<Shader> RuntimeAssetManager::ImportShader(Asset* asset, FileStreamReader& stream)
     {
-        ShaderAssetPackFormat shaderAssetPackFormat;
+        AssetPackFormat::Shader shaderAssetPackFormat;
 
-        stream.ReadRaw<ShaderAssetPackFormat::FileHeader>(shaderAssetPackFormat.Header);
+        stream.ReadRaw<AssetPackFormat::Shader::FileHeader>(shaderAssetPackFormat.Header);
         bool validHeader = memcmp(shaderAssetPackFormat.Header.HEADER, "HBLSD", 5) == 0;
         HBL2_CORE_ASSERT(validHeader, "Invalid asset pack shader header, aborting shader asset load!");
         if (!validHeader)
@@ -262,7 +262,7 @@ namespace HBL2
 
         if (shaderAssetPackFormat.Header.Version != AssetPack::CurrentVersion)
         {
-            HBL2_CORE_ERROR("AssetPack shader file format version {} is not compatible with current version {}", shaderAssetPackFormat.Header.Version, ShaderAssetPackFormat::CurrentVersion);
+            HBL2_CORE_ERROR("AssetPack shader file format version {} is not compatible with current version {}", shaderAssetPackFormat.Header.Version, AssetPackFormat::Shader::CurrentVersion);
             return Handle<Shader>();
         }
 
@@ -294,7 +294,7 @@ namespace HBL2
         }
 
         // Retrieve shader bind group layouts.
-        StaticDArray<Handle<BindGroupLayout>, 4> bindGroupLayouts;
+        StaticDArray<Handle<BindGroupLayout>, 3> bindGroupLayouts;
         {
             uint32_t bindGroupLayoutDescriptorSize = 0;
             stream.ReadRaw<uint32_t>(bindGroupLayoutDescriptorSize);
@@ -306,14 +306,14 @@ namespace HBL2
                 uint32_t textureBindingCount = 0;
                 stream.ReadRaw<uint32_t>(textureBindingCount);
                 textureBindings.resize(textureBindingCount);
-                stream.ReadSpan<ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::TextureBinding>(textureBindings, textureBindingCount);
+                stream.ReadSpan<AssetPackFormat::BindGroupLayoutDescriptor::TextureBinding>(textureBindings, textureBindingCount);
 
                 auto& bufferBindings = shaderAssetPackFormat.Data.BindGroupLayoutDescriptors[i].bufferBindings;
 
                 uint32_t bufferBindingCount = 0;
                 stream.ReadRaw<uint32_t>(bufferBindingCount);
                 bufferBindings.resize(bufferBindingCount);
-                stream.ReadSpan<ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::BufferBinding>(bufferBindings, bufferBindingCount);
+                stream.ReadSpan<AssetPackFormat::BindGroupLayoutDescriptor::BufferBinding>(bufferBindings, bufferBindingCount);
             }
 
             for (auto& bindGroupLayoutDescriptor : shaderAssetPackFormat.Data.BindGroupLayoutDescriptors)
@@ -341,35 +341,13 @@ namespace HBL2
         // Retrieve shader bind group.
         Handle<BindGroup> shaderBindGroup;
         {
-            // Deserialize shader bind group texture bindings layout description.
-            auto& textureBindings = shaderAssetPackFormat.Data.ShaderBindGroupDescriptor.layout.textureBindings;
-
-            uint32_t textureBindingCount = 0;
-            stream.ReadRaw<uint32_t>(textureBindingCount);
-            textureBindings.resize(textureBindingCount);
-            stream.ReadSpan<ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::TextureBinding>(textureBindings, textureBindingCount);
-
-            // Deserialize shader bind group buffer bindings layout description.
-            auto& bufferBindings = shaderAssetPackFormat.Data.ShaderBindGroupDescriptor.layout.bufferBindings;
-
-            uint32_t bufferBindingCount = 0;
-            stream.ReadRaw<uint32_t>(bufferBindingCount);
-            bufferBindings.resize(bufferBindingCount);
-            stream.ReadSpan<ShaderAssetPackFormat::Metadata::BindGroupLayoutDescriptor::BufferBinding>(bufferBindings, bufferBindingCount);
-
-            // Create the shader bind group layout resource.
-            Handle<BindGroupLayout> shaderBindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
-                .textureBindings = { (const BindGroupLayoutDescriptor::TextureBinding*)textureBindings.data(), textureBindings.size() },
-                .bufferBindings = { (const BindGroupLayoutDescriptor::BufferBinding*)bufferBindings.data(), bufferBindings.size() },
-            });
-
             // Deserialize shader bind group texture entries.
             auto& textureEntries = shaderAssetPackFormat.Data.ShaderBindGroupDescriptor.textures;
 
             uint32_t textureEntryCount = 0;
             stream.ReadRaw<uint32_t>(textureEntryCount);
             textureEntries.resize(textureEntryCount);
-            stream.ReadSpan<ShaderAssetPackFormat::Metadata::BindGroupDescriptor::TextureEntry>(textureEntries, textureEntryCount);
+            stream.ReadSpan<AssetPackFormat::Shader::Metadata::BindGroupDescriptor::TextureEntry>(textureEntries, textureEntryCount);
 
             // Deserialize shader bind group buffer entries.
             auto& bufferEntries = shaderAssetPackFormat.Data.ShaderBindGroupDescriptor.buffers;
@@ -393,7 +371,7 @@ namespace HBL2
                 stream.ReadRaw<uint32_t>(bufferEntries[i].buffer.byteSize);
 
                 ByteSpan bufferBytes(bufferEntries[i].buffer.initialData, bufferEntries[i].buffer.byteSize);
-                stream.ReadBytes(bufferBytes);
+                stream.ReadBytes(bufferBytes, bufferEntries[i].buffer.byteSize);
             }
 
             // Populate actual texture entries that will be used to create the bind group.
@@ -415,13 +393,15 @@ namespace HBL2
                     .initialData = bufferEntry.buffer.initialData,
                 });
 
+                // TODO: Delete bufferEntry.buffer.initialData since it was allocated with malloc?
+
                 finalBufferEntries.push_back({ .buffer = userBuffer });
             }
 
             // Create the shader bind group resource.
             shaderBindGroup = ResourceManager::Instance->CreateBindGroup({
                 .debugName = "shader-bind-group",
-                .layout = shaderBindGroupLayout,
+                .layout = bindGroupLayouts[1],
                 .textures = finalTextureEntries,
                 .buffers = finalBufferEntries,
             });
@@ -479,7 +459,152 @@ namespace HBL2
 
     Handle<Material> RuntimeAssetManager::ImportMaterial(Asset* asset, FileStreamReader& stream)
     {
-        return Handle<Material>();
+        AssetPackFormat::Material materialAssetPackFormat;
+
+        stream.ReadRaw<AssetPackFormat::Material::FileHeader>(materialAssetPackFormat.Header);
+        bool validHeader = memcmp(materialAssetPackFormat.Header.HEADER, "HBLMT", 5) == 0;
+        HBL2_CORE_ASSERT(validHeader, "Invalid asset pack material header, aborting material asset load!");
+        if (!validHeader)
+        {
+            return Handle<Material>();
+        }
+
+        if (materialAssetPackFormat.Header.Version != AssetPack::CurrentVersion)
+        {
+            HBL2_CORE_ERROR("AssetPack material file format version {} is not compatible with current version {}", materialAssetPackFormat.Header.Version, AssetPackFormat::Material::CurrentVersion);
+            return Handle<Material>();
+        }
+
+        // Retrieve material type.
+        uint32_t materialType = 0;
+        {
+            stream.ReadRaw<uint32_t>(materialType);
+        }
+
+        // Retrieve shader handle.
+        Handle<Shader> shaderHandle;
+        {
+            stream.ReadRaw<UUID>(materialAssetPackFormat.Data.ShaderUUID);
+            shaderHandle = AssetManager::Instance->GetAsset<Shader>(materialAssetPackFormat.Data.ShaderUUID);
+        }
+
+        // Retrieve material bind group.
+        Handle<BindGroup> materialBindGroup;
+        {
+            // Deserialize material bind group layout.
+            Handle<BindGroupLayout> bindGroupLayout;
+            {
+                auto& textureBindings = materialAssetPackFormat.Data.MaterialBindGroupDescriptor.layout.textureBindings;
+
+                uint32_t textureBindingCount = 0;
+                stream.ReadRaw<uint32_t>(textureBindingCount);
+                textureBindings.resize(textureBindingCount);
+                stream.ReadSpan<AssetPackFormat::BindGroupLayoutDescriptor::TextureBinding>(textureBindings, textureBindingCount);
+
+                auto& bufferBindings = materialAssetPackFormat.Data.MaterialBindGroupDescriptor.layout.bufferBindings;
+
+                uint32_t bufferBindingCount = 0;
+                stream.ReadRaw<uint32_t>(bufferBindingCount);
+                bufferBindings.resize(bufferBindingCount);
+                stream.ReadSpan<AssetPackFormat::BindGroupLayoutDescriptor::BufferBinding>(bufferBindings, bufferBindingCount);
+
+                // Create the material bind group layout resource.
+                bindGroupLayout = ResourceManager::Instance->CreateBindGroupLayout({
+                    .textureBindings = { (const BindGroupLayoutDescriptor::TextureBinding*)textureBindings.data(), textureBindings.size() },
+                    .bufferBindings = { (const BindGroupLayoutDescriptor::BufferBinding*)bufferBindings.data(), bufferBindings.size() },
+                });
+            }
+
+            // Deserialize material bind group texture entries.
+            auto& textureEntries = materialAssetPackFormat.Data.MaterialBindGroupDescriptor.textures;
+
+            uint32_t textureEntryCount = 0;
+            stream.ReadRaw<uint32_t>(textureEntryCount);
+            textureEntries.resize(textureEntryCount);
+            stream.ReadSpan<AssetPackFormat::Material::Metadata::BindGroupDescriptor::TextureEntry>(textureEntries, textureEntryCount);
+
+            // Deserialize material bind group buffer entries.
+            auto& bufferEntries = materialAssetPackFormat.Data.MaterialBindGroupDescriptor.buffers;
+
+            uint32_t bufferEntryCount = 0;
+            stream.ReadRaw<uint32_t>(bufferEntryCount);
+            bufferEntries.resize(bufferEntryCount);
+            for (uint32_t i = 0; i < bufferEntryCount; i++)
+            {
+                stream.ReadRaw<uint32_t>(bufferEntries[i].byteOffset);
+                stream.ReadRaw<uint32_t>(bufferEntries[i].range);
+
+                uint32_t bufferUsageFlags = 0;
+                stream.ReadRaw<uint32_t>(bufferUsageFlags);
+                bufferEntries[i].buffer.usage.SetRaw(bufferUsageFlags);
+
+                uint32_t memoryUsage = 0;
+                stream.ReadRaw<uint32_t>(memoryUsage);
+                bufferEntries[i].buffer.memoryUsage = (MemoryUsage)memoryUsage;
+
+                stream.ReadRaw<uint32_t>(bufferEntries[i].buffer.byteSize);
+
+                ByteSpan bufferBytes(bufferEntries[i].buffer.initialData, bufferEntries[i].buffer.byteSize);
+                stream.ReadBytes(bufferBytes, bufferEntries[i].buffer.byteSize);
+            }
+
+            // Populate actual texture entries that will be used to create the bind group.
+            StaticDArray<BindGroupDescriptor::TextureEntry, 8> finalTextureEntries;
+            for (auto& textureEntry : textureEntries)
+            {
+                finalTextureEntries.push_back({ AssetManager::Instance->GetAsset<Texture>(textureEntry.texture) });
+            }
+
+            // Populate actual buffer entries that will be used to create the bind group.
+            StaticDArray<BindGroupDescriptor::BufferEntry, 8> finalBufferEntries;
+            for (auto& bufferEntry : bufferEntries)
+            {
+                auto userBuffer = ResourceManager::Instance->CreateBuffer({
+                    .debugName = "shader-uniform-buffer",
+                    .usage = bufferEntry.buffer.usage,
+                    .memoryUsage = bufferEntry.buffer.memoryUsage,
+                    .byteSize = bufferEntry.buffer.byteSize,
+                    .initialData = bufferEntry.buffer.initialData,
+                });
+                
+                // TODO: Delete bufferEntry.buffer.initialData since it was allocated with malloc?
+
+                finalBufferEntries.push_back({ .buffer = userBuffer });
+            }
+
+            // Create the material bind group resource.
+            materialBindGroup = ResourceManager::Instance->CreateBindGroup({
+                .debugName = "shader-bind-group",
+                .layout = bindGroupLayout,
+                .textures = finalTextureEntries,
+                .buffers = finalBufferEntries,
+            });
+        }
+
+        // Retrieve material variant hash.
+        ShaderDescriptor::RenderPipeline::PackedVariant variantDesc;
+        {
+            stream.ReadRaw<packed_size>(materialAssetPackFormat.Data.MaterialVariantHash);
+            variantDesc = ShaderDescriptor::RenderPipeline::PackedVariant::FromKey(materialAssetPackFormat.Data.MaterialVariantHash);
+        }
+
+        uint32_t dynamicUniformBufferRange = (materialType == 0 ? sizeof(PerDrawDataSprite) : sizeof(PerDrawData));
+
+        auto drawBindings = ResourceManager::Instance->CreateBindGroup({
+            .layout = Renderer::Instance->GetDynamicBindingsLayout(),
+            .buffers = { { .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange }, }
+        });
+
+        auto material = ResourceManager::Instance->CreateMaterial({
+            .shader = shaderHandle,
+            .drawBindGroup = drawBindings,
+            .materialBindGroup = materialBindGroup,
+        });
+
+        Material* mat = ResourceManager::Instance->GetMaterial(material);
+        mat->VariantHash = variantDesc;
+
+        return material;
     }
 
     Handle<Mesh> RuntimeAssetManager::ImportMesh(Asset* asset, FileStreamReader& stream)
