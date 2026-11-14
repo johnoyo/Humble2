@@ -155,9 +155,27 @@ namespace HBL2
 			});
 		}
 	}
-	void* VulkanResourceManager::GetBufferData(Handle<Buffer> handle)
+	bool VulkanResourceManager::GetBufferData(Handle<Buffer> handle, ByteSpan& outBufferBytes, uint64_t offset)
 	{
-		return GetBufferHot(handle)->Data;
+		VulkanBuffer vulkanBuffer = GetBuffer(handle);
+
+		if (!vulkanBuffer.IsValid())
+		{
+			return false;
+		}
+
+		return vulkanBuffer.ReadBack(outBufferBytes, offset);
+	}
+	uint32_t VulkanResourceManager::GetBufferByteSize(Handle<Buffer> handle)
+	{
+		VulkanBufferHot* vulkanBuffer = GetBufferHot(handle);
+
+		if (vulkanBuffer != nullptr)
+		{
+			return vulkanBuffer->ByteSize;
+		}
+
+		return 0;
 	}
 	void VulkanResourceManager::SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData)
 	{

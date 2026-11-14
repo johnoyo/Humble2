@@ -43,7 +43,8 @@ namespace HBL2
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) override;
 		virtual void DeleteBuffer(Handle<Buffer> handle) override;
-		virtual void* GetBufferData(Handle<Buffer> handle) override;
+		virtual bool GetBufferData(Handle<Buffer> handle, ByteSpan& outBufferBytes, uint64_t offset = 0) override;
+		virtual uint32_t GetBufferByteSize(Handle<Buffer> handle) override;
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) override;
 		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) override;
 		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) override;

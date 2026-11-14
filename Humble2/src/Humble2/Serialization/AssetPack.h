@@ -6,6 +6,7 @@
 #include "Resources/Handle.h"
 #include "Resources/TypeDescriptors.h"
 #include "Utilities/Collections/StaticDArray.h"
+#include "Utilities/Collections/FixedArray.h"
 #include "Utilities/Collections/FixedHashMap.h"
 
 #include <cstdint>
@@ -161,33 +162,34 @@ namespace HBL2
 
 			enum class MeshFlags : uint32_t
 			{
-				HasMaterials = 1,
-				HasAnimation = 2,
-				HasSkeleton = 4,
+				IsSkinned = 1,
 			};
 
 			struct Metadata
 			{
-				uint32_t Flags;
-				// AABB BoundingBox;
+				struct SubMeshDescriptor
+				{
+					uint32_t indexOffset;
+					uint32_t indexCount;
+					uint32_t vertexOffset;
+					uint32_t vertexCount;
+					glm::vec3 minVertex;
+					glm::vec3 maxVertex;
+				};
 
-				uint64_t NodeArrayOffset;
-				uint64_t NodeArraySize;
+				struct MeshDescriptor
+				{
+					FixedArray<SubMeshDescriptor> subMeshes;
+					BufferDescriptor indexBuffer;
+					BufferDescriptor vertexBuffer;
+					BufferDescriptor skinBuffer;
+					MeshPartDescriptor::LocalTransform importedLocalTransform;
+				};
 
-				uint64_t SubmeshArrayOffset;
-				uint64_t SubmeshArraySize;
-
-				uint64_t MaterialArrayOffset;
-				uint64_t MaterialArraySize;
-
-				uint64_t VertexBufferOffset;
-				uint64_t VertexBufferSize;
-
-				uint64_t IndexBufferOffset;
-				uint64_t IndexBufferSize;
-
-				uint64_t AnimationDataOffset;
-				uint64_t AnimationDataSize;
+				BitFlags<MeshFlags> Flags;
+				FixedArray<MeshDescriptor> MeshDescriptors;
+				SkeletonDescriptor Skeleton;
+				FixedArray<AnimationClipDescriptor> AnimationClipDescriptors;
 			};
 
 			struct FileHeader

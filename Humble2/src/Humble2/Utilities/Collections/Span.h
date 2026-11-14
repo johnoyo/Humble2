@@ -2,6 +2,7 @@
 
 #include "StaticArray.h"
 #include "StaticDArray.h"
+#include "FixedArray.h"
 #include "Collections.h"
 
 #include <vector>
@@ -50,6 +51,11 @@ namespace HBL2
 		Span(StaticDArray<T, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
 		template<typename U, size_t N>
 		Span(StaticDArray<U, N>& array) : m_Data(array.data()), m_Size(array.size()) {}
+
+		template<size_t N>
+		Span(FixedArray<T>& array) : m_Data(array.data()), m_Size(array.size()) {}
+		template<typename U, size_t N>
+		Span(FixedArray<U>& array) : m_Data(array.data()), m_Size(array.size()) {}
 
 		template<typename Container>
 		constexpr Span(Container&& values) noexcept

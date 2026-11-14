@@ -141,14 +141,33 @@ namespace HBL2
             });
         }
     }
-    void* MetalResourceManager::GetBufferData(Handle<Buffer> handle)
+    bool MetalResourceManager::GetBufferData(Handle<Buffer> handle, ByteSpan& outBufferBytes, uint64_t offset)
     {
-        return GetBufferHot(handle)->Data;
+        MetalBufferHot* metalBuffer = GetBufferHot(handle);
+
+        if (metalBuffer == nullptr)
+        {
+            return false;
+        }
+
+        memcpy((void*)((char*)metalBuffer->Buffer->contents() + offset), (void*)outBufferBytes.data(), outBufferBytes.size());
+        return true;
+    }
+    uint32_t MetalResourceManager::GetBufferByteSize(Handle<Buffer> handle)
+    {
+        MetalBufferHot* metalBuffer = GetBufferHot(handle);
+
+        if (metalBuffer != nullptr)
+        {
+            return metalBuffer->ByteSize;
+        }
+
+        return 0;
     }
     void MetalResourceManager::SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData)
     {
-        MetalBufferHot* MetalBuffer = GetBufferHot(buffer);
-        MetalBuffer->Data = (void*)((char*)newData + offset);
+        MetalBufferHot* metalBuffer = GetBufferHot(buffer);
+        metalBuffer->Data = (void*)((char*)newData + offset);
     }
     void MetalResourceManager::SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData)
     {

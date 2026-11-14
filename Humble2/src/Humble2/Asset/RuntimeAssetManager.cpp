@@ -595,6 +595,7 @@ namespace HBL2
             .buffers = { { .buffer = Renderer::Instance->TempUniformRingBuffer->GetBuffer(), .range = dynamicUniformBufferRange }, }
         });
 
+        // Create material resource.
         auto material = ResourceManager::Instance->CreateMaterial({
             .shader = shaderHandle,
             .drawBindGroup = drawBindings,
@@ -609,7 +610,118 @@ namespace HBL2
 
     Handle<Mesh> RuntimeAssetManager::ImportMesh(Asset* asset, FileStreamReader& stream)
     {
-        return Handle<Mesh>();
+        AssetPackFormat::Mesh meshAssetPackFormat;
+
+        stream.ReadRaw<AssetPackFormat::Mesh::FileHeader>(meshAssetPackFormat.Header);
+        bool validHeader = memcmp(meshAssetPackFormat.Header.HEADER, "HBLMS", 5) == 0;
+        HBL2_CORE_ASSERT(validHeader, "Invalid asset pack mesh header, aborting mesh asset load!");
+        if (!validHeader)
+        {
+            return Handle<Mesh>();
+        }
+
+        if (meshAssetPackFormat.Header.Version != AssetPack::CurrentVersion)
+        {
+            HBL2_CORE_ERROR("AssetPack mesh file format version {} is not compatible with current version {}", meshAssetPackFormat.Header.Version, AssetPackFormat::Mesh::CurrentVersion);
+            return Handle<Mesh>();
+        }
+
+        ScratchArena scratch(*JobSystem::Get().GetWorkerArena());
+
+        // Retrieve mesh flags.
+        {
+            uint32_t meshFlags;
+            stream.ReadRaw<uint32_t>(meshFlags);
+            meshAssetPackFormat.Data.Flags.SetRaw(meshFlags);
+        }
+
+        // Retrieve mesh descriptor.
+        {
+            uint32_t meshDescriptorCount;
+            stream.ReadRaw<uint32_t>(meshDescriptorCount);
+            meshAssetPackFormat.Data.MeshDescriptors = FixedArray<AssetPackFormat::Mesh::Metadata::MeshDescriptor>(scratch.GetArena(), meshDescriptorCount);
+            meshAssetPackFormat.Data.MeshDescriptors.resize(meshDescriptorCount);
+            stream.ReadSpan<AssetPackFormat::Mesh::Metadata::MeshDescriptor>({ meshAssetPackFormat.Data.MeshDescriptors.data(), meshAssetPackFormat.Data.MeshDescriptors.size() }, meshDescriptorCount);
+
+            if (meshAssetPackFormat.Data.Flags.IsSet(AssetPackFormat::Mesh::MeshFlags::IsSkinned))
+            {
+                // Retrieve skeleton descriptor.
+                uint32_t skeletonParentCount;
+                stream.ReadRaw<uint32_t>(skeletonParentCount);
+                meshAssetPackFormat.Data.Skeleton.parents.resize(skeletonParentCount);
+                stream.ReadSpan<int16_t>(meshAssetPackFormat.Data.Skeleton.parents, skeletonParentCount);
+
+                uint32_t skeletonInverseBindCount;
+                stream.ReadRaw<uint32_t>(skeletonInverseBindCount);
+                meshAssetPackFormat.Data.Skeleton.inverseBind.resize(skeletonInverseBindCount);
+                stream.ReadSpan<glm::mat4>(meshAssetPackFormat.Data.Skeleton.inverseBind, skeletonInverseBindCount);
+
+                uint32_t skeletonBindPoseCount;
+                stream.ReadRaw<uint32_t>(skeletonBindPoseCount);
+                meshAssetPackFormat.Data.Skeleton.bindPose.resize(skeletonBindPoseCount);
+                stream.ReadSpan<JointTransform>(meshAssetPackFormat.Data.Skeleton.bindPose, skeletonBindPoseCount);
+
+                stream.ReadRaw<glm::mat4>(meshAssetPackFormat.Data.Skeleton.rootTransform);
+
+                // Retrieve animation clip descriptors.
+                uint32_t animationDescCount;
+                stream.ReadRaw<uint32_t>(animationDescCount);
+                meshAssetPackFormat.Data.AnimationClipDescriptors = FixedArray<AnimationClipDescriptor>(scratch.GetArena(), animationDescCount);
+                meshAssetPackFormat.Data.AnimationClipDescriptors.resize(animationDescCount);
+                stream.ReadSpan<AnimationClipDescriptor>({ meshAssetPackFormat.Data.AnimationClipDescriptors.data(), meshAssetPackFormat.Data.AnimationClipDescriptors.size() }, animationDescCount);
+            }
+        }
+
+        // Assemble actual mesh descriptor elements from deserialized data.
+        std::vector<MeshPartDescriptor> meshDescriptors(meshAssetPackFormat.Data.MeshDescriptors.size());
+
+        for (uint32_t i = 0; i < meshAssetPackFormat.Data.MeshDescriptors.size(); i++)
+        {
+            auto& meshPart = meshAssetPackFormat.Data.MeshDescriptors[i];
+
+            meshDescriptors[i].indexBuffer = ResourceManager::Instance->CreateBuffer(std::move(meshPart.indexBuffer));
+            meshDescriptors[i].vertexBuffers.push_back(ResourceManager::Instance->CreateBuffer(std::move(meshPart.vertexBuffer)));
+
+            if (meshAssetPackFormat.Data.Flags.IsSet(AssetPackFormat::Mesh::MeshFlags::IsSkinned))
+            {
+                meshDescriptors[i].skinBuffer = ResourceManager::Instance->CreateBuffer(std::move(meshPart.skinBuffer));
+            }
+
+            meshDescriptors[i].importedLocalTransform = meshPart.importedLocalTransform;
+
+            meshDescriptors[i].subMeshes.resize(meshPart.subMeshes.size());
+
+            for (uint32_t j = 0; j < meshPart.subMeshes.size(); j++)
+            {
+                auto& subMesh = meshPart.subMeshes[j];
+
+                meshDescriptors[i].subMeshes[j].indexOffset = subMesh.indexOffset;
+                meshDescriptors[i].subMeshes[j].indexCount = subMesh.indexCount;
+                meshDescriptors[i].subMeshes[j].vertexOffset = subMesh.vertexOffset;
+                meshDescriptors[i].subMeshes[j].vertexCount = subMesh.vertexCount;
+                meshDescriptors[i].subMeshes[j].minVertex = subMesh.minVertex;
+                meshDescriptors[i].subMeshes[j].maxVertex = subMesh.maxVertex;
+            }
+        }
+
+        Handle<Skeleton> skeleton = ResourceManager::Instance->CreateSkeleton(std::move(meshAssetPackFormat.Data.Skeleton));
+
+        std::vector<Handle<AnimationClip>> animationClips(meshAssetPackFormat.Data.AnimationClipDescriptors.size());
+
+        for (uint32_t i = 0; i < meshAssetPackFormat.Data.AnimationClipDescriptors.size(); i++)
+        {
+            meshAssetPackFormat.Data.AnimationClipDescriptors[i].skeleton = skeleton;
+            animationClips[i] = ResourceManager::Instance->CreateAnimationClip(std::move(meshAssetPackFormat.Data.AnimationClipDescriptors[i]));
+        }
+
+        // Create mesh resource.
+        auto mesh = ResourceManager::Instance->CreateMesh({
+            .meshes = std::move(meshDescriptors),
+            .skeleton = skeleton,
+            .animationClips = std::move(animationClips),
+        });
+
+        return mesh;
     }
 
     Handle<Scene> RuntimeAssetManager::ImportScene(Asset* asset, FileStreamReader& stream)
@@ -680,12 +792,61 @@ namespace HBL2
 
     void RuntimeAssetManager::UnloadMesh(Asset * asset)
     {
+        Handle<Mesh> meshAssetHandle = Handle<Mesh>::UnPack(asset->Indentifier);
 
+        if (!meshAssetHandle.IsValid())
+        {
+            HBL2_CORE_WARN("Asset \"{0}\" has an invalid handle, skipping unload operation.", asset->DebugName);
+            return;
+        }
+
+        if (!asset->Loaded)
+        {
+            HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+            return;
+        }
+
+        Mesh* mesh = ResourceManager::Instance->GetMesh(meshAssetHandle);
+
+        if (mesh != nullptr)
+        {
+            for (auto& meshPart : mesh->Meshes)
+            {
+                ResourceManager::Instance->DeleteBuffer(meshPart.IndexBuffer);
+
+                for (const auto vertexBuffer : meshPart.VertexBuffers)
+                {
+                    ResourceManager::Instance->DeleteBuffer(vertexBuffer);
+                }
+            }
+        }
+
+        ResourceManager::Instance->DeleteMesh(meshAssetHandle);
+
+        asset->Loaded = false;
+        asset->Indentifier = 0;
     }
 
     void RuntimeAssetManager::UnloadMaterial(Asset * asset)
     {
+        Handle<Material> materialAssetHandle = Handle<Material>::UnPack(asset->Indentifier);
 
+        if (!materialAssetHandle.IsValid())
+        {
+            HBL2_CORE_WARN("Asset \"{0}\" has an invalid handle, skipping unload operation.", asset->DebugName);
+            return;
+        }
+
+        if (!asset->Loaded)
+        {
+            HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+            return;
+        }
+
+        ResourceManager::Instance->DeleteMaterial(materialAssetHandle);
+
+        asset->Loaded = false;
+        asset->Indentifier = 0;
     }
 
     void RuntimeAssetManager::UnloadScene(Asset * asset)

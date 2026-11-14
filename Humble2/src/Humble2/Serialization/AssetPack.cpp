@@ -897,7 +897,153 @@ namespace HBL2
 		Handle<Mesh> handle = Handle<Mesh>::UnPack(asset->Indentifier);
 		Mesh* mesh = ResourceManager::Instance->GetMesh(handle);
 
-		return false;
+		ScratchArena scratch(*JobSystem::Get().GetWorkerArena());
+
+		AssetPackFormat::Mesh meshAssetPackFormat;
+
+		// Retrieve mesh desciptor.
+		{
+			meshAssetPackFormat.Data.MeshDescriptors = FixedArray<AssetPackFormat::Mesh::Metadata::MeshDescriptor>(scratch.GetArena(), mesh->Meshes.size());
+			meshAssetPackFormat.Data.MeshDescriptors.resize(mesh->Meshes.size());
+			for (uint32_t i = 0; i < mesh->Meshes.size(); i++)
+			{
+				auto& meshPart = meshAssetPackFormat.Data.MeshDescriptors[i];
+
+				// Retrieve imported local transform.
+				meshPart.importedLocalTransform.translation = mesh->Meshes[i].ImportedLocalTransform.translation;
+				meshPart.importedLocalTransform.rotation = mesh->Meshes[i].ImportedLocalTransform.rotation;
+				meshPart.importedLocalTransform.scale = mesh->Meshes[i].ImportedLocalTransform.scale;
+
+				// Retrieve index buffer description.
+				uint32_t indexBufferByteSize = ResourceManager::Instance->GetBufferByteSize(mesh->Meshes[i].IndexBuffer);
+				ByteSpan indexBufferBytes(std::malloc(indexBufferByteSize), indexBufferByteSize);
+				ResourceManager::Instance->GetBufferData(mesh->Meshes[i].IndexBuffer, indexBufferBytes);
+
+				meshPart.indexBuffer = {
+					.usage = BufferUsage::INDEX,
+					.memoryUsage = MemoryUsage::GPU_ONLY,
+					.byteSize = (uint32_t)indexBufferBytes.size(),
+					.initialData = indexBufferBytes.data(),
+				};
+
+				// Retrieve vertex buffer description.
+				uint32_t vertexBufferByteSize = ResourceManager::Instance->GetBufferByteSize(mesh->Meshes[i].VertexBuffers[0]);
+				ByteSpan vertexBufferBytes(std::malloc(vertexBufferByteSize), vertexBufferByteSize);
+				ResourceManager::Instance->GetBufferData(mesh->Meshes[i].VertexBuffers[0], vertexBufferBytes);
+
+				meshPart.vertexBuffer = {
+					.usage = (mesh->Meshes[i].IsSkinned() ? BitFlags<BufferUsage>{ BufferUsage::VERTEX, BufferUsage::STORAGE } : BufferUsage::VERTEX),
+					.memoryUsage = MemoryUsage::GPU_ONLY,
+					.byteSize = (uint32_t)vertexBufferBytes.size(),
+					.initialData = vertexBufferBytes.data(),
+				};
+
+				// Retrieve skin buffer description.
+				if (mesh->Meshes[i].IsSkinned())
+				{
+					uint32_t skinBufferByteSize = ResourceManager::Instance->GetBufferByteSize(mesh->Meshes[i].SkinBuffer);
+					ByteSpan skinBufferBytes(std::malloc(skinBufferByteSize), skinBufferByteSize);
+					ResourceManager::Instance->GetBufferData(mesh->Meshes[i].SkinBuffer, skinBufferBytes);
+
+					meshPart.skinBuffer = {
+						.usage = BufferUsage::STORAGE,
+						.memoryUsage = MemoryUsage::GPU_ONLY,
+						.byteSize = (uint32_t)skinBufferBytes.size(),
+						.initialData = skinBufferBytes.data(),
+					};
+
+					meshAssetPackFormat.Data.Flags.Set(AssetPackFormat::Mesh::MeshFlags::IsSkinned);
+				}
+
+				// Retrieve sub meshes.
+				meshAssetPackFormat.Data.MeshDescriptors[i].subMeshes = FixedArray<AssetPackFormat::Mesh::Metadata::SubMeshDescriptor>(scratch.GetArena(), mesh->Meshes[i].SubMeshes.size());
+				meshAssetPackFormat.Data.MeshDescriptors[i].subMeshes.resize(mesh->Meshes[i].SubMeshes.size());
+				for (uint32_t j = 0; j < mesh->Meshes[i].SubMeshes.size(); j++)
+				{
+					auto& subMesh = meshAssetPackFormat.Data.MeshDescriptors[i].subMeshes[j];
+
+					subMesh.indexOffset = mesh->Meshes[i].SubMeshes[j].IndexOffset;
+					subMesh.indexCount = mesh->Meshes[i].SubMeshes[j].IndexCount;
+					subMesh.vertexOffset = mesh->Meshes[i].SubMeshes[j].VertexOffset;
+					subMesh.vertexCount = mesh->Meshes[i].SubMeshes[j].VertexCount;
+					subMesh.minVertex = mesh->Meshes[i].SubMeshes[j].Extents.Min;
+					subMesh.maxVertex = mesh->Meshes[i].SubMeshes[j].Extents.Max;
+				}
+			}
+		}
+
+		// Retrieve skeleton descriptor.
+		{
+			Skeleton* skeleton = ResourceManager::Instance->GetSkeleton(mesh->Skeleton);
+
+			if (skeleton != nullptr)
+			{
+				meshAssetPackFormat.Data.Skeleton.parents = skeleton->Parents;
+				meshAssetPackFormat.Data.Skeleton.inverseBind = skeleton->InverseBind;
+				meshAssetPackFormat.Data.Skeleton.bindPose = skeleton->BindPose;
+				meshAssetPackFormat.Data.Skeleton.rootTransform = skeleton->RootTransform;
+			}
+		}
+
+		// Retrieve clip descriptors.
+		{
+			meshAssetPackFormat.Data.AnimationClipDescriptors = FixedArray<AnimationClipDescriptor>(scratch.GetArena(), mesh->AnimationClips.size());
+			meshAssetPackFormat.Data.AnimationClipDescriptors.resize(mesh->AnimationClips.size());
+
+			for (uint32_t i = 0; i < mesh->AnimationClips.size(); i++)
+			{
+				AnimationClip* clip = ResourceManager::Instance->GetAnimationClip(mesh->AnimationClips[i]);
+
+				if (clip != nullptr)
+				{
+					meshAssetPackFormat.Data.AnimationClipDescriptors[i].samplers = clip->Samplers;
+					meshAssetPackFormat.Data.AnimationClipDescriptors[i].channels = clip->Channels;
+					meshAssetPackFormat.Data.AnimationClipDescriptors[i].duration = clip->Duration;
+				}
+			}
+		}
+
+		// Serialize to stream.
+		uint64_t startPosition = stream.GetStreamPosition();
+
+		// Serialize mesh header.
+		stream.WriteRaw<AssetPackFormat::Mesh::FileHeader>(meshAssetPackFormat.Header);
+
+		// Serialize mesh flags.
+		stream.WriteRaw<uint32_t>(meshAssetPackFormat.Data.Flags.GetRaw());
+
+		// Serialize mesh descriptor.
+		stream.WriteSpan<AssetPackFormat::Mesh::Metadata::MeshDescriptor>({ meshAssetPackFormat.Data.MeshDescriptors.data(), meshAssetPackFormat.Data.MeshDescriptors.size() });
+
+		if (meshAssetPackFormat.Data.Flags.IsSet(AssetPackFormat::Mesh::MeshFlags::IsSkinned))
+		{
+			// Serialize skeleton descriptor.
+			stream.WriteSpan<int16_t>(meshAssetPackFormat.Data.Skeleton.parents);
+			stream.WriteSpan<glm::mat4>(meshAssetPackFormat.Data.Skeleton.inverseBind);
+			stream.WriteSpan<JointTransform>(meshAssetPackFormat.Data.Skeleton.bindPose);
+			stream.WriteRaw<glm::mat4>(meshAssetPackFormat.Data.Skeleton.rootTransform);
+
+			// Serialize animation clip descriptors.
+			stream.WriteSpan<AnimationClipDescriptor>({ meshAssetPackFormat.Data.AnimationClipDescriptors.data(), meshAssetPackFormat.Data.AnimationClipDescriptors.size() });
+		}
+
+		uint64_t writtenSize = stream.GetStreamPosition() - startPosition;
+
+		// Store offsets in binary blob.
+		Assets[asset->UUID].PackedOffset = startPosition;
+		Assets[asset->UUID].PackedSize = writtenSize;
+
+		// Clean up memory allocated for mesh part buffers.
+		for (uint32_t i = 0; i < mesh->Meshes.size(); i++)
+		{
+			auto& meshPart = meshAssetPackFormat.Data.MeshDescriptors[i];
+
+			std::free(meshPart.indexBuffer.initialData);
+			std::free(meshPart.vertexBuffer.initialData);
+			std::free(meshPart.skinBuffer.initialData);
+		}
+
+		return true;
 	}
 
 	bool AssetPack::SerializeScene(Asset* asset, FileStreamWriter& stream)

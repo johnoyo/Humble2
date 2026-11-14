@@ -38,6 +38,9 @@ namespace HBL2
 		void ReAllocate(uint32_t currentOffset);
 		void Destroy();
 
+		bool ReadBack(void* outData, uint64_t size = 0, uint64_t offset = 0) const;
+		bool ReadBack(ByteSpan& outBufferBytes, uint64_t offset = 0) const;
+
 		VulkanBufferHot* Hot;
 		VulkanBufferCold* Cold;
 	};

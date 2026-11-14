@@ -137,7 +137,8 @@ namespace HBL2
 		// Buffers
 		virtual Handle<Buffer> CreateBuffer(const BufferDescriptor&& desc) = 0;
 		virtual void DeleteBuffer(Handle<Buffer> handle) = 0;
-		virtual void* GetBufferData(Handle<Buffer> handle) = 0;
+		virtual bool GetBufferData(Handle<Buffer> handle, ByteSpan& outBufferBytes, uint64_t offset = 0) = 0;
+		virtual uint32_t GetBufferByteSize(Handle<Buffer> handle) = 0;
 		virtual void SetBufferData(Handle<Buffer> buffer, intptr_t offset, void* newData) = 0;
 		virtual void SetBufferData(Handle<BindGroup> bindGroup, uint32_t bufferIndex, void* newData) = 0;
 		virtual void MapBufferData(Handle<Buffer> buffer, intptr_t offset, intptr_t size) = 0;
