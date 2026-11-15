@@ -5,6 +5,8 @@
 #include "Utilities/Collections/ByteSpan.h"
 #include "Utilities/YamlUtilities.h"
 
+#include "Scene/RuntimeSceneSerializer.h"
+
 namespace HBL2
 {
     bool AssetPack::Serialize(UUID assetUUID, FileStreamWriter& stream)
@@ -1066,13 +1068,16 @@ namespace HBL2
 		// Serialize scene descriptor.
 		stream.WriteObject<SceneDescriptor>(sceneAssetPackFormat.Data.Descriptor);
 
+		RuntimeSceneSerializer serializer(scene);
+		serializer.Serialize(stream);
+
 		uint64_t writtenSize = stream.GetStreamPosition() - startPosition;
 
 		// Store offsets in binary blob.
 		Assets[asset->UUID].PackedOffset = startPosition;
 		Assets[asset->UUID].PackedSize = writtenSize;
 
-		return false;
+		return true;
 	}
 
 	bool AssetPack::SerializePrefab(Asset* asset, FileStreamWriter& stream)

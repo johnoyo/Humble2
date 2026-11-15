@@ -4,6 +4,8 @@
 #include "Serialization/AssetPackSerializer.h"
 #include "Project/Project.h"
 
+#include "Scene/RuntimeSceneSerializer.h"
+
 #include "Systems/HierachySystem.h"
 #include "Systems/CameraSystem.h"
 #include "Systems/AnimationSystem.h"
@@ -781,10 +783,8 @@ namespace HBL2
         scene->RegisterSystem<SkeletonPoseSystem>();
         scene->RegisterSystem<RenderingSystem>();
 
-        // Retrieve scene contents.
-        {
-            // ...
-        }
+        RuntimeSceneSerializer serializer(scene);
+        serializer.Deserialize(stream);
 
         return sceneHandle;
     }
@@ -911,7 +911,34 @@ namespace HBL2
 
     void RuntimeAssetManager::UnloadScene(Asset * asset)
     {
+        Handle<Scene> sceneHandle = Handle<Scene>::UnPack(asset->Indentifier);
 
+        if (!sceneHandle.IsValid())
+        {
+            HBL2_CORE_WARN("Asset \"{0}\" has an invalid resource handle, skipping unload operation.", asset->DebugName);
+            return;
+        }
+
+        if (!asset->Loaded)
+        {
+            HBL2_CORE_WARN("Asset \"{0}\" is already unloaded, skipping unload operation.", asset->DebugName);
+            return;
+        }
+
+        // Retrieve scene.
+        Scene* currentScene = ResourceManager::Instance->GetScene(sceneHandle);
+
+        // Clear entire scene.
+        if (currentScene != nullptr)
+        {
+            currentScene->Clear();
+        }
+
+        // Delete from pool.
+        ResourceManager::Instance->DeleteScene(sceneHandle);
+
+        asset->Loaded = false;
+        asset->Indentifier = 0;
     }
 
     void RuntimeAssetManager::UnloadSound(Asset * asset)

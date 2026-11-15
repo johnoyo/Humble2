@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AssetPack.h"
+
 #include "FileStreamWriter.h"
 #include "FileStreamReader.h"
 
@@ -381,6 +383,30 @@ namespace HBL2
 			stream->ReadRaw(obj.maxStructuralCommandsPerFramePerThread);
 			stream->ReadRaw(obj.maxJobsPerSystem);
 			stream->ReadRaw(obj.useStructuralCommandBuffer);
+
+			return true;
+		}
+	};
+
+	template<>
+	struct Serializer<Component::AnimationCurve::KeyFrame>
+	{
+		static bool Serialize(FileStreamWriter* stream, const Component::AnimationCurve::KeyFrame& obj)
+		{
+			stream->WriteRaw(obj.Time);
+			stream->WriteRaw(obj.Value);
+			stream->WriteRaw(obj.InTan);
+			stream->WriteRaw(obj.OutTan);
+
+			return true;
+		}
+
+		static bool Deserialize(FileStreamReader* stream, Component::AnimationCurve::KeyFrame& obj)
+		{
+			stream->ReadRaw(obj.Time);
+			stream->ReadRaw(obj.Value);
+			stream->ReadRaw(obj.InTan);
+			stream->ReadRaw(obj.OutTan);
 
 			return true;
 		}
