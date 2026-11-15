@@ -3,6 +3,7 @@
 #include "FileStreamWriter.h"
 #include "FileStreamReader.h"
 
+#include "Scene/Scene.h"
 #include "Resources/TypeDescriptors.h"
 
 #include "Utilities/JobSystem.h"
@@ -352,6 +353,34 @@ namespace HBL2
 			stream->ReadSpan<AnimationChannel>(obj.channels, channelCount);
 
 			stream->ReadRaw<float>(obj.duration);
+
+			return true;
+		}
+	};
+
+	template<>
+	struct Serializer<SceneDescriptor>
+	{
+		static bool Serialize(FileStreamWriter* stream, const SceneDescriptor& obj)
+		{
+			stream->WriteRaw(obj.maxEntities);
+			stream->WriteRaw(obj.maxComponents);
+			stream->WriteRaw(obj.maxSystems);
+			stream->WriteRaw(obj.maxStructuralCommandsPerFramePerThread);
+			stream->WriteRaw(obj.maxJobsPerSystem);
+			stream->WriteRaw(obj.useStructuralCommandBuffer);
+
+			return true;
+		}
+
+		static bool Deserialize(FileStreamReader* stream, SceneDescriptor& obj)
+		{
+			stream->ReadRaw(obj.maxEntities);
+			stream->ReadRaw(obj.maxComponents);
+			stream->ReadRaw(obj.maxSystems);
+			stream->ReadRaw(obj.maxStructuralCommandsPerFramePerThread);
+			stream->ReadRaw(obj.maxJobsPerSystem);
+			stream->ReadRaw(obj.useStructuralCommandBuffer);
 
 			return true;
 		}

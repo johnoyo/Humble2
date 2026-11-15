@@ -1,7 +1,19 @@
 #include "RuntimeAssetManager.h"
 
+#include "Serialization/Serializer.h"
 #include "Serialization/AssetPackSerializer.h"
 #include "Project/Project.h"
+
+#include "Systems/HierachySystem.h"
+#include "Systems/CameraSystem.h"
+#include "Systems/AnimationSystem.h"
+#include "Systems/RenderingSystem.h"
+#include "Systems/SoundSystem.h"
+#include "Systems/Physics2dSystem.h"
+#include "Systems/Physics3dSystem.h"
+#include "Systems/TerrainSystem.h"
+#include "Systems/AnimationCurveSystem.h"
+#include "Systems/SkeletonPoseSystem.h"
 
 namespace HBL2
 {
@@ -726,7 +738,55 @@ namespace HBL2
 
     Handle<Scene> RuntimeAssetManager::ImportScene(Asset* asset, FileStreamReader& stream)
     {
-        return Handle<Scene>();
+        AssetPackFormat::Scene sceneAssetPackFormat;
+
+        stream.ReadRaw<AssetPackFormat::Scene::FileHeader>(sceneAssetPackFormat.Header);
+        bool validHeader = memcmp(sceneAssetPackFormat.Header.HEADER, "HBLSC", 5) == 0;
+        HBL2_CORE_ASSERT(validHeader, "Invalid asset pack scene header, aborting scene asset load!");
+        if (!validHeader)
+        {
+            return Handle<Scene>();
+        }
+
+        if (sceneAssetPackFormat.Header.Version != AssetPack::CurrentVersion)
+        {
+            HBL2_CORE_ERROR("AssetPack scene file format version {} is not compatible with current version {}", sceneAssetPackFormat.Header.Version, AssetPackFormat::Scene::CurrentVersion);
+            return Handle<Scene>();
+        }
+
+        // Retrieve scene descriptor.
+        stream.ReadObject<SceneDescriptor>(sceneAssetPackFormat.Data.Descriptor);
+
+        // Create scene resource.
+        auto sceneHandle = ResourceManager::Instance->CreateScene(std::move(sceneAssetPackFormat.Data.Descriptor));
+
+        // Retrieve scene object.
+        Scene* scene = ResourceManager::Instance->GetScene(sceneHandle);
+
+        if (scene == nullptr)
+        {
+            HBL2_CORE_ERROR("Scene asset \"{0}\" is invalid, aborting scene load.", asset->FilePath.filename().stem().string());
+            return Handle<Scene>();
+        }
+
+        // Register built-in systems.
+        scene->RegisterSystem<HierachySystem>();
+        scene->RegisterSystem<CameraSystem>();
+        scene->RegisterSystem<AnimationSystem>();
+        scene->RegisterSystem<TerrainSystem>();
+        scene->RegisterSystem<SoundSystem>(SystemType::Runtime);
+        scene->RegisterSystem<Physics2dSystem>(SystemType::Runtime);
+        scene->RegisterSystem<Physics3dSystem>(SystemType::Runtime);
+        scene->RegisterSystem<AnimationCurveSystem>();
+        scene->RegisterSystem<SkeletonPoseSystem>();
+        scene->RegisterSystem<RenderingSystem>();
+
+        // Retrieve scene contents.
+        {
+            // ...
+        }
+
+        return sceneHandle;
     }
 
     Handle<Sound> RuntimeAssetManager::ImportSound(Asset* asset, FileStreamReader& stream)

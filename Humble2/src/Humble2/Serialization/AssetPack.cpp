@@ -1052,6 +1052,26 @@ namespace HBL2
 		Handle<Scene> handle = Handle<Scene>::UnPack(asset->Indentifier);
 		Scene* scene = ResourceManager::Instance->GetScene(handle);
 
+		AssetPackFormat::Scene sceneAssetPackFormat;
+
+		// Retrieve scene descriptor.
+		sceneAssetPackFormat.Data.Descriptor = scene->GetDescriptor();
+
+		// Serialize to stream.
+		uint64_t startPosition = stream.GetStreamPosition();
+
+		// Serialize scene header.
+		stream.WriteRaw<AssetPackFormat::Scene::FileHeader>(sceneAssetPackFormat.Header);
+
+		// Serialize scene descriptor.
+		stream.WriteObject<SceneDescriptor>(sceneAssetPackFormat.Data.Descriptor);
+
+		uint64_t writtenSize = stream.GetStreamPosition() - startPosition;
+
+		// Store offsets in binary blob.
+		Assets[asset->UUID].PackedOffset = startPosition;
+		Assets[asset->UUID].PackedSize = writtenSize;
+
 		return false;
 	}
 

@@ -26,7 +26,7 @@ namespace HBL2
 
 		float progressIncrement = 0.4f / (float)m_Context->Assets.size();
 
-		// Write asset data + fill in offset + size
+		// Write asset data + fill in offset + size.
 		for (auto& [assetUUID, assetInfo] : m_Context->Assets)
 		{
 			// Serialize asset.

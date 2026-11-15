@@ -3,6 +3,7 @@
 #include "FileStreamWriter.h"
 
 #include "Asset/Asset.h"
+#include "Scene/Scene.h"
 #include "Resources/Handle.h"
 #include "Resources/TypeDescriptors.h"
 #include "Utilities/Collections/StaticDArray.h"
@@ -195,6 +196,26 @@ namespace HBL2
 			struct FileHeader
 			{
 				const char HEADER[5] = { 'H','B','L','M','S' };
+				uint32_t Version = CurrentVersion;
+			};
+
+			FileHeader Header;
+			Metadata Data;
+		};
+
+		struct Scene
+		{
+			static constexpr uint32_t CurrentVersion = 0;
+
+			struct Metadata
+			{
+				SceneDescriptor Descriptor;
+			};
+			static_assert(std::is_trivial<JointTransform>());
+
+			struct FileHeader
+			{
+				const char HEADER[5] = { 'H','B','L','S','C' };
 				uint32_t Version = CurrentVersion;
 			};
 
