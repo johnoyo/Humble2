@@ -3,6 +3,7 @@
 #include "Utilities/Collections/Span.h"
 #include "Utilities/Collections/ByteSpan.h"
 #include "Utilities/Collections/FixedHashMap.h"
+#include "Utilities/Collections/StaticString.h"
 
 #include <filesystem>
 #include <fstream>
@@ -24,10 +25,22 @@ namespace HBL2
 		uint64_t GetStreamPosition();
 		void SetStreamPosition(uint64_t position);
 		bool ReadData(char* destination, size_t size);
-		size_t GetStreamLength();
-		size_t ReadAsString(std::string& outString);
 
-		void ReadBytes(ByteSpan& bytes, uint32_t size = 0);
+		size_t GetStreamLength();
+
+		size_t ReadAsString(std::string& outString);
+		uint32_t ReadString(char* dst, uint32_t maxLength);
+		void ReadString(std::string& out);
+
+		template<size_t N>
+		void ReadString(StaticString<N>& out)
+		{
+			char buffer[N];
+			const uint32_t length = ReadString(buffer, N - 1); // leave room for the null terminator
+			out.assign(std::string_view(buffer, length));
+		}
+
+		void ReadBytes(ByteSpan& bytes, uint32_t size = UINT32_MAX);
 
 		template<typename T>
 		void ReadRaw(T& type)
@@ -43,9 +56,9 @@ namespace HBL2
 		}
 
 		template<typename T>
-		void ReadSpan(Span<T> span, uint32_t size = 0)
+		void ReadSpan(Span<T> span, uint32_t size = UINT32_MAX)
 		{
-			if (size == 0)
+			if (size == UINT32_MAX)
 			{
 				ReadRaw<uint32_t>(size);
 			}
@@ -69,9 +82,9 @@ namespace HBL2
 		}
 
 		template<typename Key, typename Value>
-		void ReadMap(FixedHashMap<Key, Value>& map, uint32_t size = 0)
+		void ReadMap(FixedHashMap<Key, Value>& map, uint32_t size = UINT32_MAX)
 		{
-			if (size == 0)
+			if (size == UINT32_MAX)
 			{
 				ReadRaw<uint32_t>(size);
 			}

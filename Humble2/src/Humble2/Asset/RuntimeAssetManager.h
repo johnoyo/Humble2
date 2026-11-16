@@ -13,6 +13,8 @@ namespace HBL2
 		virtual ~RuntimeAssetManager() = default;
 
 		virtual void Initialize(const AssetManagerSpecification& spec) override;
+		virtual void InitializeRT() override;
+		virtual void CleanRT() override;
 
 		virtual bool IsAssetValid(Handle<Asset> handle) override;
 		virtual bool IsAssetLoaded(Handle<Asset> handle) override;

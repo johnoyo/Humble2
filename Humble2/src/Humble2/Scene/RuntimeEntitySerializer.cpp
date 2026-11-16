@@ -27,7 +27,7 @@ namespace HBL2
 		stream.WriteRaw(m_Entity.Idx);
 
 		uint64_t indexPos = stream.GetStreamPosition();
-		uint32_t entityComponentCount = 0;
+		int32_t entityComponentCount = 0;
 		stream.WriteRaw(entityComponentCount);
 
 		if (m_Scene->HasComponent<Component::Tag>(m_Entity))
@@ -35,8 +35,7 @@ namespace HBL2
 			auto& component = m_Scene->GetComponent<Component::Tag>(m_Entity);
 
 			stream.WriteRaw(Reflect::TypeIndex<Component::Tag>::value);
-			ByteSpan chars{ (uint8_t*)component.Name.data(), component.Name.size() };
-			stream.WriteBytes(chars);
+			stream.WriteString(component.Name);
 
 			entityComponentCount++;
 		}
@@ -389,7 +388,7 @@ namespace HBL2
 		stream.SetStreamPosition(indexPos);
 
 		// Write component count.
-		stream.WriteRaw<uint32_t>(entityComponentCount);
+		stream.WriteRaw<int32_t>(entityComponentCount);
 
 		// Set again the cursor at the end position.
 		stream.SetStreamPosition(endPos);
@@ -400,7 +399,7 @@ namespace HBL2
 		uint32_t entityID;
 		stream.ReadRaw(entityID);
 
-		uint32_t entityComponentCount;
+		int32_t entityComponentCount;
 		stream.ReadRaw(entityComponentCount);
 
 		// Retrieve tag component id.
@@ -410,15 +409,7 @@ namespace HBL2
 		// Retrieve component tag.
 		StaticString<64> name;
 		{
-			char nameChars[64];
-			uint32_t nameSize;
-			stream.ReadRaw(nameSize);
-			ByteSpan chars{ (uint8_t*)nameChars, nameSize };
-			stream.ReadBytes(chars, nameSize);
-
-			nameChars[nameSize] = '\0';
-			name = StaticString<64>(nameChars);
-
+			stream.ReadString(name);
 			entityComponentCount--;
 		}
 

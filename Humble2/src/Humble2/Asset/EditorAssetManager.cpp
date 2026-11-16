@@ -4,6 +4,7 @@
 #include "Utilities/YamlUtilities.h"
 #include "Utilities/Collections/Collections.h"
 #include "Utilities/Collections/StaticDArray.h"
+#include "Utilities/PrefabUtilities.h"
 
 #include "Systems/HierachySystem.h"
 #include "Systems/CameraSystem.h"
@@ -47,6 +48,35 @@ namespace HBL2
 		m_RegisteredAssetMap = FixedHashMap<UUID, Handle<Asset>>(&m_PoolArena, m_Spec.Assets);
 		m_RegisteredAssetPathToUUIDMap = FixedHashMap<std::filesystem::path, UUID>(&m_PoolArena, m_Spec.Assets);
 		m_RegisteredAssets = FixedArray<Handle<Asset>>(&m_PoolArena, m_Spec.Assets);
+
+		MeshUtilities::Initialize();
+		PrefabUtilities::Initialize();
+		ShaderUtilities::Initialize();
+	}
+
+	void EditorAssetManager::InitializeRT()
+	{
+		TextureUtilities::Get().LoadWhiteTexture();
+		ShaderUtilities::Get().LoadBuiltInShaders();
+		ShaderUtilities::Get().LoadBuiltInMaterials();
+		MeshUtilities::Get().LoadBuiltInMeshes();
+	}
+
+	void EditorAssetManager::CleanRT()
+	{
+		TextureUtilities::Get().DeleteWhiteTexture();
+		ShaderUtilities::Get().DeleteBuiltInShaders();
+		ShaderUtilities::Get().DeleteBuiltInMaterials();
+		MeshUtilities::Get().DeleteBuiltInMeshes();
+	}
+
+	void EditorAssetManager::Clean()
+	{
+		AssetManager::Clean();
+
+		ShaderUtilities::Shutdown();
+		MeshUtilities::Shutdown();
+		PrefabUtilities::Shutdown();
 	}
 
     uint32_t EditorAssetManager::LoadAsset(Handle<Asset> handle)

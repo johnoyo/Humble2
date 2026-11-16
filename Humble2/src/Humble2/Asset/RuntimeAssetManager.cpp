@@ -45,6 +45,16 @@ namespace HBL2
         m_AssetPackPath = Project::GetAssetDirectory() / "AssetPack.hblap";
     }
 
+    void RuntimeAssetManager::InitializeRT()
+    {
+
+    }
+
+    void RuntimeAssetManager::CleanRT()
+    {
+
+    }
+
     bool RuntimeAssetManager::IsAssetValid(Handle<Asset> handle)
     {
         return handle.IsValid() && GetAssetMetadata(handle) != nullptr;

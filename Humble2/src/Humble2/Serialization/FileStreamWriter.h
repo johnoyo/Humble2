@@ -3,6 +3,7 @@
 #include "Utilities/Collections/Span.h"
 #include "Utilities/Collections/ByteSpan.h"
 #include "Utilities/Collections/FixedHashMap.h"
+#include "Utilities/Collections/StaticString.h"
 
 #include <filesystem>
 #include <fstream>
@@ -29,6 +30,13 @@ namespace HBL2
 
 		void WriteBytes(ByteSpan& bytes, bool writeSize = true);
 		void WriteZero(uint64_t size);
+		void WriteString(std::string_view str);
+
+		template<size_t N>
+		void WriteString(const StaticString<N>& str)
+		{
+			WriteString(str.view());
+		}
 
 		template<typename T>
 		void WriteRaw(const T& type)

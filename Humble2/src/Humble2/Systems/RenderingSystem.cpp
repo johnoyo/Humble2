@@ -8,6 +8,8 @@
 #include "Renderer/ForwardPlusSceneRenderer.h"
 #include "Script/BuildEngine.h"
 
+#include "Utilities/ShaderUtilities.h"
+
 namespace HBL2
 {
 	struct SkinningPushData

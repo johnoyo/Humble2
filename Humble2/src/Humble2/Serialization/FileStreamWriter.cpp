@@ -52,4 +52,14 @@ namespace HBL2
             WriteData(&zero, 1);
         }
     }
+
+    void FileStreamWriter::WriteString(std::string_view str)
+    {
+        WriteRaw<uint32_t>(static_cast<uint32_t>(str.size()));
+
+        if (!str.empty())
+        {
+            WriteData(str.data(), str.size());
+        }
+    }
 }

@@ -63,8 +63,10 @@ namespace HBL2
 		virtual ~AssetManager() = default;
 
 		virtual void Initialize(const AssetManagerSpecification& spec) = 0;
+		virtual void InitializeRT() = 0;
+		virtual void CleanRT() = 0;
 		void Dispatch();
-		void Clean();
+		virtual void Clean();
 
 		const AssetManagerSpecification& GetSpec() const;
 		const AssetManagerSpecification GetUsageStats();

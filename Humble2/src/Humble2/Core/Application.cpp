@@ -98,10 +98,7 @@ namespace HBL2
 
 		EventDispatcher::Initialize({ projectSettings.MaxEventTypes, projectSettings.MaxListenersPerEventType });
 		JobSystem::Initialize({ projectSettings.MaxWorkerMemory });
-		MeshUtilities::Initialize();
-		PrefabUtilities::Initialize();
-		ShaderUtilities::Initialize();
-
+		
         BuildEngine::Instance = BuildEngine::Create();
         BuildEngine::Instance->Initialize();
         
@@ -279,10 +276,7 @@ namespace HBL2
 			ImGuiRenderer::Instance->Initialize();
 			DebugRenderer::Instance->Initialize();
 
-			TextureUtilities::Get().LoadWhiteTexture();
-			ShaderUtilities::Get().LoadBuiltInShaders();
-			ShaderUtilities::Get().LoadBuiltInMaterials();
-			MeshUtilities::Get().LoadBuiltInMeshes();
+			AssetManager::Instance->InitializeRT();
 
 			m_RenderThreadInitializationFinished.store(true, std::memory_order_release);
 
@@ -316,10 +310,7 @@ namespace HBL2
 				END_APP_PROFILE(renderThread, m_CurrentStats.RenderThreadTime);
 			}
 
-			TextureUtilities::Get().DeleteWhiteTexture();
-			ShaderUtilities::Get().DeleteBuiltInShaders();
-			ShaderUtilities::Get().DeleteBuiltInMaterials();
-			MeshUtilities::Get().DeleteBuiltInMeshes();
+			AssetManager::Instance->CleanRT();
 		});
 
 		WaitForRenderThreadInitialization();
@@ -414,9 +405,6 @@ namespace HBL2
 		Console::Instance = nullptr;
 
 		Input::ShutDown();
-		ShaderUtilities::Shutdown();
-		MeshUtilities::Shutdown();
-		PrefabUtilities::Shutdown();
 		EventDispatcher::Shutdown();
 		JobSystem::Shutdown();
 

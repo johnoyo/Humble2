@@ -8,6 +8,8 @@
 
 #include "UI/UserInterfaceUtilities.h"
 
+#include "Utilities/PrefabUtilities.h"
+
 #include "Inspectors/LinkEditor.h"
 #include "Inspectors/CameraEditor.h"
 #include "Inspectors/AnimationCurveEditor.h"
